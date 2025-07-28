@@ -4,8 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 export default function JungVoiceTest({
   apiKey,
+  onTestComplete,
+  numberOfWords,
 }: {
   apiKey?: string;
+  onTestComplete?: (results: any) => void;
+  numberOfWords?: number;
 }) {
   return (
     <Card>
@@ -17,7 +21,11 @@ export default function JungVoiceTest({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <VoiceEmotionAnalysisWebSocket apiKey={apiKey} />
+        <VoiceEmotionAnalysisWebSocket 
+          apiKey={apiKey} 
+          onTestComplete={onTestComplete}
+          numberOfWords={numberOfWords}
+        />
       </CardContent>
     </Card>
   );

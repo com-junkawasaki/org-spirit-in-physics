@@ -11,10 +11,11 @@ export default function JungVoiceAssessment({
   apiKey = process.env.NEXT_PUBLIC_HUME_API_KEY || '',
   onTestComplete,
   className = '',
+  numberOfWords = 10,
 }: JungVoiceAssessmentProps) {
   // Props validation
   const validatedProps = JungVoiceAssessmentPropsSchema.parse({
-    numberOfWords: 10, // Default value, not used by the new test component
+    numberOfWords: numberOfWords,
     apiKey,
     generationId: 'default', // Default value
     voiceName: 'default', // Default value
@@ -70,6 +71,8 @@ export default function JungVoiceAssessment({
         <div className="max-w-4xl mx-auto space-y-6">
           <JungVoiceTest 
             apiKey={validatedProps.apiKey}
+            onTestComplete={handleTestComplete}
+            numberOfWords={validatedProps.numberOfWords}
           />
         </div>
     </div>

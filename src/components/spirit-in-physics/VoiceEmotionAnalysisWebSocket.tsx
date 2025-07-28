@@ -2,34 +2,43 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, Clock, Mic, MicOff } from 'lucide-react';
+import { AlertCircle, Clock, Mic, MicOff, ChevronRight, CheckCircle } from 'lucide-react';
+import { JUNG_STIMULUS_WORDS } from '../jung-word-assessment/JungWordTest';
 // import { HumeRealtimeEmotionService, ConnectionState } from '@/lib/client/hume-realtime';
 // import { HumeVoiceEmotion } from '@/lib/actions/hume-service';
 
 interface VoiceEmotionAnalysisWebSocketProps {
   apiKey?: string;
+  onTestComplete?: (results: any) => void;
+  numberOfWords?: number;
 }
 
 export default function VoiceEmotionAnalysisWebSocket({ 
   apiKey = process.env.NEXT_PUBLIC_HUME_API_KEY || '',
+  onTestComplete,
+  numberOfWords = 10,
 }: VoiceEmotionAnalysisWebSocketProps) {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [emotions, setEmotions] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [recordingTime, setRecordingTime] = useState<number>(0);
   const [connectionStatus, setConnectionStatus] = useState<string>('CLOSED');
   
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [responses, setResponses] = useState<any[]>([]);
+  const [isTestComplete, setIsTestComplete] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const timerIdRef = useRef<NodeJS.Timeout | null>(null);
   const humeServiceRef = useRef<any | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const stimulusWords = JUNG_STIMULUS_WORDS.slice(0, numberOfWords);
   
-  // エモーションサービスの初期化
+  // エモーションサービスの初期化 (省略)
   useEffect(() => {
     if (!apiKey) {
       setError('APIキーが設定されていません。環境変数を確認してください。');
@@ -137,13 +146,6 @@ export default function VoiceEmotionAnalysisWebSocket({
       
       // 録音開始（2秒ごとにデータを取得）
       recorder.start(2000);
-      setIsRecording(true);
-      
-      // タイマーの設定
-      setRecordingTime(0);
-      timerIdRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
       
     } catch (err) {
       console.error('Error starting recording:', err);
@@ -164,48 +166,59 @@ export default function VoiceEmotionAnalysisWebSocket({
       
       setIsRecording(false);
       
-      // タイマーの停止
-      if (timerIdRef.current) {
-        clearInterval(timerIdRef.current);
-        timerIdRef.current = null;
+    }
+  };
+  
+  const handleNextWord = () => {
+    stopRecording();
+    const reactionTime = startTime ? Date.now() - startTime : 0;
+    const newResponse = {
+      stimulusWord: stimulusWords[currentWordIndex],
+      reactionTimeMs: reactionTime,
+      emotions: [...emotions],
+      // TODO: responseWord を音声認識で取得する
+      responseWord: "spoken_word_placeholder",
+    };
+    const updatedResponses = [...responses, newResponse];
+    setResponses(updatedResponses);
+    setEmotions([]);
+    
+    if (currentWordIndex < stimulusWords.length - 1) {
+      setCurrentWordIndex(prev => prev + 1);
+    } else {
+      setIsTestComplete(true);
+      const testResults = {
+        responses: updatedResponses,
+        averageReactionTimeMs: updatedResponses.reduce((acc, r) => acc + r.reactionTimeMs, 0) / stimulusWords.length,
+        delayedResponseCount: updatedResponses.filter(r => r.reactionTimeMs > 2000).length,
+      };
+      if (onTestComplete) {
+        onTestComplete(testResults);
       }
     }
   };
-  
-  // 接続状態のテキスト表示
-  const getConnectionStateText = (): string => {
-    switch (connectionStatus) {
-      case 'CLOSED':
-        return '切断';
-      case 'CONNECTING':
-        return '接続中...';
-      case 'OPEN':
-        return '接続済み（認証中...）';
-      case 'AUTHENTICATED':
-        return '接続済み';
-      case 'ERROR':
-        return 'エラー';
-      default:
-        return '不明';
-    }
-  };
-  
-  // 時間のフォーマット MM:SS
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  // 上位5つの感情を取得
-  const topEmotions = emotions.slice().sort((a, b) => b.score - a.score).slice(0, 5);
+
+  if (isTestComplete) {
+    return (
+      <Card className="text-center p-8">
+        <CardHeader>
+          <CardTitle className="text-2xl">Test Complete</CardTitle>
+          <CardDescription>Thank you for your participation.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CheckCircle className="w-20 h-20 mx-auto text-green-500" />
+          <p className="mt-6 text-lg">Your responses have been recorded.</p>
+        </CardContent>
+      </Card>
+    );
+  }
   
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>リアルタイム音声感情分析</span>
+            <span>Word {currentWordIndex + 1} of {stimulusWords.length}</span>
             <span className={`text-sm px-2 py-1 rounded-full ${
               isConnected 
                 ? 'bg-green-100 text-green-800' 
@@ -213,79 +226,49 @@ export default function VoiceEmotionAnalysisWebSocket({
                   ? 'bg-yellow-100 text-yellow-800'
                   : 'bg-gray-100 text-gray-800'
             }`}>
-              {getConnectionStateText()}
+              {connectionStatus}
             </span>
           </CardTitle>
+          <Progress value={((currentWordIndex + 1) / stimulusWords.length) * 100} className="mt-4" />
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center space-y-4">
-            {error && (
-              <div className="p-4 bg-red-100 text-red-700 rounded-md w-full flex items-start">
-                <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-                <div>{error}</div>
-              </div>
-            )}
-            
-            <div className="text-center mb-4">
-              {isRecording ? (
-                <div className="text-xl font-bold">{formatTime(recordingTime)}</div>
-              ) : (
-                <div className="text-gray-500">録音ボタンを押して開始</div>
-              )}
-            </div>
-            
-            <div className="flex space-x-4">
+        <CardContent className="text-center p-8">
+            <p className="text-5xl font-bold my-12 h-16">{stimulusWords[currentWordIndex]}</p>
+            <div className="flex justify-center space-x-4">
               {!isRecording ? (
-                <Button 
-                  onClick={startRecording} 
-                  disabled={connectionStatus === 'ERROR'}
-                  className="w-32 flex items-center"
-                >
-                  <Mic className="w-4 h-4 mr-2" />
-                  録音開始
+                <Button onClick={startRecording} size="lg" className="w-64 h-16 text-xl">
+                  <Mic className="w-8 h-8 mr-4" />
+                  Start Recording
                 </Button>
               ) : (
-                <Button 
-                  onClick={stopRecording} 
-                  variant="destructive"
-                  className="w-32 flex items-center"
-                >
-                  <MicOff className="w-4 h-4 mr-2" />
-                  録音停止
+                <Button onClick={handleNextWord} size="lg" variant="default" className="w-64 h-16 text-xl">
+                  <ChevronRight className="w-8 h-8 mr-4" />
+                  Next Word
                 </Button>
               )}
             </div>
-          </div>
+            {isRecording && <p className="text-lg text-gray-500 mt-6">Speak your response and click "Next Word".</p>}
         </CardContent>
       </Card>
       
-      {topEmotions.length > 0 && (
+      {emotions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>リアルタイム検出感情</CardTitle>
+            <CardTitle>Detected Emotions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topEmotions.map(emotion => (
-                <div key={emotion.name} className="space-y-1">
-                  <div className="flex justify-between">
+            <div className="space-y-2">
+              {emotions.slice(0, 5).map((emotion: any) => (
+                <div key={emotion.name}>
+                  <div className="flex justify-between font-medium">
                     <span>{emotion.name}</span>
-                    <span className="font-medium">{(emotion.score * 100).toFixed(1)}%</span>
+                    <span>{(emotion.score * 100).toFixed(1)}%</span>
                   </div>
-                  <Progress value={emotion.score * 100} className="h-2" />
+                  <Progress value={emotion.score * 100} />
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
-      )}
-      
-      {!isConnected && !error && (
-        <div className="text-center p-4 bg-blue-50 rounded-md">
-          <p className="text-blue-700">
-            WebSocket接続は録音開始時に自動的に確立されます。
-          </p>
-        </div>
       )}
     </div>
   );
