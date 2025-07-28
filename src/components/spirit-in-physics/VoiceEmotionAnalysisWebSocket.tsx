@@ -43,8 +43,8 @@ export default function VoiceEmotionAnalysisWebSocket({
     if (isTestComplete || currentWordIndex < 0) return;
 
     const word = stimulusWords[currentWordIndex];
-    // Sanitize word for use in a filename, e.g., "to sing" -> "to-sing.mp3"
-    const filename = word.replace(/\s+/g, '-').toLowerCase() + '.mp3';
+    // Sanitize word for use in a filename, e.g., "head" -> "jung_head.mp3", "to sing" -> "jung_to-sing.mp3"
+    const filename = 'jung_' + word.replace(/\s+/g, '-').toLowerCase() + '.mp3';
     const audio = new Audio(`/audio/${filename}`);
     
     const playPromise = audio.play();
