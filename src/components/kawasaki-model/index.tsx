@@ -9,8 +9,7 @@ import { useAnimation } from "./hooks/useAnimation"
 import { defaultModelParams, type IntegratedModelParams } from "./utils/integratedModel"
 import { useKawasakiStore } from "../../store/kawasakiStore"
 import { generateGraphDataFromVoiceAssessment } from "../jung-integrated/utils/generateGraphDataFromVoiceAssessment"
-
-const PhysicsGraph = dynamic(() => import("./PhysicsGraph"), { ssr: false })
+import { PhysicsGraph } from '@/components/physics-graph';
 
 export default function KawasakiModel() {
   // Use animation hook

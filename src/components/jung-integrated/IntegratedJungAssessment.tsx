@@ -14,9 +14,10 @@ import { type TestResults as VoiceTestResults } from '@/components/jung-voice-as
 import { generateGraphDataFromWordAssessment } from './utils/generateGraphDataFromAssessment';
 import { generateGraphDataFromVoiceAssessment } from './utils/generateGraphDataFromVoiceAssessment';
 import { mergeGraphData } from './utils/mergeGraphData';
+import { PhysicsGraph, type PhysicsGraphProps } from '@/components/physics-graph';
 
 // Using dynamic import for the physics graph component (client-side only)
-const PhysicsGraph = dynamic(() => import('@/components/kawasaki-model/PhysicsGraph'), { ssr: false });
+// const DynamicPhysicsGraph = dynamic<PhysicsGraphProps>(() => import('@/components/physics-graph').then(mod => mod.PhysicsGraph), { ssr: false });
 
 type AssessmentType = 'word' | 'voice' | 'both';
 

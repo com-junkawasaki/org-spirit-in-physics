@@ -6,7 +6,7 @@ import ForceGraph3D from "react-force-graph-3d"
 import type { GraphData } from "@/components/kawasaki-model/utils/generateGraphData"
 import * as THREE from "three"
 
-interface PhysicsGraphProps {
+export interface PhysicsGraphProps {
   data: GraphData
   frameRate?: number
   time: number
@@ -545,5 +545,4 @@ const PhysicsGraph: React.FC<PhysicsGraphProps> = ({
   )
 }
 
-export default PhysicsGraph
-
+export default PhysicsGraph 
