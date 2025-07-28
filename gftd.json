@@ -681,12 +681,126 @@
         "properties": {
           "name": "Isolate Component for Focused Debugging",
           "description": "Change debugging strategy to isolate the `ResearchParticipationConsent` component on a dedicated test page. This will eliminate potential interference and allow for focused debugging of its state lifecycle using detailed logging with `useEffect`.",
-          "status": "pending",
-          "sub-tasks": [
-            "Create a temporary test page to render only the consent form.",
-            "Add `useEffect` to log state changes of `isAgreed`.",
-            "Analyze the complete state flow to identify the root cause."
+          "status": "superseded"
+        }
+      },
+      {
+        "id": "P22_AestheticMismatch",
+        "label": "Problem",
+        "properties": {
+          "name": "Major Aesthetic Mismatch with New Design",
+          "description": "The current implementation of the consent form and page background is functionally correct but aesthetically completely different from the new reference design, which features a gradient background and a much more polished, modern UI.",
+          "files": ["src/components/ui/ResearchParticipationConsent.tsx", "src/app/globals.css"]
+        }
+      },
+      {
+        "id": "A50_ImplementAestheticOverhaul",
+        "label": "Design",
+        "properties": {
+          "name": "Implement Aesthetic Overhaul to Match New Design",
+          "description": "A complete redesign of the page aesthetics. This involves adding a global background gradient and completely re-styling the `ResearchParticipationConsent` component to match the new, polished reference image.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A51_ExecuteAestheticOverhaul",
+        "label": "Action",
+        "properties": {
+          "name": "Execute Aesthetic Overhaul",
+          "description": "Applied a new gradient background and completely restyled the `ResearchParticipationConsent` component to match the polished design from the reference image.",
+          "status": "completed",
+          "files": ["src/app/globals.css", "src/components/ui/ResearchParticipationConsent.tsx"]
+        }
+      },
+      {
+        "id": "A52_FinalBuildAfterAestheticOverhaul",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After Aesthetic Overhaul",
+          "description": "Running the final build to verify that the new aesthetic design is correctly implemented and the application is stable.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
+      },
+      {
+        "id": "P23_FinalStylingMismatch",
+        "label": "Problem",
+        "properties": {
+          "name": "Final Styling Mismatch",
+          "description": "The previous aesthetic overhaul did not accurately match the final design reference. Key differences remain, especially in the styling of radio buttons, typography, and internal layout of the consent form.",
+          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
+        }
+      },
+      {
+        "id": "A53_PerformFinalStylingPass",
+        "label": "Design",
+        "properties": {
+          "name": "Perform Final Styling Pass",
+          "description": "A final pass on styling the `ResearchParticipationConsent` component to precisely match the new reference image. This involves simplifying the radio button styles and fine-tuning typography and layout.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A54_ExecuteFinalStylingPass",
+        "label": "Action",
+        "properties": {
+          "name": "Execute Final Styling Pass",
+          "description": "Executed the final styling pass on the `ResearchParticipationConsent` component, adjusting typography, layout, and radio button styles to precisely match the final design reference.",
+          "status": "completed",
+          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
+        }
+      },
+      {
+        "id": "A55_FinalBuildAfterFinalStyling",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After Final Styling Pass",
+          "description": "Running the final build to verify that all styling corrections are implemented correctly.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
+      },
+      {
+        "id": "P24_RecurringStateIssue",
+        "label": "Problem",
+        "properties": {
+          "name": "Recurring State Management Issue in Consent Form",
+          "description": "Despite multiple styling adjustments, the core issue persists: the consent checkbox does not reliably enable the submit button. This points to an unresolved state management bug.",
+          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
+        }
+      },
+      {
+        "id": "A56_ResumeFocusedDebugging",
+        "label": "Design",
+        "properties": {
+          "name": "Resume Focused Debugging on Isolated Component",
+          "description": "Resume the focused debugging of the `ResearchParticipationConsent` component. A new Playwright test will be created to run against the isolated debug page (`/debug`) to monitor console logs and verify the state update.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A57_ExecuteFinalDebuggingAndCleanup",
+        "label": "Action",
+        "properties": {
+          "name": "Execute Final Debugging and Cleanup",
+          "description": "Successfully diagnosed the state update issue using an isolated test page and Playwright. The fix was confirmed, and all temporary debugging code and test files have been removed.",
+          "status": "completed",
+          "files": [
+            "src/components/ui/ResearchParticipationConsent.tsx",
+            "src/app/debug/page.tsx",
+            "tests/debug-isolated.spec.ts",
+            "tests/debug.spec.ts"
           ]
+        }
+      },
+      {
+        "id": "A58_FinalBuildAfterDebug",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After Debugging",
+          "description": "Running the final build to verify that the application is stable after fixing the state management bug and cleaning up debug files.",
+          "status": "completed",
+          "command": "pnpm build"
         }
       }
     ],
@@ -762,7 +876,19 @@
       { "id": "e69", "label": "precedes", "outV": "A46_ExecuteConsentFormStyling", "inV": "A47_FinalBuildAfterConsentStyling" },
       { "id": "e70", "label": "enables", "outV": "A47_FinalBuildAfterConsentStyling", "inV": "A48_InitiateUXDebugSession" },
       { "id": "e71", "label": "uncovered", "outV": "A48_InitiateUXDebugSession", "inV": "P21_RecurringStateUpdateFailure" },
-      { "id": "e72", "label": "led_to", "outV": "P21_RecurringStateUpdateFailure", "inV": "A49_IsolateAndDebugComponent" }
+      { "id": "e72", "label": "led_to", "outV": "P21_RecurringStateUpdateFailure", "inV": "A49_IsolateAndDebugComponent" },
+      { "id": "e73", "label": "uncovered", "outV": "A49_IsolateAndDebugComponent", "inV": "P22_AestheticMismatch" },
+      { "id": "e74", "label": "led_to", "outV": "P22_AestheticMismatch", "inV": "A50_ImplementAestheticOverhaul" },
+      { "id": "e75", "label": "implemented_by", "outV": "A50_ImplementAestheticOverhaul", "inV": "A51_ExecuteAestheticOverhaul" },
+      { "id": "e76", "label": "precedes", "outV": "A51_ExecuteAestheticOverhaul", "inV": "A52_FinalBuildAfterAestheticOverhaul" },
+      { "id": "e77", "label": "uncovered", "outV": "A52_FinalBuildAfterAestheticOverhaul", "inV": "P23_FinalStylingMismatch" },
+      { "id": "e78", "label": "led_to", "outV": "P23_FinalStylingMismatch", "inV": "A53_PerformFinalStylingPass" },
+      { "id": "e79", "label": "implemented_by", "outV": "A53_PerformFinalStylingPass", "inV": "A54_ExecuteFinalStylingPass" },
+      { "id": "e80", "label": "precedes", "outV": "A54_ExecuteFinalStylingPass", "inV": "A55_FinalBuildAfterFinalStyling" },
+      { "id": "e81", "label": "uncovered", "outV": "A55_FinalBuildAfterFinalStyling", "inV": "P24_RecurringStateIssue" },
+      { "id": "e82", "label": "led_to", "outV": "P24_RecurringStateIssue", "inV": "A56_ResumeFocusedDebugging" },
+      { "id": "e83", "label": "implemented_by", "outV": "A56_ResumeFocusedDebugging", "inV": "A57_ExecuteFinalDebuggingAndCleanup" },
+      { "id": "e84", "label": "precedes", "outV": "A57_ExecuteFinalDebuggingAndCleanup", "inV": "A58_FinalBuildAfterDebug" }
     ]
   }
 } 
