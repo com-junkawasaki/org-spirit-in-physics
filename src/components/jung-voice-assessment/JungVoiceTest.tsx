@@ -1,19 +1,24 @@
 import React from 'react';
-import { JungVoiceAssessmentProps, TestResults } from './types';
+import VoiceEmotionAnalysisWebSocket from '@/components/spirit-in-physics/VoiceEmotionAnalysisWebSocket';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function JungVoiceTest({
-  numberOfWords,
   apiKey,
-  voiceName,
-  speechRecognitionLang,
-  onTestComplete,
-  className,
-}: JungVoiceAssessmentProps) {
+}: {
+  apiKey?: string;
+}) {
   return (
-    <div>
-      <h1>Jung Voice Test</h1>
-      <p>This component is under construction.</p>
-      <p>Number of words: {numberOfWords}</p>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Jung Voice Test</CardTitle>
+        <CardDescription>
+          Respond to the stimulus words by speaking into your microphone.
+          Your vocal prosody will be analyzed for emotional content in real-time.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <VoiceEmotionAnalysisWebSocket apiKey={apiKey} />
+      </CardContent>
+    </Card>
   );
 } 

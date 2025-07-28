@@ -253,11 +253,7 @@ export default function IntegratedJungAssessment({
       
       {showVoiceTest && (
         <JungVoiceTest 
-          numberOfWords={numberOfWords}
           apiKey={apiKey}
-          voiceName={voiceName}
-          speechRecognitionLang={speechRecognitionLang}
-          onTestComplete={handleVoiceTestComplete}
         />
       )}
       

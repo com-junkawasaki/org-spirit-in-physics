@@ -250,6 +250,145 @@
           "status": "completed",
           "command": "pnpm build"
         }
+      },
+      {
+        "id": "A18_EvaluateUIUX",
+        "label": "Analysis",
+        "properties": {
+          "name": "Evaluate UI/UX based on application screenshot",
+          "description": "Analyzed the current user interface to identify strengths and weaknesses. The UI is functional for presenting academic information but lacks modern UX principles for engagement, clarity, and interactivity.",
+          "status": "completed",
+          "inputs": [
+            "screenshot of the application"
+          ],
+          "outputs": [
+            "UI/UX improvement suggestions"
+          ]
+        }
+      },
+      {
+        "id": "P11_UIUXDeficiencies",
+        "label": "Problem",
+        "properties": {
+          "name": "UI/UX Deficiencies Identified",
+          "description": "The UI, while informative, suffers from information overload, poor visual hierarchy, and lack of interactivity. It resembles a static document more than a dynamic web application, potentially hindering user engagement and comprehension.",
+          "areas_for_improvement": [
+            "Information Density",
+            "Visual Design",
+            "Interactivity",
+            "Component Grouping"
+          ]
+        }
+      },
+      {
+        "id": "A19_PlanUIUXRefactor",
+        "label": "Design",
+        "properties": {
+          "name": "Plan UI/UX Refactoring",
+          "description": "Create a plan to refactor the UI. This involves breaking the single page into logical sections using components like Cards and Tabs, improving visual hierarchy with better spacing and typography, and making the parameter controls more interactive.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A20_ExecuteUIUXRefactor",
+        "label": "Action",
+        "properties": {
+          "name": "Execute UI/UX Refactoring",
+          "description": "Refactored the main page (`PageClient.tsx`) using `Card` and `Tabs` components to improve structure, readability, and user experience, based on the UI/UX plan.",
+          "status": "completed",
+          "files": ["src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A21_VerifyRefactorBuild",
+        "label": "Action",
+        "properties": {
+          "name": "Run `pnpm build` to verify refactoring",
+          "description": "Building the project to ensure the UI refactoring did not introduce any errors and renders correctly.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
+      },
+      {
+        "id": "P12_IncompleteExperimentFlow",
+        "label": "Problem",
+        "properties": {
+          "name": "Incomplete Experimental Procedure in UI",
+          "description": "The application lacks a structured experimental flow. Key elements like an informed consent form are missing, and the Jung Voice Test component is non-functional ('under construction').",
+          "files": ["src/app/PageClient.tsx", "src/components/jung-voice-assessment/JungVoiceTest.tsx"]
+        }
+      },
+      {
+        "id": "A22_DefineFullExperiment",
+        "label": "Design",
+        "properties": {
+          "name": "Define and Implement Full Experimental Procedure",
+          "description": "Define a complete experimental procedure including consent, instructions, testing, and data handling. This involves implementing a consent form and activating the voice test component.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A23_ImplementConsent",
+        "label": "Action",
+        "properties": {
+          "name": "Implement Consent Form",
+          "description": "Added a modal consent form to `PageClient.tsx` that appears on first load. The user must agree to the terms to proceed with the experiment.",
+          "status": "completed",
+          "files": ["src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A24_FixJungVoiceTest",
+        "label": "Action",
+        "properties": {
+          "name": "Fix JungVoiceTest Component",
+          "description": "Replaced the placeholder content in `JungVoiceTest.tsx` with the functional `VoiceEmotionAnalysisWebSocket` component. Also refactored `JungVoiceAssessment.tsx` to align with the new, simplified props.",
+          "status": "completed",
+          "files": [
+            "src/components/jung-voice-assessment/JungVoiceTest.tsx",
+            "src/components/jung-voice-assessment/JungVoiceAssessment.tsx"
+          ]
+        }
+      },
+      {
+        "id": "A25_FinalBuildVerification",
+        "label": "Action",
+        "properties": {
+          "name": "Run `pnpm build` for final verification",
+          "description": "Building the project to ensure all changes for the experimental flow are integrated correctly and without errors.",
+          "status": "failed",
+          "command": "pnpm build",
+          "error": "Type error in IntegratedJungAssessment.tsx"
+        }
+      },
+      {
+        "id": "P13_PropsTypeError",
+        "label": "Problem",
+        "properties": {
+          "name": "Props Type Error in IntegratedJungAssessment",
+          "description": "A type error occurred because `IntegratedJungAssessment.tsx` was passing outdated props to the refactored `JungVoiceTest` component.",
+          "files": ["src/components/jung-integrated/IntegratedJungAssessment.tsx"]
+        }
+      },
+      {
+        "id": "A26_FixProps",
+        "label": "Action",
+        "properties": {
+          "name": "Fix Props in IntegratedJungAssessment",
+          "description": "Corrected the props passed to `JungVoiceTest` within `IntegratedJungAssessment.tsx` to align with the new, simplified interface.",
+          "status": "completed",
+          "files": ["src/components/jung-integrated/IntegratedJungAssessment.tsx"]
+        }
+      },
+      {
+        "id": "A27_FinalBuildAttempt",
+        "label": "Action",
+        "properties": {
+          "name": "Run final build attempt",
+          "description": "Attempting the final build after fixing the props type error.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
       }
     ],
     "edges": [
@@ -279,7 +418,21 @@
       { "id": "e24", "label": "precedes", "outV": "A14_CommentOutHume", "inV": "A15_ExecuteBuild" },
       { "id": "e25", "label": "resulted_in", "outV": "A15_ExecuteBuild", "inV": "P10_PrerenderError" },
       { "id": "e26", "label": "led_to", "outV": "P10_PrerenderError", "inV": "A16_DynamicImport" },
-      { "id": "e27", "label": "precedes", "outV": "A16_DynamicImport", "inV": "A17_ExecuteBuildAgain" }
+      { "id": "e27", "label": "precedes", "outV": "A16_DynamicImport", "inV": "A17_ExecuteBuildAgain" },
+      { "id": "e28", "label": "enables", "outV": "A17_ExecuteBuildAgain", "inV": "A18_EvaluateUIUX" },
+      { "id": "e29", "label": "uncovered", "outV": "A18_EvaluateUIUX", "inV": "P11_UIUXDeficiencies" },
+      { "id": "e30", "label": "led_to", "outV": "P11_UIUXDeficiencies", "inV": "A19_PlanUIUXRefactor" },
+      { "id": "e31", "label": "implemented_by", "outV": "A19_PlanUIUXRefactor", "inV": "A20_ExecuteUIUXRefactor" },
+      { "id": "e32", "label": "precedes", "outV": "A20_ExecuteUIUXRefactor", "inV": "A21_VerifyRefactorBuild" },
+      { "id": "e33", "label": "uncovered", "outV": "A21_VerifyRefactorBuild", "inV": "P12_IncompleteExperimentFlow" },
+      { "id": "e34", "label": "led_to", "outV": "P12_IncompleteExperimentFlow", "inV": "A22_DefineFullExperiment" },
+      { "id": "e35", "label": "implemented_by", "outV": "A22_DefineFullExperiment", "inV": "A23_ImplementConsent" },
+      { "id": "e36", "label": "implemented_by", "outV": "A22_DefineFullExperiment", "inV": "A24_FixJungVoiceTest" },
+      { "id": "e37", "label": "precedes", "outV": "A23_ImplementConsent", "inV": "A25_FinalBuildVerification" },
+      { "id": "e38", "label": "precedes", "outV": "A24_FixJungVoiceTest", "inV": "A25_FinalBuildVerification" },
+      { "id": "e39", "label": "resulted_in", "outV": "A25_FinalBuildVerification", "inV": "P13_PropsTypeError" },
+      { "id": "e40", "label": "led_to", "outV": "P13_PropsTypeError", "inV": "A26_FixProps" },
+      { "id": "e41", "label": "precedes", "outV": "A26_FixProps", "inV": "A27_FinalBuildAttempt" }
     ]
   }
 } 
