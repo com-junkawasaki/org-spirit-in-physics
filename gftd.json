@@ -389,6 +389,80 @@
           "status": "completed",
           "command": "pnpm build"
         }
+      },
+      {
+        "id": "P14_UILayoutDeviation",
+        "label": "Problem",
+        "properties": {
+          "name": "UI Layout Deviates from Original Design",
+          "description": "The previous UI refactoring introduced a tabbed layout, which conflicts with the desired single-page, article-style design shown in the reference image. The implementation of the consent form as a modal also does not match the embedded form in the design.",
+          "files": ["src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A28_RestoreSinglePageLayout",
+        "label": "Design",
+        "properties": {
+          "name": "Restore Single-Page Article Layout",
+          "description": "Plan to refactor the UI to restore the original single-page layout. This involves removing the Tabs from PageClient.tsx, re-integrating all components into a linear flow, and redesigning the consent form to be an embedded component as shown in the reference image.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A29_ExecuteLayoutRevert",
+        "label": "Action",
+        "properties": {
+          "name": "Revert to Single-Page Layout",
+          "description": "Removed the `Tabs` component from `PageClient.tsx` and restored the original linear, article-style layout.",
+          "status": "completed",
+          "files": ["src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A30_CreateEmbeddedConsentForm",
+        "label": "Action",
+        "properties": {
+          "name": "Create and Integrate Embedded Consent Form",
+          "description": "Created a new `ResearchParticipationConsent` component with a CDISC-compliant design and integrated it into `PageClient.tsx` with state management to control content visibility.",
+          "status": "completed",
+          "files": ["src/components/ui/ResearchParticipationConsent.tsx", "src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A31_FinalBuildAfterUIRestoration",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After UI Restoration",
+          "description": "Running the final build to verify that the UI has been successfully restored to the intended design and all components are functioning correctly.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
+      },
+      {
+        "id": "A32_DefinePlaywrightDebugProcess",
+        "label": "Design",
+        "properties": {
+          "name": "Define Standardized Playwright Debugging Process",
+          "description": "Establish a standard operating procedure (SOP) for debugging the application using Playwright. The process includes starting the dev server, running tests to capture console logs and screenshots, analyzing artifacts to find the root cause, and verifying the fix by re-running tests. This process itself is the SSoT for debugging activities.",
+          "status": "completed",
+          "steps": [
+            "Start dev server with `pnpm dev`",
+            "Prepare a Playwright test script to target a specific page/feature",
+            "Execute `pnpm playwright test`",
+            "Analyze Playwright report (trace, console logs, screenshots)",
+            "Implement code fix",
+            "Verify fix by re-running tests"
+          ]
+        }
+      },
+      {
+        "id": "A33_InitiatePlaywrightDebugSession",
+        "label": "Action",
+        "properties": {
+          "name": "Initiate Playwright Debug Session",
+          "description": "Begin a debugging session following the standardized process to check for any runtime errors on the main page.",
+          "status": "pending"
+        }
       }
     ],
     "edges": [
@@ -432,7 +506,15 @@
       { "id": "e38", "label": "precedes", "outV": "A24_FixJungVoiceTest", "inV": "A25_FinalBuildVerification" },
       { "id": "e39", "label": "resulted_in", "outV": "A25_FinalBuildVerification", "inV": "P13_PropsTypeError" },
       { "id": "e40", "label": "led_to", "outV": "P13_PropsTypeError", "inV": "A26_FixProps" },
-      { "id": "e41", "label": "precedes", "outV": "A26_FixProps", "inV": "A27_FinalBuildAttempt" }
+      { "id": "e41", "label": "precedes", "outV": "A26_FixProps", "inV": "A27_FinalBuildAttempt" },
+      { "id": "e42", "label": "uncovered", "outV": "A27_FinalBuildAttempt", "inV": "P14_UILayoutDeviation" },
+      { "id": "e43", "label": "led_to", "outV": "P14_UILayoutDeviation", "inV": "A28_RestoreSinglePageLayout" },
+      { "id": "e44", "label": "implemented_by", "outV": "A28_RestoreSinglePageLayout", "inV": "A29_ExecuteLayoutRevert" },
+      { "id": "e45", "label": "implemented_by", "outV": "A28_RestoreSinglePageLayout", "inV": "A30_CreateEmbeddedConsentForm" },
+      { "id": "e46", "label": "precedes", "outV": "A29_ExecuteLayoutRevert", "inV": "A31_FinalBuildAfterUIRestoration" },
+      { "id": "e47", "label": "precedes", "outV": "A30_CreateEmbeddedConsentForm", "inV": "A31_FinalBuildAfterUIRestoration" },
+      { "id": "e48", "label": "enables", "outV": "A31_FinalBuildAfterUIRestoration", "inV": "A32_DefinePlaywrightDebugProcess" },
+      { "id": "e49", "label": "precedes", "outV": "A32_DefinePlaywrightDebugProcess", "inV": "A33_InitiatePlaywrightDebugSession" }
     ]
   }
 } 
