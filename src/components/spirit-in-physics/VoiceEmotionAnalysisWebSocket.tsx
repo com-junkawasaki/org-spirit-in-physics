@@ -143,7 +143,19 @@ export default function VoiceEmotionAnalysisWebSocket({
       streamRef.current = stream;
       
       // MediaRecorderの設定
-      const recorder = new MediaRecorder(stream);
+      const mimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+      ];
+      const supportedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+
+      if (!supportedMimeType) {
+        throw new Error("このブラウザでは、録音に利用できる音声フォーマットが見つかりませんでした。");
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType: supportedMimeType });
       mediaRecorderRef.current = recorder;
       
       // データの処理
@@ -167,9 +179,15 @@ export default function VoiceEmotionAnalysisWebSocket({
       // 録音開始（2秒ごとにデータを取得）
       recorder.start(2000);
       
+      setStartTime(Date.now());
+      
     } catch (err) {
       console.error('Error starting recording:', err);
-      setError(err instanceof Error ? err.message : 'マイクの起動に失敗しました');
+      let message = '録音の開始に失敗しました。';
+      if (err instanceof Error) {
+        message = `マイクエラー: ${err.name} - ${err.message}。ブラウザの権限設定を確認してください。`;
+      }
+      setError(message);
     }
   };
   
@@ -252,6 +270,12 @@ export default function VoiceEmotionAnalysisWebSocket({
           <Progress value={((currentWordIndex + 1) / stimulusWords.length) * 100} className="mt-4" />
         </CardHeader>
         <CardContent className="text-center p-8">
+            {error && (
+              <div className="mb-6 p-3 bg-red-100 text-red-800 rounded-md text-left flex items-start">
+                <AlertCircle className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
             <p className="text-5xl font-bold my-12 h-16">{stimulusWords[currentWordIndex]}</p>
             <div className="flex justify-center space-x-4">
               {!isRecording ? (
