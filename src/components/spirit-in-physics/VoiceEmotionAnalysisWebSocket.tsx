@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, Clock, Mic, MicOff } from 'lucide-react';
-import { HumeRealtimeEmotionService, ConnectionState } from '@/lib/client/hume-realtime';
-import { HumeVoiceEmotion } from '@/lib/actions/hume-service';
+// import { HumeRealtimeEmotionService, ConnectionState } from '@/lib/client/hume-realtime';
+// import { HumeVoiceEmotion } from '@/lib/actions/hume-service';
 
 interface VoiceEmotionAnalysisWebSocketProps {
   apiKey?: string;
@@ -17,15 +17,16 @@ export default function VoiceEmotionAnalysisWebSocket({
 }: VoiceEmotionAnalysisWebSocketProps) {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [emotions, setEmotions] = useState<HumeVoiceEmotion[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [emotions, setEmotions] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState<number>(0);
-  const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CLOSED);
+  const [connectionStatus, setConnectionStatus] = useState<string>('CLOSED');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIdRef = useRef<NodeJS.Timeout | null>(null);
-  const humeServiceRef = useRef<HumeRealtimeEmotionService | null>(null);
+  const humeServiceRef = useRef<any | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   
   // エモーションサービスの初期化
@@ -35,30 +36,37 @@ export default function VoiceEmotionAnalysisWebSocket({
       return;
     }
     
-    humeServiceRef.current = new HumeRealtimeEmotionService(
-      apiKey,
-      // Face data handler (not used)
-      () => {},
-      // Voice data handler
-      (voiceData) => {
-        if (voiceData.emotions && voiceData.emotions.length > 0) {
-          console.log('Voice emotion data received:', voiceData);
-          setEmotions(voiceData.emotions);
-        }
-      },
-      // Error handler
-      (error) => {
-        console.error('Hume WebSocket error:', error);
-        const errorMessage = error instanceof Error 
-          ? error.message 
-          : typeof error === 'object' && error !== null && 'message' in error
-            ? String(error.message)
-            : 'WebSocket接続エラーが発生しました';
-        setError(errorMessage);
-        setIsConnected(false);
-        setConnectionState(ConnectionState.ERROR);
-      }
-    );
+    // Initialize Hume service
+    if (apiKey && !humeServiceRef.current) {
+      // humeServiceRef.current = new HumeRealtimeEmotionService(
+      //   apiKey,
+      //   // Face data handler (not used)
+      //   () => {},
+      //   // Voice data handler
+      //   (data: HumeVoiceResponse) => {
+      //     if (data.emotions) {
+      //       setEmotions(data.emotions.sort((a, b) => b.score - a.score));
+      //     }
+      //   },
+      //   // Error handler
+      //   (err: Error | Event) => {
+      //     const errorMessage = err instanceof Error ? err.message : 'WebSocket error';
+      //     console.error('Hume service error:', errorMessage);
+      //     setError(errorMessage);
+      //     setIsConnected(false);
+      //     setConnectionStatus('ERROR');
+      //   }
+      // );
+
+      // Periodically check connection state
+      // setInterval(() => {
+      //   if (humeServiceRef.current) {
+      //     const state = humeServiceRef.current.getConnectionState();
+      //     setConnectionStatus(state);
+      //     setIsConnected(humeServiceRef.current.isAuthenticated());
+      //   }
+      // }, 1000);
+    }
     
     return () => {
       stopRecording();
@@ -75,7 +83,7 @@ export default function VoiceEmotionAnalysisWebSocket({
     const intervalId = setInterval(() => {
       if (humeServiceRef.current) {
         const state = humeServiceRef.current.getConnectionState();
-        setConnectionState(state);
+        setConnectionStatus(state);
         setIsConnected(humeServiceRef.current.isAuthenticated());
       }
     }, 1000);
@@ -166,16 +174,16 @@ export default function VoiceEmotionAnalysisWebSocket({
   
   // 接続状態のテキスト表示
   const getConnectionStateText = (): string => {
-    switch (connectionState) {
-      case ConnectionState.CLOSED:
+    switch (connectionStatus) {
+      case 'CLOSED':
         return '切断';
-      case ConnectionState.CONNECTING:
+      case 'CONNECTING':
         return '接続中...';
-      case ConnectionState.OPEN:
+      case 'OPEN':
         return '接続済み（認証中...）';
-      case ConnectionState.AUTHENTICATED:
+      case 'AUTHENTICATED':
         return '接続済み';
-      case ConnectionState.ERROR:
+      case 'ERROR':
         return 'エラー';
       default:
         return '不明';
@@ -201,7 +209,7 @@ export default function VoiceEmotionAnalysisWebSocket({
             <span className={`text-sm px-2 py-1 rounded-full ${
               isConnected 
                 ? 'bg-green-100 text-green-800' 
-                : connectionState === ConnectionState.CONNECTING 
+                : connectionStatus === 'CONNECTING' 
                   ? 'bg-yellow-100 text-yellow-800'
                   : 'bg-gray-100 text-gray-800'
             }`}>
@@ -230,7 +238,7 @@ export default function VoiceEmotionAnalysisWebSocket({
               {!isRecording ? (
                 <Button 
                   onClick={startRecording} 
-                  disabled={connectionState === ConnectionState.ERROR}
+                  disabled={connectionStatus === 'ERROR'}
                   className="w-32 flex items-center"
                 >
                   <Mic className="w-4 h-4 mr-2" />

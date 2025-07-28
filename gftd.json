@@ -135,6 +135,61 @@
           "description": "エラーの再発ループは、単一のコードミスではなく、プロジェクト全体の健全性が損なわれていることを示す。根本原因は、(1) 依存関係の不整合 (ReactとNext.jsのバージョンなど)、(2) Next.jsのキャッシュ機構の永続的な破損、(3) `tsconfig.json`や`next.config.mjs`などの設定ファイルの競合、のいずれかまたは組み合わせと仮説を立てる。",
           "files": ["package.json", "tsconfig.json", "next.config.mjs"]
         }
+      },
+      {
+        "id": "A10_SwitchToReact",
+        "label": "Action",
+        "properties": {
+          "name": "MDXの使用を中止し、Reactコンポーネントへ移行",
+          "description": "エラーの根本原因の一つであるMDXの複雑さを排除するため、`page.mdx`を`page.tsx`に変換し、MDX関連の依存関係と設定をすべて削除。これにより、プロジェクトの構成を簡素化し、安定性を向上させる。",
+          "files": ["src/app/page.tsx", "next.config.mjs", "package.json"]
+        }
+      },
+      {
+        "id": "P7_MetadataConflict",
+        "label": "Problem",
+        "properties": {
+          "name": "metadataエクスポートと'use client'の競合",
+          "description": "MDXから.tsxへの移行後、`metadata`のexport（サーバーコンポーネント限定）と`'use client'`ディレクティブ（クライアントコンポーネント限定）が同一ファイル内で競合し、ビルドエラーが発生。",
+          "files": ["src/app/page.tsx"]
+        }
+      },
+      {
+        "id": "A11_ComponentSeparationPlan",
+        "label": "Design",
+        "properties": {
+          "name": "コンポーネント分離パターンの適用",
+          "description": "`metadata`を持つサーバーコンポーネント(page.tsx)と、`'use client'`を持つクライアントコンポーネント(PageClient.tsx)に分離する設計を立案。これにより、Next.jsの規約に準拠しつつ、静的メタデータと動的UIを両立させる。",
+          "files": ["src/app/page.tsx", "src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A12_ExecuteSeparation",
+        "label": "Action",
+        "properties": {
+          "name": "コンポーネント分離を実行",
+          "description": "計画に基づき、`page.tsx`からUIロジックを`PageClient.tsx`に分離し、`page.tsx`を純粋なサーバーコンポーネントとして修正した。",
+          "status": "completed",
+          "files": ["src/app/page.tsx", "src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "P8_MissingUIComponent",
+        "label": "Problem",
+        "properties": {
+          "name": "UIコンポーネントの不足: progress",
+          "description": "`VoiceEmotionAnalysisWebSocket.tsx`が必要とする`@/components/ui/progress`コンポーネントが見つからないため、ビルドエラーが発生。",
+          "files": ["src/components/spirit-in-physics/VoiceEmotionAnalysisWebSocket.tsx"]
+        }
+      },
+      {
+        "id": "P9_RecurringMissingModule",
+        "label": "Problem",
+        "properties": {
+          "name": "Hume AI関連モジュールの再度の欠落",
+          "description": "`VoiceEmotionAnalysisWebSocket.tsx`が、以前に他のファイルでも問題となった未実装のHume AI関連モジュールをインポートしようとしており、エラーの一因となっている。",
+          "files": ["src/components/spirit-in-physics/VoiceEmotionAnalysisWebSocket.tsx"]
+        }
       }
     ],
     "edges": [
@@ -151,7 +206,13 @@
       { "id": "e11", "label": "resulted_in", "outV": "A7_FixJungVoiceTestProps", "inV": "P5_FinalBuildError" },
       { "id": "e12", "label": "led_to", "outV": "P5_FinalBuildError", "inV": "A8_FixUseRef" },
       { "id": "e13", "label": "uncovered", "outV": "A8_FixUseRef", "inV": "P6_ErrorRecurrence" },
-      { "id": "e14", "label": "triggered", "outV": "P6_ErrorRecurrence", "inV": "A9_RootCauseAnalysis" }
+      { "id": "e14", "label": "triggered", "outV": "P6_ErrorRecurrence", "inV": "A9_RootCauseAnalysis" },
+      { "id": "e15", "label": "led_to_decision", "outV": "A9_RootCauseAnalysis", "inV": "A10_SwitchToReact" },
+      { "id": "e16", "label": "resulted_in", "outV": "A10_SwitchToReact", "inV": "P7_MetadataConflict" },
+      { "id": "e17", "label": "led_to", "outV": "P7_MetadataConflict", "inV": "A11_ComponentSeparationPlan" },
+      { "id": "e18", "label": "implemented_by", "outV": "A11_ComponentSeparationPlan", "inV": "A12_ExecuteSeparation" },
+      { "id": "e19", "label": "uncovered", "outV": "A12_ExecuteSeparation", "inV": "P8_MissingUIComponent" },
+      { "id": "e20", "label": "uncovered", "outV": "A12_ExecuteSeparation", "inV": "P9_RecurringMissingModule" }
     ]
   }
 } 
