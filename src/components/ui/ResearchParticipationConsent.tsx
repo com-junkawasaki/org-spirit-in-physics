@@ -24,11 +24,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 export function ResearchParticipationConsent() {
   const [isAgreed, setIsAgreed] = React.useState(false);
 
+  React.useEffect(() => {
+    console.log('isAgreed state updated:', isAgreed);
+  }, [isAgreed]);
+
   return (
-    <Card className="w-full max-w-3xl mx-auto my-12 border-2 border-blue-200 shadow-lg">
+    <Card className="w-full max-w-3xl mx-auto my-12 border-2 border-blue-200 shadow-lg not-prose">
       <CardHeader>
         <CardTitle className="text-2xl text-blue-800">Research Participation Consent</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-base">
           This Spirit in Physics (Jung's Word Association Embedding Test) is
           conducted for research purposes. Please read the following consent
           information before proceeding.
@@ -37,11 +41,11 @@ export function ResearchParticipationConsent() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <Label className="text-lg font-semibold text-gray-800">Demographic Information (CDISC Standards)</Label>
+          <Label className="text-lg font-semibold text-gray-800 block mb-2">Demographic Information (CDISC Standards)</Label>
           <p className="text-sm text-gray-600 mb-4">
             This information helps us understand our research participants better. All responses are anonymous and optional.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
             <div className="grid gap-2">
               <Label htmlFor="age-group">Age Group</Label>
               <Select>
@@ -60,22 +64,22 @@ export function ResearchParticipationConsent() {
             </div>
             <div className="grid gap-2">
               <Label>Gender</Label>
-              <RadioGroup defaultValue="prefer-not-to-say" className="flex flex-wrap gap-4">
+              <RadioGroup defaultValue="prefer-not-to-say" className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="male" id="male" />
-                  <Label htmlFor="male">Male</Label>
+                  <Label htmlFor="male" className="font-normal">Male</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="female" id="female" />
-                  <Label htmlFor="female">Female</Label>
+                  <Label htmlFor="female" className="font-normal">Female</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="non-binary" id="non-binary" />
-                  <Label htmlFor="non-binary">Non-binary</Label>
+                  <Label htmlFor="non-binary" className="font-normal">Non-binary</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="prefer-not-to-say" id="prefer-not-to-say" />
-                  <Label htmlFor="prefer-not-to-say">Prefer not to say</Label>
+                  <Label htmlFor="prefer-not-to-say" className="font-normal">Prefer not to say</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -112,11 +116,11 @@ export function ResearchParticipationConsent() {
             </div>
           </div>
         </div>
-        <div className="flex items-start space-x-3 mt-4">
+        <div className="flex items-start space-x-3 pt-4 border-t">
           <Checkbox id="terms" checked={isAgreed} onCheckedChange={(checked) => setIsAgreed(checked === true)} className="mt-1" />
           <label
             htmlFor="terms"
-            className="text-sm text-gray-700"
+            className="text-sm text-gray-700 leading-relaxed"
           >
             I have read and understood the above information. I have had the opportunity to ask questions and have received satisfactory answers to my questions. I voluntarily agree to participate in this research. I understand that I have the right to withdraw at any time.
           </label>

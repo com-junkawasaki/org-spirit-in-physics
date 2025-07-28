@@ -579,6 +579,115 @@
           "status": "completed",
           "command": "pnpm build"
         }
+      },
+      {
+        "id": "P19_ComponentLayoutBroken",
+        "label": "Problem",
+        "properties": {
+          "name": "KawasakiModel Component Layout is Broken When Embedded",
+          "description": "The `KawasakiModel` component's fixed-height calculation (`h-[calc(100vh-2rem)]`) conflicts with the scrolling layout of the page it's embedded in. It also renders a redundant, internal title.",
+          "files": ["src/components/kawasaki-model/index.tsx", "src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A42_RefactorComponentModel",
+        "label": "Design",
+        "properties": {
+          "name": "Refactor KawasakiModel for Better Embedding",
+          "description": "Plan to refactor the `KawasakiModel` to be more composable. This involves changing its height to `h-full` to respect its parent container and adding a `showTitle` prop to conditionally render its internal title.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A43_ExecuteComponentRefactor",
+        "label": "Action",
+        "properties": {
+          "name": "Execute KawasakiModel Refactor",
+          "description": "Refactored the `KawasakiModel` to be embeddable by adjusting its height and adding a `showTitle` prop. Also updated `PageClient.tsx` to use the new prop and correct the section title.",
+          "status": "completed",
+          "files": ["src/components/kawasaki-model/index.tsx", "src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A44_FinalBuildAfterComponentRefactor",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After Component Refactor",
+          "description": "Running the final build to verify that the component refactoring has fixed the layout issues.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
+      },
+      {
+        "id": "P20_ConsentFormUIBroken",
+        "label": "Problem",
+        "properties": {
+          "name": "Consent Form UI is Broken",
+          "description": "The `ResearchParticipationConsent` component's styling is broken. Form elements are not aligned correctly and lack proper typography, likely due to the removal of the parent `prose` styles.",
+          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
+        }
+      },
+      {
+        "id": "A45_FixConsentFormStyling",
+        "label": "Design",
+        "properties": {
+          "name": "Fix Consent Form Styling",
+          "description": "Plan to fix the consent form's UI by applying direct Tailwind CSS classes for layout, spacing, and typography to the form elements within the `ResearchParticipationConsent` component.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A46_ExecuteConsentFormStyling",
+        "label": "Action",
+        "properties": {
+          "name": "Execute Consent Form Styling",
+          "description": "Applied a comprehensive set of Tailwind CSS classes to the `ResearchParticipationConsent` component to fix layout and typography issues.",
+          "status": "completed",
+          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
+        }
+      },
+      {
+        "id": "A47_FinalBuildAfterConsentStyling",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After Consent Form Styling",
+          "description": "Running the final build to verify that the consent form's UI is correctly styled.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
+      },
+      {
+        "id": "A48_InitiateUXDebugSession",
+        "label": "Action",
+        "properties": {
+          "name": "Initiate UX Debugging Session with Playwright",
+          "description": "Start a new debugging session following the SSoT to perform a UX evaluation of the main page. This involves visual inspection via screenshots and interaction testing of key components.",
+          "status": "failed",
+          "error": "Consent button remains disabled, indicating a persistent state update issue."
+        }
+      },
+      {
+        "id": "P21_RecurringStateUpdateFailure",
+        "label": "Problem",
+        "properties": {
+          "name": "Recurring State Update Failure in Consent Form",
+          "description": "The consent form's submit button remains disabled despite multiple fixes. This indicates a deeper, unresolved issue with React state management within the `ResearchParticipationConsent` component.",
+          "files": ["src/components/ui/ResearchParticipationConsent.tsx", "tests/ux-debug.spec.ts"]
+        }
+      },
+      {
+        "id": "A49_IsolateAndDebugComponent",
+        "label": "Design",
+        "properties": {
+          "name": "Isolate Component for Focused Debugging",
+          "description": "Change debugging strategy to isolate the `ResearchParticipationConsent` component on a dedicated test page. This will eliminate potential interference and allow for focused debugging of its state lifecycle using detailed logging with `useEffect`.",
+          "status": "pending",
+          "sub-tasks": [
+            "Create a temporary test page to render only the consent form.",
+            "Add `useEffect` to log state changes of `isAgreed`.",
+            "Analyze the complete state flow to identify the root cause."
+          ]
+        }
       }
     ],
     "edges": [
@@ -642,7 +751,18 @@
       { "id": "e58", "label": "uncovered", "outV": "A38_FinalBuildAndVerification", "inV": "P18_UIStylingMismatch" },
       { "id": "e59", "label": "led_to", "outV": "P18_UIStylingMismatch", "inV": "A39_RefineUIStyling" },
       { "id": "e60", "label": "implemented_by", "outV": "A39_RefineUIStyling", "inV": "A40_ExecuteStylingRefactor" },
-      { "id": "e61", "label": "precedes", "outV": "A40_ExecuteStylingRefactor", "inV": "A41_FinalBuildAfterStyling" }
+      { "id": "e61", "label": "precedes", "outV": "A40_ExecuteStylingRefactor", "inV": "A41_FinalBuildAfterStyling" },
+      { "id": "e62", "label": "uncovered", "outV": "A41_FinalBuildAfterStyling", "inV": "P19_ComponentLayoutBroken" },
+      { "id": "e63", "label": "led_to", "outV": "P19_ComponentLayoutBroken", "inV": "A42_RefactorComponentModel" },
+      { "id": "e64", "label": "implemented_by", "outV": "A42_RefactorComponentModel", "inV": "A43_ExecuteComponentRefactor" },
+      { "id": "e65", "label": "precedes", "outV": "A43_ExecuteComponentRefactor", "inV": "A44_FinalBuildAfterComponentRefactor" },
+      { "id": "e66", "label": "uncovered", "outV": "A44_FinalBuildAfterComponentRefactor", "inV": "P20_ConsentFormUIBroken" },
+      { "id": "e67", "label": "led_to", "outV": "P20_ConsentFormUIBroken", "inV": "A45_FixConsentFormStyling" },
+      { "id": "e68", "label": "implemented_by", "outV": "A45_FixConsentFormStyling", "inV": "A46_ExecuteConsentFormStyling" },
+      { "id": "e69", "label": "precedes", "outV": "A46_ExecuteConsentFormStyling", "inV": "A47_FinalBuildAfterConsentStyling" },
+      { "id": "e70", "label": "enables", "outV": "A47_FinalBuildAfterConsentStyling", "inV": "A48_InitiateUXDebugSession" },
+      { "id": "e71", "label": "uncovered", "outV": "A48_InitiateUXDebugSession", "inV": "P21_RecurringStateUpdateFailure" },
+      { "id": "e72", "label": "led_to", "outV": "P21_RecurringStateUpdateFailure", "inV": "A49_IsolateAndDebugComponent" }
     ]
   }
 } 

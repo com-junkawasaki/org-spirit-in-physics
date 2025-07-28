@@ -35,23 +35,10 @@ export default function PageClient() {
       </section>
 
       <section className="mb-12">
-        <h2 className="text-3xl font-semibold border-b pb-2 mb-6">Spirit Physical Space (Kawasaki Model)</h2>
-        <h3 className="text-2xl font-semibold mb-4">Mathematical Model:</h3>
-        <div className="flex justify-center my-4">
-          <BlockMath math="S = V, E, T" />
-        </div>
-        <div className="flex justify-center my-4">
-          <BlockMath math="E = -\ln P(w_O | w_I),\; V = \{\vec{w_I}, \vec{w_O}, ...\},\; T = \text{time axis}." />
-        </div>
-
-        <h3 className="text-2xl font-semibold mb-4">Physical Definition of Spirit:</h3>
-        <div className="flex justify-center my-4">
-          <BlockMath math="\psi(S) = \frac{\delta E(S)}{\delta S}." />
-        </div>
-        <p className="text-center text-sm text-gray-500">(Bérut et al., 2012)</p>
+        <h2 className="text-3xl font-semibold border-b pb-2 mb-6">Spirit in Physics ( Jung's Word Association Test Embedding Model )</h2>
         
         <div className="w-full h-[80vh] my-8 rounded-lg overflow-hidden border shadow-lg">
-          <KawasakiModel />
+          <KawasakiModel showTitle={false} />
         </div>
       </section>
 

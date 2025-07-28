@@ -13,7 +13,11 @@ import type { PhysicsGraphProps } from "../physics-graph/index.ts"
 
 const PhysicsGraph = dynamic<PhysicsGraphProps>(() => import('../physics-graph/index.ts').then(mod => mod.PhysicsGraph), { ssr: false });
 
-export default function KawasakiModel() {
+interface KawasakiModelProps {
+  showTitle?: boolean;
+}
+
+export default function KawasakiModel({ showTitle = true }: KawasakiModelProps) {
   // Use animation hook
   const { transitionState, time, isPlaying, speed, handleStateChange, togglePlay, handleSpeedChange } = useAnimation({
     initialSpeed: 1,
@@ -162,19 +166,21 @@ export default function KawasakiModel() {
   }
 
   return (
-    <main className="flex flex-col h-[calc(100vh-2rem)] w-full p-0 bg-gradient-to-b from-gray-50 to-gray-100 text-gray-800 overflow-hidden">
-      <div className="px-4 py-3 bg-white/80 backdrop-blur-sm">
-        <h1 className="text-xl font-bold text-gray-800 tracking-wide">
-          Spirit in Physics ( Jung's Word Association Test Embedding Model )
-        </h1>
-        {voiceAssessments.length > 0 && (
-          <p className="text-sm text-gray-600">
-            Voice assessment data included ({voiceAssessments.length} test{voiceAssessments.length !== 1 ? 's' : ''})
-            {voiceGraphData.nodes.length > 0 && 
-              ` - ${voiceGraphData.nodes.length - 1} words with latency reflected in distance`}
-          </p>
-        )}
-      </div>
+    <main className="flex flex-col h-full w-full p-0 bg-gradient-to-b from-gray-50 to-gray-100 text-gray-800 overflow-hidden">
+      {showTitle && (
+        <div className="px-4 py-3 bg-white/80 backdrop-blur-sm">
+          <h1 className="text-xl font-bold text-gray-800 tracking-wide">
+            Spirit in Physics ( Jung's Word Association Test Embedding Model )
+          </h1>
+          {voiceAssessments.length > 0 && (
+            <p className="text-sm text-gray-600">
+              Voice assessment data included ({voiceAssessments.length} test{voiceAssessments.length !== 1 ? 's' : ''})
+              {voiceGraphData.nodes.length > 0 && 
+                ` - ${voiceGraphData.nodes.length - 1} words with latency reflected in distance`}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-0 h-full">
         {/* Left sidebar with controls */}

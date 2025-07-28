@@ -1,0 +1,115 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - heading "Spirit in Physics" [level=1]
+  - paragraph:
+    - strong: "Authors:"
+    - text: Jun Kawasaki(root@junkawasaki.com), Kazuki Tainaka, Tomonori Takeuchi
+  - paragraph:
+    - strong: "Affiliation:"
+    - text: Graduate School of Medical and Dental Sciences, Niigata University, Brain Research Institute, Niigata University, Japan, Department of Biomedicine, Aarhus University, Denmark
+- 'heading "Introduction: Structuring and Quantifying Human Spirit Using the Informational Vector Space" [level=2]'
+- heading "Hypothesis 1" [level=3]
+- paragraph:
+  - strong: "Information is Physics:"
+  - text: Information is inherently physical—it obeys the laws of thermodynamics and directly influences energy exchange. Experimental validations of Landauer's principle (Bérut et al., 2012) reinforce that computation and energy are fundamentally intertwined.
+- heading "Hypothesis 2" [level=3]
+- paragraph:
+  - strong: "Self-expansiveness into information space:"
+  - text: Based on the rubber hand illusion (Botvinick & Cohen, 1998), self-boundaries are not fixed but can extend to incorporate external objects. We assume that the neural mechanisms underlying multisensory integration—demonstrated by the rubber hand illusion—provide a measurable basis for transforming physical self-perception into an expansive, information-rich state that underpins Spirit.
+- heading "Spirit in Physics ( Jung's Word Association Test Embedding Model )" [level=2]
+- main:
+  - 'heading "Association State: Stimulus Words" [level=2]'
+  - button "Show Responses"
+  - button "Show Complexes"
+  - button "Show Stimuli" [disabled]
+  - heading "Integrated Model Parameters" [level=3]
+  - text: "Reaction Speed (α): 1.00"
+  - slider "Reaction Speed": "1"
+  - text: "Skin Potential (γ): 1.00"
+  - slider "Skin Potential": "1"
+  - text: "Facial Emotion (η): 1.00"
+  - slider "Facial Emotion": "1"
+  - text: "Scale Factor (λ): 1.00"
+  - slider "Scale Factor": "1"
+  - heading "About the Integrated Model" [level=3]
+  - paragraph: "This model integrates multiple factors from Jung's word association test:"
+  - list:
+    - listitem: Semantic similarity (vector dot product)
+    - listitem: Association reaction speed (α parameter)
+    - listitem: Skin potential for emotional response (γ, λ parameters)
+    - listitem: Facial emotion analysis (η parameter)
+  - paragraph: Adjust parameters to visualize how different psychological factors influence word associations in the Zen-inspired space.
+- heading "Vectorization Spirit Using the Word Association Experiment (Jung, 1910)" [level=2]
+- math: P ( w O ∣ w I ) = exp ⁡ ( w I ⃗ ⋅ w O ⃗ ) ⋅ [ r ( w I , w O ) ] α ⋅ exp ⁡ ( γ Δ S P ( w I , w O ) λ ) ⋅ exp ⁡ ( η F ( w I , w O ) ) ∑ j exp ⁡ ( w I ⃗ ⋅ w j ⃗ ) ⋅ [ r ( w I , w j ) ] α ⋅ exp ⁡ ( γ Δ S P ( w I , w j ) λ ) ⋅ exp ⁡ ( η F ( w I , w j ) )
+- heading "Words(100):" [level=3]
+- paragraph: head, green, water, to sing, dead, long, ship, to pay, window, friendly, to cook, to ask, cold, stem, to dance, village, lake, sick, pride, to cook, ink, angry, needle, to swim, voyage, blue, lamp, to sin, bread, rich, tree, to prick, pity, yellow, mountain, to die, salt, new, custom, to pray, money, foolish, pamphlet, despise, finger, expensive, bird, to fall, book, unjust, frog, to part, hunger, white, child, to take care, pencil, sad, plum, to marry, house, dear, glass, to quarrel, fur, great, turnip, to hold, triangle, to fear, anxious, to kiss, burn, clean, door, to choose, hay, contented, ridicule, to sleep, month, nice, woman, to abuse, yellow, to come, stove, sad, stem, to dance, sea, lovely, year, black, bread, family, to wash, cow, friend, happiness
+- paragraph:
+  - strong: "Conventional Word2Vec:"
+  - text: Quantify the strength of association using the inner product of word vectors.
+- paragraph:
+  - strong: "Jung's association method element:"
+  - text: Introduce a factor that is the inverse of reaction time.
+- paragraph:
+  - strong: "Integrated model:"
+  - text: "Adjust the reaction speed factor with the hyperparameter α and define a modified probability function as follows:"
+- text: Research Participation Consent This Spirit in Physics (Jung's Word Association Embedding Test) is conducted for research purposes. Please read the following consent information before proceeding.
+- button "Read Full Consent Form"
+- text: Demographic Information (CDISC Standards)
+- paragraph: This information helps us understand our research participants better. All responses are anonymous and optional.
+- text: Age Group
+- combobox "Age Group": Prefer not to say
+- text: Gender
+- radiogroup:
+  - radio "Male"
+  - text: Male
+  - radio "Female"
+  - text: Female
+  - radio "Non-binary"
+  - text: Non-binary
+  - radio "Prefer not to say" [checked]
+  - text: Prefer not to say
+- text: Race/Ethnicity
+- combobox "Race/Ethnicity": Prefer not to say
+- text: Annual Income
+- combobox "Annual Income": Prefer not to say
+- checkbox "I have read and understood the above information. I have had the opportunity to ask questions and have received satisfactory answers to my questions. I voluntarily agree to participate in this research. I understand that I have the right to withdraw at any time."
+- text: I have read and understood the above information. I have had the opportunity to ask questions and have received satisfactory answers to my questions. I voluntarily agree to participate in this research. I understand that I have the right to withdraw at any time.
+- button "Consent and Continue" [disabled]
+- paragraph: "This consent process complies with ICH-GCP (International Conference on Harmonisation - Good Clinical Practice) standards. IRB Approval number: Niigata University 2024-0269 | Approval date: Marth 1, 2025"
+- text: Jung Voice Test Respond to the stimulus words by speaking into your microphone. Your vocal prosody will be analyzed for emotional content in real-time. リアルタイム音声感情分析切断 録音ボタンを押して開始
+- button "録音開始"
+- paragraph: WebSocket接続は録音開始時に自動的に確立されます。
+- heading "Measurement via Emotion Analytics (Quantitative Analysis)" [level=2]
+- math: r ( w I , w O ) = 1 T ( w I , w O ) + ϵ
+- paragraph: The facial and voice recognition system defines an emotion score F(w_I, w_O) obtained from the subject's facial expression and voice. This score is treated as an integrated index of the intensity of each emotion, such as "happiness," "sadness," and "surprise."
+- heading "Measurement via Skin Potential Using the Rubber Hand Illusion(Qualitative Analysis)" [level=2]
+- math: s ( w I , w O ) = exp ⁡ ( Δ S P ( w I , w O ) λ )
+- heading "Conclusion" [level=2]
+- paragraph:
+  - strong: "Self-expansiveness is Spirit:"
+  - text: Self-expansiveness plays a key role in shaping personal, physiological, and societal phenomena.
+- paragraph:
+  - strong: "Spirit Transformer Model:"
+  - text: The Kawasaki Model proves that the spirit can be structured, measured, and quantified as dynamic physical information.
+- math: P ( w O ∣ w I ) = exp ⁡ ( w I ⃗ ⋅ w O ⃗ ) ⋅ [ r ( w I , w O ) ] α ⋅ exp ⁡ ( γ Δ S P ( w I , w O ) λ ) ⋅ exp ⁡ ( η F ( w I , w O ) ) ∑ j exp ⁡ ( w I ⃗ ⋅ w j ⃗ ) ⋅ [ r ( w I , w j ) ] α ⋅ exp ⁡ ( γ Δ S P ( w I , w j ) λ ) ⋅ exp ⁡ ( η F ( w I , w j ) )
+- heading "Results" [level=2]
+- paragraph: Spirit in Physics (Jung's Word Association Test Embedding Model)
+- link "https://www.junkawasaki.com/posts/spirit-in-physics":
+  - /url: https://www.junkawasaki.com/posts/spirit-in-physics
+- heading "References" [level=2]
+- list:
+  - listitem: Landauer, R. (1991). Information is physical. Physics Today, 44(5), 23–29.
+  - listitem: Bérut, A., Arakelyan, A., Petrosyan, A., Ciliberto, S., Dillenschneider, R., & Lutz, E. (2012). Experimental verification of Landauer's principle linking information and thermodynamics. Nature, 483(7388), 187–189.
+  - listitem: Botvinick, M., & Cohen, J. (1998). Rubber-hand illusion. Nature, 391, 756.
+  - listitem: Toyabe, S., Sagawa, T., Ueda, M., Muneyuki, E., & Sano, M. (2010). Experimental demonstration of information-to-energy conversion and validation of the generalized Jarzynski equality. Nature Physics, 6, 988–992.
+- 'heading "Another Research / High-IQ Japanese GWAS: Explore IQ Genes" [level=3]'
+- paragraph: Leveraging Japan's unique genetics, a GWAS targeting individuals with IQ ≥140 will compare genetic and cognitive data to identify SNPs linked to intelligence. The study begins in 2024 with results slated for publication.
+- paragraph:
+  - strong: "Dataset:"
+  - text: 92 people / CAMS IQ140 sd15 - IQ180t / SNPs.
+- paragraph:
+  - strong: "ref:"
+  - text: Jonathan R. I. Coleman et al, Mol Psychiatry 24, 182-197 (2019)
+```
