@@ -6,8 +6,15 @@ import { JUNG_STIMULUS_WORDS } from "@/components/jung-word-assessment/JungWordT
 import KawasakiModel from "@/components/kawasaki-model";
 import SpiritInPhysicsInteractive from "@/components/spirit-in-physics/SpiritInPhysicsInteractive";
 import { ResearchParticipationConsent } from '@/components/ui/ResearchParticipationConsent';
+import { useState } from 'react';
 
 export default function PageClient() {
+  const [isConsented, setIsConsented] = useState(false);
+
+  const handleConsent = () => {
+    setIsConsented(true);
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 text-gray-800">
       <header className="mb-12">
@@ -59,8 +66,11 @@ export default function PageClient() {
           <p><strong>Integrated model:</strong> Adjust the reaction speed factor with the hyperparameter α and define a modified probability function as follows:</p>
         </div>
 
-        <ResearchParticipationConsent />
-        <SpiritInPhysicsInteractive />
+        {!isConsented ? (
+          <ResearchParticipationConsent onConsent={handleConsent} />
+        ) : (
+          <SpiritInPhysicsInteractive />
+        )}
       </section>
 
       <section className="mb-12">

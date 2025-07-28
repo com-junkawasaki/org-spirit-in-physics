@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
-export function ResearchParticipationConsent() {
+export function ResearchParticipationConsent({ onConsent }: { onConsent: () => void }) {
   const [isAgreed, setIsAgreed] = React.useState(false);
 
   return (
@@ -116,7 +116,7 @@ export function ResearchParticipationConsent() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col items-center gap-4 pt-6 bg-gray-50 p-8 border-t">
-          <Button className="w-full text-base py-3" disabled={!isAgreed}>Consent and Continue</Button>
+          <Button className="w-full text-base py-3" disabled={!isAgreed} onClick={onConsent}>Consent and Continue</Button>
           <p className="text-xs text-gray-500 text-center">
             This consent process complies with ICH-GCP (International Conference on Harmonisation - Good Clinical Practice) standards.
             <br />
