@@ -47,8 +47,8 @@ export default function KawasakiModel({ showTitle = true }: KawasakiModelProps) 
   // Get voice assessment data from Zustand store
   const voiceAssessments = useKawasakiStore((state) => state.voiceAssessments)
 
-  // Set particle count to 50 (half of Jung's 100 words for performance)
-  const particleCount = 50
+  // Set particle count to 100 (full list of Jung's words)
+  const particleCount = 100
 
   // Generate graph data (pass integrated model parameters)
   const baseGraphData = useMemo(() => 

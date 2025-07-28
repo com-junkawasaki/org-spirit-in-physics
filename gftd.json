@@ -802,6 +802,104 @@
           "status": "completed",
           "command": "pnpm build"
         }
+      },
+      {
+        "id": "P25_TailwindStylingNotApplied",
+        "label": "Problem",
+        "properties": {
+          "name": "Tailwind CSS Styles Not Applied to Components",
+          "description": "Tailwind CSS utility classes are not being applied to the components, likely due to an incorrect configuration in `tailwind.config.ts` that prevents the scanner from finding the component files.",
+          "files": ["tailwind.config.ts"]
+        }
+      },
+      {
+        "id": "A59_DebugNextJsTailwindConfig",
+        "label": "Design",
+        "properties": {
+          "name": "Debug Next.js Tailwind CSS Configuration",
+          "description": "Plan to debug the Tailwind CSS configuration. The primary focus will be on verifying and correcting the `content` paths in `tailwind.config.ts` to ensure it correctly scans all `.tsx` files in the `src` directory.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A60_FixTailwindConfig",
+        "label": "Action",
+        "properties": {
+          "name": "Fix Tailwind CSS Configuration",
+          "description": "Corrected the `content` path in `tailwind.config.ts` by removing the unnecessary reference to the `pages` directory, which resolved the style application issue.",
+          "status": "completed",
+          "files": ["tailwind.config.ts"]
+        }
+      },
+      {
+        "id": "A61_FinalBuildAfterTailwindFix",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After Tailwind CSS Fix",
+          "description": "Running the final build to verify that Tailwind CSS styles are now correctly applied to all components.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
+      },
+      {
+        "id": "P26_StaleCacheIssue",
+        "label": "Problem",
+        "properties": {
+          "name": "Styling Changes Not Reflected Due to Stale Cache",
+          "description": "Despite a successful build after the Tailwind CSS config fix, the UI changes are not visible in the browser. This indicates a stale Next.js build cache in the `.next` directory.",
+          "files": [".next/"]
+        }
+      },
+      {
+        "id": "A62_ForceClearCache",
+        "label": "Design",
+        "properties": {
+          "name": "Force Clear Next.js Cache",
+          "description": "Plan to manually and completely clear the Next.js cache by deleting the `.next` directory and then restarting the development server to ensure a fresh build.",
+          "status": "completed",
+          "commands": [
+            "rm -rf .next",
+            "pnpm dev"
+          ]
+        }
+      },
+      {
+        "id": "P27_IncorrectWordCount",
+        "label": "Problem",
+        "properties": {
+          "name": "Incorrect Word Count in Visualization",
+          "description": "The Kawasaki Model visualization is only rendering 51 elements (50 words + 1 field) because the particle count is hardcoded to 50 for performance reasons, which is inconsistent with the full list of 100 stimulus words.",
+          "files": ["src/components/kawasaki-model/index.tsx"]
+        }
+      },
+      {
+        "id": "A63_IncreaseParticleCount",
+        "label": "Design",
+        "properties": {
+          "name": "Increase Particle Count to 100",
+          "description": "Plan to modify `kawasaki-model/index.tsx` to increase the `particleCount` from 50 to 100 to utilize the full set of Jung's stimulus words in the visualization.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A64_ExecuteParticleCountIncrease",
+        "label": "Action",
+        "properties": {
+          "name": "Execute Particle Count Increase",
+          "description": "Increased the `particleCount` to 100 in `kawasaki-model/index.tsx` to ensure all stimulus words are displayed.",
+          "status": "completed",
+          "files": ["src/components/kawasaki-model/index.tsx"]
+        }
+      },
+      {
+        "id": "A65_FinalBuildAfterWordCountFix",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After Word Count Fix",
+          "description": "Running the final build to verify that the word count in the visualization is correct.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
       }
     ],
     "edges": [
@@ -888,7 +986,17 @@
       { "id": "e81", "label": "uncovered", "outV": "A55_FinalBuildAfterFinalStyling", "inV": "P24_RecurringStateIssue" },
       { "id": "e82", "label": "led_to", "outV": "P24_RecurringStateIssue", "inV": "A56_ResumeFocusedDebugging" },
       { "id": "e83", "label": "implemented_by", "outV": "A56_ResumeFocusedDebugging", "inV": "A57_ExecuteFinalDebuggingAndCleanup" },
-      { "id": "e84", "label": "precedes", "outV": "A57_ExecuteFinalDebuggingAndCleanup", "inV": "A58_FinalBuildAfterDebug" }
+      { "id": "e84", "label": "precedes", "outV": "A57_ExecuteFinalDebuggingAndCleanup", "inV": "A58_FinalBuildAfterDebug" },
+      { "id": "e85", "label": "uncovered", "outV": "A58_FinalBuildAfterDebug", "inV": "P25_TailwindStylingNotApplied" },
+      { "id": "e86", "label": "led_to", "outV": "P25_TailwindStylingNotApplied", "inV": "A59_DebugNextJsTailwindConfig" },
+      { "id": "e87", "label": "implemented_by", "outV": "A59_DebugNextJsTailwindConfig", "inV": "A60_FixTailwindConfig" },
+      { "id": "e88", "label": "precedes", "outV": "A60_FixTailwindConfig", "inV": "A61_FinalBuildAfterTailwindFix" },
+      { "id": "e89", "label": "uncovered", "outV": "A61_FinalBuildAfterTailwindFix", "inV": "P26_StaleCacheIssue" },
+      { "id": "e90", "label": "led_to", "outV": "P26_StaleCacheIssue", "inV": "A62_ForceClearCache" },
+      { "id": "e91", "label": "uncovered", "outV": "A62_ForceClearCache", "inV": "P27_IncorrectWordCount" },
+      { "id": "e92", "label": "led_to", "outV": "P27_IncorrectWordCount", "inV": "A63_IncreaseParticleCount" },
+      { "id": "e93", "label": "implemented_by", "outV": "A63_IncreaseParticleCount", "inV": "A64_ExecuteParticleCountIncrease" },
+      { "id": "e94", "label": "precedes", "outV": "A64_ExecuteParticleCountIncrease", "inV": "A65_FinalBuildAfterWordCountFix" }
     ]
   }
 } 
