@@ -900,6 +900,92 @@
           "status": "completed",
           "command": "pnpm build"
         }
+      },
+      {
+        "id": "P28_TailwindNotProcessing",
+        "label": "Problem",
+        "properties": {
+          "name": "Tailwind CSS is Not Processing Utility Classes",
+          "description": "Despite a correct `tailwind.config.ts`, utility classes are not being processed into CSS. This points to a deeper configuration issue, likely in `postcss.config.mjs` or the import of `globals.css` in the root layout.",
+          "files": ["postcss.config.mjs", "src/app/layout.tsx"]
+        }
+      },
+      {
+        "id": "A66_VerifyPostCssAndGlobalCss",
+        "label": "Design",
+        "properties": {
+          "name": "Verify PostCSS and Global CSS Configuration",
+          "description": "Plan to investigate and correct the PostCSS configuration and the global CSS import to ensure Tailwind's build process is triggered correctly.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A67_FixPostCssConfig",
+        "label": "Action",
+        "properties": {
+          "name": "Fix PostCSS Configuration",
+          "description": "Updated `postcss.config.mjs` to use `tailwindcss` directly instead of the outdated `@tailwindcss/postcss` plugin.",
+          "status": "completed",
+          "files": ["postcss.config.mjs"]
+        }
+      },
+      {
+        "id": "A68_ClearCacheAndFinalBuild",
+        "label": "Action",
+        "properties": {
+          "name": "Clear Cache and Final Build",
+          "description": "Clearing the cache and running the final build to verify that the PostCSS configuration fix has resolved the styling issue.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
+      },
+      {
+        "id": "P29_IncorrectPostCssConfig",
+        "label": "Problem",
+        "properties": {
+          "name": "Incorrect PostCSS Configuration for Tailwind CSS v4",
+          "description": "The attempt to fix the PostCSS configuration was incorrect for the installed version of Tailwind CSS, causing a build failure. The error message explicitly states that `@tailwindcss/postcss` should be used.",
+          "files": ["postcss.config.mjs"]
+        }
+      },
+      {
+        "id": "A69_RevertPostCssConfig",
+        "label": "Action",
+        "properties": {
+          "name": "Revert PostCSS Configuration",
+          "description": "Reverted `postcss.config.mjs` to use `@tailwindcss/postcss` as indicated by the build error message.",
+          "status": "completed",
+          "files": ["postcss.config.mjs"]
+        }
+      },
+      {
+        "id": "A70_FinalBuildAttemptAfterRevert",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build Attempt After Revert",
+          "description": "Running the final build after reverting the PostCSS configuration to the correct format.",
+          "status": "completed",
+          "commands": [
+            "rm -rf .next",
+            "pnpm build"
+          ]
+        }
+      },
+      {
+        "id": "A71_StandardizeTailwindDebugProcess",
+        "label": "Design",
+        "properties": {
+          "name": "Standardize Tailwind CSS Debugging Process",
+          "description": "Document a standardized procedure for debugging Tailwind CSS build and styling issues based on the recent troubleshooting session. This process serves as the SSoT for future styling-related problems.",
+          "status": "completed",
+          "steps": [
+            "Verify `tailwind.config.ts`: Ensure the `content` paths correctly scan all source files.",
+            "Verify `postcss.config.mjs`: Ensure it uses `@tailwindcss/postcss` and `autoprefixer`.",
+            "Verify Global CSS Import: Ensure `globals.css` is imported in the root `layout.tsx`.",
+            "Force Clear Cache: Always delete the `.next` directory after config changes.",
+            "Perform a Clean Build: Run `pnpm build` to validate any fixes."
+          ]
+        }
       }
     ],
     "edges": [
@@ -996,7 +1082,15 @@
       { "id": "e91", "label": "uncovered", "outV": "A62_ForceClearCache", "inV": "P27_IncorrectWordCount" },
       { "id": "e92", "label": "led_to", "outV": "P27_IncorrectWordCount", "inV": "A63_IncreaseParticleCount" },
       { "id": "e93", "label": "implemented_by", "outV": "A63_IncreaseParticleCount", "inV": "A64_ExecuteParticleCountIncrease" },
-      { "id": "e94", "label": "precedes", "outV": "A64_ExecuteParticleCountIncrease", "inV": "A65_FinalBuildAfterWordCountFix" }
+      { "id": "e94", "label": "precedes", "outV": "A64_ExecuteParticleCountIncrease", "inV": "A65_FinalBuildAfterWordCountFix" },
+      { "id": "e95", "label": "uncovered", "outV": "A65_FinalBuildAfterWordCountFix", "inV": "P28_TailwindNotProcessing" },
+      { "id": "e96", "label": "led_to", "outV": "P28_TailwindNotProcessing", "inV": "A66_VerifyPostCssAndGlobalCss" },
+      { "id": "e97", "label": "implemented_by", "outV": "A66_VerifyPostCssAndGlobalCss", "inV": "A67_FixPostCssConfig" },
+      { "id": "e98", "label": "precedes", "outV": "A67_FixPostCssConfig", "inV": "A68_ClearCacheAndFinalBuild" },
+      { "id": "e99", "label": "uncovered", "outV": "A68_ClearCacheAndFinalBuild", "inV": "P29_IncorrectPostCssConfig" },
+      { "id": "e100", "label": "led_to", "outV": "P29_IncorrectPostCssConfig", "inV": "A69_RevertPostCssConfig" },
+      { "id": "e101", "label": "precedes", "outV": "A69_RevertPostCssConfig", "inV": "A70_FinalBuildAttemptAfterRevert" },
+      { "id": "e102", "label": "enables", "outV": "A70_FinalBuildAttemptAfterRevert", "inV": "A71_StandardizeTailwindDebugProcess" }
     ]
   }
 } 
