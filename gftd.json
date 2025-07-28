@@ -541,6 +541,44 @@
           "status": "completed",
           "command": "pnpm build"
         }
+      },
+      {
+        "id": "P18_UIStylingMismatch",
+        "label": "Problem",
+        "properties": {
+          "name": "UI Styling Mismatch",
+          "description": "The current UI styling, which relies on the '@tailwindcss/typography' (prose) plugin, does not match the clean, simple aesthetic shown in the reference screenshot. Typography, spacing, and list styles are incorrect.",
+          "files": ["src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A39_RefineUIStyling",
+        "label": "Design",
+        "properties": {
+          "name": "Refine UI Styling to Match Screenshot",
+          "description": "Refactor the UI styling by removing the `prose` classes and applying custom Tailwind CSS classes for headings, paragraphs, and lists to accurately match the visual representation in the screenshot.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A40_ExecuteStylingRefactor",
+        "label": "Action",
+        "properties": {
+          "name": "Execute Styling Refactor",
+          "description": "Removed the `prose` classes from `PageClient.tsx` and applied a new set of Tailwind CSS classes to structure the layout into sections and style typography to match the design.",
+          "status": "completed",
+          "files": ["src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A41_FinalBuildAfterStyling",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build After Styling",
+          "description": "Running the final build to verify that the new UI styles are correctly applied and the application is stable.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
       }
     ],
     "edges": [
@@ -600,7 +638,11 @@
       { "id": "e54", "label": "uncovered", "outV": "A35_ShiftToManualDebugging", "inV": "P17_IncorrectUIFlow" },
       { "id": "e55", "label": "led_to", "outV": "P17_IncorrectUIFlow", "inV": "A36_ImplementSinglePageWithEmbeddedConsent" },
       { "id": "e56", "label": "implemented_by", "outV": "A36_ImplementSinglePageWithEmbeddedConsent", "inV": "A37_FinalizeUIRestoration" },
-      { "id": "e57", "label": "precedes", "outV": "A37_FinalizeUIRestoration", "inV": "A38_FinalBuildAndVerification" }
+      { "id": "e57", "label": "precedes", "outV": "A37_FinalizeUIRestoration", "inV": "A38_FinalBuildAndVerification" },
+      { "id": "e58", "label": "uncovered", "outV": "A38_FinalBuildAndVerification", "inV": "P18_UIStylingMismatch" },
+      { "id": "e59", "label": "led_to", "outV": "P18_UIStylingMismatch", "inV": "A39_RefineUIStyling" },
+      { "id": "e60", "label": "implemented_by", "outV": "A39_RefineUIStyling", "inV": "A40_ExecuteStylingRefactor" },
+      { "id": "e61", "label": "precedes", "outV": "A40_ExecuteStylingRefactor", "inV": "A41_FinalBuildAfterStyling" }
     ]
   }
 } 
