@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { HumeFaceResponse } from '@/lib/actions/hume-service';
-import { analyzeFaceEmotion } from '@/lib/actions/hume-rest-service';
+import React, { useState, useEffect, useRef } from 'react';
+// import { HumeFaceResponse } from '@/lib/actions/hume-service';
+// import { analyzeFaceEmotion } from '@/lib/actions/hume-rest-service';
 
 interface EmotionScore {
   name: string;
@@ -20,6 +20,8 @@ export default function FaceEmotionAnalysisRest() {
   const [debugInfo, setDebugInfo] = useState<string>('');
   const [lastApiCallTime, setLastApiCallTime] = useState<number>(0);
   const [captureInterval, setCaptureInterval] = useState<number>(1000); // 1 second default
+  const [analysisResults, setAnalysisResults] = useState<any[]>([]);
+  const [isClient, setIsClient] = useState(false);
 
   // API キーの取得・検証
   useEffect(() => {
@@ -140,29 +142,29 @@ export default function FaceEmotionAnalysisRest() {
       setDebugInfo(`画像を取得しました。Hume APIに送信中... (${new Date().toLocaleTimeString()})`);
       
       // Send to Hume API
-      const result = await analyzeFaceEmotion(imageDataUrl, apiKey);
+      // const result = await analyzeFaceEmotion(imageDataUrl, apiKey);
       
       // Handle response
-      if ('error' in result) {
-        console.error('Hume API error:', result.error);
-        setError(`Hume API エラー: ${result.error}`);
-        setDebugInfo(prev => `${prev}\nAPIエラー: ${result.error}`);
-      } else {
+      // if ('error' in result) {
+      //   console.error('Hume API error:', result.error);
+      //   setError(`Hume API エラー: ${result.error}`);
+      //   setDebugInfo(prev => `${prev}\nAPIエラー: ${result.error}`);
+      // } else {
         // Clear any previous errors
         setError(null);
         
         // Update emotions if they exist in the response
-        if (result.emotions && Array.isArray(result.emotions)) {
-          setEmotions(result.emotions.sort((a, b) => b.score - a.score));
-          setDebugInfo(`最終更新: ${new Date().toLocaleTimeString()}\n感情分析が完了しました`);
-        } else if ((result as any).predictions && (result as any).predictions.emotions) {
+        // if (result.emotions && Array.isArray(result.emotions)) {
+        //   setEmotions(result.emotions.sort((a, b) => b.score - a.score));
+        //   setDebugInfo(`最終更新: ${new Date().toLocaleTimeString()}\n感情分析が完了しました`);
+        // } else if ((result as any).predictions && (result as any).predictions.emotions) {
           // Handle alternative response structure
-          setEmotions((result as any).predictions.emotions.sort((a: any, b: any) => b.score - a.score));
-          setDebugInfo(`最終更新: ${new Date().toLocaleTimeString()}\n感情分析が完了しました (新フォーマット)`);
-        } else {
-          setDebugInfo(prev => `${prev}\n感情データがレスポンスに含まれていません\n受信データ: ${JSON.stringify(result).substring(0, 100)}...`);
-        }
-      }
+          // setEmotions((result as any).predictions.emotions.sort((a: any, b: any) => b.score - a.score));
+          // setDebugInfo(`最終更新: ${new Date().toLocaleTimeString()}\n感情分析が完了しました (新フォーマット)`);
+        // } else {
+          // setDebugInfo(prev => `${prev}\n感情データがレスポンスに含まれていません\n受信データ: ${JSON.stringify(result).substring(0, 100)}...`);
+        // }
+      // }
     } catch (err) {
       console.error('画像処理エラー:', err);
       setError(`画像処理エラー: ${err instanceof Error ? err.message : '不明なエラー'}`);

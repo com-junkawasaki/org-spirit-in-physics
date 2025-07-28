@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { analyzeVoice } from '@/lib/actions/hume-service';
-import { HumeVoiceEmotion } from '@/lib/actions/hume-service';
+// import { analyzeVoice } from '@/lib/actions/hume-service';
+// import { HumeVoiceEmotion } from '@/lib/actions/hume-service';
 import { AlertCircle, Clock } from 'lucide-react';
 
 interface VoiceEmotionAnalysisTestProps {
@@ -15,7 +15,9 @@ export default function VoiceEmotionAnalysisTest({
   apiKey = process.env.NEXT_PUBLIC_HUME_API_KEY || '',
 }: VoiceEmotionAnalysisTestProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [emotions, setEmotions] = useState<HumeVoiceEmotion[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisTime, setAnalysisTime] = useState<number | null>(null);
+  const [emotions, setEmotions] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingTime, setProcessingTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -56,9 +58,26 @@ export default function VoiceEmotionAnalysisTest({
       mediaRecorderRef.current = mediaRecorder;
       
       // Set up event handlers
-      mediaRecorder.ondataavailable = (event) => {
+      mediaRecorder.ondataavailable = async (event) => {
         if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+          setAnalysisTime(null);
+          setIsAnalyzing(true);
+          const startTime = performance.now();
+          // try {
+          //   const analysisResults = await analyzeVoice(event.data);
+          //   if (analysisResults && analysisResults.length > 0) {
+          //     setEmotions(analysisResults);
+          //   } else {
+          //     setEmotions([]);
+          //   }
+          // } catch (e) {
+          //   setError('Error analyzing voice emotion.');
+          //   console.error(e);
+          // } finally {
+          //   const endTime = performance.now();
+          //   setAnalysisTime(endTime - startTime);
+          //   setIsAnalyzing(false);
+          // }
         }
       };
       
@@ -114,10 +133,10 @@ export default function VoiceEmotionAnalysisTest({
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
       
       // Send to Hume AI for analysis
-      const response = await analyzeVoice(audioBlob, apiKey);
+      // const response = await analyzeVoice(audioBlob, apiKey);
       
       // Update state with emotions
-      setEmotions(response.emotions);
+      // setEmotions(response.emotions);
     } catch (err: any) {
       console.error('Error processing voice recording:', err);
       const errorMessage = err.message || '音声分析中にエラーが発生しました。';

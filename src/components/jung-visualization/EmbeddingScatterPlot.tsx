@@ -25,7 +25,7 @@ const EmbeddingScatterPlot: React.FC<EmbeddingScatterPlotProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoveredPoint, setHoveredPoint] = useState<EmbeddingPoint | null>(null);
   const [selectedPoint, setSelectedPoint] = useState<EmbeddingPoint | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
 
   // Animation frame handler
   useEffect(() => {

@@ -1,0 +1,157 @@
+{
+  "graph": {
+    "vertices": [
+      {
+        "id": "P1_CreateContextError",
+        "label": "Problem",
+        "properties": {
+          "name": "TypeError: createContext only works in Client Components",
+          "description": "Next.jsアプリケーションの起動時に`createContext`がサーバーコンポーネントで呼び出されているというエラーが発生。",
+          "files": ["src/app/page.mdx"]
+        }
+      },
+      {
+        "id": "A1_VerifyUseClient",
+        "label": "Action",
+        "properties": {
+          "name": "関連コンポーネントの'use client'ディレクティブ確認",
+          "description": "エラーの発生源と思われるコンポーネント群（page.mdx, KawasakiModel, etc.）に'use client'が正しく設定されているかを確認。結果、設定は正しかった。",
+          "files": ["src/app/page.mdx", "src/components/kawasaki-model/index.tsx", "src/components/spirit-in-physics/SpiritInPhysicsInteractive.tsx"]
+        }
+      },
+      {
+        "id": "A2_ReinstallDeps",
+        "label": "Action",
+        "properties": {
+          "name": "依存関係の再インストール",
+          "description": "コンポーネントの設定に問題がないため、依存関係の破損を疑い`rm -rf node_modules pnpm-lock.yaml && pnpm install`を実行。これによりcreateContextエラーは解消されたが、新たなビルドエラーが発生した。",
+          "files": ["package.json"]
+        }
+      },
+      {
+        "id": "P2_BuildScriptError",
+        "label": "Problem",
+        "properties": {
+          "name": "ビルドスクリプトの欠落とコマンドエラー",
+          "description": "`pnpm build`実行時に`build`スクリプトが存在しないエラー、および追加後に`next: command not found`エラーが発生。",
+          "files": ["package.json"]
+        }
+      },
+      {
+        "id": "A3_FixBuildScript",
+        "label": "Action",
+        "properties": {
+          "name": "package.jsonの修正と再度の依存関係インストール",
+          "description": "`package.json`に`\"build\": \"next build\"`を追加し、`next`コマンドが見つからない問題に対処するため再度`pnpm install`を実行した。",
+          "files": ["package.json"]
+        }
+      },
+      {
+        "id": "P3_ModuleNotFoundError",
+        "label": "Problem",
+        "properties": {
+          "name": "モジュール解決エラー: Cannot find module PhysicsGraph",
+          "description": "ビルド時に`IntegratedJungAssessment.tsx`が`@/components/kawasaki-model/PhysicsGraph`を見つけられないという型エラーが発生。",
+          "files": ["src/components/jung-integrated/IntegratedJungAssessment.tsx"]
+        }
+      },
+      {
+        "id": "A4_AnalyzeDependencies",
+        "label": "Analysis",
+        "properties": {
+          "name": "コンポーネント依存関係の分析",
+          "description": "エラーが解消しないため、コンポーネント間の依存関係を可視化・分析。`PhysicsGraph`が複数のコンポーネントから利用される共有コンポーネントであるにも関わらず、`kawasaki-model`の内部に結合されている構造的問題を特定。",
+          "files": ["src/components/kawasaki-model/index.tsx", "src/components/jung-integrated/IntegratedJungAssessment.tsx"]
+        }
+      },
+      {
+        "id": "A5_RefactorPlan",
+        "label": "Design",
+        "properties": {
+          "name": "PhysicsGraphコンポーネントの分離リファクタリング計画",
+          "description": "`PhysicsGraph`を独立したコンポーネントモジュールとして`src/components/physics-graph/`に分離し、インポートパスを修正する計画を立案。",
+          "files": []
+        }
+      },
+      {
+        "id": "A6_ExecuteRefactor",
+        "label": "Action",
+        "properties": {
+          "name": "リファクタリングの実行",
+          "description": "計画に基づき、`PhysicsGraph.tsx`を新しいディレクトリに移動し、`index.ts`を作成してコンポーネントを公開。古いファイルを削除し、関連する全てのインポートパスを更新した。",
+          "files": ["src/components/physics-graph/PhysicsGraph.tsx", "src/components/physics-graph/index.ts", "src/components/kawasaki-model/index.tsx", "src/components/jung-integrated/IntegratedJungAssessment.tsx"]
+        }
+      },
+      {
+        "id": "P4_StaticImportError",
+        "label": "Problem",
+        "properties": {
+          "name": "型エラー: IntrinsicAttributes on JungVoiceTest",
+          "description": "問題切り分けのため動的インポートを静的インポートに変更したところ、モジュール解決エラーは消え、代わりに`JungVoiceTest`コンポーネントのProps型エラーが発生。問題がモジュール解決からPropsの型定義に移ったことを特定。",
+          "files": ["src/components/jung-integrated/IntegratedJungAssessment.tsx"]
+        }
+      },
+      {
+        "id": "A7_FixJungVoiceTestProps",
+        "label": "Action",
+        "properties": {
+          "name": "JungVoiceTestのPropsを修正",
+          "description": "`JungVoiceTest.tsx`がPropsを受け取れるように、型定義を追加し、コンポーネントシグネチャを修正した。",
+          "files": ["src/components/jung-voice-assessment/JungVoiceTest.tsx"]
+        }
+      },
+      {
+        "id": "P5_FinalBuildError",
+        "label": "Problem",
+        "properties": {
+          "name": "最終ビルドエラー: useRef in EmbeddingScatterPlot",
+          "description": "これまでの修正により、最終的に`EmbeddingScatterPlot.tsx`内の`useRef`の使い方が原因のビルドエラーにたどり着いた。",
+          "files": ["src/components/jung-visualization/EmbeddingScatterPlot.tsx"]
+        }
+      },
+      {
+        "id": "A8_FixUseRef",
+        "label": "Action",
+        "properties": {
+          "name": "EmbeddingScatterPlotのuseRefを修正",
+          "description": "`useRef`に初期値`null`を渡すことで、`EmbeddingScatterPlot.tsx`の型エラーを修正した。",
+          "files": ["src/components/jung-visualization/EmbeddingScatterPlot.tsx"]
+        }
+      },
+      {
+        "id": "P6_ErrorRecurrence",
+        "label": "Problem",
+        "properties": {
+          "name": "エラーの再発とキャッシュ破損",
+          "description": "ここまでの修正にも関わらず、開発サーバーで初期の`createContext`エラーが再発。同時に`.next`ディレクトリ内のファイルが見つからない`ENOENT`エラーが多発し、キャッシュや依存関係の深刻な破損が示唆された。",
+          "files": []
+        }
+      },
+      {
+        "id": "A9_RootCauseAnalysis",
+        "label": "Analysis",
+        "properties": {
+          "name": "根本原因の再分析",
+          "description": "エラーの再発ループは、単一のコードミスではなく、プロジェクト全体の健全性が損なわれていることを示す。根本原因は、(1) 依存関係の不整合 (ReactとNext.jsのバージョンなど)、(2) Next.jsのキャッシュ機構の永続的な破損、(3) `tsconfig.json`や`next.config.mjs`などの設定ファイルの競合、のいずれかまたは組み合わせと仮説を立てる。",
+          "files": ["package.json", "tsconfig.json", "next.config.mjs"]
+        }
+      }
+    ],
+    "edges": [
+      { "id": "e1", "label": "led_to", "outV": "P1_CreateContextError", "inV": "A1_VerifyUseClient" },
+      { "id": "e2", "label": "followed_by", "outV": "A1_VerifyUseClient", "inV": "A2_ReinstallDeps" },
+      { "id": "e3", "label": "resulted_in", "outV": "A2_ReinstallDeps", "inV": "P2_BuildScriptError" },
+      { "id": "e4", "label": "led_to", "outV": "P2_BuildScriptError", "inV": "A3_FixBuildScript" },
+      { "id": "e5", "label": "resulted_in", "outV": "A3_FixBuildScript", "inV": "P3_ModuleNotFoundError" },
+      { "id": "e6", "label": "triggered", "outV": "P3_ModuleNotFoundError", "inV": "A4_AnalyzeDependencies" },
+      { "id": "e7", "label": "led_to", "outV": "A4_AnalyzeDependencies", "inV": "A5_RefactorPlan" },
+      { "id": "e8", "label": "implemented_by", "outV": "A5_RefactorPlan", "inV": "A6_ExecuteRefactor" },
+      { "id": "e9", "label": "uncovered", "outV": "A6_ExecuteRefactor", "inV": "P4_StaticImportError" },
+      { "id": "e10", "label": "led_to", "outV": "P4_StaticImportError", "inV": "A7_FixJungVoiceTestProps" },
+      { "id": "e11", "label": "resulted_in", "outV": "A7_FixJungVoiceTestProps", "inV": "P5_FinalBuildError" },
+      { "id": "e12", "label": "led_to", "outV": "P5_FinalBuildError", "inV": "A8_FixUseRef" },
+      { "id": "e13", "label": "uncovered", "outV": "A8_FixUseRef", "inV": "P6_ErrorRecurrence" },
+      { "id": "e14", "label": "triggered", "outV": "P6_ErrorRecurrence", "inV": "A9_RootCauseAnalysis" }
+    ]
+  }
+} 
