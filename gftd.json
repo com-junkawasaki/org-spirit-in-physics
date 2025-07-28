@@ -190,6 +190,66 @@
           "description": "`VoiceEmotionAnalysisWebSocket.tsx`が、以前に他のファイルでも問題となった未実装のHume AI関連モジュールをインポートしようとしており、エラーの一因となっている。",
           "files": ["src/components/spirit-in-physics/VoiceEmotionAnalysisWebSocket.tsx"]
         }
+      },
+      {
+        "id": "A13_AddProgressComponent",
+        "label": "Action",
+        "properties": {
+          "name": "Add `progress` UI component",
+          "description": "The `progress` component required by `VoiceEmotionAnalysisWebSocket.tsx` was missing. Created `src/components/ui/progress.tsx` to resolve the build error.",
+          "files": ["src/components/ui/progress.tsx"],
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A14_CommentOutHume",
+        "label": "Action",
+        "properties": {
+          "name": "Comment out Hume AI dependencies",
+          "description": "Temporarily resolved the missing module issue for Hume AI by commenting out the related imports and service initialization in `VoiceEmotionAnalysisWebSocket.tsx`.",
+          "files": ["src/components/spirit-in-physics/VoiceEmotionAnalysisWebSocket.tsx"],
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A15_ExecuteBuild",
+        "label": "Action",
+        "properties": {
+          "name": "Run `pnpm build`",
+          "description": "Attempting to build the project after applying fixes for missing components and modules.",
+          "status": "failed",
+          "command": "pnpm build",
+          "error": "ReferenceError: window is not defined"
+        }
+      },
+      {
+        "id": "P10_PrerenderError",
+        "label": "Problem",
+        "properties": {
+          "name": "Prerendering error: window is not defined",
+          "description": "The build failed because a client-side component using the `window` object was being rendered on the server.",
+          "files": ["src/app/PageClient.tsx"]
+        }
+      },
+      {
+        "id": "A16_DynamicImport",
+        "label": "Action",
+        "properties": {
+          "name": "Dynamically import PhysicsGraph",
+          "description": "The `PhysicsGraph` component was identified as the source of the prerendering error. It is now dynamically imported with SSR disabled to ensure it only runs on the client.",
+          "files": ["src/components/kawasaki-model/index.tsx"],
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A17_ExecuteBuildAgain",
+        "label": "Action",
+        "properties": {
+          "name": "Run `pnpm build` again",
+          "description": "Re-running the build after fixing the prerendering error.",
+          "status": "completed",
+          "command": "pnpm build"
+        }
       }
     ],
     "edges": [
@@ -212,7 +272,14 @@
       { "id": "e17", "label": "led_to", "outV": "P7_MetadataConflict", "inV": "A11_ComponentSeparationPlan" },
       { "id": "e18", "label": "implemented_by", "outV": "A11_ComponentSeparationPlan", "inV": "A12_ExecuteSeparation" },
       { "id": "e19", "label": "uncovered", "outV": "A12_ExecuteSeparation", "inV": "P8_MissingUIComponent" },
-      { "id": "e20", "label": "uncovered", "outV": "A12_ExecuteSeparation", "inV": "P9_RecurringMissingModule" }
+      { "id": "e20", "label": "uncovered", "outV": "A12_ExecuteSeparation", "inV": "P9_RecurringMissingModule" },
+      { "id": "e21", "label": "led_to", "outV": "P8_MissingUIComponent", "inV": "A13_AddProgressComponent" },
+      { "id": "e22", "label": "led_to", "outV": "P9_RecurringMissingModule", "inV": "A14_CommentOutHume" },
+      { "id": "e23", "label": "precedes", "outV": "A13_AddProgressComponent", "inV": "A15_ExecuteBuild" },
+      { "id": "e24", "label": "precedes", "outV": "A14_CommentOutHume", "inV": "A15_ExecuteBuild" },
+      { "id": "e25", "label": "resulted_in", "outV": "A15_ExecuteBuild", "inV": "P10_PrerenderError" },
+      { "id": "e26", "label": "led_to", "outV": "P10_PrerenderError", "inV": "A16_DynamicImport" },
+      { "id": "e27", "label": "precedes", "outV": "A16_DynamicImport", "inV": "A17_ExecuteBuildAgain" }
     ]
   }
 } 
