@@ -38,6 +38,26 @@ export default function VoiceEmotionAnalysisWebSocket({
 
   const stimulusWords = JUNG_STIMULUS_WORDS.slice(0, numberOfWords);
   
+  // Play audio for the current word when it changes
+  useEffect(() => {
+    if (isTestComplete || currentWordIndex < 0) return;
+
+    const word = stimulusWords[currentWordIndex];
+    // Sanitize word for use in a filename, e.g., "to sing" -> "to-sing.mp3"
+    const filename = word.replace(/\s+/g, '-').toLowerCase() + '.mp3';
+    const audio = new Audio(`/audio/${filename}`);
+    
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.error(`Could not play audio for "${word}" (path: /audio/${filename}):`, error);
+        // Don't show a blocking error, just log it, as audio might be optional.
+        // setError(`Audio file for "${word}" could not be played. Please ensure it exists in /public/audio/`);
+      });
+    }
+  }, [currentWordIndex, stimulusWords, isTestComplete]);
+
+
   // エモーションサービスの初期化 (省略)
   useEffect(() => {
     if (!apiKey) {
