@@ -461,7 +461,85 @@
         "properties": {
           "name": "Initiate Playwright Debug Session",
           "description": "Begin a debugging session following the standardized process to check for any runtime errors on the main page.",
-          "status": "pending"
+          "status": "in_progress"
+        }
+      },
+      {
+        "id": "P15_InteractiveModeViolation",
+        "label": "Problem",
+        "properties": {
+          "name": "Playwright runs in interactive mode by default",
+          "description": "The default Playwright configuration opens an HTML report automatically after tests run, which violates the established rule of avoiding interactive modes.",
+          "files": ["playwright.config.ts"]
+        }
+      },
+      {
+        "id": "A34_DisableInteractiveMode",
+        "label": "Design",
+        "properties": {
+          "name": "Disable Interactive Mode for Playwright",
+          "description": "Update the Playwright configuration to ensure it always runs in a non-interactive mode by setting the HTML reporter's `open` option to `never`.",
+          "status": "completed",
+          "files": ["playwright.config.ts"]
+        }
+      },
+      {
+        "id": "P16_PersistentCheckboxStateError",
+        "label": "Problem",
+        "properties": {
+          "name": "Persistent Checkbox State Update Failure",
+          "description": "Multiple attempts to fix the Playwright test have failed. The consent checkbox click does not enable the submit button, indicating a fundamental issue in the component's state management or event handling logic, rather than a testing flaw.",
+          "files": ["tests/debug.spec.ts", "src/components/ui/ResearchParticipationConsent.tsx"]
+        }
+      },
+      {
+        "id": "A35_ShiftToManualDebugging",
+        "label": "Design",
+        "properties": {
+          "name": "Shift to Manual and Component-Level Debugging",
+          "description": "Change strategy from repeated Playwright tests to in-depth manual debugging. This involves using browser dev tools and React DevTools to inspect the component's state (`isAgreed`) in real-time and verify the `onCheckedChange` event handler's behavior.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "P17_IncorrectUIFlow",
+        "label": "Problem",
+        "properties": {
+          "name": "Incorrect UI Flow and Layout",
+          "description": "The application implements a blocking consent form that hides the main content. The desired user experience is a single-page article layout where all content is visible on load, with a newly designed, more detailed consent form embedded directly within the page.",
+          "files": ["src/app/PageClient.tsx", "src/components/ui/ResearchParticipationConsent.tsx"]
+        }
+      },
+      {
+        "id": "A36_ImplementSinglePageWithEmbeddedConsent",
+        "label": "Design",
+        "properties": {
+          "name": "Implement Single-Page Layout with New Embedded Consent Form",
+          "description": "Refactor the UI to match the new design. This involves removing the conditional rendering logic from `PageClient.tsx`, creating a new detailed consent form component, and embedding it into the single-page layout.",
+          "status": "completed"
+        }
+      },
+      {
+        "id": "A37_FinalizeUIRestoration",
+        "label": "Action",
+        "properties": {
+          "name": "Finalize UI Restoration",
+          "description": "Removed conditional rendering from `PageClient.tsx`, deleted the old consent form, created a new one based on the latest design, and embedded it into the page.",
+          "status": "completed",
+          "files": [
+            "src/app/PageClient.tsx",
+            "src/components/ui/ResearchParticipationConsent.tsx"
+          ]
+        }
+      },
+      {
+        "id": "A38_FinalBuildAndVerification",
+        "label": "Action",
+        "properties": {
+          "name": "Final Build and Verification",
+          "description": "Running the final build to verify that all UI changes are correctly implemented and the application is stable.",
+          "status": "completed",
+          "command": "pnpm build"
         }
       }
     ],
@@ -514,7 +592,15 @@
       { "id": "e46", "label": "precedes", "outV": "A29_ExecuteLayoutRevert", "inV": "A31_FinalBuildAfterUIRestoration" },
       { "id": "e47", "label": "precedes", "outV": "A30_CreateEmbeddedConsentForm", "inV": "A31_FinalBuildAfterUIRestoration" },
       { "id": "e48", "label": "enables", "outV": "A31_FinalBuildAfterUIRestoration", "inV": "A32_DefinePlaywrightDebugProcess" },
-      { "id": "e49", "label": "precedes", "outV": "A32_DefinePlaywrightDebugProcess", "inV": "A33_InitiatePlaywrightDebugSession" }
+      { "id": "e49", "label": "precedes", "outV": "A32_DefinePlaywrightDebugProcess", "inV": "A33_InitiatePlaywrightDebugSession" },
+      { "id": "e50", "label": "uncovered", "outV": "A33_InitiatePlaywrightDebugSession", "inV": "P15_InteractiveModeViolation" },
+      { "id": "e51", "label": "led_to", "outV": "P15_InteractiveModeViolation", "inV": "A34_DisableInteractiveMode" },
+      { "id": "e52", "label": "uncovered", "outV": "A33_InitiatePlaywrightDebugSession", "inV": "P16_PersistentCheckboxStateError" },
+      { "id": "e53", "label": "led_to", "outV": "P16_PersistentCheckboxStateError", "inV": "A35_ShiftToManualDebugging" },
+      { "id": "e54", "label": "uncovered", "outV": "A35_ShiftToManualDebugging", "inV": "P17_IncorrectUIFlow" },
+      { "id": "e55", "label": "led_to", "outV": "P17_IncorrectUIFlow", "inV": "A36_ImplementSinglePageWithEmbeddedConsent" },
+      { "id": "e56", "label": "implemented_by", "outV": "A36_ImplementSinglePageWithEmbeddedConsent", "inV": "A37_FinalizeUIRestoration" },
+      { "id": "e57", "label": "precedes", "outV": "A37_FinalizeUIRestoration", "inV": "A38_FinalBuildAndVerification" }
     ]
   }
 } 

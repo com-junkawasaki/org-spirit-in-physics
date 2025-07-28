@@ -12,7 +12,11 @@ test.describe('Main Page Debugging', () => {
     await page.goto('/');
 
     // Agree to consent form
-    await page.getByLabel('I have read and understood').check();
+    await page.locator('label[for="terms"]').click();
+    
+    // Wait for the button to be enabled
+    await expect(page.getByRole('button', { name: 'Submit and Continue' })).toBeEnabled();
+    
     await page.getByRole('button', { name: 'Submit and Continue' }).click();
     
     // Wait for the main content to be visible
