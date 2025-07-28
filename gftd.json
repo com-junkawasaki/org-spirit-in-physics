@@ -1082,6 +1082,22 @@
           "status": "completed",
           "command": "pnpm build"
         }
+      },
+      {
+        "id": "A79_StandardizeTailwindDebugSOP",
+        "label": "Design",
+        "properties": {
+          "name": "Standardize Tailwind CSS Debugging SOP",
+          "description": "Document the learnings from the extensive Tailwind CSS troubleshooting session into a Standard Operating Procedure (SOP) to serve as a future reference and prevent recurrence.",
+          "status": "completed",
+          "steps": [
+            "Verify `tailwind.config.ts`: Check that the `content` array correctly scans all relevant source files (`app`, `components`).",
+            "Verify `postcss.config.mjs`: Ensure it correctly uses the `@tailwindcss/postcss` plugin for the installed Tailwind CSS version.",
+            "Verify `globals.css`: Ensure it uses the modern `@import 'tailwindcss';` directive and does not contain legacy `@apply` rules for undefined custom variables.",
+            "Force Clear Cache: After any configuration change, always delete the `.next` directory with `rm -rf .next`.",
+            "Perform a Clean Restart: Run `pnpm dev` or `pnpm build` after clearing the cache to validate fixes."
+          ]
+        }
       }
     ],
     "edges": [
@@ -1196,7 +1212,8 @@
       { "id": "e109", "label": "precedes", "outV": "A75_RemoveCustomClassUsage", "inV": "A76_FinalBuildAfterCleanup" },
       { "id": "e110", "label": "uncovered", "outV": "A76_FinalBuildAfterCleanup", "inV": "P31_MoreUnknownUtilityClasses" },
       { "id": "e111", "label": "led_to", "outV": "P31_MoreUnknownUtilityClasses", "inV": "A77_RemoveAllCustomClasses" },
-      { "id": "e112", "label": "precedes", "outV": "A77_RemoveAllCustomClasses", "inV": "A78_FinalBuildAfterAllFixes" }
+      { "id": "e112", "label": "precedes", "outV": "A77_RemoveAllCustomClasses", "inV": "A78_FinalBuildAfterAllFixes" },
+      { "id": "e113", "label": "documents", "outV": "A78_FinalBuildAfterAllFixes", "inV": "A79_StandardizeTailwindDebugSOP" }
     ]
   }
 } 
