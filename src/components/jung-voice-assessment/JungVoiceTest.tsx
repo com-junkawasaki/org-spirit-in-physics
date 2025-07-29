@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
-import { HumeClient } from 'hume';
+import { HumeClient, convertBlobToBase64 } from 'hume';
 import type { ChatSocket } from 'hume';
 
 interface JungVoiceTestProps {

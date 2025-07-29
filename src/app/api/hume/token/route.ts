@@ -1,4 +1,3 @@
-import { HumeClient } from 'hume';
 import { NextResponse } from 'next/server';
 
 export async function POST() {
@@ -13,17 +12,28 @@ export async function POST() {
   }
 
   try {
-    const hume = new HumeClient({ apiKey, clientSecret });
-    const accessToken = await hume.getAccessToken();
+    const authString = Buffer.from(`${apiKey}:${clientSecret}`).toString('base64');
+    
+    const response = await fetch('https://api.hume.ai/oauth2-cc/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${authString}`,
+      },
+      body: 'grant_type=client_credentials',
+    });
 
-    if (!accessToken) {
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Error from Hume API:', data);
       return NextResponse.json(
-        { error: 'Failed to fetch Hume access token' },
-        { status: 500 }
+        { error: 'Failed to fetch Hume access token', details: data },
+        { status: response.status }
       );
     }
     
-    return NextResponse.json({ accessToken });
+    return NextResponse.json({ accessToken: data.access_token });
   } catch (error) {
     console.error('Error fetching Hume access token:', error);
     return NextResponse.json(
