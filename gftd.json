@@ -8,9 +8,16 @@
   },
   "processes": [
     {
+      "id": "preflight_check",
+      "name": "Device Preflight Check",
+      "description": "Before starting the test, the user is presented with a device check screen. This process requests access to the camera and microphone, displays the camera preview for user verification, and ensures devices are ready before proceeding to data collection.",
+      "entryComponent": "JungVoiceTest",
+      "trigger": "User clicks 'Start Session 1'"
+    },
+    {
       "id": "data_collection",
       "name": "Data Collection (2 Sessions)",
-      "description": "Core process where the user performs the word association test. Webcam and microphone are recorded continuously for each session, with periodic overwrite-saving for data integrity.",
+      "description": "Core process where the user performs the word association test. Webcam and microphone are recorded continuously for each session using MediaRecorder. The process only starts after a successful preflight check.",
       "entryComponent": "JungVoiceTest"
     },
     {
@@ -37,28 +44,34 @@
     {
       "name": "JungVoiceTest",
       "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-      "description": "Handles the entire data collection flow, including continuous webcam/mic recording and triggering live logging for each event.",
+      "description": "Handles the entire user-facing test flow. This includes a preflight device check screen, the main test loop for both sessions, continuous webcam/mic recording via MediaRecorder, and triggering event logging.",
       "dependencies": ["zustand"]
     },
     {
       "name": "kawasakiStore",
       "path": "src/store/kawasakiStore.ts",
-      "description": "Zustand store that manages the session state and orchestrates data saving operations. It receives blobs from the component and forwards them to the server-side API.",
+      "description": "Zustand store that manages the global state of the test. It includes a state machine for the test status ('idle', 'preflight', 'session-running', etc.), orchestrates data saving operations, and logs all critical events.",
       "dependencies": ["zustand"]
     },
     {
         "name": "saveArtifactApi",
         "path": "src/app/api/save-artifact/route.ts",
-        "description": "Server-side API route that receives data from the client (video blobs, log files) and writes them directly to the `artifacts/sessions` directory, overwriting files with the same name.",
+        "description": "Server-side API route that receives data from the client (video blobs, log files) and writes them directly to the `artifacts/sessions` directory.",
         "dependencies": ["fs", "path"]
     }
   ],
   "dataFlows": [
     {
-      "flow": "Full Experiment Execution with Continuous Recording and Live Logging",
+      "flow": "Full Experiment Execution with Preflight Check",
       "steps": [
-        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 1', granting permissions. This now implicitly includes a device check." },
-        { "component": "JungVoiceTest", "action": "Continuous webcam and mic recording for Session 1 starts." }
+        { "component": "JungVoiceTest (IntroScreen)", "action": "User clicks 'Start Session 1'." },
+        { "component": "kawasakiStore", "action": "State transitions to 'preflight'." },
+        { "component": "JungVoiceTest (PreflightScreen)", "action": "Requests media permissions. Displays camera preview and status." },
+        { "component": "JungVoiceTest (PreflightScreen)", "action": "User confirms devices are working and clicks 'Start Session'." },
+        { "component": "JungVoiceTest", "action": "Starts continuous webcam and mic recording for Session 1." },
+        { "component": "kawasakiStore", "action": "State transitions to 'session-1-running' and test loop begins." },
+        { "component": "JungVoiceTest", "action": "At end of session 1, recording is stopped, saved via API, and state moves to 'session-1-complete'."},
+        { "component": "JungVoiceTest", "action": "Process repeats for session 2, then moves to 'completed' state."}
       ]
     }
   ]

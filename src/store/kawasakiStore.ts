@@ -47,6 +47,7 @@ interface KawasakiState {
 
     // Actions
     advanceToNextWord: () => void;
+    startPreflight: () => void;
     startSession: (numberOfWords: number) => void;
     recordResponse: (audioBlob: Blob) => void;
     logEvent: (event: string, details?: Record<string, any>) => void;
@@ -77,6 +78,10 @@ export const useKawasakiStore = create<KawasakiState>()(
             // Actions Implementation
             advanceToNextWord: () => {
                 set((state) => ({ currentWordIndex: state.currentWordIndex + 1 }));
+            },
+
+            startPreflight: () => {
+                set({ testStatus: 'preflight' });
             },
 
             logEvent: (event, details = {}) => {

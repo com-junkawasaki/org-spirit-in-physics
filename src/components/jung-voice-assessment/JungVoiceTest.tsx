@@ -25,9 +25,11 @@ export default function JungVoiceTest({
     logEvent,
     saveSessionVideo,
     currentSession,
-    advanceToNextWord, // Assuming this action exists now
+    advanceToNextWord,
     mediaStatus,
-    setMediaStatus
+    setMediaStatus,
+    startPreflight,
+    completeSession
   } = useKawasakiStore();
   
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -42,14 +44,39 @@ export default function JungVoiceTest({
   const [sessionToResume, setSessionToResume] = useState<any>(null);
   
   const stopContinuousRecording = useCallback(() => {
-    // ... logic to stop recording and save file
-    setIsRecording(false);
-  }, [/* dependencies */]);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop(); // This will trigger the onstop event
+    }
+  }, []);
 
   const startContinuousRecording = useCallback(async () => {
-    // ... logic to start recording
-    setIsRecording(true);
-  }, [/* dependencies */]);
+    if (combinedStreamRef.current) {
+      videoChunksRef.current = []; // Clear previous chunks
+      const recorder = new MediaRecorder(combinedStreamRef.current, {
+        mimeType: 'video/webm; codecs=vp9',
+      });
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          videoChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+        // Use the store action to save the video
+        useKawasakiStore.getState().saveSessionVideo(currentSession, videoBlob);
+        videoChunksRef.current = []; // Clear chunks after saving
+        setIsRecording(false);
+        logEvent('continuous_recording_stopped', { session: currentSession });
+      };
+
+      recorder.start(5000); // Save chunks every 5 seconds
+      setIsRecording(true);
+      logEvent('continuous_recording_started', { session: currentSession });
+    }
+  }, [currentSession, logEvent]);
   
   // This effect handles the main test loop based on zustand state
   useEffect(() => {
@@ -87,27 +114,16 @@ export default function JungVoiceTest({
   }, [currentWordIndex, testStatus, stimulusWords, advanceToNextWord, logEvent, setMediaStatus]);
 
 
-  const handleStartSession = async () => {
+  const handleConfirmAndStartSession = async () => {
     setError(null);
     try {
-      // Step 1: Get stream and set up preview
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: true, 
-          video: { width: 1280, height: 720 }
-      });
-      combinedStreamRef.current = stream;
-      if (videoPreviewRef.current) {
-        videoPreviewRef.current.srcObject = stream;
-      }
-      
-      // Step 2: Start session recording
+      // Stream is already acquired during preflight, so we can just start recording
       await startContinuousRecording();
-
-      // Step 3: Start the test loop in zustand
+      // Start the test loop in zustand
       startSession(numberOfWords);
-
     } catch (err) {
-      setError("Failed to initialize devices. Please check permissions.");
+      setError("Failed to start the session.");
+      logEvent('session_start_failed', { error: (err as Error).message });
     }
   };
 
@@ -121,8 +137,8 @@ export default function JungVoiceTest({
   };
 
   const handleEndSession = () => {
-      // stopContinuousRecording();
-      // useKawasakiStore.getState().completeSession();
+      stopContinuousRecording();
+      useKawasakiStore.getState().completeSession();
   }
   
   const handleStartSecondSession = async () => {
@@ -135,25 +151,81 @@ export default function JungVoiceTest({
   const IntroScreen = () => (
     <div>
         <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
-        <Button onClick={handleStartSession} size="lg">Start Session 1</Button>
+        <Button onClick={startPreflight} size="lg">Start Session 1</Button>
     </div>
   );
 
-  const SessionScreen = () => (
-    <div className="space-y-4">
-      <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-4 flex items-center justify-center">
-        <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
-        <div className="absolute inset-0 flex items-center justify-center">
-             <p className="text-white/50 text-xs">Camera Preview</p>
+  const PreflightScreen = () => {
+    const [deviceStatus, setDeviceStatus] = useState<'pending' | 'success' | 'error'>('pending');
+
+    useEffect(() => {
+      const initializeMedia = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+              audio: true, 
+              video: { width: 1280, height: 720 }
+          });
+          combinedStreamRef.current = stream;
+          if (videoPreviewRef.current) {
+            videoPreviewRef.current.srcObject = stream;
+          }
+          setDeviceStatus('success');
+          logEvent('preflight_devices_acquired');
+        } catch (err) {
+          setDeviceStatus('error');
+          setError("Failed to access camera or microphone. Please check your browser permissions and ensure no other application is using the camera.");
+          logEvent('preflight_devices_failed', { error: (err as Error).message });
+        }
+      };
+      initializeMedia();
+    }, []);
+
+    return (
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">Device Check</h2>
+        <div className="relative w-full max-w-md mx-auto aspect-video bg-gray-900 rounded-md overflow-hidden mb-4 flex items-center justify-center">
+          <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
+          {deviceStatus !== 'success' && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-white/80 text-lg">
+                {deviceStatus === 'pending' && 'Preparing camera and microphone...'}
+                {deviceStatus === 'error' && 'Could not access devices.'}
+              </p>
+            </div>
+          )}
         </div>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {deviceStatus === 'success' && <p className="text-green-500">Camera and microphone are ready.</p>}
+        <Button onClick={handleConfirmAndStartSession} size="lg" disabled={deviceStatus !== 'success'}>
+          Start Session
+        </Button>
       </div>
-      <p className="text-sm text-gray-500">
-        Session {currentSession} - 
-        Word {currentWordIndex + 1} of {stimulusWords.length}
-      </p>
-      <h2 className="text-4xl font-bold my-8 h-12">{stimulusWords[currentWordIndex]}</h2>
-    </div>
-  );
+    );
+  };
+
+  const SessionScreen = () => {
+    useEffect(() => {
+      if (videoPreviewRef.current && combinedStreamRef.current) {
+        videoPreviewRef.current.srcObject = combinedStreamRef.current;
+      }
+    }, []);
+
+    return (
+      <div className="space-y-4">
+        <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-4 flex items-center justify-center">
+          <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-white/50 text-xs">Camera Preview</p>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          Session {currentSession} -
+          Word {currentWordIndex + 1} of {stimulusWords.length}
+        </p>
+        <h2 className="text-4xl font-bold my-8 h-12">{stimulusWords[currentWordIndex]}</h2>
+      </div>
+    );
+  };
   
   const BreakScreen = () => (
     <div className="space-y-4">
@@ -179,6 +251,8 @@ export default function JungVoiceTest({
   
   const renderContent = () => {
     switch (testStatus) {
+        case 'preflight':
+            return <PreflightScreen />;
         case 'session-1-running':
         case 'session-2-running':
             return <SessionScreen />;
