@@ -231,9 +231,9 @@ export default function JungVoiceTest({
 
     return (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold">Test Complete</h2>
+          <h2 className="text-2xl font-bold">Assessment Complete!</h2>
           <p>Thank you for your participation. Your data has been saved.</p>
-          <Button onClick={resetTest}>Take Test Again</Button>
+          <Button onClick={resetTest}>Start New Session</Button>
         </div>
       );
   };

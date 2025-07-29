@@ -11,6 +11,7 @@ import { useKawasakiStore } from "../../store/kawasakiStore";
  */
 export default function SpiritInPhysicsInteractive() {
   const testStatus = useKawasakiStore((state) => state.testStatus);
+  const resetTest = useKawasakiStore((state) => state.resetTest);
   const completedAssessments = useKawasakiStore((state) => state.completedAssessments);
   const [showEmbeddingVisualization, setShowEmbeddingVisualization] = useState(false);
 
@@ -32,17 +33,20 @@ export default function SpiritInPhysicsInteractive() {
             <p className="text-gray-700 mb-6">
               Thank you for completing both sessions. Your data has been saved for analysis.
             </p>
-            {/* 
-              This visualization part is currently disabled as it requires
-              processed data from the Hume batch job, which is not available in real-time.
-              A button is provided to show where it would appear.
-            */}
-            <button
-              onClick={() => setShowEmbeddingVisualization(!showEmbeddingVisualization)}
-              className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              {showEmbeddingVisualization ? 'Hide' : 'Show'} Post-Analysis Visualization
-            </button>
+            <div className="flex justify-center gap-4 mt-6">
+              <button
+                onClick={() => setShowEmbeddingVisualization(!showEmbeddingVisualization)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                {showEmbeddingVisualization ? 'Hide' : 'Show'} Post-Analysis Visualization
+              </button>
+              <button
+                onClick={resetTest}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                Start New Session
+              </button>
+            </div>
           </div>
         )}
       </div>
