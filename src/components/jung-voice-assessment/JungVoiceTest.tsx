@@ -129,13 +129,14 @@ export default function JungVoiceTest({
   className = '',
 }: JungVoiceTestProps) {
   // IPアドレスの状態
-  const [ipAddress, setIpAddress] = useState<string>('');
+  // const [ipAddress, setIpAddress] = useState<string>('');
   
   // IPアドレスに基づいた言語設定
-  const detectedLanguage = useMemo(() => getLanguageFromIP(ipAddress), [ipAddress]);
+  // const detectedLanguage = useMemo(() => getLanguageFromIP(ipAddress), [ipAddress]);
   
   // speechRecognitionLangが明示的に指定されていない場合、IPアドレスに基づいて設定
-  const effectiveSpeechRecognitionLang = speechRecognitionLang || detectedLanguage || 'en-US';
+  // 言語の自動判定を無効化し、互換性の高い英語に固定
+  const effectiveSpeechRecognitionLang = speechRecognitionLang || 'en-US';
   
   // プロップスのバリデーション (修正された言語設定を使用)
   const validatedProps = JungVoiceAssessmentPropsSchema.parse({
@@ -148,22 +149,22 @@ export default function JungVoiceTest({
     className
   });
 
-  // IPアドレスを取得
-  useEffect(() => {
-    const fetchIPAddress = async () => {
-      try {
-        const response = await axios.get('https://api.ipify.org?format=json');
-        if (response.data && response.data.ip) {
-          setIpAddress(response.data.ip);
-          console.log(`IP address detected: ${response.data.ip}, Setting language to: ${getLanguageFromIP(response.data.ip)}`);
-        }
-      } catch (error) {
-        console.error('Failed to fetch IP address:', error);
-      }
-    };
+  // IPアドレスを取得する処理をコメントアウト
+  // useEffect(() => {
+  //   const fetchIPAddress = async () => {
+  //     try {
+  //       const response = await axios.get('https://api.ipify.org?format=json');
+  //       if (response.data && response.data.ip) {
+  //         setIpAddress(response.data.ip);
+  //         console.log(`IP address detected: ${response.data.ip}, Setting language to: ${getLanguageFromIP(response.data.ip)}`);
+  //       }
+  //     } catch (error) {
+  //       console.error('Failed to fetch IP address:', error);
+  //     }
+  //   };
     
-    fetchIPAddress();
-  }, []);
+  //   fetchIPAddress();
+  // }, []);
 
   // 使用する刺激語の数を制限し、ランダムに選択する
   const stimulusWords = useMemo(() => {
