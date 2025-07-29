@@ -43,22 +43,28 @@ export default function JungVoiceTest({
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const snapshotTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const playAudio = useCallback((path: string, onEnded?: () => void) => {
-    if (audioRef.current) {
-        audioRef.current.src = path;
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(error => console.error(`Failed to play audio from ${path}:`, error));
-        }
-        if (onEnded) {
-            const handleEnded = () => {
-                onEnded();
-                audioRef.current?.removeEventListener('ended', handleEnded);
-            };
-            audioRef.current.addEventListener('ended', handleEnded);
-        }
-    }
+  const [speechSynthesisSupported, setSpeechSynthesisSupported] = useState(false);
+  
+  useEffect(() => {
+    setSpeechSynthesisSupported('speechSynthesis' in window);
   }, []);
+
+  const speakText = useCallback((text: string, onEnd?: () => void) => {
+    if (!speechSynthesisSupported) {
+      console.warn("SpeechSynthesis not supported, skipping audio.");
+      onEnd?.();
+      return;
+    }
+    // Cancel any previous utterances
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    if (onEnd) {
+      utterance.onend = () => onEnd();
+    }
+    window.speechSynthesis.speak(utterance);
+  }, [speechSynthesisSupported]);
   
   const stopContinuousRecording = useCallback(() => {
     if (snapshotTimerRef.current) {
@@ -202,8 +208,7 @@ export default function JungVoiceTest({
         if (currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
             const word = stimulusWords[currentWordIndex];
             logEvent('word_displayed', { session: currentSession, wordIndex: currentWordIndex, word: word });
-            const filename = `jung_${word.replace(/\s+/g, '-').toLowerCase()}.mp3`;
-            playAudio(`/audio/${filename}`, () => {
+            speakText(word, () => {
                 logEvent('response_window_opened', { session: currentSession, wordIndex: currentWordIndex });
                 responseTimerRef.current = setTimeout(() => {
                     logEvent('response_window_closed', { session: currentSession, wordIndex: currentWordIndex });
@@ -223,7 +228,7 @@ export default function JungVoiceTest({
             clearTimeout(responseTimerRef.current);
         }
     };
-  }, [currentWordIndex, testStatus, stimulusWords, playAudio, advanceToNextWord, logEvent, currentSession]);
+  }, [currentWordIndex, testStatus, stimulusWords, speakText, advanceToNextWord, logEvent, currentSession]);
 
   const handleStartSession = async (session: 1 | 2) => {
     // This now assumes device check was successful
@@ -338,12 +343,18 @@ export default function JungVoiceTest({
 
   return (
     <Card className={`text-center p-6 ${className}`}>
-      <audio ref={audioRef} className="hidden" />
+      {/* <audio ref={audioRef} className="hidden" /> No longer needed */}
       <CardHeader>
         <CardTitle>Jung Voice Test</CardTitle>
       </CardHeader>
       <CardContent>
         {error && <p className="text-red-500 mb-4">{error}</p>}
+        {!speechSynthesisSupported && testStatus === 'idle' && (
+            <div className="p-4 border-yellow-400 bg-yellow-50 rounded-md">
+                <p className="font-bold text-yellow-800">Browser Warning</p>
+                <p className="text-yellow-700">Your browser does not support speech synthesis. Audio cues will be disabled.</p>
+            </div>
+        )}
         {renderContent()}
       </CardContent>
     </Card>

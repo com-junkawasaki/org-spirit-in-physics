@@ -1,0 +1,355 @@
+{
+  "assessmentId": "78325ee1-f361-4adf-bf13-338c2f0e4a9b",
+  "userId": "user-placeholder",
+  "timestamp": "2025-07-29T12:39:08.001Z",
+  "session": 1,
+  "responses": [],
+  "fullLog": [
+    {
+      "timestamp": "2025-07-29T11:57:37.775Z",
+      "event": "session_start",
+      "details": {
+        "session": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-29T11:57:37.779Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 0,
+        "word": "frog"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T11:57:39.223Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-29T11:57:45.228Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-29T11:57:45.230Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T11:57:59.964Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T11:57:59.966Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:00:13.571Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:00:40.043Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:00:40.044Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:36:22.873Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:36:22.874Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:06.411Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:06.415Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:06.419Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1,
+        "word": "to cook"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:07.990Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:14.138Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:14.142Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 2,
+        "word": "money"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:14.667Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 2
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:20.746Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 2
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:20.749Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 3,
+        "word": "foolish"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:21.424Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 3
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:27.522Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 3
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:27.527Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 4,
+        "word": "voyage"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:28.144Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 4
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:34.227Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 4
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:34.230Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 5,
+        "word": "head"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:34.687Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 5
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:40.808Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 5
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:40.811Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 6,
+        "word": "ink"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:41.232Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 6
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:47.434Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 6
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:47.438Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 7,
+        "word": "expensive"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:48.296Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 7
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:54.433Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 7
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:54.436Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 8,
+        "word": "long"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:38:55.048Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 8
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:39:01.325Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 8
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:39:01.330Z",
+      "event": "word_displayed",
+      "details": {
+        "session": 1,
+        "wordIndex": 9,
+        "word": "cold"
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:39:01.872Z",
+      "event": "response_window_opened",
+      "details": {
+        "session": 1,
+        "wordIndex": 9
+      }
+    },
+    {
+      "timestamp": "2025-07-29T12:39:07.999Z",
+      "event": "response_window_closed",
+      "details": {
+        "session": 1,
+        "wordIndex": 9
+      }
+    }
+  ]
+}
