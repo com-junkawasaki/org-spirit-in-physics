@@ -42,6 +42,7 @@ interface KawasakiState {
     userResponses: RecordedResponse[];
     eventLog: EventLog[];
     assessmentId: string | null;
+    videoChunks: { session1: Blob[], session2: Blob[] };
 
     // Actions
     startSession: (numberOfWords: number) => void;
@@ -51,6 +52,8 @@ interface KawasakiState {
     completeSession: () => void;
     resetTest: () => void;
     restoreSession: (logData: EventLog[], session: 1 | 2, assessmentId: string) => void;
+    addVideoChunk: (session: 1 | 2, chunk: Blob) => void;
+    saveFullVideo: (session: 1 | 2) => void;
 }
 
 export const useKawasakiStore = create<KawasakiState>()(
@@ -65,6 +68,7 @@ export const useKawasakiStore = create<KawasakiState>()(
             userResponses: [],
             eventLog: [],
             assessmentId: null,
+            videoChunks: { session1: [], session2: [] },
 
             // Actions Implementation
             logEvent: (event, details = {}) => {
@@ -155,13 +159,48 @@ export const useKawasakiStore = create<KawasakiState>()(
                 }
             },
 
-            saveSessionVideo: (session, videoBlob) => {
+            addVideoChunk: (session, chunk) => {
+                const key = session === 1 ? 'session1' : 'session2';
+                set(state => ({
+                    videoChunks: {
+                        ...state.videoChunks,
+                        [key]: [...state.videoChunks[key], chunk]
+                    }
+                }));
+            },
+
+            saveFullVideo: (session) => {
                 const state = get();
                 if (!state.assessmentId) return;
 
-                const fileName = `session-${session}-video-recording.webm`;
-                get().logEvent('session_video_saved', { session: session, fileName: fileName });
+                const key = session === 1 ? 'session1' : 'session2';
+                const chunks = state.videoChunks[key];
+                if (chunks.length === 0) return;
 
+                const videoBlob = new Blob(chunks, { type: 'video/webm' });
+                const fileName = `session-${session}-video.webm`;
+                
+                get().logEvent('video_snapshot_saved', { session, fileName, size: videoBlob.size });
+
+                const formData = new FormData();
+                formData.append('file', videoBlob);
+                formData.append('sessionId', state.assessmentId);
+                formData.append('fileName', fileName);
+
+                fetch('/api/save-artifact', {
+                    method: 'POST',
+                    body: formData,
+                }).catch(error => console.error('Failed to save video snapshot:', error));
+            },
+
+            saveSessionVideo: (session, videoBlob) => {
+                // This will now be used for the FINAL save on session stop
+                const state = get();
+                if (!state.assessmentId) return;
+
+                const fileName = `session-${session}-video-final.webm`;
+                get().logEvent('final_video_saved', { session, fileName, size: videoBlob.size });
+                
                 const formData = new FormData();
                 formData.append('file', videoBlob);
                 formData.append('sessionId', state.assessmentId);
@@ -244,11 +283,17 @@ export const useKawasakiStore = create<KawasakiState>()(
                     userResponses: [],
                     assessmentId: null,
                     eventLog: [],
+                    videoChunks: { session1: [], session2: [] },
                 })
             }
         }),
         {
-            name: "kawasaki-model-storage-v6",
+            name: "kawasaki-model-storage-v7",
+            // We don't persist chunks as they can be large
+            partialize: (state) => {
+                const { videoChunks, ...rest } = state;
+                return rest;
+            },
         },
     ),
 );

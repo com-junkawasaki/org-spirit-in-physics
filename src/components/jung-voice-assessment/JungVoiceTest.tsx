@@ -21,10 +21,11 @@ export default function JungVoiceTest({
     currentWordIndex,
     stimulusWords,
     startSession,
-    recordResponse,
+    recordResponse, // Will be deprecated in this component, but kept for store compatibility
     resetTest,
     logEvent,
-    saveSessionVideo,
+    addVideoChunk,
+    saveFullVideo,
     currentSession,
     restoreSession,
   } = useKawasakiStore();
@@ -39,6 +40,7 @@ export default function JungVoiceTest({
   const videoChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const snapshotTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const playAudio = useCallback((path: string, onEnded?: () => void) => {
     if (audioRef.current) {
@@ -57,17 +59,16 @@ export default function JungVoiceTest({
     }
   }, []);
   
-  const stopRecording = useCallback(() => {
+  const stopContinuousRecording = useCallback(() => {
+    if (snapshotTimerRef.current) {
+        clearInterval(snapshotTimerRef.current);
+    }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.onstop = () => {
-        const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
-        saveSessionVideo(currentSession, videoBlob);
-      };
-      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stop(); // onstop will trigger the final saveFullVideo
     }
     combinedStreamRef.current?.getTracks().forEach(track => track.stop());
-    setIsRecording(false);
-  }, [saveSessionVideo, currentSession]);
+    logEvent('continuous_recording_stopped', { session: currentSession });
+  }, [logEvent, currentSession]);
 
   const startContinuousRecording = useCallback(async () => {
     setError(null);
@@ -91,29 +92,31 @@ export default function JungVoiceTest({
 
         mediaRecorderRef.current.ondataavailable = (event) => {
             if (event.data.size > 0) {
-              console.log(`[Recording] Chunk received for session ${currentSession}, size: ${event.data.size}`);
-              videoChunksRef.current.push(event.data);
+              addVideoChunk(currentSession, event.data);
             }
         };
 
         mediaRecorderRef.current.onstop = () => {
-          const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
-          console.log(`[Recording] Stopped. Final blob size for session ${currentSession}: ${videoBlob.size}`);
-          if (videoBlob.size > 0) {
-            saveSessionVideo(currentSession, videoBlob);
-          } else {
-            console.warn(`[Recording] Blob size is 0 for session ${currentSession}, not saving.`);
-          }
+          logEvent('final_video_saving', { session: currentSession });
+          saveFullVideo(currentSession); // Save the final complete video
         };
 
-        mediaRecorderRef.current.start(1000); // Collect data in chunks
+        mediaRecorderRef.current.start();
+
+        // Start snapshot timer
+        snapshotTimerRef.current = setInterval(() => {
+            if (mediaRecorderRef.current?.state === 'recording') {
+                // This doesn't create a snapshot but saves what's been collected so far
+                saveFullVideo(currentSession);
+            }
+        }, 10000); // Save a snapshot every 10 seconds
 
     } catch (err) {
         console.error("Error starting recording:", err);
         setError("Could not access camera/microphone. Please check permissions.");
         setIsRecording(false);
     }
-  }, [saveSessionVideo, currentSession, logEvent]);
+  }, [addVideoChunk, saveFullVideo, currentSession, logEvent]);
 
   const advanceToNextWord = useCallback(() => {
     useKawasakiStore.setState(state => ({
@@ -185,12 +188,12 @@ export default function JungVoiceTest({
   };
 
   const handleEndSession = () => {
-      stopRecording();
+      stopContinuousRecording();
       useKawasakiStore.getState().completeSession();
   }
   
   const handleStartSecondSession = async () => {
-      stopRecording(); // Stop session 1 recording
+      stopContinuousRecording(); // Stop session 1 recording
       await startContinuousRecording(); // Start session 2 recording
       startSession(numberOfWords); // This will correctly start session 2
   }
@@ -241,10 +244,8 @@ export default function JungVoiceTest({
   
   const CompletionScreen = () => {
     useEffect(() => {
-        // This effect runs when the completion screen is shown.
-        // We stop the final recording here.
-        stopRecording();
-    }, [stopRecording]);
+        stopContinuousRecording();
+    }, [stopContinuousRecording]);
 
     return (
         <div className="space-y-4">
