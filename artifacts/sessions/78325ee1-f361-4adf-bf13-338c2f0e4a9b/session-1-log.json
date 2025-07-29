@@ -1,0 +1,106 @@
+[
+  {
+    "timestamp": "2025-07-29T11:57:37.775Z",
+    "event": "session_start",
+    "details": {
+      "session": 1
+    }
+  },
+  {
+    "timestamp": "2025-07-29T11:57:37.779Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 0,
+      "word": "frog"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T11:57:39.223Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 1,
+      "wordIndex": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-29T11:57:45.228Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 1,
+      "wordIndex": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-29T11:57:45.230Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 1,
+      "word": "to cook"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T11:57:59.964Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 1,
+      "word": "to cook"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T11:57:59.966Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 1,
+      "word": "to cook"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:00:13.571Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 1,
+      "word": "to cook"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:00:40.043Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 1,
+      "word": "to cook"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:00:40.044Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 1,
+      "word": "to cook"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:36:22.873Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 1,
+      "word": "to cook"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:36:22.874Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 1,
+      "wordIndex": 1,
+      "word": "to cook"
+    }
+  }
+]

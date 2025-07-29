@@ -8,19 +8,23 @@
   },
   "processes": [
     {
-      "id": "data_collection",
-      "name": "Data Collection (2 Sessions)",
-      "description": "Core process where the user performs the word association test. Webcam and microphone are recorded continuously for each session. To ensure data integrity against interruptions, the video recording is periodically saved by overwriting the session file.",
+      "id": "pre_flight_check",
+      "name": "Pre-flight Device Check",
+      "description": "Before the session starts, this process verifies that camera and microphone permissions are granted and that the devices are successfully capturing data.",
       "entryComponent": "JungVoiceTest",
       "steps": [
-        "User starts a session, granting camera/mic permissions.",
-        "A continuous webcam and microphone recording begins.",
-        "Every 10 seconds, the recording up to that point is saved as a complete, playable video file, overwriting the previous save.",
-        "A stimulus word audio is played, followed by a fixed 6-second response window.",
-        "This loop repeats for all words.",
-        "At the end of the session, the final recording is saved."
-      ],
-      "dataStore": "kawasakiStore"
+        "User clicks a 'Check Devices' button.",
+        "The application requests camera and microphone permissions via `getUserMedia`.",
+        "A short (2-second) test recording is initiated.",
+        "The system verifies that a non-empty video Blob is generated.",
+        "If successful, the user is allowed to proceed to the main session. If not, a specific error is displayed."
+      ]
+    },
+    {
+      "id": "data_collection",
+      "name": "Data Collection (2 Sessions)",
+      "description": "Core process where the user performs the word association test. Webcam and microphone are recorded continuously for each session, with periodic overwrite-saving for data integrity.",
+      "entryComponent": "JungVoiceTest"
     },
     {
       "id": "live_logging",
@@ -34,7 +38,7 @@
     {
       "name": "JungVoiceTest",
       "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-      "description": "Handles the entire data collection flow. Manages the MediaRecorder for continuous recording and uses a timer to periodically send the full recording data to the server for overwrite-saving.",
+      "description": "Handles the entire data collection flow, including the pre-flight check, continuous recording, and event logging.",
       "dependencies": ["zustand"]
     },
     {
@@ -52,17 +56,15 @@
   ],
   "dataFlows": [
     {
-      "flow": "Full Experiment Execution with Incremental Overwrite",
+      "flow": "Full Experiment Execution with Pre-flight Check",
       "steps": [
-        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 1', granting permissions." },
-        { "component": "JungVoiceTest", "action": "Continuous webcam and mic recording for Session 1 starts." },
-        { "component": "kawasakiStore", "action": "Dispatches 'logEvent' for 'session_start'. Log file is saved/updated via API." },
-        { "component": "JungVoiceTest", "action": "(Loop) Stimulus audio plays. 'word_displayed' is logged and saved." },
-        { "component": "JungVoiceTest", "action": "(Loop) A 6-second response window follows." },
-        { "component": "JungVoiceTest", "action": "(Background Loop) Every 10 seconds, a complete, playable .webm blob of the recording so far is created and sent to the `/api/save-artifact` endpoint, overwriting the previous version of `session-1-video.webm`." },
-        { "component": "JungVoiceTest", "action": "When Session 1 ends, the continuous recording is stopped, triggering a final save of the video file." },
-        { "component": "kawasakiStore", "action": "'session_complete' is logged and saved." },
-        { "component": "JungVoiceTest", "action": "User starts Session 2, repeating the same recording and logging process for `session-2-video.webm` and `session-2-log.json`." }
+        { "component": "JungVoiceTest", "action": "User is presented with an intro screen and a 'Check Devices' button." },
+        { "component": "JungVoiceTest", "action": "User clicks the button, triggering a camera/mic permission prompt." },
+        { "component": "JungVoiceTest", "action": "A short test recording is performed to verify data is being generated." },
+        { "component": "JungVoiceTest", "action": "If check is successful, the 'Start Session 1' button becomes active. Otherwise, an error is shown." },
+        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 1' to begin the continuous recording and the experiment loop." },
+        { "component": "JungVoiceTest", "action": "(Background Loop) Every 10 seconds, the recording is saved to a file via the API, overwriting the previous version." },
+        { "component": "JungVoiceTest", "action": "The rest of the two-session flow proceeds as previously defined." }
       ]
     }
   ]

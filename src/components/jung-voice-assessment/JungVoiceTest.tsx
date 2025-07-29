@@ -33,6 +33,7 @@ export default function JungVoiceTest({
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionToResume, setSessionToResume] = useState<any>(null);
+  const [deviceCheckStatus, setDeviceCheckStatus] = useState<'idle' | 'checking' | 'success' | 'failed'>('idle');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const combinedStreamRef = useRef<MediaStream | null>(null);
@@ -124,6 +125,59 @@ export default function JungVoiceTest({
     }));
   }, []);
 
+  const handleDeviceCheck = useCallback(async () => {
+    setDeviceCheckStatus('checking');
+    setError(null);
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks: Blob[] = [];
+
+        recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                chunks.push(event.data);
+            }
+        };
+
+        recorder.onstop = () => {
+            stream.getTracks().forEach(track => track.stop()); // Clean up the stream
+            if (chunks.length > 0) {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                console.log(`[Device Check] Success. Blob size: ${blob.size}`);
+                setDeviceCheckStatus('success');
+            } else {
+                console.error('[Device Check] Failed. No data was recorded.');
+                setError('Failed to record any data from camera/microphone. Please check device connections and browser permissions.');
+                setDeviceCheckStatus('failed');
+            }
+        };
+        
+        recorder.start();
+        setTimeout(() => {
+            if (recorder.state === "recording") {
+                recorder.stop();
+            }
+        }, 2000); // 2 second test recording
+
+    } catch (err) {
+        console.error("Error during device check:", err);
+        let message = "Could not access camera/microphone. Please check browser permissions.";
+        if (err instanceof Error) {
+            if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                message = "No camera/microphone found. Please ensure they are connected and enabled.";
+            } else if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                message = "Permission for camera/microphone was denied. Please allow access in your browser settings.";
+            }
+        }
+        setError(message);
+        setDeviceCheckStatus('failed');
+    }
+  }, []);
+
   // Check for resumable session on mount
   useEffect(() => {
     const checkForResumableSession = async () => {
@@ -172,9 +226,8 @@ export default function JungVoiceTest({
   }, [currentWordIndex, testStatus, stimulusWords, playAudio, advanceToNextWord, logEvent, currentSession]);
 
   const handleStartSession = async (session: 1 | 2) => {
-    if (session === 1) {
-        await startContinuousRecording();
-    }
+    // This now assumes device check was successful
+    await startContinuousRecording();
     startSession(numberOfWords);
   }
 
@@ -201,22 +254,29 @@ export default function JungVoiceTest({
   // UI Components
   const IntroScreen = () => (
     <div>
-        {sessionToResume ? (
-            <div className="p-4 border-yellow-400 bg-yellow-50 rounded-md mb-6">
-                <h3 className="font-bold text-yellow-800">Incomplete Session Found</h3>
-                <p className="text-yellow-700">
-                    An incomplete session (Session {sessionToResume.session}) was found. Do you want to resume from where you left off?
-                </p>
-                <div className="mt-4 space-x-4">
-                    <Button onClick={handleResumeSession} size="lg">Resume Session</Button>
-                    <Button onClick={() => { setSessionToResume(null); resetTest(); }} size="lg" variant="outline">Start New Test</Button>
-                </div>
+        <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
+        
+        {deviceCheckStatus === 'idle' && (
+            <Button onClick={handleDeviceCheck} size="lg">Check Devices</Button>
+        )}
+
+        {deviceCheckStatus === 'checking' && (
+            <p className="text-lg text-blue-600 animate-pulse">Checking devices...</p>
+        )}
+
+        {deviceCheckStatus === 'failed' && (
+            <div className="p-4 border-red-400 bg-red-50 rounded-md">
+                <p className="font-bold text-red-800">Device Check Failed</p>
+                <p className="text-red-700">{error}</p>
+                <Button onClick={handleDeviceCheck} size="lg" variant="outline" className="mt-4">Try Again</Button>
             </div>
-        ) : (
-            <>
-                <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
-                <Button onClick={() => handleStartSession(1)} size="lg">Grant Permissions & Start Session 1</Button>
-            </>
+        )}
+        
+        {deviceCheckStatus === 'success' && (
+            <div className='flex flex-col items-center'>
+                <p className="text-green-600 mb-4">✓ Devices are working correctly!</p>
+                <Button onClick={() => handleStartSession(1)} size="lg">Start Session 1</Button>
+            </div>
         )}
     </div>
   );
@@ -257,6 +317,11 @@ export default function JungVoiceTest({
   };
   
   const renderContent = () => {
+    // The intro screen now handles the device check flow
+    if (testStatus === 'idle') {
+        return <IntroScreen />;
+    }
+
     switch (testStatus) {
         case 'session-1-running':
         case 'session-2-running':
