@@ -8,70 +8,75 @@
   },
   "processes": [
     {
-      "id": "consent",
-      "name": "Consent & Permissions",
-      "description": "Handles user consent for research, audio playback, and webcam recording before the experiment begins.",
-      "entryComponent": "ResearchParticipationConsent"
+      "id": "consent_and_setup",
+      "name": "Consent & Setup",
+      "description": "Handles user consent and permissions. For local controlled studies, it uses a server-side process to manage files, eliminating user prompts for directory selection.",
+      "entryComponent": "JungVoiceTest"
     },
     {
       "id": "data_collection",
       "name": "Data Collection (2 Sessions)",
-      "description": "Core process where the user performs the word association test. User's voice, webcam video, and detailed event logs are recorded for later batch analysis.",
+      "description": "Core process where the user performs the word association test. Webcam and microphone are recorded continuously for the entire duration of each session.",
       "entryComponent": "JungVoiceTest",
       "steps": [
-        "An introduction audio is played.",
-        "User clicks a button to start the session, which prompts for camera and microphone permission.",
-        "Webcam and microphone recording begins.",
-        "A stimulus word audio is played, and the event is logged with a timestamp.",
-        "User has a fixed 6-second window to speak their response; the start and end of this window are logged.",
-        "The process repeats for all words in the session.",
-        "After the first session, a break screen is shown and recording is paused.",
-        "The user starts the second session, and recording resumes.",
-        "After the second session, recordings are stopped and saved.",
-        "A detailed session log (JSON) with event timestamps is also saved."
+        "User starts a session.",
+        "A continuous webcam and microphone recording begins for the session.",
+        "A stimulus word audio is played.",
+        "The system waits for a fixed 6-second response window.",
+        "The process repeats for all words.",
+        "At the end of the session, the continuous recording is stopped and saved.",
+        "After a break, the process is repeated for the second session."
       ],
       "dataStore": "kawasakiStore"
     },
     {
-      "id": "backend_analysis",
-      "name": "Backend Batch Analysis",
-      "description": "Asynchronous process where the collected audio and webcam video are analyzed by Hume AI.",
-      "trigger": "Completion of data collection session.",
-      "technology": "Hume AI Batch API"
+      "id": "live_logging",
+      "name": "Live Event Logging",
+      "description": "Throughout each session, every significant event is immediately written to a session-specific log file.",
+      "trigger": "Any tracked event (e.g., session_start, word_displayed, response_window_closed).",
+      "steps": [
+        "An event occurs in the client (e.g., a word is displayed).",
+        "The event, with a timestamp and details, is added to the zustand store.",
+        "The entire log from the store is immediately written to the session's log file (e.g., `session-1-log.json`) via the server-side API, overwriting the previous version.",
+        "This ensures the log file is always up-to-date, supporting session resumption."
+      ],
+      "dataStore": "kawasakiStore"
     }
   ],
   "components": [
     {
       "name": "JungVoiceTest",
       "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-      "description": "Handles the entire data collection flow: consent, intro, two-session loop, breaks, webcam/mic recording, and detailed event logging. Manages state via `kawasakiStore`.",
+      "description": "Handles the entire data collection flow, including continuous webcam/mic recording and triggering live logging for each event.",
       "dependencies": ["zustand"]
+    },
+    {
+      "name": "kawasakiStore",
+      "path": "src/store/kawasakiStore.ts",
+      "description": "Zustand store that manages the session state and orchestrates all data saving operations by calling the server-side API for each event log and recording.",
+      "dependencies": ["zustand"]
+    },
+    {
+        "name": "saveArtifactApi",
+        "path": "src/app/api/save-artifact/route.ts",
+        "description": "Server-side API route that receives data from the client (video blobs, log files) and writes them directly to the `artifacts/sessions` directory on the local file system.",
+        "dependencies": ["fs", "path"]
     }
   ],
   "dataFlows": [
     {
-      "flow": "Full Experiment Execution with Webcam Recording",
+      "flow": "Full Experiment Execution with Continuous Recording and Live Logging",
       "steps": [
-        { "component": "ResearchParticipationConsent", "action": "User provides all necessary consents." },
-        { "component": "JungVoiceTest", "action": "User clicks 'Start Session', triggering a camera and microphone permission prompt." },
-        { "component": "JungVoiceTest", "action": "Once permission is granted, webcam and mic recording starts via `MediaRecorder`." },
-        { "component": "kawasakiStore", "action": "State updates: `testStatus` to 'session-1-running', `currentWordIndex` to 0. Session start is logged." },
-        { "component": "JungVoiceTest", "action": "(Loop) Stimulus audio for the current word is played. 'WordDisplayed' event is logged with timestamp and word." },
-        { "component": "JungVoiceTest", "action": "(Loop) A 6-second timer for user response begins. 'ResponseWindowOpened' event is logged." },
-        { "component": "kawasakiStore", "action": "(Loop) After 6 seconds, `currentWordIndex` increments. 'ResponseWindowClosed' event is logged." },
-        { "component": "JungVoiceTest", "action": "When Session 1 ends, recording is paused. A break screen is displayed." },
-        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 2'. Recording resumes." },
-        { "component": "kawasakiStore", "action": "State updates: `testStatus` to 'session-2-running', `currentWordIndex` to 0." },
-        { "component": "JungVoiceTest", "action": "Session 2 loop starts." },
-        { "component": "JungVoiceTest", "action": "When Session 2 ends, all recordings are stopped." },
-        { "component": "kawasakiStore", "action": "Triggers the saving of artifacts: session-1.webm (video+mic), session-2.webm (video+mic), and session-log.json via the `/api/save-artifact` endpoint." }
+        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 1'." },
+        { "component": "JungVoiceTest", "action": "Continuous webcam and mic recording for Session 1 starts." },
+        { "component": "kawasakiStore", "action": "Dispatches 'logEvent' for 'session_start'. The entire log is immediately saved to `session-1-log.json` via the API." },
+        { "component": "JungVoiceTest", "action": "(Loop) Stimulus audio plays. `logEvent` is dispatched for 'word_displayed'. Log file is updated." },
+        { "component": "JungVoiceTest", "action": "(Loop) After 6 seconds, the next word is triggered. `logEvent` for 'response_window_closed' is dispatched. Log file is updated." },
+        { "component": "JungVoiceTest", "action": "When Session 1 ends, the continuous recording is stopped." },
+        { "component": "kawasakiStore", "action": "The recording blob for Session 1 is saved to `session-1-video.webm` via the API. `logEvent` for 'session_complete' is dispatched. Log file is updated." },
+        { "component": "JungVoiceTest", "action": "A break screen is displayed." },
+        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 2', repeating the process for the second session with new files (`session-2-video.webm`, `session-2-log.json`)." }
       ]
-    }
-  ],
-  "troubleshooting": [
-    {
-      "issue": "Real-time speech-to-text was slow and introduced latency.",
-      "resolution": "Changed the architecture to a data collection model. The app now records all user responses (audio/video) locally and sends them for asynchronous batch processing. This decouples the user experience from API latency."
     }
   ]
 } 

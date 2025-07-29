@@ -51,12 +51,12 @@ export default function SpiritInPhysicsInteractive() {
       {testStatus === 'completed' && showEmbeddingVisualization && (
         <div className="mt-8 p-6 border rounded-lg">
            <h3 className="text-xl font-semibold mb-4">RAG-style Jung Embedding Analysis (Post-Batch-Processing)</h3>
-           <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-4">
              This visualization will show the semantic relationships and clustering patterns from your responses
              after they have been analyzed by the backend.
-           </p>
+          </p>
            {/* 
-            <JungEmbeddingVisualization 
+          <JungEmbeddingVisualization 
               // This would take the processed data from the backend, not the raw recorded blobs.
               // testData={processedDataFromBackend} 
             /> 

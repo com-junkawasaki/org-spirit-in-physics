@@ -10,7 +10,7 @@ interface JungVoiceTestProps {
   className?: string;
 }
 
-const INTRODUCTION_MESSAGE = "This study requires capturing your webcam and microphone audio. Please grant permission when prompted. A small preview of your camera will be shown. When you're ready, click the start button.";
+const INTRODUCTION_MESSAGE = "This study requires capturing your webcam and microphone for the entire duration of each session. Please grant permission when prompted. When you're ready, click the start button.";
 
 export default function JungVoiceTest({
   numberOfWords = 10,
@@ -21,23 +21,21 @@ export default function JungVoiceTest({
     currentWordIndex,
     stimulusWords,
     startSession,
-    recordResponse,
     resetTest,
     logEvent,
-    saveSessionVideo, // Changed from saveScreenRecording
+    saveSessionVideo,
     currentSession,
   } = useKawasakiStore();
   
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [showIntro, setShowIntro] = useState(true);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const combinedStreamRef = useRef<MediaStream | null>(null);
-  const videoPreviewRef = useRef<HTMLVideoElement | null>(null); // Ref for the video preview element
-  const audioChunksRef = useRef<Blob[]>([]);
-  const videoChunksRef = useRef<Blob[]>([]); // Renamed from screenChunks
+  const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+  const videoChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const playAudio = useCallback((path: string, onEnded?: () => void) => {
     if (audioRef.current) {
@@ -58,125 +56,111 @@ export default function JungVoiceTest({
   
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop(); // This will trigger onstop
+      mediaRecorderRef.current.onstop = () => {
+        const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+        saveSessionVideo(currentSession, videoBlob);
+      };
+      mediaRecorderRef.current.stop();
     }
     combinedStreamRef.current?.getTracks().forEach(track => track.stop());
     setIsRecording(false);
-    logEvent('recording_stopped', { session: currentSession });
-  }, [logEvent, currentSession]);
+  }, [saveSessionVideo, currentSession]);
 
-  const startRecording = useCallback(async (isSessionRecording: boolean) => {
+  const startContinuousRecording = useCallback(async () => {
     setError(null);
     setIsRecording(true);
+    videoChunksRef.current = [];
     
-    if(isSessionRecording) {
-      videoChunksRef.current = [];
-    } else {
-      audioChunksRef.current = [];
-    }
-    
-    logEvent('recording_started', { type: isSessionRecording ? 'webcam_and_mic' : 'mic_only', session: currentSession });
+    logEvent('continuous_recording_started', { session: currentSession });
 
     try {
-        let streamToRecord: MediaStream;
-        let mimeType: string;
-
-        if (isSessionRecording) {
-            const videoStream = await navigator.mediaDevices.getUserMedia({ 
-                audio: true, 
-                video: { width: { ideal: 640 }, height: { ideal: 480 } }
-            });
-            combinedStreamRef.current = videoStream;
-            
-            // Show preview
-            if (videoPreviewRef.current) {
-                videoPreviewRef.current.srcObject = videoStream;
-            }
-
-            streamToRecord = videoStream;
-            mimeType = 'video/webm';
-        } else {
-            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            streamToRecord = audioStream;
-            mimeType = 'audio/webm';
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: true, 
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        combinedStreamRef.current = stream;
+        
+        if (videoPreviewRef.current) {
+            videoPreviewRef.current.srcObject = stream;
         }
         
-        mediaRecorderRef.current = new MediaRecorder(streamToRecord, { mimeType });
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9,opus' });
 
         mediaRecorderRef.current.ondataavailable = (event) => {
             if (event.data.size > 0) {
-              if (isSessionRecording) {
-                videoChunksRef.current.push(event.data);
-              } else {
-                audioChunksRef.current.push(event.data);
-              }
+              videoChunksRef.current.push(event.data);
             }
         };
 
-        mediaRecorderRef.current.onstop = () => {
-          if (isSessionRecording) {
-            const videoBlob = new Blob(videoChunksRef.current, { type: mimeType });
-            // Re-using saveScreenRecording action to save the webcam video blob
-            saveSessionVideo(currentSession, videoBlob); // Use the new action name
-          } else {
-            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-            recordResponse(audioBlob);
-          }
-            setIsRecording(false);
-        };
-
-        mediaRecorderRef.current.start();
-
-        if (!isSessionRecording) {
-            setTimeout(() => {
-                if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-                    mediaRecorderRef.current.stop();
-                }
-            }, 6000);
-        }
+        mediaRecorderRef.current.start(1000); // Collect data in chunks
 
     } catch (err) {
         console.error("Error starting recording:", err);
         setError("Could not access camera/microphone. Please check permissions.");
         setIsRecording(false);
     }
-  }, [recordResponse, saveSessionVideo, currentSession, logEvent]);
+  }, [logEvent, currentSession]);
 
+  const advanceToNextWord = useCallback(() => {
+    useKawasakiStore.setState(state => ({
+        currentWordIndex: state.currentWordIndex + 1
+    }));
+  }, []);
 
   useEffect(() => {
+    if (responseTimerRef.current) {
+        clearTimeout(responseTimerRef.current);
+    }
     if ((testStatus === 'session-1-running' || testStatus === 'session-2-running')) {
         if (currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
             const word = stimulusWords[currentWordIndex];
-            const filename = `jung_${word.replace(/\s+/g, '-').toLowerCase()}.mp3`;
             logEvent('word_displayed', { session: currentSession, wordIndex: currentWordIndex, word: word });
+            const filename = `jung_${word.replace(/\s+/g, '-').toLowerCase()}.mp3`;
             playAudio(`/audio/${filename}`, () => {
-                startRecording(false); // Start mic-only recording for the response
+                logEvent('response_window_opened', { session: currentSession, wordIndex: currentWordIndex });
+                responseTimerRef.current = setTimeout(() => {
+                    logEvent('response_window_closed', { session: currentSession, wordIndex: currentWordIndex });
+                    // Check if this is the last word
+                    if (currentWordIndex >= stimulusWords.length - 1) {
+                        useKawasakiStore.getState().completeSession();
+                    } else {
+                        advanceToNextWord();
+                    }
+                }, 6000);
             });
         }
     }
-  }, [currentWordIndex, testStatus, stimulusWords, playAudio, startRecording, logEvent, currentSession]);
+    // Cleanup timer on unmount or state change
+    return () => {
+        if (responseTimerRef.current) {
+            clearTimeout(responseTimerRef.current);
+        }
+    };
+  }, [currentWordIndex, testStatus, stimulusWords, playAudio, advanceToNextWord, logEvent, currentSession]);
 
-  const handleStartSession = async () => {
-    if (showIntro) {
-      await startRecording(true);
-      setShowIntro(false);
-    } else if (testStatus === 'session-1-complete') {
-      stopRecording(); // Stop screen recording for session 1
-      await startRecording(true); // Start new screen recording for session 2
+  const handleStartSession = async (session: 1 | 2) => {
+    if (session === 1) {
+        await startContinuousRecording();
     }
     startSession(numberOfWords);
   }
 
   const handleEndSession = () => {
-      stopRecording(); // Stop screen recording
-      // completeSession will be called by the last recordResponse
+      stopRecording();
+      useKawasakiStore.getState().completeSession();
+  }
+  
+  const handleStartSecondSession = async () => {
+      stopRecording(); // Stop session 1 recording
+      await startContinuousRecording(); // Start session 2 recording
+      startSession(numberOfWords); // This will correctly start session 2
   }
 
-  // UI Components for each status
+  // UI Components
   const IntroScreen = () => (
     <div>
         <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
-        <Button onClick={handleStartSession} size="lg">Grant Permissions and Start Session 1</Button>
+        <Button onClick={() => handleStartSession(1)} size="lg">Grant Permissions & Start Session 1</Button>
     </div>
   );
 
@@ -190,13 +174,6 @@ export default function JungVoiceTest({
         Word {currentWordIndex + 1} of {stimulusWords.length}
       </p>
       <h2 className="text-4xl font-bold my-8 h-12">{stimulusWords[currentWordIndex]}</h2>
-      <div>
-        {isRecording ? (
-          <p className="text-lg text-blue-600 animate-pulse">Recording...</p>
-        ) : (
-          <p className="text-lg text-gray-500">Processing...</p>
-        )}
-      </div>
     </div>
   );
   
@@ -204,23 +181,27 @@ export default function JungVoiceTest({
     <div className="space-y-4">
         <h2 className="text-2xl font-bold">Session 1 Complete</h2>
         <p>Take a short break. When you are ready, start the second session.</p>
-        <Button onClick={handleStartSession} size="lg">Start Session 2</Button>
+        <Button onClick={handleStartSecondSession} size="lg">Start Session 2</Button>
     </div>
   );
   
-  const CompletionScreen = () => (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Test Complete</h2>
-      <p>Thank you for your participation. Your data has been saved.</p>
-      <Button onClick={() => { stopRecording(); resetTest(); setShowIntro(true); }}>Take Test Again</Button>
-    </div>
-  );
+  const CompletionScreen = () => {
+    useEffect(() => {
+        // This effect runs when the completion screen is shown.
+        // We stop the final recording here.
+        stopRecording();
+    }, [stopRecording]);
 
+    return (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold">Test Complete</h2>
+          <p>Thank you for your participation. Your data has been saved.</p>
+          <Button onClick={resetTest}>Take Test Again</Button>
+        </div>
+      );
+  };
+  
   const renderContent = () => {
-    if (showIntro && testStatus === 'idle') {
-        return <IntroScreen />;
-    }
-
     switch (testStatus) {
         case 'session-1-running':
         case 'session-2-running':

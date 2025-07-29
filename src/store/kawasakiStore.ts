@@ -72,37 +72,58 @@ export const useKawasakiStore = create<KawasakiState>()(
                     event,
                     details,
                 };
-                set(state => ({ eventLog: [...state.eventLog, newLog] }));
+                const updatedLog = [...get().eventLog, newLog];
+                set({ eventLog: updatedLog });
+
+                // --- Live Log Saving ---
+                const state = get();
+                if (!state.assessmentId) return;
+
+                const logBlob = new Blob([JSON.stringify(updatedLog, null, 2)], { type: 'application/json' });
+                const formData = new FormData();
+                formData.append('file', logBlob);
+                formData.append('sessionId', state.assessmentId);
+                formData.append('fileName', `session-${state.currentSession}-log.json`);
+
+                fetch('/api/save-artifact', {
+                    method: 'POST',
+                    body: formData,
+                }).catch(error => console.error('Failed to save live log:', error));
+                // --- End Live Log Saving ---
             },
 
             startSession: (numberOfWords) => {
                 const state = get();
                 if (state.testStatus === 'idle' || state.testStatus === 'session-1-complete') {
                     const sessionNumber = state.testStatus === 'idle' ? 1 : 2;
-                    get().logEvent('session_start', { session: sessionNumber });
-                    
-                    const shuffled = [...JUNG_STIMULUS_WORDS].sort(() => Math.random() - 0.5);
-                    const words = shuffled.slice(0, numberOfWords);
+                    const assessmentId = state.assessmentId || uuidv4();
                     
                     set({
                         testStatus: sessionNumber === 1 ? 'session-1-running' : 'session-2-running',
                         currentSession: sessionNumber,
-                        stimulusWords: words,
+                        stimulusWords: [...JUNG_STIMULUS_WORDS].sort(() => 0.5 - Math.random()).slice(0, numberOfWords),
                         currentWordIndex: 0,
-                        assessmentId: state.assessmentId || uuidv4(),
+                        assessmentId: assessmentId,
+                        // Reset event log only for the very first session
+                        eventLog: sessionNumber === 1 ? [] : state.eventLog, 
                     });
+                    
+                    get().logEvent('session_start', { session: sessionNumber });
                 }
             },
 
             recordResponse: (audioBlob) => {
+                // This function will now only be used for individual word audio snippets if needed.
+                // The main continuous recording will be handled separately.
+                // For now, we keep the logic but it might be deprecated.
                 const state = get();
                 if ((state.testStatus !== 'session-1-running' && state.testStatus !== 'session-2-running') || !state.assessmentId) return;
-
+                
                 const word = state.stimulusWords[state.currentWordIndex];
-                const fileName = `session-${state.currentSession}-word-${state.currentWordIndex + 1}-${word.replace(/\s+/g, '-')}.webm`;
+                const fileName = `word-audio-s${state.currentSession}-w${state.currentWordIndex + 1}-${word.replace(/\s+/g, '-')}.webm`;
                 
-                get().logEvent('response_recorded', { session: state.currentSession, word: word, fileName: fileName });
-                
+                get().logEvent('word_response_audio_saved', { session: state.currentSession, word: word, fileName: fileName });
+
                 // Save audio file via API route
                 const formData = new FormData();
                 formData.append('file', audioBlob);
@@ -178,7 +199,7 @@ export const useKawasakiStore = create<KawasakiState>()(
 
                 if (state.currentSession === 1) {
                     set({ testStatus: 'session-1-complete', currentWordIndex: -1 });
-                } else {
+                    } else {
                     const finalResult: FullTestResult = {
                         userId: 'user-placeholder',
                         assessmentId: state.assessmentId!,
@@ -193,7 +214,7 @@ export const useKawasakiStore = create<KawasakiState>()(
                         testStatus: 'completed',
                         completedAssessments: [...prev.completedAssessments, finalResult],
                     }));
-                }
+                    }
             },
             
             resetTest: () => {
@@ -210,7 +231,7 @@ export const useKawasakiStore = create<KawasakiState>()(
             }
         }),
         {
-            name: "kawasaki-model-storage-v5",
+            name: "kawasaki-model-storage-v6",
         },
     ),
 );
