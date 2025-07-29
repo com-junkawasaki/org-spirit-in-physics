@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -35,12 +35,18 @@ export default function VoiceEmotionAnalysisWebSocket({
   const audioChunksRef = useRef<Blob[]>([]);
   const humeServiceRef = useRef<any | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const playedAudioForIndex = useRef<number>(-1);
 
-  const stimulusWords = JUNG_STIMULUS_WORDS.slice(0, numberOfWords);
+  const stimulusWords = useMemo(() => 
+    JUNG_STIMULUS_WORDS.slice(0, numberOfWords),
+    [numberOfWords]
+  );
   
   // Play audio for the current word when it changes
   useEffect(() => {
-    if (isTestComplete || currentWordIndex < 0) return;
+    if (!isRecording || isTestComplete || currentWordIndex < 0 || playedAudioForIndex.current === currentWordIndex) {
+      return;
+    }
 
     const word = stimulusWords[currentWordIndex];
     // Sanitize word for use in a filename, e.g., "head" -> "jung_head.mp3", "to sing" -> "jung_to-sing.mp3"
@@ -49,13 +55,15 @@ export default function VoiceEmotionAnalysisWebSocket({
     
     const playPromise = audio.play();
     if (playPromise !== undefined) {
+      playedAudioForIndex.current = currentWordIndex;
       playPromise.catch(error => {
         console.error(`Could not play audio for "${word}" (path: /audio/${filename}):`, error);
+        playedAudioForIndex.current = -1; // Reset if play failed to allow retry
         // Don't show a blocking error, just log it, as audio might be optional.
         // setError(`Audio file for "${word}" could not be played. Please ensure it exists in /public/audio/`);
       });
     }
-  }, [currentWordIndex, stimulusWords, isTestComplete]);
+  }, [currentWordIndex, stimulusWords, isTestComplete, isRecording]);
 
 
   // エモーションサービスの初期化 (省略)
