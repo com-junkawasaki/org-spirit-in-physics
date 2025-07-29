@@ -40,55 +40,6 @@ interface SpeechRecognition extends EventTarget {
   onend: () => void;
 }
 
-// IPアドレスに基づく言語設定のマッピング
-const IP_LANGUAGE_MAPPING: {[key: string]: string} = {
-  // アジア地域
-  '124.': 'ja-JP', // 日本
-  '203.': 'ja-JP', // 日本の別の範囲
-  '211.': 'ko-KR', // 韓国
-  '58.': 'zh-CN', // 中国
-  '59.': 'zh-CN', // 中国
-  '60.': 'zh-CN', // 中国
-  '61.': 'zh-CN', // 中国
-  '219.': 'zh-CN', // 中国
-  '220.': 'zh-CN', // 中国
-  '221.': 'zh-CN', // 中国
-  // 欧州地域
-  '91.': 'en-GB', // イギリス
-  '81.': 'de-DE', // ドイツ
-  '82.': 'fr-FR', // フランス
-  '79.': 'es-ES', // スペイン
-  '83.': 'it-IT', // イタリア
-  // 北米
-  '64.': 'en-US', // アメリカ
-  '65.': 'en-US', // アメリカ
-  '66.': 'en-US', // アメリカ
-  '67.': 'en-US', // アメリカ
-  '68.': 'en-US', // アメリカ
-  '69.': 'en-US', // アメリカ
-  '70.': 'en-US', // アメリカ
-  '71.': 'en-US', // アメリカ
-  '72.': 'en-US', // アメリカ
-  '24.': 'en-CA', // カナダ
-};
-
-// IPアドレスプレフィックスに基づいて言語を取得
-const getLanguageFromIP = (ipAddress: string): string => {
-  // デフォルト言語（IP情報がない場合）
-  const defaultLang = 'en-US';
-  
-  if (!ipAddress) return defaultLang;
-  
-  // IPアドレスのプレフィックスを確認
-  for (const prefix in IP_LANGUAGE_MAPPING) {
-    if (ipAddress.startsWith(prefix)) {
-      return IP_LANGUAGE_MAPPING[prefix];
-    }
-  }
-  
-  return defaultLang;
-};
-
 // ユングの100の刺激語（1910年の論文より）
 export const JUNG_STIMULUS_WORDS = [
   'head', 'green', 'water', 'to sing', 'dead', 'long', 'ship', 'to pay', 'window', 'friendly',
@@ -124,19 +75,10 @@ export default function JungVoiceTest({
   apiKey = process.env.NEXT_PUBLIC_HUME_API_KEY || '',
   generationId = '795c949a-1510-4a80-9646-7d0863b023ab',
   voiceName = 'David Hume',
-  speechRecognitionLang,
+  speechRecognitionLang, // This prop is kept for potential future use, but we hardcode to en-US for now
   onTestComplete,
   className = '',
 }: JungVoiceTestProps) {
-  // IPアドレスの状態
-  // const [ipAddress, setIpAddress] = useState<string>('');
-  
-  // IPアドレスに基づいた言語設定
-  // const detectedLanguage = useMemo(() => getLanguageFromIP(ipAddress), [ipAddress]);
-  
-  // speechRecognitionLangが明示的に指定されていない場合、IPアドレスに基づいて設定
-  // 言語の自動判定を無効化し、互換性の高い英語に固定
-  const effectiveSpeechRecognitionLang = speechRecognitionLang || 'en-US';
   
   // プロップスのバリデーション (修正された言語設定を使用)
   const validatedProps = JungVoiceAssessmentPropsSchema.parse({
@@ -144,27 +86,10 @@ export default function JungVoiceTest({
     apiKey,
     generationId,
     voiceName,
-    speechRecognitionLang: effectiveSpeechRecognitionLang,
+    speechRecognitionLang: 'en-US', // Always use en-US for validation
     onTestComplete,
     className
   });
-
-  // IPアドレスを取得する処理をコメントアウト
-  // useEffect(() => {
-  //   const fetchIPAddress = async () => {
-  //     try {
-  //       const response = await axios.get('https://api.ipify.org?format=json');
-  //       if (response.data && response.data.ip) {
-  //         setIpAddress(response.data.ip);
-  //         console.log(`IP address detected: ${response.data.ip}, Setting language to: ${getLanguageFromIP(response.data.ip)}`);
-  //       }
-  //     } catch (error) {
-  //       console.error('Failed to fetch IP address:', error);
-  //     }
-  //   };
-    
-  //   fetchIPAddress();
-  // }, []);
 
   // 使用する刺激語の数を制限し、ランダムに選択する
   const stimulusWords = useMemo(() => {
@@ -278,7 +203,7 @@ export default function JungVoiceTest({
       if (recognitionRef.current) {
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = effectiveSpeechRecognitionLang;
+        recognitionRef.current.lang = 'en-US'; // Hardcode to en-US for maximum compatibility
         
         recognitionRef.current.onresult = (event) => {
           const transcript = Array.from(event.results)
@@ -323,65 +248,19 @@ export default function JungVoiceTest({
           const errorType = event.error || 'unknown';
           const errorMessage = event.message || 'No additional details';
           
-          // Handle specific error types differently
-          if (errorType === 'no-speech') {
-            // No speech detected - handle as a warning instead of an error
-            console.warn('No speech detected:', {
+          console.error(`Speech recognition error: ${errorType}`, {
               type: errorType,
               message: errorMessage,
               details: event
-            });
-            // Show a user-friendly message
-            setError('No speech detected. Please speak louder or check your microphone.');
+          });
+
+          if (errorType === 'not-allowed' || errorType === 'permission-denied') {
+            setError('Microphone access denied. Please grant permission to use speech recognition.');
           } else {
-            // Log all other errors normally
-            console.error(`Speech recognition error: ${errorType}`, {
-              type: errorType,
-              message: errorMessage,
-              details: event
-            });
-            
-            // Handle other specific error types
-            if (errorType === 'not-allowed' || errorType === 'permission-denied') {
-              // Permission issues
-              setError('Microphone access denied. Please grant permission to use speech recognition.');
-            } else if (errorType === 'network') {
-              // Network issues
-              setError('Network error occurred. Please check your connection and try again.');
-            } else if (errorType === 'language-not-supported') {
-              // Language not supported error
-              console.warn(`Language ${effectiveSpeechRecognitionLang} not supported, falling back to en-US`);
-              setError(`Language "${effectiveSpeechRecognitionLang}" is not supported by your browser. Falling back to English (US).`);
-              
-              // Try to fall back to English
-              if (recognitionRef.current) {
-                recognitionRef.current.lang = 'en-US';
-                
-                // Restart recognition if it was active
-                setTimeout(() => {
-                  if (recognitionRef.current && isMountedRef.current) {
-                    try {
-                      recognitionRef.current.start();
-                    } catch (e) {
-                      console.error('Error restarting recognition with fallback language:', e);
-                    }
-                  }
-                }, 300);
-              }
-            }
+            setError(`Speech recognition error: ${errorType}. Please check your browser settings.`);
           }
           
           setIsListening(false);
-          
-          // Try to recover if appropriate
-          if (['no-speech', 'aborted', 'audio-capture'].includes(errorType)) {
-            // These errors can potentially be recovered from
-            setTimeout(() => {
-              if (isMountedRef.current && currentWordIndex >= 0) {
-                startListening();
-              }
-            }, 1000);
-          }
         };
         
         recognitionRef.current.onend = () => {
@@ -424,7 +303,7 @@ export default function JungVoiceTest({
         }
       }
     };
-  }, [effectiveSpeechRecognitionLang, currentWordIndex]);
+  }, [currentWordIndex]); // Removed dependency on effectiveSpeechRecognitionLang
 
   // Hume クライアントの初期化
   useEffect(() => {
@@ -962,7 +841,7 @@ export default function JungVoiceTest({
         if (recognitionRef.current) {
           recognitionRef.current.continuous = false;
           recognitionRef.current.interimResults = true;
-          recognitionRef.current.lang = effectiveSpeechRecognitionLang;
+          recognitionRef.current.lang = 'en-US'; // Hardcode to en-US for maximum compatibility
           
           recognitionRef.current.onresult = (event) => {
             const transcript = Array.from(event.results)
@@ -1043,7 +922,7 @@ export default function JungVoiceTest({
       setIsSpeechSupported(false);
       setError('Failed to initialize speech recognition after error. Please reload the page.');
     }
-  }, [effectiveSpeechRecognitionLang, userResponse, currentWordIndex, isListening]);
+  }, [userResponse, currentWordIndex, isListening]);
 
   // 音声認識停止
   const stopListening = () => {
