@@ -37,6 +37,7 @@ interface KawasakiState {
     // Real-time test state
     testStatus: 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
     mediaStatus: 'idle' | 'recording_response';
+    deviceStatus: 'idle' | 'pending' | 'success' | 'error';
     currentSession: 1 | 2;
     currentWordIndex: number;
     stimulusWords: string[];
@@ -48,6 +49,7 @@ interface KawasakiState {
     // Actions
     advanceToNextWord: () => void;
     startPreflight: () => void;
+    setDeviceStatus: (status: KawasakiState['deviceStatus']) => void;
     startSession: (numberOfWords: number) => void;
     recordResponse: (audioBlob: Blob) => void;
     logEvent: (event: string, details?: Record<string, any>) => void;
@@ -67,6 +69,7 @@ export const useKawasakiStore = create<KawasakiState>()(
             completedAssessments: [],
             testStatus: 'idle',
             mediaStatus: 'idle',
+            deviceStatus: 'idle',
             currentSession: 1,
             currentWordIndex: -1,
             stimulusWords: [],
@@ -81,8 +84,10 @@ export const useKawasakiStore = create<KawasakiState>()(
             },
 
             startPreflight: () => {
-                set({ testStatus: 'preflight' });
+                set({ testStatus: 'preflight', deviceStatus: 'pending' });
             },
+
+            setDeviceStatus: (status) => set({ deviceStatus: status }),
 
             logEvent: (event, details = {}) => {
                 const newLog: EventLog = {

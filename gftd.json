@@ -50,7 +50,7 @@
     {
       "name": "kawasakiStore",
       "path": "src/store/kawasakiStore.ts",
-      "description": "Zustand store that manages the global state of the test. It includes a state machine for the test status ('idle', 'preflight', 'session-running', etc.), orchestrates data saving operations, and logs all critical events. The mediaStatus now only tracks 'idle' and 'recording_response'.",
+      "description": "Zustand store that manages the global state of the test. It includes a state machine for the test status ('idle', 'preflight', etc.) and device status ('pending', 'success', etc.), orchestrates data saving operations, and logs all critical events.",
       "dependencies": ["zustand"]
     },
     {

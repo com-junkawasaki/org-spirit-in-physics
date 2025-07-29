@@ -29,7 +29,9 @@ export default function JungVoiceTest({
     mediaStatus,
     setMediaStatus,
     startPreflight,
-    completeSession
+    completeSession,
+    deviceStatus,
+    setDeviceStatus,
   } = useKawasakiStore();
   
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -145,8 +147,6 @@ export default function JungVoiceTest({
   );
 
   const PreflightScreen = () => {
-    const [deviceStatus, setDeviceStatus] = useState<'pending' | 'success' | 'error'>('pending');
-
     useEffect(() => {
       const initializeMedia = async () => {
         try {
@@ -167,6 +167,12 @@ export default function JungVoiceTest({
         }
       };
       initializeMedia();
+
+      return () => {
+        if (combinedStreamRef.current) {
+          combinedStreamRef.current.getTracks().forEach(track => track.stop());
+        }
+      };
     }, []);
 
     return (
@@ -175,9 +181,16 @@ export default function JungVoiceTest({
         <div className="relative w-full max-w-md mx-auto aspect-video bg-gray-900 rounded-md overflow-hidden mb-4 flex items-center justify-center">
           <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
           {deviceStatus !== 'success' && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center text-center p-4">
               <p className="text-white/80 text-lg">
-                {deviceStatus === 'pending' && 'Preparing camera and microphone...'}
+                {deviceStatus === 'pending' && (
+                  <>
+                    Preparing camera and microphone...
+                    <span className="block text-sm mt-2 font-normal">
+                      Please allow access in your browser's pop-up.
+                    </span>
+                  </>
+                )}
                 {deviceStatus === 'error' && 'Could not access devices.'}
               </p>
             </div>

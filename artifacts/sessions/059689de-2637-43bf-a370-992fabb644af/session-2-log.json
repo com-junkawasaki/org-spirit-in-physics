@@ -558,5 +558,10 @@
     "details": {
       "session": 2
     }
+  },
+  {
+    "timestamp": "2025-07-29T14:12:04.418Z",
+    "event": "test_reset",
+    "details": {}
   }
 ]
