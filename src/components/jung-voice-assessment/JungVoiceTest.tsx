@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
@@ -40,45 +40,51 @@ export default function JungVoiceTest({
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const combinedStreamRef = useRef<MediaStream | null>(null);
-  const videoChunksRef = useRef<Blob[]>([]);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [sessionToResume, setSessionToResume] = useState<any>(null);
   
-  const stopContinuousRecording = useCallback(() => {
+  const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop(); // This will trigger the onstop event
+      mediaRecorderRef.current.stop(); // onstop will handle the rest
     }
   }, []);
 
-  const startContinuousRecording = useCallback(async () => {
-    if (combinedStreamRef.current) {
-      videoChunksRef.current = []; // Clear previous chunks
+  const startRecording = useCallback(async (session: 1 | 2) => {
+    if (!combinedStreamRef.current) {
+      logEvent('recording_start_failed', { reason: 'No media stream available.' });
+      setError("Cannot start recording, media stream is not available.");
+      return;
+    }
+  
+    const videoChunks: Blob[] = [];
+    try {
       const recorder = new MediaRecorder(combinedStreamRef.current, {
         mimeType: 'video/webm; codecs=vp9',
       });
       mediaRecorderRef.current = recorder;
-
+  
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          videoChunksRef.current.push(event.data);
+          videoChunks.push(event.data);
         }
       };
-
+  
       recorder.onstop = () => {
-        const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
-        // Use the store action to save the video
-        useKawasakiStore.getState().saveSessionVideo(currentSession, videoBlob);
-        videoChunksRef.current = []; // Clear chunks after saving
-        setIsRecording(false);
-        logEvent('continuous_recording_stopped', { session: currentSession });
+        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+        useKawasakiStore.getState().saveSessionVideo(session, videoBlob);
+        logEvent('recording_stopped_and_saved', { session });
+        mediaRecorderRef.current = null;
       };
-
-      recorder.start(5000); // Save chunks every 5 seconds
+  
+      recorder.start();
       setIsRecording(true);
-      logEvent('continuous_recording_started', { session: currentSession });
+      logEvent('recording_started', { session });
+    } catch (err) {
+      logEvent('media_recorder_setup_failed', { error: (err as Error).message });
+      setError("Failed to create MediaRecorder.");
     }
-  }, [currentSession, logEvent]);
+  }, [logEvent, setError]);
   
   // This effect handles the main test loop based on zustand state
   useEffect(() => {
@@ -110,7 +116,7 @@ export default function JungVoiceTest({
     setError(null);
     try {
       // Stream is already acquired during preflight, so we can just start recording
-      await startContinuousRecording();
+      await startRecording(1);
       // Start the test loop in zustand
       startSession(numberOfWords);
     } catch (err) {
@@ -124,18 +130,18 @@ export default function JungVoiceTest({
     //     useKawasakiStore.getState().restoreSession(sessionToResume.data, sessionToResume.session, sessionToResume.assessmentId);
     //     setSessionToResume(null); // Clear resume state
     //     // Start recording for the resumed session
-    //     startContinuousRecording();
+    //     startRecording();
     // }
   };
 
   const handleEndSession = () => {
-      stopContinuousRecording();
+      stopRecording();
       useKawasakiStore.getState().completeSession();
   }
   
   const handleStartSecondSession = async () => {
-      stopContinuousRecording(); // Stop session 1 recording
-      await startContinuousRecording(); // Start session 2 recording
+      stopRecording(); // Stop session 1 recording
+      await startRecording(2); // Start session 2 recording
       startSession(numberOfWords); // This will correctly start session 2
   }
 
@@ -255,8 +261,8 @@ export default function JungVoiceTest({
   
   const CompletionScreen = () => {
     useEffect(() => {
-        stopContinuousRecording();
-    }, [stopContinuousRecording]);
+        stopRecording();
+    }, [stopRecording]);
 
     return (
         <div className="space-y-4">

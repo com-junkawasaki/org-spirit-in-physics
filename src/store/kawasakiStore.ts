@@ -46,7 +46,6 @@ interface KawasakiState {
     userResponses: RecordedResponse[];
     eventLog: EventLog[];
     assessmentId: string | null;
-    videoChunks: { session1: Blob[], session2: Blob[] };
 
     // Actions
     advanceToNextWord: () => void;
@@ -59,8 +58,6 @@ interface KawasakiState {
     completeSession: () => void;
     resetTest: () => void;
     restoreSession: (logData: EventLog[], session: 1 | 2, assessmentId: string) => void;
-    addVideoChunk: (session: 1 | 2, chunk: Blob) => void;
-    clearVideoChunks: (session: 1 | 2) => void;
     setMediaStatus: (status: KawasakiState['mediaStatus']) => void;
 }
 
@@ -79,7 +76,6 @@ export const useKawasakiStore = create<KawasakiState>()(
             userResponses: [],
             eventLog: [],
             assessmentId: null,
-            videoChunks: { session1: [], session2: [] },
 
             // Actions Implementation
             advanceToNextWord: () => {
@@ -180,23 +176,6 @@ export const useKawasakiStore = create<KawasakiState>()(
                 }
             },
 
-            addVideoChunk: (session, chunk) => {
-                const key = session === 1 ? 'session1' : 'session2';
-                set(state => ({
-                    videoChunks: {
-                        ...state.videoChunks,
-                        [key]: [...state.videoChunks[key], chunk]
-                    }
-                }));
-            },
-
-            clearVideoChunks: (session) => {
-                const key = session === 1 ? 'session1' : 'session2';
-                set(state => ({
-                    videoChunks: { ...state.videoChunks, [key]: [] }
-                }));
-            },
-            
             saveSessionVideo: (session, videoBlob) => {
                 // This is now only for the final video
                 const state = get();
@@ -287,15 +266,14 @@ export const useKawasakiStore = create<KawasakiState>()(
                     userResponses: [],
                     assessmentId: null,
                     eventLog: [],
-                    videoChunks: { session1: [], session2: [] },
                 })
             }
         }),
         {
-            name: "kawasaki-model-storage-v9",
+            name: "kawasaki-model-storage-v10", // Incremented version
             partialize: (state) => {
-                const { videoChunks, ...rest } = state;
-                return rest;
+                // No need to exclude anything anymore since videoChunks is gone
+                return state;
             },
         },
     ),

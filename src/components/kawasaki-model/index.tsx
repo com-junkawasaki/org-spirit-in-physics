@@ -8,7 +8,7 @@ import ModelParamsControl from "./ModelParamsControl"
 import { useAnimation } from "./hooks/useAnimation"
 import { defaultModelParams, type IntegratedModelParams } from "./utils/integratedModel"
 import { useKawasakiStore } from "../../store/kawasakiStore"
-import { generateGraphDataFromVoiceAssessment } from "../jung-integrated/utils/generateGraphDataFromVoiceAssessment"
+import { generateGraphDataFromVoiceAssessment } from "./utils/generateGraphDataFromVoiceAssessment"
 import type { PhysicsGraphProps } from "../physics-graph"
 
 const PhysicsGraph = dynamic<PhysicsGraphProps>(
@@ -65,9 +65,9 @@ export default function KawasakiModel({ showTitle = true }: KawasakiModelProps) 
       // Use the most recent voice assessment
       const latestAssessment = voiceAssessments[voiceAssessments.length - 1]
       
-      if (latestAssessment && latestAssessment.results) {
+      if (latestAssessment) {
         return generateGraphDataFromVoiceAssessment(
-          latestAssessment.results,
+          latestAssessment,
           transitionState,
           time,
           modelParams

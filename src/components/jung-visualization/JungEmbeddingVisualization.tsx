@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import EmbeddingScatterPlot from './EmbeddingScatterPlot';
-import AssociationHeatmap from './AssociationHeatmap';
-import EvaluationMetrics from './EvaluationMetrics';
+// import EmbeddingScatterPlot from './EmbeddingScatterPlot';
+// import AssociationHeatmap from './AssociationHeatmap';
+// import EvaluationMetrics from './EvaluationMetrics';
 import {
   EmbeddingPoint,
   AssociationConnection,
@@ -312,7 +312,7 @@ const JungEmbeddingVisualization: React.FC<JungEmbeddingVisualizationProps> = ({
       <div className="p-6">
         {activeTab === 'scatter' && (
           <div className="h-[600px]">
-            <EmbeddingScatterPlot
+            {/* <EmbeddingScatterPlot
               points={currentPoints}
               connections={visualizationData.connections}
               clusters={visualizationData.clusters}
@@ -320,18 +320,18 @@ const JungEmbeddingVisualization: React.FC<JungEmbeddingVisualizationProps> = ({
               config={config}
               onPointClick={setSelectedPoint}
               onPointHover={() => {}}
-            />
+            /> */}
           </div>
         )}
 
         {activeTab === 'heatmap' && (
           <div className="flex justify-center">
-            <AssociationHeatmap
+            {/* <AssociationHeatmap
               points={visualizationData.points}
               connections={visualizationData.connections}
               width={Math.min(600, width - 100)}
               height={Math.min(600, height - 200)}
-            />
+            /> */}
           </div>
         )}
 
