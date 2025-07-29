@@ -117,9 +117,23 @@
     "details": {
       "word": "to kiss"
     }
+  },
+  {
+    "timestamp": "2025-07-29T13:09:59.940Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "to kiss"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:15:46.093Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "to kiss"
+    }
   }
 ]  {
-    "timestamp": "2025-07-29T13:09:59.940Z",
+    "timestamp": "2025-07-29T13:15:46.094Z",
     "event": "word_audio_playing",
     "details": {
       "word": "to kiss"
