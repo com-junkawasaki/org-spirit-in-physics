@@ -502,5 +502,61 @@
     "details": {
       "word": "frog"
     }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:37.744Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "frog"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:37.749Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "turnip"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:37.750Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "turnip"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:43.755Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "turnip"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:43.759Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "to wash"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:43.761Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "to wash"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:49.765Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "to wash"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:49.767Z",
+    "event": "session_complete",
+    "details": {
+      "session": 2
+    }
   }
 ]
