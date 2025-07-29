@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
+import AudioVisualizer from './AudioVisualizer';
 
 interface JungVoiceTestProps {
   numberOfWords?: number;
@@ -157,6 +158,11 @@ export default function JungVoiceTest({
           combinedStreamRef.current = stream;
           if (videoPreviewRef.current) {
             videoPreviewRef.current.srcObject = stream;
+            videoPreviewRef.current.play().catch(e => {
+              if (e.name !== 'AbortError') {
+                console.error("Video play error:", e);
+              }
+            });
           }
           setDeviceStatus('success');
           logEvent('preflight_devices_acquired');
@@ -196,8 +202,18 @@ export default function JungVoiceTest({
             </div>
           )}
         </div>
+        
+        {deviceStatus === 'success' && (
+          <div className="space-y-3 text-center">
+            <p className="text-green-500">Camera and microphone are ready.</p>
+            <div className='flex items-center justify-center gap-2'>
+              <span className='text-sm font-medium text-gray-600'>Mic:</span>
+              <AudioVisualizer stream={combinedStreamRef.current} />
+            </div>
+          </div>
+        )}
+
         {error && <p className="text-red-500 mb-4">{error}</p>}
-        {deviceStatus === 'success' && <p className="text-green-500">Camera and microphone are ready.</p>}
         <Button onClick={handleConfirmAndStartSession} size="lg" disabled={deviceStatus !== 'success'}>
           Start Session
         </Button>

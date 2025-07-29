@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { JUNG_STIMULUS_WORDS } from "@/components/jung-word-assessment/JungWordTest";
 import { v4 as uuidv4 } from 'uuid';
+import type { TestResults as VoiceTestResults } from '@/components/jung-voice-assessment/types';
 
 // Types for recorded data and test results
 interface RecordedResponse {
@@ -33,6 +34,7 @@ interface FullTestResult {
 interface KawasakiState {
     // Final results storage
     completedAssessments: FullTestResult[];
+    voiceAssessments: VoiceTestResults[];
 
     // Real-time test state
     testStatus: 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
@@ -67,6 +69,7 @@ export const useKawasakiStore = create<KawasakiState>()(
         (set, get) => ({
             // Default state
             completedAssessments: [],
+            voiceAssessments: [],
             testStatus: 'idle',
             mediaStatus: 'idle',
             deviceStatus: 'idle',

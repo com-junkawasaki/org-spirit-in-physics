@@ -9,12 +9,15 @@ import { useAnimation } from "./hooks/useAnimation"
 import { defaultModelParams, type IntegratedModelParams } from "./utils/integratedModel"
 import { useKawasakiStore } from "../../store/kawasakiStore"
 import { generateGraphDataFromVoiceAssessment } from "../jung-integrated/utils/generateGraphDataFromVoiceAssessment"
-import type { PhysicsGraphProps } from "../physics-graph/index.ts"
+import type { PhysicsGraphProps } from "../physics-graph"
 
-const PhysicsGraph = dynamic<PhysicsGraphProps>(() => import('../physics-graph/index.ts').then(mod => mod.PhysicsGraph), { ssr: false });
+const PhysicsGraph = dynamic<PhysicsGraphProps>(
+  () => import("@/components/physics-graph/index.ts").then(mod => mod.PhysicsGraph),
+  { ssr: false },
+)
 
 interface KawasakiModelProps {
-  showTitle?: boolean;
+  showTitle?: boolean
 }
 
 export default function KawasakiModel({ showTitle = true }: KawasakiModelProps) {
