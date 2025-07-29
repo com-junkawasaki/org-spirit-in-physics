@@ -50,6 +50,7 @@ interface KawasakiState {
     saveSessionVideo: (session: 1 | 2, videoBlob: Blob) => void;
     completeSession: () => void;
     resetTest: () => void;
+    restoreSession: (logData: EventLog[], session: 1 | 2, assessmentId: string) => void;
 }
 
 export const useKawasakiStore = create<KawasakiState>()(
@@ -217,6 +218,22 @@ export const useKawasakiStore = create<KawasakiState>()(
                     }
             },
             
+            restoreSession: (logData, session, assessmentId) => {
+                const lastWordDisplayed = [...logData].reverse().find(log => log.event === 'word_displayed');
+                const lastWordIndex = lastWordDisplayed ? lastWordDisplayed.details.wordIndex : -1;
+                
+                const stimulusWords = [...JUNG_STIMULUS_WORDS].sort(() => 0.5 - Math.random()).slice(0, 10); // Assuming 10 words for now
+                
+                set({
+                    eventLog: logData,
+                    assessmentId: assessmentId,
+                    currentSession: session,
+                    testStatus: session === 1 ? 'session-1-running' : 'session-2-running',
+                    currentWordIndex: lastWordIndex + 1,
+                    stimulusWords: stimulusWords // Note: stimulusWords will be different, a limitation for now.
+                });
+            },
+
             resetTest: () => {
                 get().logEvent('test_reset');
                 set({

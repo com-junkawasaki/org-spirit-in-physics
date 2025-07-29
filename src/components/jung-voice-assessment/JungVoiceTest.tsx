@@ -21,14 +21,17 @@ export default function JungVoiceTest({
     currentWordIndex,
     stimulusWords,
     startSession,
+    recordResponse,
     resetTest,
     logEvent,
     saveSessionVideo,
     currentSession,
+    restoreSession,
   } = useKawasakiStore();
   
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionToResume, setSessionToResume] = useState<any>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const combinedStreamRef = useRef<MediaStream | null>(null);
@@ -107,6 +110,22 @@ export default function JungVoiceTest({
     }));
   }, []);
 
+  // Check for resumable session on mount
+  useEffect(() => {
+    const checkForResumableSession = async () => {
+        try {
+            const res = await fetch('/api/session');
+            const data = await res.json();
+            if (data.resume) {
+                setSessionToResume(data);
+            }
+        } catch (e) {
+            console.error("Failed to check for resumable session", e);
+        }
+    };
+    checkForResumableSession();
+  }, []);
+
   useEffect(() => {
     if (responseTimerRef.current) {
         clearTimeout(responseTimerRef.current);
@@ -145,6 +164,15 @@ export default function JungVoiceTest({
     startSession(numberOfWords);
   }
 
+  const handleResumeSession = () => {
+    if (sessionToResume) {
+        restoreSession(sessionToResume.data, sessionToResume.session, sessionToResume.assessmentId);
+        setSessionToResume(null); // Clear resume state
+        // Start recording for the resumed session
+        startContinuousRecording();
+    }
+  };
+
   const handleEndSession = () => {
       stopRecording();
       useKawasakiStore.getState().completeSession();
@@ -159,8 +187,23 @@ export default function JungVoiceTest({
   // UI Components
   const IntroScreen = () => (
     <div>
-        <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
-        <Button onClick={() => handleStartSession(1)} size="lg">Grant Permissions & Start Session 1</Button>
+        {sessionToResume ? (
+            <div className="p-4 border-yellow-400 bg-yellow-50 rounded-md mb-6">
+                <h3 className="font-bold text-yellow-800">Incomplete Session Found</h3>
+                <p className="text-yellow-700">
+                    An incomplete session (Session {sessionToResume.session}) was found. Do you want to resume from where you left off?
+                </p>
+                <div className="mt-4 space-x-4">
+                    <Button onClick={handleResumeSession} size="lg">Resume Session</Button>
+                    <Button onClick={() => { setSessionToResume(null); resetTest(); }} size="lg" variant="outline">Start New Test</Button>
+                </div>
+            </div>
+        ) : (
+            <>
+                <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
+                <Button onClick={() => handleStartSession(1)} size="lg">Grant Permissions & Start Session 1</Button>
+            </>
+        )}
     </div>
   );
 

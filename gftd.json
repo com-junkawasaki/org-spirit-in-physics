@@ -16,7 +16,7 @@
     {
       "id": "data_collection",
       "name": "Data Collection (2 Sessions)",
-      "description": "Core process where the user performs the word association test. Webcam and microphone are recorded continuously for the entire duration of each session.",
+      "description": "Core process where the user performs the word association test. Webcam and microphone are recorded continuously for the entire duration of each session. The process supports resumption from the last completed word if interrupted.",
       "entryComponent": "JungVoiceTest",
       "steps": [
         "User starts a session.",
@@ -32,7 +32,7 @@
     {
       "id": "live_logging",
       "name": "Live Event Logging",
-      "description": "Throughout each session, every significant event is immediately written to a session-specific log file.",
+      "description": "Throughout each session, every significant event is immediately written to a session-specific log file. This ensures data integrity and allows for session resumption.",
       "trigger": "Any tracked event (e.g., session_start, word_displayed, response_window_closed).",
       "steps": [
         "An event occurs in the client (e.g., a word is displayed).",
@@ -47,13 +47,13 @@
     {
       "name": "JungVoiceTest",
       "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-      "description": "Handles the entire data collection flow, including continuous webcam/mic recording and triggering live logging for each event.",
+      "description": "Handles the entire data collection flow, including continuous webcam/mic recording, triggering live logging for each event, and session resumption logic.",
       "dependencies": ["zustand"]
     },
     {
       "name": "kawasakiStore",
       "path": "src/store/kawasakiStore.ts",
-      "description": "Zustand store that manages the session state and orchestrates all data saving operations by calling the server-side API for each event log and recording.",
+      "description": "Zustand store that manages the session state and orchestrates all data saving operations. Includes logic to restore state from a log file for session resumption.",
       "dependencies": ["zustand"]
     },
     {
@@ -61,11 +61,17 @@
         "path": "src/app/api/save-artifact/route.ts",
         "description": "Server-side API route that receives data from the client (video blobs, log files) and writes them directly to the `artifacts/sessions` directory on the local file system.",
         "dependencies": ["fs", "path"]
+    },
+    {
+        "name": "sessionApi",
+        "path": "src/app/api/session/route.ts",
+        "description": "Server-side API route to check for and load data from incomplete session logs to enable session resumption.",
+        "dependencies": ["fs", "path"]
     }
   ],
   "dataFlows": [
     {
-      "flow": "Full Experiment Execution with Continuous Recording and Live Logging",
+      "flow": "New Experiment Execution",
       "steps": [
         { "component": "JungVoiceTest", "action": "User clicks 'Start Session 1'." },
         { "component": "JungVoiceTest", "action": "Continuous webcam and mic recording for Session 1 starts." },
@@ -76,6 +82,16 @@
         { "component": "kawasakiStore", "action": "The recording blob for Session 1 is saved to `session-1-video.webm` via the API. `logEvent` for 'session_complete' is dispatched. Log file is updated." },
         { "component": "JungVoiceTest", "action": "A break screen is displayed." },
         { "component": "JungVoiceTest", "action": "User clicks 'Start Session 2', repeating the process for the second session with new files (`session-2-video.webm`, `session-2-log.json`)." }
+      ]
+    },
+    {
+      "flow": "Session Resumption",
+      "steps": [
+          { "component": "JungVoiceTest", "action": "On component mount, it calls a new server-side API endpoint (`/api/session`) to check for incomplete sessions." },
+          { "component": "sessionApi", "action": "Scans the `artifacts/sessions` directory for the latest session folder. Reads the log file (e.g., `session-1-log.json`) and checks if it has a 'session_complete' event." },
+          { "component": "sessionApi", "action": "If an incomplete log is found, it returns the log data to the client." },
+          { "component": "kawasakiStore", "action": "An action `restoreSession` is called with the log data. The store's state (`currentWordIndex`, `userResponses`, `eventLog`, etc.) is rehydrated to match the saved log." },
+          { "component": "JungVoiceTest", "action": "The UI displays the correct session and word, allowing the user to continue from where they left off." }
       ]
     }
   ]
