@@ -1,0 +1,114 @@
+[
+  {
+    "timestamp": "2025-07-29T13:02:31.777Z",
+    "event": "session_start",
+    "details": {
+      "session": 1
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:02:31.782Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "cow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:05:50.328Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "cow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:05:50.329Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "cow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:22.883Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "cow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:24.362Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "cow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:30.365Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "cow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:30.368Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "village"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:31.533Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "village"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:36.486Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "village"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:37.813Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "village"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:43.815Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "village"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:43.819Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "yellow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:44.949Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "yellow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:50.953Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "yellow"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:07:50.957Z",
+    "event": "word_audio_playing",
+    "details": {
+      "word": "to kiss"
+    }
+  }
+]

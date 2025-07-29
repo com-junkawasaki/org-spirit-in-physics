@@ -46,6 +46,7 @@ interface KawasakiState {
     videoChunks: { session1: Blob[], session2: Blob[] };
 
     // Actions
+    advanceToNextWord: () => void;
     startSession: (numberOfWords: number) => void;
     recordResponse: (audioBlob: Blob) => void;
     logEvent: (event: string, details?: Record<string, any>) => void;
@@ -74,6 +75,10 @@ export const useKawasakiStore = create<KawasakiState>()(
             videoChunks: { session1: [], session2: [] },
 
             // Actions Implementation
+            advanceToNextWord: () => {
+                set((state) => ({ currentWordIndex: state.currentWordIndex + 1 }));
+            },
+
             logEvent: (event, details = {}) => {
                 const newLog: EventLog = {
                     timestamp: new Date().toISOString(),

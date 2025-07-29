@@ -8,19 +8,6 @@
   },
   "processes": [
     {
-      "id": "pre_flight_check",
-      "name": "Pre-flight Device Check",
-      "description": "Before the session starts, this process verifies that camera and microphone permissions are granted and that the devices are successfully capturing data.",
-      "entryComponent": "JungVoiceTest",
-      "steps": [
-        "User clicks a 'Check Devices' button.",
-        "The application requests camera and microphone permissions via `getUserMedia`.",
-        "A short (2-second) test recording is initiated.",
-        "The system verifies that a non-empty video Blob is generated.",
-        "If successful, the user is allowed to proceed to the main session. If not, a specific error is displayed."
-      ]
-    },
-    {
       "id": "data_collection",
       "name": "Data Collection (2 Sessions)",
       "description": "Core process where the user performs the word association test. Webcam and microphone are recorded continuously for each session, with periodic overwrite-saving for data integrity.",
@@ -32,13 +19,25 @@
       "description": "Throughout each session, every significant event is immediately written to a session-specific log file, ensuring data integrity and supporting session resumption.",
       "trigger": "Any tracked event (e.g., session_start, word_displayed).",
       "dataStore": "kawasakiStore"
+    },
+    {
+      "id": "debugging",
+      "name": "Debugging & Troubleshooting",
+      "description": "A systematic process for identifying, analyzing, and resolving issues during development.",
+      "steps": [
+        "1. Identify the Problem: Accurately capture and understand the error message, console logs, or unexpected behavior.",
+        "2. Isolate the Cause: Add targeted console logs on both the client-side (React components, zustand store) and server-side (API routes) to trace the data flow and pinpoint where the process fails.",
+        "3. Investigate External Factors: If the issue involves an external library or API (e.g., Hume), use web search to consult the official documentation and sample code for any recent changes, breaking changes, or correct implementation patterns.",
+        "4. Implement & Verify Solution: Apply a focused code change based on the findings. Verify that the fix resolves the specific issue without introducing new ones.",
+        "5. Update SSoT: Document the problem, its resolution, and any architectural changes in gftd.json to maintain a single source of truth."
+      ]
     }
   ],
   "components": [
     {
       "name": "JungVoiceTest",
       "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-      "description": "Handles the entire data collection flow, including the pre-flight check, continuous recording, and event logging.",
+      "description": "Handles the entire data collection flow, including continuous webcam/mic recording and triggering live logging for each event.",
       "dependencies": ["zustand"]
     },
     {
@@ -56,15 +55,10 @@
   ],
   "dataFlows": [
     {
-      "flow": "Full Experiment Execution with Pre-flight Check",
+      "flow": "Full Experiment Execution with Continuous Recording and Live Logging",
       "steps": [
-        { "component": "JungVoiceTest", "action": "User is presented with an intro screen and a 'Check Devices' button." },
-        { "component": "JungVoiceTest", "action": "User clicks the button, triggering a camera/mic permission prompt." },
-        { "component": "JungVoiceTest", "action": "A short test recording is performed to verify data is being generated." },
-        { "component": "JungVoiceTest", "action": "If check is successful, the 'Start Session 1' button becomes active. Otherwise, an error is shown." },
-        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 1' to begin the continuous recording and the experiment loop." },
-        { "component": "JungVoiceTest", "action": "(Background Loop) Every 10 seconds, the recording is saved to a file via the API, overwriting the previous version." },
-        { "component": "JungVoiceTest", "action": "The rest of the two-session flow proceeds as previously defined." }
+        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 1', granting permissions. This now implicitly includes a device check." },
+        { "component": "JungVoiceTest", "action": "Continuous webcam and mic recording for Session 1 starts." }
       ]
     }
   ]

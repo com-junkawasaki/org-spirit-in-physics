@@ -30,9 +30,8 @@ export default function JungVoiceTest({
     setMediaStatus
   } = useKawasakiStore();
   
+  const [isRecording, setIsRecording] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSessionRecording, setIsSessionRecording] = useState(false);
-  const [devicesReady, setDevicesReady] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const combinedStreamRef = useRef<MediaStream | null>(null);
@@ -40,22 +39,23 @@ export default function JungVoiceTest({
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [sessionToResume, setSessionToResume] = useState<any>(null);
   
   const stopContinuousRecording = useCallback(() => {
     // ... logic to stop recording and save file
-    setIsSessionRecording(false);
+    setIsRecording(false);
   }, [/* dependencies */]);
 
   const startContinuousRecording = useCallback(async () => {
     // ... logic to start recording
-    setIsSessionRecording(true);
+    setIsRecording(true);
   }, [/* dependencies */]);
   
   // This effect handles the main test loop based on zustand state
   useEffect(() => {
-    if (testStatus.includes('running') && devicesReady && currentWordIndex < stimulusWords.length) {
+    if (testStatus.includes('running') && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
-      const audio = new Audio(`/audio/jung_${word.replace(/\s+/g, '-')}.toLowerCase()}.mp3`);
+      const audio = new Audio(`/audio/jung_${word.replace(/\s+/g, '-').toLowerCase()}.mp3`);
       
       const playAudio = () => {
         setMediaStatus('playing_audio');
@@ -84,12 +84,11 @@ export default function JungVoiceTest({
         if (responseTimerRef.current) clearTimeout(responseTimerRef.current);
       }
     }
-  }, [currentWordIndex, testStatus, devicesReady, stimulusWords, advanceToNextWord, logEvent, setMediaStatus]);
+  }, [currentWordIndex, testStatus, stimulusWords, advanceToNextWord, logEvent, setMediaStatus]);
 
 
   const handleStartSession = async () => {
     setError(null);
-    setDevicesReady(false);
     try {
       // Step 1: Get stream and set up preview
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -100,7 +99,6 @@ export default function JungVoiceTest({
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = stream;
       }
-      setDevicesReady(true);
       
       // Step 2: Start session recording
       await startContinuousRecording();
@@ -114,17 +112,17 @@ export default function JungVoiceTest({
   };
 
   const handleResumeSession = () => {
-    if (sessionToResume) {
-        useKawasakiStore.getState().restoreSession(sessionToResume.data, sessionToResume.session, sessionToResume.assessmentId);
-        setSessionToResume(null); // Clear resume state
-        // Start recording for the resumed session
-        startContinuousRecording();
-    }
+    // if (sessionToResume) {
+    //     useKawasakiStore.getState().restoreSession(sessionToResume.data, sessionToResume.session, sessionToResume.assessmentId);
+    //     setSessionToResume(null); // Clear resume state
+    //     // Start recording for the resumed session
+    //     startContinuousRecording();
+    // }
   };
 
   const handleEndSession = () => {
-      stopContinuousRecording();
-      useKawasakiStore.getState().completeSession();
+      // stopContinuousRecording();
+      // useKawasakiStore.getState().completeSession();
   }
   
   const handleStartSecondSession = async () => {
@@ -137,29 +135,7 @@ export default function JungVoiceTest({
   const IntroScreen = () => (
     <div>
         <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
-        
-        {deviceCheckStatus === 'idle' && (
-            <Button onClick={handleDeviceCheck} size="lg">Check Devices</Button>
-        )}
-
-        {deviceCheckStatus === 'checking' && (
-            <p className="text-lg text-blue-600 animate-pulse">Checking devices...</p>
-        )}
-
-        {deviceCheckStatus === 'failed' && (
-            <div className="p-4 border-red-400 bg-red-50 rounded-md">
-                <p className="font-bold text-red-800">Device Check Failed</p>
-                <p className="text-red-700">{error}</p>
-                <Button onClick={handleDeviceCheck} size="lg" variant="outline" className="mt-4">Try Again</Button>
-            </div>
-        )}
-        
-        {deviceCheckStatus === 'success' && (
-            <div className='flex flex-col items-center'>
-                <p className="text-green-600 mb-4">✓ Devices are working correctly!</p>
-                <Button onClick={() => handleStartSession(1)} size="lg">Start Session 1</Button>
-            </div>
-        )}
+        <Button onClick={handleStartSession} size="lg">Start Session 1</Button>
     </div>
   );
 
@@ -202,11 +178,6 @@ export default function JungVoiceTest({
   };
   
   const renderContent = () => {
-    // The intro screen now handles the device check flow
-    if (testStatus === 'idle') {
-        return <IntroScreen />;
-    }
-
     switch (testStatus) {
         case 'session-1-running':
         case 'session-2-running':
@@ -223,18 +194,12 @@ export default function JungVoiceTest({
 
   return (
     <Card className={`text-center p-6 ${className}`}>
-      {/* <audio ref={audioRef} className="hidden" /> No longer needed */}
+      <audio ref={audioRef} className="hidden" />
       <CardHeader>
         <CardTitle>Jung Voice Test</CardTitle>
       </CardHeader>
       <CardContent>
         {error && <p className="text-red-500 mb-4">{error}</p>}
-        {!speechSynthesisSupported && testStatus === 'idle' && (
-            <div className="p-4 border-yellow-400 bg-yellow-50 rounded-md">
-                <p className="font-bold text-yellow-800">Browser Warning</p>
-                <p className="text-yellow-700">Your browser does not support speech synthesis. Audio cues will be disabled.</p>
-            </div>
-        )}
         {renderContent()}
       </CardContent>
     </Card>
