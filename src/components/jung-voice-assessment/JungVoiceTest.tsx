@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
-import { HumeClient } from 'hume';
+import { HumeClient, convertBlobToBase64 } from 'hume';
 import type { ChatSocket } from 'hume';
 
 interface JungVoiceTestProps {
@@ -71,6 +71,7 @@ export default function JungVoiceTest({
     if (audioStreamRef.current) {
       audioStreamRef.current.getTracks().forEach(track => track.stop());
     }
+    // Use property access for readyState
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.close();
     }
@@ -112,9 +113,11 @@ export default function JungVoiceTest({
       socketRef.current = socket;
 
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      mediaRecorderRef.current.ondataavailable = (event) => {
+      mediaRecorderRef.current.ondataavailable = async (event) => {
+        // Use property access for readyState and sendAudioInput method
         if (event.data.size > 0 && socketRef.current?.readyState === WebSocket.OPEN) {
-            socketRef.current?.send(event.data);
+            const encodedAudio = await convertBlobToBase64(event.data);
+            socketRef.current?.sendAudioInput({ data: encodedAudio });
         }
       };
       mediaRecorderRef.current.start(250);
