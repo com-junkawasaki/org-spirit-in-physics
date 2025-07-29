@@ -53,7 +53,7 @@ interface KawasakiState {
     resetTest: () => void;
     restoreSession: (logData: EventLog[], session: 1 | 2, assessmentId: string) => void;
     addVideoChunk: (session: 1 | 2, chunk: Blob) => void;
-    saveFullVideo: (session: 1 | 2) => void;
+    clearVideoChunks: (session: 1 | 2) => void;
 }
 
 export const useKawasakiStore = create<KawasakiState>()(
@@ -169,32 +169,15 @@ export const useKawasakiStore = create<KawasakiState>()(
                 }));
             },
 
-            saveFullVideo: (session) => {
-                const state = get();
-                if (!state.assessmentId) return;
-
+            clearVideoChunks: (session) => {
                 const key = session === 1 ? 'session1' : 'session2';
-                const chunks = state.videoChunks[key];
-                if (chunks.length === 0) return;
-
-                const videoBlob = new Blob(chunks, { type: 'video/webm' });
-                const fileName = `session-${session}-video.webm`;
-                
-                get().logEvent('video_snapshot_saved', { session, fileName, size: videoBlob.size });
-
-                const formData = new FormData();
-                formData.append('file', videoBlob);
-                formData.append('sessionId', state.assessmentId);
-                formData.append('fileName', fileName);
-
-                fetch('/api/save-artifact', {
-                    method: 'POST',
-                    body: formData,
-                }).catch(error => console.error('Failed to save video snapshot:', error));
+                set(state => ({
+                    videoChunks: { ...state.videoChunks, [key]: [] }
+                }));
             },
-
+            
             saveSessionVideo: (session, videoBlob) => {
-                // This will now be used for the FINAL save on session stop
+                // This is now only for the final video
                 const state = get();
                 if (!state.assessmentId) return;
 
@@ -288,8 +271,7 @@ export const useKawasakiStore = create<KawasakiState>()(
             }
         }),
         {
-            name: "kawasaki-model-storage-v7",
-            // We don't persist chunks as they can be large
+            name: "kawasaki-model-storage-v8",
             partialize: (state) => {
                 const { videoChunks, ...rest } = state;
                 return rest;

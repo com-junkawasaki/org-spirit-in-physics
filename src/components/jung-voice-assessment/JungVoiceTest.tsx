@@ -25,9 +25,11 @@ export default function JungVoiceTest({
     resetTest,
     logEvent,
     addVideoChunk,
-    saveFullVideo,
+    clearVideoChunks,
+    saveSessionVideo,
     currentSession,
-    restoreSession,
+    assessmentId,
+    videoChunks,
   } = useKawasakiStore();
   
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -37,7 +39,12 @@ export default function JungVoiceTest({
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const combinedStreamRef = useRef<MediaStream | null>(null);
-  const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+  const videoPreviewRef = useCallback((node: HTMLVideoElement | null) => {
+    if (node !== null && combinedStreamRef.current) {
+      console.log("[Preview] Attaching stream to video element.");
+      node.srcObject = combinedStreamRef.current;
+    }
+  }, []);
   const videoChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -66,16 +73,40 @@ export default function JungVoiceTest({
     window.speechSynthesis.speak(utterance);
   }, [speechSynthesisSupported]);
   
+  const saveSnapshot = useCallback(() => {
+    const chunks = videoChunks[currentSession === 1 ? 'session1' : 'session2'];
+    if (chunks.length === 0 || !assessmentId) return;
+
+    const videoBlob = new Blob(chunks, { type: 'video/webm' });
+    const fileName = `session-${currentSession}-video.webm`;
+    
+    logEvent('video_snapshot_saved', { session: currentSession, fileName, size: videoBlob.size, chunkCount: chunks.length });
+
+    const formData = new FormData();
+    formData.append('file', videoBlob);
+    formData.append('sessionId', assessmentId);
+    formData.append('fileName', fileName);
+
+    fetch('/api/save-artifact', {
+        method: 'POST',
+        body: formData,
+        keepalive: true, // Ensures the request is sent even if the page is closing
+    }).catch(error => console.error('Failed to save video snapshot:', error));
+
+  }, [videoChunks, currentSession, assessmentId, logEvent]);
+
+  
   const stopContinuousRecording = useCallback(() => {
     if (snapshotTimerRef.current) {
         clearInterval(snapshotTimerRef.current);
+        snapshotTimerRef.current = null;
     }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop(); // onstop will trigger the final saveFullVideo
+      mediaRecorderRef.current.stop(); // onstop will trigger the final save
     }
     combinedStreamRef.current?.getTracks().forEach(track => track.stop());
-    logEvent('continuous_recording_stopped', { session: currentSession });
-  }, [logEvent, currentSession]);
+    setIsRecording(false);
+  }, []);
 
   const startContinuousRecording = useCallback(async () => {
     setError(null);
@@ -89,11 +120,21 @@ export default function JungVoiceTest({
             audio: true, 
             video: { width: { ideal: 1280 }, height: { ideal: 720 } }
         });
+
+        console.log('[Recording] Stream obtained.', stream);
+        const videoTracks = stream.getVideoTracks();
+        const audioTracks = stream.getAudioTracks();
+        console.log(`[Recording] Tracks found: ${videoTracks.length} video, ${audioTracks.length} audio.`);
+        
+        if (videoTracks.length === 0) {
+            setError("No video track found. Is the camera blocked, disabled, or used by another application?");
+            setIsRecording(false);
+            return;
+        }
+
         combinedStreamRef.current = stream;
         
-        if (videoPreviewRef.current) {
-            videoPreviewRef.current.srcObject = stream;
-        }
+        // The callback ref will handle attaching the stream to the preview element
         
         mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9,opus' });
 
@@ -105,25 +146,21 @@ export default function JungVoiceTest({
 
         mediaRecorderRef.current.onstop = () => {
           logEvent('final_video_saving', { session: currentSession });
-          saveFullVideo(currentSession); // Save the final complete video
+          saveSnapshot(); // Save the final complete video
+          clearVideoChunks(currentSession);
         };
 
-        mediaRecorderRef.current.start();
+        mediaRecorderRef.current.start(1000); // Generate a chunk every second
 
         // Start snapshot timer
-        snapshotTimerRef.current = setInterval(() => {
-            if (mediaRecorderRef.current?.state === 'recording') {
-                // This doesn't create a snapshot but saves what's been collected so far
-                saveFullVideo(currentSession);
-            }
-        }, 10000); // Save a snapshot every 10 seconds
+        snapshotTimerRef.current = setInterval(saveSnapshot, 10000); // Save a snapshot every 10 seconds
 
     } catch (err) {
         console.error("Error starting recording:", err);
         setError("Could not access camera/microphone. Please check permissions.");
         setIsRecording(false);
     }
-  }, [addVideoChunk, saveFullVideo, currentSession, logEvent]);
+  }, [addVideoChunk, saveSnapshot, currentSession, logEvent, clearVideoChunks]);
 
   const advanceToNextWord = useCallback(() => {
     useKawasakiStore.setState(state => ({
@@ -238,7 +275,7 @@ export default function JungVoiceTest({
 
   const handleResumeSession = () => {
     if (sessionToResume) {
-        restoreSession(sessionToResume.data, sessionToResume.session, sessionToResume.assessmentId);
+        useKawasakiStore.getState().restoreSession(sessionToResume.data, sessionToResume.session, sessionToResume.assessmentId);
         setSessionToResume(null); // Clear resume state
         // Start recording for the resumed session
         startContinuousRecording();
@@ -288,8 +325,11 @@ export default function JungVoiceTest({
 
   const SessionScreen = () => (
     <div className="space-y-4">
-      <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-4">
+      <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-4 flex items-center justify-center">
         <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
+        <div className="absolute inset-0 flex items-center justify-center">
+             <p className="text-white/50 text-xs">Camera Preview</p>
+        </div>
       </div>
       <p className="text-sm text-gray-500">
         Session {currentSession} - 
