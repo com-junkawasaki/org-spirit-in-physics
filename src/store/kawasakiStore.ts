@@ -1,155 +1,137 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { TestResults } from "@/components/jung-voice-assessment/types";
 import { JUNG_STIMULUS_WORDS } from "@/components/jung-word-assessment/JungWordTest";
 import { v4 as uuidv4 } from 'uuid';
 
-interface VoiceAssessmentData {
+// Types for recorded data and test results
+interface RecordedResponse {
+    stimulusWord: string;
+    session: 1 | 2;
+    audioBlob: Blob;
+    // videoBlob?: Blob; // Future-proofing for video
+}
+
+interface SessionResult {
+    sessionId: 1 | 2;
+    responses: RecordedResponse[];
+}
+
+interface FullTestResult {
     userId: string;
     assessmentId: string;
-    results: TestResults;
+    sessionResults: SessionResult[];
     timestamp: string;
 }
 
-// WordResponseの型を定義
-interface WordResponse {
-    stimulusWord: string;
-    responseWord: string;
-    reactionTimeMs: number;
-    isDelayed: boolean;
-}
-
-
+// Zustand Store State and Actions
 interface KawasakiState {
-    voiceAssessments: VoiceAssessmentData[];
-    updateVoiceAssessment: (data: VoiceAssessmentData) => void;
-    
-    // Voice Test State
-    testStatus: 'idle' | 'running' | 'completed';
+    // Final results storage
+    completedAssessments: FullTestResult[];
+
+    // Real-time test state
+    testStatus: 'idle' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
+    currentSession: 1 | 2;
     currentWordIndex: number;
     stimulusWords: string[];
-    userResponses: WordResponse[];
-    startTime: number;
+    userResponses: RecordedResponse[];
     assessmentId: string | null;
 
-    // Voice Test Actions
-    startTest: (numberOfWords: number) => void;
-    recordResponse: (responseWord: string) => void;
-    completeTest: () => void;
+    // Actions
+    startSession: (numberOfWords: number) => void;
+    recordResponse: (audioBlob: Blob) => void;
+    completeSession: () => void;
     resetTest: () => void;
 }
 
 export const useKawasakiStore = create<KawasakiState>()(
     persist(
         (set, get) => ({
-            voiceAssessments: [],
-
-            updateVoiceAssessment: (data) =>
-                set((state) => {
-                    const existingIndex = state.voiceAssessments.findIndex(
-                        (assessment) => assessment.assessmentId === data.assessmentId,
-                    );
-
-                    if (existingIndex >= 0) {
-                        const updatedAssessments = [...state.voiceAssessments];
-                        updatedAssessments[existingIndex] = data;
-                        return { voiceAssessments: updatedAssessments };
-                    } else {
-                        return {
-                            voiceAssessments: [...state.voiceAssessments, data],
-                        };
-                    }
-                }),
-
-            // Voice Test State Implementation
+            // Default state
+            completedAssessments: [],
             testStatus: 'idle',
+            currentSession: 1,
             currentWordIndex: -1,
             stimulusWords: [],
             userResponses: [],
-            startTime: 0,
             assessmentId: null,
 
-            // Voice Test Actions Implementation
-            startTest: (numberOfWords) => {
-                const shuffled = [...JUNG_STIMULUS_WORDS].sort(() => Math.random() - 0.5);
-                const words = shuffled.slice(0, numberOfWords);
-                set({
-                    testStatus: 'running',
-                    stimulusWords: words,
-                    currentWordIndex: 0,
-                    userResponses: [],
-                    assessmentId: uuidv4(),
-                    startTime: Date.now(), // 最初の単語の開始時間
-                });
+            // Actions Implementation
+            startSession: (numberOfWords) => {
+                const state = get();
+                if (state.testStatus === 'idle' || state.testStatus === 'session-1-complete') {
+                    const sessionNumber = state.testStatus === 'idle' ? 1 : 2;
+                    const shuffled = [...JUNG_STIMULUS_WORDS].sort(() => Math.random() - 0.5);
+                    const words = shuffled.slice(0, numberOfWords);
+                    
+                    set({
+                        testStatus: sessionNumber === 1 ? 'session-1-running' : 'session-2-running',
+                        currentSession: sessionNumber,
+                        stimulusWords: words,
+                        currentWordIndex: 0,
+                        assessmentId: state.assessmentId || uuidv4(),
+                    });
+                }
             },
 
-            recordResponse: (responseWord) => {
+            recordResponse: (audioBlob) => {
                 const state = get();
-                if (state.testStatus !== 'running') return;
-                
-                const reactionTimeMs = Date.now() - state.startTime;
-                const newResponse: WordResponse = {
+                if (state.testStatus !== 'session-1-running' && state.testStatus !== 'session-2-running') return;
+
+                const newResponse: RecordedResponse = {
                     stimulusWord: state.stimulusWords[state.currentWordIndex],
-                    responseWord: responseWord,
-                    reactionTimeMs,
-                    isDelayed: reactionTimeMs > 2000,
+                    session: state.currentSession,
+                    audioBlob,
                 };
                 
                 const nextIndex = state.currentWordIndex + 1;
                 const updatedResponses = [...state.userResponses, newResponse];
                 
+                set({ userResponses: updatedResponses });
+
                 if (nextIndex >= state.stimulusWords.length) {
-                    set({ userResponses: updatedResponses });
-                    get().completeTest();
+                    get().completeSession();
                 } else {
-                    set({
-                        userResponses: updatedResponses,
-                        currentWordIndex: nextIndex,
-                        startTime: Date.now(), // 次の単語の開始時間
-                    });
+                    set({ currentWordIndex: nextIndex });
                 }
             },
 
-            completeTest: () => {
+            completeSession: () => {
                 const state = get();
-                if (state.testStatus !== 'running' || !state.assessmentId) return;
-
-                const totalReactionTime = state.userResponses.reduce((acc, res) => acc + res.reactionTimeMs, 0);
-                const avgReactionTime = state.userResponses.length > 0 ? totalReactionTime / state.userResponses.length : 0;
-
-                const results: TestResults = {
-                    responses: state.userResponses,
-                    averageReactionTimeMs: avgReactionTime,
-                    delayedResponseCount: state.userResponses.filter(res => res.isDelayed).length,
-                    completedAt: new Date().toISOString()
-                };
-
-                const newAssessment: VoiceAssessmentData = {
-                    userId: 'user-placeholder', // Replace with actual user ID later
-                    assessmentId: state.assessmentId,
-                    results,
-                    timestamp: new Date().toISOString(),
-                };
-
-                set(prevState => ({
-                    testStatus: 'completed',
-                    voiceAssessments: [...prevState.voiceAssessments, newAssessment],
-                }));
+                if (state.currentSession === 1) {
+                    set({ testStatus: 'session-1-complete', currentWordIndex: -1 });
+                } else {
+                    // Final completion
+                    const finalResult: FullTestResult = {
+                        userId: 'user-placeholder', // This should be set properly
+                        assessmentId: state.assessmentId!,
+                        sessionResults: [
+                            { sessionId: 1, responses: state.userResponses.filter(r => r.session === 1) },
+                            { sessionId: 2, responses: state.userResponses.filter(r => r.session === 2) }
+                        ],
+                        timestamp: new Date().toISOString(),
+                    };
+                    set(prev => ({
+                        testStatus: 'completed',
+                        completedAssessments: [...prev.completedAssessments, finalResult],
+                    }));
+                }
             },
             
             resetTest: () => {
                 set({
                     testStatus: 'idle',
+                    currentSession: 1,
                     currentWordIndex: -1,
                     stimulusWords: [],
                     userResponses: [],
                     assessmentId: null,
-                    startTime: 0
                 })
             }
         }),
         {
-            name: "kawasaki-model-storage",
+            name: "kawasaki-model-storage-v2", // Renamed to avoid conflicts with old structure
+            // Note: Storing Blobs in localStorage via persist middleware can be tricky.
+            // This might need a custom storage implementation if it causes issues.
         },
     ),
 );
