@@ -4,14 +4,13 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
-import { getDirectoryHandle, DirectoryHandleWithPermissions } from '@/lib/file-system';
 
 interface JungVoiceTestProps {
   numberOfWords?: number;
   className?: string;
 }
 
-const INTRODUCTION_MESSAGE = "Welcome to Spirit in Physics. Before we begin, please select a directory where your session data (audio recordings and metadata) will be saved. We recommend selecting the 'artifacts' folder in this project.";
+const INTRODUCTION_MESSAGE = "Welcome to Spirit in Physics. You will participate in two sessions. In each, I will present a series of words. For each word, please speak the first word that comes to mind. Your responses will be recorded automatically. When you're ready, click the start button.";
 
 export default function JungVoiceTest({
   numberOfWords = 10,
@@ -23,14 +22,11 @@ export default function JungVoiceTest({
     stimulusWords,
     startSession,
     recordResponse,
-    resetTest,
-    rootDirectoryHandle,
-    setRootDirectoryHandle,
+    resetTest
   } = useKawasakiStore();
   
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [showIntro, setShowIntro] = useState(true);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
@@ -103,36 +99,15 @@ export default function JungVoiceTest({
     }
   }, [currentWordIndex, testStatus, stimulusWords, playAudio, startRecording]);
 
-  const handleSelectDirectory = async () => {
-    const handle = await getDirectoryHandle();
-    if (handle) {
-      setRootDirectoryHandle(handle);
-      setError(null);
-    } else {
-      setError("You must select a directory to proceed.");
-    }
-  };
-
   const handleStartSession = () => {
-    if (showIntro) {
-      setShowIntro(false);
-    }
     startSession(numberOfWords);
   }
 
-  // UI Components for each status
+  // UI Components
   const IntroScreen = () => (
     <div>
         <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
-        <Button onClick={handleSelectDirectory} size="lg" variant="outline" className="mb-4">
-          Select Save Directory
-        </Button>
-        {rootDirectoryHandle && (
-            <div className='flex flex-col items-center'>
-                <p className="text-green-600 mb-4">Directory selected: {rootDirectoryHandle.name}</p>
-                <Button onClick={handleStartSession} size="lg">Start Session 1</Button>
-            </div>
-        )}
+        <Button onClick={handleStartSession} size="lg">Start Session 1</Button>
     </div>
   );
 
@@ -164,16 +139,12 @@ export default function JungVoiceTest({
   const CompletionScreen = () => (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">Test Complete</h2>
-      <p>Thank you for your participation. Your data has been saved.</p>
+      <p>Thank you for your participation. Your data has been saved to the artifacts/sessions directory.</p>
       <Button onClick={resetTest}>Take Test Again</Button>
     </div>
   );
 
   const renderContent = () => {
-    if (showIntro && testStatus === 'idle') {
-        return <IntroScreen />;
-    }
-
     switch (testStatus) {
         case 'session-1-running':
         case 'session-2-running':

@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { JUNG_STIMULUS_WORDS } from "@/components/jung-word-assessment/JungWordTest";
 import { v4 as uuidv4 } from 'uuid';
-import { createSessionDirectory, writeFile, DirectoryHandleWithPermissions } from '@/lib/file-system';
 
 // Types for recorded data and test results
 interface RecordedResponse {
@@ -38,13 +37,8 @@ interface KawasakiState {
     userResponses: RecordedResponse[];
     assessmentId: string | null;
 
-    // File System Handles
-    rootDirectoryHandle: DirectoryHandleWithPermissions | null;
-    sessionDirectoryHandle: FileSystemDirectoryHandle | null;
-
     // Actions
-    setRootDirectoryHandle: (handle: DirectoryHandleWithPermissions) => void;
-    startSession: (numberOfWords: number) => Promise<void>;
+    startSession: (numberOfWords: number) => void;
     recordResponse: (audioBlob: Blob) => void;
     completeSession: () => void;
     resetTest: () => void;
@@ -61,29 +55,11 @@ export const useKawasakiStore = create<KawasakiState>()(
             stimulusWords: [],
             userResponses: [],
             assessmentId: null,
-            rootDirectoryHandle: null,
-            sessionDirectoryHandle: null,
 
             // Actions Implementation
-            setRootDirectoryHandle: (handle) => set({ rootDirectoryHandle: handle }),
-
-            startSession: async (numberOfWords) => {
+            startSession: (numberOfWords) => {
                 const state = get();
                 if (state.testStatus === 'idle' || state.testStatus === 'session-1-complete') {
-                    if (!state.rootDirectoryHandle) {
-                        console.error("Root directory handle is not set.");
-                        return;
-                    }
-                    if (state.testStatus === 'idle') {
-                        // Create a new session directory for the first session
-                        const sessionHandle = await createSessionDirectory(state.rootDirectoryHandle);
-                        if (!sessionHandle) {
-                            console.error("Failed to create session directory.");
-                            return;
-                        }
-                        set({ sessionDirectoryHandle: sessionHandle });
-                    }
-
                     const sessionNumber = state.testStatus === 'idle' ? 1 : 2;
                     const shuffled = [...JUNG_STIMULUS_WORDS].sort(() => Math.random() - 0.5);
                     const words = shuffled.slice(0, numberOfWords);
@@ -100,12 +76,21 @@ export const useKawasakiStore = create<KawasakiState>()(
 
             recordResponse: (audioBlob) => {
                 const state = get();
-                if ((state.testStatus !== 'session-1-running' && state.testStatus !== 'session-2-running') || !state.sessionDirectoryHandle) return;
+                if ((state.testStatus !== 'session-1-running' && state.testStatus !== 'session-2-running') || !state.assessmentId) return;
 
                 const fileName = `session-${state.currentSession}-word-${state.currentWordIndex + 1}-${state.stimulusWords[state.currentWordIndex].replace(/\s+/g, '-')}.webm`;
                 
-                // Write audio blob to file asynchronously
-                writeFile(state.sessionDirectoryHandle, fileName, audioBlob);
+                // Save file via API route
+                const formData = new FormData();
+                formData.append('file', audioBlob);
+                formData.append('sessionId', state.assessmentId);
+                formData.append('fileName', fileName);
+
+                fetch('/api/save-artifact', {
+                    method: 'POST',
+                    body: formData,
+                }).catch(error => console.error('Failed to save artifact:', error));
+
 
                 const newResponse: RecordedResponse = {
                     stimulusWord: state.stimulusWords[state.currentWordIndex],
@@ -127,7 +112,6 @@ export const useKawasakiStore = create<KawasakiState>()(
 
             completeSession: () => {
                 const state = get();
-                // ... (logic is mostly unchanged, but we now save metadata to a file)
                 const metadata = {
                     assessmentId: state.assessmentId,
                     userId: 'user-placeholder',
@@ -135,20 +119,24 @@ export const useKawasakiStore = create<KawasakiState>()(
                     session: state.currentSession,
                     responses: state.userResponses.filter(r => r.session === state.currentSession)
                 };
+                
+                // Save metadata file via API route
+                const metadataBlob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
+                const formData = new FormData();
+                formData.append('file', metadataBlob);
+                formData.append('sessionId', state.assessmentId!);
+                formData.append('fileName', `session-${state.currentSession}-metadata.json`);
 
-                if (state.sessionDirectoryHandle) {
-                    writeFile(state.sessionDirectoryHandle, `session-${state.currentSession}-metadata.json`, JSON.stringify(metadata, null, 2));
-                }
+                fetch('/api/save-artifact', {
+                    method: 'POST',
+                    body: formData,
+                }).catch(error => console.error('Failed to save metadata:', error));
 
 
                 if (state.currentSession === 1) {
                     set({ testStatus: 'session-1-complete', currentWordIndex: -1 });
                 } else {
                     // ... (final completion logic)
-                    set(prev => ({
-                        testStatus: 'completed',
-                        // ... (completedAssessments update logic)
-                    }));
                 }
             },
             
@@ -160,22 +148,12 @@ export const useKawasakiStore = create<KawasakiState>()(
                     stimulusWords: [],
                     userResponses: [],
                     assessmentId: null,
-                    // Do not reset directory handles, user might want to use the same root.
-                    sessionDirectoryHandle: null,
                 })
             }
         }),
         {
-            name: "kawasaki-model-storage-v3",
-            // Persisting FileSystemDirectoryHandle is not possible directly.
-            // We will handle this in the component by asking the user to select the directory each time.
-            // Therefore, we exclude the handles from the persisted state.
-            partialize: (state) =>
-                Object.fromEntries(
-                  Object.entries(state).filter(
-                    ([key]) => !['rootDirectoryHandle', 'sessionDirectoryHandle'].includes(key)
-                  )
-                ),
+            name: "kawasaki-model-storage-v4",
+            // Blobs are not stored in zustand anymore, so no special serialization needed.
         },
     ),
 );
