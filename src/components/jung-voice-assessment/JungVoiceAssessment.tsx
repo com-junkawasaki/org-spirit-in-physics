@@ -51,12 +51,7 @@ export default function JungVoiceAssessment({
     
     // Kawasaki Model ストアに結果を反映
     try {
-      updateVoiceAssessment({
-        userId,
-        assessmentId: uuidv4(),
-        results,
-        timestamp: new Date().toISOString(),
-      });
+      updateVoiceAssessment(results);
     } catch (error) {
       console.error('Failed to update Kawasaki Model with voice assessment results:', error);
     }

@@ -59,6 +59,7 @@ interface KawasakiState {
     resetTest: () => void;
     restoreSession: (logData: EventLog[], session: 1 | 2, assessmentId: string) => void;
     setMediaStatus: (status: KawasakiState['mediaStatus']) => void;
+    updateVoiceAssessment: (assessment: VoiceTestResults) => void;
 }
 
 export const useKawasakiStore = create<KawasakiState>()(
@@ -267,6 +268,12 @@ export const useKawasakiStore = create<KawasakiState>()(
                     assessmentId: null,
                     eventLog: [],
                 })
+            },
+            
+            updateVoiceAssessment: (assessment) => {
+                set((state) => ({
+                    voiceAssessments: [...state.voiceAssessments, assessment]
+                }))
             }
         }),
         {

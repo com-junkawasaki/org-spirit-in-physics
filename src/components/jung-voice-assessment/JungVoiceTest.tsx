@@ -5,17 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
 import AudioVisualizer from './AudioVisualizer';
-
-interface JungVoiceTestProps {
-  numberOfWords?: number;
-  className?: string;
-}
+import type { JungVoiceTestProps, TestResults } from './types';
 
 const INTRODUCTION_MESSAGE = "This study requires capturing your webcam and microphone for the entire duration of each session. Please grant permission when prompted. When you're ready, click the start button.";
 
 export default function JungVoiceTest({
   numberOfWords = 10,
   className = '',
+  onTestComplete,
 }: JungVoiceTestProps) {
   const {
     testStatus,
