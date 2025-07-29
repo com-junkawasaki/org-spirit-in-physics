@@ -1,1219 +1,147 @@
 {
-  "graph": {
-    "vertices": [
-      {
-        "id": "P1_CreateContextError",
-        "label": "Problem",
-        "properties": {
-          "name": "TypeError: createContext only works in Client Components",
-          "description": "Next.jsアプリケーションの起動時に`createContext`がサーバーコンポーネントで呼び出されているというエラーが発生。",
-          "files": ["src/app/page.mdx"]
-        }
-      },
-      {
-        "id": "A1_VerifyUseClient",
-        "label": "Action",
-        "properties": {
-          "name": "関連コンポーネントの'use client'ディレクティブ確認",
-          "description": "エラーの発生源と思われるコンポーネント群（page.mdx, KawasakiModel, etc.）に'use client'が正しく設定されているかを確認。結果、設定は正しかった。",
-          "files": ["src/app/page.mdx", "src/components/kawasaki-model/index.tsx", "src/components/spirit-in-physics/SpiritInPhysicsInteractive.tsx"]
-        }
-      },
-      {
-        "id": "A2_ReinstallDeps",
-        "label": "Action",
-        "properties": {
-          "name": "依存関係の再インストール",
-          "description": "コンポーネントの設定に問題がないため、依存関係の破損を疑い`rm -rf node_modules pnpm-lock.yaml && pnpm install`を実行。これによりcreateContextエラーは解消されたが、新たなビルドエラーが発生した。",
-          "files": ["package.json"]
-        }
-      },
-      {
-        "id": "P2_BuildScriptError",
-        "label": "Problem",
-        "properties": {
-          "name": "ビルドスクリプトの欠落とコマンドエラー",
-          "description": "`pnpm build`実行時に`build`スクリプトが存在しないエラー、および追加後に`next: command not found`エラーが発生。",
-          "files": ["package.json"]
-        }
-      },
-      {
-        "id": "A3_FixBuildScript",
-        "label": "Action",
-        "properties": {
-          "name": "package.jsonの修正と再度の依存関係インストール",
-          "description": "`package.json`に`\"build\": \"next build\"`を追加し、`next`コマンドが見つからない問題に対処するため再度`pnpm install`を実行した。",
-          "files": ["package.json"]
-        }
-      },
-      {
-        "id": "P3_ModuleNotFoundError",
-        "label": "Problem",
-        "properties": {
-          "name": "モジュール解決エラー: Cannot find module PhysicsGraph",
-          "description": "ビルド時に`IntegratedJungAssessment.tsx`が`@/components/kawasaki-model/PhysicsGraph`を見つけられないという型エラーが発生。",
-          "files": ["src/components/jung-integrated/IntegratedJungAssessment.tsx"]
-        }
-      },
-      {
-        "id": "A4_AnalyzeDependencies",
-        "label": "Analysis",
-        "properties": {
-          "name": "コンポーネント依存関係の分析",
-          "description": "エラーが解消しないため、コンポーネント間の依存関係を可視化・分析。`PhysicsGraph`が複数のコンポーネントから利用される共有コンポーネントであるにも関わらず、`kawasaki-model`の内部に結合されている構造的問題を特定。",
-          "files": ["src/components/kawasaki-model/index.tsx", "src/components/jung-integrated/IntegratedJungAssessment.tsx"]
-        }
-      },
-      {
-        "id": "A5_RefactorPlan",
-        "label": "Design",
-        "properties": {
-          "name": "PhysicsGraphコンポーネントの分離リファクタリング計画",
-          "description": "`PhysicsGraph`を独立したコンポーネントモジュールとして`src/components/physics-graph/`に分離し、インポートパスを修正する計画を立案。",
-          "files": []
-        }
-      },
-      {
-        "id": "A6_ExecuteRefactor",
-        "label": "Action",
-        "properties": {
-          "name": "リファクタリングの実行",
-          "description": "計画に基づき、`PhysicsGraph.tsx`を新しいディレクトリに移動し、`index.ts`を作成してコンポーネントを公開。古いファイルを削除し、関連する全てのインポートパスを更新した。",
-          "files": ["src/components/physics-graph/PhysicsGraph.tsx", "src/components/physics-graph/index.ts", "src/components/kawasaki-model/index.tsx", "src/components/jung-integrated/IntegratedJungAssessment.tsx"]
-        }
-      },
-      {
-        "id": "P4_StaticImportError",
-        "label": "Problem",
-        "properties": {
-          "name": "型エラー: IntrinsicAttributes on JungVoiceTest",
-          "description": "問題切り分けのため動的インポートを静的インポートに変更したところ、モジュール解決エラーは消え、代わりに`JungVoiceTest`コンポーネントのProps型エラーが発生。問題がモジュール解決からPropsの型定義に移ったことを特定。",
-          "files": ["src/components/jung-integrated/IntegratedJungAssessment.tsx"]
-        }
-      },
-      {
-        "id": "A7_FixJungVoiceTestProps",
-        "label": "Action",
-        "properties": {
-          "name": "JungVoiceTestのPropsを修正",
-          "description": "`JungVoiceTest.tsx`がPropsを受け取れるように、型定義を追加し、コンポーネントシグネチャを修正した。",
-          "files": ["src/components/jung-voice-assessment/JungVoiceTest.tsx"]
-        }
-      },
-      {
-        "id": "P5_FinalBuildError",
-        "label": "Problem",
-        "properties": {
-          "name": "最終ビルドエラー: useRef in EmbeddingScatterPlot",
-          "description": "これまでの修正により、最終的に`EmbeddingScatterPlot.tsx`内の`useRef`の使い方が原因のビルドエラーにたどり着いた。",
-          "files": ["src/components/jung-visualization/EmbeddingScatterPlot.tsx"]
-        }
-      },
-      {
-        "id": "A8_FixUseRef",
-        "label": "Action",
-        "properties": {
-          "name": "EmbeddingScatterPlotのuseRefを修正",
-          "description": "`useRef`に初期値`null`を渡すことで、`EmbeddingScatterPlot.tsx`の型エラーを修正した。",
-          "files": ["src/components/jung-visualization/EmbeddingScatterPlot.tsx"]
-        }
-      },
-      {
-        "id": "P6_ErrorRecurrence",
-        "label": "Problem",
-        "properties": {
-          "name": "エラーの再発とキャッシュ破損",
-          "description": "ここまでの修正にも関わらず、開発サーバーで初期の`createContext`エラーが再発。同時に`.next`ディレクトリ内のファイルが見つからない`ENOENT`エラーが多発し、キャッシュや依存関係の深刻な破損が示唆された。",
-          "files": []
-        }
-      },
-      {
-        "id": "A9_RootCauseAnalysis",
-        "label": "Analysis",
-        "properties": {
-          "name": "根本原因の再分析",
-          "description": "エラーの再発ループは、単一のコードミスではなく、プロジェクト全体の健全性が損なわれていることを示す。根本原因は、(1) 依存関係の不整合 (ReactとNext.jsのバージョンなど)、(2) Next.jsのキャッシュ機構の永続的な破損、(3) `tsconfig.json`や`next.config.mjs`などの設定ファイルの競合、のいずれかまたは組み合わせと仮説を立てる。",
-          "files": ["package.json", "tsconfig.json", "next.config.mjs"]
-        }
-      },
-      {
-        "id": "A10_SwitchToReact",
-        "label": "Action",
-        "properties": {
-          "name": "MDXの使用を中止し、Reactコンポーネントへ移行",
-          "description": "エラーの根本原因の一つであるMDXの複雑さを排除するため、`page.mdx`を`page.tsx`に変換し、MDX関連の依存関係と設定をすべて削除。これにより、プロジェクトの構成を簡素化し、安定性を向上させる。",
-          "files": ["src/app/page.tsx", "next.config.mjs", "package.json"]
-        }
-      },
-      {
-        "id": "P7_MetadataConflict",
-        "label": "Problem",
-        "properties": {
-          "name": "metadataエクスポートと'use client'の競合",
-          "description": "MDXから.tsxへの移行後、`metadata`のexport（サーバーコンポーネント限定）と`'use client'`ディレクティブ（クライアントコンポーネント限定）が同一ファイル内で競合し、ビルドエラーが発生。",
-          "files": ["src/app/page.tsx"]
-        }
-      },
-      {
-        "id": "A11_ComponentSeparationPlan",
-        "label": "Design",
-        "properties": {
-          "name": "コンポーネント分離パターンの適用",
-          "description": "`metadata`を持つサーバーコンポーネント(page.tsx)と、`'use client'`を持つクライアントコンポーネント(PageClient.tsx)に分離する設計を立案。これにより、Next.jsの規約に準拠しつつ、静的メタデータと動的UIを両立させる。",
-          "files": ["src/app/page.tsx", "src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A12_ExecuteSeparation",
-        "label": "Action",
-        "properties": {
-          "name": "コンポーネント分離を実行",
-          "description": "計画に基づき、`page.tsx`からUIロジックを`PageClient.tsx`に分離し、`page.tsx`を純粋なサーバーコンポーネントとして修正した。",
-          "status": "completed",
-          "files": ["src/app/page.tsx", "src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "P8_MissingUIComponent",
-        "label": "Problem",
-        "properties": {
-          "name": "UIコンポーネントの不足: progress",
-          "description": "`VoiceEmotionAnalysisWebSocket.tsx`が必要とする`@/components/ui/progress`コンポーネントが見つからないため、ビルドエラーが発生。",
-          "files": ["src/components/spirit-in-physics/VoiceEmotionAnalysisWebSocket.tsx"]
-        }
-      },
-      {
-        "id": "P9_RecurringMissingModule",
-        "label": "Problem",
-        "properties": {
-          "name": "Hume AI関連モジュールの再度の欠落",
-          "description": "`VoiceEmotionAnalysisWebSocket.tsx`が、以前に他のファイルでも問題となった未実装のHume AI関連モジュールをインポートしようとしており、エラーの一因となっている。",
-          "files": ["src/components/spirit-in-physics/VoiceEmotionAnalysisWebSocket.tsx"]
-        }
-      },
-      {
-        "id": "A13_AddProgressComponent",
-        "label": "Action",
-        "properties": {
-          "name": "Add `progress` UI component",
-          "description": "The `progress` component required by `VoiceEmotionAnalysisWebSocket.tsx` was missing. Created `src/components/ui/progress.tsx` to resolve the build error.",
-          "files": ["src/components/ui/progress.tsx"],
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A14_CommentOutHume",
-        "label": "Action",
-        "properties": {
-          "name": "Comment out Hume AI dependencies",
-          "description": "Temporarily resolved the missing module issue for Hume AI by commenting out the related imports and service initialization in `VoiceEmotionAnalysisWebSocket.tsx`.",
-          "files": ["src/components/spirit-in-physics/VoiceEmotionAnalysisWebSocket.tsx"],
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A15_ExecuteBuild",
-        "label": "Action",
-        "properties": {
-          "name": "Run `pnpm build`",
-          "description": "Attempting to build the project after applying fixes for missing components and modules.",
-          "status": "failed",
-          "command": "pnpm build",
-          "error": "ReferenceError: window is not defined"
-        }
-      },
-      {
-        "id": "P10_PrerenderError",
-        "label": "Problem",
-        "properties": {
-          "name": "Prerendering error: window is not defined",
-          "description": "The build failed because a client-side component using the `window` object was being rendered on the server.",
-          "files": ["src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A16_DynamicImport",
-        "label": "Action",
-        "properties": {
-          "name": "Dynamically import PhysicsGraph",
-          "description": "The `PhysicsGraph` component was identified as the source of the prerendering error. It is now dynamically imported with SSR disabled to ensure it only runs on the client.",
-          "files": ["src/components/kawasaki-model/index.tsx"],
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A17_ExecuteBuildAgain",
-        "label": "Action",
-        "properties": {
-          "name": "Run `pnpm build` again",
-          "description": "Re-running the build after fixing the prerendering error.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "A18_EvaluateUIUX",
-        "label": "Analysis",
-        "properties": {
-          "name": "Evaluate UI/UX based on application screenshot",
-          "description": "Analyzed the current user interface to identify strengths and weaknesses. The UI is functional for presenting academic information but lacks modern UX principles for engagement, clarity, and interactivity.",
-          "status": "completed",
-          "inputs": [
-            "screenshot of the application"
-          ],
-          "outputs": [
-            "UI/UX improvement suggestions"
-          ]
-        }
-      },
-      {
-        "id": "P11_UIUXDeficiencies",
-        "label": "Problem",
-        "properties": {
-          "name": "UI/UX Deficiencies Identified",
-          "description": "The UI, while informative, suffers from information overload, poor visual hierarchy, and lack of interactivity. It resembles a static document more than a dynamic web application, potentially hindering user engagement and comprehension.",
-          "areas_for_improvement": [
-            "Information Density",
-            "Visual Design",
-            "Interactivity",
-            "Component Grouping"
-          ]
-        }
-      },
-      {
-        "id": "A19_PlanUIUXRefactor",
-        "label": "Design",
-        "properties": {
-          "name": "Plan UI/UX Refactoring",
-          "description": "Create a plan to refactor the UI. This involves breaking the single page into logical sections using components like Cards and Tabs, improving visual hierarchy with better spacing and typography, and making the parameter controls more interactive.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A20_ExecuteUIUXRefactor",
-        "label": "Action",
-        "properties": {
-          "name": "Execute UI/UX Refactoring",
-          "description": "Refactored the main page (`PageClient.tsx`) using `Card` and `Tabs` components to improve structure, readability, and user experience, based on the UI/UX plan.",
-          "status": "completed",
-          "files": ["src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A21_VerifyRefactorBuild",
-        "label": "Action",
-        "properties": {
-          "name": "Run `pnpm build` to verify refactoring",
-          "description": "Building the project to ensure the UI refactoring did not introduce any errors and renders correctly.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P12_IncompleteExperimentFlow",
-        "label": "Problem",
-        "properties": {
-          "name": "Incomplete Experimental Procedure in UI",
-          "description": "The application lacks a structured experimental flow. Key elements like an informed consent form are missing, and the Jung Voice Test component is non-functional ('under construction').",
-          "files": ["src/app/PageClient.tsx", "src/components/jung-voice-assessment/JungVoiceTest.tsx"]
-        }
-      },
-      {
-        "id": "A22_DefineFullExperiment",
-        "label": "Design",
-        "properties": {
-          "name": "Define and Implement Full Experimental Procedure",
-          "description": "Define a complete experimental procedure including consent, instructions, testing, and data handling. This involves implementing a consent form and activating the voice test component.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A23_ImplementConsent",
-        "label": "Action",
-        "properties": {
-          "name": "Implement Consent Form",
-          "description": "Added a modal consent form to `PageClient.tsx` that appears on first load. The user must agree to the terms to proceed with the experiment.",
-          "status": "completed",
-          "files": ["src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A24_FixJungVoiceTest",
-        "label": "Action",
-        "properties": {
-          "name": "Fix JungVoiceTest Component",
-          "description": "Replaced the placeholder content in `JungVoiceTest.tsx` with the functional `VoiceEmotionAnalysisWebSocket` component. Also refactored `JungVoiceAssessment.tsx` to align with the new, simplified props.",
-          "status": "completed",
-          "files": [
-            "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-            "src/components/jung-voice-assessment/JungVoiceAssessment.tsx"
-          ]
-        }
-      },
-      {
-        "id": "A25_FinalBuildVerification",
-        "label": "Action",
-        "properties": {
-          "name": "Run `pnpm build` for final verification",
-          "description": "Building the project to ensure all changes for the experimental flow are integrated correctly and without errors.",
-          "status": "failed",
-          "command": "pnpm build",
-          "error": "Type error in IntegratedJungAssessment.tsx"
-        }
-      },
-      {
-        "id": "P13_PropsTypeError",
-        "label": "Problem",
-        "properties": {
-          "name": "Props Type Error in IntegratedJungAssessment",
-          "description": "A type error occurred because `IntegratedJungAssessment.tsx` was passing outdated props to the refactored `JungVoiceTest` component.",
-          "files": ["src/components/jung-integrated/IntegratedJungAssessment.tsx"]
-        }
-      },
-      {
-        "id": "A26_FixProps",
-        "label": "Action",
-        "properties": {
-          "name": "Fix Props in IntegratedJungAssessment",
-          "description": "Corrected the props passed to `JungVoiceTest` within `IntegratedJungAssessment.tsx` to align with the new, simplified interface.",
-          "status": "completed",
-          "files": ["src/components/jung-integrated/IntegratedJungAssessment.tsx"]
-        }
-      },
-      {
-        "id": "A27_FinalBuildAttempt",
-        "label": "Action",
-        "properties": {
-          "name": "Run final build attempt",
-          "description": "Attempting the final build after fixing the props type error.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P14_UILayoutDeviation",
-        "label": "Problem",
-        "properties": {
-          "name": "UI Layout Deviates from Original Design",
-          "description": "The previous UI refactoring introduced a tabbed layout, which conflicts with the desired single-page, article-style design shown in the reference image. The implementation of the consent form as a modal also does not match the embedded form in the design.",
-          "files": ["src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A28_RestoreSinglePageLayout",
-        "label": "Design",
-        "properties": {
-          "name": "Restore Single-Page Article Layout",
-          "description": "Plan to refactor the UI to restore the original single-page layout. This involves removing the Tabs from PageClient.tsx, re-integrating all components into a linear flow, and redesigning the consent form to be an embedded component as shown in the reference image.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A29_ExecuteLayoutRevert",
-        "label": "Action",
-        "properties": {
-          "name": "Revert to Single-Page Layout",
-          "description": "Removed the `Tabs` component from `PageClient.tsx` and restored the original linear, article-style layout.",
-          "status": "completed",
-          "files": ["src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A30_CreateEmbeddedConsentForm",
-        "label": "Action",
-        "properties": {
-          "name": "Create and Integrate Embedded Consent Form",
-          "description": "Created a new `ResearchParticipationConsent` component with a CDISC-compliant design and integrated it into `PageClient.tsx` with state management to control content visibility.",
-          "status": "completed",
-          "files": ["src/components/ui/ResearchParticipationConsent.tsx", "src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A31_FinalBuildAfterUIRestoration",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After UI Restoration",
-          "description": "Running the final build to verify that the UI has been successfully restored to the intended design and all components are functioning correctly.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "A32_DefinePlaywrightDebugProcess",
-        "label": "Design",
-        "properties": {
-          "name": "Define Standardized Playwright Debugging Process",
-          "description": "Establish a standard operating procedure (SOP) for debugging the application using Playwright. The process includes starting the dev server, running tests to capture console logs and screenshots, analyzing artifacts to find the root cause, and verifying the fix by re-running tests. This process itself is the SSoT for debugging activities.",
-          "status": "completed",
-          "steps": [
-            "Start dev server with `pnpm dev`",
-            "Prepare a Playwright test script to target a specific page/feature",
-            "Execute `pnpm playwright test`",
-            "Analyze Playwright report (trace, console logs, screenshots)",
-            "Implement code fix",
-            "Verify fix by re-running tests"
-          ]
-        }
-      },
-      {
-        "id": "A33_InitiatePlaywrightDebugSession",
-        "label": "Action",
-        "properties": {
-          "name": "Initiate Playwright Debug Session",
-          "description": "Begin a debugging session following the standardized process to check for any runtime errors on the main page.",
-          "status": "in_progress"
-        }
-      },
-      {
-        "id": "P15_InteractiveModeViolation",
-        "label": "Problem",
-        "properties": {
-          "name": "Playwright runs in interactive mode by default",
-          "description": "The default Playwright configuration opens an HTML report automatically after tests run, which violates the established rule of avoiding interactive modes.",
-          "files": ["playwright.config.ts"]
-        }
-      },
-      {
-        "id": "A34_DisableInteractiveMode",
-        "label": "Design",
-        "properties": {
-          "name": "Disable Interactive Mode for Playwright",
-          "description": "Update the Playwright configuration to ensure it always runs in a non-interactive mode by setting the HTML reporter's `open` option to `never`.",
-          "status": "completed",
-          "files": ["playwright.config.ts"]
-        }
-      },
-      {
-        "id": "P16_PersistentCheckboxStateError",
-        "label": "Problem",
-        "properties": {
-          "name": "Persistent Checkbox State Update Failure",
-          "description": "Multiple attempts to fix the Playwright test have failed. The consent checkbox click does not enable the submit button, indicating a fundamental issue in the component's state management or event handling logic, rather than a testing flaw.",
-          "files": ["tests/debug.spec.ts", "src/components/ui/ResearchParticipationConsent.tsx"]
-        }
-      },
-      {
-        "id": "A35_ShiftToManualDebugging",
-        "label": "Design",
-        "properties": {
-          "name": "Shift to Manual and Component-Level Debugging",
-          "description": "Change strategy from repeated Playwright tests to in-depth manual debugging. This involves using browser dev tools and React DevTools to inspect the component's state (`isAgreed`) in real-time and verify the `onCheckedChange` event handler's behavior.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "P17_IncorrectUIFlow",
-        "label": "Problem",
-        "properties": {
-          "name": "Incorrect UI Flow and Layout",
-          "description": "The application implements a blocking consent form that hides the main content. The desired user experience is a single-page article layout where all content is visible on load, with a newly designed, more detailed consent form embedded directly within the page.",
-          "files": ["src/app/PageClient.tsx", "src/components/ui/ResearchParticipationConsent.tsx"]
-        }
-      },
-      {
-        "id": "A36_ImplementSinglePageWithEmbeddedConsent",
-        "label": "Design",
-        "properties": {
-          "name": "Implement Single-Page Layout with New Embedded Consent Form",
-          "description": "Refactor the UI to match the new design. This involves removing the conditional rendering logic from `PageClient.tsx`, creating a new detailed consent form component, and embedding it into the single-page layout.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A37_FinalizeUIRestoration",
-        "label": "Action",
-        "properties": {
-          "name": "Finalize UI Restoration",
-          "description": "Removed conditional rendering from `PageClient.tsx`, deleted the old consent form, created a new one based on the latest design, and embedded it into the page.",
-          "status": "completed",
-          "files": [
-            "src/app/PageClient.tsx",
-            "src/components/ui/ResearchParticipationConsent.tsx"
-          ]
-        }
-      },
-      {
-        "id": "A38_FinalBuildAndVerification",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build and Verification",
-          "description": "Running the final build to verify that all UI changes are correctly implemented and the application is stable.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P18_UIStylingMismatch",
-        "label": "Problem",
-        "properties": {
-          "name": "UI Styling Mismatch",
-          "description": "The current UI styling, which relies on the '@tailwindcss/typography' (prose) plugin, does not match the clean, simple aesthetic shown in the reference screenshot. Typography, spacing, and list styles are incorrect.",
-          "files": ["src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A39_RefineUIStyling",
-        "label": "Design",
-        "properties": {
-          "name": "Refine UI Styling to Match Screenshot",
-          "description": "Refactor the UI styling by removing the `prose` classes and applying custom Tailwind CSS classes for headings, paragraphs, and lists to accurately match the visual representation in the screenshot.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A40_ExecuteStylingRefactor",
-        "label": "Action",
-        "properties": {
-          "name": "Execute Styling Refactor",
-          "description": "Removed the `prose` classes from `PageClient.tsx` and applied a new set of Tailwind CSS classes to structure the layout into sections and style typography to match the design.",
-          "status": "completed",
-          "files": ["src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A41_FinalBuildAfterStyling",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Styling",
-          "description": "Running the final build to verify that the new UI styles are correctly applied and the application is stable.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P19_ComponentLayoutBroken",
-        "label": "Problem",
-        "properties": {
-          "name": "KawasakiModel Component Layout is Broken When Embedded",
-          "description": "The `KawasakiModel` component's fixed-height calculation (`h-[calc(100vh-2rem)]`) conflicts with the scrolling layout of the page it's embedded in. It also renders a redundant, internal title.",
-          "files": ["src/components/kawasaki-model/index.tsx", "src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A42_RefactorComponentModel",
-        "label": "Design",
-        "properties": {
-          "name": "Refactor KawasakiModel for Better Embedding",
-          "description": "Plan to refactor the `KawasakiModel` to be more composable. This involves changing its height to `h-full` to respect its parent container and adding a `showTitle` prop to conditionally render its internal title.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A43_ExecuteComponentRefactor",
-        "label": "Action",
-        "properties": {
-          "name": "Execute KawasakiModel Refactor",
-          "description": "Refactored the `KawasakiModel` to be embeddable by adjusting its height and adding a `showTitle` prop. Also updated `PageClient.tsx` to use the new prop and correct the section title.",
-          "status": "completed",
-          "files": ["src/components/kawasaki-model/index.tsx", "src/app/PageClient.tsx"]
-        }
-      },
-      {
-        "id": "A44_FinalBuildAfterComponentRefactor",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Component Refactor",
-          "description": "Running the final build to verify that the component refactoring has fixed the layout issues.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P20_ConsentFormUIBroken",
-        "label": "Problem",
-        "properties": {
-          "name": "Consent Form UI is Broken",
-          "description": "The `ResearchParticipationConsent` component's styling is broken. Form elements are not aligned correctly and lack proper typography, likely due to the removal of the parent `prose` styles.",
-          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
-        }
-      },
-      {
-        "id": "A45_FixConsentFormStyling",
-        "label": "Design",
-        "properties": {
-          "name": "Fix Consent Form Styling",
-          "description": "Plan to fix the consent form's UI by applying direct Tailwind CSS classes for layout, spacing, and typography to the form elements within the `ResearchParticipationConsent` component.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A46_ExecuteConsentFormStyling",
-        "label": "Action",
-        "properties": {
-          "name": "Execute Consent Form Styling",
-          "description": "Applied a comprehensive set of Tailwind CSS classes to the `ResearchParticipationConsent` component to fix layout and typography issues.",
-          "status": "completed",
-          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
-        }
-      },
-      {
-        "id": "A47_FinalBuildAfterConsentStyling",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Consent Form Styling",
-          "description": "Running the final build to verify that the consent form's UI is correctly styled.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "A48_InitiateUXDebugSession",
-        "label": "Action",
-        "properties": {
-          "name": "Initiate UX Debugging Session with Playwright",
-          "description": "Start a new debugging session following the SSoT to perform a UX evaluation of the main page. This involves visual inspection via screenshots and interaction testing of key components.",
-          "status": "failed",
-          "error": "Consent button remains disabled, indicating a persistent state update issue."
-        }
-      },
-      {
-        "id": "P21_RecurringStateUpdateFailure",
-        "label": "Problem",
-        "properties": {
-          "name": "Recurring State Update Failure in Consent Form",
-          "description": "The consent form's submit button remains disabled despite multiple fixes. This indicates a deeper, unresolved issue with React state management within the `ResearchParticipationConsent` component.",
-          "files": ["src/components/ui/ResearchParticipationConsent.tsx", "tests/ux-debug.spec.ts"]
-        }
-      },
-      {
-        "id": "A49_IsolateAndDebugComponent",
-        "label": "Design",
-        "properties": {
-          "name": "Isolate Component for Focused Debugging",
-          "description": "Change debugging strategy to isolate the `ResearchParticipationConsent` component on a dedicated test page. This will eliminate potential interference and allow for focused debugging of its state lifecycle using detailed logging with `useEffect`.",
-          "status": "superseded"
-        }
-      },
-      {
-        "id": "P22_AestheticMismatch",
-        "label": "Problem",
-        "properties": {
-          "name": "Major Aesthetic Mismatch with New Design",
-          "description": "The current implementation of the consent form and page background is functionally correct but aesthetically completely different from the new reference design, which features a gradient background and a much more polished, modern UI.",
-          "files": ["src/components/ui/ResearchParticipationConsent.tsx", "src/app/globals.css"]
-        }
-      },
-      {
-        "id": "A50_ImplementAestheticOverhaul",
-        "label": "Design",
-        "properties": {
-          "name": "Implement Aesthetic Overhaul to Match New Design",
-          "description": "A complete redesign of the page aesthetics. This involves adding a global background gradient and completely re-styling the `ResearchParticipationConsent` component to match the new, polished reference image.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A51_ExecuteAestheticOverhaul",
-        "label": "Action",
-        "properties": {
-          "name": "Execute Aesthetic Overhaul",
-          "description": "Applied a new gradient background and completely restyled the `ResearchParticipationConsent` component to match the polished design from the reference image.",
-          "status": "completed",
-          "files": ["src/app/globals.css", "src/components/ui/ResearchParticipationConsent.tsx"]
-        }
-      },
-      {
-        "id": "A52_FinalBuildAfterAestheticOverhaul",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Aesthetic Overhaul",
-          "description": "Running the final build to verify that the new aesthetic design is correctly implemented and the application is stable.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P23_FinalStylingMismatch",
-        "label": "Problem",
-        "properties": {
-          "name": "Final Styling Mismatch",
-          "description": "The previous aesthetic overhaul did not accurately match the final design reference. Key differences remain, especially in the styling of radio buttons, typography, and internal layout of the consent form.",
-          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
-        }
-      },
-      {
-        "id": "A53_PerformFinalStylingPass",
-        "label": "Design",
-        "properties": {
-          "name": "Perform Final Styling Pass",
-          "description": "A final pass on styling the `ResearchParticipationConsent` component to precisely match the new reference image. This involves simplifying the radio button styles and fine-tuning typography and layout.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A54_ExecuteFinalStylingPass",
-        "label": "Action",
-        "properties": {
-          "name": "Execute Final Styling Pass",
-          "description": "Executed the final styling pass on the `ResearchParticipationConsent` component, adjusting typography, layout, and radio button styles to precisely match the final design reference.",
-          "status": "completed",
-          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
-        }
-      },
-      {
-        "id": "A55_FinalBuildAfterFinalStyling",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Final Styling Pass",
-          "description": "Running the final build to verify that all styling corrections are implemented correctly.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P24_RecurringStateIssue",
-        "label": "Problem",
-        "properties": {
-          "name": "Recurring State Management Issue in Consent Form",
-          "description": "Despite multiple styling adjustments, the core issue persists: the consent checkbox does not reliably enable the submit button. This points to an unresolved state management bug.",
-          "files": ["src/components/ui/ResearchParticipationConsent.tsx"]
-        }
-      },
-      {
-        "id": "A56_ResumeFocusedDebugging",
-        "label": "Design",
-        "properties": {
-          "name": "Resume Focused Debugging on Isolated Component",
-          "description": "Resume the focused debugging of the `ResearchParticipationConsent` component. A new Playwright test will be created to run against the isolated debug page (`/debug`) to monitor console logs and verify the state update.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A57_ExecuteFinalDebuggingAndCleanup",
-        "label": "Action",
-        "properties": {
-          "name": "Execute Final Debugging and Cleanup",
-          "description": "Successfully diagnosed the state update issue using an isolated test page and Playwright. The fix was confirmed, and all temporary debugging code and test files have been removed.",
-          "status": "completed",
-          "files": [
-            "src/components/ui/ResearchParticipationConsent.tsx",
-            "src/app/debug/page.tsx",
-            "tests/debug-isolated.spec.ts",
-            "tests/debug.spec.ts"
-          ]
-        }
-      },
-      {
-        "id": "A58_FinalBuildAfterDebug",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Debugging",
-          "description": "Running the final build to verify that the application is stable after fixing the state management bug and cleaning up debug files.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P25_TailwindStylingNotApplied",
-        "label": "Problem",
-        "properties": {
-          "name": "Tailwind CSS Styles Not Applied to Components",
-          "description": "Tailwind CSS utility classes are not being applied to the components, likely due to an incorrect configuration in `tailwind.config.ts` that prevents the scanner from finding the component files.",
-          "files": ["tailwind.config.ts"]
-        }
-      },
-      {
-        "id": "A59_DebugNextJsTailwindConfig",
-        "label": "Design",
-        "properties": {
-          "name": "Debug Next.js Tailwind CSS Configuration",
-          "description": "Plan to debug the Tailwind CSS configuration. The primary focus will be on verifying and correcting the `content` paths in `tailwind.config.ts` to ensure it correctly scans all `.tsx` files in the `src` directory.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A60_FixTailwindConfig",
-        "label": "Action",
-        "properties": {
-          "name": "Fix Tailwind CSS Configuration",
-          "description": "Corrected the `content` path in `tailwind.config.ts` by removing the unnecessary reference to the `pages` directory, which resolved the style application issue.",
-          "status": "completed",
-          "files": ["tailwind.config.ts"]
-        }
-      },
-      {
-        "id": "A61_FinalBuildAfterTailwindFix",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Tailwind CSS Fix",
-          "description": "Running the final build to verify that Tailwind CSS styles are now correctly applied to all components.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P26_StaleCacheIssue",
-        "label": "Problem",
-        "properties": {
-          "name": "Styling Changes Not Reflected Due to Stale Cache",
-          "description": "Despite a successful build after the Tailwind CSS config fix, the UI changes are not visible in the browser. This indicates a stale Next.js build cache in the `.next` directory.",
-          "files": [".next/"]
-        }
-      },
-      {
-        "id": "A62_ForceClearCache",
-        "label": "Design",
-        "properties": {
-          "name": "Force Clear Next.js Cache",
-          "description": "Plan to manually and completely clear the Next.js cache by deleting the `.next` directory and then restarting the development server to ensure a fresh build.",
-          "status": "completed",
-          "commands": [
-            "rm -rf .next",
-            "pnpm dev"
-          ]
-        }
-      },
-      {
-        "id": "P27_IncorrectWordCount",
-        "label": "Problem",
-        "properties": {
-          "name": "Incorrect Word Count in Visualization",
-          "description": "The Kawasaki Model visualization is only rendering 51 elements (50 words + 1 field) because the particle count is hardcoded to 50 for performance reasons, which is inconsistent with the full list of 100 stimulus words.",
-          "files": ["src/components/kawasaki-model/index.tsx"]
-        }
-      },
-      {
-        "id": "A63_IncreaseParticleCount",
-        "label": "Design",
-        "properties": {
-          "name": "Increase Particle Count to 100",
-          "description": "Plan to modify `kawasaki-model/index.tsx` to increase the `particleCount` from 50 to 100 to utilize the full set of Jung's stimulus words in the visualization.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A64_ExecuteParticleCountIncrease",
-        "label": "Action",
-        "properties": {
-          "name": "Execute Particle Count Increase",
-          "description": "Increased the `particleCount` to 100 in `kawasaki-model/index.tsx` to ensure all stimulus words are displayed.",
-          "status": "completed",
-          "files": ["src/components/kawasaki-model/index.tsx"]
-        }
-      },
-      {
-        "id": "A65_FinalBuildAfterWordCountFix",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Word Count Fix",
-          "description": "Running the final build to verify that the word count in the visualization is correct.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P28_TailwindNotProcessing",
-        "label": "Problem",
-        "properties": {
-          "name": "Tailwind CSS is Not Processing Utility Classes",
-          "description": "Despite a correct `tailwind.config.ts`, utility classes are not being processed into CSS. This points to a deeper configuration issue, likely in `postcss.config.mjs` or the import of `globals.css` in the root layout.",
-          "files": ["postcss.config.mjs", "src/app/layout.tsx"]
-        }
-      },
-      {
-        "id": "A66_VerifyPostCssAndGlobalCss",
-        "label": "Design",
-        "properties": {
-          "name": "Verify PostCSS and Global CSS Configuration",
-          "description": "Plan to investigate and correct the PostCSS configuration and the global CSS import to ensure Tailwind's build process is triggered correctly.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A67_FixPostCssConfig",
-        "label": "Action",
-        "properties": {
-          "name": "Fix PostCSS Configuration",
-          "description": "Updated `postcss.config.mjs` to use `tailwindcss` directly instead of the outdated `@tailwindcss/postcss` plugin.",
-          "status": "completed",
-          "files": ["postcss.config.mjs"]
-        }
-      },
-      {
-        "id": "A68_ClearCacheAndFinalBuild",
-        "label": "Action",
-        "properties": {
-          "name": "Clear Cache and Final Build",
-          "description": "Clearing the cache and running the final build to verify that the PostCSS configuration fix has resolved the styling issue.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "P29_IncorrectPostCssConfig",
-        "label": "Problem",
-        "properties": {
-          "name": "Incorrect PostCSS Configuration for Tailwind CSS v4",
-          "description": "The attempt to fix the PostCSS configuration was incorrect for the installed version of Tailwind CSS, causing a build failure. The error message explicitly states that `@tailwindcss/postcss` should be used.",
-          "files": ["postcss.config.mjs"]
-        }
-      },
-      {
-        "id": "A69_RevertPostCssConfig",
-        "label": "Action",
-        "properties": {
-          "name": "Revert PostCSS Configuration",
-          "description": "Reverted `postcss.config.mjs` to use `@tailwindcss/postcss` as indicated by the build error message.",
-          "status": "completed",
-          "files": ["postcss.config.mjs"]
-        }
-      },
-      {
-        "id": "A70_FinalBuildAttemptAfterRevert",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build Attempt After Revert",
-          "description": "Running the final build after reverting the PostCSS configuration to the correct format.",
-          "status": "completed",
-          "commands": [
-            "rm -rf .next",
-            "pnpm build"
-          ]
-        }
-      },
-      {
-        "id": "A71_StandardizeTailwindDebugProcess",
-        "label": "Design",
-        "properties": {
-          "name": "Standardize Tailwind CSS Debugging Process",
-          "description": "Document a standardized procedure for debugging Tailwind CSS build and styling issues based on the recent troubleshooting session. This process serves as the SSoT for future styling-related problems.",
-          "status": "completed",
-          "steps": [
-            "Verify `tailwind.config.ts`: Ensure the `content` paths correctly scan all source files.",
-            "Verify `postcss.config.mjs`: Ensure it uses `@tailwindcss/postcss` and `autoprefixer`.",
-            "Verify Global CSS Import: Ensure `globals.css` is imported in the root `layout.tsx`.",
-            "Force Clear Cache: Always delete the `.next` directory after config changes.",
-            "Perform a Clean Build: Run `pnpm build` to validate any fixes."
-          ]
-        }
-      },
-      {
-        "id": "P29_PersistentTailwindFailure",
-        "label": "Problem",
-        "properties": {
-          "name": "Persistent Tailwind CSS Failure",
-          "description": "Despite following the standardized debug process, Tailwind CSS styles are still not being applied. This suggests a fundamental misconfiguration that requires re-verification against official documentation.",
-          "files": ["tailwind.config.ts", "postcss.config.mjs", "package.json"]
-        }
-      },
-      {
-        "id": "A72_ReverifyOfficialSetup",
-        "label": "Design",
-        "properties": {
-          "name": "Re-verify Setup Against Official Tailwind CSS v4 Docs",
-          "description": "Plan to perform a web search for the official Tailwind CSS v4 + Next.js App Router installation guide and meticulously compare every configuration file (`package.json`, `tailwind.config.ts`, `postcss.config.mjs`, etc.) against it to find and fix the discrepancy.",
-          "status": "completed"
-        }
-      },
-      {
-        "id": "A73_ExecuteOfficialSetupFix",
-        "label": "Action",
-        "properties": {
-          "name": "Execute Fix Based on Official Documentation",
-          "description": "Corrected the Tailwind CSS configuration based on official v4 guidelines. This involved updating `globals.css` to use `@import 'tailwindcss'` and simplifying `tailwind.config.ts`.",
-          "status": "completed",
-          "files": ["src/app/globals.css", "tailwind.config.ts"]
-        }
-      },
-      {
-        "id": "A74_FinalBuildAfterOfficialFix",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Official Setup Fix",
-          "description": "Clearing the cache and running the final build to verify that adhering to the official setup guide has resolved the styling issue.",
-          "status": "failed",
-          "error": "Unknown utility class 'border-border'"
-        }
-      },
-      {
-        "id": "P30_UnknownUtilityClass",
-        "label": "Problem",
-        "properties": {
-          "name": "Unknown Utility Class Error",
-          "description": "The build process reported an error for the unknown utility class 'border-border', which was caused by the removal of custom theme variables from `globals.css`.",
-          "files": ["src/app/globals.css"]
-        }
-      },
-      {
-        "id": "A75_RemoveCustomClassUsage",
-        "label": "Action",
-        "properties": {
-          "name": "Remove Custom Class Usage",
-          "description": "Removed the usage of the custom `border-border` class from the global stylesheet to resolve the build error.",
-          "status": "completed",
-          "files": ["src/app/globals.css"]
-        }
-      },
-      {
-        "id": "A76_FinalBuildAfterCleanup",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After Cleanup",
-          "description": "Running the final build to verify that all Tailwind CSS issues are resolved and the application is stable.",
-          "status": "failed",
-          "error": "Unknown utility class 'bg-background'"
-        }
-      },
-      {
-        "id": "P31_MoreUnknownUtilityClasses",
-        "label": "Problem",
-        "properties": {
-          "name": "More Unknown Utility Class Errors",
-          "description": "The build process revealed more unknown utility classes (`bg-background`, `text-foreground`) after the initial fix, indicating all custom variable usages need to be removed.",
-          "files": ["src/app/globals.css"]
-        }
-      },
-      {
-        "id": "A77_RemoveAllCustomClasses",
-        "label": "Action",
-        "properties": {
-          "name": "Remove All Custom Class Usages",
-          "description": "Removed all remaining custom utility class usages from `globals.css` to finally resolve all build errors.",
-          "status": "completed",
-          "files": ["src/app/globals.css"]
-        }
-      },
-      {
-        "id": "A78_FinalBuildAfterAllFixes",
-        "label": "Action",
-        "properties": {
-          "name": "Final Build After All Fixes",
-          "description": "Running the absolute final build to verify that all Tailwind CSS configuration and styling issues are completely resolved.",
-          "status": "completed",
-          "command": "pnpm build"
-        }
-      },
-      {
-        "id": "A79_StandardizeTailwindDebugSOP",
-        "label": "Design",
-        "properties": {
-          "name": "Standardize Tailwind CSS Debugging SOP",
-          "description": "Document the learnings from the extensive Tailwind CSS troubleshooting session into a Standard Operating Procedure (SOP) to serve as a future reference and prevent recurrence.",
-          "status": "completed",
-          "steps": [
-            "Verify `tailwind.config.ts`: Check that the `content` array correctly scans all relevant source files (`app`, `components`).",
-            "Verify `postcss.config.mjs`: Ensure it correctly uses the `@tailwindcss/postcss` plugin for the installed Tailwind CSS version.",
-            "Verify `globals.css`: Ensure it uses the modern `@import 'tailwindcss';` directive and does not contain legacy `@apply` rules for undefined custom variables.",
-            "Force Clear Cache: After any configuration change, always delete the `.next` directory with `rm -rf .next`.",
-            "Perform a Clean Restart: Run `pnpm dev` or `pnpm build` after clearing the cache to validate fixes."
-          ]
-        }
-      }
-    ],
-    "edges": [
-      { "id": "e1", "label": "led_to", "outV": "P1_CreateContextError", "inV": "A1_VerifyUseClient" },
-      { "id": "e2", "label": "followed_by", "outV": "A1_VerifyUseClient", "inV": "A2_ReinstallDeps" },
-      { "id": "e3", "label": "resulted_in", "outV": "A2_ReinstallDeps", "inV": "P2_BuildScriptError" },
-      { "id": "e4", "label": "led_to", "outV": "P2_BuildScriptError", "inV": "A3_FixBuildScript" },
-      { "id": "e5", "label": "resulted_in", "outV": "A3_FixBuildScript", "inV": "P3_ModuleNotFoundError" },
-      { "id": "e6", "label": "triggered", "outV": "P3_ModuleNotFoundError", "inV": "A4_AnalyzeDependencies" },
-      { "id": "e7", "label": "led_to", "outV": "A4_AnalyzeDependencies", "inV": "A5_RefactorPlan" },
-      { "id": "e8", "label": "implemented_by", "outV": "A5_RefactorPlan", "inV": "A6_ExecuteRefactor" },
-      { "id": "e9", "label": "uncovered", "outV": "A6_ExecuteRefactor", "inV": "P4_StaticImportError" },
-      { "id": "e10", "label": "led_to", "outV": "P4_StaticImportError", "inV": "A7_FixJungVoiceTestProps" },
-      { "id": "e11", "label": "resulted_in", "outV": "A7_FixJungVoiceTestProps", "inV": "P5_FinalBuildError" },
-      { "id": "e12", "label": "led_to", "outV": "P5_FinalBuildError", "inV": "A8_FixUseRef" },
-      { "id": "e13", "label": "uncovered", "outV": "A8_FixUseRef", "inV": "P6_ErrorRecurrence" },
-      { "id": "e14", "label": "triggered", "outV": "P6_ErrorRecurrence", "inV": "A9_RootCauseAnalysis" },
-      { "id": "e15", "label": "led_to_decision", "outV": "A9_RootCauseAnalysis", "inV": "A10_SwitchToReact" },
-      { "id": "e16", "label": "resulted_in", "outV": "A10_SwitchToReact", "inV": "P7_MetadataConflict" },
-      { "id": "e17", "label": "led_to", "outV": "P7_MetadataConflict", "inV": "A11_ComponentSeparationPlan" },
-      { "id": "e18", "label": "implemented_by", "outV": "A11_ComponentSeparationPlan", "inV": "A12_ExecuteSeparation" },
-      { "id": "e19", "label": "uncovered", "outV": "A12_ExecuteSeparation", "inV": "P8_MissingUIComponent" },
-      { "id": "e20", "label": "uncovered", "outV": "A12_ExecuteSeparation", "inV": "P9_RecurringMissingModule" },
-      { "id": "e21", "label": "led_to", "outV": "P8_MissingUIComponent", "inV": "A13_AddProgressComponent" },
-      { "id": "e22", "label": "led_to", "outV": "P9_RecurringMissingModule", "inV": "A14_CommentOutHume" },
-      { "id": "e23", "label": "precedes", "outV": "A13_AddProgressComponent", "inV": "A15_ExecuteBuild" },
-      { "id": "e24", "label": "precedes", "outV": "A14_CommentOutHume", "inV": "A15_ExecuteBuild" },
-      { "id": "e25", "label": "resulted_in", "outV": "A15_ExecuteBuild", "inV": "P10_PrerenderError" },
-      { "id": "e26", "label": "led_to", "outV": "P10_PrerenderError", "inV": "A16_DynamicImport" },
-      { "id": "e27", "label": "precedes", "outV": "A16_DynamicImport", "inV": "A17_ExecuteBuildAgain" },
-      { "id": "e28", "label": "enables", "outV": "A17_ExecuteBuildAgain", "inV": "A18_EvaluateUIUX" },
-      { "id": "e29", "label": "uncovered", "outV": "A18_EvaluateUIUX", "inV": "P11_UIUXDeficiencies" },
-      { "id": "e30", "label": "led_to", "outV": "P11_UIUXDeficiencies", "inV": "A19_PlanUIUXRefactor" },
-      { "id": "e31", "label": "implemented_by", "outV": "A19_PlanUIUXRefactor", "inV": "A20_ExecuteUIUXRefactor" },
-      { "id": "e32", "label": "precedes", "outV": "A20_ExecuteUIUXRefactor", "inV": "A21_VerifyRefactorBuild" },
-      { "id": "e33", "label": "uncovered", "outV": "A21_VerifyRefactorBuild", "inV": "P12_IncompleteExperimentFlow" },
-      { "id": "e34", "label": "led_to", "outV": "P12_IncompleteExperimentFlow", "inV": "A22_DefineFullExperiment" },
-      { "id": "e35", "label": "implemented_by", "outV": "A22_DefineFullExperiment", "inV": "A23_ImplementConsent" },
-      { "id": "e36", "label": "implemented_by", "outV": "A22_DefineFullExperiment", "inV": "A24_FixJungVoiceTest" },
-      { "id": "e37", "label": "precedes", "outV": "A23_ImplementConsent", "inV": "A25_FinalBuildVerification" },
-      { "id": "e38", "label": "precedes", "outV": "A24_FixJungVoiceTest", "inV": "A25_FinalBuildVerification" },
-      { "id": "e39", "label": "resulted_in", "outV": "A25_FinalBuildVerification", "inV": "P13_PropsTypeError" },
-      { "id": "e40", "label": "led_to", "outV": "P13_PropsTypeError", "inV": "A26_FixProps" },
-      { "id": "e41", "label": "precedes", "outV": "A26_FixProps", "inV": "A27_FinalBuildAttempt" },
-      { "id": "e42", "label": "uncovered", "outV": "A27_FinalBuildAttempt", "inV": "P14_UILayoutDeviation" },
-      { "id": "e43", "label": "led_to", "outV": "P14_UILayoutDeviation", "inV": "A28_RestoreSinglePageLayout" },
-      { "id": "e44", "label": "implemented_by", "outV": "A28_RestoreSinglePageLayout", "inV": "A29_ExecuteLayoutRevert" },
-      { "id": "e45", "label": "implemented_by", "outV": "A28_RestoreSinglePageLayout", "inV": "A30_CreateEmbeddedConsentForm" },
-      { "id": "e46", "label": "precedes", "outV": "A29_ExecuteLayoutRevert", "inV": "A31_FinalBuildAfterUIRestoration" },
-      { "id": "e47", "label": "precedes", "outV": "A30_CreateEmbeddedConsentForm", "inV": "A31_FinalBuildAfterUIRestoration" },
-      { "id": "e48", "label": "enables", "outV": "A31_FinalBuildAfterUIRestoration", "inV": "A32_DefinePlaywrightDebugProcess" },
-      { "id": "e49", "label": "precedes", "outV": "A32_DefinePlaywrightDebugProcess", "inV": "A33_InitiatePlaywrightDebugSession" },
-      { "id": "e50", "label": "uncovered", "outV": "A33_InitiatePlaywrightDebugSession", "inV": "P15_InteractiveModeViolation" },
-      { "id": "e51", "label": "led_to", "outV": "P15_InteractiveModeViolation", "inV": "A34_DisableInteractiveMode" },
-      { "id": "e52", "label": "uncovered", "outV": "A33_InitiatePlaywrightDebugSession", "inV": "P16_PersistentCheckboxStateError" },
-      { "id": "e53", "label": "led_to", "outV": "P16_PersistentCheckboxStateError", "inV": "A35_ShiftToManualDebugging" },
-      { "id": "e54", "label": "uncovered", "outV": "A35_ShiftToManualDebugging", "inV": "P17_IncorrectUIFlow" },
-      { "id": "e55", "label": "led_to", "outV": "P17_IncorrectUIFlow", "inV": "A36_ImplementSinglePageWithEmbeddedConsent" },
-      { "id": "e56", "label": "implemented_by", "outV": "A36_ImplementSinglePageWithEmbeddedConsent", "inV": "A37_FinalizeUIRestoration" },
-      { "id": "e57", "label": "precedes", "outV": "A37_FinalizeUIRestoration", "inV": "A38_FinalBuildAndVerification" },
-      { "id": "e58", "label": "uncovered", "outV": "A38_FinalBuildAndVerification", "inV": "P18_UIStylingMismatch" },
-      { "id": "e59", "label": "led_to", "outV": "P18_UIStylingMismatch", "inV": "A39_RefineUIStyling" },
-      { "id": "e60", "label": "implemented_by", "outV": "A39_RefineUIStyling", "inV": "A40_ExecuteStylingRefactor" },
-      { "id": "e61", "label": "precedes", "outV": "A40_ExecuteStylingRefactor", "inV": "A41_FinalBuildAfterStyling" },
-      { "id": "e62", "label": "uncovered", "outV": "A41_FinalBuildAfterStyling", "inV": "P19_ComponentLayoutBroken" },
-      { "id": "e63", "label": "led_to", "outV": "P19_ComponentLayoutBroken", "inV": "A42_RefactorComponentModel" },
-      { "id": "e64", "label": "implemented_by", "outV": "A42_RefactorComponentModel", "inV": "A43_ExecuteComponentRefactor" },
-      { "id": "e65", "label": "precedes", "outV": "A43_ExecuteComponentRefactor", "inV": "A44_FinalBuildAfterComponentRefactor" },
-      { "id": "e66", "label": "uncovered", "outV": "A44_FinalBuildAfterComponentRefactor", "inV": "P20_ConsentFormUIBroken" },
-      { "id": "e67", "label": "led_to", "outV": "P20_ConsentFormUIBroken", "inV": "A45_FixConsentFormStyling" },
-      { "id": "e68", "label": "implemented_by", "outV": "A45_FixConsentFormStyling", "inV": "A46_ExecuteConsentFormStyling" },
-      { "id": "e69", "label": "precedes", "outV": "A46_ExecuteConsentFormStyling", "inV": "A47_FinalBuildAfterConsentStyling" },
-      { "id": "e70", "label": "enables", "outV": "A47_FinalBuildAfterConsentStyling", "inV": "A48_InitiateUXDebugSession" },
-      { "id": "e71", "label": "uncovered", "outV": "A48_InitiateUXDebugSession", "inV": "P21_RecurringStateUpdateFailure" },
-      { "id": "e72", "label": "led_to", "outV": "P21_RecurringStateUpdateFailure", "inV": "A49_IsolateAndDebugComponent" },
-      { "id": "e73", "label": "uncovered", "outV": "A49_IsolateAndDebugComponent", "inV": "P22_AestheticMismatch" },
-      { "id": "e74", "label": "led_to", "outV": "P22_AestheticMismatch", "inV": "A50_ImplementAestheticOverhaul" },
-      { "id": "e75", "label": "implemented_by", "outV": "A50_ImplementAestheticOverhaul", "inV": "A51_ExecuteAestheticOverhaul" },
-      { "id": "e76", "label": "precedes", "outV": "A51_ExecuteAestheticOverhaul", "inV": "A52_FinalBuildAfterAestheticOverhaul" },
-      { "id": "e77", "label": "uncovered", "outV": "A52_FinalBuildAfterAestheticOverhaul", "inV": "P23_FinalStylingMismatch" },
-      { "id": "e78", "label": "led_to", "outV": "P23_FinalStylingMismatch", "inV": "A53_PerformFinalStylingPass" },
-      { "id": "e79", "label": "implemented_by", "outV": "A53_PerformFinalStylingPass", "inV": "A54_ExecuteFinalStylingPass" },
-      { "id": "e80", "label": "precedes", "outV": "A54_ExecuteFinalStylingPass", "inV": "A55_FinalBuildAfterFinalStyling" },
-      { "id": "e81", "label": "uncovered", "outV": "A55_FinalBuildAfterFinalStyling", "inV": "P24_RecurringStateIssue" },
-      { "id": "e82", "label": "led_to", "outV": "P24_RecurringStateIssue", "inV": "A56_ResumeFocusedDebugging" },
-      { "id": "e83", "label": "implemented_by", "outV": "A56_ResumeFocusedDebugging", "inV": "A57_ExecuteFinalDebuggingAndCleanup" },
-      { "id": "e84", "label": "precedes", "outV": "A57_ExecuteFinalDebuggingAndCleanup", "inV": "A58_FinalBuildAfterDebug" },
-      { "id": "e85", "label": "uncovered", "outV": "A58_FinalBuildAfterDebug", "inV": "P25_TailwindStylingNotApplied" },
-      { "id": "e86", "label": "led_to", "outV": "P25_TailwindStylingNotApplied", "inV": "A59_DebugNextJsTailwindConfig" },
-      { "id": "e87", "label": "implemented_by", "outV": "A59_DebugNextJsTailwindConfig", "inV": "A60_FixTailwindConfig" },
-      { "id": "e88", "label": "precedes", "outV": "A60_FixTailwindConfig", "inV": "A61_FinalBuildAfterTailwindFix" },
-      { "id": "e89", "label": "uncovered", "outV": "A61_FinalBuildAfterTailwindFix", "inV": "P26_StaleCacheIssue" },
-      { "id": "e90", "label": "led_to", "outV": "P26_StaleCacheIssue", "inV": "A62_ForceClearCache" },
-      { "id": "e91", "label": "uncovered", "outV": "A62_ForceClearCache", "inV": "P27_IncorrectWordCount" },
-      { "id": "e92", "label": "led_to", "outV": "P27_IncorrectWordCount", "inV": "A63_IncreaseParticleCount" },
-      { "id": "e93", "label": "implemented_by", "outV": "A63_IncreaseParticleCount", "inV": "A64_ExecuteParticleCountIncrease" },
-      { "id": "e94", "label": "precedes", "outV": "A64_ExecuteParticleCountIncrease", "inV": "A65_FinalBuildAfterWordCountFix" },
-      { "id": "e95", "label": "uncovered", "outV": "A65_FinalBuildAfterWordCountFix", "inV": "P28_TailwindNotProcessing" },
-      { "id": "e96", "label": "led_to", "outV": "P28_TailwindNotProcessing", "inV": "A66_VerifyPostCssAndGlobalCss" },
-      { "id": "e97", "label": "implemented_by", "outV": "A66_VerifyPostCssAndGlobalCss", "inV": "A67_FixPostCssConfig" },
-      { "id": "e98", "label": "precedes", "outV": "A67_FixPostCssConfig", "inV": "A68_ClearCacheAndFinalBuild" },
-      { "id": "e99", "label": "uncovered", "outV": "A68_ClearCacheAndFinalBuild", "inV": "P29_IncorrectPostCssConfig" },
-      { "id": "e100", "label": "led_to", "outV": "P29_IncorrectPostCssConfig", "inV": "A69_RevertPostCssConfig" },
-      { "id": "e101", "label": "precedes", "outV": "A69_RevertPostCssConfig", "inV": "A70_FinalBuildAttemptAfterRevert" },
-      { "id": "e102", "label": "enables", "outV": "A70_FinalBuildAttemptAfterRevert", "inV": "A71_StandardizeTailwindDebugProcess" },
-      { "id": "e103", "label": "uncovered", "outV": "A71_StandardizeTailwindDebugProcess", "inV": "P29_PersistentTailwindFailure" },
-      { "id": "e104", "label": "led_to", "outV": "P29_PersistentTailwindFailure", "inV": "A72_ReverifyOfficialSetup" },
-      { "id": "e105", "label": "implemented_by", "outV": "A72_ReverifyOfficialSetup", "inV": "A73_ExecuteOfficialSetupFix" },
-      { "id": "e106", "label": "precedes", "outV": "A73_ExecuteOfficialSetupFix", "inV": "A74_FinalBuildAfterOfficialFix" },
-      { "id": "e107", "label": "uncovered", "outV": "A74_FinalBuildAfterOfficialFix", "inV": "P30_UnknownUtilityClass" },
-      { "id": "e108", "label": "led_to", "outV": "P30_UnknownUtilityClass", "inV": "A75_RemoveCustomClassUsage" },
-      { "id": "e109", "label": "precedes", "outV": "A75_RemoveCustomClassUsage", "inV": "A76_FinalBuildAfterCleanup" },
-      { "id": "e110", "label": "uncovered", "outV": "A76_FinalBuildAfterCleanup", "inV": "P31_MoreUnknownUtilityClasses" },
-      { "id": "e111", "label": "led_to", "outV": "P31_MoreUnknownUtilityClasses", "inV": "A77_RemoveAllCustomClasses" },
-      { "id": "e112", "label": "precedes", "outV": "A77_RemoveAllCustomClasses", "inV": "A78_FinalBuildAfterAllFixes" },
-      { "id": "e113", "label": "documents", "outV": "A78_FinalBuildAfterAllFixes", "inV": "A79_StandardizeTailwindDebugSOP" }
-    ]
-  }
+  "application": {
+    "name": "@gftdcojp/spirit-in-physics",
+    "version": "0.0.1",
+    "description": "Jung's Word Association Test Embedding Model for quantifying the human spirit.",
+    "framework": "Next.js",
+    "mainEntry": "src/app/page.tsx"
+  },
+  "processes": [
+    {
+      "id": "consent",
+      "name": "Consent Process",
+      "description": "Handles user consent for research participation before the test begins.",
+      "entryComponent": "ResearchParticipationConsent",
+      "steps": [
+        "Display consent form and demographic questions.",
+        "User agrees to the terms.",
+        "Triggers the main application flow."
+      ]
+    },
+    {
+      "id": "voice_assessment",
+      "name": "Jung's Voice Association Test",
+      "description": "Core process where the user performs the word association test via voice.",
+      "entryComponent": "SpiritInPhysicsInteractive",
+      "subComponents": ["JungVoiceTest"],
+      "steps": [
+        "A stimulus word is presented visually and audibly.",
+        "User responds by speaking the first associated word that comes to mind.",
+        "Hume AI API captures and transcribes the user's voice.",
+        "Response and reaction time are recorded in the zustand store.",
+        "Process repeats for the configured number of words."
+      ],
+      "dataStore": "kawasakiStore"
+    },
+    {
+      "id": "visualization",
+      "name": "Kawasaki Model Visualization",
+      "description": "Displays the 3D force graph representation of the Kawasaki Model.",
+      "entryComponent": "KawasakiModel",
+      "dependencies": ["react-force-graph-3d", "three"]
+    }
+  ],
+  "components": [
+    {
+      "name": "PageClient",
+      "path": "src/app/PageClient.tsx",
+      "description": "Main client-side component that orchestrates the overall page layout and flow.",
+      "dependencies": ["ResearchParticipationConsent", "SpiritInPhysicsInteractive", "KawasakiModel"]
+    },
+    {
+      "name": "ResearchParticipationConsent",
+      "path": "src/components/ui/ResearchParticipationConsent.tsx",
+      "description": "UI component for capturing user consent and demographic information.",
+      "dependencies": ["@radix-ui/*", "shadcn-ui"]
+    },
+    {
+      "name": "SpiritInPhysicsInteractive",
+      "path": "src/components/spirit-in-physics/SpiritInPhysicsInteractive.tsx",
+      "description": "Wrapper component that contains the main interactive voice assessment.",
+      "dependencies": ["JungVoiceAssessment"]
+    },
+    {
+      "name": "JungVoiceAssessment",
+      "path": "src/components/jung-voice-assessment/JungVoiceAssessment.tsx",
+      "description": "Manages the setup and state for the voice test, delegating to JungVoiceTest.",
+      "dependencies": ["JungVoiceTest", "kawasakiStore"]
+    },
+    {
+      "name": "JungVoiceTest",
+      "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
+      "description": "Handles the core logic of the voice test: presenting words, playing audio, capturing voice input via Hume API, and recording responses.",
+      "dependencies": ["hume", "kawasakiStore"]
+    },
+    {
+      "name": "KawasakiModel",
+      "path": "src/components/kawasaki-model/index.tsx",
+      "description": "Renders the 3D visualization of the physics model.",
+      "dependencies": ["react-force-graph-3d", "three"]
+    },
+    {
+      "name": "kawasakiStore",
+      "path": "src/store/kawasakiStore.ts",
+      "description": "Zustand store for global state management, including test results and real-time test state.",
+      "dependencies": ["zustand"]
+    }
+  ],
+  "dependencies": {
+    "next": "^15.4.4",
+    "react": "^19.1.0",
+    "hume": "^0.12.1",
+    "zustand": "^5.0.6",
+    "axios": "^1.11.0",
+    "uuid": "^11.1.0",
+    "three": "^0.178.0",
+    "react-force-graph-3d": "^1.28.0",
+    "lucide-react": "^0.528.0",
+    "shadcn-ui": "^0.9.5"
+  },
+  "dataFlows": [
+    {
+      "flow": "Voice Test Execution",
+      "steps": [
+        {
+          "component": "PageClient",
+          "action": "User clicks 'Consent and Continue'"
+        },
+        {
+          "component": "SpiritInPhysicsInteractive",
+          "action": "Renders JungVoiceAssessment"
+        },
+        {
+          "component": "JungVoiceTest",
+          "action": "User clicks 'Start Test', triggering `startTest` action in zustand store."
+        },
+        {
+          "component": "kawasakiStore",
+          "action": "State updates: `testStatus` to 'running', `currentWordIndex` to 0."
+        },
+        {
+          "component": "JungVoiceTest",
+          "action": "Detects `currentWordIndex` change, plays audio for the stimulus word."
+        },
+        {
+          "component": "JungVoiceTest",
+          "action": "User clicks 'Respond', `startListening` is called, connecting to Hume API."
+        },
+        {
+          "component": "Hume API",
+          "action": "Transcribes user's voice and sends back the text."
+        },
+        {
+          "component": "JungVoiceTest",
+          "action": "Receives transcription, calls `recordResponse` action in zustand store."
+        },
+        {
+          "component": "kawasakiStore",
+          "action": "Adds response to `userResponses`, increments `currentWordIndex`. If test is over, calls `completeTest`."
+        },
+        {
+          "component": "kawasakiStore",
+          "action": "(On complete) Calculates results and saves them to `voiceAssessments` in persistent storage."
+        }
+      ]
+    }
+  ]
 } 

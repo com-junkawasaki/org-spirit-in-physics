@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
 import { HumeClient } from 'hume';
-import type { StreamSocket } from 'hume';
+import type { ChatSocket } from 'hume';
 
 interface JungVoiceTestProps {
   numberOfWords?: number;
   apiKey?: string;
+  secretKey?: string;
   className?: string;
 }
 
@@ -18,6 +19,7 @@ const INTRODUCTION_MESSAGE = "Welcome to Spirit in Physics. I will present a ser
 export default function JungVoiceTest({
   numberOfWords = 10,
   apiKey = process.env.NEXT_PUBLIC_HUME_API_KEY || '',
+  secretKey = process.env.NEXT_PUBLIC_HUME_CLIENT_SECRET || '',
   className = '',
 }: JungVoiceTestProps) {
   const {
@@ -34,39 +36,32 @@ export default function JungVoiceTest({
   const [messages, setMessages] = useState<any[]>([]);
 
   const humeClientRef = useRef<HumeClient | null>(null);
-  const socketRef = useRef<StreamSocket | null>(null);
+  const socketRef = useRef<ChatSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
-    if (apiKey) {
-      humeClientRef.current = new HumeClient({ apiKey });
+    if (apiKey && secretKey) {
+      humeClientRef.current = new HumeClient({ apiKey, secretKey });
     } else {
-      setError("Hume API key is not set.");
+      setError("Hume API key or secret key is not set.");
     }
-  }, [apiKey]);
-
-  const playAudio = useCallback((path: string, onEnded?: () => void) => {
-    if (audioRef.current) {
-      audioRef.current.src = path;
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => console.error(`Failed to play audio from ${path}:`, error));
-      }
-      if (onEnded) {
-        const handleEnded = () => {
-          onEnded();
-          audioRef.current?.removeEventListener('ended', handleEnded);
-        };
-        audioRef.current.addEventListener('ended', handleEnded);
-      }
-    }
-  }, []);
-
+  }, [apiKey, secretKey]);
+  
+  // Play intro message on component mount
   useEffect(() => {
-    playAudio('/audio/Welcome_to_Spirit_in_e4385e4e.mp3');
-  }, [playAudio]);
+      const audio = new Audio('/audio/Welcome_to_Spirit_in_e4385e4e.mp3');
+      audio.play().catch(e => {
+        if (e.name !== 'AbortError') {
+          console.error("Error playing intro audio:", e)
+        }
+      });
+      return () => {
+          audio.pause();
+          audio.src = '';
+      };
+  }, []);
 
 
   const stopListening = useCallback(() => {
@@ -87,7 +82,6 @@ export default function JungVoiceTest({
     recordResponse(userInput);
   }, [recordResponse, stopListening]);
   
-
   const startListening = useCallback(async () => {
     if (!humeClientRef.current || isListening) return;
     
@@ -98,7 +92,7 @@ export default function JungVoiceTest({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = stream;
       
-      const socket = await humeClientRef.current.empathicVoice.stream.connect({
+      const socket = await humeClientRef.current.empathicVoice.chat.connect({
         onOpen: () => console.log('Hume WebSocket connected.'),
         onMessage: (message) => {
           if (message.type === 'user_input' && message.input.trim() !== "") {
@@ -141,9 +135,19 @@ export default function JungVoiceTest({
     const word = stimulusWords[currentWordIndex];
     const filename = `jung_${word.replace(/\s+/g, '-').toLowerCase()}.mp3`;
     
-    playAudio(`/audio/${filename}`); // Audio plays automatically, but listening does not start
+    const audio = new Audio(`/audio/${filename}`);
+    audio.play().catch(e => {
+        if (e.name !== 'AbortError') {
+            console.error(`Could not play audio for "${word}":`, e);
+        }
+    });
 
-  }, [currentWordIndex, testStatus, stimulusWords, playAudio, stopListening]);
+    return () => {
+      audio.pause();
+      audio.src = '';
+    };
+
+  }, [currentWordIndex, testStatus, stimulusWords, isListening, stopListening]);
 
   const handleStartTest = () => {
     startTest(numberOfWords);
@@ -155,7 +159,7 @@ export default function JungVoiceTest({
 
   return (
     <Card className={`text-center p-6 ${className}`}>
-      <audio ref={audioRef} className="hidden" />
+      {/* <audio ref={audioRef} className="hidden" /> No longer needed */}
       <CardHeader>
         <CardTitle>Jung Voice Test</CardTitle>
       </CardHeader>
