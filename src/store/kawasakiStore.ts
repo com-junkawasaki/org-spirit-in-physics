@@ -46,6 +46,8 @@ interface KawasakiState {
     userResponses: RecordedResponse[];
     eventLog: EventLog[];
     assessmentId: string | null;
+    stream: MediaStream | null;
+    error: string | null;
 
     // Actions
     advanceToNextWord: () => void;
@@ -60,6 +62,8 @@ interface KawasakiState {
     restoreSession: (logData: EventLog[], session: 1 | 2, assessmentId: string) => void;
     setMediaStatus: (status: KawasakiState['mediaStatus']) => void;
     updateVoiceAssessment: (assessment: VoiceTestResults) => void;
+    setStream: (stream: MediaStream | null) => void;
+    setError: (error: string | null) => void;
 }
 
 export const useKawasakiStore = create<KawasakiState>()(
@@ -77,6 +81,8 @@ export const useKawasakiStore = create<KawasakiState>()(
             userResponses: [],
             eventLog: [],
             assessmentId: null,
+            stream: null,
+            error: null,
 
             // Actions Implementation
             advanceToNextWord: () => {
@@ -267,6 +273,8 @@ export const useKawasakiStore = create<KawasakiState>()(
                     userResponses: [],
                     assessmentId: null,
                     eventLog: [],
+                    stream: null, // Reset stream
+                    error: null,  // Reset error
                 })
             },
             
@@ -274,13 +282,17 @@ export const useKawasakiStore = create<KawasakiState>()(
                 set((state) => ({
                     voiceAssessments: [...state.voiceAssessments, assessment]
                 }))
-            }
+            },
+
+            setStream: (stream) => set({ stream }),
+            setError: (error) => set({ error }),
         }),
         {
             name: "kawasaki-model-storage-v10", // Incremented version
             partialize: (state) => {
-                // No need to exclude anything anymore since videoChunks is gone
-                return state;
+                // Exclude non-serializable 'stream' property from persisted state
+                const { stream, ...rest } = state;
+                return rest;
             },
         },
     ),

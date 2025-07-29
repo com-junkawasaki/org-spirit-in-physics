@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, MutableRefObject } from 'react';
+import React, { useEffect, useRef, useCallback, MutableRefObject } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
@@ -9,70 +9,32 @@ import type { JungVoiceTestProps } from './types';
 
 const INTRODUCTION_MESSAGE = "This study requires capturing your webcam and microphone for the entire duration of each session. Please grant permission when prompted. When you're ready, click the start button.";
 
-// --- Sub-components moved outside the main component ---
+// --- Memoized, Dumb Sub-components ---
 
-interface IntroScreenProps {
-  onStart: () => void;
-}
-const IntroScreen: React.FC<IntroScreenProps> = ({ onStart }) => (
+const IntroScreen = React.memo<{ onStart: () => void; }>(({ onStart }) => (
   <div>
     <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
     <Button onClick={onStart} size="lg">Start Session 1</Button>
   </div>
-);
+));
+IntroScreen.displayName = 'IntroScreen';
 
-interface PreflightScreenProps {
+
+const PreflightScreen = React.memo<{
   videoPreviewRef: MutableRefObject<HTMLVideoElement | null>;
-  streamRef: MutableRefObject<MediaStream | null>;
+  stream: MediaStream | null;
   deviceStatus: 'idle' | 'pending' | 'success' | 'error';
   error: string | null;
   onStartSession: () => void;
-  setDeviceStatus: (status: 'idle' | 'pending' | 'success' | 'error') => void;
-  setError: (error: string | null) => void;
-  logEvent: (event: string, details?: Record<string, any>) => void;
-}
-const PreflightScreen: React.FC<PreflightScreenProps> = ({
-  videoPreviewRef,
-  streamRef,
-  deviceStatus,
-  error,
-  onStartSession,
-  setDeviceStatus,
-  setError,
-  logEvent,
-}) => {
+}>(({ videoPreviewRef, stream, deviceStatus, error, onStartSession }) => {
   useEffect(() => {
-    const initializeMedia = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: { width: 1280, height: 720 }
-        });
-        streamRef.current = stream;
-        if (videoPreviewRef.current) {
-          videoPreviewRef.current.srcObject = stream;
-          videoPreviewRef.current.play().catch(e => {
+    if (stream && videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = stream;
+        videoPreviewRef.current.play().catch(e => {
             if (e.name !== 'AbortError') console.error("Video play error:", e);
-          });
-        }
-        setDeviceStatus('success');
-        logEvent('preflight_devices_acquired');
-      } catch (err) {
-        setDeviceStatus('error');
-        setError("Failed to access camera or microphone. Please check your browser permissions.");
-        logEvent('preflight_devices_failed', { error: (err as Error).message });
-      }
-    };
-    initializeMedia();
-
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // This should only run once on mount
+        });
+    }
+  }, [stream, videoPreviewRef]);
 
   return (
     <div className="space-y-4">
@@ -88,33 +50,34 @@ const PreflightScreen: React.FC<PreflightScreenProps> = ({
           </div>
         )}
       </div>
-      {deviceStatus === 'success' && streamRef.current && (
+      {deviceStatus === 'success' && stream && (
         <div className="space-y-3 text-center">
           <p className="text-green-500">Camera and microphone are ready.</p>
-          <AudioVisualizer stream={streamRef.current} />
+          <AudioVisualizer stream={stream} />
         </div>
       )}
       {error && <p className="text-red-500 mb-4">{error}</p>}
-      <Button onClick={onStartSession} size="lg" disabled={deviceStatus !== 'success'}>
+      <Button onClick={onStartSession} size="lg" disabled={!stream}>
         Start Session
       </Button>
     </div>
   );
-};
+});
+PreflightScreen.displayName = 'PreflightScreen';
 
-interface SessionScreenProps {
+
+const SessionScreen = React.memo<{
   videoPreviewRef: MutableRefObject<HTMLVideoElement | null>;
-  streamRef: MutableRefObject<MediaStream | null>;
+  stream: MediaStream | null;
   currentSession: 1 | 2;
   currentWordIndex: number;
   stimulusWords: string[];
-}
-const SessionScreen: React.FC<SessionScreenProps> = ({ videoPreviewRef, streamRef, currentSession, currentWordIndex, stimulusWords }) => {
-  useEffect(() => {
-    if (videoPreviewRef.current && streamRef.current) {
-      videoPreviewRef.current.srcObject = streamRef.current;
-    }
-  }, [streamRef, videoPreviewRef]);
+}>(({ videoPreviewRef, stream, currentSession, currentWordIndex, stimulusWords }) => {
+    useEffect(() => {
+        if (stream && videoPreviewRef.current) {
+            videoPreviewRef.current.srcObject = stream;
+        }
+    }, [stream, videoPreviewRef]);
   
   if (currentWordIndex >= stimulusWords.length) {
     return <div>Loading next word...</div>;
@@ -131,31 +94,27 @@ const SessionScreen: React.FC<SessionScreenProps> = ({ videoPreviewRef, streamRe
       <h2 className="text-4xl font-bold my-8 h-12">{stimulusWords[currentWordIndex]}</h2>
     </div>
   );
-};
+});
+SessionScreen.displayName = 'SessionScreen';
 
-interface BreakScreenProps {
-  onStartNextSession: () => void;
-}
-const BreakScreen: React.FC<BreakScreenProps> = ({ onStartNextSession }) => (
+
+const BreakScreen = React.memo<{ onStartNextSession: () => void; }>(({ onStartNextSession }) => (
   <div className="space-y-4">
     <h2 className="text-2xl font-bold">Session 1 Complete</h2>
     <p>Take a short break. When you are ready, start the second session.</p>
     <Button onClick={onStartNextSession} size="lg">Start Session 2</Button>
   </div>
-);
+));
+BreakScreen.displayName = 'BreakScreen';
 
-interface CompletionScreenProps {
-  onReset: () => void;
-}
-const CompletionScreen: React.FC<CompletionScreenProps> = ({ onReset }) => {
-  return (
+const CompletionScreen = React.memo<{ onReset: () => void; }>(({ onReset }) => (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">Assessment Complete!</h2>
       <p>Thank you for your participation. Your data has been saved.</p>
       <Button onClick={onReset}>Start New Session</Button>
     </div>
-  );
-};
+));
+CompletionScreen.displayName = 'CompletionScreen';
 
 
 // --- Main Component ---
@@ -179,27 +138,56 @@ export default function JungVoiceTest({
     completeSession,
     deviceStatus,
     setDeviceStatus,
+    stream,
+    error,
+    setStream,
+    setError,
   } = useKawasakiStore();
-  
-  const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const combinedStreamRef = useRef<MediaStream | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Effect for media initialization and cleanup
+  useEffect(() => {
+    const initializeMedia = async () => {
+      setError(null);
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: { width: 1280, height: 720 }
+        });
+        setStream(mediaStream);
+        setDeviceStatus('success');
+        logEvent('preflight_devices_acquired');
+      } catch (err) {
+        setDeviceStatus('error');
+        setError("Failed to access camera or microphone. Please check your browser permissions.");
+        logEvent('preflight_devices_failed', { error: (err as Error).message });
+      }
+    };
+
+    if (testStatus === 'preflight' && !stream) {
+      initializeMedia();
+    }
+    
+    // Cleanup stream when the test is fully completed or reset
+    if ((testStatus === 'completed' || testStatus === 'idle') && stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+    }
+
+  }, [testStatus, stream, setDeviceStatus, logEvent, setStream, setError]);
+
+
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-    }
-    if (combinedStreamRef.current) {
-      combinedStreamRef.current.getTracks().forEach(track => track.stop());
-      combinedStreamRef.current = null;
+      mediaRecorderRef.current.stop(); // onstop will handle saving
     }
   }, []);
 
   const startRecording = useCallback(async (session: 1 | 2) => {
-    if (!combinedStreamRef.current) {
+    if (!stream) {
       logEvent('recording_start_failed', { reason: 'No media stream available.' });
       setError("Cannot start recording, media stream is not available.");
       return;
@@ -207,7 +195,7 @@ export default function JungVoiceTest({
   
     const videoChunks: Blob[] = [];
     try {
-      const recorder = new MediaRecorder(combinedStreamRef.current, { mimeType: 'video/webm; codecs=vp9' });
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
       mediaRecorderRef.current = recorder;
   
       recorder.ondataavailable = (event) => {
@@ -227,8 +215,9 @@ export default function JungVoiceTest({
       logEvent('media_recorder_setup_failed', { error: (err as Error).message });
       setError("Failed to create MediaRecorder.");
     }
-  }, [logEvent, saveSessionVideo]);
+  }, [logEvent, saveSessionVideo, stream, setError]);
   
+  // Word display and advancement timer
   useEffect(() => {
     if (testStatus.includes('running') && currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
@@ -252,8 +241,9 @@ export default function JungVoiceTest({
     }
   }, [currentWordIndex, testStatus, stimulusWords, advanceToNextWord, logEvent, setMediaStatus, completeSession]);
   
+  // Stop recording when a session or the test completes
   useEffect(() => {
-    if(testStatus === 'completed'){
+    if(testStatus === 'session-1-complete' || testStatus === 'completed'){
         stopRecording();
     }
   }, [testStatus, stopRecording]);
@@ -266,7 +256,6 @@ export default function JungVoiceTest({
   };
   
   const handleStartSecondSession = async () => {
-      stopRecording();
       await startRecording(2);
       startSession(numberOfWords);
   }
@@ -276,19 +265,16 @@ export default function JungVoiceTest({
       case 'preflight':
         return <PreflightScreen 
           videoPreviewRef={videoPreviewRef}
-          streamRef={combinedStreamRef}
+          stream={stream}
           deviceStatus={deviceStatus}
           error={error}
           onStartSession={handleConfirmAndStartSession}
-          setDeviceStatus={setDeviceStatus}
-          setError={setError}
-          logEvent={logEvent}
         />;
       case 'session-1-running':
       case 'session-2-running':
         return <SessionScreen 
           videoPreviewRef={videoPreviewRef}
-          streamRef={combinedStreamRef}
+          stream={stream}
           currentSession={currentSession}
           currentWordIndex={currentWordIndex}
           stimulusWords={stimulusWords}
