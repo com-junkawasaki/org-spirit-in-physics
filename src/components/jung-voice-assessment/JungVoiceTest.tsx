@@ -39,7 +39,6 @@ export default function JungVoiceTest({
   const combinedStreamRef = useRef<MediaStream | null>(null);
   const videoChunksRef = useRef<Blob[]>([]);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [sessionToResume, setSessionToResume] = useState<any>(null);
   
@@ -82,32 +81,22 @@ export default function JungVoiceTest({
   useEffect(() => {
     if (testStatus.includes('running') && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
-      const audio = new Audio(`/audio/jung_${word.replace(/\s+/g, '-').toLowerCase()}.mp3`);
+      logEvent('word_displayed', { word });
       
-      const playAudio = () => {
-        setMediaStatus('playing_audio');
-        logEvent('word_audio_playing', { word });
-        audio.play().catch(e => console.error("Audio play error:", e));
-      };
+      // Immediately start the response timer as audio is no longer played
+      setMediaStatus('recording_response');
+      logEvent('response_window_opened', { word });
 
-      const handleAudioEnd = () => {
-        setMediaStatus('recording_response');
-        logEvent('response_window_opened', { word });
-        responseTimerRef.current = setTimeout(() => {
-          logEvent('response_window_closed', { word });
-          if (currentWordIndex >= stimulusWords.length - 1) {
-            useKawasakiStore.getState().completeSession();
-          } else {
-            advanceToNextWord();
-          }
-        }, 6000);
-      };
-      
-      audio.addEventListener('ended', handleAudioEnd);
-      playAudio();
+      responseTimerRef.current = setTimeout(() => {
+        logEvent('response_window_closed', { word });
+        if (currentWordIndex >= stimulusWords.length - 1) {
+          useKawasakiStore.getState().completeSession();
+        } else {
+          advanceToNextWord();
+        }
+      }, 6000);
 
       return () => {
-        audio.removeEventListener('ended', handleAudioEnd);
         if (responseTimerRef.current) clearTimeout(responseTimerRef.current);
       }
     }
@@ -268,7 +257,6 @@ export default function JungVoiceTest({
 
   return (
     <Card className={`text-center p-6 ${className}`}>
-      <audio ref={audioRef} className="hidden" />
       <CardHeader>
         <CardTitle>Jung Voice Test</CardTitle>
       </CardHeader>

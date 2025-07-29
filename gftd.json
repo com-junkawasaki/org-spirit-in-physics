@@ -44,13 +44,13 @@
     {
       "name": "JungVoiceTest",
       "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-      "description": "Handles the entire user-facing test flow. This includes a preflight device check screen, the main test loop for both sessions, continuous webcam/mic recording via MediaRecorder, and triggering event logging.",
+      "description": "Handles the entire user-facing test flow. This includes a preflight device check screen, the main test loop for both sessions (displaying words without audio), continuous webcam/mic recording via MediaRecorder, and triggering event logging.",
       "dependencies": ["zustand"]
     },
     {
       "name": "kawasakiStore",
       "path": "src/store/kawasakiStore.ts",
-      "description": "Zustand store that manages the global state of the test. It includes a state machine for the test status ('idle', 'preflight', 'session-running', etc.), orchestrates data saving operations, and logs all critical events.",
+      "description": "Zustand store that manages the global state of the test. It includes a state machine for the test status ('idle', 'preflight', 'session-running', etc.), orchestrates data saving operations, and logs all critical events. The mediaStatus now only tracks 'idle' and 'recording_response'.",
       "dependencies": ["zustand"]
     },
     {
@@ -69,7 +69,7 @@
         { "component": "JungVoiceTest (PreflightScreen)", "action": "Requests media permissions. Displays camera preview and status." },
         { "component": "JungVoiceTest (PreflightScreen)", "action": "User confirms devices are working and clicks 'Start Session'." },
         { "component": "JungVoiceTest", "action": "Starts continuous webcam and mic recording for Session 1." },
-        { "component": "kawasakiStore", "action": "State transitions to 'session-1-running' and test loop begins." },
+        { "component": "kawasakiStore", "action": "State transitions to 'session-1-running' and test loop begins. A word is displayed and a 6-second response timer starts immediately." },
         { "component": "JungVoiceTest", "action": "At end of session 1, recording is stopped, saved via API, and state moves to 'session-1-complete'."},
         { "component": "JungVoiceTest", "action": "Process repeats for session 2, then moves to 'completed' state."}
       ]

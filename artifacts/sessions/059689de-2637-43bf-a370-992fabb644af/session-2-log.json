@@ -334,5 +334,173 @@
     "details": {
       "session": 1
     }
+  },
+  {
+    "timestamp": "2025-07-29T13:18:49.660Z",
+    "event": "session_start",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:18:49.665Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "custom"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:18:49.667Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "custom"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:18:55.671Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "custom"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:18:55.678Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "fur"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:18:55.680Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "fur"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:01.686Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "fur"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:01.691Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "pride"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:01.692Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "pride"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:07.695Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "pride"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:07.701Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "to kiss"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:07.703Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "to kiss"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:13.707Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "to kiss"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:13.711Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "family"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:13.712Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "family"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:19.714Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "family"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:19.719Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "bird"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:19.721Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "bird"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:25.724Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "bird"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:25.727Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "water"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:25.728Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "water"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:31.734Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "water"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:31.739Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "frog"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T13:19:31.741Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "frog"
+    }
   }
 ]

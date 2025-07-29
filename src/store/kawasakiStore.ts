@@ -36,7 +36,7 @@ interface KawasakiState {
 
     // Real-time test state
     testStatus: 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
-    mediaStatus: 'idle' | 'playing_audio' | 'recording_response';
+    mediaStatus: 'idle' | 'recording_response';
     currentSession: 1 | 2;
     currentWordIndex: number;
     stimulusWords: string[];
