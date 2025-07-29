@@ -91,8 +91,19 @@ export default function JungVoiceTest({
 
         mediaRecorderRef.current.ondataavailable = (event) => {
             if (event.data.size > 0) {
+              console.log(`[Recording] Chunk received for session ${currentSession}, size: ${event.data.size}`);
               videoChunksRef.current.push(event.data);
             }
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+          const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+          console.log(`[Recording] Stopped. Final blob size for session ${currentSession}: ${videoBlob.size}`);
+          if (videoBlob.size > 0) {
+            saveSessionVideo(currentSession, videoBlob);
+          } else {
+            console.warn(`[Recording] Blob size is 0 for session ${currentSession}, not saving.`);
+          }
         };
 
         mediaRecorderRef.current.start(1000); // Collect data in chunks
@@ -102,7 +113,7 @@ export default function JungVoiceTest({
         setError("Could not access camera/microphone. Please check permissions.");
         setIsRecording(false);
     }
-  }, [logEvent, currentSession]);
+  }, [saveSessionVideo, currentSession, logEvent]);
 
   const advanceToNextWord = useCallback(() => {
     useKawasakiStore.setState(state => ({
