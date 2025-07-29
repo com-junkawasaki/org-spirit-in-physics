@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
-import { HumeClient, convertBlobToBase64 } from 'hume';
+import { HumeClient } from 'hume';
 import type { ChatSocket } from 'hume';
 
 interface JungVoiceTestProps {
@@ -18,10 +18,11 @@ const INTRODUCTION_MESSAGE = "Welcome to Spirit in Physics. I will present a ser
 
 export default function JungVoiceTest({
   numberOfWords = 10,
-  apiKey = process.env.NEXT_PUBLIC_HUME_API_KEY || '',
-  secretKey = process.env.NEXT_PUBLIC_HUME_CLIENT_SECRET || '',
   className = '',
-}: JungVoiceTestProps) {
+}: {
+  numberOfWords?: number;
+  className?: string;
+}) {
   const {
     testStatus,
     currentWordIndex,
@@ -33,21 +34,39 @@ export default function JungVoiceTest({
   
   const [isListening, setIsListening] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const humeClientRef = useRef<HumeClient | null>(null);
   const socketRef = useRef<ChatSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const listeningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
-    if (apiKey && secretKey) {
-      humeClientRef.current = new HumeClient({ apiKey, secretKey });
-    } else {
-      setError("Hume API key or secret key is not set.");
+    const fetchToken = async () => {
+      try {
+        const res = await fetch('/api/hume/token', { method: 'POST' });
+        const data = await res.json();
+        if (data.accessToken) {
+          setAccessToken(data.accessToken);
+        } else {
+          setError(data.error || "Failed to fetch access token.");
+        }
+      } catch (e) {
+        setError("Failed to connect to the server to get an access token.");
+      }
+    };
+    fetchToken();
+  }, []);
+  
+  useEffect(() => {
+    if (accessToken) {
+      console.log("Hume access token received, initializing client.");
+      humeClientRef.current = new HumeClient({ accessToken });
+      setError(null);
     }
-  }, [apiKey, secretKey]);
+  }, [accessToken]);
   
   // Play intro message on component mount
   useEffect(() => {
@@ -65,6 +84,9 @@ export default function JungVoiceTest({
 
 
   const stopListening = useCallback(() => {
+    if (listeningTimeoutRef.current) {
+      clearTimeout(listeningTimeoutRef.current);
+    }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
     }
@@ -79,23 +101,37 @@ export default function JungVoiceTest({
   }, []);
 
   const handleHumeResponse = useCallback((userInput: string) => {
+    if (listeningTimeoutRef.current) {
+      clearTimeout(listeningTimeoutRef.current);
+    }
     stopListening();
     recordResponse(userInput);
   }, [recordResponse, stopListening]);
   
   const startListening = useCallback(async () => {
-    if (!humeClientRef.current || isListening) return;
+    if (!humeClientRef.current) {
+      setError("Hume client is not initialized. Check server for token generation issues.");
+      return;
+    };
+    if (isListening) return;
     
     setError(null);
     setIsListening(true);
+    
+    listeningTimeoutRef.current = setTimeout(() => {
+        setError("No response from Hume after 10 seconds. Check API keys and network connection.");
+        stopListening();
+    }, 10000);
 
     try {
+      console.log("Attempting to connect to Hume WebSocket...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = stream;
       
       const socket = await humeClientRef.current.empathicVoice.chat.connect({
         onOpen: () => console.log('Hume WebSocket connected.'),
         onMessage: (message) => {
+          console.log('Received Hume message:', message); // Log all messages
           if (message.type === 'user_input' && message.input.trim() !== "") {
             handleHumeResponse(message.input.trim());
           }
@@ -110,6 +146,7 @@ export default function JungVoiceTest({
           if (isListening) stopListening();
         },
       });
+      console.log("Hume WebSocket connection successful.");
       socketRef.current = socket;
 
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -123,9 +160,12 @@ export default function JungVoiceTest({
       mediaRecorderRef.current.start(250);
 
     } catch (err) {
-      console.error("Error starting microphone:", err);
-      setError("Could not access microphone. Please check permissions.");
+      console.error("Error during Hume connection or microphone start:", err);
+      setError("Failed to connect to voice service or access microphone.");
       setIsListening(false);
+      if (listeningTimeoutRef.current) {
+        clearTimeout(listeningTimeoutRef.current);
+      }
     }
   }, [isListening, handleHumeResponse, stopListening]);
 
