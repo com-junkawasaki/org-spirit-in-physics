@@ -320,5 +320,269 @@
     "details": {
       "session": 1
     }
+  },
+  {
+    "timestamp": "2025-07-29T12:44:50.718Z",
+    "event": "session_start",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:44:50.723Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 0,
+      "word": "black"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:44:51.317Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:44:57.319Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:44:57.323Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 1,
+      "word": "rich"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:44:57.894Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 1
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:03.896Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 1
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:03.900Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 2,
+      "word": "angry"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:04.464Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:10.485Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:10.490Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 3,
+      "word": "to sing"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:11.071Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 3
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:17.072Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 3
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:17.076Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 4,
+      "word": "sea"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:17.545Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 4
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:23.547Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 4
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:23.552Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 5,
+      "word": "salt"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:24.246Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 5
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:30.251Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 5
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:30.256Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 6,
+      "word": "to take care"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:31.188Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 6
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:37.216Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 6
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:37.221Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 7,
+      "word": "stove"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:37.768Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 7
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:43.781Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 7
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:43.784Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 8,
+      "word": "to die"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:44.380Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 8
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:50.382Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 8
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:50.385Z",
+    "event": "word_displayed",
+    "details": {
+      "session": 2,
+      "wordIndex": 9,
+      "word": "bird"
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:50.817Z",
+    "event": "response_window_opened",
+    "details": {
+      "session": 2,
+      "wordIndex": 9
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:56.827Z",
+    "event": "response_window_closed",
+    "details": {
+      "session": 2,
+      "wordIndex": 9
+    }
+  },
+  {
+    "timestamp": "2025-07-29T12:45:56.829Z",
+    "event": "session_complete",
+    "details": {
+      "session": 2
+    }
   }
 ]

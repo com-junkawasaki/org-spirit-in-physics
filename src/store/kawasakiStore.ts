@@ -35,7 +35,8 @@ interface KawasakiState {
     completedAssessments: FullTestResult[];
 
     // Real-time test state
-    testStatus: 'idle' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
+    testStatus: 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
+    mediaStatus: 'idle' | 'playing_audio' | 'recording_response';
     currentSession: 1 | 2;
     currentWordIndex: number;
     stimulusWords: string[];
@@ -54,6 +55,7 @@ interface KawasakiState {
     restoreSession: (logData: EventLog[], session: 1 | 2, assessmentId: string) => void;
     addVideoChunk: (session: 1 | 2, chunk: Blob) => void;
     clearVideoChunks: (session: 1 | 2) => void;
+    setMediaStatus: (status: KawasakiState['mediaStatus']) => void;
 }
 
 export const useKawasakiStore = create<KawasakiState>()(
@@ -62,6 +64,7 @@ export const useKawasakiStore = create<KawasakiState>()(
             // Default state
             completedAssessments: [],
             testStatus: 'idle',
+            mediaStatus: 'idle',
             currentSession: 1,
             currentWordIndex: -1,
             stimulusWords: [],
@@ -97,6 +100,8 @@ export const useKawasakiStore = create<KawasakiState>()(
                 // --- End Live Log Saving ---
             },
 
+            setMediaStatus: (status) => set({ mediaStatus: status }),
+
             startSession: (numberOfWords) => {
                 const state = get();
                 if (state.testStatus === 'idle' || state.testStatus === 'session-1-complete') {
@@ -118,9 +123,7 @@ export const useKawasakiStore = create<KawasakiState>()(
             },
 
             recordResponse: (audioBlob) => {
-                // This function will now only be used for individual word audio snippets if needed.
-                // The main continuous recording will be handled separately.
-                // For now, we keep the logic but it might be deprecated.
+                // This will now be triggered AFTER the 6s recording, not used for the session video
                 const state = get();
                 if ((state.testStatus !== 'session-1-running' && state.testStatus !== 'session-2-running') || !state.assessmentId) return;
                 
@@ -271,7 +274,7 @@ export const useKawasakiStore = create<KawasakiState>()(
             }
         }),
         {
-            name: "kawasaki-model-storage-v8",
+            name: "kawasaki-model-storage-v9",
             partialize: (state) => {
                 const { videoChunks, ...rest } = state;
                 return rest;
