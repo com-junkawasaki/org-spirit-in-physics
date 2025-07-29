@@ -10,90 +10,61 @@
     {
       "id": "consent",
       "name": "Consent & Permissions",
-      "description": "Handles user consent for research, audio playback, and video recording before the experiment begins.",
-      "entryComponent": "ResearchParticipationConsent",
-      "steps": [
-        "User agrees to the overall research terms.",
-        "User separately consents to audio playback and video recording permissions."
-      ]
+      "description": "Handles user consent for research, audio playback, and webcam recording before the experiment begins.",
+      "entryComponent": "ResearchParticipationConsent"
     },
     {
       "id": "data_collection",
       "name": "Data Collection (2 Sessions)",
-      "description": "Core process where the user performs the word association test. Audio and video are recorded for later batch analysis.",
+      "description": "Core process where the user performs the word association test. User's voice, webcam video, and detailed event logs are recorded for later batch analysis.",
       "entryComponent": "JungVoiceTest",
       "steps": [
         "An introduction audio is played.",
-        "User clicks a button to start the session.",
-        "Audio and video recording begins.",
-        "A stimulus word audio is played.",
-        "User has a fixed 6-second window to speak their response.",
+        "User clicks a button to start the session, which prompts for camera and microphone permission.",
+        "Webcam and microphone recording begins.",
+        "A stimulus word audio is played, and the event is logged with a timestamp.",
+        "User has a fixed 6-second window to speak their response; the start and end of this window are logged.",
         "The process repeats for all words in the session.",
-        "After the first session, a break screen is shown.",
-        "The user starts the second session.",
-        "The session process is repeated.",
-        "After the second session, the user is directed to the results page."
+        "After the first session, a break screen is shown and recording is paused.",
+        "The user starts the second session, and recording resumes.",
+        "After the second session, recordings are stopped and saved.",
+        "A detailed session log (JSON) with event timestamps is also saved."
       ],
       "dataStore": "kawasakiStore"
     },
     {
       "id": "backend_analysis",
       "name": "Backend Batch Analysis",
-      "description": "Asynchronous process where the collected audio and video data are analyzed by Hume AI.",
+      "description": "Asynchronous process where the collected audio and webcam video are analyzed by Hume AI.",
       "trigger": "Completion of data collection session.",
-      "steps": [
-        "Recorded audio/video files are uploaded to a secure storage.",
-        "A batch processing job is submitted to Hume AI.",
-        "Hume AI analyzes expression, emotion, and transcribes speech.",
-        "The results are stored in the database, linked to the user's session."
-      ],
       "technology": "Hume AI Batch API"
     }
   ],
   "components": [
     {
-      "name": "PageClient",
-      "path": "src/app/PageClient.tsx",
-      "description": "Main client-side component orchestrating the page flow.",
-      "dependencies": ["ResearchParticipationConsent", "SpiritInPhysicsInteractive"]
-    },
-    {
       "name": "JungVoiceTest",
       "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-      "description": "Handles the entire data collection flow: consent checks, intro, two-session test loop, breaks, and recording. Manages state via `kawasakiStore`.",
-      "dependencies": ["hume", "zustand"]
-    },
-    {
-      "name": "kawasakiStore",
-      "path": "src/store/kawasakiStore.ts",
-      "description": "Zustand store for global state management. Manages the session state (e.g., current session number, word index) and stores the recorded data locally before batch processing.",
+      "description": "Handles the entire data collection flow: consent, intro, two-session loop, breaks, webcam/mic recording, and detailed event logging. Manages state via `kawasakiStore`.",
       "dependencies": ["zustand"]
     }
   ],
-  "dependencies": {
-    "next": "^15.4.4",
-    "react": "^19.1.0",
-    "hume": "^0.12.1",
-    "zustand": "^5.0.6"
-  },
   "dataFlows": [
     {
-      "flow": "Full Experiment Execution",
+      "flow": "Full Experiment Execution with Webcam Recording",
       "steps": [
-        { "component": "ResearchParticipationConsent", "action": "User provides all necessary consents (research, audio, video)." },
-        { "component": "JungVoiceTest", "action": "Introduction audio is played." },
-        { "component": "JungVoiceTest", "action": "User clicks 'Start Session'." },
-        { "component": "kawasakiStore", "action": "State updates: `testStatus` to 'session-1-running', `currentWordIndex` to 0." },
-        { "component": "JungVoiceTest", "action": "Audio/video recording starts. A loop begins for Session 1." },
-        { "component": "JungVoiceTest", "action": "(Loop) Stimulus audio for the current word is played." },
-        { "component": "JungVoiceTest", "action": "(Loop) User speaks. A 6-second timer runs. The response is recorded locally." },
-        { "component": "kawasakiStore", "action": "(Loop) After 6 seconds, `currentWordIndex` increments." },
-        { "component": "JungVoiceTest", "action": "When Session 1 ends, a break screen is displayed. Recording is paused." },
-        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 2'." },
+        { "component": "ResearchParticipationConsent", "action": "User provides all necessary consents." },
+        { "component": "JungVoiceTest", "action": "User clicks 'Start Session', triggering a camera and microphone permission prompt." },
+        { "component": "JungVoiceTest", "action": "Once permission is granted, webcam and mic recording starts via `MediaRecorder`." },
+        { "component": "kawasakiStore", "action": "State updates: `testStatus` to 'session-1-running', `currentWordIndex` to 0. Session start is logged." },
+        { "component": "JungVoiceTest", "action": "(Loop) Stimulus audio for the current word is played. 'WordDisplayed' event is logged with timestamp and word." },
+        { "component": "JungVoiceTest", "action": "(Loop) A 6-second timer for user response begins. 'ResponseWindowOpened' event is logged." },
+        { "component": "kawasakiStore", "action": "(Loop) After 6 seconds, `currentWordIndex` increments. 'ResponseWindowClosed' event is logged." },
+        { "component": "JungVoiceTest", "action": "When Session 1 ends, recording is paused. A break screen is displayed." },
+        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 2'. Recording resumes." },
         { "component": "kawasakiStore", "action": "State updates: `testStatus` to 'session-2-running', `currentWordIndex` to 0." },
-        { "component": "JungVoiceTest", "action": "Session 2 loop starts, identical to Session 1." },
-        { "component": "JungVoiceTest", "action": "When Session 2 ends, recording stops. User is shown the results page." },
-        { "component": "Backend", "action": "Recorded data is sent for asynchronous batch processing via Hume AI." }
+        { "component": "JungVoiceTest", "action": "Session 2 loop starts." },
+        { "component": "JungVoiceTest", "action": "When Session 2 ends, all recordings are stopped." },
+        { "component": "kawasakiStore", "action": "Triggers the saving of artifacts: session-1.webm (video+mic), session-2.webm (video+mic), and session-log.json via the `/api/save-artifact` endpoint." }
       ]
     }
   ],
@@ -101,18 +72,6 @@
     {
       "issue": "Real-time speech-to-text was slow and introduced latency.",
       "resolution": "Changed the architecture to a data collection model. The app now records all user responses (audio/video) locally and sends them for asynchronous batch processing. This decouples the user experience from API latency."
-    },
-    {
-      "issue": "Cross-browser voice recognition inconsistency and API errors.",
-      "resolution": "Replaced the browser's native Web Speech API with the Hume AI SDK. All API-related issues were resolved by consulting the official documentation and sample code to use the latest, correct methods for authentication and data transmission."
-    },
-    {
-      "issue": "Microphone access and audio playback errors.",
-      "resolution": "Ensured that microphone access and audio playback are initiated by direct user actions (button clicks), complying with modern browser security policies."
-    },
-    {
-      "issue": "Complex component state and React lifecycle errors.",
-      "resolution": "Centralized all application state into a `zustand` global store. Refactored components to be stateless where possible and use `useCallback` for functions passed into `useEffect` to prevent lifecycle issues."
     }
   ]
 } 
