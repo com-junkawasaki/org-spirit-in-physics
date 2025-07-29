@@ -4,13 +4,14 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
+import { getDirectoryHandle, DirectoryHandleWithPermissions } from '@/lib/file-system';
 
 interface JungVoiceTestProps {
   numberOfWords?: number;
   className?: string;
 }
 
-const INTRODUCTION_MESSAGE = "Welcome to Spirit in Physics. You will participate in two sessions. In each, I will present a series of words. For each word, please speak the first word that comes to mind. Your responses will be recorded. When you're ready, click the start button.";
+const INTRODUCTION_MESSAGE = "Welcome to Spirit in Physics. Before we begin, please select a directory where your session data (audio recordings and metadata) will be saved. We recommend selecting the 'artifacts' folder in this project.";
 
 export default function JungVoiceTest({
   numberOfWords = 10,
@@ -22,7 +23,9 @@ export default function JungVoiceTest({
     stimulusWords,
     startSession,
     recordResponse,
-    resetTest
+    resetTest,
+    rootDirectoryHandle,
+    setRootDirectoryHandle,
   } = useKawasakiStore();
   
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -91,16 +94,24 @@ export default function JungVoiceTest({
 
 
   useEffect(() => {
-    if (testStatus === 'session-1-running' || testStatus === 'session-2-running') {
-        if (currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
-            const word = stimulusWords[currentWordIndex];
-            const filename = `jung_${word.replace(/\s+/g, '-').toLowerCase()}.mp3`;
-            playAudio(`/audio/${filename}`, () => {
-                startRecording();
-            });
-        }
+    if ((testStatus === 'session-1-running' || testStatus === 'session-2-running') && currentWordIndex >= 0) {
+        const word = stimulusWords[currentWordIndex];
+        const filename = `jung_${word.replace(/\s+/g, '-').toLowerCase()}.mp3`;
+        playAudio(`/audio/${filename}`, () => {
+            startRecording();
+        });
     }
   }, [currentWordIndex, testStatus, stimulusWords, playAudio, startRecording]);
+
+  const handleSelectDirectory = async () => {
+    const handle = await getDirectoryHandle();
+    if (handle) {
+      setRootDirectoryHandle(handle);
+      setError(null);
+    } else {
+      setError("You must select a directory to proceed.");
+    }
+  };
 
   const handleStartSession = () => {
     if (showIntro) {
@@ -113,7 +124,15 @@ export default function JungVoiceTest({
   const IntroScreen = () => (
     <div>
         <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
-        <Button onClick={handleStartSession} size="lg">Start</Button>
+        <Button onClick={handleSelectDirectory} size="lg" variant="outline" className="mb-4">
+          Select Save Directory
+        </Button>
+        {rootDirectoryHandle && (
+            <div className='flex flex-col items-center'>
+                <p className="text-green-600 mb-4">Directory selected: {rootDirectoryHandle.name}</p>
+                <Button onClick={handleStartSession} size="lg">Start Session 1</Button>
+            </div>
+        )}
     </div>
   );
 
