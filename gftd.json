@@ -9,79 +9,64 @@
   "processes": [
     {
       "id": "consent",
-      "name": "Consent Process",
-      "description": "Handles user consent for research participation before the test begins.",
+      "name": "Consent & Permissions",
+      "description": "Handles user consent for research, audio playback, and video recording before the experiment begins.",
       "entryComponent": "ResearchParticipationConsent",
       "steps": [
-        "Display consent form and demographic questions.",
-        "User agrees to the terms.",
-        "Triggers the main application flow."
+        "User agrees to the overall research terms.",
+        "User separately consents to audio playback and video recording permissions."
       ]
     },
     {
-      "id": "voice_assessment",
-      "name": "Jung's Voice Association Test",
-      "description": "Core process where the user performs the word association test via voice. Initially implemented using the browser's Web Speech API, but switched to Hume AI's API to resolve cross-browser compatibility issues.",
-      "entryComponent": "SpiritInPhysicsInteractive",
-      "subComponents": ["JungVoiceTest"],
+      "id": "data_collection",
+      "name": "Data Collection (2 Sessions)",
+      "description": "Core process where the user performs the word association test. Audio and video are recorded for later batch analysis.",
+      "entryComponent": "JungVoiceTest",
       "steps": [
-        "A stimulus word is presented visually and audibly from local files in `/public/audio`.",
-        "User clicks the 'Respond' button, which triggers the microphone access request.",
-        "Hume AI API captures and transcribes the user's voice in real-time.",
-        "Response and reaction time are recorded in the zustand store.",
-        "Process repeats for the configured number of words."
+        "An introduction audio is played.",
+        "User clicks a button to start the session.",
+        "Audio and video recording begins.",
+        "A stimulus word audio is played.",
+        "User has a fixed 6-second window to speak their response.",
+        "The process repeats for all words in the session.",
+        "After the first session, a break screen is shown.",
+        "The user starts the second session.",
+        "The session process is repeated.",
+        "After the second session, the user is directed to the results page."
       ],
       "dataStore": "kawasakiStore"
     },
     {
-      "id": "visualization",
-      "name": "Kawasaki Model Visualization",
-      "description": "Displays the 3D force graph representation of the Kawasaki Model.",
-      "entryComponent": "KawasakiModel",
-      "dependencies": ["react-force-graph-3d", "three"]
+      "id": "backend_analysis",
+      "name": "Backend Batch Analysis",
+      "description": "Asynchronous process where the collected audio and video data are analyzed by Hume AI.",
+      "trigger": "Completion of data collection session.",
+      "steps": [
+        "Recorded audio/video files are uploaded to a secure storage.",
+        "A batch processing job is submitted to Hume AI.",
+        "Hume AI analyzes expression, emotion, and transcribes speech.",
+        "The results are stored in the database, linked to the user's session."
+      ],
+      "technology": "Hume AI Batch API"
     }
   ],
   "components": [
     {
       "name": "PageClient",
       "path": "src/app/PageClient.tsx",
-      "description": "Main client-side component that orchestrates the overall page layout and flow.",
-      "dependencies": ["ResearchParticipationConsent", "SpiritInPhysicsInteractive", "KawasakiModel"]
-    },
-    {
-      "name": "ResearchParticipationConsent",
-      "path": "src/components/ui/ResearchParticipationConsent.tsx",
-      "description": "UI component for capturing user consent and demographic information.",
-      "dependencies": ["@radix-ui/*", "shadcn-ui"]
-    },
-    {
-      "name": "SpiritInPhysicsInteractive",
-      "path": "src/components/spirit-in-physics/SpiritInPhysicsInteractive.tsx",
-      "description": "Wrapper component that contains the main interactive voice assessment.",
-      "dependencies": ["JungVoiceAssessment"]
-    },
-    {
-      "name": "JungVoiceAssessment",
-      "path": "src/components/jung-voice-assessment/JungVoiceAssessment.tsx",
-      "description": "Manages the setup for the voice test. It has been refactored to primarily pass props to JungVoiceTest.",
-      "dependencies": ["JungVoiceTest"]
+      "description": "Main client-side component orchestrating the page flow.",
+      "dependencies": ["ResearchParticipationConsent", "SpiritInPhysicsInteractive"]
     },
     {
       "name": "JungVoiceTest",
       "path": "src/components/jung-voice-assessment/JungVoiceTest.tsx",
-      "description": "Handles the core logic of the voice test. Connects to Hume API for STT, plays audio cues, and uses the `kawasakiStore` for state management.",
-      "dependencies": ["hume", "kawasakiStore"]
-    },
-    {
-      "name": "KawasakiModel",
-      "path": "src/components/kawasaki-model/index.tsx",
-      "description": "Renders the 3D visualization of the physics model.",
-      "dependencies": ["react-force-graph-3d", "three"]
+      "description": "Handles the entire data collection flow: consent checks, intro, two-session test loop, breaks, and recording. Manages state via `kawasakiStore`.",
+      "dependencies": ["hume", "zustand"]
     },
     {
       "name": "kawasakiStore",
       "path": "src/store/kawasakiStore.ts",
-      "description": "Zustand store for global state management. Manages the entire lifecycle of the voice test, including status, words, responses, and final results.",
+      "description": "Zustand store for global state management. Manages the session state (e.g., current session number, word index) and stores the recorded data locally before batch processing.",
       "dependencies": ["zustand"]
     }
   ],
@@ -89,57 +74,45 @@
     "next": "^15.4.4",
     "react": "^19.1.0",
     "hume": "^0.12.1",
-    "zustand": "^5.0.6",
-    "axios": "^1.11.0",
-    "uuid": "^11.1.0",
-    "three": "^0.178.0",
-    "react-force-graph-3d": "^1.28.0",
-    "microsoft-cognitiveservices-speech-sdk": "^1.45.0"
+    "zustand": "^5.0.6"
   },
   "dataFlows": [
     {
-      "flow": "Voice Test Execution",
+      "flow": "Full Experiment Execution",
       "steps": [
-        { "component": "PageClient", "action": "User provides consent." },
-        { "component": "JungVoiceTest", "action": "User clicks 'Start Test', triggering `startTest` action in zustand store." },
-        { "component": "kawasakiStore", "action": "State updates: `testStatus` to 'running', `currentWordIndex` to 0, stimulus words are shuffled and set." },
-        { "component": "JungVoiceTest", "action": "Detects `currentWordIndex` change, plays audio for the stimulus word." },
-        { "component": "JungVoiceTest", "action": "User clicks 'Respond', `startListening` is called, which requests microphone access and connects to Hume API." },
-        { "component": "Hume API", "action": "Streams transcribed user's voice back to the client." },
-        { "component": "JungVoiceTest", "action": "Receives transcription, calls `recordResponse` action in zustand store." },
-        { "component": "kawasakiStore", "action": "Adds response to `userResponses`, increments `currentWordIndex`. If the test is over, it calls `completeTest`." },
-        { "component": "kawasakiStore", "action": "(On complete) Calculates final results and saves them to `voiceAssessments` in persistent storage. `testStatus` is set to 'completed'." }
+        { "component": "ResearchParticipationConsent", "action": "User provides all necessary consents (research, audio, video)." },
+        { "component": "JungVoiceTest", "action": "Introduction audio is played." },
+        { "component": "JungVoiceTest", "action": "User clicks 'Start Session'." },
+        { "component": "kawasakiStore", "action": "State updates: `testStatus` to 'session-1-running', `currentWordIndex` to 0." },
+        { "component": "JungVoiceTest", "action": "Audio/video recording starts. A loop begins for Session 1." },
+        { "component": "JungVoiceTest", "action": "(Loop) Stimulus audio for the current word is played." },
+        { "component": "JungVoiceTest", "action": "(Loop) User speaks. A 6-second timer runs. The response is recorded locally." },
+        { "component": "kawasakiStore", "action": "(Loop) After 6 seconds, `currentWordIndex` increments." },
+        { "component": "JungVoiceTest", "action": "When Session 1 ends, a break screen is displayed. Recording is paused." },
+        { "component": "JungVoiceTest", "action": "User clicks 'Start Session 2'." },
+        { "component": "kawasakiStore", "action": "State updates: `testStatus` to 'session-2-running', `currentWordIndex` to 0." },
+        { "component": "JungVoiceTest", "action": "Session 2 loop starts, identical to Session 1." },
+        { "component": "JungVoiceTest", "action": "When Session 2 ends, recording stops. User is shown the results page." },
+        { "component": "Backend", "action": "Recorded data is sent for asynchronous batch processing via Hume AI." }
       ]
     }
   ],
   "troubleshooting": [
     {
-      "issue": "Cross-browser voice recognition inconsistency (language-not-supported error in Edge).",
-      "resolution": "Replaced the browser's native Web Speech API with the Hume AI SDK for speech-to-text, ensuring consistent behavior across all modern browsers."
+      "issue": "Real-time speech-to-text was slow and introduced latency.",
+      "resolution": "Changed the architecture to a data collection model. The app now records all user responses (audio/video) locally and sends them for asynchronous batch processing. This decouples the user experience from API latency."
     },
     {
-      "issue": "Hume API connection errors (`connect is not a function`, `send is not a function`).",
-      "resolution": "Investigated Hume AI's documentation and updated the code to use the latest API methods (`empathicVoice.chat.connect`, `sendAudioInput`) and types (`ChatSocket`). This also required adding a `secretKey` for authentication."
+      "issue": "Cross-browser voice recognition inconsistency and API errors.",
+      "resolution": "Replaced the browser's native Web Speech API with the Hume AI SDK. All API-related issues were resolved by consulting the official documentation and sample code to use the latest, correct methods for authentication and data transmission."
     },
     {
-      "issue": "Microphone access errors (`Could not access microphone`).",
-      "resolution": "Changed the UX flow to initiate microphone access only after a direct user action (clicking a 'Respond' button), instead of automatically after audio playback. This complies with browser security policies."
+      "issue": "Microphone access and audio playback errors.",
+      "resolution": "Ensured that microphone access and audio playback are initiated by direct user actions (button clicks), complying with modern browser security policies."
     },
     {
-      "issue": "React `useEffect` dependency array errors.",
-      "resolution": "Refactored key functions within `JungVoiceTest` to use `useCallback`, stabilizing their references and preventing unnecessary re-renders and dependency array changes."
-    },
-    {
-      "issue": "Audio playback interruption errors (`play() request was interrupted`).",
-      "resolution": "Removed the shared `<audio>` element and refactored the logic to create a new, independent `Audio` object for each playback instance. This prevents conflicts between playback requests."
-    },
-    {
-        "issue": "State management became complex within the `JungVoiceTest` component.",
-        "resolution": "Refactored the component to use a global `zustand` store (`kawasakiStore`) for all test-related state and logic. This simplified the component and centralized state management."
-    },
-    {
-        "issue": "Persistent API errors due to library updates (`... is not a function`).",
-        "resolution": "When encountering recurring errors with an external library, a key troubleshooting step is to assume its API has changed. The process is to use web search to find the official documentation and up-to-date code samples. This provides a reliable source of truth to correct the implementation, as was done to resolve the Hume API connection and data sending methods."
+      "issue": "Complex component state and React lifecycle errors.",
+      "resolution": "Centralized all application state into a `zustand` global store. Refactored components to be stateless where possible and use `useCallback` for functions passed into `useEffect` to prevent lifecycle issues."
     }
   ]
 } 
