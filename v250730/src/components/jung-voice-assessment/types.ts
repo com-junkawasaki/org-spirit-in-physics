@@ -82,6 +82,7 @@ export interface JungVoiceTestProps {
   speechRecognitionLang?: string;
   onTestComplete?: (results: TestResults) => void;
   className?: string;
+  onComplete?: () => void;
 }
 
 // AI ガイドメッセージの型

@@ -211,6 +211,7 @@ CompletionScreen.displayName = 'CompletionScreen';
 export default function JungVoiceTest({
   numberOfWords = 10,
   className = '',
+  onComplete,
 }: JungVoiceTestProps) {
   const {
     testStatus,
@@ -239,6 +240,13 @@ export default function JungVoiceTest({
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const wordDisplayedTimeRef = useRef<number | null>(null);
   
+  // onComplete callback effect
+  useEffect(() => {
+    if (testStatus === 'completed' && onComplete) {
+      onComplete();
+    }
+  }, [testStatus, onComplete]);
+
   // Effect for media initialization and cleanup
   useEffect(() => {
     const initializeMedia = async () => {

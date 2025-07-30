@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import ConsentForm from '@/components/jung-voice-assessment/ConsentForm';
+import ConsentForm from '@/app/ConsentForm';
 import JungVoiceTest from '@/components/jung-voice-assessment/JungVoiceTest';
 import { ParticipantSchema } from '@/components/jung-voice-assessment/schema';
 

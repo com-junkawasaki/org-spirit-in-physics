@@ -1,6 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: string, signature: string) => void, participantId: string }) => {
   const [consentText, setConsentText] = useState('');
@@ -19,8 +24,7 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
       .catch((err) => console.error('Error fetching consent form:', err));
   }, []);
 
-  const handleAgreementChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = event.target;
+  const handleAgreementChange = (name: keyof typeof agreements) => (checked: boolean) => {
     setAgreements((prev) => ({ ...prev, [name]: checked }));
   };
 
@@ -34,84 +38,58 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-4">研究参加への同意</h1>
-      <div className="border rounded-md p-4 h-96 overflow-y-scroll mb-4 bg-gray-50">
-        <div style={{ whiteSpace: 'pre-wrap' }}>{consentText}</div>
-      </div>
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-2 mb-4">
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="understand"
-                checked={agreements.understand}
-                onChange={handleAgreementChange}
-                className="mr-2"
-              />
-              研究内容を理解しました。
-            </label>
-          </div>
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="voluntary"
-                checked={agreements.voluntary}
-                onChange={handleAgreementChange}
-                className="mr-2"
-              />
-              自発的に研究に参加することに同意します。
-            </label>
-          </div>
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="withdraw"
-                checked={agreements.withdraw}
-                onChange={handleAgreementChange}
-                className="mr-2"
-              />
-              いつでも同意を撤回できることを理解しました。
-            </label>
-          </div>
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="recording"
-                checked={agreements.recording}
-                onChange={handleAgreementChange}
-                className="mr-2"
-              />
-              音声と映像の記録に同意します。
-            </label>
-          </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Research Participation Consent</CardTitle>
+        <CardDescription>Please read the consent form carefully and agree to the terms to proceed.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="prose prose-sm dark:prose-invert border rounded-md p-4 h-96 overflow-y-scroll mb-6 bg-gray-50/50 dark:bg-gray-900/50">
+          <pre className="whitespace-pre-wrap font-sans text-sm">{consentText}</pre>
         </div>
-        <div className="mb-4">
-          <label htmlFor="signature" className="block font-bold mb-1">
-            署名
-          </label>
-          <input
-            type="text"
-            id="signature"
-            value={signature}
-            onChange={(e) => setSignature(e.target.value)}
-            placeholder="氏名を入力してください"
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-        <button
+        <form onSubmit={handleSubmit} id="consent-form">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox id="understand" checked={agreements.understand} onCheckedChange={handleAgreementChange('understand')} />
+              <Label htmlFor="understand">I understand the nature and purpose of the research.</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="voluntary" checked={agreements.voluntary} onCheckedChange={handleAgreementChange('voluntary')} />
+              <Label htmlFor="voluntary">I agree to participate voluntarily.</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="withdraw" checked={agreements.withdraw} onCheckedChange={handleAgreementChange('withdraw')} />
+              <Label htmlFor="withdraw">I understand that I can withdraw at any time.</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="recording" checked={agreements.recording} onCheckedChange={handleAgreementChange('recording')} />
+              <Label htmlFor="recording">I consent to the audio and video recording.</Label>
+            </div>
+          </div>
+          <div className="mt-6">
+            <Label htmlFor="signature" className="font-bold">Digital Signature</Label>
+            <Input
+              type="text"
+              id="signature"
+              value={signature}
+              onChange={(e) => setSignature(e.target.value)}
+              placeholder="Please type your full name"
+              className="mt-2"
+            />
+          </div>
+        </form>
+      </CardContent>
+      <CardFooter>
+        <Button
           type="submit"
+          form="consent-form"
           disabled={!isAllAgreed}
-          className="w-full p-2 rounded-md bg-blue-500 text-white disabled:bg-gray-400"
+          className="w-full"
         >
-          同意して実験を開始する
-        </button>
-      </form>
-    </div>
+          Agree and Start Experiment
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

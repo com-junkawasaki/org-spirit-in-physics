@@ -112,10 +112,28 @@
 }
 
 @layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    /* ... other shadcn variables ... */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    
+    /* ... other dark shadcn variables ... */
+  }
+}
+
+@layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    background-image: radial-gradient(circle at 1px 1px, hsl(var(--foreground) / 0.1) 1px, transparent 0);
+    background-size: 1.5rem 1.5rem;
   }
 } 
