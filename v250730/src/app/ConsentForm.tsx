@@ -1,130 +1,120 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-export function ResearchParticipationConsent({ onConsent }: { onConsent: () => void }) {
-  const [isAgreed, setIsAgreed] = React.useState(false);
+const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: string, signature: string) => void, participantId: string }) => {
+  const [consentText, setConsentText] = useState('');
+  const [agreements, setAgreements] = useState({
+    understand: false,
+    voluntary: false,
+    withdraw: false,
+    recording: false,
+  });
+  const [signature, setSignature] = useState('');
+
+  useEffect(() => {
+    fetch('/docs/同意説明文書_Spirit-in-Physics_250620_ver2.0.md')
+      .then((res) => res.text())
+      .then((text) => setConsentText(text))
+      .catch((err) => console.error('Error fetching consent form:', err));
+  }, []);
+
+  const handleAgreementChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = event.target;
+    setAgreements((prev) => ({ ...prev, [name]: checked }));
+  };
+
+  const isAllAgreed = Object.values(agreements).every(Boolean) && signature.trim() !== '';
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (isAllAgreed) {
+      onConsent(participantId, signature);
+    }
+  };
 
   return (
-    <div className="not-prose my-12">
-      <Card className="w-full max-w-2xl mx-auto bg-white/50 rounded-2xl shadow-md border border-gray-200">
-        <CardHeader className="p-8 border-b">
-          <CardTitle className="text-xl font-semibold text-gray-800">Research Participation Consent</CardTitle>
-          <CardDescription className="text-gray-600 mt-2">
-            This Spirit in Physics study uses Jung's Word Association Test for research.
-            The experiment consists of two sessions and is expected to take about 3 hours, with the possibility of extension.
-            Participants will be compensated at a rate of 2,000 JPY per hour.
-            Please read the following consent information before proceeding.
-          </CardDescription>
-          <Button variant="link" className="px-0 justify-start text-blue-600 hover:text-blue-800 text-sm">Read Full Consent Form</Button>
-        </CardHeader>
-        <CardContent className="p-8">
-          <div className="space-y-6">
-            <div>
-              <Label className="text-lg font-semibold text-gray-800 block mb-4">Demographic Information (CDISC Standards)</Label>
-              <p className="text-sm text-gray-500 mb-6">
-                This information helps us understand our research participants better. All responses are anonymous and optional.
-              </p>
-              <div className="space-y-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="age-group" className="font-medium text-gray-700">Age Group</Label>
-                  <Select>
-                    <SelectTrigger id="age-group" className="bg-white">
-                      <SelectValue placeholder="Prefer not to say" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="18-24">18-24</SelectItem>
-                      <SelectItem value="25-34">25-34</SelectItem>
-                      <SelectItem value="35-44">35-44</SelectItem>
-                      <SelectItem value="45-54">45-54</SelectItem>
-                      <SelectItem value="55+">55+</SelectItem>
-                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label className="font-medium text-gray-700">Gender</Label>
-                  <RadioGroup defaultValue="prefer-not-to-say" className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                    {['Male', 'Female', 'Non-binary', 'Prefer not to say'].map(gender => (
-                      <div key={gender} className="flex items-center space-x-2">
-                        <RadioGroupItem value={gender.toLowerCase().replace(' ', '-')} id={gender.toLowerCase()} />
-                        <Label htmlFor={gender.toLowerCase()} className="font-normal text-gray-700">{gender}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="race-ethnicity" className="font-medium text-gray-700">Race/Ethnicity</Label>
-                  <Select>
-                    <SelectTrigger id="race-ethnicity" className="bg-white">
-                      <SelectValue placeholder="Prefer not to say" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="asian">Asian</SelectItem>
-                      <SelectItem value="black">Black or African American</SelectItem>
-                      <SelectItem value="hispanic">Hispanic or Latino</SelectItem>
-                      <SelectItem value="white">White</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="annual-income" className="font-medium text-gray-700">Annual Income</Label>
-                  <Select>
-                    <SelectTrigger id="annual-income" className="bg-white">
-                      <SelectValue placeholder="Prefer not to say" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="<25k">&lt; $25,000</SelectItem>
-                      <SelectItem value="25k-50k">$25,000 - $49,999</SelectItem>
-                      <SelectItem value="50k-100k">$50,000 - $99,999</SelectItem>
-                      <SelectItem value="100k+">&gt; $100,000</SelectItem>
-                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 pt-6 border-t">
-              <Checkbox id="terms" checked={isAgreed} onCheckedChange={(checked) => setIsAgreed(checked === true)} className="mt-1" />
-              <label
-                htmlFor="terms"
-                className="text-sm text-gray-600 leading-relaxed"
-              >
-                I have read and understood the information about this research, including the purpose, methods, duration (approx. 3 hours, potentially longer), and compensation (2,000 JPY/hour). I have had the opportunity to ask questions and have received satisfactory answers. I voluntarily agree to participate and understand that I can withdraw at any time without penalty.
-              </label>
-            </div>
+    <div className="container mx-auto p-4 max-w-2xl">
+      <h1 className="text-2xl font-bold mb-4">研究参加への同意</h1>
+      <div className="prose border rounded-md p-4 h-96 overflow-y-scroll mb-4">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{consentText}</ReactMarkdown>
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-2 mb-4">
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                name="understand"
+                checked={agreements.understand}
+                onChange={handleAgreementChange}
+                className="mr-2"
+              />
+              研究内容を理解しました。
+            </label>
           </div>
-        </CardContent>
-        <CardFooter className="flex flex-col items-center gap-4 pt-6 bg-gray-50 p-8 border-t">
-          <Button className="w-full text-base py-3" disabled={!isAgreed} onClick={onConsent}>Consent and Continue</Button>
-          <p className="text-xs text-gray-500 text-center">
-            This consent process complies with ICH-GCP (International Conference on Harmonisation - Good Clinical Practice) standards.
-            <br />
-            IRB Approval number: Niigata University 2024-0269 | Approval date: June 20, 2025
-          </p>
-        </CardFooter>
-      </Card>
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                name="voluntary"
+                checked={agreements.voluntary}
+                onChange={handleAgreementChange}
+                className="mr-2"
+              />
+              自発的に研究に参加することに同意します。
+            </label>
+          </div>
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                name="withdraw"
+                checked={agreements.withdraw}
+                onChange={handleAgreementChange}
+                className="mr-2"
+              />
+              いつでも同意を撤回できることを理解しました。
+            </label>
+          </div>
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                name="recording"
+                checked={agreements.recording}
+                onChange={handleAgreementChange}
+                className="mr-2"
+              />
+              音声と映像の記録に同意します。
+            </label>
+          </div>
+        </div>
+        <div className="mb-4">
+          <label htmlFor="signature" className="block font-bold mb-1">
+            署名
+          </label>
+          <input
+            type="text"
+            id="signature"
+            value={signature}
+            onChange={(e) => setSignature(e.target.value)}
+            placeholder="氏名を入力してください"
+            className="w-full p-2 border rounded-md"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={!isAllAgreed}
+          className="w-full p-2 rounded-md bg-blue-500 text-white disabled:bg-gray-400"
+        >
+          同意して実験を開始する
+        </button>
+      </form>
     </div>
-  )
-} 
+  );
+};
+
+export default ConsentForm; 
