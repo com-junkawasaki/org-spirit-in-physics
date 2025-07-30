@@ -9,4 +9,12 @@ export const JUNG_STIMULUS_WORDS: string[] = [
   '花', '打つ', '箱', '荒い', '家族', '洗う', '牛', '妙な', '幸運', 'うそ',
   '礼儀', '狭い', '兄弟', '怖がる', '鶴', '間違い', '心配', 'キス', '花嫁', '清潔な',
   '戸', '選ぶ', '乾し草', '嬉しい', 'あざける', '眠る', '月', 'きれいな', '女', '侮辱'
-]; 
+];
+
+export const INTRO_TEXT = `
+  ユングの言語連想検査へようこそ。この検査は、あなたの言葉に対する心理的な連想を探るものです。私が単語を提示しますので、最初に思いついた単語で応答してください。１つの単語に対して、10秒以内に応答してください。
+`;
+
+export const JUNG_TEST_WELCOME_MESSAGE = `
+  Welcome to the Jung's Word Association Test. This test explores your immediate mental associations. I'll present words, and you respond with the first word that comes to mind.
+`;
