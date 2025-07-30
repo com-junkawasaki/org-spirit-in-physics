@@ -245,5 +245,234 @@
     "details": {
       "reason": "No media stream available."
     }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:08.067Z",
+    "event": "session_start",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:08.079Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "親切な"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:08.082Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "親切な"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:14.089Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "親切な"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:14.099Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "軽蔑する"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:14.103Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "軽蔑する"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:20.110Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "軽蔑する"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:20.121Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "光"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:20.126Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "光"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:26.134Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "光"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:26.144Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "歌う"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:26.152Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "歌う"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:32.161Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "歌う"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:32.172Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "尋ねる"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:32.177Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "尋ねる"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:38.184Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "尋ねる"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:38.193Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "罪"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:38.198Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "罪"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:44.204Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "罪"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:44.214Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "怒り"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:44.219Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "怒り"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:50.228Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "怒り"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:50.238Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "ランプ"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:50.243Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "ランプ"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:56.251Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "ランプ"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:56.262Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "水"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:11:56.267Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "水"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:12:02.276Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "水"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:12:02.288Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "箱"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:12:02.293Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "箱"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:12:08.302Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "箱"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:12:08.304Z",
+    "event": "session_complete",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:13:55.249Z",
+    "event": "test_reset",
+    "details": {}
   }
 ]

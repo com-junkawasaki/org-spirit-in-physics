@@ -102,17 +102,20 @@ const SessionScreen = React.memo<{
     useEffect(() => {
         if (currentWordIndex < stimulusWords.length) {
             const word = stimulusWords[currentWordIndex];
+            const audio = stimulusAudioRef.current;
             
             // Play audio for the word from mp3 file
-            if (stimulusAudioRef.current) {
+            if (audio) {
                 const audioSrc = `/audio/jung-voice-assessment/${encodeURIComponent(word)}.mp3`;
-                stimulusAudioRef.current.src = audioSrc;
-                stimulusAudioRef.current.play()
+                audio.src = audioSrc;
+                audio.play()
                     .catch(err => {
-                        console.error(`Could not play audio ${audioSrc}, falling back to speech synthesis.`, err);
-                        // Fallback to SpeechSynthesis
-                        const utterance = new SpeechSynthesisUtterance(word);
-                        speechSynthesis.speak(utterance);
+                        if (err.name !== 'AbortError') { // Ignore AbortError which is expected on fast re-renders
+                          console.error(`Could not play audio ${audioSrc}, falling back to speech synthesis.`, err);
+                          // Fallback to SpeechSynthesis
+                          const utterance = new SpeechSynthesisUtterance(word);
+                          speechSynthesis.speak(utterance);
+                        }
                     });
             } else {
                 // Fallback for safety, though ref should exist.
@@ -141,15 +144,16 @@ const SessionScreen = React.memo<{
                     setRecognizedText(transcript);
 
                     if (event.results[0].isFinal) {
-                        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                        onResponse(transcript, audioBlob);
+                        // const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                        onResponse(transcript, new Blob()); // Pass empty blob for now
                         if (recognitionRef.current) {
                             recognitionRef.current.stop();
                         }
                     }
                 };
 
-                // Media Recorder Setup
+                // Media Recorder Setup (temporarily disabled for debugging)
+                /*
                 if (stream) {
                     mediaRecorderRef.current = new MediaRecorder(stream);
                     mediaRecorderRef.current.ondataavailable = (event) => {
@@ -163,12 +167,16 @@ const SessionScreen = React.memo<{
                     audioChunksRef.current = [];
                     mediaRecorderRef.current.start();
                 }
+                */
                 
                 recognition.start();
             }
 
             return () => {
                 speechSynthesis.cancel();
+                if (audio) {
+                    audio.pause();
+                }
                 if (recognitionRef.current && isListening) {
                     recognitionRef.current.stop();
                 }
@@ -386,7 +394,7 @@ export default function JungVoiceTest({
       startSession(numberOfWords);
   }
 
-  const handleResponse = (response: string, audioBlob: Blob) => {
+  const handleResponse = useCallback((response: string, audioBlob: Blob) => {
       const reactionTimeMs = wordDisplayedTimeRef.current ? Date.now() - wordDisplayedTimeRef.current : 0;
 
       recordWordResponse({
@@ -397,7 +405,7 @@ export default function JungVoiceTest({
 
       // The advancement logic is now in the store
       if (responseTimerRef.current) clearTimeout(responseTimerRef.current);
-  };
+  }, [recordWordResponse]);
 
   const renderContent = () => {
     switch (testStatus) {
