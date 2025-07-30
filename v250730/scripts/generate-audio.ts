@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import OpenAI from 'openai';
-import { JUNG_STIMULUS_WORDS_FOR_JAPANESE_PRONUNCIATION, JUNG_TEST_WELCOME_MESSAGE } from '../src/components/jung-voice-assessment/constants';
+import { JUNG_STIMULUS_WORDS, JUNG_TEST_WELCOME_MESSAGE } from '../src/components/jung-voice-assessment/constants';
 import 'dotenv/config';
 
 /**
@@ -65,7 +65,7 @@ async function main() {
   await textToSpeech(openai, JUNG_TEST_WELCOME_MESSAGE.trim(), 'welcome_message');
 
   // 各単語の音声を生成
-  for (const word of JUNG_STIMULUS_WORDS_FOR_JAPANESE_PRONUNCIATION) {
+  for (const word of JUNG_STIMULUS_WORDS) {
     await textToSpeech(openai, word, word);
     // APIのリクエスト制限を避けるために短い待機時間を設ける
     await new Promise(resolve => setTimeout(resolve, 200));
