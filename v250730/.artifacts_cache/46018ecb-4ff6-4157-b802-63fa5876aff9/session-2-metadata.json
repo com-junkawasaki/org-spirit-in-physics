@@ -1,0 +1,473 @@
+{
+  "assessmentId": "46018ecb-4ff6-4157-b802-63fa5876aff9",
+  "userId": "user-placeholder",
+  "timestamp": "2025-07-30T15:25:29.200Z",
+  "session": 2,
+  "responses": [],
+  "fullLog": [
+    {
+      "timestamp": "2025-07-30T15:22:25.424Z",
+      "event": "session_start",
+      "details": {
+        "session": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:25.431Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "口論"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:25.432Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "口論"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:31.434Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "口論"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:31.440Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "部分"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:31.443Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "部分"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:37.445Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "部分"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:37.448Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "信頼"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:37.449Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "信頼"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:43.450Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "信頼"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:43.454Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "村"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:43.456Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "村"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:49.458Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "村"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:49.463Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "パン"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:49.464Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "パン"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:55.466Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "パン"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:55.470Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "悲しい"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:22:55.471Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "悲しい"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:01.473Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "悲しい"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:01.476Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "眠る"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:01.477Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "眠る"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:07.478Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "眠る"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:07.484Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "疑い"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:07.486Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "疑い"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:13.490Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "疑い"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:13.497Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "狭い"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:13.500Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "狭い"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:19.502Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "狭い"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:19.508Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "毛皮"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:19.512Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "毛皮"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:25.516Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "毛皮"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:25.518Z",
+      "event": "session_complete",
+      "details": {
+        "session": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:25.531Z",
+      "event": "final_video_saved",
+      "details": {
+        "session": 1,
+        "fileName": "session-1-video-final.webm",
+        "size": 4450187
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:23:25.532Z",
+      "event": "recording_stopped_and_saved",
+      "details": {
+        "session": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:29.067Z",
+      "event": "recording_started",
+      "details": {
+        "session": 2
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:29.069Z",
+      "event": "session_start",
+      "details": {
+        "session": 2
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:29.076Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "頭"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:29.078Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "頭"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:35.081Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "頭"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:35.089Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "悲しい"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:35.091Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "悲しい"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:41.094Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "悲しい"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:41.100Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "インク"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:41.102Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "インク"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:47.105Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "インク"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:47.111Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "選ぶ"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:47.113Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "選ぶ"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:53.117Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "選ぶ"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:53.124Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "信頼"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:53.127Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "信頼"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:59.130Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "信頼"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:59.136Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "洗う"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:24:59.139Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "洗う"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:05.143Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "洗う"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:05.148Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "怒り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:05.150Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "怒り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:11.153Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "怒り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:11.160Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "パン"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:11.164Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "パン"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:17.167Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "パン"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:17.175Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "プラム"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:17.181Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "プラム"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:23.184Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "プラム"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:23.190Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "病気"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:23.194Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "病気"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:25:29.197Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "病気"
+      }
+    }
+  ]
+}
