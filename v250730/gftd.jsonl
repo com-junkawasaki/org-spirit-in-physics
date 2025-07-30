@@ -167,4 +167,67 @@
     "description": "A process to analyze and improve the recently completed debugging process, following Kaizen principles."
   },
   "traversals": []
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {"id": "process:sdlc", "label": "process", "name": "Software Development Life Cycle", "status": "in_progress", "cmmi_level": 5},
+      {"id": "phase:planning", "label": "phase", "name": "Planning & Requirement Analysis", "status": "completed"},
+      {"id": "phase:design", "label": "phase", "name": "Design", "status": "in_progress"},
+      {"id": "phase:implementation", "label": "phase", "name": "Implementation", "status": "pending"},
+      {"id": "phase:testing", "label": "phase", "name": "Testing", "status": "pending"},
+      {"id": "phase:deployment", "label": "phase", "name": "Deployment", "status": "pending"},
+      {"id": "phase:maintenance", "label": "phase", "name": "Maintenance", "status": "pending"},
+      {"id": "task:define_requirements", "label": "task", "name": "Define Project Requirements", "status": "completed", "details": "Based on docs/2412-研究計画書_Spirit-in-Physics_ver2.0_250620.md"},
+      {"id": "task:architectural_design", "label": "task", "name": "Architectural Design", "status": "completed", "details": "Mermaid diagram created."},
+      {"id": "task:db_schema_design", "label": "task", "name": "Database Schema Design", "status": "completed", "details": "Schema defined in jung-voice-assessment/schema.ts"},
+      {"id": "task:ui_ux_design", "label": "task", "name": "UI/UX Design", "status": "in_progress"},
+      {"id": "task:coding", "label": "task", "name": "Coding and Unit Testing", "status": "pending"},
+      {"id": "task:integration_testing", "label": "task", "name": "Integration and System Testing", "status": "pending"},
+      {"id": "task:release", "label": "task", "name": "Release to Production", "status": "pending"},
+      {"id": "task:monitoring", "label": "task", "name": "Monitoring and Support", "status": "pending"}
+    ],
+    "edges": [
+      {"id": "e_sdlc_p1", "outV": "process:sdlc", "inV": "phase:planning", "label": "has_phase"},
+      {"id": "e_sdlc_p2", "outV": "process:sdlc", "inV": "phase:design", "label": "has_phase"},
+      {"id": "e_sdlc_p3", "outV": "process:sdlc", "inV": "phase:implementation", "label": "has_phase"},
+      {"id": "e_sdlc_p4", "outV": "process:sdlc", "inV": "phase:testing", "label": "has_phase"},
+      {"id": "e_sdlc_p5", "outV": "process:sdlc", "inV": "phase:deployment", "label": "has_phase"},
+      {"id": "e_sdlc_p6", "outV": "process:sdlc", "inV": "phase:maintenance", "label": "has_phase"},
+      {"id": "e_sdlc_s1", "outV": "phase:planning", "inV": "phase:design", "label": "precedes"},
+      {"id": "e_sdlc_s2", "outV": "phase:design", "inV": "phase:implementation", "label": "precedes"},
+      {"id": "e_sdlc_s3", "outV": "phase:implementation", "inV": "phase:testing", "label": "precedes"},
+      {"id": "e_sdlc_s4", "outV": "phase:testing", "inV": "phase:deployment", "label": "precedes"},
+      {"id": "e_sdlc_s5", "outV": "phase:deployment", "inV": "phase:maintenance", "label": "precedes"},
+      {"id": "e_plan1", "outV": "phase:planning", "inV": "task:define_requirements", "label": "has_task"},
+      {"id": "e_design1", "outV": "phase:design", "inV": "task:architectural_design", "label": "has_task"},
+      {"id": "e_design_db", "outV": "phase:design", "inV": "task:db_schema_design", "label": "has_task"},
+      {"id": "e_design_ui", "outV": "phase:design", "inV": "task:ui_ux_design", "label": "has_task"},
+      {"id": "e_impl1", "outV": "phase:implementation", "inV": "task:coding", "label": "has_task"},
+      {"id": "e_test1", "outV": "phase:testing", "inV": "task:integration_testing", "label": "has_task"},
+      {"id": "e_deploy1", "outV": "phase:deployment", "inV": "task:release", "label": "has_task"},
+      {"id": "e_maint1", "outV": "phase:maintenance", "inV": "task:monitoring", "label": "has_task"},
+      {"id": "e_feedback_loop", "outV": "phase:testing", "inV": "phase:implementation", "label": "provides_feedback_to"}
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-30",
+    "description": "A standard Software Development Life Cycle (SDLC) process, compliant with CMMI Level 5 principles."
+  },
+  "traversals": [
+    {
+      "name": "get_current_sdlc_phase",
+      "script": "g.V().has('label','phase').has('status','in_progress')"
+    },
+    {
+      "name": "get_design_tasks",
+      "script": "g.V('phase:design').out('has_task')"
+    },
+    {
+      "name": "get_sdlc_flow",
+      "script": "g.V('process:sdlc').out('has_phase')"
+    }
+  ]
 } 
