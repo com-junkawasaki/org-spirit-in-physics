@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
 import AudioVisualizer from './AudioVisualizer';
+import { JUNG_TEST_WELCOME_MESSAGE } from './constants';
 import type { JungVoiceTestProps } from './types';
 
 // --- Memoized, Dumb Sub-components ---
@@ -16,6 +17,7 @@ const PreflightScreen = React.memo<{
   error: string | null;
   onStartSession: () => void;
 }>(({ videoPreviewRef, stream, deviceStatus, error, onStartSession }) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
     if (stream && videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = stream;
@@ -25,9 +27,29 @@ const PreflightScreen = React.memo<{
     }
   }, [stream, videoPreviewRef]);
 
+  const playWelcomeAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.play();
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">デバイスチェック</h2>
+
+      <Card className="p-4">
+        <CardHeader>
+            <CardTitle>ようこそ</CardTitle>
+        </CardHeader>
+        <CardContent className="text-left">
+          <p className="whitespace-pre-wrap">{JUNG_TEST_WELCOME_MESSAGE}</p>
+          <audio ref={audioRef} src="/audio/jung-voice-assessment/welcome_message.mp3" autoPlay />
+          <Button onClick={playWelcomeAudio} className="mt-4">
+            説明を音声で聞く
+          </Button>
+        </CardContent>
+      </Card>
+
       <div className="relative w-full max-w-md mx-auto aspect-video bg-gray-900 rounded-md overflow-hidden mb-4 flex items-center justify-center">
         <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
         {deviceStatus !== 'success' && (
