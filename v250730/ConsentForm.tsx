@@ -30,9 +30,10 @@ export function ResearchParticipationConsent({ onConsent }: { onConsent: () => v
         <CardHeader className="p-8 border-b">
           <CardTitle className="text-xl font-semibold text-gray-800">Research Participation Consent</CardTitle>
           <CardDescription className="text-gray-600 mt-2">
-            This Spirit in Physics (Jung's Word Association Embedding Test) is
-            conducted for research purposes. Please read the following consent
-            information before proceeding.
+            This Spirit in Physics study uses Jung's Word Association Test for research.
+            The experiment consists of two sessions and is expected to take about 3 hours, with the possibility of extension.
+            Participants will be compensated at a rate of 2,000 JPY per hour.
+            Please read the following consent information before proceeding.
           </CardDescription>
           <Button variant="link" className="px-0 justify-start text-blue-600 hover:text-blue-800 text-sm">Read Full Consent Form</Button>
         </CardHeader>
@@ -110,7 +111,7 @@ export function ResearchParticipationConsent({ onConsent }: { onConsent: () => v
                 htmlFor="terms"
                 className="text-sm text-gray-600 leading-relaxed"
               >
-                I have read and understood the above information. I have had the opportunity to ask questions and have received satisfactory answers to my questions. I voluntarily agree to participate in this research. I understand that I have the right to withdraw at any time.
+                I have read and understood the information about this research, including the purpose, methods, duration (approx. 3 hours, potentially longer), and compensation (2,000 JPY/hour). I have had the opportunity to ask questions and have received satisfactory answers. I voluntarily agree to participate and understand that I can withdraw at any time without penalty.
               </label>
             </div>
           </div>
@@ -120,7 +121,7 @@ export function ResearchParticipationConsent({ onConsent }: { onConsent: () => v
           <p className="text-xs text-gray-500 text-center">
             This consent process complies with ICH-GCP (International Conference on Harmonisation - Good Clinical Practice) standards.
             <br />
-            IRB Approval number: Niigata University 2024-0269 | Approval date: Marth 1, 2025
+            IRB Approval number: Niigata University 2024-0269 | Approval date: June 20, 2025
           </p>
         </CardFooter>
       </Card>

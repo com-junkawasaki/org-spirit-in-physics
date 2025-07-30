@@ -25,11 +25,15 @@ export const MessageSchema = z.object({
 
 // JungVoiceAssessment コンポーネントのプロップスのスキーマ
 export const JungVoiceAssessmentPropsSchema = z.object({
-  numberOfWords: z.number().int().min(1).max(1000).optional().default(100),
-  apiKey: z.string().optional(),
+  numberOfWords: z.number().int().positive().optional(),
+  apiKey: z.string(),
   generationId: z.string().optional(),
   voiceName: z.string().optional(),
   speechRecognitionLang: z.string().optional(),
+  onTestComplete: z.function().args(z.any()).returns(z.void()).optional(),
+  onComplete: z.function().args(z.void()).returns(z.void()).optional(),
+  session: z.number().int().positive().optional(),
+  className: z.string().optional(),
 });
 
 // AI ガイドメッセージのスキーマ

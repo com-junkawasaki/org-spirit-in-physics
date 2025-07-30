@@ -34,7 +34,7 @@ export interface JungVoiceAssessmentProps {
   /**
    * Hume AI API キー
    */
-  apiKey?: string;
+  apiKey: string;
   
   /**
    * Hume AI 音声生成ID
@@ -61,6 +61,16 @@ export interface JungVoiceAssessmentProps {
    * 追加のCSSクラス
    */
   className?: string;
+
+  /**
+   * セッション完了時のコールバック
+   */
+  onComplete?: () => void;
+
+  /**
+   * セッション番号
+   */
+  session?: number;
 }
 
 // JungVoiceTest コンポーネントのプロップスの型

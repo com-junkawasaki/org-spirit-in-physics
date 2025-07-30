@@ -10,8 +10,10 @@ import { useKawasakiStore } from '@/store/kawasakiStore';
 export default function JungVoiceAssessment({ 
   apiKey = process.env.NEXT_PUBLIC_HUME_API_KEY || '',
   onTestComplete,
+  onComplete, // new prop
+  session, // new prop
   className = '',
-  numberOfWords = 10,
+  numberOfWords = 100, // Updated to 100 as per research plan
 }: JungVoiceAssessmentProps) {
   // Props validation
   const validatedProps = JungVoiceAssessmentPropsSchema.parse({
@@ -21,20 +23,18 @@ export default function JungVoiceAssessment({
     voiceName: 'default', // Default value
     speechRecognitionLang: 'en-US', // Default value
     onTestComplete,
+    onComplete,
+    session,
     className
   });
 
   const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [userId, setUserId] = useState<string>('');
 
-  // Kawasaki Model ストアから更新関数を取得
-  const updateVoiceAssessment = useKawasakiStore(state => state.updateVoiceAssessment);
+  const addCompletedAssessment = useKawasakiStore(state => state.addCompletedAssessment);
 
-  // ユーザーIDの初期化 - useEffect で実行してSSRに対応
   useEffect(() => {
-    // Only run in browser environment
     if (typeof window !== 'undefined') {
-      // ユーザーIDをローカルストレージから取得または生成
       const existingUserId = localStorage.getItem('jung_test_user_id');
       const newUserId = existingUserId || uuidv4();
       
@@ -49,15 +49,15 @@ export default function JungVoiceAssessment({
   const handleTestComplete = (results: TestResults) => {
     setTestResults(results);
     
-    // Kawasaki Model ストアに結果を反映
-    try {
-      updateVoiceAssessment(results);
-    } catch (error) {
-      console.error('Failed to update Kawasaki Model with voice assessment results:', error);
-    }
+    // Pass session number to the store
+    addCompletedAssessment({ ...results, session: validatedProps.session });
     
     if (onTestComplete) {
       onTestComplete(results);
+    }
+
+    if (validatedProps.onComplete) {
+      validatedProps.onComplete();
     }
   };
 

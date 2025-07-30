@@ -1,32 +1,53 @@
 "use client";
 
 import React, { useState } from "react";
-import { JungVoiceAssessment } from "../jung-voice-assessment";
+import { JungVoiceAssessment } from "./jung-voice-assessment";
 import { JungEmbeddingVisualization } from "../jung-visualization";
 import { useKawasakiStore } from "../../store/kawasakiStore";
 
 /**
- * An interactive component for Spirit in Physics that now primarily handles
- * the display of the JungVoiceTest and the subsequent visualization of its results.
+ * An interactive component for Spirit in Physics that handles the
+ * two-session Jungian word association test and the subsequent visualization of its results.
  */
-export default function SpiritInPhysicsInteractive() {
+export default function ResearchMethod() {
   const testStatus = useKawasakiStore((state) => state.testStatus);
   const resetTest = useKawasakiStore((state) => state.resetTest);
   const completedAssessments = useKawasakiStore((state) => state.completedAssessments);
   const [showEmbeddingVisualization, setShowEmbeddingVisualization] = useState(false);
+  const [session, setSession] = useState(1);
 
-  // Note: The data structure for visualization might need to be adapted
-  // once the batch processing results are available. This is a placeholder.
-  // For now, we'll just show the main test component.
-  const latestAssessment = completedAssessments.length > 0 ? completedAssessments[completedAssessments.length - 1] : null;
+  const handleSessionComplete = () => {
+    if (session === 1) {
+      setSession(2);
+    }
+  };
 
-  // The main interaction is now handled by JungVoiceTest, which is rendered within JungVoiceAssessment.
-  // This component will orchestrate showing the test or the results.
+  const isSession1Complete = completedAssessments.length >= 1;
+  const isSession2Complete = completedAssessments.length >= 2;
+
   return (
     <div className="space-y-8 my-12">
       <div className="p-6 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg shadow-lg">
-        {testStatus !== 'completed' ? (
-          <JungVoiceAssessment />
+        {!isSession2Complete ? (
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Session {session}</h2>
+            {!isSession1Complete || session === 2 ? (
+              <JungVoiceAssessment onComplete={handleSessionComplete} session={session} />
+            ) : (
+              <div className="text-center">
+                <h3 className="text-xl font-semibold mb-4">Session 1 Complete</h3>
+                <p className="text-gray-700 mb-6">
+                  Thank you. Please take a short break. Click below to start the second session.
+                </p>
+                <button
+                  onClick={() => setSession(2)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Start Session 2
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="text-center">
             <h3 className="text-2xl font-semibold mb-4">Assessment Complete!</h3>
@@ -44,27 +65,20 @@ export default function SpiritInPhysicsInteractive() {
                 onClick={resetTest}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
               >
-                Start New Session
+                Start New Study
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Placeholder for where the visualization would be shown after backend processing */}
-      {testStatus === 'completed' && showEmbeddingVisualization && (
+      {isSession2Complete && showEmbeddingVisualization && (
         <div className="mt-8 p-6 border rounded-lg">
            <h3 className="text-xl font-semibold mb-4">RAG-style Jung Embedding Analysis (Post-Batch-Processing)</h3>
           <p className="text-gray-600 mb-4">
              This visualization will show the semantic relationships and clustering patterns from your responses
              after they have been analyzed by the backend.
           </p>
-           {/* 
-          <JungEmbeddingVisualization 
-              // This would take the processed data from the backend, not the raw recorded blobs.
-              // testData={processedDataFromBackend} 
-            /> 
-           */}
            <div className="w-full h-96 bg-gray-200 flex items-center justify-center rounded-md">
              <p className="text-gray-500">Visualization will appear here once data is processed.</p>
            </div>
