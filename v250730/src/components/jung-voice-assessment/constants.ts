@@ -1,12 +1,12 @@
 export const JUNG_STIMULUS_WORDS: string[] = [
-  'head', 'green', 'water', 'sing', 'dead', 'long', 'ship', 'make', 'woman', 'friendly',
-  'bake', 'ask', 'cold', 'stalk', 'dance', 'village', 'pond', 'sick', 'pride', 'cook',
-  'ink', 'angry', 'needle', 'swim', 'go', 'blue', 'lamp', 'sin', 'bread', 'rich',
-  'tree', 'pity', 'yellow', 'mountain', 'die', 'salt', 'new', 'custom', 'pray', 'money',
-  'foolish', 'pamphlet', 'despise', 'finger', 'rich', 'light', 'sad', 'plum', 'marry', 'house',
-  'dear', 'glass', 'quarrel', 'fur', 'big', 'carrot', 'paint', 'part', 'old', 'flower',
-  'box', 'wild', 'family', 'wash', 'cow', 'friend', 'luck', 'lie', 'behavior', 'narrow',
-  'brother', 'fear', 'stork', 'false', 'anxiety', 'kiss', 'bride', 'pure', 'door', 'choose',
-  'hay', 'contented', 'ridicule', 'sleep', 'month', 'nice', 'woman', 'abuse', 'dark', 'glass',
-  'love', 'hate', 'shame', 'betray', 'joy', 'pain', 'hope', 'despair', 'trust', 'doubt'
+  '頭', '緑', '水', '歌う', '死', '長い', '船', '支払う', '窓', '親切な',
+  '机', '尋ねる', '村', '冷たい', '茎', '踊る', '海', '病気', '誇り', '炊く',
+  'インキ', '怒り', '針', '泳ぐ', '旅行', '青い', 'ランプ', '犯す', 'パン', '金持ち',
+  '木', '刺す', '同情', '黄色', '山', '死ぬ', '塩', '新しい', 'くせ', '祈る',
+  '金', '馬鹿な', 'ノート', '軽蔑する', '指', '高価な', '鳥', '落ちる', '本', '不正な',
+  '蛙', '別れる', '空腹', '白い', '子供', '注意する', '鉛筆', '悲しい', 'あんず', '結婚する',
+  '家', 'かわいい', 'ガラス', '争う', '毛皮', '大きい', 'かぶら', '塗る', '部分', '古い',
+  '花', '打つ', '箱', '荒い', '家族', '洗う', '牛', '妙な', '幸運', 'うそ',
+  '礼儀', '狭い', '兄弟', '怖がる', '鶴', '間違い', '心配', 'キス', '花嫁', '清潔な',
+  '戸', '選ぶ', '乾し草', '嬉しい', 'あざける', '眠る', '月', 'きれいな', '女', '侮辱'
 ]; 
