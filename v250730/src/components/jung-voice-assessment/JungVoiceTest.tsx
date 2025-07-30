@@ -7,18 +7,7 @@ import { useKawasakiStore } from '@/store/kawasakiStore';
 import AudioVisualizer from './AudioVisualizer';
 import type { JungVoiceTestProps } from './types';
 
-const INTRODUCTION_MESSAGE = "This study requires capturing your webcam and microphone for the entire duration of each session. Please grant permission when prompted. When you're ready, click the start button.";
-
 // --- Memoized, Dumb Sub-components ---
-
-const IntroScreen = React.memo<{ onStart: () => void; }>(({ onStart }) => (
-  <div>
-    <p className="mb-6">{INTRODUCTION_MESSAGE}</p>
-    <Button onClick={onStart} size="lg">Start Session 1</Button>
-  </div>
-));
-IntroScreen.displayName = 'IntroScreen';
-
 
 const PreflightScreen = React.memo<{
   videoPreviewRef: MutableRefObject<HTMLVideoElement | null>;
@@ -38,27 +27,27 @@ const PreflightScreen = React.memo<{
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Device Check</h2>
+      <h2 className="text-2xl font-bold">デバイスチェック</h2>
       <div className="relative w-full max-w-md mx-auto aspect-video bg-gray-900 rounded-md overflow-hidden mb-4 flex items-center justify-center">
         <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
         {deviceStatus !== 'success' && (
           <div className="absolute inset-0 flex items-center justify-center text-center p-4">
             <p className="text-white/80 text-lg">
-              {deviceStatus === 'pending' && 'Preparing camera and microphone...'}
-              {deviceStatus === 'error' && 'Could not access devices.'}
+              {deviceStatus === 'pending' && 'カメラとマイクを準備しています...'}
+              {deviceStatus === 'error' && 'デバイスにアクセスできませんでした。'}
             </p>
           </div>
         )}
       </div>
       {deviceStatus === 'success' && stream && (
         <div className="space-y-3 text-center">
-          <p className="text-green-500">Camera and microphone are ready.</p>
+          <p className="text-green-500">カメラとマイクの準備ができました。</p>
           <AudioVisualizer stream={stream} />
         </div>
       )}
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <Button onClick={onStartSession} size="lg" disabled={!stream}>
-        Start Session
+        セッションを開始
       </Button>
     </div>
   );
@@ -155,7 +144,7 @@ const SessionScreen = React.memo<{
     }, [currentWordIndex, stimulusWords, onResponse, isListening, stream]);
   
   if (currentWordIndex >= stimulusWords.length) {
-    return <div>Loading next word...</div>;
+    return <div>次の単語を読み込み中...</div>;
   }
 
   const progress = ((currentWordIndex + 1) / stimulusWords.length) * 100;
@@ -167,7 +156,7 @@ const SessionScreen = React.memo<{
       </div>
        <div className="w-full max-w-md">
           <p className="text-sm text-gray-500 mb-1">
-              Session {currentSession} - Word {currentWordIndex + 1} of {stimulusWords.length}
+              セッション {currentSession} - 単語 {currentWordIndex + 1} / {stimulusWords.length}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
@@ -178,8 +167,8 @@ const SessionScreen = React.memo<{
         {stream && <AudioVisualizer stream={stream} />}
       </div>
       <div className="h-8 text-xl text-gray-600">
-        {isListening ? 'Listening...' : ''}
-        {recognizedText && `Recognized: ${recognizedText}`}
+        {isListening ? '聞き取り中...' : ''}
+        {recognizedText && `認識結果: ${recognizedText}`}
       </div>
     </div>
   );
@@ -189,18 +178,18 @@ SessionScreen.displayName = 'SessionScreen';
 
 const BreakScreen = React.memo<{ onStartNextSession: () => void; }>(({ onStartNextSession }) => (
   <div className="space-y-4">
-    <h2 className="text-2xl font-bold">Session 1 Complete</h2>
-    <p>Take a short break. When you are ready, start the second session.</p>
-    <Button onClick={onStartNextSession} size="lg">Start Session 2</Button>
+    <h2 className="text-2xl font-bold">セッション1が完了しました</h2>
+    <p>短い休憩を取ってください。準備ができたら、セッション2を開始してください。</p>
+    <Button onClick={onStartNextSession} size="lg">セッション2を開始</Button>
   </div>
 ));
 BreakScreen.displayName = 'BreakScreen';
 
 const CompletionScreen = React.memo<{ onReset: () => void; }>(({ onReset }) => (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Assessment Complete!</h2>
-      <p>Thank you for your participation. Your data has been saved.</p>
-      <Button onClick={onReset}>Start New Session</Button>
+      <h2 className="text-2xl font-bold">検査完了</h2>
+      <p>ご協力ありがとうございました。データは保存されました。</p>
+      <Button onClick={onReset}>新しいセッションを開始する</Button>
     </div>
 ));
 CompletionScreen.displayName = 'CompletionScreen';
@@ -261,7 +250,7 @@ export default function JungVoiceTest({
         logEvent('preflight_devices_acquired');
       } catch (err) {
         setDeviceStatus('error');
-        setError("Failed to access camera or microphone. Please check your browser permissions.");
+        setError("カメラまたはマイクへのアクセスに失敗しました。ブラウザの権限設定を確認してください。");
         logEvent('preflight_devices_failed', { error: (err as Error).message });
       }
     };
@@ -288,7 +277,7 @@ export default function JungVoiceTest({
   const startRecording = useCallback(async (session: 1 | 2) => {
     if (!stream) {
       logEvent('recording_start_failed', { reason: 'No media stream available.' });
-      setError("Cannot start recording, media stream is not available.");
+      setError("録画を開始できません。メディアストリームが利用できません。");
       return;
     }
   
@@ -312,7 +301,7 @@ export default function JungVoiceTest({
       logEvent('recording_started', { session });
     } catch (err) {
       logEvent('media_recorder_setup_failed', { error: (err as Error).message });
-      setError("Failed to create MediaRecorder.");
+      setError("MediaRecorderの作成に失敗しました。");
     }
   }, [logEvent, saveSessionVideo, stream, setError]);
   
@@ -406,7 +395,7 @@ export default function JungVoiceTest({
   return (
     <Card className={`text-center p-6 ${className}`}>
       <CardHeader>
-        <CardTitle>Jung Voice Test</CardTitle>
+        <CardTitle>ユング式言語連想検査</CardTitle>
       </CardHeader>
       <CardContent>
         {error && testStatus !== 'preflight' && <p className="text-red-500 mb-4">{error}</p>}

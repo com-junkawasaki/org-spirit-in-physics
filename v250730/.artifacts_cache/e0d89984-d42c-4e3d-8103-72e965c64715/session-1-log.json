@@ -1,0 +1,249 @@
+[
+  {
+    "timestamp": "2025-07-30T13:40:27.562Z",
+    "event": "session_start",
+    "details": {
+      "session": 1
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:27.571Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "白い"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:27.576Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "白い"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:33.579Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "白い"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:33.584Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "かぶら"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:33.586Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "かぶら"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:39.590Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "かぶら"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:39.596Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "乾し草"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:39.599Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "乾し草"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:45.602Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "乾し草"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:45.609Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "古い"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:45.612Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "古い"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:51.616Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "古い"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:51.620Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "新しい"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:51.622Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "新しい"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:57.625Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "新しい"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:57.630Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "木"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:40:57.632Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "木"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:03.634Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "木"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:03.639Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "心配"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:03.642Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "心配"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:09.646Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "心配"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:09.649Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "インキ"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:09.651Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "インキ"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:15.654Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "インキ"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:15.660Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "悲しい"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:15.664Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "悲しい"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:21.668Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "悲しい"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:21.672Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "あんず"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:21.675Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "あんず"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:27.680Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "あんず"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:27.682Z",
+    "event": "session_complete",
+    "details": {
+      "session": 1
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:27.697Z",
+    "event": "final_video_saved",
+    "details": {
+      "session": 1,
+      "fileName": "session-1-video-final.webm",
+      "size": 14638421
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:41:27.701Z",
+    "event": "recording_stopped_and_saved",
+    "details": {
+      "session": 1
+    }
+  },
+  {
+    "timestamp": "2025-07-30T13:44:00.574Z",
+    "event": "recording_started",
+    "details": {
+      "session": 2
+    }
+  }
+]
