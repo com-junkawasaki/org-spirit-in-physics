@@ -125,8 +125,8 @@ export const useKawasakiStore = create<KawasakiState>()(
 
             startSession: (numberOfWords) => {
                 const state = get();
-                if (state.testStatus === 'idle' || state.testStatus === 'session-1-complete') {
-                    const sessionNumber = state.testStatus === 'idle' ? 1 : 2;
+                if (state.testStatus === 'preflight' || state.testStatus === 'session-1-complete') {
+                    const sessionNumber = state.testStatus === 'preflight' ? 1 : 2;
                     const assessmentId = state.assessmentId || uuidv4();
                     
                     set({
