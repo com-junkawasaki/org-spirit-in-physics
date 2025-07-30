@@ -45,7 +45,7 @@ const PreflightScreen = React.memo<{
           <p className="whitespace-pre-wrap">{JUNG_TEST_WELCOME_MESSAGE}</p>
           <audio ref={audioRef} src="/audio/jung-voice-assessment/welcome_message.mp3" autoPlay />
           <Button onClick={playWelcomeAudio} className="mt-4">
-            説明を音声で聞く
+            説明をもう一度聞く
           </Button>
         </CardContent>
       </Card>

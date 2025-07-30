@@ -8,5 +8,10 @@
     "timestamp": "2025-07-30T13:47:12.121Z",
     "event": "preflight_devices_acquired",
     "details": {}
+  },
+  {
+    "timestamp": "2025-07-30T15:21:38.997Z",
+    "event": "test_started",
+    "details": {}
   }
 ]
