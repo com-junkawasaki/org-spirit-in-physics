@@ -183,7 +183,7 @@
       {"id": "task:architectural_design", "label": "task", "name": "Architectural Design", "status": "completed", "details": "Mermaid diagram created."},
       {"id": "task:db_schema_design", "label": "task", "name": "Database Schema Design", "status": "completed", "details": "Schema defined in jung-voice-assessment/schema.ts"},
       {"id": "task:ui_ux_design", "label": "task", "name": "UI/UX Design", "status": "completed", "details": "Wireframes for JungVoiceTest and ConsentForm created."},
-      {"id": "task:coding", "label": "task", "name": "Coding and Unit Testing", "status": "in_progress"},
+      {"id": "task:coding", "label": "task", "name": "Coding and Unit Testing", "status": "in_progress", "details": "Unit test setup has issues. `ConsentForm` test is postponed."},
       {"id": "task:integration_testing", "label": "task", "name": "Integration and System Testing", "status": "pending"},
       {"id": "task:release", "label": "task", "name": "Release to Production", "status": "pending"},
       {"id": "task:monitoring", "label": "task", "name": "Monitoring and Support", "status": "pending"}

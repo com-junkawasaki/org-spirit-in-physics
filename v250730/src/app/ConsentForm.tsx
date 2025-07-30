@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: string, signature: string) => void, participantId: string }) => {
   const [consentText, setConsentText] = useState('');
@@ -38,8 +36,8 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <h1 className="text-2xl font-bold mb-4">研究参加への同意</h1>
-      <div className="prose border rounded-md p-4 h-96 overflow-y-scroll mb-4">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{consentText}</ReactMarkdown>
+      <div className="border rounded-md p-4 h-96 overflow-y-scroll mb-4 bg-gray-50">
+        <div style={{ whiteSpace: 'pre-wrap' }}>{consentText}</div>
       </div>
       <form onSubmit={handleSubmit}>
         <div className="space-y-2 mb-4">

@@ -1,14 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { JUNG_STIMULUS_WORDS } from "@/components/jung-word-assessment/JungWordTest";
+import { JUNG_STIMULUS_WORDS } from "../../jung-voice-assessment/constants";
 import { v4 as uuidv4 } from 'uuid';
 import type { TestResults as VoiceTestResults } from '@/components/jung-voice-assessment/types';
 
 // Types for recorded data and test results
 interface RecordedResponse {
     stimulusWord: string;
+    responseWord: string; // Added
+    reactionTimeMs: number; // Added
     session: 1 | 2;
-    fileName: string;
+    fileName: string; // For audio/video file
 }
 
 interface SessionResult {
@@ -54,7 +56,7 @@ interface KawasakiState {
     startPreflight: () => void;
     setDeviceStatus: (status: KawasakiState['deviceStatus']) => void;
     startSession: (numberOfWords: number) => void;
-    recordResponse: (audioBlob: Blob) => void;
+    recordWordResponse: (data: { responseWord: string, reactionTimeMs: number, audioBlob: Blob }) => void; // Unified action
     logEvent: (event: string, details?: Record<string, any>) => void;
     saveSessionVideo: (session: 1 | 2, videoBlob: Blob) => void;
     completeSession: () => void;
@@ -143,16 +145,13 @@ export const useKawasakiStore = create<KawasakiState>()(
                 }
             },
 
-            recordResponse: (audioBlob) => {
-                // This will now be triggered AFTER the 6s recording, not used for the session video
+            recordWordResponse: ({ responseWord, reactionTimeMs, audioBlob }) => {
                 const state = get();
                 if ((state.testStatus !== 'session-1-running' && state.testStatus !== 'session-2-running') || !state.assessmentId) return;
                 
                 const word = state.stimulusWords[state.currentWordIndex];
                 const fileName = `word-audio-s${state.currentSession}-w${state.currentWordIndex + 1}-${word.replace(/\s+/g, '-')}.webm`;
                 
-                get().logEvent('word_response_audio_saved', { session: state.currentSession, word: word, fileName: fileName });
-
                 // Save audio file via API route
                 const formData = new FormData();
                 formData.append('file', audioBlob);
@@ -167,15 +166,17 @@ export const useKawasakiStore = create<KawasakiState>()(
 
                 const newResponse: RecordedResponse = {
                     stimulusWord: word,
+                    responseWord: responseWord,
+                    reactionTimeMs: reactionTimeMs,
                     session: state.currentSession,
                     fileName: fileName,
                 };
                 
-                const nextIndex = state.currentWordIndex + 1;
-                const updatedResponses = [...state.userResponses, newResponse];
+                set(prev => ({ userResponses: [...prev.userResponses, newResponse] }));
+                get().logEvent('word_response_recorded', { ...newResponse });
                 
-                set({ userResponses: updatedResponses });
-
+                // Advance to next word or complete session
+                const nextIndex = state.currentWordIndex + 1;
                 if (nextIndex >= state.stimulusWords.length) {
                     get().completeSession();
                 } else {

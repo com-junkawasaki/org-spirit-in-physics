@@ -72,11 +72,13 @@ const SessionScreen = React.memo<{
   currentSession: 1 | 2;
   currentWordIndex: number;
   stimulusWords: string[];
-  onResponse: (response: string) => void;
+  onResponse: (response: string, audioBlob: Blob) => void;
 }>(({ videoPreviewRef, stream, currentSession, currentWordIndex, stimulusWords, onResponse }) => {
     const [recognizedText, setRecognizedText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
 
     useEffect(() => {
         if (stream && videoPreviewRef.current) {
@@ -114,21 +116,43 @@ const SessionScreen = React.memo<{
                     setRecognizedText(transcript);
 
                     if (event.results[0].isFinal) {
-                        onResponse(transcript);
+                        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                        onResponse(transcript, audioBlob);
+                        if (recognitionRef.current) {
+                            recognitionRef.current.stop();
+                        }
                     }
                 };
+
+                // Media Recorder Setup
+                if (stream) {
+                    mediaRecorderRef.current = new MediaRecorder(stream);
+                    mediaRecorderRef.current.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunksRef.current.push(event.data);
+                        }
+                    };
+                    mediaRecorderRef.current.onstop = () => {
+                        // onResponse is called when recognition is final, which should trigger stop.
+                    };
+                    audioChunksRef.current = [];
+                    mediaRecorderRef.current.start();
+                }
                 
                 recognition.start();
             }
 
             return () => {
                 speechSynthesis.cancel();
-                if (recognitionRef.current) {
+                if (recognitionRef.current && isListening) {
                     recognitionRef.current.stop();
+                }
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                    mediaRecorderRef.current.stop();
                 }
             };
         }
-    }, [currentWordIndex, stimulusWords, onResponse]);
+    }, [currentWordIndex, stimulusWords, onResponse, isListening, stream]);
   
   if (currentWordIndex >= stimulusWords.length) {
     return <div>Loading next word...</div>;
@@ -207,11 +231,13 @@ export default function JungVoiceTest({
     error,
     setStream,
     setError,
+    recordWordResponse,
   } = useKawasakiStore();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const wordDisplayedTimeRef = useRef<number | null>(null);
   
   // Effect for media initialization and cleanup
   useEffect(() => {
@@ -287,6 +313,7 @@ export default function JungVoiceTest({
     if (testStatus.includes('running') && currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
       logEvent('word_displayed', { word });
+      wordDisplayedTimeRef.current = Date.now();
       
       setMediaStatus('recording_response');
       logEvent('response_window_opened', { word });
@@ -325,16 +352,17 @@ export default function JungVoiceTest({
       startSession(numberOfWords);
   }
 
-  const handleResponse = (response: string) => {
-      logEvent('response_recognized', { word: stimulusWords[currentWordIndex], response });
-      // Here you would typically save the response to your state management
-      // For now, we just advance to the next word
+  const handleResponse = (response: string, audioBlob: Blob) => {
+      const reactionTimeMs = wordDisplayedTimeRef.current ? Date.now() - wordDisplayedTimeRef.current : 0;
+
+      recordWordResponse({
+          responseWord: response,
+          reactionTimeMs: reactionTimeMs,
+          audioBlob: audioBlob,
+      });
+
+      // The advancement logic is now in the store
       if (responseTimerRef.current) clearTimeout(responseTimerRef.current);
-      if (currentWordIndex >= stimulusWords.length - 1) {
-          completeSession();
-      } else {
-          advanceToNextWord();
-      }
   };
 
   const renderContent = () => {
