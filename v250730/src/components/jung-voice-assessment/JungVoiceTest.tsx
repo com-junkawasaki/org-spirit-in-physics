@@ -399,7 +399,7 @@ export default function JungVoiceTest({
         return <CompletionScreen onReset={resetTest} />;
       case 'idle':
       default:
-        return <IntroScreen onStart={startPreflight} />;
+        return null;
     }
   };
 

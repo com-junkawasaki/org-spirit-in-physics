@@ -43,10 +43,13 @@ interface KawasakiState {
     userResponses: RecordedResponse[];
     eventLog: EventLog[];
     assessmentId: string | null;
+    participantId: string | null; // Add participantId
     stream: MediaStream | null;
     error: string | null;
 
     // Actions
+    setParticipantId: (id: string) => void; // Add setParticipantId
+    startTest: () => void; // Add startTest
     advanceToNextWord: () => void;
     startPreflight: () => void;
     setDeviceStatus: (status: KawasakiState['deviceStatus']) => void;
@@ -78,10 +81,29 @@ export const useKawasakiStore = create<KawasakiState>()(
             userResponses: [],
             eventLog: [],
             assessmentId: null,
+            participantId: null, // Initialize participantId
             stream: null,
             error: null,
 
             // Actions Implementation
+            setParticipantId: (id) => set({ participantId: id }), // Implement setParticipantId
+
+            startTest: () => {
+                get().logEvent('test_started');
+                set({
+                    testStatus: 'idle',
+                    currentSession: 1,
+                    currentWordIndex: -1,
+                    stimulusWords: [],
+                    userResponses: [],
+                    assessmentId: uuidv4(),
+                    eventLog: [],
+                    stream: null,
+                    error: null,
+                });
+                get().startPreflight();
+            },
+            
             advanceToNextWord: () => {
                 set((state) => ({ currentWordIndex: state.currentWordIndex + 1 }));
             },

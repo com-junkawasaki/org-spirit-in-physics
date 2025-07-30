@@ -44,11 +44,20 @@ export const ResponseDataSchema = z.object({
 });
 export type ResponseData = z.infer<typeof ResponseDataSchema>;
 
+export const ConsentDataSchema = z.object({
+    type: z.literal('consent'),
+    participantId: z.string().uuid(),
+    signature: z.string(),
+    agreedAt: z.string().datetime(),
+});
+export type ConsentData = z.infer<typeof ConsentDataSchema>;
+
 // --- API Payloads ---
 
-export const SaveStructuredDataPayloadSchema = z.discriminatedUnion("dataType", [
-  z.object({ dataType: z.literal("participant"), data: ParticipantSchema }),
-  z.object({ dataType: z.literal("experimentSession"), data: ExperimentSessionSchema }),
-  z.object({ dataType: z.literal("responseData"), data: ResponseDataSchema }),
+export const SaveStructuredDataPayloadSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("consent"), data: ConsentDataSchema }),
+  z.object({ type: z.literal("participant"), data: ParticipantSchema }),
+  z.object({ type: z.literal("experimentSession"), data: ExperimentSessionSchema }),
+  z.object({ type: z.literal("responseData"), data: ResponseDataSchema }),
 ]);
 export type SaveStructuredDataPayload = z.infer<typeof SaveStructuredDataPayloadSchema>;

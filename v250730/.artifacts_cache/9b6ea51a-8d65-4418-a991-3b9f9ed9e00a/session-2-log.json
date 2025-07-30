@@ -485,5 +485,10 @@
     "details": {
       "session": 2
     }
+  },
+  {
+    "timestamp": "2025-07-30T13:32:58.565Z",
+    "event": "test_started",
+    "details": {}
   }
 ]

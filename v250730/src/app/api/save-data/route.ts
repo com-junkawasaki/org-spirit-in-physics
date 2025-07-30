@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         // Append to the JSONL file
         await appendFile(DB_FILE, JSON.stringify(dataToSave) + '\\n');
 
-        return new NextResponse('Data saved successfully', { status: 200 });
+        return new NextResponse(JSON.stringify({ message: 'Data saved successfully' }), { status: 200 });
 
     } catch (error) {
         console.error('Error saving data:', error);

@@ -1,69 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import ConsentForm from '@/app/ConsentForm';
-import JungVoiceTest from '@/components/jung-voice-assessment/JungVoiceTest';
-import { ParticipantSchema } from '@/components/jung-voice-assessment/schema';
-
-type AppState = 'consent' | 'testing' | 'completed';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function HomePage() {
-  const [appState, setAppState] = useState<AppState>('consent');
-  const [participantId, setParticipantId] = useState<string>('');
-
-  useEffect(() => {
-    setParticipantId(uuidv4());
-  }, []);
-
-  const handleConsent = (pId: string, signature: string) => {
-    console.log(`Consent given by ${signature} for participant ${pId}`);
-    
-    const participantData = ParticipantSchema.parse({
-      id: pId,
-      createdAt: new Date(),
-      // age, gender, etc. can be collected via an extended form if needed
-    });
-
-    // Save participant data
-    fetch('/api/save-data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dataType: 'participant', data: participantData }),
-    })
-    .then(() => {
-      setAppState('testing');
-    })
-    .catch(err => console.error("Failed to save participant data:", err));
-  };
-
-  const handleTestComplete = () => {
-    console.log('Test completed for participant:', participantId);
-    setAppState('completed');
-  };
-
-  const renderContent = () => {
-    switch (appState) {
-      case 'testing':
-        // NOTE: JungVoiceTest will need an onComplete prop to trigger handleTestComplete
-        return <JungVoiceTest onComplete={handleTestComplete} />;
-      case 'completed':
-        return (
-          <div className="text-center p-8">
-            <h1 className="text-2xl font-bold mb-4">Thank you for your participation.</h1>
-            <p>Your session is complete. You may now close the window.</p>
-          </div>
-        );
-      case 'consent':
-      default:
-        return <ConsentForm onConsent={handleConsent} participantId={participantId} />;
-    }
-  };
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 md:p-24">
-      <div className="w-full max-w-2xl bg-card/50 backdrop-blur-sm border rounded-xl shadow-lg">
-        {renderContent()}
+    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50 dark:bg-gray-900">
+      <div className="text-center">
+        <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-8">
+          <span className="bg-clip-text text-transparent bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
+            Spirit in Physics
+          </span>
+        </h1>
+        <div className="flex flex-col space-y-4 items-center">
+          <Link href="/admin" passHref>
+            <Button variant="outline" className="w-64 h-16 text-lg font-semibold">管理者画面</Button>
+          </Link>
+          <Link href="/steps/1" passHref>
+            <Button className="w-64 h-16 text-lg font-semibold">被験者画面</Button>
+          </Link>
+        </div>
       </div>
     </main>
   );
