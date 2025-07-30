@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Text, Environment, Line } from "@react-three/drei";
 import { Vector } from "@/types/correlation";
-import * as THREE from "three";
+import * as THREE from "node_modules/@types/three";
 
 import {
   Mesh,
@@ -15,7 +15,7 @@ import {
   LineBasicMaterial,
   AmbientLight,
   PointLight,
-} from "three";
+} from "node_modules/@types/three";
 
 type VectorVisualizationProps = {
   vectors: Vector[];

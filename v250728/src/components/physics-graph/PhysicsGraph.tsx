@@ -4,7 +4,7 @@ import type React from "react"
 import { useRef, useEffect, useState } from "react"
 import ForceGraph3D from "react-force-graph-3d"
 import type { GraphData } from "@/components/kawasaki-model/utils/generateGraphData"
-import * as THREE from "three"
+import * as THREE from "node_modules/@types/three"
 
 export interface PhysicsGraphProps {
   data: GraphData
