@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, MutableRefObject } from 'react';
+import React, { useEffect, useRef, useCallback, MutableRefObject, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useKawasakiStore } from '@/store/kawasakiStore';
@@ -72,26 +72,115 @@ const SessionScreen = React.memo<{
   currentSession: 1 | 2;
   currentWordIndex: number;
   stimulusWords: string[];
-}>(({ videoPreviewRef, stream, currentSession, currentWordIndex, stimulusWords }) => {
+  onResponse: (response: string, audioBlob: Blob) => void;
+}>(({ videoPreviewRef, stream, currentSession, currentWordIndex, stimulusWords, onResponse }) => {
+    const [recognizedText, setRecognizedText] = useState('');
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+
     useEffect(() => {
         if (stream && videoPreviewRef.current) {
             videoPreviewRef.current.srcObject = stream;
         }
     }, [stream, videoPreviewRef]);
+
+    // Speech Synthesis and Recognition Effect
+    useEffect(() => {
+        if (currentWordIndex < stimulusWords.length) {
+            const word = stimulusWords[currentWordIndex];
+            
+            // Speak the word
+            const utterance = new SpeechSynthesisUtterance(word);
+            speechSynthesis.speak(utterance);
+
+            // Start listening for a response
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'ja-JP';
+                recognition.interimResults = true;
+                recognition.continuous = false;
+
+                recognitionRef.current = recognition;
+
+                recognition.onstart = () => setIsListening(true);
+                recognition.onend = () => setIsListening(false);
+
+                recognition.onresult = (event) => {
+                    const transcript = Array.from(event.results)
+                        .map(result => result[0])
+                        .map(result => result.transcript)
+                        .join('');
+                    setRecognizedText(transcript);
+
+                    if (event.results[0].isFinal) {
+                        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                        onResponse(transcript, audioBlob);
+                        if (recognitionRef.current) {
+                            recognitionRef.current.stop();
+                        }
+                    }
+                };
+
+                // Media Recorder Setup
+                if (stream) {
+                    mediaRecorderRef.current = new MediaRecorder(stream);
+                    mediaRecorderRef.current.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunksRef.current.push(event.data);
+                        }
+                    };
+                    mediaRecorderRef.current.onstop = () => {
+                        // onResponse is called when recognition is final, which should trigger stop.
+                    };
+                    audioChunksRef.current = [];
+                    mediaRecorderRef.current.start();
+                }
+                
+                recognition.start();
+            }
+
+            return () => {
+                speechSynthesis.cancel();
+                if (recognitionRef.current && isListening) {
+                    recognitionRef.current.stop();
+                }
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                    mediaRecorderRef.current.stop();
+                }
+            };
+        }
+    }, [currentWordIndex, stimulusWords, onResponse, isListening, stream]);
   
   if (currentWordIndex >= stimulusWords.length) {
     return <div>Loading next word...</div>;
   }
 
+  const progress = ((currentWordIndex + 1) / stimulusWords.length) * 100;
+
   return (
-    <div className="space-y-4">
-      <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-4 flex items-center justify-center">
+    <div className="space-y-4 flex flex-col items-center">
+      <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-2 flex items-center justify-center">
         <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
       </div>
-      <p className="text-sm text-gray-500">
-        Session {currentSession} - Word {currentWordIndex + 1} of {stimulusWords.length}
-      </p>
-      <h2 className="text-4xl font-bold my-8 h-12">{stimulusWords[currentWordIndex]}</h2>
+       <div className="w-full max-w-md">
+          <p className="text-sm text-gray-500 mb-1">
+              Session {currentSession} - Word {currentWordIndex + 1} of {stimulusWords.length}
+          </p>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+          </div>
+      </div>
+      <h2 className="text-6xl font-bold my-8 h-20 flex items-center justify-center">{stimulusWords[currentWordIndex]}</h2>
+      <div className="h-24 w-full max-w-md">
+        {stream && <AudioVisualizer stream={stream} />}
+      </div>
+      <div className="h-8 text-xl text-gray-600">
+        {isListening ? 'Listening...' : ''}
+        {recognizedText && `Recognized: ${recognizedText}`}
+      </div>
     </div>
   );
 });
@@ -142,11 +231,13 @@ export default function JungVoiceTest({
     error,
     setStream,
     setError,
+    recordWordResponse,
   } = useKawasakiStore();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const wordDisplayedTimeRef = useRef<number | null>(null);
   
   // Effect for media initialization and cleanup
   useEffect(() => {
@@ -222,6 +313,7 @@ export default function JungVoiceTest({
     if (testStatus.includes('running') && currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
       logEvent('word_displayed', { word });
+      wordDisplayedTimeRef.current = Date.now();
       
       setMediaStatus('recording_response');
       logEvent('response_window_opened', { word });
@@ -260,6 +352,19 @@ export default function JungVoiceTest({
       startSession(numberOfWords);
   }
 
+  const handleResponse = (response: string, audioBlob: Blob) => {
+      const reactionTimeMs = wordDisplayedTimeRef.current ? Date.now() - wordDisplayedTimeRef.current : 0;
+
+      recordWordResponse({
+          responseWord: response,
+          reactionTimeMs: reactionTimeMs,
+          audioBlob: audioBlob,
+      });
+
+      // The advancement logic is now in the store
+      if (responseTimerRef.current) clearTimeout(responseTimerRef.current);
+  };
+
   const renderContent = () => {
     switch (testStatus) {
       case 'preflight':
@@ -278,6 +383,7 @@ export default function JungVoiceTest({
           currentSession={currentSession}
           currentWordIndex={currentWordIndex}
           stimulusWords={stimulusWords}
+          onResponse={handleResponse}
         />;
       case 'session-1-complete':
         return <BreakScreen onStartNextSession={handleStartSecondSession} />;

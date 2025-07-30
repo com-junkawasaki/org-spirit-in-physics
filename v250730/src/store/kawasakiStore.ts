@@ -1,17 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { JUNG_STIMULUS_WORDS } from "../../jung-voice-assessment/constants";
+import { JUNG_STIMULUS_WORDS } from "@/components/jung-voice-assessment/constants";
 import { v4 as uuidv4 } from 'uuid';
 import type { TestResults as VoiceTestResults } from '@/components/jung-voice-assessment/types';
+import type { ResponseData } from "@/components/jung-voice-assessment/schema";
 
 // Types for recorded data and test results
-interface RecordedResponse {
-    stimulusWord: string;
-    responseWord: string; // Added
-    reactionTimeMs: number; // Added
-    session: 1 | 2;
-    fileName: string; // For audio/video file
-}
+type RecordedResponse = ResponseData; // Use Zod schema type
 
 interface SessionResult {
     sessionId: 1 | 2;
@@ -152,7 +147,7 @@ export const useKawasakiStore = create<KawasakiState>()(
                 const word = state.stimulusWords[state.currentWordIndex];
                 const fileName = `word-audio-s${state.currentSession}-w${state.currentWordIndex + 1}-${word.replace(/\s+/g, '-')}.webm`;
                 
-                // Save audio file via API route
+                // Save audio file via artifact API
                 const formData = new FormData();
                 formData.append('file', audioBlob);
                 formData.append('sessionId', state.assessmentId);
@@ -165,12 +160,23 @@ export const useKawasakiStore = create<KawasakiState>()(
 
 
                 const newResponse: RecordedResponse = {
+                    id: uuidv4(),
+                    experimentId: state.assessmentId, // Assuming assessmentId is the experimentId
+                    wordStimulusId: state.currentWordIndex, // This should ideally be the word ID from a list
                     stimulusWord: word,
                     responseWord: responseWord,
                     reactionTimeMs: reactionTimeMs,
                     session: state.currentSession,
-                    fileName: fileName,
+                    audioFilePath: fileName,
+                    timestamp: new Date(),
                 };
+
+                // Save structured data via data API
+                fetch('/api/save-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dataType: 'responseData', data: newResponse }),
+                }).catch(error => console.error('Failed to save response data:', error));
                 
                 set(prev => ({ userResponses: [...prev.userResponses, newResponse] }));
                 get().logEvent('word_response_recorded', { ...newResponse });

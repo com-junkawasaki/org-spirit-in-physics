@@ -1,54 +1,54 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-// 単一の単語応答のスキーマ
-export const WordResponseSchema = z.object({
+// --- Core Data Structures ---
+
+export const ParticipantSchema = z.object({
+  id: z.string().uuid(),
+  age: z.number().int().optional(),
+  gender: z.string().optional(),
+  handedness: z.string().optional(),
+  createdAt: z.date(),
+});
+export type Participant = z.infer<typeof ParticipantSchema>;
+
+export const ExperimentSessionSchema = z.object({
+  id: z.string().uuid(),
+  participantId: z.string().uuid(),
+  sessionNumber: z.union([z.literal(1), z.literal(2)]),
+  experimentDate: z.date(),
+  envTemperature: z.number().optional(),
+  envHumidity: z.number().optional(),
+});
+export type ExperimentSession = z.infer<typeof ExperimentSessionSchema>;
+
+export const WordStimulusSchema = z.object({
+  id: z.number().int(),
+  word: z.string(),
+});
+export type WordStimulus = z.infer<typeof WordStimulusSchema>;
+
+export const ResponseDataSchema = z.object({
+  id: z.string().uuid(),
+  experimentId: z.string().uuid(),
+  wordStimulusId: z.number().int(),
   stimulusWord: z.string(),
   responseWord: z.string(),
-  reactionTimeMs: z.number().int().nonnegative(),
-});
-
-// テスト結果のスキーマ
-export const TestResultsSchema = z.object({
-  totalWords: z.number().int().positive(),
-  averageReactionTimeMs: z.number().nonnegative(),
-  delayedResponsesCount: z.number().int().nonnegative(),
-  responses: z.array(WordResponseSchema),
-});
-
-// メッセージのスキーマ
-export const MessageSchema = z.object({
-  id: z.string().uuid(),
-  content: z.string().min(1),
-  sender: z.enum(["user", "assistant"]),
+  reactionTimeMs: z.number().int(),
+  session: z.union([z.literal(1), z.literal(2)]),
   timestamp: z.date(),
+  audioFilePath: z.string().optional(),
+  videoFilePath: z.string().optional(),
+  skinPotential: z.number().optional(),
+  emotion: z.string().optional(),
+  emotionConfidence: z.number().optional(),
 });
+export type ResponseData = z.infer<typeof ResponseDataSchema>;
 
-// JungVoiceAssessment コンポーネントのプロップスのスキーマ
-export const JungVoiceAssessmentPropsSchema = z.object({
-  numberOfWords: z.number().int().positive().optional(),
-  apiKey: z.string(),
-  generationId: z.string().optional(),
-  voiceName: z.string().optional(),
-  speechRecognitionLang: z.string().optional(),
-  onTestComplete: z.function().args(z.any()).returns(z.void()).optional(),
-  onComplete: z.function().args(z.void()).returns(z.void()).optional(),
-  session: z.number().int().positive().optional(),
-  className: z.string().optional(),
-});
+// --- API Payloads ---
 
-// AI ガイドメッセージのスキーマ
-export const GuideMessageSchema = z.object({
-  introduction: z.string(),
-  nextWord: z.string(),
-  testComplete: z.string(),
-  delayed: z.string(),
-  normal: z.string(),
-});
-
-export type ValidatedWordResponse = z.infer<typeof WordResponseSchema>;
-export type ValidatedTestResults = z.infer<typeof TestResultsSchema>;
-export type ValidatedMessage = z.infer<typeof MessageSchema>;
-export type ValidatedJungVoiceAssessmentProps = z.infer<
-  typeof JungVoiceAssessmentPropsSchema
->;
-export type ValidatedGuideMessage = z.infer<typeof GuideMessageSchema>;
+export const SaveStructuredDataPayloadSchema = z.discriminatedUnion("dataType", [
+  z.object({ dataType: z.literal("participant"), data: ParticipantSchema }),
+  z.object({ dataType: z.literal("experimentSession"), data: ExperimentSessionSchema }),
+  z.object({ dataType: z.literal("responseData"), data: ResponseDataSchema }),
+]);
+export type SaveStructuredDataPayload = z.infer<typeof SaveStructuredDataPayloadSchema>;
