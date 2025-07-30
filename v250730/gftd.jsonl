@@ -3,13 +3,15 @@
     "mode": "NORMAL",
     "vertices": [
       { "_id": "task:generate_audio_script_240730_1", "label": "task", "name": "Create a script to convert stimulus words and welcome message to speech using OpenAI TTS", "status": "completed" },
-      { "_id": "file:constants.ts", "label": "file", "path": "src/components/jung-voice-assessment/constants.ts" },
+      { "_id": "file:constants.ts", "label": "file", "path": "src/components/jung-voice-assessment/constants.ts", "status": "modified", "language": "Japanese" },
       { "_id": "file:generate-audio.ts", "label": "file", "path": "scripts/generate-audio.ts", "status": "pending_creation" },
       { "_id": "npm_package:openai", "label": "dependency", "name": "openai", "type": "npm" },
       { "_id": "npm_package:dotenv", "label": "dependency", "name": "dotenv", "type": "npm" },
       { "_id": "npm_package:tsx", "label": "dependency", "name": "tsx", "type": "npm" },
       { "_id": "npm_package:dotenv-cli", "label": "dependency", "name": "dotenv-cli", "type": "npm" },
-      { "_id": "directory:audio_output", "label": "directory", "path": "public/audio/jung-voice-assessment", "status": "pending_creation" }
+      { "_id": "directory:audio_output", "label": "directory", "path": "public/audio/jung-voice-assessment", "status": "pending_creation" },
+      { "_id": "user_request:translate_words_240731_1", "label": "user_request", "query": "これを日本語訳にして", "status": "completed" },
+      { "_id": "task:translate_stimulus_words_240731_1", "label": "task", "name": "Translate stimulus words in `constants.ts` to Japanese", "status": "completed" }
     ],
     "edges": [
       { "_outV": "task:generate_audio_script_240730_1", "_inV": "file:generate-audio.ts", "label": "results_in" },
@@ -19,12 +21,15 @@
       { "_outV": "file:generate-audio.ts", "_inV": "npm_package:tsx", "label": "uses" },
       { "_outV": "file:generate-audio.ts", "_inV": "directory:audio_output", "label": "writes_to" },
       { "_outV": "file:generate-audio.ts", "_inV": "npm_package:dotenv-cli", "label": "uses" },
-      { "_outV": "file:generate-audio.ts", "_inV": "file:.envrc", "label": "reads" }
+      { "_outV": "file:generate-audio.ts", "_inV": "file:.envrc", "label": "reads" },
+      { "_outV": "user_request:translate_words_240731_1", "_inV": "task:translate_stimulus_words_240731_1", "label": "initiated" },
+      { "_outV": "task:translate_stimulus_words_240731_1", "_inV": "file:constants.ts", "label": "modified" }
     ]
   },
   "metadata": {
     "createdBy": "gemini-2.5-pro",
-    "createdAt": "2024-07-30T12:00:00Z"
+    "createdAt": "2024-07-30T12:00:00Z",
+    "updatedAt": "2024-07-31T12:00:00Z"
   },
   "traversals": [
     {

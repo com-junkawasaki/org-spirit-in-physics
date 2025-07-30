@@ -1,15 +1,28 @@
 export const JUNG_STIMULUS_WORDS: string[] = [
-  '頭', '緑', '水', '歌う', '死', '長い', '船', '支払う', '窓', '親切な',
-  '机', '尋ねる', '村', '冷たい', '茎', '踊る', '海', '病気', '誇り', '炊く',
-  'インキ', '怒り', '針', '泳ぐ', '旅行', '青い', 'ランプ', '犯す', 'パン', '金持ち',
-  '木', '刺す', '同情', '黄色', '山', '死ぬ', '塩', '新しい', 'くせ', '祈る',
-  '金', '馬鹿な', 'ノート', '軽蔑する', '指', '高価な', '鳥', '落ちる', '本', '不正な',
-  '蛙', '別れる', '空腹', '白い', '子供', '注意する', '鉛筆', '悲しい', 'あんず', '結婚する',
-  '家', 'かわいい', 'ガラス', '争う', '毛皮', '大きい', 'かぶら', '塗る', '部分', '古い',
-  '花', '打つ', '箱', '荒い', '家族', '洗う', '牛', '妙な', '幸運', 'うそ',
-  '礼儀', '狭い', '兄弟', '怖がる', '鶴', '間違い', '心配', 'キス', '花嫁', '清潔な',
-  '戸', '選ぶ', '乾し草', '嬉しい', 'あざける', '眠る', '月', 'きれいな', '女', '侮辱'
-];
+  '頭', '緑', '水', '歌う', '死', '長い', '船', '作る', '女性', '親切な',
+  '焼く', '尋ねる', '冷たい', '茎', '踊る', '村', '池', '病気', '誇り', '料理する',
+  'インク', '怒り', '針', '泳ぐ', '行く', '青', 'ランプ', '罪', 'パン', '裕福な',
+  '木', '哀れみ', '黄色', '山', '死ぬ', '塩', '新しい', '習慣', '祈る', 'お金',
+  '愚かな', 'パンフレット', '軽蔑する', '指', '裕福な', '光', '悲しい', 'プラム', '結婚する', '家',
+  '親愛な', 'ガラス', '口論', '毛皮', '大きい', 'にんじん', '描く', '部分', '古い', '花',
+  '箱', '野生の', '家族', '洗う', '牛', '友達', '運', '嘘', '振る舞い', '狭い',
+  '兄弟', '恐怖', 'コウノトリ', '偽り', '不安', 'キス', '花嫁', '純粋な', 'ドア', '選ぶ',
+  '干し草', '満足した', '嘲笑', '眠る', '月', '素敵な', '女性', '虐待', '暗い', 'ガラス',
+  '愛', '憎しみ', '恥', '裏切り', '喜び', '痛み', '希望', '絶望', '信頼', '疑い'
+];  
+
+export const JUNG_STIMULUS_WORDS_FOR_ENGLISH_PRONUNCIATION: string[] = [
+  'head', 'green', 'water', 'sing', 'dead', 'long', 'ship', 'make', 'woman', 'friendly',
+  'bake', 'ask', 'cold', 'stalk', 'dance', 'village', 'pond', 'sick', 'pride', 'cook',
+  'ink', 'angry', 'needle', 'swim', 'go', 'blue', 'lamp', 'sin', 'bread', 'rich',
+  'tree', 'pity', 'yellow', 'mountain', 'die', 'salt', 'new', 'custom', 'pray', 'money',
+  'foolish', 'pamphlet', 'despise', 'finger', 'rich', 'light', 'sad', 'plum', 'marry', 'house',
+  'dear', 'glass', 'quarrel', 'fur', 'big', 'carrot', 'paint', 'part', 'old', 'flower',
+  'box', 'wild', 'family', 'wash', 'cow', 'friend', 'luck', 'lie', 'behavior', 'narrow',
+  'brother', 'fear', 'stork', 'false', 'anxiety', 'kiss', 'bride', 'pure', 'door', 'choose',
+  'hay', 'contented', 'ridicule', 'sleep', 'month', 'nice', 'woman', 'abuse', 'dark', 'glass',
+  'love', 'hate', 'shame', 'betray', 'joy', 'pain', 'hope', 'despair', 'trust', 'doubt'
+];  
 
 export const JUNG_STIMULUS_WORDS_FOR_JAPANESE_PRONUNCIATION: string[] = [
   '頭', '緑', '水', '歌う', '死', '長い', '船', '支払う', '窓', '親切な',
