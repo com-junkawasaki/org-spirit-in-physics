@@ -326,4 +326,225 @@
     "description": "A process to track the UI improvements made to the ConsentForm component using Tailwind CSS. This is part of the ongoing implementation phase of the SDLC."
   },
   "traversals": []
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {
+        "id": "process:fix_styling_issue_250731_1",
+        "label": "process",
+        "name": "Fix CSS Styling Issues",
+        "status": "completed",
+        "cmmi_level": 5
+      },
+      {
+        "id": "task:debug_css_loading",
+        "label": "task",
+        "name": "Debug CSS Loading and Configuration",
+        "status": "completed",
+        "details": "Investigated layout.tsx, tailwind.config.ts, and globals.css to find the root cause of the styling issue."
+      },
+      {
+        "id": "task:correct_globals_css",
+        "label": "task",
+        "name": "Correct globals.css",
+        "status": "completed",
+        "target_file": "src/app/globals.css",
+        "details": "Fixed duplicated @layer base definitions, unified color variables to HSL, and removed non-standard CSS to resolve style conflicts."
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_fxs_1",
+        "outV": "process:fix_styling_issue_250731_1",
+        "inV": "task:debug_css_loading",
+        "label": "has_task"
+      },
+      {
+        "id": "e_fxs_2",
+        "outV": "task:debug_css_loading",
+        "inV": "task:correct_globals_css",
+        "label": "precedes"
+      }
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-31",
+    "description": "A process to document the investigation and fix for the CSS styling issue where shadcn/ui components were not rendering correctly."
+  },
+  "traversals": []
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {
+        "id": "process:fix_styling_issue_250731_2",
+        "label": "process",
+        "name": "Fix CSS Styling Issues (Second Attempt)",
+        "status": "completed",
+        "cmmi_level": 5
+      },
+      {
+        "id": "task:web_search_best_practices",
+        "label": "task",
+        "name": "Web Search for Best Practices",
+        "status": "completed",
+        "details": "Searched for best practices for using Next.js, Tailwind CSS, and shadcn/ui together."
+      },
+      {
+        "id": "task:update_postcss_config",
+        "label": "task",
+        "name": "Update postcss.config.mjs",
+        "status": "completed",
+        "target_file": "postcss.config.mjs",
+        "details": "Updated the PostCSS configuration to use the recommended `tailwindcss` plugin instead of the deprecated `@tailwindcss/postcss`."
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_fxs2_1",
+        "outV": "process:fix_styling_issue_250731_2",
+        "inV": "task:web_search_best_practices",
+        "label": "has_task"
+      },
+      {
+        "id": "e_fxs2_2",
+        "outV": "task:web_search_best_practices",
+        "inV": "task:update_postcss_config",
+        "label": "precedes"
+      }
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-31",
+    "description": "A process to document the second attempt at fixing CSS styling issues, which involved researching best practices and updating the PostCSS configuration."
+  },
+  "traversals": []
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {
+        "id": "process:fix_styling_issue_250731_3",
+        "label": "process",
+        "name": "Fix CSS Styling Issues by Downgrading Tailwind CSS",
+        "status": "completed",
+        "cmmi_level": 5
+      },
+      {
+        "id": "task:analyze_dependencies",
+        "label": "task",
+        "name": "Analyze package.json dependencies",
+        "status": "completed",
+        "details": "Identified conflicting and unstable dependencies (@tailwindcss/postcss and tailwindcss v4)."
+      },
+      {
+        "id": "task:downgrade_tailwind",
+        "label": "task",
+        "name": "Downgrade Tailwind CSS to v3",
+        "status": "completed",
+        "details": "Removed @tailwindcss/postcss and downgraded tailwindcss to ^3.4.1 for better stability and compatibility with shadcn/ui."
+      },
+      {
+        "id": "task:reconfigure_postcss",
+        "label": "task",
+        "name": "Reconfigure postcss.config.mjs for v3",
+        "status": "completed",
+        "target_file": "postcss.config.mjs"
+      },
+      {
+        "id": "task:reconfigure_globals_css",
+        "label": "task",
+        "name": "Reconfigure globals.css for v3",
+        "status": "completed",
+        "target_file": "src/app/globals.css"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_fxs3_1",
+        "outV": "process:fix_styling_issue_250731_3",
+        "inV": "task:analyze_dependencies",
+        "label": "has_task"
+      },
+      {
+        "id": "e_fxs3_2",
+        "outV": "task:analyze_dependencies",
+        "inV": "task:downgrade_tailwind",
+        "label": "precedes"
+      },
+      {
+        "id": "e_fxs3_3",
+        "outV": "task:downgrade_tailwind",
+        "inV": "task:reconfigure_postcss",
+        "label": "precedes"
+      },
+      {
+        "id": "e_fxs3_4",
+        "outV": "task:downgrade_tailwind",
+        "inV": "task:reconfigure_globals_css",
+        "label": "precedes"
+      }
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-31",
+    "description": "A process to document the comprehensive fix for the CSS styling issues by downgrading Tailwind CSS to a stable version and aligning all related configurations."
+  },
+  "traversals": []
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {
+        "id": "process:fix_build_error_250731_1",
+        "label": "process",
+        "name": "Fix ES Module Build Error",
+        "status": "completed",
+        "cmmi_level": 5
+      },
+      {
+        "id": "task:identify_error_cause",
+        "label": "task",
+        "name": "Identify Cause of 'module is not defined' Error",
+        "status": "completed",
+        "details": "The error was caused by using CommonJS syntax (module.exports) in an ES module file (postcss.config.mjs)."
+      },
+      {
+        "id": "task:correct_postcss_syntax",
+        "label": "task",
+        "name": "Correct postcss.config.mjs Syntax",
+        "status": "completed",
+        "target_file": "postcss.config.mjs",
+        "details": "Reverted postcss.config.mjs to use ES module syntax (export default)."
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_fbe1_1",
+        "outV": "process:fix_build_error_250731_1",
+        "inV": "task:identify_error_cause",
+        "label": "has_task"
+      },
+      {
+        "id": "e_fbe1_2",
+        "outV": "task:identify_error_cause",
+        "inV": "task:correct_postcss_syntax",
+        "label": "precedes"
+      }
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-31",
+    "description": "A process to document the fix for the build error caused by incorrect module syntax in postcss.config.mjs."
+  },
+  "traversals": []
 } 
