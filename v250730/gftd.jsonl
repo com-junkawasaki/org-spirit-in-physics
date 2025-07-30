@@ -98,4 +98,51 @@
       "script": "g.V('process:spirit-in-physics').out('has_phase')"
     }
   ]
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {"id": "process:debug_400_error", "label": "process", "name": "Debug 400 Bad Request Error", "status": "completed"},
+      {"id": "phase:investigation", "label": "phase", "name": "Investigation", "status": "completed"},
+      {"id": "phase:reproduction", "label": "phase", "name": "Reproduction", "status": "completed"},
+      {"id": "phase:root_cause_analysis", "label": "phase", "name": "Root Cause Analysis", "status": "completed"},
+      {"id": "phase:fix_implementation", "label": "phase", "name": "Fix Implementation", "status": "completed"},
+      {"id": "phase:verification", "label": "phase", "name": "Verification", "status": "completed"},
+      {"id": "task:identify_request", "label": "task", "name": "Identify the failing HTTP request", "status": "completed"},
+      {"id": "task:analyze_request", "label": "task", "name": "Analyze request headers and payload", "status": "completed"},
+      {"id": "task:check_server_logs", "label": "task", "name": "Check server-side logs for error details", "status": "completed"},
+      {"id": "task:review_api_handler", "label": "task", "name": "Review the API endpoint handler code", "status": "completed", "details": "Handlers were missing"},
+      {"id": "task:implement_fix", "label": "task", "name": "Implement the fix for the root cause", "status": "completed", "details": "Created /api/audio-cache and /api/save-artifact routes"},
+      {"id": "task:verify_fix", "label": "task", "name": "Verify the fix resolves the 400 error", "status": "completed"}
+    ],
+    "edges": [
+      {"id": "e_dbg_p1", "outV": "process:debug_400_error", "inV": "phase:investigation", "label": "has_phase"},
+      {"id": "e_dbg_p2", "outV": "process:debug_400_error", "inV": "phase:reproduction", "label": "has_phase"},
+      {"id": "e_dbg_p3", "outV": "process:debug_400_error", "inV": "phase:root_cause_analysis", "label": "has_phase"},
+      {"id": "e_dbg_p4", "outV": "process:debug_400_error", "inV": "phase:fix_implementation", "label": "has_phase"},
+      {"id": "e_dbg_p5", "outV": "process:debug_400_error", "inV": "phase:verification", "label": "has_phase"},
+      {"id": "e_dbg_s1", "outV": "phase:investigation", "inV": "phase:reproduction", "label": "precedes"},
+      {"id": "e_dbg_s2", "outV": "phase:reproduction", "inV": "phase:root_cause_analysis", "label": "precedes"},
+      {"id": "e_dbg_s3", "outV": "phase:root_cause_analysis", "inV": "phase:fix_implementation", "label": "precedes"},
+      {"id": "e_dbg_s4", "outV": "phase:fix_implementation", "inV": "phase:verification", "label": "precedes"},
+      {"id": "e_inv1", "outV": "phase:investigation", "inV": "task:identify_request", "label": "has_task"},
+      {"id": "e_rca1", "outV": "phase:root_cause_analysis", "inV": "task:analyze_request", "label": "has_task"},
+      {"id": "e_rca2", "outV": "phase:root_cause_analysis", "inV": "task:check_server_logs", "label": "has_task"},
+      {"id": "e_rca3", "outV": "phase:root_cause_analysis", "inV": "task:review_api_handler", "label": "has_task"},
+      {"id": "e_fix1", "outV": "phase:fix_implementation", "inV": "task:implement_fix", "label": "has_task"},
+      {"id": "e_ver1", "outV": "phase:verification", "inV": "task:verify_fix", "label": "has_task"}
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-30",
+    "description": "A process to debug a 400 Bad Request error reported by the user."
+  },
+  "traversals": [
+    {
+      "name": "get_pending_debug_tasks",
+      "script": "g.V().has('label', 'task').has('status', 'pending')"
+    }
+  ]
 } 
