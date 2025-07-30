@@ -145,4 +145,26 @@
       "script": "g.V().has('label', 'task').has('status', 'pending')"
     }
   ]
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {"id": "process:kaizen_debug_process", "label": "process", "name": "Kaizen of Debug Process", "status": "completed"},
+      {"id": "task:review_graph", "label": "task", "name": "Review Completed Debug Graph", "status": "completed", "target_process_id": "process:debug_400_error"},
+      {"id": "task:generate_report", "label": "task", "name": "Generate Debug Session Report", "status": "completed", "details": "Analysis complete, identified 3 potential improvements."},
+      {"id": "task:identify_improvements", "label": "task", "name": "Identify Process Improvements", "status": "completed"}
+    ],
+    "edges": [
+      {"id": "e_kzn1", "outV": "process:kaizen_debug_process", "inV": "task:review_graph", "label": "has_task"},
+      {"id": "e_kzn2", "outV": "task:review_graph", "inV": "task:generate_report", "label": "precedes"},
+      {"id": "e_kzn3", "outV": "task:generate_report", "inV": "task:identify_improvements", "label": "precedes"}
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-30",
+    "description": "A process to analyze and improve the recently completed debugging process, following Kaizen principles."
+  },
+  "traversals": []
 } 
