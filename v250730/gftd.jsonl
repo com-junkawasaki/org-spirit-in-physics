@@ -20,12 +20,6 @@
         "id": "context:nextjs",
         "label": "context",
         "project_type": "Next.js"
-      },
-      {
-        "id": "task:initial-commit",
-        "label": "task",
-        "name": "Initial Git Commit",
-        "status": "completed"
       }
     ],
     "edges": [
@@ -40,12 +34,6 @@
         "outV": "task:gitignore",
         "inV": "context:nextjs",
         "label": "has_context"
-      },
-      {
-        "id": "e3",
-        "outV": "process:init",
-        "inV": "task:initial-commit",
-        "label": "has_task"
       }
     ]
   },
@@ -57,6 +45,57 @@
     {
       "name": "find_pending_tasks",
       "script": "g.V().has('label','task').has('status','pending')"
+    }
+  ]
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {"id": "process:spirit-in-physics", "label": "process", "name": "Spirit-in-Physics Research", "document": "docs/2412-研究計画書_Spirit-in-Physics_ver2.0_250620.md", "status": "defined"},
+      {"id": "phase:recruitment", "label": "phase", "name": "Participant Recruitment", "details": "Recruit 30 healthy adults"},
+      {"id": "phase:setup", "label": "phase", "name": "Experiment Setup"},
+      {"id": "phase:execution", "label": "phase", "name": "Experiment Execution"},
+      {"id": "phase:analysis", "label": "phase", "name": "Data Analysis"},
+      {"id": "phase:reporting", "label": "phase", "name": "Reporting"},
+      {"id": "task:consent", "label": "task", "name": "Informed Consent"},
+      {"id": "task:exp1_skin_potential", "label": "task", "name": "Experiment 1: Measure Skin Potential (SKINPRO)", "details": "Part of Word Association Test"},
+      {"id": "task:exp2_emotion_analysis", "label": "task", "name": "Experiment 2: Emotion Analysis (Deepface/BERT)", "details": "Part of Word Association Test, record face and voice"},
+      {"id": "task:statistical_analysis", "label": "task", "name": "Statistical Analysis", "details": "Lèvene test, Shapiro-Wilk test, Student's t-test, ANOVA"},
+      {"id": "task:vector_mapping", "label": "task", "name": "Kawasaki Model Vector Space Mapping", "details": "Embed word association data with biometric parameters"},
+      {"id": "task:visualization", "label": "task", "name": "UMAP Visualization", "details": "Dimensionality reduction of vector space"},
+      {"id": "condition:env_control", "label": "condition", "name": "Environment Control", "details": "Temp: 22-25C, Humidity: 30-50%"},
+      {"id": "condition:env_recording", "label": "condition", "name": "Environment Recording", "details": "Record audio and video of the experimental setting"}
+    ],
+    "edges": [
+      {"id": "e_p1", "outV": "process:spirit-in-physics", "inV": "phase:recruitment", "label": "has_phase"},
+      {"id": "e_p2", "outV": "process:spirit-in-physics", "inV": "phase:setup", "label": "has_phase"},
+      {"id": "e_p3", "outV": "process:spirit-in-physics", "inV": "phase:execution", "label": "has_phase"},
+      {"id": "e_p4", "outV": "process:spirit-in-physics", "inV": "phase:analysis", "label": "has_phase"},
+      {"id": "e_p5", "outV": "process:spirit-in-physics", "inV": "phase:reporting", "label": "has_phase"},
+      {"id": "e_s1", "outV": "phase:recruitment", "inV": "phase:execution", "label": "precedes"},
+      {"id": "e_s2", "outV": "phase:setup", "inV": "phase:execution", "label": "precedes"},
+      {"id": "e_s3", "outV": "phase:execution", "inV": "phase:analysis", "label": "precedes"},
+      {"id": "e_s4", "outV": "phase:analysis", "inV": "phase:reporting", "label": "precedes"},
+      {"id": "e_exec1", "outV": "phase:execution", "inV": "task:consent", "label": "starts_with"},
+      {"id": "e_exec2", "outV": "task:consent", "inV": "task:exp1_skin_potential", "label": "precedes"},
+      {"id": "e_exec3", "outV": "task:consent", "inV": "task:exp2_emotion_analysis", "label": "precedes"},
+      {"id": "e_exec4", "outV": "phase:execution", "inV": "condition:env_control", "label": "subject_to"},
+      {"id": "e_exec5", "outV": "phase:execution", "inV": "condition:env_recording", "label": "subject_to"},
+      {"id": "e_ana1", "outV": "phase:analysis", "inV": "task:statistical_analysis", "label": "has_task"},
+      {"id": "e_ana2", "outV": "phase:analysis", "inV": "task:vector_mapping", "label": "has_task"},
+      {"id": "e_ana3", "outV": "task:vector_mapping", "inV": "task:visualization", "label": "leads_to"}
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-30",
+    "source": "docs/2412-研究計画書_Spirit-in-Physics_ver2.0_250620.md"
+  },
+  "traversals": [
+    {
+      "name": "get_research_phases",
+      "script": "g.V('process:spirit-in-physics').out('has_phase')"
     }
   ]
 } 
