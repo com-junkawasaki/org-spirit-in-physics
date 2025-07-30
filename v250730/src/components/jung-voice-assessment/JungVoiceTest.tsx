@@ -90,6 +90,7 @@ const SessionScreen = React.memo<{
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
+    const stimulusAudioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         if (stream && videoPreviewRef.current) {
@@ -102,9 +103,22 @@ const SessionScreen = React.memo<{
         if (currentWordIndex < stimulusWords.length) {
             const word = stimulusWords[currentWordIndex];
             
-            // Speak the word
-            const utterance = new SpeechSynthesisUtterance(word);
-            speechSynthesis.speak(utterance);
+            // Play audio for the word from mp3 file
+            if (stimulusAudioRef.current) {
+                const audioSrc = `/audio/jung-voice-assessment/${encodeURIComponent(word)}.mp3`;
+                stimulusAudioRef.current.src = audioSrc;
+                stimulusAudioRef.current.play()
+                    .catch(err => {
+                        console.error(`Could not play audio ${audioSrc}, falling back to speech synthesis.`, err);
+                        // Fallback to SpeechSynthesis
+                        const utterance = new SpeechSynthesisUtterance(word);
+                        speechSynthesis.speak(utterance);
+                    });
+            } else {
+                // Fallback for safety, though ref should exist.
+                const utterance = new SpeechSynthesisUtterance(word);
+                speechSynthesis.speak(utterance);
+            }
 
             // Start listening for a response
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -163,7 +177,7 @@ const SessionScreen = React.memo<{
                 }
             };
         }
-    }, [currentWordIndex, stimulusWords, onResponse, isListening, stream]);
+    }, [currentWordIndex, stimulusWords, onResponse, stream]);
   
   if (currentWordIndex >= stimulusWords.length) {
     return <div>次の単語を読み込み中...</div>;
@@ -176,6 +190,7 @@ const SessionScreen = React.memo<{
       {/* <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-2 flex items-center justify-center">
         <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
       </div> */}
+      <audio ref={stimulusAudioRef} />
        <div className="w-full max-w-md">
           <p className="text-sm text-gray-500 mb-1">
               セッション {currentSession} - 単語 {currentWordIndex + 1} / {stimulusWords.length}

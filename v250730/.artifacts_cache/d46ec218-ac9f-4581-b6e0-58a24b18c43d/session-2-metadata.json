@@ -1,0 +1,515 @@
+{
+  "assessmentId": "d46ec218-ac9f-4581-b6e0-58a24b18c43d",
+  "userId": "user-placeholder",
+  "timestamp": "2025-07-30T16:04:31.030Z",
+  "session": 2,
+  "responses": [],
+  "fullLog": [
+    {
+      "timestamp": "2025-07-30T15:30:43.935Z",
+      "event": "session_start",
+      "details": {
+        "session": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:30:43.942Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "不安"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:30:43.943Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "不安"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:30:49.946Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "不安"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:30:49.954Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "箱"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:30:49.958Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "箱"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:30:55.961Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "箱"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:30:55.966Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "口論"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:30:55.970Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "口論"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:01.974Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "口論"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:01.980Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "偽り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:01.982Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "偽り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:07.986Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "偽り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:07.995Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "裕福な"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:07.997Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "裕福な"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:14.000Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "裕福な"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:14.008Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "船"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:14.012Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "船"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:20.016Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "船"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:20.023Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "恐怖"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:20.026Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "恐怖"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:26.030Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "恐怖"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:26.036Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "青"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:26.039Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "青"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:32.043Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "青"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:32.051Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "指"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:32.054Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "指"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:38.058Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "指"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:38.065Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "パンフレット"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:38.068Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "パンフレット"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:44.071Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "パンフレット"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:44.073Z",
+      "event": "session_complete",
+      "details": {
+        "session": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:44.085Z",
+      "event": "final_video_saved",
+      "details": {
+        "session": 1,
+        "fileName": "session-1-video-final.webm",
+        "size": 7267267
+      }
+    },
+    {
+      "timestamp": "2025-07-30T15:31:44.087Z",
+      "event": "recording_stopped_and_saved",
+      "details": {
+        "session": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:18.871Z",
+      "event": "recording_start_failed",
+      "details": {
+        "reason": "No media stream available."
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:18.879Z",
+      "event": "session_start",
+      "details": {
+        "session": 2
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:18.892Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "池"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:18.894Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "池"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:24.898Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "池"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:24.907Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "死ぬ"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:24.912Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "死ぬ"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:30.921Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "死ぬ"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:30.931Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "軽蔑する"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:30.935Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "軽蔑する"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:36.941Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "軽蔑する"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:36.950Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:36.955Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:39.928Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:39.930Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:42.333Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:42.338Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:48.891Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:48.892Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:54.896Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "誇り"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:54.900Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "歌う"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:03:54.901Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "歌う"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:00.907Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "歌う"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:00.918Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "木"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:00.922Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "木"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:06.931Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "木"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:06.941Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "緑"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:06.946Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "緑"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:12.957Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "緑"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:12.967Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "運"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:12.970Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "運"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:18.977Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "運"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:18.988Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "親切な"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:18.991Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "親切な"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:24.999Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "親切な"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:25.010Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "喜び"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:25.014Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "喜び"
+      }
+    },
+    {
+      "timestamp": "2025-07-30T16:04:31.024Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "喜び"
+      }
+    }
+  ]
+}

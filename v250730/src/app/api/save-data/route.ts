@@ -33,6 +33,20 @@ export async function POST(request: NextRequest) {
         
         const dataToSave = validationResult.data;
 
+        // --- New logic for handling consent data ---
+        if (dataToSave.type === 'consent') {
+            const { participantId } = dataToSave.data;
+            if (!participantId) {
+                return new NextResponse(JSON.stringify({ error: 'Participant ID is required for consent data' }), { status: 400 });
+            }
+            const sessionDir = path.join(ARTIFACTS_DIR, participantId);
+            await ensureDirExists(sessionDir);
+            const consentFilePath = path.join(sessionDir, 'consent.json');
+            await fs.writeFile(consentFilePath, JSON.stringify(dataToSave.data, null, 2));
+            return new NextResponse(JSON.stringify({ message: 'Consent data saved successfully' }), { status: 200 });
+        }
+        // --- End of new logic ---
+
         // Append to the JSONL file
         await appendFile(DB_FILE, JSON.stringify(dataToSave) + '\\n');
 

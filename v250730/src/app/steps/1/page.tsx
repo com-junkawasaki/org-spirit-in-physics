@@ -18,12 +18,13 @@ export default function ConsentPage() {
     setParticipantIdInStore(newParticipantId);
   }, [setParticipantIdInStore]);
 
-  const handleConsent = async (participantId: string, signature: string) => {
+  const handleConsent = async (participantId: string, signature: string, agreements: any) => {
     try {
       const consentData = {
         type: 'consent' as const,
         participantId,
         signature,
+        agreements,
         agreedAt: new Date().toISOString(),
       };
 

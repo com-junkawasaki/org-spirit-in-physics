@@ -1,249 +1,242 @@
 [
   {
-    "timestamp": "2025-07-30T15:30:43.935Z",
+    "timestamp": "2025-07-30T16:06:24.244Z",
     "event": "session_start",
     "details": {
       "session": 1
     }
   },
   {
-    "timestamp": "2025-07-30T15:30:43.942Z",
+    "timestamp": "2025-07-30T16:06:24.255Z",
     "event": "word_displayed",
     "details": {
-      "word": "不安"
+      "word": "ガラス"
     }
   },
   {
-    "timestamp": "2025-07-30T15:30:43.943Z",
+    "timestamp": "2025-07-30T16:06:24.258Z",
     "event": "response_window_opened",
     "details": {
-      "word": "不安"
+      "word": "ガラス"
     }
   },
   {
-    "timestamp": "2025-07-30T15:30:49.946Z",
+    "timestamp": "2025-07-30T16:06:30.260Z",
     "event": "response_window_closed",
     "details": {
-      "word": "不安"
+      "word": "ガラス"
     }
   },
   {
-    "timestamp": "2025-07-30T15:30:49.954Z",
+    "timestamp": "2025-07-30T16:06:30.266Z",
     "event": "word_displayed",
     "details": {
-      "word": "箱"
+      "word": "習慣"
     }
   },
   {
-    "timestamp": "2025-07-30T15:30:49.958Z",
+    "timestamp": "2025-07-30T16:06:30.268Z",
     "event": "response_window_opened",
     "details": {
-      "word": "箱"
+      "word": "習慣"
     }
   },
   {
-    "timestamp": "2025-07-30T15:30:55.961Z",
+    "timestamp": "2025-07-30T16:06:36.270Z",
     "event": "response_window_closed",
     "details": {
-      "word": "箱"
+      "word": "習慣"
     }
   },
   {
-    "timestamp": "2025-07-30T15:30:55.966Z",
+    "timestamp": "2025-07-30T16:06:36.274Z",
     "event": "word_displayed",
     "details": {
-      "word": "口論"
+      "word": "暗い"
     }
   },
   {
-    "timestamp": "2025-07-30T15:30:55.970Z",
+    "timestamp": "2025-07-30T16:06:36.275Z",
     "event": "response_window_opened",
     "details": {
-      "word": "口論"
+      "word": "暗い"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:01.974Z",
+    "timestamp": "2025-07-30T16:06:42.283Z",
     "event": "response_window_closed",
     "details": {
-      "word": "口論"
+      "word": "暗い"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:01.980Z",
+    "timestamp": "2025-07-30T16:06:42.292Z",
     "event": "word_displayed",
     "details": {
-      "word": "偽り"
+      "word": "軽蔑する"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:01.982Z",
+    "timestamp": "2025-07-30T16:06:42.294Z",
     "event": "response_window_opened",
     "details": {
-      "word": "偽り"
+      "word": "軽蔑する"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:07.986Z",
+    "timestamp": "2025-07-30T16:06:48.298Z",
     "event": "response_window_closed",
     "details": {
-      "word": "偽り"
+      "word": "軽蔑する"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:07.995Z",
+    "timestamp": "2025-07-30T16:06:48.307Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "愚かな"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:06:48.310Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "愚かな"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:06:54.313Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "愚かな"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:06:54.322Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "運"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:06:54.325Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "運"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:07:00.328Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "運"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:07:00.332Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "頭"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:07:00.335Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "頭"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:07:06.338Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "頭"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T16:07:06.341Z",
     "event": "word_displayed",
     "details": {
       "word": "裕福な"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:07.997Z",
+    "timestamp": "2025-07-30T16:07:06.343Z",
     "event": "response_window_opened",
     "details": {
       "word": "裕福な"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:14.000Z",
+    "timestamp": "2025-07-30T16:07:12.345Z",
     "event": "response_window_closed",
     "details": {
       "word": "裕福な"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:14.008Z",
+    "timestamp": "2025-07-30T16:07:12.353Z",
     "event": "word_displayed",
     "details": {
-      "word": "船"
+      "word": "お金"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:14.012Z",
+    "timestamp": "2025-07-30T16:07:12.356Z",
     "event": "response_window_opened",
     "details": {
-      "word": "船"
+      "word": "お金"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:20.016Z",
+    "timestamp": "2025-07-30T16:07:18.359Z",
     "event": "response_window_closed",
     "details": {
-      "word": "船"
+      "word": "お金"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:20.023Z",
+    "timestamp": "2025-07-30T16:07:18.368Z",
     "event": "word_displayed",
     "details": {
-      "word": "恐怖"
+      "word": "純粋な"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:20.026Z",
+    "timestamp": "2025-07-30T16:07:18.370Z",
     "event": "response_window_opened",
     "details": {
-      "word": "恐怖"
+      "word": "純粋な"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:26.030Z",
+    "timestamp": "2025-07-30T16:07:24.372Z",
     "event": "response_window_closed",
     "details": {
-      "word": "恐怖"
+      "word": "純粋な"
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:26.036Z",
-    "event": "word_displayed",
-    "details": {
-      "word": "青"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:26.039Z",
-    "event": "response_window_opened",
-    "details": {
-      "word": "青"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:32.043Z",
-    "event": "response_window_closed",
-    "details": {
-      "word": "青"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:32.051Z",
-    "event": "word_displayed",
-    "details": {
-      "word": "指"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:32.054Z",
-    "event": "response_window_opened",
-    "details": {
-      "word": "指"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:38.058Z",
-    "event": "response_window_closed",
-    "details": {
-      "word": "指"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:38.065Z",
-    "event": "word_displayed",
-    "details": {
-      "word": "パンフレット"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:38.068Z",
-    "event": "response_window_opened",
-    "details": {
-      "word": "パンフレット"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:44.071Z",
-    "event": "response_window_closed",
-    "details": {
-      "word": "パンフレット"
-    }
-  },
-  {
-    "timestamp": "2025-07-30T15:31:44.073Z",
+    "timestamp": "2025-07-30T16:07:24.374Z",
     "event": "session_complete",
     "details": {
       "session": 1
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:44.085Z",
+    "timestamp": "2025-07-30T16:07:24.385Z",
     "event": "final_video_saved",
     "details": {
       "session": 1,
       "fileName": "session-1-video-final.webm",
-      "size": 7267267
+      "size": 9337426
     }
   },
   {
-    "timestamp": "2025-07-30T15:31:44.087Z",
+    "timestamp": "2025-07-30T16:07:24.389Z",
     "event": "recording_stopped_and_saved",
     "details": {
       "session": 1
-    }
-  },
-  {
-    "timestamp": "2025-07-30T16:03:18.871Z",
-    "event": "recording_start_failed",
-    "details": {
-      "reason": "No media stream available."
     }
   }
 ]

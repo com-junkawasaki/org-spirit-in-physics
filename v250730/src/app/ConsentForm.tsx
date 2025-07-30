@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ResearchPlanContent from './ResearchPlanContent';
 
-const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: string, signature: string) => void, participantId: string }) => {
+const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: string, signature: string, agreements: any) => void, participantId: string }) => {
   const [agreements, setAgreements] = useState({
     understand: false,
     voluntary: false,
@@ -26,7 +26,7 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (isAllAgreed) {
-      onConsent(participantId, signature);
+      onConsent(participantId, signature, agreements);
     }
   };
 
