@@ -40,13 +40,18 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build"
+    "build": "next build",
+    "test": "jest"
   },
   "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.54.1",
+    "@swc/jest": "^0.2.39",
     "@tailwindcss/postcss": "^4.1.11",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
     "@types/dom-speech-recognition": "^0.0.6",
+    "@types/jest": "^30.0.0",
     "@types/node": "24.1.0",
     "@types/react": "19.1.8",
     "@types/three": "^0.178.1",
@@ -54,10 +59,13 @@
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "drizzle-orm": "^0.44.4",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
     "postcss": "^8.5.6",
     "shadcn-ui": "^0.9.5",
     "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
+    "ts-node": "^10.9.2",
     "tw-animate-css": "^1.3.6",
     "typescript": "5.8.3"
   }
