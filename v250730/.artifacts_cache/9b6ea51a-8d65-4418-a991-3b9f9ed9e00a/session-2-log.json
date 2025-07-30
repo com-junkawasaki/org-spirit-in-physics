@@ -245,5 +245,245 @@
     "details": {
       "session": 2
     }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:39.686Z",
+    "event": "session_start",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:39.691Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "abuse"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:39.692Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "abuse"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:45.693Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "abuse"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:45.697Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "flower"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:45.702Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "flower"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:51.704Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "flower"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:51.707Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "narrow"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:51.708Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "narrow"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:57.709Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "narrow"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:57.713Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "pity"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:36:57.714Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "pity"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:03.715Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "pity"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:03.718Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "paint"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:03.719Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "paint"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:09.722Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "paint"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:09.729Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "joy"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:09.730Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "joy"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:15.732Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "joy"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:15.735Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "glass"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:15.736Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "glass"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:21.738Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "glass"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:21.741Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "month"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:21.742Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "month"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:27.745Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "month"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:27.749Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "stalk"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:27.750Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "stalk"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:33.753Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "stalk"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:33.756Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "part"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:33.757Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "part"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:39.759Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "part"
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:39.762Z",
+    "event": "session_complete",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:39.775Z",
+    "event": "final_video_saved",
+    "details": {
+      "session": 2,
+      "fileName": "session-2-video-final.webm",
+      "size": 14811206
+    }
+  },
+  {
+    "timestamp": "2025-07-30T12:37:39.781Z",
+    "event": "recording_stopped_and_saved",
+    "details": {
+      "session": 2
+    }
   }
 ]
