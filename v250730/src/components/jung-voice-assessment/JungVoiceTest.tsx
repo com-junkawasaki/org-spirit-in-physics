@@ -173,9 +173,9 @@ const SessionScreen = React.memo<{
 
   return (
     <div className="space-y-4 flex flex-col items-center">
-      <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-2 flex items-center justify-center">
+      {/* <div className="relative w-40 h-32 mx-auto bg-gray-900 rounded-md overflow-hidden mb-2 flex items-center justify-center">
         <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover"></video>
-      </div>
+      </div> */}
        <div className="w-full max-w-md">
           <p className="text-sm text-gray-500 mb-1">
               セッション {currentSession} - 単語 {currentWordIndex + 1} / {stimulusWords.length}
@@ -417,7 +417,7 @@ export default function JungVoiceTest({
   return (
     <Card className={`text-center p-6 ${className}`}>
       <CardHeader>
-        <CardTitle>ユング式言語連想検査</CardTitle>
+        {/* <CardTitle>ユング式言語連想検査</CardTitle> */}
       </CardHeader>
       <CardContent>
         {error && testStatus !== 'preflight' && <p className="text-red-500 mb-4">{error}</p>}
