@@ -34,7 +34,7 @@ async function textToSpeech(openai: OpenAI, text: string, fileName:string) {
   try {
     const mp3 = await openai.audio.speech.create({
       model: 'gpt-4o-mini-tts',
-      voice: 'wav',
+      voice: 'alloy',
       input: text,
     });
 

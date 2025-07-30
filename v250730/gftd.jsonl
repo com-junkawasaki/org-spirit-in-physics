@@ -2,7 +2,7 @@
   "graph": {
     "mode": "NORMAL",
     "vertices": [
-      { "_id": "task:generate_audio_script_240730_1", "label": "task", "name": "Create a script to convert stimulus words and welcome message to speech using OpenAI TTS", "status": "retrying" },
+      { "_id": "task:generate_audio_script_240730_1", "label": "task", "name": "Create a script to convert stimulus words and welcome message to speech using OpenAI TTS", "status": "completed" },
       { "_id": "file:constants.ts", "label": "file", "path": "src/components/jung-voice-assessment/constants.ts" },
       { "_id": "file:generate-audio.ts", "label": "file", "path": "scripts/generate-audio.ts", "status": "pending_creation" },
       { "_id": "npm_package:openai", "label": "dependency", "name": "openai", "type": "npm" },
