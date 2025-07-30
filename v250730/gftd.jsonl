@@ -230,4 +230,100 @@
       "script": "g.V('process:sdlc').out('has_phase')"
     }
   ]
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {
+        "id": "process:update_content_250731_1",
+        "label": "process",
+        "name": "Update UI Content based on User Request",
+        "status": "completed",
+        "cmmi_level": 5
+      },
+      {
+        "id": "task:update_researchplancontent_tsx",
+        "label": "task",
+        "name": "Update ResearchPlanContent.tsx with Consent Form",
+        "status": "completed",
+        "target_file": "src/app/ResearchPlanContent.tsx",
+        "details": "Replaced the research plan content with the detailed consent form text provided by the user."
+      },
+      {
+        "id": "artifact:ResearchPlanContent.tsx",
+        "label": "artifact",
+        "type": "file",
+        "path": "src/app/ResearchPlanContent.tsx"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_uc1",
+        "outV": "process:update_content_250731_1",
+        "inV": "task:update_researchplancontent_tsx",
+        "label": "has_task"
+      },
+      {
+        "id": "e_uc2",
+        "outV": "task:update_researchplancontent_tsx",
+        "inV": "artifact:ResearchPlanContent.tsx",
+        "label": "modifies"
+      }
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-31",
+    "description": "A process to track the update of the ResearchPlanContent component to display the consent form, as requested by the user. This is part of the ongoing implementation phase of the SDLC."
+  },
+  "traversals": []
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {
+        "id": "process:ui_improvement_250731_1",
+        "label": "process",
+        "name": "Improve UI with Tailwind CSS",
+        "status": "completed",
+        "cmmi_level": 5
+      },
+      {
+        "id": "task:refactor_consentform_ui",
+        "label": "task",
+        "name": "Refactor ConsentForm.tsx UI",
+        "status": "completed",
+        "target_file": "src/app/ConsentForm.tsx",
+        "details": "Improved UI/UX of the consent form by adjusting layout, making it responsive with max-h-[50vh], and translating labels to Japanese for better readability and consistency."
+      },
+      {
+        "id": "artifact:ConsentForm.tsx",
+        "label": "artifact",
+        "type": "file",
+        "path": "src/app/ConsentForm.tsx"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_ui_1",
+        "outV": "process:ui_improvement_250731_1",
+        "inV": "task:refactor_consentform_ui",
+        "label": "has_task"
+      },
+      {
+        "id": "e_ui_2",
+        "outV": "task:refactor_consentform_ui",
+        "inV": "artifact:ConsentForm.tsx",
+        "label": "modifies"
+      }
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-31",
+    "description": "A process to track the UI improvements made to the ConsentForm component using Tailwind CSS. This is part of the ongoing implementation phase of the SDLC."
+  },
+  "traversals": []
 } 

@@ -31,43 +31,43 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Research Participation Consent</CardTitle>
-        <CardDescription>Please read the consent form carefully and agree to the terms to proceed.</CardDescription>
+        <CardTitle>研究参加への同意</CardTitle>
+        <CardDescription>研究計画書をよくお読みの上、各項目に同意いただけましたら署名をお願いします。</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="border rounded-md h-96 overflow-y-scroll mb-6 bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="border rounded-md p-4 max-h-[50vh] overflow-y-auto mb-6 bg-gray-50/50 dark:bg-gray-900/50">
           <ResearchPlanContent />
         </div>
         <form onSubmit={handleSubmit} id="consent-form">
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="understand" checked={agreements.understand} onCheckedChange={handleAgreementChange('understand')} />
-              <Label htmlFor="understand">I understand the nature and purpose of the research.</Label>
+            <div className="flex items-start space-x-3">
+              <Checkbox id="understand" checked={agreements.understand} onCheckedChange={handleAgreementChange('understand')} className="mt-1" />
+              <Label htmlFor="understand" className="flex-1">研究の性質と目的を理解しました。</Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="voluntary" checked={agreements.voluntary} onCheckedChange={handleAgreementChange('voluntary')} />
-              <Label htmlFor="voluntary">I agree to participate voluntarily.</Label>
+            <div className="flex items-start space-x-3">
+              <Checkbox id="voluntary" checked={agreements.voluntary} onCheckedChange={handleAgreementChange('voluntary')} className="mt-1" />
+              <Label htmlFor="voluntary" className="flex-1">自身の自由意思に基づき、研究に任意で参加することに同意します。</Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="withdraw" checked={agreements.withdraw} onCheckedChange={handleAgreementChange('withdraw')} />
-              <Label htmlFor="withdraw">I understand that I can withdraw at any time.</Label>
+            <div className="flex items-start space-x-3">
+              <Checkbox id="withdraw" checked={agreements.withdraw} onCheckedChange={handleAgreementChange('withdraw')} className="mt-1" />
+              <Label htmlFor="withdraw" className="flex-1">いつでも同意を撤回し、研究への参加を中止できることを理解しました。</Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="recording" checked={agreements.recording} onCheckedChange={handleAgreementChange('recording')} />
-              <Label htmlFor="recording">I consent to the audio and video recording.</Label>
+            <div className="flex items-start space-x-3">
+              <Checkbox id="recording" checked={agreements.recording} onCheckedChange={handleAgreementChange('recording')} className="mt-1" />
+              <Label htmlFor="recording" className="flex-1">実験中の音声および映像の記録に同意します。</Label>
             </div>
           </div>
-          <div className="mt-6">
-            <Label htmlFor="signature" className="font-bold">Digital Signature</Label>
+          <div className="mt-8">
+            <Label htmlFor="signature" className="font-bold text-lg">電子署名</Label>
             <Input
               type="text"
               id="signature"
               value={signature}
               onChange={(e) => setSignature(e.target.value)}
-              placeholder="Please type your full name"
-              className="mt-2"
+              placeholder="氏名を入力してください"
+              className="mt-2 text-base p-3"
             />
           </div>
         </form>
@@ -77,9 +77,9 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
           type="submit"
           form="consent-form"
           disabled={!isAllAgreed}
-          className="w-full"
+          className="w-full text-lg py-6"
         >
-          Agree and Start Experiment
+          同意して実験を開始する
         </Button>
       </CardFooter>
     </Card>
