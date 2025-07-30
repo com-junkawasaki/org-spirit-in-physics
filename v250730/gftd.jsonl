@@ -1,0 +1,62 @@
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {
+        "id": "process:init",
+        "label": "process",
+        "name": "Project Initialization",
+        "status": "in_progress",
+        "cmmi_level": 5
+      },
+      {
+        "id": "task:gitignore",
+        "label": "task",
+        "name": "Create .gitignore",
+        "status": "completed",
+        "target_file": ".gitignore"
+      },
+      {
+        "id": "context:nextjs",
+        "label": "context",
+        "project_type": "Next.js"
+      },
+      {
+        "id": "task:initial-commit",
+        "label": "task",
+        "name": "Initial Git Commit",
+        "status": "completed"
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "outV": "process:init",
+        "inV": "task:gitignore",
+        "label": "has_task"
+      },
+      {
+        "id": "e2",
+        "outV": "task:gitignore",
+        "inV": "context:nextjs",
+        "label": "has_context"
+      },
+      {
+        "id": "e3",
+        "outV": "process:init",
+        "inV": "task:initial-commit",
+        "label": "has_task"
+      }
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-30"
+  },
+  "traversals": [
+    {
+      "name": "find_pending_tasks",
+      "script": "g.V().has('label','task').has('status','pending')"
+    }
+  ]
+} 
