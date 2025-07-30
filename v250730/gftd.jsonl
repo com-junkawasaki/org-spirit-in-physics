@@ -547,4 +547,53 @@
     "description": "A process to document the fix for the build error caused by incorrect module syntax in postcss.config.mjs."
   },
   "traversals": []
+}
+{
+  "graph": {
+    "mode": "NORMAL",
+    "vertices": [
+      {
+        "id": "process:fix_build_error_250731_2",
+        "label": "process",
+        "name": "Fix 'class does not exist' Build Error",
+        "status": "completed",
+        "cmmi_level": 5
+      },
+      {
+        "id": "task:identify_tailwind_config_issue",
+        "label": "task",
+        "name": "Identify Missing Tailwind Config",
+        "status": "completed",
+        "details": "The build failed because CSS variables from globals.css were not mapped to Tailwind classes in tailwind.config.ts."
+      },
+      {
+        "id": "task:update_tailwind_config_theme",
+        "label": "task",
+        "name": "Update tailwind.config.ts with Theme Extensions",
+        "status": "completed",
+        "target_file": "tailwind.config.ts",
+        "details": "Added color and borderRadius extensions to the theme to correctly map CSS variables."
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_fbe2_1",
+        "outV": "process:fix_build_error_250731_2",
+        "inV": "task:identify_tailwind_config_issue",
+        "label": "has_task"
+      },
+      {
+        "id": "e_fbe2_2",
+        "outV": "task:identify_tailwind_config_issue",
+        "inV": "task:update_tailwind_config_theme",
+        "label": "precedes"
+      }
+    ]
+  },
+  "metadata": {
+    "createdBy": "Gemini 2.5 Pro",
+    "createdAt": "2025-07-31",
+    "description": "A process to document the fix for the Tailwind CSS build error 'class does not exist' by updating the theme configuration."
+  },
+  "traversals": []
 } 
