@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ResearchPlanContent from './ResearchPlanContent';
 
 const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: string, signature: string) => void, participantId: string }) => {
-  const [consentText, setConsentText] = useState('');
   const [agreements, setAgreements] = useState({
     understand: false,
     voluntary: false,
@@ -16,13 +16,6 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
     recording: false,
   });
   const [signature, setSignature] = useState('');
-
-  useEffect(() => {
-    fetch('/docs/同意説明文書_Spirit-in-Physics_250620_ver2.0.md')
-      .then((res) => res.text())
-      .then((text) => setConsentText(text))
-      .catch((err) => console.error('Error fetching consent form:', err));
-  }, []);
 
   const handleAgreementChange = (name: keyof typeof agreements) => (checked: boolean) => {
     setAgreements((prev) => ({ ...prev, [name]: checked }));
@@ -44,8 +37,8 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
         <CardDescription>Please read the consent form carefully and agree to the terms to proceed.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="prose prose-sm dark:prose-invert border rounded-md p-4 h-96 overflow-y-scroll mb-6 bg-gray-50/50 dark:bg-gray-900/50">
-          <pre className="whitespace-pre-wrap font-sans text-sm">{consentText}</pre>
+        <div className="border rounded-md h-96 overflow-y-scroll mb-6 bg-gray-50/50 dark:bg-gray-900/50">
+          <ResearchPlanContent />
         </div>
         <form onSubmit={handleSubmit} id="consent-form">
           <div className="space-y-4">
