@@ -151,7 +151,7 @@ export const useKawasakiStore = create<KawasakiState>()(
                     set({
                         testStatus: sessionNumber === 1 ? 'session-1-running' : 'session-2-running',
                         currentSession: sessionNumber,
-                        stimulusWords: [...JUNG_STIMULUS_WORDS].sort(() => 0.5 - Math.random()).slice(0, numberOfWords),
+                        stimulusWords: Object.values(JUNG_STIMULUS_WORDS).sort(() => 0.5 - Math.random()).slice(0, numberOfWords).map(word => word.japanese),
                         currentWordIndex: 0,
                         assessmentId: assessmentId,
                         // Reset event log only for the very first session
@@ -280,7 +280,7 @@ export const useKawasakiStore = create<KawasakiState>()(
                 const lastWordDisplayed = [...logData].reverse().find(log => log.event === 'word_displayed');
                 const lastWordIndex = lastWordDisplayed ? lastWordDisplayed.details.wordIndex : -1;
                 
-                const stimulusWords = [...JUNG_STIMULUS_WORDS].sort(() => 0.5 - Math.random()).slice(0, 10); // Assuming 10 words for now
+                const stimulusWords = Object.values(JUNG_STIMULUS_WORDS).sort(() => 0.5 - Math.random()).slice(0, 10).map(word => word.japanese); // Assuming 10 words for now
                 
                 set({
                     eventLog: logData,
@@ -288,7 +288,7 @@ export const useKawasakiStore = create<KawasakiState>()(
                     currentSession: session,
                     testStatus: session === 1 ? 'session-1-running' : 'session-2-running',
                     currentWordIndex: lastWordIndex + 1,
-                    stimulusWords: stimulusWords // Note: stimulusWords will be different, a limitation for now.
+                    stimulusWords: stimulusWords,
                 });
             },
 
