@@ -356,6 +356,7 @@ export default function JungVoiceTest({
     if (testStatus.includes('running') && currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
       logEvent('word_displayed', { word: word.word, key: word.key });
+      console.log(`[JungVoiceTest] Word Displayed: ${currentWordIndex + 1}/${stimulusWords.length} - ${word.word}`);
       wordDisplayedTimeRef.current = Date.now();
       
       setMediaStatus('recording_response');
@@ -364,6 +365,7 @@ export default function JungVoiceTest({
       responseTimerRef.current = setTimeout(() => {
         logEvent('response_window_closed', { word: word.word });
         if (currentWordIndex >= stimulusWords.length - 1) {
+          console.log(`[JungVoiceTest] Last word timeout. Calling completeSession for session ${currentSession}`);
           completeSession();
         } else {
           advanceToNextWord();
@@ -379,18 +381,21 @@ export default function JungVoiceTest({
   // Stop recording when a session or the test completes
   useEffect(() => {
     if(testStatus === 'session-1-complete' || testStatus === 'completed'){
+        console.log(`[JungVoiceTest] Status is ${testStatus}, stopping recording.`);
         stopRecording();
     }
   }, [testStatus, stopRecording]);
 
 
   const handleConfirmAndStartSession = async () => {
+    console.log('[JungVoiceTest] Starting Session 1');
     setError(null);
     await startRecording(1);
     startSession(numberOfWords);
   };
   
   const handleStartSecondSession = async () => {
+      console.log('[JungVoiceTest] Starting Session 2');
       await startRecording(2);
       startSession(numberOfWords);
   }
@@ -409,6 +414,7 @@ export default function JungVoiceTest({
   }, [recordWordResponse]);
 
   const renderContent = () => {
+    console.log(`[JungVoiceTest] Rendering content for testStatus: ${testStatus}`);
     switch (testStatus) {
       case 'preflight':
         return <PreflightScreen 
