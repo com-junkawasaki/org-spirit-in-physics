@@ -82,7 +82,7 @@ const SessionScreen = React.memo<{
   stream: MediaStream | null;
   currentSession: 1 | 2;
   currentWordIndex: number;
-  stimulusWords: string[];
+  stimulusWords: import('./types').Word[];
   onResponse: (response: string, audioBlob: Blob) => void;
 }>(({ videoPreviewRef, stream, currentSession, currentWordIndex, stimulusWords, onResponse }) => {
     const [recognizedText, setRecognizedText] = useState('');
@@ -101,25 +101,25 @@ const SessionScreen = React.memo<{
     // Speech Synthesis and Recognition Effect
     useEffect(() => {
         if (currentWordIndex < stimulusWords.length) {
-            const word = stimulusWords[currentWordIndex];
+            const currentWord = stimulusWords[currentWordIndex];
             const audio = stimulusAudioRef.current;
             
             // Play audio for the word from mp3 file
             if (audio) {
-                const audioSrc = `/audio/jung-voice-assessment/${encodeURIComponent(word)}.mp3`;
+                const audioSrc = `/audio/jung-voice-assessment/${currentWord.key}.mp3`;
                 audio.src = audioSrc;
                 audio.play()
                     .catch(err => {
                         if (err.name !== 'AbortError') { // Ignore AbortError which is expected on fast re-renders
                           console.error(`Could not play audio ${audioSrc}, falling back to speech synthesis.`, err);
                           // Fallback to SpeechSynthesis
-                          const utterance = new SpeechSynthesisUtterance(word);
+                          const utterance = new SpeechSynthesisUtterance(currentWord.word);
                           speechSynthesis.speak(utterance);
                         }
                     });
             } else {
                 // Fallback for safety, though ref should exist.
-                const utterance = new SpeechSynthesisUtterance(word);
+                const utterance = new SpeechSynthesisUtterance(currentWord.word);
                 speechSynthesis.speak(utterance);
             }
 
@@ -207,7 +207,7 @@ const SessionScreen = React.memo<{
               <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
           </div>
       </div>
-      <h2 className="text-6xl font-bold my-8 h-20 flex items-center justify-center">{stimulusWords[currentWordIndex]}</h2>
+      <h2 className="text-6xl font-bold my-8 h-20 flex items-center justify-center">{stimulusWords[currentWordIndex].word}</h2>
       <div className="h-24 w-full max-w-md">
         {stream && <AudioVisualizer stream={stream} />}
       </div>
@@ -354,14 +354,14 @@ export default function JungVoiceTest({
   useEffect(() => {
     if (testStatus.includes('running') && currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
-      logEvent('word_displayed', { word });
+      logEvent('word_displayed', { word: word.word, key: word.key });
       wordDisplayedTimeRef.current = Date.now();
       
       setMediaStatus('recording_response');
-      logEvent('response_window_opened', { word });
+      logEvent('response_window_opened', { word: word.word });
 
       responseTimerRef.current = setTimeout(() => {
-        logEvent('response_window_closed', { word });
+        logEvent('response_window_closed', { word: word.word });
         if (currentWordIndex >= stimulusWords.length - 1) {
           completeSession();
         } else {

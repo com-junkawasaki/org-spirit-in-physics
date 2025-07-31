@@ -1,22 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useEffect } from 'react';
 import ConsentForm from '@/app/ConsentForm';
 import { useKawasakiStore } from '@/store/kawasakiStore';
 import { useRouter } from 'next/navigation';
 
 export default function ConsentPage() {
-  const [participantId, setParticipantId] = useState<string>('');
-  const setParticipantIdInStore = useKawasakiStore((state) => state.setParticipantId);
-  const startTest = useKawasakiStore((state) => state.startTest);
+  const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
+  const startPreflight = useKawasakiStore((state) => state.startPreflight);
+  const participantId = useKawasakiStore((state) => state.participantId);
+
   const router = useRouter();
 
   useEffect(() => {
-    const newParticipantId = uuidv4();
-    setParticipantId(newParticipantId);
-    setParticipantIdInStore(newParticipantId);
-  }, [setParticipantIdInStore]);
+    // コンポーネントがマウントされたときに参加者IDを初期化
+    if (!participantId) {
+      initializeParticipant();
+    }
+  }, [initializeParticipant, participantId]);
 
   const handleConsent = async (participantId: string, signature: string, agreements: any) => {
     try {
@@ -40,7 +41,7 @@ export default function ConsentPage() {
       if (!response.ok) {
         throw new Error('データの保存に失敗しました。');
       }
-      startTest();
+      startPreflight();
       router.push('/steps/2');
     } catch (error) {
       console.error('同意データの保存中にエラーが発生しました:', error);

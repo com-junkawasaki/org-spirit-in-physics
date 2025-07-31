@@ -1,88 +1,83 @@
-import { z } from 'zod';
+export type Word = {
+  word: string;
+  key: string;
+};
 
 // 単一の単語応答の型
-export interface WordResponse {
-  stimulusWord: string;
+export type WordResponse = {
+  stimulusWord: Word;
   responseWord: string;
   reactionTimeMs: number;
+  audioBlob?: Blob;
   isDelayed?: boolean;
-}
+};
 
 // テスト結果の型
-export interface TestResults {
+export interface TestResult {
   totalWords: number;
   averageReactionTimeMs: number;
-  delayedResponsesCount: number;
   responses: WordResponse[];
   completedAt?: Date;
 }
+
+/**
+ * @fileoverview Defines the core types and interfaces for the Jung Voice Test application.
+ * This includes the main state shape for the Zustand store and props for the main components.
+ */
+
+// --- Component Props ---
+
+export interface JungVoiceTestProps {
+    numberOfWords?: number;
+    stimulusWords?: Word[]; // Changed from string[]
+    onTestComplete?: (results: TestResult) => void;
+    voiceName?: string;
+    speechRecognitionLang?: string;
+    className?: string;
+    onComplete?: () => void;
+}
+
+// --- Zustand Store ---
+
+export type MediaStatus = 'idle' | 'recording_session' | 'recording_response' | 'processing';
+
+export interface KawasakiStoreState {
+  testStatus: 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
+  deviceStatus: 'idle' | 'pending' | 'success' | 'error';
+  stream: MediaStream | null;
+  error: string | null;
+  stimulusWords: Word[]; // Changed from string[]
+  currentSession: 1 | 2;
+  currentWordIndex: number;
+  wordResponses: WordResponse[];
+  mediaStatus: MediaStatus;
+  events: { timestamp: number; type: string; payload?: object }[];
+  sessionVideoUrl: string | null;
+  participantId: string | null;
+}
+
+export interface KawasakiStoreActions {
+  startSession: (numberOfWords: number) => void;
+  completeSession: () => void;
+  advanceToNextWord: () => void;
+  recordWordResponse: (response: { responseWord: string; reactionTimeMs: number; audioBlob: Blob }) => void;
+  resetTest: () => void;
+  setMediaStatus: (status: MediaStatus) => void;
+  setDeviceStatus: (status: 'idle' | 'pending' | 'success' | 'error') => void;
+  setStream: (stream: MediaStream | null) => void;
+  setError: (error: string | null) => void;
+  logEvent: (type: string, payload?: object) => void;
+  startPreflight: () => void;
+  saveSessionVideo: (session: 1 | 2, blob: Blob) => void;
+  initializeParticipant: () => void;
+}
+
+export type KawasakiStore = KawasakiStoreState & KawasakiStoreActions;
 
 // メッセージの型
 export interface Message {
   text: string;
   role: 'user' | 'assistant';
-}
-
-// JungVoiceAssessment コンポーネントのプロップスの型
-export interface JungVoiceAssessmentProps {
-  /**
-   * テストする単語の数
-   * デフォルト: 100
-   */
-  numberOfWords?: number;
-  
-  /**
-   * Hume AI API キー
-   */
-  apiKey: string;
-  
-  /**
-   * Hume AI 音声生成ID
-   */
-  generationId?: string;
-  
-  /**
-   * 使用する音声の名前
-   */
-  voiceName?: string;
-  
-  /**
-   * 音声認識の言語
-   * デフォルト: 'en-US'
-   */
-  speechRecognitionLang?: string;
-  
-  /**
-   * テスト完了時のコールバック
-   */
-  onTestComplete?: (results: TestResults) => void;
-  
-  /**
-   * 追加のCSSクラス
-   */
-  className?: string;
-
-  /**
-   * セッション完了時のコールバック
-   */
-  onComplete?: () => void;
-
-  /**
-   * セッション番号
-   */
-  session?: number;
-}
-
-// JungVoiceTest コンポーネントのプロップスの型
-export interface JungVoiceTestProps {
-  numberOfWords?: number;
-  apiKey?: string;
-  generationId?: string;
-  voiceName?: string;
-  speechRecognitionLang?: string;
-  onTestComplete?: (results: TestResults) => void;
-  className?: string;
-  onComplete?: () => void;
 }
 
 // AI ガイドメッセージの型
