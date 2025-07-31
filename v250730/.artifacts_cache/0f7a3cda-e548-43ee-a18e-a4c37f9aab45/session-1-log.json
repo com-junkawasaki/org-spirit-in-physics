@@ -1,0 +1,65 @@
+[
+  {
+    "timestamp": "2025-07-31T01:18:57.810Z",
+    "event": "session_start",
+    "details": {
+      "session": 1
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:18:57.813Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "嘘"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:18:57.814Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "嘘"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:19:03.817Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "嘘"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:19:03.822Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "病気"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:19:03.824Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "病気"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:19:09.827Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "病気"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:19:09.830Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "踊る"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:19:09.832Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "踊る"
+    }
+  }
+]
