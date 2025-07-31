@@ -47,15 +47,23 @@ export async function POST(request: NextRequest) {
             return new NextResponse(JSON.stringify({ message: 'Consent data saved successfully' }), { status: 200 });
         }
         if (dataToSave.type === 'session-data') {
+            console.log('Received session-data for participant:', dataToSave.data.participantId); // デバッグ用ログ
             const { participantId, ...rest } = dataToSave.data;
             if (!participantId) {
+                console.error('Participant ID is missing in session-data'); // デバッグ用ログ
                 return new NextResponse(JSON.stringify({ error: 'Participant ID is required for session data' }), { status: 400 });
             }
             const sessionDir = path.join(ARTIFACTS_DIR, participantId);
             await ensureDirExists(sessionDir);
             const sessionFilePath = path.join(sessionDir, 'session_data.json');
-            await fs.writeFile(sessionFilePath, JSON.stringify({ participantId, ...rest }, null, 2));
-            return new NextResponse(JSON.stringify({ message: 'Session data saved successfully' }), { status: 200 });
+            try {
+                await fs.writeFile(sessionFilePath, JSON.stringify({ participantId, ...rest }, null, 2));
+                console.log(`Successfully saved session data to ${sessionFilePath}`); // デバッグ用ログ
+                return new NextResponse(JSON.stringify({ message: 'Session data saved successfully' }), { status: 200 });
+            } catch (writeError) {
+                console.error(`Failed to write session data to ${sessionFilePath}:`, writeError); // デバッグ用ログ
+                return new NextResponse('Failed to write session data file', { status: 500 });
+            }
         }
         // --- End of new logic ---
 

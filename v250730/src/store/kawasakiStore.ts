@@ -67,10 +67,11 @@ export const useKawasakiStore = create<KawasakiStore>()(
     },
 
     completeSession: () => {
-        const currentSession = get().currentSession;
+        const { logEvent, currentSession } = get();
+        console.log(`completeSession called for session: ${currentSession}`); // デバッグ用ログ
         if (currentSession === 1) {
             set({ testStatus: 'session-1-complete', currentWordIndex: -1, currentSession: 2 });
-            get().logEvent('session_1_completed');
+            logEvent('session_1_completed');
         } else {
             set({ testStatus: 'completed' });
             get().logEvent('session_2_completed');
@@ -120,7 +121,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
     saveSessionData: async () => {
         const { participantId, events, wordResponses } = get();
         const payload = {
-            type: 'session-data',
+            type: 'session-data' as const,
             data: {
                 participantId,
                 events,
@@ -130,6 +131,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
                 })),
             }
         };
+        console.log('Attempting to save session data:', payload); // デバッグ用ログ
         try {
             const response = await fetch('/api/save-data', {
                 method: 'POST',
