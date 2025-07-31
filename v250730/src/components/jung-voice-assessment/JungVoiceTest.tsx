@@ -90,6 +90,7 @@ const SessionScreen = React.memo<{
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const stimulusAudioRef = useRef<HTMLAudioElement | null>(null);
+    const advanceOnSpeechTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (stream && videoPreviewRef.current) {
@@ -124,6 +125,9 @@ const SessionScreen = React.memo<{
 
             // Start listening for a response
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let audioContext: AudioContext | null = null;
+            let animationFrameId: number;
+
             if (SpeechRecognition) {
                 const recognition = new SpeechRecognition();
                 recognition.lang = 'ja-JP';
@@ -169,6 +173,49 @@ const SessionScreen = React.memo<{
                 */
                 
                 recognition.start();
+
+                if (stream) {
+                    audioContext = new AudioContext();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const analyser = audioContext.createAnalyser();
+                    const dataArray = new Uint8Array(analyser.fftSize);
+                    source.connect(analyser);
+
+                    let speechHasBeenDetected = false;
+
+                    const checkSpeaking = () => {
+                        if (speechHasBeenDetected) return;
+
+                        analyser.getByteTimeDomainData(dataArray);
+                        let sum = 0;
+                        for (let i = 0; i < dataArray.length; i++) {
+                            const val = (dataArray[i] - 128) / 128;
+                            sum += val * val;
+                        }
+                        const volume = Math.sqrt(sum / dataArray.length);
+
+                        if (volume > 0.05) {
+                            speechHasBeenDetected = true;
+                            console.log("👄 発話あり");
+                            
+                            if (advanceOnSpeechTimerRef.current) {
+                                clearTimeout(advanceOnSpeechTimerRef.current);
+                            }
+
+                            advanceOnSpeechTimerRef.current = setTimeout(() => {
+                                console.log("2秒経過。認識を停止して次の単語へ。");
+                                if (recognitionRef.current) {
+                                    recognitionRef.current.stop();
+                                }
+                            }, 2000);
+                        }
+
+                        if (!speechHasBeenDetected) {
+                            animationFrameId = requestAnimationFrame(checkSpeaking);
+                        }
+                    };
+                    checkSpeaking();
+                }
             }
 
             return () => {
@@ -182,9 +229,18 @@ const SessionScreen = React.memo<{
                 if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
                     mediaRecorderRef.current.stop();
                 }
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                if (audioContext && audioContext.state === 'running') {
+                    audioContext.close();
+                }
+                if (advanceOnSpeechTimerRef.current) {
+                    clearTimeout(advanceOnSpeechTimerRef.current);
+                }
             };
         }
-    }, [currentWordIndex, stimulusWords, onResponse, stream]);
+    }, [currentWordIndex, stimulusWords, onResponse, stream, isListening]);
   
   if (currentWordIndex >= stimulusWords.length) {
     return <div>次の単語を読み込み中...</div>;
