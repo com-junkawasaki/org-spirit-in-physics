@@ -1,0 +1,30 @@
+[
+  {
+    "timestamp": "2025-07-31T00:22:06.155Z",
+    "event": "session_start",
+    "details": {
+      "session": 1
+    }
+  }
+]mestamp": "2025-07-31T00:19:22.096Z",
+    "event": "preflight_devices_acquired",
+    "details": {}
+  },
+  {
+    "timestamp": "2025-07-31T00:19:24.128Z",
+    "event": "preflight_devices_acquired",
+    "details": {}
+  },
+  {
+    "timestamp": "2025-07-31T00:20:59.592Z",
+    "event": "preflight_devices_acquired",
+    "details": {}
+  },
+  {
+    "timestamp": "2025-07-31T00:22:06.153Z",
+    "event": "recording_started",
+    "details": {
+      "session": 1
+    }
+  }
+]

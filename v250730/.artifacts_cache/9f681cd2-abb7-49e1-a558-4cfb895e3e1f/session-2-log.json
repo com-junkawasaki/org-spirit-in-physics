@@ -385,5 +385,108 @@
     "details": {
       "word": "裕福な"
     }
+  },
+  {
+    "timestamp": "2025-07-31T00:08:51.211Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "裕福な"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:08:51.215Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "憎しみ"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:08:51.217Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "憎しみ"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:08:57.221Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "憎しみ"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:08:57.228Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "死ぬ"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:08:57.230Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "死ぬ"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:03.237Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "死ぬ"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:03.244Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "親愛な"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:03.249Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "親愛な"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:09.257Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "親愛な"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:09.263Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "誇り"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:09.265Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "誇り"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:15.271Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "誇り"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:15.275Z",
+    "event": "session_complete",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-31T00:09:21.113Z",
+    "event": "test_reset",
+    "details": {}
   }
 ]

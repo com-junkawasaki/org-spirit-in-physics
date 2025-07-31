@@ -11,7 +11,13 @@
       { "_id": "npm_package:dotenv-cli", "label": "dependency", "name": "dotenv-cli", "type": "npm" },
       { "_id": "directory:audio_output", "label": "directory", "path": "public/audio/jung-voice-assessment", "status": "pending_creation" },
       { "_id": "user_request:translate_words_240731_1", "label": "user_request", "query": "これを日本語訳にして", "status": "completed" },
-      { "_id": "task:translate_stimulus_words_240731_1", "label": "task", "name": "Translate stimulus words in `constants.ts` to Japanese", "status": "completed" }
+      { "_id": "task:translate_stimulus_words_240731_1", "label": "task", "name": "Translate stimulus words in `constants.ts` to Japanese", "status": "completed" },
+      { "_id": "user_request:hiraganize_words_240731_2", "label": "user_request", "query": "この単語を全てひらがなにしてください", "status": "completed" },
+      { "_id": "task:hiraganize_stimulus_words_240731_2", "label": "task", "name": "Convert Japanese stimulus words to hiragana in `constants.ts`", "status": "completed" },
+      { "_id": "user_request:refactor_words_array_240731_3", "label": "user_request", "query": "このベースの日本語漢字、発音、英語のペアの連想配列を正しく整え直して", "status": "completed" },
+      { "_id": "task:refactor_stimulus_words_240731_3", "label": "task", "name": "Refactor stimulus words to a single source of truth in `constants.ts`", "status": "completed" },
+      { "_id": "user_request:update_words_array_240731_4", "label": "user_request", "query": "この単語で配列をアップデート", "status": "completed" },
+      { "_id": "task:update_stimulus_words_240731_4", "label": "task", "name": "Update stimulus words in `constants.ts` with new list", "status": "completed" }
     ],
     "edges": [
       { "_outV": "task:generate_audio_script_240730_1", "_inV": "file:generate-audio.ts", "label": "results_in" },
@@ -23,13 +29,19 @@
       { "_outV": "file:generate-audio.ts", "_inV": "npm_package:dotenv-cli", "label": "uses" },
       { "_outV": "file:generate-audio.ts", "_inV": "file:.envrc", "label": "reads" },
       { "_outV": "user_request:translate_words_240731_1", "_inV": "task:translate_stimulus_words_240731_1", "label": "initiated" },
-      { "_outV": "task:translate_stimulus_words_240731_1", "_inV": "file:constants.ts", "label": "modified" }
+      { "_outV": "task:translate_stimulus_words_240731_1", "_inV": "file:constants.ts", "label": "modified" },
+      { "_outV": "user_request:hiraganize_words_240731_2", "_inV": "task:hiraganize_stimulus_words_240731_2", "label": "initiated" },
+      { "_outV": "task:hiraganize_stimulus_words_240731_2", "_inV": "file:constants.ts", "label": "modified" },
+      { "_outV": "user_request:refactor_words_array_240731_3", "_inV": "task:refactor_stimulus_words_240731_3", "label": "initiated" },
+      { "_outV": "task:refactor_stimulus_words_240731_3", "_inV": "file:constants.ts", "label": "modified" },
+      { "_outV": "user_request:update_words_array_240731_4", "_inV": "task:update_stimulus_words_240731_4", "label": "initiated" },
+      { "_outV": "task:update_stimulus_words_240731_4", "_inV": "file:constants.ts", "label": "modified" }
     ]
   },
   "metadata": {
     "createdBy": "gemini-2.5-pro",
     "createdAt": "2024-07-30T12:00:00Z",
-    "updatedAt": "2024-07-31T12:00:00Z"
+    "updatedAt": "2024-07-31T15:00:00Z"
   },
   "traversals": [
     {
