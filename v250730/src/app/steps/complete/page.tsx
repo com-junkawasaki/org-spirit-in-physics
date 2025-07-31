@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useKawasakiStore } from '@/store/kawasakiStore';
+import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
 import Link from 'next/link';
 
 export default function CompletionPage() {

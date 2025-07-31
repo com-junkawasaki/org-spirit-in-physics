@@ -19,10 +19,20 @@ const ExperimentSessionSchema = z.object({
   endTime: z.string().datetime(),
 });
 
+const WordResponseSchema = z.object({
+  stimulusWord: z.object({
+    word: z.string(),
+    key: z.string(),
+  }),
+  responseWord: z.string(),
+  reactionTimeMs: z.number(),
+  isDelayed: z.boolean().optional(),
+});
+
 const SessionDataSchema = z.object({
     participantId: z.string().uuid(),
     events: z.array(z.any()),
-    wordResponses: z.array(z.any()),
+    wordResponses: z.array(WordResponseSchema),
 });
 
 export const WordStimulusSchema = z.object({
