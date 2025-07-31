@@ -61,6 +61,7 @@ export interface KawasakiStoreActions {
   completeSession: () => void;
   advanceToNextWord: () => void;
   recordWordResponse: (response: { responseWord: string; reactionTimeMs: number; audioBlob: Blob }) => void;
+  saveSessionData: () => Promise<void>;
   resetTest: () => void;
   setMediaStatus: (status: MediaStatus) => void;
   setDeviceStatus: (status: 'idle' | 'pending' | 'success' | 'error') => void;

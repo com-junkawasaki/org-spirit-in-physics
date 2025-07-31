@@ -75,11 +75,15 @@ export const useKawasakiStore = create<KawasakiStore>()(
             set({ testStatus: 'completed' });
             get().logEvent('session_2_completed');
             get().logEvent('test_completed');
+            // Save all data at the very end
+            get().saveSessionData();
         }
     },
     
     advanceToNextWord: () => {
-        const { currentWordIndex, stimulusWords, completeSession } = get();
+        const { currentWordIndex, stimulusWords, completeSession, testStatus } = get();
+        if (testStatus === 'completed') return;
+
         if (currentWordIndex + 1 >= stimulusWords.length) {
             completeSession();
         } else {
@@ -113,17 +117,70 @@ export const useKawasakiStore = create<KawasakiStore>()(
         advanceToNextWord();
     },
 
+    saveSessionData: async () => {
+        const { participantId, events, wordResponses } = get();
+        const payload = {
+            type: 'session-data',
+            data: {
+                participantId,
+                events,
+                wordResponses: wordResponses.map(r => ({
+                    ...r,
+                    audioBlob: undefined, // remove blob before serialization
+                })),
+            }
+        };
+        try {
+            const response = await fetch('/api/save-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to save session data');
+            }
+            get().logEvent('session_data_saved');
+        } catch (error) {
+            console.error('Error in saveSessionData:', error);
+            get().setError('セッションデータの保存に失敗しました。');
+        }
+    },
+
     resetTest: () => {
         set(initialState);
         get().logEvent('test_reset');
     },
 
-    saveSessionVideo: (session, blob) => {
-        // This is a placeholder for saving video.
-        // In a real app, you'd upload this to a server.
-        const url = URL.createObjectURL(blob);
-        set({ sessionVideoUrl: url });
-        get().logEvent(`session_${session}_video_saved`, { url });
+    saveSessionVideo: async (session, blob) => {
+        const { participantId, logEvent, setError } = get();
+        if (!participantId) {
+            setError('Participant ID is not set, cannot save video.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', blob, `session-${session}.webm`);
+        formData.append('sessionId', participantId);
+        formData.append('fileName', `session-${session}-video.webm`);
+
+        try {
+            const response = await fetch('/api/save-artifact', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to save session video: ${errorText}`);
+            }
+            const url = `/artifacts_cache/${participantId}/session-${session}-video.webm`;
+            set({ sessionVideoUrl: url });
+            logEvent(`session_${session}_video_saved`, { url });
+
+        } catch (error) {
+            console.error(error);
+            setError('動画の保存に失敗しました。');
+        }
     },
   }))
 );

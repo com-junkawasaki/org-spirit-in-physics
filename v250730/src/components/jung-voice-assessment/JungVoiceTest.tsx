@@ -270,6 +270,7 @@ export default function JungVoiceTest({
   } = useKawasakiStore();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const videoChunksRef = useRef<Blob[]>([]);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const wordDisplayedTimeRef = useRef<number | null>(null);
@@ -326,17 +327,17 @@ export default function JungVoiceTest({
       return;
     }
   
-    const videoChunks: Blob[] = [];
+    videoChunksRef.current = [];
     try {
       const recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
       mediaRecorderRef.current = recorder;
   
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) videoChunks.push(event.data);
+        if (event.data.size > 0) videoChunksRef.current.push(event.data);
       };
   
       recorder.onstop = () => {
-        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+        const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
         saveSessionVideo(session, videoBlob);
         logEvent('recording_stopped_and_saved', { session });
         mediaRecorderRef.current = null;

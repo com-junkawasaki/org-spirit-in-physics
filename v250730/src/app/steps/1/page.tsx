@@ -21,20 +21,17 @@ export default function ConsentPage() {
 
   const handleConsent = async (participantId: string, signature: string, agreements: any) => {
     try {
-      const consentData = {
-        type: 'consent' as const,
-        participantId,
-        signature,
-        agreements,
-        agreedAt: new Date().toISOString(),
-      };
-
       const response = await fetch('/api/save-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'consent',
-          data: consentData,
+          data: {
+            participantId,
+            signature,
+            agreements,
+            agreedAt: new Date().toISOString(),
+          }
         }),
       });
 

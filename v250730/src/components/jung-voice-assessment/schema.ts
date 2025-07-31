@@ -11,15 +11,19 @@ export const ParticipantSchema = z.object({
 });
 export type Participant = z.infer<typeof ParticipantSchema>;
 
-export const ExperimentSessionSchema = z.object({
-  id: z.string().uuid(),
+const ExperimentSessionSchema = z.object({
   participantId: z.string().uuid(),
-  sessionNumber: z.union([z.literal(1), z.literal(2)]),
-  experimentDate: z.date(),
-  envTemperature: z.number().optional(),
-  envHumidity: z.number().optional(),
+  sessionId: z.string().uuid(),
+  sessionType: z.enum(['session-1', 'session-2']),
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
 });
-export type ExperimentSession = z.infer<typeof ExperimentSessionSchema>;
+
+const SessionDataSchema = z.object({
+    participantId: z.string().uuid(),
+    events: z.array(z.any()),
+    wordResponses: z.array(z.any()),
+});
 
 export const WordStimulusSchema = z.object({
   id: z.number().int(),
@@ -27,8 +31,8 @@ export const WordStimulusSchema = z.object({
 });
 export type WordStimulus = z.infer<typeof WordStimulusSchema>;
 
-export const ResponseDataSchema = z.object({
-  id: z.string().uuid(),
+const ResponseDataSchema = z.object({
+  participantId: z.string().uuid(),
   experimentId: z.string().uuid(),
   wordStimulusId: z.number().int(),
   stimulusWord: z.string(),
@@ -45,19 +49,50 @@ export const ResponseDataSchema = z.object({
 export type ResponseData = z.infer<typeof ResponseDataSchema>;
 
 export const ConsentDataSchema = z.object({
-    type: z.literal('consent'),
     participantId: z.string().uuid(),
-    signature: z.string(),
+    signature: z.string().min(1, { message: "Signature cannot be empty" }),
+    agreements: z.object({
+        understand: z.literal(true),
+        voluntary: z.literal(true),
+        withdraw: z.literal(true),
+        recording: z.literal(true),
+    }),
     agreedAt: z.string().datetime(),
 });
 export type ConsentData = z.infer<typeof ConsentDataSchema>;
 
 // --- API Payloads ---
 
-export const SaveStructuredDataPayloadSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("consent"), data: ConsentDataSchema }),
-  z.object({ type: z.literal("participant"), data: ParticipantSchema }),
-  z.object({ type: z.literal("experimentSession"), data: ExperimentSessionSchema }),
-  z.object({ type: z.literal("responseData"), data: ResponseDataSchema }),
+const ConsentPayloadSchema = z.object({
+    type: z.literal('consent'),
+    data: ConsentDataSchema,
+});
+
+const ParticipantPayloadSchema = z.object({
+    type: z.literal('participant'),
+    data: ParticipantSchema,
+});
+
+const ExperimentSessionPayloadSchema = z.object({
+    type: z.literal('experimentSession'),
+    data: ExperimentSessionSchema,
+});
+
+const SessionDataPayloadSchema = z.object({
+    type: z.literal('session-data'),
+    data: SessionDataSchema,
+});
+
+const ResponseDataPayloadSchema = z.object({
+    type: z.literal('responseData'),
+    data: ResponseDataSchema,
+});
+
+export const SaveStructuredDataPayloadSchema = z.discriminatedUnion('type', [
+  ConsentPayloadSchema,
+  ParticipantPayloadSchema,
+  ExperimentSessionPayloadSchema,
+  ResponseDataPayloadSchema,
+  SessionDataPayloadSchema,
 ]);
 export type SaveStructuredDataPayload = z.infer<typeof SaveStructuredDataPayloadSchema>;

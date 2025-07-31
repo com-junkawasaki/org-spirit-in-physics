@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
         // Validate the payload
         const validationResult = SaveStructuredDataPayloadSchema.safeParse(body);
         if (!validationResult.success) {
+            console.error('Payload validation failed:', validationResult.error.format());
             return new NextResponse(JSON.stringify({ error: 'Invalid payload', details: validationResult.error.format() }), { status: 400 });
         }
         
@@ -44,6 +45,17 @@ export async function POST(request: NextRequest) {
             const consentFilePath = path.join(sessionDir, 'consent.json');
             await fs.writeFile(consentFilePath, JSON.stringify(dataToSave.data, null, 2));
             return new NextResponse(JSON.stringify({ message: 'Consent data saved successfully' }), { status: 200 });
+        }
+        if (dataToSave.type === 'session-data') {
+            const { participantId, ...rest } = dataToSave.data;
+            if (!participantId) {
+                return new NextResponse(JSON.stringify({ error: 'Participant ID is required for session data' }), { status: 400 });
+            }
+            const sessionDir = path.join(ARTIFACTS_DIR, participantId);
+            await ensureDirExists(sessionDir);
+            const sessionFilePath = path.join(sessionDir, 'session_data.json');
+            await fs.writeFile(sessionFilePath, JSON.stringify({ participantId, ...rest }, null, 2));
+            return new NextResponse(JSON.stringify({ message: 'Session data saved successfully' }), { status: 200 });
         }
         // --- End of new logic ---
 
