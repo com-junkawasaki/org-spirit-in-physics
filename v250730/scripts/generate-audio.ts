@@ -65,8 +65,9 @@ async function main() {
   await textToSpeech(openai, JUNG_TEST_WELCOME_MESSAGE.trim(), 'welcome_message');
 
   // 各単語の音声を生成
-  for (const word of Object.values(JUNG_STIMULUS_WORDS)) {
-    await textToSpeech(openai, word.japanese, word.pronunciation);
+  for (const key of Object.keys(JUNG_STIMULUS_WORDS)) {
+    const word = JUNG_STIMULUS_WORDS[key as unknown as keyof typeof JUNG_STIMULUS_WORDS];
+    await textToSpeech(openai, word.pronunciation, key);
     // APIのリクエスト制限を避けるために短い待機時間を設ける
     await new Promise(resolve => setTimeout(resolve, 200));
   }
