@@ -1,0 +1,310 @@
+{
+  "assessmentId": "f58fb900-6ea4-4e89-a463-068a833ba7ea",
+  "userId": "user-placeholder",
+  "timestamp": "2025-07-31T01:35:16.624Z",
+  "session": 1,
+  "responses": [],
+  "fullLog": [
+    {
+      "timestamp": "2025-07-31T01:33:21.871Z",
+      "event": "session_start",
+      "details": {
+        "session": 1
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:33:21.882Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:33:21.883Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:33:37.912Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:33:37.914Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:33:57.706Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:33:57.728Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:33:59.187Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:33:59.189Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:05.196Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "大きい"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:05.216Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "女"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:05.219Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "女"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:11.206Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "女"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:11.208Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "女"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:17.316Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "女"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:17.318Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "女"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:23.326Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "女"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:23.335Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "針"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:23.338Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "針"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:29.343Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "針"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:29.352Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "蛙"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:29.357Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "蛙"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:35.367Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "蛙"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:35.379Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "泳ぐ"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:35.385Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "泳ぐ"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:40.487Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "泳ぐ"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:40.489Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "泳ぐ"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:46.495Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "泳ぐ"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:46.507Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "鳥"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:46.511Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "鳥"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:52.521Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "鳥"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:52.533Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "ドア"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:52.537Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "ドア"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:58.542Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "ドア"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:58.553Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "黄色"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:34:58.557Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "黄色"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:35:04.566Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "黄色"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:35:04.578Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "間違い"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:35:04.582Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "間違い"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:35:10.590Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "間違い"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:35:10.604Z",
+      "event": "word_displayed",
+      "details": {
+        "word": "刺す"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:35:10.609Z",
+      "event": "response_window_opened",
+      "details": {
+        "word": "刺す"
+      }
+    },
+    {
+      "timestamp": "2025-07-31T01:35:16.617Z",
+      "event": "response_window_closed",
+      "details": {
+        "word": "刺す"
+      }
+    }
+  ]
+}

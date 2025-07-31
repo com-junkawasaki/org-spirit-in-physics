@@ -257,5 +257,234 @@
     "details": {
       "reason": "No media stream available."
     }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:35.694Z",
+    "event": "session_start",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:35.703Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "女"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:35.705Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "女"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:41.708Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "女"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:41.720Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "落ちる"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:41.725Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "落ちる"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:47.729Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "落ちる"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:47.739Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "刺す"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:47.743Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "刺す"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:53.748Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "刺す"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:53.759Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "眠る"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:53.764Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "眠る"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:59.769Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "眠る"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:59.777Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "高価な"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:31:59.781Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "高価な"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:05.785Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "高価な"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:05.796Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "家族"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:05.801Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "家族"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:11.807Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "家族"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:11.818Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "村"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:11.824Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "村"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:17.829Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "村"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:17.840Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "亡くなる"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:17.845Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "亡くなる"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:23.851Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "亡くなる"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:23.861Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "頭"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:23.866Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "頭"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:29.871Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "頭"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:29.885Z",
+    "event": "word_displayed",
+    "details": {
+      "word": "争う"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:29.890Z",
+    "event": "response_window_opened",
+    "details": {
+      "word": "争う"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:35.894Z",
+    "event": "response_window_closed",
+    "details": {
+      "word": "争う"
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:32:35.899Z",
+    "event": "session_complete",
+    "details": {
+      "session": 2
+    }
+  },
+  {
+    "timestamp": "2025-07-31T01:33:13.728Z",
+    "event": "test_reset",
+    "details": {}
   }
 ]
