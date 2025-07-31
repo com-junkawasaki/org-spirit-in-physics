@@ -3,10 +3,9 @@
 import React, { useEffect, useRef, useCallback, MutableRefObject, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { useKawasakiStore } from '@/store/kawasakiStore';
+import { useKawasakiStore, JungVoiceTestProps, Word } from './store';
 import AudioVisualizer from './AudioVisualizer';
 import { JUNG_TEST_WELCOME_MESSAGE } from './constants';
-import type { JungVoiceTestProps } from './types';
 
 // --- Memoized, Dumb Sub-components ---
 
@@ -82,7 +81,7 @@ const SessionScreen = React.memo<{
   stream: MediaStream | null;
   currentSession: 1 | 2;
   currentWordIndex: number;
-  stimulusWords: import('./types').Word[];
+  stimulusWords: Word[];
   onResponse: (response: string, audioBlob: Blob) => void;
 }>(({ videoPreviewRef, stream, currentSession, currentWordIndex, stimulusWords, onResponse }) => {
     const [recognizedText, setRecognizedText] = useState('');

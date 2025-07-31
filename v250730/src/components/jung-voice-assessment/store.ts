@@ -1,8 +1,78 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
-import type { Word, KawasakiStore, KawasakiStoreState, WordResponse } from '@/components/jung-voice-assessment/types';
-import { JUNG_STIMULUS_WORDS } from '@/components/jung-voice-assessment/constants';
+import { JUNG_STIMULUS_WORDS } from './constants';
+
+// --- Type Definitions (from types.ts) ---
+
+export type Word = {
+  word: string;
+  key: string;
+};
+
+export type WordResponse = {
+  stimulusWord: Word;
+  responseWord: string;
+  reactionTimeMs: number;
+  audioBlob?: Blob;
+  isDelayed?: boolean;
+};
+
+export interface TestResult {
+  totalWords: number;
+  averageReactionTimeMs: number;
+  responses: WordResponse[];
+  completedAt?: Date;
+}
+
+export interface JungVoiceTestProps {
+    numberOfWords?: number;
+    stimulusWords?: Word[];
+    onTestComplete?: (results: TestResult) => void;
+    voiceName?: string;
+    speechRecognitionLang?: string;
+    className?: string;
+    onComplete?: () => void;
+}
+
+export type MediaStatus = 'idle' | 'recording_session' | 'recording_response' | 'processing';
+
+export interface KawasakiStoreState {
+  testStatus: 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
+  deviceStatus: 'idle' | 'pending' | 'success' | 'error';
+  stream: MediaStream | null;
+  error: string | null;
+  stimulusWords: Word[];
+  currentSession: 1 | 2;
+  currentWordIndex: number;
+  wordResponses: WordResponse[];
+  mediaStatus: MediaStatus;
+  events: { timestamp: number; type: string; payload?: object }[];
+  sessionVideoUrl: string | null;
+  participantId: string | null;
+}
+
+export interface KawasakiStoreActions {
+  startSession: (numberOfWords: number) => void;
+  completeSession: () => void;
+  advanceToNextWord: () => void;
+  recordWordResponse: (response: { responseWord: string; reactionTimeMs: number; audioBlob: Blob }) => void;
+  saveSessionData: () => Promise<void>;
+  resetTest: () => void;
+  setMediaStatus: (status: MediaStatus) => void;
+  setDeviceStatus: (status: 'idle' | 'pending' | 'success' | 'error') => void;
+  setStream: (stream: MediaStream | null) => void;
+  setError: (error: string | null) => void;
+  logEvent: (type: string, payload?: object) => void;
+  startPreflight: () => void;
+  saveSessionVideo: (session: 1 | 2, blob: Blob) => void;
+  initializeParticipant: () => void;
+}
+
+export type KawasakiStore = KawasakiStoreState & KawasakiStoreActions;
+
+
+// --- Zustand Store Implementation (from kawasakiStore.ts) ---
 
 const JUNG_WORDS: Word[] = Object.entries(JUNG_STIMULUS_WORDS).map(
   ([key, value]) => ({
@@ -54,7 +124,6 @@ export const useKawasakiStore = create<KawasakiStore>()(
 
     startSession: (numberOfWords) => {
         const sessionNumber = get().currentSession === 1 ? 1 : 2;
-        // JUNG_WORDSを直接変更しないように、コピーを作成してからシャッフルする
         const shuffledWords = [...JUNG_WORDS].sort(() => 0.5 - Math.random()).slice(0, numberOfWords);
 
         set(state => {
@@ -68,7 +137,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
 
     completeSession: () => {
         const { logEvent, currentSession } = get();
-        console.log(`completeSession called for session: ${currentSession}`); // デバッグ用ログ
+        console.log(`completeSession called for session: ${currentSession}`);
         if (currentSession === 1) {
             set({ testStatus: 'session-1-complete', currentWordIndex: -1, currentSession: 2 });
             logEvent('session_1_completed');
@@ -76,7 +145,6 @@ export const useKawasakiStore = create<KawasakiStore>()(
             set({ testStatus: 'completed' });
             get().logEvent('session_2_completed');
             get().logEvent('test_completed');
-            // Save all data at the very end
             get().saveSessionData();
         }
     },
@@ -127,19 +195,22 @@ export const useKawasakiStore = create<KawasakiStore>()(
                 events,
                 wordResponses: wordResponses.map(r => ({
                     ...r,
-                    audioBlob: undefined, // remove blob before serialization
+                    audioBlob: undefined,
                 })),
             }
         };
-        console.log('Attempting to save session data:', payload); // デバッグ用ログ
+        console.log('Attempting to save session data:', payload);
         try {
             const response = await fetch('/api/save-data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
+            const responseData = await response.json().catch(() => response.text());
+            console.log('Server response from /api/save-data:', { status: response.status, body: responseData });
+
             if (!response.ok) {
-                throw new Error('Failed to save session data');
+                throw new Error(`Failed to save session data. Status: ${response.status}. Details: ${JSON.stringify(responseData)}`);
             }
             get().logEvent('session_data_saved');
         } catch (error) {
@@ -164,6 +235,8 @@ export const useKawasakiStore = create<KawasakiStore>()(
         formData.append('file', blob, `session-${session}.webm`);
         formData.append('sessionId', participantId);
         formData.append('fileName', `session-${session}-video.webm`);
+        
+        console.log(`Attempting to save session video for session ${session}`);
 
         try {
             const response = await fetch('/api/save-artifact', {
@@ -171,9 +244,11 @@ export const useKawasakiStore = create<KawasakiStore>()(
                 body: formData,
             });
 
+            const responseText = await response.text();
+            console.log(`Server response from /api/save-artifact for session ${session}:`, { status: response.status, body: responseText });
+
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to save session video: ${errorText}`);
+                throw new Error(`Failed to save session video: ${responseText}`);
             }
             const url = `/artifacts_cache/${participantId}/session-${session}-video.webm`;
             set({ sessionVideoUrl: url });
@@ -185,4 +260,4 @@ export const useKawasakiStore = create<KawasakiStore>()(
         }
     },
   }))
-);
+); 

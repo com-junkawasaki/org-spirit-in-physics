@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import ConsentForm from '@/app/ConsentForm';
-import { useKawasakiStore } from '@/store/kawasakiStore';
+import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
 import { useRouter } from 'next/navigation';
 
 export default function ConsentPage() {
