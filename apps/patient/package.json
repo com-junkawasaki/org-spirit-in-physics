@@ -24,7 +24,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.1",
-    "duckdb": "^1.4.0",
     "hume": "^0.12.1",
     "inngest": "^3.19.16",
     "katex": "^0.16.22",
