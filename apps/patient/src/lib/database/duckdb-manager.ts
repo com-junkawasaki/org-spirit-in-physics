@@ -1,7 +1,19 @@
 // Merkle DAG: 分析データベースマネージャー
 // DuckDBを使用した高速分析クエリのためのマネージャー
 
-import * as duckdb from 'duckdb';
+// サーバーサイドでのみDuckDBをインポート
+let duckdb: any;
+let duckdbLoaded = false;
+
+if (typeof window === 'undefined') {
+  try {
+    duckdb = require('duckdb');
+    duckdbLoaded = true;
+  } catch (error) {
+    console.warn('DuckDB not available:', error);
+  }
+}
+
 import { join } from 'path';
 
 export interface AnalyticalParticipant {
@@ -38,17 +50,23 @@ export interface AnalyticalEmotionData {
 }
 
 export class DuckDBManager {
-  private db: duckdb.Database;
+  private db: any;
   private dbPath: string;
 
   constructor(dbPath?: string) {
     this.dbPath = dbPath || join(process.cwd(), 'analytics.duckdb');
 
+    if (!duckdbLoaded || !duckdb) {
+      console.warn('DuckDB not available, using fallback mode');
+      this.db = null;
+      return;
+    }
+
     try {
       this.db = new duckdb.Database(this.dbPath);
     } catch (error) {
       console.error('Failed to create DuckDB database:', error);
-      throw error;
+      this.db = null;
     }
   }
 
@@ -57,6 +75,11 @@ export class DuckDBManager {
    * 分析用テーブルとインデックスの作成
    */
   async initialize(): Promise<void> {
+    if (!this.db) {
+      console.warn('DuckDB not available, skipping initialization');
+      return;
+    }
+
     const queries = [
       // 参加者分析テーブル
       `
@@ -402,6 +425,11 @@ export class DuckDBManager {
    * 汎用クエリ実行メソッド
    */
   private async executeQuery(query: string, params: any[] = []): Promise<any[]> {
+    if (!this.db) {
+      console.warn('DuckDB not available, returning empty result');
+      return [];
+    }
+
     return new Promise((resolve, reject) => {
       this.db.all(query, params, (err: any, rows: any[]) => {
         if (err) {
@@ -417,6 +445,11 @@ export class DuckDBManager {
    * データベース接続のクローズ
    */
   async close(): Promise<void> {
+    if (!this.db) {
+      console.warn('DuckDB not available, skipping close');
+      return;
+    }
+
     return new Promise((resolve, reject) => {
       this.db.close((err: any) => {
         if (err) reject(err);
