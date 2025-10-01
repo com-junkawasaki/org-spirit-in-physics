@@ -6,3 +6,4 @@ export * from './route-supervisors';
 export * from './workflow-supervisors';
 export * from './workflows/video-analysis';
 export * from './workflows/batch-analysis';
+export * from './workflows/analytical-data-sync';

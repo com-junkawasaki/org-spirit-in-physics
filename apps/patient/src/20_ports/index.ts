@@ -7,3 +7,4 @@ export * from './emotion-analysis';
 export * from './media';
 export * from './event-bus';
 export * from './external-api';
+export * from './analytical-data';
