@@ -10,6 +10,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  css: {
+    postcss: './postcss.config.js',
+  },
   server: {
     port: 5174, // patientアプリ(25250)と被らないように5174に設定
     host: true,
