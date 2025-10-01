@@ -2,7 +2,6 @@
   "name": "@gftdcojp/spirit-in-physics-admin",
   "version": "0.0.1",
   "description": "Spirit in Physics Admin Dashboard",
-  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
