@@ -3,7 +3,8 @@ import {
   analyzeVideoEmotions,
   analyzeAllParticipantVideos,
   loadEmotionAnalysisResults,
-  generateEmotionStatistics
+  generateEmotionStatistics,
+  getEmotionStatisticsFromKuzu
 } from "@/lib/emotion-analysis";
 import { WorkflowService } from "@/lib/workflow-service";
 
