@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import OpenAI from 'openai';
-import { JUNG_STIMULUS_WORDS, JUNG_TEST_WELCOME_MESSAGE } from '../src/components/jung-voice-assessment/constants';
+import { JUNG_STIMULUS_WORDS, JUNG_TEST_WELCOME_MESSAGE } from './src/components/jung-voice-assessment/constants';
 import 'dotenv/config';
 
 /**

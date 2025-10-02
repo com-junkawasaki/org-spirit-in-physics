@@ -2,7 +2,7 @@
 
 import { readdir, readFile, stat } from "fs/promises";
 import path from "path";
-import { blobStorage } from "../src/lib/blob";
+import { blobStorage } from "./src/lib/blob";
 
 const ARTIFACTS_DIR = path.resolve(process.cwd(), ".artifacts_cache");
 
