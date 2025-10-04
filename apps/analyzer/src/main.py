@@ -8,6 +8,7 @@ from pipeline.feature_extractor import FeatureExtractor
 from pipeline.kawasaki_model import KawasakiModel
 from pipeline.data_storer import DataStorer
 from pipeline.job_manager import JobManager, JobType, JobStatus
+from pipeline.physiological_processor import PhysiologicalProcessor
 from visualization.spirit_visualizer import SpiritVisualizer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -30,6 +31,7 @@ def main():
     logging.info("Initializing pipeline components...")
     data_loader = DataLoader(config['supabase'])
     emotion_processor = EmotionProcessor(config['hume_ai'])
+    physiological_processor = PhysiologicalProcessor()
     feature_extractor = FeatureExtractor(config['model_params'])
     kawasaki_model = KawasakiModel(config['model_params'], config['word2vec'])
     data_storer = DataStorer(config['supabase'])
@@ -55,7 +57,11 @@ def main():
             if media_files['video_path']:
                 try:
                     local_video_path = data_loader.download_media_file(media_files['video_path'])
-                    video_emotions = emotion_processor.process_media(local_video_path)
+                    # 非同期処理を使用
+                    import asyncio
+                    video_emotions = asyncio.run(emotion_processor.process_media_file(
+                        local_video_path, "video", response['participant_id']
+                    ))
                     emotion_timeseries_data.extend(video_emotions)
                     # Clean up local file
                     os.remove(local_video_path)
@@ -66,7 +72,11 @@ def main():
             elif media_files['audio_path']:
                 try:
                     local_audio_path = data_loader.download_media_file(media_files['audio_path'])
-                    audio_emotions = emotion_processor.process_media(local_audio_path)
+                    # 非同期処理を使用
+                    import asyncio
+                    audio_emotions = asyncio.run(emotion_processor.process_media_file(
+                        local_audio_path, "audio", response['participant_id']
+                    ))
                     emotion_timeseries_data.extend(audio_emotions)
                     # Clean up local file
                     os.remove(local_audio_path)
@@ -77,17 +87,26 @@ def main():
             if emotion_timeseries_data:
                 data_storer.store_emotion_data(response['id'], emotion_timeseries_data)
 
-            # d. Extract features
-            # TODO: Load skin potential data from timeseries table
-            sp_timeseries = []  # Placeholder - load from database
+            # d. Load and process physiological data
+            sp_timeseries = data_loader.load_skin_potential_data(response['id'])
+
+            # Process physiological data with our processor
+            physiological_features = physiological_processor.extract_features_for_response(
+                response, sp_timeseries
+            )
+
+            # e. Extract features combining physiological and emotion data
             features = feature_extractor.extract_features_for_response(
                 response, sp_timeseries, emotion_timeseries_data
             )
 
-            # e. Run Kawasaki Model
+            # Add physiological features to the feature set
+            features.update(physiological_features)
+
+            # f. Run Kawasaki Model
             result = kawasaki_model.calculate(features)
 
-            # f. Store results
+            # g. Store results
             data_storer.store_analysis_result(run_id, response['id'], result)
 
             logging.info(f"Successfully processed response ID: {response['id']}")

@@ -21,3 +21,5 @@ processing:
   max_concurrent_jobs: 3    # Maximum number of Hume AI jobs to run concurrently
   job_timeout_seconds: 600  # Timeout for Hume AI job completion (10 minutes)
   temp_dir: "/tmp/spirit-analysis"  # Directory for temporary file downloads
+hume_ai:
+  api_key: "YOUR_HUME_AI_API_KEY"

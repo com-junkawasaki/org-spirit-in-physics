@@ -1,36 +1,71 @@
 import asyncio
 import logging
 import os
-from typing import List, Dict, Any
-from hume import AsyncHumeClient
-from hume.expression_measurement.batch import (
-    FaceConfig,
-    ProsodyConfig,
-    LanguageConfig,
-    BurstConfig,
-    NerConfig,
-    Models,
-    Job,
-    JobState
-)
+from typing import List, Dict, Any, Optional
+from pathlib import Path
+
+# Hume AIの実APIを使用するかシミュレーターを使用するかを設定
+USE_REAL_API = False
+
+if USE_REAL_API:
+    try:
+        from hume import AsyncHumeClient
+        from hume.expression_measurement.batch import (
+            FaceConfig,
+            ProsodyConfig,
+            LanguageConfig,
+            BurstConfig,
+            NerConfig,
+            Models,
+            Job,
+            JobState
+        )
+    except ImportError:
+        logging.warning("Hume AI package not available, falling back to simulator")
+        USE_REAL_API = False
+
+if not USE_REAL_API:
+    from .hume_ai_simulator import HumeAISimulator
 
 class EmotionProcessor:
     def __init__(self, config):
-        self.api_key = config['api_key']
-        self.client = AsyncHumeClient(api_key=self.api_key)
-        logging.info("EmotionProcessor initialized with Hume AI client.")
+        self.config = config
+        self.use_real_api = USE_REAL_API
 
-    async def process_media_file(self, file_path: str, media_type: str = "video") -> List[Dict[str, Any]]:
+        if self.use_real_api:
+            self.api_key = config['api_key']
+            self.client = AsyncHumeClient(api_key=self.api_key)
+            logging.info("EmotionProcessor initialized with Hume AI client.")
+        else:
+            self.simulator = HumeAISimulator(config)
+            logging.info("EmotionProcessor initialized with Hume AI simulator.")
+
+    async def process_media_file(self, file_path: str, media_type: str = "video", participant_id: str = "unknown") -> List[Dict[str, Any]]:
         """
         Processes a video or audio file with Hume AI to get emotion time-series data.
 
         Args:
             file_path: Path to the media file
             media_type: "video" or "audio"
+            participant_id: Participant identifier
 
         Returns:
             List of emotion time-series data points
         """
+        if not self.use_real_api:
+            # シミュレーターを使用
+            logging.info(f"Using Hume AI simulator for {media_type} file {file_path}")
+
+            if media_type == "video":
+                result = self.simulator.analyze_video_emotions(file_path, participant_id)
+            else:  # audio
+                result = self.simulator.analyze_audio_emotions(file_path, participant_id)
+
+            timeseries_data = result["emotion_timeseries"]
+            logging.info(f"Successfully simulated {len(timeseries_data)} emotion data points.")
+            return timeseries_data
+
+        # 実APIを使用
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Media file not found: {file_path}")
 

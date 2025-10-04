@@ -90,3 +90,29 @@ class DataLoader:
             'video_path': video_path,
             'audio_path': audio_path
         }
+
+    def load_skin_potential_data(self, response_id: str) -> list:
+        """
+        Loads skin potential time-series data for a specific response.
+
+        Args:
+            response_id: UUID of the response
+
+        Returns:
+            List of skin potential data points with timestamp offsets
+        """
+        logging.info(f"Loading skin potential data for response: {response_id}")
+
+        try:
+            response = self.supabase.table('response_skin_potential_timeseries').select('*').eq('response_id', response_id).order('timestamp_offset_ms').execute()
+
+            if response.data:
+                logging.info(f"Loaded {len(response.data)} skin potential data points")
+                return response.data
+            else:
+                logging.info(f"No skin potential data found for response {response_id}")
+                return []
+
+        except Exception as e:
+            logging.error(f"Failed to load skin potential data for response {response_id}: {e}")
+            return []

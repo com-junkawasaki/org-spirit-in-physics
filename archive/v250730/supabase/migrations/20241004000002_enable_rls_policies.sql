@@ -16,46 +16,46 @@ CREATE POLICY "Users can insert their own participant data" ON participants
 CREATE POLICY "Users can update their own participant data" ON participants
   FOR UPDATE USING (auth.uid() = id);
 
--- Create policies for consents table
+-- Create policies for participant_consents table
 -- Users can only see and manage their own consents
-CREATE POLICY "Users can view their own consents" ON consents
+CREATE POLICY "Users can view their own consents" ON participant_consents
   FOR SELECT USING (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
     )
   );
 
-CREATE POLICY "Users can insert their own consents" ON consents
+CREATE POLICY "Users can insert their own consents" ON participant_consents
   FOR INSERT WITH CHECK (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
     )
   );
 
-CREATE POLICY "Users can update their own consents" ON consents
+CREATE POLICY "Users can update their own consents" ON participant_consents
   FOR UPDATE USING (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
     )
   );
 
--- Create policies for experiment_sessions table
+-- Create policies for participant_experiment_sessions table
 -- Users can only see and manage their own sessions
-CREATE POLICY "Users can view their own experiment sessions" ON experiment_sessions
+CREATE POLICY "Users can view their own experiment sessions" ON participant_experiment_sessions
   FOR SELECT USING (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
     )
   );
 
-CREATE POLICY "Users can insert their own experiment sessions" ON experiment_sessions
+CREATE POLICY "Users can insert their own experiment sessions" ON participant_experiment_sessions
   FOR INSERT WITH CHECK (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
     )
   );
 
-CREATE POLICY "Users can update their own experiment sessions" ON experiment_sessions
+CREATE POLICY "Users can update their own experiment sessions" ON participant_experiment_sessions
   FOR UPDATE USING (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
@@ -67,23 +67,23 @@ CREATE POLICY "Users can update their own experiment sessions" ON experiment_ses
 CREATE POLICY "Authenticated users can view word stimuli" ON word_stimuli
   FOR SELECT TO authenticated USING (true);
 
--- Create policies for response_data table
+-- Create policies for participant_response_data table
 -- Users can only see and manage their own response data
-CREATE POLICY "Users can view their own response data" ON response_data
+CREATE POLICY "Users can view their own response data" ON participant_response_data
   FOR SELECT USING (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
     )
   );
 
-CREATE POLICY "Users can insert their own response data" ON response_data
+CREATE POLICY "Users can insert their own response data" ON participant_response_data
   FOR INSERT WITH CHECK (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
     )
   );
 
-CREATE POLICY "Users can update their own response data" ON response_data
+CREATE POLICY "Users can update their own response data" ON participant_response_data
   FOR UPDATE USING (
     participant_id IN (
       SELECT id FROM participants WHERE auth.uid() = id
@@ -93,7 +93,7 @@ CREATE POLICY "Users can update their own response data" ON response_data
 -- Allow service role to bypass RLS for administrative operations
 -- This is needed for server-side operations
 ALTER TABLE participants FORCE ROW LEVEL SECURITY;
-ALTER TABLE consents FORCE ROW LEVEL SECURITY;
-ALTER TABLE experiment_sessions FORCE ROW LEVEL SECURITY;
+ALTER TABLE participant_consents FORCE ROW LEVEL SECURITY;
+ALTER TABLE participant_experiment_sessions FORCE ROW LEVEL SECURITY;
 ALTER TABLE word_stimuli FORCE ROW LEVEL SECURITY;
-ALTER TABLE response_data FORCE ROW LEVEL SECURITY;
+ALTER TABLE participant_response_data FORCE ROW LEVEL SECURITY;
