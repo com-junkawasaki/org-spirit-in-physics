@@ -24,8 +24,8 @@ if USE_REAL_API:
             QueuedState
         )
         logging.info("Using real Hume AI API")
-    except ImportError as e:
-        logging.warning(f"Hume AI package not available ({e}), falling back to simulator")
+    except (ImportError, AttributeError) as e:
+        logging.warning(f"Hume AI package import failed ({e}), falling back to simulator")
         USE_REAL_API = False
 
 if not USE_REAL_API:

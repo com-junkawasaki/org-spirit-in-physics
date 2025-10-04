@@ -1,18 +1,26 @@
 -- Enable storage and create bucket policies for spirit-in-physics bucket
+-- Note: Bucket is already created via config.toml, so we only need policies
 
--- Create the spirit-in-physics bucket if it doesn't exist
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'spirit-in-physics',
-  'spirit-in-physics',
-  false,
-  104857600, -- 100MB in bytes
-  ARRAY['audio/*', 'video/*', 'image/*', 'application/json']
-)
-ON CONFLICT (id) DO NOTHING;
+-- Enable RLS on storage.objects (only if not already enabled)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'objects'
+    AND n.nspname = 'storage'
+    AND c.relrowsecurity = true
+  ) THEN
+    EXECUTE 'ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY';
+  END IF;
+END
+$$;
 
--- Enable RLS on storage.objects
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can upload their own files" ON storage.objects;
+DROP POLICY IF EXISTS "Users can view their own files" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own files" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own files" ON storage.objects;
 
 -- Create policy for participants to upload their own files
 CREATE POLICY "Users can upload their own files" ON storage.objects
@@ -45,7 +53,3 @@ CREATE POLICY "Users can delete their own files" ON storage.objects
     bucket_id = 'spirit-in-physics'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
-
--- Allow service role to bypass RLS for administrative operations
--- This is needed for server-side operations
-ALTER TABLE storage.objects FORCE ROW LEVEL SECURITY;
