@@ -37,25 +37,53 @@ class DataImporter:
             return False
         
         try:
-            # 同意データのインポート
+            # まずparticipantsテーブルにデータを挿入
             consent_file = participant_dir / "consent.json"
             if consent_file.exists():
                 with open(consent_file, 'r', encoding='utf-8') as f:
                     consent_data = json.load(f)
-                
+
+                # participantsテーブルに基本データを挿入
+                try:
+                    participant_result = self.data_storer.supabase.table('participants').insert({
+                        "id": consent_data["participantId"],
+                        "name": consent_data.get("signature", f"Participant {participant_id[:8]}"),
+                        "age": None,  # データがないのでNULL
+                        "gender": None,  # データがないのでNULL
+                        "handedness": None  # データがないのでNULL
+                    }).execute()
+
+                    if participant_result.data:
+                        logging.info(f"Inserted participant record for {participant_id}")
+                    else:
+                        logging.error(f"Failed to insert participant {participant_id}: No data returned")
+                        return False
+                except Exception as e:
+                    if 'duplicate key value' in str(e):
+                        logging.info(f"Participant {participant_id} already exists, skipping")
+                    else:
+                        logging.error(f"Failed to insert participant {participant_id}: {e}")
+                        return False
+
                 # participant_consentsテーブルに保存
-                import_result = self.data_storer.supabase.table('participant_consents').insert({
-                    "participant_id": consent_data["participantId"],
-                    "signature": consent_data["signature"],
-                    "agreements": consent_data["agreements"],
-                    "agreed_at": consent_data["agreedAt"]
-                }).execute()
-                
-                if import_result.error:
-                    logging.error(f"Failed to import consent for {participant_id}: {import_result.error}")
-                    return False
-                
-                logging.info(f"Imported consent data for participant {participant_id}")
+                try:
+                    consent_result = self.data_storer.supabase.table('participant_consents').insert({
+                        "participant_id": consent_data["participantId"],
+                        "signature": consent_data["signature"],
+                        "agreements": consent_data["agreements"],
+                        "agreed_at": consent_data["agreedAt"]
+                    }).execute()
+
+                    if consent_result.data:
+                        logging.info(f"Imported consent data for participant {participant_id}")
+                    else:
+                        logging.warning(f"Consent data may already exist for participant {participant_id}")
+                except Exception as e:
+                    if 'duplicate key value' in str(e):
+                        logging.info(f"Consent data already exists for participant {participant_id}, continuing...")
+                    else:
+                        logging.error(f"Failed to import consent for {participant_id}: {e}")
+                        return False
             
             # セッションデータのインポート
             session_file = participant_dir / "session_data.json"
@@ -89,9 +117,11 @@ class DataImporter:
         for event in events:
             if event["type"] == "session_started":
                 session_num = event["payload"]["session"]
+                import uuid
                 experiment_sessions[session_num] = {
+                    "id": str(uuid.uuid4()),
                     "participant_id": participant_id,
-                    "session_id": f"{participant_id}-session-{session_num}",
+                    "session_id": str(uuid.uuid4()),  # セッション固有のID
                     "session_type": f"session-{session_num}",
                     "start_time": self._timestamp_to_iso(event["timestamp"])
                 }
@@ -103,23 +133,24 @@ class DataImporter:
             
             elif event["type"] == "word_response_recorded":
                 payload = event["payload"]
+                session_num = payload.get('session', 1)
+                # 対応するexperiment sessionのIDを取得
+                experiment_session_id = experiment_sessions.get(session_num, {}).get('id', str(uuid.uuid4()))
                 response_data.append({
                     "participant_id": participant_id,
-                    "experiment_id": f"{participant_id}-exp-{payload.get('session', 1)}",
+                    "experiment_id": experiment_session_id,
                     "word_stimulus_id": payload.get("wordIndex", 1) + 1,  # 0-indexed to 1-indexed
                     "stimulus_word": payload.get("stimulusWord", ""),
                     "response_word": payload.get("responseWord", ""),
                     "reaction_time_ms": payload.get("reactionTime", 0),
-                    "session": f"session-{payload.get('session', 1)}",
+                    "session": f"session-{session_num}",
                     "timestamp": self._timestamp_to_iso(event["timestamp"])
                 })
         
         # 実験セッションを保存
         for session_info in experiment_sessions.values():
             try:
-                self.data_storer.supabase.table('participant_experiment_sessions').upsert(
-                    session_info, on_conflict="participant_id,session_id"
-                ).execute()
+                self.data_storer.supabase.table('participant_experiment_sessions').insert(session_info).execute()
             except Exception as e:
                 logging.warning(f"Failed to save experiment session: {e}")
         

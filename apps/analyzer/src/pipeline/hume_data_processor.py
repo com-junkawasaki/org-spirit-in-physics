@@ -32,8 +32,13 @@ class HumeDataProcessor:
     def load_burst_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load burst prediction data from database."""
         try:
+            job_id = self._get_job_id_for_session(participant_experiment_session_id)
+            if not job_id:
+                logging.warning(f"No Hume AI job found for session {participant_experiment_session_id}")
+                return []
+
             response = self.supabase.table('participant_hume_burst_predictions').select('*').eq(
-                'job_id', self._get_job_id_for_session(participant_experiment_session_id)
+                'job_id', job_id
             ).execute()
 
             if response.data:
@@ -49,8 +54,13 @@ class HumeDataProcessor:
     def load_prosody_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load prosody prediction data from database."""
         try:
+            job_id = self._get_job_id_for_session(participant_experiment_session_id)
+            if not job_id:
+                logging.warning(f"No Hume AI job found for session {participant_experiment_session_id}")
+                return []
+
             response = self.supabase.table('participant_hume_prosody_predictions').select('*').eq(
-                'job_id', self._get_job_id_for_session(participant_experiment_session_id)
+                'job_id', job_id
             ).execute()
 
             if response.data:
@@ -66,8 +76,13 @@ class HumeDataProcessor:
     def load_language_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load language prediction data from database."""
         try:
+            job_id = self._get_job_id_for_session(participant_experiment_session_id)
+            if not job_id:
+                logging.warning(f"No Hume AI job found for session {participant_experiment_session_id}")
+                return []
+
             response = self.supabase.table('participant_hume_language_predictions').select('*').eq(
-                'job_id', self._get_job_id_for_session(participant_experiment_session_id)
+                'job_id', job_id
             ).execute()
 
             if response.data:
@@ -83,15 +98,40 @@ class HumeDataProcessor:
     def _get_job_id_for_session(self, participant_experiment_session_id: str) -> str:
         """Get the Hume AI job ID for a given experiment session."""
         try:
+            # First try direct match
             response = self.supabase.table('participant_hume_analysis_jobs').select('id').eq(
                 'participant_experiment_session_id', participant_experiment_session_id
             ).eq('status', 'completed').execute()
 
             if response.data and len(response.data) > 0:
                 return response.data[0]['id']
-            else:
-                logging.warning(f"No completed Hume AI job found for session {participant_experiment_session_id}")
-                return ""
+
+            # If no direct match, get participant_id and find any Hume job for that participant
+            session_response = self.supabase.table('participant_experiment_sessions').select('participant_id').eq(
+                'id', participant_experiment_session_id
+            ).execute()
+
+            if session_response.data and len(session_response.data) > 0:
+                participant_id = session_response.data[0]['participant_id']
+
+                # Find all experiment sessions for this participant
+                all_sessions_response = self.supabase.table('participant_experiment_sessions').select('id').eq(
+                    'participant_id', participant_id
+                ).execute()
+
+                if all_sessions_response.data:
+                    session_ids = [s['id'] for s in all_sessions_response.data]
+
+                    # Find Hume jobs for any of these sessions
+                    job_response = self.supabase.table('participant_hume_analysis_jobs').select('id').in_(
+                        'participant_experiment_session_id', session_ids
+                    ).eq('status', 'completed').execute()
+
+                    if job_response.data and len(job_response.data) > 0:
+                        return job_response.data[0]['id']
+
+            logging.warning(f"No completed Hume AI job found for session {participant_experiment_session_id}")
+            return ""
         except Exception as e:
             logging.error(f"Error getting job ID for session {participant_experiment_session_id}: {e}")
             return ""

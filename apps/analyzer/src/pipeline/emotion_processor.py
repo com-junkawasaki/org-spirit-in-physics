@@ -21,11 +21,13 @@ if USE_REAL_API:
 if not USE_REAL_API:
     from .hume_ai_simulator import HumeAISimulator
     # シミュレーター用のダミークラス
-    class Job:
+    class InferenceJob:
         pass
     class JobStatus:
         COMPLETED = "COMPLETED"
         FAILED = "FAILED"
+    class Job:
+        pass
 
 class EmotionProcessor:
     def __init__(self, config):
