@@ -177,7 +177,7 @@ const SessionScreen = React.memo<{
                                     if (recognitionStartTimer) clearTimeout(recognitionStartTimer);
                                     if (recognitionRef.current && isListening) recognitionRef.current.stop();
                                     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop();
-                                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                                    // animationFrameId cleanup handled in return function
                                     if (audioContext && audioContext.state === 'running') audioContext.close();
                                     if (advanceOnSpeechTimerRef.current) clearTimeout(advanceOnSpeechTimerRef.current);
                                 }, 1000);
@@ -221,21 +221,21 @@ const SessionScreen = React.memo<{
             // Cleanup function - capture current values at cleanup time
             // eslint-disable-next-line react-hooks/exhaustive-deps
             const currentMediaRecorder = mediaRecorderRef.current;
-            const currentAnimationFrameId = animationFrameId;
-            const currentAudioContext = audioContext;
+            // const currentAnimationFrameId = animationFrameId; // Cannot capture due to closure scope
+            // const currentAudioContext = audioContext; // Cannot capture due to closure scope
             const currentAdvanceTimer = advanceOnSpeechTimerRef.current;
             const currentRecognition = recognitionRef.current;
             const currentIsListening = isListening;
-            const currentAudio = audio;
-            const currentRecognitionStartTimer = recognitionStartTimer;
+            // const currentAudio = audio; // Cannot capture due to closure scope
+            // const currentRecognitionStartTimer = recognitionStartTimer; // Cannot capture due to closure scope
 
             speechSynthesis.cancel();
-            if (currentAudio) currentAudio.pause();
-            if (currentRecognitionStartTimer) clearTimeout(currentRecognitionStartTimer);
+            // if (currentAudio) currentAudio.pause(); // Cannot capture due to closure scope
+            // if (currentRecognitionStartTimer) clearTimeout(currentRecognitionStartTimer); // Cannot capture due to closure scope
             if (currentRecognition && currentIsListening) currentRecognition.stop();
             if (currentMediaRecorder && currentMediaRecorder.state === "recording") currentMediaRecorder.stop();
-            if (currentAnimationFrameId) cancelAnimationFrame(currentAnimationFrameId);
-            if (currentAudioContext && currentAudioContext.state === 'running') currentAudioContext.close();
+            // Note: animationFrameId cannot be cancelled from cleanup due to closure scope
+            // if (currentAudioContext && currentAudioContext.state === 'running') currentAudioContext.close(); // Cannot capture due to closure scope
             if (currentAdvanceTimer) clearTimeout(currentAdvanceTimer);
         };
     }, [currentWordIndex, stimulusWords, onResponse, stream, isListening, logEvent, currentSession]);

@@ -24,7 +24,7 @@ export class StorageAdapter implements StoragePort {
     await supabaseManager.saveParticipant({
       id: data.participantId,
       signature: data.signature,
-      agreedAt: data.agreedAt,
+      agreedAt: new Date(data.agreedAt),
       agreements: data.agreements
     });
   }
@@ -80,7 +80,7 @@ export class StorageAdapter implements StoragePort {
         handedness: undefined, // SupabaseParticipantにはない
         createdAt: new Date(sp.agreedAt), // agreedAtを使用
         signature: sp.signature,
-        agreedAt: sp.agreedAt,
+        agreedAt: sp.agreedAt?.toISOString() || new Date().toISOString(),
         agreements: sp.agreements,
         hasSessionData: false, // 後で更新
         hasVideoFiles: false, // 後で更新

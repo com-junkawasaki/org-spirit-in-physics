@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
         const participants = await storageAdapter.loadAllParticipants();
         const participantsForStats = participants.map(p => ({
           ...p,
-          agreedAt: new Date(p.agreedAt)
+          agreedAt: new Date(p.agreedAt),
+          gender: undefined // 型を合わせるためにundefinedに設定
         }));
         const participantStats = getParticipantStatistics(participantsForStats);
 
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
         });
 
       case 'sessions':
-        const allSessionData = loadAllSessionData();
+        const allSessionData = await loadAllSessionData();
         const sessions = participantId
           ? allSessionData.filter(s => s.participantId === participantId)
           : allSessionData;
@@ -115,7 +116,12 @@ export async function GET(request: NextRequest) {
         // Supabaseデータベースの初期化
         await initializeSupabaseDatabase();
         const participants_for_analytics = await storageAdapter.loadAllParticipants();
-        const stats = getParticipantStatistics(participants_for_analytics);
+        const participantsForStats2 = participants_for_analytics.map(p => ({
+          ...p,
+          agreedAt: new Date(p.agreedAt),
+          gender: undefined // 型を合わせるためにundefinedに設定
+        }));
+        const stats = getParticipantStatistics(participantsForStats2);
         const allSessions = await loadAllSessionData();
 
         // Calculate reaction time statistics

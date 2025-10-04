@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     switch (type) {
       case 'participants':
         // Supabaseから参加者データを取得
-        const { data: participants, error } = await supabase
+        const { data: participantsData, error: supabaseError } = await supabase
           .from('participants')
           .select(`
             *,
@@ -27,17 +27,17 @@ export async function GET(request: NextRequest) {
           `)
           .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching participants:', error);
+        if (supabaseError) {
+          console.error('Error fetching participants:', supabaseError);
           return NextResponse.json({
             error: "Failed to fetch participants"
           }, { status: 500 });
         }
 
-        const participantStats = getParticipantStatistics(participants || []);
+        const participantStats = getParticipantStatistics(participantsData || []);
 
         // Transform to match expected format
-        const formattedParticipants = (participants || []).map((p: any) => ({
+        const formattedParticipants = (participantsData || []).map((p: any) => ({
           id: p.id,
           age: null, // Age not available in current data
           gender: null, // Gender not available in current data
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        const { data: participant, error } = await supabase
+        const { data: participant, error: participantError } = await supabase
           .from('participants')
           .select(`
             *,
@@ -81,8 +81,8 @@ export async function GET(request: NextRequest) {
           .eq('id', participantId)
           .single();
 
-        if (error) {
-          console.error('Error fetching participant:', error);
+        if (participantError) {
+          console.error('Error fetching participant:', participantError);
           return NextResponse.json({
             error: "Participant not found"
           }, { status: 404 });
@@ -115,17 +115,17 @@ export async function GET(request: NextRequest) {
           query = query.eq('participant_id', participantId);
         }
 
-        const { data: sessions, error } = await query;
+        const { data: sessionsData, error: sessionsError } = await query;
 
-        if (error) {
-          console.error('Error fetching sessions:', error);
+        if (sessionsError) {
+          console.error('Error fetching sessions:', sessionsError);
           return NextResponse.json({
             error: "Failed to fetch sessions"
           }, { status: 500 });
         }
 
         // Transform session data to match expected format
-        const formattedSessions = (sessions || []).map((session: any) => {
+        const formattedSessions = (sessionsData || []).map((session: any) => {
           const wordResponses = parseWordResponsesFromEvents(session.events || []);
 
           // Extract session start/end times from events

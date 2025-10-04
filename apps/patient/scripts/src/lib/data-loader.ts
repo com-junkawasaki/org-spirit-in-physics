@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { supabase } from './supabase';
+import type { Participant } from './database/supabase-manager';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -103,11 +104,11 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
 
           // Supabaseにも保存
           for (const data of consentData) {
-            const { supabaseManager } = await import('./database/supabase-manager');
+            const { supabaseManager } = await import('./database/supabase-manager.ts');
             const participant: Participant = {
               id: data.participantId,
               signature: data.signature,
-              agreedAt: data.agreedAt || new Date().toISOString(),
+              agreedAt: new Date(data.agreedAt || new Date()),
               agreements: data.agreements || {}
             };
 

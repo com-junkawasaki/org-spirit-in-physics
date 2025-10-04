@@ -7,7 +7,7 @@ import { supabase, Database } from '../supabase';
 export interface Participant {
   id: string;
   signature?: string;
-  agreedAt?: string;
+  agreedAt?: Date;
   agreements?: Record<string, any>;
   name?: string;
   age?: number;

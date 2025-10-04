@@ -15,6 +15,7 @@ export interface ArtifactMetadata {
 export class BlobStorageService {
     private static instance: BlobStorageService;
     private readonly ARTIFACTS_PREFIX = "artifacts/";
+    private readonly blobStoreUrl = process.env.BLOB_STORE_URL || "https://blob.vercel-storage.com";
 
     private constructor() {}
 
@@ -152,11 +153,42 @@ export class BlobStorageService {
     }
 
     /**
+     * JSONデータをBlob Storageにアップロード
+     */
+    async uploadJson(data: any, key: string): Promise<string> {
+        const jsonString = JSON.stringify(data, null, 2);
+        const buffer = Buffer.from(jsonString, 'utf-8');
+
+        const blob = await put(key, buffer, {
+            access: "public",
+            contentType: "application/json",
+        });
+
+        return blob.url;
+    }
+
+    /**
      * 感情分析結果をBlobに保存
      */
     async saveEmotionAnalysis(participantId: string, analysisData: any): Promise<string> {
         const blobPath = `participants/${participantId}/emotion_analysis.json`;
         return await this.uploadJson(analysisData, blobPath);
+    }
+
+    /**
+     * JSONデータをBlob Storageからダウンロード
+     */
+    async downloadJson(url: string): Promise<any> {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch JSON from ${url}: ${response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error downloading JSON:', error);
+            return null;
+        }
     }
 
     /**
