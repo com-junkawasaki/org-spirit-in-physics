@@ -1,0 +1,18 @@
+# Configuration for the Spirit in Physics Analysis Pipeline
+
+supabase:
+  url: "YOUR_SUPABASE_URL"
+  service_role_key: "YOUR_SUPABASE_SERVICE_ROLE_KEY"
+
+hume_ai:
+  api_key: "YOUR_HUME_AI_API_KEY"
+
+model_params:
+  alpha: 1.0
+  gamma: 1.0
+  eta: 1.0
+  lambda: 1.0
+  epsilon: 0.001
+
+word2vec:
+  model_path: "path/to/your/word2vec.model"
