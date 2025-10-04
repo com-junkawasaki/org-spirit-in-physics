@@ -13,6 +13,9 @@ export interface Participant {
   age?: number;
   gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
   handedness?: string;
+  hasSessionData?: boolean;
+  hasVideoFiles?: boolean;
+  videoFiles?: any[];
 }
 
 export interface Session {

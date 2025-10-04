@@ -41,6 +41,8 @@ interface Participant {
   sessionCount: number;
   lastActivity: Date;
   status: string;
+  hasVideoFiles: boolean;
+  videoFiles: any[];
 }
 
 export function SessionTimeline() {

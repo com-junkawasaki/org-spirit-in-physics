@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        const savedResults = await emotionAnalysisAdapter.loadEmotionAnalysis(participantId);
+        const savedResults = await storageAdapter.loadEmotionAnalysis(participantId);
         const stats = foldEmotionStatistics(savedResults);
 
         return NextResponse.json({

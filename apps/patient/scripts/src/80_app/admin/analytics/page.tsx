@@ -74,7 +74,7 @@ interface IntegratedAnalyticsData {
     totalAnalyses: number;
     dominantEmotions: Array<{ emotion: string; count: number; percentage: number }>;
     emotionTrends: Array<{ timestamp: string; emotion: string; score: number }>;
-    emotionCorrelations: Array<{ x: number; y: number; emotion: string }>;
+    emotionCorrelations: Array<{ x: number; y: number; emotion: string; correlation: number }>;
   };
   storageStats: {
     blobUsage: number;
@@ -196,7 +196,7 @@ export default function AnalyticsDashboard() {
       percentage: (e.count / (emotionsData.data?.totalAnalyses || 1)) * 100
     })) || [],
     emotionTrends: generateEmotionTrends(emotionsData.data?.dominantEmotions || []),
-    emotionCorrelations: generateEmotionCorrelations(emotionsData.data?.dominantEmotions || [])
+    emotionCorrelations: generateEmotionCorrelations(emotionsData.data?.dominantEmotions || []) as Array<{ x: number; y: number; emotion: string; correlation: number }>
   },
         storageStats: {
           blobUsage: participantsData.total * 1024 || 0, // 仮定値

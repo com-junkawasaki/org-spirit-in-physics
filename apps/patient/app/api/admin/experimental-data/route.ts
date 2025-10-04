@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         });
 
       case 'sessions':
-        const allSessionData = loadAllSessionData();
+        const allSessionData = await loadAllSessionData();
         const sessions = participantId
           ? allSessionData.filter(s => s.participantId === participantId)
           : allSessionData;

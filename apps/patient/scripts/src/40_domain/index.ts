@@ -4,4 +4,3 @@
 
 export * from './jung-test-machine';
 export * from './emotion-analysis-machine';
-export * from './analytical-data-machine';

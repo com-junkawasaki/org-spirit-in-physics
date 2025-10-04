@@ -9,7 +9,7 @@ import { Badge } from 'scripts/src/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'scripts/src/components/ui/tabs';
 import { Progress } from 'scripts/src/components/ui/progress';
 import { AlertCircle, CheckCircle, Database, Cloud, FileText } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+// import { Alert, AlertDescription } from '@/components/ui/alert'; // 削除されたコンポーネント
 
 type ImportStatus = 'idle' | 'running' | 'completed' | 'error';
 
@@ -195,12 +195,12 @@ export default function ImportPage() {
                 <div className="space-y-2">
                   <h4 className="font-semibold">結果:</h4>
                   {participantResults.map((result, index) => (
-                    <Alert key={index} className={result.status === 'success' ? 'border-green-200' : 'border-red-200'}>
+                    <div key={index} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                       <AlertCircle className={`h-4 w-4 ${result.status === 'success' ? 'text-green-500' : 'text-red-500'}`} />
-                      <AlertDescription>
+                      <span>
                         <strong>{result.participantId}:</strong> {result.message}
-                      </AlertDescription>
-                    </Alert>
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -243,12 +243,12 @@ export default function ImportPage() {
                 <div className="space-y-2">
                   <h4 className="font-semibold">結果:</h4>
                   {sessionResults.map((result, index) => (
-                    <Alert key={index} className={result.status === 'success' ? 'border-green-200' : 'border-red-200'}>
+                    <div key={index} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                       <AlertCircle className={`h-4 w-4 ${result.status === 'success' ? 'text-green-500' : 'text-red-500'}`} />
-                      <AlertDescription>
+                      <span>
                         <strong>{result.participantId}:</strong> {result.message}
-                      </AlertDescription>
-                    </Alert>
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -291,12 +291,12 @@ export default function ImportPage() {
                 <div className="space-y-2">
                   <h4 className="font-semibold">結果:</h4>
                   {emotionResults.map((result, index) => (
-                    <Alert key={index} className={result.status === 'success' ? 'border-green-200' : 'border-red-200'}>
+                    <div key={index} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                       <AlertCircle className={`h-4 w-4 ${result.status === 'success' ? 'text-green-500' : 'text-red-500'}`} />
-                      <AlertDescription>
+                      <span>
                         <strong>{result.participantId}:</strong> {result.message}
-                      </AlertDescription>
-                    </Alert>
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}
