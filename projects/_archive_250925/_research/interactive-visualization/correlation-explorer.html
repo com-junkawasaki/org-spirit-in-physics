@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spirit in Physics - Correlation Explorer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.2em;
+        }
+
+        .controls-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .control-group select, .control-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            min-width: 150px;
+        }
+
+        .viz-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .viz-panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .viz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .viz-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .viz-subtitle {
+            color: #666;
+            font-size: 0.9em;
+            margin: 5px 0 0 0;
+        }
+
+        .heatmap-container {
+            width: 100%;
+            height: 400px;
+        }
+
+        .scatter-container {
+            width: 100%;
+            height: 400px;
+        }
+
+        .correlation-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .correlation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+
+        .correlation-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .correlation-info {
+            text-align: right;
+        }
+
+        .correlation-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .correlation-strength {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .stats-panel {
+            grid-column: span 2;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .viz-container {
+                grid-template-columns: 1fr;
+            }
+
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Correlation Explorer</h1>
+            <p>Interactive Physiological-Emotion Correlation Analysis</p>
+        </div>
+
+        <div class="controls-panel">
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="participantSelect">Participant:</label>
+                    <select id="participantSelect">
+                        <option value="all">All Participants</option>
+                        <option value="2a0d7a69-f953-4c29-87a5-8a8e4e8bd413">Participant A</option>
+                        <option value="participant_b">Participant B</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="physiologicalSelect">Physiological Signal:</label>
+                    <select id="physiologicalSelect">
+                        <option value="gsr">GSR (Skin Conductance)</option>
+                        <option value="hrv">HRV (Heart Rate Variability)</option>
+                        <option value="scl">SCL (Skin Conductance Level)</option>
+                        <option value="temp">Temperature</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="emotionSelect">Emotion Category:</label>
+                    <select id="emotionSelect">
+                        <option value="all">All Emotions</option>
+                        <option value="anger">Anger</option>
+                        <option value="joy">Joy</option>
+                        <option value="fear">Fear</option>
+                        <option value="sadness">Sadness</option>
+                        <option value="surprise">Surprise</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="correlationMethod">Correlation Method:</label>
+                    <select id="correlationMethod">
+                        <option value="pearson">Pearson (Linear)</option>
+                        <option value="spearman">Spearman (Rank)</option>
+                        <option value="both">Both</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="timeWindow">Time Window (seconds):</label>
+                    <input type="range" id="timeWindow" min="10" max="120" value="30" step="10">
+                    <span id="timeWindowValue">30s</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="viz-container">
+            <div class="viz-panel">
+                <div class="viz-header">
+                    <div>
+                        <h3 class="viz-title">Correlation Heatmap</h3>
+                        <p class="viz-subtitle">Physiological-Emotion Correlation Matrix</p>
+                    </div>
+                </div>
+                <div class="heatmap-container" id="correlationHeatmap"></div>
+            </div>
+
+            <div class="viz-panel">
+                <div class="viz-header">
+                    <div>
+                        <h3 class="viz-title">Correlation Scatter Plot</h3>
+                        <p class="viz-subtitle">Selected physiological vs emotion relationship</p>
+                    </div>
+                </div>
+                <div class="scatter-container" id="correlationScatter"></div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <h3 style="margin-bottom: 20px; color: #333;">Correlation Statistics</h3>
+            <div class="stats-grid" id="correlationStats">
+                <!-- Stats will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="viz-container">
+            <div class="viz-panel">
+                <div class="viz-header">
+                    <div>
+                        <h3 class="viz-title">Time-Series Correlation</h3>
+                        <p class="viz-subtitle">Correlation dynamics over experimental timeline</p>
+                    </div>
+                </div>
+                <div class="scatter-container" id="timeSeriesCorrelation"></div>
+            </div>
+
+            <div class="viz-panel">
+                <div class="viz-header">
+                    <div>
+                        <h3 class="viz-title">Top Correlations</h3>
+                        <p class="viz-subtitle">Strongest physiological-emotion relationships</p>
+                    </div>
+                </div>
+                <div class="correlation-details" id="topCorrelations">
+                    <!-- Correlation details will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample correlation data - in real implementation, fetch from API
+        const sampleData = {
+            correlations: {
+                'gsr': {
+                    'anger': { pearson: 0.67, spearman: 0.71, strength: 'strong', p_value: 0.001 },
+                    'joy': { pearson: 0.45, spearman: 0.42, strength: 'moderate', p_value: 0.01 },
+                    'fear': { pearson: 0.38, spearman: 0.35, strength: 'weak', p_value: 0.05 },
+                    'sadness': { pearson: -0.32, spearman: -0.35, strength: 'moderate', p_value: 0.02 },
+                    'surprise': { pearson: 0.23, spearman: 0.19, strength: 'weak', p_value: 0.15 }
+                },
+                'hrv': {
+                    'anger': { pearson: -0.41, spearman: -0.44, strength: 'moderate', p_value: 0.01 },
+                    'joy': { pearson: 0.28, spearman: 0.31, strength: 'weak', p_value: 0.08 },
+                    'fear': { pearson: -0.52, spearman: -0.48, strength: 'moderate', p_value: 0.005 },
+                    'sadness': { pearson: -0.61, spearman: -0.64, strength: 'strong', p_value: 0.001 },
+                    'surprise': { pearson: 0.19, spearman: 0.22, strength: 'weak', p_value: 0.18 }
+                },
+                'scl': {
+                    'anger': { pearson: 0.52, spearman: 0.48, strength: 'moderate', p_value: 0.005 },
+                    'joy': { pearson: 0.41, spearman: 0.44, strength: 'moderate', p_value: 0.01 },
+                    'fear': { pearson: 0.35, spearman: 0.38, strength: 'weak', p_value: 0.03 },
+                    'sadness': { pearson: -0.28, spearman: -0.31, strength: 'weak', p_value: 0.08 },
+                    'surprise': { pearson: 0.33, spearman: 0.29, strength: 'weak', p_value: 0.04 }
+                }
+            },
+
+            timeSeriesData: [
+                { time: 0, gsr_anger: 0.65, gsr_joy: 0.42, hrv_sadness: -0.61 },
+                { time: 30, gsr_anger: 0.58, gsr_joy: 0.48, hrv_sadness: -0.55 },
+                { time: 60, gsr_anger: 0.45, gsr_joy: 0.52, hrv_sadness: -0.48 },
+                { time: 90, gsr_anger: 0.52, gsr_joy: 0.45, hrv_sadness: -0.52 },
+                { time: 120, gsr_anger: 0.48, gsr_joy: 0.35, hrv_sadness: -0.58 },
+                { time: 150, gsr_anger: 0.42, gsr_joy: 0.41, hrv_sadness: -0.49 },
+                { time: 180, gsr_anger: 0.38, gsr_joy: 0.48, hrv_sadness: -0.45 }
+            ]
+        };
+
+        let currentPhysiological = 'gsr';
+        let currentEmotion = 'anger';
+        let currentMethod = 'pearson';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeControls();
+            updateVisualization();
+            updateStats();
+            updateTopCorrelations();
+        });
+
+        function initializeControls() {
+            // Time window slider
+            const timeWindowSlider = document.getElementById('timeWindow');
+            const timeWindowValue = document.getElementById('timeWindowValue');
+
+            timeWindowSlider.addEventListener('input', function(e) {
+                timeWindowValue.textContent = e.target.value + 's';
+            });
+
+            // Other controls
+            document.getElementById('physiologicalSelect').addEventListener('change', function(e) {
+                currentPhysiological = e.target.value;
+                updateVisualization();
+            });
+
+            document.getElementById('emotionSelect').addEventListener('change', function(e) {
+                currentEmotion = e.target.value;
+                updateVisualization();
+            });
+
+            document.getElementById('correlationMethod').addEventListener('change', function(e) {
+                currentMethod = e.target.value;
+                updateVisualization();
+            });
+        }
+
+        function updateVisualization() {
+            createCorrelationHeatmap();
+            createScatterPlot();
+            createTimeSeriesPlot();
+        }
+
+        function createCorrelationHeatmap() {
+            const physiologicalSignals = Object.keys(sampleData.correlations);
+            const emotions = Object.keys(sampleData.correlations.gsr);
+
+            const heatmapData = physiologicalSignals.map(phys => {
+                return emotions.map(emotion => {
+                    const corr = sampleData.correlations[phys][emotion];
+                    return currentMethod === 'both' ?
+                        (corr.pearson + corr.spearman) / 2 :
+                        corr[currentMethod];
+                });
+            });
+
+            const data = [{
+                z: heatmapData,
+                x: emotions,
+                y: physiologicalSignals.map(p => p.toUpperCase()),
+                type: 'heatmap',
+                colorscale: [
+                    [0, '#3B4CC0'],
+                    [0.25, '#7F9FF2'],
+                    [0.5, '#FFFFFF'],
+                    [0.75, '#F2A67F'],
+                    [1, '#C03B4C']
+                ],
+                showscale: true,
+                colorbar: {
+                    title: 'Correlation',
+                    titleside: 'right'
+                }
+            }];
+
+            const layout = {
+                title: 'Physiological-Emotion Correlation Heatmap',
+                xaxis: { title: 'Emotions' },
+                yaxis: { title: 'Physiological Signals' },
+                margin: { l: 100, r: 100, t: 50, b: 50 }
+            };
+
+            Plotly.newPlot('correlationHeatmap', data, layout, {responsive: true});
+        }
+
+        function createScatterPlot() {
+            // Generate sample scatter data
+            const n = 50;
+            const physData = Array.from({length: n}, () => Math.random() * 10 + 5);
+            const emotionData = physData.map(x =>
+                x * sampleData.correlations[currentPhysiological][currentEmotion].pearson +
+                (Math.random() - 0.5) * 2 + 5
+            );
+
+            const data = [{
+                x: physData,
+                y: emotionData,
+                mode: 'markers',
+                type: 'scatter',
+                name: 'Data Points',
+                marker: {
+                    color: '#007bff',
+                    size: 8,
+                    opacity: 0.6
+                }
+            }, {
+                x: physData,
+                y: physData.map(x =>
+                    x * sampleData.correlations[currentPhysiological][currentEmotion].pearson + 5
+                ),
+                mode: 'lines',
+                type: 'scatter',
+                name: 'Regression Line',
+                line: {
+                    color: '#ff6b6b',
+                    width: 3
+                }
+            }];
+
+            const correlation = sampleData.correlations[currentPhysiological][currentEmotion];
+            const layout = {
+                title: `${currentPhysiological.toUpperCase()} vs ${currentEmotion} (${currentMethod})`,
+                xaxis: { title: `${currentPhysiological.toUpperCase()} Value` },
+                yaxis: { title: `${currentEmotion} Intensity` },
+                annotations: [{
+                    x: 12,
+                    y: 12,
+                    xref: 'x',
+                    yref: 'y',
+                    text: `r = ${correlation[currentMethod].toFixed(3)}<br>p = ${correlation.p_value}`,
+                    showarrow: false,
+                    bgcolor: 'rgba(255, 255, 255, 0.8)',
+                    bordercolor: '#007bff',
+                    borderwidth: 1
+                }],
+                margin: { l: 60, r: 60, t: 50, b: 50 }
+            };
+
+            Plotly.newPlot('correlationScatter', data, layout, {responsive: true});
+        }
+
+        function createTimeSeriesPlot() {
+            const traces = Object.keys(sampleData.timeSeriesData[0])
+                .filter(key => key !== 'time')
+                .map(key => ({
+                    x: sampleData.timeSeriesData.map(d => d.time),
+                    y: sampleData.timeSeriesData.map(d => d[key]),
+                    mode: 'lines+markers',
+                    type: 'scatter',
+                    name: key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                    line: { width: 3 }
+                }));
+
+            const layout = {
+                title: 'Time-Series Correlation Dynamics',
+                xaxis: { title: 'Time (seconds)' },
+                yaxis: { title: 'Correlation Strength' },
+                margin: { l: 60, r: 60, t: 50, b: 50 }
+            };
+
+            Plotly.newPlot('timeSeriesCorrelation', traces, layout, {responsive: true});
+        }
+
+        function updateStats() {
+            const statsContainer = document.getElementById('correlationStats');
+
+            const stats = [
+                {
+                    label: 'Total Correlations Analyzed',
+                    value: Object.keys(sampleData.correlations).length * Object.keys(sampleData.correlations.gsr).length
+                },
+                {
+                    label: 'Strong Correlations (r > 0.6)',
+                    value: Object.values(sampleData.correlations).flatMap(obj =>
+                        Object.values(obj).filter(corr => corr.pearson > 0.6)
+                    ).length
+                },
+                {
+                    label: 'Average Correlation Strength',
+                    value: (Object.values(sampleData.correlations).flatMap(obj =>
+                        Object.values(obj).map(corr => corr.pearson)
+                    ).reduce((a, b) => a + b, 0) / 15).toFixed(3)
+                },
+                {
+                    label: 'Most Correlated Pair',
+                    value: 'GSR-Anger'
+                }
+            ];
+
+            statsContainer.innerHTML = stats.map(stat => `
+                <div class="stat-card">
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateTopCorrelations() {
+            const correlationsContainer = document.getElementById('topCorrelations');
+
+            const allCorrelations = Object.entries(sampleData.correlations).flatMap(([phys, emotions]) =>
+                Object.entries(emotions).map(([emotion, corr]) => ({
+                    physiological: phys,
+                    emotion: emotion,
+                    ...corr
+                }))
+            ).sort((a, b) => Math.abs(b.pearson) - Math.abs(a.pearson)).slice(0, 5);
+
+            correlationsContainer.innerHTML = allCorrelations.map(corr => `
+                <div class="correlation-item">
+                    <div>
+                        <div class="correlation-label">${corr.physiological.toUpperCase()} × ${corr.emotion}</div>
+                        <div class="correlation-strength">${corr.strength}</div>
+                    </div>
+                    <div class="correlation-info">
+                        <div class="correlation-value">${corr.pearson.toFixed(3)}</div>
+                        <div style="font-size: 0.8em; color: #666;">p = ${corr.p_value}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

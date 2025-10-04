@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spirit in Physics - Participant Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.2em;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #4facfe;
+            transition: transform 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-card h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4facfe;
+            margin: 10px 0;
+        }
+
+        .metric-subtitle {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .chart-subtitle {
+            color: #666;
+            font-size: 0.9em;
+            margin: 5px 0 0 0;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .control-group {
+            display: inline-block;
+            margin-right: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .control-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .correlation-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .correlation-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #28a745;
+        }
+
+        .correlation-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .correlation-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .timeline-container {
+            margin-top: 20px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0 15px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Spirit in Physics</h1>
+            <p>Participant Analysis Dashboard</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Key Metrics -->
+            <div class="metric-card">
+                <h3>Data Quality Score</h3>
+                <div class="metric-value" id="qualityScore">70</div>
+                <div class="metric-subtitle">Out of 100 points</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Session Duration</h3>
+                <div class="metric-value" id="sessionDuration">23.6</div>
+                <div class="metric-subtitle">Minutes</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Words Analyzed</h3>
+                <div class="metric-value" id="wordsAnalyzed">199</div>
+                <div class="metric-subtitle">Total stimuli</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Strong Correlations</h3>
+                <div class="metric-value" id="strongCorrelations">4</div>
+                <div class="metric-subtitle">r > 0.6</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Average Spirit Probability</h3>
+                <div class="metric-value" id="spiritProbability">0.73</div>
+                <div class="metric-subtitle">Model output</div>
+            </div>
+
+            <div class="metric-card">
+                <h3>Peak Correlation Time</h3>
+                <div class="metric-value" id="peakTime">0-30s</div>
+                <div class="metric-subtitle">Strongest coupling period</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="participantSelect">Participant:</label>
+                <select id="participantSelect">
+                    <option value="2a0d7a69-f953-4c29-87a5-8a8e4e8bd413">Participant A</option>
+                    <option value="participant_b">Participant B</option>
+                    <option value="participant_c">Participant C</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="correlationThreshold">Correlation Threshold:</label>
+                <select id="correlationThreshold">
+                    <option value="0.3">0.3 (Weak)</option>
+                    <option value="0.5" selected>0.5 (Moderate)</option>
+                    <option value="0.7">0.7 (Strong)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="timeWindow">Time Window:</label>
+                <select id="timeWindow">
+                    <option value="30">30 seconds</option>
+                    <option value="60">1 minute</option>
+                    <option value="120">2 minutes</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div>
+                    <h2 class="chart-title">Correlation Strength Distribution</h2>
+                    <p class="chart-subtitle">Distribution of correlation strengths across emotion types</p>
+                </div>
+            </div>
+            <canvas id="correlationChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <div>
+                    <h2 class="chart-title">Top Physiological-Emotion Correlations</h2>
+                    <p class="chart-subtitle">Strongest correlations between physiological signals and emotions</p>
+                </div>
+            </div>
+            <canvas id="topCorrelationsChart" width="400" height="200"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <div>
+                    <h2 class="chart-title">Time-Series Correlation Analysis</h2>
+                    <p class="chart-subtitle">Correlation changes over experimental timeline</p>
+                </div>
+            </div>
+            <div class="timeline-container">
+                <svg id="timelineChart" width="100%" height="300"></svg>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b6b;"></div>
+                        <span>GSR-Anger</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4ecdc4;"></div>
+                        <span>GSR-Joy</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #45b7d1;"></div>
+                        <span>GSR-Fear</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Correlation Matrix -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div>
+                    <h2 class="chart-title">Correlation Matrix</h2>
+                    <p class="chart-subtitle">Detailed correlation values for all physiological-emotion pairs</p>
+                </div>
+            </div>
+            <div class="correlation-matrix" id="correlationMatrix">
+                <!-- Correlation items will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - in a real implementation, this would come from your API
+        const sampleData = {
+            qualityScore: 70,
+            sessionDuration: 23.6,
+            wordsAnalyzed: 199,
+            strongCorrelations: 4,
+            spiritProbability: 0.73,
+            peakTime: "0-30s",
+
+            correlationDistribution: {
+                'Very Strong (>0.8)': 1,
+                'Strong (0.6-0.8)': 3,
+                'Moderate (0.4-0.6)': 18,
+                'Weak (0.2-0.4)': 28,
+                'Very Weak (<0.2)': 10
+            },
+
+            topCorrelations: [
+                { emotion: 'Anger', physiological: 'GSR', correlation: 0.67, strength: 'Strong' },
+                { emotion: 'Joy', physiological: 'GSR', correlation: 0.45, strength: 'Moderate' },
+                { emotion: 'Fear', physiological: 'GSR', correlation: 0.38, strength: 'Weak' },
+                { emotion: 'Sadness', physiological: 'HRV', correlation: -0.41, strength: 'Moderate' },
+                { emotion: 'Anxiety', physiological: 'SCL', correlation: 0.52, strength: 'Moderate' }
+            ],
+
+            timelineData: [
+                { time: 0, gsr_anger: 0.65, gsr_joy: 0.42, gsr_fear: 0.35 },
+                { time: 30, gsr_anger: 0.58, gsr_joy: 0.48, gsr_fear: 0.41 },
+                { time: 60, gsr_anger: 0.45, gsr_joy: 0.52, gsr_fear: 0.38 },
+                { time: 90, gsr_anger: 0.52, gsr_joy: 0.45, gsr_fear: 0.42 },
+                { time: 120, gsr_anger: 0.48, gsr_joy: 0.35, gsr_fear: 0.51 },
+                { time: 150, gsr_anger: 0.42, gsr_joy: 0.41, gsr_fear: 0.45 },
+                { time: 180, gsr_anger: 0.38, gsr_joy: 0.48, gsr_fear: 0.39 }
+            ]
+        };
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateMetrics();
+            createCorrelationChart();
+            createTopCorrelationsChart();
+            createTimelineChart();
+            populateCorrelationMatrix();
+            setupEventListeners();
+        });
+
+        function updateMetrics() {
+            document.getElementById('qualityScore').textContent = sampleData.qualityScore;
+            document.getElementById('sessionDuration').textContent = sampleData.sessionDuration;
+            document.getElementById('wordsAnalyzed').textContent = sampleData.wordsAnalyzed;
+            document.getElementById('strongCorrelations').textContent = sampleData.strongCorrelations;
+            document.getElementById('spiritProbability').textContent = sampleData.spiritProbability;
+            document.getElementById('peakTime').textContent = sampleData.peakTime;
+        }
+
+        function createCorrelationChart() {
+            const ctx = document.getElementById('correlationChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(sampleData.correlationDistribution),
+                    datasets: [{
+                        data: Object.values(sampleData.correlationDistribution),
+                        backgroundColor: [
+                            '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createTopCorrelationsChart() {
+            const ctx = document.getElementById('topCorrelationsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sampleData.topCorrelations.map(item => `${item.physiological}-${item.emotion}`),
+                    datasets: [{
+                        label: 'Correlation Strength',
+                        data: sampleData.topCorrelations.map(item => item.correlation),
+                        backgroundColor: sampleData.topCorrelations.map(item => {
+                            if (item.correlation > 0.6) return '#ff6b6b';
+                            if (item.correlation > 0.4) return '#4ecdc4';
+                            return '#45b7d1';
+                        }),
+                        borderWidth: 1,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 0.8
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function createTimelineChart() {
+            const svg = d3.select('#timelineChart');
+            const margin = { top: 20, right: 80, bottom: 30, left: 50 };
+            const width = svg.node().getBoundingClientRect().width - margin.left - margin.right;
+            const height = 300 - margin.top - margin.bottom;
+
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            // Scales
+            const x = d3.scaleLinear()
+                .domain([0, d3.max(sampleData.timelineData, d => d.time)])
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([0, 0.8])
+                .range([height, 0]);
+
+            // Line generators
+            const lineAnger = d3.line()
+                .x(d => x(d.time))
+                .y(d => y(d.gsr_anger))
+                .curve(d3.curveMonotoneX);
+
+            const lineJoy = d3.line()
+                .x(d => x(d.time))
+                .y(d => y(d.gsr_joy))
+                .curve(d3.curveMonotoneX);
+
+            const lineFear = d3.line()
+                .x(d => x(d.time))
+                .y(d => y(d.gsr_fear))
+                .curve(d3.curveMonotoneX);
+
+            // Add lines
+            g.append('path')
+                .datum(sampleData.timelineData)
+                .attr('fill', 'none')
+                .attr('stroke', '#ff6b6b')
+                .attr('stroke-width', 3)
+                .attr('d', lineAnger);
+
+            g.append('path')
+                .datum(sampleData.timelineData)
+                .attr('fill', 'none')
+                .attr('stroke', '#4ecdc4')
+                .attr('stroke-width', 3)
+                .attr('d', lineJoy);
+
+            g.append('path')
+                .datum(sampleData.timelineData)
+                .attr('fill', 'none')
+                .attr('stroke', '#45b7d1')
+                .attr('stroke-width', 3)
+                .attr('d', lineFear);
+
+            // Add axes
+            g.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d => `${d}s`));
+
+            g.append('g')
+                .call(d3.axisLeft(y).tickFormat(d => d.toFixed(2)));
+        }
+
+        function populateCorrelationMatrix() {
+            const matrix = document.getElementById('correlationMatrix');
+            sampleData.topCorrelations.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'correlation-item';
+
+                const strengthColor = item.correlation > 0.6 ? '#ff6b6b' :
+                                    item.correlation > 0.4 ? '#4ecdc4' : '#45b7d1';
+
+                itemDiv.innerHTML = `
+                    <div class="correlation-value" style="color: ${strengthColor}">
+                        ${item.correlation.toFixed(3)}
+                    </div>
+                    <div class="correlation-label">
+                        ${item.physiological} × ${item.emotion}
+                    </div>
+                    <div style="font-size: 0.8em; color: #666; margin-top: 5px;">
+                        ${item.strength}
+                    </div>
+                `;
+
+                matrix.appendChild(itemDiv);
+            });
+        }
+
+        function setupEventListeners() {
+            // Add interactive controls if needed
+            document.getElementById('participantSelect').addEventListener('change', function(e) {
+                // In a real implementation, fetch data for selected participant
+                console.log('Selected participant:', e.target.value);
+            });
+
+            document.getElementById('correlationThreshold').addEventListener('change', function(e) {
+                // Filter correlations based on threshold
+                console.log('Correlation threshold:', e.target.value);
+            });
+        }
+    </script>
+</body>
+</html>
