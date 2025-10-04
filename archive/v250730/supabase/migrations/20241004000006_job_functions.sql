@@ -36,12 +36,15 @@ $$;
 
 -- Function to clean up expired cache entries
 CREATE OR REPLACE FUNCTION cleanup_expired_cache()
-RETURNS INTEGER
+RETURNS BIGINT
 LANGUAGE sql
 AS $$
-  DELETE FROM analysis_cache 
-  WHERE expires_at < NOW()
-  RETURNING id;
+  WITH deleted AS (
+    DELETE FROM analysis_cache
+    WHERE expires_at < NOW()
+    RETURNING 1
+  )
+  SELECT count(*) FROM deleted;
 $$;
 
 -- Function to get job statistics for a run

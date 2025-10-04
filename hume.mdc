@@ -1,0 +1,48 @@
+---
+alwaysApply: true
+---
+
+# Hume AI Integration Status
+
+## API Configuration
+- **API Key**: `LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s`
+- **Endpoint**: Expression Measurement API (Batch processing)
+- **SDK Version**: Latest (0.12.1)
+
+## Integration Status
+✅ **Completed**:
+- Hume AI Python SDK integration in `apps/analyzer/src/pipeline/emotion_processor.py`
+- Updated to use modern async API with `AsyncHumeClient`
+- Configured `FaceConfig` and `ProsodyConfig` for video/audio emotion analysis
+- Implemented proper job lifecycle management with `InferenceJob`
+- Updated prediction parsing for nested JSON response structure
+- Enabled real API usage (`USE_REAL_API = True`)
+
+## Models Configured
+- **FaceConfig**: Facial expression analysis for video files
+- **ProsodyConfig**: Vocal emotion analysis for audio/video files
+
+## Data Flow
+1. Media files uploaded to Supabase Storage
+2. `EmotionProcessor` downloads files and submits to Hume AI
+3. Batch jobs processed asynchronously with `job.await_complete()`
+4. Emotion time-series data extracted and stored in `response_emotion_timeseries` table
+5. Results integrated into Kawasaki Model calculations
+
+## Testing Status
+- ✅ SDK imports successful
+- ⏳ Real API testing pending (requires media files)
+- ⏳ End-to-end pipeline testing pending
+
+## Next Steps
+1. Test real API calls with sample media files
+2. Validate emotion data parsing accuracy
+3. Integrate emotion features into Kawasaki Model
+4. Run full analysis pipeline with Hume AI data
+
+## Configuration File
+Located at: `apps/analyzer/config.yaml`
+```yaml
+hume_ai:
+  api_key: "LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s"
+```

@@ -10,19 +10,9 @@ USE_REAL_API = True
 if USE_REAL_API:
     try:
         from hume import AsyncHumeClient
-        from hume.expression_measurement.batch import (
-            Face,
-            Prosody,
-            Language,
-            Burst,
-            Ner,
-            Models,
-            InferenceJob,
-            CompletedState,
-            FailedState,
-            InProgressState,
-            QueuedState
-        )
+        # Use the new config objects for models
+        from hume.models.config import FaceConfig, ProsodyConfig
+        from hume.expression_measurement.batch import InferenceJob, JobStatus
         logging.info("Using real Hume AI API")
     except (ImportError, AttributeError) as e:
         logging.warning(f"Hume AI package import failed ({e}), falling back to simulator")
@@ -33,9 +23,9 @@ if not USE_REAL_API:
     # シミュレーター用のダミークラス
     class Job:
         pass
-    class JobState:
-        COMPLETED = "completed"
-        FAILED = "failed"
+    class JobStatus:
+        COMPLETED = "COMPLETED"
+        FAILED = "FAILED"
 
 class EmotionProcessor:
     def __init__(self, config):
@@ -82,20 +72,15 @@ class EmotionProcessor:
         logging.info(f"Submitting {media_type} file {file_path} to Hume AI for emotion analysis.")
 
         try:
-            # Configure models for emotion analysis
-            models = Models(
-                face=Face(),  # Facial expression analysis
-                prosody=Prosody(),  # Vocal emotion analysis
-                language=Language(),  # Language emotion analysis
-                burst=Burst(),  # Emotion bursts
-                ner=Ner()  # Named entity recognition
-            )
+            # Configure models for emotion analysis using new config objects
+            configs = [ProsodyConfig()] # Prosody is common for both
+            if media_type == "video":
+                configs.append(FaceConfig())
 
             # Start batch job
             job = await self.client.expression_measurement.batch.start_inference_job(
-                models=models,
-                urls=[],  # We'll upload file directly
-                files=[file_path]
+                files=[file_path],
+                configs=configs
             )
 
             logging.info(f"Started Hume AI job: {job.id}")
@@ -116,96 +101,59 @@ class EmotionProcessor:
             logging.error(f"Failed to process media file with Hume AI: {e}")
             raise
 
-    async def _wait_for_job_completion(self, job: Job, timeout: int = 300):
+    async def _wait_for_job_completion(self, job: InferenceJob, timeout: int = 600):
         """Wait for Hume AI job to complete."""
-        import time
+        logging.info(f"Awaiting completion for job {job.id}...")
+        await job.await_complete(timeout=timeout)
+        
+        status = await job.get_status()
+        logging.info(f"Job {job.id} finished with status: {status}")
 
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            await job.update_status()
-            if job.state == JobState.COMPLETED:
-                logging.info("Hume AI job completed successfully.")
-                return
-            elif job.state == JobState.FAILED:
-                raise Exception(f"Hume AI job failed: {job.get_details()}")
+        if status == JobStatus.FAILED:
+            error = await job.get_error()
+            raise Exception(f"Hume AI job failed: {error}")
 
-            logging.info(f"Job status: {job.state}. Waiting...")
-            await asyncio.sleep(5)
-
-        raise TimeoutError(f"Hume AI job timed out after {timeout} seconds.")
-
-    def _process_predictions(self, predictions, media_type: str) -> List[Dict[str, Any]]:
+    def _process_predictions(self, predictions: List[Any], media_type: str) -> List[Dict[str, Any]]:
         """
-        Process Hume AI predictions into time-series format.
-
-        Returns:
-            List of dicts with timestamp_offset_ms and emotion_data
+        Processes Hume AI predictions into a standardized time-series format.
         """
-        timeseries_data = []
+        processed_data = []
+        if not predictions:
+            logging.warning("No predictions returned from Hume AI.")
+            return processed_data
 
-        for prediction in predictions:
-            # Process different model predictions
-            if hasattr(prediction, 'face') and prediction.face.predictions:
-                # Facial emotion data
-                for face_pred in prediction.face.predictions:
-                    if hasattr(face_pred, 'emotions'):
-                        for emotion in face_pred.emotions:
-                            timeseries_data.append({
-                                "timestamp_offset_ms": getattr(emotion, 'frame_time', 0) * 1000,  # Convert to ms
-                                "source": f"hume_api_{media_type}_face",
-                                "emotion_data": {
-                                    "joy": getattr(emotion, 'joy', 0),
-                                    "sadness": getattr(emotion, 'sadness', 0),
-                                    "anger": getattr(emotion, 'anger', 0),
-                                    "fear": getattr(emotion, 'fear', 0),
-                                    "disgust": getattr(emotion, 'disgust', 0),
-                                    "surprise": getattr(emotion, 'surprise', 0),
-                                    # Add more emotions as available
-                                }
-                            })
+        try:
+            # We process one file at a time, so we take the first result
+            source_prediction = predictions[0]
+            results = source_prediction.get('results')
+            if not results:
+                logging.warning("No 'results' found in the prediction object.")
+                return processed_data
 
-            if hasattr(prediction, 'prosody') and prediction.prosody.predictions:
-                # Vocal emotion data
-                for prosody_pred in prediction.prosody.predictions:
-                    if hasattr(prosody_pred, 'emotions'):
-                        for emotion in prosody_pred.emotions:
-                            timeseries_data.append({
-                                "timestamp_offset_ms": getattr(emotion, 'time', 0) * 1000,  # Convert to ms
-                                "source": f"hume_api_{media_type}_prosody",
-                                "emotion_data": {
-                                    "joy": getattr(emotion, 'joy', 0),
-                                    "sadness": getattr(emotion, 'sadness', 0),
-                                    "anger": getattr(emotion, 'anger', 0),
-                                    "fear": getattr(emotion, 'fear', 0),
-                                    "disgust": getattr(emotion, 'disgust', 0),
-                                    "surprise": getattr(emotion, 'surprise', 0),
-                                }
-                            })
+            predictions_by_source = results.get('predictions', [])
+            for file_predictions in predictions_by_source:
+                # This is a list of predictions for different models (face, prosody)
+                for model_pred in file_predictions.get('models', {}).values():
+                    # model_pred is a list of predictions for a single model
+                    for pred_group in model_pred:
+                        for pred in pred_group.get('predictions', []):
+                            emotion_scores = {e['name']: e['score'] for e in pred.get('emotions', [])}
+                            if emotion_scores:
+                                processed_data.append({
+                                    "timestamp_offset_ms": int(pred.get('time', 0) * 1000),
+                                    "source": f"{media_type}_{file_predictions.get('source', 'unknown')}",
+                                    "emotion_data": emotion_scores
+                                })
+        except (KeyError, IndexError, TypeError) as e:
+            logging.error(f"Error parsing Hume AI prediction structure: {e}")
+            logging.error(f"Prediction object structure: {predictions}")
 
-            if hasattr(prediction, 'language') and prediction.language.predictions:
-                # Language emotion data
-                for lang_pred in prediction.language.predictions:
-                    if hasattr(lang_pred, 'emotions'):
-                        for emotion in lang_pred.emotions:
-                            timeseries_data.append({
-                                "timestamp_offset_ms": getattr(emotion, 'time', 0) * 1000,  # Convert to ms
-                                "source": f"hume_api_{media_type}_language",
-                                "emotion_data": {
-                                    "joy": getattr(emotion, 'joy', 0),
-                                    "sadness": getattr(emotion, 'sadness', 0),
-                                    "anger": getattr(emotion, 'anger', 0),
-                                    "fear": getattr(emotion, 'fear', 0),
-                                    "disgust": getattr(emotion, 'disgust', 0),
-                                    "surprise": getattr(emotion, 'surprise', 0),
-                                }
-                            })
 
         # Sort by timestamp
-        timeseries_data.sort(key=lambda x: x['timestamp_offset_ms'])
+        processed_data.sort(key=lambda x: x['timestamp_offset_ms'])
+        return processed_data
 
-        return timeseries_data
-
-    def process_media(self, media_path: str) -> List[Dict[str, Any]]:
+    def process_media(self, media_path: str, participant_id: str = "unknown") -> List[Dict[str, Any]]:
         """
         Synchronous wrapper for async process_media_file.
         Determines media type from file extension.
@@ -220,4 +168,4 @@ class EmotionProcessor:
             media_type = "video"  # default
 
         # Run async function
-        return asyncio.run(self.process_media_file(media_path, media_type))
+        return asyncio.run(self.process_media_file(media_path, media_type, participant_id))
