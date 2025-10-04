@@ -102,24 +102,34 @@ def main():
     if args.model_version and run_id:
         try:
             logging.info("Generating visualizations...")
-            job_manager = JobManager(config['supabase'])
 
-            # 完了したジョブの結果を取得
-            completed_jobs = []
-            for response in responses:
-                job = job_manager.get_job_status(job_id)  # 実際のジョブIDが必要
-                if job and job.status == JobStatus.COMPLETED:
-                    # 結果を取得（簡易版）
+            # Get analysis results from database
+            from supabase import create_client
+            supabase = create_client(config['supabase']['url'], config['supabase']['service_role_key'])
+            results_response = supabase.table('analysis_results').select('*').eq('run_id', run_id).execute()
+
+            if results_response.data:
+                completed_jobs = []
+                for result in results_response.data:
                     completed_jobs.append({
-                        "p_value": 0.5,  # モック値
-                        "components": {"word2vec": 0.1, "reaction_time": 0.2, "skin_potential": 0.3, "emotion": 0.4},
-                        "raw_inputs": response
+                        "p_value": result['p_value'],
+                        "components": {
+                            "word2vec": result['word2vec_component'],
+                            "reaction_time": result['reaction_time_component'],
+                            "skin_potential": result['skin_potential_component'],
+                            "emotion": result['emotion_component']
+                        },
+                        "raw_inputs": result['raw_inputs']
                     })
 
-            if completed_jobs:
-                visualizer = SpiritVisualizer()
-                visualizer.save_all_visualizations(run_id, completed_jobs)
-                logging.info(f"Visualizations generated for run {run_id}")
+                if completed_jobs:
+                    visualizer = SpiritVisualizer()
+                    visualizer.save_all_visualizations(run_id, completed_jobs)
+                    logging.info(f"Visualizations generated for run {run_id}")
+                else:
+                    logging.info("No completed analysis results found for visualization")
+            else:
+                logging.info("No analysis results found in database")
 
         except Exception as e:
             logging.error(f"Failed to generate visualizations: {e}")

@@ -67,7 +67,9 @@ class PhysiologicalProcessor:
                 "delta_sp": 0.0,
                 "max_change": 0.0,
                 "response_integral": 0.0,
-                "response_duration_ms": 0
+                "response_duration_ms": 0,
+                "data_points": 0,
+                "baseline_value": baseline
             }
         
         # 反応分析用の時間窓（0ms から 5000ms）
@@ -83,7 +85,9 @@ class PhysiologicalProcessor:
                 "delta_sp": 0.0,
                 "max_change": 0.0,
                 "response_integral": 0.0,
-                "response_duration_ms": 0
+                "response_duration_ms": 0,
+                "data_points": 0,
+                "baseline_value": 0.0
             }
         
         # ベースラインからの最大変化を計算

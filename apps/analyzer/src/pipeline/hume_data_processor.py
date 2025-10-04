@@ -98,12 +98,17 @@ class HumeDataProcessor:
     def _get_job_id_for_session(self, participant_experiment_session_id: str) -> str:
         """Get the Hume AI job ID for a given experiment session."""
         try:
+            logging.info(f"DEBUG: Looking for Hume AI job for session {participant_experiment_session_id}")
+
             # First try direct match
-            response = self.supabase.table('participant_hume_analysis_jobs').select('id').eq(
+            response = self.supabase.table('participant_hume_analysis_jobs').select('id, participant_experiment_session_id, status').eq(
                 'participant_experiment_session_id', participant_experiment_session_id
             ).eq('status', 'completed').execute()
 
+            logging.info(f"DEBUG: Direct match query returned: {response.data}")
+
             if response.data and len(response.data) > 0:
+                logging.info(f"DEBUG: Found direct match job: {response.data[0]['id']}")
                 return response.data[0]['id']
 
             # If no direct match, get participant_id and find any Hume job for that participant
@@ -111,24 +116,30 @@ class HumeDataProcessor:
                 'id', participant_experiment_session_id
             ).execute()
 
+            logging.info(f"DEBUG: Session lookup returned: {session_response.data}")
+
             if session_response.data and len(session_response.data) > 0:
                 participant_id = session_response.data[0]['participant_id']
+                logging.info(f"DEBUG: Found participant_id: {participant_id}")
 
-                # Find all experiment sessions for this participant
-                all_sessions_response = self.supabase.table('participant_experiment_sessions').select('id').eq(
-                    'participant_id', participant_id
-                ).execute()
+                # Find all Hume jobs (regardless of status) for debugging
+                all_jobs_response = self.supabase.table('participant_hume_analysis_jobs').select('*').execute()
+                logging.info(f"DEBUG: All Hume jobs in database: {all_jobs_response.data}")
 
-                if all_sessions_response.data:
-                    session_ids = [s['id'] for s in all_sessions_response.data]
+                # Find Hume jobs for any session of this participant
+                job_response = self.supabase.table('participant_hume_analysis_jobs').select('*').execute()
+                logging.info(f"DEBUG: All jobs before filtering: {job_response.data}")
 
-                    # Find Hume jobs for any of these sessions
-                    job_response = self.supabase.table('participant_hume_analysis_jobs').select('id').in_(
-                        'participant_experiment_session_id', session_ids
-                    ).eq('status', 'completed').execute()
+                # Filter manually since in_ might not work as expected
+                matching_jobs = [job for job in job_response.data if job['participant_experiment_session_id'] in [
+                    s['id'] for s in self.supabase.table('participant_experiment_sessions').select('id').eq('participant_id', participant_id).execute().data
+                ] and job['status'] == 'completed']
 
-                    if job_response.data and len(job_response.data) > 0:
-                        return job_response.data[0]['id']
+                logging.info(f"DEBUG: Matching jobs for participant {participant_id}: {matching_jobs}")
+
+                if matching_jobs:
+                    logging.info(f"DEBUG: Returning job: {matching_jobs[0]['id']}")
+                    return matching_jobs[0]['id']
 
             logging.warning(f"No completed Hume AI job found for session {participant_experiment_session_id}")
             return ""
@@ -155,8 +166,27 @@ class HumeDataProcessor:
             all_emotions = {}
             if isinstance(emotions, dict):
                 all_emotions.update(emotions)
+            elif isinstance(emotions, str):
+                # Try to parse JSON string
+                try:
+                    import json
+                    parsed_emotions = json.loads(emotions)
+                    if isinstance(parsed_emotions, dict):
+                        all_emotions.update(parsed_emotions)
+                except:
+                    pass
+
             if isinstance(expressions, dict):
                 all_emotions.update(expressions)
+            elif isinstance(expressions, str):
+                # Try to parse JSON string
+                try:
+                    import json
+                    parsed_expressions = json.loads(expressions)
+                    if isinstance(parsed_expressions, dict):
+                        all_emotions.update(parsed_expressions)
+                except:
+                    pass
 
             if all_emotions:
                 emotion_timeseries.append({
@@ -179,7 +209,7 @@ class HumeDataProcessor:
         for record in prosody_data:
             begin_time = record.get('begin_time', 0)
             end_time = record.get('end_time', 0)
-            confidence = record.get('confidence', 0)
+            # Note: prosody table doesn't have confidence field based on schema
             emotions = record.get('emotions', {})
 
             # Use midpoint of time segment
@@ -188,13 +218,20 @@ class HumeDataProcessor:
             emotion_scores = {}
             if isinstance(emotions, dict):
                 emotion_scores = emotions
+            elif isinstance(emotions, str):
+                # Try to parse JSON string
+                try:
+                    import json
+                    emotion_scores = json.loads(emotions)
+                except:
+                    pass
 
             if emotion_scores:
                 emotion_timeseries.append({
                     "timestamp_offset_ms": int(midpoint_time * 1000),
                     "source": "hume_prosody",
                     "emotion_data": emotion_scores,
-                    "confidence": confidence,
+                    "confidence": 1.0,  # Default confidence since field doesn't exist
                     "begin_time": begin_time,
                     "end_time": end_time
                 })
@@ -220,6 +257,13 @@ class HumeDataProcessor:
             emotion_scores = {}
             if isinstance(emotions, dict):
                 emotion_scores = emotions
+            elif isinstance(emotions, str):
+                # Try to parse JSON string
+                try:
+                    import json
+                    emotion_scores = json.loads(emotions)
+                except:
+                    pass
 
             if emotion_scores:
                 emotion_timeseries.append({

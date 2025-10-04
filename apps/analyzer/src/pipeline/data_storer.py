@@ -30,23 +30,48 @@ class DataStorer:
             {
                 "response_id": response_id,
                 "timestamp_offset_ms": item['timestamp_offset_ms'],
-                "source": "hume_api_video", # example
+                "source": item.get('source', 'hume_ai'),
                 "emotion_data": item['emotion_data']
             }
             for item in emotion_timeseries
         ]
-        response = self.supabase.table('response_emotion_timeseries').insert(records).execute()
-        if response.error:
-            logging.error(f"Failed to store emotion data for response {response_id}. Error: {response.error}")
+        # Use upsert to handle duplicates
+        for record in records:
+            try:
+                response = self.supabase.table('response_emotion_timeseries').upsert(
+                    record, on_conflict="response_id,source,timestamp_offset_ms"
+                ).execute()
+                if hasattr(response, 'error') and response.error:
+                    logging.warning(f"Failed to store emotion data point for response {response_id}: {response.error}")
+                elif not response.data:
+                    logging.warning(f"No data returned when storing emotion data for response {response_id}")
+            except Exception as e:
+                logging.warning(f"Exception storing emotion data for response {response_id}: {e}")
+                # Continue with other records even if one fails
 
     def store_analysis_result(self, run_id: str, response_id: str, result: dict):
         """Stores the final result of a model calculation."""
         logging.info(f"Storing analysis result for response ID: {response_id}")
+
+        # Extract components from nested structure
+        components = result.get('components', {})
         record = {
             "run_id": run_id,
             "response_id": response_id,
-            **result
+            "p_value": result.get('p_value'),
+            "word2vec_component": components.get('word2vec'),
+            "reaction_time_component": components.get('reaction_time'),
+            "skin_potential_component": components.get('skin_potential'),
+            "emotion_component": components.get('emotion'),
+            "raw_inputs": result  # Store full result as JSONB
         }
-        response = self.supabase.table('analysis_results').insert(record).execute()
-        if response.error:
-            logging.error(f"Failed to store analysis result for response {response_id}. Error: {response.error}")
+        try:
+            response = self.supabase.table('analysis_results').insert(record).execute()
+            if hasattr(response, 'error') and response.error:
+                logging.error(f"Failed to store analysis result for response {response_id}. Error: {response.error}")
+            elif not response.data:
+                logging.warning(f"No data returned when storing analysis result for response {response_id}")
+            else:
+                logging.info(f"Successfully stored analysis result for response {response_id}")
+        except Exception as e:
+            logging.error(f"Exception storing analysis result for response {response_id}: {e}")
