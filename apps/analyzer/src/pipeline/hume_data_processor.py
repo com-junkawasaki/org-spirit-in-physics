@@ -4,16 +4,17 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import numpy as np
+from supabase import create_client, Client
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class HumeDataProcessor:
     """
-    Processes Hume AI emotion analysis data from CSV files and JSON predictions.
+    Processes Hume AI emotion analysis data from Supabase database.
     """
 
-    def __init__(self, data_dir: str = "apps/analyzer/hume_data"):
-        self.data_dir = Path(data_dir)
+    def __init__(self, supabase_config: Dict[str, str]):
+        self.supabase: Client = create_client(supabase_config['url'], supabase_config['service_role_key'])
         self.emotion_columns = [
             'Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger',
             'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness', 'Concentration',
@@ -26,158 +27,127 @@ class HumeDataProcessor:
             'Tiredness', 'Triumph'
         ]
 
-        logging.info(f"HumeDataProcessor initialized with data directory: {self.data_dir}")
+        logging.info("HumeDataProcessor initialized with Supabase client.")
 
-    def load_face_data(self, csv_path: Optional[str] = None) -> pd.DataFrame:
-        """Load facial emotion analysis data."""
-        if csv_path is None:
-            # Find the face CSV file
-            face_csv = self._find_csv_file('face.csv')
-        else:
-            face_csv = Path(csv_path)
+    def load_burst_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
+        """Load burst prediction data from database."""
+        try:
+            response = self.supabase.table('participant_hume_burst_predictions').select('*').eq(
+                'job_id', self._get_job_id_for_session(participant_experiment_session_id)
+            ).execute()
 
-        if not face_csv.exists():
-            logging.warning(f"Face data file not found: {face_csv}")
-            return pd.DataFrame()
+            if response.data:
+                logging.info(f"Loaded {len(response.data)} burst prediction records")
+                return response.data
+            else:
+                logging.warning("No burst prediction data found")
+                return []
+        except Exception as e:
+            logging.error(f"Error loading burst data: {e}")
+            return []
 
-        logging.info(f"Loading face data from: {face_csv}")
-        df = pd.read_csv(face_csv)
-        logging.info(f"Loaded {len(df)} face data rows")
-        return df
+    def load_prosody_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
+        """Load prosody prediction data from database."""
+        try:
+            response = self.supabase.table('participant_hume_prosody_predictions').select('*').eq(
+                'job_id', self._get_job_id_for_session(participant_experiment_session_id)
+            ).execute()
 
-    def load_prosody_data(self, csv_path: Optional[str] = None) -> pd.DataFrame:
-        """Load vocal emotion analysis data."""
-        if csv_path is None:
-            prosody_csv = self._find_csv_file('prosody.csv')
-        else:
-            prosody_csv = Path(csv_path)
+            if response.data:
+                logging.info(f"Loaded {len(response.data)} prosody prediction records")
+                return response.data
+            else:
+                logging.warning("No prosody prediction data found")
+                return []
+        except Exception as e:
+            logging.error(f"Error loading prosody data: {e}")
+            return []
 
-        if not prosody_csv.exists():
-            logging.warning(f"Prosody data file not found: {prosody_csv}")
-            return pd.DataFrame()
+    def load_language_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
+        """Load language prediction data from database."""
+        try:
+            response = self.supabase.table('participant_hume_language_predictions').select('*').eq(
+                'job_id', self._get_job_id_for_session(participant_experiment_session_id)
+            ).execute()
 
-        logging.info(f"Loading prosody data from: {prosody_csv}")
-        df = pd.read_csv(prosody_csv)
-        logging.info(f"Loaded {len(df)} prosody data rows")
-        return df
+            if response.data:
+                logging.info(f"Loaded {len(response.data)} language prediction records")
+                return response.data
+            else:
+                logging.warning("No language prediction data found")
+                return []
+        except Exception as e:
+            logging.error(f"Error loading language data: {e}")
+            return []
 
-    def load_language_data(self, csv_path: Optional[str] = None) -> pd.DataFrame:
-        """Load language emotion analysis data."""
-        if csv_path is None:
-            language_csv = self._find_csv_file('language.csv')
-        else:
-            language_csv = Path(csv_path)
+    def _get_job_id_for_session(self, participant_experiment_session_id: str) -> str:
+        """Get the Hume AI job ID for a given experiment session."""
+        try:
+            response = self.supabase.table('participant_hume_analysis_jobs').select('id').eq(
+                'participant_experiment_session_id', participant_experiment_session_id
+            ).eq('status', 'completed').execute()
 
-        if not language_csv.exists():
-            logging.warning(f"Language data file not found: {language_csv}")
-            return pd.DataFrame()
+            if response.data and len(response.data) > 0:
+                return response.data[0]['id']
+            else:
+                logging.warning(f"No completed Hume AI job found for session {participant_experiment_session_id}")
+                return ""
+        except Exception as e:
+            logging.error(f"Error getting job ID for session {participant_experiment_session_id}: {e}")
+            return ""
 
-        logging.info(f"Loading language data from: {language_csv}")
-        df = pd.read_csv(language_csv)
-        logging.info(f"Loaded {len(df)} language data rows")
-        return df
-
-    def load_burst_data(self, csv_path: Optional[str] = None) -> pd.DataFrame:
-        """Load emotion burst data."""
-        if csv_path is None:
-            burst_csv = self._find_csv_file('burst.csv')
-        else:
-            burst_csv = Path(csv_path)
-
-        if not burst_csv.exists():
-            logging.warning(f"Burst data file not found: {burst_csv}")
-            return pd.DataFrame()
-
-        logging.info(f"Loading burst data from: {burst_csv}")
-        df = pd.read_csv(burst_csv)
-        logging.info(f"Loaded {len(df)} burst data rows")
-        return df
-
-    def _find_csv_file(self, filename: str) -> Path:
-        """Find CSV file in the data directory structure."""
-        # Look in the registry directory first
-        registry_dirs = list(self.data_dir.glob("registry_file-*"))
-        if registry_dirs:
-            # Try the nested path structure
-            csv_file = registry_dirs[0] / "csv" / registry_dirs[0].name / filename
-            if csv_file.exists():
-                return csv_file
-
-        # Fallback to direct search in data directory
-        csv_file = self.data_dir / filename
-        if csv_file.exists():
-            return csv_file
-
-        # Try searching in the csv subdirectory
-        csv_dir = self.data_dir / "csv"
-        if csv_dir.exists():
-            registry_subdirs = list(csv_dir.glob("*"))
-            if registry_subdirs:
-                csv_file = registry_subdirs[0] / filename
-                if csv_file.exists():
-                    return csv_file
-
-        # Return the expected path even if it doesn't exist
-        if registry_dirs:
-            return registry_dirs[0] / "csv" / registry_dirs[0].name / filename
-        else:
-            return self.data_dir / filename
-
-    def extract_face_emotions(self, face_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def extract_burst_emotions(self, burst_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Extract emotion time-series data from face analysis.
-        Returns list of emotion data points with timestamps.
+        Extract emotion time-series data from burst predictions.
         """
         emotion_timeseries = []
 
-        if face_df.empty:
-            return emotion_timeseries
+        for record in burst_data:
+            begin_time = record.get('begin_time', 0)
+            end_time = record.get('end_time', 0)
+            emotions = record.get('emotions', {})
+            expressions = record.get('expressions', {})
 
-        for _, row in face_df.iterrows():
-            frame_time = row.get('Time', 0)
-            probability = row.get('Probability', 0)
+            # Calculate midpoint time
+            midpoint_time = (begin_time + end_time) / 2
 
-            # Skip low-confidence detections
-            if probability < 0.5:
-                continue
+            # Combine emotions and expressions
+            all_emotions = {}
+            if isinstance(emotions, dict):
+                all_emotions.update(emotions)
+            if isinstance(expressions, dict):
+                all_emotions.update(expressions)
 
-            emotion_scores = {}
-            for emotion in self.emotion_columns:
-                if emotion in row:
-                    emotion_scores[emotion.lower().replace(' ', '_').replace('(', '').replace(')', '')] = float(row[emotion])
-
-            if emotion_scores:
+            if all_emotions:
                 emotion_timeseries.append({
-                    "timestamp_offset_ms": int(frame_time * 1000),
-                    "source": "hume_face",
-                    "emotion_data": emotion_scores,
-                    "confidence": probability
+                    "timestamp_offset_ms": int(midpoint_time * 1000),
+                    "source": "hume_burst",
+                    "emotion_data": all_emotions,
+                    "begin_time": begin_time,
+                    "end_time": end_time
                 })
 
-        logging.info(f"Extracted {len(emotion_timeseries)} face emotion data points")
+        logging.info(f"Extracted {len(emotion_timeseries)} burst emotion data points")
         return emotion_timeseries
 
-    def extract_prosody_emotions(self, prosody_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def extract_prosody_emotions(self, prosody_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Extract emotion time-series data from prosody analysis.
         """
         emotion_timeseries = []
 
-        if prosody_df.empty:
-            return emotion_timeseries
-
-        for _, row in prosody_df.iterrows():
-            begin_time = row.get('BeginTime', 0)
-            end_time = row.get('EndTime', 0)
-            confidence = row.get('Confidence', 0)
+        for record in prosody_data:
+            begin_time = record.get('begin_time', 0)
+            end_time = record.get('end_time', 0)
+            confidence = record.get('confidence', 0)
+            emotions = record.get('emotions', {})
 
             # Use midpoint of time segment
             midpoint_time = (begin_time + end_time) / 2
 
             emotion_scores = {}
-            for emotion in self.emotion_columns:
-                if emotion in row:
-                    emotion_scores[emotion.lower().replace(' ', '_').replace('(', '').replace(')', '')] = float(row[emotion])
+            if isinstance(emotions, dict):
+                emotion_scores = emotions
 
             if emotion_scores:
                 emotion_timeseries.append({
@@ -185,7 +155,6 @@ class HumeDataProcessor:
                     "source": "hume_prosody",
                     "emotion_data": emotion_scores,
                     "confidence": confidence,
-                    "text": row.get('Text', ''),
                     "begin_time": begin_time,
                     "end_time": end_time
                 })
@@ -193,26 +162,24 @@ class HumeDataProcessor:
         logging.info(f"Extracted {len(emotion_timeseries)} prosody emotion data points")
         return emotion_timeseries
 
-    def extract_language_emotions(self, language_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def extract_language_emotions(self, language_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Extract emotion time-series data from language analysis.
         """
         emotion_timeseries = []
 
-        if language_df.empty:
-            return emotion_timeseries
+        for record in language_data:
+            begin_time = record.get('begin_time', 0)
+            end_time = record.get('end_time', 0)
+            confidence = record.get('confidence', 0)
+            emotions = record.get('emotions', {})
+            text = record.get('text', '')
 
-        for _, row in language_df.iterrows():
-            begin_time = row.get('BeginTime', 0)
-            end_time = row.get('EndTime', 0)
-            confidence = row.get('Confidence', 0)
-
-            midpoint_time = (begin_time + end_time) / 2
+            midpoint_time = (begin_time + end_time) / 2 if begin_time and end_time else 0
 
             emotion_scores = {}
-            for emotion in self.emotion_columns:
-                if emotion in row:
-                    emotion_scores[emotion.lower().replace(' ', '_').replace('(', '').replace(')', '')] = float(row[emotion])
+            if isinstance(emotions, dict):
+                emotion_scores = emotions
 
             if emotion_scores:
                 emotion_timeseries.append({
@@ -220,7 +187,7 @@ class HumeDataProcessor:
                     "source": "hume_language",
                     "emotion_data": emotion_scores,
                     "confidence": confidence,
-                    "text": row.get('Text', ''),
+                    "text": text,
                     "begin_time": begin_time,
                     "end_time": end_time
                 })
@@ -266,38 +233,37 @@ class HumeDataProcessor:
         logging.info(f"Calculated average scores for {len(averages)} emotions")
         return averages
 
-    def process_all_hume_data(self) -> Dict[str, Any]:
+    def process_hume_data_for_session(self, participant_experiment_session_id: str) -> Dict[str, Any]:
         """
-        Process all available Hume AI data and return comprehensive results.
+        Process Hume AI data for a specific participant experiment session.
         """
-        logging.info("Processing all Hume AI data...")
+        logging.info(f"Processing Hume AI data for session: {participant_experiment_session_id}")
 
-        # Load data from all sources
-        face_df = self.load_face_data()
-        prosody_df = self.load_prosody_data()
-        language_df = self.load_language_data()
-        burst_df = self.load_burst_data()
+        # Load data from all sources for this session
+        burst_data = self.load_burst_data(participant_experiment_session_id)
+        prosody_data = self.load_prosody_data(participant_experiment_session_id)
+        language_data = self.load_language_data(participant_experiment_session_id)
 
         # Extract emotion time-series
-        face_emotions = self.extract_face_emotions(face_df)
-        prosody_emotions = self.extract_prosody_emotions(prosody_df)
-        language_emotions = self.extract_language_emotions(language_df)
+        burst_emotions = self.extract_burst_emotions(burst_data)
+        prosody_emotions = self.extract_prosody_emotions(prosody_data)
+        language_emotions = self.extract_language_emotions(language_data)
 
-        # Combine all emotion data
-        combined_emotions = self.combine_emotion_data(face_emotions, prosody_emotions, language_emotions)
+        # Combine all emotion data (no face data since we don't have that in the current schema)
+        combined_emotions = self.combine_emotion_data([], burst_emotions + prosody_emotions, language_emotions)
 
         # Calculate averages
         average_emotions = self.calculate_average_emotions(combined_emotions)
 
         results = {
-            "face_data_count": len(face_emotions),
+            "burst_data_count": len(burst_emotions),
             "prosody_data_count": len(prosody_emotions),
             "language_data_count": len(language_emotions),
             "total_emotion_points": len(combined_emotions),
             "average_emotions": average_emotions,
             "emotion_timeseries": combined_emotions,
-            "burst_data_count": len(burst_df) if not burst_df.empty else 0
+            "session_id": participant_experiment_session_id
         }
 
-        logging.info(f"Processed Hume AI data: {results['total_emotion_points']} emotion data points")
+        logging.info(f"Processed Hume AI data for session {participant_experiment_session_id}: {results['total_emotion_points']} emotion data points")
         return results

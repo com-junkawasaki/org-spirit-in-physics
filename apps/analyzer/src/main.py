@@ -9,6 +9,7 @@ from pipeline.kawasaki_model import KawasakiModel
 from pipeline.data_storer import DataStorer
 from pipeline.job_manager import JobManager, JobType, JobStatus
 from pipeline.physiological_processor import PhysiologicalProcessor
+from pipeline.hume_data_processor import HumeDataProcessor
 from visualization.spirit_visualizer import SpiritVisualizer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,6 +32,7 @@ def main():
     logging.info("Initializing pipeline components...")
     data_loader = DataLoader(config['supabase'])
     emotion_processor = EmotionProcessor(config['hume_ai'])
+    hume_data_processor = HumeDataProcessor(config['supabase'])
     physiological_processor = PhysiologicalProcessor()
     feature_extractor = FeatureExtractor(config['model_params'])
     kawasaki_model = KawasakiModel(config['model_params'], config['word2vec'])
@@ -49,41 +51,23 @@ def main():
         try:
             logging.info(f"Processing response ID: {response['id']}")
 
-            # b. Get media file paths for this response
-            media_files = data_loader.get_media_files_for_response(response)
+            # b. Load Hume AI emotion data from database
+            # Find the experiment session for this response
+            experiment_session = data_loader.get_experiment_session_for_response(response['id'])
             emotion_timeseries_data = []
 
-            # Process video file if available
-            if media_files['video_path']:
+            if experiment_session:
                 try:
-                    local_video_path = data_loader.download_media_file(media_files['video_path'])
-                    # 非同期処理を使用
-                    import asyncio
-                    video_emotions = asyncio.run(emotion_processor.process_media_file(
-                        local_video_path, "video", response['participant_id']
-                    ))
-                    emotion_timeseries_data.extend(video_emotions)
-                    # Clean up local file
-                    os.remove(local_video_path)
+                    # Load Hume AI data for this experiment session
+                    hume_data = hume_data_processor.process_hume_data_for_session(experiment_session['id'])
+                    emotion_timeseries_data = hume_data.get('emotion_timeseries', [])
+                    logging.info(f"Loaded {len(emotion_timeseries_data)} Hume emotion data points for response {response['id']}")
                 except Exception as e:
-                    logging.warning(f"Failed to process video for response {response['id']}: {e}")
+                    logging.warning(f"Failed to load Hume data for response {response['id']}: {e}")
+            else:
+                logging.warning(f"No experiment session found for response {response['id']}")
 
-            # Process audio file if available (and no video was processed)
-            elif media_files['audio_path']:
-                try:
-                    local_audio_path = data_loader.download_media_file(media_files['audio_path'])
-                    # 非同期処理を使用
-                    import asyncio
-                    audio_emotions = asyncio.run(emotion_processor.process_media_file(
-                        local_audio_path, "audio", response['participant_id']
-                    ))
-                    emotion_timeseries_data.extend(audio_emotions)
-                    # Clean up local file
-                    os.remove(local_audio_path)
-                except Exception as e:
-                    logging.warning(f"Failed to process audio for response {response['id']}: {e}")
-
-            # c. Store emotion data
+            # c. Store emotion data (if we have Hume data)
             if emotion_timeseries_data:
                 data_storer.store_emotion_data(response['id'], emotion_timeseries_data)
 

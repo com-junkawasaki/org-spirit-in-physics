@@ -2,7 +2,7 @@ from supabase import create_client, Client
 import logging
 import os
 import tempfile
-from typing import Optional
+from typing import Optional, Dict, Any
 
 class DataLoader:
     def __init__(self, config):
@@ -58,6 +58,39 @@ class DataLoader:
         except Exception as e:
             logging.error(f"Failed to download file {storage_path}: {e}")
             raise
+
+    def get_experiment_session_for_response(self, response_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Gets the experiment session associated with a response.
+        This is needed to link responses to Hume AI analysis data.
+        """
+        try:
+            logging.info(f"Finding experiment session for response {response_id}")
+
+            # First get the response to find the participant_id
+            response = self.supabase.table('participant_response_data').select('participant_id').eq('id', response_id).execute()
+
+            if not response.data or len(response.data) == 0:
+                logging.warning(f"Response {response_id} not found")
+                return None
+
+            participant_id = response.data[0]['participant_id']
+
+            # Find the most recent experiment session for this participant
+            # (assuming responses are linked to the most recent session)
+            session = self.supabase.table('participant_experiment_sessions').select('*').eq(
+                'participant_id', participant_id
+            ).order('created_at', desc=True).limit(1).execute()
+
+            if session.data and len(session.data) > 0:
+                return session.data[0]
+            else:
+                logging.warning(f"No experiment session found for participant {participant_id}")
+                return None
+
+        except Exception as e:
+            logging.error(f"Error getting experiment session for response {response_id}: {e}")
+            return None
 
     def get_response_with_media(self, response_id: str) -> Optional[dict]:
         """
