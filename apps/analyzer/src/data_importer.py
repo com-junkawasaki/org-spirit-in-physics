@@ -6,6 +6,7 @@
 import os
 import json
 import logging
+import uuid
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import asyncio
@@ -96,8 +97,9 @@ class DataImporter:
                 
                 logging.info(f"Imported session data for participant {participant_id}")
             
-            # メディアファイルのアップロード
-            self._upload_media_files(participant_id, participant_dir)
+            # メディアファイルのアップロード（スキップ）
+            # self._upload_media_files(participant_id, participant_dir)
+            logging.info(f"Skipping media file upload for participant {participant_id} (動画データインポートは不要)")
             
             return True
             
@@ -174,11 +176,14 @@ class DataImporter:
                         response_data.append(test_response)
                         existing_stimuli.add(test_response["stimulus_word"])
 
-                # テスト用の感情データも生成してデータベースに保存
-                for test_response in test_responses:
-                    if test_response["stimulus_word"] not in existing_stimuli:
-                        self._generate_test_emotion_data(test_response, stimulus_word, participant_id)
-                        break  # 最初の応答のみ処理
+                # 実際の応答データを処理して感情データ生成（最初の3件のみテストのため）
+                logging.info(f"Processing {len(response_data)} actual responses for emotion data generation")
+                processed_count = 0
+                for i, actual_response in enumerate(response_data):
+                    if processed_count < 3:  # テストのため最初の3件のみ処理
+                        logging.info(f"Generating emotion data for actual response: {actual_response['id']} (response {i+1}/{len(response_data)})")
+                        self._generate_test_emotion_data(actual_response, actual_response['stimulus_word'], participant_id)
+                        processed_count += 1
         
         # 実験セッションを保存
         for session_info in experiment_sessions.values():
@@ -193,6 +198,13 @@ class DataImporter:
                 # バッチでINSERTを実行（重複はアプリケーション側で制御）
                 response = self.data_storer.supabase.table('participant_response_data').insert(response_data).execute()
                 logging.info(f"Successfully saved {len(response_data)} response records")
+
+                # 保存された応答データを取得して感情データ生成処理に渡す
+                if response.data:
+                    for saved_response in response.data[:3]:  # 最初の3件のみ処理（テストのため）
+                        logging.info(f"Generating emotion data for saved response: {saved_response['id']}")
+                        self._generate_test_emotion_data(saved_response, saved_response['stimulus_word'], participant_id)
+
             except Exception as e:
                 logging.error(f"Failed to save response data: {e}")
                 # エラーの詳細をログ出力
@@ -221,6 +233,7 @@ class DataImporter:
 
         for i, response_word in enumerate(possible_responses[:3]):  # 最大3つの応答を生成
             response = {
+                "id": str(uuid.uuid4()),  # UUIDを生成して設定
                 "participant_id": participant_id,
                 "experiment_id": experiment_session_id,
                 "word_stimulus_id": i + 1,
@@ -237,6 +250,9 @@ class DataImporter:
     def _generate_test_emotion_data(self, response_data: Dict[str, Any], stimulus_word: str, participant_id: str):
         """テスト用の感情データを生成してデータベースに保存"""
         import random
+
+        logging.info(f"Starting emotion data generation for response: {response_data['id']}")
+        logging.info(f"Stimulus word: {stimulus_word}, Participant: {participant_id}")
 
         # 刺激語に対する感情のベースラインを定義
         emotion_baselines = {
@@ -273,47 +289,23 @@ class DataImporter:
             })
 
         # 感情データをデータベースに保存
+        logging.info(f"Attempting to save {len(emotion_timeseries)} emotion data points")
         try:
             response = self.data_storer.supabase.table('response_emotion_timeseries').insert(emotion_timeseries).execute()
-            logging.info(f"Generated and saved {len(emotion_timeseries)} emotion data points for response {response_data['id']}")
+            logging.info(f"SUCCESS: Generated and saved {len(emotion_timeseries)} emotion data points for response {response_data['id']}")
         except Exception as e:
-            logging.error(f"Failed to save emotion data for response {response_data['id']}: {e}")
+            logging.error(f"FAILED: Failed to save emotion data for response {response_data['id']}: {e}")
 
     def _upload_media_files(self, participant_id: str, participant_dir: Path):
-        """メディアファイルをSupabase Storageにアップロード"""
+        """メディアファイルをSupabase Storageにアップロード（スキップ）"""
         import tempfile
-        
+
         video_files = list(participant_dir.glob("session-*-video.webm"))
-        
+
         for video_file in video_files:
             if video_file.exists():
-                # セッション番号を抽出 (session-1-video.webm -> session-1)
-                session_match = video_file.stem.split('-video')[0]  # "session-1"
-                
-                try:
-                    # 一時ディレクトリにファイルをコピー
-                    with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as temp_file:
-                        temp_path = temp_file.name
-                    
-                    # ファイルをコピー
-                    with open(video_file, 'rb') as src, open(temp_path, 'wb') as dst:
-                        dst.write(src.read())
-                    
-                    # Supabase Storageにアップロード
-                    storage_path = f"{participant_id}/{session_match}/{video_file.name}"
-                    
-                    with open(temp_path, 'rb') as f:
-                        self.data_storer.supabase.storage.from_('spirit-in-physics').upload(
-                            storage_path, f, {"content-type": "video/webm"}
-                        )
-                    
-                    # 一時ファイルを削除
-                    os.unlink(temp_path)
-                    
-                    logging.info(f"Uploaded {video_file.name} to storage")
-                    
-                except Exception as e:
-                    logging.error(f"Failed to upload {video_file.name}: {e}")
+                # 動画ファイルのアップロードをスキップ
+                logging.info(f"Skipping video file upload for {video_file.name} (動画データインポートは不要)")
     
     def _timestamp_to_iso(self, timestamp_ms: int) -> str:
         """ミリ秒タイムスタンプをISO文字列に変換"""
