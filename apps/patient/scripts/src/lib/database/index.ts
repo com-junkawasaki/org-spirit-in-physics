@@ -2,7 +2,6 @@
 // 全てのデータベースの初期化を統括
 
 import { supabaseManager } from './supabase-manager';
-import { duckDBManager } from './duckdb-manager';
 
 export class DatabaseInitializer {
   private initialized = false;
@@ -22,9 +21,6 @@ export class DatabaseInitializer {
       // Supabase初期化（メインDB）
       await supabaseManager.initialize();
 
-      // DuckDB初期化（分析データベース）
-      await duckDBManager.initialize();
-
       this.initialized = true;
       console.log('All databases initialized successfully');
 
@@ -41,10 +37,7 @@ export class DatabaseInitializer {
     try {
       console.log('Closing all databases...');
 
-      await Promise.all([
-        supabaseManager.close(),
-        duckDBManager.close(),
-      ]);
+      await supabaseManager.close();
 
       this.initialized = false;
       console.log('All databases closed successfully');

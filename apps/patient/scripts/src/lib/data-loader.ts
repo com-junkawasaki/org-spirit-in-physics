@@ -1,7 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { supabase } from './supabase';
-import type { Participant } from './database/supabase-manager';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -70,6 +69,7 @@ export interface Participant {
   id: string;
   signature: string;
   agreedAt: Date;
+  agreements: Record<string, any>;
   hasSessionData: boolean;
   hasVideoFiles: boolean;
   videoFiles: string[];
@@ -109,7 +109,10 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
               id: data.participantId,
               signature: data.signature,
               agreedAt: new Date(data.agreedAt || new Date()),
-              agreements: data.agreements || {}
+              agreements: data.agreements || {},
+              hasSessionData: false,
+              hasVideoFiles: false,
+              videoFiles: []
             };
 
             try {
@@ -160,12 +163,15 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
 
     // Supabaseにも保存
     for (const data of consentData) {
-      const { supabaseManager } = await import('./database/supabase-manager');
+      const { supabaseManager } = await import('./database/supabase-manager.ts');
       const participant: Participant = {
         id: data.participantId,
         signature: data.signature,
-        agreedAt: data.agreedAt || new Date().toISOString(),
-        agreements: data.agreements || {}
+        agreedAt: new Date(data.agreedAt || new Date()),
+        agreements: data.agreements || {},
+        hasSessionData: false,
+        hasVideoFiles: false,
+        videoFiles: []
       };
 
       try {
@@ -223,6 +229,7 @@ export function loadParticipantData(participantId: string): Participant | null {
       id: participantId,
       signature: consentData.signature,
       agreedAt: new Date(consentData.agreedAt),
+      agreements: consentData.agreements || {},
       hasSessionData,
       hasVideoFiles: videoFiles.length > 0,
       videoFiles
@@ -276,10 +283,11 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
   events.forEach(event => {
     if (event.payload?.word) {
       const word = event.payload.word;
-      if (!wordEvents[word]) {
-        wordEvents[word] = [];
+      const wordKey = String(word);
+      if (!wordEvents[wordKey]) {
+        wordEvents[wordKey] = [];
       }
-      wordEvents[word].push(event);
+      wordEvents[wordKey].push(event);
     }
   });
 
@@ -370,10 +378,11 @@ export async function loadAllSessionData(): Promise<Array<{ participantId: strin
         events: [], // participant_experiment_sessionsにはイベントデータがない
         createdAt: session.created_at,
         sessionId: session.session_id,
+        wordResponses: [], // 初期化
         sessionType: session.session_type,
         startTime: session.start_time,
         endTime: session.end_time,
-      } as SessionData
+      } as unknown as SessionData
     }));
   } catch (error) {
     console.error('Error loading all session data:', error);
