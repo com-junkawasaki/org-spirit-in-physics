@@ -75,6 +75,21 @@
         act: 'Word2Vecモデルの高度化',
         summary: 'ユング刺激語の詳細な日本語訳・発音・カテゴリ情報を活用し、感情価統合とスピリチュアル文脈を考慮した高度化されたWord2Vecモデルを開発。意味的類似性の精度を向上させ、霊性測定の定量性を強化。発音パターン分析と多言語統合により、より豊かな意味表現を実現し、川崎モデルの意味ベクトル精度を大幅に改善。',
       },
+      {
+        // Merkle DAG: 物語.ナラティブ[13]
+        act: 'KuzuからSupabaseへの完全移行',
+        summary: 'グラフデータベースKuzuからリレーショナルデータベースSupabaseへの完全移行を達成。Kuzu特有のノード・リレーション・プロパティモデルから、participants・participant_consents・participant_experiment_sessions・participant_response_data・video_files・emotion_analyses・emotionsテーブルによる正規化されたスキーマに移行。パフォーマンスとメンテナンス性の向上を実現し、Row Level Securityによるデータ保護と堅牢なトランザクション管理を確保。',
+      },
+      {
+        // Merkle DAG: 物語.ナラティブ[14]
+        act: 'データベースアーキテクチャの完全統一',
+        summary: 'SupabaseManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をPostgreSQLベースに移行。Kuzuの動的スキーマからSupabaseの静的型付きスキーマへの移行により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
+      },
+      {
+        // Merkle DAG: 物語.ナラティブ[15]
+        act: 'プロセスネットワークの最適化',
+        summary: 'SOLID原則とMerkle DAGに基づくアーキテクチャを完全実装し、依存関係の最小化と安定性を確保。Hexagonal Architecture + CQRSパターンにより、ビジネスロジックとインフラ層の分離を達成。全てのコンポーネントが疎結合となり、テスト容易性と拡張性を最大化。プロセスネットワークグラフモデルの逆トポロジカルソートによる因果追跡と、トポロジカルソートによる実行順序保証を実装。',
+      },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -106,10 +121,14 @@
           sub_processes: [
             '川崎モデルの開発',
             'Hume AI感情分析統合',
-            'Supabaseデータベースアーキテクチャ',
+            'Supabaseデータベースアーキテクチャ完全統一',
+            'KuzuからSupabaseへの完全移行',
             '耐久性のあるジョブ処理システム',
             'REST APIによる結果提供',
-            '科学的手法による霊性測定'
+            '科学的手法による霊性測定',
+            'プロセスネットワーク最適化',
+            'SOLID原則完全実装',
+            'Hexagonal Architecture + CQRSパターン'
           ],
         },
         {
@@ -117,21 +136,27 @@
           name: '技術基盤 (Technical Foundation)',
           description: '研究の信頼性と拡張性を保証する技術インフラ',
           sub_processes: [
-            'Row Level Securityによるデータ保護',
+            'Supabase Row Level Securityによるデータ保護',
+            'PostgreSQLリレーショナルデータベース完全移行',
+            '静的型付きスキーマによる開発効率向上',
             '非同期ジョブ管理と依存関係解決',
             '中間結果のキャッシュシステム',
             '自動リトライとエラーハンドリング',
             'RESTful APIによる外部連携',
-            'モニタリングとログ管理'
+            'モニタリングとログ管理',
+            'Kuzu依存関係完全除去',
+            'データベースアーキテクチャ統一',
+            'プロセスネットワークグラフモデル実装',
+            'Merkle DAGによる状態管理'
           ],
         },
       ],
     },
         metadata: {
-          version: '1.7.0',
+          version: '1.8.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: 'Word2Vec高度化完全統合版',
+          merkle_root: 'Supabase完全移行・プロセスネットワーク最適化版',
           last_updated: '2024-10-04',
           implemented_features: [
             '川崎モデルの数式実装',

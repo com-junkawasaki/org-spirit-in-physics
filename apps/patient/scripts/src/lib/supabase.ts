@@ -14,8 +14,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Server-side Supabase client (for server components and API routes)
-export function createSupabaseServerClient() {
-  const cookieStore = cookies()
+export async function createSupabaseServerClient() {
+  const cookieStore = await cookies()
 
   return createServerClient(
     supabaseUrl,
@@ -323,98 +323,6 @@ export type Database = {
           score?: number
           confidence?: number
           created_at?: string
-        }
-      }
-      video_files: {
-        Row: {
-          id: string
-          participant_id: string
-          session_id: string
-          file_name: string
-          file_path: string
-          file_size: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          participant_id: string
-          session_id: string
-          file_name: string
-          file_path: string
-          file_size: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          participant_id?: string
-          session_id?: string
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      emotion_analyses: {
-        Row: {
-          id: string
-          participant_id: string
-          video_file_id: string
-          session_type: string
-          timestamp: string
-          processing_time_ms: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          participant_id: string
-          video_file_id: string
-          session_type: string
-          timestamp: string
-          processing_time_ms: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          participant_id?: string
-          video_file_id?: string
-          session_type?: string
-          timestamp?: string
-          processing_time_ms?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      emotions: {
-        Row: {
-          id: string
-          analysis_id: string
-          name: string
-          score: number
-          confidence: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          analysis_id: string
-          name: string
-          score: number
-          confidence: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          analysis_id?: string
-          name?: string
-          score?: number
-          confidence?: number
-          created_at?: string
-        }
-      }
     }
     Views: {
       [_ in never]: never

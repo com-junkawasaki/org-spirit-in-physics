@@ -4,6 +4,18 @@ import { join } from 'path';
 
 // Supabaseを使用するため、Kuzu関連のインポートは不要
 
+// サーバーサイドでのみインポート
+let blobStorage: any = null;
+
+if (typeof window === 'undefined') {
+  try {
+    const blobModule = require('./blob-storage');
+    blobStorage = blobModule.blobStorage;
+  } catch (error) {
+    console.warn('Blob storage not available:', error);
+  }
+}
+
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
 interface EmotionAnalysisResult {
@@ -105,7 +117,7 @@ export async function analyzeVideoEmotions(
 /**
  * Hume APIの予測結果を処理して感情データを抽出
  */
-function processHumePredictions(predictions: HumeEmotionResponse): Array<{
+function processHumePredictions(predictions: any): Array<{
   name: string;
   score: number;
   confidence: number;
@@ -173,7 +185,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
     // storageAdapter経由でSupabaseから感情分析データを取得
-    const { storageAdapter } = await import('../50_adapters/storage-adapter');
+    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
     return await storageAdapter.loadEmotionAnalysis(participantId);
   } catch (error) {
     console.error(`Error loading emotion analysis results for ${participantId}:`, error);
@@ -233,7 +245,7 @@ export async function getEmotionStatisticsFromKuzu(): Promise<{
 }> {
   try {
     // Supabaseマネージャーを使用（後方互換性のため関数名は変更しない）
-    const { supabaseManager } = await import('./database/supabase-manager');
+    const { supabaseManager } = await import('./database/supabase-manager.ts');
     return await supabaseManager.getEmotionStatistics();
   } catch (error) {
     console.error('Error getting emotion statistics from Supabase:', error);
