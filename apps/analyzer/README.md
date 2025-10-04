@@ -55,10 +55,59 @@ The analysis pipeline is designed as a series of sequential steps:
     -   Fill in your Supabase project URL, service role key, and Hume AI API key.
     -   Ensure your Hume AI API key has access to Expression Measurement endpoints.
 
-3.  **Run Pipeline**:
-    ```bash
-    python src/main.py --model-version "1.0-alpha" --notes "Initial test run with default parameters."
-    ```
+## Durable Job-Based Workflow
+
+The analysis now uses a durable, job-based system that supports:
+
+- **Asynchronous Processing**: Jobs run in the background without blocking
+- **Fault Tolerance**: Failed jobs are automatically retried
+- **Progress Tracking**: Real-time monitoring of job status
+- **Dependency Management**: Jobs can depend on each other
+- **Caching**: Intermediate results are cached for durability
+
+### Quick Start
+
+1. **Create an analysis run**:
+   ```bash
+   python src/job_cli.py create-run --model-version "1.0-hume" --notes "First durable run"
+   ```
+   This returns a run ID (e.g., `abc123...`).
+
+2. **Queue jobs for processing**:
+   ```bash
+   python src/job_cli.py queue-jobs --run-id abc123...
+   ```
+   This creates jobs for emotion analysis, feature extraction, and model calculation.
+
+3. **Start the worker** (in a separate terminal):
+   ```bash
+   python src/job_cli.py start-worker
+   ```
+   The worker processes jobs asynchronously.
+
+4. **Monitor progress**:
+   ```bash
+   python src/job_cli.py status --run-id abc123...
+   ```
+
+5. **Start the API server** (optional, for external access):
+   ```bash
+   python src/api_server.py --port 8000
+   ```
+   Access results via REST API at `http://localhost:8000`.
+
+### Job Types
+
+- **EMOTION_ANALYSIS**: Processes video/audio with Hume AI
+- **FEATURE_EXTRACTION**: Extracts features from emotion data
+- **MODEL_CALCULATION**: Runs Kawasaki model and stores results
+
+### Legacy Single-Run Mode
+
+For simple cases, you can still use:
+```bash
+python src/main.py --model-version "1.0-alpha" --notes "Single run"
+```
 
 ## Hume AI Integration
 
