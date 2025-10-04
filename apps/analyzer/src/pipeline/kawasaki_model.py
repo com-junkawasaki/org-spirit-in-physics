@@ -1,8 +1,15 @@
 import numpy as np
 import logging
 import os
-from gensim.models import Word2Vec
 from typing import Dict, Any, Optional
+
+# Try to import gensim, use fallback if not available
+try:
+    from gensim.models import Word2Vec
+    GENSIM_AVAILABLE = True
+except ImportError:
+    logging.warning("Gensim not available, using fallback word vector generation")
+    GENSIM_AVAILABLE = False
 
 class KawasakiModel:
     def __init__(self, params, w2v_config):
@@ -12,16 +19,21 @@ class KawasakiModel:
         logging.info("KawasakiModel initialized.")
 
     def _load_word2vec_model(self, model_path: Optional[str]):
-        """Word2Vecモデルの読み込み"""
-        if model_path and os.path.exists(model_path):
-            try:
-                self.w2v_model = Word2Vec.load(model_path)
-                logging.info(f"Word2Vec model loaded from {model_path}")
-            except Exception as e:
-                logging.error(f"Failed to load Word2Vec model: {e}")
+            """Word2Vecモデルの読み込み"""
+            if not GENSIM_AVAILABLE:
+                logging.info("Gensim not available, using fallback word vectors")
                 self.w2v_model = None
-        else:
-            logging.warning("Word2Vec model path not provided or file not found")
+                return
+
+            if model_path and os.path.exists(model_path):
+                try:
+                    self.w2v_model = Word2Vec.load(model_path)
+                    logging.info(f"Word2Vec model loaded from {model_path}")
+                except Exception as e:
+                    logging.error(f"Failed to load Word2Vec model: {e}")
+                    self.w2v_model = None
+            else:
+                logging.warning("Word2Vec model path not provided or file not found")
 
     def get_word_vector(self, word: str) -> np.ndarray:
         """単語のベクトルを取得"""
@@ -133,24 +145,24 @@ class KawasakiModel:
         正規化項の計算（分母）
         実際のモデルでは全ての可能な応答語について計算するが、ここでは近似
         """
-        if not self.w2v_model:
+        if not self.w2v_model or not GENSIM_AVAILABLE:
             return 1.0
-        
+
         try:
             # 刺激語に最も類似した単語を取得（トップ10）
             similar_words = self.w2v_model.wv.most_similar(stimulus_word, topn=10)
-            
+
             # 各類似語について分子を計算し、総和
             total = 0.0
             for similar_word, similarity in similar_words:
                 similar_vector = self.get_word_vector(similar_word)
                 word2vec_comp = np.dot(stimulus_vector, similar_vector)
-                
+
                 # 簡易版: Word2Vec成分のみを使用
                 total += np.exp(word2vec_comp)
-            
+
             return total / len(similar_words)  # 平均
-            
+
         except KeyError:
             # 類似語が見つからない場合は1を返す
             return 1.0
@@ -171,7 +183,7 @@ class KawasakiModel:
         """
         霊性的に類似した単語を探す（感情的・生理的文脈を考慮）
         """
-        if not self.w2v_model:
+        if not self.w2v_model or not GENSIM_AVAILABLE:
             return []
         
         try:

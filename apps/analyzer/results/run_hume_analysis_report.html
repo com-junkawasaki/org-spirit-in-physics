@@ -1,0 +1,421 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Spirit in Physics - Analysis Report</title>
+            <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .section { margin: 30px 0; }
+                .metric { display: inline-block; margin: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+                .metric h3 { margin: 0; color: #333; }
+                .metric .value { font-size: 24px; font-weight: bold; color: #007acc; }
+            </style>
+        </head>
+        <body>
+            <h1>Spirit in Physics - Analysis Report</h1>
+            <p><strong>Run ID:</strong> hume_analysis</p>
+            <p><strong>Generated:</strong> 2025-10-04 20:20:17</p>
+            
+            <div class="section">
+                <h2>Summary Metrics</h2>
+                <div class="metric">
+                    <h3>Total Responses</h3>
+                    <div class="value">45</div>
+                </div>
+                <div class="metric">
+                    <h3>Average Spirit Probability</h3>
+                    <div class="value">0.7239</div>
+                </div>
+                <div class="metric">
+                    <h3>Max Spirit Probability</h3>
+                    <div class="value">0.7931</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Spirit Vector Space (3D)</h2>
+                <div id="spirit-3d-plot"></div>
+            </div>
+            
+            <div class="section">
+                <h2>Component Analysis</h2>
+                <div id="component-plot"></div>
+            </div>
+            
+            <div class="section">
+                <h2>Detailed Results</h2>
+                <table border="1" style="border-collapse: collapse; width: 100%;">
+                    <tr>
+                        <th>Stimulus</th>
+                        <th>Response</th>
+                        <th>Spirit Probability</th>
+                        <th>Reaction Time (ms)</th>
+                        <th>Skin Potential Δ</th>
+                    </tr>
+        
+                    <tr>
+                        <td>head</td>
+                        <td>head_response_1</td>
+                        <td>0.7526</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>head</td>
+                        <td>emotion_head</td>
+                        <td>0.7258</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>head</td>
+                        <td>feeling_head</td>
+                        <td>0.7632</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>green</td>
+                        <td>green_response_1</td>
+                        <td>0.7309</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>green</td>
+                        <td>emotion_green</td>
+                        <td>0.7220</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>green</td>
+                        <td>feeling_green</td>
+                        <td>0.7344</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>water</td>
+                        <td>water_response_1</td>
+                        <td>0.6850</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>water</td>
+                        <td>emotion_water</td>
+                        <td>0.6867</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>water</td>
+                        <td>feeling_water</td>
+                        <td>0.7211</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>death</td>
+                        <td>death_response_1</td>
+                        <td>0.7569</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>death</td>
+                        <td>emotion_death</td>
+                        <td>0.7291</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>death</td>
+                        <td>feeling_death</td>
+                        <td>0.7188</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>mother</td>
+                        <td>mother_response_1</td>
+                        <td>0.6869</td>
+                        <td>1100</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>mother</td>
+                        <td>emotion_mother</td>
+                        <td>0.7094</td>
+                        <td>1100</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>mother</td>
+                        <td>feeling_mother</td>
+                        <td>0.7174</td>
+                        <td>1100</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>father</td>
+                        <td>father_response_1</td>
+                        <td>0.7122</td>
+                        <td>1100</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>father</td>
+                        <td>emotion_father</td>
+                        <td>0.6970</td>
+                        <td>1100</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>father</td>
+                        <td>feeling_father</td>
+                        <td>0.7005</td>
+                        <td>1100</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>child</td>
+                        <td>child_response_1</td>
+                        <td>0.7400</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>child</td>
+                        <td>emotion_child</td>
+                        <td>0.7033</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>child</td>
+                        <td>feeling_child</td>
+                        <td>0.7049</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>love</td>
+                        <td>love_response_1</td>
+                        <td>0.7131</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>love</td>
+                        <td>emotion_love</td>
+                        <td>0.7565</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>love</td>
+                        <td>feeling_love</td>
+                        <td>0.7599</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>hate</td>
+                        <td>hate_response_1</td>
+                        <td>0.7169</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>hate</td>
+                        <td>emotion_hate</td>
+                        <td>0.7390</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>hate</td>
+                        <td>feeling_hate</td>
+                        <td>0.7040</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>joy</td>
+                        <td>joy_response_1</td>
+                        <td>0.7563</td>
+                        <td>950</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>joy</td>
+                        <td>emotion_joy</td>
+                        <td>0.7666</td>
+                        <td>950</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>joy</td>
+                        <td>feeling_joy</td>
+                        <td>0.7135</td>
+                        <td>950</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>sadness</td>
+                        <td>sadness_response_1</td>
+                        <td>0.7097</td>
+                        <td>1150</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>sadness</td>
+                        <td>emotion_sadness</td>
+                        <td>0.6896</td>
+                        <td>1150</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>sadness</td>
+                        <td>feeling_sadness</td>
+                        <td>0.7365</td>
+                        <td>1150</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>anger</td>
+                        <td>anger_response_1</td>
+                        <td>0.7044</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>anger</td>
+                        <td>emotion_anger</td>
+                        <td>0.7538</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>anger</td>
+                        <td>feeling_anger</td>
+                        <td>0.7216</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>fear</td>
+                        <td>fear_response_1</td>
+                        <td>0.7189</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>fear</td>
+                        <td>emotion_fear</td>
+                        <td>0.7231</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>fear</td>
+                        <td>feeling_fear</td>
+                        <td>0.7124</td>
+                        <td>1000</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>peace</td>
+                        <td>peace_response_1</td>
+                        <td>0.7187</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>peace</td>
+                        <td>emotion_peace</td>
+                        <td>0.6756</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>peace</td>
+                        <td>feeling_peace</td>
+                        <td>0.6983</td>
+                        <td>1050</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>war</td>
+                        <td>war_response_1</td>
+                        <td>0.7512</td>
+                        <td>950</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>war</td>
+                        <td>emotion_war</td>
+                        <td>0.7931</td>
+                        <td>950</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                    <tr>
+                        <td>war</td>
+                        <td>feeling_war</td>
+                        <td>0.7443</td>
+                        <td>950</td>
+                        <td>0.0000</td>
+                    </tr>
+            
+                </table>
+            </div>
+        </body>
+        </html>
+        

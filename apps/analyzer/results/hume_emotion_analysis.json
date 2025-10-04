@@ -1,0 +1,12 @@
+{
+  "hume_data_summary": {
+    "face_data_points": 0,
+    "prosody_data_points": 0,
+    "language_data_points": 0,
+    "total_emotion_points": 0,
+    "burst_events": 0
+  },
+  "emotion_statistics": {},
+  "emotion_timeseries": [],
+  "average_emotions": {}
+}
