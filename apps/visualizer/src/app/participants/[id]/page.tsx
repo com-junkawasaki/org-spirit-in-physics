@@ -378,6 +378,12 @@ export default async function ParticipantDetailPage({ params }: PageProps) {
               時系列分析
             </Button>
           </Link>
+          <Link href={`/participants/${participant.id}/correlation`}>
+            <Button variant="outline">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              相関分析
+            </Button>
+          </Link>
         </div>
 
         <div className="flex items-center justify-between">
