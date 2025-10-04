@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storageAdapter } from "scripts/src/50_adapters";
 import { emotionAnalysisAdapter } from "scripts/src/50_adapters";
-import { parseWordResponsesFromEvents, getParticipantStatistics } from "scripts/src/lib/data-loader";
+import { parseWordResponsesFromEvents, getParticipantStatistics, initializeSupabaseDatabase, loadAllSessionData } from "scripts/src/lib/data-loader";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -12,9 +12,13 @@ export async function GET(request: NextRequest) {
     switch (type) {
       case 'participants':
         // Supabaseデータベースの初期化
-        await initializeKuzuDatabase();
+        await initializeSupabaseDatabase();
         const participants = await storageAdapter.loadAllParticipants();
-        const participantStats = getParticipantStatistics(participants);
+        const participantsForStats = participants.map(p => ({
+          ...p,
+          agreedAt: new Date(p.agreedAt)
+        }));
+        const participantStats = getParticipantStatistics(participantsForStats);
 
         // Transform to match expected format
         const formattedParticipants = participants.map(p => ({
@@ -109,7 +113,7 @@ export async function GET(request: NextRequest) {
 
       case 'analytics':
         // Supabaseデータベースの初期化
-        await initializeKuzuDatabase();
+        await initializeSupabaseDatabase();
         const participants_for_analytics = await storageAdapter.loadAllParticipants();
         const stats = getParticipantStatistics(participants_for_analytics);
         const allSessions = await loadAllSessionData();

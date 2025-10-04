@@ -1,7 +1,7 @@
 // LLM-BOUNDARY: 80_app - app/(segments)/...（RSC & Client）
 
 import { NextRequest, NextResponse } from "next/server";
-import { emotionAnalysisAdapter } from "scripts/src/50_adapters";
+import { emotionAnalysisAdapter, storageAdapter } from "scripts/src/50_adapters";
 import { WorkflowSupervisor } from "scripts/src/70_supervisors";
 import { foldEmotionStatistics } from "scripts/src/30_fold";
 
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         // 全参加者の結果を集計
         const globalResults: any[] = [];
         const participantPromises = participantIds.map(async id => {
-          const results = await emotionAnalysisAdapter.loadEmotionAnalysis(id);
+          const results = await storageAdapter.loadEmotionAnalysis(id);
           return results;
         });
         const allParticipantResults = await Promise.all(participantPromises);
