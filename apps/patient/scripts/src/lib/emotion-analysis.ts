@@ -2,19 +2,7 @@ import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-// サーバーサイドでのみKuzuをインポート
-let kuzuManager: any = null;
-let EmotionAnalysis: any;
-
-if (typeof window === 'undefined') {
-  try {
-    const kuzuModule = require('./database/kuzu-manager');
-    kuzuManager = kuzuModule.kuzuManager;
-    EmotionAnalysis = kuzuModule.EmotionAnalysis;
-  } catch (error) {
-    console.warn('Kuzu manager not available:', error);
-  }
-}
+// Supabaseを使用するため、Kuzu関連のインポートは不要
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
@@ -172,25 +160,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
       }
     }
 
-    // Kuzuにも保存（利用可能な場合）
-    if (kuzuManager) {
-      try {
-        const analysis: EmotionAnalysis = {
-          id: `${result.participantId}_${result.videoFile}_${Date.now()}`,
-          participantId: result.participantId,
-          videoFileId: `${result.participantId}_${result.videoFile}`,
-          sessionType: result.sessionType,
-          timestamp: result.timestamp,
-          processingTime: result.processingTime,
-          emotions: result.emotions
-        };
-
-        await kuzuManager.saveEmotionAnalysis(analysis);
-        console.log(`Emotion analysis result saved to Kuzu: ${analysis.id}`);
-      } catch (kuzuError) {
-        console.warn('Failed to save emotion analysis to Kuzu:', kuzuError);
-      }
-    }
+    // Supabaseに保存（storageAdapter経由）
 
   } catch (error) {
     console.error('Error saving emotion analysis result:', error);
@@ -202,27 +172,9 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
  */
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
-    // Kuzuデータベースから感情分析データを取得（一本化）
-    if (kuzuManager) {
-      try {
-        const kuzuResults = await kuzuManager.getEmotionAnalysis(participantId);
-        console.log(`Loaded emotion analysis results from Kuzu for ${participantId}`);
-        return kuzuResults.map(ka => ({
-          participantId: ka.participantId,
-          videoFile: ka.videoFileId.replace(`${ka.participantId}_`, ''),
-          sessionType: ka.sessionType,
-          emotions: ka.emotions,
-          timestamp: ka.timestamp,
-          processingTime: ka.processingTime
-        }));
-      } catch (kuzuError) {
-        console.warn('Failed to load emotion analysis from Kuzu:', kuzuError);
-        return [];
-      }
-    } else {
-      console.warn('Kuzu manager not available');
-      return [];
-    }
+    // storageAdapter経由でSupabaseから感情分析データを取得
+    const { storageAdapter } = await import('../50_adapters/storage-adapter');
+    return await storageAdapter.loadEmotionAnalysis(participantId);
   } catch (error) {
     console.error(`Error loading emotion analysis results for ${participantId}:`, error);
     return [];

@@ -1,5 +1,5 @@
 // Merkle DAG: 分析データ同期ワークフロー
-// KuzuからDuckDBへのデータ同期を管理
+// Supabaseから分析データベースへのデータ同期を管理
 
 import { createMachine, assign, spawn } from 'xstate';
 import type { AnalyticalDataPort } from '../../20_ports/analytical-data';
@@ -158,7 +158,7 @@ export const analyticalDataSyncMachine = createMachine<AnalyticalDataSyncContext
         console.log('Analytical data sync initialized');
       },
       syncParticipants: async (context) => {
-        // 実際の実装ではKuzuManagerからデータを取得
+        // 実際の実装ではSupabaseManagerからデータを取得
         // ここではモックデータを使用
         const mockParticipants = [
           {
@@ -176,7 +176,7 @@ export const analyticalDataSyncMachine = createMachine<AnalyticalDataSyncContext
         return { processed: mockParticipants.length };
       },
       syncSessions: async (context) => {
-        // 実際の実装ではKuzuManagerからデータを取得
+        // 実際の実装ではSupabaseManagerからデータを取得
         const mockSessions = [
           {
             id: 'session-1',
@@ -193,7 +193,7 @@ export const analyticalDataSyncMachine = createMachine<AnalyticalDataSyncContext
         return { processed: mockSessions.length };
       },
       syncAnalyses: async (context) => {
-        // 実際の実装ではKuzuManagerからデータを取得
+        // 実際の実装ではSupabaseManagerからデータを取得
         const mockAnalyses = [
           {
             id: 'analysis-1',

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Kuzuデータベースの初期化
+        // Supabaseデータベースの初期化
         await initializeKuzuDatabase();
         const participants = await storageAdapter.loadAllParticipants();
         const participantStats = getParticipantStatistics(participants);
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Kuzuデータベースの初期化
+        // Supabaseデータベースの初期化
         await initializeKuzuDatabase();
         const participants_for_analytics = await storageAdapter.loadAllParticipants();
         const stats = getParticipantStatistics(participants_for_analytics);
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Kuzuから感情統計を取得
+        // Supabaseから感情統計を取得
         const emotionStats = await emotionAnalysisAdapter.getEmotionStatistics();
         const emotionDistribution: Record<string, number> = {};
         emotionStats.dominantEmotions.forEach(item => {

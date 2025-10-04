@@ -2,7 +2,57 @@
 // Supabaseを使用したデータベース操作マネージャー
 
 import { supabase, Database } from '../supabase';
-import type { Participant, Session, VideoFile, EmotionAnalysis } from './kuzu-manager';
+
+// インターフェース定義
+export interface Participant {
+  id: string;
+  signature?: string;
+  agreedAt?: string;
+  agreements?: Record<string, any>;
+  name?: string;
+  age?: number;
+  gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
+  handedness?: string;
+}
+
+export interface Session {
+  id: string;
+  participantId: string;
+  events: any[];
+  createdAt: string;
+}
+
+export interface VideoFile {
+  id: string;
+  participantId: string;
+  sessionId: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  createdAt: string;
+}
+
+export interface EmotionAnalysis {
+  id: string;
+  participantId: string;
+  videoFileId: string;
+  sessionType: string;
+  emotions: Array<{
+    name: string;
+    score: number;
+    confidence: number;
+  }>;
+  timestamp: string;
+  processingTime: number;
+}
+
+export interface Emotion {
+  id: string;
+  analysisId: string;
+  name: string;
+  score: number;
+  confidence: number;
+}
 
 export class SupabaseManager {
   private supabase = supabase;

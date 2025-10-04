@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
           "e41a9cd2-d803-49a8-9020-0260e55cd03e"
         ];
 
-        // Kuzuから感情統計を取得
-        const kuzuStats = await getEmotionStatisticsFromKuzu();
+        // Supabaseから感情統計を取得
+        const emotionStats = await getEmotionStatisticsFromKuzu();
         const globalResults: any[] = [];
         const participantPromises = participantIds.map(async id => {
           const results = await loadEmotionAnalysisResults(id);

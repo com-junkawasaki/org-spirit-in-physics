@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
           }))
           .sort((a, b) => b.count - a.count);
 
-        const kuzuStats = {
+        const emotionStats = {
           totalAnalyses: emotions?.length || 0,
           dominantEmotions
         };
