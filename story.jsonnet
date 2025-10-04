@@ -40,6 +40,11 @@
         act: '科学と霊性の統合',
         summary: '川崎モデルにより、参加者の「spirit」はもはや曖昧な概念ではなく、確率値とベクトルとして可視化・測定可能になった。これにより、科学的手法で霊性を探求し、人間性の全体像を理解する新たな道が開かれた。',
       },
+      {
+        // Merkle DAG: 物語.ナラティブ[6]
+        act: '初の実験データ解析',
+        summary: '11名の参加者の実験データをSupabaseに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
+      },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -92,20 +97,26 @@
         },
       ],
     },
-    metadata: {
-      version: '1.0.0',
-      author: 'Jumma Kawasaki',
-      // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-      merkle_root: '川崎モデルとHume AI統合の完成版',
-      last_updated: '2024-10-04',
-      implemented_features: [
-        '川崎モデルの数式実装',
-        'Hume AI Expression Measurement統合',
-        'Supabase Row Level Security',
-        '耐久性のあるジョブベース処理システム',
-        'REST APIによる結果提供',
-        '感情・生理・言語データの統合分析'
-      ],
-    },
+        metadata: {
+          version: '1.1.0',
+          author: 'Jumma Kawasaki',
+          // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
+          merkle_root: '初の実験データ解析完了版',
+          last_updated: '2024-10-04',
+          implemented_features: [
+            '川崎モデルの数式実装',
+            'Hume AI Expression Measurement統合',
+            'Supabase Row Level Security',
+            '耐久性のあるジョブベース処理システム',
+            'REST APIによる結果提供',
+            '感情・生理・言語データの統合分析',
+            '実験データインポート機能',
+            'ローカル解析パイプライン',
+            'インタラクティブ可視化ダッシュボード',
+            '11名参加者のSpirit確率解析',
+            'Word2Vec日本語対応',
+            '包括的分析レポート生成'
+          ],
+        },
   },
 }

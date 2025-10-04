@@ -1,0 +1,266 @@
+{
+  "25111604-c7db-4bfd-8662-e55060e332d6": {
+    "participant_id": "25111604-c7db-4bfd-8662-e55060e332d6",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9998701984930116,
+      "max_spirit_probability": 0.9998701984930116,
+      "min_spirit_probability": 0.9998701984930116,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9998701984930116,
+        "components": {
+          "word2vec": -0.10105113914123534,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "キス",
+        "response_word": "冷たい",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "a4e1b8f4-e267-41a7-acfc-07fe1b7c06fb": {
+    "participant_id": "a4e1b8f4-e267-41a7-acfc-07fe1b7c06fb",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9999797540929267,
+      "max_spirit_probability": 0.9999797540929267,
+      "min_spirit_probability": 0.9999797540929267,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9999797540929267,
+        "components": {
+          "word2vec": 0.08760905989792821,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "嘘",
+        "response_word": "緑",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "4512513e-9132-4556-9858-bac08f28037f": {
+    "participant_id": "4512513e-9132-4556-9858-bac08f28037f",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.99988482051093,
+      "max_spirit_probability": 0.99988482051093,
+      "min_spirit_probability": 0.99988482051093,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.99988482051093,
+        "components": {
+          "word2vec": -0.08778337789959331,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "空腹",
+        "response_word": "礼儀",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "5346d514-e501-457a-aff1-55c92074a6f2": {
+    "participant_id": "5346d514-e501-457a-aff1-55c92074a6f2",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9998111311396266,
+      "max_spirit_probability": 0.9998111311396266,
+      "min_spirit_probability": 0.9998111311396266,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9998111311396266,
+        "components": {
+          "word2vec": -0.1438690488187001,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "荒い",
+        "response_word": "船",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "5ac869a3-b8db-49c3-9362-3e149a5415e9": {
+    "participant_id": "5ac869a3-b8db-49c3-9362-3e149a5415e9",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9999266485360658,
+      "max_spirit_probability": 0.9999266485360658,
+      "min_spirit_probability": 0.9999266485360658,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9999266485360658,
+        "components": {
+          "word2vec": -0.039221558336210265,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "針",
+        "response_word": "鉛筆",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "7dda0261-a6f4-4208-bd61-4244380d277f": {
+    "participant_id": "7dda0261-a6f4-4208-bd61-4244380d277f",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9999828879784721,
+      "max_spirit_probability": 0.9999828879784721,
+      "min_spirit_probability": 0.9999828879784721,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9999828879784721,
+        "components": {
+          "word2vec": 0.10305008910699465,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "嬉しい",
+        "response_word": "海",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "ad96101f-a7a8-4d71-8d82-c0478975c40b": {
+    "participant_id": "ad96101f-a7a8-4d71-8d82-c0478975c40b",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.999972721104439,
+      "max_spirit_probability": 0.999972721104439,
+      "min_spirit_probability": 0.999972721104439,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.999972721104439,
+        "components": {
+          "word2vec": 0.05963247155441713,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "頭",
+        "response_word": "狭い",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "2a0d7a69-f953-4c29-87a5-8a8e4e8bd413": {
+    "participant_id": "2a0d7a69-f953-4c29-87a5-8a8e4e8bd413",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9999936027626711,
+      "max_spirit_probability": 0.9999936027626711,
+      "min_spirit_probability": 0.9999936027626711,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9999936027626711,
+        "components": {
+          "word2vec": 0.18890271258652552,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "金持ち",
+        "response_word": "インク",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "e41a9cd2-d803-49a8-9020-0260e55cd03e": {
+    "participant_id": "e41a9cd2-d803-49a8-9020-0260e55cd03e",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9998978625444703,
+      "max_spirit_probability": 0.9998978625444703,
+      "min_spirit_probability": 0.9998978625444703,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9998978625444703,
+        "components": {
+          "word2vec": -0.07461797040748312,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "選ぶ",
+        "response_word": "踊る",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "15592cdb-86cf-4baf-86f5-66184169ee39": {
+    "participant_id": "15592cdb-86cf-4baf-86f5-66184169ee39",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9999722523346457,
+      "max_spirit_probability": 0.9999722523346457,
+      "min_spirit_probability": 0.9999722523346457,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9999722523346457,
+        "components": {
+          "word2vec": 0.05800985718472905,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "旅行",
+        "response_word": "長い",
+        "reaction_time_ms": 100
+      }
+    ]
+  },
+  "144b325f-5966-4d59-a629-f2ca421388cc": {
+    "participant_id": "144b325f-5966-4d59-a629-f2ca421388cc",
+    "stats": {
+      "total_responses": 1,
+      "avg_spirit_probability": 0.9996281853927471,
+      "max_spirit_probability": 0.9996281853927471,
+      "min_spirit_probability": 0.9996281853927471,
+      "std_spirit_probability": 0.0
+    },
+    "results": [
+      {
+        "p_value": 0.9996281853927471,
+        "components": {
+          "word2vec": -0.22618432667820865,
+          "reaction_time": 9.900990099009901,
+          "skin_potential": 1.0,
+          "emotion": 1.0
+        },
+        "stimulus_word": "年月",
+        "response_word": "蛙",
+        "reaction_time_ms": 100
+      }
+    ]
+  }
+}
