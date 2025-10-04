@@ -33,12 +33,18 @@ export default function RootLayout({
                     Analysis Dashboard
                   </span>
                 </div>
-                <div className="flex items-center space-x-4">
+                <nav className="flex items-center space-x-6">
+                  <a
+                    href="/participants"
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    被験者一覧
+                  </a>
                   <div className="text-sm text-muted-foreground">
                     Real-time Research Analytics
                   </div>
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
+                </nav>
               </div>
             </div>
           </header>

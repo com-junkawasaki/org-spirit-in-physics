@@ -267,7 +267,7 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
       .eq('participant_id', participantId)
 
     if (runIds && runIds.length > 0) {
-      query = query.in('analysis_run_id', runIds.map(r => r.id))
+      query = query.in('run_id', runIds.map(r => r.id))
     } else {
       return []
     }
@@ -275,4 +275,39 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 
   const { data } = await query
   return data || []
+}
+
+export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
+  const supabase = createServerSupabaseClient()
+
+  // Get participant responses first
+  const { data: responses } = await supabase
+    .from('participant_response_data')
+    .select('id, stimulus_word, response_word, reaction_time_ms, emotion_data')
+    .eq('participant_id', participantId)
+    .order('timestamp', { ascending: false })
+
+  if (!responses || responses.length === 0) {
+    return []
+  }
+
+  // Get analysis results for these responses
+  const responseIds = responses.map(r => r.id)
+  const { data: analysisResults } = await supabase
+    .from('analysis_results')
+    .select('*')
+    .in('response_id', responseIds)
+    .order('created_at', { ascending: false })
+
+  // Merge response data with analysis results
+  return (analysisResults || []).map(result => {
+    const response = responses.find(r => r.id === result.response_id)
+    return {
+      ...result,
+      stimulus_word: response?.stimulus_word || '',
+      response_word: response?.response_word || '',
+      reaction_time_ms: response?.reaction_time_ms || 0,
+      emotion_data: response?.emotion_data || {}
+    }
+  })
 }
