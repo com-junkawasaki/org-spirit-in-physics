@@ -152,7 +152,9 @@ class SessionDataProcessor:
             'word_count': 0,
             'avg_response_time_ms': 0,
             'event_types': {},
-            'time_ranges': {}
+            'time_ranges': {},
+            'word_frequency': {},
+            'time_distribution': {}
         }
 
         if not timeline_df.empty:
@@ -165,9 +167,11 @@ class SessionDataProcessor:
             event_counts = timeline_df['event_type'].value_counts()
             summary['event_types'] = event_counts.to_dict()
 
-            # 単語数
-            word_events = timeline_df[timeline_df['event_type'] == 'word_displayed']
-            summary['word_count'] = len(word_events)
+            # 単語応答パターンの分析
+            word_analysis = self.analyze_word_response_patterns(timeline_df)
+            summary['word_count'] = word_analysis['total_words']
+            summary['word_frequency'] = word_analysis['word_frequency']
+            summary['time_distribution'] = word_analysis['time_distribution']
 
             # 応答タイミングの分析
             response_events = self.detect_response_timing(timeline_df)

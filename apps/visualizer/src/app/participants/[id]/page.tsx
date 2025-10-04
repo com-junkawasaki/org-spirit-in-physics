@@ -365,12 +365,20 @@ export default async function ParticipantDetailPage({ params }: PageProps) {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <Link href="/participants">
-          <Button variant="ghost" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            被験者一覧に戻る
-          </Button>
-        </Link>
+        <div className="flex gap-4 mb-4">
+          <Link href="/participants">
+            <Button variant="ghost">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              被験者一覧に戻る
+            </Button>
+          </Link>
+          <Link href={`/participants/${participant.id}/timeline`}>
+            <Button variant="outline">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              時系列分析
+            </Button>
+          </Link>
+        </div>
 
         <div className="flex items-center justify-between">
           <div>

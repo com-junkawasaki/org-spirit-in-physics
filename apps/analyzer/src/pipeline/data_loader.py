@@ -2,7 +2,7 @@ from supabase import create_client, Client
 import logging
 import os
 import tempfile
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 class DataLoader:
     def __init__(self, config):
@@ -91,6 +91,15 @@ class DataLoader:
         except Exception as e:
             logging.error(f"Error getting experiment session for response {response_id}: {e}")
             return None
+
+    def get_participant_sessions(self, participant_id: str) -> List[Dict[str, Any]]:
+        """参加者の実験セッションを取得"""
+        try:
+            response = self.supabase.table('participant_experiment_sessions').select('*').eq('participant_id', participant_id).execute()
+            return response.data if response.data else []
+        except Exception as e:
+            logging.error(f"Failed to get participant sessions: {e}")
+            return []
 
     def get_response_with_media(self, response_id: str) -> Optional[dict]:
         """
