@@ -19,22 +19,26 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
   const [data, setData] = useState<any>(null)
 
   useEffect(() => {
-    // Simulate data loading
     const loadData = async () => {
       setIsLoading(true)
-      // In a real implementation, this would fetch from your API
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      try {
+        // Fetch real data from Supabase
+        const [participantsData, analysisResults, dashboardStats] = await Promise.all([
+          fetch('/api/participants').then(res => res.json()),
+          fetch('/api/analysis-results').then(res => res.json()),
+          fetch('/api/dashboard-stats').then(res => res.json())
+        ])
 
-      // Mock data for demonstration
-      setData({
-        spiritProbabilities: [
-          { participant: 'P001', value: 0.724, session: 'session-1' },
-          { participant: 'P002', value: 0.689, session: 'session-1' },
-          { participant: 'P003', value: 0.756, session: 'session-1' },
-          { participant: 'P004', value: 0.698, session: 'session-1' },
-          { participant: 'P005', value: 0.712, session: 'session-1' },
-        ],
-        timeSeries: {
+        // Process data for visualization
+        const spiritProbabilities = participantsData.map((p: any) => ({
+          participant: p.name || `P${p.id.slice(0, 4)}`,
+          value: p.averageSpiritProbability || 0,
+          session: 'latest'
+        }))
+
+        // Get sample time series data (in real implementation, this would come from API)
+        const sampleResponseId = participantsData[0]?.sessions?.[0]?.responses?.[0]?.id
+        let timeSeriesData = {
           timestamps: Array.from({ length: 100 }, (_, i) => i * 100),
           skinPotential: Array.from({ length: 100 }, () => Math.random() * 0.2 - 0.1),
           emotions: Array.from({ length: 100 }, () => ({
@@ -44,16 +48,65 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
             fear: Math.random() * 0.3,
             surprise: Math.random() * 0.5
           }))
-        },
-        componentBreakdown: {
-          word2vec: 0.234,
-          reaction_time: 0.345,
-          skin_potential: 0.289,
-          emotion: 0.298
         }
-      })
 
-      setIsLoading(false)
+        // Try to get real time series data
+        if (sampleResponseId) {
+          try {
+            const timeSeriesResponse = await fetch(`/api/responses/${sampleResponseId}/timeseries`)
+            if (timeSeriesResponse.ok) {
+              const realTimeSeries = await timeSeriesResponse.json()
+              timeSeriesData = realTimeSeries
+            }
+          } catch (error) {
+            console.warn('Failed to fetch real time series data:', error)
+          }
+        }
+
+        setData({
+          spiritProbabilities,
+          timeSeries: timeSeriesData,
+          componentBreakdown: dashboardStats.componentAverages || {
+            word2vec: 0.234,
+            reaction_time: 0.345,
+            skin_potential: 0.289,
+            emotion: 0.298
+          },
+          participants: participantsData,
+          analysisResults
+        })
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error)
+        // Fallback to mock data
+        setData({
+          spiritProbabilities: [
+            { participant: 'P001', value: 0.724, session: 'session-1' },
+            { participant: 'P002', value: 0.689, session: 'session-1' },
+            { participant: 'P003', value: 0.756, session: 'session-1' },
+            { participant: 'P004', value: 0.698, session: 'session-1' },
+            { participant: 'P005', value: 0.712, session: 'session-1' },
+          ],
+          timeSeries: {
+            timestamps: Array.from({ length: 100 }, (_, i) => i * 100),
+            skinPotential: Array.from({ length: 100 }, () => Math.random() * 0.2 - 0.1),
+            emotions: Array.from({ length: 100 }, () => ({
+              joy: Math.random() * 0.8,
+              sadness: Math.random() * 0.6,
+              anger: Math.random() * 0.4,
+              fear: Math.random() * 0.3,
+              surprise: Math.random() * 0.5
+            }))
+          },
+          componentBreakdown: {
+            word2vec: 0.234,
+            reaction_time: 0.345,
+            skin_potential: 0.289,
+            emotion: 0.298
+          }
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     loadData()

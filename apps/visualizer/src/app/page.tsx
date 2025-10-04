@@ -6,8 +6,27 @@ import { Users, Activity, Brain, TrendingUp } from 'lucide-react'
 import { getDashboardStats } from '@/lib/data'
 
 export default async function DashboardPage() {
-  // Server-side data fetching
-  const stats = await getDashboardStats()
+  // Server-side data fetching with error handling
+  let stats
+  try {
+    stats = await getDashboardStats()
+  } catch (error) {
+    console.error('Failed to fetch dashboard stats:', error)
+    // Provide fallback data
+    stats = {
+      totalParticipants: 0,
+      totalSessions: 0,
+      totalResponses: 0,
+      averageSpiritProbability: 0,
+      emotionDistribution: {},
+      componentAverages: {
+        word2vec: 0,
+        reaction_time: 0,
+        skin_potential: 0,
+        emotion: 0
+      }
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
