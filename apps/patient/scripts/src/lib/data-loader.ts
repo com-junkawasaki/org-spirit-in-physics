@@ -1,26 +1,11 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
+import { supabase } from './supabase';
 
 // サーバーサイドでのみインポート
-let kuzuManager: any = null;
-let Participant: any, Session: any, VideoFile: any;
 let blobStorage: any = null;
 
 if (typeof window === 'undefined') {
-  try {
-    // ビルド時のエラーを避けるために条件付きで import
-    const kuzuAvailable = process.env.KUZU_AVAILABLE === 'true';
-    if (kuzuAvailable) {
-      const kuzuModule = require('./database/kuzu-manager');
-      kuzuManager = new kuzuModule.KuzuManager();
-      Participant = kuzuModule.Participant;
-      Session = kuzuModule.Session;
-      VideoFile = kuzuModule.VideoFile;
-    }
-  } catch (error) {
-    console.warn('Kuzu manager not available:', error);
-  }
-
   try {
     const blobModule = require('./blob-storage');
     blobStorage = blobModule.BlobStorage;
@@ -31,20 +16,29 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-// Kuzu初期化関数
-export async function initializeKuzuDatabase(): Promise<void> {
+// Supabase初期化関数
+export async function initializeSupabaseDatabase(): Promise<void> {
   try {
-    if (kuzuManager) {
-      // KuzuManagerはコンストラクタで既に初期化されているため、
-      // ここでは何もしないか、必要に応じて再初期化
-      console.log('Kuzu database manager is available');
-    } else {
-      console.warn('Kuzu database manager is not available');
+    // Supabase接続テスト
+    const { data, error } = await supabase
+      .from('participants')
+      .select('count')
+      .limit(1);
+
+    if (error) {
+      console.error('Supabase connection failed:', error);
+      throw error;
     }
+
+    console.log('Supabase database connection established');
   } catch (error) {
-    console.error('Failed to initialize Kuzu database:', error);
+    console.error('Failed to initialize Supabase database:', error);
+    throw error;
   }
 }
+
+// 後方互換性のための関数
+export const initializeKuzuDatabase = initializeSupabaseDatabase;
 
 // Types based on actual data structure
 export interface ConsentData {
@@ -321,28 +315,39 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
 // Load all participants data
 export async function loadAllParticipants(): Promise<Participant[]> {
   try {
-    // Kuzuデータベースから参加者データを取得（一本化）
-    if (kuzuManager) {
-      try {
-        const kuzuParticipants = await kuzuManager.getAllParticipants();
-        console.log(`Loaded ${kuzuParticipants.length} participants from Kuzu`);
-        return kuzuParticipants.map(kp => ({
-          id: kp.id,
-          signature: kp.signature,
-          agreedAt: kp.agreedAt,
-          agreements: kp.agreements,
-          hasSessionData: false, // 後で更新
-          hasVideoFiles: false, // 後で更新
-          videoFiles: []
-        }));
-      } catch (kuzuError) {
-        console.warn('Failed to load participants from Kuzu:', kuzuError);
-        return [];
-      }
-    } else {
-      console.warn('Kuzu manager not available');
+    // Supabaseから参加者データを取得
+    const { data: participants, error } = await supabase
+      .from('participants')
+      .select(`
+        *,
+        sessions (
+          id
+        ),
+        video_files (
+          id,
+          file_name,
+          file_path,
+          file_size
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading participants from Supabase:', error);
       return [];
     }
+
+    console.log(`Loaded ${participants?.length || 0} participants from Supabase`);
+
+    return (participants || []).map((p: any) => ({
+      id: p.id,
+      signature: p.signature,
+      agreedAt: p.agreed_at,
+      agreements: p.agreements,
+      hasSessionData: (p.sessions?.length || 0) > 0,
+      hasVideoFiles: (p.video_files?.length || 0) > 0,
+      videoFiles: p.video_files || []
+    }));
   } catch (error) {
     console.error('Error loading all participants:', error);
     return [];
@@ -352,31 +357,30 @@ export async function loadAllParticipants(): Promise<Participant[]> {
 // Load all session data
 export async function loadAllSessionData(): Promise<Array<{ participantId: string; sessionData: SessionData }>> {
   try {
-    const participants = await loadAllParticipants();
-    const sessionDataPromises = participants
-      .filter(p => p.hasSessionData)
-      .map(async participant => {
-        const sessionData = await loadSessionData(participant.id);
-        return sessionData ? { participantId: participant.id, sessionData } : null;
-      });
+    // Supabaseからセッションデータを取得
+    const { data: sessions, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    const results = await Promise.all(sessionDataPromises);
-    return results.filter((data): data is { participantId: string; sessionData: SessionData } => data !== null);
+    if (error) {
+      console.error('Error loading session data from Supabase:', error);
+      return [];
+    }
+
+    console.log(`Loaded ${sessions?.length || 0} sessions from Supabase`);
+
+    return (sessions || []).map((session: any) => ({
+      participantId: session.participant_id,
+      sessionData: {
+        events: session.events || [],
+        createdAt: session.created_at,
+        // 他のSessionDataフィールドは必要に応じて追加
+      } as SessionData
+    }));
   } catch (error) {
     console.error('Error loading all session data:', error);
-    // Fallback to synchronous loading
-    const participantIds = getParticipantDirectories();
-    const participants = participantIds
-      .map(id => loadParticipantData(id))
-      .filter((participant): participant is Participant => participant !== null);
-
-    return participants
-      .filter(p => p.hasSessionData)
-      .map(participant => {
-        const sessionData = loadSessionData(participant.id);
-        return sessionData ? { participantId: participant.id, sessionData } : null;
-      })
-      .filter((data): data is { participantId: string; sessionData: SessionData } => data !== null);
+    return [];
   }
 }
 

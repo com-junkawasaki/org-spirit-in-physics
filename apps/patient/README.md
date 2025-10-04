@@ -2,6 +2,39 @@
 
 This process is for experimental research on spirituality, based on Jung's word association test and computational modeling.
 
+## 🚀 Quick Start
+
+### Prerequisites
+
+1. **Supabase Setup**
+   - Create a new project at [supabase.com](https://supabase.com)
+   - Copy your project URL and anon key
+   - Run the migration script: `supabase db push`
+
+2. **Environment Variables**
+   ```bash
+   # Create .env.local in the project root
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   ```
+
+3. **Database Schema**
+   The migration file `supabase/migrations/20241002_create_spirit_in_physics_tables.sql` contains all necessary tables:
+   - `participants` - Research participants
+   - `sessions` - Experiment sessions
+   - `video_files` - Uploaded video files
+   - `emotion_analyses` - Emotion analysis results
+   - `emotions` - Individual emotion data
+
+### Installation & Development
+
+```bash
+cd apps/patient
+pnpm install
+pnpm dev
+```
+
 ## 🏗️ Architecture
 
 This project implements **Hexagonal Architecture + CQRS** pattern with the following layered structure:

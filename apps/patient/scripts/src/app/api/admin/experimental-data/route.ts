@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  loadAllParticipants,
-  loadAllSessionData,
-  parseWordResponsesFromEvents,
-  getParticipantStatistics,
-  initializeKuzuDatabase
-} from "scripts/src/lib/data-loader";
-import { loadEmotionAnalysisResults, getEmotionStatisticsFromKuzu } from "scripts/src/lib/emotion-analysis";
+import { supabase } from "scripts/src/lib/supabase";
+import { parseWordResponsesFromEvents, getParticipantStatistics } from "scripts/src/lib/data-loader";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -16,23 +10,44 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Kuzuデータベースの初期化
-        await initializeKuzuDatabase();
-        const participants = await loadAllParticipants();
-        const participantStats = getParticipantStatistics(participants);
+        // Supabaseから参加者データを取得
+        const { data: participants, error } = await supabase
+          .from('participants')
+          .select(`
+            *,
+            sessions (
+              id
+            ),
+            video_files (
+              id,
+              file_name,
+              file_path,
+              file_size
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching participants:', error);
+          return NextResponse.json({
+            error: "Failed to fetch participants"
+          }, { status: 500 });
+        }
+
+        const participantStats = getParticipantStatistics(participants || []);
 
         // Transform to match expected format
-        const formattedParticipants = participants.map(p => ({
+        const formattedParticipants = (participants || []).map((p: any) => ({
           id: p.id,
           age: null, // Age not available in current data
           gender: null, // Gender not available in current data
           handedness: null, // Handedness not available in current data
-          createdAt: p.agreedAt,
-          sessionCount: p.hasSessionData ? 1 : 0, // Simplified
-          lastActivity: p.agreedAt,
-          status: p.hasSessionData ? 'completed' : 'in_progress',
-          hasVideoFiles: p.hasVideoFiles,
-          videoFiles: p.videoFiles
+          createdAt: p.agreed_at,
+          sessionCount: p.sessions?.length || 0,
+          lastActivity: p.updated_at || p.created_at,
+          status: (p.sessions?.length || 0) > 0 ? 'completed' : 'in_progress',
+          hasVideoFiles: (p.video_files?.length || 0) > 0,
+          videoFiles: p.video_files || []
         }));
 
         return NextResponse.json({
@@ -49,9 +64,25 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        const participants_list = await loadAllParticipants();
-        const participant = participants_list.find(p => p.id === participantId);
-        if (!participant) {
+        const { data: participant, error } = await supabase
+          .from('participants')
+          .select(`
+            *,
+            sessions (
+              id
+            ),
+            video_files (
+              id,
+              file_name,
+              file_path,
+              file_size
+            )
+          `)
+          .eq('id', participantId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching participant:', error);
           return NextResponse.json({
             error: "Participant not found"
           }, { status: 404 });
@@ -62,47 +93,65 @@ export async function GET(request: NextRequest) {
           data: {
             id: participant.id,
             signature: participant.signature,
-            agreedAt: participant.agreedAt,
-            hasSessionData: participant.hasSessionData,
-            hasVideoFiles: participant.hasVideoFiles,
-            videoFiles: participant.videoFiles
+            agreedAt: participant.agreed_at,
+            hasSessionData: (participant.sessions?.length || 0) > 0,
+            hasVideoFiles: (participant.video_files?.length || 0) > 0,
+            videoFiles: participant.video_files || []
           }
         });
 
       case 'sessions':
-        const allSessionData = loadAllSessionData();
-        const sessions = participantId
-          ? allSessionData.filter(s => s.participantId === participantId)
-          : allSessionData;
+        let query = supabase
+          .from('sessions')
+          .select(`
+            *,
+            participants (
+              signature
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (participantId) {
+          query = query.eq('participant_id', participantId);
+        }
+
+        const { data: sessions, error } = await query;
+
+        if (error) {
+          console.error('Error fetching sessions:', error);
+          return NextResponse.json({
+            error: "Failed to fetch sessions"
+          }, { status: 500 });
+        }
 
         // Transform session data to match expected format
-        const formattedSessions = sessions.map(({ participantId, sessionData }) => {
-          const wordResponses = parseWordResponsesFromEvents(sessionData.events);
+        const formattedSessions = (sessions || []).map((session: any) => {
+          const wordResponses = parseWordResponsesFromEvents(session.events || []);
 
           // Extract session start/end times from events
-          const sessionStartedEvent = sessionData.events.find(e => e.type === 'session_started');
+          const sessionStartedEvent = (session.events || []).find((e: any) => e.type === 'session_started');
           const sessionStartTime = sessionStartedEvent
             ? new Date(sessionStartedEvent.timestamp).toISOString()
-            : new Date().toISOString();
+            : session.created_at;
 
-          const sessionEndedEvent = sessionData.events
-            .filter(e => e.type === 'response_window_closed')
+          const sessionEndedEvent = (session.events || [])
+            .filter((e: any) => e.type === 'response_window_closed')
             .pop();
           const sessionEndTime = sessionEndedEvent
             ? new Date(sessionEndedEvent.timestamp).toISOString()
             : sessionStartTime;
 
           return {
-            participantId,
-            sessionId: `session-${sessionStartedEvent?.payload?.session || 1}`,
-            sessionType: `session-${sessionStartedEvent?.payload?.session || 1}`,
+            participantId: session.participant_id,
+            sessionId: session.id,
+            sessionType: session.id,
             startTime: sessionStartTime,
             endTime: sessionEndTime,
             wordResponses,
             averageReactionTime: wordResponses.length > 0
-              ? wordResponses.reduce((acc, r) => acc + r.reactionTimeMs, 0) / wordResponses.length
+              ? wordResponses.reduce((acc: any, r: any) => acc + r.reactionTimeMs, 0) / wordResponses.length
               : 0,
-            emotionData: [] // Emotion data not available in current structure
+            emotionData: [] // Emotion data will be fetched separately if needed
           };
         });
 
@@ -113,32 +162,60 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Kuzuデータベースの初期化
-        await initializeKuzuDatabase();
-        const participants_for_analytics = await loadAllParticipants();
-        const stats = getParticipantStatistics(participants_for_analytics);
-        const allSessions = await loadAllSessionData();
+        // Supabaseからデータを取得
+        const { data: participants, error: participantsError } = await supabase
+          .from('participants')
+          .select(`
+            *,
+            sessions (
+              id,
+              events
+            ),
+            video_files (
+              id
+            )
+          `);
 
-        // Calculate reaction time statistics
+        if (participantsError) {
+          console.error('Error fetching analytics data:', participantsError);
+          return NextResponse.json({
+            error: "Failed to fetch analytics data"
+          }, { status: 500 });
+        }
+
+        const stats = getParticipantStatistics(participants || []);
+
+        // Calculate reaction time statistics from Supabase data
         let totalReactionTime = 0;
         let totalResponses = 0;
 
-        allSessions.forEach(({ sessionData }) => {
-          const wordResponses = parseWordResponsesFromEvents(sessionData.events);
-          wordResponses.forEach(response => {
-            totalReactionTime += response.reactionTimeMs;
-            totalResponses += 1;
+        (participants || []).forEach((participant: any) => {
+          (participant.sessions || []).forEach((session: any) => {
+            const wordResponses = parseWordResponsesFromEvents(session.events || []);
+            wordResponses.forEach((response: any) => {
+              totalReactionTime += response.reactionTimeMs;
+              totalResponses += 1;
+            });
           });
         });
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Kuzuから感情統計を取得
-        const emotionStats = await getEmotionStatisticsFromKuzu();
-        const emotionDistribution: Record<string, number> = {};
-        emotionStats.dominantEmotions.forEach(item => {
-          emotionDistribution[item.emotion] = item.count;
-        });
+        // Supabaseから感情統計を取得
+        const { data: emotions, error: emotionsError } = await supabase
+          .from('emotions')
+          .select('name');
+
+        let emotionDistribution: Record<string, number> = {};
+        if (!emotionsError && emotions) {
+          emotionDistribution = emotions.reduce((acc: Record<string, number>, emotion: any) => {
+            acc[emotion.name] = (acc[emotion.name] || 0) + 1;
+            return acc;
+          }, {});
+        }
+
+        const totalSessions = (participants || []).reduce((acc: number, p: any) =>
+          acc + (p.sessions?.length || 0), 0);
 
         return NextResponse.json({
           success: true,
@@ -149,18 +226,29 @@ export async function GET(request: NextRequest) {
             averageSessionDuration: 2700, // Estimated 45 minutes in seconds
             averageReactionTime,
             emotionDistribution,
-            totalSessions: allSessions.length,
+            totalSessions,
             participantsWithVideo: stats.participantsWithVideo
           }
         });
 
       case 'reaction-times':
-        const allSessionData_rt = await loadAllSessionData();
-        const reactionTimeData = allSessionData_rt.flatMap(({ participantId, sessionData }) => {
-          const wordResponses = parseWordResponsesFromEvents(sessionData.events);
+        const { data: sessions, error } = await supabase
+          .from('sessions')
+          .select('participant_id, events')
+          .not('events', 'is', null);
 
-          return wordResponses.map(response => ({
-            participantId,
+        if (error) {
+          console.error('Error fetching reaction time data:', error);
+          return NextResponse.json({
+            error: "Failed to fetch reaction time data"
+          }, { status: 500 });
+        }
+
+        const reactionTimeData = (sessions || []).flatMap((session: any) => {
+          const wordResponses = parseWordResponsesFromEvents(session.events || []);
+
+          return wordResponses.map((response: any) => ({
+            participantId: session.participant_id,
             sessionType: 'session-1', // Simplified
             stimulusWord: response.stimulusWord,
             responseWord: response.responseWord,

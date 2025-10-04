@@ -1,8 +1,8 @@
 // Merkle DAG: データベース初期化マネージャー
 // 全てのデータベースの初期化を統括
 
-import { kuzuManager } from './kuzu-manager';
-import { duckDBManager } from './duckdb-manager.ts';
+import { supabaseManager } from './supabase-manager';
+import { duckDBManager } from './duckdb-manager';
 
 export class DatabaseInitializer {
   private initialized = false;
@@ -19,8 +19,8 @@ export class DatabaseInitializer {
     try {
       console.log('Initializing all databases...');
 
-      // Kuzu初期化（グラフデータベース）
-      await kuzuManager.initialize();
+      // Supabase初期化（メインDB）
+      await supabaseManager.initialize();
 
       // DuckDB初期化（分析データベース）
       await duckDBManager.initialize();
@@ -42,7 +42,7 @@ export class DatabaseInitializer {
       console.log('Closing all databases...');
 
       await Promise.all([
-        kuzuManager.close(),
+        supabaseManager.close(),
         duckDBManager.close(),
       ]);
 
@@ -65,3 +65,6 @@ export class DatabaseInitializer {
 
 // シングルトンインスタンス
 export const databaseInitializer = new DatabaseInitializer();
+
+// Supabaseマネージャーのエクスポート
+export { supabaseManager };
