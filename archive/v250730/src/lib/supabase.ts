@@ -64,3 +64,65 @@ export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+// Storage utilities
+export const BUCKET_NAME = 'spirit-in-physics'
+
+export function getStoragePath(participantId: string, fileName: string, type: 'audio' | 'video' | 'image' | 'data'): string {
+  return `${participantId}/${type}/${fileName}`
+}
+
+// Upload file to storage
+export async function uploadFile(
+  supabaseClient: ReturnType<typeof createSupabaseServerClient>,
+  participantId: string,
+  file: File | Buffer,
+  fileName: string,
+  type: 'audio' | 'video' | 'image' | 'data',
+  mimeType?: string
+) {
+  const filePath = getStoragePath(participantId, fileName, type)
+
+  const { data, error } = await supabaseClient.storage
+    .from(BUCKET_NAME)
+    .upload(filePath, file, {
+      contentType: mimeType,
+      upsert: true
+    })
+
+  if (error) {
+    throw error
+  }
+
+  return data
+}
+
+// Get public URL for file
+export function getFileUrl(participantId: string, fileName: string, type: 'audio' | 'video' | 'image' | 'data'): string {
+  const supabase = createSupabaseBrowserClient()
+  const filePath = getStoragePath(participantId, fileName, type)
+
+  const { data } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(filePath)
+
+  return data.publicUrl
+}
+
+// Delete file from storage
+export async function deleteFile(
+  supabaseClient: ReturnType<typeof createSupabaseServerClient>,
+  participantId: string,
+  fileName: string,
+  type: 'audio' | 'video' | 'image' | 'data'
+) {
+  const filePath = getStoragePath(participantId, fileName, type)
+
+  const { error } = await supabaseClient.storage
+    .from(BUCKET_NAME)
+    .remove([filePath])
+
+  if (error) {
+    throw error
+  }
+}

@@ -55,7 +55,13 @@ pnpm supabase stop
 - `word_stimuli` - Stimulus words for the Jung test
 - `participant_response_data` - Response data from participants
 
-All tables have Row Level Security (RLS) enabled with appropriate policies.
+**Storage**: The `spirit-in-physics` bucket stores participant files:
+- Audio recordings (`audio/` folder)
+- Video recordings (`video/` folder)
+- Images (`image/` folder)
+- JSON data files (`data/` folder)
+
+All tables and storage have Row Level Security (RLS) enabled with appropriate policies ensuring participants can only access their own data.
 
 ### Development
 
