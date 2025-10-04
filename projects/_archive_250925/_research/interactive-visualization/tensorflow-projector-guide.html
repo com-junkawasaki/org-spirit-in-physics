@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TensorFlow Projector 可視化ガイド - Spirit in Physics</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.2em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .dataset-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+
+        .dataset-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .dataset-desc {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .file-list {
+            background: #f8f9fa;
+            border-left: 3px solid #28a745;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .file-list strong {
+            color: #28a745;
+        }
+
+        .steps {
+            counter-reset: step-counter;
+        }
+
+        .step {
+            counter-increment: step-counter;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .step::before {
+            content: counter(step-counter);
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #007bff;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px 5px;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .viz-preview {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .viz-preview img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TensorFlow Projector 可視化ガイド</h1>
+            <p>Spirit in Physics - 高次元データ可視化チュートリアル</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>📊 概要</h2>
+                <p>
+                    このガイドでは、Spirit in Physics研究のデータを<a href="https://projector.tensorflow.org/" target="_blank">TensorFlow Projector</a>で可視化する方法を説明します。
+                    高次元データをインタラクティブに探索し、感情・生理・単語埋め込みの関係性を視覚的に理解することができます。
+                </p>
+
+                <div class="highlight">
+                    <strong>🎯 学習目標:</strong>
+                    <ul>
+                        <li>TensorFlow Projectorの基本的な使い方</li>
+                        <li>Spirit in Physicsデータの構造理解</li>
+                        <li>高次元データの次元削減と可視化</li>
+                        <li>インタラクティブなデータ探索手法</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📁 利用可能なデータセット</h2>
+
+                <div class="dataset-card">
+                    <div class="dataset-title">🧠 Word Embeddings (単語埋め込み)</div>
+                    <div class="dataset-desc">
+                        感情関連単語の128次元ベクトル表現。単語間の意味的類似性を可視化します。
+                    </div>
+                    <div class="file-list">
+                        <strong>ベクトルファイル:</strong> <code>word_embeddings_vectors.tsv</code><br>
+                        <strong>メタデータ:</strong> <code>word_embeddings_metadata.tsv</code>
+                    </div>
+                    <p><strong>可視化のヒント:</strong> 感情単語のクラスタリングを確認。類似する感情が近くに配置されるはずです。</p>
+                </div>
+
+                <div class="dataset-card">
+                    <div class="dataset-title">💭 Emotion Patterns (感情パターン)</div>
+                    <div class="dataset-desc">
+                        実験中の感情変化パターン。感情タイプと強度の時系列データをベクトル化。
+                    </div>
+                    <div class="file-list">
+                        <strong>ベクトルファイル:</strong> <code>emotion_patterns_vectors.tsv</code><br>
+                        <strong>メタデータ:</strong> <code>emotion_patterns_metadata.tsv</code>
+                    </div>
+                    <p><strong>可視化のヒント:</strong> 感情タイプによるクラスタリングと、参加者間の感情パターンの違いを確認。</p>
+                </div>
+
+                <div class="dataset-card">
+                    <div class="dataset-title">👥 Participant Features (参加者特徴)</div>
+                    <div class="dataset-desc">
+                        各参加者の特徴ベクトル。Spirit確率、相関係数、データ品質を含む統合特徴。
+                    </div>
+                    <div class="file-list">
+                        <strong>ベクトルファイル:</strong> <code>participant_features_vectors.tsv</code><br>
+                        <strong>メタデータ:</strong> <code>participant_features_metadata.tsv</code>
+                    </div>
+                    <p><strong>可視化のヒント:</strong> Spirit確率の高い参加者がどのようにクラスタリングされるか確認。</p>
+                </div>
+
+                <div class="dataset-card">
+                    <div class="dataset-title">🫀 Physiological Time-series (生理時系列)</div>
+                    <div class="dataset-desc">
+                        生理データの時系列ウィンドウ特徴。GSR、HRV、SCLの統計量ベクトル。
+                    </div>
+                    <div class="file-list">
+                        <strong>ベクトルファイル:</strong> <code>physiological_timeseries_vectors.tsv</code><br>
+                        <strong>メタデータ:</strong> <code>physiological_timeseries_metadata.tsv</code>
+                    </div>
+                    <p><strong>可視化のヒント:</strong> 時間ウィンドウごとの生理パターンの変化を時系列で確認。</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🚀 TensorFlow Projectorでの可視化手順</h2>
+
+                <div class="steps">
+                    <div class="step">
+                        <h3>ステップ1: TensorFlow Projectorを開く</h3>
+                        <p>ブラウザで <a href="https://projector.tensorflow.org/" target="_blank" class="btn">TensorFlow Projector</a> を開いてください。</p>
+                        <div class="viz-preview">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDgwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI4MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjZjNmNGY2Ii8+Cjx0ZXh0IHg9IjQwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM5Y2E5OWQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5UZW5zb3JGbG93IFByb2plY3RvciBJbnRlcmZhY2U8L3RleHQ+Cjx0ZXh0IHg9IjQwMCIgeT0iMjMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM2Yzc1NzQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5DbGljayBMb2FkIGRhdGEgZnJvbSB5b3VyIGNvbXB1dGVyPC90ZXh0Pgo8L3N2Zz4K" alt="TensorFlow Projector Interface" style="max-width: 100%; height: 200px;">
+                            <p>TensorFlow Projectorのメインインターフェース</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <h3>ステップ2: データファイルをアップロード</h3>
+                        <p>「Load data from your computer」をクリックし、以下のファイルをアップロードしてください：</p>
+                        <ol>
+                            <li><strong>Step 1:</strong> ベクトルファイル（例: <code>word_embeddings_vectors.tsv</code>）を選択</li>
+                            <li><strong>Step 2:</strong> メタデータファイル（例: <code>word_embeddings_metadata.tsv</code>）を選択</li>
+                        </ol>
+                        <div class="code-block">
+# アップロードするファイルの例
+tensorflow-projector-data/
+├── word_embeddings_vectors.tsv    # 必須: ベクトルデータ
+├── word_embeddings_metadata.tsv   # オプション: メタデータ
+├── emotion_patterns_vectors.tsv   # 別のデータセット
+└── emotion_patterns_metadata.tsv
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <h3>ステップ3: 次元削減手法を選択</h3>
+                        <p>データを2D/3Dで可視化するために、次元削減手法を選択してください：</p>
+                        <ul>
+                            <li><strong>UMAP:</strong> 非線形次元削減、局所構造を保持</li>
+                            <li><strong>t-SNE:</strong> 非線形次元削減、クラスタリングに適する</li>
+                            <li><strong>PCA:</strong> 線形次元削減、主成分分析</li>
+                        </ul>
+                        <div class="highlight">
+                            <strong>💡 推奨設定:</strong><br>
+                            - 感情データの場合: t-SNE (perplexity: 30, iterations: 1000)<br>
+                            - 単語埋め込みの場合: UMAP (neighbors: 15, min distance: 0.1)<br>
+                            - 生理データの場合: PCA (主成分の分散を確認)
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <h3>ステップ4: インタラクティブな探索</h3>
+                        <p>可視化されたデータをインタラクティブに探索してください：</p>
+                        <ul>
+                            <li><strong>ポイントクリック:</strong> 最近傍点を表示</li>
+                            <li><strong>ドラッグ選択:</strong> 領域内の点を選択</li>
+                            <li><strong>カラーリング:</strong> メタデータによる色付け</li>
+                            <li><strong>検索:</strong> 正規表現によるポイント検索</li>
+                        </ul>
+                        <div class="viz-preview">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDgwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjIwMCIgY3k9IjIwMCIgcj0iOCIgZmlsbD0iIzQyODVmNCIvPgo8Y2lyY2xlIGN4PSI0MDAiIGN5PSIxNTAiIHI9IjEwIiBmaWxsPSIjZWY0NDQ0Ii8+CjxjaXJjbGUgY3g9IjYwMCIgY3k9IjMwMCIgcj0iNiIgZmlsbD0iIzIyYzU1ZSIvPgo8Y2lyY2xlIGN4PSIyMDAiIGN5PSIzMDAiIHI9IjEyIiBmaWxsPSIjZmJmZjAwIi8+Cjx0ZXh0IHg9IjQwMCIgeT0iMzgwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiMzMzMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkRhdGEgUG9pbnRzIGluIDJEIFNwYWNlPC90ZXh0Pgo8L3N2Zz4K" alt="Interactive Exploration" style="max-width: 100%; height: 200px;">
+                            <p>インタラクティブなデータ探索インターフェース</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <h3>ステップ5: 高度な機能を使用</h3>
+                        <p>より詳細な分析のために以下の機能を活用してください：</p>
+                        <ul>
+                            <li><strong>ブックマーク:</strong> 興味深いビューを保存</li>
+                            <li><strong>カスタム投影:</strong> 特定のベクトルによる投影</li>
+                            <li><strong>時系列分析:</strong> 時間軸での変化を追跡</li>
+                            <li><strong>クラスタリング:</strong> 自動グループ化と分析</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔍 分析のヒントと解釈ガイド</h2>
+
+                <h3>Word Embeddingsの解釈</h3>
+                <ul>
+                    <li><strong>クラスタリング:</strong> 意味的に類似した感情単語が近くに配置される</li>
+                    <li><strong>距離の意味:</strong> 近い単語ほど意味的・感情的に類似</li>
+                    <li><strong>外れ値:</strong> 特殊な感情表現の単語は離れた位置に</li>
+                </ul>
+
+                <h3>Emotion Patternsの解釈</h3>
+                <ul>
+                    <li><strong>感情タイプ別クラスタ:</strong> 同じ感情タイプのデータポイントが集まる</li>
+                    <li><strong>強度グラデーション:</strong> 感情強度による色の濃淡を確認</li>
+                    <li><strong>参加者差:</strong> 同じ感情でも参加者によって位置が異なる</li>
+                </ul>
+
+                <h3>Participant Featuresの解釈</h3>
+                <ul>
+                    <li><strong>Spirit確率:</strong> 高Spirit参加者は特定の領域に集まる</li>
+                    <li><strong>相関係数:</strong> 生理・感情の関連性の強さが位置に反映</li>
+                    <li><strong>データ品質:</strong> 高品質データ参加者の分布パターン</li>
+                </ul>
+
+                <h3>Physiological Time-seriesの解釈</h3>
+                <ul>
+                    <li><strong>時間的変化:</strong> 実験中の生理状態の遷移を追跡</li>
+                    <li><strong>ウィンドウパターン:</strong> 30秒ごとの生理特徴の変化</li>
+                    <li><strong>参加者比較:</strong> 同じ時間帯での個人差</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>📚 参考資料と追加リソース</h2>
+
+                <h3>TensorFlow Projector公式ドキュメント</h3>
+                <ul>
+                    <li><a href="https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin" target="_blank">TensorBoard Projector Plugin</a></li>
+                    <li><a href="https://projector.tensorflow.org/" target="_blank">ライブデモ</a></li>
+                </ul>
+
+                <h3>次元削減手法の解説</h3>
+                <ul>
+                    <li><strong>UMAP:</strong> <a href="https://umap-learn.readthedocs.io/en/latest/" target="_blank">公式ドキュメント</a></li>
+                    <li><strong>t-SNE:</strong> <a href="https://lvdmaaten.github.io/tsne/" target="_blank">論文と解説</a></li>
+                    <li><strong>PCA:</strong> <a href="https://scikit-learn.org/stable/modules/decomposition.html#pca" target="_blank">Scikit-learnガイド</a></li>
+                </ul>
+
+                <h3>関連研究</h3>
+                <ul>
+                    <li><a href="https://www.psychologytoday.com/us/blog/the-human-equation/201801/what-is-spirituality" target="_blank">Spiritualityの心理学的研究</a></li>
+                    <li><a href="https://www.apa.org/topics/mindfulness-meditation" target="_blank">APA Mindfulness研究</a></li>
+                    <li><a href="https://www.frontiersin.org/articles/10.3389/fpsyg.2019.01432/full" target="_blank">感情と生理の統合研究</a></li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>🚀 高度な活用法</h2>
+
+                <h3>カスタム分析スクリプト</h3>
+                <div class="code-block">
+# Pythonでのカスタム分析例
+import pandas as pd
+from sklearn.manifold import TSNE
+import plotly.express as px
+
+# データ読み込み
+vectors = pd.read_csv('word_embeddings_vectors.tsv', sep='\t', header=None)
+metadata = pd.read_csv('word_embeddings_metadata.tsv')
+
+# t-SNE次元削減
+tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+embeddings_2d = tsne.fit_transform(vectors)
+
+# インタラクティブ可視化
+fig = px.scatter(embeddings_2d, x=0, y=1, text=metadata['word'],
+                 title="Word Embeddings t-SNE Visualization")
+fig.show()
+                </div>
+
+                <h3>バッチ処理と自動化</h3>
+                <p>複数のデータセットを連続して処理する場合：</p>
+                <div class="code-block">
+# バッチ処理スクリプト例
+datasets = ['word_embeddings', 'emotion_patterns', 'participant_features']
+
+for dataset in datasets:
+    vectors_file = f'{dataset}_vectors.tsv'
+    metadata_file = f'{dataset}_metadata.tsv'
+
+    # TensorFlow Projector用設定生成
+    config = generate_projector_config(vectors_file, metadata_file)
+    upload_to_projector(config)
+                </div>
+
+                <h3>共有可能なビジュアライゼーション</h3>
+                <p>作成した可視化を共有するには：</p>
+                <ol>
+                    <li>GitHub GistにTSVファイルをアップロード</li>
+                    <li>Projector設定JSONを生成</li>
+                    <li>共有URLを作成して配布</li>
+                </ol>
+            </div>
+
+            <div class="section">
+                <h2>🎯 次のステップ</h2>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h3>📊 データ分析</h3>
+                        <p>生成された可視化を分析し、研究仮説を検証</p>
+                        <a href="#analysis" class="btn">分析開始</a>
+                    </div>
+
+                    <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h3>🔬 実験設計</h3>
+                        <p>新たな実験プロトコルの設計と改善</p>
+                        <a href="#experiments" class="btn">実験設計</a>
+                    </div>
+
+                    <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h3>📝 論文執筆</h3>
+                        <p>研究結果を学術論文としてまとめる</p>
+                        <a href="#publication" class="btn">論文執筆</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // インタラクティブな機能を追加
+        document.addEventListener('DOMContentLoaded', function() {
+            // 外部リンクにtarget="_blank"を自動追加
+            const links = document.querySelectorAll('a[href^="http"]');
+            links.forEach(link => {
+                if (!link.hasAttribute('target')) {
+                    link.setAttribute('target', '_blank');
+                }
+            });
+
+            // コードブロックのコピー機能
+            const codeBlocks = document.querySelectorAll('.code-block');
+            codeBlocks.forEach(block => {
+                const copyBtn = document.createElement('button');
+                copyBtn.textContent = '📋 Copy';
+                copyBtn.style.cssText = `
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 5px 10px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    font-size: 12px;
+                `;
+                copyBtn.onclick = function() {
+                    navigator.clipboard.writeText(block.textContent.replace('📋 Copy', '').trim());
+                    this.textContent = '✅ Copied!';
+                    setTimeout(() => this.textContent = '📋 Copy', 2000);
+                };
+
+                block.style.position = 'relative';
+                block.appendChild(copyBtn);
+            });
+        });
+    </script>
+</body>
+</html>

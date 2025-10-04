@@ -91,6 +91,22 @@ print('Correlation analysis completed')
 "
 ```
 
+### 4. TensorFlow Projector可視化
+```bash
+# データエクスポート
+cd code/analysis-pipeline
+python tensorflow-projector-export.py
+
+# 可視化ガイドを開く
+cd ../interactive-visualization
+open tensorflow-projector-guide.html
+
+# TensorFlow Projectorでデータを開く
+# https://projector.tensorflow.org/
+# -> Load data from your computer
+# -> tensorflow-projector-data/ 内のTSVファイルをアップロード
+```
+
 ## 詳細な実験結果
 
 ### 川崎モデル性能指標
