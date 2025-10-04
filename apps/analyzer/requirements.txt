@@ -6,3 +6,6 @@ hume
 gensim
 flask
 flask-cors
+plotly
+matplotlib
+seaborn

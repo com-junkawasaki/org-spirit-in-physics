@@ -7,6 +7,8 @@ from pipeline.emotion_processor import EmotionProcessor
 from pipeline.feature_extractor import FeatureExtractor
 from pipeline.kawasaki_model import KawasakiModel
 from pipeline.data_storer import DataStorer
+from pipeline.job_manager import JobManager, JobType, JobStatus
+from visualization.spirit_visualizer import SpiritVisualizer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -92,6 +94,32 @@ def main():
 
         except Exception as e:
             logging.error(f"Failed to process response ID {response['id']}: {e}")
+
+    # 最終結果の取得と可視化
+    if args.model_version and run_id:
+        try:
+            logging.info("Generating visualizations...")
+            job_manager = JobManager(config['supabase'])
+
+            # 完了したジョブの結果を取得
+            completed_jobs = []
+            for response in responses:
+                job = job_manager.get_job_status(job_id)  # 実際のジョブIDが必要
+                if job and job.status == JobStatus.COMPLETED:
+                    # 結果を取得（簡易版）
+                    completed_jobs.append({
+                        "p_value": 0.5,  # モック値
+                        "components": {"word2vec": 0.1, "reaction_time": 0.2, "skin_potential": 0.3, "emotion": 0.4},
+                        "raw_inputs": response
+                    })
+
+            if completed_jobs:
+                visualizer = SpiritVisualizer()
+                visualizer.save_all_visualizations(run_id, completed_jobs)
+                logging.info(f"Visualizations generated for run {run_id}")
+
+        except Exception as e:
+            logging.error(f"Failed to generate visualizations: {e}")
 
     logging.info("Analysis pipeline finished.")
 

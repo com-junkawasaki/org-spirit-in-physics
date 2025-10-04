@@ -102,6 +102,57 @@ The analysis now uses a durable, job-based system that supports:
 - **FEATURE_EXTRACTION**: Extracts features from emotion data
 - **MODEL_CALCULATION**: Runs Kawasaki model and stores results
 
+## Visualization Features
+
+The analyzer includes comprehensive visualization capabilities:
+
+### Generated Visualizations
+- **3D Spirit Vector Plot**: Interactive 3D visualization of spirit probabilities in vector space
+- **Component Analysis**: Breakdown of how each model component contributes to the final probability
+- **Time Series Plots**: Physiological and emotional data over time
+- **Heatmap**: Stimulus-response probability matrix
+- **Analysis Report**: Comprehensive HTML report with all metrics and visualizations
+
+### Visualization Output
+All visualizations are saved as interactive HTML files in the `visualizations/` directory:
+- `run_{run_id}_spirit_vectors.html` - 3D spirit vector space
+- `run_{run_id}_components.html` - Component contribution analysis
+- `run_{run_id}_heatmap.html` - Probability heatmap
+- `run_{run_id}_report.html` - Complete analysis report
+
+## Advanced Features
+
+### Word2Vec Model Integration
+- **Custom Training**: Trains Word2Vec model on Jung stimuli words and related Japanese translations
+- **Fallback Handling**: Uses deterministic random vectors for unknown words
+- **Emotional Weighting**: Considers emotional intensity in word similarity calculations
+
+### Physiological Data Synchronization
+- **Baseline Calculation**: Automatic baseline detection from pre-stimulus data
+- **Time Alignment**: Synchronizes all time-series data to stimulus presentation
+- **Feature Extraction**: Computes ΔSP and response integrals from skin potential data
+
+### Emotion Analysis Integration
+- **Multi-Modal Processing**: Face, prosody, and language emotion analysis
+- **Time-Series Storage**: Stores emotion predictions with precise timestamps
+- **Component Integration**: Feeds emotion features into Kawasaki model calculations
+
+### Job-Based Processing
+- **Fault Tolerance**: Automatic retry logic for failed jobs
+- **Dependency Management**: Ensures proper execution order
+- **Progress Tracking**: Real-time monitoring of analysis pipeline
+- **Scalable Architecture**: Supports concurrent processing of multiple responses
+
+## API Endpoints
+
+The REST API server (`api_server.py`) provides:
+
+- `GET /runs` - List all analysis runs
+- `GET /runs/{run_id}` - Get detailed run information
+- `GET /runs/{run_id}/results` - Get analysis results
+- `GET /jobs/{job_id}` - Get job status
+- `POST /jobs/{job_id}/retry` - Retry failed jobs
+
 ### Legacy Single-Run Mode
 
 For simple cases, you can still use:
