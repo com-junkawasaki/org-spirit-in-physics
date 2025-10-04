@@ -1,51 +1,83 @@
 import numpy as np
 import logging
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
-# Try to import gensim, use fallback if not available
+# Try to import gensim and advanced word2vec trainer, use fallback if not available
 try:
     from gensim.models import Word2Vec
     GENSIM_AVAILABLE = True
+    try:
+        from word2vec_trainer import AdvancedWord2VecTrainer
+        ADVANCED_W2V_AVAILABLE = True
+        logging.info("Advanced Word2Vec trainer available")
+    except ImportError:
+        ADVANCED_W2V_AVAILABLE = False
+        logging.info("Advanced Word2Vec trainer not available, using basic Word2Vec")
 except ImportError:
     logging.warning("Gensim not available, using fallback word vector generation")
     GENSIM_AVAILABLE = False
+    ADVANCED_W2V_AVAILABLE = False
 
 class KawasakiModel:
     def __init__(self, params, w2v_config):
         self.params = params
         self.w2v_model = None
+        self.advanced_trainer = None
+        self.use_advanced_w2v = w2v_config.get('use_advanced', False)
         self._load_word2vec_model(w2v_config.get('model_path'))
         logging.info("KawasakiModel initialized.")
 
     def _load_word2vec_model(self, model_path: Optional[str]):
-            """Word2Vecモデルの読み込み"""
-            if not GENSIM_AVAILABLE:
-                logging.info("Gensim not available, using fallback word vectors")
-                self.w2v_model = None
-                return
+        """Word2Vecモデルの読み込み（高度化版対応）"""
+        if not GENSIM_AVAILABLE:
+            logging.info("Gensim not available, using fallback word vectors")
+            self.w2v_model = None
+            self.advanced_trainer = None
+            return
 
-            if model_path and os.path.exists(model_path):
-                try:
-                    self.w2v_model = Word2Vec.load(model_path)
-                    logging.info(f"Word2Vec model loaded from {model_path}")
-                except Exception as e:
-                    logging.error(f"Failed to load Word2Vec model: {e}")
-                    self.w2v_model = None
-            else:
-                logging.warning("Word2Vec model path not provided or file not found")
+        # 高度化されたWord2Vecを使用する場合
+        if self.use_advanced_w2v and ADVANCED_W2V_AVAILABLE:
+            try:
+                self.advanced_trainer = AdvancedWord2VecTrainer()
+                if model_path and os.path.exists(model_path):
+                    self.advanced_trainer.load_model(model_path)
+                    logging.info(f"Advanced Word2Vec model loaded from {model_path}")
+                else:
+                    logging.warning("Advanced Word2Vec model path not provided, will use basic functionality")
+            except Exception as e:
+                logging.error(f"Failed to load advanced Word2Vec model: {e}")
+                self.advanced_trainer = None
+        # 基本的なWord2Vecを使用する場合
+        elif model_path and os.path.exists(model_path):
+            try:
+                self.w2v_model = Word2Vec.load(model_path)
+                logging.info(f"Basic Word2Vec model loaded from {model_path}")
+            except Exception as e:
+                logging.error(f"Failed to load basic Word2Vec model: {e}")
+                self.w2v_model = None
+        else:
+            logging.warning("Word2Vec model path not provided or file not found")
 
     def get_word_vector(self, word: str) -> np.ndarray:
-        """単語のベクトルを取得"""
+        """単語のベクトルを取得（高度化版対応）"""
+        # 高度化されたWord2Vecトレーナーが利用可能な場合
+        if self.advanced_trainer:
+            try:
+                return self.advanced_trainer.get_enhanced_word_vector(word)
+            except Exception as e:
+                logging.warning(f"Failed to get enhanced vector for '{word}': {e}")
+
+        # 基本的なWord2Vecモデルが利用可能な場合
         if self.w2v_model:
             try:
                 return self.w2v_model.wv[word]
             except KeyError:
                 logging.warning(f"Word '{word}' not in vocabulary, using random vector")
-        
-        # Word2Vecモデルがない場合はランダムベクトルを使用
+
+        # どちらも利用できない場合はランダムベクトルを使用
         np.random.seed(hash(word) % 2**32)  # 単語に基づく決定論的なシード
-        return np.random.normal(0, 0.1, 100)  # 平均0、標準偏差0.1の正規分布
+        return np.random.normal(0, 0.1, 200)  # 高度化モデルに合わせた次元数
 
     def calculate_reaction_component(self, reaction_time_ms: int) -> float:
         """反応時間成分 r(w_I, w_O) の計算"""
@@ -181,30 +213,123 @@ class KawasakiModel:
 
     def find_spiritually_similar_words(self, target_word: str, topn: int = 5) -> list:
         """
-        霊性的に類似した単語を探す（感情的・生理的文脈を考慮）
+        霊性的に類似した単語を探す（感情価統合・スピリチュアル文脈を考慮）
         """
-        if not self.w2v_model or not GENSIM_AVAILABLE:
-            return []
-        
-        try:
-            # 通常の意味的類似度に加えて、感情価を考慮
-            similar_words = self.w2v_model.wv.most_similar(target_word, topn=topn*2)
-            
-            # 感情価の高い単語を優先（簡易版）
-            emotionally_weighted = []
-            for word, similarity in similar_words:
-                # 単語の感情価を推定（仮定のロジック）
-                emotional_boost = self._estimate_emotional_intensity(word)
-                weighted_similarity = similarity * (1 + emotional_boost)
-                emotionally_weighted.append((word, weighted_similarity))
-            
-            # 重み付けされた類似度でソート
-            emotionally_weighted.sort(key=lambda x: x[1], reverse=True)
-            
-            return emotionally_weighted[:topn]
-            
-        except KeyError:
-            return []
+        # 高度化されたWord2Vecトレーナーが利用可能な場合
+        if self.advanced_trainer:
+            try:
+                # 感情価統合された類似語検索を使用
+                enhanced_similar = self.advanced_trainer.find_enhanced_similar_words(
+                    target_word, topn=topn, include_emotional=True
+                )
+                return [(word, sim) for word, sim in enhanced_similar]
+            except Exception as e:
+                logging.warning(f"Enhanced similar words search failed: {e}")
+
+        # 基本的なWord2Vecモデルが利用可能な場合
+        if self.w2v_model and GENSIM_AVAILABLE:
+            try:
+                # 通常の意味的類似度に加えて、感情価を考慮
+                similar_words = self.w2v_model.wv.most_similar(target_word, topn=topn*2)
+
+                # 感情価の高い単語を優先（簡易版）
+                emotionally_weighted = []
+                for word, similarity in similar_words:
+                    # 単語の感情価を推定（仮定のロジック）
+                    emotional_boost = self._estimate_emotional_intensity(word)
+                    weighted_similarity = similarity * (1 + emotional_boost)
+                    emotionally_weighted.append((word, weighted_similarity))
+
+                # 重み付けされた類似度でソート
+                emotionally_weighted.sort(key=lambda x: x[1], reverse=True)
+
+                return emotionally_weighted[:topn]
+
+            except KeyError:
+                pass
+
+        return []
+
+    def get_enhanced_semantic_similarity(self, word1: str, word2: str,
+                                       semantic_weight: float = 0.7,
+                                       emotional_weight: float = 0.3) -> float:
+        """
+        高度化された意味的類似度を計算（感情価統合）
+        """
+        if self.advanced_trainer:
+            try:
+                return self.advanced_trainer.get_enhanced_similarity(
+                    word1, word2, semantic_weight, emotional_weight
+                )
+            except Exception as e:
+                logging.warning(f"Enhanced similarity calculation failed: {e}")
+
+        # フォールバック: 基本的なベクトル類似度
+        vec1 = self.get_word_vector(word1)
+        vec2 = self.get_word_vector(word2)
+
+        # コサイン類似度
+        dot_product = np.dot(vec1, vec2)
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+
+        return dot_product / (norm1 * norm2)
+
+    def get_spiritual_semantic_distance(self, word: str) -> Dict[str, float]:
+        """
+        単語とスピリチュアル概念との意味的距離を計算
+        """
+        if self.advanced_trainer:
+            try:
+                return self.advanced_trainer.get_spiritual_semantic_distance(word)
+            except Exception as e:
+                logging.warning(f"Spiritual distance calculation failed: {e}")
+
+        # フォールバック: 基本的なスピリチュアル距離計算
+        spiritual_concepts = ["soul", "spirit", "consciousness", "transcendence", "enlightenment",
+                             "愛", "霊", "意識", "超越", "悟り"]
+
+        distances = {}
+        for concept in spiritual_concepts:
+            try:
+                similarity = self.get_enhanced_semantic_similarity(word, concept)
+                distances[concept] = similarity
+            except:
+                distances[concept] = 0.0
+
+        return distances
+
+    def analyze_semantic_clusters(self, words: List[str]) -> Dict[str, List[str]]:
+        """
+        意味的クラスタリング分析を実行
+        """
+        if self.advanced_trainer:
+            try:
+                return self.advanced_trainer.analyze_semantic_clusters(words)
+            except Exception as e:
+                logging.warning(f"Semantic clustering analysis failed: {e}")
+
+        # フォールバック: 簡易的なクラスタリング
+        clusters = {}
+        processed_words = set()
+
+        for word in words:
+            if word in processed_words:
+                continue
+
+            # 類似語を取得（簡易版）
+            similar_words = self.find_spiritually_similar_words(word, topn=5)
+            cluster_words = [w for w, sim in similar_words if sim > 0.3]  # 類似度閾値
+
+            if len(cluster_words) > 1:
+                cluster_name = f"cluster_{word}"
+                clusters[cluster_name] = [word] + cluster_words
+                processed_words.update([word] + cluster_words)
+
+        return clusters
 
     def _estimate_emotional_intensity(self, word: str) -> float:
         """単語の感情強度を推定（簡易版）"""
