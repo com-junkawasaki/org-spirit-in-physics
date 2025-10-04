@@ -3,26 +3,26 @@
     {
       "tensorName": "Word Embeddings - 感情単語の意味的類似性",
       "tensorShape": [10, 128],
-      "tensorPath": "./tensorflow-projector-data/word_embeddings_vectors.tsv",
-      "metadataPath": "./tensorflow-projector-data/word_embeddings_metadata.tsv"
+      "tensorPath": "word_embeddings_vectors.tsv",
+      "metadataPath": "word_embeddings_metadata.tsv"
     },
     {
       "tensorName": "Emotion Patterns - 実験中の感情変化",
       "tensorShape": [200, 8],
-      "tensorPath": "./tensorflow-projector-data/emotion_patterns_vectors.tsv",
-      "metadataPath": "./tensorflow-projector-data/emotion_patterns_metadata.tsv"
+      "tensorPath": "emotion_patterns_vectors.tsv",
+      "metadataPath": "emotion_patterns_metadata.tsv"
     },
     {
       "tensorName": "Participant Features - Spirit確率と特徴量",
       "tensorShape": [12, 6],
-      "tensorPath": "./tensorflow-projector-data/participant_features_vectors.tsv",
-      "metadataPath": "./tensorflow-projector-data/participant_features_metadata.tsv"
+      "tensorPath": "participant_features_vectors.tsv",
+      "metadataPath": "participant_features_metadata.tsv"
     },
     {
       "tensorName": "Physiological Time-series - 生理データウィンドウ",
       "tensorShape": [38, 15],
-      "tensorPath": "./tensorflow-projector-data/physiological_timeseries_vectors.tsv",
-      "metadataPath": "./tensorflow-projector-data/physiological_timeseries_metadata.tsv"
+      "tensorPath": "physiological_timeseries_vectors.tsv",
+      "metadataPath": "physiological_timeseries_metadata.tsv"
     }
   ]
 }
