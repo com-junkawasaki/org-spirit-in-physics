@@ -1,6 +1,7 @@
 import argparse
 import yaml
 import logging
+import os
 from pipeline.data_loader import DataLoader
 from pipeline.emotion_processor import EmotionProcessor
 from pipeline.feature_extractor import FeatureExtractor
@@ -44,21 +45,49 @@ def main():
         try:
             logging.info(f"Processing response ID: {response['id']}")
 
-            # b. Process emotions from video/audio
-            # This is a placeholder for downloading from storage and processing
-            # emotion_timeseries = emotion_processor.process_media(response['video_file_path'])
-            # data_storer.store_emotion_data(response['id'], emotion_timeseries)
-            
-            # c. Extract features
-            # This would load all necessary time-series data for the response
-            # features = feature_extractor.extract_features_for_response(response)
-            
-            # d. Run Kawasaki Model
-            # result = kawasaki_model.calculate(features)
+            # b. Get media file paths for this response
+            media_files = data_loader.get_media_files_for_response(response)
+            emotion_timeseries_data = []
 
-            # e. Store results
-            # data_storer.store_analysis_result(run_id, response['id'], result)
-            
+            # Process video file if available
+            if media_files['video_path']:
+                try:
+                    local_video_path = data_loader.download_media_file(media_files['video_path'])
+                    video_emotions = emotion_processor.process_media(local_video_path)
+                    emotion_timeseries_data.extend(video_emotions)
+                    # Clean up local file
+                    os.remove(local_video_path)
+                except Exception as e:
+                    logging.warning(f"Failed to process video for response {response['id']}: {e}")
+
+            # Process audio file if available (and no video was processed)
+            elif media_files['audio_path']:
+                try:
+                    local_audio_path = data_loader.download_media_file(media_files['audio_path'])
+                    audio_emotions = emotion_processor.process_media(local_audio_path)
+                    emotion_timeseries_data.extend(audio_emotions)
+                    # Clean up local file
+                    os.remove(local_audio_path)
+                except Exception as e:
+                    logging.warning(f"Failed to process audio for response {response['id']}: {e}")
+
+            # c. Store emotion data
+            if emotion_timeseries_data:
+                data_storer.store_emotion_data(response['id'], emotion_timeseries_data)
+
+            # d. Extract features
+            # TODO: Load skin potential data from timeseries table
+            sp_timeseries = []  # Placeholder - load from database
+            features = feature_extractor.extract_features_for_response(
+                response, sp_timeseries, emotion_timeseries_data
+            )
+
+            # e. Run Kawasaki Model
+            result = kawasaki_model.calculate(features)
+
+            # f. Store results
+            data_storer.store_analysis_result(run_id, response['id'], result)
+
             logging.info(f"Successfully processed response ID: {response['id']}")
 
         except Exception as e:

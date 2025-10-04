@@ -53,11 +53,35 @@ The analysis pipeline is designed as a series of sequential steps:
 2.  **Configure Environment**:
     -   Copy `config.example.yaml` to `config.yaml`.
     -   Fill in your Supabase project URL, service role key, and Hume AI API key.
+    -   Ensure your Hume AI API key has access to Expression Measurement endpoints.
 
 3.  **Run Pipeline**:
     ```bash
     python src/main.py --model-version "1.0-alpha" --notes "Initial test run with default parameters."
     ```
+
+## Hume AI Integration
+
+The pipeline integrates with Hume AI's Expression Measurement API to analyze facial expressions, vocal emotions, and language content from participant videos and audio recordings.
+
+### Supported Media Types
+- **Video files**: `.mp4`, `.avi`, `.mov`, `.webm` - Analyzes facial expressions, vocal prosody, and spoken language
+- **Audio files**: `.mp3`, `.wav`, `.m4a`, `.flac` - Analyzes vocal prosody and spoken language
+
+### Emotion Models Used
+- **Face**: Facial expression analysis (joy, sadness, anger, fear, disgust, surprise)
+- **Prosody**: Vocal emotion analysis from speech patterns
+- **Language**: Semantic emotion analysis from spoken content
+- **Burst**: Emotion intensity bursts
+- **NER**: Named entity recognition
+
+### Data Flow
+1. Downloads media files from Supabase Storage
+2. Submits to Hume AI batch processing API
+3. Waits for asynchronous job completion
+4. Parses time-series emotion predictions
+5. Stores emotion data in `response_emotion_timeseries` table
+6. Uses emotion data for feature extraction in Kawasaki Model
 
 ## Schema
 

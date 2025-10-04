@@ -1,12 +1,16 @@
 from supabase import create_client, Client
 import logging
+import os
+import tempfile
+from typing import Optional
 
 class DataLoader:
     def __init__(self, config):
         self.supabase: Client = create_client(config['url'], config['service_role_key'])
+        self.bucket_name = "spirit-in-physics"
         logging.info("DataLoader initialized and Supabase client created.")
 
-    def get_unprocessed_responses(self):
+    def get_unprocessed_responses(self, limit: int = 10):
         """
         Fetches responses from participant_response_data that have not yet
         been processed in the latest analysis run. This logic is a placeholder
@@ -14,7 +18,7 @@ class DataLoader:
         """
         logging.info("Fetching unprocessed responses...")
         # In a real scenario, you'd join against analysis_results to find unprocessed items.
-        response = self.supabase.table('participant_response_data').select('*').limit(10).execute()
+        response = self.supabase.table('participant_response_data').select('*').limit(limit).execute()
         if response.data:
             logging.info(f"Found {len(response.data)} responses.")
             return response.data
@@ -22,10 +26,67 @@ class DataLoader:
             logging.warning("No new responses found.")
             return []
 
-    def download_media_file(self, file_path: str):
+    def download_media_file(self, storage_path: str, local_dir: Optional[str] = None) -> str:
         """
-        Downloads a media file from Supabase Storage.
+        Downloads a media file from Supabase Storage to local filesystem.
+
+        Args:
+            storage_path: Path in Supabase Storage (e.g., "participant-uuid/audio/filename.mp4")
+            local_dir: Local directory to save file. If None, uses temp directory.
+
+        Returns:
+            Local file path of downloaded file
         """
-        # Placeholder for storage download logic
-        logging.info(f"Downloading media file from: {file_path}")
-        pass
+        if local_dir is None:
+            local_dir = tempfile.gettempdir()
+
+        # Extract filename from storage path
+        filename = os.path.basename(storage_path)
+        local_path = os.path.join(local_dir, filename)
+
+        logging.info(f"Downloading file from storage: {storage_path} -> {local_path}")
+
+        try:
+            # Download file from Supabase Storage
+            with open(local_path, 'wb') as f:
+                res = self.supabase.storage.from_(self.bucket_name).download(storage_path)
+                f.write(res)
+
+            logging.info(f"Successfully downloaded file to: {local_path}")
+            return local_path
+
+        except Exception as e:
+            logging.error(f"Failed to download file {storage_path}: {e}")
+            raise
+
+    def get_response_with_media(self, response_id: str) -> Optional[dict]:
+        """
+        Gets a specific response with its associated media file information.
+        """
+        logging.info(f"Fetching response {response_id} with media info...")
+
+        response = self.supabase.table('participant_response_data').select('*').eq('id', response_id).execute()
+
+        if response.data and len(response.data) > 0:
+            return response.data[0]
+        else:
+            logging.warning(f"Response {response_id} not found.")
+            return None
+
+    def get_media_files_for_response(self, response_data: dict) -> dict:
+        """
+        Extracts media file paths from response data.
+
+        Returns:
+            Dict with keys: 'video_path', 'audio_path' (may be None)
+        """
+        video_path = response_data.get('video_file_path')
+        audio_path = response_data.get('audio_file_path')
+
+        # These paths should be relative to the spirit-in-physics bucket
+        # Format: participant-uuid/type/filename.ext
+
+        return {
+            'video_path': video_path,
+            'audio_path': audio_path
+        }
