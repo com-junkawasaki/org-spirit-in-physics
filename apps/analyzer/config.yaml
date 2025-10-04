@@ -5,7 +5,7 @@ supabase:
   service_role_key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
 
 hume_ai:
-  api_key: "YOUR_HUME_AI_API_KEY"
+  api_key: "LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s"
 
 model_params:
   alpha: 1.0      # Weight for reaction time component r(w_I, w_O)
@@ -21,5 +21,3 @@ processing:
   max_concurrent_jobs: 3    # Maximum number of Hume AI jobs to run concurrently
   job_timeout_seconds: 600  # Timeout for Hume AI job completion (10 minutes)
   temp_dir: "/tmp/spirit-analysis"  # Directory for temporary file downloads
-hume_ai:
-  api_key: "YOUR_HUME_AI_API_KEY"

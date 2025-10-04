@@ -5,27 +5,37 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 # Hume AIの実APIを使用するかシミュレーターを使用するかを設定
-USE_REAL_API = False
+USE_REAL_API = True
 
 if USE_REAL_API:
     try:
         from hume import AsyncHumeClient
         from hume.expression_measurement.batch import (
-            FaceConfig,
-            ProsodyConfig,
-            LanguageConfig,
-            BurstConfig,
-            NerConfig,
+            Face,
+            Prosody,
+            Language,
+            Burst,
+            Ner,
             Models,
-            Job,
-            JobState
+            InferenceJob,
+            CompletedState,
+            FailedState,
+            InProgressState,
+            QueuedState
         )
-    except ImportError:
-        logging.warning("Hume AI package not available, falling back to simulator")
+        logging.info("Using real Hume AI API")
+    except ImportError as e:
+        logging.warning(f"Hume AI package not available ({e}), falling back to simulator")
         USE_REAL_API = False
 
 if not USE_REAL_API:
     from .hume_ai_simulator import HumeAISimulator
+    # シミュレーター用のダミークラス
+    class Job:
+        pass
+    class JobState:
+        COMPLETED = "completed"
+        FAILED = "failed"
 
 class EmotionProcessor:
     def __init__(self, config):
@@ -74,11 +84,11 @@ class EmotionProcessor:
         try:
             # Configure models for emotion analysis
             models = Models(
-                face=FaceConfig(),  # Facial expression analysis
-                prosody=ProsodyConfig(),  # Vocal emotion analysis
-                language=LanguageConfig(),  # Language emotion analysis
-                burst=BurstConfig(),  # Emotion bursts
-                ner=NerConfig()  # Named entity recognition
+                face=Face(),  # Facial expression analysis
+                prosody=Prosody(),  # Vocal emotion analysis
+                language=Language(),  # Language emotion analysis
+                burst=Burst(),  # Emotion bursts
+                ner=Ner()  # Named entity recognition
             )
 
             # Start batch job

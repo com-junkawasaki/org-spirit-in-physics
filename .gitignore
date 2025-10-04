@@ -15,3 +15,7 @@ playwright-report/
 .next
 build
 dist
+
+# python
+venv
+__pycache__

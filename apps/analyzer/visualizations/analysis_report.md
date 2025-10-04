@@ -4,8 +4,8 @@
 ## Summary Statistics
 - **Total Participants**: 11
 - **Total Responses Analyzed**: 11
-- **Average Spirit Probability**: 0.9999 ± 0.0001
-- **Spirit Probability Range**: [0.9996, 1.0000]
+- **Average Spirit Probability**: 0.9999 ± 0.0000
+- **Spirit Probability Range**: [0.9999, 1.0000]
 
 ## Top Performing Response
 - **Stimulus**: 金持ち
@@ -14,13 +14,13 @@
 - **Reaction Time**: 100 ms
 
 ## Lowest Performing Response
-- **Stimulus**: 年月
-- **Response**: 蛙
-- **Spirit Probability**: 0.9996
+- **Stimulus**: 嘘
+- **Response**: 緑
+- **Spirit Probability**: 0.9999
 - **Reaction Time**: 100 ms
 
 ## Component Analysis
-- **Word2Vec Component**: -0.016 ± 0.124
+- **Word2Vec Component**: 0.027 ± 0.100
 - **Reaction Time Component**: 9.901 ± 0.000
 - **Skin Potential Component**: 1.000 ± 0.000
 - **Emotion Component**: 1.000 ± 0.000
