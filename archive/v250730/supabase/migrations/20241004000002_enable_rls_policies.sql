@@ -1,9 +1,9 @@
 -- Enable Row Level Security on all tables
 ALTER TABLE participants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE consents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE experiment_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE participant_consents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE participant_experiment_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE word_stimuli ENABLE ROW LEVEL SECURITY;
-ALTER TABLE response_data ENABLE ROW LEVEL SECURITY;
+ALTER TABLE participant_response_data ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for participants table
 -- Participants can only see their own data

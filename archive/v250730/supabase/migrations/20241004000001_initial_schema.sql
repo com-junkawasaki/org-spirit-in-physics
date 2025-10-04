@@ -12,8 +12,8 @@ CREATE TABLE participants (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create consents table
-CREATE TABLE consents (
+-- Create participant_consents table
+CREATE TABLE participant_consents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
   signature TEXT NOT NULL,
@@ -24,8 +24,8 @@ CREATE TABLE consents (
   UNIQUE(participant_id)
 );
 
--- Create experiment_sessions table
-CREATE TABLE experiment_sessions (
+-- Create participant_experiment_sessions table
+CREATE TABLE participant_experiment_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
   session_id UUID NOT NULL,
@@ -44,8 +44,8 @@ CREATE TABLE word_stimuli (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create response_data table
-CREATE TABLE response_data (
+-- Create participant_response_data table
+CREATE TABLE participant_response_data (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
   experiment_id UUID NOT NULL,
@@ -66,13 +66,13 @@ CREATE TABLE response_data (
 
 -- Create indexes for better performance
 CREATE INDEX idx_participants_created_at ON participants(created_at);
-CREATE INDEX idx_consents_participant_id ON consents(participant_id);
-CREATE INDEX idx_experiment_sessions_participant_id ON experiment_sessions(participant_id);
-CREATE INDEX idx_experiment_sessions_session_type ON experiment_sessions(session_type);
-CREATE INDEX idx_response_data_participant_id ON response_data(participant_id);
-CREATE INDEX idx_response_data_experiment_id ON response_data(experiment_id);
-CREATE INDEX idx_response_data_session ON response_data(session);
-CREATE INDEX idx_response_data_timestamp ON response_data(timestamp);
+CREATE INDEX idx_participant_consents_participant_id ON participant_consents(participant_id);
+CREATE INDEX idx_participant_experiment_sessions_participant_id ON participant_experiment_sessions(participant_id);
+CREATE INDEX idx_participant_experiment_sessions_session_type ON participant_experiment_sessions(session_type);
+CREATE INDEX idx_participant_response_data_participant_id ON participant_response_data(participant_id);
+CREATE INDEX idx_participant_response_data_experiment_id ON participant_response_data(experiment_id);
+CREATE INDEX idx_participant_response_data_session ON participant_response_data(session);
+CREATE INDEX idx_participant_response_data_timestamp ON participant_response_data(timestamp);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -85,6 +85,6 @@ $$ language 'plpgsql';
 
 -- Add updated_at triggers to all tables
 CREATE TRIGGER update_participants_updated_at BEFORE UPDATE ON participants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_consents_updated_at BEFORE UPDATE ON consents FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_experiment_sessions_updated_at BEFORE UPDATE ON experiment_sessions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_response_data_updated_at BEFORE UPDATE ON response_data FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_participant_consents_updated_at BEFORE UPDATE ON participant_consents FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_participant_experiment_sessions_updated_at BEFORE UPDATE ON participant_experiment_sessions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_participant_response_data_updated_at BEFORE UPDATE ON participant_response_data FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

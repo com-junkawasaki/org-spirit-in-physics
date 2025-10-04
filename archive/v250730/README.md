@@ -31,18 +31,31 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 1. Create a new Supabase project at [supabase.com](https://supabase.com)
 2. Copy your project URL and API keys from the project settings
-3. Run database migrations to set up the schema
+3. Set up environment variables in `.env.local`
+4. Run database migrations to set up the schema
 
 ```bash
 # Install dependencies
 pnpm install
 
-# Run database migrations
-pnpm supabase db push
+# Start local Supabase (optional, for development)
+pnpm supabase start
 
-# Generate TypeScript types
-pnpm supabase gen types typescript --local > src/lib/database.types.ts
+# Run database migrations
+pnpm supabase db reset
+
+# Stop local Supabase (when done)
+pnpm supabase stop
 ```
+
+**Note**: The database schema includes:
+- `participants` - Participant information
+- `participant_consents` - Consent data
+- `participant_experiment_sessions` - Experiment session records
+- `word_stimuli` - Stimulus words for the Jung test
+- `participant_response_data` - Response data from participants
+
+All tables have Row Level Security (RLS) enabled with appropriate policies.
 
 ### Development
 
