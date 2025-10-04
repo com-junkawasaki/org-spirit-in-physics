@@ -3,9 +3,9 @@ const nextConfig = {
   experimental: {
     appDir: true,
   },
-  webpack: (config, { isServer }) => {
-    // Node.js ポリフィルの追加（InngestとKuzuで必要）
-    if (!isServer) {
+    webpack: (config, { isServer }) => {
+      // Node.js ポリフィルの追加（Inngestで必要）
+      if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         "async_hooks": false,
@@ -19,22 +19,17 @@ const nextConfig = {
         "https": false,
         "zlib": false,
         "querystring": false,
-        "kuzu": false, // ブラウザでは使用しない
       };
     }
 
-    // サーバーサイドでのみKuzuを有効にする
+    // サーバーサイドでの外部モジュール設定
     if (isServer) {
       config.externals = config.externals || [];
-      config.externals.push({
-        'kuzu': 'commonjs kuzu'
-      });
+      // Supabaseはwebpackバンドルに含めるため、外部設定は不要
     }
 
     return config;
   },
-  // サーバーサイドでのみKuzuを使用するための設定
-  serverComponentsExternalPackages: ['kuzu'],
 };
 
 module.exports = nextConfig;

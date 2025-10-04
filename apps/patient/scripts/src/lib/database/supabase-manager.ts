@@ -35,18 +35,36 @@ export class SupabaseManager {
    * Merkle DAG: 参加者データの保存
    */
   async saveParticipant(participant: Participant): Promise<void> {
-    const { error } = await this.supabase
+    // 新しいスキーマではparticipantsとparticipant_consentsに分離
+    // まずparticipantsテーブルに基本情報を保存
+    const { error: participantError } = await this.supabase
       .from('participants')
       .upsert({
         id: participant.id,
-        signature: participant.signature,
-        agreed_at: participant.agreedAt,
-        agreements: participant.agreements,
+        name: participant.name || null,
+        age: participant.age || null,
+        gender: participant.gender || null,
+        handedness: participant.handedness || null,
       });
 
-    if (error) {
-      console.error('Error saving participant:', error);
-      throw error;
+    if (participantError) {
+      console.error('Error saving participant:', participantError);
+      throw participantError;
+    }
+
+    // 次にparticipant_consentsテーブルに同意情報を保存
+    const { error: consentError } = await this.supabase
+      .from('participant_consents')
+      .upsert({
+        participant_id: participant.id,
+        signature: participant.signature || '',
+        agreements: participant.agreements || {},
+        agreed_at: participant.agreedAt,
+      });
+
+    if (consentError) {
+      console.error('Error saving participant consent:', consentError);
+      throw consentError;
     }
 
     console.log(`Participant ${participant.id} saved to Supabase`);
@@ -56,13 +74,19 @@ export class SupabaseManager {
    * Merkle DAG: セッションデータの保存
    */
   async saveSession(session: Session): Promise<void> {
+    // 新しいスキーマではparticipant_experiment_sessionsテーブルを使用
+    // イベントデータからセッション情報を抽出
+    const sessionStartedEvent = session.events.find((e: any) => e.type === 'session_started');
+    const sessionEndedEvent = session.events.filter((e: any) => e.type === 'response_window_closed').pop();
+
     const { error } = await this.supabase
-      .from('sessions')
+      .from('participant_experiment_sessions')
       .upsert({
-        id: session.id,
+        session_id: session.id,
         participant_id: session.participantId,
-        events: session.events,
-        created_at: session.createdAt,
+        session_type: 'session-1', // デフォルト値、必要に応じて変更
+        start_time: sessionStartedEvent?.timestamp || session.createdAt,
+        end_time: sessionEndedEvent?.timestamp || null,
       });
 
     if (error) {
@@ -101,40 +125,30 @@ export class SupabaseManager {
    * Merkle DAG: 感情分析結果の保存
    */
   async saveEmotionAnalysis(analysis: EmotionAnalysis): Promise<void> {
-    // 感情分析結果を保存
-    const { error: analysisError } = await this.supabase
-      .from('emotion_analyses')
-      .upsert({
-        id: analysis.id,
-        participant_id: analysis.participantId,
-        video_file_id: analysis.videoFileId,
-        session_type: analysis.sessionType,
-        timestamp: analysis.timestamp,
-        processing_time_ms: analysis.processingTime,
-      });
-
-    if (analysisError) {
-      console.error('Error saving emotion analysis:', analysisError);
-      throw analysisError;
-    }
-
-    // 各感情を保存
+    // 新しいスキーマではparticipant_response_dataテーブルに感情データを保存
+    // 各感情を個別の応答データとして保存
     for (const emotion of analysis.emotions) {
-      const emotionId = `${analysis.id}_${emotion.name}`;
-
-      const { error: emotionError } = await this.supabase
-        .from('emotions')
+      const { error } = await this.supabase
+        .from('participant_response_data')
         .upsert({
-          id: emotionId,
-          analysis_id: analysis.id,
-          name: emotion.name,
-          score: emotion.score,
-          confidence: emotion.confidence,
+          participant_id: analysis.participantId,
+          experiment_id: analysis.id,
+          word_stimulus_id: 1, // デフォルト値、必要に応じて変更
+          stimulus_word: emotion.name, // 感情名を刺激語として使用
+          response_word: emotion.name, // 感情名を応答語としても使用
+          reaction_time_ms: 0, // 感情分析なので反応時間なし
+          session: analysis.sessionType as 'session-1' | 'session-2',
+          timestamp: analysis.timestamp,
+          emotion: emotion.name,
+          emotion_confidence: emotion.confidence,
+          skin_potential: null, // 感情分析では取得しない
+          audio_file_path: null,
+          video_file_path: analysis.videoFileId,
         });
 
-      if (emotionError) {
-        console.error('Error saving emotion:', emotionError);
-        throw emotionError;
+      if (error) {
+        console.error('Error saving emotion analysis:', error);
+        throw error;
       }
     }
 
@@ -145,9 +159,17 @@ export class SupabaseManager {
    * Merkle DAG: 参加者データの取得
    */
   async getParticipant(participantId: string): Promise<Participant | null> {
+    // 新しいスキーマではparticipantsとparticipant_consentsをJOINして取得
     const { data, error } = await this.supabase
       .from('participants')
-      .select('*')
+      .select(`
+        *,
+        participant_consents (
+          signature,
+          agreements,
+          agreed_at
+        )
+      `)
       .eq('id', participantId)
       .single();
 
@@ -160,11 +182,17 @@ export class SupabaseManager {
       throw error;
     }
 
+    const consent = data.participant_consents?.[0]; // 最新の同意情報を取得
+
     return {
       id: data.id,
-      signature: data.signature,
-      agreedAt: data.agreed_at,
-      agreements: data.agreements,
+      name: data.name,
+      age: data.age,
+      gender: data.gender,
+      handedness: data.handedness,
+      signature: consent?.signature,
+      agreedAt: consent?.agreed_at,
+      agreements: consent?.agreements,
     };
   }
 
@@ -174,7 +202,23 @@ export class SupabaseManager {
   async getAllParticipants(): Promise<Participant[]> {
     const { data, error } = await this.supabase
       .from('participants')
-      .select('*')
+      .select(`
+        *,
+        participant_consents (
+          signature,
+          agreements,
+          agreed_at
+        ),
+        sessions (
+          id
+        ),
+        video_files (
+          id,
+          file_name,
+          file_path,
+          file_size
+        )
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -182,53 +226,78 @@ export class SupabaseManager {
       throw error;
     }
 
-    return data.map(row => ({
-      id: row.id,
-      signature: row.signature,
-      agreedAt: row.agreed_at,
-      agreements: row.agreements,
-    }));
+    return data.map(row => {
+      const consent = row.participant_consents?.[0]; // 最新の同意情報を取得
+      return {
+        id: row.id,
+        name: row.name,
+        age: row.age,
+        gender: row.gender,
+        handedness: row.handedness,
+        signature: consent?.signature,
+        agreedAt: consent?.agreed_at,
+        agreements: consent?.agreements,
+        hasSessionData: (row.sessions?.length || 0) > 0,
+        hasVideoFiles: (row.video_files?.length || 0) > 0,
+        videoFiles: row.video_files || []
+      };
+    });
   }
 
   /**
    * Merkle DAG: 感情分析結果の取得
    */
   async getEmotionAnalysis(participantId: string): Promise<EmotionAnalysis[]> {
+    // 新しいスキーマではparticipant_response_dataテーブルから感情データを取得
     const { data, error } = await this.supabase
-      .from('emotion_analyses')
-      .select(`
-        *,
-        emotions (*)
-      `)
-      .eq('participant_id', participantId);
+      .from('participant_response_data')
+      .select('*')
+      .eq('participant_id', participantId)
+      .not('emotion', 'is', null)
+      .order('timestamp', { ascending: false });
 
     if (error) {
       console.error('Error getting emotion analysis:', error);
       throw error;
     }
 
-    return data.map(row => ({
-      id: row.id,
-      participantId: row.participant_id,
-      videoFileId: row.video_file_id,
-      sessionType: row.session_type,
-      timestamp: row.timestamp,
-      processingTime: row.processing_time_ms,
-      emotions: row.emotions.map((e: any) => ({
-        name: e.name,
-        score: e.score,
-        confidence: e.confidence,
-      })),
-    }));
+    // データをグループ化してEmotionAnalysis形式に変換
+    const analysisMap = new Map<string, EmotionAnalysis>();
+
+    data.forEach((row: any) => {
+      const experimentId = row.experiment_id;
+      if (!analysisMap.has(experimentId)) {
+        analysisMap.set(experimentId, {
+          id: experimentId,
+          participantId: row.participant_id,
+          videoFileId: row.video_file_path || '',
+          sessionType: row.session,
+          timestamp: row.timestamp,
+          processingTime: 0, // 処理時間は保存されていない
+          emotions: []
+        });
+      }
+
+      const analysis = analysisMap.get(experimentId)!;
+      analysis.emotions.push({
+        name: row.emotion,
+        score: row.skin_potential || 0, // 感情スコアとして使用
+        confidence: row.emotion_confidence || 0,
+      });
+    });
+
+    return Array.from(analysisMap.values());
   }
 
   /**
    * Merkle DAG: 感情統計の取得
    */
   async getEmotionStatistics(): Promise<any> {
+    // 新しいスキーマではparticipant_response_dataテーブルから感情データを取得
     const { data, error } = await this.supabase
-      .from('emotions')
-      .select('name, score');
+      .from('participant_response_data')
+      .select('emotion, emotion_confidence, skin_potential')
+      .not('emotion', 'is', null);
 
     if (error) {
       console.error('Error getting emotion statistics:', error);
@@ -242,11 +311,13 @@ export class SupabaseManager {
 
     // 感情ごとの統計を計算
     const emotionStats = data.reduce((acc: any, emotion: any) => {
-      if (!acc[emotion.name]) {
-        acc[emotion.name] = { count: 0, totalScore: 0 };
+      const name = emotion.emotion;
+      if (!acc[name]) {
+        acc[name] = { count: 0, totalScore: 0, totalConfidence: 0 };
       }
-      acc[emotion.name].count += 1;
-      acc[emotion.name].totalScore += emotion.score;
+      acc[name].count += 1;
+      acc[name].totalScore += emotion.skin_potential || 0;
+      acc[name].totalConfidence += emotion.emotion_confidence || 0;
       return acc;
     }, {});
 
@@ -267,7 +338,7 @@ export class SupabaseManager {
       totalAnalyses: data.length,
       averageEmotions,
       dominantEmotions,
-      processingStats: { averageTime: 0, totalTime: 0 } // TODO: 処理時間統計を実装
+      processingStats: { averageTime: 0, totalTime: 0 } // 処理時間統計は保存されていない
     };
   }
 

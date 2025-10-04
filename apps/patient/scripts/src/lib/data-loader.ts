@@ -357,9 +357,9 @@ export async function loadAllParticipants(): Promise<Participant[]> {
 // Load all session data
 export async function loadAllSessionData(): Promise<Array<{ participantId: string; sessionData: SessionData }>> {
   try {
-    // Supabaseからセッションデータを取得
+    // 新しいスキーマではparticipant_experiment_sessionsテーブルを使用
     const { data: sessions, error } = await supabase
-      .from('sessions')
+      .from('participant_experiment_sessions')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -373,9 +373,12 @@ export async function loadAllSessionData(): Promise<Array<{ participantId: strin
     return (sessions || []).map((session: any) => ({
       participantId: session.participant_id,
       sessionData: {
-        events: session.events || [],
+        events: [], // participant_experiment_sessionsにはイベントデータがない
         createdAt: session.created_at,
-        // 他のSessionDataフィールドは必要に応じて追加
+        sessionId: session.session_id,
+        sessionType: session.session_type,
+        startTime: session.start_time,
+        endTime: session.end_time,
       } as SessionData
     }));
   } catch (error) {

@@ -2,11 +2,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getParticipantDirectories, loadParticipantData } from "scripts/src/lib/data-loader";
-import { kuzuManager } from "scripts/src/lib/database/kuzu-manager";
+import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("Starting participant data import to Kuzu...");
+    console.log("Starting participant data import to Supabase...");
 
     // ファイルシステムから参加者データを取得
     const participantIds = getParticipantDirectories();

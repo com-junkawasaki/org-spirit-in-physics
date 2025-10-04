@@ -280,13 +280,11 @@ export async function getEmotionStatisticsFromKuzu(): Promise<{
   };
 }> {
   try {
-    if (kuzuManager) {
-      return await kuzuManager.getEmotionStatistics();
-    } else {
-      console.warn('Kuzu manager not available, returning empty stats');
-    }
+    // Supabaseマネージャーを使用（後方互換性のため関数名は変更しない）
+    const { supabaseManager } = await import('./database/supabase-manager');
+    return await supabaseManager.getEmotionStatistics();
   } catch (error) {
-    console.error('Error getting emotion statistics from Kuzu:', error);
+    console.error('Error getting emotion statistics from Supabase:', error);
   }
 
   // Fallback to empty stats

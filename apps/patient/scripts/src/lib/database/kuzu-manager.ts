@@ -16,9 +16,13 @@ import { join } from 'path';
 
 export interface Participant {
   id: string;
-  signature: string;
-  agreedAt: string;
-  agreements: Record<string, any>;
+  signature?: string;
+  agreedAt?: string;
+  agreements?: Record<string, any>;
+  name?: string;
+  age?: number;
+  gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
+  handedness?: string;
 }
 
 export interface Session {

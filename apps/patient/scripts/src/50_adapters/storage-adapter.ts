@@ -2,16 +2,15 @@
 
 import { StoragePort } from 'scripts/src/20_ports';
 import { ConsentData, SaveStructuredDataPayload, EmotionAnalysisResult, Participant, ParticipantWithFiles, SessionData } from 'scripts/src/00_schema';
-import { kuzuManager } from 'scripts/src/lib/database/kuzu-manager';
-import type { Participant as KuzuParticipant } from 'scripts/src/lib/database/kuzu-manager';
+import { supabaseManager } from 'scripts/src/lib/database/supabase-manager';
 
 export class StorageAdapter implements StoragePort {
   async saveStructuredData(payload: SaveStructuredDataPayload): Promise<void> {
-    // Kuzuデータベースに保存（一本化）
+    // Supabaseデータベースに保存（一本化）
     if (payload.type === "consent") {
       await this.saveConsentData(payload.data);
     } else if (payload.type === "session-data") {
-      await kuzuManager.saveSession({
+      await supabaseManager.saveSession({
         id: `${payload.data.participantId}_session`,
         participantId: payload.data.participantId,
         events: payload.data.events,
@@ -21,8 +20,8 @@ export class StorageAdapter implements StoragePort {
   }
 
   async saveConsentData(data: ConsentData): Promise<void> {
-    // Kuzuデータベースに保存（一本化）
-    await kuzuManager.saveParticipant({
+    // Supabaseデータベースに保存（一本化）
+    await supabaseManager.saveParticipant({
       id: data.participantId,
       signature: data.signature,
       agreedAt: data.agreedAt,
@@ -31,7 +30,7 @@ export class StorageAdapter implements StoragePort {
   }
 
   async saveEmotionAnalysis(participantId: string, result: EmotionAnalysisResult): Promise<void> {
-    // Kuzuデータベースに保存（一本化）
+    // Supabaseデータベースに保存（一本化）
     const analysis = {
       id: `${result.participantId}_${result.videoFile}_${Date.now()}`,
       participantId: result.participantId,
@@ -42,66 +41,66 @@ export class StorageAdapter implements StoragePort {
       emotions: result.emotions
     };
 
-    await kuzuManager.saveEmotionAnalysis(analysis);
+    await supabaseManager.saveEmotionAnalysis(analysis);
   }
 
   async loadEmotionAnalysis(participantId: string): Promise<EmotionAnalysisResult[]> {
-    // Kuzuデータベースから読み込み（一本化）
+    // Supabaseデータベースから読み込み（一本化）
     try {
-      const kuzuResults = await kuzuManager.getEmotionAnalysis(participantId);
-      return kuzuResults.map(ka => ({
-        participantId: ka.participantId,
-        videoFile: ka.videoFileId.replace(`${ka.participantId}_`, ''),
-        sessionType: ka.sessionType,
-        emotions: ka.emotions,
-        timestamp: ka.timestamp,
-        processingTime: ka.processingTime
+      const supabaseResults = await supabaseManager.getEmotionAnalysis(participantId);
+      return supabaseResults.map(sa => ({
+        participantId: sa.participantId,
+        videoFile: sa.videoFileId.replace(`${sa.participantId}_`, ''),
+        sessionType: sa.sessionType,
+        emotions: sa.emotions,
+        timestamp: sa.timestamp,
+        processingTime: sa.processingTime
       }));
     } catch (error) {
-      console.warn('Failed to load emotion analysis from Kuzu:', error);
+      console.warn('Failed to load emotion analysis from Supabase:', error);
       return [];
     }
   }
 
   async saveArtifact(participantId: string, type: string, filename: string, data: Buffer): Promise<string> {
     // アーティファクト保存は未実装（必要に応じて実装）
-    // 現在はURLを返すダミー実装
-    return `kuzu://artifacts/${participantId}/${filename}`;
+      // 現在はURLを返すダミー実装
+      return `supabase://artifacts/${participantId}/${filename}`;
   }
 
   // data-loader.ts から統合した追加メソッド
   async loadAllParticipants(): Promise<ParticipantWithFiles[]> {
-    // Kuzuデータベースから参加者データを取得（一本化）
+    // Supabaseデータベースから参加者データを取得（一本化）
     try {
-      const kuzuParticipants: KuzuParticipant[] = await kuzuManager.getAllParticipants();
-      return kuzuParticipants.map(kp => ({
-        id: kp.id,
-        age: undefined, // KuzuParticipantにはない
-        gender: undefined, // KuzuParticipantにはない
-        handedness: undefined, // KuzuParticipantにはない
-        createdAt: new Date(), // 仮の日付
-        signature: kp.signature,
-        agreedAt: kp.agreedAt,
-        agreements: kp.agreements,
+      const supabaseParticipants = await supabaseManager.getAllParticipants();
+      return supabaseParticipants.map(sp => ({
+        id: sp.id,
+        age: undefined, // SupabaseParticipantにはない
+        gender: undefined, // SupabaseParticipantにはない
+        handedness: undefined, // SupabaseParticipantにはない
+        createdAt: new Date(sp.agreedAt), // agreedAtを使用
+        signature: sp.signature,
+        agreedAt: sp.agreedAt,
+        agreements: sp.agreements,
         hasSessionData: false, // 後で更新
         hasVideoFiles: false, // 後で更新
         videoFiles: []
       }));
     } catch (error) {
-      console.warn('Failed to load participants from Kuzu:', error);
+      console.warn('Failed to load participants from Supabase:', error);
       return [];
     }
   }
 
   async loadSessionData(participantId: string): Promise<SessionData | null> {
-    // Kuzuデータベースからセッションデータを取得（一本化）
+    // Supabaseデータベースからセッションデータを取得（一本化）
     try {
-      // KuzuManagerにgetSessionDataメソッドが必要
+      // SupabaseManagerからセッションデータを取得
       // 現時点では仮の実装
-      console.log(`Loading session data from Kuzu for ${participantId}`);
+      console.log(`Loading session data from Supabase for ${participantId}`);
       return null; // 仮実装
     } catch (error) {
-      console.warn('Failed to load session data from Kuzu:', error);
+      console.warn('Failed to load session data from Supabase:', error);
       return null;
     }
   }
