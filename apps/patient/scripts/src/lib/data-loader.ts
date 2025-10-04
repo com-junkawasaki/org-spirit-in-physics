@@ -101,21 +101,20 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
         if (consentData.length > 0) {
           console.log(`Loaded ${consentData.length} participants from Vercel Blob`);
 
-          // Kuzuにも保存
+          // Supabaseにも保存
           for (const data of consentData) {
-            if (kuzuManager) {
-              const participant: Participant = {
-                id: data.participantId,
-                signature: data.signature,
-                agreedAt: data.agreedAt || new Date().toISOString(),
-                agreements: data.agreements || {}
-              };
+            const { supabaseManager } = await import('./database/supabase-manager');
+            const participant: Participant = {
+              id: data.participantId,
+              signature: data.signature,
+              agreedAt: data.agreedAt || new Date().toISOString(),
+              agreements: data.agreements || {}
+            };
 
-              try {
-                await kuzuManager.saveParticipant(participant);
-              } catch (saveError) {
-                console.warn('Failed to save participant to Kuzu:', saveError);
-              }
+            try {
+              await supabaseManager.saveParticipant(participant);
+            } catch (saveError) {
+              console.warn('Failed to save participant to Supabase:', saveError);
             }
           }
 
@@ -158,21 +157,20 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       }
     }
 
-    // Kuzuにも保存
-    if (kuzuManager) {
-      for (const data of consentData) {
-        const participant: Participant = {
-          id: data.participantId,
-          signature: data.signature,
-          agreedAt: data.agreedAt || new Date().toISOString(),
-          agreements: data.agreements || {}
-        };
+    // Supabaseにも保存
+    for (const data of consentData) {
+      const { supabaseManager } = await import('./database/supabase-manager');
+      const participant: Participant = {
+        id: data.participantId,
+        signature: data.signature,
+        agreedAt: data.agreedAt || new Date().toISOString(),
+        agreements: data.agreements || {}
+      };
 
-        try {
-          await kuzuManager.saveParticipant(participant);
-        } catch (saveError) {
-          console.warn('Failed to save participant to Kuzu:', saveError);
-        }
+      try {
+        await supabaseManager.saveParticipant(participant);
+      } catch (saveError) {
+        console.warn('Failed to save participant to Supabase:', saveError);
       }
     }
 
@@ -237,21 +235,16 @@ export function loadParticipantData(participantId: string): Participant | null {
 // Load session data for a participant
 export async function loadSessionData(participantId: string): Promise<SessionData | null> {
   try {
-    // Kuzuデータベースからセッションデータを取得（一本化）
-    if (kuzuManager) {
-      try {
-        // Kuzuからセッションデータを取得
-        // 実際のクエリ実装はKuzuManagerで実装する必要がある
-        // 現時点では仮の実装
-        console.log(`Loading session data from Kuzu for ${participantId}`);
-        // TODO: KuzuManagerにgetSessionDataメソッドを実装
-        return null; // 仮実装
-      } catch (kuzuError) {
-        console.warn('Failed to load session data from Kuzu:', kuzuError);
-        return null;
-      }
-    } else {
-      console.warn('Kuzu manager not available');
+    // Supabaseデータベースからセッションデータを取得（一本化）
+    try {
+      // Supabaseからセッションデータを取得
+      // 実際のクエリ実装はSupabaseManagerで実装する必要がある
+      // 現時点では仮の実装
+      console.log(`Loading session data from Supabase for ${participantId}`);
+      // TODO: SupabaseManagerにgetSessionDataメソッドを実装
+      return null; // 仮実装
+    } catch (supabaseError) {
+      console.warn('Failed to load session data from Supabase:', supabaseError);
       return null;
     }
   } catch (error) {

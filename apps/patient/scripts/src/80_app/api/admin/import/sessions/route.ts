@@ -4,13 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getParticipantDirectories } from "scripts/src/lib/data-loader";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { kuzuManager } from "scripts/src/lib/database/kuzu-manager";
+import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("Starting session data import to Kuzu...");
+    console.log("Starting session data import to Supabase...");
 
     // ファイルシステムからセッションデータを取得
     const participantIds = getParticipantDirectories();
@@ -38,11 +38,11 @@ export async function POST(request: NextRequest) {
 
     const results = [];
 
-    // 各セッションデータをKuzuにインポート
+    // 各セッションデータをSupabaseにインポート
     for (const { participantId, sessionData } of sessionDataList) {
       try {
-        // Kuzuに保存（一本化）
-        await kuzuManager.saveSession({
+        // Supabaseに保存（一本化）
+        await supabaseManager.saveSession({
           id: `${participantId}_session`,
           participantId: participantId,
           events: sessionData.events,
@@ -52,12 +52,12 @@ export async function POST(request: NextRequest) {
         results.push({
           participantId,
           status: "success",
-          message: "Successfully imported session data to Kuzu"
+          message: "Successfully imported session data to Supabase"
         });
 
-        console.log(`Imported session data for participant ${participantId} to Kuzu`);
+        console.log(`Imported session data for participant ${participantId} to Supabase`);
       } catch (error) {
-        console.error(`Failed to import session data for participant ${participantId} to Kuzu:`, error);
+        console.error(`Failed to import session data for participant ${participantId} to Supabase:`, error);
         results.push({
           participantId,
           status: "error",
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Imported session data for ${successCount} participants to Kuzu successfully, ${errorCount} failed`,
+      message: `Imported session data for ${successCount} participants to Supabase successfully, ${errorCount} failed`,
       results,
       summary: {
         total: sessionDataList.length,

@@ -4,7 +4,7 @@ import {
   loadAllSessionData,
   parseWordResponsesFromEvents,
   getParticipantStatistics,
-  initializeKuzuDatabase
+  initializeSupabaseDatabase
 } from "scripts/src/lib/data-loader";
 import { loadEmotionAnalysisResults, getEmotionStatisticsFromKuzu } from "scripts/src/lib/emotion-analysis";
 
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Kuzuデータベースの初期化
-        await initializeKuzuDatabase();
+        // Supabaseデータベースの初期化
+        await initializeSupabaseDatabase();
         const participants = await loadAllParticipants();
         const participantStats = getParticipantStatistics(participants);
 
@@ -113,8 +113,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Kuzuデータベースの初期化
-        await initializeKuzuDatabase();
+        // Supabaseデータベースの初期化
+        await initializeSupabaseDatabase();
         const participants_for_analytics = await loadAllParticipants();
         const stats = getParticipantStatistics(participants_for_analytics);
         const allSessions = await loadAllSessionData();
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Kuzuから感情統計を取得
+        // Supabaseから感情統計を取得
         const emotionStats = await getEmotionStatisticsFromKuzu();
         const emotionDistribution: Record<string, number> = {};
         emotionStats.dominantEmotions.forEach(item => {

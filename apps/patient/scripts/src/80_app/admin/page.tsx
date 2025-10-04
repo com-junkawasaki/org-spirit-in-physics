@@ -84,7 +84,7 @@ export default function AdminPage() {
               クラウド統合実験管理ダッシュボード
             </h1>
             <p className="text-sm text-gray-600 mt-1">
-              Vercel Blob + Kuzu + ファイルシステム統合のSpirit-in-Physics実験データ管理
+              Supabase + Vercel Blob + ファイルシステム統合のSpirit-in-Physics実験データ管理
             </p>
           </div>
           <div className="flex items-center space-x-4">
@@ -128,7 +128,7 @@ export default function AdminPage() {
                 </div>
                 <div className="flex items-center space-x-1">
                   <Database className="h-3 w-3 text-green-600" />
-                  <span className="text-xs text-green-700">Kuzu DB</span>
+                  <span className="text-xs text-green-700">Supabase</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <FileText className="h-3 w-3 text-gray-600" />

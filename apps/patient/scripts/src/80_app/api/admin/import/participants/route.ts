@@ -24,11 +24,11 @@ export async function POST(request: NextRequest) {
 
     const results = [];
 
-    // 各参加者をKuzuにインポート
+    // 各参加者をSupabaseにインポート
     for (const participant of participants) {
       try {
-        // Kuzuに保存（一本化）
-        await kuzuManager.saveParticipant({
+        // Supabaseに保存（一本化）
+        await supabaseManager.saveParticipant({
           id: participant.id,
           signature: participant.signature,
           agreedAt: participant.agreedAt,
@@ -38,12 +38,12 @@ export async function POST(request: NextRequest) {
         results.push({
           participantId: participant.id,
           status: "success",
-          message: "Successfully imported participant data to Kuzu"
+          message: "Successfully imported participant data to Supabase"
         });
 
-        console.log(`Imported participant ${participant.id} to Kuzu`);
+        console.log(`Imported participant ${participant.id} to Supabase`);
       } catch (error) {
-        console.error(`Failed to import participant ${participant.id} to Kuzu:`, error);
+        console.error(`Failed to import participant ${participant.id} to Supabase:`, error);
         results.push({
           participantId: participant.id,
           status: "error",
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Imported ${successCount} participants to Kuzu successfully, ${errorCount} failed`,
+      message: `Imported ${successCount} participants to Supabase successfully, ${errorCount} failed`,
       results,
       summary: {
         total: participants.length,
