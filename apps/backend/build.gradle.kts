@@ -60,6 +60,10 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("org.testcontainers:postgresql:1.19.3")
     testImplementation("org.testcontainers:junit-jupiter:1.19.3")
+
+    // Pact Contract Testing
+    testImplementation("au.com.dius.pact.provider:junit5:4.6.14")
+    testImplementation("au.com.dius.pact.provider:spring:4.6.14")
 }
 
 tasks.withType<Test> {

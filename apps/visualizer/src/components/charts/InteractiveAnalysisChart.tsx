@@ -13,7 +13,7 @@ import { exportToImage, exportToPDF, exportToCSV, exportToJSON } from '@/lib/exp
 const Plot = dynamic(() => import('react-plotly.js'), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-64">Loading chart...</div>
-})
+}) as any
 
 interface AnalysisData {
   id: string

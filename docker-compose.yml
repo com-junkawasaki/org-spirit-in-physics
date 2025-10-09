@@ -68,6 +68,46 @@ services:
       timeout: 10s
       retries: 5
 
+  # Pact Broker for Contract Testing
+  pact-broker:
+    image: pactfoundation/pact-broker:latest
+    container_name: spirit-pact-broker
+    ports:
+      - "9292:9292"
+    environment:
+      - PACT_BROKER_DATABASE_URL=postgresql://postgres:password@pact-postgres:5432/pact_broker
+      - PACT_BROKER_BASIC_AUTH_USERNAME=admin
+      - PACT_BROKER_BASIC_AUTH_PASSWORD=password
+      - PACT_BROKER_BASIC_AUTH_READ_ONLY_USERNAME=readonly
+      - PACT_BROKER_BASIC_AUTH_READ_ONLY_PASSWORD=password
+    depends_on:
+      - pact-postgres
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9292/diagnostic/status/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Pact Broker Database
+  pact-postgres:
+    image: postgres:15
+    container_name: spirit-pact-postgres
+    environment:
+      - POSTGRES_DB=pact_broker
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - pact-broker-data:/var/lib/postgresql/data
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   # Analyzer Temporal API Server
   analyzer-temporal-api:
     build: ./apps/analyzer-temporal
@@ -182,6 +222,8 @@ volumes:
   axonserver-log:
     driver: local
   temporal-data:
+    driver: local
+  pact-broker-data:
     driver: local
 
 networks:

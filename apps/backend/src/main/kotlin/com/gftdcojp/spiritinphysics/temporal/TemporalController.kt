@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
@@ -111,7 +112,7 @@ class TemporalController {
                     val stubs = WorkflowServiceStubs.newInstance(
                         WorkflowServiceStubsOptions.newBuilder()
                             .setTarget("$temporalHost:$temporalPort")
-                            .setRpcTimeout(5000) // 5秒タイムアウト
+                            .setRpcTimeout(Duration.ofSeconds(5)) // 5秒タイムアウト
                             .build()
                     )
 
@@ -168,7 +169,7 @@ class TemporalController {
                 WorkflowServiceStubs.newInstance(
                     WorkflowServiceStubsOptions.newBuilder()
                         .setTarget("$temporalHost:$temporalPort")
-                        .setRpcTimeout(10000) // 10秒タイムアウト
+                        .setRpcTimeout(Duration.ofSeconds(10)) // 10秒タイムアウト
                         .build()
                 )
             )
@@ -222,7 +223,7 @@ class TemporalController {
             val stubs = WorkflowServiceStubs.newInstance(
                 WorkflowServiceStubsOptions.newBuilder()
                     .setTarget("$temporalHost:$temporalPort")
-                    .setRpcTimeout(5000) // 5秒タイムアウト
+                    .setRpcTimeout(Duration.ofSeconds(5)) // 5秒タイムアウト
                     .build()
             )
 

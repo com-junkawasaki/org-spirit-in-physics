@@ -51,11 +51,15 @@
     "start": "next start",
     "lint": "next lint",
     "generate-audio": "tsx scripts/generate-audio.ts",
-    "migrate-artifacts": "tsx scripts/migrate-artifacts.ts"
+    "migrate-artifacts": "tsx scripts/migrate-artifacts.ts",
+    "test:pact": "jest __tests__/pact --testTimeout=30000",
+    "test:pact:publish": "pact-broker publish pacts --consumer-app-version=1.0.0 --broker-base-url=http://localhost:9292 --broker-username=admin --broker-password=password"
   },
   "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.54.1",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/dom-speech-recognition": "^0.0.6",
     "@types/node": "24.1.0",
@@ -66,6 +70,8 @@
     "dotenv-cli": "^10.0.0",
     "eslint": "^9.35.0",
     "eslint-config-next": "15.5.3",
+    "pact": "^13.0.0",
+    "@pact-foundation/pact": "^13.0.0",
     "postcss": "^8.5.6",
     "shadcn-ui": "^0.9.5",
     "tailwindcss": "^3.4.17",
