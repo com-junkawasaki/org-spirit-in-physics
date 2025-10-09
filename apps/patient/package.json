@@ -44,7 +44,7 @@
     "zustand": "^5.0.6"
   },
   "scripts": {
-    "dev": "next dev -p 25250",
+    "dev": "next dev -p 25250 --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

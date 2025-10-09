@@ -1,0 +1,28 @@
+# Development Dockerfile for Spring Boot Backend
+FROM openjdk:21-jdk-slim
+
+WORKDIR /app
+
+# Install Gradle
+RUN apt-get update && apt-get install -y wget unzip \
+    && wget https://services.gradle.org/distributions/gradle-8.5-bin.zip \
+    && unzip gradle-8.5-bin.zip \
+    && mv gradle-8.5 /opt/gradle \
+    && ln -s /opt/gradle/bin/gradle /usr/bin/gradle \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* gradle-8.5-bin.zip
+
+# Copy build files for dependency resolution
+COPY build.gradle.kts settings.gradle.kts ./
+
+# Download dependencies (this layer will be cached if dependencies don't change)
+RUN gradle dependencies --no-daemon
+
+# Copy source code (will be mounted as volume in devcontainer)
+COPY src src/
+
+# Expose port
+EXPOSE 8080
+
+# Default command for development (will be overridden in docker-compose.yml)
+CMD ["gradle", "bootRun", "--continuous"]

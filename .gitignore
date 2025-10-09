@@ -23,3 +23,7 @@ dist
 # python
 venv
 __pycache__
+
+# Dev Containers
+.devcontainer/.gradle
+.devcontainer/node_modules

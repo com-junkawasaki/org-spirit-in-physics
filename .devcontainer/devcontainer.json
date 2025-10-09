@@ -1,0 +1,132 @@
+{
+  "name": "Spirit in Physics - Full Stack Development",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.override.yml"
+  ],
+  "service": "dev-backend",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+
+  // Configure tool-specific properties.
+  "customizations": {
+    // Configure properties specific to VS Code.
+    "vscode": {
+      "extensions": [
+        // TypeScript & JavaScript
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-json",
+
+        // Python
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+
+        // Kotlin
+        "fwcd.kotlin",
+
+        // Docker
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers",
+
+        // Database
+        "ms-ossdata.vscode-postgresql",
+
+        // Testing
+        "ms-vscode.test-adapter-converter",
+        "hbenl.vscode-test-explorer",
+
+        // Git
+        "mhutchie.git-graph",
+
+        // General Development
+        "ms-vscode.vscode-eslint",
+        "streetsidesoftware.code-spell-checker",
+        "christian-kohler.path-intellisense",
+
+        // Next.js specific
+        "ms-vscode.vscode-nextjs",
+
+        // Temporal
+        "temporalio.temporalio",
+
+        // React
+        "ms-vscode.vscode-react-native"
+      ],
+      "settings": {
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "files.associations": {
+          "*.jsonnet": "json"
+        },
+        "python.formatting.provider": "black",
+        "python.linting.enabled": true,
+        "python.linting.flake8Enabled": true,
+        "tailwindCSS.includeLanguages": {
+          "typescript": "javascript",
+          "typescriptreact": "javascript"
+        },
+        "emmet.includeLanguages": {
+          "typescriptreact": "html"
+        }
+      }
+    }
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [
+    3000, // Next.js apps
+    3001, // Admin dashboard
+    3002, // Patient app
+    3003, // Visualizer
+    8080, // Backend API
+    8081, // Analyzer Temporal API
+    5432, // PostgreSQL
+    8024, // Axon Server HTTP
+    8124, // Axon Server gRPC
+    7233, // Temporal gRPC
+    8233, // Temporal HTTP
+    9292  // Pact Broker
+  ],
+
+  // Configure the container to run as the same user as the host
+  "remoteUser": "root",
+
+  // Mount the workspace
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind"
+  ],
+
+  // Install additional tools
+  "postCreateCommand": "apt-get update && apt-get install -y curl wget git htop",
+
+  // Comment out to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "dockerDashComposeVersion": "v2"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts",
+      "nodeGypDependencies": true,
+      "installYarnUsingApt": true,
+      "installNpmUsingApt": true
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installTools": true
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "installGradle": true,
+      "installMaven": false
+    }
+  }
+}

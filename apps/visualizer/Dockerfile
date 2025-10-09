@@ -23,4 +23,4 @@ RUN pnpm build
 EXPOSE 3000
 
 # Start the application in development mode
-CMD ["pnpm", "dev", "--host", "0.0.0.0"]
+CMD ["pnpm", "dev"]

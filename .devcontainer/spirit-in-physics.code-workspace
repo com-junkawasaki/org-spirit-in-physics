@@ -1,0 +1,110 @@
+{
+  "folders": [
+    {
+      "name": "Root",
+      "path": ".."
+    },
+    {
+      "name": "Backend (Kotlin/Spring)",
+      "path": "../apps/backend"
+    },
+    {
+      "name": "Patient App (Next.js)",
+      "path": "../apps/patient"
+    },
+    {
+      "name": "Admin Dashboard (Vite)",
+      "path": "../apps/admin"
+    },
+    {
+      "name": "Visualizer (Next.js)",
+      "path": "../apps/visualizer"
+    },
+    {
+      "name": "Analyzer Temporal (Python)",
+      "path": "../apps/analyzer-temporal"
+    }
+  ],
+  "settings": {
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    },
+    "files.associations": {
+      "*.jsonnet": "json"
+    },
+    "python.formatting.provider": "black",
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "tailwindCSS.includeLanguages": {
+      "typescript": "javascript",
+      "typescriptreact": "javascript"
+    },
+    "emmet.includeLanguages": {
+      "typescriptreact": "html"
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.next": true,
+      "**/build": true,
+      "**/.gradle": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "ms-vscode.vscode-json",
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.flake8",
+      "fwcd.kotlin",
+      "ms-azuretools.vscode-docker",
+      "ms-vscode-remote.remote-containers",
+      "ms-ossdata.vscode-postgresql",
+      "ms-vscode.test-adapter-converter",
+      "hbenl.vscode-test-explorer",
+      "mhutchie.git-graph",
+      "ms-vscode.vscode-eslint",
+      "streetsidesoftware.code-spell-checker",
+      "christian-kohler.path-intellisense",
+      "ms-vscode.vscode-nextjs",
+      "temporalio.temporalio",
+      "ms-vscode.vscode-react-native"
+    ]
+  },
+  "launch": {
+    "configurations": [
+      {
+        "name": "Debug Backend (Spring Boot)",
+        "type": "java",
+        "request": "launch",
+        "mainClass": "com.spirit.SpiritInPhysicsBackendApplication",
+        "projectName": "spirit-in-physics-backend",
+        "cwd": "${workspaceFolder:Backend (Kotlin/Spring)}"
+      },
+      {
+        "name": "Debug Patient App (Next.js)",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder:Patient App (Next.js)}/node_modules/.bin/next",
+        "args": ["dev"],
+        "cwd": "${workspaceFolder:Patient App (Next.js)}",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Debug Admin Dashboard (Vite)",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder:Admin Dashboard (Vite)}/node_modules/.bin/vite",
+        "args": ["dev"],
+        "cwd": "${workspaceFolder:Admin Dashboard (Vite)}",
+        "console": "integratedTerminal"
+      }
+    ]
+  }
+}
