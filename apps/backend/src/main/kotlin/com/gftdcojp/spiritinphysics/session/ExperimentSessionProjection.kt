@@ -9,7 +9,10 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.util.*
-import javax.persistence.*
+import javax.persistence.Entity
+import javax.persistence.Table
+import javax.persistence.Id
+import javax.persistence.Column
 
 @Repository
 interface ExperimentSessionRepository : JpaRepository<ExperimentSessionEntity, UUID> {

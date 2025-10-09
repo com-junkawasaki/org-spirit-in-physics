@@ -60,8 +60,8 @@ class VisualizerService(
             )
         }
 
-        val lastActivity = sessions.maxOfOrNull { it.createdAt }?.toEpochMilli()
-            ?: participant.updatedAt.toEpochMilli()
+        val lastActivity = sessions.maxOfOrNull { it.createdAt.toEpochSecond(java.time.ZoneOffset.UTC) * 1000 }
+            ?: participant.updatedAt.toEpochSecond(java.time.ZoneOffset.UTC) * 1000
 
         return VisualizerParticipant(
             id = participant.participantId.toString(),
@@ -304,7 +304,7 @@ class VisualizerService(
             sessions.forEach { session ->
                 // Session created
                 events.add(TimelineEvent(
-                    timestamp = session.createdAt.toEpochMilli(),
+                    timestamp = session.createdAt.toEpochSecond(java.time.ZoneOffset.UTC) * 1000,
                     type = "session_created",
                     description = "実験セッションが作成されました",
                     data = mapOf(
@@ -316,7 +316,7 @@ class VisualizerService(
                 // Session started
                 session.startedAt?.let { startedAt ->
                     events.add(TimelineEvent(
-                        timestamp = startedAt.toEpochMilli(),
+                        timestamp = startedAt.toEpochSecond(java.time.ZoneOffset.UTC) * 1000,
                         type = "session_started",
                         description = "実験セッションが開始されました",
                         data = mapOf("sessionId" to session.sessionId.toString())
@@ -326,7 +326,7 @@ class VisualizerService(
                 // Session completed
                 session.completedAt?.let { completedAt ->
                     events.add(TimelineEvent(
-                        timestamp = completedAt.toEpochMilli(),
+                        timestamp = completedAt.toEpochSecond(java.time.ZoneOffset.UTC) * 1000,
                         type = "session_completed",
                         description = "実験セッションが完了しました",
                         data = mapOf("sessionId" to session.sessionId.toString())
@@ -338,7 +338,7 @@ class VisualizerService(
             analysisJobs.forEach { job ->
                 // Job created
                 events.add(TimelineEvent(
-                    timestamp = job.createdAt.toEpochMilli(),
+                    timestamp = job.createdAt.toEpochSecond(java.time.ZoneOffset.UTC) * 1000,
                     type = "analysis_created",
                     description = "${job.jobType}分析ジョブが作成されました",
                     data = mapOf(
@@ -351,7 +351,7 @@ class VisualizerService(
                 // Job started
                 job.startedAt?.let { startedAt ->
                     events.add(TimelineEvent(
-                        timestamp = startedAt.toEpochMilli(),
+                        timestamp = startedAt.toEpochSecond(java.time.ZoneOffset.UTC) * 1000,
                         type = "analysis_started",
                         description = "分析ジョブが開始されました",
                         data = mapOf(
@@ -370,7 +370,7 @@ class VisualizerService(
                         "分析ジョブが失敗しました: ${job.errorMessage ?: "不明なエラー"}"
 
                     events.add(TimelineEvent(
-                        timestamp = completedAt.toEpochMilli(),
+                        timestamp = completedAt.toEpochSecond(java.time.ZoneOffset.UTC) * 1000,
                         type = eventType,
                         description = description,
                         data = mapOf(
@@ -391,9 +391,10 @@ class VisualizerService(
                     end = events.last().timestamp
                 )
             } else {
+                val now = System.currentTimeMillis()
                 TimeRange(
-                    start = System.currentTimeMillis(),
-                    end = System.currentTimeMillis()
+                    start = now,
+                    end = now
                 )
             }
 
@@ -482,8 +483,8 @@ class VisualizerService(
                             reactionTimeComponent = ((results["emotionComponents"] as? Map<*, *>)?.get("reactionTime") as? Number)?.toDouble() ?: 0.0,
                             skinPotentialComponent = ((results["emotionComponents"] as? Map<*, *>)?.get("skinPotential") as? Number)?.toDouble() ?: 0.0,
                             emotionComponent = ((results["emotionComponents"] as? Map<*, *>)?.get("emotion") as? Number)?.toDouble() ?: 0.0,
-                            emotionData = (results["emotionData"] as? Map<*, *>)?.mapKeys { it.key.toString() }?.mapValues { it.value } ?: emptyMap(),
-                            physiologicalData = (results["physiologicalData"] as? Map<*, *>)?.mapKeys { it.key.toString() }?.mapValues { it.value } ?: emptyMap(),
+                            emotionData = (results["emotionData"] as? Map<*, *>)?.mapKeys { it.key.toString() }?.mapValues { it.value as Any } ?: emptyMap(),
+                            physiologicalData = (results["physiologicalData"] as? Map<*, *>)?.mapKeys { it.key.toString() }?.mapValues { it.value as Any } ?: emptyMap(),
                             createdAt = job.completedAt?.toString() ?: job.createdAt.toString()
                         )
                     } catch (e: Exception) {

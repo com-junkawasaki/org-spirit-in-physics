@@ -11,7 +11,14 @@ import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 import java.util.*
-import javax.persistence.*
+import javax.persistence.Entity
+import javax.persistence.Table
+import javax.persistence.Id
+import javax.persistence.Column
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType
+import javax.persistence.Temporal
+import javax.persistence.TemporalType
 
 @Repository
 interface AnalysisJobRepository : JpaRepository<AnalysisJobEntity, UUID> {

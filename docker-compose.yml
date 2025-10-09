@@ -1,52 +1,9 @@
+# Spirit in Physics - Complete System Integration
 version: '3.8'
 
 services:
-    # MinIO Object Storage Server
-    minio:
-      image: minio/minio:latest
-      container_name: spirit-minio
-      ports:
-        - "9000:9000"
-        - "9001:9001"
-      environment:
-        - MINIO_ACCESS_KEY=minioadmin
-        - MINIO_SECRET_KEY=minioadmin
-        - MINIO_ROOT_USER=minioadmin
-        - MINIO_ROOT_PASSWORD=minioadmin
-      volumes:
-        - minio-data:/data
-      networks:
-        - spirit-network
-      command: server /data --console-address ":9001"
-      healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-        interval: 30s
-        timeout: 10s
-        retries: 5
-
-    # MinIO Client for bucket initialization
-    minio-init:
-      image: minio/mc:latest
-      container_name: minio-init
-      depends_on:
-        minio:
-          condition: service_healthy
-      networks:
-        - spirit-network
-      entrypoint: ["/bin/sh", "-c"]
-      command: |
-        /usr/bin/mc config host add spirit-minio http://minio:9000 minioadmin minioadmin &&
-        /usr/bin/mc mb spirit-minio/spirit-files --ignore-existing &&
-        /usr/bin/mc mb spirit-minio/spirit-analysis --ignore-existing &&
-        /usr/bin/mc mb spirit-minio/spirit-videos --ignore-existing &&
-        /usr/bin/mc mb spirit-minio/spirit-results --ignore-existing &&
-        /usr/bin/mc anonymous set public spirit-minio/spirit-files &&
-        /usr/bin/mc anonymous set public spirit-minio/spirit-analysis &&
-        /usr/bin/mc anonymous set download spirit-minio/spirit-results &&
-        echo "MinIO buckets initialized successfully"
-
-    # PostgreSQL Database
-    postgres:
+  # PostgreSQL Database
+  postgres:
     image: postgres:15
     ports:
       - "5432:5432"
@@ -64,8 +21,8 @@ services:
       timeout: 10s
       retries: 5
 
-    # Axon Server for Event Sourcing
-    axonserver:
+  # Axon Server for Event Sourcing
+  axonserver:
     image: axoniq/axonserver:latest
     ports:
       - "8024:8024"  # HTTP port
@@ -85,7 +42,7 @@ services:
       retries: 5
 
   # Temporal Server for Workflow Orchestration
-    temporal:
+  temporal:
     image: temporalio/auto-setup:latest
     ports:
       - "7233:7233"  # gRPC port
@@ -112,7 +69,7 @@ services:
       retries: 5
 
   # Analyzer Temporal API Server
-    analyzer-temporal-api:
+  analyzer-temporal-api:
     build: ./apps/analyzer-temporal
     container_name: analyzer-temporal-api
     ports:
@@ -130,7 +87,7 @@ services:
     command: python api_server.py --host 0.0.0.0 --port 8081
 
   # Axon Framework Backend (Kotlin/Spring Boot)
-    backend:
+  backend:
     build: ./apps/backend
     container_name: spirit-backend
     ports:
@@ -144,22 +101,12 @@ services:
       - TEMPORAL_SERVER_HOST=temporal
       - TEMPORAL_SERVER_PORT=7233
       - ANALYZER_TEMPORAL_URL=http://analyzer-temporal-api:8081
-      # MinIO Configuration
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - MINIO_BUCKET_FILES=spirit-files
-      - MINIO_BUCKET_ANALYSIS=spirit-analysis
-      - MINIO_BUCKET_VIDEOS=spirit-videos
-      - MINIO_BUCKET_RESULTS=spirit-results
     depends_on:
       axonserver:
         condition: service_healthy
       postgres:
         condition: service_healthy
       temporal:
-        condition: service_healthy
-      minio:
         condition: service_healthy
     networks:
       - spirit-network
@@ -170,21 +117,16 @@ services:
       retries: 5
 
   # Visualizer Frontend (Next.js)
-    visualizer:
+  visualizer:
     build: ./apps/visualizer
     container_name: spirit-visualizer
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8080/api
-      - NEXT_PUBLIC_MINIO_ENDPOINT=http://localhost:9000
-      - NEXT_PUBLIC_MINIO_ACCESS_KEY=minioadmin
-      - NEXT_PUBLIC_MINIO_SECRET_KEY=minioadmin
-      - NEXT_PUBLIC_MINIO_BUCKET_ANALYSIS=spirit-analysis
-      - NEXT_PUBLIC_MINIO_BUCKET_RESULTS=spirit-results
+      - NEXT_PUBLIC_BACKEND_API_URL=http://backend:8080/api
+      - BACKEND_API_URL=http://backend:8080/api
     depends_on:
       - backend
-      - minio
     networks:
       - spirit-network
     healthcheck:
@@ -194,37 +136,26 @@ services:
       retries: 5
 
   # Patient App (Next.js)
-    patient:
+  patient:
     build: ./apps/patient
     container_name: spirit-patient
     ports:
       - "25260:3000"
     environment:
-      - NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8080/api
-      - NEXT_PUBLIC_MINIO_ENDPOINT=http://localhost:9000
-      - NEXT_PUBLIC_MINIO_ACCESS_KEY=minioadmin
-      - NEXT_PUBLIC_MINIO_SECRET_KEY=minioadmin
-      - NEXT_PUBLIC_MINIO_BUCKET_FILES=spirit-files
-      - NEXT_PUBLIC_MINIO_BUCKET_VIDEOS=spirit-videos
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
     depends_on:
       - backend
-      - minio
     networks:
       - spirit-network
 
 volumes:
   postgres-data:
-    driver: local
   axonserver-data:
-    driver: local
   axonserver-events:
-    driver: local
   axonserver-log:
-    driver: local
   temporal-data:
-    driver: local
-  minio-data:
-    driver: local
 
 networks:
   spirit-network:

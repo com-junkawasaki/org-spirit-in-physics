@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 @Aggregate
-class AnalysisJob() {
+class AnalysisJob {
 
     @AggregateIdentifier
     private lateinit var jobId: UUID
@@ -24,9 +24,6 @@ class AnalysisJob() {
     private var completedAt: LocalDateTime? = null
     private var results: AnalysisResults? = null
     private var errorMessage: String? = null
-
-    // Default constructor for Axon
-    constructor()
 
     @CommandHandler
     constructor(command: CreateAnalysisJobCommand) {

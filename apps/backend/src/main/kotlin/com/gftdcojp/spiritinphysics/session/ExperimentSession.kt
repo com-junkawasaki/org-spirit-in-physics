@@ -11,7 +11,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 @Aggregate
-class ExperimentSession() {
+class ExperimentSession {
 
     @AggregateIdentifier
     private lateinit var sessionId: UUID
@@ -24,9 +24,6 @@ class ExperimentSession() {
     private var completedAt: LocalDateTime? = null
     private var videoFileUrl: String? = null
     private var audioFileUrl: String? = null
-
-    // Default constructor for Axon
-    constructor()
 
     @CommandHandler
     constructor(command: CreateExperimentSessionCommand) {

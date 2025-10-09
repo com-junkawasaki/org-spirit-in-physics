@@ -19,14 +19,24 @@ import org.axonframework.spring.config.AxonConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.jta.JtaTransactionManager
 
 @Configuration
 class AxonConfig {
 
     @Bean
-    fun commandBus(transactionManager: TransactionManager): CommandBus {
+    fun commandBus(transactionManager: PlatformTransactionManager): CommandBus {
+        // Convert PlatformTransactionManager to TransactionManager
+        val axonTransactionManager = object : org.axonframework.common.transaction.TransactionManager {
+            override fun <R : Any?, T : Throwable?> executeInTransaction(param: org.axonframework.common.transaction.TransactionManager.TransactionalCallable<R, T>): R {
+                return transactionManager.execute {
+                    param.doInTransaction(null)
+                } ?: throw RuntimeException("Transaction returned null")
+            }
+        }
+
         return SimpleCommandBus.builder()
-            .transactionManager(transactionManager)
+            .transactionManager(axonTransactionManager)
             .build()
     }
 
@@ -38,9 +48,18 @@ class AxonConfig {
     }
 
     @Bean
-    fun queryBus(transactionManager: TransactionManager): QueryBus {
+    fun queryBus(transactionManager: PlatformTransactionManager): QueryBus {
+        // Convert PlatformTransactionManager to TransactionManager
+        val axonTransactionManager = object : org.axonframework.common.transaction.TransactionManager {
+            override fun <R : Any?, T : Throwable?> executeInTransaction(param: org.axonframework.common.transaction.TransactionManager.TransactionalCallable<R, T>): R {
+                return transactionManager.execute {
+                    param.doInTransaction(null)
+                } ?: throw RuntimeException("Transaction returned null")
+            }
+        }
+
         return SimpleQueryBus.builder()
-            .transactionManager(transactionManager)
+            .transactionManager(axonTransactionManager)
             .build()
     }
 
@@ -56,10 +75,19 @@ class AxonConfig {
         serializer: Serializer,
         transactionManager: PlatformTransactionManager
     ): EventStorageEngine {
+        // Convert PlatformTransactionManager to TransactionManager
+        val axonTransactionManager = object : org.axonframework.common.transaction.TransactionManager {
+            override fun <R : Any?, T : Throwable?> executeInTransaction(param: org.axonframework.common.transaction.TransactionManager.TransactionalCallable<R, T>): R {
+                return transactionManager.execute {
+                    param.doInTransaction(null)
+                } ?: throw RuntimeException("Transaction returned null")
+            }
+        }
+
         return JpaEventStorageEngine.builder()
             .snapshotSerializer(serializer)
             .eventSerializer(serializer)
-            .transactionManager(transactionManager)
+            .transactionManager(axonTransactionManager)
             .build()
     }
 

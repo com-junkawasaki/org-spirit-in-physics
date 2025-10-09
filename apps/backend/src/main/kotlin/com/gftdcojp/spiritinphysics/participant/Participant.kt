@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 @Aggregate
-class Participant() {
+class Participant {
 
     @AggregateIdentifier
     private lateinit var participantId: UUID
@@ -19,9 +19,6 @@ class Participant() {
     private var createdAt: LocalDateTime = LocalDateTime.now()
     private var updatedAt: LocalDateTime = LocalDateTime.now()
     private var status: ParticipantStatus = ParticipantStatus.PENDING_CONSENT
-
-    // Default constructor for Axon
-    constructor()
 
     @CommandHandler
     constructor(command: CreateParticipantCommand) {

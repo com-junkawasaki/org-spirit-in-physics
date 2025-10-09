@@ -11,6 +11,7 @@ import com.gftdcojp.spiritinphysics.analysis.AnalysisJobEntity
 import org.axonframework.queryhandling.QueryGateway
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 @RestController
@@ -35,7 +36,7 @@ class VisualizerController(
 
     @GetMapping("/participants/{participantId}")
     fun getParticipantData(@PathVariable participantId: String): CompletableFuture<ResponseEntity<VisualizerParticipantData?>> {
-        val query = GetParticipantQuery(participantId)
+        val query = GetParticipantQuery(UUID.fromString(participantId))
         return queryGateway.query(query, ParticipantEntity::class.java)
             .thenApply { participant ->
                 if (participant != null) {
