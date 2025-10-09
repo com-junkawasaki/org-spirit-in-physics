@@ -213,7 +213,7 @@ services:
     networks:
       - spirit-network
     labels:
-      - dev.orbstack.https-port=3003
+      - dev.orbstack.https-port=25260
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:25260/api/health"]
       interval: 30s
@@ -221,8 +221,8 @@ services:
       retries: 5
 
   # Admin Dashboard (Vite/React)
-  admin:
-    build: ./apps/admin
+  researcher:
+    build: ./apps/researcher
     container_name: spirit-admin
     ports:
       - "3001:5174"
@@ -256,7 +256,7 @@ services:
     networks:
       - spirit-network
     labels:
-      - dev.orbstack.https-port=3002
+      - dev.orbstack.https-port=25250
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:25250/api/health"]
       interval: 30s

@@ -8,7 +8,7 @@
     "dev:pact:ci": "./scripts/local-dev-pact.sh",
     "dev:full": "docker-compose up -d && sleep 10 && pnpm run dev:pact",
     "dev:backend": "docker-compose up backend",
-    "dev:frontend": "docker-compose up patient admin visualizer",
+    "dev:frontend": "docker-compose up patient researcher visualizer",
     "dev:services": "docker-compose up postgres axonserver temporal pact-broker",
     "test:pact": "pnpm run dev:pact",
     "test:pact:watch": "node scripts/watch-pact-tests.js",

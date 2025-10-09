@@ -97,7 +97,7 @@ spirit-in-physics/
 ├── apps/
 │   ├── backend/          # Kotlin/Spring Boot API
 │   ├── patient/          # Patient experiment interface
-│   ├── admin/            # Admin dashboard
+│   ├── researcher/       # Researcher dashboard
 │   ├── visualizer/       # Data visualization
 │   └── analyzer-temporal/# Python temporal workflows
 ├── docs/
