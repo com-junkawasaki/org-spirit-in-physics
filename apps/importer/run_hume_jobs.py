@@ -73,7 +73,7 @@ async def main():
         config = yaml.safe_load(f)
     
     # EmotionProcessor初期化
-    emotion_processor = EmotionProcessor(config['hume_ai'])
+    emotion_processor = EmotionProcessor(config['hume'])
 
     if not emotion_processor.use_real_api:
         logging.error("This script requires the real Hume AI API to be enabled. Please check USE_REAL_API in emotion_processor.py")

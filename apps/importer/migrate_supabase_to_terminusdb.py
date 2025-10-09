@@ -25,10 +25,10 @@ SUPABASE_URL = config['supabase']['url']
 SUPABASE_KEY = config['supabase']['service_role_key']
 
 # TerminusDB configuration
-TERMINUSDB_URL = config.get('terminusdb', {}).get('url', 'http://localhost:6363')
+TERMINUSDB_URL = config.get('terminusdb', {}).get('server_url', 'http://localhost:6363')
 TERMINUSDB_USER = config.get('terminusdb', {}).get('user', 'admin')
 TERMINUSDB_PASSWORD = config.get('terminusdb', {}).get('password', 'root')
-DATABASE_ID = "spirit_in_physics"
+DATABASE_ID = config.get('terminusdb', {}).get('database', 'spirit_in_physics')
 
 def get_supabase_client() -> Client:
     """Get Supabase client instance."""

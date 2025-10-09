@@ -270,19 +270,55 @@ def process_prosody_prediction(job_id: str, prediction: dict, client: WOQLClient
 
 def main():
     """Main import function."""
-    hume_data_dir = "hume_data"
-    supabase = get_supabase_client()
 
-    # Get all Hume artifact directories
-    hume_dirs = [d for d in os.listdir(hume_data_dir) if os.path.isdir(os.path.join(hume_data_dir, d)) and d.startswith("HumeAI_artifacts_")]
+    try:
+        # Initialize TerminusDB client
+        client = WOQLClient(server=TERMINUSDB_URL, user=TERMINUSDB_USER, password=TERMINUSDB_PASSWORD)
 
-    print(f"Found {len(hume_dirs)} Hume AI analysis directories to process")
+        # Create database if it doesn't exist
+        if DATABASE_ID not in client.list_databases():
+            client.create_database(DATABASE_ID, "Spirit in Physics Experiment Database")
+            print(f"Created database: {DATABASE_ID}")
+        else:
+            print(f"Database {DATABASE_ID} already exists")
 
-    for hume_dir in hume_dirs:
-        full_path = os.path.join(hume_data_dir, hume_dir)
-        process_hume_job(full_path, supabase)
+        # Connect to database
+        client.connect(DATABASE_ID)
 
-    print("Hume AI data import completed!")
+        # Load schema
+        schema_path = Path(__file__).parent / "terminusdb_schema.jsonld"
+        if schema_path.exists():
+            with open(schema_path, 'r') as f:
+                schema = json.load(f)
+
+            query = WOQLQuery().insert(schema["@graph"])
+            client.query(query)
+            print("Schema loaded successfully")
+        else:
+            print(f"Warning: Schema file not found at {schema_path}")
+
+        hume_data_dir = "hume_data"
+
+        # Get all Hume artifact directories
+        if not os.path.exists(hume_data_dir):
+            print(f"Hume data directory {hume_data_dir} not found")
+            return
+
+        hume_dirs = [d for d in os.listdir(hume_data_dir) if os.path.isdir(os.path.join(hume_data_dir, d)) and d.startswith("HumeAI_artifacts_")]
+
+        print(f"Found {len(hume_dirs)} Hume AI analysis directories to process")
+
+        for hume_dir in hume_dirs:
+            full_path = os.path.join(hume_data_dir, hume_dir)
+            process_hume_job(full_path, client)
+
+        print("Hume AI data import completed successfully!")
+
+    except Exception as e:
+        print(f"Import failed: {e}")
+    finally:
+        if 'client' in locals():
+            client.close()
 
 if __name__ == "__main__":
     main()
