@@ -202,79 +202,60 @@ export async function getParticipantData(participantId: string): Promise<Partici
 
   const { data: participant } = await supabase
     .from('participants')
-    .select('id, name')
+    .select('id, age, gender, handedness')
     .eq('id', participantId)
     .single()
 
   if (!participant) return null
 
-  // Get sessions with responses
-  const { data: sessionsData } = await supabase
-    .from('participant_experiment_sessions')
-    .select(`
-      id,
-      session_id,
-      session_type,
-      start_time,
-      end_time
-    `)
+  // Get sessions with analysis results using the new view
+  const { data: sessionDetail } = await supabase
+    .from('session_detail')
+    .select('*')
     .eq('participant_id', participantId)
+    .order('start_time', { ascending: false })
 
-  const sessions = await Promise.all(
-    (sessionsData || []).map(async (session) => {
-      const { data: responses } = await supabase
-        .from('participant_response_data')
-        .select('id, stimulus_word, response_word, reaction_time_ms, skin_potential, emotion, emotion_confidence')
-        .eq('participant_id', participantId)
-        .eq('experiment_id', session.id)
+  const sessions = (sessionDetail || []).map(session => ({
+    id: session.session_id,
+    session_id: session.session_id,
+    session_type: session.session_type,
+    start_time: session.start_time,
+    end_time: session.end_time,
+    responses: session.responses || []
+  }))
 
-      return {
-        ...session,
-        responses: responses || []
-      }
-    })
-  )
-
-  // Get analysis runs
-  const { data: analysisRunsData } = await supabase
-    .from('analysis_runs')
-    .select('id, run_id, status, created_at, completed_at')
+  // Get analysis results for this participant
+  const { data: analysisResults } = await supabase
+    .from('participant_analysis_results')
+    .select('*')
     .eq('participant_id', participantId)
+    .order('created_at', { ascending: false })
 
-  const analysisRuns = await Promise.all(
-    (analysisRunsData || []).map(async (run) => {
-      const { data: results } = await supabase
-        .from('analysis_results')
-        .select('id, p_value, word2vec_component, reaction_time_component, skin_potential_component, emotion_component, emotion_data, physiological_data, created_at')
-        .eq('run_id', run.id)
-
-      // Get stimulus/response words from participant_response_data
-      const resultsWithWords = await Promise.all(
-        (results || []).map(async (result) => {
-          const { data: responseData } = await supabase
-            .from('participant_response_data')
-            .select('stimulus_word, response_word')
-            .eq('id', result.response_id)
-            .single()
-
-          return {
-            ...result,
-            stimulus_word: responseData?.stimulus_word || '',
-            response_word: responseData?.response_word || ''
-          }
-        })
-      )
-
-      return {
-        ...run,
-        results: resultsWithWords
-      }
-    })
-  )
+  const analysisRuns = analysisResults ? [{
+    id: 'latest',
+    run_id: 'latest',
+    status: 'completed',
+    created_at: analysisResults[0]?.created_at || new Date().toISOString(),
+    completed_at: analysisResults[0]?.created_at || new Date().toISOString(),
+    results: analysisResults.map(result => ({
+      id: result.id,
+      stimulus_word: result.stimulus_word,
+      response_word: result.response_word,
+      p_value: result.spirit_probability,
+      word2vec_component: result.word2vec_component || 0,
+      reaction_time_component: result.reaction_time_component || 0,
+      skin_potential_component: result.skin_potential_component || 0,
+      emotion_component: result.emotion_component || 0,
+      emotion_data: result.emotion_data || {},
+      physiological_data: result.physiological_data || {},
+      created_at: result.created_at,
+      reaction_time_ms: result.reaction_time_ms || 0
+    }))
+  }] : []
 
   return {
     id: participant.id,
-    name: participant.name,
+    name: `Participant ${participantId.slice(0, 8)}`, // Default name if not available
     sessions,
     analysisRuns
   }
@@ -334,34 +315,30 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   const supabase = createServerSupabaseClient()
 
-  // Get participant responses first
-  const { data: responses } = await supabase
-    .from('participant_response_data')
-    .select('id, stimulus_word, response_word, reaction_time_ms, emotion_data')
+  // Get analysis results using the new table structure
+  const { data: analysisResults } = await supabase
+    .from('participant_analysis_results')
+    .select('*')
     .eq('participant_id', participantId)
-    .order('timestamp', { ascending: false })
+    .order('created_at', { ascending: false })
 
-  if (!responses || responses.length === 0) {
+  if (!analysisResults || analysisResults.length === 0) {
     return []
   }
 
-  // Get analysis results for these responses
-  const responseIds = responses.map(r => r.id)
-  const { data: analysisResults } = await supabase
-    .from('analysis_results')
-    .select('*')
-    .in('response_id', responseIds)
-    .order('created_at', { ascending: false })
-
-  // Merge response data with analysis results
-  return (analysisResults || []).map(result => {
-    const response = responses.find(r => r.id === result.response_id)
-    return {
-      ...result,
-      stimulus_word: response?.stimulus_word || '',
-      response_word: response?.response_word || '',
-      reaction_time_ms: response?.reaction_time_ms || 0,
-      emotion_data: response?.emotion_data || {}
-    }
-  })
+  // Transform to the expected format
+  return analysisResults.map(result => ({
+    id: result.id,
+    stimulus_word: result.stimulus_word,
+    response_word: result.response_word,
+    p_value: result.spirit_probability,
+    word2vec_component: result.word2vec_component || 0,
+    reaction_time_component: result.reaction_time_component || 0,
+    skin_potential_component: result.skin_potential_component || 0,
+    emotion_component: result.emotion_component || 0,
+    emotion_data: result.emotion_data || {},
+    physiological_data: result.physiological_data || {},
+    created_at: result.created_at,
+    reaction_time_ms: result.reaction_time_ms || 0
+  }))
 }

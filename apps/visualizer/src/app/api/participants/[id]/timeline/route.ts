@@ -1,62 +1,148 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const participantId = params.id
+    const { id: participantId } = await params
 
-    // For now, we'll create mock data based on our analysis
-    // In a real implementation, this would integrate with the IntegratedDataPipeline
-    const mockTimelineData = {
+    const supabase = await createServerSupabaseClient()
+
+    // Get participant data
+    const { data: participant } = await supabase
+      .from('participants')
+      .select('id, name')
+      .eq('id', participantId)
+      .single()
+
+    if (!participant) {
+      return NextResponse.json({ error: 'Participant not found' }, { status: 404 })
+    }
+
+    // Get sessions for this participant
+    const { data: sessions } = await supabase
+      .from('participant_experiment_sessions')
+      .select(`
+        id,
+        session_id,
+        session_type,
+        start_time,
+        end_time
+      `)
+      .eq('participant_id', participantId)
+      .order('start_time')
+
+    if (!sessions || sessions.length === 0) {
+      return NextResponse.json({ error: 'No sessions found' }, { status: 404 })
+    }
+
+    // Get all responses for this participant
+    const { data: responses } = await supabase
+      .from('participant_response_data')
+      .select(`
+        id,
+        stimulus_word,
+        response_word,
+        reaction_time_ms,
+        timestamp,
+        session,
+        emotion,
+        emotion_confidence,
+        skin_potential
+      `)
+      .eq('participant_id', participantId)
+      .order('timestamp')
+
+    // Calculate session statistics
+    const sessionStats = sessions.map(session => {
+      const sessionResponses = responses?.filter(r => r.session === session.session_type) || []
+      const totalResponseTime = sessionResponses.reduce((sum, r) => sum + (r.reaction_time_ms || 0), 0)
+
+      return {
+        session_id: session.id,
+        session_type: session.session_type,
+        start_time: session.start_time,
+        end_time: session.end_time,
+        response_count: sessionResponses.length,
+        avg_response_time_ms: sessionResponses.length > 0 ? Math.round(totalResponseTime / sessionResponses.length) : 0,
+        responses: sessionResponses.map(r => ({
+          id: r.id,
+          stimulus_word: r.stimulus_word,
+          response_word: r.response_word,
+          reaction_time_ms: r.reaction_time_ms,
+          timestamp: r.timestamp,
+          emotion: r.emotion,
+          emotion_confidence: r.emotion_confidence,
+          skin_potential: r.skin_potential,
+          relative_time_ms: r.timestamp ? new Date(r.timestamp).getTime() - new Date(session.start_time || 0).getTime() : 0
+        }))
+      }
+    })
+
+    // Calculate overall statistics
+    const totalResponses = responses?.length || 0
+    const totalResponseTime = responses?.reduce((sum, r) => sum + (r.reaction_time_ms || 0), 0) || 0
+    const avgResponseTime = totalResponses > 0 ? Math.round(totalResponseTime / totalResponses) : 0
+
+    // Group responses by time windows for distribution analysis
+    const timeDistribution: Record<string, number> = {}
+    responses?.forEach(response => {
+      if (response.timestamp && sessions[0]?.start_time) {
+        const relativeTime = new Date(response.timestamp).getTime() - new Date(sessions[0].start_time).getTime()
+        const minutes = Math.floor(relativeTime / (1000 * 60))
+        const timeWindow = `${minutes}-${minutes + 1}min`
+        timeDistribution[timeWindow] = (timeDistribution[timeWindow] || 0) + 1
+      }
+    })
+
+    // Word frequency analysis
+    const wordFrequency: Record<string, number> = {}
+    responses?.forEach(response => {
+      if (response.stimulus_word) {
+        wordFrequency[response.stimulus_word] = (wordFrequency[response.stimulus_word] || 0) + 1
+      }
+    })
+
+    const timelineData = {
       session_info: {
         participant_id: participantId,
-        total_events: 1004,
-        duration_ms: 1414400,
-        word_count: 199,
-        avg_response_time_ms: 2500
+        participant_name: participant.name,
+        total_sessions: sessions.length,
+        total_events: totalResponses,
+        total_response_time_ms: totalResponseTime,
+        avg_response_time_ms: avgResponseTime,
+        word_count: Object.keys(wordFrequency).length
       },
-      timeline_events: [],
+      sessions: sessionStats,
       event_analysis: {
         event_types: {
-          word_displayed: 199,
-          speech_detected: 150,
-          response_window_opened: 199,
-          participant_initialized: 1
+          word_displayed: totalResponses,
+          speech_detected: totalResponses, // Assuming 1:1 relationship for now
+          response_window_opened: totalResponses,
+          participant_initialized: sessions.length
         },
-        word_frequency: {
-          'インク': 2, 'ノート': 2, '家': 2, '嬉しい': 2, '花嫁': 2,
-          '塗る': 2, '幸運': 2, '古い': 2, '部分': 2, '病気': 2,
-          'プライド': 2, '癖': 2, '針': 2, '窓': 2, '歌う': 2,
-          '旅行': 2, '注意': 2, '子供': 2, '船': 2, 'お金': 2
-        },
-        time_distribution: {
-          '0-1min': 0,
-          '1-5min': 15,
-          '5-10min': 50,
-          '10-20min': 99,
-          '20min+': 35
-        }
+        word_frequency: wordFrequency,
+        time_distribution: timeDistribution
       },
-      response_patterns: [],
+      response_patterns: sessionStats.flatMap(s => s.responses),
       summary: {
         participant_id: participantId,
-        total_events: 1004,
-        session_duration_ms: 1414400,
-        word_count: 199,
-        avg_response_time_ms: 2500,
+        total_sessions: sessions.length,
+        total_responses: totalResponses,
+        avg_response_time_ms: avgResponseTime,
         data_completeness: {
           has_consent: true,
           has_session_data: true,
-          has_video_files: true,
-          has_physiological_data: true,
-          data_quality_score: 85
+          has_video_files: false, // Would need to check file storage
+          has_physiological_data: responses?.some(r => r.skin_potential !== null) || false,
+          data_quality_score: Math.round((totalResponses / Math.max(sessions.length * 100, 1)) * 100)
         }
       }
     }
 
-    return NextResponse.json(mockTimelineData)
+    return NextResponse.json(timelineData)
   } catch (error) {
     console.error('Error fetching participant timeline:', error)
     return NextResponse.json(

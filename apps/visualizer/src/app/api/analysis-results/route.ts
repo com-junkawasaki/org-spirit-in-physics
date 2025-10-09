@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAnalysisResultsForParticipant } from '@/lib/data'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,15 +13,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const results = await getAnalysisResultsForParticipant(participantId)
+    const supabase = createServerSupabaseClient()
+
+    // Get analysis results for the participant using the new table structure
+    const { data: results, error } = await supabase
+      .from('participant_analysis_results')
+      .select('*')
+      .eq('participant_id', participantId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching analysis results:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch analysis results' },
+        { status: 500 }
+      )
+    }
 
     // Transform the data for the frontend
-    const transformedResults = results.map(result => ({
+    const transformedResults = (results || []).map(result => ({
       id: result.id,
       stimulusWord: result.stimulus_word,
       responseWord: result.response_word,
-      spiritProbability: result.kawasaki_p_value,
-      reactionTime: result.reaction_time_ms,
+      spiritProbability: result.spirit_probability,
+      reactionTime: result.reaction_time_ms || 0,
       emotionData: result.emotion_data || {},
       timestamp: result.created_at,
       components: {

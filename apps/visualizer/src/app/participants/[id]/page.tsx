@@ -14,10 +14,10 @@ import {
   Activity,
   BarChart3,
   Users,
-  Target,
   Layers,
   FileText,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Target
 } from 'lucide-react'
 
 interface Participant {
@@ -92,23 +92,35 @@ async function getParticipantAnalysis(id: string): Promise<AnalysisResult[]> {
 function formatDate(timestamp: number | null | string): string {
   if (!timestamp) return 'N/A'
 
-  const date = typeof timestamp === 'string'
-    ? new Date(timestamp)
-    : new Date(timestamp)
+  try {
+    const date = typeof timestamp === 'string'
+      ? new Date(timestamp)
+      : new Date(timestamp)
 
-  return date.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+    if (Number.isNaN(date.getTime())) {
+      return 'N/A'
+    }
+
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return 'N/A'
+  }
 }
 
 function getSpiritProbabilityColor(probability: number): string {
-  if (probability >= 0.99) return 'bg-green-100 text-green-800 border-green-200'
-  if (probability >= 0.95) return 'bg-blue-100 text-blue-800 border-blue-200'
+  if (probability >= 0.9999) return 'bg-green-100 text-green-800 border-green-200'
+  if (probability >= 0.999) return 'bg-emerald-100 text-emerald-800 border-emerald-200'
+  if (probability >= 0.99) return 'bg-blue-100 text-blue-800 border-blue-200'
+  if (probability >= 0.95) return 'bg-cyan-100 text-cyan-800 border-cyan-200'
   if (probability >= 0.90) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+  if (probability >= 0.80) return 'bg-orange-100 text-orange-800 border-orange-200'
   return 'bg-red-100 text-red-800 border-red-200'
 }
 
@@ -118,6 +130,60 @@ function SpiritProbabilityBadge({ probability }: { probability: number }) {
       <Target className="h-3 w-3 mr-1" />
       {(probability * 100).toFixed(4)}%
     </Badge>
+  )
+}
+
+
+function LoadingSkeleton() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-8 bg-muted rounded w-64 animate-pulse"></div>
+            <div className="h-4 bg-muted rounded w-32 animate-pulse"></div>
+          </div>
+          <div className="h-6 bg-muted rounded w-20 animate-pulse"></div>
+        </div>
+
+        {/* Metrics skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={`metric-card-${Date.now()}-${i}`} className="p-6 border rounded-lg">
+              <div className="flex items-center">
+                <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
+                <div className="ml-4 space-y-2">
+                  <div className="h-4 bg-muted rounded w-24 animate-pulse"></div>
+                  <div className="h-8 bg-muted rounded w-16 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Sessions skeleton */}
+        <div className="border rounded-lg">
+          <div className="p-6 border-b">
+            <div className="h-6 bg-muted rounded w-32 animate-pulse"></div>
+          </div>
+          <div className="p-6 space-y-4">
+            {Array.from({ length: 2 }, (_, i) => (
+              <div key={`loading-session-${Date.now()}-${i}`} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="h-5 w-5 bg-muted rounded animate-pulse"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded w-20 animate-pulse"></div>
+                    <div className="h-3 bg-muted rounded w-32 animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="h-6 bg-muted rounded w-16 animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -187,8 +253,26 @@ export default function ParticipantDetailPage() {
           </Link>
           <Link href={`/participants/${participant.id}/correlation`}>
             <Button variant="outline">
-              <TrendingUp className="h-4 w-4 mr-2" />
+              <TrendingUpIcon className="h-4 w-4 mr-2" />
               相関分析
+            </Button>
+          </Link>
+          <Link href={`/participants/${participant.id}/vectors`}>
+            <Button variant="outline">
+              <Layers className="h-4 w-4 mr-2" />
+              三次元ベクトル
+            </Button>
+          </Link>
+          <Link href={`/participants/${participant.id}/results`}>
+            <Button variant="outline">
+              <FileText className="h-4 w-4 mr-2" />
+              詳細結果
+            </Button>
+          </Link>
+          <Link href={`/participants/${participant.id}/report`}>
+            <Button variant="outline">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              分析レポート
             </Button>
           </Link>
         </div>
@@ -207,15 +291,13 @@ export default function ParticipantDetailPage() {
       </div>
 
       {/* Content */}
-      <Suspense fallback={<LoadingSkeleton />}>
-        <ParticipantDetailContent participant={participant} />
-      </Suspense>
+      <OverviewContent participant={participant} />
     </div>
   )
 }
 
 
-function ParticipantDetailContent({ participant }: { participant: Participant }) {
+function OverviewContent({ participant }: { participant: Participant }) {
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -230,28 +312,167 @@ function ParticipantDetailContent({ participant }: { participant: Participant })
   }, [participant.id])
 
   if (loading) {
-    return <LoadingSkeleton />
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Card key={`loading-metric-${i + 1}`}>
+              <CardContent className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-muted rounded mb-2"></div>
+                  <div className="h-8 bg-muted rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <div className="h-6 bg-muted rounded w-1/4"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="animate-pulse space-y-4">
+              <div className="h-16 bg-muted rounded"></div>
+              <div className="h-16 bg-muted rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
+  const averageReactionTime = analysisResults.length > 0
+    ? analysisResults.reduce((sum, result) => sum + (result.reaction_time_ms || 0), 0) / analysisResults.length
+    : 0
+
+  const topEmotions = analysisResults.length > 0
+    ? Object.entries(
+        analysisResults.reduce((acc, result) => {
+          Object.entries(result.emotion_data).forEach(([emotion, value]) => {
+            acc[emotion] = (acc[emotion] || 0) + value
+          })
+          return acc
+        }, {} as Record<string, number>)
+      )
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+    : []
+
   return (
-    <Tabs defaultValue="overview" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="overview">概要</TabsTrigger>
-        <TabsTrigger value="results">詳細結果</TabsTrigger>
-        <TabsTrigger value="report">分析レポート</TabsTrigger>
-      </TabsList>
+    <div className="space-y-6">
+      {/* Key Metrics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">平均Spirit確率</p>
+                <p className="text-2xl font-bold">
+                  {(participant.averageSpiritProbability * 100).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      <TabsContent value="overview">
-        <OverviewTab participant={participant} analysisResults={analysisResults} />
-      </TabsContent>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">平均反応時間</p>
+                <p className="text-2xl font-bold">
+                  {averageReactionTime.toFixed(0)}ms
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      <TabsContent value="results">
-        <ResultsTab analysisResults={analysisResults} />
-      </TabsContent>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Activity className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">総応答数</p>
+                <p className="text-2xl font-bold">{participant.responseCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      <TabsContent value="report">
-        <AnalysisReportTab />
-      </TabsContent>
-    </Tabs>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-orange-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-muted-foreground">セッション数</p>
+                <p className="text-2xl font-bold">{participant.sessionCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sessions Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>実験セッション</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {participant.sessions.map((session) => (
+              <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{session.sessionType}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(session.startTime)}
+                      {session.endTime && ` - ${formatDate(session.endTime)}`}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="secondary">
+                  {session.responseCount} 応答
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Top Emotions */}
+      {topEmotions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>主な感情パターン</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {topEmotions.map(([emotion, totalScore]) => (
+                <div key={emotion} className="flex items-center justify-between">
+                  <span className="text-sm font-medium capitalize">{emotion}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-24 bg-secondary rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full"
+                        style={{
+                          width: `${Math.min((totalScore / analysisResults.length) * 100, 100)}%`
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm text-muted-foreground w-12 text-right">
+                      {(totalScore / analysisResults.length).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }

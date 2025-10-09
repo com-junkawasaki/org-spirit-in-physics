@@ -1,38 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllParticipants } from '@/lib/data'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
     console.log('API: Fetching participants...')
-    const participants = await getAllParticipants()
+    const supabase = createServerSupabaseClient()
+
+    // Get participants data using the new view
+    const { data: participants, error } = await supabase
+      .from('participant_summary')
+      .select('*')
+      .order('last_activity', { ascending: false, nullsLast: true })
+
+    if (error) {
+      console.error('API: Error fetching participants:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch participants', details: error.message },
+        { status: 500 }
+      )
+    }
+
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
 
     // Process participants data for frontend
-    const processedParticipants = participants.map(participant => {
-      // Calculate average spirit probability
-      const analysisResults = participant.analysisRuns.flatMap(run => run.results)
-      const averageSpiritProbability = analysisResults.length > 0
-        ? analysisResults.reduce((sum, result) => sum + result.p_value, 0) / analysisResults.length
-        : 0
-
-      return {
-        id: participant.id,
-        name: participant.name,
-        sessionCount: participant.sessions.length,
-        responseCount: participant.sessions.reduce((sum, session) => sum + session.responses.length, 0),
-        averageSpiritProbability,
-        lastActivity: participant.sessions.length > 0
-          ? Math.max(...participant.sessions.map(s => new Date(s.start_time || '').getTime()))
-          : null,
-        sessions: participant.sessions.map(session => ({
-          id: session.id,
-          sessionType: session.session_type,
-          startTime: session.start_time,
-          endTime: session.end_time,
-          responseCount: session.responses.length
-        }))
-      }
-    })
+    const processedParticipants = (participants || []).map(participant => ({
+      id: participant.participant_id,
+      name: `参加者 ${participant.participant_id.slice(0, 8)}`, // Default name format
+      sessionCount: participant.session_count || 0,
+      responseCount: participant.total_responses || 0,
+      averageSpiritProbability: participant.average_spirit_probability || 0,
+      lastActivity: participant.last_activity ? new Date(participant.last_activity).getTime() : null,
+      sessions: participant.sessions || []
+    }))
 
     console.log('API: Processed participants:', processedParticipants.length)
     return NextResponse.json(processedParticipants)
