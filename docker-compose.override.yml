@@ -4,6 +4,13 @@
 version: '3.8'
 
 services:
+  # Temporarily disable temporal dependency for debugging
+  backend:
+    depends_on:
+      - axonserver
+      - postgres
+      # - temporal  # Temporarily disabled
+
   # Pact Broker - Always start in development
   pact-broker:
     env_file:
@@ -28,15 +35,6 @@ services:
         max-file: "3"
 
   # Development-specific service overrides
-  backend:
-    environment:
-      - PACT_BROKER_URL=http://pact-broker:9292
-    volumes:
-      # Mount source code for hot reloading during development
-      - ./apps/backend:/app
-      - /app/build
-      - /app/.gradle
-
   patient:
     environment:
       - PACT_BROKER_URL=http://pact-broker:9292

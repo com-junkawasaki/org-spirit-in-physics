@@ -16,23 +16,20 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-// Supabase初期化関数
+// Backend初期化関数
 export async function initializeSupabaseDatabase(): Promise<void> {
   try {
-    // Supabase接続テスト
-    const { data, error } = await supabase
-      .from('participants')
-      .select('count')
-      .limit(1);
+    // Backend API接続テスト
+    const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+    const response = await fetch(`${backendUrl}/actuator/health`);
 
-    if (error) {
-      console.error('Supabase connection failed:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(`Backend API connection failed: ${response.status}`);
     }
 
-    console.log('Supabase database connection established');
+    console.log('Backend API connection established');
   } catch (error) {
-    console.error('Failed to initialize Supabase database:', error);
+    console.error('Failed to initialize backend connection:', error);
     throw error;
   }
 }

@@ -97,11 +97,13 @@ export const videoAnalysisWorkflow = inngest.createFunction(
     // ステップ4: 結果の永続化
     await step.run('persist-results', async () => {
       try {
-        saveEmotionAnalysisResult(analysisResult);
+        // Type assertion to ensure analysisResult is properly typed
+        const result = analysisResult as { participantId: string; videoFile: string; sessionType: string; emotions: Array<{ name: string; score: number; confidence: number; }>; timestamp: string; processingTime: number; };
+        saveEmotionAnalysisResult(result);
 
         logger.info(`Analysis results persisted for ${participantId}/${videoFile}`, {
-          emotionsCount: analysisResult.emotions.length,
-          dominantEmotion: analysisResult.emotions[0]?.name,
+          emotionsCount: result.emotions.length,
+          dominantEmotion: result.emotions[0]?.name,
         });
       } catch (error) {
         logger.error(`Failed to persist results for ${participantId}/${videoFile}`, {

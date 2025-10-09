@@ -244,11 +244,31 @@ export async function getEmotionStatisticsFromKuzu(): Promise<{
   };
 }> {
   try {
-    // Supabaseマネージャーを使用（後方互換性のため関数名は変更しない）
-    const { supabaseManager } = await import('./database/supabase-manager.ts');
-    return await supabaseManager.getEmotionStatistics();
+    // Backend APIを呼び出す
+    const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+    const response = await fetch(`${backendUrl}/api/emotion-analysis?action=get-statistics`);
+
+    if (!response.ok) {
+      throw new Error(`Backend API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data.success && data.data) {
+      // Backend APIのレスポンス形式を既存の形式に変換
+      const emotionMap = (data.data.dominantEmotions || []).reduce((acc: Record<string, number>, item: any) => {
+        acc[item.emotion] = item.count;
+        return acc;
+      }, {});
+
+      return {
+        totalAnalyses: data.data.totalAnalyses || 0,
+        averageEmotions: emotionMap,
+        dominantEmotions: data.data.dominantEmotions || [],
+        processingStats: { averageTime: 0, totalTime: 0 } // TODO: backendで実装
+      };
+    }
   } catch (error) {
-    console.error('Error getting emotion statistics from Supabase:', error);
+    console.error('Error getting emotion statistics from backend:', error);
   }
 
   // Fallback to empty stats

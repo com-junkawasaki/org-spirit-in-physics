@@ -1,7 +1,7 @@
 // Merkle DAG: Supabaseデータベースマネージャー
 // Supabaseを使用したデータベース操作マネージャー
 
-import { supabase, Database } from '../supabase';
+import { supabase } from '../supabase';
 
 // インターフェース定義
 export interface Participant {
