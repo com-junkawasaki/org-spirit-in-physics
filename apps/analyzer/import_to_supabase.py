@@ -11,9 +11,13 @@ from datetime import datetime
 from supabase import create_client, Client
 import glob
 
-# Supabase configuration
-SUPABASE_URL = "http://127.0.0.1:54321"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8HdqQwv8Hdp7fsn3W0YpN81IU"
+# Load configuration from config.yaml
+import yaml
+with open('config.yaml') as f:
+    config = yaml.safe_load(f)
+
+SUPABASE_URL = config['supabase']['url']
+SUPABASE_KEY = config['supabase']['service_role_key']
 
 def get_supabase_client() -> Client:
     """Get Supabase client instance."""
@@ -112,30 +116,47 @@ def process_session_data(participant_id: str, session_data: dict, supabase: Clie
             sessions[session_num]["updated_at"] = timestamp
 
         elif event_type == "word_displayed":
-            # Extract word response data
-            session_num = payload.get("session")
-            if session_num in sessions:
-                word_data = {
-                    "participant_id": participant_id,
-                    "experiment_id": sessions[session_num]["id"],
-                    "stimulus_word": payload.get("word", ""),
-                    "response_word": payload.get("response", ""),
-                    "reaction_time_ms": payload.get("reactionTime", 0),
-                    "session": f"session-{session_num}",
-                    "timestamp": timestamp,
-                    "audio_file_path": payload.get("audioFile"),
-                    "video_file_path": payload.get("videoFile"),
-                    "emotion": payload.get("emotion"),
-                    "emotion_confidence": payload.get("emotionConfidence"),
-                    "created_at": timestamp,
-                    "updated_at": timestamp
-                }
-                responses.append(word_data)
+            # Store word display info for later matching with speech_detected
+            word_key = payload.get("key")
+            if word_key:
+                # Find corresponding speech_detected event
+                for speech_event in events:
+                    if (speech_event.get("type") == "speech_detected" and
+                        speech_event.get("payload", {}).get("key") == word_key):
+                        speech_payload = speech_event.get("payload", {})
+                        speech_timestamp = parse_timestamp(speech_event.get("timestamp"))
+
+                        # Calculate reaction time
+                        reaction_time = speech_event.get("timestamp") - event.get("timestamp")
+
+                        word_data = {
+                            "id": str(uuid.uuid4()),
+                            "participant_id": participant_id,
+                            "experiment_id": sessions[session_num]["id"] if session_num and session_num in sessions else str(uuid.uuid4()),
+                            "stimulus_word": payload.get("word", ""),
+                            "response_word": speech_payload.get("word", ""),
+                            "reaction_time_ms": reaction_time,
+                            "session": f"session-{session_num}" if session_num else "session-1",
+                            "timestamp": timestamp,
+                            "created_at": timestamp,
+                            "updated_at": timestamp
+                        }
+                        responses.append(word_data)
+                        break
 
     # Insert sessions
     for session_data in sessions.values():
         try:
-            supabase.table("participant_experiment_sessions").upsert(session_data).execute()
+            session_insert_data = {
+                "id": session_data["id"],
+                "participant_id": session_data["participant_id"],
+                "session_id": session_data["session_id"],
+                "session_type": session_data["session_type"],
+                "start_time": session_data["start_time"],
+                "created_at": session_data["created_at"],
+                "updated_at": session_data["updated_at"]
+            }
+            supabase.table("participant_experiment_sessions").upsert(session_insert_data).execute()
             print(f"  ✓ Inserted session {session_data['session_type']} for {participant_id}")
         except Exception as e:
             print(f"  ✗ Failed to insert session for {participant_id}: {e}")
@@ -146,9 +167,16 @@ def process_session_data(participant_id: str, session_data: dict, supabase: Clie
             # Ensure word_stimulus exists
             word = response_data["stimulus_word"]
             if word:
-                supabase.table("word_stimuli").upsert({"id": hash(word) % 1000000, "word": word}).execute()
+                # Check if word already exists
+                existing_word = supabase.table("word_stimuli").select("id").eq("word", word).execute()
+                if existing_word.data:
+                    word_stimulus_id = existing_word.data[0]["id"]
+                else:
+                    # Insert new word stimulus with a simple hash-based ID
+                    word_stimulus_id = hash(word) % 2147483647  # Max int value
+                    supabase.table("word_stimuli").upsert({"id": word_stimulus_id, "word": word}).execute()
 
-                response_data["word_stimulus_id"] = hash(word) % 1000000
+                response_data["word_stimulus_id"] = word_stimulus_id
 
             supabase.table("participant_response_data").upsert(response_data).execute()
         except Exception as e:

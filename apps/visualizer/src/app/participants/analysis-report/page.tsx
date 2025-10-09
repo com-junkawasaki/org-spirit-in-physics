@@ -109,7 +109,7 @@ ${reportData.emotionAnalysisSummary.emotionSources.length > 0
 - **High Spirit Responses** (&gt;0.8): ${reportData.kawasakiModelResults.highSpiritResponses}
 
 ## Top Performing Word Pairs
-${reportData.topPerformingWordPairs.map((pair, index) =>
+${reportData.topPerformingWordPairs.map((pair) =>
   `- **${pair.stimulus}** → **${pair.response}** ${(pair.probability * 100).toFixed(4)}%${pair.participant_name ? ` (${pair.participant_name})` : ''}`
 ).join('\n')}
 

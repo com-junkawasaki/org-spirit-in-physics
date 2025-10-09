@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   Calendar,
   Clock,
-  Brain,
   TrendingUp,
   Activity,
   BarChart3,
@@ -378,8 +377,8 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
+        {Array.from({ length: 4 }, (_, i) => (
+          <Card key={`loading-card-${i}`}>
             <CardContent className="p-6">
               <div className="animate-pulse">
                 <div className="h-4 bg-muted rounded mb-2"></div>
