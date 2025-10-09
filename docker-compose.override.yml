@@ -4,12 +4,22 @@
 version: '3.8'
 
 services:
+  # Temporarily disable temporal-related services for debugging
+  temporal:
+    profiles:
+      - temporal-enabled
+
+  analyzer-temporal-api:
+    profiles:
+      - temporal-enabled
+
   # Temporarily disable temporal dependency for debugging
   backend:
     depends_on:
-      - axonserver
-      - postgres
-      # - temporal  # Temporarily disabled
+      axonserver:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   # Pact Broker - Always start in development
   pact-broker:

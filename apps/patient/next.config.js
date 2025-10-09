@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
   webpack: (config, { isServer }) => {
       // Node.js ポリフィルの追加（Inngestで必要）
       if (!isServer) {

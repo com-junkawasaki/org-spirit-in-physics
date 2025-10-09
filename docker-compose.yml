@@ -62,6 +62,11 @@ services:
         condition: service_healthy
     networks:
       - spirit-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7233"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # Pact Broker for Contract Testing
   pact-broker:
@@ -107,6 +112,8 @@ services:
 
   # Analyzer Temporal API Server
   analyzer-temporal-api:
+    profiles:
+      - temporal-enabled
     build: ./apps/analyzer-temporal
     container_name: analyzer-temporal-api
     ports:
@@ -145,8 +152,6 @@ services:
       axonserver:
         condition: service_healthy
       postgres:
-        condition: service_healthy
-      temporal:
         condition: service_healthy
     networks:
       - spirit-network
