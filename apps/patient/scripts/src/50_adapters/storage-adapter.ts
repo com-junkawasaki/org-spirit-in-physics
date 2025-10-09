@@ -2,62 +2,115 @@
 
 import { StoragePort } from 'scripts/src/20_ports';
 import { ConsentData, SaveStructuredDataPayload, EmotionAnalysisResult, Participant, ParticipantWithFiles, SessionData } from 'scripts/src/00_schema';
-import { supabaseManager } from 'scripts/src/lib/database/supabase-manager';
 
 export class StorageAdapter implements StoragePort {
   async saveStructuredData(payload: SaveStructuredDataPayload): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
+    // Backend API経由で保存
     if (payload.type === "consent") {
       await this.saveConsentData(payload.data);
     } else if (payload.type === "session-data") {
-      await supabaseManager.saveSession({
-        id: `${payload.data.participantId}_session`,
-        participantId: payload.data.participantId,
-        events: payload.data.events,
-        createdAt: payload.data.events[0]?.timestamp || new Date().toISOString()
-      });
+      await this.saveSessionData(payload.data);
+    }
+  }
+
+  async saveSessionData(data: SessionData): Promise<void> {
+    // Backendのsession import APIを呼び出し
+    const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+    const sessionData = {
+      participantId: data.participantId,
+      events: data.events,
+      createdAt: data.events[0]?.timestamp || new Date().toISOString()
+    };
+
+    const response = await fetch(`${backendUrl}/api/admin/import/sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ data: sessionData }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend API error: ${response.status}`);
     }
   }
 
   async saveConsentData(data: ConsentData): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
-    await supabaseManager.saveParticipant({
+    // Backendのparticipant import APIを呼び出し
+    const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+    const participantData = {
       id: data.participantId,
       signature: data.signature,
-      agreedAt: new Date(data.agreedAt),
-      agreements: data.agreements
+      agreedAt: new Date(data.agreedAt || new Date()),
+      agreements: data.agreements || {}
+    };
+
+    const response = await fetch(`${backendUrl}/api/admin/import/participants`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ data: participantData }),
     });
+
+    if (!response.ok) {
+      throw new Error(`Backend API error: ${response.status}`);
+    }
   }
 
   async saveEmotionAnalysis(participantId: string, result: EmotionAnalysisResult): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
-    const analysis = {
-      id: `${result.participantId}_${result.videoFile}_${Date.now()}`,
+    // Backendのemotion import APIを呼び出し
+    const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+    const analysisData = {
       participantId: result.participantId,
-      videoFileId: `${result.participantId}_${result.videoFile}`,
+      videoFile: result.videoFile,
       sessionType: result.sessionType,
       timestamp: result.timestamp,
       processingTime: result.processingTime,
       emotions: result.emotions
     };
 
-    await supabaseManager.saveEmotionAnalysis(analysis);
+    const response = await fetch(`${backendUrl}/api/admin/import/emotions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ data: analysisData }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend API error: ${response.status}`);
+    }
   }
 
   async loadEmotionAnalysis(participantId: string): Promise<EmotionAnalysisResult[]> {
-    // Supabaseデータベースから読み込み（一本化）
+    // Backend APIから読み込み
     try {
-      const supabaseResults = await supabaseManager.getEmotionAnalysis(participantId);
-      return supabaseResults.map(sa => ({
-        participantId: sa.participantId,
-        videoFile: sa.videoFileId.replace(`${sa.participantId}_`, ''),
-        sessionType: sa.sessionType,
-        emotions: sa.emotions,
-        timestamp: sa.timestamp,
-        processingTime: sa.processingTime
+      const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+      const response = await fetch(`${backendUrl}/api/emotion-analysis?action=get-results&participantId=${participantId}`);
+
+      if (!response.ok) {
+        console.warn(`Backend API error: ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.data) {
+        console.warn('Invalid response from backend API');
+        return [];
+      }
+
+      // Backend APIのレスポンス形式を既存の形式に変換
+      return (data.data || []).map((sa: any) => ({
+        participantId: sa.participantId || participantId,
+        videoFile: sa.videoFile || sa.videoFileId?.replace(`${sa.participantId}_`, '') || 'unknown',
+        sessionType: sa.sessionType || 'unknown',
+        emotions: sa.emotions || [],
+        timestamp: sa.timestamp || new Date().toISOString(),
+        processingTime: sa.processingTime || 0
       }));
     } catch (error) {
-      console.warn('Failed to load emotion analysis from Supabase:', error);
+      console.warn('Failed to load emotion analysis from backend:', error);
       return [];
     }
   }
@@ -70,37 +123,74 @@ export class StorageAdapter implements StoragePort {
 
   // data-loader.ts から統合した追加メソッド
   async loadAllParticipants(): Promise<ParticipantWithFiles[]> {
-    // Supabaseデータベースから参加者データを取得（一本化）
+    // Backend APIから参加者データを取得
     try {
-      const supabaseParticipants = await supabaseManager.getAllParticipants();
-      return supabaseParticipants.map(sp => ({
+      const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+      const response = await fetch(`${backendUrl}/api/experimental-data?type=participants`);
+
+      if (!response.ok) {
+        console.warn(`Backend API error: ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.data) {
+        console.warn('Invalid response from backend API');
+        return [];
+      }
+
+      // Backend APIのレスポンス形式を既存の形式に変換
+      return (data.data || []).map((sp: any) => ({
         id: sp.id,
-        age: undefined, // SupabaseParticipantにはない
-        gender: undefined, // SupabaseParticipantにはない
-        handedness: undefined, // SupabaseParticipantにはない
-        createdAt: new Date(sp.agreedAt), // agreedAtを使用
+        age: undefined, // Backend APIにはない
+        gender: undefined, // Backend APIにはない
+        handedness: undefined, // Backend APIにはない
+        createdAt: new Date(sp.createdAt || sp.agreedAt), // createdAtを使用
         signature: sp.signature,
-        agreedAt: sp.agreedAt?.toISOString() || new Date().toISOString(),
+        agreedAt: sp.createdAt || sp.agreedAt || new Date().toISOString(),
         agreements: sp.agreements,
-        hasSessionData: false, // 後で更新
-        hasVideoFiles: false, // 後で更新
-        videoFiles: []
+        hasSessionData: sp.hasSessionData || false,
+        hasVideoFiles: sp.hasVideoFiles || false,
+        videoFiles: sp.videoFiles || []
       }));
     } catch (error) {
-      console.warn('Failed to load participants from Supabase:', error);
+      console.warn('Failed to load participants from backend:', error);
       return [];
     }
   }
 
   async loadSessionData(participantId: string): Promise<SessionData | null> {
-    // Supabaseデータベースからセッションデータを取得（一本化）
+    // Backend APIからセッションデータを取得
     try {
-      // SupabaseManagerからセッションデータを取得
-      // 現時点では仮の実装
-      console.log(`Loading session data from Supabase for ${participantId}`);
-      return null; // 仮実装
+      const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+      const response = await fetch(`${backendUrl}/api/experimental-data?type=participant&participantId=${participantId}`);
+
+      if (!response.ok) {
+        console.warn(`Backend API error: ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.data) {
+        console.warn('Invalid response from backend API');
+        return null;
+      }
+
+      // Backend APIのレスポンスをSessionData形式に変換
+      // TODO: backendでセッションイベントデータを返すように実装する必要がある
+      const participant = data.data;
+      return {
+        participantId: participant.id,
+        events: [], // TODO: backendで実装
+        createdAt: participant.agreedAt || new Date().toISOString(),
+        sessionId: `session-${participant.id}`,
+        wordResponses: [], // TODO: backendで実装
+        sessionType: 'session-1', // デフォルト
+        startTime: participant.agreedAt || new Date().toISOString(),
+        endTime: participant.agreedAt || new Date().toISOString(),
+      } as SessionData;
     } catch (error) {
-      console.warn('Failed to load session data from Supabase:', error);
+      console.warn('Failed to load session data from backend:', error);
       return null;
     }
   }

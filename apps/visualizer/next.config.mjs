@@ -4,7 +4,7 @@ const nextConfig = {
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   // Enable experimental features for better performance
   experimental: {
-    optimizeCss: true,
+    optimizeCss: false, // Disabled due to critters dependency issue
   },
   // Configure headers for better security and performance
   async headers() {

@@ -115,6 +115,10 @@ export const videoAnalysisWorkflow = inngest.createFunction(
 
     // ステップ5: 完了イベント送信
     await step.run('send-completion-event', async () => {
+      if (!analysisResult) {
+        throw new Error('Analysis result is null');
+      }
+
       const completionEvent: AnalysisResultEvent = {
         participantId,
         videoFile,

@@ -1,8 +1,6 @@
 // Merkle DAG: データベース初期化マネージャー
 // 全てのデータベースの初期化を統括
 
-import { supabaseManager } from './supabase-manager';
-
 export class DatabaseInitializer {
   private initialized = false;
 
@@ -18,8 +16,13 @@ export class DatabaseInitializer {
     try {
       console.log('Initializing all databases...');
 
-      // Supabase初期化（メインDB）
-      await supabaseManager.initialize();
+      // Backend API接続テスト
+      const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+      const response = await fetch(`${backendUrl}/actuator/health`);
+
+      if (!response.ok) {
+        throw new Error(`Backend API connection failed: ${response.status}`);
+      }
 
       this.initialized = true;
       console.log('All databases initialized successfully');
@@ -37,8 +40,7 @@ export class DatabaseInitializer {
     try {
       console.log('Closing all databases...');
 
-      await supabaseManager.close();
-
+      // Backend接続は明示的にクローズする必要はない
       this.initialized = false;
       console.log('All databases closed successfully');
 
@@ -58,6 +60,3 @@ export class DatabaseInitializer {
 
 // シングルトンインスタンス
 export const databaseInitializer = new DatabaseInitializer();
-
-// Supabaseマネージャーのエクスポート
-export { supabaseManager };

@@ -1,6 +1,5 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
-import { supabase } from './supabase';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -99,23 +98,30 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
         if (consentData.length > 0) {
           console.log(`Loaded ${consentData.length} participants from Vercel Blob`);
 
-          // Supabaseにも保存
+          // Backend APIにも保存
           for (const data of consentData) {
-            const { supabaseManager } = await import('./database/supabase-manager.ts');
-            const participant: Participant = {
-              id: data.participantId,
-              signature: data.signature,
-              agreedAt: new Date(data.agreedAt || new Date()),
-              agreements: data.agreements || {},
-              hasSessionData: false,
-              hasVideoFiles: false,
-              videoFiles: []
-            };
-
             try {
-              await supabaseManager.saveParticipant(participant);
+              const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+              const participantData = {
+                id: data.participantId,
+                signature: data.signature,
+                agreedAt: new Date(data.agreedAt || new Date()),
+                agreements: data.agreements || {}
+              };
+
+              const response = await fetch(`${backendUrl}/api/admin/import/participants`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ data: participantData }),
+              });
+
+              if (!response.ok) {
+                console.warn('Failed to save participant to backend:', response.status);
+              }
             } catch (saveError) {
-              console.warn('Failed to save participant to Supabase:', saveError);
+              console.warn('Failed to save participant to backend:', saveError);
             }
           }
 
@@ -158,23 +164,30 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       }
     }
 
-    // Supabaseにも保存
+    // Backend APIにも保存
     for (const data of consentData) {
-      const { supabaseManager } = await import('./database/supabase-manager.ts');
-      const participant: Participant = {
-        id: data.participantId,
-        signature: data.signature,
-        agreedAt: new Date(data.agreedAt || new Date()),
-        agreements: data.agreements || {},
-        hasSessionData: false,
-        hasVideoFiles: false,
-        videoFiles: []
-      };
-
       try {
-        await supabaseManager.saveParticipant(participant);
+        const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+        const participantData = {
+          id: data.participantId,
+          signature: data.signature,
+          agreedAt: new Date(data.agreedAt || new Date()),
+          agreements: data.agreements || {}
+        };
+
+        const response = await fetch(`${backendUrl}/api/admin/import/participants`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ data: participantData }),
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to save participant to backend:', response.status);
+        }
       } catch (saveError) {
-        console.warn('Failed to save participant to Supabase:', saveError);
+        console.warn('Failed to save participant to backend:', saveError);
       }
     }
 
@@ -248,8 +261,8 @@ export async function loadSessionData(participantId: string): Promise<SessionDat
       console.log(`Loading session data from Supabase for ${participantId}`);
       // TODO: SupabaseManagerにgetSessionDataメソッドを実装
       return null; // 仮実装
-    } catch (supabaseError) {
-      console.warn('Failed to load session data from Supabase:', supabaseError);
+    } catch (error) {
+      console.warn('Failed to load session data from backend:', error);
       return null;
     }
   } catch (error) {
@@ -314,38 +327,32 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
 // Load all participants data
 export async function loadAllParticipants(): Promise<Participant[]> {
   try {
-    // Supabaseから参加者データを取得
-    const { data: participants, error } = await supabase
-      .from('participants')
-      .select(`
-        *,
-        sessions (
-          id
-        ),
-        video_files (
-          id,
-          file_name,
-          file_path,
-          file_size
-        )
-      `)
-      .order('created_at', { ascending: false });
+    // Backend APIから参加者データを取得
+    const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+    const response = await fetch(`${backendUrl}/api/experimental-data?type=participants`);
 
-    if (error) {
-      console.error('Error loading participants from Supabase:', error);
+    if (!response.ok) {
+      console.error(`Backend API error: ${response.status}`);
       return [];
     }
 
-    console.log(`Loaded ${participants?.length || 0} participants from Supabase`);
+    const data = await response.json();
+    if (!data.success || !data.data) {
+      console.error('Invalid response from backend API');
+      return [];
+    }
 
-    return (participants || []).map((p: any) => ({
+    console.log(`Loaded ${data.data?.length || 0} participants from backend`);
+
+    // Backend APIのレスポンス形式を既存の形式に変換
+    return (data.data || []).map((p: any) => ({
       id: p.id,
       signature: p.signature,
-      agreedAt: p.agreed_at,
+      agreedAt: p.createdAt,
       agreements: p.agreements,
-      hasSessionData: (p.sessions?.length || 0) > 0,
-      hasVideoFiles: (p.video_files?.length || 0) > 0,
-      videoFiles: p.video_files || []
+      hasSessionData: p.hasSessionData || false,
+      hasVideoFiles: p.hasVideoFiles || false,
+      videoFiles: p.videoFiles || []
     }));
   } catch (error) {
     console.error('Error loading all participants:', error);
@@ -356,29 +363,34 @@ export async function loadAllParticipants(): Promise<Participant[]> {
 // Load all session data
 export async function loadAllSessionData(): Promise<Array<{ participantId: string; sessionData: SessionData }>> {
   try {
-    // 新しいスキーマではparticipant_experiment_sessionsテーブルを使用
-    const { data: sessions, error } = await supabase
-      .from('participant_experiment_sessions')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Backend APIからセッションデータを取得
+    const backendUrl = process.env.BACKEND_API_URL || 'http://backend:8080';
+    const response = await fetch(`${backendUrl}/api/experimental-data?type=sessions`);
 
-    if (error) {
-      console.error('Error loading session data from Supabase:', error);
+    if (!response.ok) {
+      console.error(`Backend API error: ${response.status}`);
       return [];
     }
 
-    console.log(`Loaded ${sessions?.length || 0} sessions from Supabase`);
+    const data = await response.json();
+    if (!data.success || !data.data) {
+      console.error('Invalid response from backend API');
+      return [];
+    }
 
-    return (sessions || []).map((session: any) => ({
-      participantId: session.participant_id,
+    console.log(`Loaded ${data.data?.length || 0} sessions from backend`);
+
+    // Backend APIのレスポンス形式を既存の形式に変換
+    return (data.data || []).map((session: any) => ({
+      participantId: session.participantId,
       sessionData: {
-        events: [], // participant_experiment_sessionsにはイベントデータがない
-        createdAt: session.created_at,
-        sessionId: session.session_id,
-        wordResponses: [], // 初期化
-        sessionType: session.session_type,
-        startTime: session.start_time,
-        endTime: session.end_time,
+        events: [], // TODO: backendでイベントデータを実装
+        createdAt: session.startTime,
+        sessionId: session.sessionId,
+        wordResponses: session.wordResponses || [],
+        sessionType: session.sessionType,
+        startTime: session.startTime,
+        endTime: session.endTime,
       } as unknown as SessionData
     }));
   } catch (error) {

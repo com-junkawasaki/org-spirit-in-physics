@@ -5,16 +5,22 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
+
+# Install pnpm
+RUN npm install -g pnpm
 
 # Install dependencies
-RUN npm ci
+RUN pnpm install --no-frozen-lockfile
 
 # Copy source code
 COPY . .
+
+# Build the application
+RUN pnpm build
 
 # Expose port 3000
 EXPOSE 3000
 
 # Start the application in development mode
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["pnpm", "dev", "--host", "0.0.0.0"]

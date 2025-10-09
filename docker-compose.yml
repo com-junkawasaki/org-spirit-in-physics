@@ -62,11 +62,6 @@ services:
         condition: service_healthy
     networks:
       - spirit-network
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "7233"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   # Pact Broker for Contract Testing
   pact-broker:
@@ -126,8 +121,9 @@ services:
       - temporal
     networks:
       - spirit-network
+      - default
     labels:
-      - dev.orbstack.https-port=8081
+      - dev.orbstack.port=8081
     command: python api_server.py --host 0.0.0.0 --port 8081
 
   # Axon Framework Backend (Kotlin/Spring Boot)
