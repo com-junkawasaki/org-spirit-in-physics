@@ -1,42 +1,38 @@
 version: '3.8'
 
 services:
-  postgresql:
-    container_name: temporal-postgresql
-    image: postgres:13
-    environment:
-      POSTGRES_USER: temporal
-      POSTGRES_PASSWORD: temporal
-      POSTGRES_DB: temporal
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgresql_data:/var/lib/postgresql/data
-    networks:
-      - temporal-network
-
   temporal:
     container_name: temporal
-    image: temporalio/server:1.22.0
+    image: temporalio/auto-setup:latest
     ports:
       - "7233:7233"
     environment:
-      - DB=postgresql
-      - POSTGRES_HOST=postgresql
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PASSWORD=temporal
-      - POSTGRES_DB=temporal
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+      - CASSANDRA_SEEDS=cassandra
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
     depends_on:
-      - postgresql
+      - cassandra
+    networks:
+      - temporal-network
+
+  cassandra:
+    container_name: temporal-cassandra
+    image: cassandra:3.11
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=temporal
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+    volumes:
+      - cassandra_data:/var/lib/cassandra
     networks:
       - temporal-network
 
 volumes:
-  postgresql_data:
+  cassandra_data:
 
 networks:
   temporal-network:

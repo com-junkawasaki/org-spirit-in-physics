@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  # Axon Server for event sourcing
+  axonserver:
+    image: axoniq/axonserver:latest
+    ports:
+      - "8024:8024"  # HTTP port
+      - "8124:8124"  # gRPC port
+    environment:
+      - AXONSERVER_HOSTNAME=axonserver
+    volumes:
+      - axonserver-data:/data
+      - axonserver-events:/eventdata
+      - axonserver-log:/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8024/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - backend-network
+
+  # PostgreSQL database for backend
+  postgres-backend:
+    image: postgres:15
+    ports:
+      - "5433:5432"  # Avoid conflict with Supabase on 5432
+    environment:
+      - POSTGRES_DB=spirit_in_physics
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres-backend-data:/var/lib/postgresql/data
+      - ./apps/backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - backend-network
+
+  # Temporal Server for backend workflows
+  temporal-backend:
+    image: temporalio/auto-setup:latest
+    ports:
+      - "7234:7233"  # gRPC port (avoid conflict with analyzer temporal)
+      - "8234:8233"  # HTTP port
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=password
+      - POSTGRES_SEEDS=postgres-backend:5432
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    volumes:
+      - temporal-backend-data:/data
+      - ./apps/backend/temporal-dynamicconfig:/config/dynamicconfig
+    depends_on:
+      postgres-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "tctl", "cluster", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - backend-network
+
+  # Spirit in Physics Backend
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - AXON_AXONSERVER_SERVERS=axonserver:8124
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-backend:5432/spirit_in_physics
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - TEMPORAL_SERVER_HOST=temporal-backend
+      - TEMPORAL_SERVER_PORT=7233
+    depends_on:
+      axonserver:
+        condition: service_healthy
+      postgres-backend:
+        condition: service_healthy
+      temporal-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - backend-network
+
+  # Temporal Server for analyzer (using Cassandra)
+  temporal-analyzer:
+    image: temporalio/auto-setup:latest
+    container_name: temporal-analyzer
+    ports:
+      - "7233:7233"  # gRPC port
+    environment:
+      - CASSANDRA_SEEDS=cassandra-analyzer
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml
+    volumes:
+      - ./apps/analyzer-temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+    depends_on:
+      - cassandra-analyzer
+    networks:
+      - analyzer-network
+
+  # Cassandra for analyzer temporal
+  cassandra-analyzer:
+    image: cassandra:3.11
+    container_name: temporal-cassandra-analyzer
+    ports:
+      - "9043:9042"  # Avoid conflict with other Cassandra instances
+    environment:
+      - CASSANDRA_CLUSTER_NAME=temporal-analyzer
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+    volumes:
+      - cassandra-analyzer-data:/var/lib/cassandra
+    networks:
+      - analyzer-network
+
+  # Admin dashboard (React/Vite)
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./apps/admin:/app
+      - /app/node_modules
+    networks:
+      - frontend-network
+
+  # Patient app (Next.js)
+  patient:
+    build:
+      context: ./apps/patient
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./apps/patient:/app
+      - /app/node_modules
+    networks:
+      - frontend-network
+
+  # Visualizer app (Next.js)
+  visualizer:
+    build:
+      context: ./apps/visualizer
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./apps/visualizer:/app
+      - /app/node_modules
+    networks:
+      - frontend-network
+
+volumes:
+  axonserver-data:
+  axonserver-events:
+  axonserver-log:
+  postgres-backend-data:
+  temporal-backend-data:
+  cassandra-analyzer-data:
+
+networks:
+  backend-network:
+    driver: bridge
+  analyzer-network:
+    driver: bridge
+  frontend-network:
+    driver: bridge

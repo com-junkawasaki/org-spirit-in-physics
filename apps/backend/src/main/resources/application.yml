@@ -1,0 +1,63 @@
+# src/main/resources/application.yml
+spring:
+  application:
+    name: spirit-in-physics-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spirit_in_physics
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+# Axon Framework Configuration
+axon:
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+
+# Temporal Workflow Configuration
+temporal:
+  server:
+    host: localhost
+    port: 7233
+  task-queue: spirit-analysis-queue
+
+# Supabase Configuration (override with environment variables)
+supabase:
+  url: ${SUPABASE_URL:http://localhost:5432/spirit_in_physics}
+  username: ${SUPABASE_USERNAME:postgres}
+  password: ${SUPABASE_PASSWORD:password}
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:mySecretKey}
+  expiration: 86400000  # 24 hours in milliseconds
+
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# Logging
+logging:
+  level:
+    com.gftdcojp.spiritinphysics: DEBUG
+    org.axonframework: INFO
+    io.temporal: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

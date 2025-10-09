@@ -194,9 +194,9 @@ otp_expiry = 3600
 # sender_name = "Admin"
 
 # Email confirmation template
-[auth.email.template.confirm]
-subject = "メールアドレスの確認"
-content_path = "./supabase/templates/confirm.html"
+# [auth.email.template.confirm]
+# subject = "メールアドレスの確認"
+# content_path = "./templates/confirm.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
