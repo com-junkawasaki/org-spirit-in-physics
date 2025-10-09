@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Users, Activity, Brain, TrendingUp, Calendar, ArrowRight } from 'lucide-react'
+import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
 
 interface Participant {
   id: string
@@ -23,7 +23,7 @@ interface Participant {
 
 async function getParticipants(): Promise<Participant[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/participants`, {
+    const response = await fetch('/api/participants', {
       cache: 'no-store'
     })
 
@@ -125,10 +125,11 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
 }
 
 function LoadingSkeleton() {
+  const skeletonKeys = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6']
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Card key={i} className="animate-pulse">
+      {skeletonKeys.map((key) => (
+        <Card key={key} className="animate-pulse">
           <CardHeader className="pb-3">
             <div className="h-6 bg-muted rounded mb-2"></div>
             <div className="h-4 bg-muted rounded w-3/4"></div>
