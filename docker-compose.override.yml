@@ -1,70 +1,37 @@
-# Development environment overrides for Spirit in Physics
-# This file contains development-specific configurations
-
+# Development overrides for Dev Containers
 version: '3.8'
 
 services:
-  # Temporarily disable temporal-related services for debugging
-  temporal:
-    profiles:
-      - temporal-enabled
-
-  analyzer-temporal-api:
-    profiles:
-      - temporal-enabled
-
-  # Temporarily disable temporal dependency for debugging
-  backend:
-    depends_on:
-      axonserver:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-
-  # Pact Broker - Always start in development
-  pact-broker:
-    env_file:
-      - pact.env
+  # Override dev-backend to include additional development tools
+  dev-backend:
     environment:
-      - PACT_BROKER_WEBHOOK_SCHEME_WHITELIST=http
-      - PACT_BROKER_WEBHOOK_HOST_WHITELIST=localhost
-      - PACT_BROKER_ALLOW_PUBLIC_READ=true
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  pact-postgres:
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # Development-specific service overrides
-  patient:
-    environment:
-      - PACT_BROKER_URL=http://pact-broker:9292
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELoad_ENABLED=true
     volumes:
-      - ./apps/patient:/app
-      - /app/node_modules
-      - /app/.next
+      - ./apps/backend:/app
+      - /app/build
+      - /app/.gradle
+      # Add gradle cache for faster builds
+      - ~/.gradle:/root/.gradle:cached
+
+  # Ensure postgres is accessible for development
+  postgres:
+    ports:
+      - "5432:5432"
+
+  # Make sure all frontend apps can be accessed during development
+  visualizer:
+    ports:
+      - "3003:25260"
 
   admin:
-    environment:
-      - PACT_BROKER_URL=http://pact-broker:9292
-    volumes:
-      - ./apps/admin:/app
-      - /app/node_modules
-      - /app/dist
+    ports:
+      - "3001:3000"
 
-  visualizer:
-    environment:
-      - PACT_BROKER_URL=http://pact-broker:9292
-    volumes:
-      - ./apps/visualizer:/app
-      - /app/node_modules
-      - /app/.next
+  patient:
+    ports:
+      - "3002:25250"
+
+  analyzer-temporal-api:
+    ports:
+      - "8081:8081"

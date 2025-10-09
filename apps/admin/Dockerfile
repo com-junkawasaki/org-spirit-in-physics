@@ -16,8 +16,8 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Expose port 3000
-EXPOSE 3000
+# Expose port 5174 (Vite dev server port)
+EXPOSE 5174
 
 # Start the application in development mode
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
