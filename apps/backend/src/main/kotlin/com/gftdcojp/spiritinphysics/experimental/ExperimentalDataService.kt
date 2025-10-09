@@ -60,7 +60,7 @@ class ExperimentalDataService(
     }
 
     // 個別参加者データの取得
-    fun getParticipantData(participantId: String): Map<String, Any>? {
+    fun getParticipantData(participantId: String): Map<String, Any?>? {
         val sql = """
             SELECT
                 p.id,

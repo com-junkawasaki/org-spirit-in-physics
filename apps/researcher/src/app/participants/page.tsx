@@ -23,8 +23,12 @@ interface Participant {
 
 async function getParticipants(): Promise<Participant[]> {
   try {
-    const response = await fetch('/api/participants', {
-      cache: 'no-store'
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8080'
+    const response = await fetch(`${baseUrl}/api/visualizer/participants`, {
+      cache: 'no-store',
+      headers: {
+        'Authorization': 'Basic ' + btoa('user:04258217-d13c-4c04-b502-efe68b4d63d7')
+      }
     })
 
     if (!response.ok) {

@@ -223,17 +223,20 @@ services:
       timeout: 10s
       retries: 5
 
-  # Admin Dashboard (Vite/React)
+  # Admin Dashboard (Next.js)
   researcher:
     build: ./apps/researcher
     container_name: spirit-admin
     ports:
-      - "3001:5174"
+      - "3001:3000"
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_BACKEND_API_URL=https://backend:8080
+      - BACKEND_API_URL=https://backend:8080
     volumes:
-      - ./apps/admin:/app
+      - ./apps/researcher:/app
       - /app/node_modules
+      - /app/.next
     depends_on:
       - backend
     networks:
