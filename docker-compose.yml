@@ -242,7 +242,7 @@ services:
     networks:
       - spirit-network
     labels:
-      - dev.orbstack.https-port=3001
+      - dev.orbstack.https-port=3000
 
   # Patient App (Next.js)
   patient:
