@@ -53,6 +53,17 @@ server:
   servlet:
     context-path: /api
 
+# Visualizer Service Configuration
+visualizer:
+  enable-caching: true
+  cache-ttl-minutes: 5
+  correlation:
+    min-data-points: 3
+    significance-levels:
+      high: 0.001
+      medium: 0.01
+      low: 0.05
+
 # Logging
 logging:
   level:

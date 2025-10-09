@@ -38,6 +38,7 @@ This document describes the integration between the Axon Framework backend and t
 - **Purpose**: Data visualization and analysis results display
 - **API**: `/api/visualizer/*` endpoints for dashboard data
 - **Data Flow**: CQRS read models → Frontend components
+- **Features**: Dashboard stats, participant correlation analysis, timeline data, timeseries visualization
 
 The Axon Framework backend communicates with analyzer-temporal via REST API:
 

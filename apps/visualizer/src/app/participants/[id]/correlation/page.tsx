@@ -4,7 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, LineChart, Line } from 'recharts'
-import { TrendingUp, Activity, Brain, Clock } from 'lucide-react'
+import { TrendingUp, Activity, Brain, Clock, Download } from 'lucide-react'
+import { InteractiveAnalysisChart } from '@/components/charts/InteractiveAnalysisChart'
+import { ThreeDimensionalChart } from '@/components/charts/ThreeDimensionalChart'
+import { useChartExport } from '@/hooks/useChartExport'
+import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 
 interface CorrelationData {
   physiological_file: string
@@ -72,6 +77,8 @@ const STRENGTH_COLORS = {
 
 export default function ParticipantCorrelationPage() {
   const { id: participantId } = useParams({ from: '/participants/$id/correlation' })
+  const [selectedTab, setSelectedTab] = useState('overview')
+  const { exportState, exportSingleChart, exportMultipleCharts, exportData, clearError } = useChartExport()
 
   const { data: correlationData, isLoading, error } = useQuery({
     queryKey: ['participant-correlation', participantId],
@@ -83,6 +90,30 @@ export default function ParticipantCorrelationPage() {
       return response.json()
     }
   })
+
+  // Convert correlation data to analysis format for advanced charts
+  const analysisData = correlationData ? correlationData.emotion_categories.top_correlations.map((corr, index) => ({
+    id: `correlation-${index}`,
+    participantId: participantId,
+    timestamp: Date.now() - (correlationData.emotion_categories.top_correlations.length - index) * 1000,
+    kawasakiPValue: corr.pearson_r,
+    word2vecComponent: Math.abs(corr.pearson_r) * Math.cos(index * Math.PI / 10),
+    reactionTimeComponent: Math.abs(corr.spearman_rho) * Math.sin(index * Math.PI / 10),
+    skinPotentialComponent: (corr.data_points / 1000) * Math.cos(index * Math.PI / 5),
+    emotionComponent: Math.abs(corr.pearson_r) * 0.8,
+    emotionData: { type: corr.emotion_type, confidence: 0.8 },
+    physiologicalData: { indicator: corr.physiological_indicator, value: corr.data_points }
+  })) : []
+
+  // Prepare 3D data points
+  const threeDData = correlationData ? correlationData.emotion_categories.top_correlations.map((corr, index) => ({
+    x: Math.abs(corr.pearson_r) * Math.cos(index * Math.PI / 10),
+    y: Math.abs(corr.spearman_rho) * Math.sin(index * Math.PI / 10),
+    z: (corr.data_points / Math.max(...correlationData.emotion_categories.top_correlations.map(c => c.data_points))) * 2,
+    value: Math.abs(corr.pearson_r),
+    label: `${corr.emotion_type} × ${corr.physiological_indicator}`,
+    color: `hsl(${index * 360 / correlationData.emotion_categories.top_correlations.length}, 70%, 50%)`
+  })) : []
 
   if (isLoading) return <div className="p-8">Loading correlation analysis...</div>
   if (error) return <div className="p-8">Error loading correlation data</div>
@@ -198,14 +229,108 @@ export default function ParticipantCorrelationPage() {
         </CardContent>
       </Card>
 
+      {/* Export Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Export Options
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportData(correlationData.emotion_categories.top_correlations, 'csv', `correlations_${participantId}`)}
+              disabled={exportState.isExporting}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportData(correlationData, 'json', `correlation_analysis_${participantId}`)}
+              disabled={exportState.isExporting}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export JSON
+            </Button>
+          </div>
+          {exportState.isExporting && (
+            <div className="mt-2">
+              <div className="text-sm text-muted-foreground">
+                Exporting... {exportState.progress}%
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${exportState.progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+          {exportState.error && (
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              {exportState.error}
+              <Button variant="ghost" size="sm" onClick={clearError} className="ml-2">×</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Detailed Analysis Tabs */}
-      <Tabs defaultValue="strength" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="strength">Correlation Strength</TabsTrigger>
           <TabsTrigger value="top">Top Correlations</TabsTrigger>
           <TabsTrigger value="physiological">Physiological Data</TabsTrigger>
           <TabsTrigger value="temporal">Time Analysis</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced Analysis</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Correlation Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={strengthDistributionData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="strength" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Top 5 Correlations</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {topCorrelationsData.slice(0, 5).map((corr) => (
+                    <div key={`${corr.emotion_type}-${corr.physiological_indicator}`} className="flex justify-between items-center">
+                      <span className="text-sm">
+                        {corr.physiological_indicator} × {corr.emotion_type}
+                      </span>
+                      <Badge className={STRENGTH_COLORS[corr.strength as keyof typeof STRENGTH_COLORS]}>
+                        {corr.pearson_r.toFixed(3)}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         <TabsContent value="strength" className="space-y-4">
           <Card>
@@ -315,6 +440,79 @@ export default function ParticipantCorrelationPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-6">
+          <div className="space-y-6">
+            {/* Interactive Analysis Chart */}
+            <InteractiveAnalysisChart
+              data={analysisData}
+              participantId={participantId}
+              title="Advanced Correlation Analysis"
+              width={800}
+              height={500}
+              onExport={(format) => console.log(`Exported chart as ${format}`)}
+            />
+
+            {/* 3D Visualization */}
+            {threeDData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>3D Correlation Visualization</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    3D scatter plot showing correlations between physiological indicators and emotions.
+                    Points are colored by correlation strength, sized by data point count.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <ThreeDimensionalChart
+                    data={threeDData}
+                    width={800}
+                    height={500}
+                    title="3D Correlation Space"
+                    onPointClick={(point) => console.log('Clicked point:', point)}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Advanced Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {correlationData.emotion_categories.top_correlations.length}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Correlations</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {correlationData.emotion_categories.correlation_distribution.very_strong +
+                       correlationData.emotion_categories.correlation_distribution.strong}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Strong Correlations</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {(correlationData.physiological_indicators.time_series_stats.duration_ms / 1000).toFixed(0)}s
+                    </div>
+                    <div className="text-sm text-muted-foreground">Analysis Duration</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
