@@ -27,8 +27,8 @@ ON CONFLICT (id) DO NOTHING;
 -- テスト実験セッションデータ
 INSERT INTO participant_experiment_sessions (id, participant_id, session_id, session_type, start_time, end_time, created_at, updated_at)
 VALUES
-  ('550e8400-e29b-41d4-a716-446655440000', '144b325f-5966-4d59-a629-f2ca421388cc', 'session-001', 'session-1', '2025-08-01 10:00:00+00', '2025-08-01 10:30:00+00', NOW(), NOW()),
-  ('550e8400-e29b-41d4-a716-446655440001', '15592cdb-86cf-4baf-86f5-66184169ee39', 'session-002', 'session-2', '2025-08-01 11:00:00+00', '2025-08-01 11:30:00+00', NOW(), NOW())
+  ('550e8400-e29b-41d4-a716-446655440000', '144b325f-5966-4d59-a629-f2ca421388cc', '550e8400-e29b-41d4-a716-446655440000', 'session-1', '2025-08-01 10:00:00+00', '2025-08-01 10:30:00+00', NOW(), NOW()),
+  ('550e8400-e29b-41d4-a716-446655440001', '15592cdb-86cf-4baf-86f5-66184169ee39', '550e8400-e29b-41d4-a716-446655440001', 'session-2', '2025-08-01 11:00:00+00', '2025-08-01 11:30:00+00', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- テスト応答データ

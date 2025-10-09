@@ -47,18 +47,27 @@ export interface Database {
       participants: {
         Row: {
           id: string
-          name: string | null
+          age: number | null
+          gender: string | null
+          handedness: string | null
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
-          name?: string | null
+          age?: number | null
+          gender?: string | null
+          handedness?: string | null
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
-          name?: string | null
+          age?: number | null
+          gender?: string | null
+          handedness?: string | null
           created_at?: string
+          updated_at?: string
         }
       }
       participant_consents: {
