@@ -135,6 +135,11 @@
     act: '統合時系列可視化システムの構築',
     summary: 'セッションデータ、生理データ、Hume AI感情データを統合した時系列可視化システムを設計・実装。SessionDataProcessorによる時系列イベント処理を基盤とし、単語応答パターン・時間帯分布・応答タイミングを統合分析。参加者ごとのデータ完全性評価システムを完成し、12名参加者のデータ品質を100点満点で評価可能に。科学的手法による霊性測定の時系列的理解を深化させ、実験データの多角的分析と可視化を実現。プロセスネットワークの最適化により、データインポート・解析・可視化の完全統合パイプラインを確立。',
   },
+  {
+    // Merkle DAG: 物語.ナラティブ[25]
+    act: 'AnalyzerデータSupabase完全統合の実現',
+    summary: 'analyzer/フォルダの実験データをSupabaseローカルデータベースに完全統合。11名参加者の同意情報・21件実験セッション・11件応答データをparticipant_consents・participant_experiment_sessions・participant_response_dataテーブルに格納。9件Hume AIジョブ・4240件言語予測・518件バースト予測・1825件韻律予測データをparticipant_hume_analysis_jobs・participant_hume_language_predictions・participant_hume_burst_predictions・participant_hume_prosody_predictionsテーブルに統合。100件単語刺激データをword_stimuliテーブルに格納し、川崎モデルの分析基盤を確立。科学的手法による霊性測定システムのデータ完全性を保証。',
+  },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -200,6 +205,7 @@
             '時系列イベント統合可視化',
             '生理・感情データ時系列統合',
             '多角的データ分析基盤構築',
+            'AnalyzerデータSupabase完全統合',
             '分析レポート多形式エクスポート',
             'JSON・Markdown・HTMLレポート生成',
             '生理・感情詳細相関分析システム',
@@ -244,11 +250,11 @@
       ],
     },
         metadata: {
-          version: '1.17.0',
+          version: '1.18.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: '詳細相関分析・レポート生成システム版',
-          last_updated: '2025-10-05',
+          merkle_root: 'AnalyzerデータSupabase完全統合版',
+          last_updated: '2025-10-09',
           implemented_features: [
             '川崎モデルの数式実装',
             'Hume AI Expression Measurement統合',
@@ -375,7 +381,18 @@
             'ビデオ・Humeデータ存在確認',
             '時系列イベント可視化データ生成',
             '統合時系列可視化システム設計',
-            '多角的データ統合分析基盤'
+            '多角的データ統合分析基盤',
+            'AnalyzerデータSupabase完全統合',
+            '11名参加者同意情報インポート',
+            '21件実験セッション統合',
+            '11件応答データ格納',
+            '9件Hume AIジョブ管理',
+            '4240件言語予測データ統合',
+            '518件バースト予測データ統合',
+            '1825件韻律予測データ統合',
+            '100件単語刺激データ格納',
+            '川崎モデル分析基盤確立',
+            '科学的手法による霊性測定データ完全性保証'
           ],
         },
   },

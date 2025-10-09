@@ -1,6 +1,8 @@
-import { Suspense } from 'react'
+'use client'
+
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,32 +37,33 @@ interface Participant {
 
 interface AnalysisResult {
   id: string
-  stimulusWord: string
-  responseWord: string
-  spiritProbability: number
-  reactionTime: number
-  emotionData: Record<string, number>
-  timestamp: string
-  components: {
-    word2vec: number
-    reaction_time: number
-    skin_potential: number
-    emotion: number
-  }
+  stimulus_word: string
+  response_word: string
+  p_value: number
+  reaction_time_ms?: number
+  emotion_data: Record<string, number>
+  created_at: string
+  word2vec_component: number
+  reaction_time_component: number
+  skin_potential_component: number
+  emotion_component: number
+  physiological_data: any
 }
 
 async function getParticipant(id: string): Promise<Participant | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/participants`, {
+    const response = await fetch(`/api/participants/${id}`, {
       cache: 'no-store'
     })
 
     if (!response.ok) {
-      throw new Error('Failed to fetch participants')
+      if (response.status === 404) {
+        return null
+      }
+      throw new Error('Failed to fetch participant')
     }
 
-    const participants: Participant[] = await response.json()
-    return participants.find(p => p.id === id) || null
+    return response.json()
   } catch (error) {
     console.error('Failed to fetch participant:', error)
     return null
@@ -69,7 +72,7 @@ async function getParticipant(id: string): Promise<Participant | null> {
 
 async function getParticipantAnalysis(id: string): Promise<AnalysisResult[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/analysis-results?participantId=${id}`, {
+    const response = await fetch(`/api/analysis-results?participantId=${id}`, {
       cache: 'no-store'
     })
 
@@ -118,13 +121,13 @@ function SpiritProbabilityBadge({ probability }: { probability: number }) {
 
 function OverviewTab({ participant, analysisResults }: { participant: Participant, analysisResults: AnalysisResult[] }) {
   const averageReactionTime = analysisResults.length > 0
-    ? analysisResults.reduce((sum, result) => sum + result.reactionTime, 0) / analysisResults.length
+    ? analysisResults.reduce((sum, result) => sum + (result.reaction_time_ms || 0), 0) / analysisResults.length
     : 0
 
   const topEmotions = analysisResults.length > 0
     ? Object.entries(
         analysisResults.reduce((acc, result) => {
-          Object.entries(result.emotionData).forEach(([emotion, value]) => {
+          Object.entries(result.emotion_data).forEach(([emotion, value]) => {
             acc[emotion] = (acc[emotion] || 0) + value
           })
           return acc
@@ -270,38 +273,38 @@ function ResultsTab({ analysisResults }: { analysisResults: AnalysisResult[] }) 
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-4">
                   <div className="text-lg font-bold">
-                    "{result.stimulusWord}" → "{result.responseWord}"
+                    "{result.stimulus_word}" → "{result.response_word}"
                   </div>
-                  <SpiritProbabilityBadge probability={result.spiritProbability} />
+                  <SpiritProbabilityBadge probability={result.p_value} />
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {formatDate(result.timestamp)}
+                  {formatDate(result.created_at)}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div className="text-center">
                   <div className="text-sm text-muted-foreground">反応時間</div>
-                  <div className="text-lg font-semibold">{result.reactionTime}ms</div>
+                  <div className="text-lg font-semibold">{result.reaction_time_ms || 0}ms</div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-muted-foreground">Word2Vec</div>
-                  <div className="text-lg font-semibold">{result.components.word2vec.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{result.word2vec_component.toFixed(3)}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-muted-foreground">皮膚電位</div>
-                  <div className="text-lg font-semibold">{result.components.skin_potential.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{result.skin_potential_component.toFixed(3)}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm text-muted-foreground">感情</div>
-                  <div className="text-lg font-semibold">{result.components.emotion.toFixed(3)}</div>
+                  <div className="text-lg font-semibold">{result.emotion_component.toFixed(3)}</div>
                 </div>
               </div>
 
               <div className="border-t pt-4">
                 <div className="text-sm text-muted-foreground mb-2">感情スコア</div>
                 <div className="flex flex-wrap gap-2">
-                  {Object.entries(result.emotionData)
+                  {Object.entries(result.emotion_data)
                     .sort(([,a], [,b]) => b - a)
                     .slice(0, 6)
                     .map(([emotion, score]) => (
@@ -349,16 +352,48 @@ function LoadingSkeleton() {
   )
 }
 
-interface PageProps {
-  params: Promise<{ id: string }>
-}
+export default function ParticipantDetailPage() {
+  const params = useParams()
+  const id = params.id as string
+  const [participant, setParticipant] = useState<Participant | null>(null)
+  const [loading, setLoading] = useState(true)
 
-export default async function ParticipantDetailPage({ params }: PageProps) {
-  const { id } = await params
-  const participant = await getParticipant(id)
+  useEffect(() => {
+    async function fetchParticipant() {
+      const data = await getParticipant(id)
+      setParticipant(data)
+      setLoading(false)
+    }
+
+    if (id) {
+      fetchParticipant()
+    }
+  }, [id])
+
+  if (loading) {
+    return <LoadingSkeleton />
+  }
 
   if (!participant) {
-    notFound()
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-muted-foreground">参加者が見つかりません</h3>
+          <p className="text-sm text-muted-foreground mt-2">
+            指定された参加者は存在しないか、削除された可能性があります。
+          </p>
+          <div className="mt-6">
+            <Link href="/participants">
+              <Button>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                被験者一覧に戻る
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -389,7 +424,7 @@ export default async function ParticipantDetailPage({ params }: PageProps) {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {participant.name}
+              {participant.name || `参加者 ${participant.id.slice(0, 8)}`}
             </h1>
             <p className="text-muted-foreground">
               被験者ID: {participant.id}
@@ -407,8 +442,23 @@ export default async function ParticipantDetailPage({ params }: PageProps) {
   )
 }
 
-async function ParticipantDetailContent({ participant }: { participant: Participant }) {
-  const analysisResults = await getParticipantAnalysis(participant.id)
+function ParticipantDetailContent({ participant }: { participant: Participant }) {
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchAnalysisResults() {
+      const results = await getParticipantAnalysis(participant.id)
+      setAnalysisResults(results)
+      setLoading(false)
+    }
+
+    fetchAnalysisResults()
+  }, [participant.id])
+
+  if (loading) {
+    return <LoadingSkeleton />
+  }
 
   return (
     <Tabs defaultValue="overview" className="space-y-6">

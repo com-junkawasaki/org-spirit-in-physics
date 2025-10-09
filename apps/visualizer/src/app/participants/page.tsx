@@ -124,10 +124,63 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {participants.map((participant) => (
-        <ParticipantCard key={participant.id} participant={participant} />
-      ))}
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>参加者</TableHead>
+            <TableHead>セッション数</TableHead>
+            <TableHead>応答数</TableHead>
+            <TableHead>平均Spirit確率</TableHead>
+            <TableHead>最終活動</TableHead>
+            <TableHead className="w-[100px]">アクション</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {participants.map((participant) => (
+            <TableRow key={participant.id}>
+              <TableCell>
+                <div>
+                  <div className="font-medium">
+                    {participant.name || `参加者 ${participant.id.slice(0, 8)}`}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {participant.id.slice(0, 12)}...
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <span>{participant.sessionCount}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2">
+                  <Brain className="h-4 w-4 text-muted-foreground" />
+                  <span>{participant.responseCount}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={getSpiritProbabilityColor(participant.averageSpiritProbability)}>
+                  {(participant.averageSpiritProbability * 100).toFixed(1)}%
+                </Badge>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {formatDate(participant.lastActivity)}
+              </TableCell>
+              <TableCell>
+                <Link href={`/participants/${participant.id}`}>
+                  <Button variant="outline" size="sm">
+                    詳細
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }
@@ -135,23 +188,46 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
 function LoadingSkeleton() {
   const skeletonKeys = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6']
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {skeletonKeys.map((key) => (
-        <Card key={key} className="animate-pulse">
-          <CardHeader className="pb-3">
-            <div className="h-6 bg-muted rounded mb-2"></div>
-            <div className="h-4 bg-muted rounded w-3/4"></div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="h-4 bg-muted rounded"></div>
-              <div className="h-4 bg-muted rounded"></div>
-            </div>
-            <div className="h-4 bg-muted rounded mb-4"></div>
-            <div className="h-9 bg-muted rounded"></div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>参加者</TableHead>
+            <TableHead>セッション数</TableHead>
+            <TableHead>応答数</TableHead>
+            <TableHead>平均Spirit確率</TableHead>
+            <TableHead>最終活動</TableHead>
+            <TableHead className="w-[100px]">アクション</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {skeletonKeys.map((key) => (
+            <TableRow key={key} className="animate-pulse">
+              <TableCell>
+                <div className="space-y-2">
+                  <div className="h-4 bg-muted rounded w-24"></div>
+                  <div className="h-3 bg-muted rounded w-16"></div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="h-4 bg-muted rounded w-8"></div>
+              </TableCell>
+              <TableCell>
+                <div className="h-4 bg-muted rounded w-8"></div>
+              </TableCell>
+              <TableCell>
+                <div className="h-6 bg-muted rounded w-12"></div>
+              </TableCell>
+              <TableCell>
+                <div className="h-4 bg-muted rounded w-20"></div>
+              </TableCell>
+              <TableCell>
+                <div className="h-8 bg-muted rounded w-16"></div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }
