@@ -19,19 +19,9 @@ configurations {
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://repository.axoniq.com") }
 }
 
 dependencies {
-    // Axon Framework Core
-    implementation("org.axonframework:axon-spring-boot-starter:4.9.1")
-
-    // Axon Server Connector (if using Axon Server)
-    implementation("org.axonframework:axon-server-connector:4.9.1")
-
-    // Axon Event Store (JPA for development, Axon Server for production)
-    implementation("org.axonframework:axon-jpa:4.9.1")
-
     // Spring Boot
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -41,13 +31,6 @@ dependencies {
     // Database
     implementation("org.postgresql:postgresql")
     runtimeOnly("com.h2database:h2") // For testing
-
-    // Supabase (PostgreSQL driver included above)
-    implementation("org.springframework.boot:spring-boot-starter-jdbc")
-
-    // Temporal Workflow Client
-    implementation("io.temporal:temporal-spring-boot-starter:1.22.1")
-    implementation("io.temporal:temporal-sdk:1.22.1")
 
     // JSON Processing
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

@@ -1,47 +1,29 @@
 // src/main/kotlin/com/gftdcojp/spiritinphysics/participant/ParticipantController.kt
 package com.gftdcojp.spiritinphysics.participant
 
-import org.axonframework.commandhandling.gateway.CommandGateway
-import org.axonframework.queryhandling.QueryGateway
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.util.*
-import java.util.concurrent.CompletableFuture
 
 @RestController
 @RequestMapping("/api/participants")
 class ParticipantController(
-    private val commandGateway: CommandGateway,
-    private val queryGateway: QueryGateway
+    private val participantService: ParticipantService
 ) {
 
     @PostMapping
-    fun createParticipant(@RequestBody request: CreateParticipantRequest): CompletableFuture<ResponseEntity<UUID>> {
-        val command = CreateParticipantCommand(
-            participantId = request.participantId,
-            name = request.name,
-            email = request.email
-        )
-
-        return commandGateway.send<UUID>(command)
-            .thenApply { participantId ->
-                ResponseEntity.ok(participantId)
-            }
+    fun createParticipant(@RequestBody request: CreateParticipantRequest): ResponseEntity<UUID> {
+        val participantId = participantService.createParticipant(request).get()
+        return ResponseEntity.ok(participantId)
     }
 
     @PutMapping("/{participantId}")
     fun updateParticipant(
         @PathVariable participantId: UUID,
         @RequestBody request: UpdateParticipantRequest
-    ): CompletableFuture<ResponseEntity<Void>> {
-        val command = UpdateParticipantCommand(
-            participantId = participantId,
-            name = request.name,
-            email = request.email
-        )
-
-        return commandGateway.send<Unit>(command)
-            .thenApply { ResponseEntity.ok().build() }
+    ): ResponseEntity<Void> {
+        participantService.updateParticipant(participantId, request).get()
+        return ResponseEntity.ok().build()
     }
 
     @PostMapping("/{participantId}/consent")
