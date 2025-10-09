@@ -175,6 +175,11 @@
     act: '統合システムのRDFグラフ最適化',
     summary: 'importer・analyzer・visualizerの全てがTerminusDBを使用する完全統合システムを確立。RDF triplesによる実験参加者・セッション・応答・感情データの関係性モデリングがシステム全体で統一され、WOQLクエリによるクロスコンポーネントデータ連携が可能に。科学的手法による霊性測定のデータフロー全体がグラフ構造で最適化され、分析精度と処理効率が大幅に向上。',
   },
+  {
+    // Merkle DAG: 物語.ナラティブ[33]
+    act: 'Visualizer API完全TerminusDB移行',
+    summary: 'visualizerの全API routesをSupabaseからTerminusDBに移行完了。participants一覧・詳細・タイムライン・相関分析・分析レポート・分析結果取得・分析結果インポートAPIが全てWOQLクエリ使用に変更。TypeScript TerminusDBクライアントによる型安全なデータアクセスを実現。ダッシュボード統計・参加者管理・分析結果可視化がRDFグラフベースで統一され、フロントエンドからバックエンドまでの一貫したTerminusDBアーキテクチャを確立。',
+  },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -464,7 +469,14 @@
             'TypeScript TerminusDBクライアント開発',
             'React API routes RDFデータ統合',
             'クロスコンポーネントRDFデータ連携',
-            'グラフデータベース統合システム確立'
+            'グラフデータベース統合システム確立',
+            'Visualizer API完全TerminusDB移行',
+            'participants一覧・詳細・タイムラインAPI WOQL移行',
+            '相関分析・分析レポートAPI TerminusDB統合',
+            '分析結果取得・インポートAPI TerminusDB対応',
+            'TypeScript TerminusDBクライアント型安全実装',
+            'ダッシュボード統計RDFグラフベース化',
+            '参加者管理・分析結果可視化TerminusDB統一'
           ],
         },
   },
