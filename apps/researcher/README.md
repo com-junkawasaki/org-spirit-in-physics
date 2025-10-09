@@ -1,90 +1,200 @@
-# Spirit in Physics Admin Dashboard
+# Spirit in Physics - Visualizer
 
-## 管理者ストーリー (Admin Story)
+データ可視化アプリケーション。参加者の分析結果、相関分析、タイムラインなどをインタラクティブに表示します。
 
-### Merkle DAG: admin_story
+## 機能
 
-管理者はSpirit in Physics実験システムの運営と品質管理を担う重要な役割を果たす。
+- **参加者一覧**: 実験参加者の概要と分析結果の確認
+- **詳細分析**: 個別参加者の分析結果と時系列データ
+- **相関分析**: 生理データと感情データの相関関係の可視化
+- **タイムライン**: 実験セッションの時系列イベント表示
+- **ダッシュボード**: 全体的な統計と分析結果の概要
+- **3D 可視化**: Three.js を用いた 3D 相関分析チャート
+- **インタラクティブ分析**: Plotly.js による高度なインタラクティブチャート
+- **エクスポート機能**: PDF/画像/CSV/JSON エクスポート
+- **リアルタイム分析**: 動的なデータフィルタリングとズーム
 
-## 主要な責任領域
+## 技術スタック
 
-### 1. システム監視ダッシュボード (System Monitoring Dashboard)
-- **リアルタイム指標監視**: 実験実行数、参加者数、データ品質指標
-- **システム健全性チェック**: Hume AI API状態、データベース接続、ストレージ使用量
-- **アラート管理**: 異常検知と通知システム
+- **Next.js 15**: React フレームワーク
+- **TypeScript**: 型安全な開発
+- **Tailwind CSS**: スタイリング
+- **D3.js & Plotly.js**: 2D データ可視化
+- **Three.js**: 3D データ可視化
+- **Recharts**: チャートコンポーネント
+- **Puppeteer**: PDF エクスポート
+- **html2canvas**: 画像キャプチャ
+- **jsPDF**: PDF 生成
 
-### 2. 実験管理 (Experiment Management)
-- **実験テンプレート作成**: 標準化された実験プロトコルの設計
-- **実験スケジューリング**: 実験の計画、実行、完了管理
-- **品質コントロール**: データ収集プロセスの監視と検証
+## 統合アーキテクチャ
 
-### 3. 参加者管理 (Participant Management)
-- **参加者登録管理**: 同意プロセス、プロファイル管理
-- **参加者体験最適化**: ユーザーインターフェースの改善、サポート体制
-- **倫理的配慮**: データプライバシー、同意撤回の管理
+Visualizer は Axon Framework Backend を経由してデータを取得します：
 
-### 4. データ管理 (Data Management)
-- **データ品質検証**: 分析結果の正確性確認、不整合検知
-- **データエクスポート**: 研究者向けデータ提供、バックアップ
-- **監査ログ**: システム操作の追跡とコンプライアンス確保
-
-### 5. 分析結果活用 (Analytics Utilization)
-- **結果ダッシュボード**: Spirit確率分布、感情分析結果の可視化
-- **レポート生成**: 自動レポート作成、共有機能
-- **研究支援**: データ分析支援、仮説検証支援
-
-## 技術アーキテクチャ
-
-### Frontend Stack
-- **React 19**: 最新のReact機能とパフォーマンス
-- **TypeScript**: 型安全性と開発効率
-- **TanStack Router**: 型安全なルーティング
-- **TanStack Query**: サーバー状態管理とキャッシュ
-- **Tailwind CSS**: ユーティリティファーストのスタイリング
-
-### コンポーネント設計原則
-- **SOLID原則**: 単一責任、開放閉鎖、依存性逆転
-- **アトミックデザイン**: 原子、分子、有機体、テンプレート、ページ
-- **コンポジション over 継承**: 再利用可能なコンポーネント設計
-
-### プロセスネットワーク
 ```
-管理者ダッシュボード
-├── システム監視
-│   ├── リアルタイム指標
-│   ├── 健全性チェック
-│   └── アラート管理
-├── 実験管理
-│   ├── テンプレート作成
-│   ├── スケジューリング
-│   └── 品質コントロール
-├── 参加者管理
-│   ├── 登録管理
-│   ├── 体験最適化
-│   └── 倫理管理
-├── データ管理
-│   ├── 品質検証
-│   ├── エクスポート
-│   └── 監査ログ
-└── 分析活用
-    ├── 結果ダッシュボード
-    ├── レポート生成
-    └── 研究支援
+Visualizer (Next.js) → Backend (Axon/Kotlin) → PostgreSQL
+                       ↘ Temporal (Workflows)
 ```
 
-## 開発原則
+### データフロー
 
-### Merkle DAG設計
-- 各コンポーネントはMerkle DAGノードとして設計
-- 依存関係の明確な定義と管理
-- 変更の影響範囲の予測可能性
+1. **Frontend Request**: Visualizer が `/api/*` エンドポイントを呼び出し
+2. **Proxy**: Next.js API Routes が Backend API にプロキシ
+3. **CQRS Query**: Backend が Axon Query 経由でデータを取得
+4. **Read Model**: Projection から最適化されたデータを返却
 
-### ユーザビリティ原則
-- **情報階層の明確化**: Millerの法則(7±2)に基づく情報整理
-- **Fittsの法則適用**: 重要な操作のターゲットサイズ最適化
-- **認知負荷最小化**: 段階的な情報提示と直感的なナビゲーション
+## 環境変数
 
-### セキュリティ原則
-- **最小権限原則**: 管理者権限の適切なスコープ管理
-- **監査可能性**: すべての操作のログ記録
-- **データ保護**: PIIデータの適切な取り扱い
+```bash
+# Backend API URL
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:8080/api
+BACKEND_API_URL=http://localhost:8080/api
+```
+
+## 開発
+
+```bash
+cd apps/visualizer
+pnpm install
+pnpm dev
+```
+
+## Docker 実行
+
+```bash
+# 個別実行
+docker-compose up -d
+
+# または全システム統合
+cd ../..
+docker-compose up -d
+```
+
+## API エンドポイント
+
+### 参加者データ
+- `GET /api/participants` - 参加者一覧
+- `GET /api/participants/[id]` - 参加者詳細
+
+### 分析データ
+- `GET /api/analysis-results` - 分析結果一覧
+- `GET /api/dashboard/stats` - ダッシュボード統計
+
+### 相関・時系列
+- `GET /api/participants/[id]/correlation` - 相関分析
+- `GET /api/participants/[id]/timeline` - タイムラインデータ
+- `GET /api/responses/[id]/timeseries` - 応答時系列データ
+
+## コンポーネント構造
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API Routes (Backend Proxy)
+│   ├── participants/      # 参加者ページ
+│   └── page.tsx          # ホームページ
+├── components/            # React コンポーネント
+│   ├── DashboardOverview.tsx
+│   ├── StatsCard.tsx
+│   └── ui/               # UI コンポーネント
+├── lib/                  # ユーティリティ
+│   ├── data.ts          # Backend API クライアント
+│   ├── data-proxy.ts    # API Proxy
+│   └── utils.ts         # ヘルパー関数
+└── types/               # TypeScript 型定義
+```
+
+## 可視化機能
+
+### ダッシュボード
+- 参加者数・セッション数・平均Spirit確率
+- 感情分布チャート
+- 分析コンポーネントの平均値
+
+### 参加者詳細
+- Spirit確率の時系列推移
+- 各分析コンポーネントの内訳
+- 感情データと生理データの相関
+
+### 相関分析
+- ピアソン・スピアマン相関係数
+- 時間ウィンドウベース分析
+- 統計的有意性の表示
+
+### 高度な可視化（新規）
+
+#### 3D 相関分析
+- Three.js を用いた 3D 散布図
+- 相関係数を XYZ 軸にマッピング
+- インタラクティブな視点操作
+- ポイントクリックでの詳細表示
+
+#### インタラクティブ分析チャート
+- Plotly.js による多様なチャートタイプ
+  - 2D/3D 散布図
+  - ヒートマップ
+  - 相関バーグラフ
+  - 時系列チャート
+  - レーダーチャート
+- リアルタイムズーム・パン操作
+- ポイント選択とフィルタリング
+- 動的なビュー切り替え
+
+### エクスポート機能（新規）
+
+#### 画像エクスポート
+- PNG/JPG 形式
+- 高解像度キャプチャ
+- 背景色カスタマイズ
+- 透過対応
+
+#### PDF エクスポート
+- 複数チャートの一括エクスポート
+- A4 サイズ最適化
+- メタデータ埋め込み
+- 印刷品質
+
+#### データエクスポート
+- CSV 形式（表形式データ）
+- JSON 形式（構造化データ）
+- フィルタ条件の保存
+- メタデータ付与
+
+### リアルタイム機能
+- 動的データフィルタリング
+- ズームレベル調整
+- 外れ値表示切り替え
+- インタラクティブな選択
+
+## 統合ポイント
+
+### Backend API 統合
+- `VisualizerController` - REST エンドポイント提供
+- `VisualizerService` - データ変換・集計ロジック
+- Axon Query による CQRS 準拠のデータ取得
+
+### Temporal ワークフロー統合
+- 分析ジョブのステータス監視
+- ワークフロー結果のリアルタイム表示
+- 長時間実行分析の進捗表示
+
+## デプロイ
+
+### 開発環境
+```bash
+pnpm build
+pnpm start
+```
+
+### 本番環境
+```bash
+docker build -t spirit-visualizer .
+docker run -p 3000:3000 spirit-visualizer
+```
+
+## 監視・メトリクス
+
+- **ヘルスチェック**: `/api/health`
+- **パフォーマンス**: Next.js Analytics
+- **エラートラッキング**: コンソールログ + Backend 連携
+
+この Visualizer は、Spirit in Physics 研究プラットフォームのデータ可視化・分析インターフェースとして、Backend の CQRS アーキテクチャと統合されています。
