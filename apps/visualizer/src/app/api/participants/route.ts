@@ -3,7 +3,9 @@ import { getAllParticipants } from '@/lib/data'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('API: Fetching participants...')
     const participants = await getAllParticipants()
+    console.log('API: Raw participants data:', participants?.length || 0, 'participants')
 
     // Process participants data for frontend
     const processedParticipants = participants.map(participant => {
@@ -32,11 +34,12 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    console.log('API: Processed participants:', processedParticipants.length)
     return NextResponse.json(processedParticipants)
   } catch (error) {
-    console.error('Failed to fetch participants:', error)
+    console.error('API: Failed to fetch participants:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch participants' },
+      { error: 'Failed to fetch participants', details: error.message },
       { status: 500 }
     )
   }

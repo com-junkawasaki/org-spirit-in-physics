@@ -1,8 +1,10 @@
-import { Suspense } from 'react'
+'use client'
+
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
 
 interface Participant {
@@ -154,7 +156,42 @@ function LoadingSkeleton() {
   )
 }
 
-export default async function ParticipantsPage() {
+function ParticipantsTableWrapper() {
+  const [participants, setParticipants] = useState<Participant[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchParticipants() {
+      try {
+        const response = await fetch('/api/participants', {
+          cache: 'no-store'
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch participants: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        setParticipants(data)
+      } catch (error) {
+        console.error('Failed to fetch participants:', error)
+        setParticipants([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchParticipants()
+  }, [])
+
+  if (loading) {
+    return <LoadingSkeleton />
+  }
+
+  return <ParticipantsTable participants={participants} />
+}
+
+export default function ParticipantsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -166,15 +203,7 @@ export default async function ParticipantsPage() {
         </p>
       </div>
 
-      <Suspense fallback={<LoadingSkeleton />}>
-        <ParticipantsTableWrapper />
-      </Suspense>
+      <ParticipantsTableWrapper />
     </div>
   )
-}
-
-async function ParticipantsTableWrapper() {
-  const participants = await getParticipants()
-
-  return <ParticipantsTable participants={participants} />
 }

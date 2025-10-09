@@ -109,14 +109,18 @@ def process_hume_predictions(job_id: str, hume_data: list, supabase: Client):
                                         process_language_prediction(job_id, lang_pred, supabase)
 
                         # Process burst predictions
-                        if "burst" in models and "predictions" in models["burst"]:
-                            for burst_pred in models["burst"]["predictions"]:
-                                process_burst_prediction(job_id, burst_pred, supabase)
+                        if "burst" in models and "grouped_predictions" in models["burst"]:
+                            for group in models["burst"]["grouped_predictions"]:
+                                if "predictions" in group:
+                                    for burst_pred in group["predictions"]:
+                                        process_burst_prediction(job_id, burst_pred, supabase)
 
                         # Process prosody predictions
-                        if "prosody" in models and "predictions" in models["prosody"]:
-                            for prosody_pred in models["prosody"]["predictions"]:
-                                process_prosody_prediction(job_id, prosody_pred, supabase)
+                        if "prosody" in models and "grouped_predictions" in models["prosody"]:
+                            for group in models["prosody"]["grouped_predictions"]:
+                                if "predictions" in group:
+                                    for prosody_pred in group["predictions"]:
+                                        process_prosody_prediction(job_id, prosody_pred, supabase)
 
     except Exception as e:
         print(f"  ✗ Failed to process predictions for job {job_id}: {e}")
