@@ -1,0 +1,14 @@
+# Supabase Configuration
+supabase:
+  url: "YOUR_SUPABASE_URL"
+  service_role_key: "YOUR_SUPABASE_SERVICE_ROLE_KEY"
+
+# Hume AI Configuration
+hume:
+  api_key: "YOUR_HUME_API_KEY"
+
+# Temporal Configuration
+temporal:
+  server_url: "localhost:7233"
+  namespace: "default"
+  task_queue: "spirit-importer-task-queue"

@@ -1,0 +1,8 @@
+temporalio
+supabase
+pyyaml
+hume
+pandas
+numpy
+pydantic
+dotenv

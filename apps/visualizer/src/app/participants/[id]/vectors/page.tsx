@@ -18,6 +18,7 @@ import {
   Brain,
   Zap
 } from 'lucide-react'
+import { ThreeVectorVisualization } from '@/components/ThreeVectorVisualization'
 
 interface AnalysisResult {
   id: string
@@ -127,23 +128,34 @@ function VectorsContent() {
     index: index
   }))
 
+  // 安全な統計計算
+  const safeMin = (values: number[]) => {
+    const validValues = values.filter(v => typeof v === 'number' && !isNaN(v))
+    return validValues.length > 0 ? Math.min(...validValues) : 0
+  }
+
+  const safeMax = (values: number[]) => {
+    const validValues = values.filter(v => typeof v === 'number' && !isNaN(v))
+    return validValues.length > 0 ? Math.max(...validValues) : 0
+  }
+
   // 最大値・最小値を計算してスケーリング用の統計情報を準備
   const stats = {
     word2vec: {
-      min: Math.min(...vectorData.map(d => d.x)),
-      max: Math.max(...vectorData.map(d => d.x))
+      min: safeMin(vectorData.map(d => d.x)),
+      max: safeMax(vectorData.map(d => d.x))
     },
     reactionTime: {
-      min: Math.min(...vectorData.map(d => d.y)),
-      max: Math.max(...vectorData.map(d => d.y))
+      min: safeMin(vectorData.map(d => d.y)),
+      max: safeMax(vectorData.map(d => d.y))
     },
     skinPotential: {
-      min: Math.min(...vectorData.map(d => d.z)),
-      max: Math.max(...vectorData.map(d => d.z))
+      min: safeMin(vectorData.map(d => d.z)),
+      max: safeMax(vectorData.map(d => d.z))
     },
     emotion: {
-      min: Math.min(...vectorData.map(d => d.emotion)),
-      max: Math.max(...vectorData.map(d => d.emotion))
+      min: safeMin(vectorData.map(d => d.emotion)),
+      max: safeMax(vectorData.map(d => d.emotion))
     }
   }
 
@@ -165,16 +177,12 @@ function VectorsContent() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-96 w-full bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border-2 border-dashed border-muted-foreground/20 flex items-center justify-center mb-4">
-            <div className="text-center">
-              <Layers className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                3D可視化コンポーネントは別途実装が必要です
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Three.js や D3.js を使用して実装してください
-              </p>
-            </div>
+          <div className="mb-4">
+            <ThreeVectorVisualization
+              vectorData={vectorData}
+              width={800}
+              height={600}
+            />
           </div>
 
           {/* Vector Statistics */}
@@ -183,28 +191,28 @@ function VectorsContent() {
               <Brain className="h-6 w-6 text-blue-600 mx-auto mb-2" />
               <div className="text-sm text-muted-foreground">Word2Vec</div>
               <div className="text-lg font-semibold">
-                {stats.word2vec.min.toFixed(3)} - {stats.word2vec.max.toFixed(3)}
+                {(stats.word2vec.min || 0).toFixed(3)} - {(stats.word2vec.max || 0).toFixed(3)}
               </div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <Clock className="h-6 w-6 text-green-600 mx-auto mb-2" />
               <div className="text-sm text-muted-foreground">反応時間</div>
               <div className="text-lg font-semibold">
-                {stats.reactionTime.min.toFixed(3)} - {stats.reactionTime.max.toFixed(3)}
+                {(stats.reactionTime.min || 0).toFixed(3)} - {(stats.reactionTime.max || 0).toFixed(3)}
               </div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <Zap className="h-6 w-6 text-purple-600 mx-auto mb-2" />
               <div className="text-sm text-muted-foreground">皮膚電位</div>
               <div className="text-lg font-semibold">
-                {stats.skinPotential.min.toFixed(3)} - {stats.skinPotential.max.toFixed(3)}
+                {(stats.skinPotential.min || 0).toFixed(3)} - {(stats.skinPotential.max || 0).toFixed(3)}
               </div>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
               <Activity className="h-6 w-6 text-orange-600 mx-auto mb-2" />
               <div className="text-sm text-muted-foreground">感情</div>
               <div className="text-lg font-semibold">
-                {stats.emotion.min.toFixed(3)} - {stats.emotion.max.toFixed(3)}
+                {(stats.emotion.min || 0).toFixed(3)} - {(stats.emotion.max || 0).toFixed(3)}
               </div>
             </div>
           </div>
@@ -231,12 +239,12 @@ function VectorsContent() {
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <SpiritProbabilityBadge probability={vector.probability} />
-                  <div className="text-sm text-muted-foreground mt-1">
-                    ({vector.x.toFixed(3)}, {vector.y.toFixed(3)}, {vector.z.toFixed(3)})
+                  <div className="text-right">
+                    <SpiritProbabilityBadge probability={vector.probability || 0} />
+                    <div className="text-sm text-muted-foreground mt-1">
+                      ({(vector.x || 0).toFixed(3)}, {(vector.y || 0).toFixed(3)}, {(vector.z || 0).toFixed(3)})
+                    </div>
                   </div>
-                </div>
               </div>
             ))}
           </div>
@@ -253,22 +261,22 @@ function VectorsContent() {
             <div>
               <h4 className="font-medium mb-2">データ分布の特徴</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Word2Vec成分の範囲: {stats.word2vec.min.toFixed(3)} - {stats.word2vec.max.toFixed(3)}</li>
-                <li>• 反応時間成分の範囲: {stats.reactionTime.min.toFixed(3)} - {stats.reactionTime.max.toFixed(3)}</li>
-                <li>• 皮膚電位成分の範囲: {stats.skinPotential.min.toFixed(3)} - {stats.skinPotential.max.toFixed(3)}</li>
-                <li>• 感情成分の範囲: {stats.emotion.min.toFixed(3)} - {stats.emotion.max.toFixed(3)}</li>
+                <li>• Word2Vec成分の範囲: {(stats.word2vec.min || 0).toFixed(3)} - {(stats.word2vec.max || 0).toFixed(3)}</li>
+                <li>• 反応時間成分の範囲: {(stats.reactionTime.min || 0).toFixed(3)} - {(stats.reactionTime.max || 0).toFixed(3)}</li>
+                <li>• 皮膚電位成分の範囲: {(stats.skinPotential.min || 0).toFixed(3)} - {(stats.skinPotential.max || 0).toFixed(3)}</li>
+                <li>• 感情成分の範囲: {(stats.emotion.min || 0).toFixed(3)} - {(stats.emotion.max || 0).toFixed(3)}</li>
               </ul>
             </div>
             <div>
               <h4 className="font-medium mb-2">高Spirit確率のデータポイント</h4>
               <div className="space-y-2">
                 {vectorData
-                  .filter(v => v.probability > 0.9)
+                  .filter(v => (v.probability || 0) > 0.9)
                   .slice(0, 3)
                   .map((vector) => (
                     <div key={vector.id} className="flex items-center justify-between text-sm">
                       <span>#{vector.index + 1}: "{vector.stimulus}" → "{vector.response}"</span>
-                      <SpiritProbabilityBadge probability={vector.probability} />
+                      <SpiritProbabilityBadge probability={vector.probability || 0} />
                     </div>
                   ))}
               </div>
