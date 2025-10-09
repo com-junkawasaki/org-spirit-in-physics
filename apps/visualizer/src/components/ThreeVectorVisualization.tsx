@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useCallback } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Text, Html } from '@react-three/drei'
 import { useSpring, animated } from '@react-spring/three'
-import * as THREE from 'three'
+import type * as THREE from 'three'
 
 interface VectorPoint {
   id: string
@@ -26,13 +26,8 @@ interface ThreeVectorVisualizationProps {
 }
 
 // 個別のベクターポイントコンポーネント
-function VectorPoint3D({ point, onClick }: { point: VectorPoint; onClick?: (point: VectorPoint) => void }) {
-  const meshRef = useRef<THREE.Mesh>(null!)
-
-  // 安全な値チェック
-  const safeValue = (value: number | undefined, defaultValue: number = 0): number => {
-    return typeof value === 'number' && !isNaN(value) ? value : defaultValue
-  }
+function VectorPoint3D({ point, onClick, safeValue }: { point: VectorPoint; onClick?: (point: VectorPoint) => void; safeValue: (value: number | undefined, defaultValue?: number) => number }) {
+  const meshRef = useRef<THREE.Mesh | null>(null)
 
   // Spirit確率に基づく色設定（緑が高確率、赤が低確率）
   const color = useMemo(() => {
@@ -41,7 +36,7 @@ function VectorPoint3D({ point, onClick }: { point: VectorPoint; onClick?: (poin
     if (probability >= 0.7) return '#3b82f6' // 青
     if (probability >= 0.5) return '#eab308' // 黄色
     return '#ef4444' // 赤
-  }, [point.probability])
+  }, [point.probability, safeValue])
 
   // 反応時間に基づくサイズ設定
   const size = useMemo(() => {
@@ -49,13 +44,13 @@ function VectorPoint3D({ point, onClick }: { point: VectorPoint; onClick?: (poin
     const reactionTime = safeValue(point.reactionTime, 0)
     const timeScale = Math.min(reactionTime / 5000, 1) // 最大5秒でスケーリング
     return baseSize + (timeScale * 0.05)
-  }, [point.reactionTime])
+  }, [point.reactionTime, safeValue])
 
   // 感情成分に基づく透明度設定
   const opacity = useMemo(() => {
     const emotion = safeValue(point.emotion, 0)
     return 0.6 + (emotion * 0.4) // 感情成分が高いほど透明度が高い
-  }, [point.emotion])
+  }, [point.emotion, safeValue])
 
   // アニメーション用のスプリング
   const { scale } = useSpring({
@@ -178,10 +173,15 @@ function InfoPanel({ selectedPoint }: { selectedPoint: VectorPoint | null }) {
 }
 
 // メインの3D視覚化コンポーネント
-export function ThreeVectorVisualization({ vectorData, width = 800, height = 600 }: ThreeVectorVisualizationProps) {
+export function ThreeVectorVisualization({ vectorData }: ThreeVectorVisualizationProps) {
   console.log('ThreeVectorVisualization: データ受信', vectorData.length, '件')
 
   const [selectedPoint, setSelectedPoint] = useState<VectorPoint | null>(null)
+
+  // 安全な値チェック関数
+  const safeValue = useCallback((value: number | undefined, defaultValue: number = 0): number => {
+    return typeof value === 'number' && !Number.isNaN(value) ? value : defaultValue
+  }, [])
 
   // データの統計情報を計算
   const stats = useMemo(() => {
@@ -193,12 +193,12 @@ export function ThreeVectorVisualization({ vectorData, width = 800, height = 600
 
     // 安全な統計計算
     const safeMin = (values: number[]) => {
-      const validValues = values.filter(v => typeof v === 'number' && !isNaN(v))
+      const validValues = values.filter(v => typeof v === 'number' && !Number.isNaN(v))
       return validValues.length > 0 ? Math.min(...validValues) : 0
     }
 
     const safeMax = (values: number[]) => {
-      const validValues = values.filter(v => typeof v === 'number' && !isNaN(v))
+      const validValues = values.filter(v => typeof v === 'number' && !Number.isNaN(v))
       return validValues.length > 0 ? Math.max(...validValues) : 0
     }
 
@@ -260,7 +260,7 @@ export function ThreeVectorVisualization({ vectorData, width = 800, height = 600
         z,
       }
     })
-  }, [vectorData, stats])
+  }, [vectorData, stats, safeValue])
 
   if (vectorData.length === 0) {
     return (
@@ -296,6 +296,7 @@ export function ThreeVectorVisualization({ vectorData, width = 800, height = 600
             key={point.id}
             point={point}
             onClick={setSelectedPoint}
+            safeValue={safeValue}
           />
         ))}
 

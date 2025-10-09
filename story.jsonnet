@@ -137,8 +137,8 @@
   },
   {
     // Merkle DAG: 物語.ナラティブ[25]
-    act: 'AnalyzerデータSupabase完全統合の実現',
-    summary: 'analyzer/フォルダの実験データをSupabaseローカルデータベースに完全統合。11名参加者の同意情報・21件実験セッション・11件応答データをparticipant_consents・participant_experiment_sessions・participant_response_dataテーブルに格納。9件Hume AIジョブ・4240件言語予測・518件バースト予測・1825件韻律予測データをparticipant_hume_analysis_jobs・participant_hume_language_predictions・participant_hume_burst_predictions・participant_hume_prosody_predictionsテーブルに統合。100件単語刺激データをword_stimuliテーブルに格納し、川崎モデルの分析基盤を確立。科学的手法による霊性測定システムのデータ完全性を保証。',
+    act: 'Import機能の責任分割と統合',
+    summary: 'analyzerからimporterへのimport機能の責任と権限を適切に分割・統合。importerアプリをデータインポート機能の単一責任源とし、analyzerアプリをデータ分析機能のみに特化。重複コードを排除し、依存関係を明確化（analyzer → importer）。プロセスネットワークの依存DAGを最小化し、SOLID原則に基づく安定したアーキテクチャを確立。科学的手法による霊性測定システムのデータ完全性を保証。',
   },
     ],
     // この物語から派生したプロセスネットワークグラフ
@@ -179,6 +179,10 @@
             'プロセスネットワーク最適化',
             'SOLID原則完全実装',
             'Hexagonal Architecture + CQRSパターン',
+            'Import機能の責任分割と統合',
+            'importerアプリをデータインポート単一責任源に',
+            'analyzerアプリをデータ分析機能のみに特化',
+            '重複コード排除と依存関係明確化',
             'Hume AIデータベース統合API',
             'データベースベース解析パイプライン',
             'JSONB感情データ格納構造',
@@ -205,7 +209,6 @@
             '時系列イベント統合可視化',
             '生理・感情データ時系列統合',
             '多角的データ分析基盤構築',
-            'AnalyzerデータSupabase完全統合',
             '分析レポート多形式エクスポート',
             'JSON・Markdown・HTMLレポート生成',
             '生理・感情詳細相関分析システム',
@@ -243,6 +246,10 @@
             'モニタリングとログ管理',
             'Kuzu依存関係完全除去',
             'データベースアーキテクチャ統一',
+            'Import機能の責任分割と統合',
+            'importerアプリをデータインポート単一責任源に',
+            'analyzerアプリをデータ分析機能のみに特化',
+            '重複コード排除と依存関係明確化',
             'プロセスネットワークグラフモデル実装',
             'Merkle DAGによる状態管理'
           ],
@@ -250,10 +257,10 @@
       ],
     },
         metadata: {
-          version: '1.18.0',
+          version: '1.19.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: 'AnalyzerデータSupabase完全統合版',
+          merkle_root: 'Import機能責任分割統合版',
           last_updated: '2025-10-09',
           implemented_features: [
             '川崎モデルの数式実装',
@@ -275,6 +282,10 @@
             '実験データインポート機能',
             'ローカル解析パイプライン',
             'インタラクティブ可視化ダッシュボード',
+            'Import機能の責任分割と統合',
+            'importerアプリをデータインポート単一責任源に',
+            'analyzerアプリをデータ分析機能のみに特化',
+            '重複コード排除と依存関係明確化',
             '11名参加者のSpirit確率解析',
             'Word2Vec日本語対応',
             '包括的分析レポート生成',

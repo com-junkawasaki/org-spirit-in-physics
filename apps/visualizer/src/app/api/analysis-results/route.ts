@@ -36,18 +36,17 @@ export async function GET(request: NextRequest) {
     // Transform the data for the frontend
     const transformedResults = (results || []).map(result => ({
       id: result.id,
-      stimulusWord: result.stimulus_word,
-      responseWord: result.response_word,
-      spiritProbability: result.spirit_probability,
-      reactionTime: result.reaction_time_ms || 0,
-      emotionData: result.emotion_data || {},
-      timestamp: result.created_at,
-      components: {
-        word2vec: result.word2vec_component || 0,
-        reaction_time: result.reaction_time_component || 0,
-        skin_potential: result.skin_potential_component || 0,
-        emotion: result.emotion_component || 0
-      }
+      stimulus_word: result.stimulus_word,
+      response_word: result.response_word,
+      p_value: result.spirit_probability,
+      reaction_time_ms: result.reaction_time_ms || 0,
+      emotion_data: result.emotion_data || {},
+      created_at: result.created_at,
+      word2vec_component: result.word2vec_component || 0,
+      reaction_time_component: result.reaction_time_component || 0,
+      skin_potential_component: result.skin_potential_component || 0,
+      emotion_component: result.emotion_component || 0,
+      physiological_data: null
     }))
 
     return NextResponse.json(transformedResults)

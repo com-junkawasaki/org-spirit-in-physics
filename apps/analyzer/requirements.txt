@@ -1,6 +1,5 @@
 supabase
 pandas
-numpy
 pyyaml
 hume
 gensim
