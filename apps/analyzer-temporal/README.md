@@ -72,7 +72,9 @@ hume_ai:
 
 ## Usage
 
-### 1. Start Worker
+### Option 1: Direct Command Line Usage
+
+#### 1. Start Worker
 
 In one terminal, start the worker to execute workflows:
 
@@ -81,7 +83,7 @@ cd apps/analyzer-temporal
 python worker.py
 ```
 
-### 2. Run Analysis
+#### 2. Run Analysis
 
 In another terminal, start the analysis workflow:
 
@@ -96,7 +98,7 @@ python client.py --start --stimulus-words head green water death mother
 python client.py --start --output-dir ./my-results
 ```
 
-### 3. Monitor Workflow
+#### 3. Monitor Workflow
 
 Check the status of your workflow:
 
@@ -106,6 +108,52 @@ python client.py --status spirit-analysis-12345678-1234-1234-1234-123456789012
 
 # Get workflow results (when completed)
 python client.py --result spirit-analysis-12345678-1234-1234-1234-123456789012
+```
+
+### Option 2: REST API Integration
+
+The analyzer-temporal service provides a REST API for integration with the backend services.
+
+#### Start API Server
+
+```bash
+# Using Docker Compose (recommended)
+docker-compose up -d
+
+# Or run directly
+python api_server.py --host 0.0.0.0 --port 8081
+```
+
+#### API Endpoints
+
+The API server provides the following endpoints:
+
+- `GET /health` - Health check
+- `POST /api/workflows/start` - Start a new analysis workflow
+- `GET /api/workflows/{workflow_id}/status` - Get workflow status
+- `GET /api/workflows/{workflow_id}/result` - Get workflow results
+- `DELETE /api/workflows/{workflow_id}` - Cancel a workflow
+
+#### Example API Usage
+
+```bash
+# Start a workflow
+curl -X POST http://localhost:8081/api/workflows/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "workflowId": "spirit-analysis-12345678-1234-1234-1234-123456789012",
+    "sessionId": "session-uuid-here",
+    "parameters": {
+      "stimulus_words": ["head", "green", "water", "death", "mother"],
+      "output_dir": "./results"
+    }
+  }'
+
+# Check status
+curl http://localhost:8081/api/workflows/spirit-analysis-12345678-1234-1234-1234-123456789012/status
+
+# Get results
+curl http://localhost:8081/api/workflows/spirit-analysis-12345678-1234-1234-1234-123456789012/result
 ```
 
 ## Workflow Execution Flow

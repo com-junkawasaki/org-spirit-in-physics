@@ -49,7 +49,7 @@ class SpiritAnalysisClient:
         self,
         stimulus_words: Optional[List[str]] = None,
         output_dir: Optional[str] = None,
-        workflow_id: Optional[str] = None
+        custom_workflow_id: Optional[str] = None
     ) -> str:
         """
         Start a new Spirit Analysis workflow.
@@ -65,8 +65,7 @@ class SpiritAnalysisClient:
         if not self.client:
             await self.connect()
 
-        if workflow_id is None:
-            workflow_id = f"spirit-analysis-{uuid.uuid4()}"
+        workflow_id = custom_workflow_id or f"spirit-analysis-{uuid.uuid4()}"
 
         # Start workflow
         handle = await self.client.start_workflow(
@@ -96,7 +95,7 @@ class SpiritAnalysisClient:
         result = await handle.result()
         return result
 
-    async def get_workflow_status(self, workflow_id: str) -> dict:
+    async def get_workflow_status(self, workflow_id: str) -> str:
         """
         Get the status of a workflow.
 
@@ -104,7 +103,7 @@ class SpiritAnalysisClient:
             workflow_id: The workflow ID to check
 
         Returns:
-            Workflow status information
+            Workflow status as string
         """
         if not self.client:
             await self.connect()
@@ -113,28 +112,28 @@ class SpiritAnalysisClient:
 
         try:
             # Try to get result (will raise if not complete)
-            result = await handle.result()
-            return {
-                'status': 'COMPLETED',
-                'result': result,
-                'workflow_id': workflow_id
-            }
+            await handle.result()
+            return 'COMPLETED'
         except Exception as e:
             # Check if still running
             try:
                 description = await handle.describe()
-                return {
-                    'status': description.status.name,
-                    'start_time': description.start_time,
-                    'workflow_id': workflow_id,
-                    'error': str(e) if 'Workflow' in str(type(e)) else None
-                }
+                return description.status.name
             except Exception:
-                return {
-                    'status': 'UNKNOWN',
-                    'workflow_id': workflow_id,
-                    'error': 'Could not retrieve workflow status'
-                }
+                return 'UNKNOWN'
+
+    async def cancel_workflow(self, workflow_id: str):
+        """
+        Cancel a running workflow.
+
+        Args:
+            workflow_id: The workflow ID to cancel
+        """
+        if not self.client:
+            await self.connect()
+
+        handle = self.client.get_workflow_handle(workflow_id)
+        await handle.cancel()
 
 
 async def main():

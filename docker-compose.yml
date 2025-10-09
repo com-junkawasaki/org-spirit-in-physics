@@ -48,11 +48,11 @@ services:
       - "7234:7233"  # gRPC port (avoid conflict with analyzer temporal)
       - "8234:8233"  # HTTP port
     environment:
-      - DB=postgresql
+      - DB=postgres12
       - DB_PORT=5432
       - POSTGRES_USER=postgres
       - POSTGRES_PWD=password
-      - POSTGRES_SEEDS=postgres-backend:5432
+      - POSTGRES_SEEDS=postgres-backend
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
     volumes:
       - temporal-backend-data:/data

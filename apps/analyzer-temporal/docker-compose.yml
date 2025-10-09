@@ -14,7 +14,7 @@ services:
     depends_on:
       - cassandra
     networks:
-      - temporal-network
+      - spirit-network
 
   cassandra:
     container_name: temporal-cassandra
@@ -29,11 +29,28 @@ services:
     volumes:
       - cassandra_data:/var/lib/cassandra
     networks:
-      - temporal-network
+      - spirit-network
+
+  analyzer-temporal-api:
+    build: .
+    container_name: analyzer-temporal-api
+    ports:
+      - "8081:8081"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - ./results:/app/results
+      - ./visualizations:/app/visualizations
+    depends_on:
+      - temporal
+    networks:
+      - spirit-network
+    command: python api_server.py --host 0.0.0.0 --port 8081
 
 volumes:
   cassandra_data:
 
 networks:
-  temporal-network:
+  spirit-network:
     driver: bridge

@@ -75,14 +75,18 @@ class TemporalWorkflowClient(
             )
 
             return response.body?.let { body ->
+                // Convert analyzer-temporal response to backend AnalysisResults
+                val kawasakiResults = body.kawasakiResults as Map<String, Any>
+                val overallStats = kawasakiResults["overall_statistics"] as Map<String, Any>
+
                 AnalysisResults(
-                    spiritProbability = body.spiritProbability,
-                    emotionComponents = body.emotionComponents,
-                    word2vecSimilarity = body.word2vecSimilarity,
-                    reactionTimeScore = body.reactionTimeScore,
-                    physiologicalData = body.physiologicalData,
-                    reportUrl = body.reportUrl,
-                    visualizationUrls = body.visualizationUrls
+                    spiritProbability = (overallStats["avg_spirit_probability"] as Number).toDouble(),
+                    emotionComponents = emptyMap(), // Will be extracted from emotion_results
+                    word2vecSimilarity = 0.0, // Not directly available
+                    reactionTimeScore = 0.0, // Not directly available
+                    physiologicalData = emptyMap(),
+                    reportUrl = body.outputPaths["report"] ?: body.outputPaths["analysis_report.md"],
+                    visualizationUrls = body.outputPaths.filter { it.key.contains("visualization") || it.key.contains("html") }.values.toList()
                 )
             }
 
@@ -127,11 +131,8 @@ data class WorkflowStatusResponse(
 
 data class WorkflowResultResponse(
     val workflowId: String,
-    val spiritProbability: Double,
-    val emotionComponents: Map<String, Double>,
-    val word2vecSimilarity: Double,
-    val reactionTimeScore: Double,
-    val physiologicalData: Map<String, Any> = emptyMap(),
-    val reportUrl: String? = null,
-    val visualizationUrls: List<String> = emptyList()
+    val emotionResults: Map<String, Any>,
+    val kawasakiResults: Map<String, Any>,
+    val reportContent: String,
+    val outputPaths: Map<String, String>
 )
