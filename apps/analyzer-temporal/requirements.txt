@@ -1,2 +1,12 @@
 temporalio==1.6.0
 pydantic
+pandas
+numpy
+pyyaml
+hume
+gensim
+flask
+flask-cors
+plotly
+matplotlib
+seaborn
