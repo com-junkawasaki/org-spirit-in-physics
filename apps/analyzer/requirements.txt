@@ -1,4 +1,4 @@
-supabase
+terminusdb-client
 pandas
 numpy
 pyyaml

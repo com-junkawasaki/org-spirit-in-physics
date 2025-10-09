@@ -1,43 +1,155 @@
-import { createBrowserClient, createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+// TerminusDB client for Spirit in Physics visualizer
 
-// Supabase URL and keys for local development
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz'
+interface TerminusDBConfig {
+  url: string
+  user: string
+  password: string
+  databaseId: string
+}
 
+class TerminusDBClient {
+  private config: TerminusDBConfig
+
+  constructor(config: TerminusDBConfig) {
+    this.config = config
+  }
+
+  private async query(woqlQuery: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.config.url}/api/query/${this.config.databaseId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`${this.config.user}:${this.config.password}`)}`
+        },
+        body: JSON.stringify({ query: woqlQuery })
+      })
+
+      if (!response.ok) {
+        throw new Error(`TerminusDB query failed: ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('TerminusDB query error:', error)
+      throw error
+    }
+  }
+
+  async getParticipants(): Promise<any[]> {
+    // WOQL query to get participants with summary data
+    const query = `
+      * triple("v:Participant", "rdf:type", "scm:Participant").
+      * triple("v:Participant", "scm:id", "v:Id").
+      * triple("v:Participant", "scm:created_at", "v:CreatedAt").opt().
+      * triple("v:Participant", "has_response", "v:Response").opt().
+      * group_by("v:Participant", ["v:Participant"], "v:ResponseCount", count("v:Response", "v:ResponseCount")).
+    `
+
+    const result = await this.query(query)
+
+    return result.bindings?.map((binding: any) => ({
+      participant_id: binding.Id?.['@value'],
+      session_count: 0, // Simplified for now
+      total_responses: parseInt(binding.ResponseCount?.['@value'] || '0'),
+      average_spirit_probability: 0.5, // Placeholder
+      last_activity: binding.CreatedAt?.['@value']
+    })) || []
+  }
+
+  async getParticipantDetails(participantId: string): Promise<any> {
+    // Get detailed participant information
+    const query = `
+      * triple("terminusdb:///data/Participant/${participantId}", "rdf:type", "scm:Participant").
+      * triple("terminusdb:///data/Participant/${participantId}", "scm:id", "v:Id").
+      * triple("terminusdb:///data/Participant/${participantId}", "scm:age", "v:Age").opt().
+      * triple("terminusdb:///data/Participant/${participantId}", "scm:gender", "v:Gender").opt().
+      * triple("terminusdb:///data/Participant/${participantId}", "scm:handedness", "v:Handedness").opt().
+      * triple("terminusdb:///data/Participant/${participantId}", "has_session", "v:Session").opt().
+      * triple("terminusdb:///data/Participant/${participantId}", "has_response", "v:Response").opt().
+    `
+
+    const result = await this.query(query)
+
+    if (!result.bindings?.length) {
+      throw new Error(`Participant ${participantId} not found`)
+    }
+
+    const binding = result.bindings[0]
+    return {
+      id: binding.Id?.['@value'],
+      age: binding.Age?.['@value'],
+      gender: binding.Gender?.['@value'],
+      handedness: binding.Handedness?.['@value']
+    }
+  }
+
+  async getParticipantResponses(participantId: string): Promise<any[]> {
+    // Get responses for a specific participant
+    const query = `
+      * triple("v:Response", "belongs_to_participant", "terminusdb:///data/Participant/${participantId}").
+      * triple("v:Response", "rdf:type", "scm:ResponseData").
+      * triple("v:Response", "scm:id", "v:Id").
+      * triple("v:Response", "scm:stimulus_word", "v:StimulusWord").
+      * triple("v:Response", "scm:response_word", "v:ResponseWord").
+      * triple("v:Response", "scm:reaction_time_ms", "v:ReactionTime").opt().
+      * triple("v:Response", "scm:emotion", "v:Emotion").opt().
+      * triple("v:Response", "scm:emotion_confidence", "v:EmotionConfidence").opt().
+      * triple("v:Response", "belongs_to_session", "v:Session").opt().
+    `
+
+    const result = await this.query(query)
+
+    return result.bindings?.map((binding: any) => ({
+      id: binding.Id?.['@value'],
+      stimulus_word: binding.StimulusWord?.['@value'],
+      response_word: binding.ResponseWord?.['@value'],
+      reaction_time_ms: parseInt(binding.ReactionTime?.['@value'] || '0'),
+      emotion: binding.Emotion?.['@value'],
+      emotion_confidence: parseFloat(binding.EmotionConfidence?.['@value'] || '0'),
+      session_id: binding.Session?.['@value']?.split('/').pop()
+    })) || []
+  }
+}
+
+// TerminusDB configuration
+const terminusdbConfig: TerminusDBConfig = {
+  url: process.env.NEXT_PUBLIC_TERMINUSDB_URL || 'http://localhost:6363',
+  user: process.env.TERMINUSDB_USER || 'admin',
+  password: process.env.TERMINUSDB_PASSWORD || 'root',
+  databaseId: process.env.TERMINUSDB_DATABASE_ID || 'spirit_in_physics'
+}
+
+// Create singleton client instance
+let clientInstance: TerminusDBClient | null = null
+
+export function createTerminusDBClient(): TerminusDBClient {
+  if (!clientInstance) {
+    clientInstance = new TerminusDBClient(terminusdbConfig)
+  }
+  return clientInstance
+}
+
+// Legacy compatibility functions (return mock data for now)
 export function createClient() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  console.warn('Using legacy Supabase client - this should be replaced with TerminusDB')
+  return {
+    from: (table: string) => ({
+      select: (columns: string) => ({
+        eq: (column: string, value: any) => ({
+          execute: async () => ({ data: [], error: null })
+        }),
+        order: (column: string, options: any) => ({
+          execute: async () => ({ data: [], error: null })
+        })
+      })
+    })
+  }
 }
 
 export async function createServerSupabaseClient() {
-  const cookieStore = await cookies()
-
-  return createServerClient(supabaseUrl, supabaseServiceRoleKey, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: any) {
-        try {
-          cookieStore.set({ name, value, ...options })
-        } catch (error) {
-          // The `set` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
-        }
-      },
-      remove(name: string, options: any) {
-        try {
-          cookieStore.set({ name, value: '', ...options })
-        } catch (error) {
-          // The `delete` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
-        }
-      },
-    },
-  })
+  console.warn('Using legacy Supabase server client - this should be replaced with TerminusDB')
+  return createClient()
 }
 
 // Database types (generated from Supabase schema)

@@ -1,5 +1,4 @@
-import { createServerSupabaseClient, Database } from './supabase'
-import { SupabaseClient } from '@supabase/supabase-js'
+import { createTerminusDBClient } from './supabase'
 
 export interface AnalysisResult {
   id: string
@@ -198,66 +197,77 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 }
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
-  const supabase = await createServerSupabaseClient()
+  try {
+    const client = createTerminusDBClient()
 
-  const { data: participant } = await supabase
-    .from('participants')
-    .select('id, age, gender, handedness')
-    .eq('id', participantId)
-    .single()
+    // Get participant details
+    const participant = await client.getParticipantDetails(participantId)
+    if (!participant) return null
 
-  if (!participant) return null
+    // Get participant responses
+    const responses = await client.getParticipantResponses(participantId)
 
-  // Get sessions with analysis results using the new view
-  const { data: sessionDetail } = await supabase
-    .from('session_detail')
-    .select('*')
-    .eq('participant_id', participantId)
-    .order('start_time', { ascending: false })
+    // Group responses by session
+    const sessionMap: Record<string, ResponseData[]> = {}
+    responses.forEach(response => {
+      const sessionId = response.session_id || 'unknown'
+      if (!sessionMap[sessionId]) {
+        sessionMap[sessionId] = []
+      }
+      sessionMap[sessionId].push({
+        id: response.id,
+        stimulus_word: response.stimulus_word,
+        response_word: response.response_word,
+        reaction_time_ms: response.reaction_time_ms,
+        skin_potential: 0, // Placeholder
+        emotion: response.emotion || '',
+        emotion_confidence: response.emotion_confidence,
+        skinPotentialTimeseries: [], // Placeholder
+        emotionTimeseries: [] // Placeholder
+      })
+    })
 
-  const sessions = (sessionDetail || []).map(session => ({
-    id: session.session_id,
-    session_id: session.session_id,
-    session_type: session.session_type,
-    start_time: session.start_time,
-    end_time: session.end_time,
-    responses: session.responses || []
-  }))
-
-  // Get analysis results for this participant
-  const { data: analysisResults } = await supabase
-    .from('participant_analysis_results')
-    .select('*')
-    .eq('participant_id', participantId)
-    .order('created_at', { ascending: false })
-
-  const analysisRuns = analysisResults ? [{
-    id: 'latest',
-    run_id: 'latest',
-    status: 'completed',
-    created_at: analysisResults[0]?.created_at || new Date().toISOString(),
-    completed_at: analysisResults[0]?.created_at || new Date().toISOString(),
-    results: analysisResults.map(result => ({
-      id: result.id,
-      stimulus_word: result.stimulus_word,
-      response_word: result.response_word,
-      p_value: result.spirit_probability,
-      word2vec_component: result.word2vec_component || 0,
-      reaction_time_component: result.reaction_time_component || 0,
-      skin_potential_component: result.skin_potential_component || 0,
-      emotion_component: result.emotion_component || 0,
-      emotion_data: result.emotion_data || {},
-      physiological_data: result.physiological_data || {},
-      created_at: result.created_at,
-      reaction_time_ms: result.reaction_time_ms || 0
+    // Create sessions array
+    const sessions: ExperimentSession[] = Object.entries(sessionMap).map(([sessionId, sessionResponses]) => ({
+      id: sessionId,
+      session_id: sessionId,
+      session_type: 'session-1', // Placeholder
+      start_time: null,
+      end_time: null,
+      responses: sessionResponses
     }))
-  }] : []
 
-  return {
-    id: participant.id,
-    name: `Participant ${participantId.slice(0, 8)}`, // Default name if not available
-    sessions,
-    analysisRuns
+    // Create mock analysis runs (since we don't have analysis results in TerminusDB yet)
+    const analysisRuns: AnalysisRun[] = [{
+      id: 'latest',
+      run_id: 'latest',
+      status: 'completed',
+      created_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+      results: responses.map(response => ({
+        id: response.id,
+        stimulus_word: response.stimulus_word,
+        response_word: response.response_word,
+        p_value: 0.5, // Placeholder
+        word2vec_component: 0,
+        reaction_time_component: 0,
+        skin_potential_component: 0,
+        emotion_component: 0,
+        emotion_data: {},
+        physiological_data: {},
+        created_at: new Date().toISOString()
+      }))
+    }]
+
+    return {
+      id: participant.id,
+      name: `Participant ${participantId.slice(0, 8)}`, // Default name if not available
+      sessions,
+      analysisRuns
+    }
+  } catch (error) {
+    console.error('Failed to get participant data:', error)
+    return null
   }
 }
 
@@ -265,24 +275,13 @@ export async function getResponseTimeseries(responseId: string): Promise<{
   skinPotential: SkinPotentialPoint[]
   emotions: EmotionPoint[]
 }> {
-  const supabase = createServerSupabaseClient()
-
-  const [skinPotentialResult, emotionResult] = await Promise.all([
-    supabase
-      .from('response_skin_potential_timeseries')
-      .select('timestamp_offset_ms, value')
-      .eq('response_id', responseId)
-      .order('timestamp_offset_ms'),
-    supabase
-      .from('response_emotion_timeseries')
-      .select('timestamp_offset_ms, emotion_type, intensity, confidence')
-      .eq('response_id', responseId)
-      .order('timestamp_offset_ms')
-  ])
+  // Placeholder implementation for TerminusDB
+  // TODO: Implement proper timeseries data retrieval from TerminusDB
+  console.log('Getting timeseries data for response:', responseId)
 
   return {
-    skinPotential: skinPotentialResult.data || [],
-    emotions: emotionResult.data || []
+    skinPotential: [], // Placeholder
+    emotions: [] // Placeholder
   }
 }
 

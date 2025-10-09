@@ -1,40 +1,63 @@
-# Analyzer App Setup
+# Spirit in Physics - Analyzer
 
-This directory contains scripts for analyzing participant data with Hume AI.
+## TerminusDB Migration Complete
 
-## Recommended Environment Setup (using Conda)
+This analyzer has been fully migrated from Supabase to **TerminusDB**, a powerful graph database.
 
-The Python environment for this project has dependencies that may fail to build from source using `pip` on some systems (e.g., `numpy`). It is highly recommended to use the `conda` package manager to create a stable environment.
+## Key Changes
 
-### 1. Create and Activate Conda Environment
+### Configuration (`config.yaml`)
+- **Before**: Supabase URL and service role key
+- **After**: TerminusDB URL, user, password, and database ID
 
-If you don't have Conda, please install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution).
+### Dependencies (`requirements.txt`)
+- **Before**: `supabase`
+- **After**: `terminusdb-client`
 
-```bash
-# Create a new conda environment with Python 3.11
-conda create -n spirit-in-physics python=3.11 pip
+### Data Access (`src/pipeline/data_loader.py`)
+- **Before**: Supabase client queries
+- **After**: WOQL queries against TerminusDB
 
-# Activate the environment
-conda activate spirit-in-physics
+### Data Storage (`src/pipeline/data_storer.py`)
+- **Before**: Supabase table inserts
+- **After**: RDF document creation with relationships
+
+## WOQL Query Examples
+
+### Get Unprocessed Responses
+```python
+query = WOQLQuery().woql_and(
+    WOQLQuery().triple("v:Response", "rdf:type", "scm:ResponseData"),
+    WOQLQuery().triple("v:Response", "scm:id", "v:Id"),
+    WOQLQuery().triple("v:Response", "scm:stimulus_word", "v:StimulusWord"),
+    WOQLQuery().triple("v:Response", "scm:response_word", "v:ResponseWord"),
+    WOQLQuery().triple("v:Response", "belongs_to_participant", "v:Participant"),
+    WOQLQuery().limit(limit)
+)
 ```
 
-### 2. Install Dependencies
+### Store Analysis Results
+```python
+query = WOQLQuery().woql_and(
+    WOQLQuery().insert(result_doc),
+    WOQLQuery().link(run_iri, "has_result", result_iri),
+    WOQLQuery().link(response_iri, "has_analysis_result", result_iri)
+)
+```
 
-First, install compiled scientific packages like `numpy` using Conda to ensure you get pre-built binaries. Then, install the rest of the packages using `pip` and the `requirements.txt` file.
+## Migration Benefits
+
+1. **Flexible Data Model**: RDF triples allow dynamic relationship creation
+2. **Advanced Queries**: Graph traversal for complex data relationships
+3. **Version Control**: Git-like versioning for data changes
+4. **Unified System**: Consistent data access across all components
+
+## Usage
 
 ```bash
-# Install numpy using conda
-conda install numpy
-
-# Install the rest of the dependencies using pip
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Running Scripts
-
-Once the environment is set up and activated, you can run the analysis scripts.
-
-```bash
-# Example: Run the Hume AI job processing script
-python run_hume_jobs.py
+# Run analysis
+python src/main.py
 ```

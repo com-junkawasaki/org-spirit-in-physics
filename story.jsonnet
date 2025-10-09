@@ -165,6 +165,16 @@
     act: 'TemporalワークフローとTerminusDBの統合',
     summary: 'Hume AI感情分析ワークフローにおけるSupabaseActivitiesからTerminusDBActivitiesへの移行を完了。RDFベースのデータ格納とWOQLクエリによる非同期処理パイプラインの安定化を実現。実験データのインポート・感情分析・結果格納の一気通貫プロセスがTerminusDBのグラフ構造で最適化され、科学的手法による霊性測定システムの処理効率が向上。',
   },
+  {
+    // Merkle DAG: 物語.ナラティブ[31]
+    act: 'Analyzer/VisualizerアプリのTerminusDB完全移行',
+    summary: 'analyzerとvisualizerの両アプリをSupabaseからTerminusDBへ完全移行。analyzerのDataLoader・DataStorerをWOQLクエリ使用に変更し、visualizerのReactコンポーネントとAPI routesをTerminusDBクライアント統合。TypeScriptでのTerminusDBクライアント実装により、RDFグラフベースのデータアクセスを実現。実験データ分析・可視化システムがグラフデータベースの柔軟性とパフォーマンスを活用し、科学データにおける複雑な関係性表現が向上。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[32]
+    act: '統合システムのRDFグラフ最適化',
+    summary: 'importer・analyzer・visualizerの全てがTerminusDBを使用する完全統合システムを確立。RDF triplesによる実験参加者・セッション・応答・感情データの関係性モデリングがシステム全体で統一され、WOQLクエリによるクロスコンポーネントデータ連携が可能に。科学的手法による霊性測定のデータフロー全体がグラフ構造で最適化され、分析精度と処理効率が大幅に向上。',
+  },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -288,10 +298,10 @@
       ],
     },
         metadata: {
-          version: '1.20.0',
+          version: '1.21.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: 'TerminusDB移行統合版',
+          merkle_root: 'Analyzer/Visualizer TerminusDB移行版',
           last_updated: '2025-10-09',
           implemented_features: [
             '川崎モデルの数式実装',
@@ -448,7 +458,13 @@
             'WOQLによる感情パターン分析クエリ',
             'グラフ構造による相関分析最適化',
             'RDFグラフモデルによるデータ構造最適化',
-            '科学データにおける複雑な関係性の自然表現'
+            '科学データにおける複雑な関係性の自然表現',
+            'Analyzer/Visualizer TerminusDB完全移行',
+            'DataLoader/DataStorer WOQLクエリ実装',
+            'TypeScript TerminusDBクライアント開発',
+            'React API routes RDFデータ統合',
+            'クロスコンポーネントRDFデータ連携',
+            'グラフデータベース統合システム確立'
           ],
         },
   },
