@@ -1,0 +1,6 @@
+frontend.enableClientVersionCheck:
+  - value: true
+system.forceSearchAttributesCacheRefreshOnRead:
+  - value: true
+frontend.workerVersioningWorkflowAPIs:
+  - value: true
