@@ -10,142 +10,60 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class HumeDataProcessor:
     """
-    Processes Hume AI emotion analysis data from Supabase database.
+    Loads pre-processed Hume AI emotion analysis data from the Supabase database.
     """
 
     def __init__(self, supabase_config: Dict[str, str]):
         self.supabase: Client = create_client(supabase_config['url'], supabase_config['service_role_key'])
-        self.emotion_columns = [
-            'Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger',
-            'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness', 'Concentration',
-            'Contemplation', 'Confusion', 'Contempt', 'Contentment', 'Craving',
-            'Determination', 'Disappointment', 'Disgust', 'Distress', 'Doubt', 'Ecstasy',
-            'Embarrassment', 'Empathic Pain', 'Entrancement', 'Envy', 'Excitement',
-            'Fear', 'Guilt', 'Horror', 'Interest', 'Joy', 'Love', 'Nostalgia', 'Pain',
-            'Pride', 'Realization', 'Relief', 'Romance', 'Sadness', 'Satisfaction',
-            'Desire', 'Shame', 'Surprise (negative)', 'Surprise (positive)', 'Sympathy',
-            'Tiredness', 'Triumph'
-        ]
-
         logging.info("HumeDataProcessor initialized with Supabase client.")
 
     def load_burst_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
-        """Load burst prediction data from database."""
+        """Load burst prediction data directly for a given session."""
         try:
-            job_id = self._get_job_id_for_session(participant_experiment_session_id)
-            if not job_id:
-                logging.warning(f"No Hume AI job found for session {participant_experiment_session_id}")
-                return []
-
             response = self.supabase.table('participant_hume_burst_predictions').select('*').eq(
-                'job_id', job_id
+                'participant_experiment_session_id', participant_experiment_session_id
             ).execute()
-
             if response.data:
-                logging.info(f"Loaded {len(response.data)} burst prediction records")
+                logging.info(f"Loaded {len(response.data)} burst prediction records for session {participant_experiment_session_id}")
                 return response.data
             else:
-                logging.warning("No burst prediction data found")
+                logging.warning(f"No burst prediction data found for session {participant_experiment_session_id}")
                 return []
         except Exception as e:
-            logging.error(f"Error loading burst data: {e}")
+            logging.error(f"Error loading burst data for session {participant_experiment_session_id}: {e}")
             return []
 
     def load_prosody_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
-        """Load prosody prediction data from database."""
+        """Load prosody prediction data directly for a given session."""
         try:
-            job_id = self._get_job_id_for_session(participant_experiment_session_id)
-            if not job_id:
-                logging.warning(f"No Hume AI job found for session {participant_experiment_session_id}")
-                return []
-
             response = self.supabase.table('participant_hume_prosody_predictions').select('*').eq(
-                'job_id', job_id
+                'participant_experiment_session_id', participant_experiment_session_id
             ).execute()
-
             if response.data:
-                logging.info(f"Loaded {len(response.data)} prosody prediction records")
+                logging.info(f"Loaded {len(response.data)} prosody prediction records for session {participant_experiment_session_id}")
                 return response.data
             else:
-                logging.warning("No prosody prediction data found")
+                logging.warning(f"No prosody prediction data found for session {participant_experiment_session_id}")
                 return []
         except Exception as e:
-            logging.error(f"Error loading prosody data: {e}")
+            logging.error(f"Error loading prosody data for session {participant_experiment_session_id}: {e}")
             return []
 
     def load_language_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
-        """Load language prediction data from database."""
+        """Load language prediction data directly for a given session."""
         try:
-            job_id = self._get_job_id_for_session(participant_experiment_session_id)
-            if not job_id:
-                logging.warning(f"No Hume AI job found for session {participant_experiment_session_id}")
-                return []
-
             response = self.supabase.table('participant_hume_language_predictions').select('*').eq(
-                'job_id', job_id
+                'participant_experiment_session_id', participant_experiment_session_id
             ).execute()
-
             if response.data:
-                logging.info(f"Loaded {len(response.data)} language prediction records")
+                logging.info(f"Loaded {len(response.data)} language prediction records for session {participant_experiment_session_id}")
                 return response.data
             else:
-                logging.warning("No language prediction data found")
+                logging.warning(f"No language prediction data found for session {participant_experiment_session_id}")
                 return []
         except Exception as e:
-            logging.error(f"Error loading language data: {e}")
+            logging.error(f"Error loading language data for session {participant_experiment_session_id}: {e}")
             return []
-
-    def _get_job_id_for_session(self, participant_experiment_session_id: str) -> str:
-        """Get the Hume AI job ID for a given experiment session."""
-        try:
-            logging.info(f"DEBUG: Looking for Hume AI job for session {participant_experiment_session_id}")
-
-            # First try direct match
-            response = self.supabase.table('participant_hume_analysis_jobs').select('id, participant_experiment_session_id, status').eq(
-                'participant_experiment_session_id', participant_experiment_session_id
-            ).eq('status', 'completed').execute()
-
-            logging.info(f"DEBUG: Direct match query returned: {response.data}")
-
-            if response.data and len(response.data) > 0:
-                logging.info(f"DEBUG: Found direct match job: {response.data[0]['id']}")
-                return response.data[0]['id']
-
-            # If no direct match, get participant_id and find any Hume job for that participant
-            session_response = self.supabase.table('participant_experiment_sessions').select('participant_id').eq(
-                'id', participant_experiment_session_id
-            ).execute()
-
-            logging.info(f"DEBUG: Session lookup returned: {session_response.data}")
-
-            if session_response.data and len(session_response.data) > 0:
-                participant_id = session_response.data[0]['participant_id']
-                logging.info(f"DEBUG: Found participant_id: {participant_id}")
-
-                # Find all Hume jobs (regardless of status) for debugging
-                all_jobs_response = self.supabase.table('participant_hume_analysis_jobs').select('*').execute()
-                logging.info(f"DEBUG: All Hume jobs in database: {all_jobs_response.data}")
-
-                # Find Hume jobs for any session of this participant
-                job_response = self.supabase.table('participant_hume_analysis_jobs').select('*').execute()
-                logging.info(f"DEBUG: All jobs before filtering: {job_response.data}")
-
-                # Filter manually since in_ might not work as expected
-                matching_jobs = [job for job in job_response.data if job['participant_experiment_session_id'] in [
-                    s['id'] for s in self.supabase.table('participant_experiment_sessions').select('id').eq('participant_id', participant_id).execute().data
-                ] and job['status'] == 'completed']
-
-                logging.info(f"DEBUG: Matching jobs for participant {participant_id}: {matching_jobs}")
-
-                if matching_jobs:
-                    logging.info(f"DEBUG: Returning job: {matching_jobs[0]['id']}")
-                    return matching_jobs[0]['id']
-
-            logging.warning(f"No completed Hume AI job found for session {participant_experiment_session_id}")
-            return ""
-        except Exception as e:
-            logging.error(f"Error getting job ID for session {participant_experiment_session_id}: {e}")
-            return ""
 
     def extract_burst_emotions(self, burst_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
