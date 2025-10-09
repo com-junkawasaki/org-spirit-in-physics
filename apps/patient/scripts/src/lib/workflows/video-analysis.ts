@@ -119,15 +119,18 @@ export const videoAnalysisWorkflow = inngest.createFunction(
         throw new Error('Analysis result is null');
       }
 
+      // Type assertion to ensure analysisResult is properly typed
+      const result = analysisResult as { participantId: string; videoFile: string; sessionType: string; emotions: Array<{ name: string; score: number; confidence: number; }>; timestamp: string; processingTime: number; };
+
       const completionEvent: AnalysisResultEvent = {
         participantId,
         videoFile,
-        results: analysisResult,
-        processingTime: analysisResult.processingTime,
+        results: result,
+        processingTime: result.processingTime,
         metadata: {
           sessionType,
-          emotionsDetected: analysisResult.emotions.length,
-          timestamp: analysisResult.timestamp,
+          emotionsDetected: result.emotions.length,
+          timestamp: result.timestamp,
         },
       };
 
@@ -140,13 +143,16 @@ export const videoAnalysisWorkflow = inngest.createFunction(
       logger.info(`Video analysis workflow completed for ${participantId}/${videoFile}`);
     });
 
+    // Type assertion for the return statement
+    const typedResult = analysisResult as { participantId: string; videoFile: string; sessionType: string; emotions: Array<{ name: string; score: number; confidence: number; }>; timestamp: string; processingTime: number; };
+
     return {
       success: true,
       participantId,
       videoFile,
       sessionType,
-      emotionsDetected: analysisResult.emotions.length,
-      processingTime: analysisResult.processingTime,
+      emotionsDetected: typedResult.emotions.length,
+      processingTime: typedResult.processingTime,
     };
   }
 );
