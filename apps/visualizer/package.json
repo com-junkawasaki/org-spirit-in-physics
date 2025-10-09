@@ -45,7 +45,7 @@
     "zod": "^4.0.10"
   },
   "devDependencies": {
-    "@pact-foundation/pact": "^13.0.0",
+    "@pact-foundation/pact": "^16.0.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/d3": "^7.4.3",
     "@types/node": "24.1.0",

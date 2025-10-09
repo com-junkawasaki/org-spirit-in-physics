@@ -5,6 +5,10 @@ node_modules
 .pnp.js
 .yarn/install-state.gz
 
+# pnpm
+.pnpm-debug.log
+pnpm-lock.yaml
+
 # Testing
 coverage
 .nyc_output

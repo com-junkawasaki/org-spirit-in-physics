@@ -117,7 +117,7 @@ This project is configured to deploy on Vercel with Blob Storage for artifact ma
 If you have existing artifacts in `.artifacts_cache`, migrate them to Blob Storage:
 
 ```bash
-npm run migrate-artifacts
+pnpm run migrate-artifacts
 ```
 
 ### Environment Variables

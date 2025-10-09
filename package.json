@@ -1,5 +1,27 @@
 {
+  "name": "spirit-in-physics",
+  "version": "1.0.0",
+  "description": "Spirit in Physics - Complete Integrated System",
+  "scripts": {
+    "dev": "docker-compose up",
+    "dev:pact": "./scripts/local-dev-pact.sh",
+    "dev:pact:ci": "./scripts/local-dev-pact.sh",
+    "dev:full": "docker-compose up -d && sleep 10 && pnpm run dev:pact",
+    "dev:backend": "docker-compose up backend",
+    "dev:frontend": "docker-compose up patient admin visualizer",
+    "dev:services": "docker-compose up postgres axonserver temporal pact-broker",
+    "test:pact": "pnpm run dev:pact",
+    "test:pact:watch": "node scripts/watch-pact-tests.js",
+    "pact:broker:start": "docker-compose up -d pact-broker pact-postgres",
+    "pact:broker:stop": "docker-compose stop pact-broker pact-postgres",
+    "pact:broker:logs": "docker-compose logs pact-broker",
+    "pact:publish": "cd apps/patient && pnpm run test:pact:publish",
+    "clean": "docker-compose down -v && docker system prune -f"
+  },
   "dependencies": {
     "@duckdb/node-api": "^1.4.0-r.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
   }
 }

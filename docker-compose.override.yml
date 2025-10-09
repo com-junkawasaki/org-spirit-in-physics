@@ -1,0 +1,62 @@
+# Development environment overrides for Spirit in Physics
+# This file contains development-specific configurations
+
+version: '3.8'
+
+services:
+  # Pact Broker - Always start in development
+  pact-broker:
+    env_file:
+      - pact.env
+    environment:
+      - PACT_BROKER_WEBHOOK_SCHEME_WHITELIST=http
+      - PACT_BROKER_WEBHOOK_HOST_WHITELIST=localhost
+      - PACT_BROKER_ALLOW_PUBLIC_READ=true
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  pact-postgres:
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Development-specific service overrides
+  backend:
+    environment:
+      - PACT_BROKER_URL=http://pact-broker:9292
+    volumes:
+      # Mount source code for hot reloading during development
+      - ./apps/backend:/app
+      - /app/build
+      - /app/.gradle
+
+  patient:
+    environment:
+      - PACT_BROKER_URL=http://pact-broker:9292
+    volumes:
+      - ./apps/patient:/app
+      - /app/node_modules
+      - /app/.next
+
+  admin:
+    environment:
+      - PACT_BROKER_URL=http://pact-broker:9292
+    volumes:
+      - ./apps/admin:/app
+      - /app/node_modules
+      - /app/dist
+
+  visualizer:
+    environment:
+      - PACT_BROKER_URL=http://pact-broker:9292
+    volumes:
+      - ./apps/visualizer:/app
+      - /app/node_modules
+      - /app/.next

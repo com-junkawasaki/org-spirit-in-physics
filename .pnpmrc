@@ -1,0 +1,26 @@
+# pnpm configuration for Spirit in Physics project
+# Optimize for monorepo and development workflow
+
+# Enable strict mode for better dependency resolution
+strict-peer-dependencies=false
+
+# Use symlinks for workspace packages (faster)
+link-workspace-packages=true
+
+# Enable shared-workspace-lockfile for consistent installs
+shared-workspace-lockfile=true
+
+# Use frozen lockfile in CI to ensure reproducible builds
+frozen-lockfile=true
+
+# Enable shell emulator for cross-platform compatibility
+shell-emulator=true
+
+# Increase network timeout for large downloads
+network-timeout=60000
+
+# Enable progress reporting
+progress=true
+
+# Use hoisted node_modules for better performance
+node-linker=isolated
