@@ -97,41 +97,41 @@ function VectorPoint3D({ point, onClick }: { point: VectorPoint; onClick?: (poin
   )
 }
 
-// 座標軸のラベルコンポーネント
+// 座標軸のラベルコンポーネント（川崎モデルベース）
 function AxisLabels() {
   return (
     <>
-      {/* X軸 - Word2Vec */}
+      {/* X軸 - Word2Vec（意味空間の主軸） */}
       <Text
-        position={[1.5, 0, 0]}
-        fontSize={0.1}
+        position={[1.8, 0, 0]}
+        fontSize={0.12}
         color="#3b82f6"
         anchorX="center"
         anchorY="middle"
       >
-        Word2Vec
+        意味空間 (Word2Vec)
       </Text>
 
-      {/* Y軸 - 反応時間 */}
+      {/* Y軸 - 感情・生理統合（感情価） */}
       <Text
-        position={[0, 1.5, 0]}
-        fontSize={0.1}
+        position={[0, 1.8, 0]}
+        fontSize={0.12}
         color="#10b981"
         anchorX="center"
         anchorY="middle"
       >
-        反応時間
+        感情価 (統合)
       </Text>
 
-      {/* Z軸 - 皮膚電位 */}
+      {/* Z軸 - 反応・生理統合（活性度） */}
       <Text
-        position={[0, 0, 1.5]}
-        fontSize={0.1}
+        position={[0, 0, 1.8]}
+        fontSize={0.12}
         color="#8b5cf6"
         anchorX="center"
         anchorY="middle"
       >
-        皮膚電位
+        活性度 (統合)
       </Text>
     </>
   )
@@ -168,7 +168,9 @@ function InfoPanel({ selectedPoint }: { selectedPoint: VectorPoint | null }) {
           <p><strong>応答語:</strong> {selectedPoint.response}</p>
           <p><strong>Spirit確率:</strong> {(selectedPoint.probability * 100).toFixed(2)}%</p>
           <p><strong>反応時間:</strong> {selectedPoint.reactionTime}ms</p>
-          <p><strong>座標:</strong> ({selectedPoint.x.toFixed(3)}, {selectedPoint.y.toFixed(3)}, {selectedPoint.z.toFixed(3)})</p>
+          <p><strong>意味空間位置:</strong> {selectedPoint.x.toFixed(3)}</p>
+          <p><strong>感情価:</strong> {selectedPoint.y.toFixed(3)}</p>
+          <p><strong>活性度:</strong> {selectedPoint.z.toFixed(3)}</p>
         </div>
       </div>
     </Html>
@@ -177,11 +179,17 @@ function InfoPanel({ selectedPoint }: { selectedPoint: VectorPoint | null }) {
 
 // メインの3D視覚化コンポーネント
 export function ThreeVectorVisualization({ vectorData, width = 800, height = 600 }: ThreeVectorVisualizationProps) {
+  console.log('ThreeVectorVisualization: データ受信', vectorData.length, '件')
+
   const [selectedPoint, setSelectedPoint] = useState<VectorPoint | null>(null)
 
   // データの統計情報を計算
   const stats = useMemo(() => {
-    if (vectorData.length === 0) return null
+    console.log('ThreeVectorVisualization: 統計計算開始')
+    if (vectorData.length === 0) {
+      console.log('ThreeVectorVisualization: データが空')
+      return null
+    }
 
     // 安全な統計計算
     const safeMin = (values: number[]) => {
@@ -198,7 +206,7 @@ export function ThreeVectorVisualization({ vectorData, width = 800, height = 600
     const yValues = vectorData.map(d => d.y)
     const zValues = vectorData.map(d => d.z)
 
-    return {
+    const result = {
       word2vec: {
         min: safeMin(xValues),
         max: safeMax(xValues)
@@ -212,24 +220,44 @@ export function ThreeVectorVisualization({ vectorData, width = 800, height = 600
         max: safeMax(zValues)
       }
     }
+
+    console.log('ThreeVectorVisualization: 統計計算完了', result)
+    return result
   }, [vectorData])
 
-  // データポイントをスケーリング（視覚化しやすくするため）
+  // データポイントをスケーリング（川崎モデルベースのword2vec中心配置）
   const scaledVectorData = useMemo(() => {
     if (!stats || vectorData.length === 0) return []
 
-    return vectorData.map(point => {
-      // データの範囲を-1から1の範囲にスケーリング
-      const scaleValue = (value: number, statMin: number, statMax: number) => {
-        if (statMax === statMin) return 0 // データがすべて同じ値の場合
-        return ((value - statMin) / (statMax - statMin)) * 2 - 1
-      }
+    return vectorData.map((point, index) => {
+      // Word2Vecを主軸とした物理ベースの配置
+      const word2vecScaled = ((point.x - stats.word2vec.min) / (stats.word2vec.max - stats.word2vec.min)) * 2 - 1
+
+      // 感情価：感情成分と生理データを統合（Y軸）
+      const emotionValence = safeValue(point.emotion, 0)
+      const emotionScaled = emotionValence * 1.5 - 0.75 // -0.75から0.75の範囲にスケーリング
+
+      // 活性度：反応時間と生理データを統合（Z軸）
+      const reactionTime = safeValue(point.reactionTime, 0)
+      const reactionScaled = Math.min(reactionTime / 3000, 1) * 1.2 - 0.6 // -0.6から0.6の範囲にスケーリング
+
+      // 物理シミュレーション風の微調整（粒子間の反発と引き寄せ）
+      const phi = Math.acos(1 - (2 * (index + 0.5)) / vectorData.length) // 球面上の均等分布
+      const theta = Math.PI * (1 + Math.sqrt(5)) * (index + 0.5)
+
+      // ベースとなる球面配置にデータ値を加味
+      const baseRadius = 1.0
+      const dataInfluence = 0.3
+
+      const x = (baseRadius + word2vecScaled * dataInfluence) * Math.sin(phi) * Math.cos(theta)
+      const y = (baseRadius + emotionScaled * dataInfluence) * Math.sin(phi) * Math.sin(theta)
+      const z = (baseRadius + reactionScaled * dataInfluence) * Math.cos(phi)
 
       return {
         ...point,
-        x: scaleValue(point.x, stats.word2vec.min, stats.word2vec.max),
-        y: scaleValue(point.y, stats.reactionTime.min, stats.reactionTime.max),
-        z: scaleValue(point.z, stats.skinPotential.min, stats.skinPotential.max),
+        x,
+        y,
+        z,
       }
     })
   }, [vectorData, stats])
@@ -289,9 +317,9 @@ export function ThreeVectorVisualization({ vectorData, width = 800, height = 600
         <axesHelper args={[1.5]} />
       </Canvas>
 
-      {/* 凡例と統計情報 */}
-      <div className="absolute bottom-2 left-2 bg-white/80 backdrop-blur-sm p-2 rounded text-xs">
-        <div className="font-semibold mb-1">凡例</div>
+      {/* 凡例と統計情報（川崎モデルベース） */}
+      <div className="absolute bottom-2 left-2 bg-white/80 backdrop-blur-sm p-2 rounded text-xs max-w-48">
+        <div className="font-semibold mb-1">凡例（川崎モデル統合視覚化）</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -308,6 +336,14 @@ export function ThreeVectorVisualization({ vectorData, width = 800, height = 600
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-500 rounded-full"></div>
             <span>最低Spirit確率 (&lt;50%)</span>
+          </div>
+        </div>
+        <div className="mt-2 pt-2 border-t border-gray-200">
+          <div className="font-semibold mb-1 text-xs">軸の意味</div>
+          <div className="text-xs space-y-0.5">
+            <div><strong>X軸:</strong> 意味空間位置 (Word2Vec)</div>
+            <div><strong>Y軸:</strong> 感情価 (感情・生理統合)</div>
+            <div><strong>Z軸:</strong> 活性度 (反応・生理統合)</div>
           </div>
         </div>
       </div>

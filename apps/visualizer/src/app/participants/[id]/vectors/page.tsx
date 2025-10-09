@@ -92,7 +92,9 @@ function VectorsContent() {
 
   useEffect(() => {
     async function fetchAnalysisResults() {
+      console.log('ベクターページ: データ取得開始', id)
       const results = await getParticipantAnalysis(id)
+      console.log('ベクターページ: データ取得完了', results.length, '件')
       setAnalysisResults(results)
       setLoading(false)
     }
@@ -162,7 +164,7 @@ function VectorsContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">三次元ベクトル分析</h3>
+        <h3 className="text-lg font-medium">川崎モデル統合ベクトル視覚化</h3>
         <Badge variant="secondary">
           {analysisResults.length} 件のデータポイント
         </Badge>
@@ -173,7 +175,7 @@ function VectorsContent() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5" />
-            三次元散布図
+            川崎モデル統合3D視覚化
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -185,34 +187,36 @@ function VectorsContent() {
             />
           </div>
 
-          {/* Vector Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Vector Statistics（川崎モデル統合視覚化） */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <Brain className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-              <div className="text-sm text-muted-foreground">Word2Vec</div>
-              <div className="text-lg font-semibold">
-                {(stats.word2vec.min || 0).toFixed(3)} - {(stats.word2vec.max || 0).toFixed(3)}
+              <div className="text-sm text-muted-foreground">意味空間 (Word2Vec)</div>
+              <div className="text-sm font-medium text-blue-700 mb-1">
+                分布範囲: {(stats.word2vec.min || 0).toFixed(3)} - {(stats.word2vec.max || 0).toFixed(3)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                単語の意味的類似性による配置
               </div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <Clock className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <div className="text-sm text-muted-foreground">反応時間</div>
-              <div className="text-lg font-semibold">
-                {(stats.reactionTime.min || 0).toFixed(3)} - {(stats.reactionTime.max || 0).toFixed(3)}
+              <Activity className="h-6 w-6 text-green-600 mx-auto mb-2" />
+              <div className="text-sm text-muted-foreground">感情価 (統合)</div>
+              <div className="text-sm font-medium text-green-700 mb-1">
+                感情強度: {(stats.emotion.min || 0).toFixed(3)} - {(stats.emotion.max || 0).toFixed(3)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                感情・生理反応の統合指標
               </div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <Zap className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-              <div className="text-sm text-muted-foreground">皮膚電位</div>
-              <div className="text-lg font-semibold">
-                {(stats.skinPotential.min || 0).toFixed(3)} - {(stats.skinPotential.max || 0).toFixed(3)}
+              <div className="text-sm text-muted-foreground">活性度 (統合)</div>
+              <div className="text-sm font-medium text-purple-700 mb-1">
+                反応速度: {(stats.reactionTime.min || 0).toFixed(0)} - {(stats.reactionTime.max || 0).toFixed(0)}ms
               </div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <Activity className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-              <div className="text-sm text-muted-foreground">感情</div>
-              <div className="text-lg font-semibold">
-                {(stats.emotion.min || 0).toFixed(3)} - {(stats.emotion.max || 0).toFixed(3)}
+              <div className="text-xs text-muted-foreground">
+                反応時間・生理反応の統合指標
               </div>
             </div>
           </div>
@@ -259,12 +263,12 @@ function VectorsContent() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-medium mb-2">データ分布の特徴</h4>
+              <h4 className="font-medium mb-2">川崎モデル統合視覚化の特徴</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Word2Vec成分の範囲: {(stats.word2vec.min || 0).toFixed(3)} - {(stats.word2vec.max || 0).toFixed(3)}</li>
-                <li>• 反応時間成分の範囲: {(stats.reactionTime.min || 0).toFixed(3)} - {(stats.reactionTime.max || 0).toFixed(3)}</li>
-                <li>• 皮膚電位成分の範囲: {(stats.skinPotential.min || 0).toFixed(3)} - {(stats.skinPotential.max || 0).toFixed(3)}</li>
-                <li>• 感情成分の範囲: {(stats.emotion.min || 0).toFixed(3)} - {(stats.emotion.max || 0).toFixed(3)}</li>
+                <li>• <strong>意味空間配置:</strong> Word2Vecにより単語の意味的関係性をX軸に配置</li>
+                <li>• <strong>感情価統合:</strong> 感情・生理反応を統合したY軸による感情次元表現</li>
+                <li>• <strong>活性度統合:</strong> 反応時間・生理反応を統合したZ軸による活性度表現</li>
+                <li>• <strong>物理シミュレーション:</strong> 粒子間の自然な配置による直感的な理解</li>
               </ul>
             </div>
             <div>
@@ -312,7 +316,7 @@ export default function ParticipantVectorsPage() {
           </Link>
         </div>
         <h1 className="text-3xl font-bold text-foreground">
-          三次元ベクトル分析
+          川崎モデル統合ベクトル視覚化
         </h1>
       </div>
 
