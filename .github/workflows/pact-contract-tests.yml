@@ -1,0 +1,148 @@
+# .github/workflows/pact-contract-tests.yml
+name: Pact Contract Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  pact-consumer-tests:
+    name: Consumer Contract Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [patient, admin, visualizer]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: apps/${{ matrix.app }}/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: apps/${{ matrix.app }}
+        run: pnpm install
+
+      - name: Run Pact Consumer Tests
+        working-directory: apps/${{ matrix.app }}
+        run: pnpm test:pact
+        env:
+          PACT_BROKER_BASE_URL: http://localhost:9292
+          PACT_BROKER_USERNAME: admin
+          PACT_BROKER_PASSWORD: password
+
+      - name: Upload Pact files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pact-files-${{ matrix.app }}
+          path: apps/${{ matrix.app }}/pacts/
+
+  pact-provider-tests:
+    name: Provider Contract Tests
+    runs-on: ubuntu-latest
+    needs: pact-consumer-tests
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: pact_broker
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      pact-broker:
+        image: pactfoundation/pact-broker:latest
+        env:
+          PACT_BROKER_DATABASE_URL: postgresql://postgres:password@postgres:5432/pact_broker
+          PACT_BROKER_BASIC_AUTH_USERNAME: admin
+          PACT_BROKER_BASIC_AUTH_PASSWORD: password
+        ports:
+          - 9292:9292
+        depends_on:
+          postgres:
+            condition: service_healthy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Download Pact files
+        uses: actions/download-artifact@v4
+        with:
+          name: pact-files-patient
+          path: apps/backend/pacts/
+
+      - name: Download Pact files (admin)
+        uses: actions/download-artifact@v4
+        with:
+          name: pact-files-admin
+          path: apps/backend/pacts/
+
+      - name: Download Pact files (visualizer)
+        uses: actions/download-artifact@v4
+        with:
+          name: pact-files-visualizer
+          path: apps/backend/pacts/
+
+      - name: Run Pact Provider Tests
+        working-directory: apps/backend
+        run: ./gradlew test --tests "*PactProviderTest*"
+        env:
+          PACT_BROKER_BASE_URL: http://localhost:9292
+          PACT_BROKER_USERNAME: admin
+          PACT_BROKER_PASSWORD: password
+
+  pact-publish:
+    name: Publish Pact Contracts
+    runs-on: ubuntu-latest
+    needs: [pact-consumer-tests, pact-provider-tests]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Pact CLI
+        run: |
+          curl -fsSL https://github.com/pact-foundation/pact-ruby-standalone/releases/download/v2.0.2/pact-2.0.2-linux-x86_64.tar.gz | tar -xz
+          sudo mv pact/bin/pact /usr/local/bin/
+          sudo mv pact/bin/pact-broker /usr/local/bin/
+
+      - name: Download Pact files
+        uses: actions/download-artifact@v4
+        with:
+          name: pact-files-patient
+          path: pacts/
+
+      - name: Publish Pacts to Broker
+        run: |
+          pact-broker publish pacts \
+            --consumer-app-version=${{ github.sha }} \
+            --broker-base-url=${{ secrets.PACT_BROKER_BASE_URL }} \
+            --broker-username=${{ secrets.PACT_BROKER_USERNAME }} \
+            --broker-password=${{ secrets.PACT_BROKER_PASSWORD }}
