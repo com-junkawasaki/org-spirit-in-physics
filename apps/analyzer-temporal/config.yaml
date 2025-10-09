@@ -21,6 +21,7 @@ model_params:
 
 word2vec:
   model_path: "path/to/your/word2vec.model"
+  use_advanced: true  # Enable advanced Word2Vec trainer with emotional weighting
 
 processing:
   max_concurrent_jobs: 3    # Maximum number of Hume AI jobs to run concurrently
@@ -30,3 +31,10 @@ processing:
 output:
   results_dir: "results"
   visualizations_dir: "visualizations"
+
+# Advanced analysis features
+analysis:
+  enable_normalization: true  # Enable normalization term calculation
+  enable_emotional_weighting: true  # Use emotional weighting in Word2Vec
+  confidence_interval_calculation: true  # Calculate confidence intervals
+  parallel_processing: true  # Enable parallel processing of responses

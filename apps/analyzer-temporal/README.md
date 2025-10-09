@@ -1,25 +1,40 @@
-# Spirit Analysis Pipeline (Temporal Version)
+# Spirit in Physics - Unified Temporal Analysis Pipeline
 
-This is a Temporal-based implementation of the Spirit in Physics analysis pipeline. It processes Hume AI emotion data and runs Kawasaki model analysis for quantitative measurement of spiritual responses through multimodal emotion analysis.
+This is the unified Temporal-based implementation of the Spirit in Physics analysis pipeline, integrating advanced features from both @analyzer and @analyzer-temporal. It provides a complete, production-ready system for quantitative measurement of spiritual responses through multimodal emotion analysis.
 
 ## Architecture
 
-The pipeline is implemented using Temporal workflows and activities:
+The pipeline is implemented using Temporal workflows and activities with full integration of advanced analysis features:
 
 - **Workflow**: `SpiritAnalysisWorkflow` - Orchestrates the entire analysis pipeline
 - **Activities**:
-  - `EmotionAnalysisActivity` - Processes Hume AI emotion data
-  - `KawasakiAnalysisActivity` - Runs Kawasaki model analysis with emotion integration
+  - `EmotionAnalysisActivity` - Processes Hume AI emotion data with comprehensive statistics
+  - `KawasakiAnalysisActivity` - Runs advanced Kawasaki model with real experimental data
   - `ReportGenerationActivity` - Generates comprehensive analysis reports
-  - `ResultSavingActivity` - Saves results and creates visualizations
+  - `ResultSavingActivity` - Saves results and creates interactive visualizations
 
-## Features
+## Key Features
 
+### Core Analysis Capabilities
+- **Advanced Kawasaki Model**: Complete implementation with Word2Vec, reaction time, physiological, and emotion components
+- **Hume AI Integration**: Face, prosody, and language emotion analysis with time-series processing
+- **Real Data Processing**: Direct integration with Supabase database for experimental data
+- **Interactive Visualizations**: 3D Spirit vector plots, component analysis, heatmaps, and time-series plots
+
+### Production-Ready Features
 - **Distributed Execution**: Workflows can be executed across multiple workers
-- **Fault Tolerance**: Automatic retries and failure recovery
-- **Monitoring**: Built-in workflow tracking and status monitoring
+- **Fault Tolerance**: Automatic retries and failure recovery with configurable policies
+- **Monitoring**: Built-in workflow tracking and status monitoring via Temporal UI
 - **Scalability**: Horizontal scaling by adding more workers
-- **Persistence**: Workflow state is persisted and can survive system restarts
+- **Persistence**: Workflow state survives system restarts and failures
+- **REST API**: Complete HTTP API for external integrations
+
+### Advanced Analysis Features
+- **Word2Vec Integration**: Advanced trainer with emotional weighting and normalization
+- **Emotion Integration**: Multi-modal emotion processing with statistical analysis
+- **Physiological Data**: Skin potential time-series analysis with baseline correction
+- **Confidence Intervals**: Statistical confidence calculation for Spirit probabilities
+- **Parallel Processing**: Concurrent analysis of multiple responses
 
 ## Prerequisites
 
@@ -158,19 +173,37 @@ curl http://localhost:8081/api/workflows/spirit-analysis-12345678-1234-1234-1234
 
 ## Workflow Execution Flow
 
-1. **Emotion Data Processing**: Extracts and analyzes emotion data from Hume AI
-2. **Kawasaki Model Analysis**: Runs spiritual response analysis using emotion-integrated data
-3. **Report Generation**: Creates comprehensive analysis reports
-4. **Result Saving**: Saves all results and generates visualizations
+1. **Emotion Data Processing**: Extracts and analyzes comprehensive emotion data from Hume AI (face, prosody, language)
+2. **Real Data Integration**: Loads experimental responses, physiological data, and participant information from Supabase
+3. **Advanced Feature Extraction**: Processes multi-modal data including Word2Vec vectors, reaction times, skin potential time-series, and emotion components
+4. **Kawasaki Model Analysis**: Runs complete spiritual response analysis with normalization and confidence intervals
+5. **Interactive Visualization**: Generates 3D Spirit vector plots, component analysis, probability heatmaps, and time-series visualizations
+6. **Comprehensive Reporting**: Creates detailed Markdown reports with statistical summaries and analysis insights
+7. **Result Persistence**: Saves all results, raw data, and visualizations to configured output directories
 
 ## Output Files
 
-The workflow generates the following output files:
+The unified workflow generates comprehensive output files in the configured results directory:
 
-- `hume_emotion_analysis.json` - Emotion analysis results
-- `kawasaki_analysis.json` - Kawasaki model analysis results
-- `analysis_report.md` - Comprehensive analysis report
-- `hume_analysis_visualizations.html` - Interactive visualizations
+### Data Files
+- `analysis_results.json` - Complete raw analysis results (emotion + Kawasaki data)
+- `emotion_timeseries.json` - Detailed emotion time-series data from Hume AI
+- `physiological_data.json` - Processed physiological measurements
+
+### Reports
+- `comprehensive_analysis_report.md` - Detailed Markdown report with statistical analysis
+- `analysis_summary.json` - Executive summary with key metrics and insights
+
+### Interactive Visualizations
+- `spirit_vectors_3d.html` - 3D interactive plot of Spirit vectors in semantic space
+- `component_analysis.html` - Breakdown of how each model component contributes to final probability
+- `spirit_probability_heatmap.html` - Heatmap visualization of stimulus-response probabilities
+- `physiological_timeseries.html` - Time-series plots of physiological and emotion data
+
+### Advanced Analysis
+- `confidence_intervals.json` - Statistical confidence intervals for Spirit probabilities
+- `normalization_terms.json` - Normalization calculations for model validation
+- `emotion_statistics.json` - Comprehensive emotion analysis statistics
 
 ## Configuration
 

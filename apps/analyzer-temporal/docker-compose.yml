@@ -48,6 +48,23 @@ services:
       - spirit-network
     command: python api_server.py --host 0.0.0.0 --port 8081
 
+  analyzer-temporal-worker:
+    build: .
+    container_name: analyzer-temporal-worker
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - ./results:/app/results
+      - ./visualizations:/app/visualizations
+    depends_on:
+      - temporal
+    networks:
+      - spirit-network
+    command: python worker.py
+    deploy:
+      replicas: 2  # Scale workers as needed
+
 volumes:
   cassandra_data:
 

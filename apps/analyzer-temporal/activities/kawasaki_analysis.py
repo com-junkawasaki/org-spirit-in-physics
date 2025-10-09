@@ -37,71 +37,74 @@ class KawasakiAnalysisActivity(BaseActivity):
         stimulus_words: List[str] = None
     ) -> KawasakiResults:
         """
-        Run Kawasaki model analysis using Hume AI emotion data.
+        Run Kawasaki model analysis using Hume AI emotion data and real experimental data.
         """
         self.logger.info("Starting Kawasaki model analysis with Hume AI data...")
 
         if stimulus_words is None:
             # Default stimulus words from Jung test
             stimulus_words = [
-                'head', 'green', 'water', 'stick', 'death', 'long', 'ship',
-                'rich', 'marriage', 'house', 'tree', 'cold', 'mother', 'sing'
+                'head', 'green', 'water', 'death', 'mother', 'father', 'child',
+                'love', 'hate', 'joy', 'sadness', 'anger', 'fear', 'peace', 'war'
             ]
 
-        # Create mock responses for each stimulus word with emotion data
+        # Get real experimental data from database
+        from pipeline.data_loader import DataLoader
+        data_loader = DataLoader(self.config.supabase)
+
+        # Get all responses that need analysis
+        responses = data_loader.get_unprocessed_responses()
+        self.logger.info(f"Found {len(responses)} responses to analyze")
+
         analysis_results = []
 
-        for stimulus in stimulus_words:
-            # Create multiple response variations for richer analysis
-            response_variations = [
-                f"{stimulus}_response_1",  # Mock response
-                f"emotion_{stimulus}",     # Emotion-related response
-                f"feeling_{stimulus}",     # Feeling-related response
-            ]
+        for response in responses:
+            try:
+                self.logger.info(f"Processing response ID: {response['id']}")
 
-            for response in response_variations:
-                # Create mock response data
-                mock_response = self.create_mock_response_data(
-                    stimulus, response, reaction_time_ms=800 + len(stimulus) * 50
+                # Get experiment session for this response
+                experiment_session = data_loader.get_experiment_session_for_response(response['id'])
+
+                # Load emotion data for this session
+                emotion_timeseries = []
+                if experiment_session and emotion_results.emotion_timeseries:
+                    # Match emotion data by timestamp or session
+                    emotion_timeseries = [
+                        {
+                            'timestamp_offset_ms': data.timestamp_offset_ms,
+                            'source': data.source,
+                            'emotion_data': data.emotion_data
+                        } for data in emotion_results.emotion_timeseries
+                    ]
+
+                # Load physiological data
+                sp_timeseries = data_loader.load_skin_potential_data(response['id'])
+
+                # Extract features using real data
+                features = self.feature_extractor.extract_features_for_response(
+                    response, sp_timeseries, emotion_timeseries
                 )
 
-                # Create mock physiological data (empty for now)
-                sp_timeseries = []
+                # Run Kawasaki model
+                kawasaki_result = self.kawasaki_model.calculate(features)
 
-                # Use Hume AI emotion data
-                emotion_timeseries = [
-                    {
-                        'timestamp_offset_ms': data.timestamp_offset_ms,
-                        'source': data.source,
-                        'emotion_data': data.emotion_data
-                    } for data in emotion_results.emotion_timeseries
-                ]
+                # Create result with metadata
+                result_with_metadata = KawasakiAnalysisResult(
+                    p_value=kawasaki_result['p_value'],
+                    spirit_probability=kawasaki_result.get('spirit_probability', kawasaki_result['p_value']),
+                    confidence_interval=kawasaki_result.get('confidence_interval', [0.0, 1.0]),
+                    stimulus_word=response.get('stimulus_word', ''),
+                    response_word=response.get('response_word', ''),
+                    analysis_type='real_data_integrated',
+                    emotion_data_points=len(emotion_timeseries)
+                )
 
-                try:
-                    # Extract features
-                    features = self.feature_extractor.extract_features_for_response(
-                        self._mock_response_to_dict(mock_response), sp_timeseries, emotion_timeseries
-                    )
+                analysis_results.append(result_with_metadata)
+                self.logger.info(f"Successfully analyzed response {response['id']}")
 
-                    # Run Kawasaki model
-                    kawasaki_result = self.kawasaki_model.calculate(features)
-
-                    # Add metadata
-                    result_with_metadata = KawasakiAnalysisResult(
-                        p_value=kawasaki_result['p_value'],
-                        spirit_probability=kawasaki_result.get('spirit_probability', kawasaki_result['p_value']),
-                        confidence_interval=kawasaki_result.get('confidence_interval', [0.0, 1.0]),
-                        stimulus_word=stimulus,
-                        response_word=response,
-                        analysis_type='hume_integrated',
-                        emotion_data_points=len(emotion_timeseries)
-                    )
-
-                    analysis_results.append(result_with_metadata)
-
-                    self.logger.info(f"Completed analysis for {stimulus} -> {response}: P-value = {kawasaki_result['p_value']:.4f}")
-                except Exception as e:
-                    self.logger.error(f"Failed to analyze {stimulus} -> {response}: {e}")
+            except Exception as e:
+                self.logger.error(f"Failed to analyze response {response['id']}: {e}")
+                continue
 
         # Calculate overall statistics
         if analysis_results:

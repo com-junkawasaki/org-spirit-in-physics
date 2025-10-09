@@ -37,7 +37,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Temporal SDK
-    implementation("io.temporal:temporal-sdk:1.22.4")
+    implementation("io.temporal:temporal-sdk:1.24.0")
 
     // Validation
     implementation("org.valiktor:valiktor-core:0.12.0")

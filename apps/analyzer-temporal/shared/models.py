@@ -12,9 +12,10 @@ class Config(BaseModel):
     supabase: Dict[str, str]
     hume_ai: Dict[str, str]
     model_params: Dict[str, float]
-    word2vec: Dict[str, Optional[str]]
+    word2vec: Dict[str, Any]
     processing: Dict[str, Any]
     output: Dict[str, str]
+    analysis: Optional[Dict[str, Any]] = None
 
 
 class EmotionData(BaseModel):
