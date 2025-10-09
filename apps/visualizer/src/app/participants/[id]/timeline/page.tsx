@@ -68,7 +68,7 @@ export default function ParticipantTimelinePage() {
     value: count
   }))
 
-  const wordFrequencyData = Object.entries(event_analysis.word_frequency)
+  const wordFrequencyData = (Object.entries(event_analysis.word_frequency) as [string, number][])
     .sort(([,a], [,b]) => b - a)
     .slice(0, 20)
     .map(([word, frequency]) => ({ word, frequency }))

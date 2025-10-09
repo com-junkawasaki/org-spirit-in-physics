@@ -6,6 +6,7 @@ export interface AnalysisResult {
   stimulus_word: string
   response_word: string
   kawasaki_p_value: number
+  reaction_time_ms: number
   word2vec_component: number
   reaction_time_component: number
   skin_potential_component: number

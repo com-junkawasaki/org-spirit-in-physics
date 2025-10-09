@@ -26,6 +26,7 @@ function AdminDashboard() {
             </div>
             <nav className="flex space-x-8">
               <a href="/analytics" className="text-gray-500 hover:text-gray-900">分析結果</a>
+              <a href="/temporal" className="text-gray-500 hover:text-gray-900">Temporal管理</a>
               <a href="/experiments" className="text-gray-500 hover:text-gray-900">実験管理</a>
               <a href="/participants" className="text-gray-500 hover:text-gray-900">参加者管理</a>
               <a href="/data" className="text-gray-500 hover:text-gray-900">データ管理</a>
@@ -37,7 +38,7 @@ function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* システム概要ダッシュボード */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
           <SystemMetricCard
             title="総参加者数"
             value="11"
@@ -60,6 +61,12 @@ function AdminDashboard() {
             title="Hume AIデータポイント"
             value="657"
             change="+200"
+            changeType="increase"
+          />
+          <SystemMetricCard
+            title="アクティブワークフロー"
+            value="2"
+            change="+1"
             changeType="increase"
           />
         </div>
@@ -90,7 +97,12 @@ function AdminDashboard() {
         </div>
 
         {/* システムステータス */}
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <SystemStatusCard
+            title="Temporal Server"
+            status="healthy"
+            message="正常動作中 - ポート 7233, 8080, 5432"
+          />
           <SystemStatusCard
             title="Hume AI API"
             status="healthy"
@@ -110,7 +122,12 @@ function AdminDashboard() {
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
                 クイックアクション
               </h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <QuickActionButton
+                  title="Temporal管理"
+                  description="ワークフローサーバーの管理"
+                  action="/temporal"
+                />
                 <QuickActionButton
                   title="新しい実験を開始"
                   description="参加者を募集して実験を開始"

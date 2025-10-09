@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const participantId = params.id
+    const { id: participantId } = await params
 
     // For now, we'll create mock data based on our analysis
     // In a real implementation, this would integrate with the IntegratedDataPipeline

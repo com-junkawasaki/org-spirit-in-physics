@@ -395,29 +395,32 @@ export default function ParticipantCorrelationPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Object.entries(physiological_indicators.indicators).map(([indicator, stats]) => (
-                  <div key={indicator} className="space-y-2">
-                    <h4 className="font-semibold uppercase">{indicator}</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Mean</p>
-                        <p className="font-medium">{stats.mean.toFixed(3)}</p>
+                {Object.entries(physiological_indicators.indicators).map(([indicator, stats]) => {
+                  const indicatorStats = stats as { mean: number; std: number; min: number; max: number; median: number; count: number }
+                  return (
+                    <div key={indicator} className="space-y-2">
+                      <h4 className="font-semibold uppercase">{indicator}</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Mean</p>
+                          <p className="font-medium">{indicatorStats.mean.toFixed(3)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Std Dev</p>
+                          <p className="font-medium">{indicatorStats.std.toFixed(3)}</p>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Std Dev</p>
-                        <p className="font-medium">{stats.std.toFixed(3)}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Min</p>
-                        <p className="font-medium">{stats.min.toFixed(3)}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Max</p>
-                        <p className="font-medium">{stats.max.toFixed(3)}</p>
+                        <div>
+                          <p className="text-muted-foreground">Min</p>
+                          <p className="font-medium">{indicatorStats.min.toFixed(3)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Max</p>
+                          <p className="font-medium">{indicatorStats.max.toFixed(3)}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
