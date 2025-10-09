@@ -252,7 +252,7 @@ function SpiritProbabilityChart({ data }: { data: any[] }) {
           Spirit確率分布
         </h3>
         <div className="space-y-3">
-          {data.map((item, index) => (
+          {data.map((item) => (
             <div key={item.id} className="flex items-center">
               <div className="flex-1">
                 <div className="flex items-center justify-between text-sm">
@@ -443,7 +443,7 @@ function EmotionSummaryCard({
           <div>
             <span className="text-gray-600 block mb-2">主要感情:</span>
             <div className="flex flex-wrap gap-2">
-              {summary.topEmotions.map((emotion: string, index: number) => (
+              {summary.topEmotions.map((emotion: string) => (
                 <span
                   key={emotion}
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"

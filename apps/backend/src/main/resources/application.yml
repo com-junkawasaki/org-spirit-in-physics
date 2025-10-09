@@ -4,9 +4,9 @@ spring:
     name: spirit-in-physics-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/spirit_in_physics
-    username: postgres
-    password: password
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/spirit_in_physics}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -38,7 +38,7 @@ temporal:
 
 # Supabase Configuration (override with environment variables)
 supabase:
-  url: ${SUPABASE_URL:http://localhost:5432/spirit_in_physics}
+  url: ${SUPABASE_URL:jdbc:postgresql://localhost:5432/spirit_in_physics}
   username: ${SUPABASE_USERNAME:postgres}
   password: ${SUPABASE_PASSWORD:password}
 

@@ -235,7 +235,6 @@ function TemporalDashboard() {
             loading={statusLoading}
           />
           <TaskQueuesCard
-            queues={statusData?.workers.taskQueues || []}
             loading={statusLoading}
           />
         </div>
@@ -368,12 +367,6 @@ function WorkflowMetricCard({
   icon: string
   color: 'blue' | 'yellow' | 'green' | 'red'
 }) {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-700',
-    yellow: 'bg-yellow-50 text-yellow-700',
-    green: 'bg-green-50 text-green-700',
-    red: 'bg-red-50 text-red-700'
-  }
 
   return (
     <div className={`bg-white overflow-hidden shadow rounded-lg border-l-4 ${
@@ -611,10 +604,8 @@ function WorkerStatusCard({
  * タスクキューの詳細を表示するカードコンポーネント
  */
 function TaskQueuesCard({
-  queues,
   loading
 }: {
-  queues: string[]
   loading: boolean
 }) {
   if (loading) {

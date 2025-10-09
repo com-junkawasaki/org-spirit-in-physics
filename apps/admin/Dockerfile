@@ -1,26 +1,23 @@
-# Use Node.js 18 Alpine as base image
-FROM node:18-alpine
+# Use Node.js 20 Alpine as base image (required for Vite 7.1.7+)
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 
-# Install pnpm
-RUN npm install -g pnpm
-
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
+# Install dependencies using npm (since we have package-lock.json)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN pnpm build
+RUN npm run build
 
 # Expose port 3000
 EXPOSE 3000
 
 # Start the application in development mode
-CMD ["pnpm", "dev", "--host", "0.0.0.0"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
