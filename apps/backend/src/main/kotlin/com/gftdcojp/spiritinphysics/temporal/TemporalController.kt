@@ -264,9 +264,9 @@ class TemporalController {
     // Temporal サーバー起動
     private fun startTemporalServer(): Boolean {
         return try {
-            // analyzer-temporal ディレクトリで docker-compose up を実行
+            // analyzer ディレクトリで docker-compose up を実行
             val process = ProcessBuilder("docker-compose", "up", "-d")
-                .directory(java.io.File("../../analyzer-temporal"))
+                .directory(java.io.File("../../analyzer"))
                 .redirectErrorStream(true)
                 .start()
 
@@ -281,7 +281,7 @@ class TemporalController {
     private fun stopTemporalServer(): Boolean {
         return try {
             val process = ProcessBuilder("docker-compose", "down")
-                .directory(java.io.File("../../analyzer-temporal"))
+                .directory(java.io.File("../../analyzer"))
                 .redirectErrorStream(true)
                 .start()
 

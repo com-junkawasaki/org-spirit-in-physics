@@ -141,7 +141,7 @@ Events are projected into read-optimized views for querying.
 
 ## Integration with Analyzer Temporal
 
-The backend integrates with the Python-based `analyzer-temporal` service:
+The backend integrates with the Python-based `analyzer` service:
 
 1. **Event Trigger**: When an experiment session completes, an `ExperimentSessionCompletedEvent` is published
 2. **Workflow Start**: The `AnalysisService` listens for this event and starts a Temporal workflow

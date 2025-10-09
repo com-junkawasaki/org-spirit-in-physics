@@ -60,17 +60,17 @@ class EmotionAnalysisService(
         return participantIds.map { participantId ->
             try {
                 val result = analyzeAllParticipantVideos(participantId)
-                mapOf(
+                mapOf<String, Any>(
                     "participantId" to participantId,
                     "success" to true,
                     "result" to result,
                     "count" to result.size
                 )
             } catch (e: Exception) {
-                mapOf(
+                mapOf<String, Any>(
                     "participantId" to participantId,
                     "success" to false,
-                    "error" to e.message
+                    "error" to (e.message ?: "Unknown error")
                 )
             }
         }

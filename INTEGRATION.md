@@ -1,6 +1,6 @@
 # Spirit in Physics - System Integration Guide
 
-This document describes the integration between the Axon Framework backend and the Temporal-based analyzer-temporal system.
+This document describes the integration between the Axon Framework backend and the Temporal-based analyzer system.
 
 ## System Architecture
 
@@ -31,7 +31,7 @@ This document describes the integration between the Axon Framework backend and t
 
 ### 2. Backend → Analyzer Temporal
 - **Purpose**: Automated analysis workflow execution
-- **Integration**: REST API calls to analyzer-temporal
+- **Integration**: REST API calls to analyzer
 - **Trigger**: ExperimentSessionCompletedEvent
 
 ### 3. Visualizer → Backend
@@ -40,7 +40,7 @@ This document describes the integration between the Axon Framework backend and t
 - **Data Flow**: CQRS read models → Frontend components
 - **Features**: Dashboard stats, participant correlation analysis, timeline data, timeseries visualization
 
-The Axon Framework backend communicates with analyzer-temporal via REST API:
+The Axon Framework backend communicates with analyzer via REST API:
 
 #### Workflow Start
 When an experiment session completes, the backend automatically starts analysis:
@@ -61,7 +61,7 @@ fun on(event: ExperimentSessionCompletedEvent) {
 
 ### 2. Analyzer Temporal → Backend
 
-The analyzer-temporal service provides results back to the backend:
+The analyzer service provides results back to the backend:
 
 #### Result Format
 ```json
@@ -101,7 +101,7 @@ docker network create spirit-network
 
 2. **Start analyzer-temporal:**
 ```bash
-cd apps/analyzer-temporal
+cd apps/analyzer
 docker-compose up -d
 ```
 
@@ -227,7 +227,7 @@ val results = temporalWorkflowClient.getWorkflowResult(workflowId)
 2. **Rebuild services:**
    ```bash
    cd apps/backend && docker-compose build
-   cd apps/analyzer-temporal && docker-compose build
+   cd apps/analyzer && docker-compose build
    ```
 3. **Restart services:**
    ```bash

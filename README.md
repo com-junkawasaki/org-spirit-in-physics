@@ -99,7 +99,7 @@ spirit-in-physics/
 │   ├── patient/          # Patient experiment interface
 │   ├── researcher/       # Researcher dashboard
 │   ├── visualizer/       # Data visualization
-│   └── analyzer-temporal/# Python temporal workflows
+│   └── analyzer/# Python temporal workflows
 ├── docs/
 │   └── pact/            # Pact documentation
 ├── scripts/             # Development scripts

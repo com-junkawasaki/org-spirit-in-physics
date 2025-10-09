@@ -77,7 +77,7 @@ class ExperimentalDataService(
         """.trimIndent()
 
         return jdbcTemplate.query(sql, arrayOf(participantId)) { rs, _ ->
-            mapOf(
+            mapOf<String, Any?>(
                 "id" to rs.getString("id"),
                 "signature" to rs.getString("signature"),
                 "agreedAt" to rs.getTimestamp("agreed_at")?.toString(),
@@ -111,15 +111,15 @@ class ExperimentalDataService(
         // TODO: Implement emotion distribution
         val emotionDistribution = emptyMap<String, Int>()
 
-        return mapOf(
-            "totalParticipants" to stats["totalParticipants"],
-            "completedSessions" to stats["participantsWithSessionData"],
-            "completionRate" to stats["completionRate"],
+        return mapOf<String, Any>(
+            "totalParticipants" to (stats["totalParticipants"] ?: 0),
+            "completedSessions" to (stats["participantsWithSessionData"] ?: 0),
+            "completionRate" to (stats["completionRate"] ?: 0.0),
             "averageSessionDuration" to 2700, // Estimated 45 minutes in seconds
             "averageReactionTime" to averageReactionTime,
             "emotionDistribution" to emotionDistribution,
             "totalSessions" to 0, // TODO: Implement
-            "participantsWithVideo" to stats["participantsWithVideo"]
+            "participantsWithVideo" to (stats["participantsWithVideo"] ?: 0)
         )
     }
 
@@ -138,14 +138,14 @@ class ExperimentalDataService(
         """.trimIndent()
 
         return jdbcTemplate.query(sql) { rs, _ ->
-            mapOf(
+            mapOf<String, Any>(
                 "participantId" to rs.getString("participant_id"),
                 "sessionType" to "session-1", // Simplified
                 "stimulusWord" to rs.getString("stimulus_word"),
                 "responseWord" to rs.getString("response_word"),
                 "reactionTimeMs" to rs.getInt("reaction_time_ms"),
                 "isDelayed" to false, // TODO: Implement delay detection
-                "timestamp" to rs.getTimestamp("timestamp")?.toString()
+                "timestamp" to (rs.getTimestamp("timestamp")?.toString() ?: "")
             )
         }
     }
