@@ -135,10 +135,35 @@
     act: '統合時系列可視化システムの構築',
     summary: 'セッションデータ、生理データ、Hume AI感情データを統合した時系列可視化システムを設計・実装。SessionDataProcessorによる時系列イベント処理を基盤とし、単語応答パターン・時間帯分布・応答タイミングを統合分析。参加者ごとのデータ完全性評価システムを完成し、12名参加者のデータ品質を100点満点で評価可能に。科学的手法による霊性測定の時系列的理解を深化させ、実験データの多角的分析と可視化を実現。プロセスネットワークの最適化により、データインポート・解析・可視化の完全統合パイプラインを確立。',
   },
-  {
+    {
     // Merkle DAG: 物語.ナラティブ[25]
     act: 'Import機能の責任分割と統合',
     summary: 'analyzerからimporterへのimport機能の責任と権限を適切に分割・統合。importerアプリをデータインポート機能の単一責任源とし、analyzerアプリをデータ分析機能のみに特化。重複コードを排除し、依存関係を明確化（analyzer → importer）。プロセスネットワークの依存DAGを最小化し、SOLID原則に基づく安定したアーキテクチャを確立。科学的手法による霊性測定システムのデータ完全性を保証。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[26]
+    act: 'TerminusDBグラフデータベース移行の実現',
+    summary: 'リレーショナルデータベースSupabaseからRDFベースのグラフデータベースTerminusDBへの完全移行を達成。JSON-LDスキーマによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataクラスの定義と関係性モデリングを実施。WOQLクエリ言語を使用したデータ操作とRDF triplesによる柔軟なデータ表現を実現。科学データにおける複雑な関係性（参加者-実験-応答-刺激語-感情）の自然な表現が可能に。Gitのようなバージョン管理機能を活用したデータ変更履歴の追跡とコラボレーション機能を統合。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[27]
+    act: 'RDFグラフモデルによるデータ構造最適化',
+    summary: 'Supabaseのリレーショナル制約から解放され、RDF triplesによる柔軟なデータモデリングを実現。Participant-ResponseData間の多対多関係、感情データの動的拡張、研究データのメタデータ統合を自然に表現可能に。科学的手法による霊性測定のデータ構造がより表現豊かになり、Word2Vec意味ベクトル・Hume AI感情分析・生体データ・反応時間の統合が容易に。グラフ構造によるクエリ性能の向上と分析の柔軟性を獲得。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[28]
+    act: 'WOQLクエリ言語による高度なデータ操作',
+    summary: 'SQLからWOQL（Web Object Query Language）への移行により、複雑なグラフ走査と関係性ベースのクエリを実現。実験参加者の感情パターン分析、刺激語の意味的類似性探索、生体データと感情データの相関分析がWOQLのグラフクエリで効率的に実行可能に。科学データ分析における高度な関係性探索とパターン発見をサポートするクエリ言語基盤を確立。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[29]
+    act: 'データアクセス層の完全再構築',
+    summary: 'SupabaseManagerクラスからTerminusDBDataAccessクラスへの移行により、CRUD操作のWOQLベース実装を完了。Participant・ExperimentSession・ResponseDataの作成・読み取り・更新・削除機能をRDFグラフ操作で実現。データ移行スクリプトによるSupabaseからTerminusDBへの完全データ移行を達成し、システムのダウンタイムなしでのデータベース移行を成功。科学データの一貫性と完全性を維持。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[30]
+    act: 'TemporalワークフローとTerminusDBの統合',
+    summary: 'Hume AI感情分析ワークフローにおけるSupabaseActivitiesからTerminusDBActivitiesへの移行を完了。RDFベースのデータ格納とWOQLクエリによる非同期処理パイプラインの安定化を実現。実験データのインポート・感情分析・結果格納の一気通貫プロセスがTerminusDBのグラフ構造で最適化され、科学的手法による霊性測定システムの処理効率が向上。',
   },
     ],
     // この物語から派生したプロセスネットワークグラフ
@@ -236,31 +261,37 @@
           name: '技術基盤 (Technical Foundation)',
           description: '研究の信頼性と拡張性を保証する技術インフラ',
           sub_processes: [
-            'Supabase Row Level Securityによるデータ保護',
-            'PostgreSQLリレーショナルデータベース完全移行',
-            '静的型付きスキーマによる開発効率向上',
+            'SupabaseからTerminusDBへの完全移行',
+            'RDFグラフデータベースによる柔軟なデータモデリング',
+            'JSON-LDスキーマによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseData定義',
+            'WOQLクエリ言語による高度なデータ操作',
+            'Gitのようなバージョン管理によるデータ変更履歴追跡',
+            'RDF triplesによる複雑な関係性表現',
+            'TerminusDB Row Level Securityによるデータ保護',
             '非同期ジョブ管理と依存関係解決',
             '中間結果のキャッシュシステム',
             '自動リトライとエラーハンドリング',
             'RESTful APIによる外部連携',
             'モニタリングとログ管理',
-            'Kuzu依存関係完全除去',
-            'データベースアーキテクチャ統一',
             'Import機能の責任分割と統合',
             'importerアプリをデータインポート単一責任源に',
             'analyzerアプリをデータ分析機能のみに特化',
             '重複コード排除と依存関係明確化',
             'プロセスネットワークグラフモデル実装',
-            'Merkle DAGによる状態管理'
+            'Merkle DAGによる状態管理',
+            'TerminusDBActivitiesによるTemporalワークフロー統合',
+            'RDFベースのHume AI感情データ格納',
+            'WOQLによる感情パターン分析クエリ',
+            'グラフ構造による相関分析最適化'
           ],
         },
       ],
     },
         metadata: {
-          version: '1.19.0',
+          version: '1.20.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: 'Import機能責任分割統合版',
+          merkle_root: 'TerminusDB移行統合版',
           last_updated: '2025-10-09',
           implemented_features: [
             '川崎モデルの数式実装',
@@ -403,7 +434,21 @@
             '1825件韻律予測データ統合',
             '100件単語刺激データ格納',
             '川崎モデル分析基盤確立',
-            '科学的手法による霊性測定データ完全性保証'
+            '科学的手法による霊性測定データ完全性保証',
+            'TerminusDBグラフデータベース完全移行',
+            'RDFベースParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataモデル',
+            'JSON-LDスキーマ定義と関係性モデリング',
+            'WOQLクエリ言語による高度なデータ操作',
+            'Gitバージョン管理によるデータ変更履歴追跡',
+            'RDF triplesによる複雑な関係性表現',
+            'TerminusDBDataAccessクラスによるCRUD操作',
+            'SupabaseからTerminusDBへの完全データ移行',
+            'TerminusDBActivitiesによるTemporalワークフロー統合',
+            'RDFベースのHume AI感情データ格納',
+            'WOQLによる感情パターン分析クエリ',
+            'グラフ構造による相関分析最適化',
+            'RDFグラフモデルによるデータ構造最適化',
+            '科学データにおける複雑な関係性の自然表現'
           ],
         },
   },
