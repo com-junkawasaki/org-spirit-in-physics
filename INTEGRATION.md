@@ -12,11 +12,11 @@ This document describes the integration between the Axon Framework backend and t
                                    │    Management         │
                                    └──────────────────────┘
                                             │
-                                            │ Event
+                                            │ REST API
                                             ▼
 ┌─────────────────┐    REST API    ┌──────────────────────┐
-│  Admin App      │◀───────────────│  Analyzer Temporal   │
-│   (React)       │                │  (Python/Temporal)   │
+│  Visualizer     │◀───────────────│  Analyzer Temporal   │
+│  (Next.js)      │                │  (Python/Temporal)   │
 └─────────────────┘                │  - Hume AI Analysis  │
                                    │  - Kawasaki Model    │
                                    └──────────────────────┘
@@ -24,7 +24,20 @@ This document describes the integration between the Axon Framework backend and t
 
 ## Integration Points
 
-### 1. Backend → Analyzer Temporal
+### 1. Patient App → Backend
+- **Purpose**: Experiment participation and data collection
+- **API**: REST endpoints for session management
+- **Data Flow**: Participant responses → Backend event store
+
+### 2. Backend → Analyzer Temporal
+- **Purpose**: Automated analysis workflow execution
+- **Integration**: REST API calls to analyzer-temporal
+- **Trigger**: ExperimentSessionCompletedEvent
+
+### 3. Visualizer → Backend
+- **Purpose**: Data visualization and analysis results display
+- **API**: `/api/visualizer/*` endpoints for dashboard data
+- **Data Flow**: CQRS read models → Frontend components
 
 The Axon Framework backend communicates with analyzer-temporal via REST API:
 

@@ -22,5 +22,5 @@ RUN pnpm build
 # Expose port 3000
 EXPOSE 3000
 
-# Start the application
-CMD ["pnpm", "start"]
+# Start the application in development mode
+CMD ["pnpm", "dev", "--host", "0.0.0.0"]
