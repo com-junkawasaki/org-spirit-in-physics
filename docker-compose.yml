@@ -200,7 +200,7 @@ services:
     build: ./apps/visualizer
     container_name: spirit-visualizer
     ports:
-      - "3003:3000"
+      - "3003:25260"
     environment:
       - NEXT_PUBLIC_BACKEND_API_URL=https://backend:8080/api
       - BACKEND_API_URL=https://backend:8080/api
@@ -215,7 +215,7 @@ services:
     labels:
       - dev.orbstack.https-port=3003
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:25260/api/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -243,7 +243,7 @@ services:
     build: ./apps/patient
     container_name: spirit-patient
     ports:
-      - "3002:3000"
+      - "3002:25250"
     environment:
       - NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
@@ -257,6 +257,11 @@ services:
       - spirit-network
     labels:
       - dev.orbstack.https-port=3002
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:25250/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   postgres-data:

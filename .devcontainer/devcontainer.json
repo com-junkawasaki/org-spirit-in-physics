@@ -1,8 +1,7 @@
 {
   "name": "Spirit in Physics - Full Stack Development",
   "dockerComposeFile": [
-    "../docker-compose.yml",
-    "../docker-compose.override.yml"
+    "../docker-compose.yml"
   ],
   "service": "dev-backend",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
