@@ -1,0 +1,82 @@
+[
+  {
+    "id": "95c57d74-7281-470b-832b-0f42b1627eec",
+    "stimulus_word": "蛙",
+    "response_word": "蛙",
+    "reaction_time_ms": 3062,
+    "spirit_probability": 0.6230920728705072,
+    "created_at": "2025-08-01T10:04:57.969+00:00"
+  },
+  {
+    "id": "2afb2dec-7472-4c93-bd0b-08a1c5a14e62",
+    "stimulus_word": "別れる",
+    "response_word": "別れる",
+    "reaction_time_ms": 2007,
+    "spirit_probability": 0.66627868307283,
+    "created_at": "2025-08-01T10:05:03.974+00:00"
+  },
+  {
+    "id": "d723094d-1545-451c-a237-5dfe82e0672f",
+    "stimulus_word": "踊る",
+    "response_word": "踊る",
+    "reaction_time_ms": 1316,
+    "spirit_probability": 0.7158894645941278,
+    "created_at": "2025-08-01T10:05:09.981+00:00"
+  },
+  {
+    "id": "3432a3da-6ffb-493a-af4d-0c206a8ba6ec",
+    "stimulus_word": "塗る",
+    "response_word": "塗る",
+    "reaction_time_ms": 1645,
+    "spirit_probability": 0.6890359168241966,
+    "created_at": "2025-08-01T10:05:15.985+00:00"
+  },
+  {
+    "id": "e223fbd2-1d59-4db9-acf7-e7f1ea510cfd",
+    "stimulus_word": "毛皮",
+    "response_word": "毛皮",
+    "reaction_time_ms": 3224,
+    "spirit_probability": 0.6183712121212122,
+    "created_at": "2025-08-01T10:05:21.99+00:00"
+  },
+  {
+    "id": "624d13b0-5399-44e4-b202-8d57114bc2a5",
+    "stimulus_word": "山",
+    "response_word": "山",
+    "reaction_time_ms": 2419,
+    "spirit_probability": 0.6462415911085113,
+    "created_at": "2025-08-01T10:05:27.995+00:00"
+  },
+  {
+    "id": "e406f119-7cf5-40c3-bf69-5a51b9bba8a6",
+    "stimulus_word": "怖がる",
+    "response_word": "怖がる",
+    "reaction_time_ms": 2264,
+    "spirit_probability": 0.6531862745098039,
+    "created_at": "2025-08-01T10:05:33.999+00:00"
+  },
+  {
+    "id": "fd5f2d24-f731-44a2-981e-af8a2998035d",
+    "stimulus_word": "幸運",
+    "response_word": "幸運",
+    "reaction_time_ms": 2311,
+    "spirit_probability": 0.6510117789187557,
+    "created_at": "2025-08-01T10:05:40.002+00:00"
+  },
+  {
+    "id": "e4845702-c9f7-44a0-a29c-4d16030b4922",
+    "stimulus_word": "茎",
+    "response_word": "茎",
+    "reaction_time_ms": 3423,
+    "spirit_probability": 0.613045444268596,
+    "created_at": "2025-08-01T10:05:46.007+00:00"
+  },
+  {
+    "id": "0013fdcd-9778-4402-a3d3-e12220a69702",
+    "stimulus_word": "空腹",
+    "response_word": "空腹",
+    "reaction_time_ms": 4185,
+    "spirit_probability": 0.5964320154291225,
+    "created_at": "2025-08-01T10:05:52.012+00:00"
+  }
+]
