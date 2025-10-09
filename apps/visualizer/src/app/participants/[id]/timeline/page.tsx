@@ -1,6 +1,9 @@
-import { useParams } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+'use client'
+
+import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
@@ -41,21 +44,35 @@ interface VisualizationData {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
 
 export default function ParticipantTimelinePage() {
-  const { id: participantId } = useParams({ from: '/participants/$id/timeline' })
+  const params = useParams()
+  const participantId = params.id as string
 
-  const { data: timelineData, isLoading, error } = useQuery({
-    queryKey: ['participant-timeline', participantId],
-    queryFn: async () => {
-      const response = await fetch(`/api/participants/${participantId}/timeline`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch timeline data')
+  const [timelineData, setTimelineData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchTimelineData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch(`/api/participants/${participantId}/timeline`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch timeline data')
+        }
+        const data = await response.json()
+        setTimelineData(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setIsLoading(false)
       }
-      return response.json()
     }
-  })
+
+    fetchTimelineData()
+  }, [participantId])
 
   if (isLoading) return <div className="p-8">Loading timeline analysis...</div>
-  if (error) return <div className="p-8">Error loading timeline data</div>
+  if (error) return <div className="p-8">Error loading timeline data: {error}</div>
   if (!timelineData) return <div className="p-8">No timeline data found</div>
 
   const { session_info, event_analysis } = timelineData

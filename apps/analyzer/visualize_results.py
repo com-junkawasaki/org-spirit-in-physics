@@ -248,7 +248,7 @@ def create_participant_comparison(results):
     for bar, prob in zip(bars1, avg_spirit_probs):
         height = bar.get_height()
         ax1.text(bar.get_x() + bar.get_width()/2., height,
-                f'{prob".3f"}', ha='center', va='bottom')
+                f'{prob:.3f}', ha='center', va='bottom')
 
     # Reaction time comparison
     bars2 = ax2.bar(range(len(participant_ids)), avg_reaction_times, alpha=0.7, color='lightcoral')
@@ -263,7 +263,7 @@ def create_participant_comparison(results):
     for bar, time in zip(bars2, avg_reaction_times):
         height = bar.get_height()
         ax2.text(bar.get_x() + bar.get_width()/2., height,
-                f'{time".0f"}', ha='center', va='bottom')
+                f'{time:.0f}', ha='center', va='bottom')
 
     plt.tight_layout()
     plt.savefig('participant_comparison.png', dpi=300, bbox_inches='tight')
@@ -342,11 +342,11 @@ def create_participant_detailed_report(results, output_file="participant_detaile
                     <div class="summary-label">総応答数</div>
                 </div>
                 <div class="summary-card">
-                    <div class="summary-value">{overall_stats.get('avg_spirit_prob', 0)".4f"}</div>
+                    <div class="summary-value">{overall_stats.get('avg_spirit_prob', 0):.4f}</div>
                     <div class="summary-label">全体平均Spirit確率</div>
                 </div>
                 <div class="summary-card">
-                    <div class="summary-value">{overall_stats.get('max_spirit_prob', 0)".4f"}</div>
+                    <div class="summary-value">{overall_stats.get('max_spirit_prob', 0):.4f}</div>
                     <div class="summary-label">最高Spirit確率</div>
                 </div>
             </div>
@@ -388,9 +388,9 @@ def create_participant_detailed_report(results, output_file="participant_detaile
                             <td>{pid}</td>
                             <td>{age}歳・{gender}</td>
                             <td>{stats['num_responses']}</td>
-                            <td>{stats['avg_spirit_prob']".4f"}</td>
-                            <td>{stats['spirit_std']".4f"}</td>
-                            <td>{stats['avg_reaction_time']".0f"}</td>
+                            <td>{stats['avg_spirit_prob']:.4f}</td>
+                            <td>{stats['spirit_std']:.4f}</td>
+                            <td>{stats['avg_reaction_time']:.0f}</td>
                             <td>{stats['unique_stimulus_words']}</td>
                             <td>{stats['unique_response_words']}</td>
                         </tr>
@@ -415,7 +415,7 @@ def create_participant_detailed_report(results, output_file="participant_detaile
                 <h2>🏆 高性能参加者</h2>
                 <p>Spirit確率の高い上位参加者:</p>
                 <ol>
-    "
+    """
 
     # Add top 3 participants
     top_3 = sorted_stats[:3]
@@ -427,7 +427,7 @@ def create_participant_detailed_report(results, output_file="participant_detaile
 
         html_content += f"<li><strong>参加者 {pid}</strong> ({age}歳・{gender}) - Spirit確率: {stats['avg_spirit_prob']:.4f}</li>"
 
-    html_content += f"""
+    html_content += """
                 </ol>
             </div>
 

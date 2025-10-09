@@ -1,5 +1,7 @@
-import { useParams } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+'use client'
+
+import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -71,22 +73,45 @@ const STRENGTH_COLORS = {
 }
 
 export default function ParticipantCorrelationPage() {
-  const { id: participantId } = useParams({ from: '/participants/$id/correlation' })
+  const params = useParams()
+  const participantId = params.id as string
 
-  const { data: correlationData, isLoading, error } = useQuery({
-    queryKey: ['participant-correlation', participantId],
-    queryFn: async () => {
-      const response = await fetch(`/api/participants/${participantId}/correlation`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch correlation data')
+  const [correlationData, setCorrelationData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCorrelationData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch(`/api/participants/${participantId}/correlation`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch correlation data')
+        }
+        const data = await response.json()
+        setCorrelationData(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setIsLoading(false)
       }
-      return response.json()
     }
-  })
+
+    fetchCorrelationData()
+  }, [participantId])
 
   if (isLoading) return <div className="p-8">Loading correlation analysis...</div>
-  if (error) return <div className="p-8">Error loading correlation data</div>
+  if (error) return <div className="p-8">Error loading correlation data: {error}</div>
   if (!correlationData) return <div className="p-8">No correlation data found</div>
+
+  const { component_correlations, time_window_analysis, physiological_emotion_correlations } = correlationData
+
+  // Check if the API endpoint exists for correlation
+  const correlationExists = component_correlations && Object.keys(component_correlations).length > 0
+
+  if (!correlationExists) {
+    return <div className="p-8">Correlation analysis not yet available for this participant</div>
+  }
 
   const { physiological_indicators, emotion_categories, significant_findings } = correlationData
 
