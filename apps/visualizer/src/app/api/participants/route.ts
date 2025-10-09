@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       // Calculate average spirit probability
       const analysisResults = participant.analysisRuns.flatMap(run => run.results)
       const averageSpiritProbability = analysisResults.length > 0
-        ? analysisResults.reduce((sum, result) => sum + result.kawasaki_p_value, 0) / analysisResults.length
+        ? analysisResults.reduce((sum, result) => sum + result.p_value, 0) / analysisResults.length
         : 0
 
       return {

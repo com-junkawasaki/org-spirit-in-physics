@@ -3,9 +3,9 @@ import { SupabaseClient } from '@supabase/supabase-js'
 
 export interface AnalysisResult {
   id: string
-  stimulus_word: string
-  response_word: string
-  kawasaki_p_value: number
+  stimulus_word?: string
+  response_word?: string
+  p_value: number
   word2vec_component: number
   reaction_time_component: number
   skin_potential_component: number
@@ -129,37 +129,72 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function getAllParticipants(): Promise<ParticipantData[]> {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
-  const { data: participants } = await supabase
+  const { data: participants, error: participantsError } = await supabase
     .from('participants')
-    .select(`
-      id,
-      name,
-      participant_experiment_sessions (
-        id,
-        session_id,
-        session_type,
-        start_time,
-        end_time
-      ),
-      analysis_runs (
-        id,
-        run_id,
-        status,
-        created_at,
-        completed_at
+    .select('id, name')
+
+  if (!participants || participantsError) {
+    console.error('Failed to fetch participants:', participantsError)
+    return []
+  }
+
+  // For each participant, get their sessions and analysis runs
+  const participantsWithData = await Promise.all(
+    participants.map(async (participant) => {
+      const [sessionsResult, analysisRunsResult] = await Promise.all([
+        supabase
+          .from('participant_experiment_sessions')
+          .select('id, session_id, session_type, start_time, end_time')
+          .eq('participant_id', participant.id),
+        supabase
+          .from('analysis_runs')
+          .select('id, run_id, status, created_at, completed_at')
+          .eq('participant_id', participant.id)
+      ])
+
+      // Get responses for each session
+      const sessionsWithResponses = await Promise.all(
+        (sessionsResult.data || []).map(async (session) => {
+          const { data: responses } = await supabase
+            .from('participant_response_data')
+            .select('id, stimulus_word, response_word, reaction_time_ms, skin_potential, emotion, emotion_confidence')
+            .eq('participant_id', participant.id)
+            .eq('experiment_id', session.id)
+
+          return {
+            ...session,
+            responses: responses || []
+          }
+        })
       )
-    `)
 
-  if (!participants) return []
+      // Get results for each analysis run
+      const analysisRunsWithResults = await Promise.all(
+        (analysisRunsResult.data || []).map(async (run) => {
+          const { data: results } = await supabase
+            .from('analysis_results')
+            .select('id, p_value, word2vec_component, reaction_time_component, skin_potential_component, emotion_component, emotion_data, physiological_data, created_at')
+            .eq('run_id', run.id)
 
-  return participants.map(p => ({
-    id: p.id,
-    name: p.name,
-    sessions: (p.participant_experiment_sessions as any[]) || [],
-    analysisRuns: (p.analysis_runs as any[]) || []
-  }))
+          return {
+            ...run,
+            results: results || []
+          }
+        })
+      )
+
+      return {
+        id: participant.id,
+        name: participant.name,
+        sessions: sessionsWithResponses,
+        analysisRuns: analysisRunsWithResults
+      }
+    })
+  )
+
+  return participantsWithData
 }
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {

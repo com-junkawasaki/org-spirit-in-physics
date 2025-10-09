@@ -23,15 +23,21 @@ interface Participant {
 
 async function getParticipants(): Promise<Participant[]> {
   try {
+    console.log('Fetching participants from:', '/api/participants')
     const response = await fetch('/api/participants', {
       cache: 'no-store'
     })
 
+    console.log('Response status:', response.status)
+    console.log('Response ok:', response.ok)
+
     if (!response.ok) {
-      throw new Error('Failed to fetch participants')
+      throw new Error(`Failed to fetch participants: ${response.status} ${response.statusText}`)
     }
 
-    return response.json()
+    const data = await response.json()
+    console.log('Fetched data:', data)
+    return data
   } catch (error) {
     console.error('Failed to fetch participants:', error)
     return []
