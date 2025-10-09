@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
+import { Users, Activity, Brain, ArrowRight, BarChart3 } from 'lucide-react'
 
 interface Participant {
   id: string
@@ -271,12 +271,22 @@ export default function ParticipantsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          被験者一覧
-        </h1>
-        <p className="text-muted-foreground">
-          Spirit in Physics実験に参加した被験者の検査結果一覧です。各被験者の詳細な分析結果を確認できます。
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              被験者一覧
+            </h1>
+            <p className="text-muted-foreground">
+              Spirit in Physics実験に参加した被験者の検査結果一覧です。各被験者の詳細な分析結果を確認できます。
+            </p>
+          </div>
+          <Link href="/participants/analysis-report">
+            <Button variant="outline">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              分析レポート
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <ParticipantsTableWrapper />
