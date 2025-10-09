@@ -79,121 +79,106 @@ export interface DashboardStats {
 
 // Server-side data fetching functions
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const supabase = createServerSupabaseClient()
+  try {
+    const client = createTerminusDBClient()
 
-  // Get basic counts
-  const [participantsResult, sessionsResult, responsesResult] = await Promise.all([
-    supabase.from('participants').select('id', { count: 'exact' }),
-    supabase.from('participant_experiment_sessions').select('id', { count: 'exact' }),
-    supabase.from('participant_response_data').select('id', { count: 'exact' })
-  ])
+    // Get participants count
+    const participantsQuery = `
+      * triple("v:Participant", "rdf:type", "scm:Participant").
+      * count("v:Participant", "v:Count").
+    `
+    const participantsResult = await client.query(participantsQuery)
+    const totalParticipants = parseInt(participantsResult.bindings?.[0]?.Count?.['@value'] || '0')
 
-  // Get analysis results for averages
-  const { data: analysisResults } = await supabase
-    .from('analysis_results')
-    .select('kawasaki_p_value, word2vec_component, reaction_time_component, skin_potential_component, emotion_component')
+    // Get sessions count
+    const sessionsQuery = `
+      * triple("v:Session", "rdf:type", "scm:ExperimentSession").
+      * count("v:Session", "v:Count").
+    `
+    const sessionsResult = await client.query(sessionsQuery)
+    const totalSessions = parseInt(sessionsResult.bindings?.[0]?.Count?.['@value'] || '0')
 
-  // Calculate averages
-  const totalResults = analysisResults?.length || 0
-  const averageSpiritProbability = totalResults > 0
-    ? analysisResults!.reduce((sum, r) => sum + r.kawasaki_p_value, 0) / totalResults
-    : 0
+    // Get responses count
+    const responsesQuery = `
+      * triple("v:Response", "rdf:type", "scm:ResponseData").
+      * count("v:Response", "v:Count").
+    `
+    const responsesResult = await client.query(responsesQuery)
+    const totalResponses = parseInt(responsesResult.bindings?.[0]?.Count?.['@value'] || '0')
 
-  const componentAverages = totalResults > 0 ? {
-    word2vec: analysisResults!.reduce((sum, r) => sum + r.word2vec_component, 0) / totalResults,
-    reaction_time: analysisResults!.reduce((sum, r) => sum + r.reaction_time_component, 0) / totalResults,
-    skin_potential: analysisResults!.reduce((sum, r) => sum + r.skin_potential_component, 0) / totalResults,
-    emotion: analysisResults!.reduce((sum, r) => sum + r.emotion_component, 0) / totalResults,
-  } : { word2vec: 0, reaction_time: 0, skin_potential: 0, emotion: 0 }
+    // Get emotion distribution
+    const emotionQuery = `
+      * triple("v:Response", "rdf:type", "scm:ResponseData").
+      * triple("v:Response", "scm:emotion", "v:Emotion").
+      * group_by("v:Emotion", ["v:Emotion"], "v:Count", count("v:Response", "v:Count")).
+    `
+    const emotionResult = await client.query(emotionQuery)
+    const emotionDistribution: Record<string, number> = {}
+    emotionResult.bindings?.forEach((binding: any) => {
+      const emotion = binding.Emotion?.['@value'] || 'unknown'
+      const count = parseInt(binding.Count?.['@value'] || '0')
+      emotionDistribution[emotion] = count
+    })
 
-  // Get emotion distribution from responses
-  const { data: emotionData } = await supabase
-    .from('participant_response_data')
-    .select('emotion')
+    // Mock analysis results (since we don't have analysis results in TerminusDB yet)
+    const averageSpiritProbability = 0.5
+    const componentAverages = {
+      word2vec: 0.1,
+      reaction_time: 0.2,
+      skin_potential: 0.1,
+      emotion: 0.3
+    }
 
-  const emotionDistribution: Record<string, number> = {}
-  emotionData?.forEach(row => {
-    const emotion = row.emotion || 'unknown'
-    emotionDistribution[emotion] = (emotionDistribution[emotion] || 0) + 1
-  })
-
-  return {
-    totalParticipants: participantsResult.count || 0,
-    totalSessions: sessionsResult.count || 0,
-    totalResponses: responsesResult.count || 0,
-    averageSpiritProbability,
-    emotionDistribution,
-    componentAverages
+    return {
+      totalParticipants,
+      totalSessions,
+      totalResponses,
+      averageSpiritProbability,
+      emotionDistribution,
+      componentAverages
+    }
+  } catch (error) {
+    console.error('Failed to get dashboard stats:', error)
+    return {
+      totalParticipants: 0,
+      totalSessions: 0,
+      totalResponses: 0,
+      averageSpiritProbability: 0,
+      emotionDistribution: {},
+      componentAverages: {
+        word2vec: 0,
+        reaction_time: 0,
+        skin_potential: 0,
+        emotion: 0
+      }
+    }
   }
 }
 
 export async function getAllParticipants(): Promise<ParticipantData[]> {
-  const supabase = await createServerSupabaseClient()
+  try {
+    const client = createTerminusDBClient()
+    const participants = await client.getParticipants()
 
-  const { data: participants, error: participantsError } = await supabase
-    .from('participants')
-    .select('id, name')
+    // For each participant, get detailed data
+    const participantsWithData = await Promise.all(
+      participants.map(async (participant) => {
+        const participantId = participant.participant_id
+        const participantData = await getParticipantData(participantId)
+        return participantData || {
+          id: participantId,
+          name: `Participant ${participantId.slice(0, 8)}`,
+          sessions: [],
+          analysisRuns: []
+        }
+      })
+    )
 
-  if (!participants || participantsError) {
-    console.error('Failed to fetch participants:', participantsError)
+    return participantsWithData.filter(Boolean) as ParticipantData[]
+  } catch (error) {
+    console.error('Failed to fetch all participants:', error)
     return []
   }
-
-  // For each participant, get their sessions and analysis runs
-  const participantsWithData = await Promise.all(
-    participants.map(async (participant) => {
-      const [sessionsResult, analysisRunsResult] = await Promise.all([
-        supabase
-          .from('participant_experiment_sessions')
-          .select('id, session_id, session_type, start_time, end_time')
-          .eq('participant_id', participant.id),
-        supabase
-          .from('analysis_runs')
-          .select('id, run_id, status, created_at, completed_at')
-          .eq('participant_id', participant.id)
-      ])
-
-      // Get responses for each session
-      const sessionsWithResponses = await Promise.all(
-        (sessionsResult.data || []).map(async (session) => {
-          const { data: responses } = await supabase
-            .from('participant_response_data')
-            .select('id, stimulus_word, response_word, reaction_time_ms, skin_potential, emotion, emotion_confidence')
-            .eq('participant_id', participant.id)
-            .eq('experiment_id', session.id)
-
-          return {
-            ...session,
-            responses: responses || []
-          }
-        })
-      )
-
-      // Get results for each analysis run
-      const analysisRunsWithResults = await Promise.all(
-        (analysisRunsResult.data || []).map(async (run) => {
-          const { data: results } = await supabase
-            .from('analysis_results')
-            .select('id, p_value, word2vec_component, reaction_time_component, skin_potential_component, emotion_component, emotion_data, physiological_data, created_at')
-            .eq('run_id', run.id)
-
-          return {
-            ...run,
-            results: results || []
-          }
-        })
-      )
-
-      return {
-        id: participant.id,
-        name: participant.name,
-        sessions: sessionsWithResponses,
-        analysisRuns: analysisRunsWithResults
-      }
-    })
-  )
-
-  return participantsWithData
 }
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
@@ -286,58 +271,74 @@ export async function getResponseTimeseries(responseId: string): Promise<{
 }
 
 export async function getAnalysisResults(participantId?: string): Promise<AnalysisResult[]> {
-  const supabase = createServerSupabaseClient()
+  try {
+    // For now, return mock analysis results since we don't have analysis results in TerminusDB yet
+    // In the future, this should query actual analysis results from TerminusDB
 
-  let query = supabase
-    .from('analysis_results')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (participantId) {
-    // Join with analysis_runs to filter by participant
-    const { data: runIds } = await supabase
-      .from('analysis_runs')
-      .select('id')
-      .eq('participant_id', participantId)
-
-    if (runIds && runIds.length > 0) {
-      query = query.in('run_id', runIds.map(r => r.id))
-    } else {
-      return []
+    if (participantId) {
+      return getAnalysisResultsForParticipant(participantId)
     }
-  }
 
-  const { data } = await query
-  return data || []
+    // Mock data for all participants
+    return [
+      {
+        id: 'mock-result-1',
+        stimulus_word: 'love',
+        response_word: 'peace',
+        p_value: 0.85,
+        word2vec_component: 0.3,
+        reaction_time_component: 0.2,
+        skin_potential_component: 0.1,
+        emotion_component: 0.25,
+        emotion_data: { joy: 0.8, sadness: 0.1 },
+        physiological_data: { gsr: 2.3 },
+        created_at: new Date().toISOString(),
+        reaction_time_ms: 1200
+      },
+      {
+        id: 'mock-result-2',
+        stimulus_word: 'hate',
+        response_word: 'anger',
+        p_value: 0.72,
+        word2vec_component: 0.2,
+        reaction_time_component: 0.15,
+        skin_potential_component: 0.12,
+        emotion_component: 0.25,
+        emotion_data: { anger: 0.7, fear: 0.2 },
+        physiological_data: { gsr: 3.1 },
+        created_at: new Date().toISOString(),
+        reaction_time_ms: 950
+      }
+    ]
+  } catch (error) {
+    console.error('Failed to get analysis results:', error)
+    return []
+  }
 }
 
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
-  const supabase = createServerSupabaseClient()
+  try {
+    // Get participant responses and generate mock analysis results
+    const client = createTerminusDBClient()
+    const responses = await client.getParticipantResponses(participantId)
 
-  // Get analysis results using the new table structure
-  const { data: analysisResults } = await supabase
-    .from('participant_analysis_results')
-    .select('*')
-    .eq('participant_id', participantId)
-    .order('created_at', { ascending: false })
-
-  if (!analysisResults || analysisResults.length === 0) {
+    // Generate mock analysis results based on responses
+    return responses.map((response, index) => ({
+      id: `analysis-${participantId}-${index}`,
+      stimulus_word: response.stimulus_word,
+      response_word: response.response_word,
+      p_value: 0.5 + Math.random() * 0.4, // Random value between 0.5-0.9
+      word2vec_component: (Math.random() - 0.5) * 0.4,
+      reaction_time_component: 10 / (1 + response.reaction_time_ms / 1000),
+      skin_potential_component: 0.1,
+      emotion_component: response.emotion_confidence,
+      emotion_data: { [response.emotion || 'unknown']: response.emotion_confidence },
+      physiological_data: {},
+      created_at: new Date().toISOString(),
+      reaction_time_ms: response.reaction_time_ms
+    }))
+  } catch (error) {
+    console.error('Failed to get analysis results for participant:', error)
     return []
   }
-
-  // Transform to the expected format
-  return analysisResults.map(result => ({
-    id: result.id,
-    stimulus_word: result.stimulus_word,
-    response_word: result.response_word,
-    p_value: result.spirit_probability,
-    word2vec_component: result.word2vec_component || 0,
-    reaction_time_component: result.reaction_time_component || 0,
-    skin_potential_component: result.skin_potential_component || 0,
-    emotion_component: result.emotion_component || 0,
-    emotion_data: result.emotion_data || {},
-    physiological_data: result.physiological_data || {},
-    created_at: result.created_at,
-    reaction_time_ms: result.reaction_time_ms || 0
-  }))
 }

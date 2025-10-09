@@ -2,15 +2,16 @@ import argparse
 import yaml
 import logging
 import os
-from pipeline.data_loader import DataLoader
-from pipeline.emotion_processor import EmotionProcessor
-from pipeline.feature_extractor import FeatureExtractor
-from pipeline.kawasaki_model import KawasakiModel
-from pipeline.data_storer import DataStorer
-from pipeline.job_manager import JobManager, JobType, JobStatus
-from pipeline.physiological_processor import PhysiologicalProcessor
-from pipeline.hume_data_processor import HumeDataProcessor
-from visualization.spirit_visualizer import SpiritVisualizer
+
+from .pipeline.data_loader import DataLoader
+from .pipeline.emotion_processor import EmotionProcessor
+from .pipeline.feature_extractor import FeatureExtractor
+from .pipeline.kawasaki_model import KawasakiModel
+from .pipeline.data_storer import DataStorer
+from .pipeline.job_manager import JobManager, JobType, JobStatus
+from .pipeline.physiological_processor import PhysiologicalProcessor
+from .pipeline.hume_data_processor import HumeDataProcessor
+from .visualization.spirit_visualizer import SpiritVisualizer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

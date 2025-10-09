@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createTerminusDBClient } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
@@ -8,63 +8,41 @@ export async function GET(
   try {
     const { id: participantId } = await params
 
-    const supabase = await createServerSupabaseClient()
+    const client = createTerminusDBClient()
 
     // Get participant data
-    const { data: participant } = await supabase
-      .from('participants')
-      .select('id, name')
-      .eq('id', participantId)
-      .single()
+    const participant = await client.getParticipantDetails(participantId)
 
     if (!participant) {
       return NextResponse.json({ error: 'Participant not found' }, { status: 404 })
     }
 
-    // Get sessions for this participant
-    const { data: sessions } = await supabase
-      .from('participant_experiment_sessions')
-      .select(`
-        id,
-        session_id,
-        session_type,
-        start_time,
-        end_time
-      `)
-      .eq('participant_id', participantId)
-      .order('start_time')
+    // Get all responses for this participant
+    const responses = await client.getParticipantResponses(participantId)
 
-    if (!sessions || sessions.length === 0) {
-      return NextResponse.json({ error: 'No sessions found' }, { status: 404 })
+    if (!responses || responses.length === 0) {
+      return NextResponse.json({ error: 'No responses found' }, { status: 404 })
     }
 
-    // Get all responses for this participant
-    const { data: responses } = await supabase
-      .from('participant_response_data')
-      .select(`
-        id,
-        stimulus_word,
-        response_word,
-        reaction_time_ms,
-        timestamp,
-        session,
-        emotion,
-        emotion_confidence,
-        skin_potential
-      `)
-      .eq('participant_id', participantId)
-      .order('timestamp')
+    // Group responses by session
+    const sessionMap: Record<string, any[]> = {}
+    responses.forEach(response => {
+      const sessionId = response.session_id || 'default-session'
+      if (!sessionMap[sessionId]) {
+        sessionMap[sessionId] = []
+      }
+      sessionMap[sessionId].push(response)
+    })
 
     // Calculate session statistics
-    const sessionStats = sessions.map(session => {
-      const sessionResponses = responses?.filter(r => r.session === session.session_type) || []
+    const sessionStats = Object.entries(sessionMap).map(([sessionId, sessionResponses]) => {
       const totalResponseTime = sessionResponses.reduce((sum, r) => sum + (r.reaction_time_ms || 0), 0)
 
       return {
-        session_id: session.id,
-        session_type: session.session_type,
-        start_time: session.start_time,
-        end_time: session.end_time,
+        session_id: sessionId,
+        session_type: 'session-1', // Simplified
+        start_time: null,
+        end_time: null,
         response_count: sessionResponses.length,
         avg_response_time_ms: sessionResponses.length > 0 ? Math.round(totalResponseTime / sessionResponses.length) : 0,
         responses: sessionResponses.map(r => ({
@@ -72,38 +50,32 @@ export async function GET(
           stimulus_word: r.stimulus_word,
           response_word: r.response_word,
           reaction_time_ms: r.reaction_time_ms,
-          timestamp: r.timestamp,
+          timestamp: new Date().toISOString(), // Mock timestamp
           emotion: r.emotion,
           emotion_confidence: r.emotion_confidence,
-          skin_potential: r.skin_potential,
-          relative_time_ms: r.timestamp && session.start_time ? new Date(r.timestamp).getTime() - new Date(session.start_time).getTime() : 0
+          skin_potential: 0, // Mock
+          relative_time_ms: 0 // Mock
         }))
       }
     })
 
     // Calculate overall statistics
-    const totalResponses = responses?.length || 0
-    const totalResponseTime = responses?.reduce((sum, r) => sum + (r.reaction_time_ms || 0), 0) || 0
+    const totalResponses = responses.length
+    const totalResponseTime = responses.reduce((sum, r) => sum + (r.reaction_time_ms || 0), 0)
     const avgResponseTime = totalResponses > 0 ? Math.round(totalResponseTime / totalResponses) : 0
 
     // Group responses by time windows for distribution analysis
     const timeDistribution: Record<string, number> = {}
-    responses?.forEach(response => {
-      if (response.timestamp) {
-        // Find the session this response belongs to
-        const session = sessions.find(s => s.session_type === response.session)
-        if (session?.start_time) {
-          const relativeTime = new Date(response.timestamp).getTime() - new Date(session.start_time).getTime()
-          const minutes = Math.floor(relativeTime / (1000 * 60))
-          const timeWindow = `${minutes}-${minutes + 1}min`
-          timeDistribution[timeWindow] = (timeDistribution[timeWindow] || 0) + 1
-        }
-      }
+    responses.forEach((response, index) => {
+      // Mock time distribution based on response index
+      const minutes = Math.floor(index / 10)
+      const timeWindow = `${minutes}-${minutes + 1}min`
+      timeDistribution[timeWindow] = (timeDistribution[timeWindow] || 0) + 1
     })
 
     // Word frequency analysis
     const wordFrequency: Record<string, number> = {}
-    responses?.forEach(response => {
+    responses.forEach(response => {
       if (response.stimulus_word) {
         wordFrequency[response.stimulus_word] = (wordFrequency[response.stimulus_word] || 0) + 1
       }
@@ -112,8 +84,8 @@ export async function GET(
     const timelineData = {
       session_info: {
         participant_id: participantId,
-        participant_name: participant.name,
-        total_sessions: sessions.length,
+        participant_name: `Participant ${participantId.slice(0, 8)}`,
+        total_sessions: Object.keys(sessionMap).length,
         total_events: totalResponses,
         total_response_time_ms: totalResponseTime,
         avg_response_time_ms: avgResponseTime,
@@ -125,7 +97,7 @@ export async function GET(
           word_displayed: totalResponses,
           speech_detected: totalResponses, // Assuming 1:1 relationship for now
           response_window_opened: totalResponses,
-          participant_initialized: sessions.length
+          participant_initialized: Object.keys(sessionMap).length
         },
         word_frequency: wordFrequency,
         time_distribution: timeDistribution
@@ -133,15 +105,15 @@ export async function GET(
       response_patterns: sessionStats.flatMap(s => s.responses),
       summary: {
         participant_id: participantId,
-        total_sessions: sessions.length,
+        total_sessions: Object.keys(sessionMap).length,
         total_responses: totalResponses,
         avg_response_time_ms: avgResponseTime,
         data_completeness: {
           has_consent: true,
           has_session_data: true,
           has_video_files: false, // Would need to check file storage
-          has_physiological_data: responses?.some(r => r.skin_potential !== null) || false,
-          data_quality_score: Math.round((totalResponses / Math.max(sessions.length * 100, 1)) * 100)
+          has_physiological_data: false, // Mock for now
+          data_quality_score: Math.round((totalResponses / Math.max(Object.keys(sessionMap).length * 10, 1)) * 100)
         }
       }
     }

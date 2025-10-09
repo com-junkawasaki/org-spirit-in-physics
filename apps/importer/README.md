@@ -1,160 +1,131 @@
 # Spirit in Physics - Importer
 
-## TerminusDB Migration Complete
+## Current Implementation: Supabase-based Data Import
 
-This importer has been fully migrated from Supabase to **TerminusDB**, a powerful graph database that provides:
-
-- **RDF-based data modeling** for complex relationships
-- **WOQL query language** for advanced graph traversals
-- **Git-like versioning** for data change tracking
-- **JSON-LD schema definitions** for structured data
+This importer handles data collection and import operations using **Supabase** as the primary database. The system is designed to work alongside the analyzer app, which uses TerminusDB for analysis operations.
 
 ## Architecture Overview
 
-### Data Model (RDF Graph)
-- **Participant**: Experiment participants with demographics
-- **Consent**: Participant consent information
-- **ExperimentSession**: Individual experiment sessions
-- **WordStimulus**: Stimulus words used in experiments
-- **ResponseData**: Participant responses with reaction times, emotions, and physiological data
+### Data Model (Relational)
+- **participants**: Experiment participants with demographics
+- **participant_consents**: Participant consent information
+- **participant_experiment_sessions**: Individual experiment sessions
+- **participant_response_data**: Participant responses with reaction times
+- **video_files**: Video recordings from experiments
+- **emotion_analyses**: Hume AI emotion analysis results
+- **emotions**: Individual emotion predictions
 
-### Relationships
-- Participant → has_consent → Consent
-- Participant → has_session → ExperimentSession
-- Participant → has_response → ResponseData
-- ResponseData → belongs_to_session → ExperimentSession
-- ResponseData → uses_stimulus → WordStimulus
+### Key Components
 
-## Key Components
+### 1. Data Import Scripts
+- `import_hume_data.py`: Import Hume AI emotion analysis results
+- `import_hume_participants.py`: Import participant data
+- `import_response_data.py`: Import experiment response data
+- `import_to_supabase.py`: General Supabase import utilities
 
-### 1. TerminusDB Client (`terminusdb_client.py`)
-Core client for database operations using WOQL queries.
+### 2. Data Access Layer (`src/pipeline/data_loader.py`)
+Supabase-based data loading for experiment data.
 
-### 2. Data Import (`import_to_terminusdb.py`)
-Import experimental data from various sources into TerminusDB.
+### 3. Hume AI Integration
+- `run_hume_jobs.py`: Execute Hume AI emotion analysis jobs
+- `src/pipeline/emotion_processor.py`: Hume AI API client
+- `src/pipeline/hume_data_processor.py`: Process Hume AI results
 
-### 3. Data Access Layer (`src/terminusdb_data_access.py`)
-High-level CRUD operations for all data entities.
+### 4. Migration Tools
+- `migrate_supabase_to_terminusdb.py`: Migrate data from Supabase to TerminusDB
+- `terminusdb_client.py`: TerminusDB client for migration
 
-### 4. Migration Script (`migrate_supabase_to_terminusdb.py`)
-Migrate existing Supabase data to TerminusDB.
-
-### 5. Temporal Activities (`src/activities/terminusdb_activities.py`)
-Workflow activities for Hume AI emotion analysis integration.
+### 5. Temporal Workflows (`src/activities/`)
+Asynchronous processing workflows for Hume AI analysis.
 
 ## Setup
 
 1. **Install Dependencies:**
    ```bash
    cd apps/importer
-   pnpm install
+   pip install -r requirements.txt
    ```
 
-2. **Configure TerminusDB:**
-   Update `config.yaml` with TerminusDB connection details:
+2. **Configure Supabase:**
+   Update `config.yaml` with Supabase connection details:
    ```yaml
-   terminusdb:
-     url: "http://localhost:6363"
-     user: "admin"
-     password: "root"
-   ```
-
-3. **Load Schema:**
-   ```bash
-   python -c "from terminusdb_client import TerminusDBClient; client = TerminusDBClient(); client.connect(); client.load_schema('terminusdb_schema.jsonld')"
+   supabase:
+     url: "https://your-project.supabase.co"
+     service_role_key: "your-service-role-key"
    ```
 
 ## Usage
 
-### Import Data
+### Import Participant Data
 ```bash
-python import_to_terminusdb.py
+python import_hume_participants.py
 ```
 
-### Migrate from Supabase
+### Import Response Data
+```bash
+python import_response_data.py
+```
+
+### Run Hume AI Analysis Jobs
+```bash
+python run_hume_jobs.py
+```
+
+### Import Hume AI Results
+```bash
+python import_hume_data.py
+```
+
+## Database Schema
+
+### Core Tables
+- `participants`: Basic participant information
+- `participant_consents`: Consent records
+- `participant_experiment_sessions`: Experiment sessions
+- `participant_response_data`: Word association responses
+- `video_files`: Video recordings metadata
+- `emotion_analyses`: Hume AI job results
+- `emotions`: Individual emotion predictions
+
+### Relationships
+```
+participants → participant_consents
+participants → participant_experiment_sessions
+participants → participant_response_data
+participant_response_data → participant_experiment_sessions
+participant_experiment_sessions → emotion_analyses
+emotion_analyses → emotions
+```
+
+## Integration with Analyzer
+
+The importer works alongside the analyzer app:
+
+- **Importer (Supabase)**: Data collection, storage, and preprocessing
+- **Analyzer (TerminusDB)**: Data analysis, modeling, and visualization
+
+Data flows from importer to analyzer through migration scripts when needed.
+
+## Hume AI Integration
+
+### Job Execution
+1. Videos are uploaded to dataset/partners/
+2. `run_hume_jobs.py` submits videos to Hume AI
+3. Results are stored as JSON in dataset/hume_data_organized/
+4. `import_hume_data.py` loads results into Supabase
+
+### Emotion Processing
+- Face analysis for emotional expressions
+- Prosody analysis for vocal emotions
+- Language analysis for semantic content
+- Integrated emotion scores for Spirit model
+
+## Migration Path
+
+The system includes migration tools to move from Supabase to TerminusDB when needed:
+
 ```bash
 python migrate_supabase_to_terminusdb.py
 ```
 
-### Query Data
-```python
-from src.terminusdb_data_access import TerminusDBDataAccess
-
-config = {
-    "url": "http://localhost:6363",
-    "user": "admin",
-    "password": "root",
-    "database_id": "spirit_in_physics"
-}
-
-data_access = TerminusDBDataAccess(config)
-data_access.connect()
-
-# Get participants
-participants = data_access.get_participants()
-
-# Get response data
-responses = data_access.get_response_data(participant_id="participant_001")
-```
-
-## WOQL Query Examples
-
-### Find Participants with High Spirit Scores
-```python
-query = WOQLQuery().woql_and(
-    WOQLQuery().triple("v:Participant", "rdf:type", "scm:Participant"),
-    WOQLQuery().triple("v:Participant", "scm:id", "v:Id"),
-    WOQLQuery().triple("v:Response", "belongs_to_participant", "v:Participant"),
-    WOQLQuery().triple("v:Response", "scm:emotion_confidence", "v:Confidence"),
-    WOQLQuery().greater("v:Confidence", 0.8)
-)
-```
-
-### Graph Traversal for Emotion Patterns
-```python
-query = WOQLQuery().woql_and(
-    WOQLQuery().triple("v:Participant", "has_response", "v:Response"),
-    WOQLQuery().triple("v:Response", "belongs_to_session", "v:Session"),
-    WOQLQuery().triple("v:Response", "uses_stimulus", "v:Stimulus"),
-    WOQLQuery().triple("v:Stimulus", "scm:word", "v:Word"),
-    WOQLQuery().triple("v:Response", "scm:emotion", "v:Emotion")
-)
-```
-
-## Benefits of TerminusDB Migration
-
-1. **Flexible Relationships**: Natural representation of complex data relationships
-2. **Advanced Queries**: Graph traversal capabilities for pattern discovery
-3. **Version Control**: Git-like versioning for data changes
-4. **Scalability**: Efficient handling of connected data structures
-5. **Extensibility**: Easy addition of new relationship types and properties
-
-## Previous Supabase Implementation
-
-The system was previously built on Supabase (PostgreSQL) with a relational schema. Key differences:
-
-| Aspect | Supabase (Previous) | TerminusDB (Current) |
-|--------|-------------------|---------------------|
-| Data Model | Relational tables | RDF triples |
-| Query Language | SQL | WOQL |
-| Relationships | Foreign keys | Named edges |
-| Schema | Fixed DDL | JSON-LD flexible |
-| Versioning | Manual migrations | Git-like built-in |
-| Extensibility | ALTER TABLE | Dynamic properties |
-
-## Migration Status
-
-✅ **Completed:**
-- RDF schema design (`terminusdb_schema.jsonld`)
-- TerminusDB client implementation
-- Data import scripts conversion
-- Temporal workflow activities
-- Data access layer (CRUD operations)
-- Migration script from Supabase
-- Story narrative updates
-
-🔄 **Next Steps:**
-- Performance benchmarking
-- Query optimization
-- Advanced analytics queries
-- API endpoint updates
+This enables future transition to graph database for complex relationship analysis.

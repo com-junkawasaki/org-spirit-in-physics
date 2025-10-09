@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createTerminusDBClient } from '@/lib/supabase'
 
 interface AnalysisResultData {
   participant_id: string
@@ -29,19 +29,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createServerSupabaseClient()
+    const client = createTerminusDBClient()
 
-    // If participantId is provided, validate it exists
+    // Validate participant exists in TerminusDB
     if (participantId) {
-      const { data: participant } = await supabase
-        .from('participants')
-        .select('id')
-        .eq('id', participantId)
-        .single()
-
-      if (!participant) {
+      try {
+        await client.getParticipantDetails(participantId)
+      } catch (error) {
         return NextResponse.json(
-          { error: 'Participant not found' },
+          { error: 'Participant not found in TerminusDB' },
           { status: 404 }
         )
       }
@@ -51,59 +47,20 @@ export async function POST(request: NextRequest) {
     const validatedResults: AnalysisResultData[] = []
 
     for (const result of results) {
-      // Find the corresponding experiment_id and word_stimulus_id
-      let experimentId = result.experiment_id
-      let wordStimulusId = result.word_stimulus_id
-
-      // If not provided, try to find them based on participant and timestamp
-      if (!experimentId || !wordStimulusId) {
-        const participantIdToUse = result.participant_id || participantId
-        if (!participantIdToUse) {
-          return NextResponse.json(
-            { error: 'participant_id is required for each result or as a query parameter' },
-            { status: 400 }
-          )
-        }
-
-        // Find the experiment session for this participant
-        const { data: session } = await supabase
-          .from('participant_experiment_sessions')
-          .select('id')
-          .eq('participant_id', participantIdToUse)
-          .order('start_time', { ascending: false })
-          .limit(1)
-          .single()
-
-        if (!session) {
-          return NextResponse.json(
-            { error: `No experiment session found for participant ${participantIdToUse}` },
-            { status: 404 }
-          )
-        }
-
-        experimentId = session.id
-
-        // Find the word stimulus
-        const { data: wordStimulus } = await supabase
-          .from('word_stimuli')
-          .select('id')
-          .eq('word', result.stimulus_word)
-          .single()
-
-        if (!wordStimulus) {
-          return NextResponse.json(
-            { error: `Word stimulus not found: ${result.stimulus_word}` },
-            { status: 404 }
-          )
-        }
-
-        wordStimulusId = wordStimulus.id
+      // For now, we don't have experiment sessions or word stimuli in TerminusDB
+      // So we'll use simplified validation
+      const participantIdToUse = result.participant_id || participantId
+      if (!participantIdToUse) {
+        return NextResponse.json(
+          { error: 'participant_id is required for each result or as a query parameter' },
+          { status: 400 }
+        )
       }
 
       validatedResults.push({
-        participant_id: result.participant_id || participantId,
-        experiment_id: experimentId,
-        word_stimulus_id: wordStimulusId,
+        participant_id: participantIdToUse,
+        experiment_id: result.experiment_id || 'default-session',
+        word_stimulus_id: result.word_stimulus_id || 1,
         stimulus_word: result.stimulus_word,
         response_word: result.response_word,
         reaction_time_ms: result.reaction_time_ms,
@@ -117,30 +74,21 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Insert the results into the database
-    const { data, error } = await supabase
-      .from('participant_analysis_results')
-      .insert(validatedResults)
-      .select()
-
-    if (error) {
-      console.error('Error inserting analysis results:', error)
-      return NextResponse.json(
-        { error: 'Failed to insert analysis results', details: error.message },
-        { status: 500 }
-      )
-    }
+    // Note: TerminusDB doesn't have analysis results storage yet
+    // This is a placeholder for future implementation
+    console.log(`Would import ${validatedResults.length} analysis results to TerminusDB`)
 
     return NextResponse.json({
-      message: `Successfully imported ${data.length} analysis results`,
-      count: data.length,
-      results: data
+      message: `Analysis results import prepared for ${validatedResults.length} results (TerminusDB storage not yet implemented)`,
+      count: validatedResults.length,
+      results: validatedResults.map(r => ({ ...r, id: `mock-${Date.now()}` })),
+      note: 'TerminusDB analysis results storage will be implemented in future updates'
     })
 
   } catch (error) {
     console.error('Failed to import analysis results:', error)
     return NextResponse.json(
-      { error: 'Failed to import analysis results', details: error.message },
+      { error: 'Failed to import analysis results', details: (error as Error).message },
       { status: 500 }
     )
   }

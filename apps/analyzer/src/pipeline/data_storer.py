@@ -4,6 +4,8 @@ import uuid
 from datetime import datetime
 
 class DataStorer:
+    """Data storer for analyzer using TerminusDB"""
+
     def __init__(self, config):
         self.client = WOQLClient(
             server=config['url'],
@@ -12,105 +14,75 @@ class DataStorer:
         )
         self.database_id = config['database_id']
         self.client.connect(self.database_id)
-        logging.info("DataStorer initialized and TerminusDB connected.")
+        logging.info("DataStorer initialized and TerminusDB client connected.")
 
-    def create_analysis_run(self, model_version: str, parameters: dict, notes: str) -> str:
-        """Logs a new analysis run and returns its ID."""
-        logging.info(f"Creating new analysis run for model version {model_version}.")
-
+    def create_analysis_run(self, model_version, model_params, notes=""):
+        """Create a new analysis run"""
         run_id = str(uuid.uuid4())
-        run_iri = f"terminusdb:///data/AnalysisRun/{run_id}"
-
-        run_doc = {
-            "@type": "AnalysisRun",
-            "@id": run_iri,
-            "id": run_id,
-            "model_version": model_version,
-            "parameters": str(parameters),  # Store as string for now
-            "notes": notes,
-            "status": "running",
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
-        }
+        timestamp = datetime.now().isoformat()
 
         try:
-            query = WOQLQuery().insert(run_doc)
-            self.client.query(query)
-            logging.info(f"Analysis run created with ID: {run_id}")
+            # Create analysis run node
+            query = WOQLQuery().woql_and(
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisRun/{run_id}", "rdf:type", "scm:AnalysisRun"),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisRun/{run_id}", "scm:id", run_id),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisRun/{run_id}", "scm:model_version", model_version),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisRun/{run_id}", "scm:model_params", str(model_params)),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisRun/{run_id}", "scm:notes", notes),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisRun/{run_id}", "scm:created_at", timestamp)
+            )
+
+            result = self.client.query(query)
+            logging.info(f"Created analysis run with ID: {run_id}")
             return run_id
+
         except Exception as e:
             logging.error(f"Failed to create analysis run: {e}")
-            raise Exception("Could not create analysis run in TerminusDB.")
+            return None
 
-    def store_emotion_data(self, response_id: str, emotion_timeseries: list):
-        """Stores emotion time-series data."""
-        logging.info(f"Storing emotion data for response ID: {response_id}")
-
-        response_iri = f"terminusdb:///data/ResponseData/{response_id}"
-
-        for item in emotion_timeseries:
-            emotion_id = f"emotion_{response_id}_{item['timestamp_offset_ms']}"
-            emotion_iri = f"terminusdb:///data/EmotionData/{emotion_id}"
-
-            emotion_doc = {
-                "@type": "EmotionData",
-                "@id": emotion_iri,
-                "id": emotion_id,
-                "response_id": response_id,
-                "timestamp_offset_ms": item['timestamp_offset_ms'],
-                "source": item.get('source', 'hume_ai'),
-                "emotion_data": str(item['emotion_data']),  # Store as string
-                "belongs_to_response": response_iri,
-                "created_at": datetime.now().isoformat()
-            }
-
-            try:
-                query = WOQLQuery().woql_and(
-                    WOQLQuery().insert(emotion_doc),
-                    WOQLQuery().link(response_iri, "has_emotion_data", emotion_iri)
-                )
-                self.client.query(query)
-            except Exception as e:
-                logging.warning(f"Exception storing emotion data for response {response_id}: {e}")
-                # Continue with other records even if one fails
-
-    def store_analysis_result(self, run_id: str, response_id: str, result: dict):
-        """Stores the final result of a model calculation."""
-        logging.info(f"Storing analysis result for response ID: {response_id}")
-
-        # Extract components from nested structure
-        components = result.get('components', {})
-
-        result_id = str(uuid.uuid4())
-        result_iri = f"terminusdb:///data/AnalysisResult/{result_id}"
-        run_iri = f"terminusdb:///data/AnalysisRun/{run_id}"
-        response_iri = f"terminusdb:///data/ResponseData/{response_id}"
-
-        result_doc = {
-            "@type": "AnalysisResult",
-            "@id": result_iri,
-            "id": result_id,
-            "p_value": result.get('p_value'),
-            "word2vec_component": components.get('word2vec'),
-            "reaction_time_component": components.get('reaction_time'),
-            "skin_potential_component": components.get('skin_potential'),
-            "emotion_component": components.get('emotion'),
-            "raw_inputs": str(result),  # Store full result as string
-            "belongs_to_run": run_iri,
-            "belongs_to_response": response_iri,
-            "created_at": datetime.now().isoformat()
-        }
-
-        # Remove None values
-        result_doc = {k: v for k, v in result_doc.items() if v is not None}
-
+    def store_emotion_data(self, response_id, emotion_timeseries_data):
+        """Store emotion analysis data for a response"""
         try:
+            # Store emotion data as JSON
+            import json
+            emotion_json = json.dumps(emotion_timeseries_data)
+
             query = WOQLQuery().woql_and(
-                WOQLQuery().insert(result_doc),
-                WOQLQuery().link(run_iri, "has_result", result_iri),
-                WOQLQuery().link(response_iri, "has_analysis_result", result_iri)
+                WOQLQuery().insert(f"terminusdb:///data/ResponseData/{response_id}", "scm:emotion_data", emotion_json)
             )
-            self.client.query(query)
-            logging.info(f"Successfully stored analysis result for response {response_id}")
+
+            result = self.client.query(query)
+            logging.info(f"Stored emotion data for response {response_id}")
+
         except Exception as e:
-            logging.error(f"Exception storing analysis result for response {response_id}: {e}")
+            logging.error(f"Failed to store emotion data for response {response_id}: {e}")
+
+    def store_analysis_result(self, run_id, response_id, result):
+        """Store analysis result"""
+        try:
+            timestamp = datetime.now().isoformat()
+
+            # Extract components from result
+            p_value = result.get('p_value', 0.0)
+            components = result.get('components', {})
+            raw_inputs = result.get('raw_inputs', {})
+
+            query = WOQLQuery().woql_and(
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "rdf:type", "scm:AnalysisResult"),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "scm:id", f"{response_id}_{run_id}"),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "belongs_to_run", f"terminusdb:///data/AnalysisRun/{run_id}"),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "belongs_to_response", f"terminusdb:///data/ResponseData/{response_id}"),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "scm:p_value", p_value),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "scm:word2vec_component", components.get('word2vec', 0.0)),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "scm:reaction_time_component", components.get('reaction_time', 0.0)),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "scm:skin_potential_component", components.get('skin_potential', 0.0)),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "scm:emotion_component", components.get('emotion', 0.0)),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "scm:raw_inputs", str(raw_inputs)),
+                WOQLQuery().insert(f"terminusdb:///data/AnalysisResult/{response_id}_{run_id}", "scm:created_at", timestamp)
+            )
+
+            result_query = self.client.query(query)
+            logging.info(f"Stored analysis result for response {response_id} in run {run_id}")
+
+        except Exception as e:
+            logging.error(f"Failed to store analysis result for response {response_id}: {e}")

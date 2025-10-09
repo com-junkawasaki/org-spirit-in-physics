@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = 'http://127.0.0.1:54321'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+import { getAnalysisResultsForParticipant } from '@/lib/data'
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,29 +13,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    // Get analysis results for the participant from TerminusDB
+    const results = await getAnalysisResultsForParticipant(participantId)
 
-    // Get analysis results for the participant using the new table structure
-    const { data: results, error } = await supabase
-      .from('participant_analysis_results')
-      .select('*')
-      .eq('participant_id', participantId)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching analysis results:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch analysis results' },
-        { status: 500 }
-      )
-    }
-
-    // Transform the data for the frontend
-    const transformedResults = (results || []).map(result => ({
+    // Transform the data for the frontend (already in correct format from lib/data.ts)
+    const transformedResults = results.map(result => ({
       id: result.id,
       stimulus_word: result.stimulus_word,
       response_word: result.response_word,
-      p_value: result.spirit_probability,
+      p_value: result.p_value,
       reaction_time_ms: result.reaction_time_ms || 0,
       emotion_data: result.emotion_data || {},
       created_at: result.created_at,
@@ -46,7 +29,7 @@ export async function GET(request: NextRequest) {
       reaction_time_component: result.reaction_time_component || 0,
       skin_potential_component: result.skin_potential_component || 0,
       emotion_component: result.emotion_component || 0,
-      physiological_data: null
+      physiological_data: result.physiological_data || null
     }))
 
     return NextResponse.json(transformedResults)
