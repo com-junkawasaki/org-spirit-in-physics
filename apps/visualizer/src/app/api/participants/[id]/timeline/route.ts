@@ -76,7 +76,7 @@ export async function GET(
           emotion: r.emotion,
           emotion_confidence: r.emotion_confidence,
           skin_potential: r.skin_potential,
-          relative_time_ms: r.timestamp ? new Date(r.timestamp).getTime() - new Date(session.start_time || 0).getTime() : 0
+          relative_time_ms: r.timestamp && session.start_time ? new Date(r.timestamp).getTime() - new Date(session.start_time).getTime() : 0
         }))
       }
     })
@@ -89,11 +89,15 @@ export async function GET(
     // Group responses by time windows for distribution analysis
     const timeDistribution: Record<string, number> = {}
     responses?.forEach(response => {
-      if (response.timestamp && sessions[0]?.start_time) {
-        const relativeTime = new Date(response.timestamp).getTime() - new Date(sessions[0].start_time).getTime()
-        const minutes = Math.floor(relativeTime / (1000 * 60))
-        const timeWindow = `${minutes}-${minutes + 1}min`
-        timeDistribution[timeWindow] = (timeDistribution[timeWindow] || 0) + 1
+      if (response.timestamp) {
+        // Find the session this response belongs to
+        const session = sessions.find(s => s.session_type === response.session)
+        if (session?.start_time) {
+          const relativeTime = new Date(response.timestamp).getTime() - new Date(session.start_time).getTime()
+          const minutes = Math.floor(relativeTime / (1000 * 60))
+          const timeWindow = `${minutes}-${minutes + 1}min`
+          timeDistribution[timeWindow] = (timeDistribution[timeWindow] || 0) + 1
+        }
       }
     })
 

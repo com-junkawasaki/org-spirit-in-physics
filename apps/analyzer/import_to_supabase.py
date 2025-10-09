@@ -119,15 +119,17 @@ def process_session_data(participant_id: str, session_data: dict, supabase: Clie
             # Store word display info for later matching with speech_detected
             word_key = payload.get("key")
             if word_key:
-                # Find corresponding speech_detected event
-                for speech_event in events:
+                # Find corresponding speech_detected event (look ahead in the events)
+                event_index = events.index(event)
+                for i in range(event_index + 1, len(events)):
+                    speech_event = events[i]
                     if (speech_event.get("type") == "speech_detected" and
                         speech_event.get("payload", {}).get("key") == word_key):
                         speech_payload = speech_event.get("payload", {})
                         speech_timestamp = parse_timestamp(speech_event.get("timestamp"))
 
-                        # Calculate reaction time
-                        reaction_time = speech_event.get("timestamp") - event.get("timestamp")
+                        # Calculate reaction time (ensure it's positive)
+                        reaction_time_ms = max(0, speech_event.get("timestamp") - event.get("timestamp"))
 
                         word_data = {
                             "id": str(uuid.uuid4()),
@@ -135,7 +137,7 @@ def process_session_data(participant_id: str, session_data: dict, supabase: Clie
                             "experiment_id": sessions[session_num]["id"] if session_num and session_num in sessions else str(uuid.uuid4()),
                             "stimulus_word": payload.get("word", ""),
                             "response_word": speech_payload.get("word", ""),
-                            "reaction_time_ms": reaction_time,
+                            "reaction_time_ms": reaction_time_ms,
                             "session": f"session-{session_num}" if session_num else "session-1",
                             "timestamp": timestamp,
                             "created_at": timestamp,
