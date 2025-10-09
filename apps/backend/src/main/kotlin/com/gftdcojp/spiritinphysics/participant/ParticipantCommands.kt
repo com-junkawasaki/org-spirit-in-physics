@@ -6,8 +6,8 @@ import java.util.*
 
 data class CreateParticipantCommand(
     val participantId: UUID? = null,
-    val name: String,
-    val email: String
+    val name: String? = null,
+    val email: String? = null
 )
 
 data class UpdateParticipantCommand(
@@ -18,7 +18,7 @@ data class UpdateParticipantCommand(
 
 data class ConsentParticipantCommand(
     val participantId: UUID,
-    val consentGivenAt: LocalDateTime = LocalDateTime.now(),
+    val consentGivenAt: LocalDateTime,
     val consentVersion: String
 )
 

@@ -52,8 +52,3 @@ data class Participant(
     }
 }
 
-enum class ParticipantStatus {
-    PENDING_CONSENT,
-    ACTIVE,
-    DEACTIVATED
-}

@@ -3,6 +3,7 @@ package com.gftdcojp.spiritinphysics.participant
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.time.LocalDateTime
 import java.util.*
 
 @RestController
@@ -30,41 +31,29 @@ class ParticipantController(
     fun giveConsent(
         @PathVariable participantId: UUID,
         @RequestBody request: ConsentRequest
-    ): CompletableFuture<ResponseEntity<Void>> {
-        val command = ConsentParticipantCommand(
-            participantId = participantId,
-            consentVersion = request.consentVersion
-        )
-
-        return commandGateway.send<Unit>(command)
-            .thenApply { ResponseEntity.ok().build() }
+    ): ResponseEntity<Void> {
+        participantService.giveConsent(participantId, request).get()
+        return ResponseEntity.ok().build()
     }
 
     @DeleteMapping("/{participantId}")
     fun deactivateParticipant(
         @PathVariable participantId: UUID,
         @RequestParam reason: String? = null
-    ): CompletableFuture<ResponseEntity<Void>> {
-        val command = DeactivateParticipantCommand(
-            participantId = participantId,
-            reason = reason
-        )
-
-        return commandGateway.send<Unit>(command)
-            .thenApply { ResponseEntity.ok().build() }
+    ): ResponseEntity<Void> {
+        val request = DeactivateParticipantRequest(reason = reason ?: "User requested deactivation")
+        participantService.deactivateParticipant(participantId, request).get()
+        return ResponseEntity.ok().build()
     }
 
     @GetMapping("/{participantId}")
-    fun getParticipant(@PathVariable participantId: UUID): CompletableFuture<ResponseEntity<ParticipantEntity>> {
-        val query = GetParticipantQuery(participantId)
-        return queryGateway.query(query, ParticipantEntity::class.java)
-            .thenApply { participant ->
-                if (participant != null) {
-                    ResponseEntity.ok(participant)
-                } else {
-                    ResponseEntity.notFound().build()
-                }
-            }
+    fun getParticipant(@PathVariable participantId: UUID): ResponseEntity<ParticipantEntity?> {
+        val participant = participantService.getParticipant(participantId).get()
+        return if (participant != null) {
+            ResponseEntity.ok(participant)
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
     @GetMapping
@@ -72,24 +61,21 @@ class ParticipantController(
         @RequestParam status: ParticipantStatus? = null,
         @RequestParam page: Int = 0,
         @RequestParam size: Int = 20
-    ): CompletableFuture<ResponseEntity<List<ParticipantEntity>>> {
-        val query = if (status != null) {
-            GetParticipantsByStatusQuery(status)
+    ): ResponseEntity<List<ParticipantEntity>> {
+        val participants = participantService.getAllParticipants().get()
+        val filteredParticipants = if (status != null) {
+            participants.filter { it.status == status }
         } else {
-            GetAllParticipantsQuery(page, size)
+            participants
         }
-
-        return queryGateway.query(query, List::class.java)
-            .thenApply { participants ->
-                ResponseEntity.ok(participants as List<ParticipantEntity>)
-            }
+        return ResponseEntity.ok(filteredParticipants)
     }
 
     @GetMapping("/count/active")
-    fun getActiveParticipantCount(): CompletableFuture<ResponseEntity<Long>> {
-        val query = GetActiveParticipantCountQuery()
-        return queryGateway.query(query, Long::class.java)
-            .thenApply { count -> ResponseEntity.ok(count) }
+    fun getActiveParticipantCount(): ResponseEntity<Long> {
+        val participants = participantService.getAllParticipants().get()
+        val activeCount = participants.count { it.status == ParticipantStatus.ACTIVE }.toLong()
+        return ResponseEntity.ok(activeCount)
     }
 }
 
@@ -105,5 +91,10 @@ data class UpdateParticipantRequest(
 )
 
 data class ConsentRequest(
+    val consentGivenAt: LocalDateTime = LocalDateTime.now(),
     val consentVersion: String
+)
+
+data class DeactivateParticipantRequest(
+    val reason: String? = null
 )
