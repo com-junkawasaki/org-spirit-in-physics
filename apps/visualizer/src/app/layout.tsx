@@ -1,14 +1,13 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 
-// Use Inter font with fallback to prevent build-time fetch issues
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  preload: false,
-  fallback: ['system-ui', 'sans-serif']
-})
+// Use system fonts to avoid Google Fonts fetch during build
+const inter = {
+  className: 'font-sans',
+  style: {
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  }
+}
 
 export const metadata: Metadata = {
   title: 'Spirit in Physics - Analysis Dashboard',

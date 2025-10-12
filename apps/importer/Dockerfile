@@ -26,4 +26,4 @@ COPY . .
 EXPOSE 8001
 
 # Start the importer worker
-CMD ["python", "src/run_worker.py"]
+CMD ["python", "-m", "src.run_worker"]

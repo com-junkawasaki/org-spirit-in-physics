@@ -8,7 +8,7 @@ import { Button } from './ui/button'
 import { RefreshCw, Download, ZoomIn } from 'lucide-react'
 
 // Dynamically import Plotly to avoid SSR issues
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
+const Plot = dynamic(() => import('react-plotly.js'), { ssr: false }) as any
 
 interface DashboardOverviewProps {
   className?: string

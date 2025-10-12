@@ -14,7 +14,7 @@ class TerminusDBClient {
     this.config = config
   }
 
-  private async query(woqlQuery: string): Promise<any> {
+  async query(woqlQuery: string): Promise<any> {
     try {
       const response = await fetch(`${this.config.url}/api/query/${this.config.databaseId}`, {
         method: 'POST',

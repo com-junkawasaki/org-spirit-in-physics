@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
       stimulus_word: result.stimulus_word,
       response_word: result.response_word,
       p_value: result.p_value,
-      reaction_time_ms: result.reaction_time_ms || 0,
       emotion_data: result.emotion_data || {},
       created_at: result.created_at,
       word2vec_component: result.word2vec_component || 0,

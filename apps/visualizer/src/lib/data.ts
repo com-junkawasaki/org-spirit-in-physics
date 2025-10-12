@@ -12,6 +12,7 @@ export interface AnalysisResult {
   emotion_data: any
   physiological_data: any
   created_at: string
+  reaction_time_ms?: number
 }
 
 export interface ParticipantData {

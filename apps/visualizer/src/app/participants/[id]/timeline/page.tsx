@@ -14,6 +14,8 @@ interface SessionInfo {
   duration_ms: number
   word_count: number
   avg_response_time_ms: number
+  participant_name?: string
+  total_sessions?: number
 }
 
 interface EventAnalysis {
@@ -90,7 +92,7 @@ export default function ParticipantTimelinePage() {
   if (error) return <div className="p-8">Error loading timeline data: {error}</div>
   if (!timelineData) return <div className="p-8">No timeline data found</div>
 
-  const { session_info = {}, sessions = [], event_analysis = {} } = timelineData
+  const { session_info = {} as SessionInfo, sessions = [], event_analysis = {} as EventAnalysis } = timelineData
 
   // Prepare chart data
   const eventTypeData = Object.entries(event_analysis?.event_types || {}).map(([type, count]) => ({
@@ -140,7 +142,7 @@ export default function ParticipantTimelinePage() {
         <div>
           <h1 className="text-3xl font-bold">Participant Timeline Analysis</h1>
           <p className="text-muted-foreground">
-            {session_info.participant_name || `Participant ${participantId.slice(0, 8)}...`} - Interactive session timeline with word stimuli, response times, and emotional analysis
+            {(session_info as any).participant_name || `Participant ${participantId.slice(0, 8)}...`} - Interactive session timeline with word stimuli, response times, and emotional analysis
           </p>
         </div>
         <Badge variant="secondary" className="text-lg px-4 py-2">
@@ -226,7 +228,7 @@ export default function ParticipantTimelinePage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name}: ${(Number(percent) * 100).toFixed(0)}%`}
                     outerRadius={120}
                     fill="#8884d8"
                     dataKey="value"
@@ -411,10 +413,10 @@ export default function ParticipantTimelinePage() {
                               <YAxis dataKey="reactionTime" />
                               <Tooltip
                                 labelFormatter={(value) => `Time: ${Math.round(value as number)}s`}
-                                formatter={(value, _props) => [
-                                  `${value}ms`,
-                                  `${_props.payload?.stimulusWord} → ${_props.payload?.responseWord}`
-                                ]}
+                                 formatter={(value, _props) => [
+                                   `${value}ms`,
+                                   `${(_props as any).payload?.stimulusWord} → ${(_props as any).payload?.responseWord}`
+                                 ]}
                               />
                               <Scatter dataKey="reactionTime" fill="#8884d8" />
                             </ScatterChart>
@@ -462,7 +464,7 @@ export default function ParticipantTimelinePage() {
                       <CardContent>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                           {session.responses.slice(0, 20).map((response, index) => (
-                            <div key={`${response.id}-${index}`} className="flex items-center justify-between p-2 border rounded">
+                            <div key={`response-${index}`} className="flex items-center justify-between p-2 border rounded">
                               <div className="flex-1">
                                 <span className="font-medium">{response.stimulusWord}</span>
                                 <span className="mx-2">→</span>

@@ -22,6 +22,35 @@ COPY env.docker .env
 # Copy source code
 COPY . .
 
+# Create config.yaml from environment variables
+RUN echo "terminusdb:" > config.yaml && \
+    echo "  url: \"$TERMINUSDB_URL\"" >> config.yaml && \
+    echo "  user: \"$TERMINUSDB_USER\"" >> config.yaml && \
+    echo "  password: \"$TERMINUSDB_PASSWORD\"" >> config.yaml && \
+    echo "  database_id: \"$DATABASE_ID\"" >> config.yaml && \
+    echo "" >> config.yaml && \
+    echo "supabase:" >> config.yaml && \
+    echo "  url: \"$SUPABASE_URL\"" >> config.yaml && \
+    echo "  service_role_key: \"$SUPABASE_SERVICE_ROLE_KEY\"" >> config.yaml && \
+    echo "" >> config.yaml && \
+    echo "hume_ai:" >> config.yaml && \
+    echo "  api_key: \"$HUME_API_KEY\"" >> config.yaml && \
+    echo "" >> config.yaml && \
+    echo "model_params:" >> config.yaml && \
+    echo "  alpha: $ALPHA" >> config.yaml && \
+    echo "  gamma: $GAMMA" >> config.yaml && \
+    echo "  eta: $ETA" >> config.yaml && \
+    echo "  lambda: $LAMBDA" >> config.yaml && \
+    echo "  epsilon: $EPSILON" >> config.yaml && \
+    echo "" >> config.yaml && \
+    echo "word2vec:" >> config.yaml && \
+    echo "  model_path: \"$WORD2VEC_MODEL_PATH\"" >> config.yaml && \
+    echo "" >> config.yaml && \
+    echo "processing:" >> config.yaml && \
+    echo "  max_concurrent_jobs: $MAX_CONCURRENT_JOBS" >> config.yaml && \
+    echo "  job_timeout_seconds: $JOB_TIMEOUT_SECONDS" >> config.yaml && \
+    echo "  temp_dir: \"$TEMP_DIR\"" >> config.yaml
+
 # Expose port 8000 for the API server
 EXPOSE 8000
 
