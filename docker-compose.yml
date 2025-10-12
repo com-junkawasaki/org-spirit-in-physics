@@ -6,7 +6,7 @@ services:
     image: postgres:15
     container_name: spirit-supabase-db
     ports:
-      - "54322:5432"
+      - "15432:5432"
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
@@ -22,7 +22,7 @@ services:
     image: postgrest/postgrest:latest
     container_name: spirit-supabase-api
     ports:
-      - "54321:3000"
+      - "15421:3000"
     environment:
       - PGRST_DB_URI=postgres://postgres:postgres@supabase-db:5432/postgres
       - PGRST_DB_SCHEMA=public

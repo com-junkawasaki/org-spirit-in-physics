@@ -2,7 +2,13 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+// Use Inter font with fallback to prevent build-time fetch issues
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: false,
+  fallback: ['system-ui', 'sans-serif']
+})
 
 export const metadata: Metadata = {
   title: 'Spirit in Physics - Analysis Dashboard',

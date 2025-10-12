@@ -3,10 +3,10 @@ import { getResponseTimeseries } from '@/lib/data'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const responseId = params.id
+    const { id: responseId } = await params
     const timeSeriesData = await getResponseTimeseries(responseId)
 
     // Process time series data for frontend
