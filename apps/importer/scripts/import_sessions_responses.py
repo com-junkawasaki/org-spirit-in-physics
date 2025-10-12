@@ -67,7 +67,7 @@ def parse_events_build_sessions_and_responses(session_json: dict):
         ts = ev.get("timestamp")
         typ = ev.get("type")
         payload = ev.get("payload") or {}
-        if "speech" in typ or "word" in typ or "response" in typ:
+        if "speech" in typ or "word" in typ or "response" in typ or "session" in typ:
             print(f"DEBUG: Event type={typ}, payload keys={list(payload.keys()) if payload else []}")
 
         if current_session is not None:
@@ -103,12 +103,17 @@ def parse_events_build_sessions_and_responses(session_json: dict):
         elif typ == "response_window_opened":
             window_open = True
         elif typ == "speech_detected":
-            print(f"DEBUG: Processing speech_detected event")
+            print("DEBUG: Entered speech_detected block")
+            print("DEBUG: window_open:", window_open)
+            print("DEBUG: last_word exists:", last_word is not None)
+            print("DEBUG: current_session exists:", current_session is not None)
+            # Always create response for speech_detected events
             # Always create response for speech_detected events
             if last_word and current_session is not None:
+                print("DEBUG: Condition met, creating response")
                 rt = max(0, ts - last_word["ts"])
                 # create response (speech_detectedイベントからresponse_wordを取得)
-                print(f"DEBUG: speech_detected payload={payload}")
+                print(f"DEBUG: Creating response")
                 response_word = payload.get("word") or payload.get("key")
                 print(f"DEBUG: response_word={response_word}")
                 resp = {
@@ -121,6 +126,8 @@ def parse_events_build_sessions_and_responses(session_json: dict):
                 }
                 responses.append(resp)
                 current_session["reaction_times"].append(rt)
+            else:
+                print(f"DEBUG: Skipping response creation")
         elif typ == "response_window_closed":
             window_open = False
 
@@ -141,7 +148,19 @@ def main():
     args = ap.parse_args()
 
     db = ensure_db(args.arangodb_url, args.db, args.user, args.password)
+    print(f"Connected to ArangoDB at {args.arangodb_url}, database: {args.db}")
+
+    # Test connection
+    try:
+        result = db.aql.execute("RETURN 'test'")
+        test_result = list(result)[0]
+        print(f"ArangoDB connection test successful: {test_result}")
+    except Exception as e:
+        print(f"ArangoDB connection test failed: {e}")
+        exit(1)
+
     ensure_collections(db)
+    print("Collections ensured")
     col_participants = db.collection("participants")
     col_sessions = db.collection("participant_sessions")
     col_responses = db.collection("participant_session_responses")
@@ -183,6 +202,7 @@ def main():
 
         # build sessions & responses
         sessions, responses = parse_events_build_sessions_and_responses(session_json)
+        print(f"Generated {len(sessions)} sessions and {len(responses)} responses for {pid}")
 
         # write sessions (derive session_id as '<pid>-<index>')
         for s in sessions:
@@ -227,13 +247,32 @@ def main():
         if len(responses) > 0:
             count_after = len(col_responses.all())
             print(f"Debug: responses in collection after insert: {count_after}")
+            # Also check by querying
+            try:
+                sample = col_responses.random()
+                if sample:
+                    print(f"Debug: sample document found: {sample['participant_id']} - {sample.get('response_word')}")
+                else:
+                    print("Debug: no sample document found")
+            except Exception as e:
+                print(f"Debug: error getting sample: {e}")
 
         print(f"[OK] {pid}: sessions={len(sessions)} responses={len(responses)}")
 
     print(f"Imported participants={imported_p}, sessions={imported_s}, responses={imported_r}")
 
     # Verify data was inserted
-    print(f"Verification: participants={len(col_participants.all())}, sessions={len(col_sessions.all())}, responses={len(col_responses.all())}")
+    p_count = len(col_participants.all())
+    s_count = len(col_sessions.all())
+    r_count = len(col_responses.all())
+    print(f"Verification: participants={p_count}, sessions={s_count}, responses={r_count}")
+
+    # Check sample data
+    if r_count > 0:
+        sample = col_responses.random()
+        print(f"Sample response: participant_id={sample.get('participant_id')}, response_word={sample.get('response_word')}")
+    else:
+        print("No responses found in collection")
 
 if __name__ == "__main__":
     main()

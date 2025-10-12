@@ -2,29 +2,26 @@ import asyncio
 import yaml
 from temporalio.client import Client
 from temporalio.worker import Worker
+import os
+import sys
 
-# Import your workflow and activities
-from .workflows import IngestionWorkflow
-from .activities.arangodb_activities import ArangoDBActivities
-from .activities.hume_activities import HumeActivities
-from activities.hume_activities import process_media_file, store_hume_results
-from workflows import HumeAnalysisWorkflow
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from apps.importer.src.workflows import IngestionWorkflow
+from apps.importer.src.activities.arangodb import ArangoDBActivities
+from apps.importer.src.activities.hume_activities import HumeActivities
 
 def load_config():
-    with open("config.yaml", 'r') as f:
+    with open("apps/importer/config.yaml", 'r') as f:
         return yaml.safe_load(f)
 
 async def main():
     config = load_config()
     
-    # Create client connected to server
     client = await Client.connect(config['temporal']['server_url'])
 
-    # Instantiate activities with their dependencies
-    arangodb_activities = ArangoDBActivities(config['arangodb'])
-    hume_activities = HumeActivities(config['hume'])
+    arangodb_activities = ArangoDBActivities(config)
+    hume_activities = HumeActivities(config)
     
-    # Run the worker
     worker = Worker(
         client,
         task_queue=config['temporal']['task_queue'],
@@ -40,9 +37,9 @@ async def main():
             hume_activities.poll_and_fetch_hume_results
         ],
     )
-    print("Starting worker...")
+    print("Starting importer worker...")
     await worker.run()
-    print("Worker finished.")
+    print("Importer worker finished.")
 
 if __name__ == "__main__":
     asyncio.run(main())

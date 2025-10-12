@@ -114,8 +114,8 @@ class ArangoDBClient:
             participant_doc = {k: v for k, v in participant_doc.items() if v is not None}
 
             collection = self.db.collection("participants")
-            result = collection.insert(participant_doc)
-            logger.info(f"Inserted participant: {participant_data.get('id')}")
+            result = collection.insert(participant_doc, overwrite=True)
+            logger.info(f"Inserted or updated participant: {participant_data.get('id')}")
             return True
         except Exception as e:
             logger.error(f"Failed to insert participant {participant_data.get('id')}: {e}")

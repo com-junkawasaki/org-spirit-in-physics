@@ -27,10 +27,19 @@ The analyzer now uses a shared pipeline library located in `packages/spirit_in_p
     python -m apps.analyzer.src.main --model-version <version> --notes "<your_notes>"
     ```
 
-3.  **Generate Visualizations**:
-    After an analysis run, you can generate visualizations:
+3.  **Generate Visualizations via Temporal Workflow**:
+    After an analysis run is complete, you can generate visualizations by starting the visualization workflow.
+
+    First, ensure the analyzer's Temporal worker is running:
     ```bash
-    python -m apps.analyzer.visualize_results
+    python -m apps.analyzer.src.run_worker
     ```
 
-This will use the latest analysis results to generate plots and an HTML report in the `apps/analyzer` directory.
+    Then, in a separate terminal, trigger the workflow with a specific `run_id`:
+    ```bash
+    python -m apps.analyzer.src.start_visualization_workflow --run-id <your_run_id>
+    ```
+
+    This will generate plots and an HTML report in the `apps/analyzer/visualizations` directory.
+
+    **Note:** There is a known issue with an `IndentationError` in `visualize_results.py` that may prevent this step from completing successfully.

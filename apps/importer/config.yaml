@@ -6,11 +6,9 @@ arangodb:
   database: "spirit_in_physics"
 
 # Hume AI Configuration
-hume:
-  api_key: "YOUR_HUME_API_KEY"
+hume_ai:
+  api_key: "YOUR_HUME_API_KEY" # Replace with your actual key
 
-# Temporal Configuration
 temporal:
   server_url: "localhost:7233"
-  namespace: "default"
-  task_queue: "spirit-importer-task-queue"
+  task_queue: "importer-task-queue"

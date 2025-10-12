@@ -19,6 +19,11 @@ model_params:
 word2vec:
   model_path: "path/to/your/word2vec.model"
 
+temporal:
+  server_url: "localhost:7233"
+  task_queue_importer: "importer-task-queue"
+  task_queue_analyzer: "analyzer-task-queue"
+
 processing:
   max_concurrent_jobs: 3    # Maximum number of Hume AI jobs to run concurrently
   job_timeout_seconds: 600  # Timeout for Hume AI job completion (10 minutes)
