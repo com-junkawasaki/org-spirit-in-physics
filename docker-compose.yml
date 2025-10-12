@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  # Supabase Database
+  supabase-db:
+    image: postgres:15
+    container_name: spirit-supabase-db
+    ports:
+      - "54322:5432"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - supabase_db_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - spirit-network
+
+  # Supabase API (simplified)
+  supabase-api:
+    image: postgrest/postgrest:latest
+    container_name: spirit-supabase-api
+    ports:
+      - "54321:3000"
+    environment:
+      - PGRST_DB_URI=postgres://postgres:postgres@supabase-db:5432/postgres
+      - PGRST_DB_SCHEMA=public
+      - PGRST_DB_ANON_ROLE=anon
+      - PGRST_JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
+    depends_on:
+      - supabase-db
+    networks:
+      - spirit-network
+
+  # TerminusDB
+  terminusdb:
+    image: terminusdb/terminusdb-server:latest
+    container_name: spirit-terminusdb
+    ports:
+      - "6363:6363"
+    environment:
+      - TERMINUSDB_SERVER_NAME=spirit-in-physics
+      - TERMINUSDB_ADMIN_PASS=root
+    volumes:
+      - terminusdb_data:/app/terminusdb/storage
+    networks:
+      - spirit-network
+
+  # Temporal
+  temporal:
+    image: temporalio/auto-setup:latest
+    container_name: spirit-temporal
+    ports:
+      - "7233:7233"  # Temporal server
+      - "8233:8233"  # Temporal UI
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=postgres
+      - POSTGRES_SEEDS=temporal-postgres:5432
+    depends_on:
+      - temporal-postgres
+    networks:
+      - spirit-network
+
+  temporal-postgres:
+    image: postgres:13
+    container_name: spirit-temporal-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - temporal_data:/var/lib/postgresql/data
+    networks:
+      - spirit-network
+
+  # Patient app (Next.js)
+  patient:
+    build:
+      context: ./apps/patient
+      dockerfile: Dockerfile
+    container_name: spirit-patient
+    ports:
+      - "25250:3000"
+    env_file:
+      - ./apps/patient/env.docker
+    depends_on:
+      - supabase-api
+    networks:
+      - spirit-network
+
+  # Admin app (Vite/React)
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    container_name: spirit-admin
+    ports:
+      - "4173:4173"
+    env_file:
+      - ./apps/admin/env.docker
+    depends_on:
+      - supabase-api
+    networks:
+      - spirit-network
+
+  # Visualizer app (Next.js)
+  visualizer:
+    build:
+      context: ./apps/visualizer
+      dockerfile: Dockerfile
+    container_name: spirit-visualizer
+    ports:
+      - "25260:25260"
+    env_file:
+      - ./apps/visualizer/env.docker
+    depends_on:
+      - supabase-api
+    networks:
+      - spirit-network
+
+  # Analyzer app (Python)
+  analyzer:
+    build:
+      context: ./apps/analyzer
+      dockerfile: Dockerfile
+    container_name: spirit-analyzer
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./apps/analyzer/env.docker
+    depends_on:
+      - supabase-api
+      - terminusdb
+    networks:
+      - spirit-network
+
+  # Importer app (Python)
+  importer:
+    build:
+      context: ./apps/importer
+      dockerfile: Dockerfile
+    container_name: spirit-importer
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./apps/importer/env.docker
+    depends_on:
+      - supabase-api
+      - temporal
+      - terminusdb
+    networks:
+      - spirit-network
+
+volumes:
+  supabase_db_data:
+  temporal_data:
+  terminusdb_data:
+
+networks:
+  spirit-network:
+    driver: bridge
