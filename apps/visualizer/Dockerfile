@@ -22,8 +22,12 @@ COPY . .
 # Build the application
 RUN pnpm build
 
-# Expose port 25260
-EXPOSE 25260
+# Set hostname and port to bind to all interfaces
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 
-# Start the application
-CMD ["pnpm", "start"]
+# Expose port 3000
+EXPOSE 3000
+
+# Start the application with explicit hostname and port binding
+CMD ["node", "node_modules/next/dist/bin/next", "start", "--hostname", "0.0.0.0", "--port", "3000"]

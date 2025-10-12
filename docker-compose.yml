@@ -113,7 +113,7 @@ services:
       dockerfile: Dockerfile
     container_name: spirit-visualizer
     ports:
-      - "25260:25260"
+      - "25260:3000"
     env_file:
       - ./apps/visualizer/env.docker
     depends_on:
