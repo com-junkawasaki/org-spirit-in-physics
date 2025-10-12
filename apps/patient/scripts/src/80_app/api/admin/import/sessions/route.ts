@@ -4,13 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getParticipantDirectories } from "scripts/src/lib/data-loader";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
+import { arangodbManager } from "scripts/src/lib/database/arangodb-manager";
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("Starting session data import to Supabase...");
+    console.log("Starting session data import to ArangoDB...");
 
     // ファイルシステムからセッションデータを取得
     const participantIds = getParticipantDirectories();
@@ -38,11 +38,11 @@ export async function POST(request: NextRequest) {
 
     const results = [];
 
-    // 各セッションデータをSupabaseにインポート
+    // 各セッションデータをArangoDBにインポート
     for (const { participantId, sessionData } of sessionDataList) {
       try {
-        // Supabaseに保存（一本化）
-        await supabaseManager.saveSession({
+        // ArangoDBに保存（一本化）
+        await arangodbManager.saveSession({
           id: `${participantId}_session`,
           participantId: participantId,
           events: sessionData.events,

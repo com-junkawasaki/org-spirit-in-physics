@@ -5,7 +5,7 @@ import {
   loadEmotionAnalysisResults,
   generateEmotionStatistics
 } from "scripts/src/lib/emotion-analysis";
-import { supabase } from "scripts/src/lib/supabase";
+import { arangodb } from "scripts/src/lib/supabase";
 import { WorkflowService } from "scripts/src/lib/workflow-service";
 
 export async function GET(request: NextRequest) {
@@ -83,29 +83,25 @@ export async function GET(request: NextRequest) {
           "e41a9cd2-d803-49a8-9020-0260e55cd03e"
         ];
 
-        // Supabaseから感情統計を取得
-        const { data: emotions, error } = await supabase
-          .from('emotions')
-          .select('name, score');
-
-        if (error) {
-          console.error('Error fetching emotion statistics:', error);
-          return NextResponse.json({
-            error: "Failed to fetch emotion statistics"
-          }, { status: 500 });
-        }
+        // ArangoDBから感情統計を取得
+        const emotions = await arangodb.query(`
+          FOR response IN participant_session_responses
+            FILTER response.emotion != null
+            COLLECT emotion = response.emotion WITH COUNT INTO count
+            RETURN { name: emotion, score: count }
+        `);
 
         const emotionMap = (emotions || []).reduce((acc: Record<string, { count: number; totalScore: number }>, emotion: any) => {
           if (!acc[emotion.name]) {
             acc[emotion.name] = { count: 0, totalScore: 0 };
           }
-          acc[emotion.name].count += 1;
+          acc[emotion.name].count += emotion.score; // score is count from ArangoDB query
           acc[emotion.name].totalScore += emotion.score;
           return acc;
         }, {});
 
         const dominantEmotions = Object.entries(emotionMap)
-          .map(([emotion, stats]) => ({
+          .map(([emotion, stats]: [string, { count: number; totalScore: number }]) => ({
             emotion,
             count: stats.count,
             averageScore: stats.totalScore / stats.count

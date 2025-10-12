@@ -1,38 +1,6 @@
 version: '3.8'
 
 services:
-  # Supabase Database
-  supabase-db:
-    image: postgres:15
-    container_name: spirit-supabase-db
-    ports:
-      - "15432:5432"
-    environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - supabase_db_data:/var/lib/postgresql/data
-      - ./supabase/migrations:/docker-entrypoint-initdb.d
-    networks:
-      - spirit-network
-
-  # Supabase API (simplified)
-  supabase-api:
-    image: postgrest/postgrest:latest
-    container_name: spirit-supabase-api
-    ports:
-      - "15421:3000"
-    environment:
-      - PGRST_DB_URI=postgres://postgres:postgres@supabase-db:5432/postgres
-      - PGRST_DB_SCHEMA=public
-      - PGRST_DB_ANON_ROLE=anon
-      - PGRST_JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
-    depends_on:
-      - supabase-db
-    networks:
-      - spirit-network
-
   # ArangoDB
   arangodb:
     image: arangodb:latest
@@ -87,7 +55,7 @@ services:
     env_file:
       - ./apps/patient/env.docker
     depends_on:
-      - supabase-api
+      - arangodb
     networks:
       - spirit-network
 
@@ -102,7 +70,7 @@ services:
     env_file:
       - ./apps/admin/env.docker
     depends_on:
-      - supabase-api
+      - arangodb
     networks:
       - spirit-network
 
@@ -117,7 +85,7 @@ services:
     env_file:
       - ./apps/visualizer/env.docker
     depends_on:
-      - supabase-api
+      - arangodb
     networks:
       - spirit-network
 
@@ -132,7 +100,6 @@ services:
     env_file:
       - ./apps/analyzer/env.docker
     depends_on:
-      - supabase-api
       - arangodb
     networks:
       - spirit-network
@@ -148,14 +115,14 @@ services:
     env_file:
       - ./apps/importer/env.docker
     depends_on:
-      - supabase-api
       - temporal
       - arangodb
+    volumes:
+      - ./dataset:/app/dataset
     networks:
       - spirit-network
 
 volumes:
-  supabase_db_data:
   temporal_data:
   arangodb_data:
 

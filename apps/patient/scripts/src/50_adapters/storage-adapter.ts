@@ -2,15 +2,15 @@
 
 import { StoragePort } from 'scripts/src/20_ports';
 import { ConsentData, SaveStructuredDataPayload, EmotionAnalysisResult, Participant, ParticipantWithFiles, SessionData } from 'scripts/src/00_schema';
-import { supabaseManager } from 'scripts/src/lib/database/supabase-manager';
+import { arangodbManager } from 'scripts/src/lib/database/arangodb-manager';
 
 export class StorageAdapter implements StoragePort {
   async saveStructuredData(payload: SaveStructuredDataPayload): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
+    // ArangoDBデータベースに保存（一本化）
     if (payload.type === "consent") {
       await this.saveConsentData(payload.data);
     } else if (payload.type === "session-data") {
-      await supabaseManager.saveSession({
+      await arangodbManager.saveSession({
         id: `${payload.data.participantId}_session`,
         participantId: payload.data.participantId,
         events: payload.data.events,
@@ -20,8 +20,8 @@ export class StorageAdapter implements StoragePort {
   }
 
   async saveConsentData(data: ConsentData): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
-    await supabaseManager.saveParticipant({
+    // ArangoDBデータベースに保存（一本化）
+    await arangodbManager.saveParticipant({
       id: data.participantId,
       signature: data.signature,
       agreedAt: new Date(data.agreedAt),
@@ -30,7 +30,7 @@ export class StorageAdapter implements StoragePort {
   }
 
   async saveEmotionAnalysis(participantId: string, result: EmotionAnalysisResult): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
+    // ArangoDBデータベースに保存（一本化）
     const analysis = {
       id: `${result.participantId}_${result.videoFile}_${Date.now()}`,
       participantId: result.participantId,
@@ -41,14 +41,14 @@ export class StorageAdapter implements StoragePort {
       emotions: result.emotions
     };
 
-    await supabaseManager.saveEmotionAnalysis(analysis);
+    await arangodbManager.saveEmotionAnalysis(analysis);
   }
 
   async loadEmotionAnalysis(participantId: string): Promise<EmotionAnalysisResult[]> {
-    // Supabaseデータベースから読み込み（一本化）
+    // ArangoDBデータベースから読み込み（一本化）
     try {
-      const supabaseResults = await supabaseManager.getEmotionAnalysis(participantId);
-      return supabaseResults.map(sa => ({
+      const arangodbResults = await arangodbManager.getEmotionAnalysis(participantId);
+      return arangodbResults.map(sa => ({
         participantId: sa.participantId,
         videoFile: sa.videoFileId.replace(`${sa.participantId}_`, ''),
         sessionType: sa.sessionType,
@@ -70,14 +70,14 @@ export class StorageAdapter implements StoragePort {
 
   // data-loader.ts から統合した追加メソッド
   async loadAllParticipants(): Promise<ParticipantWithFiles[]> {
-    // Supabaseデータベースから参加者データを取得（一本化）
+    // ArangoDBデータベースから参加者データを取得（一本化）
     try {
-      const supabaseParticipants = await supabaseManager.getAllParticipants();
-      return supabaseParticipants.map(sp => ({
+      const arangodbParticipants = await arangodbManager.getAllParticipants();
+      return arangodbParticipants.map(sp => ({
         id: sp.id,
-        age: undefined, // SupabaseParticipantにはない
-        gender: undefined, // SupabaseParticipantにはない
-        handedness: undefined, // SupabaseParticipantにはない
+        age: undefined, // ArangoDBParticipantにはない
+        gender: undefined, // ArangoDBParticipantにはない
+        handedness: undefined, // ArangoDBParticipantにはない
         createdAt: new Date(sp.agreedAt), // agreedAtを使用
         signature: sp.signature,
         agreedAt: sp.agreedAt?.toISOString() || new Date().toISOString(),

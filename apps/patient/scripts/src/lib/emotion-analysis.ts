@@ -244,11 +244,11 @@ export async function getEmotionStatisticsFromKuzu(): Promise<{
   };
 }> {
   try {
-    // Supabaseマネージャーを使用（後方互換性のため関数名は変更しない）
-    const { supabaseManager } = await import('./database/supabase-manager.ts');
-    return await supabaseManager.getEmotionStatistics();
+    // ArangoDBマネージャーを使用（後方互換性のため関数名は変更しない）
+    const { arangodbManager } = await import('./database/arangodb-manager.ts');
+    return await arangodbManager.getEmotionStatistics();
   } catch (error) {
-    console.error('Error getting emotion statistics from Supabase:', error);
+    console.error('Error getting emotion statistics from ArangoDB:', error);
   }
 
   // Fallback to empty stats

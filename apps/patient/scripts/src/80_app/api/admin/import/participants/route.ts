@@ -2,11 +2,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getParticipantDirectories, loadParticipantData } from "scripts/src/lib/data-loader";
-import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
+import { arangodbManager } from "scripts/src/lib/database/arangodb-manager";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("Starting participant data import to Supabase...");
+    console.log("Starting participant data import to ArangoDB...");
 
     // ファイルシステムから参加者データを取得
     const participantIds = getParticipantDirectories();
@@ -24,11 +24,11 @@ export async function POST(request: NextRequest) {
 
     const results = [];
 
-    // 各参加者をSupabaseにインポート
+    // 各参加者をArangoDBにインポート
     for (const participant of participants) {
       try {
-        // Supabaseに保存（一本化）
-        await supabaseManager.saveParticipant({
+        // ArangoDBに保存（一本化）
+        await arangodbManager.saveParticipant({
           id: participant.id,
           signature: participant.signature,
           agreedAt: participant.agreedAt,

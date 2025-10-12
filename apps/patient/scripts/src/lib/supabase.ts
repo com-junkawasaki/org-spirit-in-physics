@@ -1,66 +1,101 @@
-// Merkle DAG: Supabaseクライアント設定
-// サーバー/クライアント両方で使用可能なSupabaseクライアント
+// Merkle DAG: ArangoDBクライアント設定
+// サーバー/クライアント両方で使用可能なArangoDBクライアント
 
-import { createClient } from '@supabase/supabase-js'
-import { createBrowserClient, createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-
-// 環境変数の取得
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+interface ArangoDBConfig {
+  url: string
+  user: string
+  password: string
+  databaseName: string
 }
 
-// Server-side Supabase client (for server components and API routes)
-export async function createSupabaseServerClient() {
-  const cookieStore = await cookies()
+class ArangoDBClient {
+  private config: ArangoDBConfig
 
-  return createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+  constructor(config: ArangoDBConfig) {
+    this.config = config
+  }
+
+  async query(aqlQuery: string, bindVars?: any): Promise<any> {
+    try {
+      const auth = btoa(`${this.config.user}:${this.config.password}`)
+      const response = await fetch(`${this.config.url}/_api/cursor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${auth}`,
         },
-        set(name: string, value: string, options: any) {
-          try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // The `remove` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-      },
+        body: JSON.stringify({
+          query: aqlQuery,
+          bindVars: bindVars || {},
+          database: this.config.databaseName,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`ArangoDB query failed: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      return data.result || []
+    } catch (error) {
+      console.error('ArangoDB query error:', error)
+      throw error
     }
-  )
+  }
+
+  // Patient app specific methods
+  async insertParticipant(participantId: string, data: any): Promise<any> {
+    const doc = {
+      _key: participantId,
+      ...data,
+      created_at: new Date().toISOString()
+    }
+    const query = `INSERT @doc INTO participants RETURN NEW`
+    return await this.query(query, { doc })
+  }
+
+  async insertSession(participantId: string, sessionIndex: number, data: any): Promise<any> {
+    const doc = {
+      _key: `${participantId}-${sessionIndex}`,
+      participant_id: participantId,
+      session_index: sessionIndex,
+      ...data
+    }
+    const query = `INSERT @doc INTO participant_sessions RETURN NEW`
+    return await this.query(query, { doc })
+  }
+
+  async insertResponse(participantId: string, sessionIndex: number, data: any): Promise<any> {
+    const doc = {
+      participant_id: participantId,
+      session_id: `${participantId}-${sessionIndex}`,
+      ...data
+    }
+    const query = `INSERT @doc INTO participant_session_responses RETURN NEW`
+    return await this.query(query, { doc })
+  }
 }
 
-// Browser-side Supabase client (for client components)
-export function createSupabaseBrowserClient() {
-  return createBrowserClient(
-    supabaseUrl,
-    supabaseAnonKey
-  )
+// ArangoDB configuration
+const arangodbConfig: ArangoDBConfig = {
+  url: process.env.ARANGODB_URL || 'http://localhost:8529',
+  user: process.env.ARANGODB_USER || 'root',
+  password: process.env.ARANGODB_PASSWORD || '',
+  databaseName: process.env.ARANGODB_DATABASE_NAME || 'spirit_in_physics'
 }
 
-// Universal Supabase client (works in both server and client)
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
+// Create singleton client instance
+let clientInstance: ArangoDBClient | null = null
 
-// Database types based on new schema (20241004000001)
+export function createArangoDBClient(): ArangoDBClient {
+  if (!clientInstance) {
+    clientInstance = new ArangoDBClient(arangodbConfig)
+  }
+  return clientInstance
+}
+
+// Export singleton instance for convenience
+export const arangodb = createArangoDBClient()
+
+// Database types based on new schema
 export type Database = any; // Temporarily simplified for build

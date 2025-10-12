@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "scripts/src/lib/supabase";
+import { arangodb } from "scripts/src/lib/supabase";
 import { parseWordResponsesFromEvents, getParticipantStatistics } from "scripts/src/lib/data-loader";
 
 export async function GET(request: NextRequest) {
@@ -10,30 +10,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Supabaseから参加者データを取得
-        const { data: participantsData, error: supabaseError } = await supabase
-          .from('participants')
-          .select(`
-            *,
-            sessions (
-              id
-            ),
-            video_files (
-              id,
-              file_name,
-              file_path,
-              file_size
-            )
-          `)
-          .order('created_at', { ascending: false });
-
-        if (supabaseError) {
-          console.error('Error fetching participants:', supabaseError);
-          return NextResponse.json({
-            error: "Failed to fetch participants"
-          }, { status: 500 });
-        }
-
+        // ArangoDBから参加者データを取得（暫定：モックデータ）
+        const participantsData = []; // TODO: Implement ArangoDB query
         const participantStats = getParticipantStatistics(participantsData || []);
 
         // Transform to match expected format
@@ -64,25 +42,10 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        const { data: participant, error: participantError } = await supabase
-          .from('participants')
-          .select(`
-            *,
-            sessions (
-              id
-            ),
-            video_files (
-              id,
-              file_name,
-              file_path,
-              file_size
-            )
-          `)
-          .eq('id', participantId)
-          .single();
+        // ArangoDBから参加者データを取得（暫定：モックデータ）
+        const participant = null; // TODO: Implement ArangoDB query
 
-        if (participantError) {
-          console.error('Error fetching participant:', participantError);
+        if (!participant) {
           return NextResponse.json({
             error: "Participant not found"
           }, { status: 404 });
@@ -91,38 +54,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           success: true,
           data: {
-            id: participant.id,
-            signature: participant.signature,
-            agreedAt: participant.agreed_at,
-            hasSessionData: (participant.sessions?.length || 0) > 0,
-            hasVideoFiles: (participant.video_files?.length || 0) > 0,
-            videoFiles: participant.video_files || []
+            id: participantId,
+            signature: "mock",
+            agreedAt: new Date().toISOString(),
+            hasSessionData: false,
+            hasVideoFiles: false,
+            videoFiles: []
           }
         });
 
       case 'sessions':
-        let query = supabase
-          .from('sessions')
-          .select(`
-            *,
-            participants (
-              signature
-            )
-          `)
-          .order('created_at', { ascending: false });
-
-        if (participantId) {
-          query = query.eq('participant_id', participantId);
-        }
-
-        const { data: sessionsData, error: sessionsError } = await query;
-
-        if (sessionsError) {
-          console.error('Error fetching sessions:', sessionsError);
-          return NextResponse.json({
-            error: "Failed to fetch sessions"
-          }, { status: 500 });
-        }
+        // ArangoDBからセッションデータを取得（暫定：モックデータ）
+        const sessionsData = []; // TODO: Implement ArangoDB query
 
         // Transform session data to match expected format
         const formattedSessions = (sessionsData || []).map((session: any) => {
@@ -162,30 +105,12 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Supabaseからデータを取得
-        const { data: participants, error: participantsError } = await supabase
-          .from('participants')
-          .select(`
-            *,
-            sessions (
-              id,
-              events
-            ),
-            video_files (
-              id
-            )
-          `);
-
-        if (participantsError) {
-          console.error('Error fetching analytics data:', participantsError);
-          return NextResponse.json({
-            error: "Failed to fetch analytics data"
-          }, { status: 500 });
-        }
+        // ArangoDBからデータを取得（暫定：モックデータ）
+        const participants = []; // TODO: Implement ArangoDB query
 
         const stats = getParticipantStatistics(participants || []);
 
-        // Calculate reaction time statistics from Supabase data
+        // Calculate reaction time statistics from ArangoDB data
         let totalReactionTime = 0;
         let totalResponses = 0;
 
@@ -201,18 +126,8 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Supabaseから感情統計を取得
-        const { data: emotions, error: emotionsError } = await supabase
-          .from('emotions')
-          .select('name');
-
-        let emotionDistribution: Record<string, number> = {};
-        if (!emotionsError && emotions) {
-          emotionDistribution = emotions.reduce((acc: Record<string, number>, emotion: any) => {
-            acc[emotion.name] = (acc[emotion.name] || 0) + 1;
-            return acc;
-          }, {});
-        }
+        // ArangoDBから感情統計を取得（暫定：モックデータ）
+        const emotionDistribution: Record<string, number> = {}; // TODO: Implement ArangoDB query
 
         const totalSessions = (participants || []).reduce((acc: number, p: any) =>
           acc + (p.sessions?.length || 0), 0);
@@ -232,17 +147,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'reaction-times':
-        const { data: sessions, error } = await supabase
-          .from('sessions')
-          .select('participant_id, events')
-          .not('events', 'is', null);
-
-        if (error) {
-          console.error('Error fetching reaction time data:', error);
-          return NextResponse.json({
-            error: "Failed to fetch reaction time data"
-          }, { status: 500 });
-        }
+        // ArangoDBからreaction timeデータを取得（暫定：モックデータ）
+        const sessions = []; // TODO: Implement ArangoDB query
 
         const reactionTimeData = (sessions || []).flatMap((session: any) => {
           const wordResponses = parseWordResponsesFromEvents(session.events || []);

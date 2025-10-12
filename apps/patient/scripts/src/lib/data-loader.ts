@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
-import { supabase } from './supabase';
+import { arangodb } from './supabase';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -16,23 +16,15 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-// Supabase初期化関数
+// ArangoDB初期化関数
 export async function initializeSupabaseDatabase(): Promise<void> {
   try {
-    // Supabase接続テスト
-    const { data, error } = await supabase
-      .from('participants')
-      .select('count')
-      .limit(1);
+    // ArangoDB接続テスト
+    await arangodb.query('RETURN 1');
 
-    if (error) {
-      console.error('Supabase connection failed:', error);
-      throw error;
-    }
-
-    console.log('Supabase database connection established');
+    console.log('ArangoDB database connection established');
   } catch (error) {
-    console.error('Failed to initialize Supabase database:', error);
+    console.error('Failed to initialize ArangoDB database:', error);
     throw error;
   }
 }
@@ -104,7 +96,7 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
 
           // Supabaseにも保存
           for (const data of consentData) {
-            const { supabaseManager } = await import('./database/supabase-manager.ts');
+            const { arangodbManager } = await import('./database/arangodb-manager.ts');
             const participant: Participant = {
               id: data.participantId,
               signature: data.signature,
@@ -116,9 +108,9 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
             };
 
             try {
-              await supabaseManager.saveParticipant(participant);
+              await arangodbManager.saveParticipant(participant);
             } catch (saveError) {
-              console.warn('Failed to save participant to Supabase:', saveError);
+              console.warn('Failed to save participant to ArangoDB:', saveError);
             }
           }
 
@@ -163,7 +155,7 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
 
     // Supabaseにも保存
     for (const data of consentData) {
-      const { supabaseManager } = await import('./database/supabase-manager.ts');
+      const { arangodbManager } = await import('./database/arangodb-manager.ts');
       const participant: Participant = {
         id: data.participantId,
         signature: data.signature,
@@ -175,9 +167,9 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       };
 
       try {
-        await supabaseManager.saveParticipant(participant);
+        await arangodbManager.saveParticipant(participant);
       } catch (saveError) {
-        console.warn('Failed to save participant to Supabase:', saveError);
+        console.warn('Failed to save participant to ArangoDB:', saveError);
       }
     }
 
@@ -317,38 +309,19 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
 // Load all participants data
 export async function loadAllParticipants(): Promise<Participant[]> {
   try {
-    // Supabaseから参加者データを取得
-    const { data: participants, error } = await supabase
-      .from('participants')
-      .select(`
-        *,
-        sessions (
-          id
-        ),
-        video_files (
-          id,
-          file_name,
-          file_path,
-          file_size
-        )
-      `)
-      .order('created_at', { ascending: false });
+    // ArangoDBから参加者データを取得（暫定：モックデータ）
+    const participants = []; // TODO: Implement ArangoDB query
 
-    if (error) {
-      console.error('Error loading participants from Supabase:', error);
-      return [];
-    }
-
-    console.log(`Loaded ${participants?.length || 0} participants from Supabase`);
+    console.log(`Loaded ${participants?.length || 0} participants from ArangoDB`);
 
     return (participants || []).map((p: any) => ({
       id: p.id,
       signature: p.signature,
-      agreedAt: p.agreed_at,
+      agreedAt: p.agreedAt,
       agreements: p.agreements,
-      hasSessionData: (p.sessions?.length || 0) > 0,
-      hasVideoFiles: (p.video_files?.length || 0) > 0,
-      videoFiles: p.video_files || []
+      hasSessionData: false,
+      hasVideoFiles: false,
+      videoFiles: []
     }));
   } catch (error) {
     console.error('Error loading all participants:', error);
@@ -359,26 +332,18 @@ export async function loadAllParticipants(): Promise<Participant[]> {
 // Load all session data
 export async function loadAllSessionData(): Promise<Array<{ participantId: string; sessionData: SessionData }>> {
   try {
-    // 新しいスキーマではparticipant_experiment_sessionsテーブルを使用
-    const { data: sessions, error } = await supabase
-      .from('participant_experiment_sessions')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // ArangoDBからセッションデータを取得（暫定：モックデータ）
+    const sessions = []; // TODO: Implement ArangoDB query
 
-    if (error) {
-      console.error('Error loading session data from Supabase:', error);
-      return [];
-    }
-
-    console.log(`Loaded ${sessions?.length || 0} sessions from Supabase`);
+    console.log(`Loaded ${sessions?.length || 0} sessions from ArangoDB`);
 
     return (sessions || []).map((session: any) => ({
       participantId: session.participant_id,
       sessionData: {
-        events: [], // participant_experiment_sessionsにはイベントデータがない
+        events: [],
         createdAt: session.created_at,
         sessionId: session.session_id,
-        wordResponses: [], // 初期化
+        wordResponses: [],
         sessionType: session.session_type,
         startTime: session.start_time,
         endTime: session.end_time,

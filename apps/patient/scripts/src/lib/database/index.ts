@@ -1,7 +1,7 @@
 // Merkle DAG: データベース初期化マネージャー
 // 全てのデータベースの初期化を統括
 
-import { supabaseManager } from './supabase-manager';
+import { arangodbManager } from './arangodb-manager';
 
 export class DatabaseInitializer {
   private initialized = false;
@@ -18,8 +18,8 @@ export class DatabaseInitializer {
     try {
       console.log('Initializing all databases...');
 
-      // Supabase初期化（メインDB）
-      await supabaseManager.initialize();
+      // ArangoDB初期化（メインDB）
+      await arangodbManager.initialize();
 
       this.initialized = true;
       console.log('All databases initialized successfully');
@@ -37,7 +37,7 @@ export class DatabaseInitializer {
     try {
       console.log('Closing all databases...');
 
-      await supabaseManager.close();
+      await arangodbManager.close();
 
       this.initialized = false;
       console.log('All databases closed successfully');
@@ -59,5 +59,5 @@ export class DatabaseInitializer {
 // シングルトンインスタンス
 export const databaseInitializer = new DatabaseInitializer();
 
-// Supabaseマネージャーのエクスポート
-export { supabaseManager };
+// ArangoDBマネージャーのエクスポート
+export { arangodbManager };
