@@ -1,4 +1,4 @@
-terminusdb-client
+python-arango
 pandas
 numpy
 pyyaml

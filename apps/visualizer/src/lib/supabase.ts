@@ -1,131 +1,133 @@
-// TerminusDB client for Spirit in Physics visualizer
+// ArangoDB client for Spirit in Physics visualizer
 
-interface TerminusDBConfig {
+interface ArangoDBConfig {
   url: string
   user: string
   password: string
-  databaseId: string
+  databaseName: string
 }
 
-class TerminusDBClient {
-  private config: TerminusDBConfig
+class ArangoDBClient {
+  private config: ArangoDBConfig
 
-  constructor(config: TerminusDBConfig) {
+  constructor(config: ArangoDBConfig) {
     this.config = config
   }
 
-  async query(woqlQuery: string): Promise<any> {
+  async query(aqlQuery: string, bindVars?: any): Promise<any> {
     try {
-      const response = await fetch(`${this.config.url}/api/query/${this.config.databaseId}`, {
+      const auth = btoa(`${this.config.user}:${this.config.password}`)
+      const response = await fetch(`${this.config.url}/_api/cursor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${btoa(`${this.config.user}:${this.config.password}`)}`
+          'Authorization': `Basic ${auth}`,
         },
-        body: JSON.stringify({ query: woqlQuery })
+        body: JSON.stringify({
+          query: aqlQuery,
+          bindVars: bindVars || {},
+          database: this.config.databaseName,
+        }),
       })
 
       if (!response.ok) {
-        throw new Error(`TerminusDB query failed: ${response.statusText}`)
+        throw new Error(`ArangoDB query failed: ${response.statusText}`)
       }
 
-      return await response.json()
+      const data = await response.json()
+      return data.result || []
     } catch (error) {
-      console.error('TerminusDB query error:', error)
+      console.error('ArangoDB query error:', error)
       throw error
     }
   }
 
   async getParticipants(): Promise<any[]> {
-    // WOQL query to get participants with summary data
+    // AQL query to get participants with summary data
     const query = `
-      * triple("v:Participant", "rdf:type", "scm:Participant").
-      * triple("v:Participant", "scm:id", "v:Id").
-      * triple("v:Participant", "scm:created_at", "v:CreatedAt").opt().
-      * triple("v:Participant", "has_response", "v:Response").opt().
-      * group_by("v:Participant", ["v:Participant"], "v:ResponseCount", count("v:Response", "v:ResponseCount")).
+      FOR participant IN participants
+        LET sessionCount = LENGTH(
+          FOR session IN sessions
+            FILTER session.participant_id == participant._key
+            RETURN session
+        )
+        LET responseCount = LENGTH(
+          FOR response IN responses
+            FILTER response.participant_id == participant._key
+            RETURN response
+        )
+        RETURN {
+          participant_id: participant._key,
+          session_count: sessionCount,
+          total_responses: responseCount,
+          average_spirit_probability: 0.5,
+          last_activity: participant.created_at
+        }
     `
 
     const result = await this.query(query)
-
-    return result.bindings?.map((binding: any) => ({
-      participant_id: binding.Id?.['@value'],
-      session_count: 0, // Simplified for now
-      total_responses: parseInt(binding.ResponseCount?.['@value'] || '0'),
-      average_spirit_probability: 0.5, // Placeholder
-      last_activity: binding.CreatedAt?.['@value']
-    })) || []
+    return result || []
   }
 
   async getParticipantDetails(participantId: string): Promise<any> {
-    // Get detailed participant information
+    // Get detailed participant information from ArangoDB
     const query = `
-      * triple("terminusdb:///data/Participant/${participantId}", "rdf:type", "scm:Participant").
-      * triple("terminusdb:///data/Participant/${participantId}", "scm:id", "v:Id").
-      * triple("terminusdb:///data/Participant/${participantId}", "scm:age", "v:Age").opt().
-      * triple("terminusdb:///data/Participant/${participantId}", "scm:gender", "v:Gender").opt().
-      * triple("terminusdb:///data/Participant/${participantId}", "scm:handedness", "v:Handedness").opt().
-      * triple("terminusdb:///data/Participant/${participantId}", "has_session", "v:Session").opt().
-      * triple("terminusdb:///data/Participant/${participantId}", "has_response", "v:Response").opt().
+      FOR participant IN participants
+        FILTER participant._key == @participantId
+        RETURN participant
     `
 
-    const result = await this.query(query)
+    const result = await this.query(query, { participantId })
 
-    if (!result.bindings?.length) {
+    if (!result || result.length === 0) {
       throw new Error(`Participant ${participantId} not found`)
     }
 
-    const binding = result.bindings[0]
+    const participant = result[0]
     return {
-      id: binding.Id?.['@value'],
-      age: binding.Age?.['@value'],
-      gender: binding.Gender?.['@value'],
-      handedness: binding.Handedness?.['@value']
+      id: participant._key,
+      age: participant.age,
+      gender: participant.gender,
+      handedness: participant.handedness
     }
   }
 
   async getParticipantResponses(participantId: string): Promise<any[]> {
-    // Get responses for a specific participant
+    // Get responses for a specific participant from ArangoDB
     const query = `
-      * triple("v:Response", "belongs_to_participant", "terminusdb:///data/Participant/${participantId}").
-      * triple("v:Response", "rdf:type", "scm:ResponseData").
-      * triple("v:Response", "scm:id", "v:Id").
-      * triple("v:Response", "scm:stimulus_word", "v:StimulusWord").
-      * triple("v:Response", "scm:response_word", "v:ResponseWord").
-      * triple("v:Response", "scm:reaction_time_ms", "v:ReactionTime").opt().
-      * triple("v:Response", "scm:emotion", "v:Emotion").opt().
-      * triple("v:Response", "scm:emotion_confidence", "v:EmotionConfidence").opt().
-      * triple("v:Response", "belongs_to_session", "v:Session").opt().
+      FOR response IN responses
+        FILTER response.participant_id == @participantId
+        RETURN response
     `
 
-    const result = await this.query(query)
+    const result = await this.query(query, { participantId })
 
-    return result.bindings?.map((binding: any) => ({
-      id: binding.Id?.['@value'],
-      stimulus_word: binding.StimulusWord?.['@value'],
-      response_word: binding.ResponseWord?.['@value'],
-      reaction_time_ms: parseInt(binding.ReactionTime?.['@value'] || '0'),
-      emotion: binding.Emotion?.['@value'],
-      emotion_confidence: parseFloat(binding.EmotionConfidence?.['@value'] || '0'),
-      session_id: binding.Session?.['@value']?.split('/').pop()
+    return result?.map((response: any) => ({
+      id: response._key,
+      stimulus_word: response.stimulus_word,
+      response_word: response.response_word,
+      reaction_time_ms: response.reaction_time_ms || 0,
+      emotion: response.emotion,
+      emotion_confidence: response.emotion_confidence || 0,
+      session_id: response.session_id
     })) || []
   }
 }
 
-// TerminusDB configuration
-const terminusdbConfig: TerminusDBConfig = {
-  url: process.env.NEXT_PUBLIC_TERMINUSDB_URL || 'http://localhost:6363',
-  user: process.env.TERMINUSDB_USER || 'admin',
-  password: process.env.TERMINUSDB_PASSWORD || 'root',
-  databaseId: process.env.TERMINUSDB_DATABASE_ID || 'spirit_in_physics'
+// ArangoDB configuration
+const arangodbConfig: ArangoDBConfig = {
+  url: process.env.NEXT_PUBLIC_ARANGODB_URL || 'http://localhost:8529',
+  user: process.env.ARANGODB_USER || 'root',
+  password: process.env.ARANGODB_PASSWORD || '',
+  databaseName: process.env.ARANGODB_DATABASE_NAME || 'spirit_in_physics'
 }
 
 // Create singleton client instance
-let clientInstance: TerminusDBClient | null = null
+let clientInstance: ArangoDBClient | null = null
 
-export function createTerminusDBClient(): TerminusDBClient {
+export function createArangoDBClient(): ArangoDBClient {
   if (!clientInstance) {
-    clientInstance = new TerminusDBClient(terminusdbConfig)
+    clientInstance = new ArangoDBClient(arangodbConfig)
   }
   return clientInstance
 }

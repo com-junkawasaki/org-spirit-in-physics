@@ -1,5 +1,5 @@
 temporalio
-terminusdb-client
+python-arango
 pyyaml
 hume
 pandas

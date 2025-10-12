@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createTerminusDBClient } from '@/lib/supabase'
+import { createArangoDBClient } from '@/lib/supabase'
 
 interface AnalysisResultData {
   participant_id: string
@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const client = createTerminusDBClient()
+    const client = createArangoDBClient()
 
-    // Validate participant exists in TerminusDB
+    // Validate participant exists in ArangoDB
     if (participantId) {
       try {
         await client.getParticipantDetails(participantId)

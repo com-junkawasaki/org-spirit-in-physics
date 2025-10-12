@@ -1,4 +1,4 @@
-import { createTerminusDBClient } from './supabase'
+import { createArangoDBClient } from './supabase'
 
 export interface AnalysisResult {
   id: string
@@ -81,47 +81,37 @@ export interface DashboardStats {
 // Server-side data fetching functions
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    const client = createTerminusDBClient()
+    const client = createArangoDBClient()
 
     // Get participants count
-    const participantsQuery = `
-      * triple("v:Participant", "rdf:type", "scm:Participant").
-      * count("v:Participant", "v:Count").
-    `
+    const participantsQuery = `RETURN LENGTH(participants)`
     const participantsResult = await client.query(participantsQuery)
-    const totalParticipants = parseInt(participantsResult.bindings?.[0]?.Count?.['@value'] || '0')
+    const totalParticipants = participantsResult[0] || 0
 
     // Get sessions count
-    const sessionsQuery = `
-      * triple("v:Session", "rdf:type", "scm:ExperimentSession").
-      * count("v:Session", "v:Count").
-    `
+    const sessionsQuery = `RETURN LENGTH(sessions)`
     const sessionsResult = await client.query(sessionsQuery)
-    const totalSessions = parseInt(sessionsResult.bindings?.[0]?.Count?.['@value'] || '0')
+    const totalSessions = sessionsResult[0] || 0
 
     // Get responses count
-    const responsesQuery = `
-      * triple("v:Response", "rdf:type", "scm:ResponseData").
-      * count("v:Response", "v:Count").
-    `
+    const responsesQuery = `RETURN LENGTH(responses)`
     const responsesResult = await client.query(responsesQuery)
-    const totalResponses = parseInt(responsesResult.bindings?.[0]?.Count?.['@value'] || '0')
+    const totalResponses = responsesResult[0] || 0
 
     // Get emotion distribution
     const emotionQuery = `
-      * triple("v:Response", "rdf:type", "scm:ResponseData").
-      * triple("v:Response", "scm:emotion", "v:Emotion").
-      * group_by("v:Emotion", ["v:Emotion"], "v:Count", count("v:Response", "v:Count")).
+      FOR response IN responses
+        FILTER response.emotion != null
+        COLLECT emotion = response.emotion WITH COUNT INTO count
+        RETURN { emotion, count }
     `
     const emotionResult = await client.query(emotionQuery)
     const emotionDistribution: Record<string, number> = {}
-    emotionResult.bindings?.forEach((binding: any) => {
-      const emotion = binding.Emotion?.['@value'] || 'unknown'
-      const count = parseInt(binding.Count?.['@value'] || '0')
-      emotionDistribution[emotion] = count
+    emotionResult?.forEach((item: any) => {
+      emotionDistribution[item.emotion || 'unknown'] = item.count || 0
     })
 
-    // Mock analysis results (since we don't have analysis results in TerminusDB yet)
+    // Mock analysis results (since we don't have analysis results in ArangoDB yet)
     const averageSpiritProbability = 0.5
     const componentAverages = {
       word2vec: 0.1,
@@ -158,7 +148,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-    const client = createTerminusDBClient()
+    const client = createArangoDBClient()
     const participants = await client.getParticipants()
 
     // For each participant, get detailed data
@@ -184,7 +174,7 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    const client = createTerminusDBClient()
+    const client = createArangoDBClient()
 
     // Get participant details
     const participant = await client.getParticipantDetails(participantId)
@@ -320,7 +310,7 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   try {
     // Get participant responses and generate mock analysis results
-    const client = createTerminusDBClient()
+    const client = createArangoDBClient()
     const responses = await client.getParticipantResponses(participantId)
 
     // Generate mock analysis results based on responses

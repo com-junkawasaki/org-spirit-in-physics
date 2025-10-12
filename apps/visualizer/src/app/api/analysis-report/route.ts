@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createTerminusDBClient } from '@/lib/supabase'
+import { createArangoDBClient } from '@/lib/supabase'
 
 export async function GET() {
   try {
-    console.log('API: Generating analysis report from TerminusDB...')
-    const client = createTerminusDBClient()
+    console.log('API: Generating analysis report from ArangoDB...')
+    const client = createArangoDBClient()
 
     // Get participants
     const participants = await client.getParticipants()

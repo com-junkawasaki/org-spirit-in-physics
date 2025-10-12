@@ -23,11 +23,11 @@ COPY env.docker .env
 COPY . .
 
 # Create config.yaml from environment variables
-RUN echo "terminusdb:" > config.yaml && \
-    echo "  url: \"$TERMINUSDB_URL\"" >> config.yaml && \
-    echo "  user: \"$TERMINUSDB_USER\"" >> config.yaml && \
-    echo "  password: \"$TERMINUSDB_PASSWORD\"" >> config.yaml && \
-    echo "  database_id: \"$DATABASE_ID\"" >> config.yaml && \
+RUN echo "arangodb:" > config.yaml && \
+    echo "  url: \"$ARANGODB_URL\"" >> config.yaml && \
+    echo "  user: \"$ARANGODB_USER\"" >> config.yaml && \
+    echo "  password: \"$ARANGODB_PASSWORD\"" >> config.yaml && \
+    echo "  database_name: \"$DATABASE_NAME\"" >> config.yaml && \
     echo "" >> config.yaml && \
     echo "supabase:" >> config.yaml && \
     echo "  url: \"$SUPABASE_URL\"" >> config.yaml && \

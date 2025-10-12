@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createTerminusDBClient } from '@/lib/supabase'
+import { createArangoDBClient } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('API: Fetching participants from TerminusDB...')
-    const client = createTerminusDBClient()
+    console.log('API: Fetching participants from ArangoDB...')
+    const client = createArangoDBClient()
 
-    // Get participants data from TerminusDB
+    // Get participants data from ArangoDB
     const participants = await client.getParticipants()
 
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')

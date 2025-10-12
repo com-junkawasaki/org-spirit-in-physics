@@ -33,17 +33,17 @@ services:
     networks:
       - spirit-network
 
-  # TerminusDB
-  terminusdb:
-    image: terminusdb/terminusdb-server:latest
-    container_name: spirit-terminusdb
+  # ArangoDB
+  arangodb:
+    image: arangodb:latest
+    container_name: spirit-arangodb
     ports:
-      - "6363:6363"
+      - "8529:8529"
     environment:
-      - TERMINUSDB_SERVER_NAME=spirit-in-physics
-      - TERMINUSDB_ADMIN_PASS=root
+      - ARANGO_ROOT_PASSWORD=root
+      - ARANGO_NO_AUTH=1
     volumes:
-      - terminusdb_data:/app/terminusdb/storage
+      - arangodb_data:/var/lib/arangodb3
     networks:
       - spirit-network
 
@@ -133,7 +133,7 @@ services:
       - ./apps/analyzer/env.docker
     depends_on:
       - supabase-api
-      - terminusdb
+      - arangodb
     networks:
       - spirit-network
 
@@ -150,14 +150,14 @@ services:
     depends_on:
       - supabase-api
       - temporal
-      - terminusdb
+      - arangodb
     networks:
       - spirit-network
 
 volumes:
   supabase_db_data:
   temporal_data:
-  terminusdb_data:
+  arangodb_data:
 
 networks:
   spirit-network:
