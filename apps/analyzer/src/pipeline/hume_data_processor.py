@@ -15,8 +15,9 @@ class HumeDataProcessor:
         try:
             # Query Hume analysis jobs for this session using AQL
             aql_query = """
-            FOR job IN participant_hume_analysis_jobs
-                FILTER job.participant_experiment_session_id == @session_id
+            FOR job IN analysis_runs
+                FILTER job.analysis_type == "hume_ai"
+                FILTER job.participant_session_id == @session_id
                 FILTER job.status == "completed"
                 RETURN job
             """
@@ -26,19 +27,24 @@ class HumeDataProcessor:
 
             if results:
                 job = results[0]
-                predictions = job.get("predictions", "{}")
+                # Get Hume predictions from analysis_results collection
+                predictions = self._get_hume_predictions(job["id"])
 
-                # Parse predictions JSON
-                import json
-                predictions_data = json.loads(predictions)
+                if predictions:
+                    # Parse predictions JSON
+                    import json
+                    predictions_data = json.loads(predictions)
 
-                # Extract emotion timeseries
-                emotion_timeseries = self._extract_emotion_timeseries(predictions_data)
+                    # Extract emotion timeseries
+                    emotion_timeseries = self._extract_emotion_timeseries(predictions_data)
 
-                logging.info(f"Processed Hume data for session {session_id}: {len(emotion_timeseries)} emotion points")
-                return {
-                    "emotion_timeseries": emotion_timeseries
-                }
+                    logging.info(f"Processed Hume data for session {session_id}: {len(emotion_timeseries)} emotion points")
+                    return {
+                        "emotion_timeseries": emotion_timeseries
+                    }
+                else:
+                    logging.info(f"No Hume predictions found for job {job['id']}")
+                    return {"emotion_timeseries": []}
             else:
                 logging.info(f"No completed Hume jobs found for session {session_id}")
                 return {"emotion_timeseries": []}
@@ -46,6 +52,35 @@ class HumeDataProcessor:
         except Exception as e:
             logging.error(f"Failed to process Hume data for session {session_id}: {e}")
             return {"emotion_timeseries": []}
+
+    def _get_hume_predictions(self, job_id):
+        """Get Hume predictions data for a job"""
+        try:
+            aql_query = """
+            FOR result IN analysis_results
+                FILTER result.analysis_run_id == @job_id
+                FILTER result.prediction_type == "language" OR result.prediction_type == "burst" OR result.prediction_type == "prosody"
+                SORT result.data.begin_time ASC
+                RETURN result
+            """
+
+            cursor = self.db.aql.execute(aql_query, bind_vars={"job_id": job_id})
+            results = list(cursor)
+
+            if results:
+                # Combine all predictions into a single structure
+                combined_predictions = []
+                for result in results:
+                    combined_predictions.append(result["data"])
+
+                import json
+                return json.dumps({"results": [{"predictions": combined_predictions}]})
+            else:
+                return None
+
+        except Exception as e:
+            logging.error(f"Failed to get Hume predictions for job {job_id}: {e}")
+            return None
 
     def _extract_emotion_timeseries(self, predictions_data):
         """Extract emotion timeseries from Hume predictions"""

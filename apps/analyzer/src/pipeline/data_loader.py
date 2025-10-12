@@ -1,6 +1,7 @@
 from arango import ArangoClient
 import logging
 import os
+import yaml
 
 class DataLoader:
     """Data loader for analyzer using ArangoDB"""
@@ -32,28 +33,27 @@ class DataLoader:
     def get_experiment_session_for_response(self, response_id):
         """Get experiment session for a given response"""
         try:
-            query = WOQLQuery().woql_and(
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "belongs_to_session", "v:Session"),
-                WOQLQuery().triple("v:Session", "rdf:type", "scm:ExperimentSession"),
-                WOQLQuery().triple("v:Session", "scm:id", "v:SessionId"),
-                WOQLQuery().triple("v:Session", "scm:session_type", "v:SessionType"),
-                WOQLQuery().triple("v:Session", "scm:start_time", "v:StartTime").opt(),
-                WOQLQuery().triple("v:Session", "scm:end_time", "v:EndTime").opt(),
-                WOQLQuery().triple("v:Session", "belongs_to_participant", "v:Participant")
-            )
+            aql_query = """
+            FOR response IN participant_session_responses
+                FILTER response.id == @response_id
+                FOR session IN participant_sessions
+                    FILTER session.id == response.experiment_id
+                    FOR participant IN participants
+                        FILTER participant.id == response.participant_id
+                        RETURN {
+                            id: session.id,
+                            session_type: session.session_type,
+                            start_time: session.start_time,
+                            end_time: session.end_time,
+                            participant_id: participant.id
+                        }
+            """
 
-            result = self.client.query(query)
+            cursor = self.db.aql.execute(aql_query, bind_vars={"response_id": response_id})
+            results = list(cursor)
 
-            if result.get("bindings") and len(result["bindings"]) > 0:
-                binding = result["bindings"][0]
-                session_data = {
-                    "id": binding.get("SessionId", {}).get("@value"),
-                    "session_type": binding.get("SessionType", {}).get("@value"),
-                    "start_time": binding.get("StartTime", {}).get("@value"),
-                    "end_time": binding.get("EndTime", {}).get("@value"),
-                    "participant_id": binding.get("Participant", {}).get("@value", "").split("/")[-1] if binding.get("Participant") else None
-                }
-                return session_data
+            if results:
+                return results[0]
             else:
                 logging.warning(f"No experiment session found for response {response_id}")
                 return None
@@ -65,29 +65,24 @@ class DataLoader:
     def get_response(self, response_id):
         """Get response data by ID"""
         try:
-            query = WOQLQuery().woql_and(
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "rdf:type", "scm:ResponseData"),
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "scm:id", "v:Id"),
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "scm:stimulus_word", "v:StimulusWord"),
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "scm:response_word", "v:ResponseWord"),
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "scm:audio_file_path", "v:AudioPath").opt(),
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "scm:video_file_path", "v:VideoPath").opt(),
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "belongs_to_participant", "v:Participant")
-            )
-
-            result = self.client.query(query)
-
-            if result.get("bindings") and len(result["bindings"]) > 0:
-                binding = result["bindings"][0]
-                response_data = {
-                    "id": binding.get("Id", {}).get("@value"),
-                    "stimulus_word": binding.get("StimulusWord", {}).get("@value"),
-                    "response_word": binding.get("ResponseWord", {}).get("@value"),
-                    "audio_file_path": binding.get("AudioPath", {}).get("@value"),
-                    "video_file_path": binding.get("VideoPath", {}).get("@value"),
-                    "participant_id": binding.get("Participant", {}).get("@value", "").split("/")[-1] if binding.get("Participant") else None
+            aql_query = """
+            FOR response IN participant_session_responses
+                FILTER response.id == @response_id
+                RETURN {
+                    id: response.id,
+                    stimulus_word: response.stimulus_word,
+                    response_word: response.response_word,
+                    audio_file_path: response.audio_file_path,
+                    video_file_path: response.video_file_path,
+                    participant_id: response.participant_id
                 }
-                return response_data
+            """
+
+            cursor = self.db.aql.execute(aql_query, bind_vars={"response_id": response_id})
+            results = list(cursor)
+
+            if results:
+                return results[0]
             else:
                 logging.warning(f"Response {response_id} not found.")
                 return None
@@ -101,22 +96,19 @@ class DataLoader:
         try:
             # For now, return the skin_potential value directly from the response
             # In the future, this could be extended to handle time-series data
-            query = WOQLQuery().woql_and(
-                WOQLQuery().triple(f"terminusdb:///data/ResponseData/{response_id}", "scm:skin_potential", "v:SkinPotential").opt()
-            )
+            aql_query = """
+            FOR response IN participant_session_responses
+                FILTER response.id == @response_id AND response.skin_potential != null
+                RETURN response.skin_potential
+            """
 
-            result = self.client.query(query)
+            cursor = self.db.aql.execute(aql_query, bind_vars={"response_id": response_id})
+            results = list(cursor)
 
-            if result.get("bindings") and len(result["bindings"]) > 0:
-                binding = result["bindings"][0]
-                skin_potential = binding.get("SkinPotential", {}).get("@value")
-
-                if skin_potential is not None:
-                    logging.info(f"Loaded skin potential data for response {response_id}")
-                    return [{"value": float(skin_potential), "timestamp_offset_ms": 0}]
-                else:
-                    logging.info(f"No skin potential data found for response {response_id}")
-                    return []
+            if results and results[0] is not None:
+                skin_potential = results[0]
+                logging.info(f"Loaded skin potential data for response {response_id}")
+                return [{"value": float(skin_potential), "timestamp_offset_ms": 0}]
             else:
                 logging.info(f"No skin potential data found for response {response_id}")
                 return []

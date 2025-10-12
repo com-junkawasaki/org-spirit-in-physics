@@ -97,12 +97,13 @@ def parse_events_build_sessions_and_responses(session_json: dict):
         elif typ == "speech_detected":
             if window_open and last_word and current_session is not None:
                 rt = max(0, ts - last_word["ts"])
-                # create response (response_word は不明→None で格納; 後で音声認識等と突合せ可能)
+                # create response (speech_detectedイベントからresponse_wordを取得)
+                response_word = payload.get("word") or payload.get("key")
                 resp = {
                     "participant_id": participant_id,
                     "session_index": current_session["session_index"],
                     "stimulus_word": last_word["word"],
-                    "response_word": None,
+                    "response_word": response_word,
                     "reaction_time_ms": rt,
                     "event_ts": ts,
                 }
@@ -199,8 +200,19 @@ def main():
                 "emotion": None,
                 "emotion_confidence": None,
             }
-            col_responses.insert(rdoc)
-            imported_r += 1
+            try:
+                result = col_responses.insert(rdoc)
+                imported_r += 1
+                if imported_r <= 3:  # Debug first few insertions
+                    print(f"Inserted response: {rdoc['participant_id']} - {rdoc['response_word']}")
+            except Exception as e:
+                print(f"Failed to insert response: {e}")
+                print(f"Response data: {rdoc}")
+
+        # Debug: check if data was actually inserted
+        if len(responses) > 0:
+            count_after = len(col_responses.all())
+            print(f"Debug: responses in collection after insert: {count_after}")
 
         print(f"[OK] {pid}: sessions={len(sessions)} responses={len(responses)}")
 

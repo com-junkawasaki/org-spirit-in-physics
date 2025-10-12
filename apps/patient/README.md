@@ -37,7 +37,7 @@ pnpm dev
 
 ## 🏗️ Architecture
 
-This project implements **Hexagonal Architecture + CQRS** pattern with Supabase as the primary database:
+This project implements **Hexagonal Architecture + CQRS** pattern with ArangoDB as the primary database:
 
 ```
 src/

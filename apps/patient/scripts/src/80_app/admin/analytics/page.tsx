@@ -55,7 +55,7 @@ import {
 interface IntegratedAnalyticsData {
   storageStatus: {
     blob: boolean;
-    supabase: boolean;
+    arangodb: boolean;
     filesystem: boolean;
   };
   participantStats: {
@@ -78,7 +78,7 @@ interface IntegratedAnalyticsData {
   };
   storageStats: {
     blobUsage: number;
-    supabaseUsage: number;
+    arangodbUsage: number;
     totalDataPoints: number;
     syncStatus: 'synced' | 'syncing' | 'error';
   };
@@ -169,7 +169,7 @@ export default function AnalyticsDashboard() {
       const integratedData: IntegratedAnalyticsData = {
         storageStatus: {
           blob: true, // Vercel Blobは利用可能
-          supabase: true, // Supabaseは利用可能
+          arangodb: true, // ArangoDBは利用可能
           filesystem: true // ファイルシステムは利用可能
         },
         participantStats: {
@@ -200,7 +200,7 @@ export default function AnalyticsDashboard() {
   },
         storageStats: {
           blobUsage: participantsData.total * 1024 || 0, // 仮定値
-          supabaseUsage: (participantsData.total || 0) * 1024, // Supabase使用量の見積もり
+          arangodbUsage: (participantsData.total || 0) * 1024, // ArangoDB使用量の見積もり
           totalDataPoints: (participantsData.total || 0) + (sessionsData.data?.length || 0) + (emotionsData.data?.totalAnalyses || 0),
           syncStatus: 'synced' // 同期状態を表示
         }
@@ -250,10 +250,10 @@ export default function AnalyticsDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Database className="h-4 w-4 text-green-500" />
-              <span className="text-sm">Supabase Database</span>
+              <span className="text-sm">ArangoDB Database</span>
             </div>
-            <Badge variant={analyticsData?.storageStatus.supabase ? "default" : "secondary"}>
-              {analyticsData?.storageStatus.supabase ? (
+            <Badge variant={analyticsData?.storageStatus.arangodb ? "default" : "secondary"}>
+              {analyticsData?.storageStatus.arangodb ? (
                 <><CheckCircle className="h-3 w-3 mr-1" />利用可能</>
               ) : (
                 <><Clock className="h-3 w-3 mr-1" />利用不可</>
@@ -582,9 +582,9 @@ export default function AnalyticsDashboard() {
           <Activity className="h-5 w-5" />
           <span>データ同期ステータス</span>
         </CardTitle>
-        <CardDescription>
-          Supabase、Blob、ファイルシステム間の同期状態
-        </CardDescription>
+          <CardDescription>
+            ArangoDB、Blob、ファイルシステム間の同期状態
+          </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -612,10 +612,10 @@ export default function AnalyticsDashboard() {
               <div className="text-xs text-gray-500">Blob使用量</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-green-600">
-                {(analyticsData?.storageStats.supabaseUsage || 0) / 1024}KB
-              </div>
-             <div className="text-xs text-gray-500">Supabase使用量</div>
+                <div className="text-lg font-bold text-green-600">
+                  {(analyticsData?.storageStats.arangodbUsage || 0) / 1024}KB
+                </div>
+                <div className="text-xs text-gray-500">ArangoDB使用量</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-purple-600">
@@ -808,19 +808,19 @@ export default function AnalyticsDashboard() {
                       </div>
                     </div>
 
-                     {/* Supabase 使用状況 */}
+                     {/* ArangoDB 使用状況 */}
                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                       <div className="text-3xl font-bold text-green-600 mb-2">
-                         {(analyticsData?.storageStats.supabaseUsage || 0) / 1024}KB
-                       </div>
-                       <div className="text-sm text-green-700 font-medium">Supabase Database</div>
-                       <div className="text-xs text-green-600 mt-1">
-                         {analyticsData?.storageStatus.supabase ? '利用可能' : '利用不可'}
+                        <div className="text-3xl font-bold text-green-600 mb-2">
+                          {(analyticsData?.storageStats.arangodbUsage || 0) / 1024}KB
+                        </div>
+                        <div className="text-sm text-green-700 font-medium">ArangoDB Database</div>
+                        <div className="text-xs text-green-600 mt-1">
+                          {analyticsData?.storageStatus.arangodb ? '利用可能' : '利用不可'}
                        </div>
                       <div className="w-full bg-green-200 rounded-full h-2 mt-3">
                         <div
                           className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${analyticsData?.storageStatus.supabase ? 75 : 0}%` }}
+                          style={{ width: `${analyticsData?.storageStatus.arangodb ? 75 : 0}%` }}
                         ></div>
                       </div>
                     </div>

@@ -59,9 +59,10 @@ class JobManager:
             "max_retries": self.max_retries
         }
         
-        response = self.supabase.table('analysis_jobs').insert(job_data).execute()
-        if response.error:
-            raise Exception(f"Failed to create job: {response.error}")
+        # Insert job into ArangoDB collection
+        collection = self.db.collection('analysis_jobs')
+        job_data['_key'] = job_id
+        result = collection.insert(job_data)
         
         logging.info(f"Created job {job_id} for response {response_id}, type {job_type.value}")
         return job_id
@@ -69,12 +70,22 @@ class JobManager:
     def get_next_job(self) -> Optional[AnalysisJob]:
         """Get the next job to process based on priority and creation time."""
         # Find jobs that are ready to run (no pending dependencies)
-        response = self.supabase.rpc('get_next_ready_job').execute()
-        
-        if response.error or not response.data:
+        # For now, get the oldest queued job (simplified implementation)
+        aql_query = """
+        FOR job IN analysis_jobs
+            FILTER job.status == "queued"
+            SORT job.priority DESC, job.created_at ASC
+            LIMIT 1
+            RETURN job
+        """
+
+        cursor = self.db.aql.execute(aql_query)
+        results = list(cursor)
+
+        if not results:
             return None
-        
-        job_data = response.data[0]
+
+        job_data = results[0]
         return self._parse_job_data(job_data)
 
     def update_job_status(self, job_id: str, status: JobStatus, 
@@ -92,18 +103,18 @@ class JobManager:
             if error_message:
                 update_data["error_message"] = error_message
         
-        response = self.supabase.table('analysis_jobs').update(update_data).eq('id', job_id).execute()
-        if response.error:
-            logging.error(f"Failed to update job {job_id} status: {response.error}")
+        collection = self.db.collection('analysis_jobs')
+        result = collection.update_match({"_key": job_id}, update_data)
 
     def retry_job(self, job_id: str) -> bool:
         """Retry a failed job if retry count is below max_retries."""
         # Get current job data
-        response = self.supabase.table('analysis_jobs').select('*').eq('id', job_id).execute()
-        if response.error or not response.data:
+        collection = self.db.collection('analysis_jobs')
+        job_data = collection.get(job_id)
+        if not job_data:
             return False
-        
-        job = self._parse_job_data(response.data[0])
+
+        job = self._parse_job_data(job_data)
         
         if job.retry_count >= job.max_retries:
             logging.warning(f"Job {job_id} has exceeded max retries ({job.max_retries})")
@@ -119,10 +130,7 @@ class JobManager:
             "updated_at": datetime.now().isoformat()
         }
         
-        response = self.supabase.table('analysis_jobs').update(update_data).eq('id', job_id).execute()
-        if response.error:
-            logging.error(f"Failed to retry job {job_id}: {response.error}")
-            return False
+        result = collection.update_match({"_key": job_id}, update_data)
         
         logging.info(f"Retrying job {job_id} (attempt {job.retry_count + 1}/{job.max_retries})")
         return True
@@ -138,44 +146,52 @@ class JobManager:
             "expires_at": expires_at.isoformat()
         }
         
-        response = self.supabase.table('analysis_cache').upsert(cache_data, on_conflict="job_id,cache_key").execute()
-        if response.error:
-            logging.warning(f"Failed to cache result for job {job_id}: {response.error}")
+        collection = self.db.collection('analysis_cache')
+        # Create unique key for cache entry
+        cache_data['_key'] = f"{job_id}_{key}"
+        result = collection.insert(cache_data, overwrite=True)  # Use overwrite for upsert behavior
 
     def get_cached_result(self, job_id: str, key: str) -> Optional[Any]:
         """Get cached intermediate results."""
-        response = self.supabase.table('analysis_cache').select('cache_value, expires_at').eq('job_id', job_id).eq('cache_key', key).execute()
-        
-        if response.error or not response.data:
+        collection = self.db.collection('analysis_cache')
+        cache_key = f"{job_id}_{key}"
+        cache_entry = collection.get(cache_key)
+
+        if not cache_entry:
             return None
-        
-        cache_entry = response.data[0]
+
         expires_at = datetime.fromisoformat(cache_entry['expires_at'])
-        
+
         if datetime.now() > expires_at:
             # Cache expired, clean it up
-            self.supabase.table('analysis_cache').delete().eq('job_id', job_id).eq('cache_key', key).execute()
+            collection.delete(cache_key)
             return None
-        
+
         return cache_entry['cache_value']
 
     def get_job_status(self, job_id: str) -> Optional[AnalysisJob]:
         """Get the current status of a job."""
-        response = self.supabase.table('analysis_jobs').select('*').eq('id', job_id).execute()
-        
-        if response.error or not response.data:
+        collection = self.db.collection('analysis_jobs')
+        job_data = collection.get(job_id)
+
+        if not job_data:
             return None
-        
-        return self._parse_job_data(response.data[0])
+
+        return self._parse_job_data(job_data)
 
     def get_jobs_by_run(self, run_id: str) -> List[AnalysisJob]:
         """Get all jobs for a specific analysis run."""
-        response = self.supabase.table('analysis_jobs').select('*').eq('run_id', run_id).order('created_at').execute()
-        
-        if response.error:
-            return []
-        
-        return [self._parse_job_data(job_data) for job_data in response.data]
+        aql_query = """
+        FOR job IN analysis_jobs
+            FILTER job.run_id == @run_id
+            SORT job.created_at ASC
+            RETURN job
+        """
+
+        cursor = self.db.aql.execute(aql_query, bind_vars={"run_id": run_id})
+        job_data_list = list(cursor)
+
+        return [self._parse_job_data(job_data) for job_data in job_data_list]
 
     def add_job_dependency(self, job_id: str, depends_on_job_id: str) -> None:
         """Add a dependency between jobs."""
@@ -184,9 +200,10 @@ class JobManager:
             "depends_on_job_id": depends_on_job_id
         }
         
-        response = self.supabase.table('analysis_job_dependencies').insert(dependency_data).execute()
-        if response.error:
-            logging.error(f"Failed to add job dependency: {response.error}")
+        collection = self.db.collection('analysis_job_dependencies')
+        # Create unique key for dependency
+        dependency_data['_key'] = f"{job_id}_{depends_on_job_id}"
+        result = collection.insert(dependency_data)
 
     def _parse_job_data(self, data: Dict[str, Any]) -> AnalysisJob:
         """Parse database job data into AnalysisJob object."""

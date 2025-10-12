@@ -45,11 +45,18 @@ class DataStorer:
             import json
             emotion_json = json.dumps(emotion_timeseries_data)
 
-            query = WOQLQuery().woql_and(
-                WOQLQuery().insert(f"terminusdb:///data/ResponseData/{response_id}", "scm:emotion_data", emotion_json)
-            )
+            # Update the response document with emotion data
+            aql_query = """
+            UPDATE @response_id WITH {
+                emotion: @emotion_data
+            } IN participant_session_responses
+            """
 
-            result = self.client.query(query)
+            self.db.aql.execute(aql_query, bind_vars={
+                "response_id": response_id,
+                "emotion_data": emotion_json
+            })
+
             logging.info(f"Stored emotion data for response {response_id}")
 
         except Exception as e:

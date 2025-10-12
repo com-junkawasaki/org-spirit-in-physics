@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { arangodb } from "scripts/src/lib/supabase";
+import { arangodb } from "scripts/src/lib/arangodb";
 import { parseWordResponsesFromEvents, getParticipantStatistics } from "scripts/src/lib/data-loader";
 
 export async function GET(request: NextRequest) {

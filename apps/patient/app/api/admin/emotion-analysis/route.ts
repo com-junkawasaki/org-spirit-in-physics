@@ -5,7 +5,7 @@ import {
   loadEmotionAnalysisResults,
   generateEmotionStatistics
 } from "scripts/src/lib/emotion-analysis";
-import { arangodb } from "scripts/src/lib/supabase";
+import { arangodb } from "scripts/src/lib/arangodb";
 import { WorkflowService } from "scripts/src/lib/workflow-service";
 
 export async function GET(request: NextRequest) {

@@ -1,7 +1,7 @@
 // Merkle DAG: ArangoDBデータベースマネージャー
 // ArangoDBを使用したデータベース操作マネージャー
 
-import { arangodb, Database } from '../supabase';
+import { arangodb, Database } from '../arangodb';
 
 // インターフェース定義
 export interface Participant {

@@ -1,10 +1,10 @@
 # Configuration for the Spirit in Physics Analysis Pipeline
 
-terminusdb:
-  url: "http://localhost:6363"
-  user: "admin"
-  password: "root"
-  database_id: "spirit_in_physics"
+arangodb:
+  url: "http://localhost:8529"
+  user: "root"
+  password: ""
+  database: "spirit_in_physics"
 
 hume_ai:
   api_key: "LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s"

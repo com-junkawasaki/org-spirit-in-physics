@@ -31,13 +31,13 @@ def main():
 
     # --- 2. Initialize Components ---
     logging.info("Initializing pipeline components...")
-    data_loader = DataLoader(config['terminusdb'])
+    data_loader = DataLoader(config['arangodb'])
     emotion_processor = EmotionProcessor(config['hume_ai'])
-    hume_data_processor = HumeDataProcessor(config['terminusdb'])
+    hume_data_processor = HumeDataProcessor(config['arangodb'])
     physiological_processor = PhysiologicalProcessor()
     feature_extractor = FeatureExtractor(config['model_params'])
     kawasaki_model = KawasakiModel(config['model_params'], config['word2vec'])
-    data_storer = DataStorer(config['terminusdb'])
+    data_storer = DataStorer(config['arangodb'])
 
     # --- 3. Create Analysis Run ---
     run_id = data_storer.create_analysis_run(args.model_version, config['model_params'], args.notes)

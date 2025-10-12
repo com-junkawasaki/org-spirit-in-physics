@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
-import { arangodb } from './supabase';
+import { arangodb } from './arangodb';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
