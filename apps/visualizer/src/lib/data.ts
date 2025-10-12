@@ -89,18 +89,18 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const totalParticipants = participantsResult[0] || 0
 
     // Get sessions count
-    const sessionsQuery = `RETURN LENGTH(sessions)`
+    const sessionsQuery = `RETURN LENGTH(participant_sessions)`
     const sessionsResult = await client.query(sessionsQuery)
     const totalSessions = sessionsResult[0] || 0
 
     // Get responses count
-    const responsesQuery = `RETURN LENGTH(responses)`
+    const responsesQuery = `RETURN LENGTH(participant_session_responses)`
     const responsesResult = await client.query(responsesQuery)
     const totalResponses = responsesResult[0] || 0
 
     // Get emotion distribution
     const emotionQuery = `
-      FOR response IN responses
+      FOR response IN participant_session_responses
         FILTER response.emotion != null
         COLLECT emotion = response.emotion WITH COUNT INTO count
         RETURN { emotion, count }

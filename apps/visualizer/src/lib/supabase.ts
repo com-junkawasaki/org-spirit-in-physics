@@ -47,12 +47,12 @@ class ArangoDBClient {
     const query = `
       FOR participant IN participants
         LET sessionCount = LENGTH(
-          FOR session IN sessions
+          FOR session IN participant_sessions
             FILTER session.participant_id == participant._key
             RETURN session
         )
         LET responseCount = LENGTH(
-          FOR response IN responses
+          FOR response IN participant_session_responses
             FILTER response.participant_id == participant._key
             RETURN response
         )
@@ -95,7 +95,7 @@ class ArangoDBClient {
   async getParticipantResponses(participantId: string): Promise<any[]> {
     // Get responses for a specific participant from ArangoDB
     const query = `
-      FOR response IN responses
+      FOR response IN participant_session_responses
         FILTER response.participant_id == @participantId
         RETURN response
     `
