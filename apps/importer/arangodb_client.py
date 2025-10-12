@@ -37,7 +37,9 @@ class ArangoDBClient:
         """Connect to ArangoDB server."""
         try:
             self.client = ArangoClient(hosts=self.server_url)
-            self.db = self.client.db(self.database_name, username=self.user, password=self.password)
+            # First connect to system database to check/create our database
+            sys_db = self.client.db("_system", username=self.user, password=self.password)
+            self.db = sys_db
             logger.info(f"Connected to ArangoDB at {self.server_url}")
             return True
         except Exception as e:
@@ -119,132 +121,48 @@ class ArangoDBClient:
             logger.error(f"Failed to insert participant {participant_data.get('id')}: {e}")
             return False
 
-    def insert_consent(self, consent_data: Dict[str, Any]) -> bool:
-        """Insert a consent document."""
-        try:
-            if not self.client:
-                raise ConnectionError("Not connected to TerminusDB")
-
-            # Create consent IRI
-            consent_id = consent_data.get("id", str(hash(str(consent_data))))
-            consent_iri = f"terminusdb:///data/Consent/{consent_id}"
-            participant_iri = f"terminusdb:///data/Participant/{consent_data.get('participant_id')}"
-
-            # Prepare consent document
-            consent_doc = {
-                "@type": "Consent",
-                "@id": consent_iri,
-                "id": consent_id,
-                "signature": consent_data.get("signature"),
-                "agreements": json.dumps(consent_data.get("agreements", {})),
-                "agreed_at": consent_data.get("agreed_at"),
-                "created_at": consent_data.get("created_at"),
-                "updated_at": consent_data.get("updated_at"),
-                "belongs_to_participant": participant_iri
-            }
-
-            # Remove None values
-            consent_doc = {k: v for k, v in consent_doc.items() if v is not None}
-
-            query = WOQLQuery().woql_and(
-                WOQLQuery().insert(consent_doc),
-                WOQLQuery().link(participant_iri, "has_consent", consent_iri)
-            )
-
-            result = self.client.query(query)
-            logger.info(f"Inserted consent for participant: {consent_data.get('participant_id')}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to insert consent: {e}")
-            return False
-
     def insert_session(self, session_data: Dict[str, Any]) -> bool:
         """Insert an experiment session document."""
         try:
-            if not self.client:
-                raise ConnectionError("Not connected to TerminusDB")
-
-            # Create session IRI
-            session_id = session_data.get("id")
-            session_iri = f"terminusdb:///data/ExperimentSession/{session_id}"
-            participant_iri = f"terminusdb:///data/Participant/{session_data.get('participant_id')}"
+            if not self.db:
+                raise ConnectionError("Not connected to ArangoDB")
 
             # Prepare session document
             session_doc = {
-                "@type": "ExperimentSession",
-                "@id": session_iri,
-                "id": session_id,
+                "_key": session_data.get("id"),
+                "id": session_data.get("id"),
+                "participant_id": session_data.get("participant_id"),
                 "session_type": session_data.get("session_type"),
                 "start_time": session_data.get("start_time"),
                 "end_time": session_data.get("end_time"),
                 "created_at": session_data.get("created_at"),
-                "updated_at": session_data.get("updated_at"),
-                "belongs_to_participant": participant_iri
+                "updated_at": session_data.get("updated_at")
             }
 
             # Remove None values
             session_doc = {k: v for k, v in session_doc.items() if v is not None}
 
-            query = WOQLQuery().woql_and(
-                WOQLQuery().insert(session_doc),
-                WOQLQuery().link(participant_iri, "has_session", session_iri)
-            )
-
-            result = self.client.query(query)
-            logger.info(f"Inserted session: {session_id}")
+            collection = self.db.collection("participant_sessions")
+            result = collection.insert(session_doc)
+            logger.info(f"Inserted session: {session_data.get('id')}")
             return True
         except Exception as e:
-            logger.error(f"Failed to insert session {session_id}: {e}")
-            return False
-
-    def insert_word_stimulus(self, stimulus_data: Dict[str, Any]) -> bool:
-        """Insert a word stimulus document."""
-        try:
-            if not self.client:
-                raise ConnectionError("Not connected to TerminusDB")
-
-            # Create stimulus IRI
-            stimulus_id = str(stimulus_data.get("id"))
-            stimulus_iri = f"terminusdb:///data/WordStimulus/{stimulus_id}"
-
-            # Prepare stimulus document
-            stimulus_doc = {
-                "@type": "WordStimulus",
-                "@id": stimulus_iri,
-                "id": stimulus_id,
-                "word": stimulus_data.get("word"),
-                "created_at": stimulus_data.get("created_at")
-            }
-
-            # Remove None values
-            stimulus_doc = {k: v for k, v in stimulus_doc.items() if v is not None}
-
-            query = WOQLQuery().insert(stimulus_doc)
-            result = self.client.query(query)
-            logger.info(f"Inserted word stimulus: {stimulus_data.get('word')}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to insert word stimulus: {e}")
+            logger.error(f"Failed to insert session {session_data.get('id')}: {e}")
             return False
 
     def insert_response_data(self, response_data: Dict[str, Any]) -> bool:
         """Insert response data document."""
         try:
-            if not self.client:
-                raise ConnectionError("Not connected to TerminusDB")
-
-            # Create response IRI
-            response_id = response_data.get("id")
-            response_iri = f"terminusdb:///data/ResponseData/{response_id}"
-            participant_iri = f"terminusdb:///data/Participant/{response_data.get('participant_id')}"
-            session_iri = f"terminusdb:///data/ExperimentSession/{response_data.get('experiment_id')}"
-            stimulus_iri = f"terminusdb:///data/WordStimulus/{response_data.get('word_stimulus_id')}"
+            if not self.db:
+                raise ConnectionError("Not connected to ArangoDB")
 
             # Prepare response document
             response_doc = {
-                "@type": "ResponseData",
-                "@id": response_iri,
-                "id": response_id,
+                "_key": response_data.get("id"),
+                "id": response_data.get("id"),
+                "participant_id": response_data.get("participant_id"),
+                "experiment_id": response_data.get("experiment_id"),
+                "word_stimulus_id": response_data.get("word_stimulus_id"),
                 "stimulus_word": response_data.get("stimulus_word"),
                 "response_word": response_data.get("response_word"),
                 "reaction_time_ms": response_data.get("reaction_time_ms"),
@@ -255,70 +173,115 @@ class ArangoDBClient:
                 "emotion": response_data.get("emotion"),
                 "emotion_confidence": response_data.get("emotion_confidence"),
                 "created_at": response_data.get("created_at"),
-                "updated_at": response_data.get("updated_at"),
-                "belongs_to_participant": participant_iri,
-                "belongs_to_session": session_iri,
-                "uses_stimulus": stimulus_iri
+                "updated_at": response_data.get("updated_at")
             }
 
             # Remove None values
             response_doc = {k: v for k, v in response_doc.items() if v is not None}
 
-            query = WOQLQuery().woql_and(
-                WOQLQuery().insert(response_doc),
-                WOQLQuery().link(participant_iri, "has_response", response_iri)
-            )
-
-            result = self.client.query(query)
-            logger.info(f"Inserted response data: {response_id}")
+            collection = self.db.collection("participant_session_responses")
+            result = collection.insert(response_doc)
+            logger.info(f"Inserted response data: {response_data.get('id')}")
             return True
         except Exception as e:
-            logger.error(f"Failed to insert response data {response_id}: {e}")
+            logger.error(f"Failed to insert response data {response_data.get('id')}: {e}")
+            return False
+
+    def insert_word_stimulus(self, stimulus_data: Dict[str, Any]) -> bool:
+        """Insert a word stimulus document."""
+        try:
+            if not self.db:
+                raise ConnectionError("Not connected to ArangoDB")
+
+            # Prepare stimulus document
+            stimulus_doc = {
+                "_key": str(stimulus_data.get("id")),
+                "id": stimulus_data.get("id"),
+                "word": stimulus_data.get("word"),
+                "created_at": stimulus_data.get("created_at")
+            }
+
+            # Remove None values
+            stimulus_doc = {k: v for k, v in stimulus_doc.items() if v is not None}
+
+            collection = self.db.collection("word_stimuli")
+            result = collection.insert(stimulus_doc)
+            logger.info(f"Inserted word stimulus: {stimulus_data.get('word')}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to insert word stimulus: {e}")
             return False
 
     def query_participants(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Query participants with their related data."""
         try:
-            if not self.client:
-                raise ConnectionError("Not connected to TerminusDB")
+            if not self.db:
+                raise ConnectionError("Not connected to ArangoDB")
 
-            query = WOQLQuery().woql_and(
-                WOQLQuery().triple("v:Participant", "rdf:type", "scm:Participant"),
-                WOQLQuery().triple("v:Participant", "scm:id", "v:Id"),
-                WOQLQuery().triple("v:Participant", "scm:age", "v:Age").opt(),
-                WOQLQuery().triple("v:Participant", "scm:gender", "v:Gender").opt(),
-                WOQLQuery().triple("v:Participant", "scm:handedness", "v:Handedness").opt(),
-                WOQLQuery().limit(limit)
-            )
+            # Use AQL (ArangoDB Query Language)
+            aql = f"""
+            FOR p IN participants
+            LIMIT {limit}
+            RETURN p
+            """
 
-            result = self.client.query(query)
-            return result.get("bindings", [])
+            cursor = self.db.aql.execute(aql)
+            return [doc for doc in cursor]
         except Exception as e:
             logger.error(f"Failed to query participants: {e}")
             return []
+
+    def get_participant_with_sessions(self, participant_id: str) -> Optional[Dict[str, Any]]:
+        """Get participant with their sessions and responses."""
+        try:
+            if not self.db:
+                raise ConnectionError("Not connected to ArangoDB")
+
+            # Use AQL to get participant with related data
+            aql = """
+            FOR p IN participants
+            FILTER p.id == @participant_id
+            LET sessions = (
+                FOR s IN participant_sessions
+                FILTER s.participant_id == p.id
+                LET responses = (
+                    FOR r IN participant_session_responses
+                    FILTER r.participant_id == p.id AND r.experiment_id == s.id
+                    RETURN r
+                )
+                RETURN MERGE(s, {responses: responses})
+            )
+            RETURN MERGE(p, {sessions: sessions})
+            """
+
+            bind_vars = {"participant_id": participant_id}
+            cursor = self.db.aql.execute(aql, bind_vars=bind_vars)
+            results = [doc for doc in cursor]
+            return results[0] if results else None
+        except Exception as e:
+            logger.error(f"Failed to get participant with sessions: {e}")
+            return None
 
     def close(self):
         """Close the database connection."""
         if self.client:
             self.client.close()
-            logger.info("TerminusDB connection closed")
+            logger.info("ArangoDB connection closed")
 
 
 def main():
-    """Test TerminusDB client functionality."""
-    client = TerminusDBClient()
+    """Test ArangoDB client functionality."""
+    client = ArangoDBClient()
 
     if client.connect():
         if client.create_database():
-            schema_path = Path(__file__).parent / "terminusdb_schema.jsonld"
-            if schema_path.exists():
-                client.load_schema(str(schema_path))
-                logger.info("TerminusDB setup completed successfully")
+            if client.create_collections():
+                logger.info("ArangoDB setup completed successfully")
             else:
-                logger.error(f"Schema file not found: {schema_path}")
+                logger.error("Failed to create collections")
         client.close()
     else:
-        logger.error("Failed to connect to TerminusDB")
+        logger.error("Failed to connect to ArangoDB")
 
 
 if __name__ == "__main__":

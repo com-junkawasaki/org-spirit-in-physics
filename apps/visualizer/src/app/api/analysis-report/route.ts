@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/supabase'
+import { createArangoDBClient } from '@/lib/arangodb'
 
 export async function GET() {
   try {

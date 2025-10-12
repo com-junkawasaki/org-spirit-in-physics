@@ -1,4 +1,4 @@
-import { createArangoDBClient } from './supabase'
+import { createArangoDBClient } from './arangodb'
 
 export interface AnalysisResult {
   id: string

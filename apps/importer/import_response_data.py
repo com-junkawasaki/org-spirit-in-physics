@@ -1,37 +1,67 @@
 #!/usr/bin/env python3
 """
-Script to import response data from analysis_results.json into Supabase database.
+Script to import response data from analysis_results.json into ArangoDB database.
 """
 
 import os
 import json
 import uuid
 from datetime import datetime
-from supabase import create_client, Client
+from arangodb_client import ArangoDBClient
+import yaml
 
-# Supabase configuration
-SUPABASE_URL = "http://127.0.0.1:54321"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8HdqQwv8Hdp7fsn3W0YpN81IU"
+def get_arangodb_client() -> ArangoDBClient:
+    """Get ArangoDB client instance."""
+    with open('config.yaml') as f:
+        config = yaml.safe_load(f)
 
-def get_supabase_client() -> Client:
-    """Get Supabase client instance."""
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+    client = ArangoDBClient(
+        config['arangodb']['url'],
+        config['arangodb']['user'],
+        config['arangodb']['password']
+    )
+    return client
 
-def get_participant_sessions(participant_id: str, supabase: Client):
+def get_participant_sessions(participant_id: str, client: ArangoDBClient):
     """Get all experiment sessions for a participant."""
     try:
-        result = supabase.table("participant_experiment_sessions").select("id,session_type").eq("participant_id", participant_id).execute()
-        return result.data if result.data else []
+        aql = """
+        FOR s IN participant_sessions
+        FILTER s.participant_id == @participant_id
+        RETURN {id: s.id, session_type: s.session_type}
+        """
+        cursor = client.db.aql.execute(aql, bind_vars={"participant_id": participant_id})
+        return [doc for doc in cursor]
     except Exception as e:
         print(f"  ✗ Failed to get sessions for {participant_id}: {e}")
         return []
 
 def import_response_data():
     """Import response data from analysis_results.json."""
-    supabase = get_supabase_client()
+    client = get_arangodb_client()
+
+    if not client.connect():
+        print("Failed to connect to ArangoDB")
+        return
+
+    if not client.create_database():
+        print("Failed to create/access database")
+        client.close()
+        return
+
+    if not client.create_collections():
+        print("Failed to create collections")
+        client.close()
+        return
 
     # Load analysis results
-    with open("results/analysis_results.json", "r", encoding="utf-8") as f:
+    results_file = "results/analysis_results.json"
+    if not os.path.exists(results_file):
+        print(f"Analysis results file not found: {results_file}")
+        client.close()
+        return
+
+    with open(results_file, "r", encoding="utf-8") as f:
         analysis_data = json.load(f)
 
     total_imported = 0
@@ -40,7 +70,7 @@ def import_response_data():
         print(f"Processing participant: {participant_id}")
 
         # Get participant's experiment sessions
-        sessions = get_participant_sessions(participant_id, supabase)
+        sessions = get_participant_sessions(participant_id, client)
         if not sessions:
             print(f"  ✗ No sessions found for participant {participant_id}")
             continue
@@ -49,6 +79,7 @@ def import_response_data():
         for result in participant_data["results"]:
             # Create response data record
             response_data = {
+                "_key": str(uuid.uuid4()),
                 "id": str(uuid.uuid4()),
                 "participant_id": participant_id,
                 "experiment_id": sessions[0]["id"],  # Use first session for now
@@ -68,19 +99,29 @@ def import_response_data():
             word = result["stimulus_word"]
             if word:
                 try:
-                    supabase.table("word_stimuli").upsert({"id": hash(word) % 1000000, "word": word}).execute()
-                    response_data["word_stimulus_id"] = hash(word) % 1000000
+                    word_stimulus_id = str(hash(word) % 1000000)
+                    stimulus_data = {
+                        "_key": word_stimulus_id,
+                        "id": word_stimulus_id,
+                        "word": word,
+                        "created_at": datetime.now().isoformat()
+                    }
+                    stimuli_collection = client.db.collection("word_stimuli")
+                    stimuli_collection.insert(stimulus_data, overwrite=True)
+                    response_data["word_stimulus_id"] = word_stimulus_id
                 except Exception as e:
                     print(f"  ✗ Failed to upsert word stimulus {word}: {e}")
 
             # Insert response data
             try:
-                supabase.table("participant_response_data").upsert(response_data).execute()
+                responses_collection = client.db.collection("participant_session_responses")
+                responses_collection.insert(response_data)
                 total_imported += 1
                 print(f"  ✓ Imported response: {result['stimulus_word']} -> {result['response_word']}")
             except Exception as e:
                 print(f"  ✗ Failed to insert response for {participant_id}: {e}")
 
+    client.close()
     print(f"\nImport completed! Total responses imported: {total_imported}")
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/supabase'
+import { createArangoDBClient } from '@/lib/arangodb'
 
 interface AnalysisResultData {
   participant_id: string

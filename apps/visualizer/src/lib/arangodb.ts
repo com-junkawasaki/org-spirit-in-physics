@@ -1,5 +1,8 @@
 // ArangoDB client for Spirit in Physics visualizer
 
+import https from 'https'
+import http from 'http'
+
 interface ArangoDBConfig {
   url: string
   user: string
@@ -15,58 +18,105 @@ class ArangoDBClient {
   }
 
   async query(aqlQuery: string, bindVars?: any): Promise<any> {
-    try {
-      const auth = btoa(`${this.config.user}:${this.config.password}`)
-      const response = await fetch(`${this.config.url}/_api/cursor`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${auth}`,
-        },
-        body: JSON.stringify({
+    return new Promise((resolve, reject) => {
+      try {
+        const url = new URL(this.config.url)
+        const auth = Buffer.from(`${this.config.user}:${this.config.password}`).toString('base64')
+        console.log('ArangoDB query:', aqlQuery, 'bindVars:', bindVars, 'url:', this.config.url, 'db:', this.config.databaseName)
+
+        const postData = JSON.stringify({
           query: aqlQuery,
           bindVars: bindVars || {},
-          database: this.config.databaseName,
-        }),
-      })
+        })
 
-      if (!response.ok) {
-        throw new Error(`ArangoDB query failed: ${response.statusText}`)
+        const options = {
+          hostname: url.hostname,
+          port: url.port,
+          path: `/_db/${this.config.databaseName}/_api/cursor`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${auth}`,
+            'Content-Length': Buffer.byteLength(postData)
+          }
+        }
+
+        const client = url.protocol === 'https:' ? https : http
+        const req = client.request(options, (res) => {
+          console.log('ArangoDB response status:', res.statusCode)
+
+          let body = ''
+          res.on('data', (chunk) => {
+            body += chunk
+          })
+
+          res.on('end', () => {
+            try {
+              if (res.statusCode !== 200 && res.statusCode !== 201) {
+                console.error('ArangoDB error response:', body)
+                reject(new Error(`ArangoDB query failed: ${res.statusCode}`))
+                return
+              }
+
+              const data = JSON.parse(body)
+              console.log('ArangoDB response data:', data)
+              resolve(data.result || [])
+            } catch (error) {
+              console.error('ArangoDB parse error:', error)
+              reject(error)
+            }
+          })
+        })
+
+        req.on('error', (error) => {
+          console.error('ArangoDB request error:', error)
+          reject(error)
+        })
+
+        req.write(postData)
+        req.end()
+      } catch (error) {
+        console.error('ArangoDB query error:', error)
+        reject(error)
       }
-
-      const data = await response.json()
-      return data.result || []
-    } catch (error) {
-      console.error('ArangoDB query error:', error)
-      throw error
-    }
+    })
   }
 
   async getParticipants(): Promise<any[]> {
-    // AQL query to get participants with summary data
-    const query = `
-      FOR participant IN participants
-        LET sessionCount = LENGTH(
-          FOR session IN participant_sessions
-            FILTER session.participant_id == participant._key
-            RETURN session
-        )
-        LET responseCount = LENGTH(
-          FOR response IN participant_session_responses
-            FILTER response.participant_id == participant._key
-            RETURN response
-        )
-        RETURN {
-          participant_id: participant._key,
-          session_count: sessionCount,
-          total_responses: responseCount,
-          average_spirit_probability: 0.5,
-          last_activity: participant.created_at
-        }
-    `
+    // Simple query first to test
+    const query = `FOR participant IN participants RETURN participant._key`
 
     const result = await this.query(query)
-    return result || []
+    console.log('Simple query result:', result)
+
+    // If simple query works, try complex one
+    if (result && result.length > 0) {
+      const complexQuery = `
+        FOR participant IN participants
+          LET sessionCount = LENGTH(
+            FOR session IN participant_sessions
+              FILTER session.participant_id == participant._key
+              RETURN session
+          )
+          LET responseCount = LENGTH(
+            FOR response IN participant_session_responses
+              FILTER response.participant_id == participant._key
+              RETURN response
+          )
+          RETURN {
+            participant_id: participant._key,
+            session_count: sessionCount,
+            total_responses: responseCount,
+            average_spirit_probability: 0.5,
+            last_activity: participant.created_at
+          }
+      `
+
+      const complexResult = await this.query(complexQuery)
+      return complexResult || []
+    }
+
+    return []
   }
 
   async getParticipantDetails(participantId: string): Promise<any> {

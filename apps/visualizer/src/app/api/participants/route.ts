@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/supabase'
+import { createArangoDBClient } from '@/lib/arangodb'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const participants = await client.getParticipants()
 
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
+    console.log('API: Participants sample:', participants?.slice(0, 2))
 
     // Process participants data for frontend
     const processedParticipants = (participants || []).map(participant => ({

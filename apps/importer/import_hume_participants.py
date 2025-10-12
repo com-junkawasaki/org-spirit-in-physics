@@ -7,12 +7,41 @@ import os
 import json
 import uuid
 from datetime import datetime
+from arangodb_client import ArangoDBClient
+import yaml
 
-def generate_hume_participants_sql():
-    """Generate SQL to add Hume AI job IDs as participants and create sessions."""
+def import_hume_participants():
+    """Import Hume AI job IDs as participants and create sessions."""
+
+    # Load ArangoDB configuration
+    with open('config.yaml') as f:
+        config = yaml.safe_load(f)
+
+    client = ArangoDBClient(
+        config['arangodb']['url'],
+        config['arangodb']['user'],
+        config['arangodb']['password']
+    )
+
+    if not client.connect():
+        print("Failed to connect to ArangoDB")
+        return
+
+    if not client.create_database():
+        print("Failed to create/access database")
+        client.close()
+        return
+
+    if not client.create_collections():
+        print("Failed to create collections")
+        client.close()
+        return
 
     hume_data_dir = "hume_data"
-    sql_statements = []
+    if not os.path.exists(hume_data_dir):
+        print(f"Hume data directory {hume_data_dir} not found")
+        client.close()
+        return
 
     # Get Hume AI job IDs
     hume_dirs = [d for d in os.listdir(hume_data_dir) if d.startswith('HumeAI_artifacts_')]
@@ -20,18 +49,36 @@ def generate_hume_participants_sql():
 
     print(f"Found {len(hume_job_ids)} Hume AI jobs")
 
-    # Generate participant INSERT statements
+    # Import participants
     for job_id in hume_job_ids:
-        participant_sql = f"""INSERT INTO participants (id, age, gender, handedness, created_at, updated_at)
-VALUES ('{job_id}', NULL, 'prefer-not-to-say', NULL, '{datetime.now().isoformat()}', '{datetime.now().isoformat()}')
-ON CONFLICT (id) DO NOTHING;"""
-        sql_statements.append(participant_sql)
+        participant_data = {
+            "_key": job_id,
+            "id": job_id,
+            "age": None,
+            "gender": "prefer-not-to-say",
+            "handedness": None,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
 
-    # Generate experiment session INSERT statements
+        try:
+            participants_collection = client.db.collection("participants")
+            participants_collection.insert(participant_data, overwrite=True)
+            print(f"✓ Created participant: {job_id}")
+        except Exception as e:
+            print(f"✗ Failed to create participant {job_id}: {e}")
+
+    # Import experiment sessions
     for job_id in hume_job_ids:
         # Check if Hume directory has registry_file-1 (session-2) or not
         hume_dir = f"HumeAI_artifacts_{job_id}"
-        registry_files = [f for f in os.listdir(os.path.join(hume_data_dir, hume_dir)) if f.startswith('registry_file-')]
+        full_hume_dir = os.path.join(hume_data_dir, hume_dir)
+
+        if not os.path.exists(full_hume_dir):
+            print(f"✗ Hume directory not found: {full_hume_dir}")
+            continue
+
+        registry_files = [f for f in os.listdir(full_hume_dir) if f.startswith('registry_file-')]
 
         sessions_to_create = []
         if len(registry_files) >= 1:
@@ -41,30 +88,26 @@ ON CONFLICT (id) DO NOTHING;"""
 
         for session_type in sessions_to_create:
             session_id = str(uuid.uuid4())
-            session_sql = f"""INSERT INTO participant_experiment_sessions (
-    id, participant_id, session_id, session_type, start_time, created_at, updated_at
-) VALUES (
-    '{session_id}',
-    '{job_id}',
-    '{session_id}',
-    '{session_type}',
-    '{datetime.now().isoformat()}',
-    '{datetime.now().isoformat()}',
-    '{datetime.now().isoformat()}'
-) ON CONFLICT (participant_id, session_type) DO NOTHING;"""
-            sql_statements.append(session_sql)
+            session_data = {
+                "_key": session_id,
+                "id": session_id,
+                "participant_id": job_id,
+                "session_type": session_type,
+                "start_time": datetime.now().isoformat(),
+                "end_time": datetime.now().isoformat(),
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }
 
-    # Write SQL to file
-    with open("import_hume_participants.sql", "w", encoding="utf-8") as f:
-        f.write("-- Generated SQL for importing Hume AI participants and sessions\n\n")
-        f.write("\\c postgres\n\n")
+            try:
+                sessions_collection = client.db.collection("participant_sessions")
+                sessions_collection.insert(session_data)
+                print(f"✓ Created session {session_type} for participant: {job_id}")
+            except Exception as e:
+                print(f"✗ Failed to create session for {job_id}: {e}")
 
-        for sql in sql_statements:
-            f.write(sql + "\n\n")
-
-        f.write(f"-- Total statements: {len(sql_statements)}\n")
-
-    print(f"Generated SQL file with {len(sql_statements)} statements")
+    client.close()
+    print("Hume AI participants import completed!")
 
 if __name__ == "__main__":
-    generate_hume_participants_sql()
+    import_hume_participants()
