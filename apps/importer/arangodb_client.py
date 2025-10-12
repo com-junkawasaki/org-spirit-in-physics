@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 """
-TerminusDB client for Spirit in Physics experiment data management.
+ArangoDB client for Spirit in Physics experiment data management.
 """
 
 import json
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from terminusdb_client import WOQLClient, WOQLQuery
+from arango import ArangoClient
 from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class TerminusDBClient:
-    """TerminusDB client for Spirit in Physics data operations."""
+class ArangoDBClient:
+    """ArangoDB client for Spirit in Physics data operations."""
 
-    def __init__(self, server_url: str = "http://localhost:6363", user: str = "admin", password: str = "root"):
+    def __init__(self, server_url: str = "http://localhost:8529", user: str = "root", password: str = ""):
         """
-        Initialize TerminusDB client.
+        Initialize ArangoDB client.
 
         Args:
-            server_url: TerminusDB server URL
+            server_url: ArangoDB server URL
             user: Database user
             password: Database password
         """
@@ -30,74 +30,77 @@ class TerminusDBClient:
         self.user = user
         self.password = password
         self.client = None
-        self.database_id = "spirit_in_physics"
+        self.db = None
+        self.database_name = "spirit_in_physics"
 
     def connect(self) -> bool:
-        """Connect to TerminusDB server."""
+        """Connect to ArangoDB server."""
         try:
-            self.client = WOQLClient(server=self.server_url, user=self.user, password=self.password)
-            logger.info(f"Connected to TerminusDB at {self.server_url}")
+            self.client = ArangoClient(hosts=self.server_url)
+            self.db = self.client.db(self.database_name, username=self.user, password=self.password)
+            logger.info(f"Connected to ArangoDB at {self.server_url}")
             return True
         except Exception as e:
-            logger.error(f"Failed to connect to TerminusDB: {e}")
+            logger.error(f"Failed to connect to ArangoDB: {e}")
             return False
 
     def create_database(self) -> bool:
         """Create the spirit_in_physics database if it doesn't exist."""
         try:
             if not self.client:
-                raise ConnectionError("Not connected to TerminusDB")
+                raise ConnectionError("Not connected to ArangoDB")
 
             # Check if database exists
-            if self.database_id not in self.client.list_databases():
-                self.client.create_database(self.database_id, "Spirit in Physics Experiment Database")
-                logger.info(f"Created database: {self.database_id}")
+            if not self.client.has_database(self.database_name):
+                self.client.create_database(self.database_name)
+                logger.info(f"Created database: {self.database_name}")
             else:
-                logger.info(f"Database {self.database_id} already exists")
+                logger.info(f"Database {self.database_name} already exists")
 
             # Connect to the database
-            self.client.connect(self.database_id)
+            self.db = self.client.db(self.database_name, username=self.user, password=self.password)
             return True
         except Exception as e:
             logger.error(f"Failed to create/connect to database: {e}")
             return False
 
-    def load_schema(self, schema_path: str) -> bool:
-        """Load RDF schema into the database."""
+    def create_collections(self) -> bool:
+        """Create necessary collections in the database."""
         try:
-            if not self.client:
-                raise ConnectionError("Not connected to TerminusDB")
+            if not self.db:
+                raise ConnectionError("Not connected to ArangoDB")
 
-            with open(schema_path, 'r') as f:
-                schema = json.load(f)
+            collections = [
+                "participants",
+                "participant_sessions",
+                "participant_session_responses",
+                "word_stimuli",
+                "analysis_runs",
+                "analysis_results"
+            ]
 
-            # Insert schema
-            query = WOQLQuery().woql_and(
-                WOQLQuery().insert(schema["@graph"])
-            )
+            for collection_name in collections:
+                if not self.db.has_collection(collection_name):
+                    self.db.create_collection(collection_name)
+                    logger.info(f"Created collection: {collection_name}")
+                else:
+                    logger.info(f"Collection {collection_name} already exists")
 
-            result = self.client.query(query)
-            logger.info("Schema loaded successfully")
             return True
         except Exception as e:
-            logger.error(f"Failed to load schema: {e}")
+            logger.error(f"Failed to create collections: {e}")
             return False
 
     def insert_participant(self, participant_data: Dict[str, Any]) -> bool:
         """Insert a participant document."""
         try:
-            if not self.client:
-                raise ConnectionError("Not connected to TerminusDB")
-
-            # Create participant IRI
-            participant_id = participant_data.get("id")
-            participant_iri = f"terminusdb:///data/Participant/{participant_id}"
+            if not self.db:
+                raise ConnectionError("Not connected to ArangoDB")
 
             # Prepare participant document
             participant_doc = {
-                "@type": "Participant",
-                "@id": participant_iri,
-                "id": participant_id,
+                "_key": participant_data.get("id"),
+                "id": participant_data.get("id"),
                 "age": participant_data.get("age"),
                 "gender": participant_data.get("gender"),
                 "handedness": participant_data.get("handedness"),
@@ -108,12 +111,12 @@ class TerminusDBClient:
             # Remove None values
             participant_doc = {k: v for k, v in participant_doc.items() if v is not None}
 
-            query = WOQLQuery().insert(participant_doc)
-            result = self.client.query(query)
-            logger.info(f"Inserted participant: {participant_id}")
+            collection = self.db.collection("participants")
+            result = collection.insert(participant_doc)
+            logger.info(f"Inserted participant: {participant_data.get('id')}")
             return True
         except Exception as e:
-            logger.error(f"Failed to insert participant {participant_id}: {e}")
+            logger.error(f"Failed to insert participant {participant_data.get('id')}: {e}")
             return False
 
     def insert_consent(self, consent_data: Dict[str, Any]) -> bool:

@@ -1,8 +1,10 @@
 # Configuration for the Spirit in Physics Analysis Pipeline
 
-supabase:
-  url: "YOUR_SUPABASE_URL"
-  service_role_key: "YOUR_SUPABASE_SERVICE_ROLE_KEY"
+arangodb:
+  url: "http://localhost:8529"
+  user: "root"
+  password: ""
+  database: "spirit_in_physics"
 
 hume_ai:
   api_key: "YOUR_HUME_AI_API_KEY"

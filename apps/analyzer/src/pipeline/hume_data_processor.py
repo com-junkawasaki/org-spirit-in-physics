@@ -1,36 +1,32 @@
 import logging
-from terminusdb_client import WOQLQuery
+from arango import ArangoClient
 
 class HumeDataProcessor:
-    """Processor for Hume AI data stored in TerminusDB"""
+    """Processor for Hume AI data stored in ArangoDB"""
 
     def __init__(self, config):
-        from terminusdb_client import WOQLClient
-        self.client = WOQLClient(
-            server=config['url'],
-            user=config['user'],
-            password=config['password']
-        )
-        self.database_id = config['database_id']
-        self.client.connect(self.database_id)
+        self.client = ArangoClient(hosts=config['url'])
+        self.db = self.client.db(config['database'], username=config['user'], password=config['password'])
+        self.database_name = config['database']
         logging.info("HumeDataProcessor initialized")
 
     def process_hume_data_for_session(self, session_id):
         """Process Hume AI data for a given experiment session"""
         try:
-            # Query Hume analysis jobs for this session
-            query = WOQLQuery().woql_and(
-                WOQLQuery().triple("v:Job", "rdf:type", "scm:HumeAnalysisJob"),
-                WOQLQuery().triple("v:Job", "belongs_to_session", f"terminusdb:///data/ExperimentSession/{session_id}"),
-                WOQLQuery().triple("v:Job", "scm:status", "COMPLETED"),
-                WOQLQuery().triple("v:Job", "scm:predictions", "v:Predictions")
-            )
+            # Query Hume analysis jobs for this session using AQL
+            aql_query = """
+            FOR job IN participant_hume_analysis_jobs
+                FILTER job.participant_experiment_session_id == @session_id
+                FILTER job.status == "completed"
+                RETURN job
+            """
 
-            result = self.client.query(query)
+            cursor = self.db.aql.execute(aql_query, bind_vars={"session_id": session_id})
+            results = list(cursor)
 
-            if result.get("bindings") and len(result["bindings"]) > 0:
-                binding = result["bindings"][0]
-                predictions = binding.get("Predictions", {}).get("@value", "{}")
+            if results:
+                job = results[0]
+                predictions = job.get("predictions", "{}")
 
                 # Parse predictions JSON
                 import json

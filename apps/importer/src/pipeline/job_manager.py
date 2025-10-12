@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Any
 from enum import Enum
 from dataclasses import dataclass
 
-from supabase import create_client, Client
+from arango import ArangoClient
 
 class JobStatus(Enum):
     QUEUED = "queued"
@@ -38,7 +38,8 @@ class AnalysisJob:
 
 class JobManager:
     def __init__(self, config):
-        self.supabase: Client = create_client(config['url'], config['service_role_key'])
+        self.client = ArangoClient(hosts=config['url'])
+        self.db = self.client.db(config['database'], username=config['user'], password=config['password'])
         self.max_retries = config.get('max_retries', 3)
         logging.info("JobManager initialized.")
 

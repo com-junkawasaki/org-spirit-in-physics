@@ -18,15 +18,18 @@ from pipeline.data_storer import DataStorer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class HumeDataImporter:
-    """Import Hume AI analysis data into Supabase database."""
+    """Import Hume AI analysis data into TerminusDB database."""
 
-    def __init__(self, supabase_config):
-        self.supabase_url = supabase_config['url']
-        self.supabase_key = supabase_config['service_role_key']
+    def __init__(self, terminusdb_config):
+        from terminusdb_client import WOQLClient, WOQLQuery
 
-        # Initialize Supabase client
-        from supabase import create_client, Client
-        self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
+        self.terminusdb = WOQLClient(
+            server=terminusdb_config['url'],
+            user=terminusdb_config['user'],
+            password=terminusdb_config['password']
+        )
+        self.terminusdb.connect(terminusdb_config['database'])
+        self.config = terminusdb_config
 
     def import_hume_data(self, artifact_path, participant_experiment_session_id):
         """Import Hume AI data from artifact folder."""
@@ -174,9 +177,9 @@ class HumeDataImporter:
 
 class AnalysisAPI:
     def __init__(self, config):
-        self.job_manager = JobManager(config['supabase'])
-        self.data_storer = DataStorer(config['supabase'])
-        self.hume_importer = HumeDataImporter(config['supabase'])
+        self.job_manager = JobManager(config['terminusdb'])
+        self.data_storer = DataStorer(config['terminusdb'])
+        self.hume_importer = HumeDataImporter(config['terminusdb'])
         self.app = Flask(__name__)
         CORS(self.app)  # Enable CORS for web frontend access
 

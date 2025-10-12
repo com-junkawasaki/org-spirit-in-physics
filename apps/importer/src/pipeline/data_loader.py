@@ -1,4 +1,4 @@
-from supabase import create_client, Client
+from arango import ArangoClient
 import logging
 import os
 import tempfile
@@ -6,9 +6,11 @@ from typing import Optional, Dict, Any, List
 
 class DataLoader:
     def __init__(self, config):
-        self.supabase: Client = create_client(config['url'], config['service_role_key'])
+        self.client = ArangoClient(hosts=config['url'])
+        self.db = self.client.db(config['database'], username=config['user'], password=config['password'])
+        self.database_name = config['database']
         self.bucket_name = "spirit-in-physics"
-        logging.info("DataLoader initialized and Supabase client created.")
+        logging.info("DataLoader initialized and ArangoDB client connected.")
 
     def get_unprocessed_responses(self, limit: int = 10):
         """
@@ -17,14 +19,17 @@ class DataLoader:
         and should be refined.
         """
         logging.info("Fetching unprocessed responses...")
-        # In a real scenario, you'd join against analysis_results to find unprocessed items.
-        response = self.supabase.table('participant_response_data').select('*').limit(limit).execute()
-        if response.data:
-            logging.info(f"Found {len(response.data)} responses.")
-            return response.data
-        else:
-            logging.warning("No new responses found.")
-            return []
+        # Query ArangoDB for unprocessed responses
+        aql_query = f"""
+        FOR response IN participant_session_responses
+            LIMIT {limit}
+            RETURN response
+        """
+
+        cursor = self.db.aql.execute(aql_query)
+        data = list(cursor)
+        logging.info(f"Found {len(data)} responses.")
+        return data
 
     def download_media_file(self, storage_path: str, local_dir: Optional[str] = None) -> str:
         """

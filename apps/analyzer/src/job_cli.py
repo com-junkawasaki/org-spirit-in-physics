@@ -11,7 +11,6 @@ from typing import Optional
 
 from pipeline.job_manager import JobManager, JobType, JobStatus
 from pipeline.data_storer import DataStorer
-from pipeline.job_worker import JobWorker
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -20,8 +19,8 @@ class JobCLI:
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
         
-        self.job_manager = JobManager(self.config['supabase'])
-        self.data_storer = DataStorer(self.config['supabase'])
+        self.job_manager = JobManager(self.config['terminusdb'])
+        self.data_storer = DataStorer(self.config['terminusdb'])
 
     def create_run(self, model_version: str, notes: str = "") -> str:
         """Create a new analysis run."""
@@ -33,7 +32,7 @@ class JobCLI:
         """Queue analysis jobs for a run."""
         from pipeline.data_loader import DataLoader
         
-        data_loader = DataLoader(self.config['supabase'])
+        data_loader = DataLoader(self.config['terminusdb'])
         
         if response_ids:
             responses = [data_loader.get_response_with_media(rid) for rid in response_ids]

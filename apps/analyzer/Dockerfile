@@ -29,9 +29,11 @@ RUN echo "arangodb:" > config.yaml && \
     echo "  password: \"$ARANGODB_PASSWORD\"" >> config.yaml && \
     echo "  database_name: \"$DATABASE_NAME\"" >> config.yaml && \
     echo "" >> config.yaml && \
-    echo "supabase:" >> config.yaml && \
-    echo "  url: \"$SUPABASE_URL\"" >> config.yaml && \
-    echo "  service_role_key: \"$SUPABASE_SERVICE_ROLE_KEY\"" >> config.yaml && \
+    echo "arangodb:" >> config.yaml && \
+    echo "  url: \"$ARANGODB_URL\"" >> config.yaml && \
+    echo "  user: \"$ARANGODB_USER\"" >> config.yaml && \
+    echo "  password: \"$ARANGODB_PASSWORD\"" >> config.yaml && \
+    echo "  database: \"$ARANGODB_DATABASE\"" >> config.yaml && \
     echo "" >> config.yaml && \
     echo "hume_ai:" >> config.yaml && \
     echo "  api_key: \"$HUME_API_KEY\"" >> config.yaml && \

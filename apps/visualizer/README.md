@@ -1,8 +1,8 @@
 # Spirit in Physics - Visualizer
 
-## TerminusDB Migration Complete
+## ArangoDB Migration Complete
 
-This visualizer has been fully migrated from Supabase to **TerminusDB**, a powerful graph database.
+This visualizer has been fully migrated from Supabase to **ArangoDB**, a powerful multi-model database.
 
 ## Key Changes
 

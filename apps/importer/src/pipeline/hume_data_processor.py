@@ -4,31 +4,34 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import numpy as np
-from supabase import create_client, Client
+from arango import ArangoClient
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class HumeDataProcessor:
     """
-    Loads pre-processed Hume AI emotion analysis data from the Supabase database.
+    Loads pre-processed Hume AI emotion analysis data from the ArangoDB database.
     """
 
-    def __init__(self, supabase_config: Dict[str, str]):
-        self.supabase: Client = create_client(supabase_config['url'], supabase_config['service_role_key'])
-        logging.info("HumeDataProcessor initialized with Supabase client.")
+    def __init__(self, arangodb_config: Dict[str, str]):
+        self.client = ArangoClient(hosts=arangodb_config['url'])
+        self.db = self.client.db(arangodb_config['database'], username=arangodb_config['user'], password=arangodb_config['password'])
+        logging.info("HumeDataProcessor initialized with ArangoDB client.")
 
     def load_burst_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load burst prediction data directly for a given session."""
         try:
-            response = self.supabase.table('participant_hume_burst_predictions').select('*').eq(
-                'participant_experiment_session_id', participant_experiment_session_id
-            ).execute()
-            if response.data:
-                logging.info(f"Loaded {len(response.data)} burst prediction records for session {participant_experiment_session_id}")
-                return response.data
-            else:
-                logging.warning(f"No burst prediction data found for session {participant_experiment_session_id}")
-                return []
+            aql_query = """
+            FOR prediction IN participant_hume_burst_predictions
+                FILTER prediction.participant_experiment_session_id == @session_id
+                RETURN prediction
+            """
+
+            cursor = self.db.aql.execute(aql_query, bind_vars={"session_id": participant_experiment_session_id})
+            data = list(cursor)
+
+            logging.info(f"Loaded {len(data)} burst prediction records for session {participant_experiment_session_id}")
+            return data
         except Exception as e:
             logging.error(f"Error loading burst data for session {participant_experiment_session_id}: {e}")
             return []

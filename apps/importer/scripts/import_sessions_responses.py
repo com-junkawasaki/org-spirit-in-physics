@@ -206,5 +206,8 @@ def main():
 
     print(f"Imported participants={imported_p}, sessions={imported_s}, responses={imported_r}")
 
+    # Verify data was inserted
+    print(f"Verification: participants={len(col_participants.all())}, sessions={len(col_sessions.all())}, responses={len(col_responses.all())}")
+
 if __name__ == "__main__":
     main()

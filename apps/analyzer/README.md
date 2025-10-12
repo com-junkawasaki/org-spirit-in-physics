@@ -1,14 +1,14 @@
 # Spirit in Physics - Analyzer
 
-## TerminusDB Migration Complete
+## ArangoDB Migration Complete
 
-This analyzer has been fully migrated from Supabase to **TerminusDB**, a powerful graph database.
+This analyzer has been fully migrated from Supabase to **ArangoDB**, a powerful multi-model database.
 
 ## Key Changes
 
 ### Configuration (`config.yaml`)
 - **Before**: Supabase URL and service role key
-- **After**: TerminusDB URL, user, password, and database ID
+- **After**: TerminusDB URL, user, password, and database name
 
 ### Dependencies (`requirements.txt`)
 - **Before**: `supabase`

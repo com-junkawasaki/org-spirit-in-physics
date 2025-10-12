@@ -1,48 +1,29 @@
-from terminusdb_client import WOQLClient, WOQLQuery
+from arango import ArangoClient
 import logging
 import os
 
 class DataLoader:
-    """Data loader for analyzer using TerminusDB"""
+    """Data loader for analyzer using ArangoDB"""
 
     def __init__(self, config):
-        self.client = WOQLClient(
-            server=config['url'],
-            user=config['user'],
-            password=config['password']
-        )
-        self.database_id = config['database_id']
-        self.client.connect(self.database_id)
-        logging.info("DataLoader initialized and TerminusDB client connected.")
+        self.client = ArangoClient(hosts=config['url'])
+        self.db = self.client.db(config['database'], username=config['user'], password=config['password'])
+        self.database_name = config['database']
+        logging.info("DataLoader initialized and ArangoDB client connected.")
 
     def get_unprocessed_responses(self, limit=100):
         """Get responses that haven't been processed yet"""
         try:
-            query = WOQLQuery().woql_and(
-                WOQLQuery().triple("v:Response", "rdf:type", "scm:ResponseData"),
-                WOQLQuery().triple("v:Response", "scm:id", "v:Id"),
-                WOQLQuery().triple("v:Response", "scm:stimulus_word", "v:StimulusWord"),
-                WOQLQuery().triple("v:Response", "scm:response_word", "v:ResponseWord"),
-                WOQLQuery().triple("v:Response", "scm:reaction_time_ms", "v:ReactionTime"),
-                WOQLQuery().triple("v:Response", "belongs_to_participant", "v:Participant"),
-                WOQLQuery().limit(limit)
-            )
+            aql_query = f"""
+            FOR response IN participant_session_responses
+                LIMIT {limit}
+                RETURN response
+            """
 
-            result = self.client.query(query)
-            responses = []
+            result = list(self.db.aql.execute(aql_query))
 
-            for binding in result.get("bindings", []):
-                response_data = {
-                    "id": binding.get("Id", {}).get("@value"),
-                    "stimulus_word": binding.get("StimulusWord", {}).get("@value"),
-                    "response_word": binding.get("ResponseWord", {}).get("@value"),
-                    "reaction_time_ms": int(binding.get("ReactionTime", {}).get("@value", 0)),
-                    "participant_id": binding.get("Participant", {}).get("@value", "").split("/")[-1] if binding.get("Participant") else None
-                }
-                responses.append(response_data)
-
-            logging.info(f"Found {len(responses)} responses.")
-            return responses
+            logging.info(f"Found {len(result)} responses.")
+            return result
 
         except Exception as e:
             logging.error(f"Failed to fetch unprocessed responses: {e}")

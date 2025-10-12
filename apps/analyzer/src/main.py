@@ -31,13 +31,13 @@ def main():
 
     # --- 2. Initialize Components ---
     logging.info("Initializing pipeline components...")
-    data_loader = DataLoader(config['supabase'])
+    data_loader = DataLoader(config['terminusdb'])
     emotion_processor = EmotionProcessor(config['hume_ai'])
-    hume_data_processor = HumeDataProcessor(config['supabase'])
+    hume_data_processor = HumeDataProcessor(config['terminusdb'])
     physiological_processor = PhysiologicalProcessor()
     feature_extractor = FeatureExtractor(config['model_params'])
     kawasaki_model = KawasakiModel(config['model_params'], config['word2vec'])
-    data_storer = DataStorer(config['supabase'])
+    data_storer = DataStorer(config['terminusdb'])
 
     # --- 3. Create Analysis Run ---
     run_id = data_storer.create_analysis_run(args.model_version, config['model_params'], args.notes)
@@ -105,22 +105,39 @@ def main():
             logging.info("Generating visualizations...")
 
             # Get analysis results from database
-            from supabase import create_client
-            supabase = create_client(config['supabase']['url'], config['supabase']['service_role_key'])
-            results_response = supabase.table('analysis_results').select('*').eq('run_id', run_id).execute()
+            from arango import ArangoClient
 
-            if results_response.data:
+            # Initialize ArangoDB client
+            client = ArangoClient(hosts=config['arangodb']['url'])
+            db = client.db(config['arangodb']['database'], username=config['arangodb']['user'], password=config['arangodb']['password'])
+
+            # Query analysis results using AQL
+            aql_query = """
+            FOR result IN analysis_results
+                FILTER result.run_id == @run_id
+                RETURN {
+                    PValue: result.p_value,
+                    Word2Vec: result.word2vec_component,
+                    ReactionTime: result.reaction_time_component,
+                    SkinPotential: result.skin_potential_component,
+                    Emotion: result.emotion_component
+                }
+            """
+
+            results_response = list(db.aql.execute(aql_query, bind_vars={"run_id": run_id}))
+
+            if results_response:
                 completed_jobs = []
-                for result in results_response.data:
+                for result in results_response:
                     completed_jobs.append({
-                        "p_value": result['p_value'],
+                        "p_value": result['PValue'],
                         "components": {
-                            "word2vec": result['word2vec_component'],
-                            "reaction_time": result['reaction_time_component'],
-                            "skin_potential": result['skin_potential_component'],
-                            "emotion": result['emotion_component']
+                            "word2vec": result['Word2Vec'],
+                            "reaction_time": result['ReactionTime'],
+                            "skin_potential": result['SkinPotential'],
+                            "emotion": result['Emotion']
                         },
-                        "raw_inputs": result['raw_inputs']
+                        "raw_inputs": {}  # TODO: Add raw inputs from ArangoDB schema
                     })
 
                 if completed_jobs:

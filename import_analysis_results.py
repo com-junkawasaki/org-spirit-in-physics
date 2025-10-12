@@ -7,16 +7,20 @@ import json
 import os
 import sys
 from datetime import datetime
-from supabase import create_client, Client
 import requests
 
-# Supabase設定
-SUPABASE_URL = os.getenv('SUPABASE_URL', 'http://127.0.0.1:54321')
-SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0')
+# ArangoDB設定
+ARANGODB_URL = os.getenv('ARANGODB_URL', 'http://localhost:8529')
+ARANGODB_USER = os.getenv('ARANGODB_USER', 'root')
+ARANGODB_PASSWORD = os.getenv('ARANGODB_PASSWORD', '')
+ARANGODB_DATABASE = os.getenv('ARANGODB_DATABASE', 'spirit_in_physics')
 
-def create_supabase_client() -> Client:
-    """Supabaseクライアントを作成"""
-    return create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+def create_arangodb_client():
+    """ArangoDBクライアントを作成"""
+    from arango import ArangoClient
+    client = ArangoClient(hosts=ARANGODB_URL)
+    db = client.db(ARANGODB_DATABASE, username=ARANGODB_USER, password=ARANGODB_PASSWORD)
+    return db
 
 def load_analysis_results(file_path: str) -> list:
     """分析結果ファイルを読み込み"""
@@ -163,8 +167,8 @@ def main():
 
     print(f"分析結果ファイルからインポートを開始します: {file_path}")
 
-    # Supabaseクライアントを作成
-    supabase = create_supabase_client()
+    # ArangoDBクライアントを作成
+    db = create_arangodb_client()
 
     # 分析結果を読み込み
     results = load_analysis_results(file_path)

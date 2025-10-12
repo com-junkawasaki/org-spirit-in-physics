@@ -20,8 +20,6 @@
     "@react-spring/three": "^10.0.3",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.3.0",
-    "@supabase/ssr": "^0.5.1",
-    "@supabase/supabase-js": "^2.45.4",
     "@vercel/blob": "^0.23.4",
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",

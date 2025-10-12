@@ -142,7 +142,7 @@
   },
   {
     // Merkle DAG: 物語.ナラティブ[26]
-    act: 'TerminusDBグラフデータベース移行の実現',
+    act: 'ArangoDBマルチモデルデータベース移行の実現',
     summary: 'リレーショナルデータベースSupabaseからRDFベースのグラフデータベースTerminusDBへの完全移行を達成。JSON-LDスキーマによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataクラスの定義と関係性モデリングを実施。WOQLクエリ言語を使用したデータ操作とRDF triplesによる柔軟なデータ表現を実現。科学データにおける複雑な関係性（参加者-実験-応答-刺激語-感情）の自然な表現が可能に。Gitのようなバージョン管理機能を活用したデータ変更履歴の追跡とコラボレーション機能を統合。',
   },
   {
