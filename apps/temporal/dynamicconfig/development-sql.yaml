@@ -1,0 +1,18 @@
+# Temporal development configuration for SQL persistence
+frontend.enableClientVersionCheck:
+  - value: false
+
+system.enableActivityEagerExecution:
+  - value: false
+
+history.persistenceMaxQPS:
+  - value: 3000
+
+frontend.persistenceMaxQPS:
+  - value: 3000
+
+frontend.enableUpdateWorkflowExecution:
+  - value: true
+
+frontend.enableUpdateWorkflowExecutionAsyncAccepted:
+  - value: true

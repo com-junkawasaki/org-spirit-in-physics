@@ -1,0 +1,225 @@
+services:
+  # Infrastructure Services
+
+  supabase:
+    image: supabase/postgres:15.1.0.147
+    container_name: spirit-in-physics-supabase
+    ports:
+      - "54322:5432"  # Database
+      - "54321:8000"  # API
+      - "54323:3000"  # Studio
+      - "54324:54324" # Inbucket (email testing)
+      - "54327:54327" # Analytics
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - ./supabase:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - spirit-network
+
+  terminusdb:
+    image: terminusdb/terminusdb-server:latest
+    container_name: spirit-in-physics-terminusdb
+    ports:
+      - "6363:6363"
+    environment:
+      TERMINUSDB_SERVER_NAME: "spirit-in-physics"
+      TERMINUSDB_ADMIN_PASS: "root"
+      TERMINUSDB_SERVER_PORT: "6363"
+    volumes:
+      - terminusdb_data:/app/terminusdb/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6363/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - spirit-network
+
+  temporal:
+    image: temporalio/auto-setup:latest
+    container_name: spirit-in-physics-temporal
+    ports:
+      - "7233:7233"  # Temporal server
+      - "8233:8233"  # Temporal UI
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=postgres
+      - POSTGRES_SEEDS=spirit-in-physics-temporal-db
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    depends_on:
+      temporal-db:
+        condition: service_healthy
+    volumes:
+      - ./temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+    networks:
+      - spirit-network
+
+  temporal-db:
+    image: postgres:13
+    container_name: spirit-in-physics-temporal-db
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    volumes:
+      - temporal_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - spirit-network
+
+  # Application Services
+
+  patient:
+    build:
+      context: ./patient
+      dockerfile: Dockerfile
+    container_name: spirit-in-physics-patient
+    ports:
+      - "25250:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=http://supabase:8000
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - DATABASE_URL=postgresql://postgres:postgres@supabase:5432/postgres
+      - HUME_API_KEY=${HUME_API_KEY}
+      - TERMINUSDB_URL=http://terminusdb:6363
+      - TERMINUSDB_USER=admin
+      - TERMINUSDB_PASSWORD=root
+    depends_on:
+      supabase:
+        condition: service_healthy
+      terminusdb:
+        condition: service_healthy
+    volumes:
+      - ./patient:/app
+      - /app/node_modules
+    networks:
+      - spirit-network
+    command: pnpm dev --hostname 0.0.0.0
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: spirit-in-physics-admin
+    ports:
+      - "3000:5173"  # Vite default port
+    environment:
+      - VITE_SUPABASE_URL=http://supabase:8000
+      - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - VITE_DATABASE_URL=postgresql://postgres:postgres@supabase:5432/postgres
+      - VITE_HUME_API_KEY=${HUME_API_KEY}
+      - VITE_TERMINUSDB_URL=http://terminusdb:6363
+    depends_on:
+      supabase:
+        condition: service_healthy
+      terminusdb:
+        condition: service_healthy
+    volumes:
+      - ./admin:/app
+      - /app/node_modules
+    networks:
+      - spirit-network
+    command: npm run dev -- --host 0.0.0.0
+
+  visualizer:
+    build:
+      context: ./visualizer
+      dockerfile: Dockerfile
+    container_name: spirit-in-physics-visualizer
+    ports:
+      - "25260:3000"
+    environment:
+      - NEXT_PUBLIC_SUPABASE_URL=http://supabase:8000
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - DATABASE_URL=postgresql://postgres:postgres@supabase:5432/postgres
+      - TERMINUSDB_URL=http://terminusdb:6363
+      - TERMINUSDB_USER=admin
+      - TERMINUSDB_PASSWORD=root
+    depends_on:
+      supabase:
+        condition: service_healthy
+      terminusdb:
+        condition: service_healthy
+    volumes:
+      - ./visualizer:/app
+      - /app/node_modules
+    networks:
+      - spirit-network
+    command: pnpm dev --hostname 0.0.0.0
+
+  analyzer:
+    build:
+      context: ./analyzer
+      dockerfile: Dockerfile
+    container_name: spirit-in-physics-analyzer
+    ports:
+      - "8000:8000"
+    environment:
+      - SUPABASE_URL=http://supabase:8000
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - HUME_API_KEY=${HUME_API_KEY}
+      - TERMINUSDB_URL=http://terminusdb:6363
+      - TERMINUSDB_USER=admin
+      - TERMINUSDB_PASSWORD=root
+      - TEMPORAL_URL=temporal:7233
+    depends_on:
+      supabase:
+        condition: service_healthy
+      terminusdb:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    volumes:
+      - ./analyzer:/app
+    networks:
+      - spirit-network
+    command: python src/api_server.py --host 0.0.0.0 --port 8000
+
+  importer:
+    build:
+      context: ./importer
+      dockerfile: Dockerfile
+    container_name: spirit-in-physics-importer
+    environment:
+      - SUPABASE_URL=http://supabase:8000
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      - HUME_API_KEY=${HUME_API_KEY}
+      - TERMINUSDB_URL=http://terminusdb:6363
+      - TERMINUSDB_USER=admin
+      - TERMINUSDB_PASSWORD=root
+      - TEMPORAL_URL=temporal:7233
+    depends_on:
+      supabase:
+        condition: service_healthy
+      terminusdb:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    volumes:
+      - ./importer:/app
+      - ../../dataset:/dataset:ro
+    networks:
+      - spirit-network
+    # Command will be specified when running specific import tasks
+
+volumes:
+  terminusdb_data:
+  temporal_db_data:
+
+networks:
+  spirit-network:
+    driver: bridge
