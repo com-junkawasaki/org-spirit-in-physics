@@ -53,8 +53,8 @@ class ArangoDBClient:
                 raise ConnectionError("Not connected to ArangoDB")
 
             # Check if database exists
-            if not self.client.has_database(self.database_name):
-                self.client.create_database(self.database_name)
+            if self.database_name not in self.db.databases():
+                self.db.create_database(self.database_name)
                 logger.info(f"Created database: {self.database_name}")
             else:
                 logger.info(f"Database {self.database_name} already exists")

@@ -4,6 +4,8 @@ Script to import analyzer data into ArangoDB database.
 """
 
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import json
 import pandas as pd
 import uuid
@@ -14,7 +16,8 @@ from packages.spirit_in_physics_pipeline.arangodb_client import ArangoDBClient
 
 # Load configuration from config.yaml
 import yaml
-with open('config.yaml') as f:
+config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
+with open(config_path) as f:
     config = yaml.safe_load(f)
 
 # ArangoDB configuration
@@ -169,7 +172,7 @@ def main():
         return
 
     # Import participants data
-    participants_dir = "../../dataset/participants"
+    participants_dir = "dataset/participants"
     import_participants_data(participants_dir, client)
 
     # Close connection

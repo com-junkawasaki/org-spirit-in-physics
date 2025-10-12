@@ -24,8 +24,8 @@ class KawasakiModel:
         self.params = params
         self.w2v_model = None
         self.advanced_trainer = None
-        self.use_advanced_w2v = w2v_config.get('use_advanced', False)
-        self._load_word2vec_model(w2v_config.get('model_path'))
+        self.use_advanced_w2v = w2v_config.get('use_advanced', False) if w2v_config else False
+        self._load_word2vec_model(w2v_config.get('model_path') if w2v_config else None)
         logging.info("KawasakiModel initialized.")
 
     def _load_word2vec_model(self, model_path: Optional[str]):

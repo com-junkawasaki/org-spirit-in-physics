@@ -30,7 +30,8 @@ def main():
 
     # --- 1. Load Configuration ---
     logging.info(f"Loading configuration from {args.config}")
-    with open(args.config, 'r') as f:
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'config.yaml')
+    with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
     # --- 2. Initialize Components ---
@@ -53,12 +54,17 @@ def main():
     logging.info(f"Found {len(responses)} new responses to process.")
 
     for response in responses:
+        response_id = response.get('_key')  # ArangoDB's default key
+        if not response_id:
+            logging.warning("Skipping response without a '_key'.")
+            continue
+
         try:
-            logging.info(f"Processing response ID: {response['id']}")
+            logging.info(f"Processing response ID: {response_id}")
 
             # b. Load Hume AI emotion data from database
             # Find the experiment session for this response
-            experiment_session = data_loader.get_experiment_session_for_response(response['id'])
+            experiment_session = data_loader.get_experiment_session_for_response(response_id)
             emotion_timeseries_data = []
 
             if experiment_session:
@@ -66,18 +72,18 @@ def main():
                     # Load Hume AI data for this experiment session
                     hume_data = hume_data_processor.process_hume_data_for_session(experiment_session['id'])
                     emotion_timeseries_data = hume_data.get('emotion_timeseries', [])
-                    logging.info(f"Loaded {len(emotion_timeseries_data)} Hume emotion data points for response {response['id']}")
+                    logging.info(f"Loaded {len(emotion_timeseries_data)} Hume emotion data points for response {response_id}")
                 except Exception as e:
-                    logging.warning(f"Failed to load Hume data for response {response['id']}: {e}")
+                    logging.warning(f"Failed to load Hume data for response {response_id}: {e}")
             else:
-                logging.warning(f"No experiment session found for response {response['id']}")
+                logging.warning(f"No experiment session found for response {response_id}")
 
             # c. Store emotion data (if we have Hume data)
             if emotion_timeseries_data:
-                data_storer.store_emotion_data(response['id'], emotion_timeseries_data)
+                data_storer.store_emotion_data(response_id, emotion_timeseries_data)
 
             # d. Load and process physiological data
-            sp_timeseries = data_loader.load_skin_potential_data(response['id'])
+            sp_timeseries = data_loader.load_skin_potential_data(response_id)
 
             # Process physiological data with our processor
             physiological_features = physiological_processor.extract_features_for_response(
@@ -96,12 +102,12 @@ def main():
             result = kawasaki_model.calculate(features)
 
             # g. Store results
-            data_storer.store_analysis_result(run_id, response['id'], result)
+            data_storer.store_analysis_result(run_id, response_id, result)
 
-            logging.info(f"Successfully processed response ID: {response['id']}")
+            logging.info(f"Successfully processed response ID: {response_id}")
 
         except Exception as e:
-            logging.error(f"Failed to process response ID {response['id']}: {e}")
+            logging.error(f"Failed to process response ID {response_id}: {e}")
 
     # 最終結果の取得と可視化
     if args.model_version and run_id:

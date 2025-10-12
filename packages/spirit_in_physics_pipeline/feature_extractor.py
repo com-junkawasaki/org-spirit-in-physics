@@ -92,19 +92,20 @@ class FeatureExtractor:
         return emotion_features
 
     def extract_features_for_response(self, response_data, sp_timeseries, emotion_timeseries):
-        logging.info(f"Extracting features for response ID {response_data['id']}")
+        response_id = response_data.get('_key')
+        logging.info(f"Extracting features for response ID {response_id}")
 
-        r = self.calculate_reaction_component(response_data['reaction_time_ms'])
+        r = self.calculate_reaction_component(response_data.get('reaction_time_ms', 1000))
         delta_sp = self.calculate_sp_component(sp_timeseries)
         emotion_features = self.calculate_emotion_component(emotion_timeseries)
 
         features = {
             "r": r,
             "delta_sp": delta_sp,
-            "reaction_time_ms": response_data['reaction_time_ms'],
-            "stimulus_word": response_data['stimulus_word'],
-            "response_word": response_data['response_word'],
-            "participant_id": response_data['participant_id'],
+            "reaction_time_ms": response_data.get('reaction_time_ms', 1000),
+            "stimulus_word": response_data.get('stimulus_word', ''),
+            "response_word": response_data.get('response_word', ''),
+            "participant_id": response_data.get('participant_id', ''),
             "emotion_features": emotion_features,
             "physiological_features": {
                 "delta_sp": delta_sp,
@@ -116,5 +117,5 @@ class FeatureExtractor:
         # 感情データを個別に追加
         features.update(emotion_features)
 
-        logging.info(f"Extracted features for {response_data['stimulus_word']} -> {response_data['response_word']}: Spirit components integrated")
+        logging.info(f"Extracted features for {features['stimulus_word']} -> {features['response_word']}: Spirit components integrated")
         return features

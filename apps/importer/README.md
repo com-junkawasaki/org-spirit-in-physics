@@ -1,117 +1,60 @@
 # Spirit in Physics - Importer
 
-## Current Implementation: ArangoDB-based Data Import
+This application is responsible for importing all raw experimental data into the ArangoDB database. It handles data from various sources, including participant consent forms, session data, and Hume AI analysis results.
 
-This importer handles data collection and import operations using **ArangoDB** as the primary multi-model database. ArangoDB provides both document storage capabilities and graph database features for complex relationship analysis.
+## Architecture
 
-## Architecture Overview
+The importer is the single source of truth for data ingestion. It uses a shared pipeline library located in `packages/spirit_in_physics_pipeline` for core data handling functionalities like database connections and data models.
 
-### Data Model (Multi-Model)
-- **participants**: Experiment participants with demographics (Document Collection)
-- **participant_sessions**: Individual experiment sessions (Document Collection)
-- **participant_session_responses**: Participant responses with reaction times (Document Collection)
-- **word_stimuli**: Word association stimuli (Document Collection)
-- **analysis_runs**: Analysis execution records (Document Collection)
-- **analysis_results**: Analysis results and findings (Document Collection)
+## Key Components
 
-### Key Components
-
-### 1. Core Import Script
-- `import_to_arangodb.py`: Unified ArangoDB import script for all participant data
-- `arangodb_client.py`: ArangoDB client with AQL query support
-
-### 2. Data Access Layer (`src/pipeline/data_loader.py`)
-ArangoDB-based data loading for experiment data with AQL queries.
-
-### 3. Hume AI Integration
-- `run_hume_jobs.py`: Execute Hume AI emotion analysis jobs
-- `src/pipeline/emotion_processor.py`: Hume AI API client
-- `src/pipeline/hume_data_processor.py`: Process Hume AI results
-
-### 4. Temporal Workflows (`src/activities/`)
-Asynchronous processing workflows for Hume AI analysis using ArangoDB.
+- **Import Scripts**: A collection of scripts in the root directory (`import_*.py`) for importing different types of data (participants, responses, Hume data).
+- **Temporal Workflows**: The `src` directory contains Temporal workflows and activities for orchestrating complex, long-running ingestion processes, such as processing media files with Hume AI.
+- **Shared Pipeline**: It relies on `packages/spirit_in_physics_pipeline` for database interactions (`arangodb_client`, `data_storer`, `data_loader`) and other core logic.
 
 ## Setup
 
-1. **Install Dependencies:**
-   ```bash
-   cd apps/importer
-   pip install -r requirements.txt
-   ```
+1.  **Install Dependencies**:
+    Make sure you have a virtual environment set up and the requirements are installed:
+    ```bash
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
 
-2. **Configure ArangoDB:**
-   Update `config.yaml` with ArangoDB connection details:
-   ```yaml
-   arangodb:
-     url: "http://localhost:8529"
-     user: "root"
-     password: ""
-     database: "spirit_in_physics"
-   ```
+2.  **Configure ArangoDB**:
+    Update `config.yaml` with your ArangoDB connection details.
 
-3. **Start ArangoDB:**
-   ```bash
-   docker run -p 8529:8529 -e ARANGO_ROOT_PASSWORD="" arangodb/arangodb:3.11
-   ```
+3.  **Start ArangoDB**:
+    Ensure your ArangoDB instance is running.
 
 ## Usage
 
 ### Import All Participant Data
+
+To import all participant data from the `dataset/participants/` directory into ArangoDB, run the following command from the project root:
+
 ```bash
-python import_to_arangodb.py
+python apps/importer/import_to_arangodb.py
 ```
 
-This script imports all participant data from `../../dataset/participants/` into ArangoDB.
+### Running Hume AI Jobs
 
-### Run Hume AI Analysis Jobs
+To process video files with Hume AI, you can use the `run_hume_jobs.py` script:
+
 ```bash
-python run_hume_jobs.py
+python apps/importer/run_hume_jobs.py
 ```
 
-### Test ArangoDB Connection
-```bash
-python arangodb_client.py
-```
+### Temporal Workflows
 
-## Database Schema
+To run the Temporal-based ingestion workflows, you need to have a Temporal server running. Then you can start the worker and trigger workflows:
 
-### Core Collections
-- `participants`: Basic participant information
-- `participant_sessions`: Experiment sessions
-- `participant_session_responses`: Word association responses with reaction times
-- `word_stimuli`: Word stimuli used in experiments
-- `analysis_runs`: Analysis execution records
-- `analysis_results`: Analysis results and findings
+1.  **Start the Worker**:
+    ```bash
+    python -m apps.importer.src.run_worker
+    ```
 
-### Data Relationships
-ArangoDB supports both document queries and graph traversals for complex relationship analysis.
-
-## Integration with Analyzer
-
-The importer provides data to the analyzer app:
-
-- **Importer (ArangoDB)**: Data collection, storage, and preprocessing
-- **Analyzer**: Data analysis, modeling, and visualization using ArangoDB data
-
-## Hume AI Integration
-
-### Job Execution
-1. Videos are uploaded to dataset/participants/
-2. `run_hume_jobs.py` submits videos to Hume AI
-3. Results are processed and can be integrated into ArangoDB
-4. Emotion data enhances the Spirit analysis model
-
-### Emotion Processing
-- Face analysis for emotional expressions
-- Prosody analysis for vocal emotions
-- Language analysis for semantic content
-- Integrated emotion scores for Spirit model
-
-## ArangoDB Benefits
-
-ArangoDB provides:
-- **Multi-model database**: Documents, graphs, and key-value operations
-- **AQL queries**: Powerful query language for complex data operations
-- **Horizontal scaling**: Distributed architecture for large datasets
-- **ACID transactions**: Reliable data consistency
-- **Graph traversals**: Efficient relationship analysis for Spirit correlations
+2.  **Start an Ingestion Workflow**:
+    ```bash
+    python -m apps.importer.src.start_ingestion --session-id <your_session_id>
+    ```

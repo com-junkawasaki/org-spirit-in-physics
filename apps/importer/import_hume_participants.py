@@ -4,6 +4,8 @@ Script to import Hume AI job IDs as participants and create corresponding sessio
 """
 
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 import json
 import uuid
 from datetime import datetime

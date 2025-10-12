@@ -41,6 +41,7 @@ def upsert_participant(col, participant_id: str, consent: dict|None, first_ts: i
 def parse_events_build_sessions_and_responses(session_json: dict):
     participant_id = session_json.get("participantId")
     events = session_json.get("events", [])
+    print(f"DEBUG: Processing {len(events)} events for participant {participant_id}")
 
     sessions = []
     responses = []
@@ -66,6 +67,8 @@ def parse_events_build_sessions_and_responses(session_json: dict):
         ts = ev.get("timestamp")
         typ = ev.get("type")
         payload = ev.get("payload") or {}
+        if "speech" in typ or "word" in typ or "response" in typ:
+            print(f"DEBUG: Event type={typ}, payload keys={list(payload.keys()) if payload else []}")
 
         if current_session is not None:
             current_session["last_ts"] = ts
@@ -100,11 +103,14 @@ def parse_events_build_sessions_and_responses(session_json: dict):
         elif typ == "response_window_opened":
             window_open = True
         elif typ == "speech_detected":
-            if window_open and last_word and current_session is not None:
+            print(f"DEBUG: Processing speech_detected event")
+            # Always create response for speech_detected events
+            if last_word and current_session is not None:
                 rt = max(0, ts - last_word["ts"])
                 # create response (speech_detectedイベントからresponse_wordを取得)
+                print(f"DEBUG: speech_detected payload={payload}")
                 response_word = payload.get("word") or payload.get("key")
-                print(f"DEBUG: speech_detected payload={payload}, response_word={response_word}")
+                print(f"DEBUG: response_word={response_word}")
                 resp = {
                     "participant_id": participant_id,
                     "session_index": current_session["session_index"],
@@ -115,8 +121,6 @@ def parse_events_build_sessions_and_responses(session_json: dict):
                 }
                 responses.append(resp)
                 current_session["reaction_times"].append(rt)
-                # 一旦閉じる（多重検出抑制）
-                window_open = False
         elif typ == "response_window_closed":
             window_open = False
 
