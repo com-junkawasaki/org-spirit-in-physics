@@ -1,13 +1,18 @@
 from datetime import timedelta
 from temporalio import workflow
 
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+
 # Assuming activities are defined in the other files
-from .activities.supabase_activities import SupabaseActivities
+from .activities.arangodb_activities import ArangoDBActivities
 from .activities.hume_activities import HumeActivities
+from activities.hume_activities import process_media_file, store_hume_results
 
 # Define the activities stubs
-supabase_activities = workflow.new_activity_stub(
-    SupabaseActivities, start_to_close_timeout=timedelta(minutes=5)
+arangodb_activities = workflow.new_activity_stub(
+    ArangoDBActivities, start_to_close_timeout=timedelta(minutes=5)
 )
 hume_activities = workflow.new_activity_stub(
     HumeActivities, start_to_close_timeout=timedelta(hours=2) # Hume can be long
@@ -24,11 +29,11 @@ class IngestionWorkflow:
             # 1. Get session info and download media
             session_info = await workflow.execute_activity(
                 "get_session_for_ingestion", session_id,
-                stub=supabase_activities
+                stub=arangodb_activities
             )
             local_path = await workflow.execute_activity(
                 "download_media_file", session_info["storage_path"],
-                stub=supabase_activities,
+                stub=arangodb_activities,
                 start_to_close_timeout=timedelta(minutes=10)
             )
 
@@ -48,18 +53,18 @@ class IngestionWorkflow:
             # 4. Store raw and structured data
             await workflow.execute_activity(
                 "store_raw_hume_data", (session_id, artifacts),
-                stub=supabase_activities
+                stub=arangodb_activities
             )
             await workflow.execute_activity(
                 "parse_and_store_structured_data", (session_id, artifacts),
-                stub=supabase_activities,
+                stub=arangodb_activities,
                 start_to_close_timeout=timedelta(minutes=15)
             )
 
             # 5. Update session status
             await workflow.execute_activity(
                 "update_session_status", (session_id, "INGESTION_COMPLETE"),
-                stub=supabase_activities
+                stub=arangodb_activities
             )
 
             return {"status": "SUCCESS", "sessionId": session_id}
@@ -69,6 +74,6 @@ class IngestionWorkflow:
             if local_path:
                 await workflow.execute_activity(
                     "cleanup_temp_files", local_path,
-                    stub=supabase_activities,
+                    stub=arangodb_activities,
                     start_to_close_timeout=timedelta(minutes=2)
                 )

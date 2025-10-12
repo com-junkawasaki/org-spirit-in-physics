@@ -8,7 +8,7 @@ import json
 import pandas as pd
 import uuid
 from datetime import datetime
-from arangodb_client import ArangoDBClient
+from packages.spirit_in_physics_pipeline.arangodb_client import ArangoDBClient
 import glob
 import yaml
 

@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 import glob
-from arangodb_client import ArangoDBClient
+from packages.spirit_in_physics_pipeline.arangodb_client import ArangoDBClient
 
 # Load configuration from config.yaml
 import yaml

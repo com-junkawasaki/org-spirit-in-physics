@@ -31,7 +31,12 @@ def upsert_participant(col, participant_id: str, consent: dict|None, first_ts: i
         "created_at": ms_to_iso(first_ts) if first_ts else None,
         "consent": consent or {},
     }
-    col.insert(doc, overwrite=True)
+    try:
+        result = col.insert(doc, overwrite=True)
+        print(f"Inserted participant: {participant_id} -> {result}")
+    except Exception as e:
+        print(f"Failed to insert participant {participant_id}: {e}")
+        print(f"Document: {doc}")
 
 def parse_events_build_sessions_and_responses(session_json: dict):
     participant_id = session_json.get("participantId")
@@ -99,6 +104,7 @@ def parse_events_build_sessions_and_responses(session_json: dict):
                 rt = max(0, ts - last_word["ts"])
                 # create response (speech_detectedイベントからresponse_wordを取得)
                 response_word = payload.get("word") or payload.get("key")
+                print(f"DEBUG: speech_detected payload={payload}, response_word={response_word}")
                 resp = {
                     "participant_id": participant_id,
                     "session_index": current_session["session_index"],
@@ -137,10 +143,12 @@ def main():
     col_responses = db.collection("participant_session_responses")
 
     participant_dirs = [p for p in glob.glob(os.path.join(args.dataset, "*")) if os.path.isdir(p)]
+    print(f"Found {len(participant_dirs)} participant directories")
     imported_p = imported_s = imported_r = 0
 
     for pdir in participant_dirs:
         pid = os.path.basename(pdir)
+        print(f"Processing participant: {pid}")
         consent_path = os.path.join(pdir, "consent.json")
         session_path = os.path.join(pdir, "session_data.json")
 
@@ -164,8 +172,10 @@ def main():
         first_ts = events[0]["timestamp"] if events else None
 
         # upsert participant
+        print(f"About to upsert participant: {pid}")
         upsert_participant(col_participants, pid, consent, first_ts)
         imported_p += 1
+        print(f"Successfully upserted participant: {pid}, total imported: {imported_p}")
 
         # build sessions & responses
         sessions, responses = parse_events_build_sessions_and_responses(session_json)

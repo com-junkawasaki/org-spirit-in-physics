@@ -20,12 +20,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class IntegratedDataPipeline:
     """セッション、生理、Hume AIデータを統合した分析パイプライン"""
 
-    def __init__(self, terminusdb_config: Dict[str, Any], data_dir: str):
-        self.terminusdb_config = terminusdb_config
+    def __init__(self, arangodb_config: Dict[str, Any], data_dir: str):
+        self.arangodb_config = arangodb_config
         self.data_dir = Path(data_dir)
         self.session_processor = SessionDataProcessor()
-        self.data_loader = DataLoader(terminusdb_config)
-        self.hume_processor = HumeDataProcessor(terminusdb_config)
+        self.data_loader = DataLoader(arangodb_config)
+        self.hume_processor = HumeDataProcessor(arangodb_config)
         self.physiological_processor = PhysiologicalProcessor()
 
     def analyze_participant_completeness(self, participant_id: str) -> Dict[str, Any]:

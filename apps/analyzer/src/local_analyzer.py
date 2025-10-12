@@ -11,6 +11,10 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import logging
+import sys
+
+# Add project root to path to allow importing from packages
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

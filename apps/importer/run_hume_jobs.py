@@ -12,9 +12,10 @@ import glob
 from pathlib import Path
 
 # モジュールパスを追加
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from pipeline.emotion_processor import EmotionProcessor
+
+from packages.spirit_in_physics_pipeline.emotion_processor import EmotionProcessor
 from hume.models.config import FaceConfig, ProsodyConfig
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

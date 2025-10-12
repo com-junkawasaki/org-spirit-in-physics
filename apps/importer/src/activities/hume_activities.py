@@ -1,7 +1,13 @@
+from datetime import timedelta
 from temporalio import activity
 from hume import HumeBatchClient
 from hume.models.config import FaceConfig, ProsodyConfig, LanguageConfig
+import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
+
+from packages.spirit_in_physics_pipeline.emotion_processor import EmotionProcessor
+from packages.spirit_in_physics_pipeline.hume_data_processor import HumeDataProcessor
 
 class HumeActivities:
     def __init__(self, config):

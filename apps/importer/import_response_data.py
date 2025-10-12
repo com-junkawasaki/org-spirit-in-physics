@@ -7,7 +7,7 @@ import os
 import json
 import uuid
 from datetime import datetime
-from arangodb_client import ArangoDBClient
+from packages.spirit_in_physics_pipeline.arangodb_client import ArangoDBClient
 import yaml
 
 def get_arangodb_client() -> ArangoDBClient:

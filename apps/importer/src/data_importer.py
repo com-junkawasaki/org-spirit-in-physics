@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-過去の実験データをSupabaseにインポートするスクリプト
+過去の実験データをArangoDBにインポートするスクリプト
 """
 
 import os
@@ -10,9 +10,13 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import asyncio
+import sys
 
-from pipeline.data_storer import DataStorer
-from pipeline.data_loader import DataLoader
+# Add project root to path to allow importing from packages
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+
+from packages.spirit_in_physics_pipeline.data_storer import DataStorer
+from packages.spirit_in_physics_pipeline.data_loader import DataLoader
 import yaml
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

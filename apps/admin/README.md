@@ -1,5 +1,7 @@
 # Spirit in Physics Admin Dashboard
 
+**Database:** ArangoDB (Multi-model database)
+
 ## 管理者ストーリー (Admin Story)
 
 ### Merkle DAG: admin_story

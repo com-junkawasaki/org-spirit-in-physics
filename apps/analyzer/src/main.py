@@ -2,15 +2,19 @@ import argparse
 import yaml
 import logging
 import os
+import sys
 
-from .pipeline.data_loader import DataLoader
-from .pipeline.emotion_processor import EmotionProcessor
-from .pipeline.feature_extractor import FeatureExtractor
-from .pipeline.kawasaki_model import KawasakiModel
-from .pipeline.data_storer import DataStorer
-from .pipeline.job_manager import JobManager, JobType, JobStatus
-from .pipeline.physiological_processor import PhysiologicalProcessor
-from .pipeline.hume_data_processor import HumeDataProcessor
+# Add project root to path to allow importing from packages
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+
+from packages.spirit_in_physics_pipeline.data_loader import DataLoader
+from packages.spirit_in_physics_pipeline.emotion_processor import EmotionProcessor
+from packages.spirit_in_physics_pipeline.feature_extractor import FeatureExtractor
+from packages.spirit_in_physics_pipeline.kawasaki_model import KawasakiModel
+from packages.spirit_in_physics_pipeline.data_storer import DataStorer
+from packages.spirit_in_physics_pipeline.job_manager import JobManager, JobType, JobStatus
+from packages.spirit_in_physics_pipeline.physiological_processor import PhysiologicalProcessor
+from packages.spirit_in_physics_pipeline.hume_data_processor import HumeDataProcessor
 from .visualization.spirit_visualizer import SpiritVisualizer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

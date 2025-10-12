@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Physiological Data Importer for Supabase
-Imports CSV physiological data files into the response_skin_potential_timeseries table.
+Physiological Data Importer for ArangoDB
+Imports CSV physiological data files into the response_skin_potential_timeseries collection.
 """
 
 import csv
@@ -11,14 +11,15 @@ import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+import os
 
 # Add src directory to path for imports
-sys.path.append(str(Path(__file__).parent))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 try:
-    from supabase import create_client, Client
+    from arango import ArangoClient
 except ImportError:
-    logging.error("supabase-py not installed. Please install with: pip install supabase")
+    logging.error("python-arango not installed. Please install with: pip install python-arango")
     sys.exit(1)
 
 logging.basicConfig(
@@ -28,21 +29,24 @@ logging.basicConfig(
 
 class PhysiologicalDataImporter:
     """
-    Imports physiological data from CSV files into Supabase.
+    Imports physiological data from CSV files into ArangoDB.
     """
 
     def __init__(self, config_path: str = "config.yaml"):
         self.config = self._load_config(config_path)
-        self.supabase = self._create_supabase_client()
+        self.db = self._create_arangodb_client()
 
-    def _create_supabase_client(self) -> Client:
-        """Create Supabase client for local development."""
-        # Use local Supabase environment with service role key for data import
-        supabase_url = "http://127.0.0.1:54331"
-        # Use service role key for bypassing RLS during data import
-        supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
+    def _create_arangodb_client(self):
+        """Create ArangoDB client for local development."""
+        # Use ArangoDB configuration
+        arangodb_config = self.config.get('arangodb', {})
+        arangodb_url = arangodb_config.get('url', 'http://localhost:8529')
+        arangodb_user = arangodb_config.get('user', 'root')
+        arangodb_password = arangodb_config.get('password', '')
+        arangodb_database = arangodb_config.get('database', 'spirit_in_physics')
 
-        return create_client(supabase_url, supabase_key)
+        client = ArangoClient(hosts=arangodb_url)
+        return client.db(arangodb_database, username=arangodb_user, password=arangodb_password)
 
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from YAML file."""
@@ -164,19 +168,20 @@ class PhysiologicalDataImporter:
             date = metadata.get('date', '')
 
             # First, find or create participant
-            participant_result = self.supabase.table('participants').select('id').eq('name', participant_name).execute()
+            participants_collection = self.db.collection('participants')
+            participant_result = list(participants_collection.find({'name': participant_name}))
 
-            if not participant_result.data:
+            if not participant_result:
                 # Create new participant
                 participant_data = {
                     'name': participant_name,
                     'created_at': datetime.now().isoformat()
                 }
                 participant_result = self.supabase.table('participants').insert(participant_data).execute()
-                participant_id = participant_result.data[0]['id']
+                participant_id = participant_result[0]['_key']
                 logging.info(f"Created new participant: {participant_name} (ID: {participant_id})")
             else:
-                participant_id = participant_result.data[0]['id']
+                participant_id = participant_result[0]['_key']
                 logging.info(f"Found existing participant: {participant_name} (ID: {participant_id})")
 
             # Find experiment session for this date/participant
@@ -205,8 +210,10 @@ class PhysiologicalDataImporter:
                 'end_time': end_datetime.isoformat() if end_datetime else None
             }
 
-            session_result = self.supabase.table('participant_experiment_sessions').insert(session_data).execute()
-            session_id = session_result.data[0]['id']
+            sessions_collection = self.db.collection('participant_experiment_sessions')
+            session_data['_key'] = session_uuid
+            session_result = sessions_collection.insert(session_data)
+            session_id = session_uuid
 
             # Create a response record for this physiological data
             response_data = {
@@ -225,8 +232,10 @@ class PhysiologicalDataImporter:
                 'emotion_confidence': 1.0
             }
 
-            response_result = self.supabase.table('participant_response_data').insert(response_data).execute()
-            response_id = response_result.data[0]['id']
+            responses_collection = self.db.collection('participant_response_data')
+            response_data['_key'] = str(uuid4())
+            response_result = responses_collection.insert(response_data)
+            response_id = response_data['_key']
 
             logging.info(f"Created response record for physiological data (ID: {response_id})")
 
@@ -279,8 +288,12 @@ class PhysiologicalDataImporter:
                 ]
 
                 try:
-                    result = self.supabase.table('response_skin_potential_timeseries').insert(batch_data).execute()
-                    inserted_count = len(result.data) if result.data else 0
+                    timeseries_collection = self.db.collection('response_skin_potential_timeseries')
+                    # Add unique keys for each document
+                    for item in batch_data:
+                        item['_key'] = f"{response_id}_{item['timestamp_offset_ms']}"
+                    result = timeseries_collection.insert_many(batch_data)
+                    inserted_count = len(result)
                     total_inserted += inserted_count
                     logging.info(f"Inserted batch {i//batch_size + 1}: {inserted_count} records")
 
@@ -298,10 +311,14 @@ class PhysiologicalDataImporter:
                 max_value = max(values)
 
                 try:
-                    self.supabase.table('participant_response_data').update({
-                        'skin_potential': avg_value,
-                        'notes': f"Physiological data: {len(data_points)} points, avg={avg_value:.2f}μV, range=[{min_value:.2f}, {max_value:.2f}]μV"
-                    }).eq('id', response_id).execute()
+                    responses_collection = self.db.collection('participant_response_data')
+                    responses_collection.update_match(
+                        {'_key': response_id},
+                        {
+                            'skin_potential': avg_value,
+                            'notes': f"Physiological data: {len(data_points)} points, avg={avg_value:.2f}μV, range=[{min_value:.2f}, {max_value:.2f}]μV"
+                        }
+                    )
 
                     logging.info(f"Updated response record with summary statistics")
                 except Exception as e:
@@ -318,18 +335,35 @@ class PhysiologicalDataImporter:
         Verify that the physiological data was imported correctly.
         """
         try:
-            # Count total records
-            count_result = self.supabase.table('response_skin_potential_timeseries').select('id', count='exact').eq('response_id', response_id).execute()
-            total_count = count_result.count if hasattr(count_result, 'count') else len(count_result.data or [])
+            # Count total records using AQL
+            count_query = """
+            RETURN LENGTH(
+                FOR doc IN response_skin_potential_timeseries
+                    FILTER doc.response_id == @response_id
+                    RETURN doc
+            )
+            """
+            count_result = list(self.db.aql.execute(count_query, bind_vars={"response_id": response_id}))
+            total_count = count_result[0] if count_result else 0
 
             # Get sample records
-            sample_result = self.supabase.table('response_skin_potential_timeseries').select('*').eq('response_id', response_id).limit(5).execute()
-            sample_data = sample_result.data or []
+            sample_query = """
+            FOR doc IN response_skin_potential_timeseries
+                FILTER doc.response_id == @response_id
+                LIMIT 5
+                RETURN doc
+            """
+            sample_data = list(self.db.aql.execute(sample_query, bind_vars={"response_id": response_id}))
 
-            # Get statistics
-            stats_result = self.supabase.table('response_skin_potential_timeseries').select('value').eq('response_id', response_id).execute()
-            if stats_result.data:
-                values = [record['value'] for record in stats_result.data]
+            # Get statistics using AQL
+            stats_query = """
+            FOR doc IN response_skin_potential_timeseries
+                FILTER doc.response_id == @response_id
+                RETURN doc.value
+            """
+            stats_result = list(self.db.aql.execute(stats_query, bind_vars={"response_id": response_id}))
+            if stats_result:
+                values = [record['value'] for record in stats_result]
                 stats = {
                     'count': len(values),
                     'min': min(values),
