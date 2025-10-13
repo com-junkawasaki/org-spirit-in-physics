@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { SystemStatusCard } from '@/components/SystemStatusCard'
 
 // Merkle DAG: imports_management_page -> import_status_tracking
 interface ImportJob {
@@ -149,21 +150,6 @@ export default function ImportsPage() {
     )
   }
 
-  // Merkle DAG: imports_management_page -> system_status_indicator
-  const getSystemStatusIndicator = (status: string) => {
-    const colors = {
-      'connected': 'bg-green-500',
-      'disconnected': 'bg-gray-400',
-      'error': 'bg-red-500'
-    }
-    
-    return (
-      <div className="flex items-center space-x-2">
-        <div className={`w-2 h-2 rounded-full ${colors[status as keyof typeof colors]}`}></div>
-        <span className="text-sm capitalize">{status}</span>
-      </div>
-    )
-  }
 
   if (isLoading) {
     return (
@@ -188,31 +174,27 @@ export default function ImportsPage() {
       </div>
 
       {/* Merkle DAG: imports_management_page -> system_status_overview */}
-      <Card className="p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">システムステータス</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <h3 className="font-medium">ArangoDB</h3>
-            {getSystemStatusIndicator(systemStatus.arangodb)}
-          </div>
-          <div className="space-y-2">
-            <h3 className="font-medium">Temporal</h3>
-            {getSystemStatusIndicator(systemStatus.temporal)}
-          </div>
-          <div className="space-y-2">
-            <h3 className="font-medium">Hume AI</h3>
-            {getSystemStatusIndicator(systemStatus.humeAI)}
-          </div>
-          <div className="space-y-2">
-            <h3 className="font-medium">ジョブ統計</h3>
-            <div className="text-sm text-muted-foreground">
-              実行中: {systemStatus.activeJobs} | 
-              完了: {systemStatus.completedJobs} | 
-              失敗: {systemStatus.failedJobs}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <SystemStatusCard />
+        
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold mb-4">ジョブ統計</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{systemStatus.activeJobs}</div>
+              <div className="text-sm text-muted-foreground">実行中</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{systemStatus.completedJobs}</div>
+              <div className="text-sm text-muted-foreground">完了</div>
+            </div>
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <div className="text-2xl font-bold text-red-600">{systemStatus.failedJobs}</div>
+              <div className="text-sm text-muted-foreground">失敗</div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
 
       {/* Merkle DAG: imports_management_page -> management_tabs */}
       <Tabs defaultValue="jobs" className="space-y-6">
