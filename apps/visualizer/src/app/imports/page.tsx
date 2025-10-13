@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SystemStatusCard } from '@/components/SystemStatusCard'
+import { ArrowRight, Home } from 'lucide-react'
+import Link from 'next/link'
 
 // Merkle DAG: imports_management_page -> import_status_tracking
 interface ImportJob {
@@ -165,12 +167,30 @@ export default function ImportsPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Merkle DAG: imports_management_page -> page_header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-primary mb-2">
-          データインポート管理
-        </h1>
-        <p className="text-muted-foreground">
-          Spirit in Physics実験データのインポート処理を管理・監視します
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-primary mb-2">
+              データインポート管理
+            </h1>
+            <p className="text-muted-foreground">
+              Spirit in Physics実験データのインポート処理を管理・監視します
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm">
+                <Home className="h-4 w-4 mr-2" />
+                ダッシュボード
+              </Button>
+            </Link>
+            <Link href="/participants">
+              <Button variant="outline" size="sm">
+                参加者管理
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Merkle DAG: imports_management_page -> system_status_overview */}
