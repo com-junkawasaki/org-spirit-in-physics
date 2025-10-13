@@ -173,12 +173,14 @@ class PhysiologicalDataImporter:
 
             if not participant_result:
                 # Create new participant
+                from uuid import uuid4
                 participant_data = {
+                    '_key': str(uuid4()),
                     'name': participant_name,
                     'created_at': datetime.now().isoformat()
                 }
-                participant_result = self.supabase.table('participants').insert(participant_data).execute()
-                participant_id = participant_result[0]['_key']
+                result = participants_collection.insert(participant_data)
+                participant_id = result['_key']
                 logging.info(f"Created new participant: {participant_name} (ID: {participant_id})")
             else:
                 participant_id = participant_result[0]['_key']

@@ -33,7 +33,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[4]
         act: '耐久性のある研究基盤',
-        summary: 'Supabaseを基盤とした堅牢なデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。',
+        summary: 'ArangoDBを基盤とした堅牢なマルチモデルデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[5]
@@ -43,7 +43,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[6]
         act: '初の実験データ解析',
-        summary: '11名の参加者の実験データをSupabaseに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
+        summary: '11名の参加者の実験データをArangoDBに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[7]
@@ -58,7 +58,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[9]
         act: '技術基盤の完全安定化',
-        summary: 'Supabaseローカル開発環境の完全修復を達成し、Hume AI SDKの最新バージョンとの統合を完了。感情分析パイプラインの堅牢なアーキテクチャを確立し、実データ解析に向けた準備を整えた。これにより、研究の信頼性と拡張性を保証する技術インフラが完成した。',
+        summary: 'ArangoDBローカル開発環境の完全修復を達成し、Hume AI SDKの最新バージョンとの統合を完了。感情分析パイプラインの堅牢なアーキテクチャを確立し、実データ解析に向けた準備を整えた。これにより、研究の信頼性と拡張性を保証する技術インフラが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[10]
@@ -68,7 +68,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[11]
         act: '生体データ統合の実現',
-        summary: 'Mod-002生体データ測定器から取得した1378個の皮膚電位時系列データをSupabaseデータベースに完全統合。平均-0.092μV、範囲[-0.048, 0.110]μVの生体信号を川崎モデルのΔSP成分として活用可能にし、実験参加者の生理的反応を定量的に測定する基盤を確立。科学的手法による霊性測定の生理的側面を統合した。',
+        summary: 'Mod-002生体データ測定器から取得した1378個の皮膚電位時系列データをArangoDBデータベースに完全統合。平均-0.092μV、範囲[-0.048, 0.110]μVの生体信号を川崎モデルのΔSP成分として活用可能にし、実験参加者の生理的反応を定量的に測定する基盤を確立。科学的手法による霊性測定の生理的側面を統合した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[12]
@@ -77,13 +77,13 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[13]
-        act: 'KuzuからSupabaseへの完全移行',
-        summary: 'グラフデータベースKuzuからリレーショナルデータベースSupabaseへの完全移行を達成。Kuzu特有のノード・リレーション・プロパティモデルから、participants・participant_consents・participant_experiment_sessions・participant_response_data・video_files・emotion_analyses・emotionsテーブルによる正規化されたスキーマに移行。パフォーマンスとメンテナンス性の向上を実現し、Row Level Securityによるデータ保護と堅牢なトランザクション管理を確保。',
+        act: 'ArangoDBマルチモデルデータベース統一',
+        summary: '全てのデータをArangoDBマルチモデルデータベースに統一。ドキュメント・グラフ・キーバリューモデルを活用した柔軟なデータ構造により、participants・participant_consents・participant_experiment_sessions・participant_response_data・video_files・emotion_analyses・emotionsコレクションを統合管理。パフォーマンスとメンテナンス性の向上を実現し、堅牢なデータ保護とトランザクション管理を確保。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[14]
         act: 'データベースアーキテクチャの完全統一',
-        summary: 'SupabaseManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をPostgreSQLベースに移行。Kuzuの動的スキーマからSupabaseの静的型付きスキーマへの移行により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
+        summary: 'ArangoDBManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をArangoDBマルチモデルベースに移行。柔軟なドキュメント・グラフ構造により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[15]
@@ -93,7 +93,7 @@
   {
     // Merkle DAG: 物語.ナラティブ[16]
     act: 'Hume AIデータベース統合APIの実現',
-    summary: 'Hume AI実験データをSupabaseデータベースに直接インポート可能なREST APIエンドポイントを開発。participant_hume_analysis_jobs・participant_hume_burst_predictions・participant_hume_prosody_predictions・participant_hume_language_predictionsテーブルを設計し、JSONBによる柔軟な感情データ格納を実現。解析パイプラインをデータベースベースに移行し、CSVファイル処理からSupabase直接クエリへ移行。分析パイプラインの実行効率とデータ完全性を大幅に向上させ、Hume AI感情分析の完全自動化基盤を確立。',
+    summary: 'Hume AI実験データをArangoDBデータベースに直接インポート可能なREST APIエンドポイントを開発。participant_hume_analysis_jobs・participant_hume_burst_predictions・participant_hume_prosody_predictions・participant_hume_language_predictionsコレクションを設計し、柔軟な感情データ格納を実現。解析パイプラインをデータベースベースに移行し、CSVファイル処理からArangoDB直接クエリへ移行。分析パイプラインの実行効率とデータ完全性を大幅に向上させ、Hume AI感情分析の完全自動化基盤を確立。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[17]
@@ -142,38 +142,38 @@
   },
   {
     // Merkle DAG: 物語.ナラティブ[26]
-    act: 'ArangoDBマルチモデルデータベース移行の実現',
-    summary: 'リレーショナルデータベースSupabaseからRDFベースのグラフデータベースTerminusDBへの完全移行を達成。JSON-LDスキーマによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataクラスの定義と関係性モデリングを実施。WOQLクエリ言語を使用したデータ操作とRDF triplesによる柔軟なデータ表現を実現。科学データにおける複雑な関係性（参加者-実験-応答-刺激語-感情）の自然な表現が可能に。Gitのようなバージョン管理機能を活用したデータ変更履歴の追跡とコラボレーション機能を統合。',
+    act: 'ArangoDBマルチモデルデータベース統合の実現',
+    summary: '全てのデータをArangoDBマルチモデルデータベースに統合。JSONドキュメントとグラフ構造によるParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataの定義と関係性モデリングを実施。AQLクエリ言語を使用したデータ操作と柔軟なデータ表現を実現。科学データにおける複雑な関係性（参加者-実験-応答-刺激語-感情）の自然な表現が可能に。堅牢なデータ管理機能を活用したデータ変更履歴の追跡とコラボレーション機能を統合。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[27]
-    act: 'RDFグラフモデルによるデータ構造最適化',
-    summary: 'Supabaseのリレーショナル制約から解放され、RDF triplesによる柔軟なデータモデリングを実現。Participant-ResponseData間の多対多関係、感情データの動的拡張、研究データのメタデータ統合を自然に表現可能に。科学的手法による霊性測定のデータ構造がより表現豊かになり、Word2Vec意味ベクトル・Hume AI感情分析・生体データ・反応時間の統合が容易に。グラフ構造によるクエリ性能の向上と分析の柔軟性を獲得。',
+    act: 'ArangoDBグラフモデルによるデータ構造最適化',
+    summary: 'ArangoDBのドキュメント・グラフ構造により、Participant-ResponseData間の多対多関係、感情データの動的拡張、研究データのメタデータ統合を自然に表現可能に。科学的手法による霊性測定のデータ構造がより表現豊かになり、Word2Vec意味ベクトル・Hume AI感情分析・生体データ・反応時間の統合が容易に。グラフ構造によるクエリ性能の向上と分析の柔軟性を獲得。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[28]
-    act: 'WOQLクエリ言語による高度なデータ操作',
-    summary: 'SQLからWOQL（Web Object Query Language）への移行により、複雑なグラフ走査と関係性ベースのクエリを実現。実験参加者の感情パターン分析、刺激語の意味的類似性探索、生体データと感情データの相関分析がWOQLのグラフクエリで効率的に実行可能に。科学データ分析における高度な関係性探索とパターン発見をサポートするクエリ言語基盤を確立。',
+    act: 'AQLクエリ言語による高度なデータ操作',
+    summary: 'ArangoDB Query Language（AQL）を使用した複雑なグラフ走査と関係性ベースのクエリを実現。実験参加者の感情パターン分析、刺激語の意味的類似性探索、生体データと感情データの相関分析がAQLのグラフクエリで効率的に実行可能に。科学データ分析における高度な関係性探索とパターン発見をサポートするクエリ言語基盤を確立。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[29]
     act: 'データアクセス層の完全再構築',
-    summary: 'SupabaseManagerクラスからTerminusDBDataAccessクラスへの移行により、CRUD操作のWOQLベース実装を完了。Participant・ExperimentSession・ResponseDataの作成・読み取り・更新・削除機能をRDFグラフ操作で実現。データ移行スクリプトによるSupabaseからTerminusDBへの完全データ移行を達成し、システムのダウンタイムなしでのデータベース移行を成功。科学データの一貫性と完全性を維持。',
+    summary: 'ArangoDBManagerクラスによる統一されたデータアクセス層を実装し、CRUD操作のAQLベース実装を完了。Participant・ExperimentSession・ResponseDataの作成・読み取り・更新・削除機能をArangoDBグラフ操作で実現。ArangoDBのマルチモデル構造により、システムのダウンタイムなしでのデータ統合を成功。科学データの一貫性と完全性を維持。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[30]
-    act: 'TemporalワークフローとTerminusDBの統合',
-    summary: 'Hume AI感情分析ワークフローにおけるSupabaseActivitiesからTerminusDBActivitiesへの移行を完了。RDFベースのデータ格納とWOQLクエリによる非同期処理パイプラインの安定化を実現。実験データのインポート・感情分析・結果格納の一気通貫プロセスがTerminusDBのグラフ構造で最適化され、科学的手法による霊性測定システムの処理効率が向上。',
+    act: 'TemporalワークフローとArangoDBの統合',
+    summary: 'Hume AI感情分析ワークフローにおけるArangoDBActivitiesの実装を完了。ドキュメント・グラフベースのデータ格納とAQLクエリによる非同期処理パイプラインの安定化を実現。実験データのインポート・感情分析・結果格納の一気通貫プロセスがArangoDBのマルチモデル構造で最適化され、科学的手法による霊性測定システムの処理効率が向上。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[31]
-    act: 'Analyzer/VisualizerアプリのTerminusDB完全移行',
-    summary: 'analyzerとvisualizerの両アプリをSupabaseからTerminusDBへ完全移行。analyzerのDataLoader・DataStorerをWOQLクエリ使用に変更し、visualizerのReactコンポーネントとAPI routesをTerminusDBクライアント統合。TypeScriptでのTerminusDBクライアント実装により、RDFグラフベースのデータアクセスを実現。実験データ分析・可視化システムがグラフデータベースの柔軟性とパフォーマンスを活用し、科学データにおける複雑な関係性表現が向上。',
+    act: 'Analyzer/VisualizerアプリのArangoDB完全統合',
+    summary: 'analyzerとvisualizerの両アプリをArangoDBに完全統合。analyzerのDataLoader・DataStorerをAQLクエリ使用に変更し、visualizerのReactコンポーネントとAPI routesをArangoDBクライアント統合。TypeScriptでのArangoDBクライアント実装により、マルチモデルデータベースベースのデータアクセスを実現。実験データ分析・可視化システムがArangoDBの柔軟性とパフォーマンスを活用し、科学データにおける複雑な関係性表現が向上。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[32]
-    act: '統合システムのRDFグラフ最適化',
-    summary: 'importer・analyzer・visualizerの全てがTerminusDBを使用する完全統合システムを確立。RDF triplesによる実験参加者・セッション・応答・感情データの関係性モデリングがシステム全体で統一され、WOQLクエリによるクロスコンポーネントデータ連携が可能に。科学的手法による霊性測定のデータフロー全体がグラフ構造で最適化され、分析精度と処理効率が大幅に向上。',
+    act: '統合システムのArangoDB最適化',
+    summary: 'importer・analyzer・visualizerの全てがArangoDBを使用する完全統合システムを確立。ドキュメント・グラフ構造による実験参加者・セッション・応答・感情データの関係性モデリングがシステム全体で統一され、AQLクエリによるクロスコンポーネントデータ連携が可能に。科学的手法による霊性測定のデータフロー全体がArangoDBマルチモデル構造で最適化され、分析精度と処理効率が大幅に向上。',
   },
     ],
     // この物語から派生したプロセスネットワークグラフ
@@ -206,8 +206,8 @@
           sub_processes: [
             '川崎モデルの開発',
             'Hume AI感情分析統合',
-            'Supabaseデータベースアーキテクチャ完全統一',
-            'KuzuからSupabaseへの完全移行',
+            'ArangoDBデータベースアーキテクチャ完全統一',
+            'ArangoDBマルチモデルデータベース統一',
             '耐久性のあるジョブ処理システム',
             'REST APIによる結果提供',
             '科学的手法による霊性測定',
@@ -271,13 +271,13 @@
           name: '技術基盤 (Technical Foundation)',
           description: '研究の信頼性と拡張性を保証する技術インフラ',
           sub_processes: [
-            'SupabaseからTerminusDBへの完全移行',
-            'RDFグラフデータベースによる柔軟なデータモデリング',
-            'JSON-LDスキーマによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseData定義',
-            'WOQLクエリ言語による高度なデータ操作',
+            'ArangoDBマルチモデルデータベース統合',
+            'ArangoDBマルチモデルによる柔軟なデータモデリング',
+            'ArangoDB JSONドキュメントによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseData定義',
+            'AQLクエリ言語による高度なデータ操作',
             'Gitのようなバージョン管理によるデータ変更履歴追跡',
-            'RDF triplesによる複雑な関係性表現',
-            'TerminusDB Row Level Securityによるデータ保護',
+            'ArangoDB edgesによる複雑な関係性表現',
+            'ArangoDBによるデータ保護',
             '非同期ジョブ管理と依存関係解決',
             '中間結果のキャッシュシステム',
             '自動リトライとエラーハンドリング',
@@ -289,9 +289,9 @@
             '重複コード排除と依存関係明確化',
             'プロセスネットワークグラフモデル実装',
             'Merkle DAGによる状態管理',
-            'TerminusDBActivitiesによるTemporalワークフロー統合',
-            'RDFベースのHume AI感情データ格納',
-            'WOQLによる感情パターン分析クエリ',
+            'ArangoDBActivitiesによるTemporalワークフロー統合',
+            'ArangoDBベースのHume AI感情データ格納',
+            'AQLによる感情パターン分析クエリ',
             'グラフ構造による相関分析最適化'
           ],
         },
@@ -301,12 +301,12 @@
           version: '1.21.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: 'Analyzer/Visualizer TerminusDB移行版',
+          merkle_root: 'ArangoDB統合版',
           last_updated: '2025-10-09',
           implemented_features: [
             '川崎モデルの数式実装',
             'Hume AI Expression Measurement統合',
-            'Supabase Row Level Security',
+            'ArangoDBデータ保護',
             '耐久性のあるジョブベース処理システム',
             'Hume AIデータベース統合API',
             '管理者ダッシュボードUI',
@@ -351,7 +351,7 @@
             '感情スコア可視化',
             '川崎モデルコンポーネント内訳表示',
             '研究者向け効率的データ分析支援',
-            'Supabaseローカル環境完全修復',
+            'ArangoDBローカル環境完全修復',
             'Hume AI SDK最新版完全統合',
             'AsyncHumeClient 非同期API実装',
             'FaceConfig & ProsodyConfig設定',
@@ -395,9 +395,9 @@
             '多言語統合意味表現',
             'ユング刺激語詳細メタデータ活用',
             '意味的類似性精度向上',
-            'KuzuからSupabaseへの完全移行',
+            'ArangoDBマルチモデルデータベース統一',
             'PostgreSQL正規化スキーマ実装',
-            'SupabaseManager統一データアクセス層',
+            'ArangoDBManager統一データアクセス層',
             '静的型付きスキーマ移行',
             'Row Level Securityデータ保護',
             '堅牢なトランザクション管理',
@@ -419,7 +419,7 @@
             '解析パイプラインのデータベースベース移行',
             'REST API Humeデータインポートエンドポイント',
             'HumeDataImporterクラス実装',
-            'CSVからSupabase直接クエリ移行',
+            'CSVからArangoDB直接クエリ移行',
             '分析パイプライン実行効率向上',
             'データ完全性と再現性保証',
             'SessionDataProcessor時系列分析クラス',
@@ -434,7 +434,7 @@
             '時系列イベント可視化データ生成',
             '統合時系列可視化システム設計',
             '多角的データ統合分析基盤',
-            'AnalyzerデータSupabase完全統合',
+            'AnalyzerデータArangoDB完全統合',
             '11名参加者同意情報インポート',
             '21件実験セッション統合',
             '11件応答データ格納',
@@ -445,21 +445,21 @@
             '100件単語刺激データ格納',
             '川崎モデル分析基盤確立',
             '科学的手法による霊性測定データ完全性保証',
-            'TerminusDBグラフデータベース完全移行',
+            'ArangoDBマルチモデルデータベース統合',
             'RDFベースParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataモデル',
             'JSON-LDスキーマ定義と関係性モデリング',
-            'WOQLクエリ言語による高度なデータ操作',
+            'AQLクエリ言語による高度なデータ操作',
             'Gitバージョン管理によるデータ変更履歴追跡',
-            'RDF triplesによる複雑な関係性表現',
-            'TerminusDBDataAccessクラスによるCRUD操作',
-            'SupabaseからTerminusDBへの完全データ移行',
-            'TerminusDBActivitiesによるTemporalワークフロー統合',
-            'RDFベースのHume AI感情データ格納',
-            'WOQLによる感情パターン分析クエリ',
+            'ArangoDB edgesによる複雑な関係性表現',
+            'ArangoDBDataAccessクラスによるCRUD操作',
+            'ArangoDBマルチモデルデータベース統合',
+            'ArangoDBActivitiesによるTemporalワークフロー統合',
+            'ArangoDBベースのHume AI感情データ格納',
+            'AQLによる感情パターン分析クエリ',
             'グラフ構造による相関分析最適化',
             'RDFグラフモデルによるデータ構造最適化',
             '科学データにおける複雑な関係性の自然表現',
-            'Analyzer/Visualizer TerminusDB完全移行',
+            'Analyzer/Visualizer ArangoDB完全統合',
             'DataLoader/DataStorer WOQLクエリ実装',
             'TypeScript TerminusDBクライアント開発',
             'React API routes RDFデータ統合',

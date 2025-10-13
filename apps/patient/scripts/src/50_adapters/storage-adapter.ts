@@ -57,7 +57,7 @@ export class StorageAdapter implements StoragePort {
         processingTime: sa.processingTime
       }));
     } catch (error) {
-      console.warn('Failed to load emotion analysis from Supabase:', error);
+      console.warn('Failed to load emotion analysis from ArangoDB:', error);
       return [];
     }
   }
@@ -65,7 +65,7 @@ export class StorageAdapter implements StoragePort {
   async saveArtifact(participantId: string, type: string, filename: string, data: Buffer): Promise<string> {
     // アーティファクト保存は未実装（必要に応じて実装）
       // 現在はURLを返すダミー実装
-      return `supabase://artifacts/${participantId}/${filename}`;
+      return `arangodb://artifacts/${participantId}/${filename}`;
   }
 
   // data-loader.ts から統合した追加メソッド
@@ -87,20 +87,20 @@ export class StorageAdapter implements StoragePort {
         videoFiles: []
       }));
     } catch (error) {
-      console.warn('Failed to load participants from Supabase:', error);
+      console.warn('Failed to load participants from ArangoDB:', error);
       return [];
     }
   }
 
   async loadSessionData(participantId: string): Promise<SessionData | null> {
-    // Supabaseデータベースからセッションデータを取得（一本化）
+    // ArangoDBデータベースからセッションデータを取得（一本化）
     try {
-      // SupabaseManagerからセッションデータを取得
+      // ArangoDBManagerからセッションデータを取得
       // 現時点では仮の実装
-      console.log(`Loading session data from Supabase for ${participantId}`);
+      console.log(`Loading session data from ArangoDB for ${participantId}`);
       return null; // 仮実装
     } catch (error) {
-      console.warn('Failed to load session data from Supabase:', error);
+      console.warn('Failed to load session data from ArangoDB:', error);
       return null;
     }
   }

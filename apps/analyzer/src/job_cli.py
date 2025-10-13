@@ -19,8 +19,8 @@ class JobCLI:
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
         
-        self.job_manager = JobManager(self.config['terminusdb'])
-        self.data_storer = DataStorer(self.config['terminusdb'])
+        self.job_manager = JobManager(self.config['arangodb'])
+        self.data_storer = DataStorer(self.config['arangodb'])
 
     def create_run(self, model_version: str, notes: str = "") -> str:
         """Create a new analysis run."""
@@ -32,7 +32,7 @@ class JobCLI:
         """Queue analysis jobs for a run."""
         from pipeline.data_loader import DataLoader
         
-        data_loader = DataLoader(self.config['terminusdb'])
+        data_loader = DataLoader(self.config['arangodb'])
         
         if response_ids:
             responses = [data_loader.get_response_with_media(rid) for rid in response_ids]

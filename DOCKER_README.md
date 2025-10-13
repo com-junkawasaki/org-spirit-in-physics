@@ -6,8 +6,7 @@ This document describes how to set up and run the Spirit in Physics application 
 
 The application consists of multiple services:
 
-- **Supabase**: PostgreSQL database with REST API
-- **TerminusDB**: Graph database for advanced data operations
+- **ArangoDB**: Multi-model database for all data operations
 - **Temporal**: Workflow orchestration
 - **Patient App**: Next.js participant interface (port 25250)
 - **Admin App**: Vite admin dashboard (port 4173)
@@ -19,7 +18,7 @@ The application consists of multiple services:
 
 - Docker and Docker Compose
 - At least 8GB RAM recommended
-- Ports 54322, 15421, 6363, 7233, 8233, 25250, 4173, 25260, 8000, 8001 must be available
+- Ports 8529, 7233, 8233, 25250, 4173, 25260, 8000, 8001 must be available
 
 ## Quick Start
 
@@ -50,8 +49,7 @@ Once all services are running:
 - **Patient App**: http://localhost:25250
 - **Admin Dashboard**: http://localhost:4173
 - **Visualizer**: http://localhost:25260
-- **Supabase API**: http://localhost:15421
-- **Supabase Studio**: Access via Supabase service
+- **ArangoDB**: http://localhost:8529
 - **Temporal UI**: http://localhost:8233
 
 ## Environment Configuration

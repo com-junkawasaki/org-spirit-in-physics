@@ -18,18 +18,14 @@ from pipeline.data_storer import DataStorer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class HumeDataImporter:
-    """Import Hume AI analysis data into TerminusDB database."""
+    """Import Hume AI analysis data into ArangoDB database."""
 
-    def __init__(self, terminusdb_config):
-        from terminusdb_client import WOQLClient, WOQLQuery
+    def __init__(self, arangodb_config):
+        from arango import ArangoClient
 
-        self.terminusdb = WOQLClient(
-            server=terminusdb_config['url'],
-            user=terminusdb_config['user'],
-            password=terminusdb_config['password']
-        )
-        self.terminusdb.connect(terminusdb_config['database'])
-        self.config = terminusdb_config
+        client = ArangoClient(hosts=arangodb_config['url'])
+        self.db = client.db(arangodb_config['database'], username=arangodb_config['user'], password=arangodb_config['password'])
+        self.config = arangodb_config
 
     def import_hume_data(self, artifact_path, participant_experiment_session_id):
         """Import Hume AI data from artifact folder."""
@@ -46,8 +42,11 @@ class HumeDataImporter:
                 'status': 'completed'  # Since we're importing completed data
             }
 
-            job_result = self.supabase.table('participant_hume_analysis_jobs').insert(job_data).execute()
-            job_id = job_result.data[0]['id']
+            import uuid
+            job_data['_key'] = str(uuid.uuid4())
+            job_collection = self.db.collection('participant_hume_analysis_jobs')
+            job_result = job_collection.insert(job_data)
+            job_id = job_data['_key']
 
             # Find CSV directories - there might be multiple registry files
             registry_dirs = [d for d in os.listdir(artifact_path) if d.startswith('registry_file-') and os.path.isdir(os.path.join(artifact_path, d))]
@@ -107,7 +106,10 @@ class HumeDataImporter:
                 'expressions': json.dumps(expressions)
             }
 
-            self.supabase.table('participant_hume_burst_predictions').insert(burst_data).execute()
+            import uuid
+            burst_data['_key'] = str(uuid.uuid4())
+            burst_collection = self.db.collection('participant_hume_burst_predictions')
+            burst_collection.insert(burst_data)
 
     def _import_prosody_data(self, csv_file, job_id):
         """Import prosody prediction data."""
@@ -129,7 +131,10 @@ class HumeDataImporter:
                 'emotions': json.dumps(emotions)
             }
 
-            self.supabase.table('participant_hume_prosody_predictions').insert(prosody_data).execute()
+            import uuid
+            prosody_data['_key'] = str(uuid.uuid4())
+            prosody_collection = self.db.collection('participant_hume_prosody_predictions')
+            prosody_collection.insert(prosody_data)
 
     def _import_language_data(self, csv_file, job_id):
         """Import language prediction data."""
@@ -173,13 +178,16 @@ class HumeDataImporter:
                 'toxicity': json.dumps(toxicity)
             }
 
-            self.supabase.table('participant_hume_language_predictions').insert(language_data).execute()
+            import uuid
+            language_data['_key'] = str(uuid.uuid4())
+            language_collection = self.db.collection('participant_hume_language_predictions')
+            language_collection.insert(language_data)
 
 class AnalysisAPI:
     def __init__(self, config):
-        self.job_manager = JobManager(config['terminusdb'])
-        self.data_storer = DataStorer(config['terminusdb'])
-        self.hume_importer = HumeDataImporter(config['terminusdb'])
+        self.job_manager = JobManager(config['arangodb'])
+        self.data_storer = DataStorer(config['arangodb'])
+        self.hume_importer = HumeDataImporter(config['arangodb'])
         self.app = Flask(__name__)
         CORS(self.app)  # Enable CORS for web frontend access
 

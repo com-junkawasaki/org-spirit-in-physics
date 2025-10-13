@@ -24,8 +24,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class DataImporter:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.data_storer = DataStorer(config['supabase'])
-        self.data_loader = DataLoader(config['supabase'])
+        self.data_storer = DataStorer(config['arangodb'])
+        self.data_loader = DataLoader(config['arangodb'])
         self.data_dir = Path("data")
         
     def load_config(self) -> Dict[str, Any]:
@@ -48,38 +48,38 @@ class DataImporter:
                 with open(consent_file, 'r', encoding='utf-8') as f:
                     consent_data = json.load(f)
 
-                # participantsテーブルに基本データを挿入
+                # participantsコレクションに基本データを挿入
                 try:
-                    participant_result = self.data_storer.supabase.table('participants').insert({
+                    participant_result = self.data_storer.insert_participant({
                         "id": consent_data["participantId"],
                         "name": consent_data.get("signature", f"Participant {participant_id[:8]}"),
                         "age": None,  # データがないのでNULL
                         "gender": None,  # データがないのでNULL
                         "handedness": None  # データがないのでNULL
-                    }).execute()
+                    })
 
-                    if participant_result.data:
+                    if participant_result:
                         logging.info(f"Inserted participant record for {participant_id}")
                     else:
                         logging.error(f"Failed to insert participant {participant_id}: No data returned")
                         return False
                 except Exception as e:
-                    if 'duplicate key value' in str(e):
+                    if 'unique constraint' in str(e) or 'duplicate' in str(e):
                         logging.info(f"Participant {participant_id} already exists, skipping")
                     else:
                         logging.error(f"Failed to insert participant {participant_id}: {e}")
                         return False
 
-                # participant_consentsテーブルに保存
+                # participant_consentsコレクションに保存
                 try:
-                    consent_result = self.data_storer.supabase.table('participant_consents').insert({
+                    consent_result = self.data_storer.insert_participant_consent({
                         "participant_id": consent_data["participantId"],
                         "signature": consent_data["signature"],
                         "agreements": consent_data["agreements"],
                         "agreed_at": consent_data["agreedAt"]
-                    }).execute()
+                    })
 
-                    if consent_result.data:
+                    if consent_result:
                         logging.info(f"Imported consent data for participant {participant_id}")
                     else:
                         logging.warning(f"Consent data may already exist for participant {participant_id}")
@@ -192,20 +192,27 @@ class DataImporter:
         # 実験セッションを保存
         for session_info in experiment_sessions.values():
             try:
-                self.data_storer.supabase.table('participant_experiment_sessions').insert(session_info).execute()
+                self.data_storer.insert_experiment_session(session_info)
             except Exception as e:
                 logging.warning(f"Failed to save experiment session: {e}")
-        
+
         # 応答データを保存（バッチ処理）
         if response_data:
             try:
-                # バッチでINSERTを実行（重複はアプリケーション側で制御）
-                response = self.data_storer.supabase.table('participant_response_data').insert(response_data).execute()
-                logging.info(f"Successfully saved {len(response_data)} response records")
+                # 個別にINSERTを実行（ArangoDBではバッチ挿入が複雑なので個別処理）
+                saved_responses = []
+                for response_item in response_data:
+                    try:
+                        result = self.data_storer.insert_response_data(response_item)
+                        if result:
+                            saved_responses.append(response_item)
+                    except Exception as e:
+                        logging.warning(f"Failed to save response {response_item.get('id', 'unknown')}: {e}")
+                logging.info(f"Successfully saved {len(saved_responses)} response records")
 
                 # 保存された応答データを取得して感情データ生成処理に渡す
-                if response.data:
-                    for saved_response in response.data[:3]:  # 最初の3件のみ処理（テストのため）
+                if saved_responses:
+                    for saved_response in saved_responses[:3]:  # 最初の3件のみ処理（テストのため）
                         logging.info(f"Generating emotion data for saved response: {saved_response['id']}")
                         self._generate_test_emotion_data(saved_response, saved_response['stimulus_word'], participant_id)
 
@@ -295,8 +302,15 @@ class DataImporter:
         # 感情データをデータベースに保存
         logging.info(f"Attempting to save {len(emotion_timeseries)} emotion data points")
         try:
-            response = self.data_storer.supabase.table('response_emotion_timeseries').insert(emotion_timeseries).execute()
-            logging.info(f"SUCCESS: Generated and saved {len(emotion_timeseries)} emotion data points for response {response_data['id']}")
+            saved_count = 0
+            for emotion_item in emotion_timeseries:
+                try:
+                    result = self.data_storer.insert_response_emotion_timeseries(emotion_item)
+                    if result:
+                        saved_count += 1
+                except Exception as e:
+                    logging.warning(f"Failed to save emotion data point: {e}")
+            logging.info(f"SUCCESS: Generated and saved {saved_count}/{len(emotion_timeseries)} emotion data points for response {response_data['id']}")
         except Exception as e:
             logging.error(f"FAILED: Failed to save emotion data for response {response_data['id']}: {e}")
 

@@ -235,16 +235,16 @@ export function loadParticipantData(participantId: string): Participant | null {
 // Load session data for a participant
 export async function loadSessionData(participantId: string): Promise<SessionData | null> {
   try {
-    // Supabaseデータベースからセッションデータを取得（一本化）
+    // ArangoDBデータベースからセッションデータを取得（一本化）
     try {
-      // Supabaseからセッションデータを取得
-      // 実際のクエリ実装はSupabaseManagerで実装する必要がある
+      // ArangoDBからセッションデータを取得
+      // 実際のクエリ実装はArangoDBManagerで実装する必要がある
       // 現時点では仮の実装
-      console.log(`Loading session data from Supabase for ${participantId}`);
-      // TODO: SupabaseManagerにgetSessionDataメソッドを実装
+      console.log(`Loading session data from ArangoDB for ${participantId}`);
+      // TODO: ArangoDBManagerにgetSessionDataメソッドを実装
       return null; // 仮実装
-    } catch (supabaseError) {
-      console.warn('Failed to load session data from Supabase:', supabaseError);
+    } catch (arangodbError) {
+      console.warn('Failed to load session data from ArangoDB:', arangodbError);
       return null;
     }
   } catch (error) {

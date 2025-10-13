@@ -21,7 +21,6 @@ sys.path.insert(0, str(importer_path / "src"))
 
 try:
     from data_importer import DataImporter
-    from import_to_terminusdb import main as import_to_terminusdb_main
     IMPORTER_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Could not import from importer: {e}")

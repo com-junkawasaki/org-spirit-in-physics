@@ -36,51 +36,57 @@ def load_analysis_results(file_path: str) -> list:
         print(f"エラー: {file_path} の読み込みに失敗しました: {e}")
         return []
 
-def get_or_create_word_stimulus(supabase: Client, word: str) -> int:
+def get_or_create_word_stimulus(db, word: str) -> str:
     """単語刺激語のIDを取得または作成"""
     try:
         # 既存の単語刺激語を検索
-        result = supabase.table('word_stimuli').select('id').eq('word', word).execute()
-        if result.data and len(result.data) > 0:
-            return result.data[0]['id']
+        word_stimuli_collection = db.collection('word_stimuli')
+        result = list(word_stimuli_collection.find({'word': word}))
+        if result:
+            return result[0]['_key']
 
-        # 存在しない場合は新しいIDを生成（実際のシステムでは適切な方法で生成）
-        # ここでは単純にタイムスタンプベースのIDを生成
-        import time
-        new_id = int(time.time() * 1000) % 1000000
-
-        # 新しい単語刺激語を作成
-        supabase.table('word_stimuli').insert({
-            'id': new_id,
-            'word': word
-        }).execute()
+        # 存在しない場合は新しい単語刺激語を作成
+        import uuid
+        new_id = str(uuid.uuid4())
+        word_data = {
+            '_key': new_id,
+            'word': word,
+            'created_at': datetime.now().isoformat()
+        }
+        word_stimuli_collection.insert(word_data)
 
         return new_id
     except Exception as e:
         print(f"エラー: 単語刺激語 '{word}' の処理に失敗しました: {e}")
         # エラー時はダミーIDを返す
-        return 999999
+        return "error_id"
 
-def find_experiment_session(supabase: Client, participant_id: str, stimulus_word: str) -> tuple:
+def find_experiment_session(db, participant_id: str, stimulus_word: str) -> tuple:
     """実験セッションと応答データを検索"""
     try:
         # 参加者の実験セッションを取得
-        sessions = supabase.table('participant_experiment_sessions').select('*').eq('participant_id', participant_id).execute()
+        sessions_collection = db.collection('participant_experiment_sessions')
+        sessions = list(sessions_collection.find({'participant_id': participant_id}))
 
-        if not sessions.data or len(sessions.data) == 0:
+        if not sessions:
             print(f"警告: 参加者 {participant_id} の実験セッションが見つかりません")
             return None, None
 
         # 最新のセッションを使用
-        session = sessions.data[0]
-        experiment_id = session['id']
+        session = sessions[0]
+        experiment_id = session['_key']
 
         # 対応する応答データを検索
-        responses = supabase.table('participant_response_data').select('*').eq('participant_id', participant_id).eq('experiment_id', experiment_id).eq('stimulus_word', stimulus_word).execute()
+        responses_collection = db.collection('participant_response_data')
+        responses = list(responses_collection.find({
+            'participant_id': participant_id,
+            'experiment_id': experiment_id,
+            'stimulus_word': stimulus_word
+        }))
 
-        if responses.data and len(responses.data) > 0:
-            response = responses.data[0]
-            return experiment_id, response['id']
+        if responses:
+            response = responses[0]
+            return experiment_id, response['_key']
 
         # 応答データが見つからない場合は実験セッションのみ返す
         return experiment_id, None
@@ -89,7 +95,7 @@ def find_experiment_session(supabase: Client, participant_id: str, stimulus_word
         print(f"エラー: 実験セッションの検索に失敗しました: {e}")
         return None, None
 
-def import_analysis_results(supabase: Client, results: list, participant_id: str = None):
+def import_analysis_results(db, results: list, participant_id: str = None):
     """分析結果をデータベースにインポート"""
     imported_count = 0
     skipped_count = 0
@@ -110,7 +116,7 @@ def import_analysis_results(supabase: Client, results: list, participant_id: str
                 continue
 
             # 実験セッションと応答データを検索
-            experiment_id, response_id = find_experiment_session(supabase, current_participant_id, result['stimulus_word'])
+            experiment_id, response_id = find_experiment_session(db, current_participant_id, result['stimulus_word'])
 
             if not experiment_id:
                 print(f"警告: 実験セッションが見つからない結果をスキップします: {result.get('id', 'unknown')}")
@@ -118,7 +124,7 @@ def import_analysis_results(supabase: Client, results: list, participant_id: str
                 continue
 
             # 単語刺激語のIDを取得または作成
-            word_stimulus_id = get_or_create_word_stimulus(supabase, result['stimulus_word'])
+            word_stimulus_id = get_or_create_word_stimulus(db, result['stimulus_word'])
 
             # インポートデータを作成
             import_data = {
@@ -138,9 +144,12 @@ def import_analysis_results(supabase: Client, results: list, participant_id: str
             }
 
             # データベースに挿入
-            insert_result = supabase.table('participant_analysis_results').insert(import_data).execute()
+            import uuid
+            import_data['_key'] = str(uuid.uuid4())
+            analysis_collection = db.collection('participant_analysis_results')
+            insert_result = analysis_collection.insert(import_data)
 
-            if insert_result.data:
+            if insert_result:
                 imported_count += 1
                 print(f"インポート成功: {result['stimulus_word']} -> {result['response_word']} (確率: {result['spirit_probability']:.4f})")
             else:
@@ -190,7 +199,7 @@ def main():
     print(f"対象参加者ID: {participant_id}")
 
     # インポート実行
-    imported, skipped = import_analysis_results(supabase, results, participant_id)
+    imported, skipped = import_analysis_results(db, results, participant_id)
 
     print("
 インポート結果:")

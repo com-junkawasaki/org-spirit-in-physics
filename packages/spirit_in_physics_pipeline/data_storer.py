@@ -75,3 +75,63 @@ class DataStorer:
             logging.info(f"Successfully stored analysis result for response {response_id}")
         except Exception as e:
             logging.error(f"Exception storing analysis result for response {response_id}: {e}")
+
+    def insert_participant(self, participant_data: dict):
+        """Insert participant data into participants collection."""
+        try:
+            collection = self.db.collection('participants')
+            participant_data['_key'] = participant_data['id']
+            result = collection.insert(participant_data, overwrite=True)
+            logging.info(f"Successfully inserted participant {participant_data['id']}")
+            return result
+        except Exception as e:
+            logging.error(f"Exception inserting participant: {e}")
+            raise e
+
+    def insert_participant_consent(self, consent_data: dict):
+        """Insert participant consent data into participant_consents collection."""
+        try:
+            collection = self.db.collection('participant_consents')
+            consent_data['_key'] = f"{consent_data['participant_id']}_{consent_data['agreed_at']}"
+            result = collection.insert(consent_data, overwrite=True)
+            logging.info(f"Successfully inserted consent for participant {consent_data['participant_id']}")
+            return result
+        except Exception as e:
+            logging.error(f"Exception inserting consent: {e}")
+            raise e
+
+    def insert_experiment_session(self, session_data: dict):
+        """Insert experiment session data into participant_experiment_sessions collection."""
+        try:
+            collection = self.db.collection('participant_experiment_sessions')
+            session_data['_key'] = session_data['id']
+            result = collection.insert(session_data, overwrite=True)
+            logging.info(f"Successfully inserted experiment session {session_data['id']}")
+            return result
+        except Exception as e:
+            logging.error(f"Exception inserting experiment session: {e}")
+            raise e
+
+    def insert_response_data(self, response_data: dict):
+        """Insert response data into participant_response_data collection."""
+        try:
+            collection = self.db.collection('participant_response_data')
+            response_data['_key'] = response_data['id']
+            result = collection.insert(response_data, overwrite=True)
+            logging.info(f"Successfully inserted response data {response_data['id']}")
+            return result
+        except Exception as e:
+            logging.error(f"Exception inserting response data: {e}")
+            raise e
+
+    def insert_response_emotion_timeseries(self, emotion_timeseries: dict):
+        """Insert emotion timeseries data into response_emotion_timeseries collection."""
+        try:
+            collection = self.db.collection('response_emotion_timeseries')
+            emotion_timeseries['_key'] = f"{emotion_timeseries['response_id']}_{emotion_timeseries['timestamp_offset_ms']}"
+            result = collection.insert(emotion_timeseries, overwrite=True)
+            logging.info(f"Successfully inserted emotion timeseries for response {emotion_timeseries['response_id']}")
+            return result
+        except Exception as e:
+            logging.error(f"Exception inserting emotion timeseries: {e}")
+            raise e
