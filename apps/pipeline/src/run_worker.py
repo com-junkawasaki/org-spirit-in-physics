@@ -3,7 +3,7 @@ import os
 from temporalio.client import Client
 from temporalio.worker import Worker
 
-from .workflows.main_workflow import IngestionWorkflow, UnifiedPipelineWorkflow
+from .workflows.main_workflow import IngestionWorkflow, UnifiedPipelineWorkflow, DataImportWorkflow
 from .activities.analysis_activities import AnalysisActivities
 from .activities.arangodb import ArangoDBActivities
 from .activities.hume_activities import HumeActivities
@@ -28,7 +28,7 @@ async def main():
     worker = Worker(
         client,
         task_queue="pipeline-task-queue",
-        workflows=[IngestionWorkflow, UnifiedPipelineWorkflow],
+        workflows=[IngestionWorkflow, UnifiedPipelineWorkflow, DataImportWorkflow],
         activities=[
             arango_instance.get_session_for_ingestion,
             arango_instance.store_raw_hume_data,

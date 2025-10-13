@@ -503,6 +503,97 @@ class AnalysisAPI:
                 logging.error(f"Error importing Hume data: {e}")
                 return jsonify({"error": str(e)}), 500
 
+        @self.app.route('/api/workflows/start-import', methods=['POST'])
+        def start_import_workflow():
+            """Start data import workflow via Temporal."""
+            try:
+                from temporalio.client import Client
+
+                data = request.get_json()
+                if not data:
+                    return jsonify({"error": "Request body is required"}), 400
+
+                session_id = data.get('sessionId')
+                participant_id = data.get('participantId')
+
+                if not session_id:
+                    return jsonify({"error": "sessionId is required"}), 400
+
+                # Start Temporal workflow
+                temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
+                temporal_port = os.getenv('TEMPORAL_PORT', '7233')
+                temporal_url = f"{temporal_host}:{temporal_port}"
+
+                client = await Client.connect(temporal_url)
+
+                # For now, start IngestionWorkflow (later we can add DataImportWorkflow)
+                from .workflows.main_workflow import IngestionWorkflow
+                workflow_id = f"import-{session_id}-{uuid.uuid4()}"
+
+                await client.start_workflow(
+                    IngestionWorkflow.run,
+                    session_id,
+                    id=workflow_id,
+                    task_queue="pipeline-task-queue"
+                )
+
+                return jsonify({
+                    "workflow_id": workflow_id,
+                    "status": "started",
+                    "session_id": session_id,
+                    "participant_id": participant_id
+                })
+
+            except Exception as e:
+                logging.error(f"Error starting import workflow: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/workflows/start-analysis', methods=['POST'])
+        def start_analysis_workflow():
+            """Start analysis workflow via Temporal."""
+            try:
+                from temporalio.client import Client
+
+                data = request.get_json()
+                if not data:
+                    return jsonify({"error": "Request body is required"}), 400
+
+                session_ids = data.get('sessionIds', [])
+                model_version = data.get('modelVersion', '1.0')
+                notes = data.get('notes', '')
+
+                if not session_ids:
+                    return jsonify({"error": "sessionIds is required"}), 400
+
+                # Start Temporal workflow
+                temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
+                temporal_port = os.getenv('TEMPORAL_PORT', '7233')
+                temporal_url = f"{temporal_host}:{temporal_port}"
+
+                client = await Client.connect(temporal_url)
+
+                from .workflows.main_workflow import UnifiedPipelineWorkflow
+                workflow_id = f"analysis-{uuid.uuid4()}"
+
+                await client.start_workflow(
+                    UnifiedPipelineWorkflow.run,
+                    session_ids,
+                    id=workflow_id,
+                    task_queue="pipeline-task-queue"
+                )
+
+                return jsonify({
+                    "workflow_id": workflow_id,
+                    "status": "started",
+                    "session_ids": session_ids,
+                    "model_version": model_version,
+                    "notes": notes
+                })
+
+            except Exception as e:
+                logging.error(f"Error starting analysis workflow: {e}")
+                return jsonify({"error": str(e)}), 500
+
     def run(self, host='0.0.0.0', port=8000, debug=False):
         """Run the API server."""
         logging.info(f"Starting API server on {host}:{port}")

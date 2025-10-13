@@ -95,9 +95,26 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date().toISOString() 
     })
 
-    // 実際のインポート処理を開始
-    // ここでTemporalワークフローを開始する
-    // await startImportWorkflow(sessionId)
+    // Start the import workflow via Temporal
+    try {
+      const temporalResponse = await fetch('http://localhost:8000/api/workflows/start-import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          participantId: session.participantId
+        })
+      })
+
+      if (!temporalResponse.ok) {
+        console.warn('Failed to start Temporal workflow, but job was created')
+      }
+    } catch (temporalError) {
+      console.warn('Temporal workflow start failed:', temporalError)
+      // Don't fail the whole request if Temporal is down
+    }
 
     return NextResponse.json({
       success: true,

@@ -43,6 +43,45 @@ class IngestionWorkflow:
         return {"status": "SUCCESS", "session_id": session_id}
 
 @workflow.defn
+class DataImportWorkflow:
+    @workflow.run
+    async def run(self, participant_ids: list[str], config: dict) -> dict:
+        """Import participant data from external sources."""
+        workflow.logger.info(f"Starting data import for {len(participant_ids)} participants")
+
+        import_results = []
+        for participant_id in participant_ids:
+            try:
+                workflow.logger.info(f"Importing data for participant: {participant_id}")
+                # TODO: Implement actual data import logic
+                # This would involve fetching data from external sources,
+                # validating it, and storing it in ArangoDB
+                import_results.append({
+                    "participant_id": participant_id,
+                    "status": "SUCCESS",
+                    "imported_sessions": 2,  # placeholder
+                    "imported_responses": 10  # placeholder
+                })
+            except Exception as e:
+                workflow.logger.error(f"Failed to import data for {participant_id}: {e}")
+                import_results.append({
+                    "participant_id": participant_id,
+                    "status": "FAILED",
+                    "error": str(e)
+                })
+
+        successful_imports = [r for r in import_results if r["status"] == "SUCCESS"]
+        failed_imports = [r for r in import_results if r["status"] == "FAILED"]
+
+        return {
+            "status": "COMPLETED",
+            "total_participants": len(participant_ids),
+            "successful_imports": len(successful_imports),
+            "failed_imports": len(failed_imports),
+            "results": import_results
+        }
+
+@workflow.defn
 class UnifiedPipelineWorkflow:
     @workflow.run
     async def run(self, session_ids: list[str], model_version: str, notes: str, config: dict) -> dict:
