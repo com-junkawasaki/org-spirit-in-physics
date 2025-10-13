@@ -6,18 +6,8 @@ import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  ArrowLeft,
-  BarChart3,
-  TrendingUp as TrendingUpIcon,
-  Layers,
-  FileText,
-  Target,
-  Activity,
-  Clock,
-  Brain,
-  Zap
-} from 'lucide-react'
+import { ArrowLeft, Layers, Activity, Brain, Zap } from 'lucide-react'
+import { SpiritProbabilityBadge } from '@/components/SpiritProbabilityBadge'
 import { ThreeVectorVisualization } from '@/components/ThreeVectorVisualization'
 
 interface AnalysisResult {
@@ -52,37 +42,9 @@ async function getParticipantAnalysis(id: string): Promise<AnalysisResult[]> {
   }
 }
 
-function formatDate(timestamp: number | null | string): string {
-  if (!timestamp) return 'N/A'
+// no date formatting needed here
 
-  const date = typeof timestamp === 'string'
-    ? new Date(timestamp)
-    : new Date(timestamp)
-
-  return date.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-function getSpiritProbabilityColor(probability: number): string {
-  if (probability >= 0.99) return 'bg-green-100 text-green-800 border-green-200'
-  if (probability >= 0.95) return 'bg-blue-100 text-blue-800 border-blue-200'
-  if (probability >= 0.90) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-  return 'bg-red-100 text-red-800 border-red-200'
-}
-
-function SpiritProbabilityBadge({ probability }: { probability: number }) {
-  return (
-    <Badge className={`${getSpiritProbabilityColor(probability)} border`}>
-      <Target className="h-3 w-3 mr-1" />
-      {(probability * 100).toFixed(4)}%
-    </Badge>
-  )
-}
+// use shared badge
 
 function VectorsContent() {
   const params = useParams()
@@ -132,12 +94,12 @@ function VectorsContent() {
 
   // 安全な統計計算
   const safeMin = (values: number[]) => {
-    const validValues = values.filter(v => typeof v === 'number' && !isNaN(v))
+    const validValues = values.filter(v => typeof v === 'number' && !Number.isNaN(v))
     return validValues.length > 0 ? Math.min(...validValues) : 0
   }
 
   const safeMax = (values: number[]) => {
-    const validValues = values.filter(v => typeof v === 'number' && !isNaN(v))
+    const validValues = values.filter(v => typeof v === 'number' && !Number.isNaN(v))
     return validValues.length > 0 ? Math.max(...validValues) : 0
   }
 

@@ -14,7 +14,7 @@ from packages.spirit_in_physics_pipeline.hume_data_processor import HumeDataProc
 class HumeActivities:
     def __init__(self, config):
         self.api_key = config['hume_ai']['api_key']
-        self.client = HumeClient(self.api_key)
+        self.client = HumeClient(api_key=self.api_key)
         self.max_poll_attempts = config.get('processing', {}).get('max_poll_attempts', 60)
         self.poll_interval = config.get('processing', {}).get('poll_interval_seconds', 10)
 

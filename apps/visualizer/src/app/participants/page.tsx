@@ -1,12 +1,11 @@
-'use client'
-
-import { useState, useEffect, Suspense } from 'react'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Activity, Brain, ArrowRight, BarChart3 } from 'lucide-react'
+import { Users, Activity, Brain, BarChart3 } from 'lucide-react'
+import { getAllParticipants } from '@/lib/data'
+import { getSpiritProbabilityColor } from '@/components/SpiritProbabilityBadge'
 
 interface Participant {
   id: string
@@ -17,35 +16,14 @@ interface Participant {
   lastActivity: number | null
   sessions: Array<{
     id: string
-    sessionType: string
-    startTime: string
-    endTime: string | null
+    sessionType?: string
+    startTime?: string
+    endTime?: string | null
     responseCount: number
   }>
 }
 
-async function getParticipants(): Promise<Participant[]> {
-  try {
-    console.log('Fetching participants from:', '/api/participants')
-    const response = await fetch('/api/participants', {
-      cache: 'no-store'
-    })
-
-    console.log('Response status:', response.status)
-    console.log('Response ok:', response.ok)
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch participants: ${response.status} ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    console.log('Fetched data:', data)
-    return data
-  } catch (error) {
-    console.error('Failed to fetch participants:', error)
-    return []
-  }
-}
+// Data is fetched on the server via getAllParticipants (ArangoDB)
 
 function formatDate(timestamp: number | null): string {
   if (!timestamp) return 'N/A'
@@ -58,58 +36,9 @@ function formatDate(timestamp: number | null): string {
   })
 }
 
-function getSpiritProbabilityColor(probability: number): string {
-  if (probability >= 0.99) return 'bg-green-100 text-green-800'
-  if (probability >= 0.95) return 'bg-blue-100 text-blue-800'
-  if (probability >= 0.90) return 'bg-yellow-100 text-yellow-800'
-  return 'bg-red-100 text-red-800'
-}
+// Probability color provided via getSpiritProbabilityColor
 
-function ParticipantCard({ participant }: { participant: Participant }) {
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">{participant.name}</CardTitle>
-            <p className="text-sm text-muted-foreground">ID: {participant.id.slice(0, 8)}...</p>
-          </div>
-          <Badge className={getSpiritProbabilityColor(participant.averageSpiritProbability)}>
-            {(participant.averageSpiritProbability * 100).toFixed(1)}%
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="flex items-center space-x-2">
-            <Activity className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              <span className="font-medium">{participant.sessionCount}</span> セッション
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Brain className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              <span className="font-medium">{participant.responseCount}</span> 応答
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-          <span>最終活動:</span>
-          <span>{formatDate(participant.lastActivity)}</span>
-        </div>
-
-        <Link href={`/participants/${participant.id}`}>
-          <Button variant="outline" size="sm" className="w-full">
-            詳細を見る
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  )
-}
+// Card view is not used currently; keep table view for clarity
 
 function ParticipantsTable({ participants }: { participants: Participant[] }) {
   if (participants.length === 0) {
@@ -233,42 +162,15 @@ function LoadingSkeleton() {
   )
 }
 
-function ParticipantsTableWrapper() {
-  const [participants, setParticipants] = useState<Participant[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function fetchParticipants() {
-      try {
-        const response = await fetch('/api/participants', {
-          cache: 'no-store'
-        })
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch participants: ${response.status} ${response.statusText}`)
-        }
-
-        const data = await response.json()
-        setParticipants(data)
-      } catch (error) {
-        console.error('Failed to fetch participants:', error)
-        setParticipants([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchParticipants()
-  }, [])
-
-  if (loading) {
+async function ParticipantsTableWrapper() {
+  const participants = (await getAllParticipants()) as unknown as Participant[]
+  if (!participants || participants.length === 0) {
     return <LoadingSkeleton />
   }
-
   return <ParticipantsTable participants={participants} />
 }
 
-export default function ParticipantsPage() {
+export default async function ParticipantsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -290,7 +192,12 @@ export default function ParticipantsPage() {
         </div>
       </div>
 
-      <ParticipantsTableWrapper />
+      {/* Server-rendered table */}
+      {/* Suspense kept for future streaming if needed */}
+      <Suspense>
+        {/* @ts-expect-error Async Server Component */}
+        <ParticipantsTableWrapper />
+      </Suspense>
     </div>
   )
 }

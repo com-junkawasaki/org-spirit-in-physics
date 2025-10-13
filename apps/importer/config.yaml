@@ -1,8 +1,8 @@
 # ArangoDB Configuration
 arangodb:
-  url: "http://localhost:8529"
+  url: "http://arangodb:8529"
   user: "root"
-  password: ""
+  password: "root"
   database: "spirit_in_physics"
 
 # Hume AI Configuration
@@ -10,7 +10,7 @@ hume_ai:
   api_key: "LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s"
 
 temporal:
-  server_url: "localhost:7233"
+  server_url: "temporal:7233"
   task_queue: "importer-task-queue"
 
 # Processing Configuration

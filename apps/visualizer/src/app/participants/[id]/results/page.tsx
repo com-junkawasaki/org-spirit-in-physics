@@ -3,17 +3,11 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  ArrowLeft,
-  BarChart3,
-  TrendingUp as TrendingUpIcon,
-  Layers,
-  FileText,
-  Target
-} from 'lucide-react'
+import { SpiritProbabilityBadge } from '@/components/SpiritProbabilityBadge'
+import { ArrowLeft } from 'lucide-react'
 
 interface AnalysisResult {
   id: string
@@ -63,21 +57,7 @@ function formatDate(timestamp: number | null | string): string {
   })
 }
 
-function getSpiritProbabilityColor(probability: number): string {
-  if (probability >= 0.99) return 'bg-green-100 text-green-800 border-green-200'
-  if (probability >= 0.95) return 'bg-blue-100 text-blue-800 border-blue-200'
-  if (probability >= 0.90) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-  return 'bg-red-100 text-red-800 border-red-200'
-}
-
-function SpiritProbabilityBadge({ probability }: { probability: number }) {
-  return (
-    <Badge className={`${getSpiritProbabilityColor(probability)} border`}>
-      <Target className="h-3 w-3 mr-1" />
-      {(probability * 100).toFixed(4)}%
-    </Badge>
-  )
-}
+// shared badge component used
 
 function ResultsContent() {
   const params = useParams()
@@ -105,8 +85,8 @@ function ResultsContent() {
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="space-y-4">
-            {Array.from({ length: 3 }, (_, i) => (
-              <div key={i} className="h-32 bg-muted rounded"></div>
+            {['a','b','c'].map((k) => (
+              <div key={`sk-${k}`} className="h-32 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -133,8 +113,7 @@ function ResultsContent() {
               setTriggering(true)
               setTriggerMessage(null)
               const res = await fetch(`/api/participants/${id}/analyze`, { method: 'POST' })
-              if (res.ok) {
-                const json = await res.json()
+            if (res.ok) {
                 setTriggerMessage('解析ジョブを起動しました。数分後に更新してください。')
               } else {
                 setTriggerMessage('解析の起動に失敗しました。サーバーログを確認してください。')
