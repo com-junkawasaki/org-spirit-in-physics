@@ -88,12 +88,12 @@ class MetricsCalculator {
   async calculateSessionsMetrics(): Promise<SystemMetricsData['sessions']> {
     try {
       const query = `
-        LET total = LENGTH(FOR s IN participant_experiment_sessions RETURN 1)
-        LET active = LENGTH(FOR s IN participant_experiment_sessions 
-          FILTER s.status == 'active' 
+        LET total = LENGTH(FOR s IN participant_sessions RETURN 1)
+        LET active = LENGTH(FOR s IN participant_sessions
+          FILTER s.status == 'active'
           RETURN 1)
-        LET completed = LENGTH(FOR s IN participant_experiment_sessions 
-          FILTER s.status == 'completed' 
+        LET completed = LENGTH(FOR s IN participant_sessions
+          FILTER s.status == 'completed'
           RETURN 1)
         RETURN {
           total,
@@ -101,7 +101,7 @@ class MetricsCalculator {
           completed
         }
       `
-      
+
       const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
       return result[0] || { total: 0, active: 0, completed: 0 }
     } catch (error) {
@@ -114,14 +114,14 @@ class MetricsCalculator {
   async calculateResponsesMetrics(): Promise<SystemMetricsData['responses']> {
     try {
       const query = `
-        LET total = LENGTH(FOR r IN participant_response_data RETURN 1)
-        LET processed = LENGTH(FOR r IN participant_response_data 
-          FILTER r.spirit_probability != null 
+        LET total = LENGTH(FOR r IN participant_session_responses RETURN 1)
+        LET processed = LENGTH(FOR r IN participant_session_responses
+          FILTER r.spirit_probability != null
           RETURN 1)
         LET pending = total - processed
         LET avgSpirit = (
-          FOR r IN participant_response_data 
-          FILTER r.spirit_probability != null 
+          FOR r IN participant_session_responses
+          FILTER r.spirit_probability != null
           COLLECT AGGREGATE avg = AVG(r.spirit_probability)
           RETURN avg
         )[0]
@@ -132,7 +132,7 @@ class MetricsCalculator {
           averageSpiritProbability: avgSpirit || 0
         }
       `
-      
+
       const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
       return result[0] || { total: 0, processed: 0, pending: 0, averageSpiritProbability: 0 }
     } catch (error) {
@@ -145,15 +145,15 @@ class MetricsCalculator {
   async calculateJobsMetrics(): Promise<SystemMetricsData['jobs']> {
     try {
       const query = `
-        LET total = LENGTH(FOR j IN participant_hume_analysis_jobs RETURN 1)
-        LET active = LENGTH(FOR j IN participant_hume_analysis_jobs 
-          FILTER j.status IN ['PENDING', 'RUNNING'] 
+        LET total = LENGTH(FOR j IN analysis_runs RETURN 1)
+        LET active = LENGTH(FOR j IN analysis_runs
+          FILTER j.status IN ['PENDING', 'RUNNING']
           RETURN 1)
-        LET completed = LENGTH(FOR j IN participant_hume_analysis_jobs 
-          FILTER j.status == 'COMPLETED' 
+        LET completed = LENGTH(FOR j IN analysis_runs
+          FILTER j.status == 'COMPLETED'
           RETURN 1)
-        LET failed = LENGTH(FOR j IN participant_hume_analysis_jobs 
-          FILTER j.status == 'FAILED' 
+        LET failed = LENGTH(FOR j IN analysis_runs
+          FILTER j.status == 'FAILED'
           RETURN 1)
         RETURN {
           total,
@@ -162,7 +162,7 @@ class MetricsCalculator {
           failed
         }
       `
-      
+
       const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
       return result[0] || { total: 0, active: 0, completed: 0, failed: 0 }
     } catch (error) {
@@ -177,20 +177,20 @@ class MetricsCalculator {
       // Calculate average response time from recent responses
       const responseTimeQuery = `
         LET recentResponses = (
-          FOR r IN participant_response_data 
-          FILTER r.response_time != null 
-          SORT r.created_at DESC 
-          LIMIT 100 
-          RETURN r.response_time
+          FOR r IN participant_session_responses
+          FILTER r.reaction_time_ms != null
+          SORT r.created_at DESC
+          LIMIT 100
+          RETURN r.reaction_time_ms
         )
         LET avgResponseTime = (
-          FOR rt IN recentResponses 
+          FOR rt IN recentResponses
           COLLECT AGGREGATE avg = AVG(rt)
           RETURN avg
         )[0]
         RETURN avgResponseTime || 0
       `
-      
+
       const responseTimeResult = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(responseTimeQuery)
       const averageResponseTime = responseTimeResult[0] || 0
 
