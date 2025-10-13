@@ -187,6 +187,15 @@ export async function getParticipantData(participantId: string): Promise<Partici
     const participant = await client.getParticipantDetails(participantId)
     if (!participant) return null
 
+    // Get participant sessions directly from participant_sessions collection
+    const sessionsQuery = `
+      FOR session IN participant_sessions
+        FILTER session.participant_id == @participantId
+        RETURN session
+    `
+    const sessionsResult = await client.query(sessionsQuery, { participantId })
+    const dbSessions = sessionsResult || []
+
     // Get participant responses
     const responses = await client.getParticipantResponses(participantId)
 
@@ -210,19 +219,34 @@ export async function getParticipantData(participantId: string): Promise<Partici
       })
     })
 
-    // Create sessions array
-    const sessions: ExperimentSession[] = Object.entries(sessionMap).map(([sessionId, sessionResponses]) => {
-      const start_time = sessionResponses.length > 0 ? new Date(sessionResponses[0].event_ts).toISOString() : null;
-      const end_time = sessionResponses.length > 0 ? new Date(sessionResponses[sessionResponses.length - 1].event_ts).toISOString() : null;
-      
+    // Create sessions array - include both sessions from database and those inferred from responses
+    const sessions: ExperimentSession[] = dbSessions.map((dbSession: any) => {
+      const sessionId = dbSession.id || dbSession._key
+      const sessionResponses = sessionMap[sessionId] || []
+
       return {
         id: sessionId,
         session_id: sessionId,
-        session_type: 'session-1', // Placeholder
-        start_time,
-        end_time,
+        session_type: dbSession.session_type || 'word_association',
+        start_time: dbSession.start_time || null,
+        end_time: dbSession.end_time || null,
         responses: sessionResponses,
         responseCount: sessionResponses.length,
+      }
+    })
+
+    // Also add any sessions that have responses but aren't in the sessions table
+    Object.entries(sessionMap).forEach(([sessionId, sessionResponses]) => {
+      if (!sessions.find(s => s.id === sessionId)) {
+        sessions.push({
+          id: sessionId,
+          session_id: sessionId,
+          session_type: 'session-1', // Placeholder
+          start_time: null,
+          end_time: null,
+          responses: sessionResponses,
+          responseCount: sessionResponses.length,
+        })
       }
     })
 

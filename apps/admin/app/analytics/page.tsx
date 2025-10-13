@@ -84,6 +84,416 @@ interface IntegratedAnalyticsData {
   };
 }
 
+// ストレージステータス表示
+const StorageStatusCard = ({ analyticsData }: { analyticsData: IntegratedAnalyticsData | null }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <Shield className="h-5 w-5" />
+        <span>ストレージステータス</span>
+      </CardTitle>
+      <CardDescription>
+        データ永続化システムの状態
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Cloud className="h-4 w-4 text-blue-500" />
+            <span className="text-sm">Vercel Blob</span>
+          </div>
+          <Badge variant={analyticsData?.storageStatus.blob ? "default" : "destructive"}>
+            {analyticsData?.storageStatus.blob ? (
+              <><CheckCircle className="h-3 w-3 mr-1" />利用可能</>
+            ) : (
+              <><AlertCircle className="h-3 w-3 mr-1" />利用不可</>
+            )}
+          </Badge>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Database className="h-4 w-4 text-green-500" />
+            <span className="text-sm">ArangoDB Database</span>
+          </div>
+          <Badge variant={analyticsData?.storageStatus.arangodb ? "default" : "secondary"}>
+            {analyticsData?.storageStatus.arangodb ? (
+              <><CheckCircle className="h-3 w-3 mr-1" />利用可能</>
+            ) : (
+              <><Clock className="h-3 w-3 mr-1" />利用不可</>
+            )}
+          </Badge>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <FileText className="h-4 w-4 text-gray-500" />
+            <span className="text-sm">ファイルシステム</span>
+          </div>
+          <Badge variant={analyticsData?.storageStatus.filesystem ? "default" : "destructive"}>
+            {analyticsData?.storageStatus.filesystem ? (
+              <><CheckCircle className="h-3 w-3 mr-1" />利用可能</>
+            ) : (
+              <><AlertCircle className="h-3 w-3 mr-1" />利用不可</>
+            )}
+          </Badge>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// 参加者統計チャート
+const ParticipantStatsChart = ({ analyticsData }: { analyticsData: IntegratedAnalyticsData | null }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <Users className="h-5 w-5" />
+        <span>参加者統計</span>
+      </CardTitle>
+      <CardDescription>
+        参加者の活動状況と完了率
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-blue-600">
+            {analyticsData?.participantStats.totalParticipants}
+          </div>
+          <div className="text-sm text-gray-500">総参加者数</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-green-600">
+            {analyticsData?.participantStats.activeParticipants}
+          </div>
+          <div className="text-sm text-gray-500">アクティブ</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-purple-600">
+            {Math.round(analyticsData?.participantStats.completionRate || 0)}%
+          </div>
+          <div className="text-sm text-gray-500">完了率</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-orange-600">
+            {Math.round((analyticsData?.participantStats.averageSessionTime || 0) / 60)}分
+          </div>
+          <div className="text-sm text-gray-500">平均セッション時間</div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span>完了率</span>
+          <span>{Math.round(analyticsData?.participantStats.completionRate || 0)}%</span>
+        </div>
+        <Progress value={analyticsData?.participantStats.completionRate || 0} className="h-2" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// 感情分析チャート
+const EmotionAnalysisChart = ({ analyticsData }: { analyticsData: IntegratedAnalyticsData | null }) => {
+  const emotionData = analyticsData?.emotionStats.dominantEmotions || [];
+  const emotionTrends = analyticsData?.emotionStats.emotionTrends || [];
+  const emotionCorrelations = analyticsData?.emotionStats.emotionCorrelations || [];
+  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0'];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <Brain className="h-5 w-5" />
+          <span>感情分析結果</span>
+        </CardTitle>
+        <CardDescription>
+          参加者の感情分布、トレンド、相関分析
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {/* 統計サマリー */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-indigo-600">
+              {analyticsData?.emotionStats.totalAnalyses}
+            </div>
+            <div className="text-sm text-gray-500">総分析数</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-teal-600">
+              {emotionData.length}
+            </div>
+            <div className="text-sm text-gray-500">検出感情タイプ</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-pink-600">
+              {emotionData[0]?.emotion || 'N/A'}
+            </div>
+            <div className="text-sm text-gray-500">主要感情</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-cyan-600">
+              {Math.round(emotionData[0]?.percentage || 0)}%
+            </div>
+            <div className="text-sm text-gray-500">主要感情割合</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 感情分布と強度ランキング */}
+          <div className="space-y-6">
+            {/* 感情分布円グラフ */}
+            <div>
+              <h4 className="text-sm font-medium mb-4">感情分布</h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={emotionData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ emotion, percentage }) => `${emotion}: ${Math.round(percentage)}%`}
+                    outerRadius={60}
+                    fill="#8884d8"
+                    dataKey="count"
+                  >
+                    {emotionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 感情統計バーグラフ */}
+            <div>
+              <h4 className="text-sm font-medium mb-4">感情強度ランキング</h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={emotionData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="emotion" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 感情トレンドと相関分析 */}
+          <div className="space-y-6">
+            {/* 感情トレンド */}
+            <div>
+              <h4 className="text-sm font-medium mb-4">感情トレンド (7日間)</h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={emotionTrends}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="timestamp" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  {emotionData.slice(0, 3).map((emotion, index) => (
+                    <Line
+                      key={emotion.emotion}
+                      type="monotone"
+                      dataKey="score"
+                      stroke={colors[index % colors.length]}
+                      strokeWidth={2}
+                      name={emotion.emotion}
+                      data={emotionTrends.filter(t => t.emotion === emotion.emotion)}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 感情相関分析 */}
+            <div>
+              <h4 className="text-sm font-medium mb-4">感情相関分析</h4>
+              <ResponsiveContainer width="100%" height={200}>
+                <ScatterChart data={emotionCorrelations}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" dataKey="x" name="感情A強度" />
+                  <YAxis type="number" dataKey="y" name="感情B強度" />
+                  <Tooltip
+                    cursor={{ strokeDasharray: '3 3' }}
+                    formatter={(value, name) => [
+                      typeof value === 'number' ? value.toFixed(2) : value,
+                      name === 'x' ? '感情A強度' : '感情B強度'
+                    ]}
+                  />
+                  <Scatter name="感情相関" dataKey="correlation" fill="#8884d8" />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* 相関分析の詳細 */}
+        {emotionCorrelations.length > 0 && (
+          <div className="mt-6">
+            <h4 className="text-sm font-medium mb-4">感情ペア相関分析</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {emotionCorrelations.slice(0, 6).map((correlation, index) => (
+                <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    {correlation.emotion}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">相関係数</span>
+                    <span className={`text-sm font-medium ${
+                      correlation.correlation > 0.5 ? 'text-green-600' :
+                      correlation.correlation < -0.5 ? 'text-red-600' :
+                      'text-gray-600'
+                    }`}>
+                      {correlation.correlation.toFixed(3)}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div
+                      className={`h-2 rounded-full ${
+                        correlation.correlation > 0.5 ? 'bg-green-500' :
+                        correlation.correlation < -0.5 ? 'bg-red-500' :
+                        'bg-gray-400'
+                      }`}
+                      style={{ width: `${Math.abs(correlation.correlation) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// セッション分析チャート
+const SessionAnalysisChart = ({ analyticsData }: { analyticsData: IntegratedAnalyticsData | null }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <Video className="h-5 w-5" />
+        <span>セッション分析</span>
+      </CardTitle>
+      <CardDescription>
+        実験セッションの完了状況と反応時間分析
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* セッション完了状況 */}
+        <div>
+          <h4 className="text-sm font-medium mb-4">セッション完了状況</h4>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={analyticsData?.sessionStats.sessionDistribution}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, value }) => `${name}: ${value}`}
+                outerRadius={60}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                <Cell fill="#00C49F" />
+                <Cell fill="#FFBB28" />
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 反応時間統計 */}
+        <div>
+          <h4 className="text-sm font-medium mb-4">反応時間統計</h4>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm">平均反応時間</span>
+              <span className="font-medium">
+                {Math.round(analyticsData?.sessionStats.averageReactionTime || 0)}ms
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">総セッション数</span>
+              <span className="font-medium">
+                {analyticsData?.sessionStats.totalSessions}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">完了セッション</span>
+              <span className="font-medium">
+                {analyticsData?.sessionStats.completedSessions}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// データ同期ステータス
+const DataSyncStatus = ({ analyticsData }: { analyticsData: IntegratedAnalyticsData | null }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center space-x-2">
+        <Activity className="h-5 w-5" />
+        <span>データ同期ステータス</span>
+      </CardTitle>
+        <CardDescription>
+          ArangoDB、Blob、ファイルシステム間の同期状態
+        </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Zap className="h-4 w-4 text-yellow-500" />
+            <span className="text-sm">同期状態</span>
+          </div>
+          <Badge variant={analyticsData?.storageStats.syncStatus === 'synced' ? "default" : "secondary"}>
+            {analyticsData?.storageStats.syncStatus === 'synced' ? (
+              <><CheckCircle className="h-3 w-3 mr-1" />同期済み</>
+            ) : analyticsData?.storageStats.syncStatus === 'syncing' ? (
+              <><RefreshCw className="h-3 w-3 mr-1 animate-spin" />同期中</>
+            ) : (
+              <><AlertCircle className="h-3 w-3 mr-1" />同期エラー</>
+            )}
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center">
+            <div className="text-lg font-bold text-blue-600">
+              {(analyticsData?.storageStats.blobUsage || 0) / 1024}KB
+            </div>
+            <div className="text-xs text-gray-500">Blob使用量</div>
+          </div>
+          <div className="text-center">
+              <div className="text-lg font-bold text-green-600">
+                {(analyticsData?.storageStats.arangodbUsage || 0) / 1024}KB
+              </div>
+              <div className="text-xs text-gray-500">ArangoDB使用量</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-purple-600">
+              {analyticsData?.storageStats.totalDataPoints}
+            </div>
+            <div className="text-xs text-gray-500">総データポイント</div>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 // 感情トレンド生成関数
 const generateEmotionTrends = (emotions: any[]) => {
   if (!emotions || emotions.length === 0) return [];
