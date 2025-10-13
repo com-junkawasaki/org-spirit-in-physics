@@ -4,7 +4,7 @@ import os
 from temporalio.client import Client
 from temporalio.worker import Worker
 
-from .workflows import VisualizationWorkflow, AnalysisWorkflow
+from .workflows import VisualizationWorkflow, AnalysisWorkflow, IntegratedAnalysisWorkflow
 from .activities import generate_visualizations, run_analysis_pipeline
 
 def load_config():
@@ -20,7 +20,7 @@ async def main():
     worker = Worker(
         client,
         task_queue=config['temporal']['task_queue_analyzer'],
-        workflows=[VisualizationWorkflow, AnalysisWorkflow],
+        workflows=[VisualizationWorkflow, AnalysisWorkflow, IntegratedAnalysisWorkflow],
         activities=[generate_visualizations, run_analysis_pipeline],
     )
     print("Starting analyzer worker...")

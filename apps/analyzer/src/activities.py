@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from arango import ArangoClient
+from temporalio import activity
 
 # Add project root to path to allow importing from packages
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
@@ -18,6 +19,7 @@ from packages.spirit_in_physics_pipeline.physiological_processor import Physiolo
 from packages.spirit_in_physics_pipeline.hume_data_processor import HumeDataProcessor
 from .visualization.spirit_visualizer import SpiritVisualizer
 
+@activity.defn
 async def generate_visualizations(run_id: str, config: dict) -> str:
     """Activity to generate visualizations for a completed analysis run."""
     try:
@@ -66,6 +68,7 @@ async def generate_visualizations(run_id: str, config: dict) -> str:
     except Exception as e:
         return f"Failed to connect to ArangoDB for run_id: {run_id}, error: {str(e)}"
 
+@activity.defn
 async def run_analysis_pipeline(model_version: str, notes: str, config: dict) -> str:
     """Activity to run the main analysis pipeline."""
     try:
