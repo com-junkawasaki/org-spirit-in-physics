@@ -390,7 +390,7 @@ export default function AnalyticsDashboard() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ emotion, percentage }) => `${emotion}: ${Math.round(percentage)}%`}
+                      label={({ emotion, percentage }) => `${emotion}: ${Math.round(percentage as number)}%`}
                       outerRadius={60}
                       fill="#8884d8"
                       dataKey="count"

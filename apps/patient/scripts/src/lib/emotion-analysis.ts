@@ -214,6 +214,7 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       .filter((file: string) => file.endsWith('.webm'));
 
     const results: EmotionAnalysisResult[] = [];
+    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
 
     for (const videoFile of videoFiles) {
       // セッションタイプをファイル名から判定
@@ -222,15 +223,13 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       const result = await analyzeVideoEmotions(participantId, videoFile, sessionType);
       if (result) {
         results.push(result);
+        // ArangoDBに個別に保存
+        await storageAdapter.saveEmotionAnalysis(participantId, result);
       }
 
       // APIレート制限を考慮して少し待つ
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-
-    // ArangoDBに保存
-    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
-    await storageAdapter.saveEmotionAnalysisResults(participantId, results);
 
     return results;
   } catch (error) {
