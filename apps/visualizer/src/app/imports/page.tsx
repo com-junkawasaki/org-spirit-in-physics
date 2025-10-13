@@ -43,7 +43,10 @@ interface SystemStatus {
   failedJobs: number
 }
 
+import { redirect } from 'next/navigation'
+
 export default function ImportsPage() {
+  redirect('/data-management')
   // Merkle DAG: imports_management_page -> state_management
   const [importJobs, setImportJobs] = useState<ImportJob[]>([])
   const [participants, setParticipants] = useState<ParticipantData[]>([])

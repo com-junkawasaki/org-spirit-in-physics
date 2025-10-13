@@ -6,9 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DataManagementLayout } from '@/components/layout/PageLayout'
+import { DataManagementBreadcrumb } from '@/components/navigation/Breadcrumb'
+import { StatusBadge, ExperimentTypeBadge } from '@/components/common/StatusBadge'
+import { DataTable, StatCard } from '@/components/common/DataTable'
 import { SystemStatusCard } from '@/components/SystemStatusCard'
-import { ArrowRight, Home, Database, Activity, Users, Heart, Monitor, Settings } from 'lucide-react'
+import { Database, Activity, Users, Heart, Monitor, Settings, RefreshCw, Play, CheckCircle, XCircle } from 'lucide-react'
 
 type Run = {
   _key: string
@@ -169,19 +172,19 @@ export default function DataManagementPage() {
     )
   }
 
+  const handleRefresh = () => {
+    fetchAnalysisData()
+    fetchImportsData()
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-primary mb-2">
-              データ管理ダッシュボード
-            </h1>
-            <p className="text-muted-foreground">
-              Spirit in Physics実験データのインポート・分析・監視を統合管理します
-            </p>
-          </div>
+    <DataManagementLayout
+      header={{
+        title: 'データ管理',
+        description: 'Spirit in Physics実験データのインポート・分析・監視を統合管理します',
+        icon: <Database className="h-8 w-8" />,
+        badge: { text: '統合管理', variant: 'default' },
+        actions: (
           <div className="flex items-center gap-2">
             <Link href="/dashboard">
               <Button variant="outline" size="sm">
@@ -200,29 +203,46 @@ export default function DataManagementPage() {
               Worker起動
             </Button>
           </div>
-        </div>
-      </div>
+        )
+      }}
+      onRefresh={handleRefresh}
+      isLoading={analysisLoading && importsLoading}
+    >
+      <DataManagementBreadcrumb />
 
       {/* System Status and Job Statistics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <SystemStatusCard />
 
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">ジョブ統計</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{systemStatus.activeJobs}</div>
-              <div className="text-sm text-muted-foreground">実行中</div>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              ジョブ統計
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatCard
+                title="実行中"
+                value={systemStatus.activeJobs}
+                icon={<Play className="h-4 w-4 text-blue-500" />}
+                className="border-blue-200 bg-blue-50/50"
+              />
+              <StatCard
+                title="完了"
+                value={systemStatus.completedJobs}
+                icon={<CheckCircle className="h-4 w-4 text-green-500" />}
+                className="border-green-200 bg-green-50/50"
+              />
+              <StatCard
+                title="失敗"
+                value={systemStatus.failedJobs}
+                icon={<XCircle className="h-4 w-4 text-red-500" />}
+                className="border-red-200 bg-red-50/50"
+              />
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{systemStatus.completedJobs}</div>
-              <div className="text-sm text-muted-foreground">完了</div>
-            </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{systemStatus.failedJobs}</div>
-              <div className="text-sm text-muted-foreground">失敗</div>
-            </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
 
@@ -259,92 +279,113 @@ export default function DataManagementPage() {
             </div>
 
             {/* Experiment Type Selection */}
-            <div className="mb-6 p-4 border rounded-lg bg-muted/50">
-              <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                実験タイプ設定
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                  experimentType === 'physiological'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                }`} onClick={() => setExperimentType('physiological')}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Heart className="h-5 w-5 text-red-500" />
-                    <span className="font-medium">生理実験</span>
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  実験タイプ設定
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  実行する実験のタイプを選択してください
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                      experimentType === 'physiological'
+                        ? 'border-red-500 bg-red-50 shadow-md'
+                        : 'border-border hover:border-red-300'
+                    }`}
+                    onClick={() => setExperimentType('physiological')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Heart className="h-5 w-5 text-red-500" />
+                      <span className="font-semibold text-red-700">生理実験</span>
+                      <ExperimentTypeBadge type="physiological" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      皮膚電位データを取得する実験。感情・生理データの統合分析を行います。
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    皮膚電位データを取得する実験。感情・生理データの統合分析。
-                  </p>
+
+                  <div
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                      experimentType === 'online'
+                        ? 'border-blue-500 bg-blue-50 shadow-md'
+                        : 'border-border hover:border-blue-300'
+                    }`}
+                    onClick={() => setExperimentType('online')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Monitor className="h-5 w-5 text-blue-500" />
+                      <span className="font-semibold text-blue-700">オンライン実験</span>
+                      <ExperimentTypeBadge type="online" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      オンラインのみの実験。行動・言語データの分析を行います。
+                    </p>
+                  </div>
+
+                  <div
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                      experimentType === 'unified'
+                        ? 'border-green-500 bg-green-50 shadow-md'
+                        : 'border-border hover:border-green-300'
+                    }`}
+                    onClick={() => setExperimentType('unified')}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Activity className="h-5 w-5 text-green-500" />
+                      <span className="font-semibold text-green-700">統合実験</span>
+                      <ExperimentTypeBadge type="unified" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      複数のデータソースを統合した包括的な分析を行います。
+                    </p>
+                  </div>
                 </div>
 
-                <div className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                  experimentType === 'online'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                }`} onClick={() => setExperimentType('online')}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Monitor className="h-5 w-5 text-blue-500" />
-                    <span className="font-medium">オンライン実験</span>
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">選択中の実験タイプ:</span>
+                    <ExperimentTypeBadge type={experimentType} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    オンラインのみの実験。行動・言語データの分析。
-                  </p>
-                </div>
-
-                <div className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                  experimentType === 'unified'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                }`} onClick={() => setExperimentType('unified')}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Activity className="h-5 w-5 text-green-500" />
-                    <span className="font-medium">統合実験</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    複数のデータソースを統合した包括的な分析。
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  選択中の実験タイプ: <span className="font-medium capitalize">{experimentType}</span>
-                </div>
-                <Button
-                  onClick={async () => {
-                    setCreatingAnalysis(true)
-                    try {
-                      const res = await fetch('http://localhost:8000/api/workflows/start-analysis', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          sessionIds: ['session-1', 'session-2'],
-                          modelVersion: '1.0',
-                          experimentType: experimentType,
-                          notes: `Started from unified dashboard - ${experimentType} experiment`
+                  <Button
+                    onClick={async () => {
+                      setCreatingAnalysis(true)
+                      try {
+                        const res = await fetch('http://localhost:8000/api/workflows/start-analysis', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            sessionIds: ['test-session-1', 'test-session-2'],
+                            modelVersion: '1.0',
+                            experimentType: experimentType,
+                            notes: `Started from unified dashboard - ${experimentType} experiment`
+                          })
                         })
-                      })
-                      if (res.ok) {
-                        const data = await res.json()
-                        setTemporalMsg(`ワークフロー起動成功: ${data.workflow_id}`)
-                        await fetchAnalysisData()
-                      } else {
-                        setTemporalMsg('ワークフロー起動失敗')
+                        if (res.ok) {
+                          const data = await res.json()
+                          setTemporalMsg(`ワークフロー起動成功: ${data.workflow_id}`)
+                          await fetchAnalysisData()
+                        } else {
+                          setTemporalMsg('ワークフロー起動失敗')
+                        }
+                      } finally {
+                        setCreatingAnalysis(false)
                       }
-                    } finally {
-                      setCreatingAnalysis(false)
-                    }
-                  }}
-                  disabled={creatingAnalysis}
-                  className="flex items-center gap-2"
-                >
-                  <Activity className="h-4 w-4" />
-                  {creatingAnalysis ? '起動中…' : '新規解析を起動'}
-                </Button>
-              </div>
-            </div>
+                    }}
+                    disabled={creatingAnalysis}
+                    size="lg"
+                    className="flex items-center gap-2"
+                  >
+                    <Activity className="h-4 w-4" />
+                    {creatingAnalysis ? '起動中…' : '新規解析を起動'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             {temporalMsg && (
               <div className="mb-2 text-xs text-muted-foreground">{temporalMsg}</div>
@@ -564,7 +605,7 @@ export default function DataManagementPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </DataManagementLayout>
   )
 }
 

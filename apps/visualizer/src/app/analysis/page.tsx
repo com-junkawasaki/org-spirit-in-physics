@@ -49,6 +49,12 @@ type SystemStatus = {
   failedJobs: number
 }
 
+import { redirect } from 'next/navigation'
+
+export default function AnalysisPage() {
+  redirect('/data-management')
+}
+
 export default function DataManagementPage() {
   // Analysis state
   const [runs, setRuns] = useState<Run[]>([])
