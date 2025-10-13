@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react'
+import { RefreshCw, CheckCircle, Clock, AlertCircle, XCircle, Wifi, WifiOff } from 'lucide-react'
+import { getWebSocketClient, ImportStatusUpdate } from '@/lib/websocket'
 
 interface ImportStatus {
   participant_id: string
@@ -33,6 +34,8 @@ export function ImportStatusOverview() {
   const [summary, setSummary] = useState<ImportSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [wsConnected, setWsConnected] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null)
 
   const fetchImportStatuses = async () => {
     try {
@@ -64,6 +67,48 @@ export function ImportStatusOverview() {
 
   useEffect(() => {
     fetchImportStatuses()
+    
+    // Setup WebSocket connection for real-time updates
+    const wsClient = getWebSocketClient()
+    
+    const handleStatusUpdate = (data: ImportStatusUpdate) => {
+      if (data.data) {
+        setImportStatuses(data.data.statuses || [])
+        setSummary(data.data.summary || null)
+        setLastUpdate(data.timestamp)
+        setLoading(false)
+        setError(null)
+      }
+    }
+    
+    const handleConnected = () => {
+      setWsConnected(true)
+      console.log('WebSocket connected')
+    }
+    
+    const handleDisconnected = () => {
+      setWsConnected(false)
+      console.log('WebSocket disconnected')
+    }
+    
+    const handleError = (data: ImportStatusUpdate) => {
+      console.error('WebSocket error:', data.message)
+      setError(data.message || 'WebSocket connection error')
+    }
+    
+    // Register event listeners
+    wsClient.on('status_update', handleStatusUpdate)
+    wsClient.on('connected', handleConnected)
+    wsClient.on('disconnected', handleDisconnected)
+    wsClient.on('error', handleError)
+    
+    // Cleanup on unmount
+    return () => {
+      wsClient.off('status_update', handleStatusUpdate)
+      wsClient.off('connected', handleConnected)
+      wsClient.off('disconnected', handleDisconnected)
+      wsClient.off('error', handleError)
+    }
   }, [])
 
   const getStatusIcon = (status: string) => {
@@ -180,11 +225,30 @@ export function ImportStatusOverview() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Import Status Details</CardTitle>
-            <Button onClick={fetchImportStatuses} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              更新
-            </Button>
+            <div className="flex items-center gap-2">
+              <CardTitle>Import Status Details</CardTitle>
+              <div className="flex items-center gap-1">
+                {wsConnected ? (
+                  <Wifi className="h-4 w-4 text-green-500" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-red-500" />
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {wsConnected ? 'リアルタイム更新中' : '接続なし'}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {lastUpdate && (
+                <span className="text-xs text-muted-foreground">
+                  最終更新: {new Date(lastUpdate).toLocaleTimeString()}
+                </span>
+              )}
+              <Button onClick={fetchImportStatuses} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                手動更新
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
