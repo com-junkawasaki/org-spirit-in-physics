@@ -5,13 +5,14 @@ from temporalio.worker import Worker
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 from apps.importer.src.workflows import IngestionWorkflow
 from apps.importer.src.activities.arangodb import ArangoDBActivities
 from apps.importer.src.activities.hume_activities import HumeActivities
 
 def load_config():
-    with open("apps/importer/config.yaml", 'r') as f:
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'config.yaml')
+    with open(config_path, 'r') as f:
         return yaml.safe_load(f)
 
 async def main():

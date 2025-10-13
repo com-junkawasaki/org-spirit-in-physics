@@ -38,6 +38,23 @@ const nextConfig = {
         poll: false,
       }
     }
+
+    // Merkle DAG: Temporal client module resolution fix
+    config.resolve = {
+      ...config.resolve,
+      fallback: {
+        ...config.resolve?.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+      },
+    }
+
+    // Merkle DAG: External modules configuration for server-side
+    if (isServer) {
+      config.externals = [...(config.externals || []), '@temporalio/client']
+    }
     
     return config
   },

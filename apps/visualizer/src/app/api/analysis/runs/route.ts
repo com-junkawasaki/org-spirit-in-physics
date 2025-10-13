@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createArangoDBClient } from '@/lib/arangodb'
-import { Connection, WorkflowClient } from '@temporalio/client'
+import { TemporalClientManager, isTemporalAvailable } from '@/lib/temporal-client'
 
 export async function GET() {
   try {
@@ -38,20 +38,21 @@ export async function POST(_req: NextRequest) {
       },
     })
 
-    // Temporal clientを使用してワークフローを実行
-    const connection = await Connection.connect({
-      address: process.env.TEMPORAL_HOST || 'localhost:7233',
-    })
-    
-    const workflowClient = new WorkflowClient({ connection })
-
-    const workflowId = `analysis-workflow-${run._key}`
-    
-    await workflowClient.start('AnalysisWorkflow', {
-      workflowId,
-      taskQueue: 'analyzer-task-queue',
-      args: ['dev', `run=${run._key}`, {}], // model_version, notes, config
-    })
+    // Merkle DAG: analysis_runs_post -> temporal_workflow_start
+    if (isTemporalAvailable()) {
+      try {
+        const workflowId = `analysis-workflow-${run._key}`
+        
+        await TemporalClientManager.startWorkflow('AnalysisWorkflow', {
+          workflowId,
+          taskQueue: 'analyzer-task-queue',
+          args: ['dev', `run=${run._key}`, {}], // model_version, notes, config
+        })
+      } catch (temporalError) {
+        console.warn('Temporal workflow start failed, continuing without workflow:', temporalError)
+        // Continue execution even if Temporal fails
+      }
+    }
 
     return NextResponse.json({ ok: true, runId: run._key }, { status: 202 })
   } catch (error) {

@@ -11,16 +11,20 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
-COPY requirements.txt .
+COPY apps/importer/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy environment file
-COPY env.docker .env
+COPY apps/importer/env.docker .env
 
 # Copy source code
-COPY . .
+COPY apps/importer/ .
+# Copy apps directory structure for imports
+COPY apps/ /app/apps/
+# Copy packages directory for shared modules
+COPY packages/ /app/packages/
 
 # Expose port 8001 for the importer API
 EXPOSE 8001

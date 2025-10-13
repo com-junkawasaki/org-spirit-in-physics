@@ -125,8 +125,8 @@ services:
   # Importer app (Python)
   importer:
     build:
-      context: ./apps/importer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/importer/Dockerfile
     container_name: spirit-importer
     ports:
       - "8001:8001"
