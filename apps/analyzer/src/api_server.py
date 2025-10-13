@@ -12,7 +12,7 @@ from flask_cors import CORS
 import yaml
 import pandas as pd
 
-from pipeline.job_manager import JobManager, JobStatus
+# from pipeline.job_manager import JobManager, JobStatus  # Temporal disabled
 from pipeline.data_storer import DataStorer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

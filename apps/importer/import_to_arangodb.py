@@ -63,7 +63,7 @@ def process_participant_data(participant_dir: str, client: ArangoDBClient):
             return
 
         # Process session data
-        session_files = glob.glob(os.path.join(participant_dir, "session_*.json"))
+        session_files = glob.glob(os.path.join(participant_dir, "session_data.json"))
         for session_file in session_files:
             with open(session_file, 'r', encoding='utf-8') as f:
                 session_data = json.load(f)
