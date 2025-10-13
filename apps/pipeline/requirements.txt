@@ -6,3 +6,9 @@ pandas
 numpy
 pydantic
 dotenv
+gensim
+flask
+flask-cors
+plotly
+matplotlib
+seaborn
