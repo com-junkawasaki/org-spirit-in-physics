@@ -193,6 +193,7 @@ class AnalysisAPI:
         # self.job_manager = JobManager(config['arangodb'])  # Temporal disabled
         self.data_storer = DataStorer(config['arangodb'])
         self.hume_importer = HumeDataImporter(config['arangodb'])
+        self.arangodb_config = config['arangodb']  # Store config for direct DB access
         self.app = Flask(__name__)
         CORS(self.app)  # Enable CORS for web frontend access
 
@@ -211,10 +212,10 @@ class AnalysisAPI:
             try:
                 # Get runs from ArangoDB
                 from arango import ArangoClient
-                client = ArangoClient(hosts=self.data_storer.config['url'])
-                db = client.db(self.data_storer.config['database'], 
-                             username=self.data_storer.config['user'], 
-                             password=self.data_storer.config['password'])
+                client = ArangoClient(hosts=self.arangodb_config['url'])
+                db = client.db(self.arangodb_config['database'], 
+                             username=self.arangodb_config['user'], 
+                             password=self.arangodb_config['password'])
                 
                 # Query analysis runs
                 aql_query = """
@@ -246,10 +247,10 @@ class AnalysisAPI:
             try:
                 # Get run details from ArangoDB
                 from arango import ArangoClient
-                client = ArangoClient(hosts=self.data_storer.config['url'])
-                db = client.db(self.data_storer.config['database'], 
-                             username=self.data_storer.config['user'], 
-                             password=self.data_storer.config['password'])
+                client = ArangoClient(hosts=self.arangodb_config['url'])
+                db = client.db(self.arangodb_config['database'], 
+                             username=self.arangodb_config['user'], 
+                             password=self.arangodb_config['password'])
                 
                 # Get run details
                 run_query = """
@@ -276,37 +277,139 @@ class AnalysisAPI:
                 total_results = len(results)
                 successful_results = len([r for r in results if r.get('status') == 'completed'])
                 failed_results = len([r for r in results if r.get('status') == 'failed'])
-                queued = sum(1 for j in jobs if j.status == JobStatus.QUEUED)
                 
                 run_data = {
                     "run_id": run_id,
-                    "total_jobs": total_jobs,
-                    "completed_jobs": completed,
-                    "failed_jobs": failed,
-                    "running_jobs": running,
-                    "queued_jobs": queued,
-                    "progress_percentage": (completed / total_jobs * 100) if total_jobs > 0 else 0,
-                    "jobs": [
-                        {
-                            "id": job.id,
-                            "response_id": job.response_id,
-                            "job_type": job.job_type.value,
-                            "status": job.status.value,
-                            "priority": job.priority,
-                            "started_at": job.started_at.isoformat() if job.started_at else None,
-                            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
-                            "error_message": job.error_message,
-                            "retry_count": job.retry_count,
-                            "created_at": job.created_at.isoformat(),
-                            "updated_at": job.updated_at.isoformat()
-                        }
-                        for job in jobs
-                    ]
+                    "total_results": total_results,
+                    "successful_results": successful_results,
+                    "failed_results": failed_results,
+                    "run_details": run,
+                    "results": results
                 }
                 
                 return jsonify(run_data)
             except Exception as e:
-                logging.error(f"Error getting run {run_id}: {e}")
+                logging.error(f"Error getting run details: {e}")
+                return jsonify({"error": str(e)}), 500
+        
+        @self.app.route('/runs/<run_id>/pipeline-stages', methods=['GET'])
+        def get_pipeline_stages(run_id):
+            """Get pipeline stages and their status for a run."""
+            try:
+                # Define pipeline stages
+                pipeline_stages = [
+                    {
+                        "id": "config_loading",
+                        "name": "設定読み込み",
+                        "description": "設定ファイルとパラメータの読み込み",
+                        "order": 1
+                    },
+                    {
+                        "id": "component_init",
+                        "name": "コンポーネント初期化", 
+                        "description": "データローダー、特徴量抽出器、川崎モデルの初期化",
+                        "order": 2
+                    },
+                    {
+                        "id": "run_creation",
+                        "name": "分析実行作成",
+                        "description": "分析実行レコードの作成とID生成",
+                        "order": 3
+                    },
+                    {
+                        "id": "data_processing",
+                        "name": "データ処理",
+                        "description": "未処理応答データの取得と前処理",
+                        "order": 4
+                    },
+                    {
+                        "id": "feature_extraction",
+                        "name": "特徴量抽出",
+                        "description": "生理データ、感情データ、言語データからの特徴量抽出",
+                        "order": 5
+                    },
+                    {
+                        "id": "model_calculation",
+                        "name": "川崎モデル実行",
+                        "description": "Spirit確率の計算とモデル実行",
+                        "order": 6
+                    },
+                    {
+                        "id": "result_storage",
+                        "name": "結果保存・可視化",
+                        "description": "分析結果の保存と可視化ファイル生成",
+                        "order": 7
+                    }
+                ]
+                
+                # Get run details to determine current stage
+                from arango import ArangoClient
+                client = ArangoClient(hosts=self.arangodb_config['url'])
+                db = client.db(self.arangodb_config['database'], 
+                             username=self.arangodb_config['user'], 
+                             password=self.arangodb_config['password'])
+                
+                run_query = """
+                FOR run IN analysis_runs
+                    FILTER run._key == @run_id
+                    RETURN run
+                """
+                runs = list(db.aql.execute(run_query, bind_vars={"run_id": run_id}))
+                
+                if not runs:
+                    return jsonify({"error": "Run not found"}), 404
+                
+                run = runs[0]
+                
+                # Get analysis results to determine progress
+                results_query = """
+                FOR result IN analysis_results
+                    FILTER result.run_id == @run_id
+                    RETURN result
+                """
+                results = list(db.aql.execute(results_query, bind_vars={"run_id": run_id}))
+                
+                # Determine current stage based on run status and results
+                current_stage = "config_loading"
+                if run.get('status') == 'running':
+                    if results:
+                        current_stage = "model_calculation"
+                    else:
+                        current_stage = "data_processing"
+                elif run.get('status') == 'completed':
+                    current_stage = "result_storage"
+                elif run.get('status') == 'failed':
+                    current_stage = "data_processing"  # Assume failure in data processing
+                
+                # Calculate progress for each stage
+                total_responses = len(results) if results else 0
+                completed_responses = len([r for r in results if r.get('status') == 'completed'])
+                
+                for stage in pipeline_stages:
+                    stage_id = stage['id']
+                    if stage_id == current_stage:
+                        stage['status'] = 'running'
+                        if stage_id == 'model_calculation' and total_responses > 0:
+                            stage['progress'] = (completed_responses / total_responses) * 100
+                        else:
+                            stage['progress'] = 50  # Default progress for running stage
+                    elif pipeline_stages.index(stage) < pipeline_stages.index(next(s for s in pipeline_stages if s['id'] == current_stage)):
+                        stage['status'] = 'completed'
+                        stage['progress'] = 100
+                    else:
+                        stage['status'] = 'pending'
+                        stage['progress'] = 0
+                
+                return jsonify({
+                    "run_id": run_id,
+                    "current_stage": current_stage,
+                    "total_responses": total_responses,
+                    "completed_responses": completed_responses,
+                    "stages": pipeline_stages
+                })
+                
+            except Exception as e:
+                logging.error(f"Error getting pipeline stages: {e}")
                 return jsonify({"error": str(e)}), 500
         
         @self.app.route('/runs/<run_id>/results', methods=['GET'])

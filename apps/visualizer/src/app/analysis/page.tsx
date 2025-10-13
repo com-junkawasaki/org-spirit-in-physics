@@ -144,6 +144,15 @@ export default function AnalysisPage() {
                           >
                             可視化WF
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              window.open(`/analysis/${r._key}/pipeline`, '_blank')
+                            }}
+                          >
+                            パイプライン
+                          </Button>
                         </div>
                       </td>
                     </tr>

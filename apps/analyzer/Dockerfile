@@ -25,39 +25,38 @@ COPY packages /app/packages
 # Copy analyzer source code
 COPY apps/analyzer .
 
-# Create config.yaml from environment variables
-RUN echo "arangodb:" > config.yaml && \
-    echo "  url: \"$ARANGODB_URL\"" >> config.yaml && \
-    echo "  user: \"$ARANGODB_USER\"" >> config.yaml && \
-    echo "  password: \"$ARANGODB_PASSWORD\"" >> config.yaml && \
-    echo "  database_name: \"$DATABASE_NAME\"" >> config.yaml && \
-    echo "" >> config.yaml && \
-    echo "arangodb:" >> config.yaml && \
-    echo "  url: \"$ARANGODB_URL\"" >> config.yaml && \
-    echo "  user: \"$ARANGODB_USER\"" >> config.yaml && \
-    echo "  password: \"$ARANGODB_PASSWORD\"" >> config.yaml && \
-    echo "  database: \"$ARANGODB_DATABASE\"" >> config.yaml && \
-    echo "" >> config.yaml && \
-    echo "hume_ai:" >> config.yaml && \
-    echo "  api_key: \"$HUME_API_KEY\"" >> config.yaml && \
-    echo "" >> config.yaml && \
-    echo "model_params:" >> config.yaml && \
-    echo "  alpha: $ALPHA" >> config.yaml && \
-    echo "  gamma: $GAMMA" >> config.yaml && \
-    echo "  eta: $ETA" >> config.yaml && \
-    echo "  lambda: $LAMBDA" >> config.yaml && \
-    echo "  epsilon: $EPSILON" >> config.yaml && \
-    echo "" >> config.yaml && \
-    echo "word2vec:" >> config.yaml && \
-    echo "  model_path: \"$WORD2VEC_MODEL_PATH\"" >> config.yaml && \
-    echo "" >> config.yaml && \
-    echo "processing:" >> config.yaml && \
-    echo "  max_concurrent_jobs: $MAX_CONCURRENT_JOBS" >> config.yaml && \
-    echo "  job_timeout_seconds: $JOB_TIMEOUT_SECONDS" >> config.yaml && \
-    echo "  temp_dir: \"$TEMP_DIR\"" >> config.yaml
+# Create startup script to generate config.yaml from environment variables
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'cat > config.yaml << EOF' >> /app/start.sh && \
+    echo 'arangodb:' >> /app/start.sh && \
+    echo '  url: "$ARANGODB_URL"' >> /app/start.sh && \
+    echo '  user: "$ARANGODB_USER"' >> /app/start.sh && \
+    echo '  password: "$ARANGODB_PASSWORD"' >> /app/start.sh && \
+    echo '  database: "$ARANGODB_DATABASE"' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo 'hume_ai:' >> /app/start.sh && \
+    echo '  api_key: "$HUME_API_KEY"' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo 'model_params:' >> /app/start.sh && \
+    echo '  alpha: $ALPHA' >> /app/start.sh && \
+    echo '  gamma: $GAMMA' >> /app/start.sh && \
+    echo '  eta: $ETA' >> /app/start.sh && \
+    echo '  lambda: $LAMBDA' >> /app/start.sh && \
+    echo '  epsilon: $EPSILON' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo 'word2vec:' >> /app/start.sh && \
+    echo '  model_path: "$WORD2VEC_MODEL_PATH"' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo 'processing:' >> /app/start.sh && \
+    echo '  max_concurrent_jobs: $MAX_CONCURRENT_JOBS' >> /app/start.sh && \
+    echo '  job_timeout_seconds: $JOB_TIMEOUT_SECONDS' >> /app/start.sh && \
+    echo '  temp_dir: "$TEMP_DIR"' >> /app/start.sh && \
+    echo 'EOF' >> /app/start.sh && \
+    echo 'python src/api_server.py' >> /app/start.sh && \
+    chmod +x /app/start.sh
 
 # Expose port 8000 for the API server
 EXPOSE 8000
 
 # Start the API server
-CMD ["python", "src/api_server.py"]
+CMD ["/app/start.sh"]
