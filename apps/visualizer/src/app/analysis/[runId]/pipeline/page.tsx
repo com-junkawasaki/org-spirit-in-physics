@@ -37,7 +37,15 @@ export default function PipelinePage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`http://localhost:8000/runs/${runId}/pipeline-stages`)
+      // Merkle DAG: パフォーマンス最適化 - キャッシュヘッダー追加
+      const res = await fetch(`http://localhost:8000/runs/${runId}/pipeline-stages`, {
+        mode: 'cors',
+        cache: 'no-store', // 常に最新データを取得
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      })
       if (res.ok) {
         const data = await res.json()
         setPipelineData(data)
@@ -53,8 +61,8 @@ export default function PipelinePage() {
 
   useEffect(() => {
     fetchPipelineData()
-    // 5秒ごとに自動更新
-    const interval = setInterval(fetchPipelineData, 5000)
+    // Merkle DAG: パフォーマンス最適化 - 自動更新間隔を延長
+    const interval = setInterval(fetchPipelineData, 10000) // 10秒に変更
     return () => clearInterval(interval)
   }, [runId])
 
