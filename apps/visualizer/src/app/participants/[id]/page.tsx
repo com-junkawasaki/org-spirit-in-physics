@@ -3,7 +3,7 @@ import { getParticipantData } from '@/lib/data'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ParticipantData } from '@/lib/data'
-import ParticipantOverview from '@/components/ParticipantOverview'
+import { ParticipantOverview } from '@/components/ParticipantOverview'
 import {
   ArrowLeft,
   BarChart3,
@@ -183,7 +183,7 @@ export default async function ParticipantDetailPage({
       </div>
 
       {/* Content */}
-      <ParticipantOverview participant={participant} />
+      <ParticipantOverview />
     </div>
   )
 }

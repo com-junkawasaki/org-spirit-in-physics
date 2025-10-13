@@ -4,10 +4,10 @@ import { ArangoDBManager } from '@/lib/arangodb'
 // Merkle DAG: imports_retry_api -> failed_job_recovery
 export async function POST(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    const { jobId } = params
+    const { jobId } = await params
 
     if (!jobId) {
       return NextResponse.json(
@@ -40,7 +40,7 @@ export async function POST(
       )
     }
 
-    const job = jobResult[0]
+    const job = jobResult[0] as any
 
     // ジョブが失敗状態でない場合はエラー
     if (job.status !== 'FAILED') {
@@ -74,7 +74,7 @@ export async function POST(
       )
     }
 
-    const resetJob = resetResult[0]
+    const resetJob = resetResult[0] as any
 
     // セッションステータスも更新
     const updateSessionQuery = `

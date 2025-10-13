@@ -59,7 +59,7 @@ export function ParticipantOverview() {
           ? data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.average_spirit_probability as number) || 0), 0) / data.length
           : 0
         const activeParticipants = data.filter((p: Record<string, unknown>) => {
-          const lastActivity = new Date(p.last_activity || 0)
+          const lastActivity = new Date((p.last_activity as string) || 0)
           const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
           return lastActivity > thirtyDaysAgo
         }).length

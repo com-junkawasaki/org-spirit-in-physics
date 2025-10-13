@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const dbManager = new ArangoDBManager()
     
     // 新しいインポートジョブを作成
-    const jobData = {
+    const jobData: any = {
       session_id: sessionId,
       status: 'PENDING',
       created_at: new Date().toISOString(),

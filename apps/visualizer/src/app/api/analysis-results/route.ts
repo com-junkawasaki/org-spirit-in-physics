@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAnalysisResultsForParticipant } from '@/lib/data'
+import { getAnalysisResultsForParticipant, getAnalysisResults } from '@/lib/data'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
       results = await getAnalysisResultsForParticipant(participantId)
     } else {
       // Get all analysis results
-      const { getAnalysisResults } = await import('@/lib/data')
       results = await getAnalysisResults()
     }
 

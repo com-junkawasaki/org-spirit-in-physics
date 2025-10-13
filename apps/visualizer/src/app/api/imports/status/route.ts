@@ -54,16 +54,17 @@ export async function GET(request: NextRequest) {
       const jobsResult = await dbManager.query(jobsQuery)
       
       for (const result of jobsResult) {
-        switch (result.status) {
+        const jobResult = result as any
+        switch (jobResult.status) {
           case 'PENDING':
           case 'RUNNING':
-            activeJobs += result.count
+            activeJobs += jobResult.count
             break
           case 'COMPLETED':
-            completedJobs += result.count
+            completedJobs += jobResult.count
             break
           case 'FAILED':
-            failedJobs += result.count
+            failedJobs += jobResult.count
             break
         }
       }

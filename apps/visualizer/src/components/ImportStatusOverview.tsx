@@ -73,7 +73,11 @@ export function ImportStatusOverview() {
     
     const handleStatusUpdate = (data: ImportStatusUpdate) => {
       if (data.data) {
-        setImportStatuses(data.data.statuses || [])
+        const statuses = (data.data.statuses || []).map((status: any) => ({
+          ...status,
+          status: status.status as 'pending' | 'in_progress' | 'completed' | 'failed' | 'partial' | 'imported'
+        }))
+        setImportStatuses(statuses)
         setSummary(data.data.summary || null)
         setLastUpdate(data.timestamp)
         setLoading(false)

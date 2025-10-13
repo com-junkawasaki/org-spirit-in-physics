@@ -165,13 +165,13 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
                 {service.details && (
                   <div className="mt-2 text-xs text-muted-foreground">
                     {service.service === 'ArangoDB' && service.details.database && (
-                      <p>DB: {service.details.database}</p>
+                      <p>DB: {String(service.details.database)}</p>
                     )}
                     {service.service === 'Temporal' && service.details.server && (
-                      <p>Server: {service.details.server}</p>
+                      <p>Server: {String(service.details.server)}</p>
                     )}
                     {service.service === 'Hume AI' && service.details.endpoint && (
-                      <p>Endpoint: {service.details.endpoint}</p>
+                      <p>Endpoint: {String(service.details.endpoint)}</p>
                     )}
                   </div>
                 )}

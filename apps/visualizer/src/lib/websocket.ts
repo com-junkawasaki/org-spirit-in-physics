@@ -4,7 +4,7 @@
  */
 
 export interface ImportStatusUpdate {
-  type: 'initial_status' | 'status_update' | 'status_response' | 'subscription_confirmed' | 'error' | 'pong'
+  type: 'initial_status' | 'status_update' | 'status_response' | 'subscription_confirmed' | 'error' | 'pong' | 'connected' | 'disconnected'
   data?: {
     summary: {
       total_participants: number

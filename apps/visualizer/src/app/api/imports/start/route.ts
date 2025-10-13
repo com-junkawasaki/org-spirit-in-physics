@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const session = sessionResult[0]
+    const session = sessionResult[0] as any
 
     // 既存のジョブがあるかチェック
     const existingJobQuery = `
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const job = result[0]
+    const job = result[0] as any
 
     // セッションステータスを更新
     const updateSessionQuery = `
