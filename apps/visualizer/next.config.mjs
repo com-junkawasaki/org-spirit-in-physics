@@ -11,34 +11,16 @@ const nextConfig = {
     optimizeCss: true,
   },
   // Merkle DAG: Turbopack設定（experimental.turboの代替）
-  turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
-  },
+  // turbopack: {
+  //   rules: {
+  //     '*.svg': {
+  //       loaders: ['@svgr/webpack'],
+  //       as: '*.js',
+  //     },
+  //   },
+  // },
   // Merkle DAG: Webpack最適化設定
   webpack: (config, { dev, isServer }) => {
-    if (dev) {
-      // 開発環境でのコンパイル時間短縮
-      config.cache = {
-        type: 'filesystem',
-        buildDependencies: {
-          config: [__filename],
-        },
-        compression: 'gzip',
-      }
-      
-      // 不要なファイルの監視を無効化
-      config.watchOptions = {
-        ignored: /node_modules/,
-        aggregateTimeout: 300,
-        poll: false,
-      }
-    }
-
     // Merkle DAG: Temporal client module resolution fix
     config.resolve = {
       ...config.resolve,
