@@ -506,92 +506,137 @@ class AnalysisAPI:
         @self.app.route('/api/workflows/start-import', methods=['POST'])
         def start_import_workflow():
             """Start data import workflow via Temporal."""
+            import asyncio
+
+            async def async_start_import():
+                try:
+                    from temporalio.client import Client
+
+                    data = request.get_json()
+                    if not data:
+                        return jsonify({"error": "Request body is required"}), 400
+
+                    session_id = data.get('sessionId')
+                    participant_id = data.get('participantId')
+
+                    if not session_id:
+                        return jsonify({"error": "sessionId is required"}), 400
+
+                    # Start Temporal workflow
+                    temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
+                    temporal_port = os.getenv('TEMPORAL_PORT', '7233')
+                    temporal_url = f"{temporal_host}:{temporal_port}"
+
+                    client = await Client.connect(temporal_url)
+
+                    # Start DataImportWorkflow
+                    from .workflows.main_workflow import DataImportWorkflow
+                    workflow_id = f"import-{session_id}-{uuid.uuid4()}"
+
+                    await client.start_workflow(
+                        DataImportWorkflow.run,
+                        [session_id],  # participant_ids list
+                        {},  # config
+                        id=workflow_id,
+                        task_queue="pipeline-task-queue"
+                    )
+
+                    return {
+                        "workflow_id": workflow_id,
+                        "status": "started",
+                        "session_id": session_id,
+                        "participant_id": participant_id
+                    }
+
+                except Exception as e:
+                    logging.error(f"Error starting import workflow: {e}")
+                    raise e
+
             try:
-                from temporalio.client import Client
-
-                data = request.get_json()
-                if not data:
-                    return jsonify({"error": "Request body is required"}), 400
-
-                session_id = data.get('sessionId')
-                participant_id = data.get('participantId')
-
-                if not session_id:
-                    return jsonify({"error": "sessionId is required"}), 400
-
-                # Start Temporal workflow
-                temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
-                temporal_port = os.getenv('TEMPORAL_PORT', '7233')
-                temporal_url = f"{temporal_host}:{temporal_port}"
-
-                client = await Client.connect(temporal_url)
-
-                # For now, start IngestionWorkflow (later we can add DataImportWorkflow)
-                from .workflows.main_workflow import IngestionWorkflow
-                workflow_id = f"import-{session_id}-{uuid.uuid4()}"
-
-                await client.start_workflow(
-                    IngestionWorkflow.run,
-                    session_id,
-                    id=workflow_id,
-                    task_queue="pipeline-task-queue"
-                )
-
-                return jsonify({
-                    "workflow_id": workflow_id,
-                    "status": "started",
-                    "session_id": session_id,
-                    "participant_id": participant_id
-                })
-
+                result = asyncio.run(async_start_import())
+                return jsonify(result)
             except Exception as e:
-                logging.error(f"Error starting import workflow: {e}")
                 return jsonify({"error": str(e)}), 500
 
         @self.app.route('/api/workflows/start-analysis', methods=['POST'])
         def start_analysis_workflow():
             """Start analysis workflow via Temporal."""
+            import asyncio
+
+            async def async_start_workflow():
+                try:
+                    from temporalio.client import Client
+
+                    data = request.get_json()
+                    if not data:
+                        return {"error": "Request body is required"}, 400
+
+                    session_ids = data.get('sessionIds', [])
+                    model_version = data.get('modelVersion', '1.0')
+                    notes = data.get('notes', '')
+                    experiment_type = data.get('experimentType', 'unified')  # 'physiological', 'online', or 'unified'
+
+                    if not session_ids:
+                        return {"error": "sessionIds is required"}, 400
+
+                    # Start Temporal workflow
+                    temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
+                    temporal_port = os.getenv('TEMPORAL_PORT', '7233')
+                    temporal_url = f"{temporal_host}:{temporal_port}"
+
+                    client = await Client.connect(temporal_url)
+
+                    # Select workflow based on experiment type
+                    if experiment_type == 'physiological':
+                        from .workflows.main_workflow import PhysiologicalWorkflow
+                        workflow_fn = PhysiologicalWorkflow.run
+                        workflow_type = 'physiological'
+                    elif experiment_type == 'online':
+                        from .workflows.main_workflow import OnlineWorkflow
+                        workflow_fn = OnlineWorkflow.run
+                        workflow_type = 'online'
+                    else:
+                        from .workflows.main_workflow import UnifiedPipelineWorkflow
+                        workflow_fn = UnifiedPipelineWorkflow.run
+                        workflow_type = 'unified'
+
+                    workflow_id = f"{workflow_type}-analysis-{uuid.uuid4()}"
+
+                    # Prepare arguments based on workflow type
+                    if experiment_type in ['physiological', 'online']:
+                        # These workflows take: session_ids, model_version, notes, config
+                        args = [session_ids, model_version, notes, {}]
+                    else:
+                        # UnifiedPipelineWorkflow takes: session_ids, model_version, notes, config
+                        args = [session_ids, model_version, notes, {}]
+
+                    # Start workflow - Temporal expects specific argument format
+                    # Try passing args as a tuple after the workflow function
+                    workflow_args = (session_ids, model_version, notes, {})
+                    await client.start_workflow(
+                        workflow_fn,  # Workflow function
+                        workflow_args,  # Arguments as tuple
+                        id=workflow_id,
+                        task_queue="pipeline-task-queue"
+                    )
+
+                    return {
+                        "workflow_id": workflow_id,
+                        "status": "started",
+                        "experiment_type": experiment_type,
+                        "session_ids": session_ids,
+                        "model_version": model_version,
+                        "notes": notes
+                    }
+
+                except Exception as e:
+                    logging.error(f"Error starting analysis workflow: {e}")
+                    raise e
+
             try:
-                from temporalio.client import Client
-
-                data = request.get_json()
-                if not data:
-                    return jsonify({"error": "Request body is required"}), 400
-
-                session_ids = data.get('sessionIds', [])
-                model_version = data.get('modelVersion', '1.0')
-                notes = data.get('notes', '')
-
-                if not session_ids:
-                    return jsonify({"error": "sessionIds is required"}), 400
-
-                # Start Temporal workflow
-                temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
-                temporal_port = os.getenv('TEMPORAL_PORT', '7233')
-                temporal_url = f"{temporal_host}:{temporal_port}"
-
-                client = await Client.connect(temporal_url)
-
-                from .workflows.main_workflow import UnifiedPipelineWorkflow
-                workflow_id = f"analysis-{uuid.uuid4()}"
-
-                await client.start_workflow(
-                    UnifiedPipelineWorkflow.run,
-                    session_ids,
-                    id=workflow_id,
-                    task_queue="pipeline-task-queue"
-                )
-
-                return jsonify({
-                    "workflow_id": workflow_id,
-                    "status": "started",
-                    "session_ids": session_ids,
-                    "model_version": model_version,
-                    "notes": notes
-                })
-
+                result = asyncio.run(async_start_workflow())
+                return jsonify(result)
             except Exception as e:
-                logging.error(f"Error starting analysis workflow: {e}")
                 return jsonify({"error": str(e)}), 500
 
     def run(self, host='0.0.0.0', port=8000, debug=False):

@@ -115,8 +115,15 @@ services:
     container_name: spirit-pipeline
     ports:
       - "8000:8000"
-    env_file:
-      - ./apps/pipeline/env.docker
+    environment:
+      - HUME_API=q0nGzfOSBZB4D0HbdZorGxek3wXz5O4XpTG8IkEJ0gY8Wlet
+      - HUME_API_KEY=LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s
+      - ARANGODB_URL=http://arangodb:8529
+      - ARANGODB_USER=root
+      - ARANGODB_PASSWORD=root
+      - ARANGODB_DATABASE=spirit_in_physics
+      - TEMPORAL_HOST=temporal
+      - TEMPORAL_PORT=7233
     depends_on:
       - arangodb
       - temporal

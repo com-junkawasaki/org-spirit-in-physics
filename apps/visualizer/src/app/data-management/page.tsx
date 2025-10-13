@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SystemStatusCard } from '@/components/SystemStatusCard'
-import { ArrowRight, Home, Database, Activity, Users } from 'lucide-react'
+import { ArrowRight, Home, Database, Activity, Users, Heart, Monitor, Settings } from 'lucide-react'
 
 type Run = {
   _key: string
@@ -55,6 +56,7 @@ export default function DataManagementPage() {
   const [analysisLoading, setAnalysisLoading] = useState(true)
   const [creatingAnalysis, setCreatingAnalysis] = useState(false)
   const [temporalMsg, setTemporalMsg] = useState<string | null>(null)
+  const [experimentType, setExperimentType] = useState<'physiological' | 'online' | 'unified'>('physiological')
 
   // Import state
   const [importJobs, setImportJobs] = useState<ImportJob[]>([])
@@ -247,12 +249,69 @@ export default function DataManagementPage() {
         {/* Analysis Tab */}
         <TabsContent value="analysis" className="space-y-4">
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">分析実行管理</h2>
               <div className="flex items-center gap-2">
                 <Button onClick={fetchAnalysisData} variant="outline" size="sm">
                   更新
                 </Button>
+              </div>
+            </div>
+
+            {/* Experiment Type Selection */}
+            <div className="mb-6 p-4 border rounded-lg bg-muted/50">
+              <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                実験タイプ設定
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  experimentType === 'physiological'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`} onClick={() => setExperimentType('physiological')}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Heart className="h-5 w-5 text-red-500" />
+                    <span className="font-medium">生理実験</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    皮膚電位データを取得する実験。感情・生理データの統合分析。
+                  </p>
+                </div>
+
+                <div className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  experimentType === 'online'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`} onClick={() => setExperimentType('online')}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Monitor className="h-5 w-5 text-blue-500" />
+                    <span className="font-medium">オンライン実験</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    オンラインのみの実験。行動・言語データの分析。
+                  </p>
+                </div>
+
+                <div className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  experimentType === 'unified'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`} onClick={() => setExperimentType('unified')}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Activity className="h-5 w-5 text-green-500" />
+                    <span className="font-medium">統合実験</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    複数のデータソースを統合した包括的な分析。
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  選択中の実験タイプ: <span className="font-medium capitalize">{experimentType}</span>
+                </div>
                 <Button
                   onClick={async () => {
                     setCreatingAnalysis(true)
@@ -263,18 +322,25 @@ export default function DataManagementPage() {
                         body: JSON.stringify({
                           sessionIds: ['session-1', 'session-2'],
                           modelVersion: '1.0',
-                          notes: 'Started from unified dashboard'
+                          experimentType: experimentType,
+                          notes: `Started from unified dashboard - ${experimentType} experiment`
                         })
                       })
                       if (res.ok) {
+                        const data = await res.json()
+                        setTemporalMsg(`ワークフロー起動成功: ${data.workflow_id}`)
                         await fetchAnalysisData()
+                      } else {
+                        setTemporalMsg('ワークフロー起動失敗')
                       }
                     } finally {
                       setCreatingAnalysis(false)
                     }
                   }}
                   disabled={creatingAnalysis}
+                  className="flex items-center gap-2"
                 >
+                  <Activity className="h-4 w-4" />
                   {creatingAnalysis ? '起動中…' : '新規解析を起動'}
                 </Button>
               </div>
