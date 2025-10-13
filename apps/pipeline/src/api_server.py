@@ -505,12 +505,12 @@ class AnalysisAPI:
 
         @self.app.route('/api/workflows/start-import', methods=['POST'])
         def start_import_workflow():
-            """Start data import workflow via Temporal."""
+            """Start data import workflow via Serverless Workflow SDK."""
             import asyncio
 
             async def async_start_import():
                 try:
-                    from temporalio.client import Client
+                    from .run_worker import get_workflow_runner
 
                     data = request.get_json()
                     if not data:
@@ -522,30 +522,24 @@ class AnalysisAPI:
                     if not session_id:
                         return jsonify({"error": "sessionId is required"}), 400
 
-                    # Start Temporal workflow
-                    temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
-                    temporal_port = os.getenv('TEMPORAL_PORT', '7233')
-                    temporal_url = f"{temporal_host}:{temporal_port}"
-
-                    client = await Client.connect(temporal_url)
-
-                    # Start DataImportWorkflow
-                    from .workflows.main_workflow import DataImportWorkflow
+                    # Get workflow runner and execute import workflow
+                    runner = get_workflow_runner()
                     workflow_id = f"import-{session_id}-{uuid.uuid4()}"
 
-                    await client.start_workflow(
-                        DataImportWorkflow.run,
-                        [session_id],  # participant_ids list
-                        {},  # config
-                        id=workflow_id,
-                        task_queue="pipeline-task-queue"
+                    # Execute data import workflow
+                    result = await runner.execute_workflow(
+                        "data_import",
+                        participant_ids=[participant_id],
+                        session_id=session_id,
+                        workflow_id=workflow_id
                     )
 
                     return {
                         "workflow_id": workflow_id,
                         "status": "started",
                         "session_id": session_id,
-                        "participant_id": participant_id
+                        "participant_id": participant_id,
+                        "execution_result": result
                     }
 
                 except Exception as e:
@@ -560,12 +554,12 @@ class AnalysisAPI:
 
         @self.app.route('/api/workflows/start-analysis', methods=['POST'])
         def start_analysis_workflow():
-            """Start analysis workflow via Temporal."""
+            """Start analysis workflow via Serverless Workflow SDK."""
             import asyncio
 
             async def async_start_workflow():
                 try:
-                    from temporalio.client import Client
+                    from .run_worker import get_workflow_runner
 
                     data = request.get_json()
                     if not data:
@@ -579,43 +573,25 @@ class AnalysisAPI:
                     if not session_ids:
                         return {"error": "sessionIds is required"}, 400
 
-                    # Start Temporal workflow
-                    temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
-                    temporal_port = os.getenv('TEMPORAL_PORT', '7233')
-                    temporal_url = f"{temporal_host}:{temporal_port}"
+                    # Get workflow runner and execute appropriate workflow
+                    runner = get_workflow_runner()
+                    workflow_id = f"{experiment_type}-analysis-{uuid.uuid4()}"
 
-                    client = await Client.connect(temporal_url)
+                    # Map experiment type to workflow type
+                    workflow_type_map = {
+                        'physiological': 'physiological',
+                        'online': 'online',
+                        'unified': 'unified_pipeline'
+                    }
+                    workflow_type = workflow_type_map.get(experiment_type, 'unified_pipeline')
 
-                    # Select workflow based on experiment type
-                    if experiment_type == 'physiological':
-                        from .workflows.main_workflow import PhysiologicalWorkflow
-                        workflow_fn = PhysiologicalWorkflow.run
-                        workflow_type = 'physiological'
-                    elif experiment_type == 'online':
-                        from .workflows.main_workflow import OnlineWorkflow
-                        workflow_fn = OnlineWorkflow.run
-                        workflow_type = 'online'
-                    else:
-                        from .workflows.main_workflow import UnifiedPipelineWorkflow
-                        workflow_fn = UnifiedPipelineWorkflow.run
-                        workflow_type = 'unified'
-
-                    workflow_id = f"{workflow_type}-analysis-{uuid.uuid4()}"
-
-                    # Prepare arguments based on workflow type
-                    if experiment_type in ['physiological', 'online']:
-                        # These workflows take: session_ids, model_version, notes, config
-                        args = [session_ids, model_version, notes, {}]
-                    else:
-                        # UnifiedPipelineWorkflow takes: session_ids, model_version, notes, config
-                        args = [session_ids, model_version, notes, {}]
-
-                    # Start workflow with args parameter for multiple arguments (excluding self)
-                    await client.start_workflow(
-                        workflow_fn,  # Workflow function (self is automatically passed)
-                        args=[session_ids, model_version, notes, {}],  # Arguments excluding self
-                        id=workflow_id,
-                        task_queue="pipeline-task-queue"
+                    # Execute workflow
+                    result = await runner.execute_workflow(
+                        workflow_type,
+                        session_ids=session_ids,
+                        model_version=model_version,
+                        notes=notes,
+                        workflow_id=workflow_id
                     )
 
                     return {
@@ -624,7 +600,8 @@ class AnalysisAPI:
                         "experiment_type": experiment_type,
                         "session_ids": session_ids,
                         "model_version": model_version,
-                        "notes": notes
+                        "notes": notes,
+                        "execution_result": result
                     }
 
                 except Exception as e:
@@ -633,6 +610,94 @@ class AnalysisAPI:
 
             try:
                 result = asyncio.run(async_start_workflow())
+                return jsonify(result)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/workflows/validate', methods=['POST'])
+        def validate_workflows():
+            """Validate all workflows using Serverless Workflow SDK."""
+            import asyncio
+
+            async def async_validate():
+                try:
+                    from .run_worker import get_workflow_runner
+
+                    runner = get_workflow_runner()
+                    validation_results = runner.validate_workflows()
+
+                    return {
+                        "validation_results": validation_results,
+                        "summary": {
+                            "total_workflows": len(validation_results),
+                            "valid_workflows": sum(1 for v in validation_results.values() if v),
+                            "invalid_workflows": sum(1 for v in validation_results.values() if not v)
+                        }
+                    }
+
+                except Exception as e:
+                    logging.error(f"Error validating workflows: {e}")
+                    raise e
+
+            try:
+                result = asyncio.run(async_validate())
+                return jsonify(result)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/workflows/list', methods=['GET'])
+        def list_workflows():
+            """List all available workflows with their information."""
+            import asyncio
+
+            async def async_list():
+                try:
+                    from .run_worker import get_workflow_runner
+
+                    runner = get_workflow_runner()
+                    workflow_info = runner.get_workflow_info()
+
+                    return {
+                        "workflows": workflow_info,
+                        "total_count": len(workflow_info)
+                    }
+
+                except Exception as e:
+                    logging.error(f"Error listing workflows: {e}")
+                    raise e
+
+            try:
+                result = asyncio.run(async_list())
+                return jsonify(result)
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route('/api/workflows/<workflow_id>/visualize', methods=['GET'])
+        def visualize_workflow(workflow_id):
+            """Generate workflow visualization (Mermaid diagram)."""
+            import asyncio
+
+            async def async_visualize():
+                try:
+                    from .workflows.workflow_manager import get_workflow_manager
+
+                    manager = get_workflow_manager()
+
+                    # Generate Mermaid code
+                    mermaid_code = manager.generate_workflow_graph(workflow_id)
+
+                    return {
+                        "workflow_id": workflow_id,
+                        "mermaid_code": mermaid_code,
+                        "format": "mermaid"
+                    }
+
+                except Exception as e:
+                    logging.error(f"Error visualizing workflow {workflow_id}: {e}")
+                    raise e
+
+            try:
+                result = asyncio.run(async_visualize())
                 return jsonify(result)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500

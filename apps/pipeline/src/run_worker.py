@@ -1,13 +1,24 @@
+"""
+Serverless Workflow Runner for Spirit in Physics Pipeline
+
+This module provides workflow execution using the Serverless Workflow SDK,
+replacing the previous Temporal-based worker system.
+"""
+
 import asyncio
 import os
 import threading
-from temporalio.client import Client
-from temporalio.worker import Worker
+import json
+from typing import Dict, Any
 
-from .workflows.main_workflow import IngestionWorkflow, UnifiedPipelineWorkflow, DataImportWorkflow, PhysiologicalWorkflow, OnlineWorkflow
-from .activities.analysis_activities import AnalysisActivities
-from .activities.arangodb import ArangoDBActivities
-from .activities.hume_activities import HumeActivities
+from .workflows.main_workflow import (
+    execute_ingestion_workflow,
+    execute_data_import_workflow,
+    execute_physiological_workflow,
+    execute_online_workflow,
+    execute_unified_pipeline_workflow
+)
+from .workflows.workflow_manager import get_workflow_manager
 from .api_server import AnalysisAPI
 
 def run_api_server():
@@ -24,49 +35,137 @@ def run_api_server():
     print("Starting API server on port 8000...")
     api.run(host='0.0.0.0', port=8000, debug=False)
 
-async def main():
-    # Connect to Temporal server using environment variables
-    temporal_host = os.getenv('TEMPORAL_HOST', 'temporal')
-    temporal_port = os.getenv('TEMPORAL_PORT', '7233')
-    temporal_url = f"{temporal_host}:{temporal_port}"
+# Merkle DAG: workflow_runner -> workflow_execution
+class ServerlessWorkflowRunner:
+    """
+    Runner for executing workflows defined using the Serverless Workflow SDK.
 
-    client = await Client.connect(temporal_url)
+    This class provides methods to execute different types of workflows
+    and manage workflow state using the SDK.
+    """
 
-    # Create activity instances (they need config for initialization)
-    minimal_config = {
-        'arangodb': {'url': 'http://arangodb:8529', 'database': 'spirit_in_physics', 'user': 'root', 'password': 'root'},
-        'hume_ai': {
-            'api_key': os.getenv('HUME_API_KEY', 'dummy_key'),
-            'client_id': os.getenv('HUME_API', 'dummy_client'),
-            'client_secret': 'dummy_secret'
+    def __init__(self):
+        self.workflow_manager = get_workflow_manager()
+        self.config = self._load_config()
+
+    def _load_config(self) -> Dict[str, Any]:
+        """Load configuration for workflow execution."""
+        return {
+            'arangodb': {
+                'url': os.getenv('ARANGODB_URL', 'http://arangodb:8529'),
+                'database': os.getenv('ARANGODB_DATABASE', 'spirit_in_physics'),
+                'user': os.getenv('ARANGODB_USER', 'root'),
+                'password': os.getenv('ARANGODB_PASSWORD', 'root')
+            },
+            'hume_ai': {
+                'api_key': os.getenv('HUME_API_KEY', 'dummy_key'),
+                'client_id': os.getenv('HUME_CLIENT_ID', 'dummy_client'),
+                'client_secret': os.getenv('HUME_CLIENT_SECRET', 'dummy_secret')
+            }
         }
-    }
-    arango_instance = ArangoDBActivities(minimal_config)
-    hume_instance = HumeActivities(minimal_config)
-    analysis_instance = AnalysisActivities()
 
-    worker = Worker(
-        client,
-        task_queue="pipeline-task-queue",
-        workflows=[IngestionWorkflow, UnifiedPipelineWorkflow, DataImportWorkflow, PhysiologicalWorkflow, OnlineWorkflow],
-        activities=[
-            arango_instance.get_session_for_ingestion,
-            arango_instance.store_raw_hume_data,
-            arango_instance.parse_and_store_structured_data,
-            hume_instance.submit_job_to_hume,
-            hume_instance.poll_and_fetch_hume_results,
-            analysis_instance.generate_visualizations,
-            analysis_instance.run_analysis_pipeline,
-        ],
-    )
+    async def execute_workflow(self, workflow_type: str, **kwargs) -> Dict[str, Any]:
+        """
+        Execute a workflow by type.
+
+        Args:
+            workflow_type: Type of workflow to execute
+            **kwargs: Workflow-specific parameters
+
+        Returns:
+            Workflow execution results
+        """
+        print(f"Executing {workflow_type} workflow with params: {kwargs}")
+
+        # Route to appropriate workflow executor
+        if workflow_type == "ingestion":
+            return await execute_ingestion_workflow(kwargs.get("session_id", ""))
+        elif workflow_type == "data_import":
+            return await execute_data_import_workflow(
+                kwargs.get("participant_ids", []),
+                kwargs.get("config", self.config)
+            )
+        elif workflow_type == "physiological":
+            return await execute_physiological_workflow(
+                kwargs.get("session_ids", []),
+                kwargs.get("model_version", "1.0"),
+                kwargs.get("notes", ""),
+                kwargs.get("config", self.config)
+            )
+        elif workflow_type == "online":
+            return await execute_online_workflow(
+                kwargs.get("session_ids", []),
+                kwargs.get("model_version", "1.0"),
+                kwargs.get("notes", ""),
+                kwargs.get("config", self.config)
+            )
+        elif workflow_type == "unified_pipeline":
+            return await execute_unified_pipeline_workflow(
+                kwargs.get("session_ids", []),
+                kwargs.get("model_version", "1.0"),
+                kwargs.get("notes", ""),
+                kwargs.get("config", self.config)
+            )
+        else:
+            raise ValueError(f"Unknown workflow type: {workflow_type}")
+
+    def validate_workflows(self) -> Dict[str, bool]:
+        """Validate all loaded workflows."""
+        return self.workflow_manager.validate_all_workflows()
+
+    def get_workflow_info(self) -> Dict[str, Any]:
+        """Get information about available workflows."""
+        workflows = self.workflow_manager.list_workflows()
+        info = {}
+        for workflow_id in workflows:
+            try:
+                info[workflow_id] = self.workflow_manager.get_workflow_info(workflow_id)
+            except Exception as e:
+                info[workflow_id] = {"error": str(e)}
+        return info
+
+# Global workflow runner instance
+_workflow_runner = None
+
+def get_workflow_runner() -> ServerlessWorkflowRunner:
+    """Get the global workflow runner instance."""
+    global _workflow_runner
+    if _workflow_runner is None:
+        _workflow_runner = ServerlessWorkflowRunner()
+    return _workflow_runner
+
+async def main():
+    """Main function to run the workflow server."""
+    print("Starting Serverless Workflow Runner for Spirit in Physics Pipeline...")
+
+    # Initialize workflow runner
+    runner = get_workflow_runner()
+
+    # Validate workflows on startup
+    print("Validating workflows...")
+    validation_results = runner.validate_workflows()
+    for workflow_id, is_valid in validation_results.items():
+        status = "✓ VALID" if is_valid else "✗ INVALID"
+        print(f"  {workflow_id}: {status}")
 
     # Start API server in a separate thread
     api_thread = threading.Thread(target=run_api_server, daemon=True)
     api_thread.start()
 
-    print("Starting unified pipeline worker...")
-    await worker.run()
-    print("Pipeline worker finished.")
+    print("Workflow runner initialized successfully.")
+    print("Available workflows:")
+    workflow_info = runner.get_workflow_info()
+    for workflow_id, info in workflow_info.items():
+        if "error" not in info:
+            print(f"  - {workflow_id}: {info.get('description', 'No description')}")
+
+    # Keep the server running
+    try:
+        while True:
+            await asyncio.sleep(60)  # Sleep for 1 minute
+            print("Workflow runner is running... (press Ctrl+C to stop)")
+    except KeyboardInterrupt:
+        print("Shutting down workflow runner...")
 
 if __name__ == "__main__":
     asyncio.run(main())
