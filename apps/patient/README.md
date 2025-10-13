@@ -6,26 +6,26 @@ This process is for experimental research on spirituality, based on Jung's word 
 
 ### Prerequisites
 
-1. **Supabase Setup**
-   - Create a new project at [supabase.com](https://supabase.com)
-   - Copy your project URL and anon key
-   - Run the migration script: `supabase db push`
+1. **ArangoDB Setup**
+   - Install ArangoDB (e.g., via Docker)
+   - Ensure the database is running and accessible
 
 2. **Environment Variables**
    ```bash
    # Create .env.local in the project root
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   ARANGODB_URL=http://localhost:8529
+   ARANGODB_USER=root
+   ARANGODB_PASSWORD=
+   ARANGODB_DATABASE_NAME=spirit_in_physics
    ```
 
 3. **Database Schema**
-   The migration file `supabase/migrations/20241002_create_spirit_in_physics_tables.sql` contains all necessary tables:
+   The database schema is managed automatically by the application. The main collections are:
    - `participants` - Research participants
-   - `sessions` - Experiment sessions
+   - `participant_experiment_sessions` - Experiment sessions
+   - `participant_response_data` - Word association responses
    - `video_files` - Uploaded video files
    - `emotion_analyses` - Emotion analysis results
-   - `emotions` - Individual emotion data
 
 ### Installation & Development
 

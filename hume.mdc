@@ -23,10 +23,10 @@ alwaysApply: true
 - **ProsodyConfig**: Vocal emotion analysis for audio/video files
 
 ## Data Flow
-1. Media files uploaded to Supabase Storage
+1. Media files uploaded to Vercel Blob Storage
 2. `EmotionProcessor` downloads files and submits to Hume AI
 3. Batch jobs processed asynchronously with `job.await_complete()`
-4. Emotion time-series data extracted and stored in `response_emotion_timeseries` table
+4. Emotion time-series data extracted and stored in ArangoDB
 5. Results integrated into Kawasaki Model calculations
 
 ## Testing Status

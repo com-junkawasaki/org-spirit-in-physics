@@ -648,7 +648,7 @@ export default function AnalyticsDashboard() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">高度統合分析ダッシュボード</h1>
             <p className="text-gray-600 mt-1">
-              Supabase + Vercel Blob + ファイルシステムのリアルタイム統合分析プラットフォーム
+              ArangoDB + Vercel Blob + ファイルシステムのリアルタイム統合分析プラットフォーム
             </p>
             <div className="flex items-center space-x-4 mt-3">
               <div className="flex items-center space-x-2">
@@ -657,7 +657,7 @@ export default function AnalyticsDashboard() {
               </div>
               <div className="flex items-center space-x-2">
                 <Database className="h-4 w-4 text-green-500" />
-                <span className="text-xs text-green-600 font-medium">Supabase Database</span>
+                <span className="text-xs text-green-600 font-medium">ArangoDB Database</span>
               </div>
               <div className="flex items-center space-x-2">
                 <FileText className="h-4 w-4 text-gray-500" />
@@ -868,7 +868,7 @@ export default function AnalyticsDashboard() {
                       <div className="flex items-center justify-between py-2">
                         <div className="flex items-center space-x-3">
                           <Clock className="h-4 w-4 text-yellow-500" />
-                          <span className="text-sm">Supabaseデータベース同期</span>
+                          <span className="text-sm">ArangoDBデータベース同期</span>
                         </div>
                         <span className="text-xs text-gray-500">保留中</span>
                       </div>

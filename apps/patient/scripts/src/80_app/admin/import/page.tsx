@@ -168,7 +168,7 @@ export default function ImportPage() {
                 参加者データインポート
               </CardTitle>
               <CardDescription>
-                ファイルシステムから参加者データをSupabaseとBlob Storageにインポートします
+                ファイルシステムから参加者データをArangoDBとBlob Storageにインポートします
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -216,7 +216,7 @@ export default function ImportPage() {
                 セッションデータインポート
               </CardTitle>
               <CardDescription>
-                ファイルシステムからセッションデータをSupabaseとBlob Storageにインポートします
+                ファイルシステムからセッションデータをArangoDBとBlob Storageにインポートします
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -264,7 +264,7 @@ export default function ImportPage() {
                 感情分析データインポート
               </CardTitle>
               <CardDescription>
-                ファイルシステムから感情分析データをSupabaseとBlob Storageにインポートします
+                ファイルシステムから感情分析データをArangoDBとBlob Storageにインポートします
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

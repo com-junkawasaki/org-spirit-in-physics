@@ -73,7 +73,7 @@ export default function RootLayout({
                   © 2024 Spirit in Physics Research. Built with Kawasaki Model.
                 </div>
                 <div className="flex items-center space-x-4">
-                  <span>Powered by Hume AI & Supabase</span>
+                  <span>Powered by Hume AI & ArangoDB</span>
                   <span>•</span>
                   <span>Next.js & TypeScript</span>
                 </div>

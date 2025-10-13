@@ -78,14 +78,14 @@ patient:
 ### Service Dependencies
 
 Services start in dependency order:
-1. Databases (Supabase, TerminusDB)
+1. Databases (ArangoDB)
 2. Workflow engine (Temporal)
 3. Application services (Patient, Admin, Visualizer)
 4. Backend services (Analyzer, Importer)
 
 ### Database Initialization
 
-Supabase database is initialized with migrations from `supabase/migrations/`. The seed data is loaded from `supabase/seed.sql`.
+ArangoDB database is initialized automatically. Seed data can be imported via the Importer service.
 
 ### Building Services
 
@@ -120,11 +120,10 @@ docker-compose down -v
 
 ## Database Access
 
-### Supabase
-- **Host**: localhost:15432
-- **Database**: postgres
-- **User**: postgres
-- **Password**: postgres
+### ArangoDB
+- **URL**: http://localhost:8529
+- **User**: root
+- **Password**: (blank by default)
 
 ### TerminusDB
 - **URL**: http://localhost:6363
