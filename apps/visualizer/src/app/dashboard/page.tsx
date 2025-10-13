@@ -22,6 +22,8 @@ import Link from 'next/link'
 import { QuickActions } from '@/components/QuickActions'
 import { SystemMetrics } from '@/components/SystemMetrics'
 
+export const dynamic = 'force-dynamic'
+
 // Merkle DAG: dashboard_page -> quick_actions
 interface QuickAction {
   id: string
