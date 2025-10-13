@@ -1,8 +1,8 @@
-# Temporal Workflow Dependencies
+# Serverless Workflow Dependencies
 
 ## Overview
 
-This document describes the dependency relationships between Temporal workflows in the Spirit in Physics project. The system uses a Merkle DAG (Directed Acyclic Graph) approach to manage workflow dependencies and ensure proper execution order.
+This document describes the dependency relationships between Serverless Workflows in the Spirit in Physics project. The system uses a Merkle DAG (Directed Acyclic Graph) approach to manage workflow dependencies and ensure proper execution order.
 
 ## Workflow Dependency Graph
 

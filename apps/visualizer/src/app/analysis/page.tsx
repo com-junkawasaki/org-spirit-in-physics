@@ -42,7 +42,7 @@ type ParticipantData = {
 
 type SystemStatus = {
   arangodb: 'connected' | 'disconnected' | 'error'
-  temporal: 'connected' | 'disconnected' | 'error'
+  workflows: 'connected' | 'disconnected' | 'error'
   humeAI: 'connected' | 'disconnected' | 'error'
   activeJobs: number
   completedJobs: number

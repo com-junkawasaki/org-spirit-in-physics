@@ -1,5 +1,5 @@
 from datetime import timedelta
-from temporalio import activity
+import logging
 from hume import HumeClient
 from hume.expression_measurement.batch import Face, Prosody, Language
 import sys
@@ -11,6 +11,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from packages.spirit_in_physics_pipeline.emotion_processor import EmotionProcessor
 from packages.spirit_in_physics_pipeline.hume_data_processor import HumeDataProcessor
 
+logger = logging.getLogger(__name__)
+
 class HumeActivities:
     def __init__(self, config):
         self.api_key = config['hume_ai']['api_key']
@@ -18,10 +20,10 @@ class HumeActivities:
         self.max_poll_attempts = config.get('processing', {}).get('max_poll_attempts', 60)
         self.poll_interval = config.get('processing', {}).get('poll_interval_seconds', 10)
 
-    @activity.defn
+    async def
     async def submit_job_to_hume(self, file_path: str) -> str:
         """Submits a file to Hume AI for analysis and returns the job ID."""
-        activity.logger.info(f"Submitting {file_path} to Hume AI.")
+        logger.info(f"Submitting {file_path} to Hume AI.")
         
         try:
             # Verify file exists
@@ -41,24 +43,24 @@ class HumeActivities:
                 file=[file_path],
                 json={"models": models.model_dump()}
             )
-            activity.logger.info(f"Successfully submitted job {job_id} to Hume AI.")
+            logger.info(f"Successfully submitted job {job_id} to Hume AI.")
             
             return job_id
             
         except Exception as e:
-            activity.logger.error(f"Failed to submit job to Hume AI: {e}")
+            logger.error(f"Failed to submit job to Hume AI: {e}")
             raise
 
-    @activity.defn
+    async def
     async def poll_and_fetch_hume_results(self, hume_job_id: str) -> dict:
         """
         Polls a Hume AI job for completion and fetches the results.
         """
-        activity.logger.info(f"Polling for Hume job completion: {hume_job_id}")
+        logger.info(f"Polling for Hume job completion: {hume_job_id}")
         
         try:
             # Poll for completion with timeout
-            activity.logger.info(f"Polling for job {hume_job_id} completion...")
+            logger.info(f"Polling for job {hume_job_id} completion...")
 
             # Poll for job completion manually since we don't have await_complete
             for attempt in range(self.max_poll_attempts):
@@ -67,22 +69,22 @@ class HumeActivities:
                     status = job_details.state
 
                     if hasattr(status, 'completed') and status.completed:
-                        activity.logger.info(f"Hume job {hume_job_id} completed!")
+                        logger.info(f"Hume job {hume_job_id} completed!")
                         break
                     elif hasattr(status, 'failed') and status.failed:
                         raise Exception(f"Hume job {hume_job_id} failed")
 
-                    activity.logger.info(f"Job {hume_job_id} status: {status}, attempt {attempt + 1}/{self.max_poll_attempts}")
+                    logger.info(f"Job {hume_job_id} status: {status}, attempt {attempt + 1}/{self.max_poll_attempts}")
                     await asyncio.sleep(self.poll_interval)
 
                 except Exception as poll_error:
-                    activity.logger.warning(f"Error polling job {hume_job_id}: {poll_error}")
+                    logger.warning(f"Error polling job {hume_job_id}: {poll_error}")
                     await asyncio.sleep(self.poll_interval)
 
             else:
                 raise TimeoutError(f"Hume job {hume_job_id} did not complete within {self.max_poll_attempts * self.poll_interval} seconds")
 
-            activity.logger.info(f"Hume job {hume_job_id} completed. Fetching predictions...")
+            logger.info(f"Hume job {hume_job_id} completed. Fetching predictions...")
 
             # Fetch predictions
             predictions = await self.client.expression_measurement.batch.get_job_predictions(hume_job_id)
@@ -91,49 +93,49 @@ class HumeActivities:
             if not predictions:
                 raise ValueError(f"No predictions returned for job {hume_job_id}")
             
-            activity.logger.info(f"Successfully fetched predictions for job {hume_job_id}.")
-            activity.logger.info(f"Prediction types: {list(predictions.keys())}")
+            logger.info(f"Successfully fetched predictions for job {hume_job_id}.")
+            logger.info(f"Prediction types: {list(predictions.keys())}")
             
             return predictions
             
         except asyncio.TimeoutError:
-            activity.logger.error(f"Hume job {hume_job_id} timed out after {self.max_poll_attempts * self.poll_interval} seconds")
+            logger.error(f"Hume job {hume_job_id} timed out after {self.max_poll_attempts * self.poll_interval} seconds")
             raise
         except Exception as e:
-            activity.logger.error(f"Failed to poll and fetch results for job {hume_job_id}: {e}")
+            logger.error(f"Failed to poll and fetch results for job {hume_job_id}: {e}")
             raise
 
-    @activity.defn
+    async def
     async def validate_hume_results(self, predictions: dict) -> bool:
         """Validate Hume AI prediction results structure."""
-        activity.logger.info("Validating Hume AI prediction results")
+        logger.info("Validating Hume AI prediction results")
         
         try:
             required_keys = ['face', 'prosody', 'language']
             
             for key in required_keys:
                 if key not in predictions:
-                    activity.logger.warning(f"Missing prediction type: {key}")
+                    logger.warning(f"Missing prediction type: {key}")
                     continue
                 
                 if 'predictions' not in predictions[key]:
-                    activity.logger.warning(f"Missing predictions array for {key}")
+                    logger.warning(f"Missing predictions array for {key}")
                     continue
                 
                 predictions_count = len(predictions[key]['predictions'])
-                activity.logger.info(f"Found {predictions_count} {key} predictions")
+                logger.info(f"Found {predictions_count} {key} predictions")
             
-            activity.logger.info("Hume AI results validation completed")
+            logger.info("Hume AI results validation completed")
             return True
             
         except Exception as e:
-            activity.logger.error(f"Failed to validate Hume results: {e}")
+            logger.error(f"Failed to validate Hume results: {e}")
             return False
 
-    @activity.defn
+    async def
     async def get_job_status(self, hume_job_id: str) -> dict:
         """Get current status of a Hume AI job."""
-        activity.logger.info(f"Getting status for Hume job: {hume_job_id}")
+        logger.info(f"Getting status for Hume job: {hume_job_id}")
         
         try:
             job_details = await self.client.expression_measurement.batch.get_job_details(hume_job_id)
@@ -145,9 +147,9 @@ class HumeActivities:
                 "updated_at": job_details.updated_at if hasattr(job_details, 'updated_at') else None
             }
             
-            activity.logger.info(f"Job {hume_job_id} status: {job_details.state}")
+            logger.info(f"Job {hume_job_id} status: {job_details.state}")
             return status_info
             
         except Exception as e:
-            activity.logger.error(f"Failed to get job status for {hume_job_id}: {e}")
+            logger.error(f"Failed to get job status for {hume_job_id}: {e}")
             raise

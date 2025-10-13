@@ -1,7 +1,7 @@
-from temporalio import activity
 import sys
 import os
 import json
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
@@ -9,16 +9,17 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from packages.spirit_in_physics_pipeline.data_loader import DataLoader
 from packages.spirit_in_physics_pipeline.data_storer import DataStorer
 
+logger = logging.getLogger(__name__)
+
 class ArangoDBActivities:
     def __init__(self, config):
         self.config = config
         self.data_loader = DataLoader(config['arangodb'])
         self.data_storer = DataStorer(config['arangodb'])
 
-    @activity.defn
     async def get_session_for_ingestion(self, session_id: str) -> dict:
         """Get experiment session information for ingestion workflow."""
-        activity.logger.info(f"Getting session for ingestion: {session_id}")
+        logger.info(f"Getting session for ingestion: {session_id}")
         
         try:
             # Query ArangoDB for session information
@@ -42,34 +43,34 @@ class ArangoDBActivities:
                 raise ValueError(f"Session {session_id} not found")
             
             session_info = sessions[0]
-            activity.logger.info(f"Found session: {session_info}")
-            
+            logger.info(f"Found session: {session_info}")
+
             return session_info
-            
+
         except Exception as e:
-            activity.logger.error(f"Failed to get session {session_id}: {e}")
+            logger.error(f"Failed to get session {session_id}: {e}")
             raise
 
-    @activity.defn
+    async def
     async def download_media_file(self, storage_path: str) -> str:
         """Download media file from storage to local temporary directory."""
-        activity.logger.info(f"Downloading media file: {storage_path}")
+        logger.info(f"Downloading media file: {storage_path}")
         
         try:
             # Use DataLoader's download method
             local_path = self.data_loader.download_media_file(storage_path)
-            activity.logger.info(f"Successfully downloaded to: {local_path}")
+            logger.info(f"Successfully downloaded to: {local_path}")
             return local_path
             
         except Exception as e:
-            activity.logger.error(f"Failed to download media file {storage_path}: {e}")
+            logger.error(f"Failed to download media file {storage_path}: {e}")
             raise
 
-    @activity.defn
+    async def
     async def store_raw_hume_data(self, data: tuple) -> None:
         """Store raw Hume AI analysis results in ArangoDB."""
         session_id, artifacts = data
-        activity.logger.info(f"Storing raw Hume data for session: {session_id}")
+        logger.info(f"Storing raw Hume data for session: {session_id}")
         
         try:
             # Store raw artifacts in a dedicated collection
@@ -84,17 +85,17 @@ class ArangoDBActivities:
             }
             
             result = collection.insert(raw_data, overwrite=True)
-            activity.logger.info(f"Successfully stored raw Hume data for session {session_id}")
+            logger.info(f"Successfully stored raw Hume data for session {session_id}")
             
         except Exception as e:
-            activity.logger.error(f"Failed to store raw Hume data for session {session_id}: {e}")
+            logger.error(f"Failed to store raw Hume data for session {session_id}: {e}")
             raise
 
-    @activity.defn
+    async def
     async def parse_and_store_structured_data(self, data: tuple) -> None:
         """Parse Hume AI artifacts and store structured data in ArangoDB."""
         session_id, artifacts = data
-        activity.logger.info(f"Parsing and storing structured Hume data for session: {session_id}")
+        logger.info(f"Parsing and storing structured Hume data for session: {session_id}")
         
         try:
             # Parse different types of Hume AI predictions
@@ -144,19 +145,19 @@ class ArangoDBActivities:
                 try:
                     collection.insert(item, overwrite=True)
                 except Exception as e:
-                    activity.logger.warning(f"Failed to store structured prediction {item['_key']}: {e}")
+                    logger.warning(f"Failed to store structured prediction {item['_key']}: {e}")
             
-            activity.logger.info(f"Successfully stored {len(structured_data)} structured predictions for session {session_id}")
+            logger.info(f"Successfully stored {len(structured_data)} structured predictions for session {session_id}")
             
         except Exception as e:
-            activity.logger.error(f"Failed to parse and store structured data for session {session_id}: {e}")
+            logger.error(f"Failed to parse and store structured data for session {session_id}: {e}")
             raise
 
-    @activity.defn
+    async def
     async def update_session_status(self, data: tuple) -> None:
         """Update experiment session status in ArangoDB."""
         session_id, status = data
-        activity.logger.info(f"Updating session {session_id} to status: {status}")
+        logger.info(f"Updating session {session_id} to status: {status}")
         
         try:
             collection = self.data_storer.db.collection('participant_experiment_sessions')
@@ -168,24 +169,24 @@ class ArangoDBActivities:
             }
             
             result = collection.update({"_key": session_id}, update_data)
-            activity.logger.info(f"Successfully updated session {session_id} to status: {status}")
+            logger.info(f"Successfully updated session {session_id} to status: {status}")
             
         except Exception as e:
-            activity.logger.error(f"Failed to update session {session_id} status: {e}")
+            logger.error(f"Failed to update session {session_id} status: {e}")
             raise
 
-    @activity.defn
+    async def
     async def cleanup_temp_files(self, local_path: str) -> None:
         """Clean up temporary files after processing."""
-        activity.logger.info(f"Cleaning up temporary file: {local_path}")
+        logger.info(f"Cleaning up temporary file: {local_path}")
         
         try:
             if os.path.exists(local_path):
                 os.remove(local_path)
-                activity.logger.info(f"Successfully removed temporary file: {local_path}")
+                logger.info(f"Successfully removed temporary file: {local_path}")
             else:
-                activity.logger.warning(f"Temporary file not found: {local_path}")
+                logger.warning(f"Temporary file not found: {local_path}")
                 
         except Exception as e:
-            activity.logger.error(f"Failed to cleanup temporary file {local_path}: {e}")
+            logger.error(f"Failed to cleanup temporary file {local_path}: {e}")
             # Don't raise exception for cleanup failures

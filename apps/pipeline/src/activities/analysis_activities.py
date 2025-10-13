@@ -5,12 +5,13 @@ import os
 import sys
 from datetime import datetime
 from arango import ArangoClient
-from temporalio import activity
 
 # Add project root to path to allow importing from packages
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
 from packages.spirit_in_physics_pipeline.data_loader import DataLoader
+
+logger = logging.getLogger(__name__)
 from packages.spirit_in_physics_pipeline.emotion_processor import EmotionProcessor
 from packages.spirit_in_physics_pipeline.feature_extractor import FeatureExtractor
 from packages.spirit_in_physics_pipeline.kawasaki_model import KawasakiModel
@@ -22,7 +23,7 @@ from packages.spirit_in_physics_pipeline.hume_data_processor import HumeDataProc
 # from .visualization.spirit_visualizer import SpiritVisualizer
 
 class AnalysisActivities:
-    @activity.defn
+    async def
     async def generate_visualizations(self, run_id: str, config: dict) -> str:
         """Activity to generate visualizations for a completed analysis run."""
         try:
@@ -72,7 +73,7 @@ class AnalysisActivities:
         except Exception as e:
             return f"Failed to connect to ArangoDB for run_id: {run_id}, error: {str(e)}"
 
-    @activity.defn
+    async def
     async def run_analysis_pipeline(self, model_version: str, notes: str, config: dict) -> str:
         """Activity to run the main analysis pipeline."""
         try:

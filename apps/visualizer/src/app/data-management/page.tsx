@@ -46,7 +46,7 @@ type ParticipantData = {
 
 type SystemStatus = {
   arangodb: 'connected' | 'disconnected' | 'error'
-  temporal: 'connected' | 'disconnected' | 'error'
+  workflows: 'connected' | 'disconnected' | 'error'
   humeAI: 'connected' | 'disconnected' | 'error'
   activeJobs: number
   completedJobs: number
@@ -58,7 +58,7 @@ export default function DataManagementPage() {
   const [runs, setRuns] = useState<Run[]>([])
   const [analysisLoading, setAnalysisLoading] = useState(true)
   const [creatingAnalysis, setCreatingAnalysis] = useState(false)
-  const [temporalMsg, setTemporalMsg] = useState<string | null>(null)
+  const [workflowMsg, setWorkflowMsg] = useState<string | null>(null)
   const [experimentType, setExperimentType] = useState<'physiological' | 'online' | 'unified'>('physiological')
 
   // Import state
@@ -66,7 +66,7 @@ export default function DataManagementPage() {
   const [participants, setParticipants] = useState<ParticipantData[]>([])
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     arangodb: 'disconnected',
-    temporal: 'disconnected',
+    workflows: 'disconnected',
     humeAI: 'disconnected',
     activeJobs: 0,
     completedJobs: 0,
@@ -194,11 +194,11 @@ export default function DataManagementPage() {
             </Link>
             <Button
               variant="outline"
-              onClick={async () => {
-                setTemporalMsg(null)
-                const res = await fetch('/api/temporal/worker/start', { method: 'POST' })
-                setTemporalMsg(res.ok ? 'Temporal worker started' : 'Temporal worker failed')
-              }}
+                onClick={async () => {
+                 setWorkflowMsg(null)
+                 const res = await fetch('/api/workflows/validate', { method: 'POST' })
+                 setWorkflowMsg(res.ok ? 'Workflow validation completed' : 'Workflow validation failed')
+                }}
             >
               Worker起動
             </Button>
@@ -367,10 +367,10 @@ export default function DataManagementPage() {
                         })
                         if (res.ok) {
                           const data = await res.json()
-                          setTemporalMsg(`ワークフロー起動成功: ${data.workflow_id}`)
+                          setWorkflowMsg(`ワークフロー起動成功: ${data.workflow_id}`)
                           await fetchAnalysisData()
                         } else {
-                          setTemporalMsg('ワークフロー起動失敗')
+                          setWorkflowMsg('ワークフロー起動失敗')
                         }
                       } finally {
                         setCreatingAnalysis(false)
@@ -387,8 +387,8 @@ export default function DataManagementPage() {
               </CardContent>
             </Card>
 
-            {temporalMsg && (
-              <div className="mb-2 text-xs text-muted-foreground">{temporalMsg}</div>
+            {workflowMsg && (
+              <div className="mb-2 text-xs text-muted-foreground">{workflowMsg}</div>
             )}
 
             {analysisLoading ? (
@@ -595,7 +595,7 @@ export default function DataManagementPage() {
             <h2 className="text-xl font-semibold mb-4">システムログ</h2>
             <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-64 overflow-y-auto">
               <div>2024-01-15 10:30:15 [INFO] ArangoDB接続確認: OK</div>
-              <div>2024-01-15 10:30:16 [INFO] Temporal接続確認: OK</div>
+              <div>2024-01-15 10:30:16 [INFO] Workflow接続確認: OK</div>
               <div>2024-01-15 10:30:17 [INFO] Hume AI接続確認: OK</div>
               <div>2024-01-15 10:30:18 [INFO] インポートジョブ監視開始</div>
               <div>2024-01-15 10:30:19 [INFO] 参加者データ同期完了</div>

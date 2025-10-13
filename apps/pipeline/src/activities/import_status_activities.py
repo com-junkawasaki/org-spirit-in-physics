@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """
-Import Status Activities for Temporal Workflows
+Import Status Activities for Serverless Workflows
 
-This module provides Temporal activities for managing import status
+This module provides activities for managing import status
 during workflow execution.
 """
 
 import sys
 import os
+import logging
 from datetime import datetime
-from temporalio import activity
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
 
 from packages.spirit_in_physics_pipeline.import_status_manager import ImportStatusManager, ImportStatus, ImportType
+
+logger = logging.getLogger(__name__)
 
 class ImportStatusActivities:
     """Temporal activities for import status management."""
@@ -23,10 +25,10 @@ class ImportStatusActivities:
         self.status_manager = ImportStatusManager(config['arangodb'])
         self.config = config
     
-    @activity.defn
+    async def
     async def create_import_status(self, participant_id: str, import_type: str, data_sources: list = None) -> bool:
         """Create import status for a participant."""
-        activity.logger.info(f"Creating import status for participant: {participant_id}")
+        logger.info(f"Creating import status for participant: {participant_id}")
         
         try:
             import_type_enum = ImportType(import_type)
@@ -35,22 +37,22 @@ class ImportStatusActivities:
             )
             
             if success:
-                activity.logger.info(f"Successfully created import status for {participant_id}")
+                logger.info(f"Successfully created import status for {participant_id}")
             else:
-                activity.logger.error(f"Failed to create import status for {participant_id}")
+                logger.error(f"Failed to create import status for {participant_id}")
             
             return success
             
         except Exception as e:
-            activity.logger.error(f"Error creating import status for {participant_id}: {e}")
+            logger.error(f"Error creating import status for {participant_id}: {e}")
             return False
     
-    @activity.defn
+    async def
     async def update_import_status(self, participant_id: str, status: str, 
                                  error_message: str = None, records_count: dict = None,
                                  metadata: dict = None) -> bool:
         """Update import status for a participant."""
-        activity.logger.info(f"Updating import status for {participant_id}: {status}")
+        logger.info(f"Updating import status for {participant_id}: {status}")
         
         try:
             status_enum = ImportStatus(status)
@@ -59,21 +61,21 @@ class ImportStatusActivities:
             )
             
             if success:
-                activity.logger.info(f"Successfully updated import status for {participant_id}")
+                logger.info(f"Successfully updated import status for {participant_id}")
             else:
-                activity.logger.error(f"Failed to update import status for {participant_id}")
+                logger.error(f"Failed to update import status for {participant_id}")
             
             return success
             
         except Exception as e:
-            activity.logger.error(f"Error updating import status for {participant_id}: {e}")
+            logger.error(f"Error updating import status for {participant_id}: {e}")
             return False
     
-    @activity.defn
+    async def
     async def create_import_job(self, participant_id: str, job_type: str, 
                               priority: int = 0, metadata: dict = None) -> str:
         """Create an import job."""
-        activity.logger.info(f"Creating import job for participant: {participant_id}")
+        logger.info(f"Creating import job for participant: {participant_id}")
         
         try:
             job_id = self.status_manager.create_import_job(
@@ -81,21 +83,21 @@ class ImportStatusActivities:
             )
             
             if job_id:
-                activity.logger.info(f"Successfully created import job {job_id} for {participant_id}")
+                logger.info(f"Successfully created import job {job_id} for {participant_id}")
             else:
-                activity.logger.error(f"Failed to create import job for {participant_id}")
+                logger.error(f"Failed to create import job for {participant_id}")
             
             return job_id
             
         except Exception as e:
-            activity.logger.error(f"Error creating import job for {participant_id}: {e}")
+            logger.error(f"Error creating import job for {participant_id}: {e}")
             return ""
     
-    @activity.defn
+    async def
     async def update_import_job_status(self, job_id: str, status: str, 
                                       error_message: str = None) -> bool:
         """Update import job status."""
-        activity.logger.info(f"Updating import job {job_id} status to {status}")
+        logger.info(f"Updating import job {job_id} status to {status}")
         
         try:
             success = self.status_manager.update_import_job_status(
@@ -103,20 +105,20 @@ class ImportStatusActivities:
             )
             
             if success:
-                activity.logger.info(f"Successfully updated import job {job_id}")
+                logger.info(f"Successfully updated import job {job_id}")
             else:
-                activity.logger.error(f"Failed to update import job {job_id}")
+                logger.error(f"Failed to update import job {job_id}")
             
             return success
             
         except Exception as e:
-            activity.logger.error(f"Error updating import job {job_id}: {e}")
+            logger.error(f"Error updating import job {job_id}: {e}")
             return False
     
-    @activity.defn
+    async def
     async def get_import_status(self, participant_id: str) -> dict:
         """Get import status for a participant."""
-        activity.logger.info(f"Getting import status for participant: {participant_id}")
+        logger.info(f"Getting import status for participant: {participant_id}")
         
         try:
             status = self.status_manager.get_import_status(participant_id)
@@ -137,33 +139,33 @@ class ImportStatusActivities:
                 return {}
                 
         except Exception as e:
-            activity.logger.error(f"Error getting import status for {participant_id}: {e}")
+            logger.error(f"Error getting import status for {participant_id}: {e}")
             return {}
     
-    @activity.defn
+    async def
     async def get_pending_import_jobs(self) -> list:
         """Get all pending import jobs."""
-        activity.logger.info("Getting pending import jobs")
+        logger.info("Getting pending import jobs")
         
         try:
             jobs = self.status_manager.get_pending_import_jobs()
-            activity.logger.info(f"Found {len(jobs)} pending import jobs")
+            logger.info(f"Found {len(jobs)} pending import jobs")
             return jobs
             
         except Exception as e:
-            activity.logger.error(f"Error getting pending import jobs: {e}")
+            logger.error(f"Error getting pending import jobs: {e}")
             return []
     
-    @activity.defn
+    async def
     async def get_import_summary(self) -> dict:
         """Get import status summary."""
-        activity.logger.info("Getting import status summary")
+        logger.info("Getting import status summary")
         
         try:
             summary = self.status_manager.get_import_summary()
-            activity.logger.info(f"Import summary: {summary}")
+            logger.info(f"Import summary: {summary}")
             return summary
             
         except Exception as e:
-            activity.logger.error(f"Error getting import summary: {e}")
+            logger.error(f"Error getting import summary: {e}")
             return {}

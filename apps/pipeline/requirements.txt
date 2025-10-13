@@ -1,4 +1,3 @@
-temporalio
 python-arango
 pyyaml
 hume

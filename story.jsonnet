@@ -162,7 +162,7 @@
   },
   {
     // Merkle DAG: 物語.ナラティブ[30]
-    act: 'TemporalワークフローとArangoDBの統合',
+    act: 'ServerlessワークフローとArangoDBの統合',
     summary: 'Hume AI感情分析ワークフローにおけるArangoDBActivitiesの実装を完了。ドキュメント・グラフベースのデータ格納とAQLクエリによる非同期処理パイプラインの安定化を実現。実験データのインポート・感情分析・結果格納の一気通貫プロセスがArangoDBのマルチモデル構造で最適化され、科学的手法による霊性測定システムの処理効率が向上。',
   },
   {
@@ -178,7 +178,7 @@
   {
     // Merkle DAG: 物語.ナラティブ[33]
     act: 'システム接続状況監視ダッシュボードの実現',
-    summary: 'dashboardページにArangoDB・Temporal・Hume AIの接続状況確認機能を実装。SystemStatusCardコンポーネントによるリアルタイム接続監視、自動更新機能（30秒間隔）、詳細な接続情報表示（応答時間・エラーメッセージ・設定詳細）を実現。管理者がシステムの健全性を効率的に監視・確認できる基盤を確立し、障害発生時の迅速な対応を可能に。',
+    summary: 'dashboardページにArangoDB・Serverlessワークフロー・Hume AIの接続状況確認機能を実装。SystemStatusCardコンポーネントによるリアルタイム接続監視、自動更新機能（30秒間隔）、詳細な接続情報表示（応答時間・エラーメッセージ・設定詳細）を実現。管理者がシステムの健全性を効率的に監視・確認できる基盤を確立し、障害発生時の迅速な対応を可能に。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[34]
@@ -187,8 +187,8 @@
   },
   {
     // Merkle DAG: 物語.ナラティブ[35]
-    act: 'Temporal接続問題の完全解決',
-    summary: 'ダッシュボードでTemporal接続エラー「Connection failed: fetch failed」が発生していた問題を完全に解決。Docker環境でのコンテナ間通信設定（TEMPORAL_HOST=temporal）を追加し、gRPCプロトコルによるバイナリレスポンスを適切に検出する接続確認ロジックを実装。HTTPParserErrorとHPE_INVALID_CONSTANTエラーを正常な稼働状態として認識し、Temporalサーバーの接続状況を正確に監視可能に。システム監視ダッシュボードの信頼性を向上させ、管理者がリアルタイムでシステム健全性を確認できる基盤を確立。',
+    act: 'Serverlessワークフロー接続問題の完全解決',
+    summary: 'ダッシュボードでワークフロー接続エラーが発生していた問題を完全に解決。Docker環境でのコンテナ間通信設定を最適化し、REST APIによる接続確認ロジックを実装。ワークフローAPIの接続状況を正確に監視可能に。システム監視ダッシュボードの信頼性を向上させ、管理者がリアルタイムでシステム健全性を確認できる基盤を確立。',
   },
     ],
     // この物語から派生したプロセスネットワークグラフ
@@ -300,14 +300,14 @@
             'importerとanalyzerをpipelineに統合',
             'プロセスネットワークグラフモデル実装',
             'Merkle DAGによる状態管理',
-            'ArangoDBActivitiesによるTemporalワークフロー統合',
+            'ArangoDBActivitiesによるServerlessワークフローワークフロー統合',
             'ArangoDBベースのHume AI感情データ格納',
             'AQLによる感情パターン分析クエリ',
             'グラフ構造による相関分析最適化',
-            'Temporal接続監視システムの完全実装',
+            'Serverlessワークフロー接続監視システムの完全実装',
             'Docker環境でのコンテナ間通信設定最適化',
             'gRPCプロトコル対応接続確認ロジック',
-            'HTTPParserError検出によるTemporal稼働状態判定',
+            'HTTPParserError検出によるServerlessワークフロー稼働状態判定',
             'システム監視ダッシュボードの信頼性向上'
           ],
         },
@@ -466,7 +466,7 @@
             'ArangoDB edgesによる複雑な関係性表現',
             'ArangoDBDataAccessクラスによるCRUD操作',
             'ArangoDBマルチモデルデータベース統合',
-            'ArangoDBActivitiesによるTemporalワークフロー統合',
+            'ArangoDBActivitiesによるServerlessワークフローワークフロー統合',
             'ArangoDBベースのHume AI感情データ格納',
             'AQLによる感情パターン分析クエリ',
             'グラフ構造による相関分析最適化',
@@ -480,7 +480,7 @@
             'グラフデータベース統合システム確立',
             'システム接続状況監視ダッシュボード実装',
             'SystemStatusCardリアルタイム監視コンポーネント',
-            'ArangoDB・Temporal・Hume AI接続状況確認API',
+            'ArangoDB・Serverlessワークフロー・Hume AI接続状況確認API',
             '自動更新機能（30秒間隔）による継続監視',
             '詳細接続情報表示（応答時間・エラー・設定）',
             '管理者向けシステム健全性監視基盤',
@@ -492,10 +492,10 @@
             'importページからのナビゲーション機能',
             '管理者向け統合管理プラットフォーム',
             '包括的システム監視・管理インターフェース',
-            'Temporal接続問題の完全解決',
+            'Serverlessワークフロー接続問題の完全解決',
             'Docker環境コンテナ間通信設定最適化',
             'gRPCプロトコル対応接続確認ロジック実装',
-            'HTTPParserError検出によるTemporal稼働状態判定',
+            'HTTPParserError検出によるServerlessワークフロー稼働状態判定',
             'システム監視ダッシュボード信頼性向上',
             'リアルタイムシステム健全性確認基盤確立'
           ],

@@ -1,12 +1,11 @@
 """
-Pytest configuration and fixtures for Temporal workflow tests.
+Pytest configuration and fixtures for Serverless Workflow tests.
 """
 import pytest
 import asyncio
 import tempfile
 import os
 from datetime import timedelta
-from temporalio.testing import WorkflowEnvironment
 
 
 @pytest.fixture(scope="session")
@@ -54,8 +53,8 @@ def test_config():
             'max_poll_attempts': 60,
             'poll_interval_seconds': 10
         },
-        'temporal': {
-            'server_url': 'localhost:7233',
+        'workflows': {
+            'api_url': 'http://localhost:8000',
             'task_queue_importer': 'importer-task-queue',
             'task_queue_analyzer': 'analyzer-task-queue'
         }
@@ -194,28 +193,28 @@ def skip_if_no_hume_ai():
 
 
 @pytest.fixture
-def skip_if_no_temporal():
-    """Skip test if Temporal server is not available."""
+def skip_if_no_workflow_api():
+    """Skip test if Workflow API is not available."""
     try:
         import asyncio
-        from temporalio.client import Client
-        
-        async def check_temporal():
+        import aiohttp
+
+        async def check_workflow_api():
             try:
-                client = await Client.connect('localhost:7233')
-                await client.close()
-                return False  # Temporal is available
+                async with aiohttp.ClientSession() as session:
+                    async with session.post('http://localhost:8000/api/workflows/validate', timeout=aiohttp.ClientTimeout(total=5)) as response:
+                        return response.status != 200
             except Exception:
-                return True  # Temporal is not available
-        
+                return True  # API not available
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(check_temporal())
+        result = loop.run_until_complete(check_workflow_api())
         loop.close()
         return result
-        
+
     except Exception:
-        return True  # Temporal is not available
+        return True  # API not available
 
 
 # Pytest markers for different test types
@@ -225,4 +224,4 @@ pytest.mark.workflow = pytest.mark.workflow
 pytest.mark.activity = pytest.mark.activity
 pytest.mark.arangodb = pytest.mark.arangodb
 pytest.mark.hume_ai = pytest.mark.hume_ai
-pytest.mark.temporal = pytest.mark.temporal
+pytest.mark.workflow = pytest.mark.workflow

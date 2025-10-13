@@ -35,9 +35,6 @@ const nextConfig = {
     }
 
     // Merkle DAG: External modules configuration for server-side
-    if (isServer) {
-      config.externals = [...(config.externals || []), '@temporalio/client']
-    }
     
     return config
   },

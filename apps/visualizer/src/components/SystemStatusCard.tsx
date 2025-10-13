@@ -51,7 +51,7 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
             responseTime: service.responseTime,
             details: {
               database: service.name === 'ArangoDB' ? process.env.ARANGODB_DATABASE_NAME || 'spirit_in_physics' : undefined,
-              server: service.name === 'Temporal' ? `${process.env.TEMPORAL_HOST || 'localhost'}:${process.env.TEMPORAL_PORT || '7233'}` : undefined,
+              server: service.name === 'Workflow' ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/workflows` : undefined,
               endpoint: service.name === 'Hume AI' ? 'https://api.hume.ai/v0/face' : undefined
             }
           })) || [],
@@ -186,7 +186,7 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
                     {service.service === 'ArangoDB' && service.details.database && (
                       <p>DB: {String(service.details.database)}</p>
                     )}
-                    {service.service === 'Temporal' && service.details.server && (
+                    {service.service === 'Workflow' && service.details.server && (
                       <p>Server: {String(service.details.server)}</p>
                     )}
                     {service.service === 'Hume AI' && service.details.endpoint && (

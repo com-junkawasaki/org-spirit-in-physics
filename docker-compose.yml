@@ -13,46 +13,6 @@ services:
     networks:
       - spirit-network
 
-  # Temporal
-  temporal:
-    image: temporalio/auto-setup:latest
-    container_name: spirit-temporal
-    ports:
-      - "7233:7233"  # Temporal server
-    environment:
-      - DB=postgres12
-      - DB_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PWD=postgres
-      - POSTGRES_SEEDS=temporal-postgres
-    depends_on:
-      - temporal-postgres
-    networks:
-      - spirit-network
-
-  # Temporal UI
-  temporal-ui:
-    image: temporalio/ui:latest
-    container_name: spirit-temporal-ui
-    ports:
-      - "8233:8080"  # Temporal UI
-    environment:
-      - TEMPORAL_ADDRESS=temporal:7233
-    depends_on:
-      - temporal
-    networks:
-      - spirit-network
-
-  temporal-postgres:
-    image: postgres:13
-    container_name: spirit-temporal-postgres
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - temporal_data:/var/lib/postgresql/data
-    networks:
-      - spirit-network
 
   # Patient app (Next.js)
   patient:
@@ -98,12 +58,8 @@ services:
     command: pnpm run dev
     env_file:
       - ./apps/visualizer/env.docker
-    environment:
-      - TEMPORAL_HOST=temporal
-      - TEMPORAL_PORT=7233
     depends_on:
       - arangodb
-      - temporal
     networks:
       - spirit-network
 
@@ -122,18 +78,14 @@ services:
       - ARANGODB_USER=root
       - ARANGODB_PASSWORD=root
       - ARANGODB_DATABASE=spirit_in_physics
-      - TEMPORAL_HOST=temporal
-      - TEMPORAL_PORT=7233
     depends_on:
       - arangodb
-      - temporal
     volumes:
       - ./dataset:/app/dataset
     networks:
       - spirit-network
 
 volumes:
-  temporal_data:
   arangodb_data:
 
 networks:

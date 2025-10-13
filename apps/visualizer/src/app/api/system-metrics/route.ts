@@ -236,9 +236,9 @@ class MetricsCalculator {
         })
       }
 
-      // Check Temporal health
-      const temporalStatus = await this.checkTemporalConnection()
-      services.push(temporalStatus)
+      // Check Workflow system health
+      const workflowStatus = await this.checkWorkflowConnection()
+      services.push(workflowStatus)
 
       // Check Hume AI health
       const humeStatus = await this.checkHumeAIConnection()
@@ -263,25 +263,23 @@ class MetricsCalculator {
     }
   }
 
-  // Merkle DAG: system_metrics_api -> temporal_connection_checker
-  private async checkTemporalConnection(): Promise<{
+  // Merkle DAG: system_metrics_api -> workflow_connection_checker
+  private async checkWorkflowConnection(): Promise<{
     name: string
     status: 'healthy' | 'degraded' | 'critical'
     responseTime: number
     lastChecked: string
   }> {
     const startTime = Date.now()
-    
+
     try {
-      // Check if Temporal server is running by testing port connectivity
-      const temporalHost = process.env.TEMPORAL_HOST || 'localhost'
-      const temporalPort = parseInt(process.env.TEMPORAL_PORT || '7233')
-      
-      // Use a simple fetch to test if the port is open
-      // Temporal server will respond with gRPC binary data, which we'll catch
-      try {
-        await fetch(`http://${temporalHost}:${temporalPort}`, {
-          method: 'GET',
+     // Check if Workflow API is running by testing endpoint connectivity
+     const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+     // Use fetch to test workflow validation endpoint
+     try {
+       const response = await fetch(`${apiHost}/api/workflows/validate`, {
+         method: 'POST',
           signal: AbortSignal.timeout(5000)
         })
       } catch (fetchError) {
@@ -291,55 +289,37 @@ class MetricsCalculator {
         const causeMessage = errorCause instanceof Error ? errorCause.message : ''
         const causeName = errorCause instanceof Error ? errorCause.name : ''
         
-        // If we get an HTTP parser error, it means the server is running (gRPC response)
-        if (fetchError instanceof Error && (
-          errorMessage.includes('HTTP/0.9') ||
-          errorMessage.includes('HTTPParserError') ||
-          errorMessage.includes('does not match the HTTP/1.1 protocol') ||
-          errorMessage.includes('HPE_INVALID_CONSTANT') ||
-          causeName.includes('HTTPParserError') ||
-          causeMessage.includes('does not match the HTTP/1.1 protocol') ||
-          causeMessage.includes('HPE_INVALID_CONSTANT')
-        )) {
+        // If we get a successful connection, check the response
+        const response = await fetch(`${apiHost}/api/workflows/validate`, {
+          method: 'POST',
+          signal: AbortSignal.timeout(5000)
+        })
+
+        if (response.ok) {
           const responseTime = Date.now() - startTime
           return {
-            name: 'Temporal',
+            name: 'Workflow',
             status: 'healthy',
             responseTime,
             lastChecked: new Date().toISOString()
           }
+        } else {
+          const responseTime = Date.now() - startTime
+          return {
+            name: 'Workflow',
+            status: 'degraded',
+            responseTime,
+            lastChecked: new Date().toISOString()
+          }
         }
-        throw fetchError
-      }
-      
-      // If we get here, the server responded normally (unexpected)
-      const responseTime = Date.now() - startTime
-      return {
-        name: 'Temporal',
-        status: 'healthy',
-        responseTime,
-        lastChecked: new Date().toISOString()
-      }
+
     } catch (error) {
+      console.error('Workflow connection check failed:', error)
       const responseTime = Date.now() - startTime
-      
-      // Check if it's a connection refused error (server not running)
-      if (error instanceof Error && (
-        error.message.includes('ECONNREFUSED') || 
-        error.message.includes('Connection timeout') ||
-        error.message.includes('fetch failed')
-      )) {
-        return {
-          name: 'Temporal',
-          status: 'critical',
-          responseTime,
-          lastChecked: new Date().toISOString()
-        }
-      }
-      
+
       return {
-        name: 'Temporal',
-        status: 'degraded',
+        name: 'Workflow',
+        status: 'critical',
         responseTime,
         lastChecked: new Date().toISOString()
       }
