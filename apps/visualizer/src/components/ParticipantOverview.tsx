@@ -31,7 +31,11 @@ interface ParticipantSummary {
   hasHumeData: boolean
 }
 
-export function ParticipantOverview() {
+interface ParticipantOverviewProps {
+  participantId?: string
+}
+
+export function ParticipantOverview({ participantId }: ParticipantOverviewProps) {
   // Merkle DAG: participant_overview -> state_management
   const [participants, setParticipants] = useState<ParticipantSummary[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -47,29 +51,62 @@ export function ParticipantOverview() {
   const fetchParticipants = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/participants')
-      if (response.ok) {
-        const data = await response.json()
-        setParticipants(data)
-        
-        // Calculate summary
-        const totalSessions = data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.session_count as number) || 0), 0)
-        const totalResponses = data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.total_responses as number) || 0), 0)
-        const averageSpiritProbability = data.length > 0 
-          ? data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.average_spirit_probability as number) || 0), 0) / data.length
-          : 0
-        const activeParticipants = data.filter((p: Record<string, unknown>) => {
-          const lastActivity = new Date((p.last_activity as string) || 0)
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-          return lastActivity > thirtyDaysAgo
-        }).length
 
+      if (participantId) {
+        // For individual participant view - show only that participant's data
+        const response = await fetch(`/api/participants/${participantId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setParticipants([{
+            id: data.id,
+            name: data.name || `参加者 ${data.id.slice(0, 8)}`,
+            sessionCount: data.sessionCount || 0,
+            responseCount: data.responseCount || 0,
+            averageSpiritProbability: data.averageSpiritProbability || 0,
+            lastActivity: data.lastActivity || new Date().toISOString(),
+            hasConsent: true, // Assume consent exists for individual view
+            hasVideoFiles: false, // Would need to check actual data
+            hasHumeData: false // Would need to check actual data
+          }])
+        }
+      } else {
+        // For overview/dashboard view - show all participants
+        const response = await fetch('/api/participants')
+        if (response.ok) {
+          const data = await response.json()
+          setParticipants(data)
+
+          // Calculate summary
+          const totalSessions = data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.session_count as number) || 0), 0)
+          const totalResponses = data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.total_responses as number) || 0), 0)
+          const averageSpiritProbability = data.length > 0
+            ? data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.average_spirit_probability as number) || 0), 0) / data.length
+            : 0
+          const activeParticipants = data.filter((p: Record<string, unknown>) => {
+            const lastActivity = new Date((p.last_activity as string) || 0)
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+            return lastActivity > thirtyDaysAgo
+          }).length
+
+          setSummary({
+            totalParticipants: data.length,
+            totalSessions,
+            totalResponses,
+            averageSpiritProbability,
+            activeParticipants
+          })
+        }
+      }
+
+      // For individual participant view, calculate summary from single participant data
+      if (participantId && participants.length > 0) {
+        const currentParticipant = participants[0]
         setSummary({
-          totalParticipants: data.length,
-          totalSessions,
-          totalResponses,
-          averageSpiritProbability,
-          activeParticipants
+          totalParticipants: 1,
+          totalSessions: currentParticipant.sessionCount,
+          totalResponses: currentParticipant.responseCount,
+          averageSpiritProbability: currentParticipant.averageSpiritProbability,
+          activeParticipants: 1 // Individual participant is always "active" in their own view
         })
       }
     } catch (error) {
@@ -197,82 +234,35 @@ export function ParticipantOverview() {
         </Card>
       </div>
 
-      {/* Participants List */}
+      {/* Individual Participant Details - Only show current participant info */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>参加者一覧</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchParticipants}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                更新
-              </Button>
-              <Link href="/participants">
-                <Button variant="outline" size="sm">
-                  詳細表示
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+          <CardTitle>参加者詳細情報</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {participants.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                参加者データがありません
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <Calendar className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-blue-700">{summary.totalSessions}</div>
+              <div className="text-sm text-muted-foreground">セッション数</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <Activity className="h-6 w-6 text-green-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-green-700">{summary.totalResponses}</div>
+              <div className="text-sm text-muted-foreground">応答数</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-purple-700">
+                {(summary.averageSpiritProbability * 100).toFixed(1)}%
               </div>
-            ) : (
-              participants.map((participant) => (
-                <div key={participant.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <Users className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{participant.name || `Participant ${participant.id}`}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          ID: {participant.id} • 最終活動: {formatDate(participant.lastActivity)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right">
-                        <div className="text-sm font-medium">
-                          {participant.sessionCount} セッション
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {participant.responseCount} 応答
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-medium">
-                          {(participant.averageSpiritProbability * 100).toFixed(1)}%
-                        </div>
-                        <div className="text-sm text-muted-foreground">Spirit確率</div>
-                      </div>
-                      <div className="flex gap-1">
-                        {participant.hasConsent && (
-                          <Badge variant="secondary" className="text-xs">同意書</Badge>
-                        )}
-                        {participant.hasVideoFiles && (
-                          <Badge variant="secondary" className="text-xs">動画</Badge>
-                        )}
-                        {participant.hasHumeData && (
-                          <Badge variant="secondary" className="text-xs">感情データ</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+              <div className="text-sm text-muted-foreground">平均Spirit確率</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <Clock className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-orange-700">{summary.activeParticipants}</div>
+              <div className="text-sm text-muted-foreground">アクティブ日数</div>
+            </div>
           </div>
         </CardContent>
       </Card>

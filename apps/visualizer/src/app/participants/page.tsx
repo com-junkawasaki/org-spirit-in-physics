@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Activity, Brain, BarChart3 } from 'lucide-react'
+import { Users, Activity, Brain, BarChart3, ArrowRight } from 'lucide-react'
 import { getAllParticipants } from '@/lib/data'
 import { getSpiritProbabilityColor } from '@/components/SpiritProbabilityBadge'
 
@@ -195,7 +195,6 @@ export default async function ParticipantsPage() {
       {/* Server-rendered table */}
       {/* Suspense kept for future streaming if needed */}
       <Suspense>
-        {/* @ts-expect-error Async Server Component */}
         <ParticipantsTableWrapper />
       </Suspense>
     </div>

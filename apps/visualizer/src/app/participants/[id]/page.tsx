@@ -116,7 +116,7 @@ export default async function ParticipantDetailPage({
       </div>
 
       {/* Content */}
-      <ParticipantOverview />
+      <ParticipantOverview participantId={id} />
     </div>
   )
 }
