@@ -45,6 +45,12 @@ export default function RootLayout({
                   >
                     被験者一覧
                   </a>
+                  <a
+                    href="/analysis"
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    分析
+                  </a>
                   <div className="text-sm text-muted-foreground">
                     Real-time Research Analytics
                   </div>
