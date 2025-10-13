@@ -12,8 +12,13 @@ from flask_cors import CORS
 import yaml
 import pandas as pd
 
-# from pipeline.job_manager import JobManager, JobStatus  # Temporal disabled
-from pipeline.data_storer import DataStorer
+# Add project root to path to allow importing from packages
+import sys
+import os
+sys.path.append('/app')
+
+# from packages.spirit_in_physics_pipeline.job_manager import JobManager, JobStatus  # Temporal disabled
+from packages.spirit_in_physics_pipeline.data_storer import DataStorer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -185,7 +190,7 @@ class HumeDataImporter:
 
 class AnalysisAPI:
     def __init__(self, config):
-        self.job_manager = JobManager(config['arangodb'])
+        # self.job_manager = JobManager(config['arangodb'])  # Temporal disabled
         self.data_storer = DataStorer(config['arangodb'])
         self.hume_importer = HumeDataImporter(config['arangodb'])
         self.app = Flask(__name__)

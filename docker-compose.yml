@@ -19,15 +19,27 @@ services:
     container_name: spirit-temporal
     ports:
       - "7233:7233"  # Temporal server
-      - "8233:8233"  # Temporal UI
     environment:
       - DB=postgres12
       - DB_PORT=5432
       - POSTGRES_USER=postgres
       - POSTGRES_PWD=postgres
-      - POSTGRES_SEEDS=temporal-postgres:5432
+      - POSTGRES_SEEDS=temporal-postgres
     depends_on:
       - temporal-postgres
+    networks:
+      - spirit-network
+
+  # Temporal UI
+  temporal-ui:
+    image: temporalio/ui:latest
+    container_name: spirit-temporal-ui
+    ports:
+      - "8233:8080"  # Temporal UI
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    depends_on:
+      - temporal
     networks:
       - spirit-network
 
@@ -94,8 +106,8 @@ services:
   # Analyzer app (Python)
   analyzer:
     build:
-      context: ./apps/analyzer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/analyzer/Dockerfile
     container_name: spirit-analyzer
     ports:
       - "8000:8000"

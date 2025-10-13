@@ -11,16 +11,19 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
-COPY requirements.txt .
+COPY apps/analyzer/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy environment file
-COPY env.docker .env
+COPY apps/analyzer/env.docker .env
 
-# Copy source code
-COPY . .
+# Copy packages from project root
+COPY packages /app/packages
+
+# Copy analyzer source code
+COPY apps/analyzer .
 
 # Create config.yaml from environment variables
 RUN echo "arangodb:" > config.yaml && \
