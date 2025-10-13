@@ -96,42 +96,81 @@ async function checkTemporalConnection(): Promise<ConnectionStatus> {
   const startTime = Date.now()
   
   try {
-    // Check if Temporal server is running on default port
-    const temporalUrl = process.env.TEMPORAL_URL || 'http://localhost:7233'
+    // Check if Temporal server is running by testing port connectivity
+    const temporalHost = process.env.TEMPORAL_HOST || 'localhost'
+    const temporalPort = parseInt(process.env.TEMPORAL_PORT || '7233')
     
-    // Try to connect to Temporal server health endpoint
-    const response = await fetch(`${temporalUrl}/api/v1/namespaces`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      signal: AbortSignal.timeout(5000) // 5 second timeout
-    })
-    
-    const responseTime = Date.now() - startTime
-    
-    if (response.ok) {
-      const data = await response.json()
-      return {
-        service: 'Temporal',
-        status: 'connected',
-        message: 'Temporal server is running',
-        responseTime,
-        details: {
-          namespaces: data.namespaces || [],
-          server: temporalUrl
+    // Use a simple fetch to test if the port is open
+    // Temporal server will respond with gRPC binary data, which we'll catch
+    try {
+      await fetch(`http://${temporalHost}:${temporalPort}`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      })
+    } catch (fetchError) {
+      // Check both the error message and the cause
+      const errorMessage = fetchError instanceof Error ? fetchError.message : ''
+      const errorCause = (fetchError as any)?.cause
+      const causeMessage = errorCause instanceof Error ? errorCause.message : ''
+      const causeName = errorCause instanceof Error ? errorCause.name : ''
+      
+      // If we get an HTTP parser error, it means the server is running (gRPC response)
+      if (fetchError instanceof Error && (
+        errorMessage.includes('HTTP/0.9') ||
+        errorMessage.includes('HTTPParserError') ||
+        errorMessage.includes('does not match the HTTP/1.1 protocol') ||
+        errorMessage.includes('HPE_INVALID_CONSTANT') ||
+        causeName.includes('HTTPParserError') ||
+        causeMessage.includes('does not match the HTTP/1.1 protocol') ||
+        causeMessage.includes('HPE_INVALID_CONSTANT')
+      )) {
+        const responseTime = Date.now() - startTime
+        return {
+          service: 'Temporal',
+          status: 'connected',
+          message: 'Temporal server is running',
+          responseTime,
+          details: {
+            host: temporalHost,
+            port: temporalPort,
+            protocol: 'gRPC'
+          }
         }
       }
-    } else {
-      return {
-        service: 'Temporal',
-        status: 'error',
-        message: `Server responded with status ${response.status}`,
-        responseTime
+      throw fetchError
+    }
+    
+    // If we get here, the server responded normally (unexpected)
+    const responseTime = Date.now() - startTime
+    return {
+      service: 'Temporal',
+      status: 'connected',
+      message: 'Temporal server is running',
+      responseTime,
+      details: {
+        host: temporalHost,
+        port: temporalPort,
+        protocol: 'gRPC'
       }
     }
   } catch (error) {
     const responseTime = Date.now() - startTime
+    
+    
+    // Check if it's a connection refused error (server not running)
+    if (error instanceof Error && (
+      error.message.includes('ECONNREFUSED') || 
+      error.message.includes('Connection timeout') ||
+      error.message.includes('fetch failed')
+    )) {
+      return {
+        service: 'Temporal',
+        status: 'disconnected',
+        message: 'Temporal server is not running',
+        responseTime
+      }
+    }
+    
     return {
       service: 'Temporal',
       status: 'disconnected',
