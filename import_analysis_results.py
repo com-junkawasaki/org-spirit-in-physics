@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-分析結果をSupabaseデータベースにインポートするスクリプト
+分析結果をArangoDBデータベースにインポートするスクリプト
 """
 
 import json

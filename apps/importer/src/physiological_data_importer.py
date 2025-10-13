@@ -249,7 +249,7 @@ class PhysiologicalDataImporter:
 
     def import_physiological_data(self, csv_path: str, batch_size: int = 1000) -> bool:
         """
-        Import physiological data from CSV file into Supabase.
+        Import physiological data from CSV file into ArangoDB.
 
         Args:
             csv_path: Path to the CSV file

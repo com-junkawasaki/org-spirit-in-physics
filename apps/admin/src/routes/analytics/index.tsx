@@ -12,9 +12,9 @@ export const analyticsRoute = createRoute({
   component: AnalyticsDashboard,
 })
 
-// Supabaseから分析データを取得する関数
+// ArangoDBから分析データを取得する関数
 const fetchAnalysisResults = async () => {
-  // モックデータ - 実際にはSupabaseから取得
+  // モックデータ - 実際にはArangoDBから取得
   return {
     totalParticipants: 11,
     completedExperiments: 4,
@@ -58,7 +58,7 @@ const fetchAnalysisResults = async () => {
 
 // Hume AI感情データを取得する関数
 const fetchHumeEmotionData = async () => {
-  // モックデータ - 実際にはSupabaseから取得
+  // モックデータ - 実際にはArangoDBから取得
   return {
     burstEmotions: [
       { emotion: 'joy', count: 89, averageScore: 0.23 },

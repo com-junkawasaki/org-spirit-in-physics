@@ -34,7 +34,7 @@ class DataImporter:
             return yaml.safe_load(f)
     
     def import_participant_data(self, participant_id: str) -> bool:
-        """参加者データをSupabaseにインポート"""
+        """参加者データをArangoDBにインポート"""
         participant_dir = self.data_dir / participant_id
         
         if not participant_dir.exists():
@@ -315,7 +315,7 @@ class DataImporter:
             logging.error(f"FAILED: Failed to save emotion data for response {response_data['id']}: {e}")
 
     def _upload_media_files(self, participant_id: str, participant_dir: Path):
-        """メディアファイルをSupabase Storageにアップロード（スキップ）"""
+        """メディアファイルをArangoDB Storageにアップロード（スキップ）"""
         import tempfile
 
         video_files = list(participant_dir.glob("session-*-video.webm"))

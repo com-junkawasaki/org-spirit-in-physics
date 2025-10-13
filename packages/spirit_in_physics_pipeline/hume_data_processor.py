@@ -39,12 +39,17 @@ class HumeDataProcessor:
     def load_prosody_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load prosody prediction data directly for a given session."""
         try:
-            response = self.supabase.table('participant_hume_prosody_predictions').select('*').eq(
-                'participant_experiment_session_id', participant_experiment_session_id
-            ).execute()
-            if response.data:
-                logging.info(f"Loaded {len(response.data)} prosody prediction records for session {participant_experiment_session_id}")
-                return response.data
+            aql_query = """
+            FOR prediction IN participant_hume_prosody_predictions
+                FILTER prediction.participant_experiment_session_id == @session_id
+                RETURN prediction
+            """
+            cursor = self.db.aql.execute(aql_query, bind_vars={"session_id": participant_experiment_session_id})
+            data = list(cursor)
+
+            if data:
+                logging.info(f"Loaded {len(data)} prosody prediction records for session {participant_experiment_session_id}")
+                return data
             else:
                 logging.warning(f"No prosody prediction data found for session {participant_experiment_session_id}")
                 return []
@@ -55,12 +60,17 @@ class HumeDataProcessor:
     def load_language_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load language prediction data directly for a given session."""
         try:
-            response = self.supabase.table('participant_hume_language_predictions').select('*').eq(
-                'participant_experiment_session_id', participant_experiment_session_id
-            ).execute()
-            if response.data:
-                logging.info(f"Loaded {len(response.data)} language prediction records for session {participant_experiment_session_id}")
-                return response.data
+            aql_query = """
+            FOR prediction IN participant_hume_language_predictions
+                FILTER prediction.participant_experiment_session_id == @session_id
+                RETURN prediction
+            """
+            cursor = self.db.aql.execute(aql_query, bind_vars={"session_id": participant_experiment_session_id})
+            data = list(cursor)
+
+            if data:
+                logging.info(f"Loaded {len(data)} language prediction records for session {participant_experiment_session_id}")
+                return data
             else:
                 logging.warning(f"No language prediction data found for session {participant_experiment_session_id}")
                 return []

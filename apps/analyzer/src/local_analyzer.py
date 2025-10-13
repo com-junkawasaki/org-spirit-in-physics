@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ローカル環境で実験データを解析するスクリプト
-Supabaseが利用できない場合でもデータを処理可能
+ArangoDBが利用できない場合でもデータを処理可能
 """
 
 import json

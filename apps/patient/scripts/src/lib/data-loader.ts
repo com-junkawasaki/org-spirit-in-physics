@@ -17,7 +17,7 @@ if (typeof window === 'undefined') {
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
 // ArangoDB初期化関数
-export async function initializeSupabaseDatabase(): Promise<void> {
+export async function initializeArangoDBDatabase(): Promise<void> {
   try {
     // ArangoDB接続テスト
     await arangodb.query('RETURN 1');
@@ -30,7 +30,8 @@ export async function initializeSupabaseDatabase(): Promise<void> {
 }
 
 // 後方互換性のための関数
-export const initializeKuzuDatabase = initializeSupabaseDatabase;
+export const initializeSupabaseDatabase = initializeArangoDBDatabase;
+export const initializeKuzuDatabase = initializeArangoDBDatabase;
 
 // Types based on actual data structure
 export interface ConsentData {
@@ -94,7 +95,7 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
         if (consentData.length > 0) {
           console.log(`Loaded ${consentData.length} participants from Vercel Blob`);
 
-          // Supabaseにも保存
+          // ArangoDBにも保存
           for (const data of consentData) {
             const { arangodbManager } = await import('./database/arangodb-manager.ts');
             const participant: Participant = {
@@ -153,7 +154,7 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       }
     }
 
-    // Supabaseにも保存
+    // ArangoDBにも保存
     for (const data of consentData) {
       const { arangodbManager } = await import('./database/arangodb-manager.ts');
       const participant: Participant = {

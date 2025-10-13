@@ -97,7 +97,7 @@ function AdminDashboard() {
             message="正常動作中 - 429件の言語予測データ処理済み"
           />
           <SystemStatusCard
-            title="Supabase Database"
+            title="ArangoDB Database"
             status="healthy"
             message="正常接続 - 22件の実験セッションデータ"
           />

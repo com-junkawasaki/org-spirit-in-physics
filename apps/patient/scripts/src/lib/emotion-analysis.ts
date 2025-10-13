@@ -1,8 +1,9 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { arangodb } from './arangodb';
 
-// Supabaseを使用するため、Kuzu関連のインポートは不要
+// ArangoDBを使用するため、Kuzu関連のインポートは不要
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -18,7 +19,8 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-interface EmotionAnalysisResult {
+// Types for emotion analysis data
+export interface EmotionAnalysisResult {
   participantId: string;
   videoFile: string;
   sessionType: string;
@@ -172,7 +174,9 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
       }
     }
 
-    // Supabaseに保存（storageAdapter経由）
+    // ArangoDBに保存（storageAdapter経由）
+    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
+    await storageAdapter.saveEmotionAnalysis(result.participantId, result);
 
   } catch (error) {
     console.error('Error saving emotion analysis result:', error);
@@ -184,7 +188,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
  */
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
-    // storageAdapter経由でSupabaseから感情分析データを取得
+    // storageAdapter経由でArangoDBから感情分析データを取得
     const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
     return await storageAdapter.loadEmotionAnalysis(participantId);
   } catch (error) {
@@ -223,6 +227,10 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       // APIレート制限を考慮して少し待つ
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
+
+    // ArangoDBに保存
+    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
+    await storageAdapter.saveEmotionAnalysisResults(participantId, results);
 
     return results;
   } catch (error) {

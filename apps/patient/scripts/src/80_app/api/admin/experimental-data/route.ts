@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storageAdapter } from "scripts/src/50_adapters";
 import { emotionAnalysisAdapter } from "scripts/src/50_adapters";
-import { parseWordResponsesFromEvents, getParticipantStatistics, initializeSupabaseDatabase, loadAllSessionData } from "scripts/src/lib/data-loader";
+import { parseWordResponsesFromEvents, getParticipantStatistics, initializeArangoDBDatabase, loadAllSessionData } from "scripts/src/lib/data-loader";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Supabaseデータベースの初期化
-        await initializeSupabaseDatabase();
+        // ArangoDBデータベースの初期化
+        await initializeArangoDBDatabase();
         const participants = await storageAdapter.loadAllParticipants();
         const participantsForStats = participants.map(p => ({
           ...p,
@@ -113,8 +113,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Supabaseデータベースの初期化
-        await initializeSupabaseDatabase();
+        // ArangoDBデータベースの初期化
+        await initializeArangoDBDatabase();
         const participants_for_analytics = await storageAdapter.loadAllParticipants();
         const participantsForStats2 = participants_for_analytics.map(p => ({
           ...p,
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Supabaseから感情統計を取得
+        // ArangoDBから感情統計を取得
         const emotionStats = await emotionAnalysisAdapter.getEmotionStatistics();
         const emotionDistribution: Record<string, number> = {};
         emotionStats.dominantEmotions.forEach(item => {

@@ -84,6 +84,8 @@ function ResultsContent() {
   const id = params.id as string
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([])
   const [loading, setLoading] = useState(true)
+  const [triggering, setTriggering] = useState(false)
+  const [triggerMessage, setTriggerMessage] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchAnalysisResults() {
@@ -120,6 +122,36 @@ function ResultsContent() {
           {analysisResults.length} 件の結果
         </Badge>
       </div>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          データが無い場合は解析を実行してください。
+        </div>
+        <Button
+          onClick={async () => {
+            try {
+              setTriggering(true)
+              setTriggerMessage(null)
+              const res = await fetch(`/api/participants/${id}/analyze`, { method: 'POST' })
+              if (res.ok) {
+                const json = await res.json()
+                setTriggerMessage('解析ジョブを起動しました。数分後に更新してください。')
+              } else {
+                setTriggerMessage('解析の起動に失敗しました。サーバーログを確認してください。')
+              }
+            } finally {
+              setTriggering(false)
+            }
+          }}
+          disabled={triggering}
+        >
+          {triggering ? '起動中…' : '解析を実行'}
+        </Button>
+      </div>
+
+      {triggerMessage && (
+        <div className="text-sm text-muted-foreground">{triggerMessage}</div>
+      )}
 
       <div className="space-y-4">
         {analysisResults.map((result) => (
@@ -180,6 +212,30 @@ function ResultsContent() {
           <p className="text-sm text-muted-foreground mt-2">
             この参加者の分析結果はまだありません。
           </p>
+          <div className="mt-4">
+            <Button
+              onClick={async () => {
+                try {
+                  setTriggering(true)
+                  setTriggerMessage(null)
+                  const res = await fetch(`/api/participants/${id}/analyze`, { method: 'POST' })
+                  if (res.ok) {
+                    setTriggerMessage('解析ジョブを起動しました。数分後にこのページを更新してください。')
+                  } else {
+                    setTriggerMessage('解析の起動に失敗しました。サーバーログを確認してください。')
+                  }
+                } finally {
+                  setTriggering(false)
+                }
+              }}
+              disabled={triggering}
+            >
+              {triggering ? '起動中…' : '解析を実行'}
+            </Button>
+          </div>
+          {triggerMessage && (
+            <div className="text-sm text-muted-foreground mt-2">{triggerMessage}</div>
+          )}
         </div>
       )}
     </div>
