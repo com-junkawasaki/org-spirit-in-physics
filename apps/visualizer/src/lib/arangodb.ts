@@ -189,3 +189,39 @@ export function createArangoDBClient(): ArangoDBClient {
 // Database types are now managed by ArangoDB's data models, 
 // so the Supabase-generated types can be removed.
 // export interface Database { ... }
+
+// Merkle DAG: arangodb_manager -> unified_data_access_layer
+// ArangoDBManager class for unified data access
+export class ArangoDBManager {
+  private client: ArangoDBClient
+
+  constructor() {
+    this.client = createArangoDBClient()
+  }
+
+  async testConnection(): Promise<boolean> {
+    try {
+      const result = await this.client.query('RETURN 1')
+      return result && result.length > 0 && result[0] === 1
+    } catch (error) {
+      console.error('ArangoDB connection test failed:', error)
+      return false
+    }
+  }
+
+  async query(aqlQuery: string, bindVars?: Record<string, unknown>): Promise<unknown[]> {
+    return this.client.query(aqlQuery, bindVars)
+  }
+
+  async getParticipants(): Promise<unknown[]> {
+    return this.client.getParticipants()
+  }
+
+  async getParticipantDetails(participantId: string): Promise<unknown> {
+    return this.client.getParticipantDetails(participantId)
+  }
+
+  async getParticipantResponses(participantId: string): Promise<unknown[]> {
+    return this.client.getParticipantResponses(participantId)
+  }
+}

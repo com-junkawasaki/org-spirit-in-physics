@@ -24,7 +24,7 @@ const menuItems: MenuItem[] = [
   {
     id: 'dashboard',
     label: 'ダッシュボード',
-    href: '/',
+    href: '/dashboard',
     icon: '📊',
     description: 'システム概要と統計'
   },

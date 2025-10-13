@@ -6,15 +6,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const participantId = searchParams.get('participantId')
 
-    if (!participantId) {
-      return NextResponse.json(
-        { error: 'participantId is required' },
-        { status: 400 }
-      )
+    let results
+    if (participantId) {
+      // Get analysis results for the specific participant
+      results = await getAnalysisResultsForParticipant(participantId)
+    } else {
+      // Get all analysis results
+      const { getAnalysisResults } = await import('@/lib/data')
+      results = await getAnalysisResults()
     }
-
-    // Get analysis results for the participant from TerminusDB
-    const results = await getAnalysisResultsForParticipant(participantId)
 
     // Transform the data for the frontend (already in correct format from lib/data.ts)
     const transformedResults = results.map(result => ({
