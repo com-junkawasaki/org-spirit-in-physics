@@ -209,9 +209,33 @@ class AnalysisAPI:
         def list_runs():
             """List all analysis runs."""
             try:
-                # This would need to be implemented in DataStorer
-                # For now, return a placeholder
-                return jsonify({"runs": [], "message": "Run listing not yet implemented"})
+                # Get runs from ArangoDB
+                from arango import ArangoClient
+                client = ArangoClient(hosts=self.data_storer.config['url'])
+                db = client.db(self.data_storer.config['database'], 
+                             username=self.data_storer.config['user'], 
+                             password=self.data_storer.config['password'])
+                
+                # Query analysis runs
+                aql_query = """
+                FOR run IN analysis_runs
+                    SORT run.created_at DESC
+                    LIMIT 50
+                    RETURN {
+                        _key: run._key,
+                        _id: run._id,
+                        participant_id: run.participant_id,
+                        status: run.status,
+                        progress: run.progress,
+                        model_version: run.model_version,
+                        notes: run.notes,
+                        created_at: run.created_at,
+                        updated_at: run.updated_at
+                    }
+                """
+                
+                runs = list(db.aql.execute(aql_query))
+                return jsonify({"runs": runs})
             except Exception as e:
                 logging.error(f"Error listing runs: {e}")
                 return jsonify({"error": str(e)}), 500
@@ -220,13 +244,38 @@ class AnalysisAPI:
         def get_run(run_id):
             """Get details of a specific run."""
             try:
-                jobs = self.job_manager.get_jobs_by_run(run_id)
+                # Get run details from ArangoDB
+                from arango import ArangoClient
+                client = ArangoClient(hosts=self.data_storer.config['url'])
+                db = client.db(self.data_storer.config['database'], 
+                             username=self.data_storer.config['user'], 
+                             password=self.data_storer.config['password'])
+                
+                # Get run details
+                run_query = """
+                FOR run IN analysis_runs
+                    FILTER run._key == @run_id
+                    RETURN run
+                """
+                runs = list(db.aql.execute(run_query, bind_vars={"run_id": run_id}))
+                
+                if not runs:
+                    return jsonify({"error": "Run not found"}), 404
+                
+                run = runs[0]
+                
+                # Get analysis results for this run
+                results_query = """
+                FOR result IN analysis_results
+                    FILTER result.run_id == @run_id
+                    RETURN result
+                """
+                results = list(db.aql.execute(results_query, bind_vars={"run_id": run_id}))
                 
                 # Calculate statistics
-                total_jobs = len(jobs)
-                completed = sum(1 for j in jobs if j.status == JobStatus.COMPLETED)
-                failed = sum(1 for j in jobs if j.status == JobStatus.FAILED)
-                running = sum(1 for j in jobs if j.status == JobStatus.RUNNING)
+                total_results = len(results)
+                successful_results = len([r for r in results if r.get('status') == 'completed'])
+                failed_results = len([r for r in results if r.get('status') == 'failed'])
                 queued = sum(1 for j in jobs if j.status == JobStatus.QUEUED)
                 
                 run_data = {
