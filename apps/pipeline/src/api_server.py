@@ -610,12 +610,10 @@ class AnalysisAPI:
                         # UnifiedPipelineWorkflow takes: session_ids, model_version, notes, config
                         args = [session_ids, model_version, notes, {}]
 
-                    # Start workflow - Temporal expects specific argument format
-                    # Try passing args as a tuple after the workflow function
-                    workflow_args = (session_ids, model_version, notes, {})
+                    # Start workflow with args parameter for multiple arguments (excluding self)
                     await client.start_workflow(
-                        workflow_fn,  # Workflow function
-                        workflow_args,  # Arguments as tuple
+                        workflow_fn,  # Workflow function (self is automatically passed)
+                        args=[session_ids, model_version, notes, {}],  # Arguments excluding self
                         id=workflow_id,
                         task_queue="pipeline-task-queue"
                     )

@@ -148,9 +148,9 @@ class DataImportWorkflow:
             "results": import_results
         }
 
+# PhysiologicalWorkflow as class
 @workflow.defn
 class PhysiologicalWorkflow:
-    """Workflow for experiments that collect physiological data (skin potential)."""
     @workflow.run
     async def run(self, session_ids: list[str], model_version: str, notes: str, config: dict) -> dict:
         workflow.logger.info(f"Starting physiological experiment workflow for {len(session_ids)} sessions")
@@ -210,10 +210,10 @@ class PhysiologicalWorkflow:
                 workflow.logger.info(f"Submitting Hume AI job for session: {session_id}")
 
                 # Simulate Hume AI processing with real API calls
-                hume_data = await self._process_hume_ai_analysis(session_id, config)
+                hume_data = await _process_hume_ai_analysis(session_id, config)
 
                 # 3c. Extract physiological features (enhanced for physiological experiments)
-                physiological_features = await self._extract_physiological_features(session_id, config)
+                physiological_features = await _extract_physiological_features(session_id, config)
 
                 # 3d. Combine features with physiological emphasis
                 combined_features = {
@@ -229,7 +229,7 @@ class PhysiologicalWorkflow:
                 }
 
                 # 3e. Run enhanced Kawasaki model for physiological data
-                spirit_probability = await self._calculate_physiological_spirit_probability(combined_features, config)
+                spirit_probability = await _calculate_physiological_spirit_probability(combined_features, config)
 
                 # 3f. Store analysis results with physiological metadata
                 analysis_result = {
@@ -249,7 +249,7 @@ class PhysiologicalWorkflow:
                     "status": "SUCCESS",
                     "spirit_probability": spirit_probability,
                     "features_count": len(combined_features),
-                    "physiological_data_quality": self._assess_data_quality(physiological_features)
+                    "physiological_data_quality": _assess_data_quality(physiological_features)
                 })
 
             except Exception as e:
@@ -276,50 +276,7 @@ class PhysiologicalWorkflow:
             "analysis_results": analysis_results
         }
 
-    async def _process_hume_ai_analysis(self, session_id: str, config: dict) -> dict:
-        """Process Hume AI emotion analysis for physiological experiments."""
-        # In real implementation, this would call Hume AI API
-        # For now, return enhanced simulation with physiological correlation
-        return {
-            "emotions": {
-                "joy": 0.8,
-                "contentment": 0.7,
-                "calmness": 0.6,
-                "anxiety": 0.3,
-                "stress": 0.4
-            },
-            "expressions": {
-                "smile": 0.9,
-                "relaxed": 0.7,
-                "tense": 0.3
-            },
-            "physiological_correlation": {
-                "emotion_physio_sync": 0.75,
-                "stress_response": 0.6
-            }
-        }
-
-    async def _extract_physiological_features(self, session_id: str, config: dict) -> dict:
-        """Extract enhanced physiological features for experiments."""
-        # In real implementation, this would process actual skin potential data
-        # Enhanced features for physiological experiments
-        return {
-            'mean_sp': 0.6,
-            'std_sp': 0.25,
-            'min_sp': 0.2,
-            'max_sp': 1.0,
-            'peak_frequency': 0.15,
-            'response_variability': 0.8,
-            'recovery_rate': 0.7,
-            'baseline_stability': 0.9,
-            'stress_indicators': {
-                'sudden_spikes': 2,
-                'recovery_time': 45,
-                'variability_index': 0.35
-            }
-        }
-
-    async def _calculate_physiological_spirit_probability(self, features: dict, config: dict) -> float:
+async def _calculate_physiological_spirit_probability(features: dict, config: dict) -> float:
         """Calculate spirit probability with enhanced physiological weighting."""
         emotional_score = 0
         physio_score = 0
@@ -329,7 +286,7 @@ class PhysiologicalWorkflow:
             'joy': 0.25, 'contentment': 0.2, 'calmness': 0.15,
             'anxiety': -0.1, 'stress': -0.15, 'anger': -0.05
         }
-        emotional_features = features.get('emotional_features', {})
+        emotional_features = features.get('emotional', {})
 
         for emotion, weight in emotion_weights.items():
             if emotion in emotional_features:
@@ -355,7 +312,7 @@ class PhysiologicalWorkflow:
 
         return round(spirit_probability, 4)
 
-    def _assess_data_quality(self, physiological_features: dict) -> str:
+def _assess_data_quality(physiological_features: dict) -> str:
         """Assess the quality of physiological data collected."""
         quality_score = 0
 
@@ -375,10 +332,8 @@ class PhysiologicalWorkflow:
         else:
             return "LOW"
 
-
 @workflow.defn
 class OnlineWorkflow:
-    """Workflow for experiments conducted online only (no physiological data)."""
     @workflow.run
     async def run(self, session_ids: list[str], model_version: str, notes: str, config: dict) -> dict:
         workflow.logger.info(f"Starting online experiment workflow for {len(session_ids)} sessions")
@@ -435,13 +390,12 @@ class OnlineWorkflow:
                 session_data = {"responses": [], "session_id": session_id}  # Placeholder
 
                 # 3b. Process Hume AI emotion analysis (primary data source for online)
-                workflow.logger.info(f"Submitting Hume AI job for online session: {session_id}")
 
                 # Enhanced Hume AI processing for online experiments
-                hume_data = await self._process_online_hume_analysis(session_id, config)
+                hume_data = await _process_online_hume_analysis(session_id, config)
 
                 # 3c. Extract behavioral features from responses (no physiological data)
-                behavioral_features = await self._extract_behavioral_features(session_id, config)
+                behavioral_features = await _extract_behavioral_features(session_id, config)
 
                 # 3d. Combine features with emotional emphasis
                 combined_features = {
@@ -454,12 +408,12 @@ class OnlineWorkflow:
                         "duration": 300,
                         "response_count": len(session_data.get("responses", [])),
                         "experiment_type": "online",
-                        "interaction_quality": self._assess_interaction_quality(behavioral_features)
+                        "interaction_quality": _assess_interaction_quality(behavioral_features)
                     }
                 }
 
                 # 3e. Run online-focused spirit probability calculation
-                spirit_probability = await self._calculate_online_spirit_probability(combined_features, config)
+                spirit_probability = await _calculate_online_spirit_probability(combined_features, config)
 
                 # 3f. Store analysis results with online metadata
                 analysis_result = {
@@ -479,7 +433,7 @@ class OnlineWorkflow:
                     "status": "SUCCESS",
                     "spirit_probability": spirit_probability,
                     "features_count": len(combined_features),
-                    "interaction_quality": self._assess_interaction_quality(behavioral_features)
+                    "interaction_quality": _assess_interaction_quality(behavioral_features)
                 })
 
             except Exception as e:
@@ -506,106 +460,7 @@ class OnlineWorkflow:
             "analysis_results": analysis_results
         }
 
-    async def _process_online_hume_analysis(self, session_id: str, config: dict) -> dict:
-        """Process Hume AI emotion analysis for online experiments."""
-        # Enhanced Hume AI processing for online experiments
-        # Includes linguistic analysis which is more available in online settings
-        return {
-            "emotions": {
-                "joy": 0.7,
-                "contentment": 0.6,
-                "curiosity": 0.8,
-                "interest": 0.7,
-                "confusion": 0.2
-            },
-            "expressions": {
-                "smile": 0.6,
-                "thoughtful": 0.8,
-                "engaged": 0.9
-            },
-            "linguistic": {
-                "sentiment": 0.75,
-                "confidence": 0.8,
-                "clarity": 0.85,
-                "engagement": 0.9
-            }
-        }
 
-    async def _extract_behavioral_features(self, session_id: str, config: dict) -> dict:
-        """Extract behavioral features from online interactions."""
-        # Extract features from response patterns, timing, etc.
-        return {
-            'response_time_avg': 2.5,
-            'response_consistency': 0.8,
-            'interaction_frequency': 0.7,
-            'engagement_level': 0.85,
-            'cognitive_load': 0.3,
-            'decision_making': 0.75,
-            'behavioral_patterns': {
-                'consistency_score': 0.8,
-                'adaptability': 0.7,
-                'persistence': 0.9
-            }
-        }
-
-    async def _calculate_online_spirit_probability(self, features: dict, config: dict) -> float:
-        """Calculate spirit probability optimized for online experiments."""
-        emotional_score = 0
-        behavioral_score = 0
-
-        # Enhanced emotional component for online experiments
-        emotion_weights = {
-            'joy': 0.2, 'contentment': 0.15, 'curiosity': 0.25, 'interest': 0.2,
-            'confusion': -0.1, 'boredom': -0.15
-        }
-        emotional_features = features.get('emotional_features', {})
-
-        for emotion, weight in emotion_weights.items():
-            if emotion in emotional_features:
-                emotional_score += emotional_features[emotion] * weight
-
-        # Behavioral component (primary for online experiments)
-        behavioral_features = features.get('behavioral', {})
-        if behavioral_features:
-            behavioral_score = (
-                behavioral_features.get('engagement_level', 0) * 0.4 +
-                behavioral_features.get('response_consistency', 0) * 0.3 +
-                behavioral_features.get('decision_making', 0) * 0.2 +
-                behavioral_features.get('interaction_frequency', 0) * 0.1
-            )
-
-        # Linguistic component
-        linguistic_features = features.get('linguistic', {})
-        linguistic_score = linguistic_features.get('sentiment', 0) * 0.5 + linguistic_features.get('engagement', 0) * 0.5
-
-        # Combined score with online emphasis
-        combined_score = (emotional_score * 0.3) + (behavioral_score * 0.5) + (linguistic_score * 0.2)
-
-        # Apply sigmoid with online-specific sensitivity
-        import math
-        spirit_probability = 1 / (1 + math.exp(-5 * (combined_score - 0.5)))
-
-        return round(spirit_probability, 4)
-
-    def _assess_interaction_quality(self, behavioral_features: dict) -> str:
-        """Assess the quality of online interaction."""
-        quality_score = 0
-
-        if behavioral_features.get('engagement_level', 0) > 0.7:
-            quality_score += 1
-        if behavioral_features.get('response_consistency', 0) > 0.6:
-            quality_score += 1
-        if behavioral_features.get('interaction_frequency', 0) > 0.5:
-            quality_score += 1
-        if behavioral_features.get('decision_making', 0) > 0.6:
-            quality_score += 1
-
-        if quality_score >= 3:
-            return "HIGH"
-        elif quality_score >= 2:
-            return "MEDIUM"
-        else:
-            return "LOW"
 
 
 @workflow.defn
@@ -639,15 +494,6 @@ class UnifiedPipelineWorkflow:
         workflow.logger.info("Creating analysis run")
         run_id = f"run_{workflow.now().strftime('%Y%m%d_%H%M%S')}_{len(session_ids)}"
 
-        # Create analysis run record (this would be done via activity in real implementation)
-        analysis_config = {
-            "model_version": model_version,
-            "notes": notes,
-            "session_ids": session_ids,
-            "created_at": workflow.now().isoformat(),
-            "status": "running"
-        }
-
         # Step 3: Process each session
         analysis_results = []
         successful_analyses = 0
@@ -662,36 +508,7 @@ class UnifiedPipelineWorkflow:
             try:
                 workflow.logger.info(f"Processing analysis for session: {session_id}")
 
-                # 3a. Get session data for analysis
-                # Note: In real implementation, this would call an activity
-                session_data = {"responses": [], "session_id": session_id}  # Placeholder
-                if not session_data:
-                    workflow.logger.warning(f"No data found for session: {session_id}")
-                    failed_analyses += 1
-                    analysis_results.append({
-                        "session_id": session_id,
-                        "status": "NO_DATA",
-                        "error": "Session data not found"
-                    })
-                    continue
-
-                # 3b. Submit job to Hume AI for emotion analysis
-                # This would typically involve video/audio processing
-                workflow.logger.info(f"Submitting Hume AI job for session: {session_id}")
-
-                # For now, simulate Hume AI processing
-                # In real implementation, this would call:
-                # hume_result = await hume_activities.submit_job_to_hume(video_file_path)
-                # hume_job_id = hume_result.get("job_id")
-
-                # Simulate waiting for Hume AI processing
-                await asyncio.sleep(1)  # Simulate processing time
-
-                # 3c. Poll for Hume AI results
-                # In real implementation:
-                # hume_data = await hume_activities.poll_and_fetch_hume_results(hume_job_id)
-
-                # Simulate Hume AI results
+                # Simulate Hume AI processing
                 hume_data = {
                     "emotions": {
                         "joy": 0.7,
@@ -704,63 +521,27 @@ class UnifiedPipelineWorkflow:
                     }
                 }
 
-                # 3d. Store Hume AI results
-                # await workflow.execute_activity(
-                #     ArangoDBActivities.store_raw_hume_data,
-                #     args=[{
-                #         "session_id": session_id,
-                #         "hume_data": hume_data,
-                #         "processed_at": workflow.now().isoformat()
-                #     }]
-                # )
-
-                # 3e. Extract physiological features
-                # In real implementation, this would process skin potential data
+                # Extract physiological features
                 physiological_features = {
                     "mean_sp": 0.5,
                     "std_sp": 0.2,
                     "peak_frequency": 0.1
                 }
 
-                # 3f. Combine features for Kawasaki model
+                # Combine features
                 combined_features = {
                     "physiological": physiological_features,
                     "emotional": hume_data["emotions"],
                     "expressions": hume_data["expressions"],
                     "session_metadata": {
                         "session_id": session_id,
-                        "duration": 300,  # 5 minutes
-                        "response_count": len(session_data.get("responses", []))
+                        "duration": 300,
+                        "response_count": len([])
                     }
                 }
 
-                # 3g. Run Kawasaki model calculation
-                # analysis_activity_result = await workflow.execute_activity(
-                #     AnalysisActivities.run_analysis_pipeline,
-                #     args=[model_version, f"Analysis for session {session_id}", config]
-                # )
-                spirit_probability = 0.75  # For now, use simulated result
-
-                # 3h. Store analysis results
-                analysis_result = {
-                    "run_id": run_id,
-                    "session_id": session_id,
-                    "spirit_probability": spirit_probability,
-                    "features": combined_features,
-                    "model_version": model_version,
-                    "processed_at": workflow.now().isoformat(),
-                    "status": "completed"
-                }
-
-                # Store in ArangoDB (simulated via activity)
-                # await workflow.execute_activity(
-                #     ArangoDBActivities.parse_and_store_structured_data,
-                #     args=[{
-                #         "run_id": run_id,
-                #         "session_id": session_id,
-                #         "analysis_result": analysis_result
-                #     }]
-                # )
+                # Run spirit probability calculation
+                spirit_probability = 0.75  # Placeholder
 
                 successful_analyses += 1
                 analysis_results.append({
@@ -779,29 +560,6 @@ class UnifiedPipelineWorkflow:
                     "error": str(e)
                 })
 
-        # Step 4: Update analysis run status
-        # await workflow.execute_activity(
-        #     ArangoDBActivities.update_session_status,
-        #     args=[{
-        #         "run_id": run_id,
-        #         "status": "completed",
-        #         "total_sessions": len(session_ids),
-        #         "successful_analyses": successful_analyses,
-        #         "failed_analyses": failed_analyses,
-        #         "completed_at": workflow.now().isoformat()
-        #     }]
-        # )
-
-        # Step 5: Generate visualizations (optional)
-        if successful_analyses > 0:
-            try:
-                workflow.logger.info(f"Generating visualizations for run: {run_id}")
-                # In real implementation:
-                # await analysis_activities.generate_visualizations(run_id, config)
-                workflow.logger.info("Visualizations generated successfully")
-            except Exception as viz_error:
-                workflow.logger.warning(f"Visualization generation failed: {viz_error}")
-
         workflow.logger.info(f"Analysis pipeline completed: {successful_analyses} successful, {failed_analyses} failed")
 
         return {
@@ -815,3 +573,169 @@ class UnifiedPipelineWorkflow:
             "model_version": model_version,
             "analysis_results": analysis_results
         }
+
+# Helper functions for physiological workflow
+async def _process_hume_ai_analysis(session_id: str, config: dict) -> dict:
+    """Process Hume AI emotion analysis for physiological experiments."""
+    # In real implementation, this would call Hume AI API
+    # For now, return enhanced simulation with physiological correlation
+    return {
+        "emotions": {
+            "joy": 0.8,
+            "contentment": 0.7,
+            "calmness": 0.6,
+            "anxiety": 0.3,
+            "stress": 0.4
+        },
+        "expressions": {
+            "smile": 0.9,
+            "relaxed": 0.7,
+            "tense": 0.3
+        },
+        "physiological_correlation": {
+            "emotion_physio_sync": 0.75,
+            "stress_response": 0.6
+        }
+    }
+
+async def _extract_physiological_features(session_id: str, config: dict) -> dict:
+    """Extract enhanced physiological features for experiments."""
+    # In real implementation, this would process actual skin potential data
+    # Enhanced features for physiological experiments
+    return {
+        'mean_sp': 0.6,
+        'std_sp': 0.25,
+        'min_sp': 0.2,
+        'max_sp': 1.0,
+        'peak_frequency': 0.15,
+        'response_variability': 0.8,
+        'recovery_rate': 0.7,
+        'baseline_stability': 0.9,
+        'stress_indicators': {
+            'sudden_spikes': 2,
+            'recovery_time': 45,
+            'variability_index': 0.35
+        }
+    }
+
+def _assess_data_quality(physiological_features: dict) -> str:
+    """Assess the quality of physiological data collected."""
+    quality_score = 0
+
+    if physiological_features.get('std_sp', 0) > 0.2:
+        quality_score += 1
+    if physiological_features.get('response_variability', 0) > 0.5:
+        quality_score += 1
+    if physiological_features.get('recovery_rate', 0) > 0.6:
+        quality_score += 1
+    if physiological_features.get('baseline_stability', 0) > 0.7:
+        quality_score += 1
+
+    if quality_score >= 3:
+        return "HIGH"
+    elif quality_score >= 2:
+        return "MEDIUM"
+    else:
+        return "LOW"
+
+# Helper functions for online workflow
+async def _process_online_hume_analysis(session_id: str, config: dict) -> dict:
+    """Process Hume AI emotion analysis for online experiments."""
+    # Enhanced Hume AI processing for online experiments
+    # Includes linguistic analysis which is more available in online settings
+    return {
+        "emotions": {
+            "joy": 0.7,
+            "contentment": 0.6,
+            "curiosity": 0.8,
+            "interest": 0.7,
+            "confusion": 0.2
+        },
+        "expressions": {
+            "smile": 0.6,
+            "thoughtful": 0.8,
+            "engaged": 0.9
+        },
+        "linguistic": {
+            "sentiment": 0.75,
+            "confidence": 0.8,
+            "clarity": 0.85,
+            "engagement": 0.9
+        }
+    }
+
+async def _extract_behavioral_features(session_id: str, config: dict) -> dict:
+    """Extract behavioral features from online interactions."""
+    # Extract features from response patterns, timing, etc.
+    return {
+        'response_time_avg': 2.5,
+        'response_consistency': 0.8,
+        'interaction_frequency': 0.7,
+        'engagement_level': 0.85,
+        'cognitive_load': 0.3,
+        'decision_making': 0.75,
+        'behavioral_patterns': {
+            'consistency_score': 0.8,
+            'adaptability': 0.7,
+            'persistence': 0.9
+        }
+    }
+
+async def _calculate_online_spirit_probability(features: dict, config: dict) -> float:
+    """Calculate spirit probability optimized for online experiments."""
+    emotional_score = 0
+    behavioral_score = 0
+
+    # Enhanced emotional component for online experiments
+    emotion_weights = {
+        'joy': 0.2, 'contentment': 0.15, 'curiosity': 0.25, 'interest': 0.2,
+        'confusion': -0.1, 'boredom': -0.15
+    }
+    emotional_features = features.get('emotional', {})
+
+    for emotion, weight in emotion_weights.items():
+        if emotion in emotional_features:
+            emotional_score += emotional_features[emotion] * weight
+
+    # Behavioral component (primary for online experiments)
+    behavioral_features = features.get('behavioral', {})
+    if behavioral_features:
+        behavioral_score = (
+            behavioral_features.get('engagement_level', 0) * 0.4 +
+            behavioral_features.get('response_consistency', 0) * 0.3 +
+            behavioral_features.get('decision_making', 0) * 0.2 +
+            behavioral_features.get('interaction_frequency', 0) * 0.1
+        )
+
+    # Linguistic component
+    linguistic_features = features.get('linguistic', {})
+    linguistic_score = linguistic_features.get('sentiment', 0) * 0.5 + linguistic_features.get('engagement', 0) * 0.5
+
+    # Combined score with online emphasis
+    combined_score = (emotional_score * 0.3) + (behavioral_score * 0.5) + (linguistic_score * 0.2)
+
+    # Apply sigmoid with online-specific sensitivity
+    import math
+    spirit_probability = 1 / (1 + math.exp(-5 * (combined_score - 0.5)))
+
+    return round(spirit_probability, 4)
+
+def _assess_interaction_quality(behavioral_features: dict) -> str:
+    """Assess the quality of online interaction."""
+    quality_score = 0
+
+    if behavioral_features.get('engagement_level', 0) > 0.7:
+        quality_score += 1
+    if behavioral_features.get('response_consistency', 0) > 0.6:
+        quality_score += 1
+    if behavioral_features.get('interaction_frequency', 0) > 0.5:
+        quality_score += 1
+    if behavioral_features.get('decision_making', 0) > 0.6:
+        quality_score += 1
+
+    if quality_score >= 3:
+        return "HIGH"
+    elif quality_score >= 2:
+        return "MEDIUM"
+    else:
+        return "LOW"
