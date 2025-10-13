@@ -6,7 +6,7 @@ import asyncio
 with workflow.unsafe.imports_passed_through():
     from .activities.arangodb import ArangoDBActivities
     from .activities.hume_activities import HumeActivities
-    from .workflows.dependency_manager import WorkflowDependencyManager
+    # from workflows.dependency_manager import WorkflowDependencyManager
 
 # Define retry policies for different activity types
 arangodb_retry_policy = RetryPolicy(
@@ -25,17 +25,7 @@ hume_retry_policy = RetryPolicy(
     non_retryable_error_types=["FileNotFoundError"]
 )
 
-# Define the activities stubs with retry policies
-arangodb_activities = workflow.new_activity_stub(
-    ArangoDBActivities, 
-    start_to_close_timeout=timedelta(minutes=5),
-    retry_policy=arangodb_retry_policy
-)
-hume_activities = workflow.new_activity_stub(
-    HumeActivities, 
-    start_to_close_timeout=timedelta(hours=2),
-    retry_policy=hume_retry_policy
-)
+# Activities will be called directly in the workflow
 
 @workflow.defn
 class IngestionWorkflow:

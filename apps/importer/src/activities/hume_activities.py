@@ -1,7 +1,7 @@
 from datetime import timedelta
 from temporalio import activity
 from hume import HumeClient
-from hume.models.config import FaceConfig, ProsodyConfig, LanguageConfig
+# from hume import FaceConfig, ProsodyConfig, LanguageConfig
 import sys
 import os
 import asyncio
