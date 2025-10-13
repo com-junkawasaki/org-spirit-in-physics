@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url)
 const nextConfig = {
   // Configure `pageExtensions` to include MDX files
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  output: 'standalone',
   // Enable experimental features for better performance
   experimental: {
     optimizeCss: true,

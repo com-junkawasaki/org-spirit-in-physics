@@ -15,6 +15,8 @@ COPY apps/importer/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install hume==0.12.1
+RUN python -c "import hume; print('Hume AI SDK version:', hume.__version__)"
 
 # Copy environment file
 COPY apps/importer/env.docker .env

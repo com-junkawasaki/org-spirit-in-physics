@@ -4,25 +4,27 @@ from temporalio.common import RetryPolicy
 import asyncio
 
 with workflow.unsafe.imports_passed_through():
-    from .activities.arangodb import ArangoDBActivities
-    from .activities.hume_activities import HumeActivities
-    # from workflows.dependency_manager import WorkflowDependencyManager
+    from activities.arangodb_activities import ArangoDBActivities
+    from activities.hume_activities import HumeActivities
 
-# Define retry policies for different activity types
-arangodb_retry_policy = RetryPolicy(
-    initial_interval=timedelta(seconds=1),
-    maximum_interval=timedelta(minutes=1),
-    maximum_attempts=3,
-    backoff_coefficient=2.0,
-    non_retryable_error_types=["ValueError", "FileNotFoundError"]
+arango_activities = workflow.new_activity_stub(
+    ArangoDBActivities,
+    start_to_close_timeout=timedelta(minutes=5),
+    retry_policy=RetryPolicy(
+        initial_interval=timedelta(seconds=1),
+        maximum_interval=timedelta(minutes=1),
+        maximum_attempts=3,
+    ),
 )
 
-hume_retry_policy = RetryPolicy(
-    initial_interval=timedelta(seconds=5),
-    maximum_interval=timedelta(minutes=5),
-    maximum_attempts=5,
-    backoff_coefficient=2.0,
-    non_retryable_error_types=["FileNotFoundError"]
+hume_activities = workflow.new_activity_stub(
+    HumeActivities,
+    start_to_close_timeout=timedelta(minutes=30),
+    retry_policy=RetryPolicy(
+        initial_interval=timedelta(seconds=5),
+        maximum_interval=timedelta(minutes=5),
+        maximum_attempts=5,
+    ),
 )
 
 # Activities will be called directly in the workflow
@@ -41,11 +43,11 @@ class IngestionWorkflow:
         try:
             # Step 1: Get session information
             workflow.logger.info(f"Step 1: Getting session information for {session_id}")
-            session_info = await arangodb_activities.get_session_for_ingestion(session_id)
+            session_info = await arango_activities.get_session_for_ingestion(session_id)
             
             # Step 2: Download media file
             workflow.logger.info(f"Step 2: Downloading media file for {session_id}")
-            local_path = await arangodb_activities.download_media_file(session_info["storage_path"])
+            local_path = await arango_activities.download_media_file(session_info["storage_path"])
 
             # Step 3: Submit job to Hume AI
             workflow.logger.info(f"Step 3: Submitting job to Hume AI for {session_id}")
@@ -63,15 +65,15 @@ class IngestionWorkflow:
 
             # Step 6: Store raw Hume data
             workflow.logger.info(f"Step 6: Storing raw Hume data for {session_id}")
-            await arangodb_activities.store_raw_hume_data((session_id, artifacts))
+            await arango_activities.store_raw_hume_data((session_id, artifacts))
             
             # Step 7: Parse and store structured data
             workflow.logger.info(f"Step 7: Parsing and storing structured data for {session_id}")
-            await arangodb_activities.parse_and_store_structured_data((session_id, artifacts))
+            await arango_activities.parse_and_store_structured_data((session_id, artifacts))
 
             # Step 8: Update session status to complete
             workflow.logger.info(f"Step 8: Updating session status to COMPLETE for {session_id}")
-            await arangodb_activities.update_session_status((session_id, "INGESTION_COMPLETE"))
+            await arango_activities.update_session_status((session_id, "INGESTION_COMPLETE"))
 
             workflow.logger.info(f"Ingestion workflow completed successfully for session: {session_id}")
             return {
@@ -86,7 +88,7 @@ class IngestionWorkflow:
             
             # Update session status to failed
             try:
-                await arangodb_activities.update_session_status((session_id, "INGESTION_FAILED"))
+                await arango_activities.update_session_status((session_id, "INGESTION_FAILED"))
             except Exception as status_error:
                 workflow.logger.error(f"Failed to update session status: {status_error}")
             
@@ -103,7 +105,7 @@ class IngestionWorkflow:
             if local_path:
                 try:
                     workflow.logger.info(f"Cleaning up temporary file: {local_path}")
-                    await arangodb_activities.cleanup_temp_files(local_path)
+                    await arango_activities.cleanup_temp_files(local_path)
                 except Exception as cleanup_error:
                     workflow.logger.error(f"Failed to cleanup temporary file: {cleanup_error}")
 
@@ -164,14 +166,11 @@ class PipelineOrchestrator:
     """Orchestrates the entire data processing pipeline with dependency management."""
     
     @workflow.run
-    async def run(self, session_ids: list[str], model_version: str, notes: str, config: dict) -> dict:
+    async def run(self, session_ids: list[str]) -> dict:
         """Execute the complete pipeline: ingestion -> analysis -> visualization."""
         workflow.logger.info(f"Starting pipeline orchestration for {len(session_ids)} sessions")
         
         try:
-            # Initialize dependency manager
-            dependency_manager = WorkflowDependencyManager()
-            
             # Step 1: Execute ingestion workflows in parallel
             workflow.logger.info("Step 1: Executing ingestion workflows")
             ingestion_tasks = []
@@ -200,50 +199,13 @@ class PipelineOrchestrator:
             
             workflow.logger.info(f"Ingestion completed: {len(successful_ingestions)} successful, {len(failed_ingestions)} failed")
             
-            # Update dependency status
-            dependency_manager.update_status("ingestion", "completed")
-            
-            # Step 2: Execute analysis workflow (depends on ingestion)
-            workflow.logger.info("Step 2: Executing analysis workflow")
-            analysis_result = await workflow.execute_child_workflow(
-                "AnalysisWorkflow",  # Will be imported from analyzer
-                model_version,
-                notes,
-                config,
-                id=f"analysis-{model_version}",
-                task_queue="analyzer-task-queue"
-            )
-            
-            workflow.logger.info("Analysis workflow completed")
-            
-            # Update dependency status
-            dependency_manager.update_status("analysis", "completed")
-            
-            # Step 3: Execute visualization workflow (depends on analysis)
-            workflow.logger.info("Step 3: Executing visualization workflow")
-            visualization_result = await workflow.execute_child_workflow(
-                "VisualizationWorkflow",  # Will be imported from analyzer
-                analysis_result.get("run_id", "unknown"),
-                config,
-                id=f"visualization-{model_version}",
-                task_queue="analyzer-task-queue"
-            )
-            
-            workflow.logger.info("Visualization workflow completed")
-            
-            # Update dependency status
-            dependency_manager.update_status("visualization", "completed")
-            
             return {
                 "status": "SUCCESS",
-                "pipeline_execution_order": dependency_manager.get_execution_order(),
                 "ingestion_results": {
                     "successful": successful_ingestions,
                     "failed": failed_ingestions,
                     "total": len(session_ids)
                 },
-                "analysis_result": analysis_result,
-                "visualization_result": visualization_result
             }
             
         except Exception as e:

@@ -166,10 +166,10 @@ class ArangoDBClient {
 
 // ArangoDB configuration
 const arangodbConfig: ArangoDBConfig = {
-  url: process.env.ARANGODB_URL || process.env.NEXT_PUBLIC_ARANGODB_URL || 'http://localhost:8529',
+  url: process.env.ARANGODB_URL || process.env.NEXT_PUBLIC_ARANGODB_URL || '',
   user: process.env.ARANGODB_USER || 'root',
   password: process.env.ARANGODB_PASSWORD || '',
-  databaseName: process.env.ARANGODB_DATABASE_NAME || 'spirit_in_physics'
+  databaseName: process.env.ARANGODB_DATABASE || 'spirit_in_physics'
 }
 
 // Create singleton client instance
