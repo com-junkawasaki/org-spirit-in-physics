@@ -9,8 +9,8 @@ export interface AnalysisResult {
   reaction_time_component: number
   skin_potential_component: number
   emotion_component: number
-  emotion_data: any
-  physiological_data: any
+  emotion_data: Record<string, number>
+  physiological_data: Record<string, unknown> | null
   created_at: string
   reaction_time_ms?: number
 }
@@ -20,6 +20,9 @@ export interface ParticipantData {
   name: string | null
   sessions: ExperimentSession[]
   analysisRuns: AnalysisRun[]
+  sessionCount: number
+  responseCount: number
+  averageSpiritProbability: number
 }
 
 export interface ExperimentSession {
@@ -29,6 +32,7 @@ export interface ExperimentSession {
   start_time: string | null
   end_time: string | null
   responses: ResponseData[]
+  responseCount: number
 }
 
 export interface ResponseData {
@@ -105,9 +109,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         COLLECT emotion = response.emotion WITH COUNT INTO count
         RETURN { emotion, count }
     `
-    const emotionResult = await client.query(emotionQuery)
+    const emotionResult: { emotion: string; count: number }[] = await client.query(emotionQuery)
     const emotionDistribution: Record<string, number> = {}
-    emotionResult?.forEach((item: any) => {
+    emotionResult?.forEach((item) => {
       emotionDistribution[item.emotion || 'unknown'] = item.count || 0
     })
 
@@ -160,7 +164,10 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
           id: participantId,
           name: `Participant ${participantId.slice(0, 8)}`,
           sessions: [],
-          analysisRuns: []
+          analysisRuns: [],
+          sessionCount: 0,
+          responseCount: 0,
+          averageSpiritProbability: 0,
         }
       })
     )
@@ -204,14 +211,20 @@ export async function getParticipantData(participantId: string): Promise<Partici
     })
 
     // Create sessions array
-    const sessions: ExperimentSession[] = Object.entries(sessionMap).map(([sessionId, sessionResponses]) => ({
-      id: sessionId,
-      session_id: sessionId,
-      session_type: 'session-1', // Placeholder
-      start_time: null,
-      end_time: null,
-      responses: sessionResponses
-    }))
+    const sessions: ExperimentSession[] = Object.entries(sessionMap).map(([sessionId, sessionResponses]) => {
+      const start_time = sessionResponses.length > 0 ? new Date(sessionResponses[0].event_ts).toISOString() : null;
+      const end_time = sessionResponses.length > 0 ? new Date(sessionResponses[sessionResponses.length - 1].event_ts).toISOString() : null;
+      
+      return {
+        id: sessionId,
+        session_id: sessionId,
+        session_type: 'session-1', // Placeholder
+        start_time,
+        end_time,
+        responses: sessionResponses,
+        responseCount: sessionResponses.length,
+      }
+    })
 
     // Create mock analysis runs (since we don't have analysis results in TerminusDB yet)
     const analysisRuns: AnalysisRun[] = [{
@@ -229,17 +242,26 @@ export async function getParticipantData(participantId: string): Promise<Partici
         reaction_time_component: 0,
         skin_potential_component: 0,
         emotion_component: 0,
-        emotion_data: {},
+        emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence } : {},
         physiological_data: {},
         created_at: new Date().toISOString()
       }))
     }]
 
+    const sessionCount = sessions.length
+    const responseCount = responses.length
+    const averageSpiritProbability = analysisRuns[0].results.length > 0
+      ? analysisRuns[0].results.reduce((sum, result) => sum + result.p_value, 0) / analysisRuns[0].results.length
+      : 0
+
     return {
       id: participant.id,
       name: `Participant ${participantId.slice(0, 8)}`, // Default name if not available
       sessions,
-      analysisRuns
+      analysisRuns,
+      sessionCount,
+      responseCount,
+      averageSpiritProbability,
     }
   } catch (error) {
     console.error('Failed to get participant data:', error)

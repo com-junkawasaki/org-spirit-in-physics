@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ParticipantData, AnalysisResult } from '@/lib/data'
 import {
   ArrowLeft,
   Calendar,
@@ -20,36 +21,7 @@ import {
   Target
 } from 'lucide-react'
 
-interface Participant {
-  id: string
-  name: string
-  sessionCount: number
-  responseCount: number
-  averageSpiritProbability: number
-  lastActivity: number | null
-  sessions: Array<{
-    id: string
-    sessionType: string
-    startTime: string
-    endTime: string | null
-    responseCount: number
-  }>
-}
-
-interface AnalysisResult {
-  id: string
-  stimulus_word: string
-  response_word: string
-  p_value: number
-  reaction_time_ms?: number
-  emotion_data: Record<string, number>
-  created_at: string
-  word2vec_component: number
-  reaction_time_component: number
-  skin_potential_component: number
-  emotion_component: number
-  physiological_data: Record<string, unknown> | null
-}
+type Participant = ParticipantData
 
 async function getParticipant(id: string): Promise<Participant | null> {
   try {
@@ -199,6 +171,7 @@ export default function ParticipantDetailPage() {
   useEffect(() => {
     async function fetchParticipant() {
       const data = await getParticipant(id)
+      console.log('Fetched participant data:', data); // Add this line for debugging
       setParticipant(data)
       setLoading(false)
     }
@@ -427,10 +400,10 @@ function OverviewContent({ participant }: { participant: Participant }) {
                 <div className="flex items-center space-x-4">
                   <Calendar className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">{session.sessionType}</p>
+                    <p className="font-medium">{session.session_type}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatDate(session.startTime)}
-                      {session.endTime && ` - ${formatDate(session.endTime)}`}
+                      {formatDate(session.start_time)}
+                      {session.end_time && ` - ${formatDate(session.end_time)}`}
                     </p>
                   </div>
                 </div>

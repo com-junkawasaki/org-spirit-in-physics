@@ -49,6 +49,7 @@ def process_participant_data(participant_dir: str, client: ArangoDBClient):
 
         # Insert participant
         participant_data = {
+            "_key": participant_id,
             "id": participant_id,
             "age": None,  # Will be extracted from session data if available
             "gender": "prefer-not-to-say",  # Default value
@@ -161,8 +162,8 @@ def main():
         print("Failed to connect to ArangoDB")
         return
 
-    if not client.create_database():
-        print("Failed to create/access database")
+    if not client.recreate_database():
+        print("Failed to recreate database")
         client.close()
         return
 

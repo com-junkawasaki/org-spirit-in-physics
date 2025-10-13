@@ -66,6 +66,22 @@ class ArangoDBClient:
             logger.error(f"Failed to create/connect to database: {e}")
             return False
 
+    def recreate_database(self) -> bool:
+        """Drop and recreate the database."""
+        try:
+            if not self.client:
+                raise ConnectionError("Not connected to ArangoDB")
+
+            sys_db = self.client.db("_system", username=self.user, password=self.password)
+            if self.database_name in sys_db.databases():
+                sys_db.delete_database(self.database_name)
+                logger.info(f"Dropped database: {self.database_name}")
+
+            return self.create_database()
+        except Exception as e:
+            logger.error(f"Failed to recreate database: {e}")
+            return False
+
     def create_collections(self) -> bool:
         """Create necessary collections in the database."""
         try:
