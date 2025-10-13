@@ -17,5 +17,3 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ error: 'Failed to start Temporal worker' }, { status: 500 })
   }
 }
-
-

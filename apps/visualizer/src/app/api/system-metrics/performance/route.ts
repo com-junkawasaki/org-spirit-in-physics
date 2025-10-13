@@ -5,7 +5,7 @@
 // Interface Segregation: Focused on performance data only
 // Dependency Inversion: Depends on performance interfaces, not concrete implementations
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createArangoDBClient } from '@/lib/arangodb'
 
 // Merkle DAG: performance_metrics_api -> performance_data_interface

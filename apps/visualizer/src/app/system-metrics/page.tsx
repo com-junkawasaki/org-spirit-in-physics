@@ -307,7 +307,7 @@ export default function SystemMetricsPage() {
               healthStatuses={transformToHealthStatuses(systemMetrics)}
               overallStatus={systemMetrics.health.overall}
               isLoading={isLoading}
-              lastUpdated={lastUpdated}
+              lastChecked={lastUpdated}
             />
             
             <Card className="p-6">
@@ -352,7 +352,7 @@ export default function SystemMetricsPage() {
             healthStatuses={transformToHealthStatuses(systemMetrics)}
             overallStatus={systemMetrics.health.overall}
             isLoading={isLoading}
-            lastUpdated={lastUpdated}
+            lastChecked={lastUpdated}
             className="w-full"
           />
         </TabsContent>

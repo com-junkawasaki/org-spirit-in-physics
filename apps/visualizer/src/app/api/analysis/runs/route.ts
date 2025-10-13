@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createArangoDBClient } from '@/lib/arangodb'
-import path from 'path'
-import { spawn } from 'child_process'
+import { Connection, WorkflowClient } from '@temporalio/client'
 
 export async function GET() {
   try {
@@ -24,6 +23,7 @@ export async function POST(_req: NextRequest) {
   try {
     const client = createArangoDBClient()
     const now = new Date().toISOString()
+    
     // グローバル実行（participant未指定）用のプレースホルダ
     const insertQuery = `INSERT @doc INTO analysis_runs RETURN NEW`
     const [run] = await client.query(insertQuery, {
@@ -38,13 +38,20 @@ export async function POST(_req: NextRequest) {
       },
     })
 
-    const projectRoot = path.resolve(process.cwd(), '../../..')
-    const child = spawn(
-      'python3',
-      ['-m', 'apps.analyzer.src.main', '--model-version', 'dev', '--notes', `run=${run._key}`],
-      { cwd: projectRoot, stdio: 'ignore', detached: true }
-    )
-    child.unref()
+    // Temporal clientを使用してワークフローを実行
+    const connection = await Connection.connect({
+      address: process.env.TEMPORAL_HOST || 'localhost:7233',
+    })
+    
+    const workflowClient = new WorkflowClient({ connection })
+
+    const workflowId = `analysis-workflow-${run._key}`
+    
+    await workflowClient.start('AnalysisWorkflow', {
+      workflowId,
+      taskQueue: 'analyzer-task-queue',
+      args: ['dev', `run=${run._key}`, {}], // model_version, notes, config
+    })
 
     return NextResponse.json({ ok: true, runId: run._key }, { status: 202 })
   } catch (error) {
@@ -52,5 +59,3 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ error: 'Failed to start run' }, { status: 500 })
   }
 }
-
-
