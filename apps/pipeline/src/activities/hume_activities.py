@@ -1,7 +1,7 @@
 from datetime import timedelta
 from temporalio import activity
 from hume import HumeClient
-# from hume import FaceConfig, ProsodyConfig, LanguageConfig
+from hume.expression_measurement.batch import Face, Prosody, Language
 import sys
 import os
 import asyncio
@@ -28,19 +28,19 @@ class HumeActivities:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"Media file not found: {file_path}")
             
-            # Configure Hume AI analysis
-            configs = [
-                FaceConfig(),
-                ProsodyConfig(),
-                LanguageConfig(granularity="word")
-            ]
-
-            # Submit job to Hume AI
-            job = await self.client.expression_measurement.batch.start_inference_job(
-                files=[file_path], 
-                configs=configs
+            # Configure Hume AI analysis models
+            from hume.expression_measurement.batch import Models
+            models = Models(
+                face=Face(),
+                prosody=Prosody(),
+                language=Language()
             )
-            job_id = job.id
+
+            # Submit job to Hume AI using the local file method
+            job_id = await self.client.expression_measurement.batch.start_inference_job_from_local_file(
+                file=[file_path],
+                json={"models": models.model_dump()}
+            )
             activity.logger.info(f"Successfully submitted job {job_id} to Hume AI.")
             
             return job_id
@@ -57,22 +57,35 @@ class HumeActivities:
         activity.logger.info(f"Polling for Hume job completion: {hume_job_id}")
         
         try:
-            # Get job reference
-            job = self.client.expression_measurement.batch.get_job(hume_job_id)
-            
             # Poll for completion with timeout
-            activity.logger.info(f"Waiting for job {hume_job_id} to complete...")
-            
-            # Use Hume AI's built-in await_complete with timeout
-            await asyncio.wait_for(
-                job.await_complete(),
-                timeout=self.max_poll_attempts * self.poll_interval
-            )
-            
+            activity.logger.info(f"Polling for job {hume_job_id} completion...")
+
+            # Poll for job completion manually since we don't have await_complete
+            for attempt in range(self.max_poll_attempts):
+                try:
+                    job_details = await self.client.expression_measurement.batch.get_job_details(hume_job_id)
+                    status = job_details.state
+
+                    if hasattr(status, 'completed') and status.completed:
+                        activity.logger.info(f"Hume job {hume_job_id} completed!")
+                        break
+                    elif hasattr(status, 'failed') and status.failed:
+                        raise Exception(f"Hume job {hume_job_id} failed")
+
+                    activity.logger.info(f"Job {hume_job_id} status: {status}, attempt {attempt + 1}/{self.max_poll_attempts}")
+                    await asyncio.sleep(self.poll_interval)
+
+                except Exception as poll_error:
+                    activity.logger.warning(f"Error polling job {hume_job_id}: {poll_error}")
+                    await asyncio.sleep(self.poll_interval)
+
+            else:
+                raise TimeoutError(f"Hume job {hume_job_id} did not complete within {self.max_poll_attempts * self.poll_interval} seconds")
+
             activity.logger.info(f"Hume job {hume_job_id} completed. Fetching predictions...")
-            
+
             # Fetch predictions
-            predictions = await job.get_predictions()
+            predictions = await self.client.expression_measurement.batch.get_job_predictions(hume_job_id)
             
             # Validate predictions structure
             if not predictions:
@@ -123,16 +136,16 @@ class HumeActivities:
         activity.logger.info(f"Getting status for Hume job: {hume_job_id}")
         
         try:
-            job = self.client.expression_measurement.batch.get_job(hume_job_id)
-            
+            job_details = await self.client.expression_measurement.batch.get_job_details(hume_job_id)
+
             status_info = {
                 "job_id": hume_job_id,
-                "status": job.status,
-                "created_at": job.created_at,
-                "updated_at": job.updated_at
+                "status": job_details.state,
+                "created_at": job_details.created_at if hasattr(job_details, 'created_at') else None,
+                "updated_at": job_details.updated_at if hasattr(job_details, 'updated_at') else None
             }
             
-            activity.logger.info(f"Job {hume_job_id} status: {job.status}")
+            activity.logger.info(f"Job {hume_job_id} status: {job_details.state}")
             return status_info
             
         except Exception as e:
