@@ -36,10 +36,29 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
   const checkSystemStatus = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/system-status')
+      const response = await fetch('/api/system-metrics')
       if (response.ok) {
         const data = await response.json()
-        setStatus(data)
+        // Transform system-metrics data to SystemStatus format
+        const transformedStatus: SystemStatus = {
+          timestamp: data.timestamp,
+          totalResponseTime: data.performance?.averageResponseTime || 0,
+          services: data.health?.services?.map((service: { name: string; status: string; responseTime: number }) => ({
+            service: service.name,
+            status: service.status === 'healthy' ? 'connected' : 
+                   service.status === 'degraded' ? 'error' : 'disconnected',
+            message: `${service.name}サービスが${service.status === 'healthy' ? '正常' : '異常'}です`,
+            responseTime: service.responseTime,
+            details: {
+              database: service.name === 'ArangoDB' ? process.env.ARANGODB_DATABASE_NAME || 'spirit_in_physics' : undefined,
+              server: service.name === 'Temporal' ? `${process.env.TEMPORAL_HOST || 'localhost'}:${process.env.TEMPORAL_PORT || '7233'}` : undefined,
+              endpoint: service.name === 'Hume AI' ? 'https://api.hume.ai/v0/face' : undefined
+            }
+          })) || [],
+          overallStatus: data.health?.overall === 'healthy' ? 'healthy' : 
+                       data.health?.overall === 'critical' ? 'error' : 'degraded'
+        }
+        setStatus(transformedStatus)
         setLastChecked(new Date())
       } else {
         console.error('Failed to fetch system status')
@@ -74,7 +93,7 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'connected':
-        return <Badge variant="default" className="bg-green-500">Connected</Badge>
+        return <Badge className="bg-green-500">Connected</Badge>
       case 'disconnected':
         return <Badge variant="destructive">Disconnected</Badge>
       case 'error':
@@ -130,7 +149,7 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={checkSystemStatus}
+            onClick={() => checkSystemStatus()}
             disabled={isLoading}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />

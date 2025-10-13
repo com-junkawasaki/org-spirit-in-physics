@@ -76,7 +76,7 @@ class MetricsCalculator {
         }
       `
       
-      const result = await (this.dbClient as any).query(query)
+      const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
       return result[0] || { total: 0, active: 0, completed: 0 }
     } catch (error) {
       console.error('Failed to calculate participants metrics:', error)
@@ -102,7 +102,7 @@ class MetricsCalculator {
         }
       `
       
-      const result = await (this.dbClient as any).query(query)
+      const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
       return result[0] || { total: 0, active: 0, completed: 0 }
     } catch (error) {
       console.error('Failed to calculate sessions metrics:', error)
@@ -133,7 +133,7 @@ class MetricsCalculator {
         }
       `
       
-      const result = await (this.dbClient as any).query(query)
+      const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
       return result[0] || { total: 0, processed: 0, pending: 0, averageSpiritProbability: 0 }
     } catch (error) {
       console.error('Failed to calculate responses metrics:', error)
@@ -163,7 +163,7 @@ class MetricsCalculator {
         }
       `
       
-      const result = await (this.dbClient as any).query(query)
+      const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
       return result[0] || { total: 0, active: 0, completed: 0, failed: 0 }
     } catch (error) {
       console.error('Failed to calculate jobs metrics:', error)
@@ -191,7 +191,7 @@ class MetricsCalculator {
         RETURN avgResponseTime || 0
       `
       
-      const responseTimeResult = await (this.dbClient as any).query(responseTimeQuery)
+      const responseTimeResult = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(responseTimeQuery)
       const averageResponseTime = responseTimeResult[0] || 0
 
       // Mock performance data (in real implementation, these would come from system monitoring)
@@ -220,7 +220,7 @@ class MetricsCalculator {
       // Check ArangoDB health
       const arangoStartTime = Date.now()
       try {
-        await (this.dbClient as any).query('RETURN 1')
+        await (this.dbClient as { query: (query: string) => Promise<any[]> }).query('RETURN 1')
         services.push({
           name: 'ArangoDB',
           status: 'healthy' as const,
@@ -236,21 +236,13 @@ class MetricsCalculator {
         })
       }
 
-      // Check Temporal health (mock)
-      services.push({
-        name: 'Temporal',
-        status: 'healthy' as const,
-        responseTime: 50,
-        lastChecked: new Date().toISOString()
-      })
+      // Check Temporal health
+      const temporalStatus = await this.checkTemporalConnection()
+      services.push(temporalStatus)
 
-      // Check Hume AI health (mock)
-      services.push({
-        name: 'Hume AI',
-        status: 'healthy' as const,
-        responseTime: 200,
-        lastChecked: new Date().toISOString()
-      })
+      // Check Hume AI health
+      const humeStatus = await this.checkHumeAIConnection()
+      services.push(humeStatus)
 
       const overallStatus = services.every(s => s.status === 'healthy') 
         ? 'healthy' 
@@ -267,6 +259,164 @@ class MetricsCalculator {
       return {
         overall: 'critical',
         services: []
+      }
+    }
+  }
+
+  // Merkle DAG: system_metrics_api -> temporal_connection_checker
+  private async checkTemporalConnection(): Promise<{
+    name: string
+    status: 'healthy' | 'degraded' | 'critical'
+    responseTime: number
+    lastChecked: string
+  }> {
+    const startTime = Date.now()
+    
+    try {
+      // Check if Temporal server is running by testing port connectivity
+      const temporalHost = process.env.TEMPORAL_HOST || 'localhost'
+      const temporalPort = parseInt(process.env.TEMPORAL_PORT || '7233')
+      
+      // Use a simple fetch to test if the port is open
+      // Temporal server will respond with gRPC binary data, which we'll catch
+      try {
+        await fetch(`http://${temporalHost}:${temporalPort}`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000)
+        })
+      } catch (fetchError) {
+        // Check both the error message and the cause
+        const errorMessage = fetchError instanceof Error ? fetchError.message : ''
+        const errorCause = (fetchError as Error & { cause?: Error })?.cause
+        const causeMessage = errorCause instanceof Error ? errorCause.message : ''
+        const causeName = errorCause instanceof Error ? errorCause.name : ''
+        
+        // If we get an HTTP parser error, it means the server is running (gRPC response)
+        if (fetchError instanceof Error && (
+          errorMessage.includes('HTTP/0.9') ||
+          errorMessage.includes('HTTPParserError') ||
+          errorMessage.includes('does not match the HTTP/1.1 protocol') ||
+          errorMessage.includes('HPE_INVALID_CONSTANT') ||
+          causeName.includes('HTTPParserError') ||
+          causeMessage.includes('does not match the HTTP/1.1 protocol') ||
+          causeMessage.includes('HPE_INVALID_CONSTANT')
+        )) {
+          const responseTime = Date.now() - startTime
+          return {
+            name: 'Temporal',
+            status: 'healthy',
+            responseTime,
+            lastChecked: new Date().toISOString()
+          }
+        }
+        throw fetchError
+      }
+      
+      // If we get here, the server responded normally (unexpected)
+      const responseTime = Date.now() - startTime
+      return {
+        name: 'Temporal',
+        status: 'healthy',
+        responseTime,
+        lastChecked: new Date().toISOString()
+      }
+    } catch (error) {
+      const responseTime = Date.now() - startTime
+      
+      // Check if it's a connection refused error (server not running)
+      if (error instanceof Error && (
+        error.message.includes('ECONNREFUSED') || 
+        error.message.includes('Connection timeout') ||
+        error.message.includes('fetch failed')
+      )) {
+        return {
+          name: 'Temporal',
+          status: 'critical',
+          responseTime,
+          lastChecked: new Date().toISOString()
+        }
+      }
+      
+      return {
+        name: 'Temporal',
+        status: 'degraded',
+        responseTime,
+        lastChecked: new Date().toISOString()
+      }
+    }
+  }
+
+  // Merkle DAG: system_metrics_api -> hume_ai_connection_checker
+  private async checkHumeAIConnection(): Promise<{
+    name: string
+    status: 'healthy' | 'degraded' | 'critical'
+    responseTime: number
+    lastChecked: string
+  }> {
+    const startTime = Date.now()
+    
+    try {
+      // Check if Hume AI API key is configured
+      const apiKey = process.env.HUME_API_KEY
+      
+      if (!apiKey) {
+        return {
+          name: 'Hume AI',
+          status: 'critical',
+          responseTime: Date.now() - startTime,
+          lastChecked: new Date().toISOString()
+        }
+      }
+      
+      // Try to make a simple API call to Hume AI
+      const response = await fetch('https://api.hume.ai/v0/face', {
+        method: 'POST',
+        headers: {
+          'X-Hume-Api-Key': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          models: {
+            face: {
+              prob_threshold: 0.9
+            }
+          },
+          data: ''
+        }),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      })
+      
+      const responseTime = Date.now() - startTime
+      
+      if (response.ok) {
+        return {
+          name: 'Hume AI',
+          status: 'healthy',
+          responseTime,
+          lastChecked: new Date().toISOString()
+        }
+      } else if (response.status === 401) {
+        return {
+          name: 'Hume AI',
+          status: 'critical',
+          responseTime,
+          lastChecked: new Date().toISOString()
+        }
+      } else {
+        return {
+          name: 'Hume AI',
+          status: 'degraded',
+          responseTime,
+          lastChecked: new Date().toISOString()
+        }
+      }
+    } catch {
+      const responseTime = Date.now() - startTime
+      return {
+        name: 'Hume AI',
+        status: 'critical',
+        responseTime,
+        lastChecked: new Date().toISOString()
       }
     }
   }

@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SystemMetricsCard, type SystemMetric } from '@/components/SystemMetricsCard'
 import { SystemHealthIndicator, type HealthStatus } from '@/components/SystemHealthIndicator'
 import { PerformanceChart, type PerformanceMetric } from '@/components/PerformanceChart'
+import { SystemStatusCard } from '@/components/SystemStatusCard'
 import { 
   RefreshCw,
   Settings,
@@ -303,12 +304,7 @@ export default function SystemMetricsPage() {
           />
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SystemHealthIndicator
-              healthStatuses={transformToHealthStatuses(systemMetrics)}
-              overallStatus={systemMetrics.health.overall}
-              isLoading={isLoading}
-              lastChecked={lastUpdated}
-            />
+            <SystemStatusCard />
             
             <Card className="p-6">
               <CardHeader>
