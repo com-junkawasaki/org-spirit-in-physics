@@ -7,7 +7,7 @@ This document describes how to set up and run the Spirit in Physics application 
 The application consists of multiple services:
 
 - **ArangoDB**: Multi-model database for all data operations
-- **Temporal**: Workflow orchestration
+- **Serverless Workflow SDK**: Workflow orchestration
 - **Patient App**: Next.js participant interface (port 25250)
 - **Admin App**: Vite admin dashboard (port 4173)
 - **Visualizer App**: Next.js data visualization (port 25260)
@@ -50,7 +50,7 @@ Once all services are running:
 - **Admin Dashboard**: http://localhost:4173
 - **Visualizer**: http://localhost:25260
 - **ArangoDB**: http://localhost:8529
-- **Temporal UI**: http://localhost:8233
+- **Workflow API**: http://localhost:8000/api/workflows
 
 ## Environment Configuration
 
@@ -79,7 +79,7 @@ patient:
 
 Services start in dependency order:
 1. Databases (ArangoDB)
-2. Workflow engine (Temporal)
+2. Workflow engine (Serverless Workflow SDK)
 3. Application services (Patient, Admin, Visualizer)
 4. Backend services (Analyzer, Importer)
 

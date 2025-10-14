@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createArangoDBClient } from '@/lib/arangodb'
-import { TemporalClientManager, isTemporalAvailable } from '@/lib/temporal-client'
 
 export async function GET() {
   try {
@@ -38,20 +37,29 @@ export async function POST(_req: NextRequest) {
       },
     })
 
-    // Merkle DAG: analysis_runs_post -> temporal_workflow_start
-    if (isTemporalAvailable()) {
-      try {
-        const workflowId = `analysis-workflow-${run._key}`
-        
-        await TemporalClientManager.startWorkflow('AnalysisWorkflow', {
-          workflowId,
-          taskQueue: 'analyzer-task-queue',
-          args: ['dev', `run=${run._key}`, {}], // model_version, notes, config
+    // Start analysis workflow via new API
+    try {
+      const workflowId = `analysis-workflow-${run._key}`
+
+      const workflowResponse = await fetch('http://localhost:8000/api/workflows/start-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionIds: [], // Will be updated with actual session IDs
+          modelVersion: 'dev',
+          notes: `run=${run._key}`,
+          experimentType: 'unified'
         })
-      } catch (temporalError) {
-        console.warn('Temporal workflow start failed, continuing without workflow:', temporalError)
-        // Continue execution even if Temporal fails
+      })
+
+      if (!workflowResponse.ok) {
+        console.warn('Failed to start workflow, but continuing:', await workflowResponse.text())
       }
+    } catch (workflowError) {
+      console.warn('Workflow start failed, continuing without workflow:', workflowError)
+      // Continue execution even if workflow fails
     }
 
     return NextResponse.json({ ok: true, runId: run._key }, { status: 202 })

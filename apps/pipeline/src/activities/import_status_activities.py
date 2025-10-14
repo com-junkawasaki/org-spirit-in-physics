@@ -19,13 +19,12 @@ from packages.spirit_in_physics_pipeline.import_status_manager import ImportStat
 logger = logging.getLogger(__name__)
 
 class ImportStatusActivities:
-    """Temporal activities for import status management."""
+    """Serverless Workflow activities for import status management."""
     
     def __init__(self, config):
         self.status_manager = ImportStatusManager(config['arangodb'])
         self.config = config
     
-    async def
     async def create_import_status(self, participant_id: str, import_type: str, data_sources: list = None) -> bool:
         """Create import status for a participant."""
         logger.info(f"Creating import status for participant: {participant_id}")
@@ -47,7 +46,6 @@ class ImportStatusActivities:
             logger.error(f"Error creating import status for {participant_id}: {e}")
             return False
     
-    async def
     async def update_import_status(self, participant_id: str, status: str, 
                                  error_message: str = None, records_count: dict = None,
                                  metadata: dict = None) -> bool:
@@ -71,7 +69,6 @@ class ImportStatusActivities:
             logger.error(f"Error updating import status for {participant_id}: {e}")
             return False
     
-    async def
     async def create_import_job(self, participant_id: str, job_type: str, 
                               priority: int = 0, metadata: dict = None) -> str:
         """Create an import job."""
@@ -93,7 +90,6 @@ class ImportStatusActivities:
             logger.error(f"Error creating import job for {participant_id}: {e}")
             return ""
     
-    async def
     async def update_import_job_status(self, job_id: str, status: str, 
                                       error_message: str = None) -> bool:
         """Update import job status."""
@@ -115,7 +111,6 @@ class ImportStatusActivities:
             logger.error(f"Error updating import job {job_id}: {e}")
             return False
     
-    async def
     async def get_import_status(self, participant_id: str) -> dict:
         """Get import status for a participant."""
         logger.info(f"Getting import status for participant: {participant_id}")
@@ -142,7 +137,6 @@ class ImportStatusActivities:
             logger.error(f"Error getting import status for {participant_id}: {e}")
             return {}
     
-    async def
     async def get_pending_import_jobs(self) -> list:
         """Get all pending import jobs."""
         logger.info("Getting pending import jobs")
@@ -156,7 +150,6 @@ class ImportStatusActivities:
             logger.error(f"Error getting pending import jobs: {e}")
             return []
     
-    async def
     async def get_import_summary(self) -> dict:
         """Get import status summary."""
         logger.info("Getting import status summary")

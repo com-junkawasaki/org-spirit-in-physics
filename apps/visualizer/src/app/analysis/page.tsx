@@ -60,7 +60,7 @@ export default function DataManagementPage() {
   const [runs, setRuns] = useState<Run[]>([])
   const [analysisLoading, setAnalysisLoading] = useState(true)
   const [creatingAnalysis, setCreatingAnalysis] = useState(false)
-  const [temporalMsg, setTemporalMsg] = useState<string | null>(null)
+  const [workflowMsg, setWorkflowMsg] = useState<string | null>(null)
 
   // Import state
   const [importJobs, setImportJobs] = useState<ImportJob[]>([])
@@ -196,9 +196,9 @@ export default function DataManagementPage() {
             <Button
               variant="outline"
               onClick={async () => {
-                setTemporalMsg(null)
-                const res = await fetch('/api/temporal/worker/start', { method: 'POST' })
-                setTemporalMsg(res.ok ? 'Temporal worker started' : 'Temporal worker failed')
+                setWorkflowMsg(null)
+                const res = await fetch('http://localhost:8000/api/workflows/validate', { method: 'POST' })
+                setWorkflowMsg(res.ok ? 'Workflow validation completed' : 'Workflow validation failed')
               }}
             >
               Worker起動
@@ -494,7 +494,7 @@ export default function DataManagementPage() {
             <h2 className="text-xl font-semibold mb-4">システムログ</h2>
             <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-64 overflow-y-auto">
               <div>2024-01-15 10:30:15 [INFO] ArangoDB接続確認: OK</div>
-              <div>2024-01-15 10:30:16 [INFO] Temporal接続確認: OK</div>
+              <div>2024-01-15 10:30:16 [INFO] Workflow接続確認: OK</div>
               <div>2024-01-15 10:30:17 [INFO] Hume AI接続確認: OK</div>
               <div>2024-01-15 10:30:18 [INFO] インポートジョブ監視開始</div>
               <div>2024-01-15 10:30:19 [INFO] 参加者データ同期完了</div>

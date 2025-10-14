@@ -22,7 +22,7 @@ const nextConfig = {
   // },
   // Merkle DAG: Webpack最適化設定
   webpack: (config, { dev, isServer }) => {
-    // Merkle DAG: Temporal client module resolution fix
+    // Merkle DAG: Serverless Workflow SDK module resolution configuration
     config.resolve = {
       ...config.resolve,
       fallback: {

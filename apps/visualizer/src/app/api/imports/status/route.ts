@@ -16,15 +16,22 @@ export async function GET(request: NextRequest) {
       arangodbStatus = 'error'
     }
 
-    // Temporal接続確認（簡易版）
-    let temporalStatus = 'disconnected'
+    // Workflow接続確認
+    let workflowsStatus = 'disconnected'
     try {
-      // Temporal接続確認の実装
-      // 実際の実装ではTemporalクライアントを使用
-      temporalStatus = 'connected'
+      const workflowResponse = await fetch('http://localhost:8000/api/workflows/validate', {
+        method: 'POST',
+        signal: AbortSignal.timeout(5000)
+      })
+
+      if (workflowResponse.ok) {
+        workflowsStatus = 'connected'
+      } else {
+        workflowsStatus = 'error'
+      }
     } catch (error) {
-      console.error('Temporal connection failed:', error)
-      temporalStatus = 'error'
+      console.error('Workflow connection failed:', error)
+      workflowsStatus = 'error'
     }
 
     // Hume AI接続確認（簡易版）
@@ -74,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     const systemStatus = {
       arangodb: arangodbStatus,
-      temporal: temporalStatus,
+      workflows: workflowsStatus,
       humeAI: humeAIStatus,
       activeJobs,
       completedJobs,

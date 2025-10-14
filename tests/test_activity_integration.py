@@ -1,5 +1,5 @@
 """
-Integration tests for Temporal activities with real dependencies.
+Integration tests for Serverless Workflow activities with real dependencies.
 """
 import pytest
 import asyncio

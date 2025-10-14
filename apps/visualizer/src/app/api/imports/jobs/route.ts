@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 実際のインポート処理を開始（非同期）
-    // ここでTemporalワークフローを開始する
+    // ここでServerlessワークフローを開始する
     // startImportWorkflow(sessionId)
 
     return NextResponse.json({

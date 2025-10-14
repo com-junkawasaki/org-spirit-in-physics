@@ -91,7 +91,7 @@ export async function POST(
     })
 
     // 実際のインポート処理を再開始
-    // ここでTemporalワークフローを再開始する
+    // ここでServerlessワークフローを再開始する
     // await startImportWorkflow(job.sessionId)
 
     return NextResponse.json({

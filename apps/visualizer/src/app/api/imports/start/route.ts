@@ -95,9 +95,9 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date().toISOString() 
     })
 
-    // Start the import workflow via Temporal
+    // Start the import workflow via Serverless Workflow SDK
     try {
-      const temporalResponse = await fetch('http://localhost:8000/api/workflows/start-import', {
+      const workflowResponse = await fetch('http://localhost:8000/api/workflows/start-import', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,12 +108,12 @@ export async function POST(request: NextRequest) {
         })
       })
 
-      if (!temporalResponse.ok) {
-        console.warn('Failed to start Temporal workflow, but job was created')
+      if (!workflowResponse.ok) {
+        console.warn('Failed to start workflow, but job was created')
       }
-    } catch (temporalError) {
-      console.warn('Temporal workflow start failed:', temporalError)
-      // Don't fail the whole request if Temporal is down
+    } catch (workflowError) {
+      console.warn('Workflow start failed:', workflowError)
+      // Don't fail the whole request if workflow is down
     }
 
     return NextResponse.json({

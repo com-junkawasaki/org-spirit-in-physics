@@ -255,4 +255,4 @@ class WorkflowStatusMonitor:
 
 ## Conclusion
 
-The Temporal workflow dependency system provides a robust foundation for managing complex data processing pipelines. By using Merkle DAG principles and proper orchestration patterns, the system ensures reliable execution order and comprehensive error handling.
+The Serverless Workflow SDK dependency system provides a robust foundation for managing complex data processing pipelines. By using Merkle DAG principles and proper orchestration patterns, the system ensures reliable execution order and comprehensive error handling.
