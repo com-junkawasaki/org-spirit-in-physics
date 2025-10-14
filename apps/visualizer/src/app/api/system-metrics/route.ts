@@ -6,7 +6,7 @@
 // Dependency Inversion: Depends on data interfaces, not concrete implementations
 
 import { NextResponse } from 'next/server'
-import { createNeo4jClient } from '@/lib/arangodb'
+import { createNeo4jClient } from '@/lib/neo4j'
 
 // Merkle DAG: system_metrics_api -> metrics_data_interface
 interface SystemMetricsData {

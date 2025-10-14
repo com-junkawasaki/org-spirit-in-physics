@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ArangoDBManager } from '@/lib/arangodb'
+import { ArangoDBManager } from '@/lib/neo4j'
 
 // Merkle DAG: imports_start_api -> workflow_initiation
 export async function POST(request: NextRequest) {

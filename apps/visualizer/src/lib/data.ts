@@ -1,4 +1,4 @@
-import { createArangoDBClient } from './arangodb'
+import { createArangoDBClient } from './neo4j'
 
 export interface AnalysisResult {
   id: string

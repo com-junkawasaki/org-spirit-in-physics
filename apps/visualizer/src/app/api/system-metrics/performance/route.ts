@@ -6,7 +6,7 @@
 // Dependency Inversion: Depends on performance interfaces, not concrete implementations
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createNeo4jClient } from '@/lib/arangodb'
+import { createNeo4jClient } from '@/lib/neo4j'
 
 // Merkle DAG: performance_metrics_api -> performance_data_interface
 interface PerformanceDataPoint {

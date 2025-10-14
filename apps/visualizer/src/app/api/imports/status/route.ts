@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ArangoDBManager } from '@/lib/arangodb'
+import { ArangoDBManager } from '@/lib/neo4j'
 
 // Merkle DAG: imports_status_api -> system_health_check
 export async function GET(request: NextRequest) {

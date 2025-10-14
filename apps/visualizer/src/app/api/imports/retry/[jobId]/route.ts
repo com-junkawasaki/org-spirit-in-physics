@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ArangoDBManager } from '@/lib/arangodb'
+import { ArangoDBManager } from '@/lib/neo4j'
 
 // Merkle DAG: imports_retry_api -> failed_job_recovery
 export async function POST(

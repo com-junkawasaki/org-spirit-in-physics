@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ArangoDBManager } from '@/lib/arangodb'
+import { ArangoDBManager } from '@/lib/neo4j'
 
 // Merkle DAG: imports_jobs_api -> job_listing_and_management
 export async function GET(request: NextRequest) {

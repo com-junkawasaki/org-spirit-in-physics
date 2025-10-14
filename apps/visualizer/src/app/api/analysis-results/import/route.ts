@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/arangodb'
+import { createArangoDBClient } from '@/lib/neo4j'
 
 interface AnalysisResultData {
   participant_id: string
