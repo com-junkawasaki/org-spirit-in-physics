@@ -1,130 +1,85 @@
-// ArangoDB client for Spirit in Physics visualizer
+// Neo4j client for Spirit in Physics visualizer
 
-import https from 'https'
-import http from 'http'
+import * as neo4j from 'neo4j-driver'
 
-interface ArangoDBConfig {
-  url: string
+interface Neo4jConfig {
+  uri: string
   user: string
   password: string
-  databaseName: string
+  database: string
 }
 
-class ArangoDBClient {
-  private config: ArangoDBConfig
+class Neo4jClient {
+  private config: Neo4jConfig
+  private driver: neo4j.Driver
 
-  constructor(config: ArangoDBConfig) {
+  constructor(config: Neo4jConfig) {
     this.config = config
+    this.driver = neo4j.driver(
+      this.config.uri,
+      neo4j.auth.basic(this.config.user, this.config.password)
+    )
   }
 
-  async query(aqlQuery: string, bindVars?: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-      try {
-        const url = new URL(this.config.url)
-        const auth = Buffer.from(`${this.config.user}:${this.config.password}`).toString('base64')
-        console.log('ArangoDB query:', aqlQuery, 'bindVars:', bindVars, 'url:', this.config.url, 'db:', this.config.databaseName)
+  async query(cypherQuery: string, params?: Record<string, any>): Promise<any[]> {
+    const session = this.driver.session({ database: this.config.database })
+    try {
+      console.log('Neo4j query:', cypherQuery, 'params:', params)
 
-        const postData = JSON.stringify({
-          query: aqlQuery,
-          bindVars: bindVars || {},
+      const result = await session.run(cypherQuery, params || {})
+      console.log('Neo4j response records:', result.records.length)
+
+      const records = result.records.map(record => {
+        const obj: any = {}
+        record.keys.forEach(key => {
+          obj[key] = record.get(key)
         })
+        return obj
+      })
 
-        const options = {
-          hostname: url.hostname,
-          port: url.port,
-          path: `/_db/${this.config.databaseName}/_api/cursor`,
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Basic ${auth}`,
-            'Content-Length': Buffer.byteLength(postData)
-          }
-        }
+      console.log('Neo4j response data:', records)
+      return records
+    } catch (error) {
+      console.error('Neo4j query error:', error)
+      throw error
+    } finally {
+      await session.close()
+    }
+  }
 
-        const client = url.protocol === 'https:' ? https : http
-        const req = client.request(options, (res) => {
-          console.log('ArangoDB response status:', res.statusCode)
-
-          let body = ''
-          res.on('data', (chunk) => {
-            body += chunk
-          })
-
-          res.on('end', () => {
-            try {
-              if (res.statusCode !== 200 && res.statusCode !== 201) {
-                console.error('ArangoDB error response:', body)
-                reject(new Error(`ArangoDB query failed: ${res.statusCode}`))
-                return
-              }
-
-              const data = JSON.parse(body)
-              console.log('ArangoDB response data:', data)
-              resolve(data.result || [])
-            } catch (error) {
-              console.error('ArangoDB parse error:', error)
-              reject(error)
-            }
-          })
-        })
-
-        req.on('error', (error) => {
-          console.error('ArangoDB request error:', error)
-          reject(error)
-        })
-
-        req.write(postData)
-        req.end()
-      } catch (error) {
-        console.error('ArangoDB query error:', error)
-        reject(error)
-      }
-    })
+  async close(): Promise<void> {
+    await this.driver.close()
   }
 
   async getParticipants(): Promise<any[]> {
-    // Simple query first to test
-    const query = `FOR participant IN participants RETURN participant._key`
+    // Get participants with their session and response counts using Cypher
+    const query = `
+      MATCH (p:Participant)
+      OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
+      OPTIONAL MATCH (p)-[:HAS_SESSION]->(:Session)-[:HAS_RESPONSE]->(r:Response)
+      RETURN
+        p.id as participant_id,
+        count(distinct s) as session_count,
+        count(distinct r) as total_responses,
+        0.5 as average_spirit_probability,
+        p.created_at as last_activity
+      ORDER BY p.created_at DESC
+    `
 
-    const result = await this.query(query)
-    console.log('Simple query result:', result)
-
-    // If simple query works, try complex one
-    if (result && result.length > 0) {
-      const complexQuery = `
-        FOR participant IN participants
-          LET sessionCount = LENGTH(
-            FOR session IN participant_sessions
-              FILTER session.participant_id == participant._key
-              RETURN session
-          )
-          LET responseCount = LENGTH(
-            FOR response IN participant_session_responses
-              FILTER response.participant_id == participant._key
-              RETURN response
-          )
-          RETURN {
-            participant_id: participant._key,
-            session_count: sessionCount,
-            total_responses: responseCount,
-            average_spirit_probability: 0.5,
-            last_activity: participant.created_at
-          }
-      `
-
-      const complexResult = await this.query(complexQuery)
-      return complexResult || []
+    try {
+      const result = await this.query(query)
+      return result || []
+    } catch (error) {
+      console.error('Error in getParticipants:', error)
+      return []
     }
-
-    return []
   }
 
   async getParticipantDetails(participantId: string): Promise<any> {
-    // Get detailed participant information from ArangoDB
+    // Get detailed participant information from Neo4j
     const query = `
-      FOR participant IN participants
-        FILTER participant._key == @participantId
-        RETURN participant
+      MATCH (p:Participant {id: $participantId})
+      RETURN p
     `
 
     const result = await this.query(query, { participantId })
@@ -133,9 +88,9 @@ class ArangoDBClient {
       throw new Error(`Participant ${participantId} not found`)
     }
 
-    const participant = result[0]
+    const participant = result[0].p
     return {
-      id: participant._key,
+      id: participant.id,
       age: participant.age,
       gender: participant.gender,
       handedness: participant.handedness
@@ -143,74 +98,75 @@ class ArangoDBClient {
   }
 
   async getParticipantResponses(participantId: string): Promise<any[]> {
-    // Get responses for a specific participant from ArangoDB
+    // Get responses for a specific participant from Neo4j
     const query = `
-      FOR response IN participant_session_responses
-        FILTER response.participant_id == @participantId
-        RETURN response
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(:Session)-[:HAS_RESPONSE]->(r:Response)
+      RETURN r
+      ORDER BY r.event_ts DESC
     `
 
-    const result = await this.query(query, { participantId })
-
-    return result?.map((response: any) => ({
-      id: response._key,
-      stimulus_word: response.stimulus_word,
-      response_word: response.response_word,
-      reaction_time_ms: response.reaction_time_ms || 0,
-      emotion: response.emotion,
-      emotion_confidence: response.emotion_confidence || 0,
-      session_id: response.session_id
-    })) || []
+    try {
+      const result = await this.query(query, { participantId })
+      return result?.map((record: any) => ({
+        id: record.r.id || `${participantId}_${record.r.event_ts}`,
+        stimulus_word: record.r.stimulus_word,
+        response_word: record.r.response_word,
+        reaction_time_ms: record.r.reaction_time_ms || 0,
+        emotion: record.r.emotion,
+        emotion_confidence: record.r.emotion_confidence || 0,
+        session_id: record.r.session_id
+      })) || []
+    } catch (error) {
+      console.error('Error in getParticipantResponses:', error)
+      return []
+    }
   }
 }
 
-// ArangoDB configuration
-const arangodbConfig: ArangoDBConfig = {
-  url: process.env.ARANGODB_URL || process.env.NEXT_PUBLIC_ARANGODB_URL || '',
-  user: process.env.ARANGODB_USER || 'root',
-  password: process.env.ARANGODB_PASSWORD || '',
-  databaseName: process.env.ARANGODB_DATABASE || 'spirit_in_physics'
+// Neo4j configuration
+const neo4jConfig: Neo4jConfig = {
+  uri: process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'neo4j://localhost:7687',
+  user: process.env.NEO4J_USER || 'neo4j',
+  password: process.env.NEO4J_PASSWORD || '',
+  database: process.env.NEO4J_DATABASE || 'neo4j'
 }
 
 // Create singleton client instance
-let clientInstance: ArangoDBClient | null = null
+let clientInstance: Neo4jClient | null = null
 
-export function createArangoDBClient(): ArangoDBClient {
+export function createNeo4jClient(): Neo4jClient {
   if (!clientInstance) {
-    clientInstance = new ArangoDBClient(arangodbConfig)
+    clientInstance = new Neo4jClient(neo4jConfig)
   }
   return clientInstance
 }
 
-// Legacy compatibility functions are no longer needed
-// export function createClient() { ... }
-// export async function createServerSupabaseClient() { ... }
+// Legacy compatibility functions - maintain for now
+export function createArangoDBClient(): Neo4jClient {
+  return createNeo4jClient()
+}
 
-// Database types are now managed by ArangoDB's data models, 
-// so the Supabase-generated types can be removed.
-// export interface Database { ... }
-
-// Merkle DAG: arangodb_manager -> unified_data_access_layer
-// ArangoDBManager class for unified data access
-export class ArangoDBManager {
-  private client: ArangoDBClient
+// Merkle DAG: neo4j_manager -> unified_data_access_layer
+// Neo4jManager class for unified data access
+export class Neo4jManager {
+  private client: Neo4jClient
 
   constructor() {
-    this.client = createArangoDBClient()
+    this.client = createNeo4jClient()
   }
 
   async testConnection(): Promise<boolean> {
     try {
-      const result = await this.client.query('RETURN 1')
-      return result && result.length > 0 && result[0] === 1
+      const result = await this.client.query('RETURN 1 as test')
+      return result && result.length > 0 && result[0].test === 1
     } catch (error) {
-      console.error('ArangoDB connection test failed:', error)
+      console.error('Neo4j connection test failed:', error)
       return false
     }
   }
 
-  async query(aqlQuery: string, bindVars?: Record<string, unknown>): Promise<unknown[]> {
-    return this.client.query(aqlQuery, bindVars)
+  async query(cypherQuery: string, params?: Record<string, unknown>): Promise<unknown[]> {
+    return this.client.query(cypherQuery, params)
   }
 
   async getParticipants(): Promise<unknown[]> {
@@ -224,4 +180,11 @@ export class ArangoDBManager {
   async getParticipantResponses(participantId: string): Promise<unknown[]> {
     return this.client.getParticipantResponses(participantId)
   }
+
+  async close(): Promise<void> {
+    return this.client.close()
+  }
 }
+
+// Legacy compatibility - maintain ArangoDBManager for now
+export class ArangoDBManager extends Neo4jManager {}

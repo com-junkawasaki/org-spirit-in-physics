@@ -1,15 +1,20 @@
 services:
-  # ArangoDB
-  arangodb:
-    image: arangodb:latest
-    container_name: spirit-arangodb
+  # Neo4j
+  neo4j:
+    image: neo4j:latest
+    container_name: spirit-neo4j
     ports:
-      - "8529:8529"
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
     environment:
-      - ARANGO_ROOT_PASSWORD=root
-      - ARANGO_NO_AUTH=1
+      - NEO4J_AUTH=neo4j/neo4jpassword
+      - NEO4J_PLUGINS=["graph-data-science"]
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+      - NEO4J_dbms_memory_pagecache_size=512m
     volumes:
-      - arangodb_data:/var/lib/arangodb3
+      - neo4j_data:/data
+      - neo4j_logs:/logs
     networks:
       - spirit-network
 
@@ -25,7 +30,7 @@ services:
     env_file:
       - ./apps/patient/env.docker
     depends_on:
-      - arangodb
+      - neo4j
     networks:
       - spirit-network
 
@@ -59,7 +64,7 @@ services:
     env_file:
       - ./apps/visualizer/env.docker
     depends_on:
-      - arangodb
+      - neo4j
     networks:
       - spirit-network
 
@@ -74,19 +79,20 @@ services:
     environment:
       - HUME_API=q0nGzfOSBZB4D0HbdZorGxek3wXz5O4XpTG8IkEJ0gY8Wlet
       - HUME_API_KEY=LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s
-      - ARANGODB_URL=http://arangodb:8529
-      - ARANGODB_USER=root
-      - ARANGODB_PASSWORD=root
-      - ARANGODB_DATABASE=spirit_in_physics
+      - NEO4J_URI=neo4j://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=neo4jpassword
+      - NEO4J_DATABASE=neo4j
     depends_on:
-      - arangodb
+      - neo4j
     volumes:
       - ./dataset:/app/dataset
     networks:
       - spirit-network
 
 volumes:
-  arangodb_data:
+  neo4j_data:
+  neo4j_logs:
 
 networks:
   spirit-network:

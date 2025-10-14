@@ -11,7 +11,7 @@ import { DataManagementBreadcrumb } from '@/components/navigation/Breadcrumb'
 import { StatusBadge, ExperimentTypeBadge } from '@/components/common/StatusBadge'
 import { DataTable, StatCard } from '@/components/common/DataTable'
 import { SystemStatusCard } from '@/components/SystemStatusCard'
-import { Database, Activity, Users, Heart, Monitor, Settings, RefreshCw, Play, CheckCircle, XCircle } from 'lucide-react'
+import { Database, Activity, Users, Heart, Monitor, Settings, RefreshCw, Play, CheckCircle, XCircle, Home } from 'lucide-react'
 
 type Run = {
   _key: string

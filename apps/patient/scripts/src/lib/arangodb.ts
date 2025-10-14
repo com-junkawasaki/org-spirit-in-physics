@@ -1,101 +1,127 @@
-// Merkle DAG: ArangoDBクライアント設定
-// サーバー/クライアント両方で使用可能なArangoDBクライアント
+// Merkle DAG: Neo4jクライアント設定
+// サーバー/クライアント両方で使用可能なNeo4jクライアント
 
-interface ArangoDBConfig {
-  url: string
+import neo4j from 'neo4j-driver'
+
+interface Neo4jConfig {
+  uri: string
   user: string
   password: string
-  databaseName: string
+  database: string
 }
 
-class ArangoDBClient {
-  private config: ArangoDBConfig
+class Neo4jClient {
+  private config: Neo4jConfig
+  private driver: neo4j.Driver
 
-  constructor(config: ArangoDBConfig) {
+  constructor(config: Neo4jConfig) {
     this.config = config
+    this.driver = neo4j.driver(
+      this.config.uri,
+      neo4j.auth.basic(this.config.user, this.config.password)
+    )
   }
 
-  async query(aqlQuery: string, bindVars?: any): Promise<any> {
+  async query(cypherQuery: string, params?: Record<string, any>): Promise<any[]> {
+    const session = this.driver.session({ database: this.config.database })
     try {
-      const auth = btoa(`${this.config.user}:${this.config.password}`)
-      const response = await fetch(`${this.config.url}/_api/cursor`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${auth}`,
-        },
-        body: JSON.stringify({
-          query: aqlQuery,
-          bindVars: bindVars || {},
-          database: this.config.databaseName,
-        }),
+      const result = await session.run(cypherQuery, params || {})
+
+      const records = result.records.map(record => {
+        const obj: any = {}
+        record.keys.forEach(key => {
+          obj[key] = record.get(key)
+        })
+        return obj
       })
 
-      if (!response.ok) {
-        throw new Error(`ArangoDB query failed: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      return data.result || []
+      return records
     } catch (error) {
-      console.error('ArangoDB query error:', error)
+      console.error('Neo4j query error:', error)
       throw error
+    } finally {
+      await session.close()
     }
+  }
+
+  async close(): Promise<void> {
+    await this.driver.close()
   }
 
   // Patient app specific methods
   async insertParticipant(participantId: string, data: any): Promise<any> {
-    const doc = {
-      _key: participantId,
+    const properties = {
+      id: participantId,
       ...data,
       created_at: new Date().toISOString()
     }
-    const query = `INSERT @doc INTO participants RETURN NEW`
-    return await this.query(query, { doc })
+    const query = `
+      CREATE (p:Participant $props)
+      RETURN p
+    `
+    const result = await this.query(query, { props: properties })
+    return result[0]?.p || null
   }
 
   async insertSession(participantId: string, sessionIndex: number, data: any): Promise<any> {
-    const doc = {
-      _key: `${participantId}-${sessionIndex}`,
+    const sessionId = `${participantId}-${sessionIndex}`
+    const properties = {
+      id: sessionId,
       participant_id: participantId,
       session_index: sessionIndex,
       ...data
     }
-    const query = `INSERT @doc INTO participant_sessions RETURN NEW`
-    return await this.query(query, { doc })
+    const query = `
+      MATCH (p:Participant {id: $participantId})
+      CREATE (p)-[:HAS_SESSION]->(s:Session $props)
+      RETURN s
+    `
+    const result = await this.query(query, { participantId, props: properties })
+    return result[0]?.s || null
   }
 
   async insertResponse(participantId: string, sessionIndex: number, data: any): Promise<any> {
-    const doc = {
+    const sessionId = `${participantId}-${sessionIndex}`
+    const properties = {
       participant_id: participantId,
-      session_id: `${participantId}-${sessionIndex}`,
+      session_id: sessionId,
       ...data
     }
-    const query = `INSERT @doc INTO participant_session_responses RETURN NEW`
-    return await this.query(query, { doc })
+    const query = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
+      CREATE (s)-[:HAS_RESPONSE]->(r:Response $props)
+      RETURN r
+    `
+    const result = await this.query(query, { participantId, sessionId, props: properties })
+    return result[0]?.r || null
   }
 }
 
-// ArangoDB configuration
-const arangodbConfig: ArangoDBConfig = {
-  url: process.env.ARANGODB_URL || 'http://localhost:8529',
-  user: process.env.ARANGODB_USER || 'root',
-  password: process.env.ARANGODB_PASSWORD || '',
-  databaseName: process.env.ARANGODB_DATABASE_NAME || 'spirit_in_physics'
+// Neo4j configuration
+const neo4jConfig: Neo4jConfig = {
+  uri: process.env.NEO4J_URI || 'neo4j://localhost:7687',
+  user: process.env.NEO4J_USER || 'neo4j',
+  password: process.env.NEO4J_PASSWORD || '',
+  database: process.env.NEO4J_DATABASE || 'neo4j'
 }
 
 // Create singleton client instance
-let clientInstance: ArangoDBClient | null = null
+let clientInstance: Neo4jClient | null = null
 
-export function createArangoDBClient(): ArangoDBClient {
+export function createNeo4jClient(): Neo4jClient {
   if (!clientInstance) {
-    clientInstance = new ArangoDBClient(arangodbConfig)
+    clientInstance = new Neo4jClient(neo4jConfig)
   }
   return clientInstance
 }
 
-// Export singleton instance for convenience
-export const arangodb = createArangoDBClient()
+// Legacy compatibility - maintain ArangoDB function name
+export function createArangoDBClient(): Neo4jClient {
+  return createNeo4jClient()
+}
 
-// Database types based on new schema
+// Export singleton instance for convenience
+export const arangodb = createNeo4jClient()
+
+// Database types based on Neo4j schema
 export type Database = any; // Temporarily simplified for build

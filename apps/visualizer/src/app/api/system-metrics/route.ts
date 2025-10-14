@@ -288,7 +288,7 @@ class MetricsCalculator {
         const errorCause = (fetchError as Error & { cause?: Error })?.cause
         const causeMessage = errorCause instanceof Error ? errorCause.message : ''
         const causeName = errorCause instanceof Error ? errorCause.name : ''
-        
+
         // If we get a successful connection, check the response
         const response = await fetch(`${apiHost}/api/workflows/validate`, {
           method: 'POST',
@@ -312,7 +312,7 @@ class MetricsCalculator {
             lastChecked: new Date().toISOString()
           }
         }
-
+      }
     } catch (error) {
       console.error('Workflow connection check failed:', error)
       const responseTime = Date.now() - startTime
@@ -334,11 +334,11 @@ class MetricsCalculator {
     lastChecked: string
   }> {
     const startTime = Date.now()
-    
+
     try {
       // Check if Hume AI API key is configured
       const apiKey = process.env.HUME_API_KEY
-      
+
       if (!apiKey) {
         return {
           name: 'Hume AI',
@@ -347,7 +347,7 @@ class MetricsCalculator {
           lastChecked: new Date().toISOString()
         }
       }
-      
+
       // Try to make a simple API call to Hume AI
       const response = await fetch('https://api.hume.ai/v0/face', {
         method: 'POST',
@@ -365,9 +365,9 @@ class MetricsCalculator {
         }),
         signal: AbortSignal.timeout(10000) // 10 second timeout
       })
-      
+
       const responseTime = Date.now() - startTime
-      
+
       if (response.ok) {
         return {
           name: 'Hume AI',
