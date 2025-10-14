@@ -1,4 +1,4 @@
-import { createArangoDBClient } from './neo4j'
+import { createNeo4jClient } from './neo4j'
 
 export interface AnalysisResult {
   id: string
@@ -85,39 +85,60 @@ export interface DashboardStats {
 // Server-side data fetching functions
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    const client = createArangoDBClient()
+    const client = createNeo4jClient()
 
     // Get participants count
-    const participantsQuery = `RETURN LENGTH(participants)`
+    const participantsQuery = `MATCH (p:Participant) RETURN count(p) as total`
     const participantsResult = await client.query(participantsQuery)
-    const totalParticipants = participantsResult[0] || 0
+    const totalParticipants = participantsResult[0]?.total || 0
 
     // Get sessions count
-    const sessionsQuery = `RETURN LENGTH(participant_sessions)`
+    const sessionsQuery = `MATCH (s:ExperimentSession) RETURN count(s) as total`
     const sessionsResult = await client.query(sessionsQuery)
-    const totalSessions = sessionsResult[0] || 0
+    const totalSessions = sessionsResult[0]?.total || 0
 
     // Get responses count
-    const responsesQuery = `RETURN LENGTH(participant_session_responses)`
+    const responsesQuery = `MATCH (r:Response) RETURN count(r) as total`
     const responsesResult = await client.query(responsesQuery)
-    const totalResponses = responsesResult[0] || 0
+    const totalResponses = responsesResult[0]?.total || 0
 
     // Get emotion distribution
     const emotionQuery = `
-      FOR response IN participant_session_responses
-        FILTER response.emotion != null
-        COLLECT emotion = response.emotion WITH COUNT INTO count
-        RETURN { emotion, count }
+      MATCH (r:Response)
+      WHERE r.emotion IS NOT NULL
+      RETURN r.emotion as emotion, count(r) as count
+      ORDER BY count DESC
     `
-    const emotionResult: { emotion: string; count: number }[] = await client.query(emotionQuery)
+    const emotionResult = await client.query(emotionQuery)
     const emotionDistribution: Record<string, number> = {}
-    emotionResult?.forEach((item) => {
+    emotionResult?.forEach((item: any) => {
       emotionDistribution[item.emotion || 'unknown'] = item.count || 0
     })
 
-    // Mock analysis results (since we don't have analysis results in Neo4j yet)
-    const averageSpiritProbability = 0.5
-    const componentAverages = {
+    // Get average spirit probability
+    const avgSpiritQuery = `MATCH (r:Response) WHERE r.spirit_probability IS NOT NULL RETURN avg(r.spirit_probability) as average`
+    const avgSpiritResult = await client.query(avgSpiritQuery)
+    const averageSpiritProbability = avgSpiritResult[0]?.average || 0.5
+
+    // Get component averages
+    const componentsQuery = `
+      MATCH (r:Response)
+      WHERE r.word2vec_component IS NOT NULL AND
+            r.reaction_time_component IS NOT NULL AND
+            r.skin_potential_component IS NOT NULL AND
+            r.emotion_component IS NOT NULL
+      RETURN avg(r.word2vec_component) as word2vec,
+             avg(r.reaction_time_component) as reaction_time,
+             avg(r.skin_potential_component) as skin_potential,
+             avg(r.emotion_component) as emotion
+    `
+    const componentsResult = await client.query(componentsQuery)
+    const componentAverages = componentsResult[0] ? {
+      word2vec: componentsResult[0].word2vec || 0.1,
+      reaction_time: componentsResult[0].reaction_time || 0.2,
+      skin_potential: componentsResult[0].skin_potential || 0.1,
+      emotion: componentsResult[0].emotion || 0.3
+    } : {
       word2vec: 0.1,
       reaction_time: 0.2,
       skin_potential: 0.1,
@@ -152,7 +173,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-    const client = createArangoDBClient()
+    const client = createNeo4jClient()
     const participants = await client.getParticipants()
 
     // For each participant, get detailed data
@@ -181,20 +202,34 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    const client = createArangoDBClient()
+    const client = createNeo4jClient()
 
     // Get participant details
     const participant = await client.getParticipantDetails(participantId)
     if (!participant) return null
 
-    // Get participant sessions directly from participant_sessions collection
+    // Get participant sessions from Neo4j
     const sessionsQuery = `
-      FOR session IN participant_sessions
-        FILTER session.participant_id == @participantId
-        RETURN session
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
+      RETURN s
     `
     const sessionsResult = await client.query(sessionsQuery, { participantId })
-    const dbSessions = sessionsResult || []
+    const dbSessions = sessionsResult?.map((record: any) => {
+      // Extract properties from Neo4j Node object
+      const session = record.s
+      const properties = session && typeof session === 'object' && 'properties' in session
+        ? session.properties
+        : session
+      return {
+        id: properties.id,
+        _key: properties.id,
+        participant_id: properties.participant_id,
+        session_type: properties.session_type || 'word_association',
+        start_time: properties.start_time,
+        end_time: properties.end_time,
+        created_at: properties.created_at
+      }
+    }) || []
 
     // Get participant responses
     const responses = await client.getParticipantResponses(participantId)
@@ -356,7 +391,7 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   try {
     // Get participant responses and generate mock analysis results
-    const client = createArangoDBClient()
+    const client = createNeo4jClient()
     const responses = await client.getParticipantResponses(participantId)
 
     // Generate mock analysis results based on responses

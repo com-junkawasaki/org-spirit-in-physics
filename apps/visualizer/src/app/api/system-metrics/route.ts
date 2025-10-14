@@ -109,28 +109,27 @@ class MetricsCalculator {
   // Merkle DAG: system_metrics_api -> responses_metrics_calculator
   async calculateResponsesMetrics(): Promise<SystemMetricsData['responses']> {
     try {
-      const query = `
-        LET total = LENGTH(FOR r IN participant_session_responses RETURN 1)
-        LET processed = LENGTH(FOR r IN participant_session_responses
-          FILTER r.spirit_probability != null
-          RETURN 1)
-        LET pending = total - processed
-        LET avgSpirit = (
-          FOR r IN participant_session_responses
-          FILTER r.spirit_probability != null
-          COLLECT AGGREGATE avg = AVG(r.spirit_probability)
-          RETURN avg
-        )[0]
-        RETURN {
-          total,
-          processed,
-          pending,
-          averageSpiritProbability: avgSpirit || 0
-        }
-      `
+      const totalQuery = `MATCH (r:Response) RETURN count(r) as total`
+      const processedQuery = `MATCH (r:Response) WHERE r.processed = true RETURN count(r) as processed`
+      const avgSpiritQuery = `MATCH (r:Response) WHERE r.spirit_probability IS NOT NULL RETURN avg(r.spirit_probability) as averageSpiritProbability`
 
-      const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
-      return result[0] || { total: 0, processed: 0, pending: 0, averageSpiritProbability: 0 }
+      const [totalResult, processedResult, avgSpiritResult] = await Promise.all([
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(totalQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(processedQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(avgSpiritQuery)
+      ])
+
+      const total = totalResult[0]?.total || 0
+      const processed = processedResult[0]?.processed || 0
+      const pending = total - processed
+      const averageSpiritProbability = avgSpiritResult[0]?.averageSpiritProbability || 0
+
+      return {
+        total,
+        processed,
+        pending,
+        averageSpiritProbability
+      }
     } catch (error) {
       console.error('Failed to calculate responses metrics:', error)
       return { total: 0, processed: 0, pending: 0, averageSpiritProbability: 0 }
@@ -140,27 +139,29 @@ class MetricsCalculator {
   // Merkle DAG: system_metrics_api -> jobs_metrics_calculator
   async calculateJobsMetrics(): Promise<SystemMetricsData['jobs']> {
     try {
-      const query = `
-        LET total = LENGTH(FOR j IN analysis_runs RETURN 1)
-        LET active = LENGTH(FOR j IN analysis_runs
-          FILTER j.status IN ['PENDING', 'RUNNING']
-          RETURN 1)
-        LET completed = LENGTH(FOR j IN analysis_runs
-          FILTER j.status == 'COMPLETED'
-          RETURN 1)
-        LET failed = LENGTH(FOR j IN analysis_runs
-          FILTER j.status == 'FAILED'
-          RETURN 1)
-        RETURN {
-          total,
-          active,
-          completed,
-          failed
-        }
-      `
+      const totalQuery = `MATCH (j:ImportJob) RETURN count(j) as total`
+      const activeQuery = `MATCH (j:ImportJob) WHERE j.status IN ['PENDING', 'RUNNING'] RETURN count(j) as active`
+      const completedQuery = `MATCH (j:ImportJob) WHERE j.status = 'COMPLETED' RETURN count(j) as completed`
+      const failedQuery = `MATCH (j:ImportJob) WHERE j.status = 'FAILED' RETURN count(j) as failed`
 
-      const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
-      return result[0] || { total: 0, active: 0, completed: 0, failed: 0 }
+      const [totalResult, activeResult, completedResult, failedResult] = await Promise.all([
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(totalQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(activeQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(completedQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(failedQuery)
+      ])
+
+      const total = totalResult[0]?.total || 0
+      const active = activeResult[0]?.active || 0
+      const completed = completedResult[0]?.completed || 0
+      const failed = failedResult[0]?.failed || 0
+
+      return {
+        total,
+        active,
+        completed,
+        failed
+      }
     } catch (error) {
       console.error('Failed to calculate jobs metrics:', error)
       return { total: 0, active: 0, completed: 0, failed: 0 }
@@ -172,23 +173,15 @@ class MetricsCalculator {
     try {
       // Calculate average response time from recent responses
       const responseTimeQuery = `
-        LET recentResponses = (
-          FOR r IN participant_session_responses
-          FILTER r.reaction_time_ms != null
-          SORT r.created_at DESC
-          LIMIT 100
-          RETURN r.reaction_time_ms
-        )
-        LET avgResponseTime = (
-          FOR rt IN recentResponses
-          COLLECT AGGREGATE avg = AVG(rt)
-          RETURN avg
-        )[0]
-        RETURN avgResponseTime || 0
+        MATCH (r:Response)
+        WHERE r.reaction_time_ms IS NOT NULL
+        RETURN avg(r.reaction_time_ms) as averageResponseTime
+        ORDER BY r.created_at DESC
+        LIMIT 100
       `
 
       const responseTimeResult = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(responseTimeQuery)
-      const averageResponseTime = responseTimeResult[0] || 0
+      const averageResponseTime = responseTimeResult[0]?.averageResponseTime || 0
 
       // Mock performance data (in real implementation, these would come from system monitoring)
       return {

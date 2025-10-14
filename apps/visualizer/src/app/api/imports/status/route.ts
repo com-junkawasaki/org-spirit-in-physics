@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ArangoDBManager } from '@/lib/neo4j'
+import { Neo4jManager } from '@/lib/neo4j'
 
 // Merkle DAG: imports_status_api -> system_health_check
 export async function GET(request: NextRequest) {
   try {
-    const dbManager = new ArangoDBManager()
-    
-    // ArangoDB接続確認
-    let arangodbStatus = 'disconnected'
+    const dbManager = new Neo4jManager()
+
+    // Neo4j接続確認
+    let neo4jStatus = 'disconnected'
     try {
       await dbManager.testConnection()
-      arangodbStatus = 'connected'
+      neo4jStatus = 'connected'
     } catch (error) {
-      console.error('ArangoDB connection failed:', error)
-      arangodbStatus = 'error'
+      console.error('Neo4j connection failed:', error)
+      neo4jStatus = 'error'
     }
 
     // Workflow接続確認
@@ -51,36 +51,17 @@ export async function GET(request: NextRequest) {
     let failedJobs = 0
 
     try {
-      // ArangoDBからジョブ統計を取得
-      const jobsQuery = `
-        FOR job IN participant_hume_analysis_jobs
-        COLLECT status = job.status WITH COUNT INTO count
-        RETURN { status, count }
-      `
-      
-      const jobsResult = await dbManager.query(jobsQuery)
-      
-      for (const result of jobsResult) {
-        const jobResult = result as any
-        switch (jobResult.status) {
-          case 'PENDING':
-          case 'RUNNING':
-            activeJobs += jobResult.count
-            break
-          case 'COMPLETED':
-            completedJobs += jobResult.count
-            break
-          case 'FAILED':
-            failedJobs += jobResult.count
-            break
-        }
-      }
+      // Neo4jからジョブ統計を取得
+      const jobStats = await dbManager.getJobStatistics()
+      activeJobs = jobStats.activeJobs
+      completedJobs = jobStats.completedJobs
+      failedJobs = jobStats.failedJobs
     } catch (error) {
       console.error('Failed to get job statistics:', error)
     }
 
     const systemStatus = {
-      arangodb: arangodbStatus,
+      neo4j: neo4jStatus,
       workflows: workflowsStatus,
       humeAI: humeAIStatus,
       activeJobs,
