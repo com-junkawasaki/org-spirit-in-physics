@@ -96,9 +96,9 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
         if (consentData.length > 0) {
           console.log(`Loaded ${consentData.length} participants from Vercel Blob`);
 
-          // ArangoDBにも保存
+          // Neo4jにも保存
           for (const data of consentData) {
-            const { arangodbManager } = await import('./database/arangodb-manager.ts');
+            const { neo4jManager } = await import('./database/arangodb-manager.ts');
             const participant: Participant = {
               id: data.participantId,
               signature: data.signature,
@@ -110,9 +110,9 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
             };
 
             try {
-              await arangodbManager.saveParticipant(participant);
+              await neo4jManager.saveParticipant(participant);
             } catch (saveError) {
-              console.warn('Failed to save participant to ArangoDB:', saveError);
+              console.warn('Failed to save participant to Neo4j:', saveError);
             }
           }
 
@@ -155,9 +155,9 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       }
     }
 
-    // ArangoDBにも保存
+    // Neo4jにも保存
     for (const data of consentData) {
-      const { arangodbManager } = await import('./database/arangodb-manager.ts');
+      const { neo4jManager } = await import('./database/arangodb-manager.ts');
       const participant: Participant = {
         id: data.participantId,
         signature: data.signature,
@@ -169,9 +169,9 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       };
 
       try {
-        await arangodbManager.saveParticipant(participant);
+        await neo4jManager.saveParticipant(participant);
       } catch (saveError) {
-        console.warn('Failed to save participant to ArangoDB:', saveError);
+        console.warn('Failed to save participant to Neo4j:', saveError);
       }
     }
 
@@ -237,16 +237,31 @@ export function loadParticipantData(participantId: string): Participant | null {
 // Load session data for a participant
 export async function loadSessionData(participantId: string): Promise<SessionData | null> {
   try {
-    // ArangoDBデータベースからセッションデータを取得（一本化）
+    // Neo4jデータベースからセッションデータを取得（一本化）
     try {
-      // ArangoDBからセッションデータを取得
-      // 実際のクエリ実装はArangoDBManagerで実装する必要がある
-      // 現時点では仮の実装
-      console.log(`Loading session data from ArangoDB for ${participantId}`);
-      // TODO: ArangoDBManagerにgetSessionDataメソッドを実装
-      return null; // 仮実装
-    } catch (arangodbError) {
-      console.warn('Failed to load session data from ArangoDB:', arangodbError);
+      const { neo4jManager } = await import('./database/arangodb-manager.ts');
+
+      // Neo4jからセッションデータを取得
+      const query = `
+        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+        RETURN s
+        ORDER BY s.created_at DESC
+      `;
+      const sessions = await neo4jManager.executeQuery(query, { participantId });
+
+      if (sessions && sessions.length > 0) {
+        const session = sessions[0].s;
+        return {
+          participantId,
+          events: session.events || [],
+          wordResponses: [] // TODO: Implement word responses extraction
+        };
+      }
+
+      console.log(`No session data found in Neo4j for ${participantId}`);
+      return null;
+    } catch (neo4jError) {
+      console.warn('Failed to load session data from Neo4j:', neo4jError);
       return null;
     }
   } catch (error) {
@@ -311,20 +326,12 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
 // Load all participants data
 export async function loadAllParticipants(): Promise<Participant[]> {
   try {
-    // ArangoDBから参加者データを取得（暫定：モックデータ）
-    const participants = []; // TODO: Implement ArangoDB query
+    const { neo4jManager } = await import('./database/arangodb-manager.ts');
+    const participants = await neo4jManager.getAllParticipants();
 
-    console.log(`Loaded ${participants?.length || 0} participants from ArangoDB`);
+    console.log(`Loaded ${participants?.length || 0} participants from Neo4j`);
 
-    return (participants || []).map((p: any) => ({
-      id: p.id,
-      signature: p.signature,
-      agreedAt: p.agreedAt,
-      agreements: p.agreements,
-      hasSessionData: false,
-      hasVideoFiles: false,
-      videoFiles: []
-    }));
+    return participants;
   } catch (error) {
     console.error('Error loading all participants:', error);
     return [];
@@ -334,22 +341,25 @@ export async function loadAllParticipants(): Promise<Participant[]> {
 // Load all session data
 export async function loadAllSessionData(): Promise<Array<{ participantId: string; sessionData: SessionData }>> {
   try {
-    // ArangoDBからセッションデータを取得（暫定：モックデータ）
-    const sessions = []; // TODO: Implement ArangoDB query
+    const { neo4jManager } = await import('./database/arangodb-manager.ts');
 
-    console.log(`Loaded ${sessions?.length || 0} sessions from ArangoDB`);
+    // Neo4jからセッションデータを取得
+    const query = `
+      MATCH (p:Participant)-[:HAS_SESSION]->(s:Session)
+      RETURN p.id as participant_id, s
+      ORDER BY p.id, s.created_at DESC
+    `;
+    const sessions = await neo4jManager.executeQuery(query);
 
-    return (sessions || []).map((session: any) => ({
-      participantId: session.participant_id,
+    console.log(`Loaded ${sessions?.length || 0} sessions from Neo4j`);
+
+    return (sessions || []).map((record: any) => ({
+      participantId: record.participant_id,
       sessionData: {
-        events: [],
-        createdAt: session.created_at,
-        sessionId: session.session_id,
-        wordResponses: [],
-        sessionType: session.session_type,
-        startTime: session.start_time,
-        endTime: session.end_time,
-      } as unknown as SessionData
+        participantId: record.participant_id,
+        events: record.s.events || [],
+        wordResponses: [] // TODO: Implement word responses extraction
+      } as SessionData
     }));
   } catch (error) {
     console.error('Error loading all session data:', error);

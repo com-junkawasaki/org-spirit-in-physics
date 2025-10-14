@@ -6,7 +6,7 @@
 // Dependency Inversion: Depends on performance interfaces, not concrete implementations
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/arangodb'
+import { createNeo4jClient } from '@/lib/arangodb'
 
 // Merkle DAG: performance_metrics_api -> performance_data_interface
 interface PerformanceDataPoint {
@@ -46,16 +46,13 @@ class PerformanceDataGenerator {
     try {
       const hours = this.getHoursFromTimeRange(timeRange)
       const query = `
-        FOR r IN participant_response_data
-        FILTER r.response_time != null
-        FILTER r.created_at >= DATE_SUBTRACT(NOW(), ${hours}, 'hours')
-        SORT r.created_at ASC
-        RETURN {
-          timestamp: r.created_at,
-          value: r.response_time
-        }
+        MATCH (r:Response)
+        WHERE r.reaction_time_ms IS NOT NULL
+        AND r.event_ts >= datetime() - duration({hours: ${hours}})
+        RETURN r.event_ts as timestamp, r.reaction_time_ms as value
+        ORDER BY r.event_ts ASC
       `
-      
+
       const result = await (this.dbClient as any).query(query)
       const data = result.map((item: any) => ({
         timestamp: new Date(item.timestamp).toISOString(),
@@ -99,16 +96,13 @@ class PerformanceDataGenerator {
     try {
       const hours = this.getHoursFromTimeRange(timeRange)
       const query = `
-        FOR r IN participant_response_data
-        FILTER r.spirit_probability != null
-        FILTER r.created_at >= DATE_SUBTRACT(NOW(), ${hours}, 'hours')
-        SORT r.created_at ASC
-        RETURN {
-          timestamp: r.created_at,
-          value: r.spirit_probability
-        }
+        MATCH (r:AnalysisResult)
+        WHERE r.spirit_probability IS NOT NULL
+        AND r.processed_at >= datetime() - duration({hours: ${hours}})
+        RETURN r.processed_at as timestamp, r.spirit_probability as value
+        ORDER BY r.processed_at ASC
       `
-      
+
       const result = await (this.dbClient as any).query(query)
       const data = result.map((item: any) => ({
         timestamp: new Date(item.timestamp).toISOString(),
@@ -152,15 +146,12 @@ class PerformanceDataGenerator {
     try {
       const hours = this.getHoursFromTimeRange(timeRange)
       const query = `
-        FOR j IN participant_hume_analysis_jobs
-        FILTER j.created_at >= DATE_SUBTRACT(NOW(), ${hours}, 'hours')
-        SORT j.created_at ASC
-        RETURN {
-          timestamp: j.created_at,
-          value: j.processing_time || 0
-        }
+        MATCH (j:HumeAnalysisJob)
+        WHERE j.created_at >= datetime() - duration({hours: ${hours}})
+        RETURN j.created_at as timestamp, 0 as value
+        ORDER BY j.created_at ASC
       `
-      
+
       const result = await (this.dbClient as any).query(query)
       const data = result.map((item: any) => ({
         timestamp: new Date(item.timestamp).toISOString(),
@@ -239,7 +230,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const timeRange = searchParams.get('timeRange') || '24h'
 
-    const dbClient = createArangoDBClient()
+    const dbClient = createNeo4jClient()
     const generator = new PerformanceDataGenerator(dbClient)
 
     // Generate all performance metrics in parallel

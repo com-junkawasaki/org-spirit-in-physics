@@ -45,7 +45,7 @@ type ParticipantData = {
 }
 
 type SystemStatus = {
-  arangodb: 'connected' | 'disconnected' | 'error'
+  neo4j: 'connected' | 'disconnected' | 'error'
   workflows: 'connected' | 'disconnected' | 'error'
   humeAI: 'connected' | 'disconnected' | 'error'
   activeJobs: number
@@ -65,7 +65,7 @@ export default function DataManagementPage() {
   const [importJobs, setImportJobs] = useState<ImportJob[]>([])
   const [participants, setParticipants] = useState<ParticipantData[]>([])
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
-    arangodb: 'disconnected',
+    neo4j: 'disconnected',
     workflows: 'disconnected',
     humeAI: 'disconnected',
     activeJobs: 0,

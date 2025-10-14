@@ -174,7 +174,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
       }
     }
 
-    // ArangoDBに保存（storageAdapter経由）
+    // Neo4jに保存（storageAdapter経由）
     const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
     await storageAdapter.saveEmotionAnalysis(result.participantId, result);
 
@@ -188,7 +188,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
  */
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
-    // storageAdapter経由でArangoDBから感情分析データを取得
+    // storageAdapter経由でNeo4jから感情分析データを取得
     const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
     return await storageAdapter.loadEmotionAnalysis(participantId);
   } catch (error) {
@@ -223,7 +223,7 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       const result = await analyzeVideoEmotions(participantId, videoFile, sessionType);
       if (result) {
         results.push(result);
-        // ArangoDBに個別に保存
+        // Neo4jに個別に保存
         await storageAdapter.saveEmotionAnalysis(participantId, result);
       }
 

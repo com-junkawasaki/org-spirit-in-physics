@@ -35,8 +35,8 @@ interface ParticipantData {
 
 // Merkle DAG: imports_management_page -> system_status_monitoring
 interface SystemStatus {
-  arangodb: 'connected' | 'disconnected' | 'error'
-  temporal: 'connected' | 'disconnected' | 'error'
+  neo4j: 'connected' | 'disconnected' | 'error'
+  workflows: 'connected' | 'disconnected' | 'error'
   humeAI: 'connected' | 'disconnected' | 'error'
   activeJobs: number
   completedJobs: number
@@ -51,8 +51,8 @@ export default function ImportsPage() {
   const [importJobs, setImportJobs] = useState<ImportJob[]>([])
   const [participants, setParticipants] = useState<ParticipantData[]>([])
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
-    arangodb: 'disconnected',
-    temporal: 'disconnected',
+    neo4j: 'disconnected',
+    workflows: 'disconnected',
     humeAI: 'disconnected',
     activeJobs: 0,
     completedJobs: 0,

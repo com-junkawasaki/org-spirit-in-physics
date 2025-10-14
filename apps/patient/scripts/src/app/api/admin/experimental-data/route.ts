@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { arangodb } from "scripts/src/lib/arangodb";
+import { createNeo4jClient } from "scripts/src/lib/arangodb";
 import { parseWordResponsesFromEvents, getParticipantStatistics } from "scripts/src/lib/data-loader";
 
 export async function GET(request: NextRequest) {
@@ -10,8 +10,20 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // ArangoDBから参加者データを取得（暫定：モックデータ）
-        const participantsData = []; // TODO: Implement ArangoDB query
+        // Neo4jから参加者データを取得
+        const client = createNeo4jClient();
+        const participantsQuery = `
+          MATCH (p:Participant)
+          OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
+          WITH p, count(distinct s) as sessionCount
+          RETURN p.id as id,
+                 p.signature as signature,
+                 p.agreedAt as agreedAt,
+                 sessionCount,
+                 p.created_at as createdAt
+          ORDER BY p.created_at DESC
+        `;
+        const participantsData = await client.query(participantsQuery);
         const participantStats = getParticipantStatistics(participantsData || []);
 
         // Transform to match expected format
@@ -20,12 +32,12 @@ export async function GET(request: NextRequest) {
           age: null, // Age not available in current data
           gender: null, // Gender not available in current data
           handedness: null, // Handedness not available in current data
-          createdAt: p.agreed_at,
-          sessionCount: p.sessions?.length || 0,
-          lastActivity: p.updated_at || p.created_at,
-          status: (p.sessions?.length || 0) > 0 ? 'completed' : 'in_progress',
-          hasVideoFiles: (p.video_files?.length || 0) > 0,
-          videoFiles: p.video_files || []
+          createdAt: p.agreedAt || p.createdAt,
+          sessionCount: p.sessionCount || 0,
+          lastActivity: p.agreedAt || p.createdAt,
+          status: (p.sessionCount || 0) > 0 ? 'completed' : 'in_progress',
+          hasVideoFiles: false, // TODO: Implement video file checking
+          videoFiles: []
         }));
 
         return NextResponse.json({
