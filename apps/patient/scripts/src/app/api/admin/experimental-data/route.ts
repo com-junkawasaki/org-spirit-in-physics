@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createNeo4jClient } from "scripts/src/lib/arangodb";
 import { parseWordResponsesFromEvents, getParticipantStatistics } from "scripts/src/lib/data-loader";
+import { ParticipantQueries, SessionQueries, ResponseQueries, EmotionQueries } from "scripts/src/lib/neo4j-queries";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,19 +11,9 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Neo4jから参加者データを取得
+        // Neo4jから参加者データを取得 (Cypher Builder使用)
         const client = createNeo4jClient();
-        const participantsQuery = `
-          MATCH (p:Participant)
-          OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
-          WITH p, count(distinct s) as sessionCount
-          RETURN p.id as id,
-                 p.signature as signature,
-                 p.agreedAt as agreedAt,
-                 sessionCount,
-                 p.created_at as createdAt
-          ORDER BY p.created_at DESC
-        `;
+        const participantsQuery = ParticipantQueries.getAllParticipants();
         const participantsData = await client.query(participantsQuery);
         const participantStats = getParticipantStatistics(participantsData || []);
 
@@ -54,33 +45,39 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        // ArangoDBから参加者データを取得（暫定：モックデータ）
-        const participant = null; // TODO: Implement ArangoDB query
+        // Neo4jから参加者データを取得 (Cypher Builder使用)
+        const client = createNeo4jClient();
+        const participantQuery = ParticipantQueries.getParticipant(participantId);
+        const participantData = await client.query(participantQuery);
 
-        if (!participant) {
+        if (!participantData || participantData.length === 0) {
           return NextResponse.json({
             error: "Participant not found"
           }, { status: 404 });
         }
 
+        const participant = participantData[0].p;
         return NextResponse.json({
           success: true,
           data: {
             id: participantId,
-            signature: "mock",
-            agreedAt: new Date().toISOString(),
-            hasSessionData: false,
-            hasVideoFiles: false,
+            signature: participant.signature || "unknown",
+            agreedAt: participant.agreedAt || new Date().toISOString(),
+            hasSessionData: false, // TODO: Implement session data checking
+            hasVideoFiles: false, // TODO: Implement video file checking
             videoFiles: []
           }
         });
 
       case 'sessions':
-        // ArangoDBからセッションデータを取得（暫定：モックデータ）
-        const sessionsData = []; // TODO: Implement ArangoDB query
+        // Neo4jからセッションデータを取得 (Cypher Builder使用)
+        const client = createNeo4jClient();
+        const sessionsQuery = ParticipantQueries.getAllSessions();
+        const sessionsData = await client.query(sessionsQuery);
 
         // Transform session data to match expected format
-        const formattedSessions = (sessionsData || []).map((session: any) => {
+        const formattedSessions = (sessionsData || []).map((record: any) => {
+          const session = record.s;
           const wordResponses = parseWordResponsesFromEvents(session.events || []);
 
           // Extract session start/end times from events
@@ -97,7 +94,7 @@ export async function GET(request: NextRequest) {
             : sessionStartTime;
 
           return {
-            participantId: session.participant_id,
+            participantId: record.participant_id,
             sessionId: session.id,
             sessionType: session.id,
             startTime: sessionStartTime,
@@ -117,32 +114,39 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // ArangoDBからデータを取得（暫定：モックデータ）
-        const participants = []; // TODO: Implement ArangoDB query
+        // Neo4jからデータを取得 (Cypher Builder使用)
+        const client = createNeo4jClient();
+        const participantsQuery = ParticipantQueries.getAllParticipants();
+        const participantsData = await client.query(participantsQuery);
+        const participants = participantsData || [];
 
-        const stats = getParticipantStatistics(participants || []);
+        const stats = getParticipantStatistics(participants);
 
-        // Calculate reaction time statistics from ArangoDB data
+        // Calculate reaction time statistics from Neo4j data
         let totalReactionTime = 0;
         let totalResponses = 0;
 
-        (participants || []).forEach((participant: any) => {
-          (participant.sessions || []).forEach((session: any) => {
-            const wordResponses = parseWordResponsesFromEvents(session.events || []);
-            wordResponses.forEach((response: any) => {
-              totalReactionTime += response.reactionTimeMs;
-              totalResponses += 1;
-            });
-          });
+        participants.forEach((participant: any) => {
+          // For now, calculate from session data if available
+          // TODO: Implement proper reaction time calculation from Neo4j
         });
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // ArangoDBから感情統計を取得（暫定：モックデータ）
-        const emotionDistribution: Record<string, number> = {}; // TODO: Implement ArangoDB query
+        // Neo4jから感情統計を取得 (Cypher Builder使用)
+        const emotionQuery = EmotionQueries.getEmotionStatistics();
+        const emotionData = await client.query(emotionQuery);
+        const emotionDistribution: Record<string, number> = {};
 
-        const totalSessions = (participants || []).reduce((acc: number, p: any) =>
-          acc + (p.sessions?.length || 0), 0);
+        (emotionData || []).forEach((record: any) => {
+          const emotion = record.emotion;
+          if (emotion) {
+            emotionDistribution[emotion] = (emotionDistribution[emotion] || 0) + 1;
+          }
+        });
+
+        const totalSessions = participants.reduce((acc: number, p: any) =>
+          acc + (p.session_count || 0), 0);
 
         return NextResponse.json({
           success: true,
@@ -159,22 +163,20 @@ export async function GET(request: NextRequest) {
         });
 
       case 'reaction-times':
-        // ArangoDBからreaction timeデータを取得（暫定：モックデータ）
-        const sessions = []; // TODO: Implement ArangoDB query
+        // Neo4jからreaction timeデータを取得 (Cypher Builder使用)
+        const client = createNeo4jClient();
+        const reactionTimeQuery = ResponseQueries.getAllResponsesForReactionTimes();
+        const responseData = await client.query(reactionTimeQuery);
 
-        const reactionTimeData = (sessions || []).flatMap((session: any) => {
-          const wordResponses = parseWordResponsesFromEvents(session.events || []);
-
-          return wordResponses.map((response: any) => ({
-            participantId: session.participant_id,
-            sessionType: 'session-1', // Simplified
-            stimulusWord: response.stimulusWord,
-            responseWord: response.responseWord,
-            reactionTimeMs: response.reactionTimeMs,
-            isDelayed: response.isDelayed,
-            timestamp: new Date(response.timestamp).toISOString()
-          }));
-        });
+        const reactionTimeData = (responseData || []).map((record: any) => ({
+          participantId: record.participant_id,
+          sessionType: record.session_id,
+          stimulusWord: record.stimulus_word,
+          responseWord: record.response_word,
+          reactionTimeMs: record.reaction_time_ms || 0,
+          isDelayed: (record.reaction_time_ms || 0) > 3000, // 3秒以上を遅延とみなす
+          timestamp: record.event_ts ? new Date(record.event_ts).toISOString() : new Date().toISOString()
+        }));
 
         return NextResponse.json({
           success: true,

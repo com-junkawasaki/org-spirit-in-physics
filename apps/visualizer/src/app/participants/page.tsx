@@ -23,7 +23,7 @@ interface Participant {
   }>
 }
 
-// Data is fetched on the server via getAllParticipants (ArangoDB)
+// Data is fetched on the server via getAllParticipants (Neo4j)
 
 function formatDate(timestamp: number | null): string {
   if (!timestamp) return 'N/A'

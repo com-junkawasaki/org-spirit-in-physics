@@ -1,7 +1,7 @@
 // Merkle DAG: Neo4jスキーマ定義
 // Spirit in PhysicsプロジェクトのNeo4jグラフデータモデル
 
-import { Node, Relationship } from '@neo4j/cypher-builder';
+// TODO: 将来的に @neo4j/cypher-builder を使用した型安全なスキーマ定義を実装
 
 // ノードラベル定義
 export const NODE_LABELS = {
@@ -23,43 +23,47 @@ export const RELATIONSHIP_TYPES = {
   HAS_EMOTION_ANALYSIS: 'HAS_EMOTION_ANALYSIS',
 } as const;
 
-// ノード定義
+// ノード定義（Cypher文字列として）
+// TODO: 将来的に @neo4j/cypher-builder を使用した型安全なノード定義を実装
+
 export const Participant = (properties: Record<string, any> = {}) =>
-  new Node(NODE_LABELS.PARTICIPANT, properties);
+  `(:Participant ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
 
 export const Session = (properties: Record<string, any> = {}) =>
-  new Node(NODE_LABELS.SESSION, properties);
+  `(:Session ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
 
 export const Response = (properties: Record<string, any> = {}) =>
-  new Node(NODE_LABELS.RESPONSE, properties);
+  `(:Response ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
 
 export const WordStimulus = (properties: Record<string, any> = {}) =>
-  new Node(NODE_LABELS.WORD_STIMULUS, properties);
+  `(:WordStimulus ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
 
 export const VideoFile = (properties: Record<string, any> = {}) =>
-  new Node(NODE_LABELS.VIDEO_FILE, properties);
+  `(:VideoFile ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
 
 export const EmotionAnalysis = (properties: Record<string, any> = {}) =>
-  new Node(NODE_LABELS.EMOTION_ANALYSIS, properties);
+  `(:EmotionAnalysis ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
 
-// リレーションシップ定義
-export const HasSession = (from: Node, to: Node, properties: Record<string, any> = {}) =>
-  new Relationship(from, RELATIONSHIP_TYPES.HAS_SESSION, to, properties);
+// リレーションシップ定義（Cypher文字列として）
+// TODO: 将来的に @neo4j/cypher-builder を使用した型安全なリレーションシップ定義を実装
 
-export const HasResponse = (from: Node, to: Node, properties: Record<string, any> = {}) =>
-  new Relationship(from, RELATIONSHIP_TYPES.HAS_RESPONSE, to, properties);
+export const HasSession = (from: any, to: any, properties: Record<string, any> = {}) =>
+  `-[${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''}:HAS_SESSION]->`;
 
-export const HasVideoFile = (from: Node, to: Node, properties: Record<string, any> = {}) =>
-  new Relationship(from, RELATIONSHIP_TYPES.HAS_VIDEO_FILE, to, properties);
+export const HasResponse = (from: any, to: any, properties: Record<string, any> = {}) =>
+  `-[${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''}:HAS_RESPONSE]->`;
 
-export const StimulusWord = (from: Node, to: Node, properties: Record<string, any> = {}) =>
-  new Relationship(from, RELATIONSHIP_TYPES.STIMULUS_WORD, to, properties);
+export const HasVideoFile = (from: any, to: any, properties: Record<string, any> = {}) =>
+  `-[${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''}:HAS_VIDEO_FILE]->`;
 
-export const ResponseWord = (from: Node, to: Node, properties: Record<string, any> = {}) =>
-  new Relationship(from, RELATIONSHIP_TYPES.RESPONSE_WORD, to, properties);
+export const StimulusWord = (from: any, to: any, properties: Record<string, any> = {}) =>
+  `-[${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''}:STIMULUS_WORD]->`;
 
-export const HasEmotionAnalysis = (from: Node, to: Node, properties: Record<string, any> = {}) =>
-  new Relationship(from, RELATIONSHIP_TYPES.HAS_EMOTION_ANALYSIS, to, properties);
+export const ResponseWord = (from: any, to: any, properties: Record<string, any> = {}) =>
+  `-[${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''}:RESPONSE_WORD]->`;
+
+export const HasEmotionAnalysis = (from: any, to: any, properties: Record<string, any> = {}) =>
+  `-[${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''}:HAS_EMOTION_ANALYSIS]->`;
 
 // スキーマ制約定義（Cypherクエリとして）
 export const SCHEMA_CONSTRAINTS = {
