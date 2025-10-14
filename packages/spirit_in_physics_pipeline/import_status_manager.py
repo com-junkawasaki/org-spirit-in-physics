@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Any
 from enum import Enum
 from dataclasses import dataclass
 
-from arango import ArangoClient
+from neo4j import GraphDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -47,92 +47,120 @@ class ImportRecord:
     metadata: Optional[Dict[str, Any]] = None
 
 class ImportStatusManager:
-    """Manager for tracking import status in ArangoDB."""
-    
+    """Manager for tracking import status in Neo4j."""
+
     def __init__(self, config: Dict[str, Any]):
         """Initialize the import status manager."""
-        self.client = ArangoClient(hosts=config['url'])
-        self.db = self.client.db(config['database'], username=config['user'], password=config['password'])
+        self.driver = GraphDatabase.driver(config['url'], auth=(config['user'], config['password']))
+        self.database_name = config.get('database', 'neo4j')
         self.config = config
         logger.info("ImportStatusManager initialized.")
     
-    def create_import_status_collections(self) -> bool:
-        """Create necessary collections for import status tracking."""
+    def create_import_status_constraints(self) -> bool:
+        """Create necessary constraints for import status tracking."""
         try:
-            collections = ['import_status', 'import_jobs']
-            
-            for collection_name in collections:
-                if not self.db.has_collection(collection_name):
-                    self.db.create_collection(collection_name)
-                    logger.info(f"Created collection: {collection_name}")
-                else:
-                    logger.info(f"Collection {collection_name} already exists")
-            
+            with self.driver.session(database=self.database_name) as session:
+                # Create uniqueness constraints
+                constraints = [
+                    "CREATE CONSTRAINT import_status_participant_unique IF NOT EXISTS FOR (is:ImportStatus) REQUIRE is.participant_id IS UNIQUE",
+                    "CREATE CONSTRAINT import_job_id_unique IF NOT EXISTS FOR (ij:ImportJob) REQUIRE ij.id IS UNIQUE"
+                ]
+
+                for constraint in constraints:
+                    try:
+                        session.run(constraint)
+                        logger.info(f"Created constraint for import status tracking")
+                    except Exception as e:
+                        logger.warning(f"Failed to create constraint: {e}")
+
             return True
         except Exception as e:
-            logger.error(f"Failed to create import status collections: {e}")
+            logger.error(f"Failed to create import status constraints: {e}")
             return False
     
-    def create_import_status(self, participant_id: str, import_type: ImportType, 
+    def create_import_status(self, participant_id: str, import_type: ImportType,
                            data_sources: List[str] = None) -> bool:
         """Create a new import status record."""
         try:
-            collection = self.db.collection('import_status')
-            
-            status_doc = {
-                "_key": participant_id,
-                "participant_id": participant_id,
-                "status": ImportStatus.PENDING.value,
-                "import_type": import_type.value,
-                "imported_at": None,
-                "last_updated": datetime.now().isoformat(),
-                "data_sources": data_sources or [],
-                "records_count": {
-                    "sessions": 0,
-                    "responses": 0,
-                    "hume_data": 0,
-                    "physiological_data": 0
-                },
-                "error_message": None,
-                "metadata": {}
-            }
-            
-            collection.insert(status_doc, overwrite=True)
-            logger.info(f"Created import status for participant: {participant_id}")
-            return True
-            
+            with self.driver.session(database=self.database_name) as session:
+                status_props = {
+                    "participant_id": participant_id,
+                    "status": ImportStatus.PENDING.value,
+                    "import_type": import_type.value,
+                    "imported_at": None,
+                    "last_updated": datetime.now().isoformat(),
+                    "data_sources": data_sources or [],
+                    "records_count": {
+                        "sessions": 0,
+                        "responses": 0,
+                        "hume_data": 0,
+                        "physiological_data": 0
+                    },
+                    "error_message": None,
+                    "metadata": {}
+                }
+
+                # Create ImportStatus node and connect to Participant
+                query = """
+                MATCH (p:Participant {id: $participant_id})
+                MERGE (is:ImportStatus {participant_id: $participant_id})
+                SET is += $properties
+                MERGE (p)-[:HAS_IMPORT_STATUS]->(is)
+                RETURN is
+                """
+
+                result = session.run(query, participant_id=participant_id, properties=status_props)
+                record = result.single()
+                if record:
+                    logger.info(f"Created import status for participant: {participant_id}")
+                    return True
+                else:
+                    logger.error(f"Failed to create import status for participant: {participant_id}")
+                    return False
+
         except Exception as e:
             logger.error(f"Failed to create import status for {participant_id}: {e}")
             return False
     
-    def update_import_status(self, participant_id: str, status: ImportStatus, 
+    def update_import_status(self, participant_id: str, status: ImportStatus,
                            error_message: str = None, records_count: Dict[str, int] = None,
                            metadata: Dict[str, Any] = None) -> bool:
         """Update import status for a participant."""
         try:
-            collection = self.db.collection('import_status')
-            
-            update_data = {
-                "status": status.value,
-                "last_updated": datetime.now().isoformat()
-            }
-            
-            if status == ImportStatus.COMPLETED:
-                update_data["imported_at"] = datetime.now().isoformat()
-            
-            if error_message:
-                update_data["error_message"] = error_message
-            
-            if records_count:
-                update_data["records_count"] = records_count
-            
-            if metadata:
-                update_data["metadata"] = metadata
-            
-            collection.update({"_key": participant_id}, update_data)
-            logger.info(f"Updated import status for {participant_id}: {status.value}")
-            return True
-            
+            with self.driver.session(database=self.database_name) as session:
+                update_data = {
+                    "status": status.value,
+                    "last_updated": datetime.now().isoformat()
+                }
+
+                if status == ImportStatus.COMPLETED:
+                    update_data["imported_at"] = datetime.now().isoformat()
+
+                if error_message:
+                    update_data["error_message"] = error_message
+
+                if records_count:
+                    update_data["records_count"] = records_count
+
+                if metadata:
+                    update_data["metadata"] = metadata
+
+                # Update ImportStatus node
+                query = """
+                MATCH (is:ImportStatus {participant_id: $participant_id})
+                SET is += $update_data
+                RETURN is
+                """
+
+                result = session.run(query, participant_id=participant_id, update_data=update_data)
+                record = result.single()
+                if record:
+                    logger.info(f"Updated import status for {participant_id}: {status.value}")
+                    return True
+                else:
+                    logger.error(f"Failed to update import status for {participant_id}")
+                    return False
+
         except Exception as e:
             logger.error(f"Failed to update import status for {participant_id}: {e}")
             return False
@@ -140,26 +168,31 @@ class ImportStatusManager:
     def get_import_status(self, participant_id: str) -> Optional[ImportRecord]:
         """Get import status for a participant."""
         try:
-            collection = self.db.collection('import_status')
-            result = collection.find({"_key": participant_id})
-            records = list(result)
-            
-            if not records:
-                return None
-            
-            record = records[0]
-            return ImportRecord(
-                participant_id=record["participant_id"],
-                status=ImportStatus(record["status"]),
-                import_type=ImportType(record["import_type"]),
-                imported_at=record.get("imported_at"),
-                last_updated=record.get("last_updated"),
-                data_sources=record.get("data_sources"),
-                records_count=record.get("records_count"),
-                error_message=record.get("error_message"),
-                metadata=record.get("metadata")
-            )
-            
+            with self.driver.session(database=self.database_name) as session:
+                query = """
+                MATCH (is:ImportStatus {participant_id: $participant_id})
+                RETURN is
+                """
+
+                result = session.run(query, participant_id=participant_id)
+                record = result.single()
+
+                if not record:
+                    return None
+
+                status_data = dict(record["is"])
+                return ImportRecord(
+                    participant_id=status_data["participant_id"],
+                    status=ImportStatus(status_data["status"]),
+                    import_type=ImportType(status_data["import_type"]),
+                    imported_at=status_data.get("imported_at"),
+                    last_updated=status_data.get("last_updated"),
+                    data_sources=status_data.get("data_sources"),
+                    records_count=status_data.get("records_count"),
+                    error_message=status_data.get("error_message"),
+                    metadata=status_data.get("metadata")
+                )
+
         except Exception as e:
             logger.error(f"Failed to get import status for {participant_id}: {e}")
             return None

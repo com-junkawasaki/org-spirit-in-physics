@@ -27,11 +27,11 @@ def temp_dir():
 def test_config():
     """Test configuration for workflows and activities."""
     return {
-        'arangodb': {
-            'url': 'http://localhost:8529',
-            'user': 'root',
-            'password': '',
-            'database': 'spirit_in_physics'
+        'neo4j': {
+            'url': 'bolt://localhost:7687',
+            'user': 'neo4j',
+            'password': 'password',
+            'database': 'neo4j'
         },
         'hume_ai': {
             'api_key': 'test_key'
@@ -169,15 +169,17 @@ def mock_analysis_result():
 
 
 @pytest.fixture
-def skip_if_no_arangodb():
-    """Skip test if ArangoDB is not available."""
+def skip_if_no_neo4j():
+    """Skip test if Neo4j is not available."""
     try:
-        from arango import ArangoClient
-        client = ArangoClient(hosts='http://localhost:8529')
-        client.db('spirit_in_physics', username='root', password='')
-        return False  # ArangoDB is available
+        from neo4j import GraphDatabase
+        driver = GraphDatabase.driver('bolt://localhost:7687', auth=('neo4j', 'password'))
+        with driver.session() as session:
+            session.run("RETURN 1")
+        driver.close()
+        return False  # Neo4j is available
     except Exception:
-        return True  # ArangoDB is not available
+        return True  # Neo4j is not available
 
 
 @pytest.fixture

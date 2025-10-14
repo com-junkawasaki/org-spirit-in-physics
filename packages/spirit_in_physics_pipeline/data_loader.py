@@ -1,4 +1,4 @@
-from arango import ArangoClient
+from neo4j import GraphDatabase
 import logging
 import os
 import tempfile
@@ -6,29 +6,30 @@ from typing import Optional, Dict, Any, List
 
 class DataLoader:
     def __init__(self, config):
-        self.client = ArangoClient(hosts=config['url'])
-        self.db = self.client.db(config['database'], username=config['user'], password=config['password'])
-        self.database_name = config['database']
-        logging.info("DataLoader initialized and ArangoDB client connected.")
+        self.driver = GraphDatabase.driver(config['url'], auth=(config['user'], config['password']))
+        self.database_name = config.get('database', 'neo4j')
+        logging.info("DataLoader initialized and Neo4j client connected.")
 
     def get_unprocessed_responses(self, limit: int = 10):
         """
-        Fetches responses from participant_response_data that have not yet
+        Fetches responses from Response nodes that have not yet
         been processed in the latest analysis run. This logic is a placeholder
         and should be refined.
         """
         logging.info("Fetching unprocessed responses...")
-        # Query ArangoDB for unprocessed responses
-        aql_query = f"""
-        FOR response IN participant_session_responses
-            LIMIT {limit}
-            RETURN response
+        # Query Neo4j for unprocessed responses
+        cypher_query = """
+        MATCH (r:Response)
+        WHERE r.processed IS NULL OR r.processed = false
+        RETURN r
+        LIMIT $limit
         """
 
-        cursor = self.db.aql.execute(aql_query)
-        data = list(cursor)
-        logging.info(f"Found {len(data)} responses.")
-        return data
+        with self.driver.session(database=self.database_name) as session:
+            result = session.run(cypher_query, limit=limit)
+            data = [dict(record["r"]) for record in result]
+            logging.info(f"Found {len(data)} responses.")
+            return data
 
     def get_experiment_session_for_response(self, response_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -37,20 +38,18 @@ class DataLoader:
         """
         try:
             logging.info(f"Finding experiment session for response {response_id}")
-            aql_query = """
-            FOR response IN participant_session_responses
-                FILTER response._key == @response_id
-                FOR session IN participant_sessions
-                    FILTER session._key == response.experiment_id
-                    RETURN session
+            cypher_query = """
+            MATCH (r:Response {id: $response_id})-[:BELONGS_TO_SESSION]->(s:ExperimentSession)
+            RETURN s
             """
-            cursor = self.db.aql.execute(aql_query, bind_vars={"response_id": response_id})
-            sessions = list(cursor)
-            if sessions:
-                return sessions[0]
-            else:
-                logging.warning(f"No experiment session found for response {response_id}")
-                return None
+            with self.driver.session(database=self.database_name) as session:
+                result = session.run(cypher_query, response_id=response_id)
+                record = result.single()
+                if record:
+                    return dict(record["s"])
+                else:
+                    logging.warning(f"No experiment session found for response {response_id}")
+                    return None
         except Exception as e:
             logging.error(f"Error getting experiment session for response {response_id}: {e}")
             return None
@@ -58,13 +57,13 @@ class DataLoader:
     def get_participant_sessions(self, participant_id: str) -> List[Dict[str, Any]]:
         """参加者の実験セッションを取得"""
         try:
-            aql_query = """
-            FOR session IN participant_sessions
-                FILTER session.participant_id == @participant_id
-                RETURN session
+            cypher_query = """
+            MATCH (p:Participant {id: $participant_id})-[:HAS_SESSION]->(s:ExperimentSession)
+            RETURN s
             """
-            cursor = self.db.aql.execute(aql_query, bind_vars={"participant_id": participant_id})
-            return list(cursor)
+            with self.driver.session(database=self.database_name) as session:
+                result = session.run(cypher_query, participant_id=participant_id)
+                return [dict(record["s"]) for record in result]
         except Exception as e:
             logging.error(f"Failed to get participant sessions: {e}")
             return []
@@ -72,12 +71,23 @@ class DataLoader:
     def load_skin_potential_data(self, response_id: str) -> list:
         """
         Loads skin potential time-series data for a specific response.
-        This is a placeholder and should be adapted for how skin potential is stored.
+        Queries PhysiologicalDataPoint nodes connected to the response.
         """
         logging.info(f"Loading skin potential data for response: {response_id}")
-        # This is a placeholder. In a real scenario, you would query a collection
-        # that stores time-series data linked to the response_id.
-        return []
+        try:
+            cypher_query = """
+            MATCH (r:Response {id: $response_id})-[:HAS_PHYSIOLOGICAL_DATA]->(p:PhysiologicalDataPoint)
+            RETURN p
+            ORDER BY p.timestamp_offset_ms
+            """
+            with self.driver.session(database=self.database_name) as session:
+                result = session.run(cypher_query, response_id=response_id)
+                data = [dict(record["p"]) for record in result]
+                logging.info(f"Loaded {len(data)} physiological data points")
+                return data
+        except Exception as e:
+            logging.error(f"Failed to load skin potential data: {e}")
+            return []
 
     def download_media_file(self, storage_path: str, local_dir: Optional[str] = None) -> str:
         """

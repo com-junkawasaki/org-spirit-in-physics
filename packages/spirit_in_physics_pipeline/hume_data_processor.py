@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import numpy as np
-from arango import ArangoClient
+from neo4j import GraphDatabase
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -13,25 +13,26 @@ class HumeDataProcessor:
     Loads pre-processed Hume AI emotion analysis data from the ArangoDB database.
     """
 
-    def __init__(self, arangodb_config: Dict[str, str]):
-        self.client = ArangoClient(hosts=arangodb_config['url'])
-        self.db = self.client.db(arangodb_config['database'], username=arangodb_config['user'], password=arangodb_config['password'])
-        logging.info("HumeDataProcessor initialized with ArangoDB client.")
+    def __init__(self, neo4j_config: Dict[str, str]):
+        self.driver = GraphDatabase.driver(neo4j_config['url'], auth=(neo4j_config['user'], neo4j_config['password']))
+        self.database_name = neo4j_config.get('database', 'neo4j')
+        logging.info("HumeDataProcessor initialized with Neo4j client.")
 
     def load_burst_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load burst prediction data directly for a given session."""
         try:
-            aql_query = """
-            FOR prediction IN participant_hume_burst_predictions
-                FILTER prediction.participant_experiment_session_id == @session_id
-                RETURN prediction
+            cypher_query = """
+            MATCH (s:ExperimentSession {id: $session_id})<-[:BELONGS_TO_SESSION]-(hp:HumePrediction)
+            WHERE hp.prediction_type = 'burst'
+            RETURN hp
             """
 
-            cursor = self.db.aql.execute(aql_query, bind_vars={"session_id": participant_experiment_session_id})
-            data = list(cursor)
+            with self.driver.session(database=self.database_name) as session:
+                result = session.run(cypher_query, session_id=participant_experiment_session_id)
+                data = [dict(record["hp"]) for record in result]
 
-            logging.info(f"Loaded {len(data)} burst prediction records for session {participant_experiment_session_id}")
-            return data
+                logging.info(f"Loaded {len(data)} burst prediction records for session {participant_experiment_session_id}")
+                return data
         except Exception as e:
             logging.error(f"Error loading burst data for session {participant_experiment_session_id}: {e}")
             return []
@@ -39,20 +40,21 @@ class HumeDataProcessor:
     def load_prosody_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load prosody prediction data directly for a given session."""
         try:
-            aql_query = """
-            FOR prediction IN participant_hume_prosody_predictions
-                FILTER prediction.participant_experiment_session_id == @session_id
-                RETURN prediction
+            cypher_query = """
+            MATCH (s:ExperimentSession {id: $session_id})<-[:BELONGS_TO_SESSION]-(hp:HumePrediction)
+            WHERE hp.prediction_type = 'prosody'
+            RETURN hp
             """
-            cursor = self.db.aql.execute(aql_query, bind_vars={"session_id": participant_experiment_session_id})
-            data = list(cursor)
+            with self.driver.session(database=self.database_name) as session:
+                result = session.run(cypher_query, session_id=participant_experiment_session_id)
+                data = [dict(record["hp"]) for record in result]
 
-            if data:
-                logging.info(f"Loaded {len(data)} prosody prediction records for session {participant_experiment_session_id}")
-                return data
-            else:
-                logging.warning(f"No prosody prediction data found for session {participant_experiment_session_id}")
-                return []
+                if data:
+                    logging.info(f"Loaded {len(data)} prosody prediction records for session {participant_experiment_session_id}")
+                    return data
+                else:
+                    logging.warning(f"No prosody prediction data found for session {participant_experiment_session_id}")
+                    return []
         except Exception as e:
             logging.error(f"Error loading prosody data for session {participant_experiment_session_id}: {e}")
             return []
@@ -60,20 +62,21 @@ class HumeDataProcessor:
     def load_language_data(self, participant_experiment_session_id: str) -> List[Dict[str, Any]]:
         """Load language prediction data directly for a given session."""
         try:
-            aql_query = """
-            FOR prediction IN participant_hume_language_predictions
-                FILTER prediction.participant_experiment_session_id == @session_id
-                RETURN prediction
+            cypher_query = """
+            MATCH (s:ExperimentSession {id: $session_id})<-[:BELONGS_TO_SESSION]-(hp:HumePrediction)
+            WHERE hp.prediction_type = 'language'
+            RETURN hp
             """
-            cursor = self.db.aql.execute(aql_query, bind_vars={"session_id": participant_experiment_session_id})
-            data = list(cursor)
+            with self.driver.session(database=self.database_name) as session:
+                result = session.run(cypher_query, session_id=participant_experiment_session_id)
+                data = [dict(record["hp"]) for record in result]
 
-            if data:
-                logging.info(f"Loaded {len(data)} language prediction records for session {participant_experiment_session_id}")
-                return data
-            else:
-                logging.warning(f"No language prediction data found for session {participant_experiment_session_id}")
-                return []
+                if data:
+                    logging.info(f"Loaded {len(data)} language prediction records for session {participant_experiment_session_id}")
+                    return data
+                else:
+                    logging.warning(f"No language prediction data found for session {participant_experiment_session_id}")
+                    return []
         except Exception as e:
             logging.error(f"Error loading language data for session {participant_experiment_session_id}: {e}")
             return []

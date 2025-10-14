@@ -12,89 +12,89 @@ from temporalio.testing import WorkflowEnvironment
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from apps.importer.src.activities.arangodb import ArangoDBActivities
+from apps.importer.src.activities.neo4j import Neo4jActivities
 from apps.importer.src.activities.hume_activities import HumeActivities
 from apps.analyzer.src.activities import generate_visualizations, run_analysis_pipeline
 
 
-class TestArangoDBActivityIntegration:
-    """Integration tests for ArangoDB activities."""
-    
+class TestNeo4jActivityIntegration:
+    """Integration tests for Neo4j activities."""
+
     @pytest.fixture
     def config(self):
         """Test configuration."""
         return {
-            'arangodb': {
-                'url': 'http://localhost:8529',
-                'user': 'root',
-                'password': '',
-                'database': 'spirit_in_physics'
+            'neo4j': {
+                'url': 'bolt://localhost:7687',
+                'user': 'neo4j',
+                'password': 'password',
+                'database': 'neo4j'
             }
         }
-    
+
     @pytest.fixture
-    def arangodb_activities(self, config):
-        """ArangoDB activities instance."""
-        return ArangoDBActivities(config)
+    def neo4j_activities(self, config):
+        """Neo4j activities instance."""
+        return Neo4jActivities(config)
     
     @pytest.mark.asyncio
-    async def test_get_session_for_ingestion_integration(self, arangodb_activities):
-        """Test get_session_for_ingestion with real ArangoDB connection."""
+    async def test_get_session_for_ingestion_integration(self, neo4j_activities):
+        """Test get_session_for_ingestion with real Neo4j connection."""
         try:
-            # This test requires a running ArangoDB instance
-            result = await arangodb_activities.get_session_for_ingestion("test-session-id")
-            
+            # This test requires a running Neo4j instance
+            result = await neo4j_activities.get_session_for_ingestion("test-session-id")
+
             # If successful, verify structure
             assert isinstance(result, dict)
-            assert "id" in result or "_key" in result
-            
+            assert "id" in result
+
         except Exception as e:
-            # Expected if ArangoDB is not running
-            pytest.skip(f"ArangoDB not available: {e}")
-    
+            # Expected if Neo4j is not running
+            pytest.skip(f"Neo4j not available: {e}")
+
     @pytest.mark.asyncio
-    async def test_download_media_file_integration(self, arangodb_activities):
+    async def test_download_media_file_integration(self, neo4j_activities):
         """Test download_media_file activity."""
         try:
             # Create a temporary file path
             with tempfile.NamedTemporaryFile(delete=False) as tmp:
                 tmp.write(b"test content")
                 temp_path = tmp.name
-            
+
             try:
-                result = await arangodb_activities.download_media_file(temp_path)
-                
+                result = await neo4j_activities.download_media_file(temp_path)
+
                 # Verify result
                 assert isinstance(result, str)
                 assert os.path.exists(result)
-                
+
             finally:
                 # Cleanup
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
                 if os.path.exists(result):
                     os.remove(result)
-                    
+
         except Exception as e:
             pytest.skip(f"Media download test failed: {e}")
-    
+
     @pytest.mark.asyncio
-    async def test_cleanup_temp_files_integration(self, arangodb_activities):
+    async def test_cleanup_temp_files_integration(self, neo4j_activities):
         """Test cleanup_temp_files activity."""
         # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             temp_path = tmp.name
-        
+
         try:
             # Verify file exists
             assert os.path.exists(temp_path)
-            
+
             # Test cleanup
-            await arangodb_activities.cleanup_temp_files(temp_path)
-            
+            await neo4j_activities.cleanup_temp_files(temp_path)
+
             # Verify file is removed
             assert not os.path.exists(temp_path)
-            
+
         except Exception as e:
             # Cleanup if test fails
             if os.path.exists(temp_path):
@@ -266,11 +266,11 @@ class TestWorkflowEnvironmentIntegration:
             from apps.importer.src.workflows import IngestionWorkflow
             
             config = {
-                'arangodb': {
-                    'url': 'http://localhost:8529',
-                    'user': 'root',
-                    'password': '',
-                    'database': 'spirit_in_physics'
+                'neo4j': {
+                    'url': 'bolt://localhost:7687',
+                    'user': 'neo4j',
+                    'password': 'password',
+                    'database': 'neo4j'
                 },
                 'hume_ai': {
                     'api_key': 'test_key'
@@ -280,19 +280,19 @@ class TestWorkflowEnvironmentIntegration:
                     'poll_interval_seconds': 10
                 }
             }
-            
-            arangodb_activities = ArangoDBActivities(config)
+
+            neo4j_activities = Neo4jActivities(config)
             hume_activities = HumeActivities(config)
             
             async with env.worker(
                 workflows=[IngestionWorkflow],
                 activities=[
-                    arangodb_activities.get_session_for_ingestion,
-                    arangodb_activities.download_media_file,
-                    arangodb_activities.store_raw_hume_data,
-                    arangodb_activities.parse_and_store_structured_data,
-                    arangodb_activities.update_session_status,
-                    arangodb_activities.cleanup_temp_files,
+                    neo4j_activities.get_session_for_ingestion,
+                    neo4j_activities.download_media_file,
+                    neo4j_activities.store_raw_hume_data,
+                    neo4j_activities.parse_and_store_structured_data,
+                    neo4j_activities.update_session_status,
+                    neo4j_activities.cleanup_temp_files,
                     hume_activities.submit_job_to_hume,
                     hume_activities.poll_and_fetch_hume_results,
                     hume_activities.validate_hume_results

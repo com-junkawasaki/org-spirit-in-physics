@@ -14,6 +14,7 @@ from .session_data_processor import SessionDataProcessor
 from .data_loader import DataLoader
 from .hume_data_processor import HumeDataProcessor
 from .physiological_processor import PhysiologicalProcessor
+from .neo4j_client import Neo4jClient
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
