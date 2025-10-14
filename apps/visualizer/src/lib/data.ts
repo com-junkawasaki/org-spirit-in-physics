@@ -87,20 +87,28 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   try {
     const client = createNeo4jClient()
 
+    // Helper function to convert Neo4j integers to JavaScript numbers
+    const toNumber = (value: any): number => {
+      if (typeof value === 'object' && value !== null && 'low' in value) {
+        return value.low
+      }
+      return Number(value) || 0
+    }
+
     // Get participants count
     const participantsQuery = `MATCH (p:Participant) RETURN count(p) as total`
     const participantsResult = await client.query(participantsQuery)
-    const totalParticipants = participantsResult[0]?.total || 0
+    const totalParticipants = toNumber(participantsResult[0]?.total)
 
     // Get sessions count
     const sessionsQuery = `MATCH (s:ExperimentSession) RETURN count(s) as total`
     const sessionsResult = await client.query(sessionsQuery)
-    const totalSessions = sessionsResult[0]?.total || 0
+    const totalSessions = toNumber(sessionsResult[0]?.total)
 
     // Get responses count
     const responsesQuery = `MATCH (r:Response) RETURN count(r) as total`
     const responsesResult = await client.query(responsesQuery)
-    const totalResponses = responsesResult[0]?.total || 0
+    const totalResponses = toNumber(responsesResult[0]?.total)
 
     // Get emotion distribution
     const emotionQuery = `
@@ -112,7 +120,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const emotionResult = await client.query(emotionQuery)
     const emotionDistribution: Record<string, number> = {}
     emotionResult?.forEach((item: any) => {
-      emotionDistribution[item.emotion || 'unknown'] = item.count || 0
+      emotionDistribution[item.emotion || 'unknown'] = toNumber(item.count)
     })
 
     // Get average spirit probability
