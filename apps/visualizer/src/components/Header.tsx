@@ -26,7 +26,7 @@ export function Header() {
 
       <div className="flex items-center space-x-4">
         <div className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
-          <span>Powered by Hume AI & ArangoDB</span>
+          <span>Powered by Hume AI & Neo4j</span>
           <span>•</span>
           <span>Next.js & TypeScript</span>
         </div>

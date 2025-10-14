@@ -115,7 +115,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       emotionDistribution[item.emotion || 'unknown'] = item.count || 0
     })
 
-    // Mock analysis results (since we don't have analysis results in ArangoDB yet)
+    // Mock analysis results (since we don't have analysis results in Neo4j yet)
     const averageSpiritProbability = 0.5
     const componentAverages = {
       word2vec: 0.1,

@@ -3,7 +3,7 @@
 Import Status Manager for Spirit in Physics Pipeline
 
 This module provides functionality to track and manage import status
-of participant data in the ArangoDB database.
+of participant data in the Neo4j database.
 """
 
 import logging

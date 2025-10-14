@@ -50,7 +50,7 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
             message: `${service.name}サービスが${service.status === 'healthy' ? '正常' : '異常'}です`,
             responseTime: service.responseTime,
             details: {
-              database: service.name === 'ArangoDB' ? process.env.ARANGODB_DATABASE_NAME || 'spirit_in_physics' : undefined,
+              database: service.name === 'Neo4j' ? process.env.NEO4J_DATABASE_NAME || 'neo4j' : undefined,
               server: service.name === 'Workflow' ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/workflows` : undefined,
               endpoint: service.name === 'Hume AI' ? 'https://api.hume.ai/v0/face' : undefined
             }
@@ -183,7 +183,7 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
                 {getStatusBadge(service.status)}
                 {service.details && (
                   <div className="mt-2 text-xs text-muted-foreground">
-                    {service.service === 'ArangoDB' && service.details.database && (
+                    {service.service === 'Neo4j' && service.details.database && (
                       <p>DB: {String(service.details.database)}</p>
                     )}
                     {service.service === 'Workflow' && service.details.server && (

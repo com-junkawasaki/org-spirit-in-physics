@@ -17,14 +17,14 @@ ingestion → analysis → visualization
    - **Dependencies**: None (entry point)
    - **Dependents**: Analysis Workflow
    - **Input**: Session ID
-   - **Output**: Processed Hume AI data stored in ArangoDB
+   - **Output**: Processed Hume AI data stored in Neo4j
 
 2. **Analysis Workflow** (`AnalysisWorkflow`)
    - **Purpose**: Runs the Kawasaki model analysis on processed data
    - **Dependencies**: Ingestion Workflow (must complete first)
    - **Dependents**: Visualization Workflow
    - **Input**: Model version, notes, configuration
-   - **Output**: Analysis results stored in ArangoDB
+   - **Output**: Analysis results stored in Neo4j
 
 3. **Visualization Workflow** (`VisualizationWorkflow`)
    - **Purpose**: Generates visualizations from analysis results
@@ -119,8 +119,8 @@ class PipelineOrchestrator:
 Each workflow type has specific retry policies:
 
 ```python
-# ArangoDB activities
-arangodb_retry_policy = RetryPolicy(
+# Neo4j activities
+neo4j_retry_policy = RetryPolicy(
     initial_interval=timedelta(seconds=1),
     maximum_interval=timedelta(minutes=1),
     maximum_attempts=3,

@@ -97,4 +97,4 @@ export const getSchemaInitializationQueries = (): string[] => {
 };
 
 // Merkle DAG: スキーマ定義完了
-// このスキーマはArangoDBのマルチモデル構造をNeo4jグラフ構造に変換したもの
+// このスキーマはNeo4jグラフ構造を定義したもの

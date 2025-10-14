@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class HumeDataProcessor:
     """
-    Loads pre-processed Hume AI emotion analysis data from the ArangoDB database.
+    Loads pre-processed Hume AI emotion analysis data from the Neo4j database.
     """
 
     def __init__(self, neo4j_config: Dict[str, str]):
