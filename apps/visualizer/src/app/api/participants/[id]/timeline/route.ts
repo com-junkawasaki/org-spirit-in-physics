@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/arangodb'
+import { createNeo4jClient } from '@/lib/arangodb'
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { id: participantId } = await params
 
-    const client = createArangoDBClient()
+    const client = createNeo4jClient()
 
     // Get participant data
     const participant = await client.getParticipantDetails(participantId)

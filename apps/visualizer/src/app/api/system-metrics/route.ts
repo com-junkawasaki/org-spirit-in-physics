@@ -6,7 +6,7 @@
 // Dependency Inversion: Depends on data interfaces, not concrete implementations
 
 import { NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/arangodb'
+import { createNeo4jClient } from '@/lib/arangodb'
 
 // Merkle DAG: system_metrics_api -> metrics_data_interface
 interface SystemMetricsData {
@@ -61,23 +61,21 @@ class MetricsCalculator {
   // Merkle DAG: system_metrics_api -> participants_metrics_calculator
   async calculateParticipantsMetrics(): Promise<SystemMetricsData['participants']> {
     try {
-      const query = `
-        LET total = LENGTH(FOR p IN participants RETURN 1)
-        LET active = LENGTH(FOR p IN participants 
-          FILTER p.status == 'active' 
-          RETURN 1)
-        LET completed = LENGTH(FOR p IN participants 
-          FILTER p.status == 'completed' 
-          RETURN 1)
-        RETURN {
-          total,
-          active,
-          completed
-        }
-      `
-      
-      const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
-      return result[0] || { total: 0, active: 0, completed: 0 }
+      const totalQuery = `MATCH (p:Participant) RETURN count(p) as total`
+      const activeQuery = `MATCH (p:Participant) WHERE p.status = 'active' RETURN count(p) as active`
+      const completedQuery = `MATCH (p:Participant) WHERE p.status = 'completed' RETURN count(p) as completed`
+
+      const [totalResult, activeResult, completedResult] = await Promise.all([
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(totalQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(activeQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(completedQuery)
+      ])
+
+      return {
+        total: totalResult[0]?.total || 0,
+        active: activeResult[0]?.active || 0,
+        completed: completedResult[0]?.completed || 0
+      }
     } catch (error) {
       console.error('Failed to calculate participants metrics:', error)
       return { total: 0, active: 0, completed: 0 }
@@ -87,23 +85,21 @@ class MetricsCalculator {
   // Merkle DAG: system_metrics_api -> sessions_metrics_calculator
   async calculateSessionsMetrics(): Promise<SystemMetricsData['sessions']> {
     try {
-      const query = `
-        LET total = LENGTH(FOR s IN participant_sessions RETURN 1)
-        LET active = LENGTH(FOR s IN participant_sessions
-          FILTER s.status == 'active'
-          RETURN 1)
-        LET completed = LENGTH(FOR s IN participant_sessions
-          FILTER s.status == 'completed'
-          RETURN 1)
-        RETURN {
-          total,
-          active,
-          completed
-        }
-      `
+      const totalQuery = `MATCH (s:Session) RETURN count(s) as total`
+      const activeQuery = `MATCH (s:Session) WHERE s.status = 'active' RETURN count(s) as active`
+      const completedQuery = `MATCH (s:Session) WHERE s.status = 'completed' RETURN count(s) as completed`
 
-      const result = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(query)
-      return result[0] || { total: 0, active: 0, completed: 0 }
+      const [totalResult, activeResult, completedResult] = await Promise.all([
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(totalQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(activeQuery),
+        (this.dbClient as { query: (query: string) => Promise<any[]> }).query(completedQuery)
+      ])
+
+      return {
+        total: totalResult[0]?.total || 0,
+        active: activeResult[0]?.active || 0,
+        completed: completedResult[0]?.completed || 0
+      }
     } catch (error) {
       console.error('Failed to calculate sessions metrics:', error)
       return { total: 0, active: 0, completed: 0 }
@@ -217,21 +213,21 @@ class MetricsCalculator {
     try {
       const services = []
       
-      // Check ArangoDB health
-      const arangoStartTime = Date.now()
+      // Check Neo4j health
+      const neo4jStartTime = Date.now()
       try {
-        await (this.dbClient as { query: (query: string) => Promise<any[]> }).query('RETURN 1')
+        await (this.dbClient as { query: (query: string) => Promise<any[]> }).query('RETURN 1 as test')
         services.push({
-          name: 'ArangoDB',
+          name: 'Neo4j',
           status: 'healthy' as const,
-          responseTime: Date.now() - arangoStartTime,
+          responseTime: Date.now() - neo4jStartTime,
           lastChecked: new Date().toISOString()
         })
       } catch {
         services.push({
-          name: 'ArangoDB',
+          name: 'Neo4j',
           status: 'critical' as const,
-          responseTime: Date.now() - arangoStartTime,
+          responseTime: Date.now() - neo4jStartTime,
           lastChecked: new Date().toISOString()
         })
       }

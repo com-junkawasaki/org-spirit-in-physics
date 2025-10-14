@@ -7,8 +7,8 @@ import CypherBuilder, {
   Match,
   Create,
   Merge,
-  Returning,
-  OrderBy,
+  Return,
+  Order,
   Skip,
   Limit,
   Count,
@@ -35,8 +35,8 @@ import {
   RELATIONSHIP_TYPES,
 } from './neo4j-schema';
 
-// Cypherエディタインスタンス
-export const cypherEditor = createCypherEditor();
+// Cypherエディタインスタンス - TODO: 実装が必要
+// export const cypherEditor = createCypherEditor();
 
 // 参加者関連クエリ
 export class ParticipantQueries {
@@ -60,7 +60,7 @@ export class ParticipantQueries {
     const participant = Participant(participantData);
 
     const createQuery = Create(participant)
-      .returning(participant);
+      .return(participant);
 
     return createQuery.build();
   }
@@ -72,7 +72,7 @@ export class ParticipantQueries {
     const participant = Participant({ id: participantId });
 
     const getQuery = Match(participant)
-      .returning(participant);
+      .return(participant);
 
     return getQuery.build();
   }
@@ -91,14 +91,14 @@ export class ParticipantQueries {
     const query = Match(participant)
       .optionalMatch(hasSessionRel)
       .optionalMatch(hasResponseRel)
-      .returning(
+      .return(
         participant.property('id').as('participant_id'),
         Count(session).as('session_count'),
         Count(response).as('total_responses'),
         CypherBuilder.literal(0.5).as('average_spirit_probability'),
         participant.property('created_at').as('last_activity')
       )
-      .orderBy(participant.property('created_at'), 'DESC');
+      .order(participant.property('created_at'), 'DESC');
 
     return query.build();
   }
@@ -110,7 +110,7 @@ export class ParticipantQueries {
     const participant = Participant({ id: participantId });
 
     const query = Match(participant)
-      .returning(
+      .return(
         participant.property('id'),
         participant.property('age'),
         participant.property('gender'),
@@ -132,8 +132,8 @@ export class ParticipantQueries {
     const hasResponseRel = HasResponse(session, response);
 
     const query = Match(hasSessionRel, hasResponseRel)
-      .returning(response)
-      .orderBy(response.property('event_ts'), 'DESC');
+      .return(response)
+      .order(response.property('event_ts'), 'DESC');
 
     return query.build();
   }
@@ -157,7 +157,7 @@ export class SessionQueries {
 
     const query = Match(participant)
       .create(hasSessionRel)
-      .returning(session);
+      .return(session);
 
     return query.build();
   }
@@ -184,7 +184,7 @@ export class ResponseQueries {
 
     const query = Match(hasSessionRel)
       .create(hasResponseRel)
-      .returning(response);
+      .return(response);
 
     return query.build();
   }
@@ -200,7 +200,7 @@ export class EmotionQueries {
 
     const query = Match(response)
       .where(response.property('emotion').isNotNull())
-      .returning(
+      .return(
         response.property('emotion'),
         response.property('emotion_confidence')
       );
@@ -221,8 +221,8 @@ export class EmotionQueries {
 
     const query = Match(hasSessionRel, hasResponseRel)
       .where(response.property('emotion').isNotNull())
-      .returning(response)
-      .orderBy(response.property('event_ts'), 'DESC');
+      .return(response)
+      .order(response.property('event_ts'), 'DESC');
 
     return query.build();
   }
