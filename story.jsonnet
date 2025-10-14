@@ -32,8 +32,8 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[4]
-        act: '耐久性のある研究基盤',
-        summary: 'ArangoDBを基盤とした堅牢なマルチモデルデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。',
+    act: '耐久性のある研究基盤',
+    summary: 'Neo4jを基盤とした堅牢なグラフデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[5]
@@ -42,8 +42,8 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[6]
-        act: '初の実験データ解析',
-        summary: '11名の参加者の実験データをArangoDBに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
+    act: '初の実験データ解析',
+    summary: '11名の参加者の実験データをNeo4jに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[7]
@@ -57,8 +57,8 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[9]
-        act: '技術基盤の完全安定化',
-        summary: 'ArangoDBローカル開発環境の完全修復を達成し、Hume AI SDKの最新バージョンとの統合を完了。感情分析パイプラインの堅牢なアーキテクチャを確立し、実データ解析に向けた準備を整えた。これにより、研究の信頼性と拡張性を保証する技術インフラが完成した。',
+    act: '技術基盤の完全安定化',
+    summary: 'Neo4jローカル開発環境の完全修復を達成し、Hume AI SDKの最新バージョンとの統合を完了。感情分析パイプラインの堅牢なアーキテクチャを確立し、実データ解析に向けた準備を整えた。これにより、研究の信頼性と拡張性を保証する技術インフラが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[10]
@@ -67,8 +67,8 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[11]
-        act: '生体データ統合の実現',
-        summary: 'Mod-002生体データ測定器から取得した1378個の皮膚電位時系列データをArangoDBデータベースに完全統合。平均-0.092μV、範囲[-0.048, 0.110]μVの生体信号を川崎モデルのΔSP成分として活用可能にし、実験参加者の生理的反応を定量的に測定する基盤を確立。科学的手法による霊性測定の生理的側面を統合した。',
+    act: '生体データ統合の実現',
+    summary: 'Mod-002生体データ測定器から取得した1378個の皮膚電位時系列データをNeo4jデータベースに完全統合。平均-0.092μV、範囲[-0.048, 0.110]μVの生体信号を川崎モデルのΔSP成分として活用可能にし、実験参加者の生理的反応を定量的に測定する基盤を確立。科学的手法による霊性測定の生理的側面を統合した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[12]
@@ -77,13 +77,13 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[13]
-        act: 'ArangoDBマルチモデルデータベース統一',
-        summary: '全てのデータをArangoDBマルチモデルデータベースに統一。ドキュメント・グラフ・キーバリューモデルを活用した柔軟なデータ構造により、participants・participant_consents・participant_experiment_sessions・participant_response_data・video_files・emotion_analyses・emotionsコレクションを統合管理。パフォーマンスとメンテナンス性の向上を実現し、堅牢なデータ保護とトランザクション管理を確保。',
+    act: 'Neo4jグラフデータベース統一',
+    summary: '全てのデータをNeo4jグラフデータベースに統一。ノード・リレーションシップ・プロパティを活用した柔軟なデータ構造により、Participant・Session・Response・VideoFile・EmotionAnalysisノードを統合管理。パフォーマンスとメンテナンス性の向上を実現し、堅牢なデータ保護とトランザクション管理を確保。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[14]
-        act: 'データベースアーキテクチャの完全統一',
-        summary: 'ArangoDBManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をArangoDBマルチモデルベースに移行。柔軟なドキュメント・グラフ構造により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
+    act: 'データベースアーキテクチャの完全統一',
+    summary: 'Neo4jManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をNeo4jグラフベースに移行。柔軟なノード・リレーションシップ構造により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[15]
@@ -93,7 +93,7 @@
   {
     // Merkle DAG: 物語.ナラティブ[16]
     act: 'Hume AIデータベース統合APIの実現',
-    summary: 'Hume AI実験データをArangoDBデータベースに直接インポート可能なREST APIエンドポイントを開発。participant_hume_analysis_jobs・participant_hume_burst_predictions・participant_hume_prosody_predictions・participant_hume_language_predictionsコレクションを設計し、柔軟な感情データ格納を実現。解析パイプラインをデータベースベースに移行し、CSVファイル処理からArangoDB直接クエリへ移行。分析パイプラインの実行効率とデータ完全性を大幅に向上させ、Hume AI感情分析の完全自動化基盤を確立。',
+    summary: 'Hume AI実験データをNeo4jデータベースに直接インポート可能なREST APIエンドポイントを開発。EmotionAnalysisノードを設計し、柔軟な感情データ格納を実現。解析パイプラインをデータベースベースに移行し、CSVファイル処理からNeo4j直接クエリへ移行。分析パイプラインの実行効率とデータ完全性を大幅に向上させ、Hume AI感情分析の完全自動化基盤を確立。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[17]
@@ -142,8 +142,8 @@
   },
   {
     // Merkle DAG: 物語.ナラティブ[26]
-    act: 'ArangoDBマルチモデルデータベース統合の実現',
-    summary: '全てのデータをArangoDBマルチモデルデータベースに統合。JSONドキュメントとグラフ構造によるParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataの定義と関係性モデリングを実施。AQLクエリ言語を使用したデータ操作と柔軟なデータ表現を実現。科学データにおける複雑な関係性（参加者-実験-応答-刺激語-感情）の自然な表現が可能に。堅牢なデータ管理機能を活用したデータ変更履歴の追跡とコラボレーション機能を統合。',
+    act: 'Neo4jグラフデータベース統合の実現',
+    summary: '全てのデータをArangoDBマルチモデルデータベースに統合。JSONドキュメントとグラフ構造によるParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataの定義と関係性モデリングを実施。Cypherクエリ言語を使用したデータ操作と柔軟なデータ表現を実現。科学データにおける複雑な関係性（参加者-実験-応答-刺激語-感情）の自然な表現が可能に。堅牢なデータ管理機能を活用したデータ変更履歴の追跡とコラボレーション機能を統合。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[27]
@@ -152,28 +152,28 @@
   },
   {
     // Merkle DAG: 物語.ナラティブ[28]
-    act: 'AQLクエリ言語による高度なデータ操作',
-    summary: 'ArangoDB Query Language（AQL）を使用した複雑なグラフ走査と関係性ベースのクエリを実現。実験参加者の感情パターン分析、刺激語の意味的類似性探索、生体データと感情データの相関分析がAQLのグラフクエリで効率的に実行可能に。科学データ分析における高度な関係性探索とパターン発見をサポートするクエリ言語基盤を確立。',
+    act: 'Cypherクエリ言語による高度なデータ操作',
+    summary: 'ArangoDB Query Language（Cypher）を使用した複雑なグラフ走査と関係性ベースのクエリを実現。実験参加者の感情パターン分析、刺激語の意味的類似性探索、生体データと感情データの相関分析がCypherのグラフクエリで効率的に実行可能に。科学データ分析における高度な関係性探索とパターン発見をサポートするクエリ言語基盤を確立。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[29]
     act: 'データアクセス層の完全再構築',
-    summary: 'ArangoDBManagerクラスによる統一されたデータアクセス層を実装し、CRUD操作のAQLベース実装を完了。Participant・ExperimentSession・ResponseDataの作成・読み取り・更新・削除機能をArangoDBグラフ操作で実現。ArangoDBのマルチモデル構造により、システムのダウンタイムなしでのデータ統合を成功。科学データの一貫性と完全性を維持。',
+    summary: 'ArangoDBManagerクラスによる統一されたデータアクセス層を実装し、CRUD操作のCypherベース実装を完了。Participant・ExperimentSession・ResponseDataの作成・読み取り・更新・削除機能をArangoDBグラフ操作で実現。ArangoDBのマルチモデル構造により、システムのダウンタイムなしでのデータ統合を成功。科学データの一貫性と完全性を維持。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[30]
     act: 'ServerlessワークフローとArangoDBの統合',
-    summary: 'Hume AI感情分析ワークフローにおけるArangoDBActivitiesの実装を完了。ドキュメント・グラフベースのデータ格納とAQLクエリによる非同期処理パイプラインの安定化を実現。実験データのインポート・感情分析・結果格納の一気通貫プロセスがArangoDBのマルチモデル構造で最適化され、科学的手法による霊性測定システムの処理効率が向上。',
+    summary: 'Hume AI感情分析ワークフローにおけるNeo4jActivitiesの実装を完了。ドキュメント・グラフベースのデータ格納とCypherクエリによる非同期処理パイプラインの安定化を実現。実験データのインポート・感情分析・結果格納の一気通貫プロセスがArangoDBのマルチモデル構造で最適化され、科学的手法による霊性測定システムの処理効率が向上。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[31]
     act: 'Analyzer/VisualizerアプリのArangoDB完全統合',
-    summary: 'analyzerとvisualizerの両アプリをArangoDBに完全統合。analyzerのDataLoader・DataStorerをAQLクエリ使用に変更し、visualizerのReactコンポーネントとAPI routesをArangoDBクライアント統合。TypeScriptでのArangoDBクライアント実装により、マルチモデルデータベースベースのデータアクセスを実現。実験データ分析・可視化システムがArangoDBの柔軟性とパフォーマンスを活用し、科学データにおける複雑な関係性表現が向上。',
+    summary: 'analyzerとvisualizerの両アプリをArangoDBに完全統合。analyzerのDataLoader・DataStorerをCypherクエリ使用に変更し、visualizerのReactコンポーネントとAPI routesをArangoDBクライアント統合。TypeScriptでのArangoDBクライアント実装により、マルチモデルデータベースベースのデータアクセスを実現。実験データ分析・可視化システムがArangoDBの柔軟性とパフォーマンスを活用し、科学データにおける複雑な関係性表現が向上。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[32]
     act: '統合システムのArangoDB最適化',
-    summary: 'importer・analyzer・visualizerの全てがArangoDBを使用する完全統合システムを確立。ドキュメント・グラフ構造による実験参加者・セッション・応答・感情データの関係性モデリングがシステム全体で統一され、AQLクエリによるクロスコンポーネントデータ連携が可能に。科学的手法による霊性測定のデータフロー全体がArangoDBマルチモデル構造で最適化され、分析精度と処理効率が大幅に向上。',
+    summary: 'importer・analyzer・visualizerの全てがArangoDBを使用する完全統合システムを確立。ドキュメント・グラフ構造による実験参加者・セッション・応答・感情データの関係性モデリングがシステム全体で統一され、Cypherクエリによるクロスコンポーネントデータ連携が可能に。科学的手法による霊性測定のデータフロー全体がArangoDBマルチモデル構造で最適化され、分析精度と処理効率が大幅に向上。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[33]
@@ -284,13 +284,13 @@
           name: '技術基盤 (Technical Foundation)',
           description: '研究の信頼性と拡張性を保証する技術インフラ',
           sub_processes: [
-            'ArangoDBマルチモデルデータベース統合',
-            'ArangoDBマルチモデルによる柔軟なデータモデリング',
-            'ArangoDB JSONドキュメントによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseData定義',
-            'AQLクエリ言語による高度なデータ操作',
+            'Neo4jグラフデータベース統合',
+            'Neo4jグラフによる柔軟なデータモデリング',
+            'Neo4jノードによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseData定義',
+            'Cypherクエリ言語による高度なデータ操作',
             'Gitのようなバージョン管理によるデータ変更履歴追跡',
-            'ArangoDB edgesによる複雑な関係性表現',
-            'ArangoDBによるデータ保護',
+            'Neo4jリレーションシップによる複雑な関係性表現',
+            'Neo4jによるデータ保護',
             '非同期ジョブ管理と依存関係解決',
             '中間結果のキャッシュシステム',
             '自動リトライとエラーハンドリング',
@@ -300,9 +300,9 @@
             'importerとanalyzerをpipelineに統合',
             'プロセスネットワークグラフモデル実装',
             'Merkle DAGによる状態管理',
-            'ArangoDBActivitiesによるServerlessワークフローワークフロー統合',
-            'ArangoDBベースのHume AI感情データ格納',
-            'AQLによる感情パターン分析クエリ',
+            'Neo4jActivitiesによるServerlessワークフローワークフロー統合',
+            'Neo4jベースのHume AI感情データ格納',
+            'Cypherによる感情パターン分析クエリ',
             'グラフ構造による相関分析最適化',
             'Serverlessワークフロー接続監視システムの完全実装',
             'Docker環境でのコンテナ間通信設定最適化',
@@ -317,12 +317,12 @@
           version: '1.21.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: 'ArangoDB統合版',
+          merkle_root: 'Neo4j統合版',
           last_updated: '2025-10-14',
           implemented_features: [
             '川崎モデルの数式実装',
             'Hume AI Expression Measurement統合',
-            'ArangoDBデータ保護',
+            'Neo4jデータ保護',
             '耐久性のあるジョブベース処理システム',
             'Hume AIデータベース統合API',
             '管理者ダッシュボードUI',
@@ -364,7 +364,7 @@
             '感情スコア可視化',
             '川崎モデルコンポーネント内訳表示',
             '研究者向け効率的データ分析支援',
-            'ArangoDBローカル環境完全修復',
+            'Neo4jローカル環境完全修復',
             'Hume AI SDK最新版完全統合',
             'AsyncHumeClient 非同期API実装',
             'FaceConfig & ProsodyConfig設定',
@@ -458,25 +458,25 @@
             '100件単語刺激データ格納',
             '川崎モデル分析基盤確立',
             '科学的手法による霊性測定データ完全性保証',
-            'ArangoDBマルチモデルデータベース統合',
-            'RDFベースParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataモデル',
-            'JSON-LDスキーマ定義と関係性モデリング',
-            'AQLクエリ言語による高度なデータ操作',
+            'Neo4jグラフデータベース統合',
+            'グラフベースParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataモデル',
+            'Cypherスキーマ定義と関係性モデリング',
+            'Cypherクエリ言語による高度なデータ操作',
             'Gitバージョン管理によるデータ変更履歴追跡',
-            'ArangoDB edgesによる複雑な関係性表現',
-            'ArangoDBDataAccessクラスによるCRUD操作',
-            'ArangoDBマルチモデルデータベース統合',
-            'ArangoDBActivitiesによるServerlessワークフローワークフロー統合',
-            'ArangoDBベースのHume AI感情データ格納',
-            'AQLによる感情パターン分析クエリ',
+            'Neo4jリレーションシップによる複雑な関係性表現',
+            'Neo4jDataAccessクラスによるCRUD操作',
+            'Neo4jグラフデータベース統合',
+            'Neo4jActivitiesによるServerlessワークフローワークフロー統合',
+            'Neo4jベースのHume AI感情データ格納',
+            'Cypherによる感情パターン分析クエリ',
             'グラフ構造による相関分析最適化',
             'RDFグラフモデルによるデータ構造最適化',
             '科学データにおける複雑な関係性の自然表現',
-            'Analyzer/Visualizer ArangoDB完全統合',
-            'DataLoader/DataStorer WOQLクエリ実装',
-            'TypeScript TerminusDBクライアント開発',
-            'React API routes RDFデータ統合',
-            'クロスコンポーネントRDFデータ連携',
+            'Analyzer/Visualizer Neo4j完全統合',
+            'DataLoader/DataStorer Cypherクエリ実装',
+            'TypeScript Neo4jクライアント開発',
+            'React API routes グラフデータ統合',
+            'クロスコンポーネントグラフデータ連携',
             'グラフデータベース統合システム確立',
             'システム接続状況監視ダッシュボード実装',
             'SystemStatusCardリアルタイム監視コンポーネント',

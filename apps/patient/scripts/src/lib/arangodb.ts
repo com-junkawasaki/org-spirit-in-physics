@@ -1,7 +1,7 @@
 // Merkle DAG: Neo4jクライアント設定
 // サーバー/クライアント両方で使用可能なNeo4jクライアント
 
-import neo4j from 'neo4j-driver'
+import * as neo4j from 'neo4j-driver'
 
 interface Neo4jConfig {
   uri: string

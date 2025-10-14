@@ -401,7 +401,7 @@ class MetricsCalculator {
 // Merkle DAG: system_metrics_api -> main_handler
 export async function GET() {
   try {
-    const dbClient = createArangoDBClient()
+    const dbClient = createNeo4jClient()
     const calculator = new MetricsCalculator(dbClient)
 
     // Calculate all metrics in parallel

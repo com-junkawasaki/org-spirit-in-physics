@@ -4,7 +4,7 @@ import {
   loadAllSessionData,
   parseWordResponsesFromEvents,
   getParticipantStatistics,
-  initializeArangoDBDatabase
+  initializeNeo4jDatabase
 } from "scripts/src/lib/data-loader";
 import { loadEmotionAnalysisResults, getEmotionStatisticsFromKuzu } from "scripts/src/lib/emotion-analysis";
 
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // ArangoDBデータベースの初期化
-        await initializeArangoDBDatabase();
+        // Neo4jデータベースの初期化
+        await initializeNeo4jDatabase();
         const participants = await loadAllParticipants();
         const participantStats = getParticipantStatistics(participants);
 
@@ -113,8 +113,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // ArangoDBデータベースの初期化
-        await initializeArangoDBDatabase();
+        // Neo4jデータベースの初期化
+        await initializeNeo4jDatabase();
         const participants_for_analytics = await loadAllParticipants();
         const stats = getParticipantStatistics(participants_for_analytics);
         const allSessions = await loadAllSessionData();

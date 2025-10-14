@@ -9,18 +9,17 @@ import sys
 from datetime import datetime
 import requests
 
-# ArangoDB設定
-ARANGODB_URL = os.getenv('ARANGODB_URL', 'http://localhost:8529')
-ARANGODB_USER = os.getenv('ARANGODB_USER', 'root')
-ARANGODB_PASSWORD = os.getenv('ARANGODB_PASSWORD', '')
-ARANGODB_DATABASE = os.getenv('ARANGODB_DATABASE', 'spirit_in_physics')
+# Neo4j設定
+NEO4J_URI = os.getenv('NEO4J_URI', 'neo4j://localhost:7687')
+NEO4J_USER = os.getenv('NEO4J_USER', 'neo4j')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'neo4jpassword')
+NEO4J_DATABASE = os.getenv('NEO4J_DATABASE', 'neo4j')
 
-def create_arangodb_client():
-    """ArangoDBクライアントを作成"""
-    from arango import ArangoClient
-    client = ArangoClient(hosts=ARANGODB_URL)
-    db = client.db(ARANGODB_DATABASE, username=ARANGODB_USER, password=ARANGODB_PASSWORD)
-    return db
+def create_neo4j_client():
+    """Neo4jクライアントを作成"""
+    from neo4j import GraphDatabase
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    return driver
 
 def load_analysis_results(file_path: str) -> list:
     """分析結果ファイルを読み込み"""
@@ -36,129 +35,162 @@ def load_analysis_results(file_path: str) -> list:
         print(f"エラー: {file_path} の読み込みに失敗しました: {e}")
         return []
 
-def get_or_create_word_stimulus(db, word: str) -> str:
+def get_or_create_word_stimulus(driver, word: str) -> str:
     """単語刺激語のIDを取得または作成"""
     try:
-        # 既存の単語刺激語を検索
-        word_stimuli_collection = db.collection('word_stimuli')
-        result = list(word_stimuli_collection.find({'word': word}))
-        if result:
-            return result[0]['_key']
+        with driver.session(database=NEO4J_DATABASE) as session:
+            # 既存の単語刺激語を検索
+            result = session.run("""
+                MATCH (w:WordStimulus {word: $word})
+                RETURN w.id as id
+            """, {"word": word})
 
-        # 存在しない場合は新しい単語刺激語を作成
-        import uuid
-        new_id = str(uuid.uuid4())
-        word_data = {
-            '_key': new_id,
-            'word': word,
-            'created_at': datetime.now().isoformat()
-        }
-        word_stimuli_collection.insert(word_data)
+            record = result.single()
+            if record:
+                return record["id"]
 
-        return new_id
+            # 存在しない場合は新しい単語刺激語を作成
+            import uuid
+            new_id = str(uuid.uuid4())
+            session.run("""
+                CREATE (w:WordStimulus {
+                    id: $id,
+                    word: $word,
+                    created_at: $created_at
+                })
+            """, {
+                "id": new_id,
+                "word": word,
+                "created_at": datetime.now().isoformat()
+            })
+
+            return new_id
     except Exception as e:
         print(f"エラー: 単語刺激語 '{word}' の処理に失敗しました: {e}")
         # エラー時はダミーIDを返す
         return "error_id"
 
-def find_experiment_session(db, participant_id: str, stimulus_word: str) -> tuple:
+def find_experiment_session(driver, participant_id: str, stimulus_word: str) -> tuple:
     """実験セッションと応答データを検索"""
     try:
-        # 参加者の実験セッションを取得
-        sessions_collection = db.collection('participant_experiment_sessions')
-        sessions = list(sessions_collection.find({'participant_id': participant_id}))
+        with driver.session(database=NEO4J_DATABASE) as session:
+            # 参加者の実験セッションを取得
+            result = session.run("""
+                MATCH (p:Participant {id: $participant_id})-[:HAS_SESSION]->(s:Session)
+                RETURN s.id as session_id, s.session_index as session_index
+                ORDER BY s.created_at DESC
+                LIMIT 1
+            """, {"participant_id": participant_id})
 
-        if not sessions:
-            print(f"警告: 参加者 {participant_id} の実験セッションが見つかりません")
-            return None, None
+            record = result.single()
+            if not record:
+                print(f"警告: 参加者 {participant_id} の実験セッションが見つかりません")
+                return None, None
 
-        # 最新のセッションを使用
-        session = sessions[0]
-        experiment_id = session['_key']
+            session_id = record["session_id"]
 
-        # 対応する応答データを検索
-        responses_collection = db.collection('participant_response_data')
-        responses = list(responses_collection.find({
-            'participant_id': participant_id,
-            'experiment_id': experiment_id,
-            'stimulus_word': stimulus_word
-        }))
+            # 対応する応答データを検索
+            response_result = session.run("""
+                MATCH (p:Participant {id: $participant_id})-[:HAS_SESSION]->(s:Session {id: $session_id})-[:HAS_RESPONSE]->(r:Response {stimulus_word: $stimulus_word})
+                RETURN r.id as response_id
+                LIMIT 1
+            """, {
+                "participant_id": participant_id,
+                "session_id": session_id,
+                "stimulus_word": stimulus_word
+            })
 
-        if responses:
-            response = responses[0]
-            return experiment_id, response['_key']
+            response_record = response_result.single()
+            if response_record:
+                return session_id, response_record["response_id"]
 
-        # 応答データが見つからない場合は実験セッションのみ返す
-        return experiment_id, None
+            # 応答データが見つからない場合は実験セッションのみ返す
+            return session_id, None
 
     except Exception as e:
         print(f"エラー: 実験セッションの検索に失敗しました: {e}")
         return None, None
 
-def import_analysis_results(db, results: list, participant_id: str = None):
+def import_analysis_results(driver, results: list, participant_id: str = None):
     """分析結果をデータベースにインポート"""
     imported_count = 0
     skipped_count = 0
 
-    for result in results:
-        try:
-            # 必須フィールドのチェック
-            if not all(key in result for key in ['stimulus_word', 'response_word', 'spirit_probability']):
-                print(f"警告: 必須フィールドが不足している結果をスキップします: {result.get('id', 'unknown')}")
-                skipped_count += 1
-                continue
+    with driver.session(database=NEO4J_DATABASE) as session:
+        for result in results:
+            try:
+                # 必須フィールドのチェック
+                if not all(key in result for key in ['stimulus_word', 'response_word', 'spirit_probability']):
+                    print(f"警告: 必須フィールドが不足している結果をスキップします: {result.get('id', 'unknown')}")
+                    skipped_count += 1
+                    continue
 
-            # 参加者IDの決定
-            current_participant_id = result.get('participant_id', participant_id)
-            if not current_participant_id:
-                print(f"警告: 参加者IDが指定されていない結果をスキップします: {result.get('id', 'unknown')}")
-                skipped_count += 1
-                continue
+                # 参加者IDの決定
+                current_participant_id = result.get('participant_id', participant_id)
+                if not current_participant_id:
+                    print(f"警告: 参加者IDが指定されていない結果をスキップします: {result.get('id', 'unknown')}")
+                    skipped_count += 1
+                    continue
 
-            # 実験セッションと応答データを検索
-            experiment_id, response_id = find_experiment_session(db, current_participant_id, result['stimulus_word'])
+                # 実験セッションと応答データを検索
+                experiment_id, response_id = find_experiment_session(driver, current_participant_id, result['stimulus_word'])
 
-            if not experiment_id:
-                print(f"警告: 実験セッションが見つからない結果をスキップします: {result.get('id', 'unknown')}")
-                skipped_count += 1
-                continue
+                if not experiment_id:
+                    print(f"警告: 実験セッションが見つからない結果をスキップします: {result.get('id', 'unknown')}")
+                    skipped_count += 1
+                    continue
 
-            # 単語刺激語のIDを取得または作成
-            word_stimulus_id = get_or_create_word_stimulus(db, result['stimulus_word'])
+                # 単語刺激語のIDを取得または作成
+                word_stimulus_id = get_or_create_word_stimulus(driver, result['stimulus_word'])
 
-            # インポートデータを作成
-            import_data = {
-                'participant_id': current_participant_id,
-                'experiment_id': experiment_id,
-                'word_stimulus_id': word_stimulus_id,
-                'stimulus_word': result['stimulus_word'],
-                'response_word': result['response_word'],
-                'reaction_time_ms': result.get('reaction_time_ms'),
-                'spirit_probability': result['spirit_probability'],
-                'word2vec_component': result.get('word2vec_component', 0.25),  # デフォルト値
-                'reaction_time_component': result.get('reaction_time_component', 0.25),  # デフォルト値
-                'skin_potential_component': result.get('skin_potential_component', 0.25),  # デフォルト値
-                'emotion_component': result.get('emotion_component', 0.25),  # デフォルト値
-                'emotion_data': result.get('emotion_data', {}),
-                'physiological_data': result.get('physiological_data', {})
-            }
+                # 分析結果ノードを作成
+                import uuid
+                analysis_id = str(uuid.uuid4())
 
-            # データベースに挿入
-            import uuid
-            import_data['_key'] = str(uuid.uuid4())
-            analysis_collection = db.collection('participant_analysis_results')
-            insert_result = analysis_collection.insert(import_data)
+                # 分析結果ノードを作成し、適切なリレーションシップを確立
+                session.run("""
+                    MATCH (p:Participant {id: $participant_id})
+                    MATCH (s:Session {id: $session_id})
+                    CREATE (p)-[:HAS_ANALYSIS]->(a:AnalysisResult {
+                        id: $analysis_id,
+                        stimulus_word: $stimulus_word,
+                        response_word: $response_word,
+                        reaction_time_ms: $reaction_time_ms,
+                        spirit_probability: $spirit_probability,
+                        word2vec_component: $word2vec_component,
+                        reaction_time_component: $reaction_time_component,
+                        skin_potential_component: $skin_potential_component,
+                        emotion_component: $emotion_component,
+                        emotion_data: $emotion_data,
+                        physiological_data: $physiological_data,
+                        created_at: $created_at
+                    })
+                    CREATE (a)-[:STIMULUS_WORD]->(w:WordStimulus {id: $word_stimulus_id})
+                    CREATE (a)-[:FROM_SESSION]->(s)
+                """, {
+                    "participant_id": current_participant_id,
+                    "session_id": experiment_id,
+                    "analysis_id": analysis_id,
+                    "word_stimulus_id": word_stimulus_id,
+                    "stimulus_word": result['stimulus_word'],
+                    "response_word": result['response_word'],
+                    "reaction_time_ms": result.get('reaction_time_ms'),
+                    "spirit_probability": result['spirit_probability'],
+                    "word2vec_component": result.get('word2vec_component', 0.25),
+                    "reaction_time_component": result.get('reaction_time_component', 0.25),
+                    "skin_potential_component": result.get('skin_potential_component', 0.25),
+                    "emotion_component": result.get('emotion_component', 0.25),
+                    "emotion_data": str(result.get('emotion_data', {})),
+                    "physiological_data": str(result.get('physiological_data', {})),
+                    "created_at": datetime.now().isoformat()
+                })
 
-            if insert_result:
                 imported_count += 1
                 print(f"インポート成功: {result['stimulus_word']} -> {result['response_word']} (確率: {result['spirit_probability']:.4f})")
-            else:
-                print(f"警告: データ挿入に失敗しました: {result.get('id', 'unknown')}")
-                skipped_count += 1
 
-        except Exception as e:
-            print(f"エラー: 結果の処理中にエラーが発生しました {result.get('id', 'unknown')}: {e}")
-            skipped_count += 1
+            except Exception as e:
+                print(f"エラー: 結果の処理中にエラーが発生しました {result.get('id', 'unknown')}: {e}")
+                skipped_count += 1
 
     return imported_count, skipped_count
 
@@ -176,36 +208,41 @@ def main():
 
     print(f"分析結果ファイルからインポートを開始します: {file_path}")
 
-    # ArangoDBクライアントを作成
-    db = create_arangodb_client()
+    # Neo4jドライバーを作成
+    driver = create_neo4j_client()
 
-    # 分析結果を読み込み
-    results = load_analysis_results(file_path)
+    try:
+        # 分析結果を読み込み
+        results = load_analysis_results(file_path)
 
-    if not results:
-        print("インポートする結果がありません")
-        sys.exit(1)
+        if not results:
+            print("インポートする結果がありません")
+            sys.exit(1)
 
-    print(f"読み込まれた結果数: {len(results)}")
+        print(f"読み込まれた結果数: {len(results)}")
 
-    # 結果をインポート（最初の結果から参加者IDを取得）
-    first_result = results[0]
-    participant_id = first_result.get('participant_id')
+        # 結果をインポート（最初の結果から参加者IDを取得）
+        first_result = results[0]
+        participant_id = first_result.get('participant_id')
 
-    if not participant_id:
-        print("エラー: 最初の結果にparticipant_idが含まれていません")
-        sys.exit(1)
+        if not participant_id:
+            print("エラー: 最初の結果にparticipant_idが含まれていません")
+            sys.exit(1)
 
-    print(f"対象参加者ID: {participant_id}")
+        print(f"対象参加者ID: {participant_id}")
 
-    # インポート実行
-    imported, skipped = import_analysis_results(db, results, participant_id)
+        # インポート実行
+        imported, skipped = import_analysis_results(driver, results, participant_id)
 
-    print("
+        print("
 インポート結果:")
-    print(f"  成功: {imported}")
-    print(f"  スキップ: {skipped}")
-    print(f"  合計: {imported + skipped}")
+        print(f"  成功: {imported}")
+        print(f"  スキップ: {skipped}")
+        print(f"  合計: {imported + skipped}")
+
+    finally:
+        # ドライバーをクローズ
+        driver.close()
 
 if __name__ == '__main__':
     main()

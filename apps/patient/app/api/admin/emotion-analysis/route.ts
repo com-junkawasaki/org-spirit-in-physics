@@ -5,7 +5,7 @@ import {
   loadEmotionAnalysisResults,
   generateEmotionStatistics
 } from "scripts/src/lib/emotion-analysis";
-import { arangodb } from "scripts/src/lib/arangodb";
+import { createNeo4jClient } from "scripts/src/lib/arangodb";
 import { WorkflowService } from "scripts/src/lib/workflow-service";
 
 export async function GET(request: NextRequest) {
@@ -83,19 +83,19 @@ export async function GET(request: NextRequest) {
           "e41a9cd2-d803-49a8-9020-0260e55cd03e"
         ];
 
-        // ArangoDBから感情統計を取得
-        const emotions = await arangodb.query(`
-          FOR response IN participant_session_responses
-            FILTER response.emotion != null
-            COLLECT emotion = response.emotion WITH COUNT INTO count
-            RETURN { name: emotion, score: count }
+        // Neo4jから感情統計を取得
+        const neo4jClient = createNeo4jClient();
+        const emotions = await neo4jClient.query(`
+          MATCH (r:Response)
+          WHERE r.emotion IS NOT NULL
+          RETURN r.emotion as name, count(r) as score
         `);
 
         const emotionMap = (emotions || []).reduce((acc: Record<string, { count: number; totalScore: number }>, emotion: any) => {
           if (!acc[emotion.name]) {
             acc[emotion.name] = { count: 0, totalScore: 0 };
           }
-          acc[emotion.name].count += emotion.score; // score is count from ArangoDB query
+          acc[emotion.name].count += emotion.score; // score is count from Neo4j query
           acc[emotion.name].totalScore += emotion.score;
           return acc;
         }, {});

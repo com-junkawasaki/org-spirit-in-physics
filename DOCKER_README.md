@@ -6,7 +6,7 @@ This document describes how to set up and run the Spirit in Physics application 
 
 The application consists of multiple services:
 
-- **ArangoDB**: Multi-model database for all data operations
+- **Neo4j**: Graph database for all data operations
 - **Serverless Workflow SDK**: Workflow orchestration
 - **Patient App**: Next.js participant interface (port 25250)
 - **Admin App**: Vite admin dashboard (port 4173)
@@ -18,7 +18,7 @@ The application consists of multiple services:
 
 - Docker and Docker Compose
 - At least 8GB RAM recommended
-- Ports 8529, 7233, 8233, 25250, 4173, 25260, 8000, 8001 must be available
+- Ports 7474, 7687, 7233, 8233, 25250, 4173, 25260, 8000, 8001 must be available
 
 ## Quick Start
 
@@ -49,7 +49,7 @@ Once all services are running:
 - **Patient App**: http://localhost:25250
 - **Admin Dashboard**: http://localhost:4173
 - **Visualizer**: http://localhost:25260
-- **ArangoDB**: http://localhost:8529
+- **Neo4j Browser**: http://localhost:7474
 - **Workflow API**: http://localhost:8000/api/workflows
 
 ## Environment Configuration
@@ -78,14 +78,14 @@ patient:
 ### Service Dependencies
 
 Services start in dependency order:
-1. Databases (ArangoDB)
+1. Databases (Neo4j)
 2. Workflow engine (Serverless Workflow SDK)
 3. Application services (Patient, Admin, Visualizer)
 4. Backend services (Analyzer, Importer)
 
 ### Database Initialization
 
-ArangoDB database is initialized automatically. Seed data can be imported via the Importer service.
+Neo4j database is initialized automatically. Seed data can be imported via the Importer service.
 
 ### Building Services
 
@@ -120,15 +120,15 @@ docker-compose down -v
 
 ## Database Access
 
-### ArangoDB
-- **URL**: http://localhost:8529
-- **User**: root
-- **Password**: (blank by default)
+### Neo4j
+- **Browser URL**: http://localhost:7474
+- **Bolt URL**: neo4j://localhost:7687
+- **User**: neo4j
+- **Password**: neo4jpassword
 
-### TerminusDB
-- **URL**: http://localhost:6363
-- **User**: admin
-- **Password**: root
+### Database Connection
+- **URI**: neo4j://neo4j:7687 (from within Docker network)
+- **Database**: neo4j
 
 ## API Endpoints
 
