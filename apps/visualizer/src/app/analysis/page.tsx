@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SystemStatusCard } from '@/components/SystemStatusCard'
-import { ArrowRight, Home, Database, Activity, Users } from 'lucide-react'
+import { Home, Database, Activity, Users } from 'lucide-react'
 
 type Run = {
   _key: string
@@ -49,13 +49,8 @@ type SystemStatus = {
   failedJobs: number
 }
 
-import { redirect } from 'next/navigation'
 
 export default function AnalysisPage() {
-  redirect('/data-management')
-}
-
-export default function DataManagementPage() {
   // Analysis state
   const [runs, setRuns] = useState<Run[]>([])
   const [analysisLoading, setAnalysisLoading] = useState(true)
@@ -67,7 +62,7 @@ export default function DataManagementPage() {
   const [participants, setParticipants] = useState<ParticipantData[]>([])
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     arangodb: 'disconnected',
-    temporal: 'disconnected',
+    workflows: 'disconnected',
     humeAI: 'disconnected',
     activeJobs: 0,
     completedJobs: 0,
@@ -75,7 +70,7 @@ export default function DataManagementPage() {
   })
   const [importsLoading, setImportsLoading] = useState(true)
 
-  async function fetchAnalysisData() {
+  const fetchAnalysisData = useCallback(async () => {
     setAnalysisLoading(true)
     try {
       const res = await fetch('/api/analysis/runs', { cache: 'no-store' })
@@ -86,9 +81,9 @@ export default function DataManagementPage() {
     } finally {
       setAnalysisLoading(false)
     }
-  }
+  }, [])
 
-  async function fetchImportsData() {
+  const fetchImportsData = useCallback(async () => {
     setImportsLoading(true)
     try {
       // System status
@@ -116,7 +111,7 @@ export default function DataManagementPage() {
     } finally {
       setImportsLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchAnalysisData()
@@ -125,7 +120,7 @@ export default function DataManagementPage() {
     // Real-time updates for imports data
     const interval = setInterval(fetchImportsData, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchAnalysisData, fetchImportsData])
 
   // Import management functions
   const startImportJob = async (sessionId: string) => {
@@ -286,8 +281,8 @@ export default function DataManagementPage() {
               </div>
             </div>
 
-            {temporalMsg && (
-              <div className="mb-2 text-xs text-muted-foreground">{temporalMsg}</div>
+            {workflowMsg && (
+              <div className="mb-2 text-xs text-muted-foreground">{workflowMsg}</div>
             )}
 
             {analysisLoading ? (
