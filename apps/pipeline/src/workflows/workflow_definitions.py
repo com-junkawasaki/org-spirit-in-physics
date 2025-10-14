@@ -93,7 +93,7 @@ def create_unified_pipeline_workflow() -> Workflow:
         functions=[
             Function(
                 name="ingestSessionData",
-                operation="spirit_in_physics_pipeline.activities::ArangoDBActivities.store_raw_hume_data"
+                operation="spirit_in_physics_pipeline.activities::Neo4jActivities.store_raw_hume_data"
             ),
             Function(
                 name="processHumeAnalysis",
@@ -109,7 +109,7 @@ def create_unified_pipeline_workflow() -> Workflow:
             ),
             Function(
                 name="storeAnalysisResults",
-                operation="spirit_in_physics_pipeline.activities::ArangoDBActivities.store_analysis_results"
+                operation="spirit_in_physics_pipeline.activities::Neo4jActivities.store_analysis_results"
             )
         ]
     )
@@ -215,7 +215,7 @@ def create_physiological_workflow() -> Workflow:
         functions=[
             Function(
                 name="ingestPhysiologicalData",
-                operation="spirit_in_physics_pipeline.activities::ArangoDBActivities.store_raw_hume_data"
+                operation="spirit_in_physics_pipeline.activities::Neo4jActivities.store_raw_hume_data"
             ),
             Function(
                 name="processHumeAIPhysiological",
@@ -231,7 +231,7 @@ def create_physiological_workflow() -> Workflow:
             ),
             Function(
                 name="storePhysiologicalAnalysisResults",
-                operation="spirit_in_physics_pipeline.activities::ArangoDBActivities.store_analysis_results"
+                operation="spirit_in_physics_pipeline.activities::Neo4jActivities.store_analysis_results"
             )
         ]
     )
@@ -337,7 +337,7 @@ def create_online_workflow() -> Workflow:
         functions=[
             Function(
                 name="ingestOnlineData",
-                operation="spirit_in_physics_pipeline.activities::ArangoDBActivities.store_raw_hume_data"
+                operation="spirit_in_physics_pipeline.activities::Neo4jActivities.store_raw_hume_data"
             ),
             Function(
                 name="processHumeAIOnline",
@@ -353,7 +353,7 @@ def create_online_workflow() -> Workflow:
             ),
             Function(
                 name="storeOnlineAnalysisResults",
-                operation="spirit_in_physics_pipeline.activities::ArangoDBActivities.store_analysis_results"
+                operation="spirit_in_physics_pipeline.activities::Neo4jActivities.store_analysis_results"
             )
         ]
     )
@@ -427,15 +427,15 @@ def create_data_import_workflow() -> Workflow:
         functions=[
             Function(
                 name="fetchExternalData",
-                operation="spirit_in_physics_pipeline.activities::ImportActivities.fetch_external_data"
+                operation="spirit_in_physics_pipeline.activities::ImportStatusActivities.fetch_external_data"
             ),
             Function(
                 name="processParticipantData",
-                operation="spirit_in_physics_pipeline.activities::ImportActivities.process_participant_data"
+                operation="spirit_in_physics_pipeline.activities::ImportStatusActivities.process_participant_data"
             ),
             Function(
                 name="updateImportStatus",
-                operation="spirit_in_physics_pipeline.activities::ImportActivities.update_import_status"
+                operation="spirit_in_physics_pipeline.activities::ImportStatusActivities.update_import_status"
             )
         ]
     )
@@ -510,11 +510,11 @@ def create_ingestion_workflow() -> Workflow:
             ),
             Function(
                 name="storeRawSessionData",
-                operation="spirit_in_physics_pipeline.activities::ArangoDBActivities.store_raw_session_data"
+                operation="spirit_in_physics_pipeline.activities::Neo4jActivities.store_raw_session_data"
             ),
             Function(
                 name="updateIngestionStatus",
-                operation="spirit_in_physics_pipeline.activities::ArangoDBActivities.update_session_status"
+                operation="spirit_in_physics_pipeline.activities::Neo4jActivities.update_session_status"
             )
         ]
     )

@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from datetime import datetime
-from arango import ArangoClient
+from neo4j import GraphDatabase
 
 # Add project root to path to allow importing from packages
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
@@ -27,51 +27,49 @@ class AnalysisActivities:
     async def generate_visualizations(self, run_id: str, config: dict) -> str:
         """Activity to generate visualizations for a completed analysis run."""
         try:
-            # Initialize ArangoDB client
-            client = ArangoClient(hosts=config['arangodb']['url'])
-            db = client.db(config['arangodb']['database'], username=config['arangodb']['user'], password=config['arangodb']['password'])
+            # Initialize Neo4j client
+            driver = GraphDatabase.driver(config['neo4j']['uri'],
+                                        auth=(config['neo4j']['user'], config['neo4j']['password']))
 
-            # Query analysis results using AQL
-            aql_query = """
-            FOR result IN analysis_results
-                FILTER result.run_id == @run_id
-                RETURN {
-                    PValue: result.p_value,
-                    Word2Vec: result.word2vec_component,
-                    ReactionTime: result.reaction_time_component,
-                    SkinPotential: result.skin_potential_component,
-                    Emotion: result.emotion_component
-                }
-            """
+            with driver.session(database=config['neo4j']['database']) as session:
+                # Query analysis results using Cypher
+                cypher_query = """
+                MATCH (r:AnalysisResult {run_id: $run_id})
+                RETURN r.spirit_probability as PValue,
+                       r.word2vec_component as Word2Vec,
+                       r.reaction_time_component as ReactionTime,
+                       r.skin_potential_component as SkinPotential,
+                       r.emotion_component as Emotion
+                """
 
-            results_response = list(db.aql.execute(aql_query, bind_vars={"run_id": run_id}))
+                results_response = list(session.run(cypher_query, {"run_id": run_id}))
 
-            if results_response:
-                completed_jobs = []
-                for result in results_response:
-                    completed_jobs.append({
-                        "p_value": result['PValue'],
-                        "components": {
-                            "word2vec": result['Word2Vec'],
-                            "reaction_time": result['ReactionTime'],
-                            "skin_potential": result['SkinPotential'],
-                            "emotion": result['Emotion']
-                        },
-                        "raw_inputs": {}  # TODO: Add raw inputs from ArangoDB schema
-                    })
+                if results_response:
+                    completed_jobs = []
+                    for result in results_response:
+                        completed_jobs.append({
+                            "p_value": result['PValue'],
+                            "components": {
+                                "word2vec": result['Word2Vec'],
+                                "reaction_time": result['ReactionTime'],
+                                "skin_potential": result['SkinPotential'],
+                                "emotion": result['Emotion']
+                            },
+                            "raw_inputs": {}  # TODO: Add raw inputs from Neo4j schema
+                        })
 
-                if completed_jobs:
-                    # Visualization is handled by the separate visualizer service
-                    # visualizer = SpiritVisualizer()
-                    # visualizer.save_all_visualizations(run_id, completed_jobs)
-                    return f"Analysis completed successfully for run {run_id}. Visualizations available in visualizer service."
+                    if completed_jobs:
+                        # Visualization is handled by the separate visualizer service
+                        # visualizer = SpiritVisualizer()
+                        # visualizer.save_all_visualizations(run_id, completed_jobs)
+                        return f"Analysis completed successfully for run {run_id}. Visualizations available in visualizer service."
+                    else:
+                        return f"No completed analysis results found for run {run_id}"
                 else:
-                    return f"No completed analysis results found for run {run_id}"
-            else:
-                return f"No analysis results found in database for run {run_id}"
+                    return f"No analysis results found in database for run {run_id}"
 
         except Exception as e:
-            return f"Failed to connect to ArangoDB for run_id: {run_id}, error: {str(e)}"
+            return f"Failed to connect to Neo4j for run_id: {run_id}, error: {str(e)}"
 
     async def
     async def run_analysis_pipeline(self, model_version: str, notes: str, config: dict) -> str:
@@ -80,68 +78,63 @@ class AnalysisActivities:
             logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
             logging.info("Starting analysis pipeline activity...")
 
-            # Initialize ArangoDB client
-            client = ArangoClient(hosts=config['arangodb']['url'])
-            db = client.db(config['arangodb']['database'],
-                         username=config['arangodb']['user'],
-                         password=config['arangodb']['password'])
+            # Initialize Neo4j client
+            driver = GraphDatabase.driver(config['neo4j']['uri'],
+                                        auth=(config['neo4j']['user'], config['neo4j']['password']))
 
-            # Create analysis run record
-            run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            with driver.session(database=config['neo4j']['database']) as session:
+                # Create analysis run record
+                run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-            run_data = {
-                '_key': run_id,
-                'model_version': model_version,
-                'notes': notes,
-                'status': 'running',
-                'created_at': datetime.now().isoformat(),
-                'updated_at': datetime.now().isoformat(),
-                'total_sessions': 0,
-                'processed_sessions': 0,
-                'failed_sessions': 0
-            }
-
-            # Insert run record
-            runs_collection = db.collection('analysis_runs')
-            runs_collection.insert(run_data)
-
-            # Query for sessions that need processing
-            aql_query = """
-            FOR session IN participant_experiment_sessions
-                FILTER session.status == 'IMPORT_COMPLETED'
-                RETURN {
-                    _key: session._key,
-                    participant_id: session.participant_id,
-                    status: session.status
+                run_data = {
+                    'id': run_id,
+                    'model_version': model_version,
+                    'notes': notes,
+                    'status': 'running',
+                    'created_at': datetime.now().isoformat(),
+                    'updated_at': datetime.now().isoformat(),
+                    'total_sessions': 0,
+                    'processed_sessions': 0,
+                    'failed_sessions': 0
                 }
-            """
 
-            sessions = list(db.aql.execute(aql_query))
-            logging.info(f"Found {len(sessions)} sessions ready for analysis")
+                # Insert run record
+                session.run("CREATE (r:AnalysisRun $run_data) RETURN r", {"run_data": run_data})
 
-            processed_count = 0
-            failed_count = 0
+                # Query for sessions that need processing
+                cypher_query = """
+                MATCH (s:ExperimentSession)
+                WHERE s.status = 'IMPORT_COMPLETED'
+                RETURN s.id as _key,
+                       s.participant_id as participant_id,
+                       s.status as status
+                """
 
-            for session in sessions:
-                try:
-                    session_id = session['_key']
-                    logging.info(f"Processing session: {session_id}")
+                sessions = list(session.run(cypher_query))
 
-                    # Get Hume AI data for this session
-                    hume_query = """
-                    FOR hume IN participant_hume_burst_predictions
-                        FILTER hume.session_id == @session_id
-                        RETURN hume
-                    """
-                    hume_data = list(db.aql.execute(hume_query, bind_vars={"session_id": session_id}))
+                logging.info(f"Found {len(sessions)} sessions ready for analysis")
 
-                    # Get physiological data
-                    physio_query = """
-                    FOR physio IN participant_physiological_data
-                        FILTER physio.session_id == @session_id
-                        RETURN physio
-                    """
-                    physio_data = list(db.aql.execute(physio_query, bind_vars={"session_id": session_id}))
+                processed_count = 0
+                failed_count = 0
+
+                for session_record in sessions:
+                    try:
+                        session_id = session_record['session_id']
+                        logging.info(f"Processing session: {session_id}")
+
+                        # Get Hume AI data for this session
+                        hume_query = """
+                        MATCH (s:ExperimentSession {id: $session_id})-[:HAS_HUME_DATA]->(h:HumeAnalysisJob)-[:HAS_BURST_PREDICTION]->(b:HumeBurstPrediction)
+                        RETURN b
+                        """
+                        hume_data = list(session.run(hume_query, {"session_id": session_id}))
+
+                        # Get physiological data
+                        physio_query = """
+                        MATCH (s:ExperimentSession {id: $session_id})-[:HAS_PHYSIOLOGICAL_DATA]->(p:PhysiologicalData)
+                        RETURN p
+                        """
+                        physio_data = list(session.run(physio_query, {"session_id": session_id}))
 
                     # Extract features
                     features = self._extract_features(hume_data, physio_data, config)
@@ -149,21 +142,27 @@ class AnalysisActivities:
                     # Run Kawasaki model
                     spirit_probability = self._calculate_spirit_probability(features, config)
 
-                    # Store results
-                    result_data = {
-                        '_key': f"{run_id}_{session_id}",
-                        'run_id': run_id,
-                        'session_id': session_id,
-                        'participant_id': session['participant_id'],
-                        'spirit_probability': spirit_probability,
-                        'features': features,
-                        'model_version': model_version,
-                        'processed_at': datetime.now().isoformat(),
-                        'status': 'completed'
-                    }
+                        # Store results
+                        import uuid
+                        result_id = str(uuid.uuid4())
+                        result_data = {
+                            'id': result_id,
+                            'run_id': run_id,
+                            'session_id': session_id,
+                            'participant_id': session_record['participant_id'],
+                            'spirit_probability': spirit_probability,
+                            'features': features,
+                            'model_version': model_version,
+                            'processed_at': datetime.now().isoformat(),
+                            'status': 'completed'
+                        }
 
-                    results_collection = db.collection('analysis_results')
-                    results_collection.insert(result_data)
+                        session.run("""
+                            MATCH (r:AnalysisRun {id: $run_id})
+                            MATCH (s:ExperimentSession {id: $session_id})
+                            CREATE (r)-[:HAS_RESULT]->(res:AnalysisResult $result_data)-[:FOR_SESSION]->(s)
+                            RETURN res
+                        """, {"run_id": run_id, "session_id": session_id, "result_data": result_data})
 
                     processed_count += 1
                     logging.info(f"Completed analysis for session {session_id}")
@@ -172,24 +171,22 @@ class AnalysisActivities:
                     logging.error(f"Failed to process session {session_id}: {session_error}")
                     failed_count += 1
 
-            # Update run status
-            update_query = """
-            UPDATE @run_id WITH {
-                status: 'completed',
-                total_sessions: @total_sessions,
-                processed_sessions: @processed_sessions,
-                failed_sessions: @failed_sessions,
-                updated_at: @updated_at
-            } IN analysis_runs
-            """
-
-            db.aql.execute(update_query, bind_vars={
-                "run_id": run_id,
-                "total_sessions": len(sessions),
-                "processed_sessions": processed_count,
-                "failed_sessions": failed_count,
-                "updated_at": datetime.now().isoformat()
-            })
+                # Update run status
+                session.run("""
+                    MATCH (r:AnalysisRun {id: $run_id})
+                    SET r.status = 'completed',
+                        r.total_sessions = $total_sessions,
+                        r.processed_sessions = $processed_sessions,
+                        r.failed_sessions = $failed_sessions,
+                        r.updated_at = $updated_at
+                    RETURN r
+                """, {
+                    "run_id": run_id,
+                    "total_sessions": len(sessions),
+                    "processed_sessions": processed_count,
+                    "failed_sessions": failed_count,
+                    "updated_at": datetime.now().isoformat()
+                })
 
             logging.info(f"Analysis pipeline completed: {processed_count} processed, {failed_count} failed")
             return f"Analysis pipeline completed successfully. Run ID: {run_id}, Processed: {processed_count} sessions"

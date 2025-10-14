@@ -1,9 +1,9 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { arangodb } from './arangodb';
+import { arangodb } from './arangodb'; // Now uses Neo4j internally
 
-// ArangoDBを使用するため、Kuzu関連のインポートは不要
+// Neo4jを使用するため、Kuzu関連のインポートは不要
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -239,9 +239,9 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
 }
 
 /**
- * Kuzuから感情分析の統計情報を取得
+ * Neo4jから感情分析の統計情報を取得
  */
-export async function getEmotionStatisticsFromKuzu(): Promise<{
+export async function getEmotionStatisticsFromNeo4j(): Promise<{
   totalAnalyses: number;
   averageEmotions: Record<string, number>;
   dominantEmotions: Array<{ emotion: string; count: number }>;
@@ -250,12 +250,12 @@ export async function getEmotionStatisticsFromKuzu(): Promise<{
     totalTime: number;
   };
 }> {
-  try {
-    // ArangoDBマネージャーを使用（後方互換性のため関数名は変更しない）
-    const { arangodbManager } = await import('./database/arangodb-manager.ts');
-    return await arangodbManager.getEmotionStatistics();
+    try {
+      // Neo4jマネージャーを使用（後方互換性のため関数名は変更しない）
+      const { neo4jManager } = await import('./database/arangodb-manager.ts');
+    return await neo4jManager.getEmotionStatistics();
   } catch (error) {
-    console.error('Error getting emotion statistics from ArangoDB:', error);
+    console.error('Error getting emotion statistics from Neo4j:', error);
   }
 
   // Fallback to empty stats

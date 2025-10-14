@@ -1,33 +1,39 @@
 # Spirit in Physics - Visualizer
 
-## ArangoDB Migration Complete
+## Neo4j Migration Complete
 
-This visualizer has been fully migrated from Supabase to **ArangoDB**, a powerful multi-model database.
+This visualizer has been fully migrated from Supabase to **Neo4j**, a powerful graph database.
 
 ## Key Changes
 
-### Client Library (`src/lib/supabase.ts`)
+### Client Library (`src/lib/arangodb.ts`)
 - **Before**: Supabase JavaScript client
-- **After**: Custom TerminusDB client with WOQL queries
+- **After**: Custom Neo4j client with Cypher queries
 
 ### API Routes (`src/app/api/`)
 - **Before**: Supabase queries in API routes
-- **After**: TerminusDB client calls
+- **After**: Neo4j client calls with Cypher queries
 
 ### Data Functions (`src/lib/data.ts`)
 - **Before**: Supabase server client queries
-- **After**: TerminusDB client integration
+- **After**: Neo4j client integration with graph traversals
 
-## TerminusDB Client Features
+## Neo4j Client Features
 
 ### Participants Query
 ```typescript
 async getParticipants(): Promise<any[]> {
   const query = `
-    * triple("v:Participant", "rdf:type", "scm:Participant").
-    * triple("v:Participant", "scm:id", "v:Id").
-    * triple("v:Participant", "has_response", "v:Response").opt().
-    * group_by("v:Participant", ["v:Participant"], "v:ResponseCount", count("v:Response", "v:ResponseCount")).
+    MATCH (p:Participant)
+    OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
+    OPTIONAL MATCH (p)-[:HAS_SESSION]->(:Session)-[:HAS_RESPONSE]->(r:Response)
+    RETURN
+      p.id as participant_id,
+      count(distinct s) as session_count,
+      count(distinct r) as total_responses,
+      0.5 as average_spirit_probability,
+      p.created_at as last_activity
+    ORDER BY p.created_at DESC
   `
   // Returns processed participant data
 }
@@ -37,10 +43,11 @@ async getParticipants(): Promise<any[]> {
 ```typescript
 async getParticipantDetails(participantId: string): Promise<any> {
   const query = `
-    * triple("terminusdb:///data/Participant/${participantId}", "rdf:type", "scm:Participant").
-    * triple("terminusdb:///data/Participant/${participantId}", "scm:id", "v:Id").
-    * triple("terminusdb:///data/Participant/${participantId}", "scm:age", "v:Age").opt().
-    // ... more triples
+    MATCH (p:Participant {id: $participantId})
+    OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
+    OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
+    RETURN p, s, r
+    ORDER BY s.created_at, r.event_ts
   `
 }
 ```
@@ -49,10 +56,10 @@ async getParticipantDetails(participantId: string): Promise<any> {
 
 Add to your environment variables:
 ```bash
-NEXT_PUBLIC_TERMINUSDB_URL=http://localhost:6363
-TERMINUSDB_USER=admin
-TERMINUSDB_PASSWORD=root
-TERMINUSDB_DATABASE_ID=spirit_in_physics
+NEO4J_URI=neo4j://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=neo4jpassword
+NEO4J_DATABASE=neo4j
 ```
 
 ## Migration Benefits

@@ -55,7 +55,7 @@ import {
 interface IntegratedAnalyticsData {
   storageStatus: {
     blob: boolean;
-    arangodb: boolean;
+    neo4j: boolean;
     filesystem: boolean;
   };
   participantStats: {
@@ -78,7 +78,7 @@ interface IntegratedAnalyticsData {
   };
   storageStats: {
     blobUsage: number;
-    arangodbUsage: number;
+    neo4jUsage: number;
     totalDataPoints: number;
     syncStatus: 'synced' | 'syncing' | 'error';
   };
@@ -169,7 +169,7 @@ export default function AnalyticsDashboard() {
       const integratedData: IntegratedAnalyticsData = {
         storageStatus: {
           blob: true, // Vercel Blobは利用可能
-          arangodb: true, // ArangoDBは利用可能
+          neo4j: true, // Neo4jは利用可能
           filesystem: true // ファイルシステムは利用可能
         },
         participantStats: {
@@ -200,7 +200,7 @@ export default function AnalyticsDashboard() {
   },
         storageStats: {
           blobUsage: participantsData.total * 1024 || 0, // 仮定値
-          arangodbUsage: (participantsData.total || 0) * 1024, // ArangoDB使用量の見積もり
+          neo4jUsage: (participantsData.total || 0) * 1024, // Neo4j使用量の見積もり
           totalDataPoints: (participantsData.total || 0) + (sessionsData.data?.length || 0) + (emotionsData.data?.totalAnalyses || 0),
           syncStatus: 'synced' // 同期状態を表示
         }
@@ -250,10 +250,10 @@ export default function AnalyticsDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Database className="h-4 w-4 text-green-500" />
-              <span className="text-sm">ArangoDB Database</span>
+              <span className="text-sm">Neo4j Database</span>
             </div>
-            <Badge variant={analyticsData?.storageStatus.arangodb ? "default" : "secondary"}>
-              {analyticsData?.storageStatus.arangodb ? (
+            <Badge variant={analyticsData?.storageStatus.neo4j ? "default" : "secondary"}>
+              {analyticsData?.storageStatus.neo4j ? (
                 <><CheckCircle className="h-3 w-3 mr-1" />利用可能</>
               ) : (
                 <><Clock className="h-3 w-3 mr-1" />利用不可</>
@@ -583,7 +583,7 @@ export default function AnalyticsDashboard() {
           <span>データ同期ステータス</span>
         </CardTitle>
           <CardDescription>
-            ArangoDB、Blob、ファイルシステム間の同期状態
+            Neo4j、Blob、ファイルシステム間の同期状態
           </CardDescription>
       </CardHeader>
       <CardContent>
@@ -613,9 +613,9 @@ export default function AnalyticsDashboard() {
             </div>
             <div className="text-center">
                 <div className="text-lg font-bold text-green-600">
-                  {(analyticsData?.storageStats.arangodbUsage || 0) / 1024}KB
+                  {(analyticsData?.storageStats.neo4jUsage || 0) / 1024}KB
                 </div>
-                <div className="text-xs text-gray-500">ArangoDB使用量</div>
+                <div className="text-xs text-gray-500">Neo4j使用量</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-purple-600">
@@ -648,7 +648,7 @@ export default function AnalyticsDashboard() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">高度統合分析ダッシュボード</h1>
             <p className="text-gray-600 mt-1">
-              ArangoDB + Vercel Blob + ファイルシステムのリアルタイム統合分析プラットフォーム
+              Neo4j + Vercel Blob + ファイルシステムのリアルタイム統合分析プラットフォーム
             </p>
             <div className="flex items-center space-x-4 mt-3">
               <div className="flex items-center space-x-2">
@@ -657,7 +657,7 @@ export default function AnalyticsDashboard() {
               </div>
               <div className="flex items-center space-x-2">
                 <Database className="h-4 w-4 text-green-500" />
-                <span className="text-xs text-green-600 font-medium">ArangoDB Database</span>
+                <span className="text-xs text-green-600 font-medium">Neo4j Database</span>
               </div>
               <div className="flex items-center space-x-2">
                 <FileText className="h-4 w-4 text-gray-500" />
@@ -808,19 +808,19 @@ export default function AnalyticsDashboard() {
                       </div>
                     </div>
 
-                     {/* ArangoDB 使用状況 */}
+                     {/* Neo4j 使用状況 */}
                      <div className="text-center p-4 bg-green-50 rounded-lg">
                         <div className="text-3xl font-bold text-green-600 mb-2">
-                          {(analyticsData?.storageStats.arangodbUsage || 0) / 1024}KB
+                          {(analyticsData?.storageStats.neo4jUsage || 0) / 1024}KB
                         </div>
-                        <div className="text-sm text-green-700 font-medium">ArangoDB Database</div>
+                        <div className="text-sm text-green-700 font-medium">Neo4j Database</div>
                         <div className="text-xs text-green-600 mt-1">
-                          {analyticsData?.storageStatus.arangodb ? '利用可能' : '利用不可'}
+                          {analyticsData?.storageStatus.neo4j ? '利用可能' : '利用不可'}
                        </div>
                       <div className="w-full bg-green-200 rounded-full h-2 mt-3">
                         <div
                           className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${analyticsData?.storageStatus.arangodb ? 75 : 0}%` }}
+                          style={{ width: `${analyticsData?.storageStatus.neo4j ? 75 : 0}%` }}
                         ></div>
                       </div>
                     </div>
@@ -868,7 +868,7 @@ export default function AnalyticsDashboard() {
                       <div className="flex items-center justify-between py-2">
                         <div className="flex items-center space-x-3">
                           <Clock className="h-4 w-4 text-yellow-500" />
-                          <span className="text-sm">ArangoDBデータベース同期</span>
+                          <span className="text-sm">Neo4jデータベース同期</span>
                         </div>
                         <span className="text-xs text-gray-500">保留中</span>
                       </div>

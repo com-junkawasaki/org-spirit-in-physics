@@ -41,7 +41,7 @@ type ParticipantData = {
 }
 
 type SystemStatus = {
-  arangodb: 'connected' | 'disconnected' | 'error'
+  neo4j: 'connected' | 'disconnected' | 'error'
   workflows: 'connected' | 'disconnected' | 'error'
   humeAI: 'connected' | 'disconnected' | 'error'
   activeJobs: number
@@ -61,7 +61,7 @@ export default function AnalysisPage() {
   const [importJobs, setImportJobs] = useState<ImportJob[]>([])
   const [participants, setParticipants] = useState<ParticipantData[]>([])
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
-    arangodb: 'disconnected',
+    neo4j: 'disconnected',
     workflows: 'disconnected',
     humeAI: 'disconnected',
     activeJobs: 0,
@@ -488,7 +488,7 @@ export default function AnalysisPage() {
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">システムログ</h2>
             <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-64 overflow-y-auto">
-              <div>2024-01-15 10:30:15 [INFO] ArangoDB接続確認: OK</div>
+              <div>2024-01-15 10:30:15 [INFO] Neo4j接続確認: OK</div>
               <div>2024-01-15 10:30:16 [INFO] Workflow接続確認: OK</div>
               <div>2024-01-15 10:30:17 [INFO] Hume AI接続確認: OK</div>
               <div>2024-01-15 10:30:18 [INFO] インポートジョブ監視開始</div>

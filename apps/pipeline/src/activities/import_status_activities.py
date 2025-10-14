@@ -22,7 +22,7 @@ class ImportStatusActivities:
     """Serverless Workflow activities for import status management."""
     
     def __init__(self, config):
-        self.status_manager = ImportStatusManager(config['arangodb'])
+        self.status_manager = ImportStatusManager(config.get('neo4j', config.get('arangodb', {})))
         self.config = config
     
     async def create_import_status(self, participant_id: str, import_type: str, data_sources: list = None) -> bool:

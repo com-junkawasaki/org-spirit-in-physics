@@ -24,11 +24,17 @@ from .api_server import AnalysisAPI
 def run_api_server():
     """Run the API server in a separate thread."""
     config = {
-        'arangodb': {
+        'arangodb': {  # Keep for backward compatibility
             'url': 'http://arangodb:8529',
             'database': 'spirit_in_physics',
             'user': 'root',
             'password': 'root'
+        },
+        'neo4j': {
+            'uri': os.getenv('NEO4J_URI', 'neo4j://neo4j:7687'),
+            'database': os.getenv('NEO4J_DATABASE', 'neo4j'),
+            'user': os.getenv('NEO4J_USER', 'neo4j'),
+            'password': os.getenv('NEO4J_PASSWORD', 'neo4jpassword')
         }
     }
     api = AnalysisAPI(config)
@@ -51,11 +57,17 @@ class ServerlessWorkflowRunner:
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration for workflow execution."""
         return {
-            'arangodb': {
+            'arangodb': {  # Keep for backward compatibility
                 'url': os.getenv('ARANGODB_URL', 'http://arangodb:8529'),
                 'database': os.getenv('ARANGODB_DATABASE', 'spirit_in_physics'),
                 'user': os.getenv('ARANGODB_USER', 'root'),
                 'password': os.getenv('ARANGODB_PASSWORD', 'root')
+            },
+            'neo4j': {
+                'uri': os.getenv('NEO4J_URI', 'neo4j://neo4j:7687'),
+                'database': os.getenv('NEO4J_DATABASE', 'neo4j'),
+                'user': os.getenv('NEO4J_USER', 'neo4j'),
+                'password': os.getenv('NEO4J_PASSWORD', 'neo4jpassword')
             },
             'hume_ai': {
                 'api_key': os.getenv('HUME_API_KEY', 'dummy_key'),

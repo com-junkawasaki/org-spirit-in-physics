@@ -23,63 +23,68 @@ from packages.spirit_in_physics_pipeline.data_storer import DataStorer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class HumeDataImporter:
-    """Import Hume AI analysis data into ArangoDB database."""
+    """Import Hume AI analysis data into Neo4j database."""
 
-    def __init__(self, arangodb_config):
-        from arango import ArangoClient
+    def __init__(self, neo4j_config):
+        from neo4j import GraphDatabase
 
-        client = ArangoClient(hosts=arangodb_config['url'])
-        self.db = client.db(arangodb_config['database'], username=arangodb_config['user'], password=arangodb_config['password'])
-        self.config = arangodb_config
+        self.driver = GraphDatabase.driver(neo4j_config['uri'], auth=(neo4j_config['user'], neo4j_config['password']))
+        self.database = neo4j_config['database']
+        self.config = neo4j_config
 
     def import_hume_data(self, artifact_path, participant_experiment_session_id):
         """Import Hume AI data from artifact folder."""
         try:
-            # Extract Hume job ID from folder name
-            folder_name = os.path.basename(artifact_path)
-            hume_job_id = folder_name.replace('HumeAI_artifacts_', '')
+            with self.driver.session(database=self.database) as session:
+                # Extract Hume job ID from folder name
+                folder_name = os.path.basename(artifact_path)
+                hume_job_id = folder_name.replace('HumeAI_artifacts_', '')
 
-            # Create analysis job record
-            job_data = {
-                'participant_experiment_session_id': participant_experiment_session_id,
-                'source_media_path': artifact_path,
-                'hume_job_id': hume_job_id,
-                'status': 'completed'  # Since we're importing completed data
-            }
+                # Create analysis job record
+                import uuid
+                job_id = str(uuid.uuid4())
 
-            import uuid
-            job_data['_key'] = str(uuid.uuid4())
-            job_collection = self.db.collection('participant_hume_analysis_jobs')
-            job_result = job_collection.insert(job_data)
-            job_id = job_data['_key']
+                job_data = {
+                    'id': job_id,
+                    'participant_experiment_session_id': participant_experiment_session_id,
+                    'source_media_path': artifact_path,
+                    'hume_job_id': hume_job_id,
+                    'status': 'completed',  # Since we're importing completed data
+                    'created_at': datetime.now().isoformat()
+                }
 
-            # Find CSV directories - there might be multiple registry files
-            registry_dirs = [d for d in os.listdir(artifact_path) if d.startswith('registry_file-') and os.path.isdir(os.path.join(artifact_path, d))]
+                session.run("""
+                    CREATE (j:HumeAnalysisJob $job_data)
+                    RETURN j
+                """, {"job_data": job_data})
 
-            for registry_dir in registry_dirs:
-                registry_path = os.path.join(artifact_path, registry_dir)
-                csv_dir = os.path.join(registry_path, 'csv')
+                # Find CSV directories - there might be multiple registry files
+                registry_dirs = [d for d in os.listdir(artifact_path) if d.startswith('registry_file-') and os.path.isdir(os.path.join(artifact_path, d))]
 
-                if os.path.exists(csv_dir):
-                    # Get the job ID subdirectory (last part of hume_job_id)
-                    job_subdirs = [d for d in os.listdir(csv_dir) if os.path.isdir(os.path.join(csv_dir, d))]
-                    if job_subdirs:
-                        csv_subdir = os.path.join(csv_dir, job_subdirs[0])
+                for registry_dir in registry_dirs:
+                    registry_path = os.path.join(artifact_path, registry_dir)
+                    csv_dir = os.path.join(registry_path, 'csv')
 
-                        # Import burst predictions
-                        burst_file = os.path.join(csv_subdir, 'burst.csv')
-                        if os.path.exists(burst_file):
-                            self._import_burst_data(burst_file, job_id)
+                    if os.path.exists(csv_dir):
+                        # Get the job ID subdirectory (last part of hume_job_id)
+                        job_subdirs = [d for d in os.listdir(csv_dir) if os.path.isdir(os.path.join(csv_dir, d))]
+                        if job_subdirs:
+                            csv_subdir = os.path.join(csv_dir, job_subdirs[0])
 
-                        # Import prosody predictions
-                        prosody_file = os.path.join(csv_subdir, 'prosody.csv')
-                        if os.path.exists(prosody_file):
-                            self._import_prosody_data(prosody_file, job_id)
+                            # Import burst predictions
+                            burst_file = os.path.join(csv_subdir, 'burst.csv')
+                            if os.path.exists(burst_file):
+                                self._import_burst_data(session, burst_file, job_id)
 
-                        # Import language predictions
-                        language_file = os.path.join(csv_subdir, 'language.csv')
-                        if os.path.exists(language_file):
-                            self._import_language_data(language_file, job_id)
+                            # Import prosody predictions
+                            prosody_file = os.path.join(csv_subdir, 'prosody.csv')
+                            if os.path.exists(prosody_file):
+                                self._import_prosody_data(session, prosody_file, job_id)
+
+                            # Import language predictions
+                            language_file = os.path.join(csv_subdir, 'language.csv')
+                            if os.path.exists(language_file):
+                                self._import_language_data(session, language_file, job_id)
 
             return {"job_id": job_id, "status": "success", "message": "Hume AI data imported successfully"}
 
@@ -87,7 +92,7 @@ class HumeDataImporter:
             logging.error(f"Error importing Hume data: {e}")
             raise e
 
-    def _import_burst_data(self, csv_file, job_id):
+    def _import_burst_data(self, session, csv_file, job_id):
         """Import burst prediction data."""
         df = pd.read_csv(csv_file)
 
@@ -103,20 +108,25 @@ class HumeDataImporter:
                     else:
                         emotions[col] = float(row[col])
 
+            import uuid
+            burst_id = str(uuid.uuid4())
             burst_data = {
+                'id': burst_id,
                 'job_id': job_id,
                 'begin_time': float(row['BeginTime']),
                 'end_time': float(row['EndTime']),
                 'emotions': json.dumps(emotions),
-                'expressions': json.dumps(expressions)
+                'expressions': json.dumps(expressions),
+                'created_at': datetime.now().isoformat()
             }
 
-            import uuid
-            burst_data['_key'] = str(uuid.uuid4())
-            burst_collection = self.db.collection('participant_hume_burst_predictions')
-            burst_collection.insert(burst_data)
+            session.run("""
+                MATCH (j:HumeAnalysisJob {id: $job_id})
+                CREATE (j)-[:HAS_BURST_PREDICTION]->(b:HumeBurstPrediction $burst_data)
+                RETURN b
+            """, {"job_id": job_id, "burst_data": burst_data})
 
-    def _import_prosody_data(self, csv_file, job_id):
+    def _import_prosody_data(self, session, csv_file, job_id):
         """Import prosody prediction data."""
         df = pd.read_csv(csv_file)
 
@@ -128,20 +138,25 @@ class HumeDataImporter:
                 if col not in ['Id', 'Text', 'BeginTime', 'EndTime', 'Confidence', 'SpeakerConfidence']:
                     emotions[col] = float(row[col])
 
+            import uuid
+            prosody_id = str(uuid.uuid4())
             prosody_data = {
+                'id': prosody_id,
                 'job_id': job_id,
                 'begin_time': float(row['BeginTime']),
                 'end_time': float(row['EndTime']),
                 'confidence': float(row['Confidence']) if pd.notna(row['Confidence']) else None,
-                'emotions': json.dumps(emotions)
+                'emotions': json.dumps(emotions),
+                'created_at': datetime.now().isoformat()
             }
 
-            import uuid
-            prosody_data['_key'] = str(uuid.uuid4())
-            prosody_collection = self.db.collection('participant_hume_prosody_predictions')
-            prosody_collection.insert(prosody_data)
+            session.run("""
+                MATCH (j:HumeAnalysisJob {id: $job_id})
+                CREATE (j)-[:HAS_PROSODY_PREDICTION]->(p:HumeProsodyPrediction $prosody_data)
+                RETURN p
+            """, {"job_id": job_id, "prosody_data": prosody_data})
 
-    def _import_language_data(self, csv_file, job_id):
+    def _import_language_data(self, session, csv_file, job_id):
         """Import language prediction data."""
         df = pd.read_csv(csv_file)
 
@@ -172,7 +187,10 @@ class HumeDataImporter:
                 elif col in toxicity_cols:
                     toxicity[col] = float(row[col]) if pd.notna(row[col]) else 0.0
 
+            import uuid
+            language_id = str(uuid.uuid4())
             language_data = {
+                'id': language_id,
                 'job_id': job_id,
                 'text': str(row['Text']) if pd.notna(row['Text']) else None,
                 'begin_time': float(row['BeginTime']) if pd.notna(row['BeginTime']) else None,
@@ -180,20 +198,22 @@ class HumeDataImporter:
                 'confidence': float(row['Confidence']) if pd.notna(row['Confidence']) else None,
                 'speaker_confidence': float(row['SpeakerConfidence']) if pd.notna(row['SpeakerConfidence']) else None,
                 'emotions': json.dumps(emotions),
-                'toxicity': json.dumps(toxicity)
+                'toxicity': json.dumps(toxicity),
+                'created_at': datetime.now().isoformat()
             }
 
-            import uuid
-            language_data['_key'] = str(uuid.uuid4())
-            language_collection = self.db.collection('participant_hume_language_predictions')
-            language_collection.insert(language_data)
+            session.run("""
+                MATCH (j:HumeAnalysisJob {id: $job_id})
+                CREATE (j)-[:HAS_LANGUAGE_PREDICTION]->(l:HumeLanguagePrediction $language_data)
+                RETURN l
+            """, {"job_id": job_id, "language_data": language_data})
 
 class AnalysisAPI:
     def __init__(self, config):
         # self.job_manager = JobManager(config['arangodb'])  # Temporal disabled
         self.data_storer = DataStorer(config['arangodb'])
-        self.hume_importer = HumeDataImporter(config['arangodb'])
-        self.arangodb_config = config['arangodb']  # Store config for direct DB access
+        self.hume_importer = HumeDataImporter(config.get('neo4j', config.get('arangodb', {})))
+        self.neo4j_config = config.get('neo4j', config.get('arangodb', {}))  # Store config for direct DB access
         self.app = Flask(__name__)
         CORS(self.app)  # Enable CORS for web frontend access
 
@@ -210,32 +230,31 @@ class AnalysisAPI:
         def list_runs():
             """List all analysis runs."""
             try:
-                # Get runs from ArangoDB
-                from arango import ArangoClient
-                client = ArangoClient(hosts=self.arangodb_config['url'])
-                db = client.db(self.arangodb_config['database'], 
-                             username=self.arangodb_config['user'], 
-                             password=self.arangodb_config['password'])
-                
-                # Query analysis runs
-                aql_query = """
-                FOR run IN analysis_runs
-                    SORT run.created_at DESC
+                # Get runs from Neo4j
+                from neo4j import GraphDatabase
+                driver = GraphDatabase.driver(self.neo4j_config['uri'],
+                                            auth=(self.neo4j_config['user'], self.neo4j_config['password']))
+
+                with driver.session(database=self.neo4j_config['database']) as session:
+                    # Query analysis runs
+                    cypher_query = """
+                    MATCH (r:AnalysisRun)
+                    RETURN r.id as _key,
+                           r.participant_id as participant_id,
+                           r.status as status,
+                           r.progress as progress,
+                           r.model_version as model_version,
+                           r.notes as notes,
+                           r.created_at as created_at,
+                           r.updated_at as updated_at
+                    ORDER BY r.created_at DESC
                     LIMIT 50
-                    RETURN {
-                        _key: run._key,
-                        _id: run._id,
-                        participant_id: run.participant_id,
-                        status: run.status,
-                        progress: run.progress,
-                        model_version: run.model_version,
-                        notes: run.notes,
-                        created_at: run.created_at,
-                        updated_at: run.updated_at
-                    }
-                """
-                
-                runs = list(db.aql.execute(aql_query))
+                    """
+
+                    result = session.run(cypher_query)
+                    runs = [dict(record) for record in result]
+
+                driver.close()
                 return jsonify({"runs": runs})
             except Exception as e:
                 logging.error(f"Error listing runs: {e}")
@@ -245,33 +264,32 @@ class AnalysisAPI:
         def get_run(run_id):
             """Get details of a specific run."""
             try:
-                # Get run details from ArangoDB
-                from arango import ArangoClient
-                client = ArangoClient(hosts=self.arangodb_config['url'])
-                db = client.db(self.arangodb_config['database'], 
-                             username=self.arangodb_config['user'], 
-                             password=self.arangodb_config['password'])
-                
-                # Get run details
-                run_query = """
-                FOR run IN analysis_runs
-                    FILTER run._key == @run_id
-                    RETURN run
-                """
-                runs = list(db.aql.execute(run_query, bind_vars={"run_id": run_id}))
-                
+                # Get run details from Neo4j
+                from neo4j import GraphDatabase
+                driver = GraphDatabase.driver(self.neo4j_config['uri'],
+                                            auth=(self.neo4j_config['user'], self.neo4j_config['password']))
+
+                with driver.session(database=self.neo4j_config['database']) as session:
+                    # Get run details
+                    run_query = """
+                    MATCH (r:AnalysisRun {id: $run_id})
+                    RETURN r
+                    """
+                    result = session.run(run_query, {"run_id": run_id})
+                    runs = list(result)
+
                 if not runs:
                     return jsonify({"error": "Run not found"}), 404
-                
-                run = runs[0]
+
+                run = dict(runs[0]['r'])
                 
                 # Get analysis results for this run
                 results_query = """
-                FOR result IN analysis_results
-                    FILTER result.run_id == @run_id
-                    RETURN result
+                MATCH (r:AnalysisRun {id: $run_id})<-[:HAS_RESULT]-(res:AnalysisResult)
+                RETURN res
                 """
-                results = list(db.aql.execute(results_query, bind_vars={"run_id": run_id}))
+                results_result = session.run(results_query, {"run_id": run_id})
+                results = [dict(record['res']) for record in results_result]
                 
                 # Calculate statistics
                 total_results = len(results)
@@ -343,31 +361,30 @@ class AnalysisAPI:
                 ]
                 
                 # Get run details to determine current stage
-                from arango import ArangoClient
-                client = ArangoClient(hosts=self.arangodb_config['url'])
-                db = client.db(self.arangodb_config['database'], 
-                             username=self.arangodb_config['user'], 
-                             password=self.arangodb_config['password'])
-                
-                run_query = """
-                FOR run IN analysis_runs
-                    FILTER run._key == @run_id
-                    RETURN run
-                """
-                runs = list(db.aql.execute(run_query, bind_vars={"run_id": run_id}))
+                from neo4j import GraphDatabase
+                driver = GraphDatabase.driver(self.neo4j_config['uri'],
+                                            auth=(self.neo4j_config['user'], self.neo4j_config['password']))
+
+                with driver.session(database=self.neo4j_config['database']) as session:
+                    run_query = """
+                    MATCH (r:AnalysisRun {id: $run_id})
+                    RETURN r
+                    """
+                    runs_result = session.run(run_query, {"run_id": run_id})
+                    runs = list(runs_result)
                 
                 if not runs:
                     return jsonify({"error": "Run not found"}), 404
-                
-                run = runs[0]
-                
+
+                run = dict(runs[0]['r'])
+
                 # Get analysis results to determine progress
                 results_query = """
-                FOR result IN analysis_results
-                    FILTER result.run_id == @run_id
-                    RETURN result
+                MATCH (r:AnalysisRun {id: $run_id})<-[:HAS_RESULT]-(res:AnalysisResult)
+                RETURN res
                 """
-                results = list(db.aql.execute(results_query, bind_vars={"run_id": run_id}))
+                results_result = session.run(results_query, {"run_id": run_id})
+                results = [dict(record['res']) for record in results_result]
                 
                 # Determine current stage based on run status and results
                 current_stage = "config_loading"

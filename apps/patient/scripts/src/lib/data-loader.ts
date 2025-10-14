@@ -16,22 +16,23 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-// ArangoDB初期化関数
-export async function initializeArangoDBDatabase(): Promise<void> {
+// Neo4j初期化関数
+export async function initializeNeo4jDatabase(): Promise<void> {
   try {
-    // ArangoDB接続テスト
+    // Neo4j接続テスト
     await arangodb.query('RETURN 1');
 
-    console.log('ArangoDB database connection established');
+    console.log('Neo4j database connection established');
   } catch (error) {
-    console.error('Failed to initialize ArangoDB database:', error);
+    console.error('Failed to initialize Neo4j database:', error);
     throw error;
   }
 }
 
 // 後方互換性のための関数
-export const initializeSupabaseDatabase = initializeArangoDBDatabase;
-export const initializeKuzuDatabase = initializeArangoDBDatabase;
+export const initializeSupabaseDatabase = initializeNeo4jDatabase;
+export const initializeArangoDBDatabase = initializeNeo4jDatabase;
+export const initializeKuzuDatabase = initializeNeo4jDatabase;
 
 // Types based on actual data structure
 export interface ConsentData {

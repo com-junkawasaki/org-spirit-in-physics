@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/arangodb'
+import { createNeo4jClient } from '@/lib/arangodb'
 
 export async function GET(
   _req: NextRequest,
@@ -7,13 +7,13 @@ export async function GET(
 ) {
   try {
     const { runId } = await params
-    const client = createArangoDBClient()
+    const client = createNeo4jClient()
     const rows = await client.query(
-      'FOR r IN analysis_runs FILTER r._key == @k RETURN r',
-      { k: runId }
+      'MATCH (r:AnalysisRun {id: $runId}) RETURN r',
+      { runId }
     )
     if (!rows || rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json(rows[0])
+    return NextResponse.json(rows[0].r)
   } catch (error) {
     console.error('Failed to get run:', error)
     return NextResponse.json({ error: 'Failed to get run' }, { status: 500 })
@@ -28,15 +28,15 @@ export async function PATCH(
     const { runId } = await params
     const body = await req.json().catch(() => ({}))
     const action = body?.action
-    const client = createArangoDBClient()
+    const client = createNeo4jClient()
     const now = new Date().toISOString()
 
     if (action === 'cancel') {
       const rows = await client.query(
-        'UPDATE @k WITH { status: "cancelled", updated_at: @now } IN analysis_runs RETURN NEW',
-        { k: runId, now }
+        'MATCH (r:AnalysisRun {id: $runId}) SET r.status = "cancelled", r.updated_at = $now RETURN r',
+        { runId, now }
       )
-      return NextResponse.json(rows?.[0] || { ok: true })
+      return NextResponse.json(rows?.[0]?.r || { ok: true })
     }
 
     return NextResponse.json({ error: 'Unsupported action' }, { status: 400 })
