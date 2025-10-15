@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ArangoDBManager } from '@/lib/neo4j'
+import { Neo4jManager } from '@/lib/neo4j'
 
 // Merkle DAG: imports_retry_api -> failed_job_recovery
 export async function POST(
@@ -16,7 +16,7 @@ export async function POST(
       )
     }
 
-    const dbManager = new ArangoDBManager()
+    const dbManager = new Neo4jManager()
     
     // ジョブの存在確認と詳細取得
     const jobQuery = `

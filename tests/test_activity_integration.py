@@ -205,11 +205,11 @@ class TestAnalyzerActivityIntegration:
     def config(self):
         """Test configuration."""
         return {
-            'arangodb': {
-                'url': 'http://localhost:8529',
-                'user': 'root',
-                'password': '',
-                'database': 'spirit_in_physics'
+            'neo4j': {
+                'uri': 'neo4j://localhost:7687',
+                'user': 'neo4j',
+                'password': 'neo4jpassword',
+                'database': 'neo4j'
             },
             'hume_ai': {
                 'api_key': 'test_key'

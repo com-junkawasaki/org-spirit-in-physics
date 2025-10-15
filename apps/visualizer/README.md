@@ -6,7 +6,7 @@ This visualizer has been fully migrated from Supabase to **Neo4j**, a powerful g
 
 ## Key Changes
 
-### Client Library (`src/lib/arangodb.ts`)
+### Client Library (`src/lib/neo4j.ts`)
 - **Before**: Supabase JavaScript client
 - **After**: Custom Neo4j client with Cypher queries
 

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/neo4j'
+import { createNeo4jClient } from '@/lib/neo4j'
 
 export async function GET() {
   try {
-    console.log('API: Generating analysis report from ArangoDB...')
-    const client = createArangoDBClient()
+    console.log('API: Generating analysis report from Neo4j...')
+    const client = createNeo4jClient()
 
     // Get participants
     const participants = await client.getParticipants()

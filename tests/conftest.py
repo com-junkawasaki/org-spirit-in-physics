@@ -224,6 +224,5 @@ pytest.mark.unit = pytest.mark.unit
 pytest.mark.integration = pytest.mark.integration
 pytest.mark.workflow = pytest.mark.workflow
 pytest.mark.activity = pytest.mark.activity
-pytest.mark.arangodb = pytest.mark.arangodb
 pytest.mark.hume_ai = pytest.mark.hume_ai
 pytest.mark.workflow = pytest.mark.workflow

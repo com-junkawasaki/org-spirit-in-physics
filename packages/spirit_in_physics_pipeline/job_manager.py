@@ -59,7 +59,7 @@ class JobManager:
             "max_retries": self.max_retries
         }
         
-        # Insert job into ArangoDB collection
+        # Insert job into Neo4j
         collection = self.db.collection('analysis_jobs')
         job_data['_key'] = job_id
         result = collection.insert(job_data)

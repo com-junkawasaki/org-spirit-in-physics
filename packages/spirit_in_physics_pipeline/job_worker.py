@@ -15,12 +15,12 @@ from data_storer import DataStorer
 class JobWorker:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.job_manager = JobManager(config['arangodb'])
-        self.data_loader = DataLoader(config['arangodb'])
+        self.job_manager = JobManager(config['neo4j'])
+        self.data_loader = DataLoader(config['neo4j'])
         self.emotion_processor = EmotionProcessor(config['hume_ai'])
         self.feature_extractor = FeatureExtractor(config['model_params'])
         self.kawasaki_model = KawasakiModel(config['model_params'], config['word2vec'])
-        self.data_storer = DataStorer(config['arangodb'])
+        self.data_storer = DataStorer(config['neo4j'])
         
         self.running = True
         self.max_concurrent_jobs = config.get('processing', {}).get('max_concurrent_jobs', 3)

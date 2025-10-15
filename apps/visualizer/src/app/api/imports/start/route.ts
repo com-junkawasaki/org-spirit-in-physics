@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ArangoDBManager } from '@/lib/neo4j'
+import { Neo4jManager } from '@/lib/neo4j'
 
 // Merkle DAG: imports_start_api -> workflow_initiation
 export async function POST(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const dbManager = new ArangoDBManager()
+    const dbManager = new Neo4jManager()
     
     // セッションの存在確認
     const sessionQuery = `

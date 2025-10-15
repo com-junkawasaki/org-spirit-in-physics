@@ -275,7 +275,7 @@ def create_workflow_documentation(output_dir: str = "workflow_docs") -> str:
         f.write("### Function References\n\n")
         f.write("Functions are referenced using module paths to activity implementations:\n\n")
         f.write("```\n")
-        f.write("spirit_in_physics_pipeline.activities::ArangoDBActivities.store_raw_hume_data\n")
+        f.write("spirit_in_physics_pipeline.activities::Neo4jActivities.store_raw_hume_data\n")
         f.write("spirit_in_physics_pipeline.activities::HumeActivities.process_hume_analysis\n")
         f.write("```\n\n")
 

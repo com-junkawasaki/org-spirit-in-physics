@@ -17,25 +17,16 @@ class PhysiologicalProcessor:
         self.baseline_window_ms = 2000  # ベースライン計算用の時間窓（2秒）
         self.response_window_ms = 5000  # 反応分析用の時間窓（5秒）
         
-    def load_skin_potential_data(self, response_id: str, arangodb_client) -> List[Dict[str, Any]]:
+    def load_skin_potential_data(self, response_id: str, neo4j_client) -> List[Dict[str, Any]]:
         """
-        ArangoDBから皮膚電位の時系列データを読み込み
+        Neo4jから皮膚電位の時系列データを読み込み
         """
         logging.info(f"Loading skin potential data for response {response_id}")
-        
-        db = arangodb_client.db()
-        cursor = db.aql.execute(
-            'FOR doc IN response_skin_potential_timeseries FILTER doc.response_id == @response_id SORT doc.timestamp_offset_ms RETURN doc',
-            bind_vars={'response_id': response_id}
-        )
-        data = [doc for doc in cursor]
-        
-        if data:
-            logging.info(f"Loaded {len(data)} skin potential data points")
-            return data
-        else:
-            logging.warning(f"No skin potential data found for response {response_id}")
-            return []
+
+        # TODO: Implement Neo4j query for skin potential data
+        # For now, return empty list as this needs to be migrated
+        logging.warning(f"Skin potential data loading not yet implemented for Neo4j")
+        return []
     
     def calculate_baseline(self, sp_data: List[Dict[str, Any]], 
                           stimulus_timestamp_ms: int = 0) -> float:

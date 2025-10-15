@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createArangoDBClient } from '@/lib/neo4j'
+import { createNeo4jClient } from '@/lib/neo4j'
 
 interface AnalysisResultData {
   participant_id: string
@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const client = createArangoDBClient()
+    const client = createNeo4jClient()
 
-    // Validate participant exists in ArangoDB
+    // Validate participant exists in Neo4j
     if (participantId) {
       try {
         await client.getParticipantDetails(participantId)
