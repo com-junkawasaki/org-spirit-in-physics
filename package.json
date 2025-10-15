@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "@duckdb/node-api": "^1.4.0-r.1",
-    "@neo4j/cypher-builder": "^2.8.1",
-    "neo4j-driver": "^6.0.0"
+    "@neo4j/cypher-builder": "^2.8.1"
   }
 }

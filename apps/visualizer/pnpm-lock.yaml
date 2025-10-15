@@ -65,9 +65,6 @@ importers:
       lucide-react:
         specifier: ^0.528.0
         version: 0.528.0(react@18.2.0)
-      neo4j-driver:
-        specifier: ^6.0.0
-        version: 6.0.0
       neogma:
         specifier: ^1.15.0
         version: 1.15.0
