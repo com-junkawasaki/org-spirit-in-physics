@@ -72,11 +72,27 @@ export default function ImportPage() {
   const [statusSummary, setStatusSummary] = useState<ImportStatusResponse['summary'] | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
 
+  // 指定された participant ID のリスト
+  const targetParticipantIds = [
+    '2a0d7a69-f953-4c29-87a5-8a8e4e8bd413',
+    '5ac869a3-b8db-49c3-9362-3e149a5415e9',
+    '7dda0261-a6f4-4208-bd61-4244380d277f',
+    '144b325f-5966-4d59-a629-f2ca421388cc',
+    '5346d514-e501-457a-aff1-55c92074a6f2',
+    '15592cdb-86cf-4baf-86f5-66184169ee39',
+    '4512513e-9132-4556-9858-bac08f28037f',
+    '25111604-c7db-4bfd-8662-e55060e332d6',
+    'a4e1b8f4-e267-41a7-acfc-07fe1b7c06fb',
+    'ad96101f-a7a8-4d71-8d82-c0478975c40b',
+    'e41a9cd2-d803-49a8-9020-0260e55cd03e'
+  ];
+
   // Merkle DAG: import.status.load -> load_import_status
   const loadImportStatus = async () => {
     setStatusLoading(true);
     try {
-      const response = await fetch('/api/admin/import/status');
+      const participantIdsParam = targetParticipantIds.join(',');
+      const response = await fetch(`/api/admin/import/status?participantIds=${participantIdsParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch import status');
       }
@@ -104,6 +120,12 @@ export default function ImportPage() {
     try {
       const response = await fetch('/api/admin/import/participants', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantIds: targetParticipantIds
+        }),
       });
 
       if (!response.ok) {
@@ -133,6 +155,12 @@ export default function ImportPage() {
     try {
       const response = await fetch('/api/admin/import/sessions', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantIds: targetParticipantIds
+        }),
       });
 
       if (!response.ok) {
@@ -162,6 +190,12 @@ export default function ImportPage() {
     try {
       const response = await fetch('/api/admin/import/emotions', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantIds: targetParticipantIds
+        }),
       });
 
       if (!response.ok) {
@@ -263,8 +297,13 @@ export default function ImportPage() {
                 インポート状態
               </CardTitle>
               <CardDescription>
-                対象ファイル一覧と取得済みデータの状態を表示します
+                対象の11名参加者のファイル一覧と取得済みデータの状態を表示します
               </CardDescription>
+              <div className="mt-4">
+                <p className="text-sm text-gray-600">
+                  管理対象参加者数: {targetParticipantIds.length}名
+                </p>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">

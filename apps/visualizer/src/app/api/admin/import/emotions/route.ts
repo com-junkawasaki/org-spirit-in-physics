@@ -11,6 +11,9 @@ export async function POST(request: NextRequest) {
   try {
     console.log('API: Starting emotion import from dataset...');
 
+    const body = await request.json();
+    const targetParticipantIds = body.participantIds || null;
+
     const results = [];
 
     // Merkle DAG: import.emotions.scan
@@ -24,7 +27,12 @@ export async function POST(request: NextRequest) {
     }
 
     const entries = await fs.readdir(datasetPath, { withFileTypes: true });
-    const participantDirs = entries.filter(entry => entry.isDirectory());
+    let participantDirs = entries.filter(entry => entry.isDirectory());
+
+    // 指定された participant ID でフィルタリング
+    if (targetParticipantIds) {
+      participantDirs = participantDirs.filter(dir => targetParticipantIds.includes(dir.name));
+    }
 
     const client = createNeo4jClient();
 

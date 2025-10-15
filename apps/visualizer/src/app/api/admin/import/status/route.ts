@@ -11,6 +11,9 @@ export async function GET(request: NextRequest) {
   try {
     console.log('API: Getting import status...');
 
+    const { searchParams } = new URL(request.url);
+    const filterParticipantIds = searchParams.get('participantIds')?.split(',') || null;
+
     // Merkle DAG: import.status.scan_files
     // データセットファイルスキャン (プロジェクトルートからの相対パス)
     const datasetPath = path.join(process.cwd(), '..', '..', '..', '..', 'dataset', 'participants');
@@ -18,7 +21,16 @@ export async function GET(request: NextRequest) {
     let availableFiles: any[] = [];
     try {
       await fs.access(datasetPath);
-      availableFiles = await scanDatasetFiles(datasetPath);
+      const allFiles = await scanDatasetFiles(datasetPath);
+
+      // 指定された participant ID でフィルタリング
+      if (filterParticipantIds) {
+        availableFiles = allFiles.filter(file =>
+          filterParticipantIds.includes(file.participantId)
+        );
+      } else {
+        availableFiles = allFiles;
+      }
     } catch {
       console.warn('Dataset directory not found at:', datasetPath);
     }
