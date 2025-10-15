@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertCircle, CheckCircle, Database, Cloud, FileText, Eye, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle, Database, Cloud, FileText, Eye, RefreshCw, X } from 'lucide-react';
 
 // Merkle DAG: import.page -> data_import_ui
 type ImportStatus = 'idle' | 'running' | 'completed' | 'error';
@@ -299,10 +299,107 @@ export default function ImportPage() {
               <CardDescription>
                 対象の11名参加者のファイル一覧と取得済みデータの状態を表示します
               </CardDescription>
-              <div className="mt-4">
-                <p className="text-sm text-gray-600">
-                  管理対象参加者数: {targetParticipantIds.length}名
-                </p>
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    管理対象参加者数: {targetParticipantIds.length}名
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    検出されたファイル数: {fileStatus.length}件
+                  </p>
+                </div>
+
+                {/* 対象フォルダ一覧 */}
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h4 className="text-sm font-semibold mb-3 text-gray-800">対象フォルダ一覧</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {targetParticipantIds.map((participantId) => {
+                      const file = fileStatus.find(f => f.participantId === participantId);
+                      const isFound = !!file;
+                      const hasData = file ? (
+                        file.files.consent || file.files.sessionData || file.files.humeArtifacts
+                      ) : false;
+
+                      return (
+                        <div
+                          key={participantId}
+                          className={`border rounded-lg p-3 ${
+                            isFound
+                              ? hasData
+                                ? 'bg-green-50 border-green-200'
+                                : 'bg-yellow-50 border-yellow-200'
+                              : 'bg-red-50 border-red-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-mono text-xs truncate flex-1" title={participantId}>
+                              {participantId.slice(0, 12)}...
+                            </span>
+                            <div className="ml-2">
+                              {isFound ? (
+                                hasData ? (
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                )
+                              ) : (
+                                <X className="h-4 w-4 text-red-600" />
+                              )}
+                            </div>
+                          </div>
+
+                          {file && (
+                            <div className="grid grid-cols-3 gap-1 text-xs">
+                              <div className="flex items-center gap-1">
+                                <div className={`w-2 h-2 rounded-full ${file.files.consent ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                <span className="text-gray-600">同意</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className={`w-2 h-2 rounded-full ${file.files.sessionData ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                <span className="text-gray-600">セッション</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className={`w-2 h-2 rounded-full ${file.files.humeArtifacts ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                <span className="text-gray-600">感情</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {!file && (
+                            <div className="text-xs text-red-600">
+                              フォルダが見つかりません
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                      <span>データあり</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3 text-yellow-600" />
+                      <span>フォルダあり（データなし）</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <X className="h-3 w-3 text-red-600" />
+                      <span>フォルダなし</span>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <span>ファイルあり</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-gray-300" />
+                        <span>ファイルなし</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

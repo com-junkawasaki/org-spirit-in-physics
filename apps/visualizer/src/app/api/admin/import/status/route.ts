@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
     const filterParticipantIds = searchParams.get('participantIds')?.split(',') || null;
 
     // Merkle DAG: import.status.scan_files
-    // データセットファイルスキャン (プロジェクトルートからの相対パス)
-    const datasetPath = path.join(process.cwd(), '..', '..', '..', '..', 'dataset', 'participants');
+    // データセットファイルスキャン (src/datasetからの相対パス)
+    const datasetPath = path.join(process.cwd(), 'src', 'dataset', 'participants');
 
     let availableFiles: any[] = [];
     try {
