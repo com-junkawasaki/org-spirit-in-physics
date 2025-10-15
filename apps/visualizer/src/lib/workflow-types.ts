@@ -10,7 +10,7 @@ export type WorkflowNodeType =
   | 'analysis'
   | 'results'
 
-export interface WorkflowNodeData {
+export interface WorkflowNodeData extends Record<string, unknown> {
   label: string
   type: WorkflowNodeType
   status: 'pending' | 'running' | 'completed' | 'error'
@@ -18,7 +18,7 @@ export interface WorkflowNodeData {
   data?: Record<string, unknown>
 }
 
-export interface WorkflowEdgeData {
+export interface WorkflowEdgeData extends Record<string, unknown> {
   label?: string
   type: 'data' | 'control' | 'analysis'
 }

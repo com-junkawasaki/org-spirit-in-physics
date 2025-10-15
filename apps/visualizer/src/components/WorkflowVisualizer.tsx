@@ -16,6 +16,7 @@ import {
   Node,
   Edge,
   Handle,
+  Position,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
@@ -43,7 +44,7 @@ import {
   Maximize,
   Edit3
 } from 'lucide-react'
-import { WorkflowNode, WorkflowEdge, WORKFLOW_NODES, WORKFLOW_EDGES } from '@/lib/workflow-types'
+import { WorkflowNode, WorkflowEdge, WorkflowNodeData, WORKFLOW_NODES, WORKFLOW_EDGES } from '@/lib/workflow-types'
 
 type WorkflowDefinition = {
   id: string
@@ -163,6 +164,22 @@ const getNodeIcon = (type: string) => {
   }
 }
 
+const getWorkflowIcon = (workflowId: string) => {
+  // ワークフローIDに基づいて適切なアイコンを返す
+  switch (workflowId) {
+    case 'spirit-experiment':
+      return <Database className="h-4 w-4" />
+    case 'data-import':
+      return <Database className="h-4 w-4" />
+    case 'analysis-pipeline':
+      return <Settings className="h-4 w-4" />
+    case 'participant-flow':
+      return <Activity className="h-4 w-4" />
+    default:
+      return <Database className="h-4 w-4" />
+  }
+}
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'completed':
@@ -197,7 +214,7 @@ const CustomNode = ({ data }: { data: WorkflowNode['data'] }) => {
       {/* Target Handle - Left side for incoming connections */}
       <Handle
         type="target"
-        position="left"
+        position={Position.Left}
         className="w-3 h-3 !bg-blue-500 border-2 border-white"
       />
 
@@ -219,7 +236,7 @@ const CustomNode = ({ data }: { data: WorkflowNode['data'] }) => {
       {/* Source Handle - Right side for outgoing connections */}
       <Handle
         type="source"
-        position="right"
+        position={Position.Right}
         className="w-3 h-3 !bg-green-500 border-2 border-white"
       />
     </Card>
@@ -392,11 +409,11 @@ function WorkflowControls({
           </div>
 
           <div className="flex gap-1 flex-wrap">
-            <Button size="sm" variant="outline" onClick={zoomIn}>
+            <Button size="sm" variant="outline" onClick={() => zoomIn()}>
               <ZoomIn className="h-3 w-3 mr-1" />
               拡大
             </Button>
-            <Button size="sm" variant="outline" onClick={zoomOut}>
+            <Button size="sm" variant="outline" onClick={() => zoomOut()}>
               <ZoomOut className="h-3 w-3 mr-1" />
               縮小
             </Button>
@@ -486,7 +503,7 @@ function WorkflowFlow({
     workflowEdges.map(edge => ({
       ...edge,
       style: {
-        stroke: getEdgeColor(edge.data?.type || 'data'),
+        stroke: getEdgeColor((edge.data as any)?.type || 'data'),
         strokeWidth: 2,
       },
     }))
@@ -690,9 +707,9 @@ function NodeEditDialog({
   onSave: (node: Node) => void
   onCancel: () => void
 }) {
-  const [label, setLabel] = useState(node.data?.label || '')
-  const [description, setDescription] = useState(node.data?.description || '')
-  const [status, setStatus] = useState(node.data?.status || 'pending')
+  const [label, setLabel] = useState<string>((node.data as any)?.label || '')
+  const [description, setDescription] = useState<string>((node.data as any)?.description || '')
+  const [status, setStatus] = useState<string>((node.data as any)?.status || 'pending')
 
   const handleSave = () => {
     const updatedNode = {

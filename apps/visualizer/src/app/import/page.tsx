@@ -2,13 +2,14 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { AlertCircle, CheckCircle, Database, Cloud, FileText } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertCircle, CheckCircle, Database, Cloud, FileText, Eye, RefreshCw } from 'lucide-react';
 
 // Merkle DAG: import.page -> data_import_ui
 type ImportStatus = 'idle' | 'running' | 'completed' | 'error';
@@ -18,6 +19,41 @@ interface ImportResult {
   status: 'success' | 'error';
   message: string;
   details?: any;
+}
+
+interface FileStatus {
+  participantId: string;
+  path: string;
+  files: {
+    consent: boolean;
+    sessionData: boolean;
+    humeArtifacts: boolean;
+    videoFiles: boolean;
+  };
+  imported: {
+    participant: boolean;
+    session: boolean;
+    emotion: boolean;
+  };
+  canImport: {
+    participant: boolean;
+    session: boolean;
+    emotion: boolean;
+  };
+  status: 'ready' | 'partial' | 'complete' | 'no-data';
+  lastModified: string;
+}
+
+interface ImportStatusResponse {
+  success: boolean;
+  fileStatus: FileStatus[];
+  summary: {
+    totalFiles: number;
+    importedParticipants: number;
+    importedSessions: number;
+    importedEmotions: number;
+  };
+  error?: string;
 }
 
 export default function ImportPage() {
@@ -30,6 +66,34 @@ export default function ImportPage() {
   const [emotionResults, setEmotionResults] = useState<ImportResult[]>([]);
 
   const [progress, setProgress] = useState(0);
+
+  // インポート状態管理
+  const [fileStatus, setFileStatus] = useState<FileStatus[]>([]);
+  const [statusSummary, setStatusSummary] = useState<ImportStatusResponse['summary'] | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+
+  // Merkle DAG: import.status.load -> load_import_status
+  const loadImportStatus = async () => {
+    setStatusLoading(true);
+    try {
+      const response = await fetch('/api/admin/import/status');
+      if (!response.ok) {
+        throw new Error('Failed to fetch import status');
+      }
+      const data: ImportStatusResponse = await response.json();
+      setFileStatus(data.fileStatus || []);
+      setStatusSummary(data.summary);
+    } catch (error) {
+      console.error('Failed to load import status:', error);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // コンポーネントマウント時にインポート状態を読み込み
+  useEffect(() => {
+    loadImportStatus();
+  }, []);
 
   // Merkle DAG: import.participants -> participant_data_import
   const importParticipants = async () => {
@@ -146,6 +210,32 @@ export default function ImportPage() {
     }
   };
 
+  // Merkle DAG: import.status.helpers -> status_display_helpers
+  const getFileStatusBadge = (status: string) => {
+    switch (status) {
+      case 'ready':
+        return <Badge variant="outline" className="text-blue-600 border-blue-600">インポート可能</Badge>;
+      case 'partial':
+        return <Badge variant="outline" className="text-yellow-600 border-yellow-600">部分インポート</Badge>;
+      case 'complete':
+        return <Badge variant="outline" className="text-green-600 border-green-600">完了</Badge>;
+      case 'no-data':
+        return <Badge variant="outline" className="text-gray-600 border-gray-600">データなし</Badge>;
+      default:
+        return <Badge variant="outline">不明</Badge>;
+    }
+  };
+
+  const getImportStatusIcon = (imported: boolean, canImport: boolean) => {
+    if (imported) {
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    }
+    if (canImport) {
+      return <AlertCircle className="h-4 w-4 text-blue-500" />;
+    }
+    return <FileText className="h-4 w-4 text-gray-400" />;
+  };
+
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
@@ -156,12 +246,135 @@ export default function ImportPage() {
       </div>
 
       {/* Merkle DAG: import.tabs -> import_tabs_layout */}
-      <Tabs defaultValue="participants" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="status" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="status">インポート状態</TabsTrigger>
           <TabsTrigger value="participants">参加者データ</TabsTrigger>
           <TabsTrigger value="sessions">セッションデータ</TabsTrigger>
           <TabsTrigger value="emotions">感情分析データ</TabsTrigger>
         </TabsList>
+
+        {/* Merkle DAG: import.status.tab -> import_status_visualization */}
+        <TabsContent value="status" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                インポート状態
+              </CardTitle>
+              <CardDescription>
+                対象ファイル一覧と取得済みデータの状態を表示します
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Button
+                  onClick={loadImportStatus}
+                  disabled={statusLoading}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${statusLoading ? 'animate-spin' : ''}`} />
+                  更新
+                </Button>
+                {statusSummary && (
+                  <div className="flex gap-4 text-sm text-gray-600">
+                    <span>総ファイル数: {statusSummary.totalFiles}</span>
+                    <span>参加者: {statusSummary.importedParticipants}</span>
+                    <span>セッション: {statusSummary.importedSessions}</span>
+                    <span>感情データ: {statusSummary.importedEmotions}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>参加者ID</TableHead>
+                      <TableHead>ファイル状態</TableHead>
+                      <TableHead>参加者</TableHead>
+                      <TableHead>セッション</TableHead>
+                      <TableHead>感情データ</TableHead>
+                      <TableHead>全体状態</TableHead>
+                      <TableHead>最終更新</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fileStatus.map((file) => (
+                      <TableRow key={file.participantId}>
+                        <TableCell className="font-mono text-sm">
+                          {file.participantId}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1 text-xs">
+                            <div className="flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full ${file.files.consent ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                              consent.json
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full ${file.files.sessionData ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                              session_data.json
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full ${file.files.humeArtifacts ? 'bg-green-500' : 'bg-gray-300'}`}></span>
+                              HumeAI
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full ${file.files.videoFiles ? 'bg-blue-500' : 'bg-gray-300'}`}></span>
+                              Video (不要)
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getImportStatusIcon(file.imported.participant, file.canImport.participant)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getImportStatusIcon(file.imported.session, file.canImport.session)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getImportStatusIcon(file.imported.emotion, file.canImport.emotion)}
+                        </TableCell>
+                        <TableCell>
+                          {getFileStatusBadge(file.status)}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {new Date(file.lastModified).toLocaleString('ja-JP')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {fileStatus.length === 0 && !statusLoading && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          ファイルが見つかりません。dataset/participants/ ディレクトリを確認してください。
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>凡例:</strong></p>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>インポート済み</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4 text-blue-500" />
+                    <span>インポート可能</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <FileText className="h-4 w-4 text-gray-400" />
+                    <span>未準備/不要</span>
+                  </div>
+                </div>
+                <p><strong>注意:</strong> VideoファイルはBlobストレージ管理のため、インポート対象外です。</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="participants" className="space-y-6">
           <Card>
@@ -197,8 +410,8 @@ export default function ImportPage() {
               {participantResults.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="font-semibold">結果:</h4>
-                  {participantResults.map((result, index) => (
-                    <div key={index} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                  {participantResults.map((result) => (
+                    <div key={result.participantId} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                         <AlertCircle className={`h-4 w-4 ${result.status === 'success' ? 'text-green-500' : 'text-red-500'}`} />
                         <span>
                           <strong>{result.participantId}:</strong> {result.message}
@@ -245,8 +458,8 @@ export default function ImportPage() {
               {sessionResults.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="font-semibold">結果:</h4>
-                  {sessionResults.map((result, index) => (
-                    <div key={index} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                  {sessionResults.map((result) => (
+                    <div key={result.participantId} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                         <AlertCircle className={`h-4 w-4 ${result.status === 'success' ? 'text-green-500' : 'text-red-500'}`} />
                         <span>
                           <strong>{result.participantId}:</strong> {result.message}
@@ -293,8 +506,8 @@ export default function ImportPage() {
               {emotionResults.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="font-semibold">結果:</h4>
-                  {emotionResults.map((result, index) => (
-                    <div key={index} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                  {emotionResults.map((result) => (
+                    <div key={result.participantId} className={`flex items-center space-x-2 p-2 border rounded ${result.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                         <AlertCircle className={`h-4 w-4 ${result.status === 'success' ? 'text-green-500' : 'text-red-500'}`} />
                         <span>
                           <strong>{result.participantId}:</strong> {result.message}
