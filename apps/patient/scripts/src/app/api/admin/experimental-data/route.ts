@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseWordResponsesFromEvents, getParticipantStatistics, loadAllSessionData } from "scripts/src/lib/data-loader";
-import { neo4jManager } from "scripts/src/lib/database/arangodb-manager";
+import { neo4jManager } from "scripts/src/lib/database/neo4j-manager";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

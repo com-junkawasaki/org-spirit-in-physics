@@ -2,7 +2,7 @@
 
 import { StoragePort } from 'scripts/src/20_ports';
 import { ConsentData, SaveStructuredDataPayload, EmotionAnalysisResult, Participant, ParticipantWithFiles, SessionData } from 'scripts/src/00_schema';
-import { neo4jManager } from 'scripts/src/lib/database/arangodb-manager';
+import { neo4jManager } from 'scripts/src/lib/database/neo4j-manager';
 
 export class StorageAdapter implements StoragePort {
   async saveStructuredData(payload: SaveStructuredDataPayload): Promise<void> {

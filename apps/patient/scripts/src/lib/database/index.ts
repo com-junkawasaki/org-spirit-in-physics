@@ -1,7 +1,7 @@
 // Merkle DAG: データベース初期化マネージャー
 // 全てのデータベースの初期化を統括
 
-import { neo4jManager, arangodbManager } from './arangodb-manager';
+import { neo4jManager } from './neo4j-manager';
 
 export class DatabaseInitializer {
   private initialized = false;
@@ -59,5 +59,5 @@ export class DatabaseInitializer {
 // シングルトンインスタンス
 export const databaseInitializer = new DatabaseInitializer();
 
-// Neo4jマネージャーのエクスポート（後方互換性のため古い名前も維持）
-export { neo4jManager, arangodbManager };
+// Neo4jマネージャーのエクスポート
+export { neo4jManager };

@@ -34,20 +34,6 @@ services:
     networks:
       - spirit-network
 
-  # Admin app (Vite/React) - DISABLED: app not found
-  # admin:
-  #   build:
-  #     context: ./apps/admin
-  #     dockerfile: Dockerfile
-  #   container_name: spirit-admin
-  #   ports:
-  #     - "4173:4173"
-  #   env_file:
-  #     - ./apps/admin/env.docker
-  #   depends_on:
-  #     - arangodb
-  #   networks:
-  #     - spirit-network
 
   # Visualizer app (Next.js)
   visualizer:

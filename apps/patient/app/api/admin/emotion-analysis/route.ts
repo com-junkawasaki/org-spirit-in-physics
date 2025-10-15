@@ -5,7 +5,7 @@ import {
   loadEmotionAnalysisResults,
   generateEmotionStatistics
 } from "scripts/src/lib/emotion-analysis";
-import { createNeo4jClient } from "scripts/src/lib/arangodb";
+import { createNeo4jClient } from "scripts/src/lib/neo4j";
 import { WorkflowService } from "scripts/src/lib/workflow-service";
 
 export async function GET(request: NextRequest) {

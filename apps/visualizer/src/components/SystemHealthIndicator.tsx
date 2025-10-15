@@ -42,7 +42,7 @@ export interface SystemHealthIndicatorProps {
 // Merkle DAG: system_health_indicator -> service_icon_component
 function ServiceIcon({ service }: { service: string }) {
   switch (service.toLowerCase()) {
-    case 'arangodb':
+    case 'neo4j':
       return <Database className="h-4 w-4" />
      case 'workflows':
       return <Clock className="h-4 w-4" />

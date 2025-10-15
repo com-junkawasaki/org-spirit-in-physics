@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-分析結果をArangoDBデータベースにインポートするスクリプト
+分析結果をNeo4jデータベースにインポートするスクリプト
 """
 
 import json

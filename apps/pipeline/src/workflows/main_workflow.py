@@ -14,7 +14,7 @@ from serverlessworkflow.sdk.workflow import Workflow
 from .workflow_manager import get_workflow_manager
 
 # Import activities (these will be replaced with actual implementations)
-# from spirit_in_physics_pipeline.activities import ArangoDBActivities, HumeActivities, AnalysisActivities
+# from spirit_in_physics_pipeline.activities import Neo4jActivities, HumeActivities, AnalysisActivities
 
 # Merkle DAG: workflow_execution -> workflow_definitions
 class WorkflowExecutor:

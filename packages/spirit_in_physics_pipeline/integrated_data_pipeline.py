@@ -21,12 +21,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class IntegratedDataPipeline:
     """セッション、生理、Hume AIデータを統合した分析パイプライン"""
 
-    def __init__(self, arangodb_config: Dict[str, Any], data_dir: str):
-        self.arangodb_config = arangodb_config
+    def __init__(self, neo4j_config: Dict[str, Any], data_dir: str):
+        self.neo4j_config = neo4j_config
         self.data_dir = Path(data_dir)
         self.session_processor = SessionDataProcessor()
-        self.data_loader = DataLoader(arangodb_config)
-        self.hume_processor = HumeDataProcessor(arangodb_config)
+        self.data_loader = DataLoader(neo4j_config)
+        self.hume_processor = HumeDataProcessor(neo4j_config)
         self.physiological_processor = PhysiologicalProcessor()
 
     def analyze_participant_completeness(self, participant_id: str) -> Dict[str, Any]:

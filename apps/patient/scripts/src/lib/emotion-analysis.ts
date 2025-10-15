@@ -1,9 +1,7 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { arangodb } from './arangodb'; // Now uses Neo4j internally
-
-// Neo4jを使用するため、Kuzu関連のインポートは不要
+import { arangodb } from './neo4j';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -251,8 +249,8 @@ export async function getEmotionStatisticsFromNeo4j(): Promise<{
   };
 }> {
     try {
-      // Neo4jマネージャーを使用（後方互換性のため関数名は変更しない）
-      const { neo4jManager } = await import('./database/arangodb-manager.ts');
+      // Neo4jマネージャーを使用
+      const { neo4jManager } = await import('./database/neo4j-manager.ts');
     return await neo4jManager.getEmotionStatistics();
   } catch (error) {
     console.error('Error getting emotion statistics from Neo4j:', error);

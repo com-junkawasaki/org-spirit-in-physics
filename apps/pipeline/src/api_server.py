@@ -210,8 +210,8 @@ class HumeDataImporter:
 
 class AnalysisAPI:
     def __init__(self, config):
-        # self.job_manager = JobManager(config['arangodb'])  # Temporal disabled
-        self.data_storer = DataStorer(config['arangodb'])
+        # self.job_manager = JobManager(config['neo4j'])  # Temporal disabled
+        self.data_storer = DataStorer(config['neo4j'])
         self.hume_importer = HumeDataImporter(config.get('neo4j', config.get('arangodb', {})))
         self.neo4j_config = config.get('neo4j', config.get('arangodb', {}))  # Store config for direct DB access
         self.app = Flask(__name__)

@@ -115,10 +115,6 @@ export function createNeo4jClient(): Neo4jClient {
   return clientInstance
 }
 
-// Legacy compatibility - maintain ArangoDB function name
-export function createArangoDBClient(): Neo4jClient {
-  return createNeo4jClient()
-}
 
 // Export singleton instance for convenience
 export const arangodb = createNeo4jClient()

@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
-import { arangodb } from './arangodb';
+import { arangodb } from './neo4j';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -29,10 +29,6 @@ export async function initializeNeo4jDatabase(): Promise<void> {
   }
 }
 
-// 後方互換性のための関数
-export const initializeSupabaseDatabase = initializeNeo4jDatabase;
-export const initializeArangoDBDatabase = initializeNeo4jDatabase;
-export const initializeKuzuDatabase = initializeNeo4jDatabase;
 
 // Types based on actual data structure
 export interface ConsentData {
@@ -98,7 +94,7 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
 
           // Neo4jにも保存
           for (const data of consentData) {
-            const { neo4jManager } = await import('./database/arangodb-manager.ts');
+            const { neo4jManager } = await import('./database/neo4j-manager.ts');
             const participant: Participant = {
               id: data.participantId,
               signature: data.signature,
@@ -157,7 +153,7 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
 
     // Neo4jにも保存
     for (const data of consentData) {
-      const { neo4jManager } = await import('./database/arangodb-manager.ts');
+      const { neo4jManager } = await import('./database/neo4j-manager.ts');
       const participant: Participant = {
         id: data.participantId,
         signature: data.signature,
@@ -239,7 +235,7 @@ export async function loadSessionData(participantId: string): Promise<SessionDat
   try {
     // Neo4jデータベースからセッションデータを取得（一本化）
     try {
-      const { neo4jManager } = await import('./database/arangodb-manager.ts');
+      const { neo4jManager } = await import('./database/neo4j-manager.ts');
 
       // Neo4jからセッションデータを取得
       const query = `
@@ -326,7 +322,7 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
 // Load all participants data
 export async function loadAllParticipants(): Promise<Participant[]> {
   try {
-    const { neo4jManager } = await import('./database/arangodb-manager.ts');
+    const { neo4jManager } = await import('./database/neo4j-manager.ts');
     const neo4jParticipants = await neo4jManager.getAllParticipants();
 
     console.log(`Loaded ${neo4jParticipants?.length || 0} participants from Neo4j`);
@@ -352,7 +348,7 @@ export async function loadAllParticipants(): Promise<Participant[]> {
 // Load all session data
 export async function loadAllSessionData(): Promise<Array<{ participantId: string; sessionData: SessionData }>> {
   try {
-    const { neo4jManager } = await import('./database/arangodb-manager.ts');
+    const { neo4jManager } = await import('./database/neo4j-manager.ts');
 
     // Neo4jからセッションデータを取得
     const query = `

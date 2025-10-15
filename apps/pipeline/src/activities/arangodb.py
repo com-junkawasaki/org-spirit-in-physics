@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 class Neo4jActivities:
     def __init__(self, config):
         self.config = config
-        self.data_loader = DataLoader(config['arangodb'])
-        self.data_storer = DataStorer(config['arangodb'])
+        self.data_loader = DataLoader(config['neo4j'])
+        self.data_storer = DataStorer(config['neo4j'])
 
     async def get_session_for_ingestion(self, session_id: str) -> dict:
         """Get experiment session information for ingestion workflow."""

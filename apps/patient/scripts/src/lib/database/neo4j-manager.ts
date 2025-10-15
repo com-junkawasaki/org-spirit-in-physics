@@ -1,7 +1,7 @@
 // Merkle DAG: Neo4jデータベースマネージャー
 // Neo4jを使用したデータベース操作マネージャー
 
-import { arangodb, Database } from '../arangodb';
+import { arangodb, Database } from '../neo4j';
 
 // インターフェース定義
 export interface Participant {
@@ -342,6 +342,3 @@ export class Neo4jManager {
 // シングルトンインスタンス
 export const neo4jManager = new Neo4jManager();
 
-// Legacy compatibility - maintain ArangoDBManager for now
-export class ArangoDBManager extends Neo4jManager {}
-export const arangodbManager = neo4jManager;
