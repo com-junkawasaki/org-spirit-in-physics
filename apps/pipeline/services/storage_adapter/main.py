@@ -309,7 +309,7 @@ if __name__ == "__main__":
     service_config = config.services["storage_adapter"]
 
     uvicorn.run(
-        "main:app",
+        "services.storage_adapter.main:app",
         host=service_config.host,
         port=service_config.port,
         reload=service_config.debug,

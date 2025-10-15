@@ -422,10 +422,18 @@ export async function GET() {
       health
     }
 
-    // Convert BigInt values to numbers for JSON serialization
-    const serializedMetrics = JSON.parse(JSON.stringify(metrics, (key, value) =>
-      typeof value === 'bigint' ? Number(value) : value
-    ))
+    // Convert Neo4j Integer and BigInt values to numbers for JSON serialization
+    const serializedMetrics = JSON.parse(JSON.stringify(metrics, (key, value) => {
+      // Handle Neo4j Integer objects (have low/high properties)
+      if (typeof value === 'object' && value !== null && 'low' in value) {
+        return value.low
+      }
+      // Handle BigInt values
+      if (typeof value === 'bigint') {
+        return Number(value)
+      }
+      return value
+    }))
 
     return NextResponse.json(serializedMetrics)
   } catch (error) {

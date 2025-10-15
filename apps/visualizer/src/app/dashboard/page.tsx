@@ -1,6 +1,8 @@
 // Merkle DAG: dashboard_page -> system_overview_management
 // Main dashboard page for system overview and management
 
+'use client'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
