@@ -217,7 +217,12 @@ export class Neo4jManager {
     try {
       // Neogmaを使って接続テスト
       const result = await this.client.query('RETURN 1 as test')
-      return result && result.length > 0 && result[0].test === 1
+      // Neo4j IntegerオブジェクトをJavaScript numberに変換
+      const testValue = result && result.length > 0 ? result[0].test : null
+      const numValue = typeof testValue === 'object' && testValue !== null && 'low' in testValue
+        ? testValue.low
+        : Number(testValue) || 0
+      return numValue === 1
     } catch (error) {
       console.error('Neogma connection test failed:', error)
       return false
