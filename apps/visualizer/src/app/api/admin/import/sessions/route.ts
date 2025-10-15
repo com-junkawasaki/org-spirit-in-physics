@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
           const physiologicalCsvFiles = csvFiles.filter(file =>
             file.isFile() &&
             file.name.endsWith('.CSV') &&
-            file.name.includes('hitoshiuchida') // 特定のフォーマットのCSVファイルのみ
+            file.name.includes('2025-08') // 2025-08を含むCSVファイルのみ
           );
 
           for (const csvFile of physiologicalCsvFiles) {

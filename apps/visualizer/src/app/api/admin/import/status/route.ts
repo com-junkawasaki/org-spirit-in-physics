@@ -203,7 +203,7 @@ async function checkVideoFiles(participantPath: string): Promise<boolean> {
 async function checkCSVFiles(participantPath: string): Promise<boolean> {
   try {
     const entries = await fs.readdir(participantPath);
-    return entries.some(entry => entry.endsWith('.CSV') && entry.includes('hitoshiuchida'));
+    return entries.some(entry => entry.endsWith('.CSV') && entry.includes('2025-08'));
   } catch {
     return false;
   }
