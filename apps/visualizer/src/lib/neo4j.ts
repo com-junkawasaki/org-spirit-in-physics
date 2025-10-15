@@ -8,7 +8,7 @@ import {
   Response,
   EmotionAnalysis,
   ImportJob,
-  initializeNeogmaModels
+  setNeogmaInstance
 } from './neogma-models'
 
 interface Neo4jConfig {
@@ -29,15 +29,15 @@ class Neo4jClient {
         url: this.config.uri,
         username: this.config.user,
         password: this.config.password,
+        database: this.config.database,
       },
       {
-        database: this.config.database,
         logger: console.log,
       }
     )
 
-    // Neogmaモデルを初期化
-    initializeNeogmaModels(this.neogma)
+    // Neogmaモデルにインスタンスを設定
+    setNeogmaInstance(this.neogma)
   }
 
   async query(cypherQuery: string, params?: Record<string, any>): Promise<any[]> {
@@ -70,24 +70,21 @@ class Neo4jClient {
   async getParticipants(): Promise<any[]> {
     try {
       // Neogmaを使って参加者データを取得
-      const participants = await Participant.findMany({
-        include: {
-          sessions: {
-            attributes: ['id'],
-          },
-          responses: {
-            attributes: ['id', 'spirit_probability'],
-          },
-        },
-      })
+      const participants = await Participant.findMany()
 
-      // データを整形
-      const processed = participants.map((participant: any) => {
-        const sessionCount = participant.sessions?.length || 0
-        const totalResponses = participant.responses?.length || 0
-        const averageSpiritProbability = participant.responses?.length > 0
-          ? participant.responses.reduce((sum: number, response: any) =>
-              sum + (response.spirit_probability || 0), 0) / participant.responses.length
+      // 各参加者の統計情報を取得
+      const processed = await Promise.all(participants.map(async (participant: any) => {
+        // Neogmaでは直接countが使えないので、findManyの長さをカウント
+        const [sessions, responses] = await Promise.all([
+          ExperimentSession.findMany({ where: { participant_id: participant.id } }),
+          Response.findMany({ where: { participant_id: participant.id } }),
+        ])
+
+        const sessionCount = sessions.length
+        const totalResponses = responses.length
+        const averageSpiritProbability = responses.length > 0
+          ? responses.reduce((sum: number, response: any) =>
+              sum + (response.spirit_probability || 0), 0) / responses.length
           : 0.5
 
         return {
@@ -97,7 +94,7 @@ class Neo4jClient {
           average_spirit_probability: averageSpiritProbability,
           last_activity: participant.created_at
         }
-      })
+      }))
 
       // 作成日時で降順ソート
       processed.sort((a: any, b: any) =>
@@ -139,11 +136,6 @@ class Neo4jClient {
       // Neogmaを使って参加者のレスポンスを取得
       const responses = await Response.findMany({
         where: { participant_id: participantId },
-        include: {
-          session: {
-            attributes: ['id'],
-          },
-        },
       })
 
       // データを整形
@@ -154,7 +146,7 @@ class Neo4jClient {
         reaction_time_ms: response.reaction_time_ms || 0,
         emotion: response.emotion,
         emotion_confidence: response.emotion_confidence || 0,
-        session_id: response.session?.id || response.session_id,
+        session_id: response.session_id,
         spirit_probability: response.spirit_probability,
         event_ts: response.event_ts,
       }))
@@ -235,7 +227,7 @@ export class Neo4jManager {
     try {
       // Neogmaを使ってImportJobを取得
       const jobs = await ImportJob.findMany({
-        orderBy: [{ created_at: 'DESC' }],
+        order: [['created_at', 'DESC']],
         limit: 50,
       })
 
@@ -298,7 +290,6 @@ export class Neo4jManager {
       // まずセッションから参加者IDを取得
       const session = await ExperimentSession.findOne({
         where: { id: sessionId },
-        attributes: ['participant_id'],
       })
 
       if (!session) {

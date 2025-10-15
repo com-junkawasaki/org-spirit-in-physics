@@ -8,6 +8,7 @@ interface BaseNode {
   id: string;
   created_at?: string;
   updated_at?: string;
+  [key: string]: any; // Neogmaの制約を満たすためのインデックスシグネチャ
 }
 
 // Participantモデル
@@ -60,10 +61,6 @@ export const Participant = ModelFactory<ParticipantProperties, ParticipantRelate
       updated_at: { type: 'string' },
     },
     primaryKeyField: 'id',
-    relationshipCreationKeys: {
-      sessions: 'HAS_SESSION',
-      responses: 'HAS_RESPONSE',
-    },
   },
   {} as Neogma // Will be set when initializing
 );
@@ -114,10 +111,6 @@ export const ExperimentSession = ModelFactory<ExperimentSessionProperties, Exper
       updated_at: { type: 'string' },
     },
     primaryKeyField: 'id',
-    relationshipCreationKeys: {
-      participant: 'HAS_SESSION',
-      responses: 'HAS_RESPONSE',
-    },
   },
   {} as Neogma
 );
@@ -174,11 +167,6 @@ export const Response = ModelFactory<ResponseProperties, ResponseRelatedNodes>(
       updated_at: { type: 'string' },
     },
     primaryKeyField: 'id',
-    relationshipCreationKeys: {
-      participant: 'HAS_RESPONSE',
-      session: 'HAS_RESPONSE',
-      emotionAnalysis: 'HAS_EMOTION_ANALYSIS',
-    },
   },
   {} as Neogma
 );
@@ -213,9 +201,6 @@ export const EmotionAnalysis = ModelFactory<EmotionAnalysisProperties, EmotionAn
       updated_at: { type: 'string' },
     },
     primaryKeyField: 'id',
-    relationshipCreationKeys: {
-      response: 'HAS_EMOTION_ANALYSIS',
-    },
   },
   {} as Neogma
 );
@@ -276,15 +261,15 @@ export const ImportJob = ModelFactory<ImportJobProperties, {}>(
   {} as Neogma
 );
 
-// Neogmaインスタンス初期化関数
-export function initializeNeogmaModels(neogmaInstance: Neogma) {
+// Neogmaモデルインスタンス設定関数
+export function setNeogmaInstance(neogmaInstance: Neogma) {
   // 各モデルにNeogmaインスタンスを設定
-  Object.assign(Participant, { neogma: neogmaInstance });
-  Object.assign(ExperimentSession, { neogma: neogmaInstance });
-  Object.assign(Response, { neogma: neogmaInstance });
-  Object.assign(EmotionAnalysis, { neogma: neogmaInstance });
-  Object.assign(WordStimulus, { neogma: neogmaInstance });
-  Object.assign(ImportJob, { neogma: neogmaInstance });
+  Participant.setNeogma(neogmaInstance);
+  ExperimentSession.setNeogma(neogmaInstance);
+  Response.setNeogma(neogmaInstance);
+  EmotionAnalysis.setNeogma(neogmaInstance);
+  WordStimulus.setNeogma(neogmaInstance);
+  ImportJob.setNeogma(neogmaInstance);
 
   return {
     Participant,

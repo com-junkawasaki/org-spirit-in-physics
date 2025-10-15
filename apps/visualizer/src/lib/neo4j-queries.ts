@@ -26,13 +26,11 @@ export class ParticipantQueries {
   static async getParticipant(participantId: string) {
     return await Participant.findOne({
       where: { id: participantId },
-      attributes: ['id'],
     });
   }
 
   static async getAllParticipants() {
     return await Participant.findMany({
-      attributes: ['id', 'created_at', 'age', 'gender'],
       order: [['created_at', 'DESC']],
     });
   }
@@ -62,7 +60,7 @@ export class ParticipantQueries {
     if (!participant) return null;
 
     // Cypherクエリを使って統計を取得
-    const { createNeo4jClient } = await import('./neo4j')
+    const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
     const queries = [
@@ -148,7 +146,6 @@ export class ResponseQueries {
 
   static async getAllResponsesForReactionTimes() {
     return await Response.findMany({
-      attributes: ['participant_id', 'stimulus_word', 'response_word', 'reaction_time_ms', 'spirit_probability'],
       order: [['event_ts', 'ASC']],
     });
   }
@@ -169,7 +166,7 @@ export class ResponseQueries {
   // 反応時間の統計を取得
   static async getReactionTimeStatistics() {
     // Neogmaでnullチェックができないため、Cypherクエリを使用
-    const { createNeo4jClient } = await import('./neo4j')
+    const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
     const query = `
@@ -203,7 +200,7 @@ export class ResponseQueries {
 export class EmotionQueries {
   static async getEmotionStatistics() {
     // Neogmaでnullチェックができないため、Cypherクエリを使用
-    const { createNeo4jClient } = await import('./neo4j')
+    const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
     const query = `
@@ -239,7 +236,7 @@ export class EmotionQueries {
 
   static async getParticipantEmotionAnalysis(participantId: string) {
     // Neogmaでnullチェックができないため、Cypherクエリを使用
-    const { createNeo4jClient } = await import('./neo4j')
+    const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
     const query = `
@@ -286,7 +283,7 @@ export class UtilityQueries {
 
   static async countAllNodes() {
     // Cypherクエリを使って全ノード数をカウント
-    const { createNeo4jClient } = await import('./neo4j')
+    const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
     const queries = [
@@ -311,7 +308,7 @@ export class UtilityQueries {
 
   static async countAllRelationships() {
     // Cypherクエリを使ってリレーションシップ数をカウント
-    const { createNeo4jClient } = await import('./neo4j')
+    const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
     const queries = [
@@ -347,13 +344,21 @@ export class UtilityQueries {
     // 注意: このメソッドは危険です。本番環境では使用しないでください
     console.warn('Clearing all data from Neo4j database...');
 
-    await Promise.all([
-      EmotionAnalysis.delete({}),
-      Response.delete({}),
-      ExperimentSession.delete({}),
-      Participant.delete({}),
-      ImportJob.delete({}),
-    ]);
+    const { createNeo4jClient } = await import('./neo4j.js')
+    const client = createNeo4jClient()
+
+    // Cypherクエリを使って全てのデータを削除
+    const queries = [
+      'MATCH (n:EmotionAnalysis) DETACH DELETE n',
+      'MATCH (n:Response) DETACH DELETE n',
+      'MATCH (n:ExperimentSession) DETACH DELETE n',
+      'MATCH (n:Participant) DETACH DELETE n',
+      'MATCH (n:ImportJob) DETACH DELETE n',
+    ]
+
+    for (const query of queries) {
+      await client.query(query)
+    }
 
     return { success: true, message: 'All data cleared' };
   }

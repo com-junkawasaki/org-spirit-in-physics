@@ -405,7 +405,7 @@ export async function getAnalysisResultsForParticipant(participantId: string): P
     // Neogmaを使って参加者のレスポンスを取得
     const responses = await Response.findMany({
       where: { participant_id: participantId },
-      orderBy: [{ event_ts: 'ASC' }],
+      order: [['event_ts', 'ASC']],
     })
 
     // 実際のデータに基づいて分析結果を生成
