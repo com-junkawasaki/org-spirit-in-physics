@@ -176,8 +176,6 @@ class MetricsCalculator {
         MATCH (r:Response)
         WHERE r.reaction_time_ms IS NOT NULL
         RETURN avg(r.reaction_time_ms) as averageResponseTime
-        ORDER BY r.created_at DESC
-        LIMIT 100
       `
 
       const responseTimeResult = await (this.dbClient as { query: (query: string) => Promise<any[]> }).query(responseTimeQuery)
@@ -424,7 +422,12 @@ export async function GET() {
       health
     }
 
-    return NextResponse.json(metrics)
+    // Convert BigInt values to numbers for JSON serialization
+    const serializedMetrics = JSON.parse(JSON.stringify(metrics, (key, value) =>
+      typeof value === 'bigint' ? Number(value) : value
+    ))
+
+    return NextResponse.json(serializedMetrics)
   } catch (error) {
     console.error('Failed to get system metrics:', error)
     return NextResponse.json(

@@ -18,12 +18,11 @@ export async function POST(request: NextRequest) {
     
     // セッションの存在確認
     const sessionQuery = `
-      FOR session IN participant_experiment_sessions
-      FILTER session._key == @sessionId
+      MATCH (s:ExperimentSession {id: $sessionId})
       RETURN {
-        id: session._key,
-        participantId: session.participant_id,
-        status: session.status
+        id: s.id,
+        participantId: s.participant_id,
+        status: s.status
       }
     `
     
@@ -40,10 +39,9 @@ export async function POST(request: NextRequest) {
 
     // 既存のジョブがあるかチェック
     const existingJobQuery = `
-      FOR job IN participant_hume_analysis_jobs
-      FILTER job.session_id == @sessionId
-      AND job.status IN ['PENDING', 'RUNNING']
-      RETURN job._key
+      MATCH (j:ImportJob {session_id: $sessionId})
+      WHERE j.status IN ['PENDING', 'RUNNING']
+      RETURN j.id
     `
     
     const existingJobs = await dbManager.query(existingJobQuery, { sessionId })
@@ -66,8 +64,16 @@ export async function POST(request: NextRequest) {
     }
 
     const insertQuery = `
-      INSERT @jobData INTO participant_hume_analysis_jobs
-      RETURN NEW
+      CREATE (j:ImportJob {
+        id: randomUUID(),
+        session_id: $jobData.session_id,
+        participant_id: $jobData.participant_id,
+        status: $jobData.status,
+        created_at: $jobData.created_at,
+        progress_percentage: $jobData.progress_percentage,
+        error_message: $jobData.error_message
+      })
+      RETURN j
     `
     
     const result = await dbManager.query(insertQuery, { jobData })
@@ -83,11 +89,10 @@ export async function POST(request: NextRequest) {
 
     // セッションステータスを更新
     const updateSessionQuery = `
-      UPDATE @sessionId WITH { 
-        status: 'IMPORT_PENDING',
-        updated_at: @updatedAt
-      } IN participant_experiment_sessions
-      RETURN NEW
+      MATCH (s:ExperimentSession {id: $sessionId})
+      SET s.status = 'IMPORT_PENDING',
+          s.updated_at = $updatedAt
+      RETURN s
     `
     
     await dbManager.query(updateSessionQuery, { 
@@ -119,7 +124,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       job: {
-        id: job._key,
+        id: job.id,
         sessionId: job.session_id,
         participantId: job.participant_id,
         status: job.status,
