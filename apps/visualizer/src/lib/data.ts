@@ -1,5 +1,4 @@
 import { createNeo4jClient } from './neo4j'
-import { Participant, ExperimentSession, Response } from './neogma-models'
 
 export interface AnalysisResult {
   id: string
@@ -227,23 +226,38 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    // Neogmaを使って参加者データを取得
-    const participant = await Participant.findOne({
-      where: { id: participantId },
-    })
+    const client = createNeo4jClient()
+
+    // 参加者詳細を取得
+    const participant = await client.getParticipantDetails(participantId)
     if (!participant) return null
 
-    // Neogmaを使ってセッションを取得
-    const dbSessions = await ExperimentSession.findMany({
-      where: { participant_id: participantId },
-      order: [['start_ts', 'DESC']],
-    })
+    // セッションを取得
+    const sessionsQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
+      RETURN s
+      ORDER BY s.start_ts DESC
+    `
+    const sessionsResult = await client.query(sessionsQuery, { participantId })
+    const dbSessions = sessionsResult?.map((record: any) => {
+      const session = record.s
+      const properties = session && typeof session === 'object' && 'properties' in session
+        ? session.properties
+        : session
+      return {
+        id: properties.id,
+        participant_id: properties.participant_id,
+        start_ts: properties.start_ts,
+        end_ts: properties.end_ts,
+        status: properties.status,
+        total_responses: properties.total_responses,
+        completed_responses: properties.completed_responses,
+        created_at: properties.created_at,
+      }
+    }) || []
 
-    // Neogmaを使ってレスポンスを取得
-    const responses = await Response.findMany({
-      where: { participant_id: participantId },
-      order: [['event_ts', 'DESC']],
-    })
+    // レスポンスを取得
+    const responses = await client.getParticipantResponses(participantId)
 
     // Group responses by session
     const sessionMap: Record<string, ResponseData[]> = {}
@@ -402,11 +416,9 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   try {
-    // Neogmaを使って参加者のレスポンスを取得
-    const responses = await Response.findMany({
-      where: { participant_id: participantId },
-      order: [['event_ts', 'ASC']],
-    })
+    // 参加者のレスポンスを取得
+    const client = createNeo4jClient()
+    const responses = await client.getParticipantResponses(participantId)
 
     // 実際のデータに基づいて分析結果を生成
     return responses.map((response, index) => ({

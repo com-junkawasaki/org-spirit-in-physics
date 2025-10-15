@@ -2,14 +2,7 @@
 // Neogmaを使用した型安全なNeo4j Object-Graph Mapping
 
 import { Neogma } from 'neogma'
-import {
-  Participant,
-  ExperimentSession,
-  Response,
-  EmotionAnalysis,
-  ImportJob,
-  setNeogmaInstance
-} from './neogma-models'
+import { createNeogmaModels } from './neogma-models'
 
 interface Neo4jConfig {
   uri: string
@@ -21,6 +14,11 @@ interface Neo4jConfig {
 class Neo4jClient {
   private config: Neo4jConfig
   private neogma: Neogma
+  private Participant: any
+  private ExperimentSession: any
+  private Response: any
+  private EmotionAnalysis: any
+  private ImportJob: any
 
   constructor(config: Neo4jConfig) {
     this.config = config
@@ -36,8 +34,15 @@ class Neo4jClient {
       }
     )
 
-    // Neogmaモデルにインスタンスを設定
-    setNeogmaInstance(this.neogma)
+    // Neogmaモデルを作成
+    const models = createNeogmaModels(this.neogma)
+
+    // モデルをクラスプロパティとして設定
+    this.Participant = models.Participant
+    this.ExperimentSession = models.ExperimentSession
+    this.Response = models.Response
+    this.EmotionAnalysis = models.EmotionAnalysis
+    this.ImportJob = models.ImportJob
   }
 
   async query(cypherQuery: string, params?: Record<string, any>): Promise<any[]> {
@@ -70,14 +75,14 @@ class Neo4jClient {
   async getParticipants(): Promise<any[]> {
     try {
       // Neogmaを使って参加者データを取得
-      const participants = await Participant.findMany()
+      const participants = await this.Participant.findMany()
 
       // 各参加者の統計情報を取得
       const processed = await Promise.all(participants.map(async (participant: any) => {
         // Neogmaでは直接countが使えないので、findManyの長さをカウント
         const [sessions, responses] = await Promise.all([
-          ExperimentSession.findMany({ where: { participant_id: participant.id } }),
-          Response.findMany({ where: { participant_id: participant.id } }),
+          this.ExperimentSession.findMany({ where: { participant_id: participant.id } }),
+          this.Response.findMany({ where: { participant_id: participant.id } }),
         ])
 
         const sessionCount = sessions.length
@@ -111,7 +116,7 @@ class Neo4jClient {
   async getParticipantDetails(participantId: string): Promise<any> {
     try {
       // Neogmaを使って参加者詳細を取得
-      const participant = await Participant.findOne({
+      const participant = await this.Participant.findOne({
         where: { id: participantId },
       })
 
@@ -134,7 +139,7 @@ class Neo4jClient {
   async getParticipantResponses(participantId: string): Promise<any[]> {
     try {
       // Neogmaを使って参加者のレスポンスを取得
-      const responses = await Response.findMany({
+      const responses = await this.Response.findMany({
         where: { participant_id: participantId },
       })
 
@@ -191,9 +196,21 @@ export function createArangoDBClient(): Neo4jClient {
 // Neo4jManager class for unified data access
 export class Neo4jManager {
   private client: Neo4jClient
+  private Participant: any
+  private ExperimentSession: any
+  private Response: any
+  private EmotionAnalysis: any
+  private ImportJob: any
 
   constructor() {
     this.client = createNeo4jClient()
+    // クライアントのモデルを参照
+    const neo4jClient = this.client as any
+    this.Participant = neo4jClient.Participant
+    this.ExperimentSession = neo4jClient.ExperimentSession
+    this.Response = neo4jClient.Response
+    this.EmotionAnalysis = neo4jClient.EmotionAnalysis
+    this.ImportJob = neo4jClient.ImportJob
   }
 
   async testConnection(): Promise<boolean> {
@@ -226,7 +243,7 @@ export class Neo4jManager {
   async getImportJobs(): Promise<unknown[]> {
     try {
       // Neogmaを使ってImportJobを取得
-      const jobs = await ImportJob.findMany({
+      const jobs = await this.ImportJob.findMany({
         order: [['created_at', 'DESC']],
         limit: 50,
       })
@@ -288,7 +305,7 @@ export class Neo4jManager {
   async createImportJob(sessionId: string): Promise<unknown> {
     try {
       // まずセッションから参加者IDを取得
-      const session = await ExperimentSession.findOne({
+      const session = await this.ExperimentSession.findOne({
         where: { id: sessionId },
       })
 
@@ -300,7 +317,7 @@ export class Neo4jManager {
       const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
       // Neogmaを使ってImportJobを作成
-      const job = await ImportJob.createOne({
+      const job = await this.ImportJob.createOne({
         id: jobId,
         session_id: sessionId,
         participant_id: participantId,
@@ -319,7 +336,7 @@ export class Neo4jManager {
   async getSessionById(sessionId: string): Promise<unknown> {
     try {
       // Neogmaを使ってセッションを取得
-      const session = await ExperimentSession.findOne({
+      const session = await this.ExperimentSession.findOne({
         where: { id: sessionId },
       })
 

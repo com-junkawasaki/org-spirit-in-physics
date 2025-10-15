@@ -11,6 +11,8 @@ interface BaseNode {
   [key: string]: any; // Neogmaの制約を満たすためのインデックスシグネチャ
 }
 
+// モデル型定義 - 実行時にcreateNeogmaModels関数でインスタンス化されます
+
 // Participantモデル
 interface ParticipantProperties extends BaseNode {
   age?: number;
@@ -22,7 +24,7 @@ interface ParticipantProperties extends BaseNode {
 
 interface ParticipantRelatedNodes {
   sessions: ModelRelatedNodesI<
-    typeof ExperimentSession,
+    any, // 循環参照を避けるためanyを使用
     {
       id: string;
       participant_id: string;
@@ -32,7 +34,7 @@ interface ParticipantRelatedNodes {
     }
   >;
   responses: ModelRelatedNodesI<
-    typeof Response,
+    any, // 循環参照を避けるためanyを使用
     {
       id: string;
       participant_id: string;
@@ -46,24 +48,6 @@ interface ParticipantRelatedNodes {
     }
   >;
 }
-
-export const Participant = ModelFactory<ParticipantProperties, ParticipantRelatedNodes>(
-  {
-    label: 'Participant',
-    schema: {
-      id: { type: 'string', required: true },
-      age: { type: 'number', minimum: 0 },
-      gender: { type: 'string' },
-      handedness: { type: 'string' },
-      consent_given: { type: 'boolean', default: false },
-      consent_timestamp: { type: 'string' },
-      created_at: { type: 'string' },
-      updated_at: { type: 'string' },
-    },
-    primaryKeyField: 'id',
-  },
-  {} as Neogma // Will be set when initializing
-);
 
 // ExperimentSessionモデル
 interface ExperimentSessionProperties extends BaseNode {
@@ -77,11 +61,11 @@ interface ExperimentSessionProperties extends BaseNode {
 
 interface ExperimentSessionRelatedNodes {
   participant: ModelRelatedNodesI<
-    typeof Participant,
+    any,
     ParticipantProperties
   >;
   responses: ModelRelatedNodesI<
-    typeof Response,
+    any,
     {
       id: string;
       participant_id: string;
@@ -95,25 +79,6 @@ interface ExperimentSessionRelatedNodes {
     }
   >;
 }
-
-export const ExperimentSession = ModelFactory<ExperimentSessionProperties, ExperimentSessionRelatedNodes>(
-  {
-    label: 'ExperimentSession',
-    schema: {
-      id: { type: 'string', required: true },
-      participant_id: { type: 'string', required: true },
-      start_ts: { type: 'string', required: true },
-      end_ts: { type: 'string' },
-      status: { type: 'string', required: true },
-      total_responses: { type: 'number', minimum: 0 },
-      completed_responses: { type: 'number', minimum: 0 },
-      created_at: { type: 'string' },
-      updated_at: { type: 'string' },
-    },
-    primaryKeyField: 'id',
-  },
-  {} as Neogma
-);
 
 // Responseモデル
 interface ResponseProperties extends BaseNode {
@@ -130,15 +95,15 @@ interface ResponseProperties extends BaseNode {
 
 interface ResponseRelatedNodes {
   participant: ModelRelatedNodesI<
-    typeof Participant,
+    any,
     ParticipantProperties
   >;
   session: ModelRelatedNodesI<
-    typeof ExperimentSession,
+    any,
     ExperimentSessionProperties
   >;
   emotionAnalysis: ModelRelatedNodesI<
-    typeof EmotionAnalysis,
+    any,
     {
       id: string;
       response_id: string;
@@ -148,28 +113,6 @@ interface ResponseRelatedNodes {
     }
   >;
 }
-
-export const Response = ModelFactory<ResponseProperties, ResponseRelatedNodes>(
-  {
-    label: 'Response',
-    schema: {
-      id: { type: 'string', required: true },
-      participant_id: { type: 'string', required: true },
-      session_id: { type: 'string', required: true },
-      stimulus_word: { type: 'string', required: true },
-      response_word: { type: 'string', required: true },
-      reaction_time_ms: { type: 'number', minimum: 0 },
-      event_ts: { type: 'string', required: true },
-      emotion: { type: 'string' },
-      emotion_confidence: { type: 'number', minimum: 0, maximum: 1 },
-      spirit_probability: { type: 'number', minimum: 0, maximum: 1 },
-      created_at: { type: 'string' },
-      updated_at: { type: 'string' },
-    },
-    primaryKeyField: 'id',
-  },
-  {} as Neogma
-);
 
 // EmotionAnalysisモデル
 interface EmotionAnalysisProperties extends BaseNode {
@@ -182,28 +125,10 @@ interface EmotionAnalysisProperties extends BaseNode {
 
 interface EmotionAnalysisRelatedNodes {
   response: ModelRelatedNodesI<
-    typeof Response,
+    any,
     ResponseProperties
   >;
 }
-
-export const EmotionAnalysis = ModelFactory<EmotionAnalysisProperties, EmotionAnalysisRelatedNodes>(
-  {
-    label: 'EmotionAnalysis',
-    schema: {
-      id: { type: 'string', required: true },
-      response_id: { type: 'string', required: true },
-      emotion_data: { type: 'any', required: true },
-      confidence_score: { type: 'number', minimum: 0, maximum: 1 },
-      analysis_timestamp: { type: 'string', required: true },
-      source: { type: 'string' },
-      created_at: { type: 'string' },
-      updated_at: { type: 'string' },
-    },
-    primaryKeyField: 'id',
-  },
-  {} as Neogma
-);
 
 // WordStimulusモデル
 interface WordStimulusProperties extends BaseNode {
@@ -214,25 +139,7 @@ interface WordStimulusProperties extends BaseNode {
   meaning_vector?: any;
 }
 
-export const WordStimulus = ModelFactory<WordStimulusProperties, {}>(
-  {
-    label: 'WordStimulus',
-    schema: {
-      id: { type: 'string', required: true },
-      word: { type: 'string', required: true },
-      category: { type: 'string' },
-      language: { type: 'string', required: true },
-      pronunciation: { type: 'string' },
-      meaning_vector: { type: 'any' },
-      created_at: { type: 'string' },
-      updated_at: { type: 'string' },
-    },
-    primaryKeyField: 'id',
-  },
-  {} as Neogma
-);
-
-// ImportJobモデル（ジョブ管理用）
+// ImportJobモデル
 interface ImportJobProperties extends BaseNode {
   session_id: string;
   participant_id: string;
@@ -242,42 +149,130 @@ interface ImportJobProperties extends BaseNode {
   completed_at?: string;
 }
 
-export const ImportJob = ModelFactory<ImportJobProperties, {}>(
-  {
-    label: 'ImportJob',
-    schema: {
-      id: { type: 'string', required: true },
-      session_id: { type: 'string', required: true },
-      participant_id: { type: 'string', required: true },
-      status: { type: 'string', required: true, enum: ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED'] },
-      progress_percentage: { type: 'number', minimum: 0, maximum: 100, default: 0 },
-      error_message: { type: 'string' },
-      completed_at: { type: 'string' },
-      created_at: { type: 'string' },
-      updated_at: { type: 'string' },
+// Neogmaモデル初期化関数
+export function createNeogmaModels(neogmaInstance: Neogma) {
+  // Neogmaインスタンスを使ってモデルを再作成
+  const ParticipantModel = ModelFactory<ParticipantProperties, ParticipantRelatedNodes>(
+    {
+      label: 'Participant',
+      schema: {
+        id: { type: 'string', required: true },
+        age: { type: 'number', minimum: 0 },
+        gender: { type: 'string' },
+        handedness: { type: 'string' },
+        consent_given: { type: 'boolean', default: false },
+        consent_timestamp: { type: 'string' },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+      },
+      primaryKeyField: 'id',
     },
-    primaryKeyField: 'id',
-  },
-  {} as Neogma
-);
+    neogmaInstance
+  );
 
-// Neogmaモデルインスタンス設定関数
-export function setNeogmaInstance(neogmaInstance: Neogma) {
-  // 各モデルにNeogmaインスタンスを設定
-  Participant.setNeogma(neogmaInstance);
-  ExperimentSession.setNeogma(neogmaInstance);
-  Response.setNeogma(neogmaInstance);
-  EmotionAnalysis.setNeogma(neogmaInstance);
-  WordStimulus.setNeogma(neogmaInstance);
-  ImportJob.setNeogma(neogmaInstance);
+  const ExperimentSessionModel = ModelFactory<ExperimentSessionProperties, ExperimentSessionRelatedNodes>(
+    {
+      label: 'ExperimentSession',
+      schema: {
+        id: { type: 'string', required: true },
+        participant_id: { type: 'string', required: true },
+        start_ts: { type: 'string', required: true },
+        end_ts: { type: 'string' },
+        status: { type: 'string', required: true },
+        total_responses: { type: 'number', minimum: 0 },
+        completed_responses: { type: 'number', minimum: 0 },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+      },
+      primaryKeyField: 'id',
+    },
+    neogmaInstance
+  );
+
+  const ResponseModel = ModelFactory<ResponseProperties, ResponseRelatedNodes>(
+    {
+      label: 'Response',
+      schema: {
+        id: { type: 'string', required: true },
+        participant_id: { type: 'string', required: true },
+        session_id: { type: 'string', required: true },
+        stimulus_word: { type: 'string', required: true },
+        response_word: { type: 'string', required: true },
+        reaction_time_ms: { type: 'number', minimum: 0 },
+        event_ts: { type: 'string', required: true },
+        emotion: { type: 'string' },
+        emotion_confidence: { type: 'number', minimum: 0, maximum: 1 },
+        spirit_probability: { type: 'number', minimum: 0, maximum: 1 },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+      },
+      primaryKeyField: 'id',
+    },
+    neogmaInstance
+  );
+
+  const EmotionAnalysisModel = ModelFactory<EmotionAnalysisProperties, EmotionAnalysisRelatedNodes>(
+    {
+      label: 'EmotionAnalysis',
+      schema: {
+        id: { type: 'string', required: true },
+        response_id: { type: 'string', required: true },
+        emotion_data: { type: 'any', required: true },
+        confidence_score: { type: 'number', minimum: 0, maximum: 1 },
+        analysis_timestamp: { type: 'string', required: true },
+        source: { type: 'string' },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+      },
+      primaryKeyField: 'id',
+    },
+    neogmaInstance
+  );
+
+  const WordStimulusModel = ModelFactory<WordStimulusProperties, {}>(
+    {
+      label: 'WordStimulus',
+      schema: {
+        id: { type: 'string', required: true },
+        word: { type: 'string', required: true },
+        category: { type: 'string' },
+        language: { type: 'string', required: true },
+        pronunciation: { type: 'string' },
+        meaning_vector: { type: 'any' },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+      },
+      primaryKeyField: 'id',
+    },
+    neogmaInstance
+  );
+
+  const ImportJobModel = ModelFactory<ImportJobProperties, {}>(
+    {
+      label: 'ImportJob',
+      schema: {
+        id: { type: 'string', required: true },
+        session_id: { type: 'string', required: true },
+        participant_id: { type: 'string', required: true },
+        status: { type: 'string', required: true, enum: ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED'] },
+        progress_percentage: { type: 'number', minimum: 0, maximum: 100, default: 0 },
+        error_message: { type: 'string' },
+        completed_at: { type: 'string' },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+      },
+      primaryKeyField: 'id',
+    },
+    neogmaInstance
+  );
 
   return {
-    Participant,
-    ExperimentSession,
-    Response,
-    EmotionAnalysis,
-    WordStimulus,
-    ImportJob,
+    Participant: ParticipantModel,
+    ExperimentSession: ExperimentSessionModel,
+    Response: ResponseModel,
+    EmotionAnalysis: EmotionAnalysisModel,
+    WordStimulus: WordStimulusModel,
+    ImportJob: ImportJobModel,
   };
 }
 
