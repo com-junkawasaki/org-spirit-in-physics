@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,8 @@ import { DataManagementBreadcrumb } from '@/components/navigation/Breadcrumb'
 import { StatusBadge, ExperimentTypeBadge } from '@/components/common/StatusBadge'
 import { DataTable, StatCard } from '@/components/common/DataTable'
 import { SystemStatusCard } from '@/components/SystemStatusCard'
-import { Database, Activity, Users, Heart, Monitor, Settings, RefreshCw, Play, CheckCircle, XCircle, Home } from 'lucide-react'
+import { WorkflowVisualizer } from '@/components/WorkflowVisualizer'
+import { Database, Activity, Users, Heart, Monitor, Settings, RefreshCw, Play, CheckCircle, XCircle, Home, GitBranch } from 'lucide-react'
 
 type Run = {
   _key: string
@@ -74,7 +75,19 @@ export default function DataManagementPage() {
   })
   const [importsLoading, setImportsLoading] = useState(true)
 
-  async function fetchAnalysisData() {
+  // Workflow state
+  const [workflowData, setWorkflowData] = useState<{
+    metadata?: {
+      version?: string
+      lastUpdated?: string
+      totalParticipants?: number
+      activeSessions?: number
+      completedAnalyses?: number
+    }
+  } | null>(null)
+  const [workflowLoading, setWorkflowLoading] = useState(true)
+
+  const fetchAnalysisData = useCallback(async () => {
     setAnalysisLoading(true)
     try {
       const res = await fetch('/api/analysis/runs', { cache: 'no-store' })
@@ -85,9 +98,9 @@ export default function DataManagementPage() {
     } finally {
       setAnalysisLoading(false)
     }
-  }
+  }, [])
 
-  async function fetchImportsData() {
+  const fetchImportsData = useCallback(async () => {
     setImportsLoading(true)
     try {
       // System status
@@ -115,16 +128,53 @@ export default function DataManagementPage() {
     } finally {
       setImportsLoading(false)
     }
-  }
+  }, [])
+
+  const fetchWorkflowData = useCallback(async () => {
+    setWorkflowLoading(true)
+    try {
+      const res = await fetch('/api/workflow/status', { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        setWorkflowData(data)
+      } else {
+        // Fallback to mock data if API doesn't exist yet
+        setWorkflowData({
+          metadata: {
+            version: '1.0.0',
+            lastUpdated: new Date().toISOString(),
+            totalParticipants: participants.length,
+            activeSessions: systemStatus.activeJobs,
+            completedAnalyses: systemStatus.completedJobs
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch workflow data:', error)
+      // Fallback to mock data
+      setWorkflowData({
+        metadata: {
+          version: '1.0.0',
+          lastUpdated: new Date().toISOString(),
+          totalParticipants: participants.length,
+          activeSessions: systemStatus.activeJobs,
+          completedAnalyses: systemStatus.completedJobs
+        }
+      })
+    } finally {
+      setWorkflowLoading(false)
+    }
+  }, [participants.length, systemStatus.activeJobs, systemStatus.completedJobs])
 
   useEffect(() => {
     fetchAnalysisData()
     fetchImportsData()
+    fetchWorkflowData()
 
     // Real-time updates for imports data
     const interval = setInterval(fetchImportsData, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchAnalysisData, fetchImportsData, fetchWorkflowData])
 
   // Import management functions
   const startImportJob = async (sessionId: string) => {
@@ -175,6 +225,7 @@ export default function DataManagementPage() {
   const handleRefresh = () => {
     fetchAnalysisData()
     fetchImportsData()
+    fetchWorkflowData()
   }
 
   return (
@@ -247,8 +298,12 @@ export default function DataManagementPage() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="analysis" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="workflow" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="workflow" className="flex items-center gap-2">
+            <GitBranch className="h-4 w-4" />
+            ワークフロー
+          </TabsTrigger>
           <TabsTrigger value="analysis" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             分析実行
@@ -265,6 +320,33 @@ export default function DataManagementPage() {
             ログ
           </TabsTrigger>
         </TabsList>
+
+        {/* Workflow Tab */}
+        <TabsContent value="workflow" className="space-y-4">
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">ワークフロー可視化</h2>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleRefresh} variant="outline" size="sm">
+                  更新
+                </Button>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground">
+                Spirit in Physics実験システムのデータ処理ワークフローを可視化しています。
+                各ノードは処理ステップを、接続線はデータの流れを表しています。
+              </p>
+            </div>
+
+            <WorkflowVisualizer
+              workflowData={workflowData}
+              onRefresh={handleRefresh}
+              isLoading={analysisLoading && importsLoading && workflowLoading}
+            />
+          </Card>
+        </TabsContent>
 
         {/* Analysis Tab */}
         <TabsContent value="analysis" className="space-y-4">
@@ -291,8 +373,9 @@ export default function DataManagementPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                  <button
+                    type="button"
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md text-left w-full ${
                       experimentType === 'physiological'
                         ? 'border-red-500 bg-red-50 shadow-md'
                         : 'border-border hover:border-red-300'
@@ -307,10 +390,11 @@ export default function DataManagementPage() {
                     <p className="text-sm text-muted-foreground">
                       皮膚電位データを取得する実験。感情・生理データの統合分析を行います。
                     </p>
-                  </div>
+                  </button>
 
-                  <div
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                  <button
+                    type="button"
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md text-left w-full ${
                       experimentType === 'online'
                         ? 'border-blue-500 bg-blue-50 shadow-md'
                         : 'border-border hover:border-blue-300'
@@ -325,10 +409,11 @@ export default function DataManagementPage() {
                     <p className="text-sm text-muted-foreground">
                       オンラインのみの実験。行動・言語データの分析を行います。
                     </p>
-                  </div>
+                  </button>
 
-                  <div
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                  <button
+                    type="button"
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md text-left w-full ${
                       experimentType === 'unified'
                         ? 'border-green-500 bg-green-50 shadow-md'
                         : 'border-border hover:border-green-300'
@@ -343,7 +428,7 @@ export default function DataManagementPage() {
                     <p className="text-sm text-muted-foreground">
                       複数のデータソースを統合した包括的な分析を行います。
                     </p>
-                  </div>
+                  </button>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t">
