@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
     const results = [];
 
     // Merkle DAG: import.participants.scan
-    // データセットディレクトリをスキャン
-    const datasetPath = path.join(process.cwd(), 'dataset', 'participants');
+    // データセットディレクトリをスキャン (プロジェクトルートからの相対パス)
+    const datasetPath = path.join(process.cwd(), '..', '..', '..', '..', 'dataset', 'participants');
 
     try {
       await fs.access(datasetPath);

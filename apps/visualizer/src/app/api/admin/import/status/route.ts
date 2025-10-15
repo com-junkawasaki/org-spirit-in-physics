@@ -12,15 +12,15 @@ export async function GET(request: NextRequest) {
     console.log('API: Getting import status...');
 
     // Merkle DAG: import.status.scan_files
-    // データセットファイルスキャン
-    const datasetPath = path.join(process.cwd(), 'dataset', 'participants');
+    // データセットファイルスキャン (プロジェクトルートからの相対パス)
+    const datasetPath = path.join(process.cwd(), '..', '..', '..', '..', 'dataset', 'participants');
 
     let availableFiles: any[] = [];
     try {
       await fs.access(datasetPath);
       availableFiles = await scanDatasetFiles(datasetPath);
     } catch {
-      console.warn('Dataset directory not found');
+      console.warn('Dataset directory not found at:', datasetPath);
     }
 
     // Merkle DAG: import.status.check_imported
