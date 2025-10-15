@@ -1,0 +1,10 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+httpx==0.25.2
+
+# Workflow engine (optional - could use Temporal SDK)
+# temporalio==1.4.0
+
+# Shared dependencies
+neo4j==5.17.0
