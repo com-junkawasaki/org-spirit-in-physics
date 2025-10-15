@@ -215,9 +215,9 @@ async function checkHumeData(participantPath: string): Promise<boolean> {
   try {
     // HumeAI_artifacts_* パターンのディレクトリを探す
     const entries = await fs.readdir(participantPath, { withFileTypes: true });
-    const humeArtifactsDir = entries.find(entry =>
-      entry.isDirectory() && entry.name.startsWith('HumeAI_artifacts_')
-    );
+        const humeArtifactsDir = entries.find(entry =>
+          entry.isDirectory() && (entry.name.startsWith('HumeAI_artifacts_') || entry.name === 'hume_data')
+        );
 
     if (!humeArtifactsDir) {
       return false;

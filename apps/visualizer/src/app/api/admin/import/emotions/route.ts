@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         // HumeAI_artifacts_* ディレクトリを検索
         const participantEntries = await fs.readdir(participantPath, { withFileTypes: true });
         const humeArtifactsEntry = participantEntries.find(entry =>
-          entry.isDirectory() && entry.name.startsWith('HumeAI_artifacts_')
+          entry.isDirectory() && (entry.name.startsWith('HumeAI_artifacts_') || entry.name === 'hume_data')
         );
 
         if (!humeArtifactsEntry) {
