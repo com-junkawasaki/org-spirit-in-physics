@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createNeo4jClient } from "scripts/src/lib/arangodb";
-import { parseWordResponsesFromEvents, getParticipantStatistics } from "scripts/src/lib/data-loader";
-import { ParticipantQueries, SessionQueries, ResponseQueries, EmotionQueries } from "scripts/src/lib/neo4j-queries";
+import { parseWordResponsesFromEvents, getParticipantStatistics, loadAllSessionData } from "scripts/src/lib/data-loader";
+import { neo4jManager } from "scripts/src/lib/database/arangodb-manager";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -11,24 +10,34 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Neo4jから参加者データを取得 (Cypher Builder使用)
-        const client = createNeo4jClient();
-        const participantsQuery = ParticipantQueries.getAllParticipants();
-        const participantsData = await client.query(participantsQuery);
-        const participantStats = getParticipantStatistics(participantsData || []);
+        // Neo4jから参加者データを取得
+        const neo4jParticipants = await neo4jManager.getAllParticipants();
+
+        // Convert to data-loader Participant format
+        const participantsData: import("scripts/src/lib/data-loader").Participant[] = neo4jParticipants.map(p => ({
+          id: p.id,
+          signature: p.signature || "unknown",
+          agreedAt: p.agreedAt || new Date(),
+          agreements: p.agreements || {},
+          hasSessionData: p.hasSessionData || false,
+          hasVideoFiles: p.hasVideoFiles || false,
+          videoFiles: p.videoFiles || []
+        }));
+
+        const participantStats = getParticipantStatistics(participantsData);
 
         // Transform to match expected format
         const formattedParticipants = (participantsData || []).map((p: any) => ({
           id: p.id,
-          age: null, // Age not available in current data
-          gender: null, // Gender not available in current data
-          handedness: null, // Handedness not available in current data
+          age: p.age,
+          gender: p.gender,
+          handedness: p.handedness,
           createdAt: p.agreedAt || p.createdAt,
           sessionCount: p.sessionCount || 0,
           lastActivity: p.agreedAt || p.createdAt,
           status: (p.sessionCount || 0) > 0 ? 'completed' : 'in_progress',
-          hasVideoFiles: false, // TODO: Implement video file checking
-          videoFiles: []
+          hasVideoFiles: p.hasVideoFiles || false,
+          videoFiles: p.videoFiles || []
         }));
 
         return NextResponse.json({
@@ -45,46 +54,41 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        // Neo4jから参加者データを取得 (Cypher Builder使用)
-        const client = createNeo4jClient();
-        const participantQuery = ParticipantQueries.getParticipant(participantId);
-        const participantData = await client.query(participantQuery);
+        // Neo4jから参加者データを取得
+        const participant = await neo4jManager.getParticipant(participantId);
 
-        if (!participantData || participantData.length === 0) {
+        if (!participant) {
           return NextResponse.json({
             error: "Participant not found"
           }, { status: 404 });
         }
 
-        const participant = participantData[0].p;
         return NextResponse.json({
           success: true,
           data: {
             id: participantId,
             signature: participant.signature || "unknown",
             agreedAt: participant.agreedAt || new Date().toISOString(),
-            hasSessionData: false, // TODO: Implement session data checking
-            hasVideoFiles: false, // TODO: Implement video file checking
-            videoFiles: []
+            hasSessionData: participant.hasSessionData || false,
+            hasVideoFiles: participant.hasVideoFiles || false,
+            videoFiles: participant.videoFiles || []
           }
         });
 
       case 'sessions':
-        // Neo4jからセッションデータを取得 (Cypher Builder使用)
-        const client = createNeo4jClient();
-        const sessionsQuery = ParticipantQueries.getAllSessions();
-        const sessionsData = await client.query(sessionsQuery);
+        // Neo4jからセッションデータを取得
+        const sessionsData = await loadAllSessionData();
 
         // Transform session data to match expected format
         const formattedSessions = (sessionsData || []).map((record: any) => {
-          const session = record.s;
+          const session = record.sessionData;
           const wordResponses = parseWordResponsesFromEvents(session.events || []);
 
           // Extract session start/end times from events
           const sessionStartedEvent = (session.events || []).find((e: any) => e.type === 'session_started');
           const sessionStartTime = sessionStartedEvent
             ? new Date(sessionStartedEvent.timestamp).toISOString()
-            : session.created_at;
+            : new Date().toISOString();
 
           const sessionEndedEvent = (session.events || [])
             .filter((e: any) => e.type === 'response_window_closed')
@@ -94,9 +98,9 @@ export async function GET(request: NextRequest) {
             : sessionStartTime;
 
           return {
-            participantId: record.participant_id,
-            sessionId: session.id,
-            sessionType: session.id,
+            participantId: record.participantId,
+            sessionId: session.participantId, // Using participantId as sessionId for now
+            sessionType: session.participantId,
             startTime: sessionStartTime,
             endTime: sessionEndTime,
             wordResponses,
@@ -114,11 +118,19 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Neo4jからデータを取得 (Cypher Builder使用)
-        const client = createNeo4jClient();
-        const participantsQuery = ParticipantQueries.getAllParticipants();
-        const participantsData = await client.query(participantsQuery);
-        const participants = participantsData || [];
+        // Neo4jからデータを取得
+        const analyticsNeo4jParticipants = await neo4jManager.getAllParticipants();
+
+        // Convert to data-loader Participant format
+        const participants: import("scripts/src/lib/data-loader").Participant[] = analyticsNeo4jParticipants.map(p => ({
+          id: p.id,
+          signature: p.signature || "unknown",
+          agreedAt: p.agreedAt || new Date(),
+          agreements: p.agreements || {},
+          hasSessionData: p.hasSessionData || false,
+          hasVideoFiles: p.hasVideoFiles || false,
+          videoFiles: p.videoFiles || []
+        }));
 
         const stats = getParticipantStatistics(participants);
 
@@ -126,27 +138,27 @@ export async function GET(request: NextRequest) {
         let totalReactionTime = 0;
         let totalResponses = 0;
 
-        participants.forEach((participant: any) => {
-          // For now, calculate from session data if available
-          // TODO: Implement proper reaction time calculation from Neo4j
+        // Get sessions data for reaction time calculation
+        const analyticsSessionsData = await loadAllSessionData();
+        analyticsSessionsData.forEach((sessionRecord: any) => {
+          const wordResponses = parseWordResponsesFromEvents(sessionRecord.sessionData.events || []);
+          wordResponses.forEach((response: any) => {
+            totalReactionTime += response.reactionTimeMs;
+            totalResponses += 1;
+          });
         });
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Neo4jから感情統計を取得 (Cypher Builder使用)
-        const emotionQuery = EmotionQueries.getEmotionStatistics();
-        const emotionData = await client.query(emotionQuery);
+        // Neo4jから感情統計を取得
+        const emotionStats = await neo4jManager.getEmotionStatistics();
         const emotionDistribution: Record<string, number> = {};
-
-        (emotionData || []).forEach((record: any) => {
-          const emotion = record.emotion;
-          if (emotion) {
-            emotionDistribution[emotion] = (emotionDistribution[emotion] || 0) + 1;
-          }
+        emotionStats.dominantEmotions.forEach((item: any) => {
+          emotionDistribution[item.emotion] = item.count;
         });
 
         const totalSessions = participants.reduce((acc: number, p: any) =>
-          acc + (p.session_count || 0), 0);
+          acc + (p.sessionCount || 0), 0);
 
         return NextResponse.json({
           success: true,
@@ -163,20 +175,24 @@ export async function GET(request: NextRequest) {
         });
 
       case 'reaction-times':
-        // Neo4jからreaction timeデータを取得 (Cypher Builder使用)
-        const client = createNeo4jClient();
-        const reactionTimeQuery = ResponseQueries.getAllResponsesForReactionTimes();
-        const responseData = await client.query(reactionTimeQuery);
+        // Neo4jからreaction timeデータを取得
+        const reactionTimeSessionsData = await loadAllSessionData();
+        const reactionTimeData: any[] = [];
 
-        const reactionTimeData = (responseData || []).map((record: any) => ({
-          participantId: record.participant_id,
-          sessionType: record.session_id,
-          stimulusWord: record.stimulus_word,
-          responseWord: record.response_word,
-          reactionTimeMs: record.reaction_time_ms || 0,
-          isDelayed: (record.reaction_time_ms || 0) > 3000, // 3秒以上を遅延とみなす
-          timestamp: record.event_ts ? new Date(record.event_ts).toISOString() : new Date().toISOString()
-        }));
+        reactionTimeSessionsData.forEach((sessionRecord: any) => {
+          const wordResponses = parseWordResponsesFromEvents(sessionRecord.sessionData.events || []);
+          wordResponses.forEach((response: any) => {
+            reactionTimeData.push({
+              participantId: sessionRecord.participantId,
+              sessionType: sessionRecord.participantId, // Using participantId as sessionType
+              stimulusWord: response.stimulusWord,
+              responseWord: response.responseWord,
+              reactionTimeMs: response.reactionTimeMs,
+              isDelayed: response.isDelayed,
+              timestamp: response.timestamp
+            });
+          });
+        });
 
         return NextResponse.json({
           success: true,

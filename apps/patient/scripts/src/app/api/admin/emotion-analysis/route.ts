@@ -4,7 +4,7 @@ import {
   analyzeAllParticipantVideos,
   loadEmotionAnalysisResults,
   generateEmotionStatistics,
-  getEmotionStatisticsFromKuzu
+  getEmotionStatisticsFromNeo4j
 } from "scripts/src/lib/emotion-analysis";
 import { WorkflowService } from "scripts/src/lib/workflow-service";
 
@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
           "e41a9cd2-d803-49a8-9020-0260e55cd03e"
         ];
 
-        // Supabaseから感情統計を取得
-        const emotionStats = await getEmotionStatisticsFromKuzu();
+        // Neo4jから感情統計を取得
+        const emotionStats = await getEmotionStatisticsFromNeo4j();
         const globalResults: any[] = [];
         const participantPromises = participantIds.map(async id => {
           const results = await loadEmotionAnalysisResults(id);

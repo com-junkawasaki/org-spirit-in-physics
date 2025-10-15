@@ -22,7 +22,7 @@ const nextConfig = {
     // サーバーサイドでの外部モジュール設定
     if (isServer) {
       config.externals = config.externals || [];
-      // Supabaseはwebpackバンドルに含めるため、外部設定は不要
+      // Neo4jはwebpackバンドルに含めるため、外部設定は不要
     }
 
     return config;

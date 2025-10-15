@@ -1,6 +1,15 @@
-// Neo4j client for Spirit in Physics visualizer
+// Merkle DAG: NeogmaベースのNeo4jクライアント
+// Neogmaを使用した型安全なNeo4j Object-Graph Mapping
 
-import * as neo4j from 'neo4j-driver'
+import { Neogma } from 'neogma'
+import {
+  Participant,
+  ExperimentSession,
+  Response,
+  EmotionAnalysis,
+  ImportJob,
+  initializeNeogmaModels
+} from './neogma-models'
 
 interface Neo4jConfig {
   uri: string
@@ -11,76 +20,89 @@ interface Neo4jConfig {
 
 class Neo4jClient {
   private config: Neo4jConfig
-  private driver: neo4j.Driver
+  private neogma: Neogma
 
   constructor(config: Neo4jConfig) {
     this.config = config
-    this.driver = neo4j.driver(
-      this.config.uri,
-      neo4j.auth.basic(this.config.user, this.config.password)
+    this.neogma = new Neogma(
+      {
+        url: this.config.uri,
+        username: this.config.user,
+        password: this.config.password,
+      },
+      {
+        database: this.config.database,
+        logger: console.log,
+      }
     )
+
+    // Neogmaモデルを初期化
+    initializeNeogmaModels(this.neogma)
   }
 
   async query(cypherQuery: string, params?: Record<string, any>): Promise<any[]> {
-    const session = this.driver.session({ database: this.config.database })
     try {
-      console.log('Neo4j query:', cypherQuery, 'params:', params)
+      console.log('Neogma query:', cypherQuery, 'params:', params)
 
-      const result = await session.run(cypherQuery, params || {})
-      console.log('Neo4j response records:', result.records.length)
+      const result = await this.neogma.queryRunner.run(cypherQuery, params || {})
+      console.log('Neogma response records:', result.records?.length || 0)
 
-      const records = result.records.map(record => {
+      const records = result.records?.map(record => {
         const obj: any = {}
         record.keys.forEach(key => {
           obj[key] = record.get(key)
         })
         return obj
-      })
+      }) || []
 
-      console.log('Neo4j response data:', records)
+      console.log('Neogma response data:', records)
       return records
     } catch (error) {
-      console.error('Neo4j query error:', error)
+      console.error('Neogma query error:', error)
       throw error
-    } finally {
-      await session.close()
     }
   }
 
   async close(): Promise<void> {
-    await this.driver.close()
+    await this.neogma.driver.close()
   }
 
   async getParticipants(): Promise<any[]> {
-    // Get participants with their session and response counts using Cypher
-    const query = `
-      MATCH (p:Participant)
-      OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:ExperimentSession)
-      OPTIONAL MATCH (p)-[:HAS_SESSION]->(:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
-      RETURN
-        p.id as participant_id,
-        count(distinct s) as session_count,
-        count(distinct r) as total_responses,
-        0.5 as average_spirit_probability,
-        p.created_at as last_activity
-      ORDER BY p.created_at DESC
-    `
-
     try {
-      const result = await this.query(query)
+      // Neogmaを使って参加者データを取得
+      const participants = await Participant.findMany({
+        include: {
+          sessions: {
+            attributes: ['id'],
+          },
+          responses: {
+            attributes: ['id', 'spirit_probability'],
+          },
+        },
+      })
 
-      // Convert Neo4j integers to JavaScript numbers
-      const processed = result?.map((record: any) => ({
-        participant_id: record.participant_id,
-        session_count: typeof record.session_count === 'object' && record.session_count.low !== undefined
-          ? record.session_count.low
-          : record.session_count || 0,
-        total_responses: typeof record.total_responses === 'object' && record.total_responses.low !== undefined
-          ? record.total_responses.low
-          : record.total_responses || 0,
-        average_spirit_probability: record.average_spirit_probability || 0.5,
-        last_activity: record.last_activity
-      })) || []
+      // データを整形
+      const processed = participants.map((participant: any) => {
+        const sessionCount = participant.sessions?.length || 0
+        const totalResponses = participant.responses?.length || 0
+        const averageSpiritProbability = participant.responses?.length > 0
+          ? participant.responses.reduce((sum: number, response: any) =>
+              sum + (response.spirit_probability || 0), 0) / participant.responses.length
+          : 0.5
+
+        return {
+          participant_id: participant.id,
+          session_count: sessionCount,
+          total_responses: totalResponses,
+          average_spirit_probability: averageSpiritProbability,
+          last_activity: participant.created_at
+        }
+      })
+
+      // 作成日時で降順ソート
+      processed.sort((a: any, b: any) =>
+        new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()
+      )
 
       return processed
     } catch (error) {
@@ -90,59 +112,59 @@ class Neo4jClient {
   }
 
   async getParticipantDetails(participantId: string): Promise<any> {
-    // Get detailed participant information from Neo4j
-    const query = `
-      MATCH (p:Participant {id: $participantId})
-      RETURN p
-    `
+    try {
+      // Neogmaを使って参加者詳細を取得
+      const participant = await Participant.findOne({
+        where: { id: participantId },
+      })
 
-    const result = await this.query(query, { participantId })
+      if (!participant) {
+        throw new Error(`Participant ${participantId} not found`)
+      }
 
-    if (!result || result.length === 0) {
-      throw new Error(`Participant ${participantId} not found`)
-    }
-
-    const participant = result[0].p
-    // Extract properties from Neo4j Node object
-    const properties = participant && typeof participant === 'object' && 'properties' in participant
-      ? participant.properties
-      : participant
-
-    return {
-      id: properties.id,
-      age: properties.age,
-      gender: properties.gender,
-      handedness: properties.handedness
+      return {
+        id: participant.id,
+        age: participant.age,
+        gender: participant.gender,
+        handedness: participant.handedness
+      }
+    } catch (error) {
+      console.error('Error in getParticipantDetails:', error)
+      throw error
     }
   }
 
   async getParticipantResponses(participantId: string): Promise<any[]> {
-    // Get responses for a specific participant from Neo4j
-    const query = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
-      RETURN r
-      ORDER BY r.created_at DESC
-    `
-
     try {
-      const result = await this.query(query, { participantId })
-      return result?.map((record: any) => {
-        // Extract properties from Neo4j Node object
-        const response = record.r
-        const properties = response && typeof response === 'object' && 'properties' in response
-          ? response.properties
-          : response
+      // Neogmaを使って参加者のレスポンスを取得
+      const responses = await Response.findMany({
+        where: { participant_id: participantId },
+        include: {
+          session: {
+            attributes: ['id'],
+          },
+        },
+      })
 
-        return {
-          id: properties.id || `${participantId}_${properties.event_ts || properties.created_at}`,
-          stimulus_word: properties.stimulus_word,
-          response_word: properties.response_word,
-          reaction_time_ms: properties.reaction_time_ms || 0,
-          emotion: properties.emotion,
-          emotion_confidence: properties.emotion_confidence || 0,
-          session_id: properties.session_id || properties.experiment_id
-        }
-      }) || []
+      // データを整形
+      const processed = responses.map((response: any) => ({
+        id: response.id,
+        stimulus_word: response.stimulus_word,
+        response_word: response.response_word,
+        reaction_time_ms: response.reaction_time_ms || 0,
+        emotion: response.emotion,
+        emotion_confidence: response.emotion_confidence || 0,
+        session_id: response.session?.id || response.session_id,
+        spirit_probability: response.spirit_probability,
+        event_ts: response.event_ts,
+      }))
+
+      // 作成日時で降順ソート
+      processed.sort((a: any, b: any) =>
+        new Date(b.event_ts || 0).getTime() - new Date(a.event_ts || 0).getTime()
+      )
+
+      return processed
     } catch (error) {
       console.error('Error in getParticipantResponses:', error)
       return []
@@ -184,10 +206,11 @@ export class Neo4jManager {
 
   async testConnection(): Promise<boolean> {
     try {
+      // Neogmaを使って接続テスト
       const result = await this.client.query('RETURN 1 as test')
       return result && result.length > 0 && result[0].test === 1
     } catch (error) {
-      console.error('Neo4j connection test failed:', error)
+      console.error('Neogma connection test failed:', error)
       return false
     }
   }
@@ -209,100 +232,111 @@ export class Neo4jManager {
   }
 
   async getImportJobs(): Promise<unknown[]> {
-    const query = `
-      MATCH (j:ImportJob)
-      RETURN {
-        id: j.id,
-        sessionId: j.session_id,
-        participantId: j.participant_id,
-        status: j.status,
-        createdAt: j.created_at,
-        completedAt: j.completed_at,
-        error: j.error_message,
-        progress: j.progress_percentage
-      }
-      ORDER BY j.created_at DESC
-      LIMIT 50
-    `
-    return this.client.query(query)
+    try {
+      // Neogmaを使ってImportJobを取得
+      const jobs = await ImportJob.findMany({
+        orderBy: [{ created_at: 'DESC' }],
+        limit: 50,
+      })
+
+      return jobs.map((job: any) => ({
+        id: job.id,
+        sessionId: job.session_id,
+        participantId: job.participant_id,
+        status: job.status,
+        createdAt: job.created_at,
+        completedAt: job.completed_at,
+        error: job.error_message,
+        progress: job.progress_percentage,
+      }))
+    } catch (error) {
+      console.error('Error in getImportJobs:', error)
+      return []
+    }
   }
 
   async getJobStatistics(): Promise<{ activeJobs: number; completedJobs: number; failedJobs: number }> {
-    const query = `
-      MATCH (j:ImportJob)
-      RETURN j.status as status, count(j) as count
-    `
-    const results = await this.client.query(query)
+    try {
+      // Cypherクエリを使って各ステータスのジョブ数をカウント
+      const query = `
+        MATCH (j:ImportJob)
+        RETURN j.status as status, count(j) as count
+      `
+      const results = await this.query(query)
 
-    let activeJobs = 0
-    let completedJobs = 0
-    let failedJobs = 0
+      let activeJobs = 0
+      let completedJobs = 0
+      let failedJobs = 0
 
-    results.forEach((result: any) => {
-      const status = result.status
-      const count = result.count
+      results.forEach((result: any) => {
+        const status = result.status
+        const count = result.count
 
-      switch (status) {
-        case 'PENDING':
-        case 'RUNNING':
-          activeJobs += count
-          break
-        case 'COMPLETED':
-          completedJobs += count
-          break
-        case 'FAILED':
-          failedJobs += count
-          break
-      }
-    })
+        switch (status) {
+          case 'PENDING':
+          case 'RUNNING':
+            activeJobs += count
+            break
+          case 'COMPLETED':
+            completedJobs += count
+            break
+          case 'FAILED':
+            failedJobs += count
+            break
+        }
+      })
 
-    return { activeJobs, completedJobs, failedJobs }
+      return { activeJobs, completedJobs, failedJobs }
+    } catch (error) {
+      console.error('Error in getJobStatistics:', error)
+      return { activeJobs: 0, completedJobs: 0, failedJobs: 0 }
+    }
   }
 
   async createImportJob(sessionId: string): Promise<unknown> {
-    // First get participant ID from session
-    const sessionQuery = `
-      MATCH (s:ExperimentSession {id: $sessionId})
-      RETURN s.participant_id as participantId
-    `
-    const sessionResult = await this.client.query(sessionQuery, { sessionId })
-
-    if (!sessionResult || sessionResult.length === 0) {
-      throw new Error('Session not found')
-    }
-
-    const participantId = sessionResult[0].participantId
-    const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-
-    const createQuery = `
-      CREATE (j:ImportJob {
-        id: $jobId,
-        session_id: $sessionId,
-        participant_id: $participantId,
-        status: 'PENDING',
-        created_at: $createdAt,
-        progress_percentage: 0
+    try {
+      // まずセッションから参加者IDを取得
+      const session = await ExperimentSession.findOne({
+        where: { id: sessionId },
+        attributes: ['participant_id'],
       })
-      RETURN j
-    `
 
-    const result = await this.client.query(createQuery, {
-      jobId,
-      sessionId,
-      participantId,
-      createdAt: new Date().toISOString()
-    })
+      if (!session) {
+        throw new Error('Session not found')
+      }
 
-    return result[0]?.j
+      const participantId = session.participant_id
+      const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+      // Neogmaを使ってImportJobを作成
+      const job = await ImportJob.createOne({
+        id: jobId,
+        session_id: sessionId,
+        participant_id: participantId,
+        status: 'PENDING',
+        created_at: new Date().toISOString(),
+        progress_percentage: 0,
+      })
+
+      return job
+    } catch (error) {
+      console.error('Error in createImportJob:', error)
+      throw error
+    }
   }
 
   async getSessionById(sessionId: string): Promise<unknown> {
-    const query = `
-      MATCH (s:ExperimentSession {id: $sessionId})
-      RETURN s
-    `
-    const result = await this.client.query(query, { sessionId })
-    return result[0]?.s
+    try {
+      // Neogmaを使ってセッションを取得
+      const session = await ExperimentSession.findOne({
+        where: { id: sessionId },
+      })
+
+      return session
+    } catch (error) {
+      console.error('Error in getSessionById:', error)
+      return null
+    }
   }
 
   async close(): Promise<void> {

@@ -41,7 +41,7 @@ class IntegratedDataPipeline:
         completeness['has_physiological_data'] = len(physiological_files) > 0
         completeness['physiological_file_count'] = len(physiological_files)
 
-        # Humeデータベースの確認（Supabaseから）
+        # Humeデータベースの確認（Neo4jから）
         try:
             # 参加者の実験セッションを取得
             sessions = self.data_loader.get_participant_sessions(participant_id)

@@ -1,4 +1,5 @@
 import { createNeo4jClient } from './neo4j'
+import { Participant, ExperimentSession, Response } from './neogma-models'
 
 export interface AnalysisResult {
   id: string
@@ -82,7 +83,7 @@ export interface DashboardStats {
   }
 }
 
-// Server-side data fetching functions
+// Server-side data fetching functions - Neogmaベース
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
     const client = createNeo4jClient()
@@ -110,47 +111,63 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const responsesResult = await client.query(responsesQuery)
     const totalResponses = toNumber(responsesResult[0]?.total)
 
-    // Get emotion distribution
+    // Cypherクエリを使ってデータを取得（Neogmaのwhere句でnullチェックがサポートされていないため）
     const emotionQuery = `
       MATCH (r:Response)
       WHERE r.emotion IS NOT NULL
-      RETURN r.emotion as emotion, count(r) as count
-      ORDER BY count DESC
+      RETURN r.emotion as emotion
     `
-    const emotionResult = await client.query(emotionQuery)
-    const emotionDistribution: Record<string, number> = {}
-    emotionResult?.forEach((item: any) => {
-      emotionDistribution[item.emotion || 'unknown'] = toNumber(item.count)
-    })
-
-    // Get average spirit probability
-    const avgSpiritQuery = `MATCH (r:Response) WHERE r.spirit_probability IS NOT NULL RETURN avg(r.spirit_probability) as average`
-    const avgSpiritResult = await client.query(avgSpiritQuery)
-    const averageSpiritProbability = avgSpiritResult[0]?.average || 0.5
-
-    // Get component averages
+    const spiritQuery = `
+      MATCH (r:Response)
+      WHERE r.spirit_probability IS NOT NULL
+      RETURN r.spirit_probability as spirit_probability
+    `
     const componentsQuery = `
       MATCH (r:Response)
       WHERE r.word2vec_component IS NOT NULL AND
             r.reaction_time_component IS NOT NULL AND
             r.skin_potential_component IS NOT NULL AND
             r.emotion_component IS NOT NULL
-      RETURN avg(r.word2vec_component) as word2vec,
-             avg(r.reaction_time_component) as reaction_time,
-             avg(r.skin_potential_component) as skin_potential,
-             avg(r.emotion_component) as emotion
+      RETURN r.word2vec_component as word2vec_component,
+             r.reaction_time_component as reaction_time_component,
+             r.skin_potential_component as skin_potential_component,
+             r.emotion_component as emotion_component
     `
-    const componentsResult = await client.query(componentsQuery)
-    const componentAverages = componentsResult[0] ? {
-      word2vec: componentsResult[0].word2vec || 0.1,
-      reaction_time: componentsResult[0].reaction_time || 0.2,
-      skin_potential: componentsResult[0].skin_potential || 0.1,
-      emotion: componentsResult[0].emotion || 0.3
+
+    const [
+      responsesWithEmotions,
+      responsesWithSpirit,
+      responsesWithComponents
+    ] = await Promise.all([
+      client.query(emotionQuery),
+      client.query(spiritQuery),
+      client.query(componentsQuery),
+    ])
+
+    // 感情分布を集計
+    const emotionDistribution: Record<string, number> = {}
+    responsesWithEmotions.forEach(response => {
+      if (response.emotion) {
+        emotionDistribution[response.emotion] = (emotionDistribution[response.emotion] || 0) + 1
+      }
+    })
+
+    // 平均Spirit確率を計算
+    const averageSpiritProbability = responsesWithSpirit.length > 0
+      ? responsesWithSpirit.reduce((sum, r) => sum + (r.spirit_probability || 0), 0) / responsesWithSpirit.length
+      : 0.5
+
+    // コンポーネントの平均を計算
+    const componentAverages = responsesWithComponents.length > 0 ? {
+      word2vec: responsesWithComponents.reduce((sum, r) => sum + (r.word2vec_component || 0), 0) / responsesWithComponents.length,
+      reaction_time: responsesWithComponents.reduce((sum, r) => sum + (r.reaction_time_component || 0), 0) / responsesWithComponents.length,
+      skin_potential: responsesWithComponents.reduce((sum, r) => sum + (r.skin_potential_component || 0), 0) / responsesWithComponents.length,
+      emotion: responsesWithComponents.reduce((sum, r) => sum + (r.emotion_component || 0), 0) / responsesWithComponents.length,
     } : {
       word2vec: 0.1,
       reaction_time: 0.2,
       skin_potential: 0.1,
-      emotion: 0.3
+      emotion: 0.3,
     }
 
     return {
@@ -159,7 +176,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       totalResponses,
       averageSpiritProbability,
       emotionDistribution,
-      componentAverages
+      componentAverages,
     }
   } catch (error) {
     console.error('Failed to get dashboard stats:', error)
@@ -173,7 +190,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         word2vec: 0,
         reaction_time: 0,
         skin_potential: 0,
-        emotion: 0
+        emotion: 0,
       }
     }
   }
@@ -210,37 +227,23 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    const client = createNeo4jClient()
-
-    // Get participant details
-    const participant = await client.getParticipantDetails(participantId)
+    // Neogmaを使って参加者データを取得
+    const participant = await Participant.findOne({
+      where: { id: participantId },
+    })
     if (!participant) return null
 
-    // Get participant sessions from Neo4j
-    const sessionsQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s
-    `
-    const sessionsResult = await client.query(sessionsQuery, { participantId })
-    const dbSessions = sessionsResult?.map((record: any) => {
-      // Extract properties from Neo4j Node object
-      const session = record.s
-      const properties = session && typeof session === 'object' && 'properties' in session
-        ? session.properties
-        : session
-      return {
-        id: properties.id,
-        _key: properties.id,
-        participant_id: properties.participant_id,
-        session_type: properties.session_type || 'word_association',
-        start_time: properties.start_time,
-        end_time: properties.end_time,
-        created_at: properties.created_at
-      }
-    }) || []
+    // Neogmaを使ってセッションを取得
+    const dbSessions = await ExperimentSession.findMany({
+      where: { participant_id: participantId },
+      order: [['start_ts', 'DESC']],
+    })
 
-    // Get participant responses
-    const responses = await client.getParticipantResponses(participantId)
+    // Neogmaを使ってレスポンスを取得
+    const responses = await Response.findMany({
+      where: { participant_id: participantId },
+      order: [['event_ts', 'DESC']],
+    })
 
     // Group responses by session
     const sessionMap: Record<string, ResponseData[]> = {}
@@ -253,38 +256,38 @@ export async function getParticipantData(participantId: string): Promise<Partici
         id: response.id,
         stimulus_word: response.stimulus_word,
         response_word: response.response_word,
-        reaction_time_ms: response.reaction_time_ms,
-        skin_potential: 0, // Placeholder
+        reaction_time_ms: response.reaction_time_ms || 0,
+        skin_potential: 0, // Placeholder - 生理データ統合時に実装
         emotion: response.emotion || '',
-        emotion_confidence: response.emotion_confidence,
-        skinPotentialTimeseries: [], // Placeholder
-        emotionTimeseries: [] // Placeholder
+        emotion_confidence: response.emotion_confidence || 0,
+        skinPotentialTimeseries: [], // Placeholder - 時系列データ統合時に実装
+        emotionTimeseries: [] // Placeholder - 時系列データ統合時に実装
       })
     })
 
     // Create sessions array - include both sessions from database and those inferred from responses
     const sessions: ExperimentSession[] = dbSessions.map((dbSession: any) => {
-      const sessionId = dbSession.id || dbSession._key
+      const sessionId = dbSession.id
       const sessionResponses = sessionMap[sessionId] || []
 
       return {
         id: sessionId,
         session_id: sessionId,
-        session_type: dbSession.session_type || 'word_association',
-        start_time: dbSession.start_time || null,
-        end_time: dbSession.end_time || null,
+        session_type: 'word_association', // 固定値として設定
+        start_time: dbSession.start_ts || null,
+        end_time: dbSession.end_ts || null,
         responses: sessionResponses,
         responseCount: sessionResponses.length,
       }
     })
 
-    // Also add any sessions that have responses but aren't in the sessions table
+    // セッションが存在しないレスポンスがある場合の処理
     Object.entries(sessionMap).forEach(([sessionId, sessionResponses]) => {
       if (!sessions.find(s => s.id === sessionId)) {
         sessions.push({
           id: sessionId,
           session_id: sessionId,
-          session_type: 'session-1', // Placeholder
+          session_type: 'word_association',
           start_time: null,
           end_time: null,
           responses: sessionResponses,
@@ -293,7 +296,7 @@ export async function getParticipantData(participantId: string): Promise<Partici
       }
     })
 
-    // Create mock analysis runs (since we don't have analysis results in TerminusDB yet)
+    // 分析結果の作成 - Spirit確率を含む実際のデータを使用
     const analysisRuns: AnalysisRun[] = [{
       id: 'latest',
       run_id: 'latest',
@@ -304,26 +307,27 @@ export async function getParticipantData(participantId: string): Promise<Partici
         id: response.id,
         stimulus_word: response.stimulus_word,
         response_word: response.response_word,
-        p_value: 0.5, // Placeholder
-        word2vec_component: 0,
-        reaction_time_component: 0,
-        skin_potential_component: 0,
-        emotion_component: 0,
-        emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence } : {},
-        physiological_data: {},
-        created_at: new Date().toISOString()
+        p_value: response.spirit_probability || 0.5,
+        word2vec_component: 0, // TODO: 実際のWord2Vecコンポーネントを実装
+        reaction_time_component: response.reaction_time_ms ? 10 / (1 + response.reaction_time_ms / 1000) : 0,
+        skin_potential_component: 0, // TODO: 生理データコンポーネントを実装
+        emotion_component: response.emotion_confidence || 0,
+        emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence || 0 } : {},
+        physiological_data: {}, // TODO: 生理データを統合
+        created_at: response.event_ts || new Date().toISOString(),
+        reaction_time_ms: response.reaction_time_ms,
       }))
     }]
 
     const sessionCount = sessions.length
     const responseCount = responses.length
-    const averageSpiritProbability = analysisRuns[0].results.length > 0
-      ? analysisRuns[0].results.reduce((sum, result) => sum + result.p_value, 0) / analysisRuns[0].results.length
+    const averageSpiritProbability = responses.length > 0
+      ? responses.reduce((sum, response) => sum + (response.spirit_probability || 0), 0) / responses.length
       : 0
 
     return {
       id: participant.id,
-      name: `Participant ${participantId.slice(0, 8)}`, // Default name if not available
+      name: `Participant ${participantId.slice(0, 8)}`, // デフォルト名
       sessions,
       analysisRuns,
       sessionCount,
@@ -398,24 +402,26 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   try {
-    // Get participant responses and generate mock analysis results
-    const client = createNeo4jClient()
-    const responses = await client.getParticipantResponses(participantId)
+    // Neogmaを使って参加者のレスポンスを取得
+    const responses = await Response.findMany({
+      where: { participant_id: participantId },
+      orderBy: [{ event_ts: 'ASC' }],
+    })
 
-    // Generate mock analysis results based on responses
+    // 実際のデータに基づいて分析結果を生成
     return responses.map((response, index) => ({
       id: `analysis-${participantId}-${index}`,
       stimulus_word: response.stimulus_word,
       response_word: response.response_word,
-      p_value: 0.5 + Math.random() * 0.4, // Random value between 0.5-0.9
-      word2vec_component: (Math.random() - 0.5) * 0.4,
-      reaction_time_component: 10 / (1 + response.reaction_time_ms / 1000),
-      skin_potential_component: 0.1,
-      emotion_component: response.emotion_confidence,
-      emotion_data: { [response.emotion || 'unknown']: response.emotion_confidence },
-      physiological_data: {},
-      created_at: new Date().toISOString(),
-      reaction_time_ms: response.reaction_time_ms
+      p_value: response.spirit_probability || 0.5,
+      word2vec_component: 0, // TODO: 実際のWord2Vecコンポーネントを実装
+      reaction_time_component: response.reaction_time_ms ? 10 / (1 + response.reaction_time_ms / 1000) : 0,
+      skin_potential_component: 0, // TODO: 生理データコンポーネントを実装
+      emotion_component: response.emotion_confidence || 0,
+      emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence || 0 } : {},
+      physiological_data: {}, // TODO: 生理データを統合
+      created_at: response.event_ts || new Date().toISOString(),
+      reaction_time_ms: response.reaction_time_ms,
     }))
   } catch (error) {
     console.error('Failed to get analysis results for participant:', error)

@@ -327,9 +327,20 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
 export async function loadAllParticipants(): Promise<Participant[]> {
   try {
     const { neo4jManager } = await import('./database/arangodb-manager.ts');
-    const participants = await neo4jManager.getAllParticipants();
+    const neo4jParticipants = await neo4jManager.getAllParticipants();
 
-    console.log(`Loaded ${participants?.length || 0} participants from Neo4j`);
+    console.log(`Loaded ${neo4jParticipants?.length || 0} participants from Neo4j`);
+
+    // Convert to data-loader Participant format
+    const participants: Participant[] = neo4jParticipants.map(p => ({
+      id: p.id,
+      signature: p.signature || "unknown",
+      agreedAt: p.agreedAt || new Date(),
+      agreements: p.agreements || {},
+      hasSessionData: p.hasSessionData || false,
+      hasVideoFiles: p.hasVideoFiles || false,
+      videoFiles: p.videoFiles || []
+    }));
 
     return participants;
   } catch (error) {
