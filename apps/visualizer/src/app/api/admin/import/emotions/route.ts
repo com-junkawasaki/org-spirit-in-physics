@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
     const results = [];
 
     // Merkle DAG: import.emotions.scan
-    // データセットディレクトリをスキャン (src/datasetからの相対パス)
-    const datasetPath = path.join(process.cwd(), 'src', 'dataset', 'participants');
+    // データセットディレクトリをスキャン (apps/visualizer/src/datasetからの相対パス)
+    const datasetPath = path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants');
 
     try {
       await fs.access(datasetPath);
@@ -54,18 +54,22 @@ export async function POST(request: NextRequest) {
         }
 
         // Merkle DAG: import.emotions.find_hume_data
-        // hume_dataディレクトリを検索
-        const humeDataDir = path.join(participantPath, 'hume_data');
-        const humeDataExists = await fs.access(humeDataDir).then(() => true).catch(() => false);
+        // HumeAI_artifacts_* ディレクトリを検索
+        const participantEntries = await fs.readdir(participantPath, { withFileTypes: true });
+        const humeArtifactsEntry = participantEntries.find(entry =>
+          entry.isDirectory() && entry.name.startsWith('HumeAI_artifacts_')
+        );
 
-        if (!humeDataExists) {
+        if (!humeArtifactsEntry) {
           results.push({
             participantId,
             status: 'skipped',
-            message: 'Hume AI data directory not found'
+            message: 'HumeAI artifacts directory not found'
           });
           continue;
         }
+
+        const humeDataDir = path.join(participantPath, humeArtifactsEntry.name);
 
         // Merkle DAG: import.emotions.check_existing
         // 既存感情データのチェック
@@ -95,20 +99,29 @@ export async function POST(request: NextRequest) {
         let totalEmotionEntries = 0;
         let totalCsvFilesProcessed = 0;
 
+        // Merkle DAG: import.emotions.read_predictions
+        // HumeAI_predictions JSONファイルの処理 (artifactsディレクトリ直下)
+        const humeFiles = await fs.readdir(humeDataDir, { withFileTypes: true });
+        const predictionsFileEntry = humeFiles.find(file =>
+          file.isFile() && file.name.startsWith('HumeAI_predictions_') && file.name.endsWith('.json')
+        );
+
+        let emotionResult = { entriesProcessed: 0 };
+        if (predictionsFileEntry) {
+          const predictionsFile = path.join(humeDataDir, predictionsFileEntry.name);
+          try {
+            const predictionsData = JSON.parse(await fs.readFile(predictionsFile, 'utf-8'));
+            emotionResult = await processEmotionData(client as any, participantId, predictionsData, humeArtifactsEntry.name);
+            totalEmotionEntries += emotionResult.entriesProcessed;
+          } catch (error) {
+            console.warn(`Error processing predictions file:`, error);
+          }
+        }
+
         // Merkle DAG: import.emotions.process_registry_files
-        // 各registry_fileを処理
+        // 各registry_fileを処理 (CSVデータのみ)
         for (const registryFile of registryFiles) {
           try {
-            // HumeAI_predictions JSONファイルの処理
-            const predictionsFile = path.join(registryFile.path, 'HumeAI_predictions_' + registryFile.uuid + '.json');
-            const predictionsExist = await fs.access(predictionsFile).then(() => true).catch(() => false);
-
-            if (predictionsExist) {
-              const predictionsData = JSON.parse(await fs.readFile(predictionsFile, 'utf-8'));
-              const emotionResult = await processEmotionData(client as any, participantId, predictionsData, registryFile.uuid);
-              totalEmotionEntries += emotionResult.entriesProcessed;
-            }
-
             // CSVデータの処理
             const csvResult = await processCSVDataForRegistry(client as any, participantId, registryFile);
             totalCsvFilesProcessed += csvResult.filesProcessed;

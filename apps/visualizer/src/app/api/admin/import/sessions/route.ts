@@ -3,6 +3,72 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { createNeo4jClient } from '@/lib/neo4j';
 
+// Merkle DAG: import.sessions.csv_parser
+// CSVデータパース関数
+function parsePhysiologicalCSV(csvContent: string): { metadata: any, data: any[] } {
+  const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line);
+
+  let metadata: any = {};
+  const data: any[] = [];
+
+  let dataStartIndex = -1;
+
+  // メタデータを解析
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes(',')) {
+      const [key, ...valueParts] = line.split(',');
+      const value = valueParts.join(',').trim();
+
+      if (key === 'Date' && value) metadata.date = value;
+      if (key === 'Begin' && value) metadata.beginTime = value.trim();
+      if (key === 'End' && value) metadata.endTime = value.trim();
+      if (key === 'Time Range' && value) metadata.timeRange = value.trim();
+
+      // データ開始行を検出
+      if (key === 'Time_Sec') {
+        dataStartIndex = i;
+        break;
+      }
+    }
+  }
+
+  // データ行を解析
+  if (dataStartIndex >= 0) {
+    for (let i = dataStartIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      const values = line.split(',').map(v => v.trim());
+
+      if (values.length >= 9) { // Time_Sec + Ch1-Ch8
+        const record = {
+          time_sec: parseFloat(values[0]),
+          ch1: parseFloat(values[1]) || 0,
+          ch2: parseFloat(values[2]) || 0,
+          ch3: parseFloat(values[3]) || 0,
+          ch4: parseFloat(values[4]) || 0,
+          ch5: parseFloat(values[5]) || 0,
+          ch6: parseFloat(values[6]) || 0,
+          ch7: parseFloat(values[7]) || 0,
+          ch8: parseFloat(values[8]) || 0,
+          timestamp: 0 // 後で計算
+        };
+
+        // タイムスタンプを計算（開始時間 + time_sec）
+        if (metadata.date && metadata.beginTime) {
+          const [hours, minutes, seconds] = metadata.beginTime.split(':').map(Number);
+          const baseDate = new Date(metadata.date);
+          baseDate.setHours(hours, minutes, seconds || 0, 0);
+          record.timestamp = baseDate.getTime() + (record.time_sec * 1000);
+        }
+
+        data.push(record);
+      }
+    }
+  }
+
+  return { metadata, data };
+}
+
 // Merkle DAG: import.sessions.endpoint
 // セッションデータインポートAPIエンドポイント
 // 依存関係: @participants/ (dataset), neo4j
@@ -17,8 +83,8 @@ export async function POST(request: NextRequest) {
     const results = [];
 
     // Merkle DAG: import.sessions.scan
-    // データセットディレクトリをスキャン (src/datasetからの相対パス)
-    const datasetPath = path.join(process.cwd(), 'src', 'dataset', 'participants');
+    // データセットディレクトリをスキャン (apps/visualizer/src/datasetからの相対パス)
+    const datasetPath = path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants');
 
     try {
       await fs.access(datasetPath);
@@ -99,6 +165,43 @@ export async function POST(request: NextRequest) {
         // セッション統計を計算
         const statistics = calculateSessionStatistics(sessionData.events);
 
+        // Merkle DAG: import.sessions.process_csv_data
+        // 生理データCSVファイルを処理
+        let physiologicalRecordsCount = 0;
+        try {
+          const csvFiles = await fs.readdir(participantPath, { withFileTypes: true });
+          const physiologicalCsvFiles = csvFiles.filter(file =>
+            file.isFile() &&
+            file.name.endsWith('.CSV') &&
+            file.name.includes('hitoshiuchida') // 特定のフォーマットのCSVファイルのみ
+          );
+
+          for (const csvFile of physiologicalCsvFiles) {
+            try {
+              const csvPath = path.join(participantPath, csvFile.name);
+              const csvContent = await fs.readFile(csvPath, 'utf-8');
+
+              console.log(`Processing CSV file: ${csvFile.name} for participant ${participantId}`);
+
+              const { metadata, data } = parsePhysiologicalCSV(csvContent);
+
+              if (data.length > 0) {
+                // セッションIDを生成（既存のセッションを使用）
+                const sessionId = `session_${participantId}_${new Date(metadata.date).getTime()}`;
+
+                await (client as any).createPhysiologicalData(participantId, sessionId, data);
+                physiologicalRecordsCount += data.length;
+
+                console.log(`Imported ${data.length} physiological records from ${csvFile.name}`);
+              }
+            } catch (csvError) {
+              console.warn(`Error processing CSV file ${csvFile.name}:`, csvError);
+            }
+          }
+        } catch (csvDirError) {
+          console.warn(`Error reading CSV files for participant ${participantId}:`, csvDirError);
+        }
+
         results.push({
           participantId,
           status: 'success',
@@ -106,6 +209,7 @@ export async function POST(request: NextRequest) {
           statistics: {
             totalEvents: sessionData.events.length,
             wordResponsesCount: wordResponses.length,
+            physiologicalRecordsCount,
             averageReactionTime: statistics.averageReactionTime,
             sessionDuration: statistics.duration
           }

@@ -29,6 +29,7 @@ interface FileStatus {
     sessionData: boolean;
     humeArtifacts: boolean;
     videoFiles: boolean;
+    csvFiles: boolean;
   };
   imported: {
     participant: boolean;
@@ -457,6 +458,10 @@ export default function ImportPage() {
                               HumeAI
                             </div>
                             <div className="flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full ${file.files.csvFiles ? 'bg-purple-500' : 'bg-gray-300'}`}></span>
+                              CSV (生理)
+                            </div>
+                            <div className="flex items-center gap-1">
                               <span className={`w-2 h-2 rounded-full ${file.files.videoFiles ? 'bg-blue-500' : 'bg-gray-300'}`}></span>
                               Video (不要)
                             </div>
@@ -506,7 +511,25 @@ export default function ImportPage() {
                     <span>未準備/不要</span>
                   </div>
                 </div>
-                <p><strong>注意:</strong> VideoファイルはBlobストレージ管理のため、インポート対象外です。</p>
+                <div className="flex flex-wrap gap-4 mt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-xs">ファイルあり</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span className="text-xs">CSV (生理データ)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-xs">Video (Blob管理)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-300" />
+                    <span className="text-xs">ファイルなし</span>
+                  </div>
+                </div>
+                <p><strong>注意:</strong> VideoファイルはBlobストレージ管理、CSVファイルは生理データとしてNeo4jにインポートされます。</p>
               </div>
             </CardContent>
           </Card>

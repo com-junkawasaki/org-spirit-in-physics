@@ -354,6 +354,59 @@ export class Neo4jManager {
     }
   }
 
+  // Merkle DAG: neo4j.methods.physiological_data
+  // 生理データ作成メソッド
+  async createPhysiologicalData(participantId: string, sessionId: string, physiologicalData: any[]): Promise<void> {
+    try {
+      console.log(`Creating physiological data for session ${sessionId}, ${physiologicalData.length} records`)
+
+      // 各生理データレコードを処理
+      for (const record of physiologicalData) {
+        const physiologicalId = `physio_${sessionId}_${record.timestamp}`
+
+        // PhysiologicalDataノードを作成
+        await this.neogma.queryRunner.run(
+          `CREATE (p:PhysiologicalData {
+            id: $physiologicalId,
+            participant_id: $participantId,
+            session_id: $sessionId,
+            timestamp: $timestamp,
+            time_sec: $time_sec,
+            ch1: $ch1,
+            ch2: $ch2,
+            ch3: $ch3,
+            ch4: $ch4,
+            ch5: $ch5,
+            ch6: $ch6,
+            ch7: $ch7,
+            ch8: $ch8,
+            imported_at: datetime($imported_at)
+          })-[:BELONGS_TO]->(s:ExperimentSession {id: $sessionId})`,
+          {
+            physiologicalId,
+            participantId,
+            sessionId,
+            timestamp: new Date(record.timestamp).toISOString(),
+            time_sec: record.time_sec,
+            ch1: record.ch1,
+            ch2: record.ch2,
+            ch3: record.ch3,
+            ch4: record.ch4,
+            ch5: record.ch5,
+            ch6: record.ch6,
+            ch7: record.ch7,
+            ch8: record.ch8,
+            imported_at: new Date().toISOString()
+          }
+        )
+      }
+
+      console.log(`Successfully created ${physiologicalData.length} physiological data records`)
+    } catch (error) {
+      console.error('Error in createPhysiologicalData:', error)
+      throw error
+    }
+  }
 
   async close(): Promise<void> {
     return this.client.close()
