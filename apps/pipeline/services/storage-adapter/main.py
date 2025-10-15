@@ -27,10 +27,10 @@ from libs.models.schemas import (
     WorkflowExecutionResponse
 )
 
-# Import existing data access components
-from packages.spirit_in_physics_pipeline.neo4j_client import Neo4jClient
-from packages.spirit_in_physics_pipeline.data_loader import DataLoader
-from packages.spirit_in_physics_pipeline.data_storer import DataStorer
+# Import data access components
+from libs.storage.neo4j_client import Neo4jClient
+from libs.data.data_loader import DataLoader
+from libs.data.data_storer import DataStorer
 
 
 logger = setup_logging("storage-adapter")

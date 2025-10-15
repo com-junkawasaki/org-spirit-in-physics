@@ -6,8 +6,8 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
-from packages.spirit_in_physics_pipeline.data_loader import DataLoader
-from packages.spirit_in_physics_pipeline.data_storer import DataStorer
+from libs.data.data_loader import DataLoader
+from libs.data.data_storer import DataStorer
 
 logger = logging.getLogger(__name__)
 

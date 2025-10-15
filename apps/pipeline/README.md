@@ -79,7 +79,7 @@ The Spirit in Physics Pipeline has been refactored from a monolithic application
   - Analysis results storage
   - Job and workflow execution tracking
 
-## Shared Libraries
+## Libraries
 
 ### libs/shared/
 - **config.py**: Centralized configuration management
@@ -91,6 +91,29 @@ The Spirit in Physics Pipeline has been refactored from a monolithic application
 
 ### libs/workflows/
 - **definitions.py**: Workflow definitions and specifications
+
+### libs/data/
+- **data_loader.py**: Data loading utilities
+- **data_storer.py**: Data storage utilities
+- **session_data_processor.py**: Session data processing
+- **import_status_manager.py**: Import status management
+
+### libs/analysis/
+- **kawasaki_model.py**: Kawasaki model implementation
+- **physiological_processor.py**: Physiological data processing
+- **emotion_processor.py**: Emotion analysis processing
+- **feature_extractor.py**: Feature extraction utilities
+- **hume_data_processor.py**: Hume AI data processing
+- **hume_ai_simulator.py**: Hume AI simulation
+- **word2vec_trainer.py**: Word2Vec model training
+
+### libs/storage/
+- **neo4j_client.py**: Neo4j database client
+- **arangodb_client.py**: ArangoDB database client
+
+### libs/job/
+- **job_manager.py**: Job management utilities
+- **job_worker.py**: Job worker implementation
 
 ## Getting Started
 

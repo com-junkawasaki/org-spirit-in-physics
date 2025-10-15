@@ -45,6 +45,97 @@ import {
 } from 'lucide-react'
 import { WorkflowNode, WorkflowEdge, WORKFLOW_NODES, WORKFLOW_EDGES } from '@/lib/workflow-types'
 
+type WorkflowDefinition = {
+  id: string
+  name: string
+  description: string
+  version: string
+  definition: any
+  created_at: string
+  updated_at: string
+}
+
+// Convert workflow definition to React Flow nodes and edges
+const convertWorkflowToFlow = (workflowDef: any): { nodes: Node[], edges: Edge[] } => {
+  const nodes: Node[] = []
+  const edges: Edge[] = []
+
+  if (!workflowDef || !workflowDef.states) {
+    return { nodes: [], edges: [] }
+  }
+
+  const states = workflowDef.states
+  const nodeSpacing = 250
+  const startX = 100
+  const startY = 100
+
+  // Create nodes from states
+  states.forEach((state: any, index: number) => {
+    const nodeId = state.name
+    const x = startX + (index % 3) * nodeSpacing
+    const y = startY + Math.floor(index / 3) * nodeSpacing
+
+    // Determine node type based on state type
+    let nodeType = 'default'
+    let status = 'pending'
+    let description = state.name
+
+    if (state.type === 'operation') {
+      nodeType = 'operation'
+      status = 'running'
+      if (state.actions && state.actions.length > 0) {
+        const functionRef = state.actions[0].functionRef
+        if (functionRef) {
+          description = `${state.name}\nFunction: ${functionRef.refName}`
+        }
+      }
+    } else if (state.type === 'foreach') {
+      nodeType = 'foreach'
+      status = 'pending'
+      description = `${state.name}\nForEach: ${state.inputCollection || 'items'}`
+    }
+
+    // Special handling for start state
+    if (workflowDef.start === state.name) {
+      status = 'completed'
+    }
+
+    const node: Node = {
+      id: nodeId,
+      position: { x, y },
+      data: {
+        label: state.name,
+        type: nodeType,
+        status: status,
+        description: description,
+        stateType: state.type,
+        actions: state.actions || [],
+        inputCollection: state.inputCollection,
+        iterationParam: state.iterationParam
+      },
+      type: 'default'
+    }
+
+    nodes.push(node)
+  })
+
+  // Create edges from transitions
+  states.forEach((state: any) => {
+    if (state.transition) {
+      edges.push({
+        id: `${state.name}-to-${state.transition}`,
+        source: state.name,
+        target: state.transition,
+        type: 'default',
+        data: { type: 'transition' },
+        label: '→'
+      })
+    }
+  })
+
+  return { nodes, edges }
+}
+
 const getNodeIcon = (type: string) => {
   switch (type) {
     case 'participant':
@@ -63,6 +154,10 @@ const getNodeIcon = (type: string) => {
       return <Settings className="h-4 w-4" />
     case 'results':
       return <Database className="h-4 w-4" />
+    case 'operation':
+      return <Settings className="h-4 w-4" />
+    case 'foreach':
+      return <RefreshCw className="h-4 w-4" />
     default:
       return <Activity className="h-4 w-4" />
   }
@@ -136,7 +231,19 @@ const nodeTypes = {
 }
 
 // ワークフローコントロールコンポーネント
-function WorkflowControls({ onSave, onExecute }: { onSave?: () => void, onExecute?: () => void }) {
+function WorkflowControls({
+  onSave,
+  onExecute,
+  workflows = [],
+  selectedWorkflowId,
+  onWorkflowSelect
+}: {
+  onSave?: () => void
+  onExecute?: () => void
+  workflows?: WorkflowDefinition[]
+  selectedWorkflowId?: string
+  onWorkflowSelect?: (workflowId: string) => void
+}) {
   const {
     addNodes,
     getNodes,
@@ -199,6 +306,33 @@ function WorkflowControls({ onSave, onExecute }: { onSave?: () => void, onExecut
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 space-y-2">
+          {/* ワークフロー選択 */}
+          {workflows.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="workflow-select" className="text-xs font-medium">
+                ワークフロー選択
+              </Label>
+              <Select
+                value={selectedWorkflowId || ""}
+                onValueChange={(value) => onWorkflowSelect?.(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="ワークフローを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workflows.map((workflow) => (
+                    <SelectItem key={workflow.id} value={workflow.id}>
+                      <div className="flex items-center gap-2">
+                        {getWorkflowIcon(workflow.id)}
+                        <span>{workflow.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="flex gap-1 flex-wrap">
             <Dialog open={isAddNodeOpen} onOpenChange={setIsAddNodeOpen}>
               <DialogTrigger asChild>
@@ -307,33 +441,56 @@ interface WorkflowVisualizerProps {
       completedAnalyses?: number
     }
   } | null
+  workflows?: WorkflowDefinition[]
+  selectedWorkflowId?: string
+  onWorkflowSelect?: (workflowId: string) => void
   onRefresh?: () => void
   isLoading?: boolean
 }
 
 // 内部ワークフローコンポーネント
-function WorkflowFlow({ className = '', workflowData, onRefresh, isLoading }: WorkflowVisualizerProps) {
-  // Initialize nodes with positions
-  const initialNodes: Node[] = useMemo(() => [
-    { ...WORKFLOW_NODES[0], position: { x: 50, y: 50 } },   // participants
-    { ...WORKFLOW_NODES[1], position: { x: 300, y: 50 } },  // consent
-    { ...WORKFLOW_NODES[2], position: { x: 550, y: 50 } },  // sessions
-    { ...WORKFLOW_NODES[3], position: { x: 300, y: 200 } }, // video-files
-    { ...WORKFLOW_NODES[4], position: { x: 50, y: 350 } },  // hume-analysis
-    { ...WORKFLOW_NODES[5], position: { x: 550, y: 350 } }, // physiological-data
-    { ...WORKFLOW_NODES[6], position: { x: 300, y: 500 } }, // kawasaki-model
-    { ...WORKFLOW_NODES[7], position: { x: 300, y: 650 } }, // results
-  ], [])
+function WorkflowFlow({
+  className = '',
+  workflowData,
+  workflows = [],
+  selectedWorkflowId,
+  onWorkflowSelect,
+  onRefresh,
+  isLoading
+}: WorkflowVisualizerProps) {
+  // Get selected workflow
+  const selectedWorkflow = useMemo(() => {
+    return workflows.find(w => w.id === selectedWorkflowId) || workflows[0]
+  }, [workflows, selectedWorkflowId])
 
+  // Convert workflow definition to React Flow format
+  const { nodes: workflowNodes, edges: workflowEdges } = useMemo(() => {
+    if (selectedWorkflow && selectedWorkflow.definition) {
+      return convertWorkflowToFlow(selectedWorkflow.definition)
+    }
+    // Fallback to default unified pipeline
+    return {
+      nodes: WORKFLOW_NODES.map((node, index) => ({
+        ...node,
+        position: {
+          x: 50 + (index % 3) * 250,
+          y: 50 + Math.floor(index / 3) * 200
+        }
+      })),
+      edges: WORKFLOW_EDGES
+    }
+  }, [selectedWorkflow])
+
+  const initialNodes: Node[] = useMemo(() => workflowNodes, [workflowNodes])
   const initialEdges: Edge[] = useMemo(() =>
-    WORKFLOW_EDGES.map(edge => ({
+    workflowEdges.map(edge => ({
       ...edge,
       style: {
         stroke: getEdgeColor(edge.data?.type || 'data'),
         strokeWidth: 2,
       },
     }))
-  , [])
+  , [workflowEdges])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)

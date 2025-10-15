@@ -17,8 +17,8 @@ import sys
 import os
 sys.path.append('/app')
 
-# from packages.spirit_in_physics_pipeline.job_manager import JobManager, JobStatus  # Temporal disabled
-# from packages.spirit_in_physics_pipeline.data_storer import DataStorer  # ArangoDB removed
+# from libs.job.job_manager import JobManager, JobStatus  # Temporal disabled
+# from libs.data.data_storer import DataStorer  # ArangoDB removed
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

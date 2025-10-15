@@ -9,16 +9,16 @@ from neo4j import GraphDatabase
 # Add project root to path to allow importing from packages
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 
-from packages.spirit_in_physics_pipeline.data_loader import DataLoader
+from libs.data.data_loader import DataLoader
 
 logger = logging.getLogger(__name__)
-from packages.spirit_in_physics_pipeline.emotion_processor import EmotionProcessor
-from packages.spirit_in_physics_pipeline.feature_extractor import FeatureExtractor
-from packages.spirit_in_physics_pipeline.kawasaki_model import KawasakiModel
-from packages.spirit_in_physics_pipeline.data_storer import DataStorer
-from packages.spirit_in_physics_pipeline.job_manager import JobManager, JobType, JobStatus
-from packages.spirit_in_physics_pipeline.physiological_processor import PhysiologicalProcessor
-from packages.spirit_in_physics_pipeline.hume_data_processor import HumeDataProcessor
+from libs.analysis.emotion_processor import EmotionProcessor
+from libs.analysis.feature_extractor import FeatureExtractor
+from libs.analysis.kawasaki_model import KawasakiModel
+from libs.data.data_storer import DataStorer
+from libs.job.job_manager import JobManager, JobType, JobStatus
+from libs.analysis.physiological_processor import PhysiologicalProcessor
+from libs.analysis.hume_data_processor import HumeDataProcessor
 # Visualization is handled by the visualizer service, not here
 # from .visualization.spirit_visualizer import SpiritVisualizer
 

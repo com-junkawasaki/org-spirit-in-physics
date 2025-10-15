@@ -8,8 +8,8 @@ import asyncio
 from typing import Dict, Any, Optional
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
 
-from packages.spirit_in_physics_pipeline.emotion_processor import EmotionProcessor
-from packages.spirit_in_physics_pipeline.hume_data_processor import HumeDataProcessor
+from libs.analysis.emotion_processor import EmotionProcessor
+from libs.analysis.hume_data_processor import HumeDataProcessor
 
 logger = logging.getLogger(__name__)
 

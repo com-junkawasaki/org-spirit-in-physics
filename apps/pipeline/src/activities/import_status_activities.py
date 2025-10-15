@@ -14,7 +14,7 @@ from datetime import datetime
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
 
-from packages.spirit_in_physics_pipeline.import_status_manager import ImportStatusManager, ImportStatus, ImportType
+from libs.data.import_status_manager import ImportStatusManager, ImportStatus, ImportType
 
 logger = logging.getLogger(__name__)
 

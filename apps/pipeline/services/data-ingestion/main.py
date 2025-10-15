@@ -28,9 +28,9 @@ from libs.models.schemas import (
 )
 
 # Import data processing modules
-from packages.spirit_in_physics_pipeline.data_loader import DataLoader
-from packages.spirit_in_physics_pipeline.data_storer import DataStorer
-from packages.spirit_in_physics_pipeline.session_data_processor import SessionDataProcessor
+from libs.data.data_loader import DataLoader
+from libs.data.data_storer import DataStorer
+from libs.data.session_data_processor import SessionDataProcessor
 
 
 logger = setup_logging("data-ingestion")
