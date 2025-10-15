@@ -15,6 +15,7 @@ import {
   Panel,
   Node,
   Edge,
+  Handle,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
@@ -97,7 +98,14 @@ const CustomNode = ({ data }: { data: WorkflowNode['data'] }) => {
   if (!data) return null
 
   return (
-    <Card className="min-w-[200px] shadow-md">
+    <Card className="min-w-[200px] shadow-md relative">
+      {/* Target Handle - Left side for incoming connections */}
+      <Handle
+        type="target"
+        position="left"
+        className="w-3 h-3 !bg-blue-500 border-2 border-white"
+      />
+
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm">
           {getNodeIcon(data.type)}
@@ -112,6 +120,13 @@ const CustomNode = ({ data }: { data: WorkflowNode['data'] }) => {
            data.status === 'error' ? 'エラー' : '待機中'}
         </Badge>
       </CardContent>
+
+      {/* Source Handle - Right side for outgoing connections */}
+      <Handle
+        type="source"
+        position="right"
+        className="w-3 h-3 !bg-green-500 border-2 border-white"
+      />
     </Card>
   )
 }

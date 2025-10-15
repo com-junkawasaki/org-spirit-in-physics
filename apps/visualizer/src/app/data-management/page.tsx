@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DataManagementLayout } from '@/components/layout/PageLayout'
 import { WorkflowVisualizer } from '@/components/WorkflowVisualizer'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Database, Home } from 'lucide-react'
 
 export default function DataManagementPage() {
   // Workflow state
