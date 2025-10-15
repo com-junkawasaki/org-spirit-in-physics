@@ -34,16 +34,9 @@ const menuItems: MenuItem[] = [
         description: '参加者データ管理'
     },
     {
-        id: 'analysis',
-        label: '分析',
-        href: '/analysis',
-        icon: '🔬',
-        description: 'データ分析と可視化'
-    },
-    {
-        id: 'imports',
+        id: 'import',
         label: 'インポート管理',
-        href: '/imports',
+        href: '/import',
         icon: '📥',
         description: 'データインポート処理'
     }
