@@ -98,6 +98,9 @@ importers:
       three:
         specifier: ^0.180.0
         version: 0.180.0
+      valibot:
+        specifier: ^1.1.0
+        version: 1.1.0(typescript@5.3.3)
       zod:
         specifier: ^4.0.10
         version: 4.1.12
@@ -3999,6 +4002,14 @@ packages:
   utility-types@3.11.0:
     resolution: {integrity: sha512-6Z7Ma2aVEWisaL6TvBCy7P8rm2LQoPv6dJ7ecIaIixHcwfbJ0x7mWdbcwlIM5IGQxPZSFYeqRCqlOOeKoJYMkw==}
     engines: {node: '>= 4'}
+
+  valibot@1.1.0:
+    resolution: {integrity: sha512-Nk8lX30Qhu+9txPYTwM0cFlWLdPFsFr6LblzqIySfbZph9+BFsAHsNvHOymEviUepeIW6KFHzpX8TKhbptBXXw==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   victory-vendor@37.3.6:
     resolution: {integrity: sha512-SbPDPdDBYp+5MJHhBCAyI7wKM3d5ivekigc2Dk2s7pgbZ9wIgIBYGVw4zGHBml/qTFbexrofXW6Gu4noGxrOwQ==}
@@ -8539,6 +8550,10 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   utility-types@3.11.0: {}
+
+  valibot@1.1.0(typescript@5.3.3):
+    optionalDependencies:
+      typescript: 5.3.3
 
   victory-vendor@37.3.6:
     dependencies:

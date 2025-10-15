@@ -1,5 +1,18 @@
 // Common types for the visualizer dashboard
 
+// Merkle DAG: types.consent_schema -> consent_data_validation
+export interface ConsentData {
+  participantId: string
+  signature: string
+  agreements: {
+    understand: boolean
+    voluntary: boolean
+    withdraw: boolean
+    recording: boolean
+  }
+  agreedAt: string
+}
+
 export interface ChartDataPoint {
   x: number | string
   y: number

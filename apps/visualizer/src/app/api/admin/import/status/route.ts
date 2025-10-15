@@ -69,7 +69,7 @@ async function scanDatasetFiles(datasetPath: string): Promise<any[]> {
         // 各ファイルの存在チェック
         const consentExists = await fs.access(path.join(participantPath, 'consent.json')).then(() => true).catch(() => false);
         const sessionExists = await fs.access(path.join(participantPath, 'session_data.json')).then(() => true).catch(() => false);
-        const humeExists = await fs.access(path.join(participantPath, 'HumeAI_artifacts_c5c16907-6638-4791-b93a-f07674a7891f')).then(() => true).catch(() => false);
+        const humeExists = await checkHumeData(participantPath);
         const videoExists = await checkVideoFiles(participantPath);
 
         files.push({
@@ -179,6 +179,25 @@ async function checkVideoFiles(participantPath: string): Promise<boolean> {
   try {
     const entries = await fs.readdir(participantPath);
     return entries.some(entry => entry.endsWith('.webm') || entry.endsWith('.mp4') || entry.endsWith('.avi'));
+  } catch {
+    return false;
+  }
+}
+
+// Merkle DAG: import.status.check_hume
+// Humeデータ存在確認関数
+async function checkHumeData(participantPath: string): Promise<boolean> {
+  try {
+    const humeDataPath = path.join(participantPath, 'hume_data');
+    const humeDataExists = await fs.access(humeDataPath).then(() => true).catch(() => false);
+
+    if (!humeDataExists) {
+      return false;
+    }
+
+    // hume_data ディレクトリ内に registry_file ディレクトリが存在するかチェック
+    const humeEntries = await fs.readdir(humeDataPath, { withFileTypes: true });
+    return humeEntries.some(entry => entry.isDirectory() && entry.name.startsWith('registry_file-'));
   } catch {
     return false;
   }

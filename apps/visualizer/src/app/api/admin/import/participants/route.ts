@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
 import { createNeo4jClient } from '@/lib/neo4j';
+import { consentDataSchema } from '@/lib/utils';
+import { parse } from 'valibot';
 
 // Merkle DAG: import.participants.endpoint
 // 参加者データインポートAPIエンドポイント
@@ -36,13 +38,11 @@ export async function POST(request: NextRequest) {
         // Merkle DAG: import.participants.read_consent
         // consent.jsonを読み取り
         const consentPath = path.join(participantPath, 'consent.json');
-        const consentData = JSON.parse(await fs.readFile(consentPath, 'utf-8'));
+        const rawConsentData = JSON.parse(await fs.readFile(consentPath, 'utf-8'));
 
         // Merkle DAG: import.participants.validate_consent
-        // 同意データの検証
-        if (!consentData.participantId || !consentData.agreedAt) {
-          throw new Error('Invalid consent data structure');
-        }
+        // Valibotによる同意データの検証
+        const consentData = parse(consentDataSchema, rawConsentData);
 
         // Merkle DAG: import.participants.check_existing
         // 既存データのチェック（重複インポート防止）
@@ -128,8 +128,16 @@ async function checkVideoFiles(participantPath: string): Promise<boolean> {
 // Humeデータ存在確認関数
 async function checkHumeData(participantPath: string): Promise<boolean> {
   try {
-    const entries = await fs.readdir(participantPath);
-    return entries.some(entry => entry.includes('HumeAI_artifacts'));
+    const humeDataPath = path.join(participantPath, 'hume_data');
+    const humeDataExists = await fs.access(humeDataPath).then(() => true).catch(() => false);
+
+    if (!humeDataExists) {
+      return false;
+    }
+
+    // hume_data ディレクトリ内に registry_file ディレクトリが存在するかチェック
+    const humeEntries = await fs.readdir(humeDataPath, { withFileTypes: true });
+    return humeEntries.some(entry => entry.isDirectory() && entry.name.startsWith('registry_file-'));
   } catch {
     return false;
   }
