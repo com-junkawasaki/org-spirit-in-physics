@@ -1,7 +1,7 @@
 // Merkle DAG: Neo4jデータベースマネージャー
 // Neo4jを使用したデータベース操作マネージャー
 
-import { arangodb, Database } from '../neo4j';
+import { neo4jClient, Database } from '../neo4j';
 
 // インターフェース定義
 export interface Participant {
@@ -58,7 +58,7 @@ export interface Emotion {
 }
 
 export class Neo4jManager {
-  private neo4j = arangodb;
+  private client = neo4jClient;
 
   /**
    * Merkle DAG: データベース初期化
@@ -67,7 +67,7 @@ export class Neo4jManager {
   async initialize(): Promise<void> {
     try {
       // 接続テスト
-      await this.neo4j.query('RETURN 1 as test');
+      await this.client.query('RETURN 1 as test');
 
       console.log('Neo4j database initialized successfully');
     } catch (error) {
@@ -82,7 +82,7 @@ export class Neo4jManager {
   async saveParticipant(participant: Participant): Promise<void> {
     try {
       // Neo4jのParticipantノードを作成
-      await this.neo4j.insertParticipant(participant.id, {
+      await this.client.insertParticipant(participant.id, {
         signature: participant.signature,
         agreedAt: participant.agreedAt,
         agreements: participant.agreements,
@@ -114,7 +114,7 @@ export class Neo4jManager {
       // セッションインデックスを抽出（session.idから）
       const sessionIndex = parseInt(session.id.split('_')[1] || '0') || 0;
 
-      await this.neo4j.insertSession(session.participantId, sessionIndex, {
+      await this.client.insertSession(session.participantId, sessionIndex, {
         start_ts: new Date(sessionStartedEvent?.timestamp || session.createdAt).getTime(),
         end_ts: sessionEndedEvent?.timestamp ? new Date(sessionEndedEvent.timestamp).getTime() : null,
         events: session.events
@@ -142,7 +142,7 @@ export class Neo4jManager {
     // Neo4jではparticipant_session_responsesに感情データを保存
     for (const emotion of analysis.emotions) {
       try {
-        await this.neo4j.insertResponse(analysis.participantId, 0, {
+        await this.client.insertResponse(analysis.participantId, 0, {
           stimulus_word: emotion.name,
           response_word: emotion.name,
           reaction_time_ms: 0,
@@ -168,7 +168,7 @@ export class Neo4jManager {
         MATCH (p:Participant {id: $participantId})
         RETURN p
       `;
-      const result = await this.neo4j.query(query, { participantId });
+      const result = await this.client.query(query, { participantId });
 
       if (!result || result.length === 0) {
         return null;
@@ -202,7 +202,7 @@ export class Neo4jManager {
         RETURN p
         ORDER BY p.created_at DESC
       `;
-      const data = await this.neo4j.query(query);
+      const data = await this.client.query(query);
 
       return data.map(row => ({
         id: row.p.id,
@@ -234,7 +234,7 @@ export class Neo4jManager {
         RETURN r
         ORDER BY r.event_ts DESC
       `;
-      const data = await this.neo4j.query(query, { participantId });
+      const data = await this.client.query(query, { participantId });
 
     // データをグループ化してEmotionAnalysis形式に変換
     const analysisMap = new Map<string, EmotionAnalysis>();
@@ -278,7 +278,7 @@ export class Neo4jManager {
         WHERE r.emotion IS NOT NULL
         RETURN r.emotion as emotion, r.emotion_confidence as emotion_confidence
       `;
-      const data = await this.neo4j.query(query);
+      const data = await this.client.query(query);
 
       // 感情ごとの統計を計算
       const emotionStats = data.reduce((acc: any, emotion: any) => {
@@ -326,7 +326,7 @@ export class Neo4jManager {
    * Merkle DAG: カスタムクエリの実行
    */
   async executeQuery(query: string, params: Record<string, any> = {}): Promise<any> {
-    return await this.neo4j.query(query, params);
+    return await this.client.query(query, params);
   }
 
   /**
@@ -334,7 +334,7 @@ export class Neo4jManager {
    */
   async close(): Promise<void> {
     // Neo4jでは明示的なクローズが必要
-    await this.neo4j.close();
+    await this.client.close();
     console.log('Neo4j connection closed');
   }
 }

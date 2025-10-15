@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
-import { arangodb } from './neo4j';
+import { neo4jClient } from './neo4j';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -20,7 +20,7 @@ const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-ju
 export async function initializeNeo4jDatabase(): Promise<void> {
   try {
     // Neo4j接続テスト
-    await arangodb.query('RETURN 1');
+    await neo4jClient.query('RETURN 1');
 
     console.log('Neo4j database connection established');
   } catch (error) {

@@ -1,7 +1,7 @@
 // Merkle DAG: Neo4jクライアント設定
 // サーバー/クライアント両方で使用可能なNeo4jクライアント
 
-import * as neo4j from 'neo4j-driver'
+import * as neo4jDriver from 'neo4j-driver'
 
 interface Neo4jConfig {
   uri: string
@@ -12,13 +12,13 @@ interface Neo4jConfig {
 
 class Neo4jClient {
   private config: Neo4jConfig
-  private driver: neo4j.Driver
+  private driver: neo4jDriver.Driver
 
   constructor(config: Neo4jConfig) {
     this.config = config
-    this.driver = neo4j.driver(
+    this.driver = neo4jDriver.driver(
       this.config.uri,
-      neo4j.auth.basic(this.config.user, this.config.password)
+      neo4jDriver.auth.basic(this.config.user, this.config.password)
     )
   }
 
@@ -117,7 +117,7 @@ export function createNeo4jClient(): Neo4jClient {
 
 
 // Export singleton instance for convenience
-export const arangodb = createNeo4jClient()
+export const neo4jClient = createNeo4jClient()
 
 // Database types based on Neo4j schema
 export type Database = any; // Temporarily simplified for build

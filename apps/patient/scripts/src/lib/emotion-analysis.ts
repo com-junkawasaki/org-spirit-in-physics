@@ -1,7 +1,7 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { arangodb } from './neo4j';
+import { neo4jClient } from './neo4j';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
