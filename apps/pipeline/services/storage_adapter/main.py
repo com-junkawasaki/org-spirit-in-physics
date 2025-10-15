@@ -37,18 +37,37 @@ logger = setup_logging("storage-adapter")
 
 # Initialize data access components
 neo4j_client = Neo4jClient()
-data_loader = DataLoader()
-data_storer = DataStorer()
+
+# Create database config for DataLoader
+db_config = {
+    'url': f"neo4j://{config.database.host}:{config.database.port}",
+    'user': config.database.user,
+    'password': config.database.password,
+    'database': config.database.database
+}
+
+data_loader = DataLoader(db_config)
+
+# For now, provide dummy ArangoDB config for DataStorer
+# TODO: Migrate DataStorer to Neo4j or create Neo4j-compatible version
+arangodb_config = {
+    'url': 'http://localhost:8529',
+    'database': 'spirit_physics',
+    'user': 'root',
+    'password': 'password'
+}
+
+data_storer = DataStorer(arangodb_config)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting Storage Adapter Service")
-    await neo4j_client.connect()
+    neo4j_client.connect()  # Neo4jClient.connect() returns bool, not coroutine
     yield
     logger.info("Shutting down Storage Adapter Service")
-    await neo4j_client.disconnect()
+    neo4j_client.close()  # Neo4jClient.close() is synchronous
 
 
 app = FastAPI(

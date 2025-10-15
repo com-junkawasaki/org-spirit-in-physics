@@ -34,9 +34,31 @@ from libs.analysis.feature_extractor import FeatureExtractor
 
 logger = setup_logging("analysis-engine")
 
-# Initialize analysis components
-kawasaki_model = KawasakiModel()
-emotion_processor = EmotionProcessor()
+# Initialize analysis components with default configurations
+# Default model parameters for Kawasaki model
+model_params = {
+    'alpha': 0.1,
+    'beta': 0.2,
+    'gamma': 0.3,
+    'delta': 0.4,
+    'epsilon': 0.5
+}
+
+# Default Word2Vec configuration
+w2v_config = {
+    'use_advanced': False,
+    'model_path': None
+}
+
+kawasaki_model = KawasakiModel(model_params, w2v_config)
+
+# Initialize emotion processor with Hume AI config
+hume_config = {
+    'api_key': config.hume_ai.api_key,
+    'api_url': config.hume_ai.api_url
+}
+emotion_processor = EmotionProcessor(hume_config)
+
 hume_processor = HumeDataProcessor()
 physiological_processor = PhysiologicalProcessor()
 feature_extractor = FeatureExtractor()

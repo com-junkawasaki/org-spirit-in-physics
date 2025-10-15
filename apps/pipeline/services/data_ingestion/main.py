@@ -9,6 +9,7 @@ import asyncio
 import os
 import sys
 from contextlib import asynccontextmanager
+from typing import List
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -36,8 +37,26 @@ from libs.data.session_data_processor import SessionDataProcessor
 logger = setup_logging("data-ingestion")
 
 # Initialize data components
-data_loader = DataLoader()
-data_storer = DataStorer()
+# Create database config for DataLoader
+db_config = {
+    'url': f"neo4j://{config.database.host}:{config.database.port}",
+    'user': config.database.user,
+    'password': config.database.password,
+    'database': config.database.database
+}
+
+data_loader = DataLoader(db_config)
+
+# For now, provide dummy ArangoDB config for DataStorer
+# TODO: Migrate DataStorer to Neo4j or create Neo4j-compatible version
+arangodb_config = {
+    'url': 'http://localhost:8529',
+    'database': 'spirit_physics',
+    'user': 'root',
+    'password': 'password'
+}
+
+data_storer = DataStorer(arangodb_config)
 session_processor = SessionDataProcessor()
 
 
