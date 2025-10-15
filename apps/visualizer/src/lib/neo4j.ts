@@ -171,10 +171,10 @@ class Neo4jClient {
 
 // Neo4j configuration
 const neo4jConfig: Neo4jConfig = {
-  uri: process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'neo4j://localhost:7687',
+  uri: process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'bolt://localhost:7687',
   user: process.env.NEO4J_USER || 'neo4j',
-  password: process.env.NEO4J_PASSWORD || '',
-  database: process.env.NEO4J_DATABASE || 'neo4j'
+  password: process.env.NEO4J_PASSWORD || 'password',
+  database: process.env.NEO4J_DATABASE || 'myDb'
 }
 
 // Create singleton client instance

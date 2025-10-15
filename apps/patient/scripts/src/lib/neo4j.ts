@@ -1,7 +1,7 @@
 // Merkle DAG: Neo4jクライアント設定
 // サーバー/クライアント両方で使用可能なNeo4jクライアント
 
-import * as neo4jDriver from 'neo4j-driver'
+import { Neogma } from 'neogma'
 
 interface Neo4jConfig {
   uri: string
@@ -12,20 +12,27 @@ interface Neo4jConfig {
 
 class Neo4jClient {
   private config: Neo4jConfig
-  private driver: neo4jDriver.Driver
+  private neogma: Neogma
 
   constructor(config: Neo4jConfig) {
     this.config = config
-    this.driver = neo4jDriver.driver(
-      this.config.uri,
-      neo4jDriver.auth.basic(this.config.user, this.config.password)
+    this.neogma = new Neogma(
+      {
+        url: this.config.uri,
+        username: this.config.user,
+        password: this.config.password,
+        database: this.config.database,
+      },
+      {
+        logger: console.log,
+        encrypted: true,
+      }
     )
   }
 
   async query(cypherQuery: string, params?: Record<string, any>): Promise<any[]> {
-    const session = this.driver.session({ database: this.config.database })
     try {
-      const result = await session.run(cypherQuery, params || {})
+      const result = await this.neogma.queryRunner.run(cypherQuery, params || {})
 
       const records = result.records.map(record => {
         const obj: any = {}
@@ -39,13 +46,11 @@ class Neo4jClient {
     } catch (error) {
       console.error('Neo4j query error:', error)
       throw error
-    } finally {
-      await session.close()
     }
   }
 
   async close(): Promise<void> {
-    await this.driver.close()
+    await this.neogma.driver.close()
   }
 
   // Patient app specific methods
@@ -99,10 +104,10 @@ class Neo4jClient {
 
 // Neo4j configuration
 const neo4jConfig: Neo4jConfig = {
-  uri: process.env.NEO4J_URI || 'neo4j://localhost:7687',
+  uri: process.env.NEO4J_URI || 'bolt://localhost:7687',
   user: process.env.NEO4J_USER || 'neo4j',
-  password: process.env.NEO4J_PASSWORD || '',
-  database: process.env.NEO4J_DATABASE || 'neo4j'
+  password: process.env.NEO4J_PASSWORD || 'password',
+  database: process.env.NEO4J_DATABASE || 'myDb'
 }
 
 // Create singleton client instance
