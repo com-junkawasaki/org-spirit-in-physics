@@ -224,6 +224,80 @@ async def start_analysis_workflow(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/workflows/start-participants-import")
+async def start_participants_import_workflow():
+    """Start participants data import workflow."""
+    try:
+        # Start participants import workflow
+        workflow_request = {
+            "workflow_id": "participants-import",
+            "data": {}
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "http://workflow-orchestrator:8003/api/workflows/participants-import/execute",
+                json=workflow_request
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "workflow_id": result["id"],
+                    "status": "started",
+                    "message": "参加者データインポートワークフローが開始されました",
+                    "workflow_type": "participants-import"
+                }
+            else:
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"Participants import workflow execution failed: {response.text}"
+                )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to start participants import workflow: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/import/participants/status")
+async def get_participants_import_status():
+    """Get participants import status."""
+    try:
+        # Check if there's an active participants import workflow
+        async with httpx.AsyncClient() as client:
+            # Get recent workflow executions
+            response = await client.get("http://workflow-orchestrator:8003/api/workflow/executions?limit=10")
+
+            if response.status_code == 200:
+                executions = response.json()
+                # Find participants-import workflow
+                import_executions = [
+                    exec for exec in executions
+                    if exec.get("workflow_id") == "participants-import"
+                ]
+
+                if import_executions:
+                    latest = import_executions[0]
+                    return {
+                        "workflow_id": latest["id"],
+                        "status": latest["status"],
+                        "started_at": latest["started_at"],
+                        "completed_at": latest.get("completed_at"),
+                        "result": latest.get("result")
+                    }
+                else:
+                    return {"status": "no_active_import"}
+
+            else:
+                return {"status": "unknown"}
+
+    except Exception as e:
+        logger.error(f"Failed to get participants import status: {e}")
+        return {"status": "error", "error": str(e)}
+
+
 @app.get("/api/analysis/runs")
 async def get_analysis_runs():
     """Get analysis runs (legacy endpoint for compatibility)."""

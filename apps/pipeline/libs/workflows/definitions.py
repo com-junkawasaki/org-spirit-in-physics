@@ -194,6 +194,185 @@ def create_analysis_workflow() -> Dict[str, Any]:
     }
 
 
+def create_participants_import_workflow() -> Dict[str, Any]:
+    """
+    Create participants data import workflow.
+
+    This workflow imports participant data from the dataset directory,
+    processing each participant's files individually.
+    """
+    return {
+        "id": "participants-import-workflow",
+        "name": "Participants Import Workflow",
+        "description": "Import participant data from dataset directory",
+        "version": "1.0",
+        "specVersion": "0.8",
+        "start": "ScanParticipants",
+        "states": [
+            {
+                "name": "ScanParticipants",
+                "type": "operation",
+                "actions": [
+                    {
+                        "functionRef": {
+                            "refName": "scan-participants-directory",
+                            "arguments": {}
+                        }
+                    }
+                ],
+                "transition": "ImportParticipants"
+            },
+            {
+                "name": "ImportParticipants",
+                "type": "foreach",
+                "inputCollection": "${.participants}",
+                "iterationParam": "participant",
+                "actions": [
+                    {
+                        "functionRef": {
+                            "refName": "import-participant-data",
+                            "arguments": {
+                                "participantDir": "${.participant.path}"
+                            }
+                        }
+                    }
+                ],
+                "outputCollection": "${.importedParticipants}",
+                "transition": "ProcessSessions"
+            },
+            {
+                "name": "ProcessSessions",
+                "type": "foreach",
+                "inputCollection": "${.importedParticipants}",
+                "iterationParam": "participant",
+                "actions": [
+                    {
+                        "functionRef": {
+                            "refName": "import-session-data",
+                            "arguments": {
+                                "participantId": "${.participant.id}",
+                                "participantDir": "${.participant.path}"
+                            }
+                        }
+                    }
+                ],
+                "outputCollection": "${.processedSessions}",
+                "transition": "ImportPhysiologicalData"
+            },
+            {
+                "name": "ImportPhysiologicalData",
+                "type": "foreach",
+                "inputCollection": "${.processedSessions}",
+                "iterationParam": "session",
+                "actions": [
+                    {
+                        "functionRef": {
+                            "refName": "import-physiological-data",
+                            "arguments": {
+                                "sessionId": "${.session.id}",
+                                "participantId": "${.session.participantId}",
+                                "participantDir": "${.session.participantDir}"
+                            }
+                        }
+                    }
+                ],
+                "transition": "ImportVideoData"
+            },
+            {
+                "name": "ImportVideoData",
+                "type": "foreach",
+                "inputCollection": "${.processedSessions}",
+                "iterationParam": "session",
+                "actions": [
+                    {
+                        "functionRef": {
+                            "refName": "import-video-data",
+                            "arguments": {
+                                "sessionId": "${.session.id}",
+                                "participantId": "${.session.participantId}",
+                                "participantDir": "${.session.participantDir}"
+                            }
+                        }
+                    }
+                ],
+                "transition": "ImportHumeAnalysis"
+            },
+            {
+                "name": "ImportHumeAnalysis",
+                "type": "foreach",
+                "inputCollection": "${.processedSessions}",
+                "iterationParam": "session",
+                "actions": [
+                    {
+                        "functionRef": {
+                            "refName": "import-hume-analysis",
+                            "arguments": {
+                                "sessionId": "${.session.id}",
+                                "participantId": "${.session.participantId}",
+                                "participantDir": "${.session.participantDir}"
+                            }
+                        }
+                    }
+                ],
+                "transition": "CompleteImport"
+            },
+            {
+                "name": "CompleteImport",
+                "type": "operation",
+                "actions": [
+                    {
+                        "functionRef": {
+                            "refName": "finalize-import",
+                            "arguments": {
+                                "importedParticipants": "${.importedParticipants}",
+                                "processedSessions": "${.processedSessions}"
+                            }
+                        }
+                    }
+                ],
+                "end": True
+            }
+        ],
+        "functions": [
+            {
+                "name": "scan-participants-directory",
+                "type": "rest",
+                "uri": "http://data-ingestion:8001/api/import/scan-participants"
+            },
+            {
+                "name": "import-participant-data",
+                "type": "rest",
+                "uri": "http://data-ingestion:8001/api/import/participant"
+            },
+            {
+                "name": "import-session-data",
+                "type": "rest",
+                "uri": "http://data-ingestion:8001/api/import/session"
+            },
+            {
+                "name": "import-physiological-data",
+                "type": "rest",
+                "uri": "http://data-ingestion:8001/api/import/physiological"
+            },
+            {
+                "name": "import-video-data",
+                "type": "rest",
+                "uri": "http://data-ingestion:8001/api/import/video"
+            },
+            {
+                "name": "import-hume-analysis",
+                "type": "rest",
+                "uri": "http://analysis-engine:8002/api/import/hume-analysis"
+            },
+            {
+                "name": "finalize-import",
+                "type": "rest",
+                "uri": "http://data-ingestion:8001/api/import/finalize"
+            }
+        ]
+    }
+
+
 def get_workflow_definitions() -> List[WorkflowDefinition]:
     """Get all available workflow definitions."""
     return [
@@ -212,6 +391,15 @@ def get_workflow_definitions() -> List[WorkflowDefinition]:
             description="Analysis workflow for existing data",
             version="1.0",
             definition=create_analysis_workflow(),
+            created_at=now_utc(),
+            updated_at=now_utc()
+        ),
+        WorkflowDefinition(
+            id="participants-import",
+            name="Participants Data Import",
+            description="Import participant data from dataset directory",
+            version="1.0",
+            definition=create_participants_import_workflow(),
             created_at=now_utc(),
             updated_at=now_utc()
         )

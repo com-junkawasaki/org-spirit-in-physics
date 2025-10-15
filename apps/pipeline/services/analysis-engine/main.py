@@ -194,6 +194,87 @@ async def process_emotion_data(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/import/hume-analysis")
+async def import_hume_analysis(session_id: str, participant_id: str, participant_dir: str):
+    """Import Hume AI analysis data for a session."""
+    try:
+        from pathlib import Path
+        import json
+
+        dir_path = Path(participant_dir)
+
+        # Find Hume AI artifacts directory
+        hume_dirs = list(dir_path.glob("HumeAI_artifacts_*"))
+
+        imported_analyses = []
+        for hume_dir in hume_dirs:
+            try:
+                predictions_file = hume_dir / "HumeAI_predictions_*.json"
+                predictions_files = list(hume_dir.glob("HumeAI_predictions_*.json"))
+
+                if not predictions_files:
+                    continue
+
+                # Read Hume predictions
+                with open(predictions_files[0], 'r', encoding='utf-8') as f:
+                    hume_data = json.load(f)
+
+                # Process Hume analysis results
+                for prediction in hume_data.get('predictions', []):
+                    # Create Hume analysis record
+                    hume_record = HumeAnalysis(
+                        id=f"hume-{session_id}-{len(imported_analyses)}",
+                        session_id=session_id,
+                        participant_id=participant_id,
+                        emotions=prediction.get('emotions', {}),
+                        prosody=prediction.get('prosody', {}),
+                        language=prediction.get('language', {}),
+                        created_at=hume_processor.now_utc()
+                    )
+
+                    # Store Hume analysis data
+                    result = hume_processor.store_hume_analysis(hume_record)
+
+                    imported_analyses.append({
+                        "id": hume_record.id,
+                        "session_id": session_id,
+                        "emotions_count": len(hume_record.emotions),
+                        "prosody_count": len(hume_record.prosody),
+                        "language_count": len(hume_record.language)
+                    })
+
+                # Process CSV files if they exist
+                registry_dir = predictions_files[0].parent / "registry_file-0-*"
+                registry_dirs = list(hume_dir.glob("registry_file-0-*"))
+
+                if registry_dirs:
+                    csv_dir = registry_dirs[0] / "csv"
+                    if csv_dir.exists():
+                        # Process emotion CSV files
+                        burst_csv = csv_dir / "burst.csv"
+                        face_csv = csv_dir / "face.csv"
+                        language_csv = csv_dir / "language.csv"
+                        prosody_csv = csv_dir / "prosody.csv"
+
+                        # Additional processing of CSV data could be added here
+                        logger.info(f"Hume CSV files found in {csv_dir}")
+
+            except Exception as e:
+                logger.warning(f"Failed to process Hume directory {hume_dir}: {e}")
+                continue
+
+        logger.info(f"Hume analysis imported for session {session_id}: {len(imported_analyses)} records")
+
+        return {
+            "session_id": session_id,
+            "hume_analyses_imported": len(imported_analyses),
+            "hume_directories_processed": len(hume_dirs)
+        }
+    except Exception as e:
+        logger.error(f"Failed to import Hume analysis for session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/validate")
 async def validate_analysis_result(result_id: str):
     """Validate analysis results."""
