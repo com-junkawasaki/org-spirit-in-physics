@@ -352,6 +352,262 @@ export class Neo4jManager {
     }
   }
 
+  // Merkle DAG: import.methods.session_events
+  // セッションイベント作成メソッド
+  async createSessionEvents(events: any[]): Promise<void> {
+    try {
+      for (const event of events) {
+        await this.neogma.queryRunner.run(
+          `CREATE (e:SessionEvent {
+            participant_id: $participant_id,
+            type: $type,
+            timestamp: datetime($timestamp),
+            payload: $payload,
+            imported_at: datetime($imported_at)
+          })-[:BELONGS_TO]->(p:Participant {participant_id: $participant_id})`,
+          event
+        );
+      }
+    } catch (error) {
+      console.error('Error in createSessionEvents:', error);
+      throw error;
+    }
+  }
+
+  // Merkle DAG: import.methods.word_responses
+  // 単語応答データ作成メソッド
+  async createWordResponses(participantId: string, responses: any[]): Promise<void> {
+    try {
+      for (const response of responses) {
+        await this.neogma.queryRunner.run(
+          `MATCH (p:Participant {participant_id: $participant_id})
+           CREATE (r:WordResponse {
+             stimulus_word: $stimulus_word,
+             response_word: $response_word,
+             reaction_time_ms: $reaction_time_ms,
+             is_delayed: $is_delayed,
+             timestamp: datetime($timestamp),
+             imported_at: datetime($imported_at)
+           })-[:GIVEN_BY]->(p)`,
+          {
+            participant_id: participantId,
+            ...response,
+            imported_at: new Date().toISOString()
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error in createWordResponses:', error);
+      throw error;
+    }
+  }
+
+  // Merkle DAG: import.methods.emotion_entries
+  // 感情データ作成メソッド
+  async createEmotionEntries(entries: any[]): Promise<void> {
+    try {
+      for (const entry of entries) {
+        await this.neogma.queryRunner.run(
+          `MATCH (p:Participant {participant_id: $participant_id})
+           CREATE (e:EmotionEntry {
+             text: $text,
+             begin_time: $begin_time,
+             end_time: $end_time,
+             confidence: $confidence,
+             emotions: $emotions,
+             position: $position,
+             imported_at: datetime($imported_at)
+           })-[:HAS_EMOTION]->(p)`,
+          entry
+        );
+      }
+    } catch (error) {
+      console.error('Error in createEmotionEntries:', error);
+      throw error;
+    }
+  }
+
+  // Merkle DAG: import.methods.csv_elements
+  // CSVデータ作成メソッド
+  async createCSVElements(elements: any[]): Promise<void> {
+    try {
+      for (const element of elements) {
+        await this.neogma.queryRunner.run(
+          `MATCH (p:Participant {participant_id: $participant_id})
+           CREATE (c:CSVElement {
+             file_type: $file_type,
+             data: $data,
+             imported_at: datetime($imported_at)
+           })-[:HAS_CSV_DATA]->(p)`,
+          element
+        );
+      }
+    } catch (error) {
+      console.error('Error in createCSVElements:', error);
+      throw error;
+    }
+  }
+
+  // Merkle DAG: import.methods.get_sessions_by_participant
+  // 参加者別セッション取得メソッド
+  async getSessionsByParticipantId(participantId: string): Promise<any[]> {
+    try {
+      const result = await this.neogma.queryRunner.run(
+        `MATCH (p:Participant {participant_id: $participant_id})-[:BELONGS_TO]-(e:SessionEvent)
+         RETURN e ORDER BY e.timestamp`,
+        { participant_id: participantId }
+      );
+      return result.records.map((record: any) => record.get('e').properties);
+    } catch (error) {
+      console.error('Error in getSessionsByParticipantId:', error);
+      return [];
+    }
+  }
+
+  // Merkle DAG: import.methods.get_emotions_by_participant
+  // 参加者別感情データ取得メソッド
+  async getEmotionDataByParticipantId(participantId: string): Promise<any[]> {
+    try {
+      const result = await this.neogma.queryRunner.run(
+        `MATCH (p:Participant {participant_id: $participant_id})-[:HAS_EMOTION]-(e:EmotionEntry)
+         RETURN e ORDER BY e.begin_time`,
+        { participant_id: participantId }
+      );
+      return result.records.map((record: any) => record.get('e').properties);
+    } catch (error) {
+      console.error('Error in getEmotionDataByParticipantId:', error);
+      return [];
+    }
+  }
+
+  // Merkle DAG: import.methods.session_events
+  // セッションイベント作成メソッド
+  async createSessionEvents(events: any[]): Promise<void> {
+    try {
+      for (const event of events) {
+        await this.neogma.queryRunner.run(
+          `CREATE (e:SessionEvent {
+            participant_id: $participant_id,
+            type: $type,
+            timestamp: datetime($timestamp),
+            payload: $payload,
+            imported_at: datetime($imported_at)
+          })-[:BELONGS_TO]->(p:Participant {participant_id: $participant_id})`,
+          event
+        );
+      }
+    } catch (error) {
+      console.error('Error in createSessionEvents:', error);
+      throw error;
+    }
+  }
+
+  // Merkle DAG: import.methods.word_responses
+  // 単語応答データ作成メソッド
+  async createWordResponses(participantId: string, responses: any[]): Promise<void> {
+    try {
+      for (const response of responses) {
+        await this.neogma.queryRunner.run(
+          `MATCH (p:Participant {participant_id: $participant_id})
+           CREATE (r:WordResponse {
+             stimulus_word: $stimulus_word,
+             response_word: $response_word,
+             reaction_time_ms: $reaction_time_ms,
+             is_delayed: $is_delayed,
+             timestamp: datetime($timestamp),
+             imported_at: datetime($imported_at)
+           })-[:GIVEN_BY]->(p)`,
+          {
+            participant_id: participantId,
+            ...response,
+            imported_at: new Date().toISOString()
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error in createWordResponses:', error);
+      throw error;
+    }
+  }
+
+  // Merkle DAG: import.methods.emotion_entries
+  // 感情データ作成メソッド
+  async createEmotionEntries(entries: any[]): Promise<void> {
+    try {
+      for (const entry of entries) {
+        await this.neogma.queryRunner.run(
+          `MATCH (p:Participant {participant_id: $participant_id})
+           CREATE (e:EmotionEntry {
+             text: $text,
+             begin_time: $begin_time,
+             end_time: $end_time,
+             confidence: $confidence,
+             emotions: $emotions,
+             position: $position,
+             imported_at: datetime($imported_at)
+           })-[:HAS_EMOTION]->(p)`,
+          entry
+        );
+      }
+    } catch (error) {
+      console.error('Error in createEmotionEntries:', error);
+      throw error;
+    }
+  }
+
+  // Merkle DAG: import.methods.csv_elements
+  // CSVデータ作成メソッド
+  async createCSVElements(elements: any[]): Promise<void> {
+    try {
+      for (const element of elements) {
+        await this.neogma.queryRunner.run(
+          `MATCH (p:Participant {participant_id: $participant_id})
+           CREATE (c:CSVElement {
+             file_type: $file_type,
+             data: $data,
+             imported_at: datetime($imported_at)
+           })-[:HAS_CSV_DATA]->(p)`,
+          element
+        );
+      }
+    } catch (error) {
+      console.error('Error in createCSVElements:', error);
+      throw error;
+    }
+  }
+
+  // Merkle DAG: import.methods.get_sessions_by_participant
+  // 参加者別セッション取得メソッド
+  async getSessionsByParticipantId(participantId: string): Promise<any[]> {
+    try {
+      const result = await this.neogma.queryRunner.run(
+        `MATCH (p:Participant {participant_id: $participant_id})-[:BELONGS_TO]-(e:SessionEvent)
+         RETURN e ORDER BY e.timestamp`,
+        { participant_id: participantId }
+      );
+      return result.records.map((record: any) => record.get('e').properties);
+    } catch (error) {
+      console.error('Error in getSessionsByParticipantId:', error);
+      return [];
+    }
+  }
+
+  // Merkle DAG: import.methods.get_emotions_by_participant
+  // 参加者別感情データ取得メソッド
+  async getEmotionDataByParticipantId(participantId: string): Promise<any[]> {
+    try {
+      const result = await this.neogma.queryRunner.run(
+        `MATCH (p:Participant {participant_id: $participant_id})-[:HAS_EMOTION]-(e:EmotionEntry)
+         RETURN e ORDER BY e.begin_time`,
+        { participant_id: participantId }
+      );
+      return result.records.map((record: any) => record.get('e').properties);
+    } catch (error) {
+      console.error('Error in getEmotionDataByParticipantId:', error);
+      return [];
+    }
+  }
+
   async close(): Promise<void> {
     return this.client.close()
   }

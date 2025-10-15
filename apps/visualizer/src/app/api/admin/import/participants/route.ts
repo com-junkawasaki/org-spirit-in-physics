@@ -1,0 +1,136 @@
+import { NextRequest, NextResponse } from "next/server";
+import { promises as fs } from 'fs';
+import path from 'path';
+import { createNeo4jClient } from '@/lib/neo4j';
+
+// Merkle DAG: import.participants.endpoint
+// 参加者データインポートAPIエンドポイント
+// 依存関係: @participants/ (dataset), neo4j
+
+export async function POST(request: NextRequest) {
+  try {
+    console.log('API: Starting participant import from dataset...');
+
+    const results = [];
+
+    // Merkle DAG: import.participants.scan
+    // データセットディレクトリをスキャン
+    const datasetPath = path.join(process.cwd(), 'dataset', 'participants');
+
+    try {
+      await fs.access(datasetPath);
+    } catch {
+      throw new Error('Participants dataset directory not found');
+    }
+
+    const entries = await fs.readdir(datasetPath, { withFileTypes: true });
+    const participantDirs = entries.filter(entry => entry.isDirectory());
+
+    const client = createNeo4jClient();
+
+    for (const dirEntry of participantDirs) {
+      const participantId = dirEntry.name;
+      const participantPath = path.join(datasetPath, participantId);
+
+      try {
+        // Merkle DAG: import.participants.read_consent
+        // consent.jsonを読み取り
+        const consentPath = path.join(participantPath, 'consent.json');
+        const consentData = JSON.parse(await fs.readFile(consentPath, 'utf-8'));
+
+        // Merkle DAG: import.participants.validate_consent
+        // 同意データの検証
+        if (!consentData.participantId || !consentData.agreedAt) {
+          throw new Error('Invalid consent data structure');
+        }
+
+        // Merkle DAG: import.participants.check_existing
+        // 既存データのチェック（重複インポート防止）
+        const existingParticipant = await client.getParticipantDetails(participantId);
+        if (existingParticipant) {
+          results.push({
+            participantId,
+            status: 'skipped',
+            message: 'Participant already exists in database'
+          });
+          continue;
+        }
+
+        // Merkle DAG: import.participants.create_participant
+        // Neo4jに参加者ノードを作成
+        const participantData = {
+          participant_id: participantId,
+          signature: consentData.signature,
+          agreed_at: new Date(consentData.agreedAt).toISOString(),
+          agreements: consentData.agreements,
+          imported_at: new Date().toISOString()
+        };
+
+        await (client as any).createParticipant(participantData);
+
+        // Merkle DAG: import.participants.check_files
+        // 関連ファイルの存在確認
+        const hasSessionData = await fs.access(path.join(participantPath, 'session_data.json')).then(() => true).catch(() => false);
+        const hasVideoFiles = await checkVideoFiles(participantPath);
+        const hasHumeData = await checkHumeData(participantPath);
+
+        results.push({
+          participantId,
+          status: 'success',
+          message: 'Participant imported successfully',
+          metadata: {
+            hasSessionData,
+            hasVideoFiles,
+            hasHumeData
+          }
+        });
+
+      } catch (error) {
+        console.error(`Import error for participant ${participantId}:`, error);
+        results.push({
+          participantId,
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Unknown error during import'
+        });
+      }
+    }
+
+    console.log(`API: Participant import completed. Success: ${results.filter(r => r.status === 'success').length}, Failed: ${results.filter(r => r.status === 'error').length}, Skipped: ${results.filter(r => r.status === 'skipped').length}`);
+
+    return NextResponse.json({
+      success: true,
+      total: participantDirs.length,
+      processed: results.length,
+      results
+    });
+
+  } catch (error) {
+    console.error('API: Failed to import participants:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+}
+
+// Merkle DAG: import.participants.check_video
+// ビデオファイル存在確認関数
+async function checkVideoFiles(participantPath: string): Promise<boolean> {
+  try {
+    const entries = await fs.readdir(participantPath);
+    return entries.some(entry => entry.endsWith('.webm') || entry.endsWith('.mp4'));
+  } catch {
+    return false;
+  }
+}
+
+// Merkle DAG: import.participants.check_hume
+// Humeデータ存在確認関数
+async function checkHumeData(participantPath: string): Promise<boolean> {
+  try {
+    const entries = await fs.readdir(participantPath);
+    return entries.some(entry => entry.includes('HumeAI_artifacts'));
+  } catch {
+    return false;
+  }
+}
