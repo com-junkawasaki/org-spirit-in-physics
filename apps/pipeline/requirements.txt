@@ -1,4 +1,3 @@
-python-arango
 pyyaml
 hume
 pandas
@@ -11,4 +10,4 @@ flask-cors
 plotly
 matplotlib
 seaborn
-serverless-workflow-sdk
+neo4j

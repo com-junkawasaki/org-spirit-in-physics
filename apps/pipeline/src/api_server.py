@@ -18,7 +18,7 @@ import os
 sys.path.append('/app')
 
 # from packages.spirit_in_physics_pipeline.job_manager import JobManager, JobStatus  # Temporal disabled
-from packages.spirit_in_physics_pipeline.data_storer import DataStorer
+# from packages.spirit_in_physics_pipeline.data_storer import DataStorer  # ArangoDB removed
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -211,7 +211,7 @@ class HumeDataImporter:
 class AnalysisAPI:
     def __init__(self, config):
         # self.job_manager = JobManager(config['neo4j'])  # Temporal disabled
-        self.data_storer = DataStorer(config['neo4j'])
+        # self.data_storer = DataStorer(config['arango'])  # ArangoDB removed
         self.hume_importer = HumeDataImporter(config.get('neo4j', {}))
         self.neo4j_config = config.get('neo4j', {})  # Store config for direct DB access
         self.app = Flask(__name__)
