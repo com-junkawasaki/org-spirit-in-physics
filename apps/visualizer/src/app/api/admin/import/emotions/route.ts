@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
     const results = [];
 
     // Merkle DAG: import.emotions.scan
-    // データセットディレクトリをスキャン (apps/visualizer/src/datasetからの相対パス)
-    const datasetPath = path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants');
+    // データセットディレクトリをスキャン
+    const datasetPath = path.join(process.cwd(), 'dataset', 'participants');
 
     try {
       await fs.access(datasetPath);
