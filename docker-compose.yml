@@ -45,7 +45,7 @@ services:
       - "25260:3000"
     volumes:
       - ./apps/visualizer:/app
-      - /app/node_modules
+      - ./apps/visualizer/node_modules:/app/node_modules
     command: pnpm run dev
     env_file:
       - ./apps/visualizer/env.docker
