@@ -8,19 +8,19 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY apps/pipeline/services/data_ingestion/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY libs/ ./libs/
-COPY services/api-gateway/ ./services/api-gateway/
+COPY apps/pipeline/libs/ ./libs/
+COPY apps/pipeline/services/data_ingestion/ ./services/data_ingestion/
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV SERVICE_NAME=api-gateway
+ENV SERVICE_NAME=data-ingestion
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8001
 
 # Run the service
-CMD ["python", "-m", "services.api-gateway.main"]
+CMD ["python", "-m", "services.data_ingestion.main"]

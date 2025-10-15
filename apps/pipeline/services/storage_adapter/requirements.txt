@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+httpx
+pyyaml
+hume
+pandas
+numpy
+pydantic
+dotenv
+gensim
+flask
+flask-cors
+plotly
+matplotlib
+seaborn
+neo4j
+python-arango

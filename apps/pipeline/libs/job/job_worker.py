@@ -5,12 +5,12 @@ import sys
 from typing import Dict, Any, Optional
 import os
 
-from job_manager import JobManager, JobType, JobStatus
-from emotion_processor import EmotionProcessor
-from feature_extractor import FeatureExtractor
-from kawasaki_model import KawasakiModel
-from data_loader import DataLoader
-from data_storer import DataStorer
+from .job_manager import JobManager, JobType, JobStatus
+from ..analysis.emotion_processor import EmotionProcessor
+from ..analysis.feature_extractor import FeatureExtractor
+from ..analysis.kawasaki_model import KawasakiModel
+from ..data.data_loader import DataLoader
+from ..data.data_storer import DataStorer
 
 class JobWorker:
     def __init__(self, config: Dict[str, Any]):

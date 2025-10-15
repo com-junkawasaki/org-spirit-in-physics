@@ -52,8 +52,8 @@ class WorkflowExecution:
     workflow_id: str
     status: WorkflowStatus
     started_at: datetime
-    completed_at: Optional[datetime] = None
     data: Dict[str, Any]
+    completed_at: Optional[datetime] = None
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
 
@@ -63,8 +63,8 @@ class Participant:
     """Participant model."""
     id: str
     name: str
-    email: Optional[str] = None
     created_at: datetime
+    email: Optional[str] = None
     consent_given: bool = False
     session_count: int = 0
 
@@ -75,9 +75,9 @@ class ExperimentSession:
     id: str
     participant_id: str
     started_at: datetime
+    data: Dict[str, Any]
     completed_at: Optional[datetime] = None
     status: str = "active"
-    data: Dict[str, Any]
 
 
 @dataclass

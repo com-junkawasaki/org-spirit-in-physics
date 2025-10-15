@@ -10,7 +10,7 @@ from .emotion_processor import EmotionProcessor
 from .feature_extractor import FeatureExtractor
 from .hume_data_processor import HumeDataProcessor
 from .hume_ai_simulator import HumeAISimulator
-from .word2vec_trainer import Word2VecTrainer
+from .word2vec_trainer import AdvancedWord2VecTrainer as Word2VecTrainer
 
 __all__ = [
     "KawasakiModel",

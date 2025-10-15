@@ -5,23 +5,22 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
-    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY apps/pipeline/services/api_gateway/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY libs/ ./libs/
-COPY services/analysis-engine/ ./services/analysis-engine/
+COPY apps/pipeline/libs/ ./libs/
+COPY apps/pipeline/services/api_gateway/ ./services/api_gateway/
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV SERVICE_NAME=analysis-engine
+ENV SERVICE_NAME=api-gateway
 
 # Expose port
-EXPOSE 8002
+EXPOSE 8000
 
 # Run the service
-CMD ["python", "-m", "services.analysis-engine.main"]
+CMD ["python", "-m", "services.api_gateway.main"]

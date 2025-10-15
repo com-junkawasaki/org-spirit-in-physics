@@ -8,19 +8,19 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY apps/pipeline/services/storage_adapter/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY libs/ ./libs/
-COPY services/workflow-orchestrator/ ./services/workflow-orchestrator/
+COPY apps/pipeline/libs/ ./libs/
+COPY apps/pipeline/services/storage_adapter/ ./services/storage_adapter/
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV SERVICE_NAME=workflow-orchestrator
+ENV SERVICE_NAME=storage-adapter
 
 # Expose port
-EXPOSE 8003
+EXPOSE 8004
 
 # Run the service
-CMD ["python", "-m", "services.workflow-orchestrator.main"]
+CMD ["python", "-m", "services.storage_adapter.main"]

@@ -479,7 +479,7 @@ if __name__ == "__main__":
     service_config = config.services["data_ingestion"]
 
     uvicorn.run(
-        "main:app",
+        "services.data_ingestion.main:app",
         host=service_config.host,
         port=service_config.port,
         reload=service_config.debug,

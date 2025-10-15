@@ -5,9 +5,9 @@ This library contains database clients and storage utilities.
 """
 
 from .neo4j_client import Neo4jClient
-from .arangodb_client import ArangoDBClient
+# from .arangodb_client import ArangoDBClient  # TODO: Implement ArangoDB client
 
 __all__ = [
     "Neo4jClient",
-    "ArangoDBClient"
+    # "ArangoDBClient"
 ]

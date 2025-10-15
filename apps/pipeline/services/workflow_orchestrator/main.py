@@ -302,7 +302,7 @@ if __name__ == "__main__":
     service_config = config.services["workflow_orchestrator"]
 
     uvicorn.run(
-        "main:app",
+        "services.workflow_orchestrator.main:app",
         host=service_config.host,
         port=service_config.port,
         reload=service_config.debug,

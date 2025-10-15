@@ -224,6 +224,25 @@ async def start_analysis_workflow(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/workflows")
+async def get_workflows():
+    """Get all available workflows."""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://workflow-orchestrator:8003/api/workflows")
+
+            if response.status_code == 200:
+                workflows = response.json()
+                return workflows
+            else:
+                logger.error(f"Failed to get workflows from orchestrator: {response.status_code}")
+                raise HTTPException(status_code=response.status_code, detail="Failed to get workflows")
+
+    except Exception as e:
+        logger.error(f"Failed to get workflows: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/workflows/start-participants-import")
 async def start_participants_import_workflow():
     """Start participants data import workflow."""
@@ -333,7 +352,7 @@ if __name__ == "__main__":
     service_config = config.services["api_gateway"]
 
     uvicorn.run(
-        "main:app",
+        "services.api_gateway.main:app",
         host=service_config.host,
         port=service_config.port,
         reload=service_config.debug,

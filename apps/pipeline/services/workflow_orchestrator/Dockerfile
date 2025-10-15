@@ -8,19 +8,19 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY apps/pipeline/services/workflow_orchestrator/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY libs/ ./libs/
-COPY services/data-ingestion/ ./services/data-ingestion/
+COPY apps/pipeline/libs/ ./libs/
+COPY apps/pipeline/services/workflow_orchestrator/ ./services/workflow_orchestrator/
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV SERVICE_NAME=data-ingestion
+ENV SERVICE_NAME=workflow-orchestrator
 
 # Expose port
-EXPOSE 8001
+EXPOSE 8003
 
 # Run the service
-CMD ["python", "-m", "services.data-ingestion.main"]
+CMD ["python", "-m", "services.workflow_orchestrator.main"]
