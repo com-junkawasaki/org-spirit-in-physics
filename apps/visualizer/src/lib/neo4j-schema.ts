@@ -6,7 +6,8 @@
 // ノードラベル定義
 export const NODE_LABELS = {
   PARTICIPANT: 'Participant',
-  SESSION: 'Session',
+  EXPERIMENT: 'Experiment',
+  SESSION: 'ExperimentSession',
   RESPONSE: 'Response',
   WORD_STIMULUS: 'WordStimulus',
   VIDEO_FILE: 'VideoFile',
@@ -15,6 +16,7 @@ export const NODE_LABELS = {
 
 // リレーションシップタイプ定義
 export const RELATIONSHIP_TYPES = {
+  HAS_EXPERIMENT: 'HAS_EXPERIMENT',
   HAS_SESSION: 'HAS_SESSION',
   HAS_RESPONSE: 'HAS_RESPONSE',
   HAS_VIDEO_FILE: 'HAS_VIDEO_FILE',
@@ -29,8 +31,11 @@ export const RELATIONSHIP_TYPES = {
 export const Participant = (properties: Record<string, unknown> = {}) =>
   `(:Participant ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
 
+export const Experiment = (properties: Record<string, unknown> = {}) =>
+  `(:Experiment ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
+
 export const Session = (properties: Record<string, unknown> = {}) =>
-  `(:Session ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
+  `(:ExperimentSession ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
 
 export const Response = (properties: Record<string, unknown> = {}) =>
   `(:Response ${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''})`;
@@ -46,6 +51,9 @@ export const EmotionAnalysis = (properties: Record<string, unknown> = {}) =>
 
 // リレーションシップ定義（Cypher文字列として）
 // TODO: 将来的に @neo4j/cypher-builder を使用した型安全なリレーションシップ定義を実装
+
+export const HasExperiment = (_from: unknown, _to: unknown, properties: Record<string, unknown> = {}) =>
+  `-[${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''}:HAS_EXPERIMENT]->`;
 
 export const HasSession = (_from: unknown, _to: unknown, properties: Record<string, unknown> = {}) =>
   `-[${Object.keys(properties).length > 0 ? JSON.stringify(properties) : ''}:HAS_SESSION]->`;
@@ -69,6 +77,7 @@ export const HasEmotionAnalysis = (_from: unknown, _to: unknown, properties: Rec
 export const SCHEMA_CONSTRAINTS = {
   // ユニーク制約（主キーはアプリ側の安定ID＋DB制約で固める）
   participantId: `CREATE CONSTRAINT participant_id_unique IF NOT EXISTS FOR (p:Participant) REQUIRE p.id IS UNIQUE`,
+  experimentId: `CREATE CONSTRAINT experiment_id_unique IF NOT EXISTS FOR (e:Experiment) REQUIRE e.id IS UNIQUE`,
   sessionId: `CREATE CONSTRAINT session_id_unique IF NOT EXISTS FOR (s:ExperimentSession) REQUIRE s.id IS UNIQUE`,
   responseId: `CREATE CONSTRAINT response_id_unique IF NOT EXISTS FOR (r:Response) REQUIRE r.id IS UNIQUE`,
   wordStimulusId: `CREATE CONSTRAINT word_stimulus_id_unique IF NOT EXISTS FOR (w:WordStimulus) REQUIRE w.id IS UNIQUE`,
@@ -77,11 +86,13 @@ export const SCHEMA_CONSTRAINTS = {
 
   // ノードキー制約（複合キーによる整合性ハード担保）
   participantNodeKey: `CREATE CONSTRAINT participant_node_key IF NOT EXISTS FOR (p:Participant) REQUIRE (p.id, p.created_at) IS NODE KEY`,
-  sessionNodeKey: `CREATE CONSTRAINT session_node_key IF NOT EXISTS FOR (s:ExperimentSession) REQUIRE (s.id, s.participant_id) IS NODE KEY`,
-  responseNodeKey: `CREATE CONSTRAINT response_node_key IF NOT EXISTS FOR (r:Response) REQUIRE (r.id, r.session_id) IS NODE KEY`,
+  experimentNodeKey: `CREATE CONSTRAINT experiment_node_key IF NOT EXISTS FOR (e:Experiment) REQUIRE (e.id, e.created_at) IS NODE KEY`,
+  sessionNodeKey: `CREATE CONSTRAINT session_node_key IF NOT EXISTS FOR (s:ExperimentSession) REQUIRE (s.id, s.participant_id, s.experiment_id) IS NODE KEY`,
+  responseNodeKey: `CREATE CONSTRAINT response_node_key IF NOT EXISTS FOR (r:Response) REQUIRE (r.id, r.session_id, r.experiment_id) IS NODE KEY`,
   
   // 存在制約（EXISTS制約による整合性ハード担保）
   participantConsentExists: `CREATE CONSTRAINT participant_consent_exists IF NOT EXISTS FOR (p:Participant) REQUIRE p.consent_given IS NOT NULL`,
+  experimentStatusExists: `CREATE CONSTRAINT experiment_status_exists IF NOT EXISTS FOR (e:Experiment) REQUIRE e.status IS NOT NULL`,
   sessionStatusExists: `CREATE CONSTRAINT session_status_exists IF NOT EXISTS FOR (s:ExperimentSession) REQUIRE s.status IS NOT NULL`,
   responseEventTsExists: `CREATE CONSTRAINT response_event_ts_exists IF NOT EXISTS FOR (r:Response) REQUIRE r.event_ts IS NOT NULL`,
   
@@ -95,11 +106,14 @@ export const SCHEMA_CONSTRAINTS = {
 export const SCHEMA_INDEXES = {
   // 基本インデックス
   participantCreatedAt: `CREATE INDEX participant_created_at_idx IF NOT EXISTS FOR (p:Participant) ON (p.created_at)`,
-  sessionStartTs: `CREATE INDEX session_start_ts_idx IF NOT EXISTS FOR (s:Session) ON (s.start_ts)`,
+  experimentCreatedAt: `CREATE INDEX experiment_created_at_idx IF NOT EXISTS FOR (e:Experiment) ON (e.created_at)`,
+  sessionStartTs: `CREATE INDEX session_start_ts_idx IF NOT EXISTS FOR (s:ExperimentSession) ON (s.start_ts)`,
   responseEventTs: `CREATE INDEX response_event_ts_idx IF NOT EXISTS FOR (r:Response) ON (r.event_ts)`,
   responseEmotion: `CREATE INDEX response_emotion_idx IF NOT EXISTS FOR (r:Response) ON (r.emotion)`,
   
   // 複合インデックス（パフォーマンス最適化）
+  participantExperimentComposite: `CREATE INDEX participant_experiment_composite_idx IF NOT EXISTS FOR (p:Participant)-[r:HAS_EXPERIMENT]->(e:Experiment) ON (p.id, e.created_at)`,
+  experimentSessionComposite: `CREATE INDEX experiment_session_composite_idx IF NOT EXISTS FOR (e:Experiment)-[r:HAS_SESSION]->(s:ExperimentSession) ON (e.id, s.start_ts)`,
   participantSessionComposite: `CREATE INDEX participant_session_composite_idx IF NOT EXISTS FOR (p:Participant)-[r:HAS_SESSION]->(s:ExperimentSession) ON (p.id, s.start_ts)`,
   responseEmotionComposite: `CREATE INDEX response_emotion_composite_idx IF NOT EXISTS FOR (r:Response) ON (r.emotion, r.confidence_score)`,
   sessionTemporal: `CREATE INDEX session_temporal_idx IF NOT EXISTS FOR (s:ExperimentSession) ON (s.start_ts, s.end_ts)`,

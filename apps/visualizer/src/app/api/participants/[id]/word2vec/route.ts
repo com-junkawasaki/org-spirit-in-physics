@@ -16,9 +16,9 @@ export async function GET(
     const client = createNeo4jClient();
 
     // Merkle DAG: api.participants.word2vec.query_responses
-    // 参加者の応答データを取得
+    // 参加者の応答データを取得（Experiment階層経由）
     const responseQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
       WHERE r.stimulus_word IS NOT NULL AND r.response_word IS NOT NULL
       RETURN 
         r.stimulus_word as stimulus_word,
@@ -26,7 +26,9 @@ export async function GET(
         r.reaction_time_ms as reaction_time_ms,
         r.spirit_probability as spirit_probability,
         r.event_ts as timestamp,
-        r.id as response_id
+        r.id as response_id,
+        e.id as experiment_id,
+        s.id as session_id
       ORDER BY r.event_ts
     `;
 

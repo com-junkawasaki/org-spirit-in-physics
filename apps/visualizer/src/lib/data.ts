@@ -232,10 +232,10 @@ export async function getParticipantData(participantId: string): Promise<Partici
     const participant = await client.getParticipantDetails(participantId)
     if (!participant) return null
 
-    // セッションを取得
+    // セッションを取得（Experiment階層経由）
     const sessionsQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      RETURN s, e
       ORDER BY s.start_ts DESC
     `
     const sessionsResult = await client.query(sessionsQuery, { participantId })

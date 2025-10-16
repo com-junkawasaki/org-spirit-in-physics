@@ -37,11 +37,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Merkle DAG: api.analysis.session_comparison.get_sessions
-    // セッションデータ取得
+    // セッションデータ取得（Experiment階層経由）
     const sessionsQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s.id as sessionId, s.start_time as startTime, s.end_time as endTime
-      ORDER BY s.start_time
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      RETURN s.id as sessionId, s.start_ts as startTime, s.end_ts as endTime, e.id as experimentId
+      ORDER BY s.start_ts
     `;
     const sessions = await client.query(sessionsQuery, { participantId });
     

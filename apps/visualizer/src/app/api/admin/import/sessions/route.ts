@@ -186,14 +186,15 @@ export async function POST(request: NextRequest) {
         if (sessionCount > 0 && body.forceReimport) {
           console.log(`Deleting existing session data for participant ${participantId}`);
           const deleteQuery = `
-            MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
+            MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)
+            OPTIONAL MATCH (e)-[:HAS_SESSION]->(s:ExperimentSession)
             OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
             OPTIONAL MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-            DETACH DELETE s, r, pd
-            RETURN count(s) as deleted_sessions
+            DETACH DELETE e, s, r, pd
+            RETURN count(e) as deleted_experiments, count(s) as deleted_sessions
           `;
           await client.query(deleteQuery, { participantId });
-          console.log(`Deleted existing session data for participant ${participantId}`);
+          console.log(`Deleted existing experiment and session data for participant ${participantId}`);
         } else if (sessionCount > 0 && !body.forceReimport) {
           results.push({
             participantId,
@@ -202,6 +203,31 @@ export async function POST(request: NextRequest) {
           });
           continue;
         }
+
+        // Merkle DAG: import.sessions.create_experiment
+        // Experimentノードを作成（1回の実験に対して1つのExperiment）
+        const experimentId = `experiment_${participantId}_${Date.now()}`;
+        console.log(`Creating Experiment node: ${experimentId}`);
+        
+        await client.mergeNode('Experiment', {
+          id: experimentId,
+          experiment_name: `Spirit in Physics Experiment`,
+          experiment_type: 'word_association',
+          description: 'Word association experiment with spirit probability analysis',
+          status: 'completed',
+          start_date: new Date().toISOString(),
+          end_date: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+        // Participant → Experiment リレーション作成
+        console.log(`Creating Participant-Experiment relationship`);
+        await client.query(`
+          MATCH (p:Participant {id: $participantId})
+          MATCH (e:Experiment {id: $experimentId})
+          MERGE (p)-[:HAS_EXPERIMENT]->(e)
+        `, { participantId, experimentId });
 
         // Merkle DAG: import.sessions.create_session
         // 各セッションファイルを処理してNeo4jに格納
@@ -243,6 +269,7 @@ export async function POST(request: NextRequest) {
           await client.mergeNode('ExperimentSession', {
             id: sessionId,
             participant_id: participantId,
+            experiment_id: experimentId,
             start_ts: sessionEvents.find(e => e.type === 'session_started')?.timestamp || new Date().toISOString(),
             end_ts: sessionEvents.find(e => e.type === 'session_ended')?.timestamp || new Date().toISOString(),
             status: 'completed',
@@ -253,17 +280,17 @@ export async function POST(request: NextRequest) {
           });
           console.log(`ExperimentSession node created for ${sessionId}`);
 
-          // Merkle DAG: import.sessions.create_participant_session_relationship
-          // 参加者→セッションのリレーションを作成
-          console.log(`Creating participant-session relationship for ${sessionId}`);
-          const participantSessionRelationshipQuery = `
-            MATCH (p:Participant {id: $participantId})
+          // Merkle DAG: import.sessions.create_experiment_session_relationship
+          // Experiment→Sessionのリレーションを作成
+          console.log(`Creating experiment-session relationship for ${sessionId}`);
+          const experimentSessionRelationshipQuery = `
+            MATCH (e:Experiment {id: $experimentId})
             MATCH (s:ExperimentSession {id: $sessionId})
-            MERGE (p)-[:HAS_SESSION]->(s)
+            MERGE (e)-[:HAS_SESSION]->(s)
             RETURN count(s) as relationship_count
           `;
-          await client.query(participantSessionRelationshipQuery, { participantId, sessionId });
-          console.log(`Participant-session relationship created for ${sessionId}`);
+          await client.query(experimentSessionRelationshipQuery, { experimentId, sessionId });
+          console.log(`Experiment-session relationship created for ${sessionId}`);
 
           // Merkle DAG: import.sessions.create_word_responses
           // 単語応答データを抽出して格納
@@ -275,6 +302,7 @@ export async function POST(request: NextRequest) {
             const responseData = wordResponses.map((response: any) => ({
               id: `response_${participantId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               participant_id: participantId,
+              experiment_id: experimentId,
               session_id: sessionId,
               stimulus_word: response.stimulus_word,
               response_word: response.response_word,

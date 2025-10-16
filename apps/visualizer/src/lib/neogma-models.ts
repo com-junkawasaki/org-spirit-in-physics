@@ -28,14 +28,38 @@ interface ParticipantProperties extends BaseNode {
   additional_properties?: Record<string, unknown>;
 }
 
+// Experimentモデル - 実験の上位概念
+interface ExperimentProperties extends BaseNode {
+  // 基本プロパティ（疎結合）
+  experiment_name?: string;
+  experiment_type?: string;
+  description?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+  // Map的フィールドは最後に
+  additional_properties?: Record<string, unknown>;
+}
+
 // ガイドライン: 双方向は必要最小限・片側保存原則
 interface ParticipantRelatedNodes {
   // 一方向関係のみ定義（片側保存）
+  experiments: ModelRelatedNodesI<
+    unknown, // 循環参照を避けるためunknownを使用
+    {
+      id: string;
+      participant_id: string;
+      experiment_name?: string;
+      experiment_type?: string;
+      status?: string;
+    }
+  >;
   sessions: ModelRelatedNodesI<
     unknown, // 循環参照を避けるためunknownを使用
     {
       id: string;
       participant_id: string;
+      experiment_id: string;
       start_ts: string;
       end_ts?: string;
       status: string;
@@ -46,6 +70,7 @@ interface ParticipantRelatedNodes {
     {
       id: string;
       participant_id: string;
+      experiment_id: string;
       session_id: string;
       stimulus_word: string;
       response_word: string;
@@ -57,10 +82,31 @@ interface ParticipantRelatedNodes {
   >;
 }
 
+// Experiment関連ノード定義
+interface ExperimentRelatedNodes {
+  // 一方向関係のみ定義（片側保存）
+  participant: ModelRelatedNodesI<
+    unknown,
+    ParticipantProperties
+  >;
+  sessions: ModelRelatedNodesI<
+    unknown,
+    {
+      id: string;
+      participant_id: string;
+      experiment_id: string;
+      start_ts: string;
+      end_ts?: string;
+      status: string;
+    }
+  >;
+}
+
 // ExperimentSessionモデル - ガイドライン: 関係から決める型の写像
 interface ExperimentSessionProperties extends BaseNode {
   // 基本プロパティ（疎結合）
   participant_id: string; // ガイドライン: 主キーはアプリ側の安定ID
+  experiment_id: string; // ガイドライン: 主キーはアプリ側の安定ID
   start_ts: string;
   end_ts?: string;
   status: string;
@@ -77,11 +123,16 @@ interface ExperimentSessionRelatedNodes {
     unknown,
     ParticipantProperties
   >;
+  experiment: ModelRelatedNodesI<
+    unknown,
+    ExperimentProperties
+  >;
   responses: ModelRelatedNodesI<
     unknown,
     {
       id: string;
       participant_id: string;
+      experiment_id: string;
       session_id: string;
       stimulus_word: string;
       response_word: string;
@@ -97,6 +148,7 @@ interface ExperimentSessionRelatedNodes {
 interface ResponseProperties extends BaseNode {
   // 基本プロパティ（疎結合）
   participant_id: string; // ガイドライン: 主キーはアプリ側の安定ID
+  experiment_id: string; // ガイドライン: 主キーはアプリ側の安定ID
   session_id: string; // ガイドライン: 主キーはアプリ側の安定ID
   stimulus_word: string;
   response_word: string;
@@ -115,6 +167,10 @@ interface ResponseRelatedNodes {
   participant: ModelRelatedNodesI<
     unknown,
     ParticipantProperties
+  >;
+  experiment: ModelRelatedNodesI<
+    unknown,
+    ExperimentProperties
   >;
   session: ModelRelatedNodesI<
     unknown,
@@ -204,6 +260,30 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
     neogmaInstance
   );
 
+  const ExperimentModel = ModelFactory<ExperimentProperties, ExperimentRelatedNodes>(
+    {
+      label: 'Experiment',
+      schema: {
+        // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
+        id: { type: 'string', required: true },
+        // 基本プロパティ（疎結合）
+        experiment_name: { type: 'string' },
+        experiment_type: { type: 'string' },
+        description: { type: 'string' },
+        status: { type: 'string' },
+        start_date: { type: 'string' },
+        end_date: { type: 'string' },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+        // Map的フィールドは最後に
+        additional_properties: { type: 'object' },
+        metadata: { type: 'object' },
+      },
+      primaryKeyField: 'id', // ガイドライン: 主キーはアプリ側の安定ID
+    },
+    neogmaInstance
+  );
+
   const ExperimentSessionModel = ModelFactory<ExperimentSessionProperties, ExperimentSessionRelatedNodes>(
     {
       label: 'ExperimentSession',
@@ -211,6 +291,7 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
         // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
         id: { type: 'string', required: true },
         participant_id: { type: 'string', required: true },
+        experiment_id: { type: 'string', required: true },
         // 基本プロパティ（疎結合）
         start_ts: { type: 'string', required: true },
         end_ts: { type: 'string' },
@@ -235,6 +316,7 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
         // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
         id: { type: 'string', required: true },
         participant_id: { type: 'string', required: true },
+        experiment_id: { type: 'string', required: true },
         session_id: { type: 'string', required: true },
         // 基本プロパティ（疎結合）
         stimulus_word: { type: 'string', required: true },
@@ -327,6 +409,7 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
 
   return {
     Participant: ParticipantModel,
+    Experiment: ExperimentModel,
     ExperimentSession: ExperimentSessionModel,
     Response: ResponseModel,
     EmotionAnalysis: EmotionAnalysisModel,
