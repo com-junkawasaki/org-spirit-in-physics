@@ -85,10 +85,13 @@ export async function POST(request: NextRequest) {
     // Merkle DAG: import.sessions.scan
     // データセットディレクトリをスキャン（複数候補から解決）
     const datasetPath = await resolveDatasetParticipantsPath();
+    console.log(`Dataset path resolved to: ${datasetPath}`);
 
     try {
       await fs.access(datasetPath);
+      console.log(`Dataset path exists: ${datasetPath}`);
     } catch {
+      console.error(`Dataset path not found: ${datasetPath}`);
       throw new Error('Participants dataset directory not found');
     }
 
@@ -127,6 +130,7 @@ export async function POST(request: NextRequest) {
         try {
           await fs.access(sessionDataPath);
         } catch (error) {
+          console.log(`session_data.json not found at ${sessionDataPath}`);
           results.push({
             participantId,
             status: 'skipped',
@@ -135,7 +139,9 @@ export async function POST(request: NextRequest) {
           continue;
         }
         
+        console.log(`Reading session data from ${sessionDataPath}`);
         const sessionData = JSON.parse(await fs.readFile(sessionDataPath, 'utf-8'));
+        console.log(`Session data loaded: ${sessionData.events?.length || 0} events`);
 
         // Merkle DAG: import.sessions.validate_session_data
         // セッションデータの検証
@@ -152,13 +158,27 @@ export async function POST(request: NextRequest) {
         const existingSessionsResult = await client.query(existingSessionsQuery, { participantId });
         const sessionCount = existingSessionsResult[0]?.session_count || 0;
         
-        if (sessionCount > 0) {
+        if (sessionCount > 0 && !body.forceReimport) {
           results.push({
             participantId,
             status: 'skipped',
             message: 'Session data already exists for this participant'
           });
           continue;
+        }
+
+        // Merkle DAG: import.sessions.delete_existing
+        // 既存データの削除（forceReimportがtrueの場合）
+        if (sessionCount > 0 && body.forceReimport) {
+          console.log(`Deleting existing session data for participant ${participantId}`);
+          const deleteQuery = `
+            MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
+            OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
+            OPTIONAL MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
+            DETACH DELETE s, r, pd
+            RETURN count(s) as deleted_sessions
+          `;
+          await client.query(deleteQuery, { participantId });
         }
 
         // Merkle DAG: import.sessions.create_session
@@ -184,9 +204,21 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         });
 
+        // Merkle DAG: import.sessions.create_participant_session_relationship
+        // 参加者→セッションのリレーションを作成
+        const participantSessionRelationshipQuery = `
+          MATCH (p:Participant {id: $participantId})
+          MATCH (s:ExperimentSession {id: $sessionId})
+          MERGE (p)-[:HAS_SESSION]->(s)
+          RETURN count(s) as relationship_count
+        `;
+        await client.query(participantSessionRelationshipQuery, { participantId, sessionId });
+
         // Merkle DAG: import.sessions.create_word_responses
         // 単語応答データを抽出して格納
+        console.log(`Extracting word responses from ${sessionData.events.length} events`);
         const wordResponses = extractWordResponses(sessionData.events);
+        console.log(`Extracted ${wordResponses.length} word responses`);
         if (wordResponses.length > 0) {
           // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
           const responseData = wordResponses.map((response: any) => ({
@@ -205,6 +237,16 @@ export async function POST(request: NextRequest) {
           }));
           
           await client.bulkInsertNodes('Response', responseData, 100);
+
+          // Merkle DAG: import.sessions.create_relationships
+          // セッション→応答のリレーションを作成
+          const relationshipQuery = `
+            MATCH (s:ExperimentSession {id: $sessionId})
+            MATCH (r:Response {session_id: $sessionId})
+            MERGE (s)-[:HAS_RESPONSE]->(r)
+            RETURN count(r) as relationship_count
+          `;
+          await client.query(relationshipQuery, { sessionId });
         }
 
         // Merkle DAG: import.sessions.calculate_statistics
@@ -256,6 +298,16 @@ export async function POST(request: NextRequest) {
                 
                 await client.bulkInsertNodes('PhysiologicalData', physiologicalData, 100);
                 physiologicalRecordsCount += data.length;
+
+                // Merkle DAG: import.sessions.create_physiological_relationships
+                // セッション→生理データのリレーションを作成
+                const physiologicalRelationshipQuery = `
+                  MATCH (s:ExperimentSession {id: $sessionId})
+                  MATCH (p:PhysiologicalData {session_id: $sessionId})
+                  MERGE (s)-[:HAS_PHYSIOLOGICAL_DATA]->(p)
+                  RETURN count(p) as relationship_count
+                `;
+                await client.query(physiologicalRelationshipQuery, { sessionId });
 
                 console.log(`Imported ${data.length} physiological records from ${csvFile.name}`);
               }
@@ -314,14 +366,25 @@ function extractWordResponses(events: any[]) {
   const wordResponses = [];
 
   for (const event of events) {
-    if (event.type === 'response_window_closed' && event.payload?.stimulusWord) {
-      wordResponses.push({
-        stimulusWord: event.payload.stimulusWord,
-        responseWord: event.payload.responseWord || '',
-        reactionTimeMs: event.payload.reactionTimeMs || 0,
-        isDelayed: event.payload.isDelayed || false,
-        timestamp: new Date(event.timestamp).toISOString()
-      });
+    // 複数のイベントタイプに対応
+    if ((event.type === 'response_window_closed' || event.type === 'word_response' || event.type === 'response') && event.payload) {
+      // 複数のフィールド名パターンに対応
+      const stimulusWord = event.payload.stimulusWord || event.payload.stimulus_word || event.payload.stimulus || event.payload.word;
+      const responseWord = event.payload.responseWord || event.payload.response_word || event.payload.response || '';
+      const reactionTimeMs = event.payload.reactionTimeMs || event.payload.reaction_time_ms || event.payload.reactionTime || 0;
+      
+      if (stimulusWord) {
+        wordResponses.push({
+          stimulus_word: stimulusWord,
+          response_word: responseWord,
+          reaction_time_ms: reactionTimeMs,
+          is_delayed: event.payload.isDelayed || event.payload.is_delayed || false,
+          emotion: event.payload.emotion || null,
+          emotion_confidence: event.payload.emotionConfidence || event.payload.emotion_confidence || 0,
+          spirit_probability: event.payload.spiritProbability || event.payload.spirit_probability || 0.5,
+          timestamp: new Date(event.timestamp).toISOString()
+        });
+      }
     }
   }
 
@@ -368,8 +431,17 @@ async function resolveDatasetParticipantsPath(): Promise<string> {
     path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants'),
     path.join(process.cwd(), 'src', 'dataset', 'participants')
   ];
+  console.log('Trying dataset path candidates:');
   for (const p of candidates) {
-    try { await fs.access(p); return p; } catch {}
+    console.log(`  Trying: ${p}`);
+    try { 
+      await fs.access(p); 
+      console.log(`  Found: ${p}`);
+      return p; 
+    } catch (error) {
+      console.log(`  Not found: ${p}`);
+    }
   }
+  console.log(`Using fallback: ${path.join(process.cwd(), 'dataset', 'participants')}`);
   return path.join(process.cwd(), 'dataset', 'participants');
 }
