@@ -20,18 +20,25 @@ const menuItems: MenuItem[] = [
         description: 'システム概要と統計'
     },
     {
-        id: 'system-metrics',
-        label: 'システムメトリクス',
-        href: '/system-metrics',
-        icon: '📈',
-        description: 'システムパフォーマンス監視'
-    },
-    {
         id: 'participants',
         label: '被験者一覧',
         href: '/participants',
         icon: '👥',
         description: '参加者データ管理'
+    },
+    {
+        id: 'experiments',
+        label: '実験一覧',
+        href: '/experiments',
+        icon: '🧪',
+        description: '実験データ管理'
+    },
+    {
+        id: 'system-metrics',
+        label: 'システムメトリクス',
+        href: '/system-metrics',
+        icon: '📈',
+        description: 'システムパフォーマンス監視'
     },
     {
         id: 'procs',

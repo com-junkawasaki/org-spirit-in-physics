@@ -440,3 +440,282 @@ export async function getAnalysisResultsForParticipant(participantId: string): P
     return []
   }
 }
+
+// Merkle DAG: experiments_data_layer -> experiment_management_functions
+export interface ExperimentData {
+  id: string
+  name: string
+  description?: string
+  participantCount: number
+  sessionCount: number
+  averageSpiritProbability: number
+  createdAt: string
+  updatedAt: string
+  status: 'active' | 'completed' | 'draft'
+}
+
+export interface ExperimentSessionData {
+  id: string
+  sessionType: string
+  startTime: string
+  endTime?: string
+  participantId: string
+  participantName: string
+  responseCount: number
+  averageSpiritProbability: number
+  status: 'completed' | 'in_progress' | 'failed'
+}
+
+export interface ExperimentParticipantData {
+  id: string
+  name: string
+  sessionCount: number
+  responseCount: number
+  averageSpiritProbability: number
+  lastActivity: number | null
+}
+
+export interface ExperimentAnalysisData {
+  experimentId: string
+  totalParticipants: number
+  totalSessions: number
+  totalResponses: number
+  averageSpiritProbability: number
+  spiritProbabilityDistribution: {
+    high: number
+    medium: number
+    low: number
+  }
+  topEmotions: Array<{
+    emotion: string
+    frequency: number
+    averageIntensity: number
+  }>
+  wordAssociationInsights: Array<{
+    word: string
+    averageResponseTime: number
+    spiritCorrelation: number
+  }>
+}
+
+export interface ExperimentTimelineEvent {
+  id: string
+  timestamp: string
+  type: 'session_start' | 'session_end' | 'participant_join' | 'analysis_complete'
+  title: string
+  description: string
+  participantId?: string
+  participantName?: string
+  sessionId?: string
+}
+
+// Experiment data fetching functions - Neo4j/Neogmaベース
+export async function getAllExperiments(): Promise<ExperimentData[]> {
+  try {
+    const client = createNeo4jClient()
+    
+    // TODO: Implement Neo4j query for experiments
+    // For now, return placeholder data
+    return [
+      {
+        id: 'exp-001',
+        name: 'Spirit in Physics Study 2024',
+        description: 'Main experiment for Spirit in Physics research',
+        participantCount: 12,
+        sessionCount: 24,
+        averageSpiritProbability: 0.724,
+        createdAt: '2024-10-01',
+        updatedAt: '2024-10-16',
+        status: 'active'
+      }
+    ]
+  } catch (error) {
+    console.error('Failed to fetch all experiments:', error)
+    return []
+  }
+}
+
+export async function getExperimentDetail(experimentId: string): Promise<ExperimentData | null> {
+  try {
+    const client = createNeo4jClient()
+    
+    // TODO: Implement Neo4j query for experiment detail
+    // For now, return placeholder data
+    return {
+      id: experimentId,
+      name: 'Spirit in Physics Study 2024',
+      description: 'Main experiment for Spirit in Physics research',
+      participantCount: 12,
+      sessionCount: 24,
+      averageSpiritProbability: 0.724,
+      createdAt: '2024-10-01',
+      updatedAt: '2024-10-16',
+      status: 'active'
+    }
+  } catch (error) {
+    console.error('Failed to get experiment detail:', error)
+    return null
+  }
+}
+
+export async function getExperimentSessions(experimentId: string): Promise<ExperimentSessionData[]> {
+  try {
+    const client = createNeo4jClient()
+    
+    // TODO: Implement Neo4j query for experiment sessions
+    // For now, return placeholder data
+    return [
+      {
+        id: 'session-001',
+        sessionType: 'Word Association Test',
+        startTime: '2024-10-01T10:00:00Z',
+        endTime: '2024-10-01T11:30:00Z',
+        participantId: 'participant-001',
+        participantName: 'Participant A',
+        responseCount: 100,
+        averageSpiritProbability: 0.724,
+        status: 'completed'
+      },
+      {
+        id: 'session-002',
+        sessionType: 'Word Association Test',
+        startTime: '2024-10-02T14:00:00Z',
+        endTime: '2024-10-02T15:30:00Z',
+        participantId: 'participant-002',
+        participantName: 'Participant B',
+        responseCount: 95,
+        averageSpiritProbability: 0.689,
+        status: 'completed'
+      }
+    ]
+  } catch (error) {
+    console.error('Failed to get experiment sessions:', error)
+    return []
+  }
+}
+
+export async function getExperimentParticipants(experimentId: string): Promise<ExperimentParticipantData[]> {
+  try {
+    const client = createNeo4jClient()
+    
+    // TODO: Implement Neo4j query for experiment participants
+    // For now, return placeholder data
+    return [
+      {
+        id: 'participant-001',
+        name: 'Participant A',
+        sessionCount: 2,
+        responseCount: 195,
+        averageSpiritProbability: 0.724,
+        lastActivity: Date.now() - 86400000 // 1 day ago
+      },
+      {
+        id: 'participant-002',
+        name: 'Participant B',
+        sessionCount: 1,
+        responseCount: 95,
+        averageSpiritProbability: 0.689,
+        lastActivity: Date.now() - 172800000 // 2 days ago
+      }
+    ]
+  } catch (error) {
+    console.error('Failed to get experiment participants:', error)
+    return []
+  }
+}
+
+export async function getExperimentAnalysis(experimentId: string): Promise<ExperimentAnalysisData | null> {
+  try {
+    const client = createNeo4jClient()
+    
+    // TODO: Implement Neo4j query for experiment analysis
+    // For now, return placeholder data
+    return {
+      experimentId,
+      totalParticipants: 12,
+      totalSessions: 24,
+      totalResponses: 2400,
+      averageSpiritProbability: 0.724,
+      spiritProbabilityDistribution: {
+        high: 8,
+        medium: 3,
+        low: 1
+      },
+      topEmotions: [
+        { emotion: '喜び', frequency: 0.35, averageIntensity: 0.72 },
+        { emotion: '驚き', frequency: 0.28, averageIntensity: 0.68 },
+        { emotion: '恐れ', frequency: 0.22, averageIntensity: 0.45 },
+        { emotion: '悲しみ', frequency: 0.15, averageIntensity: 0.38 }
+      ],
+      wordAssociationInsights: [
+        { word: '愛', averageResponseTime: 1.2, spiritCorrelation: 0.89 },
+        { word: '神', averageResponseTime: 2.1, spiritCorrelation: 0.92 },
+        { word: '死', averageResponseTime: 3.4, spiritCorrelation: 0.45 },
+        { word: '生', averageResponseTime: 1.8, spiritCorrelation: 0.78 }
+      ]
+    }
+  } catch (error) {
+    console.error('Failed to get experiment analysis:', error)
+    return null
+  }
+}
+
+export async function getExperimentTimeline(experimentId: string): Promise<ExperimentTimelineEvent[]> {
+  try {
+    const client = createNeo4jClient()
+    
+    // TODO: Implement Neo4j query for experiment timeline
+    // For now, return placeholder data
+    return [
+      {
+        id: 'event-001',
+        timestamp: '2024-10-01T09:00:00Z',
+        type: 'participant_join',
+        title: 'Participant A が実験に参加',
+        description: 'Participant A が実験に参加し、同意書に署名しました。',
+        participantId: 'participant-001',
+        participantName: 'Participant A'
+      },
+      {
+        id: 'event-002',
+        timestamp: '2024-10-01T10:00:00Z',
+        type: 'session_start',
+        title: 'セッション開始',
+        description: 'Participant A の最初のセッションが開始されました。',
+        participantId: 'participant-001',
+        participantName: 'Participant A',
+        sessionId: 'session-001'
+      },
+      {
+        id: 'event-003',
+        timestamp: '2024-10-01T11:30:00Z',
+        type: 'session_end',
+        title: 'セッション終了',
+        description: 'Participant A の最初のセッションが終了しました。',
+        participantId: 'participant-001',
+        participantName: 'Participant A',
+        sessionId: 'session-001'
+      },
+      {
+        id: 'event-004',
+        timestamp: '2024-10-02T14:00:00Z',
+        type: 'session_start',
+        title: 'セッション開始',
+        description: 'Participant B のセッションが開始されました。',
+        participantId: 'participant-002',
+        participantName: 'Participant B',
+        sessionId: 'session-002'
+      },
+      {
+        id: 'event-005',
+        timestamp: '2024-10-16T16:00:00Z',
+        type: 'analysis_complete',
+        title: '分析完了',
+        description: '実験の分析が完了し、結果が生成されました。',
+      }
+    ]
+  } catch (error) {
+    console.error('Failed to get experiment timeline:', error)
+    return []
+  }
+}
