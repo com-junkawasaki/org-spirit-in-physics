@@ -122,26 +122,31 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Merkle DAG: import.sessions.read_session_data
-        // session_data.jsonを読み取り
-        const sessionDataPath = path.join(participantPath, 'session_data.json');
-        
-        // ファイルの存在確認
-        try {
-          await fs.access(sessionDataPath);
-        } catch (error) {
-          console.log(`session_data.json not found at ${sessionDataPath}`);
-          results.push({
-            participantId,
-            status: 'skipped',
-            message: 'session_data.json not found'
-          });
-          continue;
-        }
-        
-        console.log(`Reading session data from ${sessionDataPath}`);
-        const sessionData = JSON.parse(await fs.readFile(sessionDataPath, 'utf-8'));
-        console.log(`Session data loaded: ${sessionData.events?.length || 0} events`);
+    // Merkle DAG: import.sessions.read_session_data
+    // session_data.jsonを読み取り
+    const sessionDataPath = path.join(participantPath, 'session_data.json');
+    
+    console.log(`Looking for session_data.json at: ${sessionDataPath}`);
+    console.log(`Participant path: ${participantPath}`);
+    
+    // ファイルの存在確認
+    try {
+      await fs.access(sessionDataPath);
+      console.log(`session_data.json found at ${sessionDataPath}`);
+    } catch (error) {
+      console.log(`session_data.json not found at ${sessionDataPath}`);
+      results.push({
+        participantId,
+        status: 'skipped',
+        message: 'session_data.json not found'
+      });
+      continue;
+    }
+    
+    console.log(`Reading session data from ${sessionDataPath}`);
+    const sessionData = JSON.parse(await fs.readFile(sessionDataPath, 'utf-8'));
+    console.log(`Session data loaded: ${sessionData.events?.length || 0} events`);
+    console.log(`First few event types: ${sessionData.events?.slice(0, 5).map((e: any) => e.type).join(', ')}`);
 
         // Merkle DAG: import.sessions.validate_session_data
         // セッションデータの検証
@@ -364,26 +369,73 @@ export async function POST(request: NextRequest) {
 // 単語応答抽出関数
 function extractWordResponses(events: any[]) {
   const wordResponses = [];
+  
+  console.log(`Processing ${events.length} events for word response extraction`);
+  console.log(`Event types found: ${[...new Set(events.map(e => e.type))].join(', ')}`);
 
+  // word_response イベントを直接処理（reaction_time_msが含まれている）
   for (const event of events) {
-    // 複数のイベントタイプに対応
-    if ((event.type === 'response_window_closed' || event.type === 'word_response' || event.type === 'response') && event.payload) {
-      // 複数のフィールド名パターンに対応
-      const stimulusWord = event.payload.stimulusWord || event.payload.stimulus_word || event.payload.stimulus || event.payload.word;
-      const responseWord = event.payload.responseWord || event.payload.response_word || event.payload.response || '';
-      const reactionTimeMs = event.payload.reactionTimeMs || event.payload.reaction_time_ms || event.payload.reactionTime || 0;
+    if (event.type === 'word_response' && event.payload) {
+      const stimulusWord = event.payload.stimulus_word;
+      const responseWord = event.payload.response_word || '';
+      const reactionTimeMs = event.payload.reaction_time_ms || 0;
+      
+      // デバッグログ追加
+      console.log(`Event type: ${event.type}, stimulus: ${stimulusWord}, response: ${responseWord}, reaction_time_ms: ${reactionTimeMs}`);
       
       if (stimulusWord) {
         wordResponses.push({
           stimulus_word: stimulusWord,
           response_word: responseWord,
           reaction_time_ms: reactionTimeMs,
-          is_delayed: event.payload.isDelayed || event.payload.is_delayed || false,
+          is_delayed: event.payload.is_delayed || false,
           emotion: event.payload.emotion || null,
-          emotion_confidence: event.payload.emotionConfidence || event.payload.emotion_confidence || 0,
-          spirit_probability: event.payload.spiritProbability || event.payload.spirit_probability || 0.5,
+          emotion_confidence: event.payload.emotion_confidence || 0,
+          spirit_probability: event.payload.spirit_probability || 0.5,
           timestamp: new Date(event.timestamp).toISOString()
         });
+      }
+    }
+  }
+  
+  console.log(`Found ${wordResponses.length} word_response events`);
+
+  // word_response イベントがない場合は、word_displayed と response_window_closed から計算
+  if (wordResponses.length === 0) {
+    const wordDisplayEvents = new Map(); // word -> timestamp のマップ
+
+    // まず word_displayed イベントを収集
+    for (const event of events) {
+      if (event.type === 'word_displayed' && event.payload?.word) {
+        wordDisplayEvents.set(event.payload.word, event.timestamp);
+      }
+    }
+
+    // response_window_closed イベントを処理
+    for (const event of events) {
+      if (event.type === 'response_window_closed' && event.payload?.word) {
+        const stimulusWord = event.payload.word;
+        const responseTimestamp = event.timestamp;
+        const displayTimestamp = wordDisplayEvents.get(stimulusWord);
+        
+        // 反応時間を計算（ミリ秒）
+        const reactionTimeMs = displayTimestamp ? responseTimestamp - displayTimestamp : 0;
+        
+        // デバッグログ追加
+        console.log(`Event type: ${event.type}, stimulus: ${stimulusWord}, reaction_time_ms: ${reactionTimeMs}, display_timestamp: ${displayTimestamp}, response_timestamp: ${responseTimestamp}`);
+        
+        if (stimulusWord) {
+          wordResponses.push({
+            stimulus_word: stimulusWord,
+            response_word: '', // response_window_closed には応答語がない
+            reaction_time_ms: reactionTimeMs,
+            is_delayed: false,
+            emotion: null,
+            emotion_confidence: 0,
+            spirit_probability: 0.5, // デフォルト値
+            timestamp: new Date(responseTimestamp).toISOString()
+          });
+        }
       }
     }
   }
@@ -399,6 +451,9 @@ function calculateSessionStatistics(events: any[]) {
   let startTime = null;
   let endTime = null;
 
+  console.log(`Calculating statistics for ${events.length} events`);
+  console.log(`Event types: ${[...new Set(events.map(e => e.type))].join(', ')}`);
+
   for (const event of events) {
     if (event.type === 'session_started') {
       startTime = event.timestamp;
@@ -406,7 +461,14 @@ function calculateSessionStatistics(events: any[]) {
     if (event.type === 'session_ended') {
       endTime = event.timestamp;
     }
-    if (event.type === 'response_window_closed' && event.payload?.reactionTimeMs) {
+    // word_response イベントから反応時間を取得
+    if (event.type === 'word_response' && event.payload?.reaction_time_ms) {
+      totalReactionTime += event.payload.reaction_time_ms;
+      responseCount++;
+      console.log(`Found word_response: ${event.payload.stimulus_word}, reaction_time_ms: ${event.payload.reaction_time_ms}`);
+    }
+    // response_window_closed イベントからも反応時間を取得（フォールバック）
+    else if (event.type === 'response_window_closed' && event.payload?.reactionTimeMs) {
       totalReactionTime += event.payload.reactionTimeMs;
       responseCount++;
     }
@@ -414,6 +476,8 @@ function calculateSessionStatistics(events: any[]) {
 
   const duration = startTime && endTime ? (endTime - startTime) / 1000 : 0; // seconds
   const averageReactionTime = responseCount > 0 ? totalReactionTime / responseCount : 0;
+
+  console.log(`Session statistics: ${responseCount} responses, total reaction time: ${totalReactionTime}ms, average: ${averageReactionTime}ms`);
 
   return {
     duration,
@@ -432,6 +496,7 @@ async function resolveDatasetParticipantsPath(): Promise<string> {
     path.join(process.cwd(), 'src', 'dataset', 'participants')
   ];
   console.log('Trying dataset path candidates:');
+  console.log(`Current working directory: ${process.cwd()}`);
   for (const p of candidates) {
     console.log(`  Trying: ${p}`);
     try { 
