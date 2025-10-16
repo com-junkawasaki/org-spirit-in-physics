@@ -97,6 +97,9 @@ export default function ProcsPage() {
           <a href="/process/physiological" className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm hover:bg-green-200">
             💓 生理データインポート
           </a>
+          <a href="/analysis/pipeline" className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200">
+            🔬 解析パイプライン
+          </a>
         </div>
       </div>
 

@@ -175,8 +175,8 @@ async function scanPhysiologicalFiles(participantPath: string): Promise<Array<{
       if (entry.isFile()) {
         const filename = entry.name.toLowerCase();
         
-        // 2025-08を含むCSVファイルを検索
-        if (filename.includes('2025-08') && filename.endsWith('.csv')) {
+        // 2025-*で始まるCSVファイルを検索
+        if (filename.startsWith('2025-') && filename.endsWith('.csv')) {
           const sessionId = `session_${path.basename(participantPath)}_${Date.now()}`;
           physiologicalFiles.push({
             path: path.join(participantPath, entry.name),

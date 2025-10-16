@@ -69,6 +69,13 @@ const menuItems: MenuItem[] = [
         description: '生理データインポート'
     },
     {
+        id: 'analysis-pipeline',
+        label: '解析パイプライン',
+        href: '/analysis/pipeline',
+        icon: '🔬',
+        description: '統合解析パイプライン'
+    },
+    {
         id: 'import',
         label: 'インポート管理',
         href: '/import',

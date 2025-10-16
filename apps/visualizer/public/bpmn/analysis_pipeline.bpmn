@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="8.7.1">
+  <bpmn:process id="AnalysisPipelineProcess" name="解析パイプラインプロセス" isExecutable="true">
+    <!-- Start Event -->
+    <bpmn:startEvent id="StartEvent_1" name="解析パイプライン開始">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Data Validation -->
+    <bpmn:serviceTask id="Task_ValidateData" name="データ検証" implementation="data-validator">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Gateway for Data Validation -->
+    <bpmn:exclusiveGateway id="Gateway_DataValidation" name="データ検証チェック">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Data Validation Failed -->
+    <bpmn:endEvent id="EndEvent_ValidationFailed" name="データ検証失敗">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Parallel Gateway for Analysis -->
+    <bpmn:parallelGateway id="Gateway_ParallelAnalysis" name="並列解析開始">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    
+    <!-- Word2Vec Analysis -->
+    <bpmn:serviceTask id="Task_Word2VecAnalysis" name="Word2Vec分析" implementation="word2vec-analyzer">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Emotion Analysis -->
+    <bpmn:serviceTask id="Task_EmotionAnalysis" name="感情分析" implementation="emotion-analyzer">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Physiological Analysis -->
+    <bpmn:serviceTask id="Task_PhysiologicalAnalysis" name="生理データ分析" implementation="physiological-analyzer">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Parallel Gateway for Analysis Completion -->
+    <bpmn:parallelGateway id="Gateway_AnalysisComplete" name="解析完了待機">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    
+    <!-- Feature Extraction -->
+    <bpmn:serviceTask id="Task_FeatureExtraction" name="特徴量抽出" implementation="feature-extractor">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Spirit Probability Calculation -->
+    <bpmn:serviceTask id="Task_SpiritProbability" name="Spirit確率計算" implementation="spirit-calculator">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Results Aggregation -->
+    <bpmn:serviceTask id="Task_ResultsAggregation" name="結果集約" implementation="results-aggregator">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Update Statistics -->
+    <bpmn:serviceTask id="Task_UpdateStatistics" name="統計更新" implementation="statistics-updater">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Success End Event -->
+    <bpmn:endEvent id="EndEvent_Success" name="解析完了">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_ValidateData" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_ValidateData" targetRef="Gateway_DataValidation" />
+    <bpmn:sequenceFlow id="Flow_3" name="検証失敗" sourceRef="Gateway_DataValidation" targetRef="EndEvent_ValidationFailed" />
+    <bpmn:sequenceFlow id="Flow_4" name="検証成功" sourceRef="Gateway_DataValidation" targetRef="Gateway_ParallelAnalysis" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Gateway_ParallelAnalysis" targetRef="Task_Word2VecAnalysis" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Gateway_ParallelAnalysis" targetRef="Task_EmotionAnalysis" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Gateway_ParallelAnalysis" targetRef="Task_PhysiologicalAnalysis" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_Word2VecAnalysis" targetRef="Gateway_AnalysisComplete" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_EmotionAnalysis" targetRef="Gateway_AnalysisComplete" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_PhysiologicalAnalysis" targetRef="Gateway_AnalysisComplete" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Gateway_AnalysisComplete" targetRef="Task_FeatureExtraction" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_FeatureExtraction" targetRef="Task_SpiritProbability" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_SpiritProbability" targetRef="Task_ResultsAggregation" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_ResultsAggregation" targetRef="Task_UpdateStatistics" />
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="Task_UpdateStatistics" targetRef="EndEvent_Success" />
+  </bpmn:process>
+  
+  <!-- BPMN Diagram -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="AnalysisPipelineProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="142" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ValidateData_di" bpmnElement="Task_ValidateData">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DataValidation_di" bpmnElement="Gateway_DataValidation" isMarkerVisible="true">
+        <dc:Bounds x="425" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="405" y="149" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ValidationFailed_di" bpmnElement="EndEvent_ValidationFailed">
+        <dc:Bounds x="527" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="506" y="142" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ParallelAnalysis_di" bpmnElement="Gateway_ParallelAnalysis" isMarkerVisible="true">
+        <dc:Bounds x="425" y="200" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="405" y="257" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Word2VecAnalysis_di" bpmnElement="Task_Word2VecAnalysis">
+        <dc:Bounds x="270" y="323" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_EmotionAnalysis_di" bpmnElement="Task_EmotionAnalysis">
+        <dc:Bounds x="270" y="446" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PhysiologicalAnalysis_di" bpmnElement="Task_PhysiologicalAnalysis">
+        <dc:Bounds x="270" y="569" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_AnalysisComplete_di" bpmnElement="Gateway_AnalysisComplete" isMarkerVisible="true">
+        <dc:Bounds x="425" y="584" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="405" y="641" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_FeatureExtraction_di" bpmnElement="Task_FeatureExtraction">
+        <dc:Bounds x="270" y="692" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SpiritProbability_di" bpmnElement="Task_SpiritProbability">
+        <dc:Bounds x="270" y="815" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ResultsAggregation_di" bpmnElement="Task_ResultsAggregation">
+        <dc:Bounds x="270" y="938" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_UpdateStatistics_di" bpmnElement="Task_UpdateStatistics">
+        <dc:Bounds x="270" y="1061" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_Success_di" bpmnElement="EndEvent_Success">
+        <dc:Bounds x="527" y="1088" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="506" y="1131" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Sequence Flow Edges -->
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="425" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="475" y="117" />
+        <di:waypoint x="527" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="480" y="99" width="38" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="450" y="142" />
+        <di:waypoint x="450" y="200" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="460" y="161" width="38" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="425" y="225" />
+        <di:waypoint x="320" y="225" />
+        <di:waypoint x="320" y="323" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="450" y="250" />
+        <di:waypoint x="320" y="250" />
+        <di:waypoint x="320" y="446" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="425" y="275" />
+        <di:waypoint x="320" y="275" />
+        <di:waypoint x="320" y="569" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="370" y="363" />
+        <di:waypoint x="400" y="363" />
+        <di:waypoint x="400" y="584" />
+        <di:waypoint x="425" y="584" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="370" y="486" />
+        <di:waypoint x="400" y="486" />
+        <di:waypoint x="400" y="609" />
+        <di:waypoint x="425" y="609" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="370" y="609" />
+        <di:waypoint x="400" y="609" />
+        <di:waypoint x="400" y="634" />
+        <di:waypoint x="425" y="634" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="450" y="634" />
+        <di:waypoint x="450" y="692" />
+        <di:waypoint x="370" y="732" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="370" y="772" />
+        <di:waypoint x="320" y="772" />
+        <di:waypoint x="320" y="815" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="370" y="895" />
+        <di:waypoint x="320" y="895" />
+        <di:waypoint x="320" y="938" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="370" y="1018" />
+        <di:waypoint x="320" y="1018" />
+        <di:waypoint x="320" y="1061" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="370" y="1141" />
+        <di:waypoint x="527" y="1106" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

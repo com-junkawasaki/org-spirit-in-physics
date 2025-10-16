@@ -165,7 +165,7 @@ export default function ProcessPhysiologicalPage() {
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <h3 className="font-semibold text-gray-800 mb-2">サポートファイル形式</h3>
         <div className="text-sm text-gray-700 space-y-1">
-          <div>• CSVファイル: 2025-08を含むファイル名（例: physiological_data_2025-08.csv）</div>
+          <div>• CSVファイル: 2025-*で始まるファイル名（例: 2025-08-15_data.csv）</div>
           <div>• JSONファイル: physiologicalを含むファイル名（例: physiological_analysis.json）</div>
           <div>• データ形式: Time_Sec, Ch1-Ch8のチャンネルデータ</div>
           <div>• メタデータ: Dateフィールドでタイムスタンプ情報</div>
