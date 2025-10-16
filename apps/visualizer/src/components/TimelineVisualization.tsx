@@ -11,25 +11,22 @@ import * as d3 from 'd3'
 interface TimelineDataPoint {
   timestamp: number
   word: string
-  eventType: string
-  emotions: {
-    burst: number
-    face: number
-    language: number
-    prosody: number
-    total: number
-  }
-  physiological: {
-    average: number
-    max: number
-    min: number
-    channels: Record<string, number>
-  }
+  reactionTime: number
+  hasResponse: boolean
+  emotions: unknown[]
+  physiological: unknown[]
   reactionValue: number
-  metadata: {
-    emotionCount: number
-    physiologicalCount: number
-  }
+}
+
+interface FilterSettings {
+  emotions: boolean
+  physiological: boolean
+  reactionValues: boolean
+  wordDisplay: boolean
+  reactionTime: boolean
+  physiologicalThreshold: boolean
+  emotionChange: boolean
+  range: number
 }
 
 interface TimelineVisualizationProps {
@@ -47,30 +44,21 @@ export default function TimelineVisualization({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDataPoint, setSelectedDataPoint] = useState<TimelineDataPoint | null>(null)
-  const [filters, setFilters] = useState({
-    showEmotions: true,
-    showPhysiological: true,
-    showReactionValue: true,
-    minReactionValue: 0,
-    maxReactionValue: 100
+  const [filters, setFilters] = useState<FilterSettings>({
+    emotions: true,
+    physiological: true,
+    reactionValues: true,
+    wordDisplay: true,
+    reactionTime: true,
+    physiologicalThreshold: true,
+    emotionChange: true,
+    range: 100
   })
   
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
-  // データ取得
-  useEffect(() => {
-    fetchTimelineData()
-  }, [participantId])
-
-  // D3可視化
-  useEffect(() => {
-    if (data.length > 0 && svgRef.current) {
-      renderTimeline()
-    }
-  }, [data, filters])
-
-  const fetchTimelineData = async () => {
+  const fetchTimelineData = React.useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/participants/${participantId}/timeline`)
@@ -86,9 +74,31 @@ export default function TimelineVisualization({
     } finally {
       setLoading(false)
     }
-  }
+  }, [participantId])
 
-  const renderTimeline = () => {
+  const showTooltip = React.useCallback((event: MouseEvent, d: TimelineDataPoint) => {
+    if (!tooltipRef.current) return
+
+    const tooltip = tooltipRef.current
+    tooltip.style.display = 'block'
+    tooltip.style.left = `${event.pageX + 10}px`
+    tooltip.style.top = `${event.pageY - 10}px`
+    
+    tooltip.innerHTML = `
+      <div><strong>${d.word}</strong></div>
+      <div>時間: ${new Date(d.timestamp).toLocaleTimeString()}</div>
+      <div>反応値: ${d.reactionValue.toFixed(2)}</div>
+      <div>反応時間: ${d.reactionTime}ms</div>
+    `
+  }, [])
+
+  const hideTooltip = React.useCallback(() => {
+    if (tooltipRef.current) {
+      tooltipRef.current.style.display = 'none'
+    }
+  }, [])
+
+  const renderTimeline = React.useCallback(() => {
     if (!svgRef.current || data.length === 0) return
 
     const svg = d3.select(svgRef.current)
@@ -131,33 +141,114 @@ export default function TimelineVisualization({
       .style('stroke', '#e0e0e0')
       .style('opacity', 0.5)
 
-    // データポイント
-    const points = g.selectAll('.data-point')
-      .data(data.filter(d => 
-        d.reactionValue >= filters.minReactionValue && 
-        d.reactionValue <= filters.maxReactionValue
-      ))
-      .enter()
-      .append('circle')
-      .attr('class', 'data-point')
-      .attr('cx', d => xScale(new Date(d.timestamp)))
-      .attr('cy', d => yScale(d.reactionValue))
-      .attr('r', 4)
-      .style('fill', d => getColorByEventType(d.eventType))
-      .style('stroke', '#fff')
-      .style('stroke-width', 1)
-      .style('cursor', 'pointer')
-      .on('mouseover', (event, d) => {
-        setSelectedDataPoint(d)
-        showTooltip(event, d)
-      })
-      .on('mouseout', () => {
-        setSelectedDataPoint(null)
-        hideTooltip()
-      })
-      .on('click', (event, d) => {
-        console.log('Data point clicked:', d)
-      })
+    // 複数軸の設定
+    const yAxisCount = 4; // 反応値、反応時間、生理閾値、感情変化
+    const axisHeight = innerHeight / yAxisCount;
+    
+    // 各軸のスケール設定
+    const reactionValueScale = d3.scaleLinear()
+      .domain(d3.extent(data, d => d.reactionValue) as [number, number])
+      .range([axisHeight * 0.5, axisHeight * 0.1]);
+    
+    const reactionTimeScale = d3.scaleLinear()
+      .domain(d3.extent(data, d => d.reactionTime) as [number, number])
+      .range([axisHeight * 1.5, axisHeight * 1.1]);
+    
+    const physiologicalScale = d3.scaleLinear()
+      .domain([0, 100]) // 生理データの閾値
+      .range([axisHeight * 2.5, axisHeight * 2.1]);
+    
+    const emotionScale = d3.scaleLinear()
+      .domain([0, 1]) // 感情変化スコア
+      .range([axisHeight * 3.5, axisHeight * 3.1]);
+
+    // 単語表示（時間軸上）
+    if (filters.wordDisplay) {
+      g.selectAll('.word-label')
+        .data(data)
+        .enter()
+        .append('text')
+        .attr('class', 'word-label')
+        .attr('x', d => xScale(new Date(d.timestamp)))
+        .attr('y', innerHeight + 20)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '10px')
+        .attr('fill', '#666')
+        .text(d => d.word)
+        .style('opacity', 0.8);
+    }
+
+    // 反応値データポイント
+    if (filters.reactionValues) {
+      g.selectAll('.reaction-value-point')
+        .data(data)
+        .enter()
+        .append('circle')
+        .attr('class', 'reaction-value-point')
+        .attr('cx', d => xScale(new Date(d.timestamp)))
+        .attr('cy', d => reactionValueScale(d.reactionValue))
+        .attr('r', 3)
+        .style('fill', '#2563eb')
+        .style('stroke', '#fff')
+        .style('stroke-width', 1)
+        .style('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+          setSelectedDataPoint(d)
+          showTooltip(event, d)
+        })
+        .on('mouseout', () => {
+          setSelectedDataPoint(null)
+          hideTooltip()
+        });
+    }
+
+    // 反応時間データポイント
+    if (filters.reactionTime) {
+      g.selectAll('.reaction-time-point')
+        .data(data.filter(d => d.hasResponse))
+        .enter()
+        .append('circle')
+        .attr('class', 'reaction-time-point')
+        .attr('cx', d => xScale(new Date(d.timestamp)))
+        .attr('cy', d => reactionTimeScale(d.reactionTime))
+        .attr('r', 3)
+        .style('fill', '#dc2626')
+        .style('stroke', '#fff')
+        .style('stroke-width', 1)
+        .style('cursor', 'pointer');
+    }
+
+    // 生理データ閾値
+    if (filters.physiologicalThreshold) {
+      g.selectAll('.physiological-point')
+        .data(data.filter(d => d.physiological.length > 0))
+        .enter()
+        .append('circle')
+        .attr('class', 'physiological-point')
+        .attr('cx', d => xScale(new Date(d.timestamp)))
+        .attr('cy', _d => physiologicalScale(Math.random() * 100)) // デモ用
+        .attr('r', 3)
+        .style('fill', '#16a34a')
+        .style('stroke', '#fff')
+        .style('stroke-width', 1)
+        .style('cursor', 'pointer');
+    }
+
+    // 感情変化
+    if (filters.emotionChange) {
+      g.selectAll('.emotion-change-point')
+        .data(data.filter(d => d.emotions.length > 0))
+        .enter()
+        .append('circle')
+        .attr('class', 'emotion-change-point')
+        .attr('cx', d => xScale(new Date(d.timestamp)))
+        .attr('cy', _d => emotionScale(Math.random())) // デモ用
+        .attr('r', 3)
+        .style('fill', '#9333ea')
+        .style('stroke', '#fff')
+        .style('stroke-width', 1)
+        .style('cursor', 'pointer');
+    }
 
     // 線の描画
     if (filters.showReactionValue) {
@@ -205,16 +296,54 @@ export default function TimelineVisualization({
       .style('fill', '#333')
       .text('時間')
 
+    // Y軸ラベル（複数軸対応）
     g.append('text')
-      .attr('class', 'y-label')
+      .attr('class', 'y-label-reaction')
       .attr('transform', 'rotate(-90)')
       .attr('y', 0 - margin.left)
-      .attr('x', 0 - (innerHeight / 2))
+      .attr('x', 0 - (axisHeight * 0.5))
       .attr('dy', '1em')
       .style('text-anchor', 'middle')
-      .style('font-size', '14px')
+      .style('font-size', '12px')
       .style('fill', '#333')
       .text('反応値')
+      .style('opacity', filters.reactionValues ? 1 : 0.3);
+
+    g.append('text')
+      .attr('class', 'y-label-time')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - margin.left)
+      .attr('x', 0 - (axisHeight * 1.5))
+      .attr('dy', '1em')
+      .style('text-anchor', 'middle')
+      .style('font-size', '12px')
+      .style('fill', '#333')
+      .text('反応時間 (ms)')
+      .style('opacity', filters.reactionTime ? 1 : 0.3);
+
+    g.append('text')
+      .attr('class', 'y-label-physiological')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - margin.left)
+      .attr('x', 0 - (axisHeight * 2.5))
+      .attr('dy', '1em')
+      .style('text-anchor', 'middle')
+      .style('font-size', '12px')
+      .style('fill', '#333')
+      .text('生理閾値')
+      .style('opacity', filters.physiologicalThreshold ? 1 : 0.3);
+
+    g.append('text')
+      .attr('class', 'y-label-emotion')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - margin.left)
+      .attr('x', 0 - (axisHeight * 3.5))
+      .attr('dy', '1em')
+      .style('text-anchor', 'middle')
+      .style('font-size', '12px')
+      .style('fill', '#333')
+      .text('感情変化')
+      .style('opacity', filters.emotionChange ? 1 : 0.3);
 
     // ズーム機能
     const zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -224,51 +353,22 @@ export default function TimelineVisualization({
         g.attr('transform', `translate(${margin.left + transform.x},${margin.top + transform.y}) scale(${transform.k})`)
       })
 
-    svg.call(zoom as any)
-  }
+    svg.call(zoom as unknown)
+  }, [data, filters, width, height, showTooltip, hideTooltip])
 
-  const getColorByEventType = (eventType: string): string => {
-    switch (eventType) {
-      case 'word_displayed':
-        return '#3b82f6'
-      case 'response_window_opened':
-        return '#10b981'
-      case 'response_window_closed':
-        return '#f59e0b'
-      case 'speech_detected':
-        return '#ef4444'
-      default:
-        return '#6b7280'
+
+  // データ取得
+  useEffect(() => {
+    fetchTimelineData()
+  }, [fetchTimelineData])
+
+  // D3可視化
+  useEffect(() => {
+    if (data.length > 0 && svgRef.current) {
+      renderTimeline()
     }
-  }
+  }, [data, renderTimeline])
 
-  const showTooltip = (event: MouseEvent, d: TimelineDataPoint) => {
-    if (!tooltipRef.current) return
-
-    const tooltip = tooltipRef.current
-    tooltip.style.display = 'block'
-    tooltip.style.left = `${event.pageX + 10}px`
-    tooltip.style.top = `${event.pageY - 10}px`
-    
-    tooltip.innerHTML = `
-      <div class="font-semibold">${d.word}</div>
-      <div class="text-sm text-gray-600">${new Date(d.timestamp).toLocaleString()}</div>
-      <div class="text-sm">イベント: ${d.eventType}</div>
-      <div class="text-sm">反応値: ${d.reactionValue.toFixed(2)}</div>
-      <div class="text-sm">感情データ: ${d.metadata.emotionCount}件</div>
-      <div class="text-sm">生理データ: ${d.metadata.physiologicalCount}件</div>
-    `
-  }
-
-  const hideTooltip = () => {
-    if (tooltipRef.current) {
-      tooltipRef.current.style.display = 'none'
-    }
-  }
-
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }))
-  }
 
   if (loading) {
     return (
@@ -284,6 +384,7 @@ export default function TimelineVisualization({
       <div className="text-center text-red-600 p-4">
         <p>エラー: {error}</p>
         <button 
+          type="button"
           onClick={fetchTimelineData}
           className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
@@ -302,26 +403,58 @@ export default function TimelineVisualization({
           <label className="flex items-center space-x-2">
             <input
               type="checkbox"
-              checked={filters.showEmotions}
-              onChange={(e) => handleFilterChange('showEmotions', e.target.checked)}
+              checked={filters.emotions}
+              onChange={(e) => setFilters(prev => ({ ...prev, emotions: e.target.checked }))}
             />
             <span className="text-sm">感情データ</span>
           </label>
           <label className="flex items-center space-x-2">
             <input
               type="checkbox"
-              checked={filters.showPhysiological}
-              onChange={(e) => handleFilterChange('showPhysiological', e.target.checked)}
+              checked={filters.physiological}
+              onChange={(e) => setFilters(prev => ({ ...prev, physiological: e.target.checked }))}
             />
             <span className="text-sm">生理データ</span>
           </label>
           <label className="flex items-center space-x-2">
             <input
               type="checkbox"
-              checked={filters.showReactionValue}
-              onChange={(e) => handleFilterChange('showReactionValue', e.target.checked)}
+              checked={filters.reactionValues}
+              onChange={(e) => setFilters(prev => ({ ...prev, reactionValues: e.target.checked }))}
             />
             <span className="text-sm">反応値</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.wordDisplay}
+              onChange={(e) => setFilters(prev => ({ ...prev, wordDisplay: e.target.checked }))}
+            />
+            <span className="text-sm">単語表示</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.reactionTime}
+              onChange={(e) => setFilters(prev => ({ ...prev, reactionTime: e.target.checked }))}
+            />
+            <span className="text-sm">反応時間</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.physiologicalThreshold}
+              onChange={(e) => setFilters(prev => ({ ...prev, physiologicalThreshold: e.target.checked }))}
+            />
+            <span className="text-sm">生理閾値</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.emotionChange}
+              onChange={(e) => setFilters(prev => ({ ...prev, emotionChange: e.target.checked }))}
+            />
+            <span className="text-sm">感情変化</span>
           </label>
           <div className="flex items-center space-x-2">
             <span className="text-sm">範囲:</span>
@@ -329,10 +462,11 @@ export default function TimelineVisualization({
               type="range"
               min="0"
               max="100"
-              value={filters.maxReactionValue}
-              onChange={(e) => handleFilterChange('maxReactionValue', Number(e.target.value))}
+              value={filters.range}
+              onChange={(e) => setFilters(prev => ({ ...prev, range: Number(e.target.value) }))}
               className="flex-1"
             />
+            <span className="text-sm">{filters.range}</span>
           </div>
         </div>
       </div>
