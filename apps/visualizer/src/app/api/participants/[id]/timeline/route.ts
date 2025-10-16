@@ -94,14 +94,31 @@ async function getSessionData(participantId: string): Promise<any> {
 // 感情データ取得関数
 async function getEmotionData(client: any, participantId: string): Promise<any[]> {
   try {
-    const emotionQuery = `
-      MATCH (e:EmotionAnalysis {participant_id: $participantId})
-      RETURN e.file_type as fileType, e.BeginTime as beginTime, e.EndTime as endTime, 
-             e.emotions as emotions, e.session_id as sessionId
-      ORDER BY e.BeginTime
+    // 参加者の最新の実験・セッションを取得
+    const sessionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      RETURN s.id as sessionId
+      ORDER BY s.start_ts DESC
+      LIMIT 1
     `;
     
-    const emotionResults = await client.query(emotionQuery, { participantId });
+    const sessionResults = await client.query(sessionQuery, { participantId });
+    const latestSessionId = sessionResults[0]?.sessionId;
+    
+    if (!latestSessionId) {
+      console.log('No session found for participant:', participantId);
+      return [];
+    }
+    
+    const emotionQuery = `
+      MATCH (e:EmotionAnalysis {participant_id: $participantId, session_id: $sessionId})
+      RETURN e.file_type as fileType, e.begin_time as beginTime, e.end_time as endTime, 
+             e.emotions as emotions, e.session_id as sessionId
+      ORDER BY e.begin_time
+    `;
+    
+    const emotionResults = await client.query(emotionQuery, { participantId, sessionId: latestSessionId });
+    
     
     return emotionResults.map((result: any) => ({
       fileType: result.fileType,
@@ -166,9 +183,9 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         // 感情データの時間は秒単位、セッションイベントはミリ秒単位
         // セッション開始時刻を基準に相対時間でマッチング
         const sessionStartTime = sessionData.startTime || 0;
-        const relativeTimestamp = timestamp - sessionStartTime; // 相対時間（ミリ秒）
-        const beginTime = (emotion.beginTime || 0) * 1000; // 秒をミリ秒に変換
-        const endTime = (emotion.endTime || 0) * 1000; // 秒をミリ秒に変換
+        const relativeTimestamp = (timestamp - sessionStartTime) / 1000; // 相対時間（秒）
+        const beginTime = emotion.beginTime || 0; // 秒単位
+        const endTime = emotion.endTime || 0; // 秒単位
         
         return beginTime <= relativeTimestamp && endTime >= relativeTimestamp;
       });

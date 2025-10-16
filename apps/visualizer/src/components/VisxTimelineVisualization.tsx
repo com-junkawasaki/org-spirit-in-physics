@@ -3,13 +3,12 @@
 // Merkle DAG: visx_timeline.chart_component -> visualization_implementation
 // visx + D3（関数写像）+ ml-matrix/mathjs による時系列可視化コンポーネント
 
-import React, { useState, useEffect, useMemo, useId } from 'react'
+import { useState, useEffect, useMemo, useId } from 'react'
+import type React from 'react'
 import {
   scaleLinear,
   scaleTime,
-  scaleOrdinal,
-  scaleSequential,
-  interpolateViridis
+  scaleOrdinal
 } from '@visx/scale'
 import { AxisBottom, AxisLeft } from '@visx/axis'
 import { LinePath, Bar } from '@visx/shape'
@@ -17,7 +16,8 @@ import { Group } from '@visx/group'
 import { TooltipWithBounds, useTooltip } from '@visx/tooltip'
 import { localPoint } from '@visx/event'
 import { ParentSize } from '@visx/responsive'
-import { LinearTransformationPipeline, TimelineDataPoint, calculateStatistics } from '@/lib/linear-algebra'
+import { LinearTransformationPipeline, calculateStatistics } from '@/lib/linear-algebra'
+import type { TimelineDataPoint } from '@/lib/linear-algebra'
 
 interface VisxTimelineVisualizationProps {
   participantId: string
@@ -56,9 +56,9 @@ const createColorScales = (data: TimelineDataPoint[]) => {
   
   // 反応値連続色スケール
   const reactionValues = data.map(d => d.reactionValue)
-  const reactionColorScale = scaleSequential({
+  const reactionColorScale = scaleLinear<string>({
     domain: [Math.min(...reactionValues), Math.max(...reactionValues)],
-    range: interpolateViridis
+    range: ['#440154', '#31688e', '#35b779', '#fde725'] // viridisカラーパレット
   })
   
   return { eventColorScale, reactionColorScale }
@@ -217,9 +217,9 @@ function TimelineChart({
             <span className="text-sm">反応値</span>
           </label>
           <div className="flex items-center space-x-2">
-            <label htmlFor="smoothing-slider" className="text-sm">平滑化:</label>
+            <label htmlFor={`smoothing-slider-${gridId}`} className="text-sm">平滑化:</label>
             <input
-              id="smoothing-slider"
+              id={`smoothing-slider-${gridId}`}
               type="range"
               min="1"
               max="20"
@@ -234,7 +234,7 @@ function TimelineChart({
       
       {/* チャート領域 */}
       <div className="border rounded-lg p-4">
-        <svg width={width} height={height}>
+        <svg width={width} height={height} role="img" aria-label="時系列データ可視化チャート">
           <Group left={margin.left} top={margin.top}>
             {/* グリッド線 */}
             <defs>
@@ -260,7 +260,6 @@ function TimelineChart({
                     onFocus={(event) => handleMouseOver(event, d)}
                     onMouseLeave={handleMouseLeave}
                     tabIndex={0}
-                    role="button"
                     aria-label={`反応値: ${d.reactionValue.toFixed(3)}, 単語: ${d.word}`}
                   />
                 )}
@@ -273,11 +272,6 @@ function TimelineChart({
                   fill={d.eventColor}
                   stroke="#fff"
                   strokeWidth={2}
-                  onMouseOver={(event) => handleMouseOver(event, d)}
-                  onFocus={(event) => handleMouseOver(event, d)}
-                  onMouseLeave={handleMouseLeave}
-                  tabIndex={0}
-                  role="button"
                   aria-label={`イベント: ${d.eventType}, 単語: ${d.word}`}
                 />
               </g>
