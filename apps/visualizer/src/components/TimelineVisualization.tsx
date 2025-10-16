@@ -71,6 +71,7 @@ export default function TimelineVisualization({
   const [selectedDataPoint, setSelectedDataPoint] = useState<TimelineDataPoint | null>(null)
   const [visualizationMode, setVisualizationMode] = useState<VisualizationMode>('timeline')
   const [timeRange, setTimeRange] = useState<TimeRange | null>(null)
+  const [embeddingsByWord, setEmbeddingsByWord] = useState<Record<string, number[]>>({})
   const [filters, setFilters] = useState<FilterSettings>({
     emotions: true,
     physiological: true,
@@ -91,6 +92,11 @@ export default function TimelineVisualization({
   const [lambda, setLambda] = useState(1.0) // ΔSP のスケール λ
   const [eta, setEta] = useState(1.0)    // 感情スコア係数 η
   const [topNWords, setTopNWords] = useState(100)
+  const [beta, setBeta] = useState(1.0)  // ベクトル項の温度 β
+  const [springK, setSpringK] = useState(3.0)
+  const [repulsionK, setRepulsionK] = useState(800.0)
+  const [restLength, setRestLength] = useState(60)
+  const [damping, setDamping] = useState(0.95)
   
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
@@ -113,6 +119,29 @@ export default function TimelineVisualization({
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoading(false)
+    }
+  }, [participantId])
+
+  // Word2Vec 埋め込み（平均）を単語ごとに取得
+  const fetchWordEmbeddings = React.useCallback(async () => {
+    try {
+      const res = await fetch(`/api/participants/${participantId}/word2vec`)
+      const json = await res.json()
+      if (!json?.success) return
+      const byWord: Record<string, { sum: number[]; count: number }> = {}
+      ;(json.wordData as Array<{ word: string; embedding: number[] }>).forEach((item) => {
+        if (!byWord[item.word]) byWord[item.word] = { sum: new Array(item.embedding.length).fill(0), count: 0 }
+        const acc = byWord[item.word]
+        for (let i = 0; i < item.embedding.length; i++) acc.sum[i] += item.embedding[i]
+        acc.count += 1
+      })
+      const averaged: Record<string, number[]> = {}
+      Object.entries(byWord).forEach(([w, { sum, count }]) => {
+        averaged[w] = sum.map((v) => v / Math.max(1, count))
+      })
+      setEmbeddingsByWord(averaged)
+    } catch {
+      // 失敗時は無視（ベクトル項なしでも描画可能）
     }
   }, [participantId])
 
@@ -311,14 +340,51 @@ export default function TimelineVisualization({
       pairWeight.set(key, (pairWeight.get(key) || 0) + w)
     }
 
-    // 完全グラフに近いが、観測された遷移のみに限定（密度が高い場合は十分密）
-    const links: WordLink[] = []
-    for (const [key, w] of pairWeight.entries()) {
-      const [a, b] = key.split('-').map(Number)
-      links.push({ source: a, target: b, weight: w })
+    // 観測重み正規化の準備
+    let obsMin = Infinity; let obsMax = -Infinity
+    for (const v of pairWeight.values()) { if (v < obsMin) obsMin = v; if (v > obsMax) obsMax = v }
+    const obsDen = (Number.isFinite(obsMax) && Number.isFinite(obsMin) && obsMax - obsMin !== 0) ? (obsMax - obsMin) : 1
+
+    // ベクトル正規化・内積
+    const normalize = (vec: number[]): number[] => {
+      const norm = Math.hypot(...vec)
+      if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+      return vec.map((x) => x / norm)
+    }
+    const dot = (a: number[], b: number[]) => {
+      const n = Math.min(a.length, b.length)
+      let s = 0
+      for (let i = 0; i < n; i++) s += a[i] * b[i]
+      return s
     }
 
-    // エッジ重みの正規化（0.1〜1.0）
+    const normalizedEmb: Record<string, number[]> = {}
+    nodes.forEach((n) => {
+      const emb = embeddingsByWord[n.label]
+      normalizedEmb[n.label] = emb ? normalize(emb) : []
+    })
+
+    // 全結合エッジ: weight = exp(β·cos) * normalized(observedWeight)
+    const links: WordLink[] = []
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const wi = nodes[i].label
+        const wj = nodes[j].label
+        const vi = normalizedEmb[wi] || []
+        const vj = normalizedEmb[wj] || []
+        const sim = (vi.length && vj.length) ? Math.max(-1, Math.min(1, dot(vi, vj))) : 0
+        const vecFactor = Math.exp(beta * sim)
+
+        const key = i < j ? `${i}-${j}` : `${j}-${i}`
+        const obsRaw = pairWeight.get(key)
+        const obsNorm = obsRaw != null ? ((obsRaw - obsMin) / (obsDen || 1)) : 0
+        const obsFactor = 0.1 + 0.9 * obsNorm
+
+        links.push({ source: i, target: j, weight: vecFactor * obsFactor })
+      }
+    }
+
+    // 最終正規化（0.1〜1.0）
     if (links.length > 0) {
       const wMin = Math.min(...links.map(l => l.weight))
       const wMax = Math.max(...links.map(l => l.weight))
@@ -330,7 +396,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, topNWords])
+  }, [data, alpha, gamma, lambda, eta, topNWords, embeddingsByWord, beta])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -1099,7 +1165,8 @@ export default function TimelineVisualization({
   // データ取得
   useEffect(() => {
     fetchTimelineData()
-  }, [fetchTimelineData])
+    fetchWordEmbeddings()
+  }, [fetchTimelineData, fetchWordEmbeddings])
 
   // 時間範囲初期化
   useEffect(() => {
@@ -1346,7 +1413,7 @@ export default function TimelineVisualization({
         {visualizationMode === 'small-multiples' && renderSmallMultiples()}
 
         {visualizationMode === 'force-3d' && (
-          <div className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+          <div className="mb-4 grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
             <label className="flex items-center space-x-2">
               <span>α</span>
               <input type="number" step="0.1" value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
@@ -1364,8 +1431,28 @@ export default function TimelineVisualization({
               <input type="number" step="0.1" value={eta} onChange={(e) => setEta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
+              <span>β</span>
+              <input type="number" step="0.1" value={beta} onChange={(e) => setBeta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
               <span>Top N</span>
               <input type="number" min="10" max="100" value={topNWords} onChange={(e) => setTopNWords(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>K</span>
+              <input type="number" step="0.1" value={springK} onChange={(e) => setSpringK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>Repulsion</span>
+              <input type="number" step="10" value={repulsionK} onChange={(e) => setRepulsionK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>L0</span>
+              <input type="number" step="1" value={restLength} onChange={(e) => setRestLength(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>Damping</span>
+              <input type="number" step="0.01" value={damping} onChange={(e) => setDamping(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
           </div>
         )}
@@ -1375,7 +1462,7 @@ export default function TimelineVisualization({
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120 }} />
             </div>
           )
         })()}

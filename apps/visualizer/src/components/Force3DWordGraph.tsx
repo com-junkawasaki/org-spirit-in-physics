@@ -27,8 +27,15 @@ interface Force3DWordGraphProps {
   width?: number
   height?: number
   background?: string
+  physics?: {
+    springK: number
+    repulsionK: number
+    damping: number
+    restLength: number
+    maxSpeed: number
+  }
 }
-export default function Force3DWordGraph({ nodes, links, width = 1000, height = 600, background = '#0b1020' }: Force3DWordGraphProps) {
+export default function Force3DWordGraph({ nodes, links, width = 1000, height = 600, background = '#0b1020', physics }: Force3DWordGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
@@ -36,6 +43,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
   const controlsRef = useRef<OrbitControls | null>(null)
 
   const nodeMeshesRef = useRef<THREE.Mesh[]>([])
+  const labelSpritesRef = useRef<THREE.Sprite[]>([])
   const lineGeometryRef = useRef<THREE.BufferGeometry | null>(null)
   const linePositionsRef = useRef<Float32Array>(new Float32Array(links.length * 2 * 3))
   const lineColorsRef = useRef<Float32Array>(new Float32Array(links.length * 2 * 3))
@@ -118,6 +126,36 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       return mesh
     })
 
+    // ラベル
+    const makeLabel = (text: string) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return new THREE.Sprite(new THREE.SpriteMaterial({ opacity: 0 }))
+      const fontSize = 28
+      ctx.font = `${fontSize}px sans-serif`
+      const metrics = ctx.measureText(text)
+      canvas.width = Math.ceil(metrics.width + 20)
+      canvas.height = fontSize + 12
+      const ctx2 = canvas.getContext('2d')
+      if (!ctx2) return new THREE.Sprite(new THREE.SpriteMaterial({ opacity: 0 }))
+      ctx2.font = `${fontSize}px sans-serif`
+      ctx2.fillStyle = 'rgba(255,255,255,0.9)'
+      ctx2.textBaseline = 'top'
+      ctx2.fillText(text, 10, 2)
+      const texture = new THREE.CanvasTexture(canvas)
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true })
+      const sprite = new THREE.Sprite(material)
+      const scale = 0.5
+      sprite.scale.set(canvas.width * 0.5 * scale, canvas.height * 0.5 * scale, 1)
+      return sprite
+    }
+
+    labelSpritesRef.current = nodes.map((n) => {
+      const s = makeLabel(n.label)
+      scene.add(s)
+      return s
+    })
+
     // エッジ
     lineGeometryRef.current = new THREE.BufferGeometry()
     lineGeometryRef.current.setAttribute('position', new THREE.BufferAttribute(linePositionsRef.current, 3))
@@ -127,11 +165,11 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     scene.add(lines)
 
     // 物理パラメータ
-    const springK = 3.0
-    const repulsionK = 800.0
-    const damping = 0.95
-    const restLength = 60
-    const maxSpeed = 120
+    const springK = physics?.springK ?? 3.0
+    const repulsionK = physics?.repulsionK ?? 800.0
+    const damping = physics?.damping ?? 0.95
+    const restLength = physics?.restLength ?? 60
+    const maxSpeed = physics?.maxSpeed ?? 120
 
     let lastTime = performance.now()
     const tick = () => {
@@ -212,6 +250,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         const mesh = nodeMeshesRef.current[i]
         if (!mesh) continue
         mesh.position.set(p[i * 3], p[i * 3 + 1], p[i * 3 + 2])
+        const label = labelSpritesRef.current[i]
+        if (label) label.position.set(p[i * 3], p[i * 3 + 1] + 12, p[i * 3 + 2])
       }
 
       // エッジ頂点更新
@@ -255,9 +295,13 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         const mat = m.material as THREE.Material
         mat.dispose()
       })
+      labelSpritesRef.current.forEach(s => {
+        ;(s.material as THREE.Material).dispose()
+        s.removeFromParent()
+      })
       if (lineGeometryRef.current) lineGeometryRef.current.dispose()
     }
-  }, [nodes, links, width, height, background, colorForScale])
+  }, [nodes, links, width, height, background, colorForScale, physics?.springK, physics?.repulsionK, physics?.damping, physics?.restLength, physics?.maxSpeed])
 
   return <div ref={containerRef} style={{ width, height }} />
 }
