@@ -79,6 +79,17 @@ pnpm install
 pnpm dev
 ```
 
+### Timeline 3D Force モード（完全グラフ）
+
+- パス: `participants/[id]/timeline`
+- 表示モードトグルに「3D Force」を追加
+- 実装: `src/components/Force3DWordGraph.tsx`
+- ノード: 単語ごとに集約し、`scale = normalize(avgReactionValue * log(1+count))`
+- エッジ: 完全グラフ（全組合せ）、`weight = normalize(raw_i * raw_j)`
+- レンダリング: `@react-three/fiber` + `three`。カメラ・回転は `OrbitControls`
+
+参考モデル（Spirit in Physics 理論）: [投稿ページ](https://www.junkawasaki.com/posts/spirit-in-physics)
+
 ## API Endpoints
 
 - `GET /api/participants` - List all participants

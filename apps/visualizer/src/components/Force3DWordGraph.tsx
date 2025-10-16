@@ -1,0 +1,277 @@
+'use client'
+
+import React, { useMemo, useRef, useEffect } from 'react'
+import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+
+// Merkle DAG: components.force3d_word_graph
+// ユング単語連合の語ごとスケールを反映した完全グラフ3D可視化
+// 依存: React, @react-three/fiber, drei, three
+// BPMN: Force3DWordGraph
+
+export interface WordNode {
+  id: string
+  label: string
+  scale: number // 単語スケール（ノード半径・重み）
+}
+
+export interface WordLink {
+  source: number // インデックス（ノード配列参照）
+  target: number
+  weight: number // 辺スケール（太さ）
+}
+
+interface Force3DWordGraphProps {
+  nodes: WordNode[]
+  links: WordLink[]
+  width?: number
+  height?: number
+  background?: string
+}
+export default function Force3DWordGraph({ nodes, links, width = 1000, height = 600, background = '#0b1020' }: Force3DWordGraphProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
+  const sceneRef = useRef<THREE.Scene | null>(null)
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
+  const controlsRef = useRef<OrbitControls | null>(null)
+
+  const nodeMeshesRef = useRef<THREE.Mesh[]>([])
+  const lineGeometryRef = useRef<THREE.BufferGeometry | null>(null)
+  const linePositionsRef = useRef<Float32Array>(new Float32Array(links.length * 2 * 3))
+  const lineColorsRef = useRef<Float32Array>(new Float32Array(links.length * 2 * 3))
+
+  const positionsRef = useRef<Float32Array>(new Float32Array(nodes.length * 3))
+  const velocitiesRef = useRef<Float32Array>(new Float32Array(nodes.length * 3))
+  const animRef = useRef<number | null>(null)
+
+  // 色スケール
+  const scaleExtent = useMemo(() => {
+    if (nodes.length === 0) return { min: 0, max: 1 }
+    const vals = nodes.map(n => n.scale)
+    const min = Math.min(...vals)
+    const max = Math.max(...vals)
+    return { min, max: max <= min ? min + 1e-6 : max }
+  }, [nodes])
+
+  const colorForScale = React.useCallback((s: number): THREE.Color => {
+    const t = (s - scaleExtent.min) / (scaleExtent.max - scaleExtent.min)
+    return new THREE.Color(t, 0.5, 1 - t)
+  }, [scaleExtent.min, scaleExtent.max])
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    // レンダラー
+    const renderer = new THREE.WebGLRenderer({ antialias: true })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setSize(width, height)
+    containerRef.current.appendChild(renderer.domElement)
+    rendererRef.current = renderer
+
+    // シーン
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color(background)
+    sceneRef.current = scene
+
+    // カメラ
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 5000)
+    camera.position.set(0, 0, 300)
+    cameraRef.current = camera
+
+    // コントロール
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enableDamping = true
+    controls.dampingFactor = 0.08
+    controls.minDistance = 50
+    controls.maxDistance = 800
+    controlsRef.current = controls
+
+    // ライティング
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6))
+    const dl = new THREE.DirectionalLight(0xffffff, 0.6)
+    dl.position.set(50, 100, 50)
+    scene.add(dl)
+
+    // 初期位置
+    const pos = positionsRef.current
+    const vel = velocitiesRef.current
+    for (let i = 0; i < nodes.length; i++) {
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+      const r = 120 + Math.random() * 40
+      pos[i * 3] = r * Math.sin(phi) * Math.cos(theta)
+      pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
+      pos[i * 3 + 2] = r * Math.cos(phi)
+      vel[i * 3] = 0
+      vel[i * 3 + 1] = 0
+      vel[i * 3 + 2] = 0
+    }
+
+    // ノード
+    nodeMeshesRef.current = nodes.map((n) => {
+      const color = colorForScale(n.scale)
+      const radius = Math.max(2, Math.min(10, 2 + n.scale))
+      const geo = new THREE.SphereGeometry(radius, 16, 16)
+      const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.2 })
+      const mesh = new THREE.Mesh(geo, mat)
+      scene.add(mesh)
+      return mesh
+    })
+
+    // エッジ
+    lineGeometryRef.current = new THREE.BufferGeometry()
+    lineGeometryRef.current.setAttribute('position', new THREE.BufferAttribute(linePositionsRef.current, 3))
+    lineGeometryRef.current.setAttribute('color', new THREE.BufferAttribute(lineColorsRef.current, 3))
+    const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.6 })
+    const lines = new THREE.LineSegments(lineGeometryRef.current, lineMat)
+    scene.add(lines)
+
+    // 物理パラメータ
+    const springK = 3.0
+    const repulsionK = 800.0
+    const damping = 0.95
+    const restLength = 60
+    const maxSpeed = 120
+
+    let lastTime = performance.now()
+    const tick = () => {
+      const now = performance.now()
+      const delta = Math.min(0.05, (now - lastTime) / 1000)
+      lastTime = now
+
+      const p = positionsRef.current
+      const v = velocitiesRef.current
+      const n = nodes.length
+
+      // 斥力
+      for (let i = 0; i < n; i++) {
+        const ix = i * 3
+        for (let j = i + 1; j < n; j++) {
+          const jx = j * 3
+          const dx = p[ix] - p[jx]
+          const dy = p[ix + 1] - p[jx + 1]
+          const dz = p[ix + 2] - p[jx + 2]
+          const distSq = dx * dx + dy * dy + dz * dz + 1e-6
+          const dist = Math.sqrt(distSq)
+          const force = repulsionK / distSq
+          const fx = (force * dx) / dist
+          const fy = (force * dy) / dist
+          const fz = (force * dz) / dist
+          v[ix] += fx * delta
+          v[ix + 1] += fy * delta
+          v[ix + 2] += fz * delta
+          v[jx] -= fx * delta
+          v[jx + 1] -= fy * delta
+          v[jx + 2] -= fz * delta
+        }
+      }
+
+      // バネ
+      for (let k = 0; k < links.length; k++) {
+        const { source, target, weight } = links[k]
+        const i = source * 3
+        const j = target * 3
+        const dx = p[j] - p[i]
+        const dy = p[j + 1] - p[i + 1]
+        const dz = p[j + 2] - p[i + 2]
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-6
+        const L0 = Math.max(10, restLength / Math.sqrt(1 + weight))
+        const x = dist - L0
+        const force = springK * x
+        const fx = (force * dx) / dist
+        const fy = (force * dy) / dist
+        const fz = (force * dz) / dist
+        v[i] += fx * delta
+        v[i + 1] += fy * delta
+        v[i + 2] += fz * delta
+        v[j] -= fx * delta
+        v[j + 1] -= fy * delta
+        v[j + 2] -= fz * delta
+      }
+
+      // 減衰と位置更新
+      for (let i = 0; i < n; i++) {
+        const ix = i * 3
+        v[ix] *= damping
+        v[ix + 1] *= damping
+        v[ix + 2] *= damping
+        const speed = Math.hypot(v[ix], v[ix + 1], v[ix + 2])
+        if (speed > maxSpeed) {
+          const s = maxSpeed / (speed + 1e-6)
+          v[ix] *= s
+          v[ix + 1] *= s
+          v[ix + 2] *= s
+        }
+        p[ix] += v[ix] * delta
+        p[ix + 1] += v[ix + 1] * delta
+        p[ix + 2] += v[ix + 2] * delta
+      }
+
+      // ノード位置反映
+      for (let i = 0; i < nodes.length; i++) {
+        const mesh = nodeMeshesRef.current[i]
+        if (!mesh) continue
+        mesh.position.set(p[i * 3], p[i * 3 + 1], p[i * 3 + 2])
+      }
+
+      // エッジ頂点更新
+      const lp = linePositionsRef.current
+      const lc = lineColorsRef.current
+      for (let e = 0; e < links.length; e++) {
+        const { source, target } = links[e]
+        const s3 = source * 3
+        const t3 = target * 3
+        const i = e * 2 * 3
+        lp[i] = p[s3]; lp[i + 1] = p[s3 + 1]; lp[i + 2] = p[s3 + 2]
+        lp[i + 3] = p[t3]; lp[i + 4] = p[t3 + 1]; lp[i + 5] = p[t3 + 2]
+        const c1 = colorForScale(nodes[source].scale)
+        const c2 = colorForScale(nodes[target].scale)
+        lc[i] = c1.r; lc[i + 1] = c1.g; lc[i + 2] = c1.b
+        lc[i + 3] = c2.r; lc[i + 4] = c2.g; lc[i + 5] = c2.b
+      }
+      if (lineGeometryRef.current) {
+        lineGeometryRef.current.attributes.position.needsUpdate = true
+        lineGeometryRef.current.attributes.color.needsUpdate = true
+      }
+
+      controls.update()
+      renderer.render(scene, camera)
+      animRef.current = requestAnimationFrame(tick)
+    }
+
+    // 初回描画
+    const controlsLocal = controlsRef.current
+    const rendererLocal = rendererRef.current
+    const sceneLocal = sceneRef.current
+    const cameraLocal = cameraRef.current
+    const onChange = () => {
+      if (!controlsLocal || !rendererLocal || !sceneLocal || !cameraLocal) return
+      controlsLocal.update()
+      rendererLocal.render(sceneLocal, cameraLocal)
+    }
+    if (controlsLocal) controlsLocal.addEventListener('change', onChange)
+
+    animRef.current = requestAnimationFrame(tick)
+
+    // クリーンアップ
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current)
+      if (controlsLocal) controlsLocal.removeEventListener('change', onChange)
+      controlsRef.current?.dispose()
+      rendererRef.current?.dispose()
+      if (rendererRef.current) containerRef.current?.removeChild(rendererRef.current.domElement)
+      // メッシュとジオメトリの破棄
+      nodeMeshesRef.current.forEach(m => {
+        m.geometry.dispose()
+        const mat = m.material as THREE.Material
+        mat.dispose()
+      })
+      if (lineGeometryRef.current) lineGeometryRef.current.dispose()
+    }
+  }, [nodes, links, width, height, background, colorForScale])
+
+  return <div ref={containerRef} style={{ width, height }} />
+}
+
+// Merkle DAG: components.force3d_word_graph -> implementation_complete
+

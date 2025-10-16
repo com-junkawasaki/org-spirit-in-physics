@@ -1,6 +1,4 @@
-'use client'
-
-import React from 'react'
+ 
 import dynamic from 'next/dynamic'
 
 const TimelineVisualization = dynamic(() => import('@/components/TimelineVisualization'), {
@@ -19,11 +17,11 @@ const TimelineVisualization = dynamic(() => import('@/components/TimelineVisuali
 // BPMN: TimelineVisualizationPage
 
 interface TimelinePageProps {
-  params: Promise<{ id: string }>
+  params: { id: string }
 }
 
-export default async function TimelinePage({ params }: TimelinePageProps) {
-  const { id: participantId } = await params
+export default function TimelinePage({ params }: TimelinePageProps) {
+  const { id: participantId } = params
 
   return (
     <div className="p-4 space-y-6">

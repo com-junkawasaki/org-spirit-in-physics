@@ -2,6 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import * as d3 from 'd3'
+import dynamic from 'next/dynamic'
+
+// Force3D 用型（型のみローカル定義して実行時依存を最小化）
+interface WordNode { id: string; label: string; scale: number }
+interface WordLink { source: number; target: number; weight: number }
+
+// Force3D コンポーネントは選択時にのみ遅延読み込み
 
 // Merkle DAG: components.timeline_visualization
 // 時系列統合可視化コンポーネント
@@ -44,7 +51,7 @@ interface TimeRange {
   end: number
 }
 
-type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples'
+type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d'
 
 interface TimelineVisualizationProps {
   participantId: string
@@ -57,6 +64,7 @@ export default function TimelineVisualization({
   width = 800, 
   height = 400 
 }: TimelineVisualizationProps) {
+  const [mounted, setMounted] = useState(false)
   const [data, setData] = useState<TimelineDataPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,6 +89,8 @@ export default function TimelineVisualization({
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setMounted(true) }, [])
 
   const fetchTimelineData = React.useCallback(async () => {
     try {
@@ -229,6 +239,67 @@ export default function TimelineVisualization({
       }))
       .sort((a, b) => b.stats.avgReactionValue - a.stats.avgReactionValue)
       .slice(0, 12) // 上位12単語のみ表示
+  }, [data])
+
+  // 3Dフォース用 完全グラフデータ生成（語ごとスケール、辺スケール）
+  const prepareForce3DGraph = React.useCallback((): { nodes: WordNode[]; links: WordLink[] } => {
+    if (data.length === 0) return { nodes: [], links: [] }
+
+    // 単語ごとに集約
+    const groups = data.reduce((acc, d) => {
+      if (!acc[d.word]) acc[d.word] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 }
+      acc[d.word].count += 1
+      acc[d.word].sumReactionValue += d.reactionValue
+      acc[d.word].sumReactionTime += d.reactionTime
+      return acc
+    }, {} as Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }>)
+
+    // ノードの生スケール: 平均反応値 × log(1+回数)
+    const nodeEntries = Object.entries(groups).map(([word, g]) => {
+      const avgRV = g.sumReactionValue / Math.max(1, g.count)
+      const raw = avgRV * Math.log1p(g.count)
+      return { word, count: g.count, avgReactionValue: avgRV, raw }
+    })
+
+    // 上位N語に制限（描画安定性のため）
+    const TOP_N = 40
+    const top = nodeEntries.sort((a, b) => b.raw - a.raw).slice(0, TOP_N)
+
+    const rawMin = Math.min(...top.map(n => n.raw))
+    const rawMax = Math.max(...top.map(n => n.raw))
+    const denom = rawMax - rawMin || 1
+
+    const nodes: WordNode[] = top.map((n, idx) => ({
+      id: String(idx),
+      label: n.word,
+      // 0.5〜6.0程度に正規化（視認性のため）
+      scale: 0.5 + 5.5 * ((n.raw - rawMin) / denom)
+    }))
+
+    // 完全グラフの辺
+    const links: WordLink[] = []
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const wi = top[i]
+        const wj = top[j]
+        // 辺スケールはノードスケール（正規化前raw）の積を基に正規化
+        const prod = wi.raw * wj.raw
+        links.push({ source: i, target: j, weight: prod })
+      }
+    }
+
+    // 辺スケール正規化（0.1〜1.0）
+    if (links.length > 0) {
+      const wMin = Math.min(...links.map(l => l.weight))
+      const wMax = Math.max(...links.map(l => l.weight))
+      const wDen = wMax - wMin || 1
+      for (const l of links) {
+        const t = (l.weight - wMin) / wDen
+        l.weight = 0.1 + 0.9 * t
+      }
+    }
+
+    return { nodes, links }
   }, [data])
 
   // KPIカードレンダリング
@@ -588,7 +659,7 @@ export default function TimelineVisualization({
 
       g.append('g')
         .attr('class', 'brush')
-        .call(brush as unknown as any)
+        .call(brush as unknown as d3.BrushBehavior<unknown>)
     }
 
     // X軸
@@ -1018,6 +1089,9 @@ export default function TimelineVisualization({
         case 'dumbbell':
           renderDumbbellChart()
           break
+        case 'force-3d':
+          // three.js 側で描画するため、ここではD3描画なし
+          break
         default:
           break
       }
@@ -1059,7 +1133,8 @@ export default function TimelineVisualization({
             { id: 'timeline', label: '時系列', icon: '📈' },
             { id: 'kpi', label: 'KPIカード', icon: '📊' },
             { id: 'dumbbell', label: 'Before-After', icon: '⚖️' },
-            { id: 'small-multiples', label: 'スモールマルチプル', icon: '🔢' }
+            { id: 'small-multiples', label: 'スモールマルチプル', icon: '🔢' },
+            { id: 'force-3d', label: '3D Force', icon: '🧲' }
           ].map((mode) => (
             <button
               key={mode.id}
@@ -1239,6 +1314,16 @@ export default function TimelineVisualization({
         )}
         
         {visualizationMode === 'small-multiples' && renderSmallMultiples()}
+
+        {visualizationMode === 'force-3d' && mounted && (() => {
+          const Force3D = dynamic(() => import('@/components/Force3DWordGraph'), { ssr: false })
+          const { nodes, links } = prepareForce3DGraph()
+          return (
+            <div className="border rounded overflow-hidden">
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(500, height)} />
+            </div>
+          )
+        })()}
       </div>
 
       {/* データポイント詳細 */}
