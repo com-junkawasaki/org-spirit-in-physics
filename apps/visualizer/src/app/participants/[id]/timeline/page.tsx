@@ -3,12 +3,12 @@
 import React from 'react'
 import dynamic from 'next/dynamic'
 
-const TimelineVisualization = dynamic(() => import('@/components/TimelineVisualization'), {
+const VisxTimelineVisualization = dynamic(() => import('@/components/VisxTimelineVisualization'), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-64">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <span className="ml-2">時系列可視化コンポーネントを読み込み中...</span>
+      <span className="ml-2">visx + D3 + ml-matrix 時系列可視化コンポーネントを読み込み中...</span>
     </div>
   )
 })
@@ -47,7 +47,8 @@ export default async function TimelinePage({ params }: TimelinePageProps) {
           <div>
             <h3 className="font-semibold mb-2">可視化機能</h3>
             <div className="space-y-1">
-              <div>• 時系列チャート (D3.js)</div>
+              <div>• 時系列チャート (visx + D3関数写像)</div>
+              <div>• 線形代数的データ変換 (ml-matrix)</div>
               <div>• リアルタイムフィルタリング</div>
               <div>• ズーム・パン機能</div>
               <div>• データポイント詳細表示</div>
@@ -56,7 +57,8 @@ export default async function TimelinePage({ params }: TimelinePageProps) {
           <div>
             <h3 className="font-semibold mb-2">分析機能</h3>
             <div className="space-y-1">
-              <div>• 反応値統合計算</div>
+              <div>• 線形代数的反応値統合 (W_e·e + W_p·p)</div>
+              <div>• 平滑化・再標本化行列変換</div>
               <div>• イベントタイプ別色分け</div>
               <div>• 統計情報表示</div>
               <div>• インタラクティブ操作</div>
@@ -67,7 +69,7 @@ export default async function TimelinePage({ params }: TimelinePageProps) {
 
       <div className="bg-white border rounded-lg p-4">
         <h2 className="text-lg font-semibold mb-4">参加者ID: {participantId}</h2>
-        <TimelineVisualization 
+        <VisxTimelineVisualization 
           participantId={participantId}
           width={1000}
           height={500}
