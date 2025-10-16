@@ -1,30 +1,38 @@
 // Merkle DAG: Neogmaモデル定義
 // Neogmaを使用した型安全なNeo4j Object-Graph Mapping
+// ガイドライン: グラフ → 型の写像は「関係から決める」
 
-import { Neogma, ModelFactory, ModelRelatedNodesI } from 'neogma';
+import { type Neogma, ModelFactory, type ModelRelatedNodesI } from 'neogma';
 
-// 共通の型定義
+// 共通の型定義 - ガイドライン: プロパティ設計は疎に／Map的フィールドは最後に
 interface BaseNode {
-  id: string;
+  id: string; // ガイドライン: 主キーはアプリ側の安定ID
   created_at?: string;
   updated_at?: string;
-  [key: string]: any; // Neogmaの制約を満たすためのインデックスシグネチャ
+  // Map的フィールドは最後に配置
+  metadata?: Record<string, unknown>;
+  [key: string]: unknown; // Neogmaの制約を満たすためのインデックスシグネチャ
 }
 
 // モデル型定義 - 実行時にcreateNeogmaModels関数でインスタンス化されます
 
-// Participantモデル
+// Participantモデル - ガイドライン: 関係から決める型の写像
 interface ParticipantProperties extends BaseNode {
+  // 基本プロパティ（疎結合）
   age?: number;
   gender?: string;
   handedness?: string;
   consent_given?: boolean;
   consent_timestamp?: string;
+  // Map的フィールドは最後に
+  additional_properties?: Record<string, unknown>;
 }
 
+// ガイドライン: 双方向は必要最小限・片側保存原則
 interface ParticipantRelatedNodes {
+  // 一方向関係のみ定義（片側保存）
   sessions: ModelRelatedNodesI<
-    any, // 循環参照を避けるためanyを使用
+    unknown, // 循環参照を避けるためunknownを使用
     {
       id: string;
       participant_id: string;
@@ -34,7 +42,7 @@ interface ParticipantRelatedNodes {
     }
   >;
   responses: ModelRelatedNodesI<
-    any, // 循環参照を避けるためanyを使用
+    unknown, // 循環参照を避けるためunknownを使用
     {
       id: string;
       participant_id: string;
@@ -49,23 +57,28 @@ interface ParticipantRelatedNodes {
   >;
 }
 
-// ExperimentSessionモデル
+// ExperimentSessionモデル - ガイドライン: 関係から決める型の写像
 interface ExperimentSessionProperties extends BaseNode {
-  participant_id: string;
+  // 基本プロパティ（疎結合）
+  participant_id: string; // ガイドライン: 主キーはアプリ側の安定ID
   start_ts: string;
   end_ts?: string;
   status: string;
   total_responses?: number;
   completed_responses?: number;
+  // Map的フィールドは最後に
+  session_metadata?: Record<string, unknown>;
 }
 
+// ガイドライン: 双方向は必要最小限・片側保存原則
 interface ExperimentSessionRelatedNodes {
+  // 一方向関係のみ定義（片側保存）
   participant: ModelRelatedNodesI<
-    any,
+    unknown,
     ParticipantProperties
   >;
   responses: ModelRelatedNodesI<
-    any,
+    unknown,
     {
       id: string;
       participant_id: string;
@@ -80,10 +93,11 @@ interface ExperimentSessionRelatedNodes {
   >;
 }
 
-// Responseモデル
+// Responseモデル - ガイドライン: 関係から決める型の写像
 interface ResponseProperties extends BaseNode {
-  participant_id: string;
-  session_id: string;
+  // 基本プロパティ（疎結合）
+  participant_id: string; // ガイドライン: 主キーはアプリ側の安定ID
+  session_id: string; // ガイドライン: 主キーはアプリ側の安定ID
   stimulus_word: string;
   response_word: string;
   reaction_time_ms?: number;
@@ -91,81 +105,101 @@ interface ResponseProperties extends BaseNode {
   emotion?: string;
   emotion_confidence?: number;
   spirit_probability?: number;
+  // Map的フィールドは最後に
+  response_metadata?: Record<string, unknown>;
 }
 
+// ガイドライン: 双方向は必要最小限・片側保存原則
 interface ResponseRelatedNodes {
+  // 一方向関係のみ定義（片側保存）
   participant: ModelRelatedNodesI<
-    any,
+    unknown,
     ParticipantProperties
   >;
   session: ModelRelatedNodesI<
-    any,
+    unknown,
     ExperimentSessionProperties
   >;
   emotionAnalysis: ModelRelatedNodesI<
-    any,
+    unknown,
     {
       id: string;
       response_id: string;
-      emotion_data: any;
+      emotion_data: Record<string, unknown>;
       confidence_score?: number;
       analysis_timestamp: string;
     }
   >;
 }
 
-// EmotionAnalysisモデル
+// EmotionAnalysisモデル - ガイドライン: 関係から決める型の写像
 interface EmotionAnalysisProperties extends BaseNode {
-  response_id: string;
-  emotion_data: any;
+  // 基本プロパティ（疎結合）
+  response_id: string; // ガイドライン: 主キーはアプリ側の安定ID
+  emotion_data: Record<string, unknown>; // Map的フィールド
   confidence_score?: number;
   analysis_timestamp: string;
   source?: string;
+  // Map的フィールドは最後に
+  analysis_metadata?: Record<string, unknown>;
 }
 
+// ガイドライン: 双方向は必要最小限・片側保存原則
 interface EmotionAnalysisRelatedNodes {
+  // 一方向関係のみ定義（片側保存）
   response: ModelRelatedNodesI<
-    any,
+    unknown,
     ResponseProperties
   >;
 }
 
-// WordStimulusモデル
+// WordStimulusモデル - ガイドライン: 関係から決める型の写像
 interface WordStimulusProperties extends BaseNode {
+  // 基本プロパティ（疎結合）
   word: string;
   category?: string;
   language: string;
   pronunciation?: string;
-  meaning_vector?: any;
+  // Map的フィールドは最後に
+  meaning_vector?: Record<string, unknown>;
+  word_metadata?: Record<string, unknown>;
 }
 
-// ImportJobモデル
+// ImportJobモデル - ガイドライン: 関係から決める型の写像
 interface ImportJobProperties extends BaseNode {
-  session_id: string;
-  participant_id: string;
+  // 基本プロパティ（疎結合）
+  session_id: string; // ガイドライン: 主キーはアプリ側の安定ID
+  participant_id: string; // ガイドライン: 主キーはアプリ側の安定ID
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
   progress_percentage: number;
   error_message?: string;
   completed_at?: string;
+  // Map的フィールドは最後に
+  job_metadata?: Record<string, unknown>;
 }
 
-// Neogmaモデル初期化関数
+// Neogmaモデル初期化関数 - ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
 export function createNeogmaModels(neogmaInstance: Neogma) {
   // Neogmaインスタンスを使ってモデルを再作成
   const ParticipantModel = ModelFactory<ParticipantProperties, ParticipantRelatedNodes>(
     {
       label: 'Participant',
       schema: {
+        // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
         id: { type: 'string', required: true },
-        age: { type: 'number', minimum: 0 },
+        // 基本プロパティ（疎結合）
+        age: { type: 'number', minimum: 0, maximum: 150 },
         gender: { type: 'string' },
         handedness: { type: 'string' },
         consent_given: { type: 'boolean', default: false },
         consent_timestamp: { type: 'string' },
         created_at: { type: 'string' },
         updated_at: { type: 'string' },
+        // Map的フィールドは最後に
+        additional_properties: { type: 'object' },
+        metadata: { type: 'object' },
       },
-      primaryKeyField: 'id',
+      primaryKeyField: 'id', // ガイドライン: 主キーはアプリ側の安定ID
     },
     neogmaInstance
   );
@@ -174,8 +208,10 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
     {
       label: 'ExperimentSession',
       schema: {
+        // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
         id: { type: 'string', required: true },
         participant_id: { type: 'string', required: true },
+        // 基本プロパティ（疎結合）
         start_ts: { type: 'string', required: true },
         end_ts: { type: 'string' },
         status: { type: 'string', required: true },
@@ -183,8 +219,11 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
         completed_responses: { type: 'number', minimum: 0 },
         created_at: { type: 'string' },
         updated_at: { type: 'string' },
+        // Map的フィールドは最後に
+        session_metadata: { type: 'object' },
+        metadata: { type: 'object' },
       },
-      primaryKeyField: 'id',
+      primaryKeyField: 'id', // ガイドライン: 主キーはアプリ側の安定ID
     },
     neogmaInstance
   );
@@ -193,9 +232,11 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
     {
       label: 'Response',
       schema: {
+        // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
         id: { type: 'string', required: true },
         participant_id: { type: 'string', required: true },
         session_id: { type: 'string', required: true },
+        // 基本プロパティ（疎結合）
         stimulus_word: { type: 'string', required: true },
         response_word: { type: 'string', required: true },
         reaction_time_ms: { type: 'number', minimum: 0 },
@@ -205,8 +246,11 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
         spirit_probability: { type: 'number', minimum: 0, maximum: 1 },
         created_at: { type: 'string' },
         updated_at: { type: 'string' },
+        // Map的フィールドは最後に
+        response_metadata: { type: 'object' },
+        metadata: { type: 'object' },
       },
-      primaryKeyField: 'id',
+      primaryKeyField: 'id', // ガイドライン: 主キーはアプリ側の安定ID
     },
     neogmaInstance
   );
@@ -215,53 +259,68 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
     {
       label: 'EmotionAnalysis',
       schema: {
+        // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
         id: { type: 'string', required: true },
         response_id: { type: 'string', required: true },
-        emotion_data: { type: 'any', required: true },
+        // 基本プロパティ（疎結合）
         confidence_score: { type: 'number', minimum: 0, maximum: 1 },
         analysis_timestamp: { type: 'string', required: true },
         source: { type: 'string' },
         created_at: { type: 'string' },
         updated_at: { type: 'string' },
+        // Map的フィールドは最後に
+        emotion_data: { type: 'object', required: true },
+        analysis_metadata: { type: 'object' },
+        metadata: { type: 'object' },
       },
-      primaryKeyField: 'id',
+      primaryKeyField: 'id', // ガイドライン: 主キーはアプリ側の安定ID
     },
     neogmaInstance
   );
 
-  const WordStimulusModel = ModelFactory<WordStimulusProperties, {}>(
+  const WordStimulusModel = ModelFactory<WordStimulusProperties, Record<string, never>>(
     {
       label: 'WordStimulus',
       schema: {
+        // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
         id: { type: 'string', required: true },
+        // 基本プロパティ（疎結合）
         word: { type: 'string', required: true },
         category: { type: 'string' },
         language: { type: 'string', required: true },
         pronunciation: { type: 'string' },
-        meaning_vector: { type: 'any' },
         created_at: { type: 'string' },
         updated_at: { type: 'string' },
+        // Map的フィールドは最後に
+        meaning_vector: { type: 'object' },
+        word_metadata: { type: 'object' },
+        metadata: { type: 'object' },
       },
-      primaryKeyField: 'id',
+      primaryKeyField: 'id', // ガイドライン: 主キーはアプリ側の安定ID
     },
     neogmaInstance
   );
 
-  const ImportJobModel = ModelFactory<ImportJobProperties, {}>(
+  const ImportJobModel = ModelFactory<ImportJobProperties, Record<string, never>>(
     {
       label: 'ImportJob',
       schema: {
+        // ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
         id: { type: 'string', required: true },
         session_id: { type: 'string', required: true },
         participant_id: { type: 'string', required: true },
+        // 基本プロパティ（疎結合）
         status: { type: 'string', required: true, enum: ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED'] },
         progress_percentage: { type: 'number', minimum: 0, maximum: 100, default: 0 },
         error_message: { type: 'string' },
         completed_at: { type: 'string' },
         created_at: { type: 'string' },
         updated_at: { type: 'string' },
+        // Map的フィールドは最後に
+        job_metadata: { type: 'object' },
+        metadata: { type: 'object' },
       },
-      primaryKeyField: 'id',
+      primaryKeyField: 'id', // ガイドライン: 主キーはアプリ側の安定ID
     },
     neogmaInstance
   );

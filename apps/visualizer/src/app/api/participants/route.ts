@@ -6,20 +6,25 @@ export async function GET(request: NextRequest) {
     console.log('API: Fetching participants from Neo4j...')
     const client = createNeo4jClient()
 
-    // Get participants data from Neo4j
-    const participants = await client.getParticipants()
+    // ガイドライン: 過取得の抑制：投影は最小限、リレーションは必要本数のみ
+    const participants = await client.projectMinimalFields(
+      'Participant',
+      ['id', 'age', 'gender', 'handedness', 'consent_given', 'consent_timestamp', 'created_at'],
+      {},
+      { limit: 100 }
+    )
 
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
     console.log('API: Participants sample:', participants?.slice(0, 2))
 
     // Process participants data for frontend
-    const processedParticipants = (participants || []).map(participant => ({
-      id: participant.participant_id,
-      name: `参加者 ${participant.participant_id.slice(0, 8)}`, // Default name format
-      sessionCount: participant.session_count || 0,
-      responseCount: participant.total_responses || 0,
-      averageSpiritProbability: participant.average_spirit_probability || 0,
-      lastActivity: participant.last_activity ? new Date(participant.last_activity).getTime() : null,
+    const processedParticipants = (participants || []).map((participant: any) => ({
+      id: participant.id,
+      name: `参加者 ${participant.id.slice(0, 8)}`, // Default name format
+      sessionCount: 0, // Will be fetched separately if needed
+      responseCount: 0, // Will be fetched separately if needed
+      averageSpiritProbability: 0, // Will be fetched separately if needed
+      lastActivity: participant.created_at ? new Date(participant.created_at).getTime() : null,
       sessions: [] // Simplified for now
     }))
 

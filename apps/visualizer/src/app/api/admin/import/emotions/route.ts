@@ -277,9 +277,9 @@ async function processCSVDataForRegistry(client: any, participantId: string, reg
       }
     }
 
-    // バッチでCSVデータをNeo4jに格納
+    // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
     if (csvEntries.length > 0) {
-      await client.createCSVElements(csvEntries);
+      await client.bulkInsertNodes('EmotionAnalysis', csvEntries, 1000);
     }
 
     // ネストされたHumeAI_artifactsも処理

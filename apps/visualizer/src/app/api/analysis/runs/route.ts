@@ -4,21 +4,28 @@ import { createNeo4jClient } from '@/lib/neo4j'
 export async function GET() {
   try {
     const client = createNeo4jClient()
-    const query = `
-      MATCH (r:AnalysisRun)
-      RETURN r.id as _key,
-             r.participant_id as participant_id,
-             r.status as status,
-             r.progress as progress,
-             r.model_version as model_version,
-             r.notes as notes,
-             r.created_at as created_at,
-             r.updated_at as updated_at
-      ORDER BY r.created_at DESC
-      LIMIT 100
-    `
-    const rows = await client.query(query)
-    return NextResponse.json(rows || [])
+    
+    // ガイドライン: 過取得の抑制：投影は最小限、リレーションは必要本数のみ
+    const rows = await client.projectMinimalFields(
+      'AnalysisRun',
+      ['id', 'participant_id', 'status', 'progress', 'model_version', 'notes', 'created_at', 'updated_at'],
+      {},
+      { limit: 100 }
+    )
+    
+    // ガイドライン: 必ずパラメタ化、文字列連結は厳禁
+    const processedRows = (rows || []).map((row: any) => ({
+      _key: row.id,
+      participant_id: row.participant_id,
+      status: row.status,
+      progress: row.progress,
+      model_version: row.model_version,
+      notes: row.notes,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    }))
+    
+    return NextResponse.json(processedRows)
   } catch (error) {
     console.error('Failed to list runs:', error)
     return NextResponse.json({ error: 'Failed to list runs' }, { status: 500 })
@@ -31,30 +38,20 @@ export async function POST(_req: NextRequest) {
     const now = new Date().toISOString()
     const runId = `run_${Date.now()}`
 
-    // グローバル実行（participant未指定）用のプレースホルダ
-    const insertQuery = `
-      CREATE (r:AnalysisRun {
-        id: $id,
-        participant_id: $participant_id,
-        status: $status,
-        progress: $progress,
-        model_version: $model_version,
-        notes: $notes,
-        created_at: $created_at,
-        updated_at: $updated_at
-      })
-      RETURN r
-    `
-    const result = await client.query(insertQuery, {
-      id: runId,
-      participant_id: 'all',
-      status: 'running',
-      progress: 0,
-      model_version: 'dev',
-      notes: 'manual-run from /analysis',
-      created_at: now,
-      updated_at: now,
-    })
+    // ガイドライン: MERGE操作の段階化
+    const result = await client.mergeNode(
+      'AnalysisRun',
+      {
+        id: runId,
+        participant_id: 'all',
+        status: 'running',
+        progress: 0,
+        model_version: 'dev',
+        notes: 'manual-run from /analysis',
+        created_at: now,
+        updated_at: now
+      }
+    )
 
     const run = result[0]?.r
 
