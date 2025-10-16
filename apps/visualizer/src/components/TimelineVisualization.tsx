@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import * as d3 from 'd3'
-import dynamic from 'next/dynamic'
+import Force3D from '@/components/Force3DWordGraph'
+import { useForce3DStore } from '@/stores/force3d'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
 // Force3D 用型（型のみローカル定義して実行時依存を最小化）
@@ -88,15 +89,11 @@ export default function TimelineVisualization({
     showWordLabels: true
   })
   // Kawasaki model hyperparameters
-  const [alpha, setAlpha] = useState(1.0)  // 反応時間の指数 α
-  const [gamma, setGamma] = useState(1.0)  // ΔSP の係数 γ
-  const [lambda, setLambda] = useState(1.0) // ΔSP のスケール λ
-  const [eta, setEta] = useState(1.0)    // 感情スコア係数 η
-  const [beta, setBeta] = useState(1.0)  // ベクトル項の温度 β
-  const [springK, setSpringK] = useState(3.0)
-  const [repulsionK, setRepulsionK] = useState(800.0)
-  const [restLength, setRestLength] = useState(60)
-  const [damping, setDamping] = useState(0.95)
+  const {
+    alpha, gamma, lambda, eta, beta,
+    springK, repulsionK, restLength, damping,
+    setParams, setPhysics,
+  } = useForce3DStore()
   
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
@@ -1418,52 +1415,53 @@ export default function TimelineVisualization({
           <div className="mb-4 grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
             <label className="flex items-center space-x-2">
               <span>α</span>
-              <input type="number" step="0.1" value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+              <input type="number" step="0.1" value={alpha} onChange={(e) => setParams({ alpha: Number(e.target.value) })} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>γ</span>
-              <input type="number" step="0.1" value={gamma} onChange={(e) => setGamma(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+              <input type="number" step="0.1" value={gamma} onChange={(e) => setParams({ gamma: Number(e.target.value) })} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>λ</span>
-              <input type="number" step="0.1" value={lambda} onChange={(e) => setLambda(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+              <input type="number" step="0.1" value={lambda} onChange={(e) => setParams({ lambda: Number(e.target.value) })} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>η</span>
-              <input type="number" step="0.1" value={eta} onChange={(e) => setEta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+              <input type="number" step="0.1" value={eta} onChange={(e) => setParams({ eta: Number(e.target.value) })} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>β</span>
-              <input type="number" step="0.1" value={beta} onChange={(e) => setBeta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+              <input type="number" step="0.1" value={beta} onChange={(e) => setParams({ beta: Number(e.target.value) })} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>K</span>
-              <input type="number" step="0.1" value={springK} onChange={(e) => setSpringK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+              <input type="number" step="0.1" value={springK} onChange={(e) => setPhysics({ springK: Number(e.target.value) })} className="w-24 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>Repulsion</span>
-              <input type="number" step="10" value={repulsionK} onChange={(e) => setRepulsionK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+              <input type="number" step="10" value={repulsionK} onChange={(e) => setPhysics({ repulsionK: Number(e.target.value) })} className="w-24 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>L0</span>
-              <input type="number" step="1" value={restLength} onChange={(e) => setRestLength(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+              <input type="number" step="1" value={restLength} onChange={(e) => setPhysics({ restLength: Number(e.target.value) })} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>Damping</span>
-              <input type="number" step="0.01" value={damping} onChange={(e) => setDamping(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+              <input type="number" step="0.01" value={damping} onChange={(e) => setPhysics({ damping: Number(e.target.value) })} className="w-24 border rounded px-2 py-1" />
             </label>
           </div>
         )}
 
-        {visualizationMode === 'force-3d' && mounted && (() => {
-          const Force3D = dynamic(() => import('@/components/Force3DWordGraph'), { ssr: false })
-          const { nodes, links } = prepareForce3DGraph()
-          return (
-            <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120 }} />
-            </div>
-          )
-        })()}
+        {visualizationMode === 'force-3d' && mounted && (
+          (() => {
+            const { nodes, links } = prepareForce3DGraph()
+            return (
+              <div className="border rounded overflow-hidden">
+                <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120 }} />
+              </div>
+            )
+          })()
+        )}
       </div>
 
       {/* データポイント詳細 */}
