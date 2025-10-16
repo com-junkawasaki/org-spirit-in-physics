@@ -97,6 +97,13 @@ const menuItems: MenuItem[] = [
         description: 'データインポートから解析まで'
     },
     {
+        id: 'visualization-dataset',
+        label: '描画用データセット生成',
+        href: '/pipeline/visualization-dataset',
+        icon: '📊',
+        description: '時系列可視化用データセット生成'
+    },
+    {
         id: 'import',
         label: 'インポート管理',
         href: '/import',

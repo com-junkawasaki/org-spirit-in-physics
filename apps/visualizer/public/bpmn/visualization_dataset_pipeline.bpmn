@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="8.7.1">
+  <bpmn:process id="Process_VisualizationDatasetPipeline" name="描画用データセット生成パイプライン" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="開始">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_ValidateInput" name="入力データ検証" implementation="validation-service">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_Validation" name="検証結果">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_DataExtraction" name="データ抽出・統合" implementation="data-extraction-service">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:parallelGateway id="Gateway_ParallelProcessing" name="並列処理開始">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:task id="Task_TimeSeriesProcessing" name="時系列データ処理" implementation="timeseries-processor">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_EmotionProcessing" name="感情データ処理" implementation="emotion-processor">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_PhysiologicalProcessing" name="生理データ処理" implementation="physiological-processor">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:parallelGateway id="Gateway_Convergence" name="並列処理収束">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:task id="Task_DataIntegration" name="データ統合・正規化" implementation="data-integration-service">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_VisualizationDataset" name="描画用データセット生成" implementation="visualization-dataset-generator">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_QualityCheck" name="品質チェック" implementation="quality-check-service">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_Quality" name="品質チェック結果">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_DatasetStorage" name="データセット保存" implementation="dataset-storage-service">
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_18</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_ErrorHandling" name="エラーハンドリング" implementation="error-handler">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:incoming>Flow_17</bpmn:incoming>
+      <bpmn:outgoing>Flow_19</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_Success" name="成功終了">
+      <bpmn:incoming>Flow_18</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_Error" name="エラー終了">
+      <bpmn:incoming>Flow_19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_ValidateInput" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_ValidateInput" targetRef="Gateway_Validation" />
+    <bpmn:sequenceFlow id="Flow_3" name="検証成功" sourceRef="Gateway_Validation" targetRef="Task_DataExtraction" />
+    <bpmn:sequenceFlow id="Flow_4" name="検証失敗" sourceRef="Gateway_Validation" targetRef="Task_ErrorHandling" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_DataExtraction" targetRef="Gateway_ParallelProcessing" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Gateway_ParallelProcessing" targetRef="Task_TimeSeriesProcessing" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Gateway_ParallelProcessing" targetRef="Task_EmotionProcessing" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Gateway_ParallelProcessing" targetRef="Task_PhysiologicalProcessing" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_TimeSeriesProcessing" targetRef="Gateway_Convergence" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_EmotionProcessing" targetRef="Gateway_Convergence" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_PhysiologicalProcessing" targetRef="Gateway_Convergence" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Gateway_Convergence" targetRef="Task_DataIntegration" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_DataIntegration" targetRef="Task_VisualizationDataset" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="Task_VisualizationDataset" targetRef="Task_QualityCheck" />
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="Task_QualityCheck" targetRef="Gateway_Quality" />
+    <bpmn:sequenceFlow id="Flow_16" name="品質OK" sourceRef="Gateway_Quality" targetRef="Task_DatasetStorage" />
+    <bpmn:sequenceFlow id="Flow_17" name="品質NG" sourceRef="Gateway_Quality" targetRef="Task_ErrorHandling" />
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="Task_DatasetStorage" targetRef="EndEvent_Success" />
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="Task_ErrorHandling" targetRef="EndEvent_Error" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_VisualizationDatasetPipeline">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="164" y="142" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ValidateInput_di" bpmnElement="Task_ValidateInput">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Validation_di" bpmnElement="Gateway_Validation" isMarkerVisible="true">
+        <dc:Bounds x="425" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="405" y="149" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_DataExtraction_di" bpmnElement="Task_DataExtraction">
+        <dc:Bounds x="530" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ParallelProcessing_di" bpmnElement="Gateway_ParallelProcessing" isMarkerVisible="true">
+        <dc:Bounds x="685" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="665" y="149" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_TimeSeriesProcessing_di" bpmnElement="Task_TimeSeriesProcessing">
+        <dc:Bounds x="790" y="42" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_EmotionProcessing_di" bpmnElement="Task_EmotionProcessing">
+        <dc:Bounds x="790" y="142" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PhysiologicalProcessing_di" bpmnElement="Task_PhysiologicalProcessing">
+        <dc:Bounds x="790" y="242" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Convergence_di" bpmnElement="Gateway_Convergence" isMarkerVisible="true">
+        <dc:Bounds x="945" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="925" y="149" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_DataIntegration_di" bpmnElement="Task_DataIntegration">
+        <dc:Bounds x="1050" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_VisualizationDataset_di" bpmnElement="Task_VisualizationDataset">
+        <dc:Bounds x="1205" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_QualityCheck_di" bpmnElement="Task_QualityCheck">
+        <dc:Bounds x="1360" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Quality_di" bpmnElement="Gateway_Quality" isMarkerVisible="true">
+        <dc:Bounds x="1515" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1495" y="149" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_DatasetStorage_di" bpmnElement="Task_DatasetStorage">
+        <dc:Bounds x="1620" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ErrorHandling_di" bpmnElement="Task_ErrorHandling">
+        <dc:Bounds x="425" y="250" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndEvent_Success_di" bpmnElement="EndEvent_Success">
+        <dc:Bounds x="1782" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1767" y="142" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndEvent_Error_di" bpmnElement="EndEvent_Error">
+        <dc:Bounds x="582" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="567" y="315" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="425" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="475" y="117" />
+        <di:waypoint x="530" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="485" y="99" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="450" y="142" />
+        <di:waypoint x="450" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="460" y="196" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="630" y="117" />
+        <di:waypoint x="685" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="710" y="92" />
+        <di:waypoint x="710" y="82" />
+        <di:waypoint x="790" y="82" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="710" y="117" />
+        <di:waypoint x="790" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="710" y="142" />
+        <di:waypoint x="710" y="282" />
+        <di:waypoint x="790" y="282" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="890" y="82" />
+        <di:waypoint x="970" y="82" />
+        <di:waypoint x="970" y="92" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="890" y="117" />
+        <di:waypoint x="970" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="890" y="282" />
+        <di:waypoint x="970" y="282" />
+        <di:waypoint x="970" y="142" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="995" y="117" />
+        <di:waypoint x="1050" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="1150" y="117" />
+        <di:waypoint x="1205" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="1305" y="117" />
+        <di:waypoint x="1360" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="1460" y="117" />
+        <di:waypoint x="1515" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16">
+        <di:waypoint x="1565" y="117" />
+        <di:waypoint x="1620" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1575" y="99" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17">
+        <di:waypoint x="1540" y="142" />
+        <di:waypoint x="1540" y="250" />
+        <di:waypoint x="525" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1480" y="196" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18">
+        <di:waypoint x="1720" y="117" />
+        <di:waypoint x="1782" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19">
+        <di:waypoint x="525" y="290" />
+        <di:waypoint x="582" y="290" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
