@@ -34,6 +34,13 @@ const menuItems: MenuItem[] = [
         description: '参加者データ管理'
     },
     {
+        id: 'procs',
+        label: 'プロセス',
+        href: '/procs',
+        icon: '🧩',
+        description: 'BPMN 可視化・実行'
+    },
+    {
         id: 'import',
         label: 'インポート管理',
         href: '/import',

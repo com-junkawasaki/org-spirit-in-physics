@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+  xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+  xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+  id="Definitions_ImportPipeline_UI" targetNamespace="http://example.com/bpmn">
+  <process id="ImportPipelineUI" isExecutable="false">
+    <startEvent id="Start" name="Start"/>
+    <sequenceFlow id="f1" sourceRef="Start" targetRef="ImportParticipants"/>
+    <task id="ImportParticipants" name="Import Participants"/>
+    <sequenceFlow id="f2" sourceRef="ImportParticipants" targetRef="ImportSessions"/>
+    <task id="ImportSessions" name="Import Sessions"/>
+    <sequenceFlow id="f3" sourceRef="ImportSessions" targetRef="ImportEmotions"/>
+    <task id="ImportEmotions" name="Import Emotions"/>
+    <sequenceFlow id="f4" sourceRef="ImportEmotions" targetRef="CheckStatus"/>
+    <task id="CheckStatus" name="Check Status"/>
+    <sequenceFlow id="f5" sourceRef="CheckStatus" targetRef="End"/>
+    <endEvent id="End" name="End"/>
+  </process>
+</definitions>
+
+
