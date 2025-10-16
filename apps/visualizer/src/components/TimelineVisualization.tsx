@@ -27,7 +27,11 @@ interface FilterSettings {
   physiologicalThreshold: boolean
   emotionChange: boolean
   range: number
+  timeScale: number
+  verticalScale: number
 }
+
+type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples'
 
 interface TimelineVisualizationProps {
   participantId: string
@@ -44,6 +48,7 @@ export default function TimelineVisualization({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDataPoint, setSelectedDataPoint] = useState<TimelineDataPoint | null>(null)
+  const [visualizationMode, setVisualizationMode] = useState<VisualizationMode>('timeline')
   const [filters, setFilters] = useState<FilterSettings>({
     emotions: true,
     physiological: true,
@@ -52,7 +57,9 @@ export default function TimelineVisualization({
     reactionTime: true,
     physiologicalThreshold: true,
     emotionChange: true,
-    range: 100
+    range: 100,
+    timeScale: 1.0,
+    verticalScale: 1.0
   })
   
   const svgRef = useRef<SVGSVGElement>(null)
@@ -97,6 +104,351 @@ export default function TimelineVisualization({
       tooltipRef.current.style.display = 'none'
     }
   }, [])
+
+  // KPIカード計算
+  const calculateKPIs = React.useCallback(() => {
+    if (data.length === 0) return null
+
+    const currentValues = {
+      avgReactionTime: data.reduce((sum, d) => sum + d.reactionTime, 0) / data.length,
+      avgReactionValue: data.reduce((sum, d) => sum + d.reactionValue, 0) / data.length,
+      responseRate: (data.filter(d => d.hasResponse).length / data.length) * 100,
+      totalResponses: data.filter(d => d.hasResponse).length
+    }
+
+    // 過去の値（デモ用：現在値の90-110%の範囲でランダム）
+    const previousValues = {
+      avgReactionTime: currentValues.avgReactionTime * (0.9 + Math.random() * 0.2),
+      avgReactionValue: currentValues.avgReactionValue * (0.9 + Math.random() * 0.2),
+      responseRate: currentValues.responseRate * (0.9 + Math.random() * 0.2),
+      totalResponses: Math.floor(currentValues.totalResponses * (0.9 + Math.random() * 0.2))
+    }
+
+    // 変化率計算
+    const changes = {
+      avgReactionTime: ((currentValues.avgReactionTime - previousValues.avgReactionTime) / previousValues.avgReactionTime) * 100,
+      avgReactionValue: ((currentValues.avgReactionValue - previousValues.avgReactionValue) / previousValues.avgReactionValue) * 100,
+      responseRate: ((currentValues.responseRate - previousValues.responseRate) / previousValues.responseRate) * 100,
+      totalResponses: ((currentValues.totalResponses - previousValues.totalResponses) / previousValues.totalResponses) * 100
+    }
+
+    return { current: currentValues, previous: previousValues, changes }
+  }, [data])
+
+  // ダンベルチャート用データ準備
+  const prepareDumbbellData = React.useCallback(() => {
+    if (data.length === 0) return []
+
+    // 単語ごとにグループ化
+    const wordGroups = data.reduce((acc, d) => {
+      if (!acc[d.word]) acc[d.word] = []
+      acc[d.word].push(d)
+      return acc
+    }, {} as Record<string, TimelineDataPoint[]>)
+
+    // 各単語の前半・後半の平均値を計算
+    return Object.entries(wordGroups).map(([word, points]) => {
+      const sorted = points.sort((a, b) => a.timestamp - b.timestamp)
+      const mid = Math.floor(sorted.length / 2)
+      const firstHalf = sorted.slice(0, mid)
+      const secondHalf = sorted.slice(mid)
+
+      return {
+        word,
+        firstHalf: {
+          avgReactionTime: firstHalf.reduce((sum, d) => sum + d.reactionTime, 0) / firstHalf.length,
+          avgReactionValue: firstHalf.reduce((sum, d) => sum + d.reactionValue, 0) / firstHalf.length,
+          count: firstHalf.length
+        },
+        secondHalf: {
+          avgReactionTime: secondHalf.reduce((sum, d) => sum + d.reactionTime, 0) / secondHalf.length,
+          avgReactionValue: secondHalf.reduce((sum, d) => sum + d.reactionValue, 0) / secondHalf.length,
+          count: secondHalf.length
+        }
+      }
+    }).filter(d => d.firstHalf.count > 0 && d.secondHalf.count > 0)
+  }, [data])
+
+  // スモールマルチプル用データ準備
+  const prepareSmallMultiplesData = React.useCallback(() => {
+    if (data.length === 0) return []
+
+    // 単語ごとにグループ化して時系列データを作成
+    const wordGroups = data.reduce((acc, d) => {
+      if (!acc[d.word]) acc[d.word] = []
+      acc[d.word].push(d)
+      return acc
+    }, {} as Record<string, TimelineDataPoint[]>)
+
+    return Object.entries(wordGroups)
+      .map(([word, points]) => ({
+        word,
+        data: points.sort((a, b) => a.timestamp - b.timestamp),
+        stats: {
+          avgReactionTime: points.reduce((sum, d) => sum + d.reactionTime, 0) / points.length,
+          avgReactionValue: points.reduce((sum, d) => sum + d.reactionValue, 0) / points.length,
+          maxReactionValue: Math.max(...points.map(d => d.reactionValue)),
+          responseRate: (points.filter(d => d.hasResponse).length / points.length) * 100
+        }
+      }))
+      .sort((a, b) => b.stats.avgReactionValue - a.stats.avgReactionValue)
+      .slice(0, 12) // 上位12単語のみ表示
+  }, [data])
+
+  // KPIカードレンダリング
+  const renderKPICards = React.useCallback(() => {
+    const kpis = calculateKPIs()
+    if (!kpis) return
+
+    const cards = [
+      {
+        title: '平均反応時間',
+        value: kpis.current.avgReactionTime,
+        unit: 'ms',
+        change: kpis.changes.avgReactionTime,
+        sparkline: data.map(d => d.reactionTime).slice(-20) // 最新20件
+      },
+      {
+        title: '平均反応値',
+        value: kpis.current.avgReactionValue,
+        unit: '',
+        change: kpis.changes.avgReactionValue,
+        sparkline: data.map(d => d.reactionValue).slice(-20)
+      },
+      {
+        title: '反応率',
+        value: kpis.current.responseRate,
+        unit: '%',
+        change: kpis.changes.responseRate,
+        sparkline: data.map(d => d.hasResponse ? 1 : 0).slice(-20)
+      },
+      {
+        title: '総反応数',
+        value: kpis.current.totalResponses,
+        unit: '件',
+        change: kpis.changes.totalResponses,
+        sparkline: Array.from({ length: 20 }, () => Math.floor(kpis.current.totalResponses * (0.8 + Math.random() * 0.4)))
+      }
+    ]
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((card) => (
+          <div key={card.title} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-600">{card.title}</h3>
+              <div className={`flex items-center text-xs ${
+                card.change > 0 ? 'text-green-600' : card.change < 0 ? 'text-red-600' : 'text-gray-500'
+              }`}>
+                {card.change > 0 ? '↗' : card.change < 0 ? '↘' : '→'} {Math.abs(card.change).toFixed(1)}%
+              </div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-2">
+              {card.value.toFixed(card.unit === '%' ? 1 : card.unit === 'ms' ? 0 : 2)}{card.unit}
+            </div>
+            <div className="h-8">
+              <svg width="100%" height="100%" className="text-blue-500">
+                <title>スパークライン: {card.title}</title>
+                <path
+                  d={d3.line<number>()
+                    .x((_, i) => (i / (card.sparkline.length - 1)) * 100)
+                    .y(d => 100 - (d / Math.max(...card.sparkline)) * 100)
+                    .curve(d3.curveMonotoneX)(card.sparkline) || ''}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+              </svg>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }, [data, calculateKPIs])
+
+  // ダンベルチャートレンダリング
+  const renderDumbbellChart = React.useCallback(() => {
+    const dumbbellData = prepareDumbbellData()
+    if (dumbbellData.length === 0) return null
+
+    const margin = { top: 20, right: 30, bottom: 60, left: 120 }
+    const innerWidth = width - margin.left - margin.right
+    const innerHeight = Math.max(400, dumbbellData.length * 30)
+
+    const svg = d3.select(svgRef.current)
+    svg.selectAll('*').remove()
+    svg.attr('width', width).attr('height', innerHeight + margin.top + margin.bottom)
+
+    const g = svg.append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`)
+
+    // スケール設定
+    const yScale = d3.scaleBand()
+      .domain(dumbbellData.map(d => d.word))
+      .range([0, innerHeight])
+      .padding(0.1)
+
+    const xScale = d3.scaleLinear()
+      .domain([0, d3.max(dumbbellData, d => Math.max(d.firstHalf.avgReactionValue, d.secondHalf.avgReactionValue)) || 1])
+      .range([0, innerWidth])
+
+    // 線を描画
+    g.selectAll('.dumbbell-line')
+      .data(dumbbellData)
+      .enter()
+      .append('line')
+      .attr('class', 'dumbbell-line')
+      .attr('x1', d => xScale(d.firstHalf.avgReactionValue))
+      .attr('x2', d => xScale(d.secondHalf.avgReactionValue))
+      .attr('y1', d => (yScale(d.word) || 0) + yScale.bandwidth() / 2)
+      .attr('y2', d => (yScale(d.word) || 0) + yScale.bandwidth() / 2)
+      .style('stroke', '#666')
+      .style('stroke-width', 2)
+
+    // 前半の点
+    g.selectAll('.first-half-point')
+      .data(dumbbellData)
+      .enter()
+      .append('circle')
+      .attr('class', 'first-half-point')
+      .attr('cx', d => xScale(d.firstHalf.avgReactionValue))
+      .attr('cy', d => (yScale(d.word) || 0) + yScale.bandwidth() / 2)
+      .attr('r', 6)
+      .style('fill', '#3b82f6')
+      .style('stroke', '#fff')
+      .style('stroke-width', 2)
+
+    // 後半の点
+    g.selectAll('.second-half-point')
+      .data(dumbbellData)
+      .enter()
+      .append('circle')
+      .attr('class', 'second-half-point')
+      .attr('cx', d => xScale(d.secondHalf.avgReactionValue))
+      .attr('cy', d => (yScale(d.word) || 0) + yScale.bandwidth() / 2)
+      .attr('r', 6)
+      .style('fill', d => d.secondHalf.avgReactionValue > d.firstHalf.avgReactionValue ? '#10b981' : '#ef4444')
+      .style('stroke', '#fff')
+      .style('stroke-width', 2)
+
+    // Y軸
+    g.append('g')
+      .attr('class', 'y-axis')
+      .call(d3.axisLeft(yScale))
+      .selectAll('text')
+      .style('font-size', '12px')
+
+    // X軸
+    g.append('g')
+      .attr('class', 'x-axis')
+      .attr('transform', `translate(0,${innerHeight})`)
+      .call(d3.axisBottom(xScale))
+      .selectAll('text')
+      .style('font-size', '12px')
+
+    // ラベル
+    g.append('text')
+      .attr('class', 'x-label')
+      .attr('transform', `translate(${innerWidth / 2}, ${innerHeight + 40})`)
+      .style('text-anchor', 'middle')
+      .style('font-size', '14px')
+      .text('平均反応値')
+
+    // 凡例
+    const legend = g.append('g')
+      .attr('class', 'legend')
+      .attr('transform', `translate(${innerWidth - 150}, 20)`)
+
+    legend.append('circle')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 6)
+      .style('fill', '#3b82f6')
+
+    legend.append('text')
+      .attr('x', 15)
+      .attr('y', 5)
+      .style('font-size', '12px')
+      .text('前半')
+
+    legend.append('circle')
+      .attr('cx', 0)
+      .attr('cy', 20)
+      .attr('r', 6)
+      .style('fill', '#10b981')
+
+    legend.append('text')
+      .attr('x', 15)
+      .attr('y', 25)
+      .style('font-size', '12px')
+      .text('後半（改善）')
+
+    legend.append('circle')
+      .attr('cx', 0)
+      .attr('cy', 40)
+      .attr('r', 6)
+      .style('fill', '#ef4444')
+
+    legend.append('text')
+      .attr('x', 15)
+      .attr('y', 45)
+      .style('font-size', '12px')
+      .text('後半（悪化）')
+
+  }, [prepareDumbbellData, width])
+
+  // スモールマルチプルレンダリング
+  const renderSmallMultiples = React.useCallback(() => {
+    const smallMultiplesData = prepareSmallMultiplesData()
+    if (smallMultiplesData.length === 0) return null
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {smallMultiplesData.map((item) => (
+          <div key={item.word} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-900">{item.word}</h3>
+              <div className="text-xs text-gray-500">{item.data.length}件</div>
+            </div>
+            
+            <div className="h-16 mb-2">
+              <svg width="100%" height="100%" className="text-blue-500">
+                <title>スパークライン: {item.word}</title>
+                <path
+                  d={d3.line<TimelineDataPoint>()
+                    .x((_, i) => (i / Math.max(1, item.data.length - 1)) * 100)
+                    .y(d => 100 - (d.reactionValue / Math.max(...item.data.map(x => x.reactionValue))) * 100)
+                    .curve(d3.curveMonotoneX)(item.data) || ''}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+              </svg>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <div className="text-gray-500">平均反応値</div>
+                <div className="font-semibold">{item.stats.avgReactionValue.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-gray-500">反応率</div>
+                <div className="font-semibold">{item.stats.responseRate.toFixed(1)}%</div>
+              </div>
+              <div>
+                <div className="text-gray-500">最大値</div>
+                <div className="font-semibold">{item.stats.maxReactionValue.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-gray-500">平均時間</div>
+                <div className="font-semibold">{item.stats.avgReactionTime.toFixed(0)}ms</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }, [prepareSmallMultiplesData])
 
   const renderTimeline = React.useCallback(() => {
     if (!svgRef.current || data.length === 0) return
@@ -365,9 +717,18 @@ export default function TimelineVisualization({
   // D3可視化
   useEffect(() => {
     if (data.length > 0 && svgRef.current) {
-      renderTimeline()
+      switch (visualizationMode) {
+        case 'timeline':
+          renderTimeline()
+          break
+        case 'dumbbell':
+          renderDumbbellChart()
+          break
+        default:
+          break
+      }
     }
-  }, [data, renderTimeline])
+  }, [data, renderTimeline, renderDumbbellChart, visualizationMode])
 
 
   if (loading) {
@@ -396,6 +757,33 @@ export default function TimelineVisualization({
 
   return (
     <div className="space-y-4">
+      {/* 表示モード切り替え */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <h3 className="font-semibold mb-3">表示モード</h3>
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+          {[
+            { id: 'timeline', label: '時系列', icon: '📈' },
+            { id: 'kpi', label: 'KPIカード', icon: '📊' },
+            { id: 'dumbbell', label: 'Before-After', icon: '⚖️' },
+            { id: 'small-multiples', label: 'スモールマルチプル', icon: '🔢' }
+          ].map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => setVisualizationMode(mode.id as VisualizationMode)}
+              className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                visualizationMode === mode.id
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <span>{mode.icon}</span>
+              <span>{mode.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* フィルターコントロール */}
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="font-semibold mb-3">フィルター設定</h3>
@@ -468,18 +856,65 @@ export default function TimelineVisualization({
             />
             <span className="text-sm">{filters.range}</span>
           </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm">時間スケール:</span>
+            <input
+              type="range"
+              min="0.5"
+              max="5"
+              step="0.1"
+              value={filters.timeScale}
+              onChange={(e) => setFilters(prev => ({ ...prev, timeScale: Number(e.target.value) }))}
+              className="flex-1"
+            />
+            <span className="text-sm">{filters.timeScale.toFixed(1)}x</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm">縦スケール:</span>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.1"
+              value={filters.verticalScale}
+              onChange={(e) => setFilters(prev => ({ ...prev, verticalScale: Number(e.target.value) }))}
+              className="flex-1"
+            />
+            <span className="text-sm">{filters.verticalScale.toFixed(1)}x</span>
+          </div>
         </div>
       </div>
 
-      {/* 時系列チャート */}
+      {/* メインコンテンツ */}
       <div className="bg-white border rounded-lg p-4">
-        <h3 className="font-semibold mb-3">時系列統合可視化</h3>
-        <svg
-          ref={svgRef}
-          width={width}
-          height={height}
-          className="border"
-        />
+        <h3 className="font-semibold mb-3">
+          {visualizationMode === 'timeline' && '時系列統合可視化'}
+          {visualizationMode === 'kpi' && 'KPIダッシュボード'}
+          {visualizationMode === 'dumbbell' && 'Before-After比較'}
+          {visualizationMode === 'small-multiples' && 'スモールマルチプル分析'}
+        </h3>
+        
+        {visualizationMode === 'timeline' && (
+          <svg
+            ref={svgRef}
+            width={width}
+            height={height}
+            className="border"
+          />
+        )}
+        
+        {visualizationMode === 'kpi' && renderKPICards()}
+        
+        {visualizationMode === 'dumbbell' && (
+          <svg
+            ref={svgRef}
+            width={width}
+            height={height}
+            className="border"
+          />
+        )}
+        
+        {visualizationMode === 'small-multiples' && renderSmallMultiples()}
       </div>
 
       {/* データポイント詳細 */}
