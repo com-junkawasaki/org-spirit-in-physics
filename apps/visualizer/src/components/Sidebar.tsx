@@ -62,6 +62,13 @@ const menuItems: MenuItem[] = [
         description: '感情分析データインポート'
     },
     {
+        id: 'process-emotions-integrated',
+        label: '統合感情データインポート',
+        href: '/process/emotions-integrated',
+        icon: '🎭',
+        description: 'BPMN統合感情データインポート'
+    },
+    {
         id: 'process-physiological',
         label: '生理データインポート',
         href: '/process/physiological',
