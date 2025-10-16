@@ -181,15 +181,6 @@ export async function POST(request: NextRequest) {
         const existingSessionsResult = await client.query(existingSessionsQuery, { participantId });
         const sessionCount = existingSessionsResult[0]?.session_count || 0;
         
-        if (sessionCount > 0 && !body.forceReimport) {
-          results.push({
-            participantId,
-            status: 'skipped',
-            message: 'Session data already exists for this participant'
-          });
-          continue;
-        }
-
         // Merkle DAG: import.sessions.delete_existing
         // 既存データの削除（forceReimportがtrueの場合）
         if (sessionCount > 0 && body.forceReimport) {
@@ -202,6 +193,14 @@ export async function POST(request: NextRequest) {
             RETURN count(s) as deleted_sessions
           `;
           await client.query(deleteQuery, { participantId });
+          console.log(`Deleted existing session data for participant ${participantId}`);
+        } else if (sessionCount > 0 && !body.forceReimport) {
+          results.push({
+            participantId,
+            status: 'skipped',
+            message: 'Session data already exists for this participant'
+          });
+          continue;
         }
 
         // Merkle DAG: import.sessions.create_session
@@ -224,6 +223,12 @@ export async function POST(request: NextRequest) {
           const sessionId = `session_${participantId}_${Date.now()}_${fileName.replace('.json', '')}`;
           console.log(`Generated session ID: ${sessionId}`);
           
+          // セッションデータの検証
+          if (!sessionData.events || !Array.isArray(sessionData.events)) {
+            console.error(`Invalid session data structure in ${fileName}:`, sessionData);
+            continue;
+          }
+          
           const sessionEvents = sessionData.events.map((event: any) => ({
             participant_id: participantId,
             session_id: sessionId,
@@ -234,6 +239,7 @@ export async function POST(request: NextRequest) {
           }));
 
           // ガイドライン: MERGE操作の段階化
+          console.log(`Creating ExperimentSession node for ${sessionId}`);
           await client.mergeNode('ExperimentSession', {
             id: sessionId,
             participant_id: participantId,
@@ -245,9 +251,11 @@ export async function POST(request: NextRequest) {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
+          console.log(`ExperimentSession node created for ${sessionId}`);
 
           // Merkle DAG: import.sessions.create_participant_session_relationship
           // 参加者→セッションのリレーションを作成
+          console.log(`Creating participant-session relationship for ${sessionId}`);
           const participantSessionRelationshipQuery = `
             MATCH (p:Participant {id: $participantId})
             MATCH (s:ExperimentSession {id: $sessionId})
@@ -255,12 +263,13 @@ export async function POST(request: NextRequest) {
             RETURN count(s) as relationship_count
           `;
           await client.query(participantSessionRelationshipQuery, { participantId, sessionId });
+          console.log(`Participant-session relationship created for ${sessionId}`);
 
           // Merkle DAG: import.sessions.create_word_responses
           // 単語応答データを抽出して格納
           console.log(`Extracting word responses from ${sessionData.events.length} events`);
           const wordResponses = extractWordResponses(sessionData.events);
-          console.log(`Extracted ${wordResponses.length} word responses`);
+          console.log(`Extracted ${wordResponses.length} word responses from ${fileName}`);
           if (wordResponses.length > 0) {
             // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
             const responseData = wordResponses.map((response: any) => ({

@@ -109,19 +109,19 @@ export async function POST(request: NextRequest) {
 
     // 差異計算
     const differences = commonWords.map(word => {
-      const session1Data = session1Data.get(word);
-      const session2Data = session2Data.get(word);
+      const session1WordData = session1Data.get(word);
+      const session2WordData = session2Data.get(word);
       
-      const reactionTimeDiff = session2Data.reactionTime - session1Data.reactionTime;
-      const spiritProbDiff = session2Data.spiritProbability - session1Data.spiritProbability;
+      const reactionTimeDiff = session2WordData.reactionTime - session1WordData.reactionTime;
+      const spiritProbDiff = session2WordData.spiritProbability - session1WordData.spiritProbability;
       
       return {
         word,
-        session1ReactionTime: session1Data.reactionTime,
-        session2ReactionTime: session2Data.reactionTime,
+        session1ReactionTime: session1WordData.reactionTime,
+        session2ReactionTime: session2WordData.reactionTime,
         reactionTimeDifference: reactionTimeDiff,
-        session1SpiritProbability: session1Data.spiritProbability,
-        session2SpiritProbability: session2Data.spiritProbability,
+        session1SpiritProbability: session1WordData.spiritProbability,
+        session2SpiritProbability: session2WordData.spiritProbability,
         spiritProbabilityDifference: spiritProbDiff
       };
     });
