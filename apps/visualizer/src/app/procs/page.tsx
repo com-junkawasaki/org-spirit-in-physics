@@ -100,6 +100,9 @@ export default function ProcsPage() {
           <a href="/analysis/pipeline" className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200">
             🔬 解析パイプライン
           </a>
+          <a href="/pipeline/integrated" className="px-3 py-1 bg-gradient-to-r from-blue-100 to-green-100 text-blue-800 rounded text-sm hover:from-blue-200 hover:to-green-200">
+            🚀 統合パイプライン
+          </a>
         </div>
       </div>
 

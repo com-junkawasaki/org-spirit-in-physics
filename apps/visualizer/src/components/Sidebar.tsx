@@ -76,6 +76,13 @@ const menuItems: MenuItem[] = [
         description: '統合解析パイプライン'
     },
     {
+        id: 'integrated-pipeline',
+        label: '統合パイプライン',
+        href: '/pipeline/integrated',
+        icon: '🚀',
+        description: 'データインポートから解析まで'
+    },
+    {
         id: 'import',
         label: 'インポート管理',
         href: '/import',
