@@ -1,4 +1,5 @@
 import { createNeo4jClient } from './neo4j'
+import { getQueryOptimizer } from './query-optimizer'
 
 export interface AnalysisResult {
   id: string
@@ -512,23 +513,42 @@ export interface ExperimentTimelineEvent {
 // Experiment data fetching functions - Neo4j/Neogmaベース
 export async function getAllExperiments(): Promise<ExperimentData[]> {
   try {
-    const client = createNeo4jClient()
+    const queryOptimizer = getQueryOptimizer()
     
-    // TODO: Implement Neo4j query for experiments
-    // For now, return placeholder data
-    return [
-      {
-        id: 'exp-001',
-        name: 'Spirit in Physics Study 2024',
-        description: 'Main experiment for Spirit in Physics research',
-        participantCount: 12,
-        sessionCount: 24,
-        averageSpiritProbability: 0.724,
-        createdAt: '2024-10-01',
-        updatedAt: '2024-10-16',
-        status: 'active'
-      }
-    ]
+    // 最適化されたクエリで実験データを取得（キャッシュ付き）
+    const query = `
+      MATCH (e:Experiment)
+      OPTIONAL MATCH (e)-[:HAS_SESSION]->(s:ExperimentSession)
+      OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
+      WITH e, 
+           count(DISTINCT s) as sessionCount,
+           count(r) as responseCount,
+           avg(r.spirit_probability) as avgSpirit
+      RETURN e.id as id,
+             e.experiment_name as name,
+             e.description as description,
+             e.status as status,
+             e.start_date as createdAt,
+             e.end_date as updatedAt,
+             sessionCount,
+             responseCount,
+             coalesce(avgSpirit, 0.5) as averageSpiritProbability
+      ORDER BY e.start_date DESC
+    `
+    
+    const experiments = await queryOptimizer.executeWithCache(query, {}, 300000) // 5分キャッシュ
+    
+    return experiments.map((experiment: any) => ({
+      id: experiment.id,
+      name: experiment.name || `Experiment ${experiment.id.slice(0, 8)}`,
+      description: experiment.description,
+      participantCount: 0, // TODO: 参加者数を計算
+      sessionCount: experiment.sessionCount || 0,
+      averageSpiritProbability: experiment.averageSpiritProbability || 0.5,
+      createdAt: experiment.createdAt || new Date().toISOString(),
+      updatedAt: experiment.updatedAt || new Date().toISOString(),
+      status: (experiment.status || 'active') as 'active' | 'completed' | 'draft'
+    }))
   } catch (error) {
     console.error('Failed to fetch all experiments:', error)
     return []
@@ -539,18 +559,23 @@ export async function getExperimentDetail(experimentId: string): Promise<Experim
   try {
     const client = createNeo4jClient()
     
-    // TODO: Implement Neo4j query for experiment detail
-    // For now, return placeholder data
+    // Neogmaを使って実験詳細を取得
+    const experiment = await client.getExperimentDetails(experimentId)
+    
+    if (!experiment) {
+      return null
+    }
+    
     return {
-      id: experimentId,
-      name: 'Spirit in Physics Study 2024',
-      description: 'Main experiment for Spirit in Physics research',
-      participantCount: 12,
-      sessionCount: 24,
-      averageSpiritProbability: 0.724,
-      createdAt: '2024-10-01',
-      updatedAt: '2024-10-16',
-      status: 'active'
+      id: experiment.id,
+      name: experiment.experiment_name || `Experiment ${experiment.id.slice(0, 8)}`,
+      description: experiment.description,
+      participantCount: 0, // TODO: 参加者数を計算
+      sessionCount: experiment.session_count || 0,
+      averageSpiritProbability: experiment.average_spirit_probability || 0.5,
+      createdAt: experiment.start_date || experiment.created_at || new Date().toISOString(),
+      updatedAt: experiment.end_date || experiment.created_at || new Date().toISOString(),
+      status: (experiment.status || 'active') as 'active' | 'completed' | 'draft'
     }
   } catch (error) {
     console.error('Failed to get experiment detail:', error)
@@ -562,32 +587,20 @@ export async function getExperimentSessions(experimentId: string): Promise<Exper
   try {
     const client = createNeo4jClient()
     
-    // TODO: Implement Neo4j query for experiment sessions
-    // For now, return placeholder data
-    return [
-      {
-        id: 'session-001',
-        sessionType: 'Word Association Test',
-        startTime: '2024-10-01T10:00:00Z',
-        endTime: '2024-10-01T11:30:00Z',
-        participantId: 'participant-001',
-        participantName: 'Participant A',
-        responseCount: 100,
-        averageSpiritProbability: 0.724,
-        status: 'completed'
-      },
-      {
-        id: 'session-002',
-        sessionType: 'Word Association Test',
-        startTime: '2024-10-02T14:00:00Z',
-        endTime: '2024-10-02T15:30:00Z',
-        participantId: 'participant-002',
-        participantName: 'Participant B',
-        responseCount: 95,
-        averageSpiritProbability: 0.689,
-        status: 'completed'
-      }
-    ]
+    // Neogmaを使って実験セッションを取得
+    const sessions = await client.getExperimentSessions(experimentId)
+    
+    return sessions.map((session: any) => ({
+      id: session.id,
+      sessionType: session.session_type || 'Word Association Test',
+      startTime: session.start_ts || new Date().toISOString(),
+      endTime: session.end_ts,
+      participantId: session.participant_id,
+      participantName: `Participant ${session.participant_id?.slice(0, 8) || 'Unknown'}`,
+      responseCount: session.response_count || 0,
+      averageSpiritProbability: session.average_spirit_probability || 0.5,
+      status: (session.status || 'completed') as 'completed' | 'in_progress' | 'failed'
+    }))
   } catch (error) {
     console.error('Failed to get experiment sessions:', error)
     return []
@@ -598,26 +611,17 @@ export async function getExperimentParticipants(experimentId: string): Promise<E
   try {
     const client = createNeo4jClient()
     
-    // TODO: Implement Neo4j query for experiment participants
-    // For now, return placeholder data
-    return [
-      {
-        id: 'participant-001',
-        name: 'Participant A',
-        sessionCount: 2,
-        responseCount: 195,
-        averageSpiritProbability: 0.724,
-        lastActivity: Date.now() - 86400000 // 1 day ago
-      },
-      {
-        id: 'participant-002',
-        name: 'Participant B',
-        sessionCount: 1,
-        responseCount: 95,
-        averageSpiritProbability: 0.689,
-        lastActivity: Date.now() - 172800000 // 2 days ago
-      }
-    ]
+    // Neogmaを使って実験参加者を取得
+    const participants = await client.getExperimentParticipants(experimentId)
+    
+    return participants.map((participant: any) => ({
+      id: participant.id,
+      name: participant.name || `Participant ${participant.id.slice(0, 8)}`,
+      sessionCount: participant.sessionCount || 0,
+      responseCount: participant.responseCount || 0,
+      averageSpiritProbability: participant.averageSpiritProbability || 0.5,
+      lastActivity: participant.lastActivity
+    }))
   } catch (error) {
     console.error('Failed to get experiment participants:', error)
     return []
@@ -628,31 +632,79 @@ export async function getExperimentAnalysis(experimentId: string): Promise<Exper
   try {
     const client = createNeo4jClient()
     
-    // TODO: Implement Neo4j query for experiment analysis
-    // For now, return placeholder data
+    // Neo4jクエリで実験分析データを取得
+    const statsQuery = `
+      MATCH (e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)
+      OPTIONAL MATCH (s)<-[:PARTICIPATES_IN]-(p:Participant)
+      OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
+      WITH count(DISTINCT p) as totalParticipants,
+           count(DISTINCT s) as totalSessions,
+           count(r) as totalResponses,
+           avg(r.spirit_probability) as avgSpirit
+      RETURN totalParticipants, totalSessions, totalResponses, coalesce(avgSpirit, 0.5) as averageSpiritProbability
+    `
+    
+    const spiritDistQuery = `
+      MATCH (e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
+      WHERE r.spirit_probability IS NOT NULL
+      WITH r.spirit_probability as prob
+      RETURN 
+        sum(CASE WHEN prob >= 0.8 THEN 1 ELSE 0 END) as high,
+        sum(CASE WHEN prob >= 0.6 AND prob < 0.8 THEN 1 ELSE 0 END) as medium,
+        sum(CASE WHEN prob < 0.6 THEN 1 ELSE 0 END) as low
+    `
+    
+    const emotionsQuery = `
+      MATCH (e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
+      WHERE r.emotion IS NOT NULL
+      WITH r.emotion as emotion, r.emotion_confidence as confidence
+      RETURN emotion, count(*) as frequency, avg(confidence) as averageIntensity
+      ORDER BY frequency DESC
+      LIMIT 10
+    `
+    
+    const wordInsightsQuery = `
+      MATCH (e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
+      WHERE r.stimulus_word IS NOT NULL AND r.reaction_time_ms IS NOT NULL AND r.spirit_probability IS NOT NULL
+      WITH r.stimulus_word as word, 
+           avg(r.reaction_time_ms) as avgTime,
+           avg(r.spirit_probability) as avgSpirit
+      RETURN word, avgTime/1000.0 as averageResponseTime, avgSpirit as spiritCorrelation
+      ORDER BY avgSpirit DESC
+      LIMIT 10
+    `
+    
+    const [statsResults, spiritDistResults, emotionsResults, wordInsightsResults] = await Promise.all([
+      client.query(statsQuery, { experimentId }),
+      client.query(spiritDistQuery, { experimentId }),
+      client.query(emotionsQuery, { experimentId }),
+      client.query(wordInsightsQuery, { experimentId })
+    ])
+    
+    const stats = statsResults[0] || {}
+    const spiritDist = spiritDistResults[0] || { high: 0, medium: 0, low: 0 }
+    
     return {
       experimentId,
-      totalParticipants: 12,
-      totalSessions: 24,
-      totalResponses: 2400,
-      averageSpiritProbability: 0.724,
+      totalParticipants: stats.totalParticipants || 0,
+      totalSessions: stats.totalSessions || 0,
+      totalResponses: stats.totalResponses || 0,
+      averageSpiritProbability: stats.averageSpiritProbability || 0.5,
       spiritProbabilityDistribution: {
-        high: 8,
-        medium: 3,
-        low: 1
+        high: spiritDist.high || 0,
+        medium: spiritDist.medium || 0,
+        low: spiritDist.low || 0
       },
-      topEmotions: [
-        { emotion: '喜び', frequency: 0.35, averageIntensity: 0.72 },
-        { emotion: '驚き', frequency: 0.28, averageIntensity: 0.68 },
-        { emotion: '恐れ', frequency: 0.22, averageIntensity: 0.45 },
-        { emotion: '悲しみ', frequency: 0.15, averageIntensity: 0.38 }
-      ],
-      wordAssociationInsights: [
-        { word: '愛', averageResponseTime: 1.2, spiritCorrelation: 0.89 },
-        { word: '神', averageResponseTime: 2.1, spiritCorrelation: 0.92 },
-        { word: '死', averageResponseTime: 3.4, spiritCorrelation: 0.45 },
-        { word: '生', averageResponseTime: 1.8, spiritCorrelation: 0.78 }
-      ]
+      topEmotions: emotionsResults.map((record: any) => ({
+        emotion: record.emotion,
+        frequency: record.frequency / (stats.totalResponses || 1),
+        averageIntensity: record.averageIntensity || 0
+      })),
+      wordAssociationInsights: wordInsightsResults.map((record: any) => ({
+        word: record.word,
+        averageResponseTime: record.averageResponseTime || 0,
+        spiritCorrelation: record.spiritCorrelation || 0
+      }))
     }
   } catch (error) {
     console.error('Failed to get experiment analysis:', error)
@@ -664,56 +716,69 @@ export async function getExperimentTimeline(experimentId: string): Promise<Exper
   try {
     const client = createNeo4jClient()
     
-    // TODO: Implement Neo4j query for experiment timeline
-    // For now, return placeholder data
-    return [
-      {
-        id: 'event-001',
-        timestamp: '2024-10-01T09:00:00Z',
-        type: 'participant_join',
-        title: 'Participant A が実験に参加',
-        description: 'Participant A が実験に参加し、同意書に署名しました。',
-        participantId: 'participant-001',
-        participantName: 'Participant A'
-      },
-      {
-        id: 'event-002',
-        timestamp: '2024-10-01T10:00:00Z',
-        type: 'session_start',
-        title: 'セッション開始',
-        description: 'Participant A の最初のセッションが開始されました。',
-        participantId: 'participant-001',
-        participantName: 'Participant A',
-        sessionId: 'session-001'
-      },
-      {
-        id: 'event-003',
-        timestamp: '2024-10-01T11:30:00Z',
-        type: 'session_end',
-        title: 'セッション終了',
-        description: 'Participant A の最初のセッションが終了しました。',
-        participantId: 'participant-001',
-        participantName: 'Participant A',
-        sessionId: 'session-001'
-      },
-      {
-        id: 'event-004',
-        timestamp: '2024-10-02T14:00:00Z',
-        type: 'session_start',
-        title: 'セッション開始',
-        description: 'Participant B のセッションが開始されました。',
-        participantId: 'participant-002',
-        participantName: 'Participant B',
-        sessionId: 'session-002'
-      },
-      {
-        id: 'event-005',
-        timestamp: '2024-10-16T16:00:00Z',
+    // Neo4jクエリで実験タイムラインを取得
+    const query = `
+      MATCH (e:Experiment {id: $experimentId})
+      OPTIONAL MATCH (e)-[:HAS_SESSION]->(s:ExperimentSession)
+      OPTIONAL MATCH (s)<-[:PARTICIPATES_IN]-(p:Participant)
+      WITH e, s, p
+      WHERE s IS NOT NULL
+      RETURN 
+        s.id as sessionId,
+        s.start_ts as startTime,
+        s.end_ts as endTime,
+        s.status as status,
+        p.id as participantId,
+        p.participant_id as participantName
+      ORDER BY s.start_ts ASC
+    `
+    
+    const results = await client.query(query, { experimentId })
+    
+    const events: ExperimentTimelineEvent[] = []
+    
+    // セッション開始・終了イベントを生成
+    results.forEach((record: any, index: number) => {
+      if (record.startTime) {
+        events.push({
+          id: `session-start-${record.sessionId}`,
+          timestamp: record.startTime,
+          type: 'session_start',
+          title: 'セッション開始',
+          description: `${record.participantName || 'Unknown'} のセッションが開始されました。`,
+          participantId: record.participantId,
+          participantName: record.participantName,
+          sessionId: record.sessionId
+        })
+      }
+      
+      if (record.endTime) {
+        events.push({
+          id: `session-end-${record.sessionId}`,
+          timestamp: record.endTime,
+          type: 'session_end',
+          title: 'セッション終了',
+          description: `${record.participantName || 'Unknown'} のセッションが終了しました。`,
+          participantId: record.participantId,
+          participantName: record.participantName,
+          sessionId: record.sessionId
+        })
+      }
+    })
+    
+    // 分析完了イベントを追加（最新のセッション終了時刻）
+    if (events.length > 0) {
+      const lastEvent = events[events.length - 1]
+      events.push({
+        id: `analysis-complete-${experimentId}`,
+        timestamp: new Date().toISOString(),
         type: 'analysis_complete',
         title: '分析完了',
         description: '実験の分析が完了し、結果が生成されました。',
-      }
-    ]
+      })
+    }
+    
+    return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
   } catch (error) {
     console.error('Failed to get experiment timeline:', error)
     return []

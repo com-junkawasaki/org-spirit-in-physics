@@ -15,6 +15,7 @@ class Neo4jClient {
   private config: Neo4jConfig
   private neogma: Neogma
   private Participant: any
+  private Experiment: any
   private ExperimentSession: any
   private Response: any
   private EmotionAnalysis: any
@@ -39,6 +40,7 @@ class Neo4jClient {
 
     // モデルをクラスプロパティとして設定
     this.Participant = models.Participant
+    this.Experiment = models.Experiment
     this.ExperimentSession = models.ExperimentSession
     this.Response = models.Response
     this.EmotionAnalysis = models.EmotionAnalysis
@@ -193,6 +195,173 @@ class Neo4jClient {
       return processed
     } catch (error) {
       console.error('Error in getParticipants:', error)
+      return []
+    }
+  }
+
+  // Merkle DAG: neo4j_client -> experiment_management_methods
+  async getExperiments(): Promise<any[]> {
+    try {
+      // Neogmaを使って実験データを取得
+      const experiments = await this.Experiment.findMany()
+
+      // 各実験の統計情報を取得
+      const processed = await Promise.all(experiments.map(async (experiment: any) => {
+        const [sessions, responses] = await Promise.all([
+          this.ExperimentSession.findMany({ where: { experiment_id: experiment.id } }),
+          this.Response.findMany({ where: { experiment_id: experiment.id } }),
+        ])
+
+        const sessionCount = sessions.length
+        const totalResponses = responses.length
+        const averageSpiritProbability = responses.length > 0
+          ? responses.reduce((sum: number, response: any) =>
+              sum + (response.spirit_probability || 0), 0) / responses.length
+          : 0.5
+
+        return {
+          id: experiment.id,
+          experiment_name: experiment.experiment_name,
+          description: experiment.description,
+          status: experiment.status,
+          start_date: experiment.start_date,
+          end_date: experiment.end_date,
+          session_count: sessionCount,
+          total_responses: totalResponses,
+          average_spirit_probability: averageSpiritProbability,
+          created_at: experiment.created_at
+        }
+      }))
+
+      // 作成日時で降順ソート
+      processed.sort((a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+
+      return processed
+    } catch (error) {
+      console.error('Error in getExperiments:', error)
+      return []
+    }
+  }
+
+  async getExperimentDetails(experimentId: string): Promise<any> {
+    try {
+      // Neogmaを使って実験詳細を取得
+      const experiment = await this.Experiment.findOne({
+        where: { id: experimentId },
+      })
+
+      if (!experiment) {
+        return null
+      }
+
+      const [sessions, responses] = await Promise.all([
+        this.ExperimentSession.findMany({ where: { experiment_id: experimentId } }),
+        this.Response.findMany({ where: { experiment_id: experimentId } }),
+      ])
+
+      const sessionCount = sessions.length
+      const totalResponses = responses.length
+      const averageSpiritProbability = responses.length > 0
+        ? responses.reduce((sum: number, response: any) =>
+            sum + (response.spirit_probability || 0), 0) / responses.length
+        : 0.5
+
+      return {
+        id: experiment.id,
+        experiment_name: experiment.experiment_name,
+        description: experiment.description,
+        status: experiment.status,
+        start_date: experiment.start_date,
+        end_date: experiment.end_date,
+        session_count: sessionCount,
+        total_responses: totalResponses,
+        average_spirit_probability: averageSpiritProbability,
+        created_at: experiment.created_at
+      }
+    } catch (error) {
+      console.error('Error in getExperimentDetails:', error)
+      return null
+    }
+  }
+
+  async getExperimentSessions(experimentId: string): Promise<any[]> {
+    try {
+      // Neogmaを使って実験セッションを取得
+      const sessions = await this.ExperimentSession.findMany({
+        where: { experiment_id: experimentId },
+      })
+
+      // 各セッションの統計情報を取得
+      const processed = await Promise.all(sessions.map(async (session: any) => {
+        const responses = await this.Response.findMany({
+          where: { session_id: session.id },
+        })
+
+        const responseCount = responses.length
+        const averageSpiritProbability = responses.length > 0
+          ? responses.reduce((sum: number, response: any) =>
+              sum + (response.spirit_probability || 0), 0) / responses.length
+          : 0.5
+
+        return {
+          id: session.id,
+          session_type: session.session_type || 'Word Association Test',
+          start_ts: session.start_ts,
+          end_ts: session.end_ts,
+          status: session.status,
+          participant_id: session.participant_id,
+          response_count: responseCount,
+          average_spirit_probability: averageSpiritProbability
+        }
+      }))
+
+      // 開始時刻で降順ソート
+      processed.sort((a: any, b: any) =>
+        new Date(b.start_ts).getTime() - new Date(a.start_ts).getTime()
+      )
+
+      return processed
+    } catch (error) {
+      console.error('Error in getExperimentSessions:', error)
+      return []
+    }
+  }
+
+  async getExperimentParticipants(experimentId: string): Promise<any[]> {
+    try {
+      // Neo4jクエリで実験参加者を取得
+      const query = `
+        MATCH (e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)
+        MATCH (s)<-[:PARTICIPATES_IN]-(p:Participant)
+        OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
+        WITH p, 
+             count(DISTINCT s) as sessionCount,
+             count(r) as responseCount,
+             avg(r.spirit_probability) as avgSpirit,
+             max(s.start_ts) as lastActivity
+        RETURN p.id as id,
+               p.participant_id as name,
+               sessionCount,
+               responseCount,
+               coalesce(avgSpirit, 0.5) as averageSpiritProbability,
+               lastActivity
+        ORDER BY lastActivity DESC
+      `
+      
+      const results = await this.query(query, { experimentId })
+      
+      return results.map((record: any) => ({
+        id: record.id,
+        name: record.name || `Participant ${record.id.slice(0, 8)}`,
+        sessionCount: record.sessionCount || 0,
+        responseCount: record.responseCount || 0,
+        averageSpiritProbability: record.averageSpiritProbability || 0.5,
+        lastActivity: record.lastActivity ? new Date(record.lastActivity).getTime() : null
+      }))
+    } catch (error) {
+      console.error('Error in getExperimentParticipants:', error)
       return []
     }
   }
