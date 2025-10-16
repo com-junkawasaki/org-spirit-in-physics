@@ -1268,25 +1268,32 @@ export default function TimelineVisualization({
             <div>
               <div className="font-medium">感情データ</div>
               <div className="text-gray-600">
-                Burst: {selectedDataPoint.emotions.burst.toFixed(2)}<br/>
-                Face: {selectedDataPoint.emotions.face.toFixed(2)}<br/>
-                Language: {selectedDataPoint.emotions.language.toFixed(2)}<br/>
-                Prosody: {selectedDataPoint.emotions.prosody.toFixed(2)}
+                {selectedDataPoint.emotions.length > 0 ? (
+                  selectedDataPoint.emotions.map((emotion, index) => (
+                    <div key={`${emotion.name}-${emotion.fileType}-${index}`} className="text-xs">
+                      <span className="font-medium">{emotion.name || 'unknown'}</span>: 
+                      <span className="text-blue-600">{(emotion.score || 0).toFixed(2)}</span>
+                      <span className="text-gray-500">({emotion.fileType || 'unknown'})</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-gray-500">感情データなし</div>
+                )}
               </div>
             </div>
             <div>
               <div className="font-medium">生理データ</div>
               <div className="text-gray-600">
-                平均: {selectedDataPoint.physiological.average.toFixed(2)}<br/>
-                最大: {selectedDataPoint.physiological.max.toFixed(2)}<br/>
-                最小: {selectedDataPoint.physiological.min.toFixed(2)}
+                平均: {(selectedDataPoint.physiological?.average || 0).toFixed(2)}<br/>
+                最大: {(selectedDataPoint.physiological?.max || 0).toFixed(2)}<br/>
+                最小: {(selectedDataPoint.physiological?.min || 0).toFixed(2)}
               </div>
             </div>
             <div>
               <div className="font-medium">メタデータ</div>
               <div className="text-gray-600">
-                感情データ数: {selectedDataPoint.metadata.emotionCount}<br/>
-                生理データ数: {selectedDataPoint.metadata.physiologicalCount}
+                感情データ数: {selectedDataPoint.metadata?.emotionCount || 0}<br/>
+                生理データ数: {selectedDataPoint.metadata?.physiologicalCount || 0}
               </div>
             </div>
           </div>
