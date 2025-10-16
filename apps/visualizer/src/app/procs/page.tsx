@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import BpmnModeler from 'bpmn-js/lib/Modeler'
 
 const DEFAULT_IDS = [
   '2a0d7a69-f953-4c29-87a5-8a8e4e8bd413'
@@ -16,19 +15,38 @@ export default function ProcsPage() {
 
   useEffect(() => {
     if (!canvasRef.current) return
-    const modeler = new BpmnModeler({ container: canvasRef.current })
-    modelerRef.current = modeler
+    let mounted = true
 
-    async function loadDiagram() {
-      const res = await fetch('/bpmn/import_process.bpmn')
-      const xml = await res.text()
-      await modeler.importXML(xml)
-      const canvas = modeler.get('canvas')
-      canvas.zoom('fit-viewport')
+    async function init() {
+      try {
+        // Try canonical path first
+        const { default: BpmnModeler } = await import('bpmn-js/lib/Modeler').catch(() => ({ default: undefined as any }))
+        let ModelerCtor: any = BpmnModeler
+        if (!ModelerCtor) {
+          // Fallback to UMD bundle
+          const mod = await import('bpmn-js/dist/bpmn-modeler.production.min.js')
+          ModelerCtor = (mod as any).default || (mod as any)
+        }
+        if (!mounted) return
+        const modeler = new ModelerCtor({ container: canvasRef.current! })
+        modelerRef.current = modeler
+
+        const res = await fetch('/bpmn/import_process.bpmn')
+        const xml = await res.text()
+        await modeler.importXML(xml)
+        const canvas = modeler.get('canvas')
+        canvas.zoom('fit-viewport')
+      } catch (e) {
+        console.error('BPMN init error:', e)
+      }
     }
-    loadDiagram()
+    init()
 
-    return () => { modeler.destroy() }
+    return () => { 
+      if (modelerRef.current) {
+        modelerRef.current.destroy()
+      }
+    }
   }, [])
 
   async function runImportSequential() {
