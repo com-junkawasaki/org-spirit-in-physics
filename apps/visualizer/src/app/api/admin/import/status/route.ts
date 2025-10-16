@@ -113,25 +113,43 @@ async function scanDatasetFiles(datasetPath: string): Promise<any[]> {
 // dataset/participants の実体パスを複数候補から解決
 async function resolveDatasetParticipantsPath(): Promise<string> {
   const candidates = [
-    // Docker 本番/開発（visualizer コンテナ）
-    path.join(process.cwd(), 'dataset', 'participants'),           // /app/dataset/participants
-    '/app/dataset/participants',                                    // 明示フルパス
-    // リポジトリ直下（ホスト開発時の Next dev 実行）
+    // コンテナのマウント先
+    path.join(process.cwd(), 'dataset', 'participants'),      // /app/dataset/participants
+    '/app/dataset/participants',
+    // リポジトリ内のサンプルデータ
     path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants'),
-    path.join(process.cwd(), 'src', 'dataset', 'participants')
+    path.join(process.cwd(), 'src', 'dataset', 'participants'),
   ];
 
+  // アクセス可能な候補を集める
+  const accessible: string[] = [];
   for (const p of candidates) {
-    try {
-      await fs.access(p);
-      return p;
-    } catch {
-      // try next
-    }
+    try { await fs.access(p); accessible.push(p); } catch {}
   }
+  if (accessible.length === 0) return path.join(process.cwd(), 'dataset', 'participants');
 
-  // 最後にデフォルト（従来挙動）を返す
-  return path.join(process.cwd(), 'dataset', 'participants');
+  // スコアリング：各候補で先頭数ディレクトリのファイル痕跡を数える
+  let best = accessible[0];
+  let bestScore = -1;
+  for (const basePath of accessible) {
+    try {
+      const entries = await fs.readdir(basePath, { withFileTypes: true });
+      const dirs = entries.filter(e => e.isDirectory()).slice(0, 8);
+      let score = 0;
+      for (const d of dirs) {
+        const pp = path.join(basePath, d.name);
+        const consent = await fs.access(path.join(pp, 'consent.json')).then(() => 1).catch(() => 0);
+        const session = await fs.access(path.join(pp, 'session_data.json')).then(() => 1).catch(() => 0);
+        const names = await fs.readdir(pp).catch(() => [] as string[]);
+        const hasHume = Array.isArray(names) && names.some(n => n.startsWith('HumeAI_artifacts_') || n === 'hume_data');
+        const hasCsv = Array.isArray(names) && names.some(n => n.endsWith('.CSV'));
+        const hasVideo = Array.isArray(names) && names.some(n => n.endsWith('.webm') || n.endsWith('.mp4') || n.endsWith('.avi'));
+        score += consent + session + (hasHume ? 1 : 0) + (hasCsv ? 1 : 0) + (hasVideo ? 1 : 0);
+      }
+      if (score > bestScore) { bestScore = score; best = basePath; }
+    } catch {}
+  }
+  return best;
 }
 
 // Merkle DAG: import.status.get_imported
@@ -204,8 +222,8 @@ function mergeFileStatus(availableFiles: any[], importedData: any): any[] {
 // Merkle DAG: import.status.overall_status
 // 全体ステータス判定関数
 function getOverallStatus(files: any, imported: any): string {
-  const hasAnyData = files.consent || files.sessionData || files.humeArtifacts;
-  const hasAnyImported = imported.participantImported || imported.sessionImported || imported.emotionImported;
+  const hasAnyData = !!(files.consent || files.sessionData || files.humeArtifacts || files.videoFiles || files.csvFiles);
+  const hasAnyImported = !!(imported.participant || imported.session || imported.emotion);
 
   if (!hasAnyData) return 'no-data';
   if (hasAnyImported) return 'partial';
