@@ -78,17 +78,38 @@ export default function ProcsPage() {
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold">プロセス実行（BPMN）</h1>
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h2 className="font-semibold text-blue-800 mb-2">プロセス概要</h2>
+        <p className="text-blue-700 text-sm mb-3">
+          参加者データ、セッションデータ、感情データを順次インポートする統合プロセスです。
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          <a href="/process/participants" className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200">
+            👤 参加者インポート
+          </a>
+          <a href="/process/sessions" className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm hover:bg-green-200">
+            📋 セッションインポート
+          </a>
+          <a href="/process/emotions" className="px-3 py-1 bg-purple-100 text-purple-800 rounded text-sm hover:bg-purple-200">
+            😊 感情データインポート
+          </a>
+        </div>
+      </div>
+
       <div className="flex items-center gap-2">
+        <label className="font-medium">参加者ID:</label>
         <input
           className="border rounded px-2 py-1 w-[560px]"
           value={participantIds}
           onChange={e => setParticipantIds(e.target.value)}
+          placeholder="カンマ区切りで参加者IDを入力"
         />
         <button
           disabled={running}
           onClick={runImportSequential}
-          className="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-50"
-        >{running ? '実行中...' : '実行'}</button>
+          className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50 hover:bg-blue-700"
+        >{running ? '実行中...' : '統合実行'}</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

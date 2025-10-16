@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
         // Merkle DAG: import.emotions.check_existing
         // 既存感情データのチェック
-        const existingEmotions = await (client as any).getEmotionDataByParticipantId(participantId);
+        const existingEmotions = await client.getEmotionDataByParticipantId(participantId);
         if (existingEmotions && existingEmotions.length > 0) {
           results.push({
             participantId,
@@ -341,6 +341,7 @@ async function resolveDatasetParticipantsPath(): Promise<string> {
   const candidates = [
     path.join(process.cwd(), 'dataset', 'participants'),
     '/app/dataset/participants',
+    '/app/apps/visualizer/src/dataset/participants',
     path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants'),
     path.join(process.cwd(), 'src', 'dataset', 'participants')
   ];

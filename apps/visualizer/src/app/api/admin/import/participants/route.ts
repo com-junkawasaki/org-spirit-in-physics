@@ -177,6 +177,7 @@ async function resolveDatasetParticipantsPath(): Promise<string> {
   const candidates = [
     path.join(process.cwd(), 'dataset', 'participants'),
     '/app/dataset/participants',
+    '/app/apps/visualizer/src/dataset/participants',
     path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants'),
     path.join(process.cwd(), 'src', 'dataset', 'participants')
   ];

@@ -41,6 +41,27 @@ const menuItems: MenuItem[] = [
         description: 'BPMN 可視化・実行'
     },
     {
+        id: 'process-participants',
+        label: '参加者インポート',
+        href: '/process/participants',
+        icon: '👤',
+        description: '参加者データインポート'
+    },
+    {
+        id: 'process-sessions',
+        label: 'セッションインポート',
+        href: '/process/sessions',
+        icon: '📋',
+        description: 'セッションデータインポート'
+    },
+    {
+        id: 'process-emotions',
+        label: '感情データインポート',
+        href: '/process/emotions',
+        icon: '😊',
+        description: '感情分析データインポート'
+    },
+    {
         id: 'import',
         label: 'インポート管理',
         href: '/import',

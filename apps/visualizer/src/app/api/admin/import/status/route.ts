@@ -116,6 +116,7 @@ async function resolveDatasetParticipantsPath(): Promise<string> {
     // コンテナのマウント先
     path.join(process.cwd(), 'dataset', 'participants'),      // /app/dataset/participants
     '/app/dataset/participants',
+    '/app/apps/visualizer/src/dataset/participants',
     // リポジトリ内のサンプルデータ
     path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants'),
     path.join(process.cwd(), 'src', 'dataset', 'participants'),

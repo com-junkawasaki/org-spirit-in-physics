@@ -122,6 +122,19 @@ export async function POST(request: NextRequest) {
         // Merkle DAG: import.sessions.read_session_data
         // session_data.jsonを読み取り
         const sessionDataPath = path.join(participantPath, 'session_data.json');
+        
+        // ファイルの存在確認
+        try {
+          await fs.access(sessionDataPath);
+        } catch (error) {
+          results.push({
+            participantId,
+            status: 'skipped',
+            message: 'session_data.json not found'
+          });
+          continue;
+        }
+        
         const sessionData = JSON.parse(await fs.readFile(sessionDataPath, 'utf-8'));
 
         // Merkle DAG: import.sessions.validate_session_data
@@ -132,7 +145,7 @@ export async function POST(request: NextRequest) {
 
         // Merkle DAG: import.sessions.check_existing
         // 既存セッションデータのチェック
-        const existingSessions = await (client as any).getSessionsByParticipantId(participantId);
+        const existingSessions = await client.getSessionsByParticipantId(participantId);
         if (existingSessions && existingSessions.length > 0) {
           results.push({
             participantId,
@@ -299,6 +312,7 @@ async function resolveDatasetParticipantsPath(): Promise<string> {
   const candidates = [
     path.join(process.cwd(), 'dataset', 'participants'),
     '/app/dataset/participants',
+    '/app/apps/visualizer/src/dataset/participants',
     path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants'),
     path.join(process.cwd(), 'src', 'dataset', 'participants')
   ];

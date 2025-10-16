@@ -536,6 +536,15 @@ export class Neo4jManager {
     }
   }
 
+  // Merkle DAG: neo4j.methods.get_sessions_by_participant
+  async getSessionsByParticipantId(participantId: string): Promise<any[]> {
+    const res = await this.neogma.queryRunner.run(
+      `MATCH (s:ExperimentSession) WHERE s.participant_id = $participant_id RETURN s AS session`,
+      { participant_id: participantId }
+    )
+    return res.records?.map(r => r.get('session')) ?? []
+  }
+
   // Merkle DAG: neo4j.methods.get_emotions_by_participant
   async getEmotionDataByParticipantId(participantId: string): Promise<any[]> {
     const res = await this.neogma.queryRunner.run(
