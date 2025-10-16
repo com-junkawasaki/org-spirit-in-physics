@@ -74,10 +74,14 @@ async function getSessionData(participantId: string): Promise<any> {
       event.type === 'speech_detected'
     );
 
+    // セッション開始時刻を最初のイベントのtimestampから取得
+    const startTime = sessionData.events.length > 0 ? sessionData.events[0].timestamp : 0;
+
     return {
       ...sessionData,
       wordEvents,
-      events: sessionData.events
+      events: sessionData.events,
+      startTime
     };
 
   } catch (error) {
@@ -92,9 +96,9 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
   try {
     const emotionQuery = `
       MATCH (e:EmotionAnalysis {participant_id: $participantId})
-      RETURN e.file_type as fileType, e.begin_time as beginTime, e.end_time as endTime, 
+      RETURN e.file_type as fileType, e.BeginTime as beginTime, e.EndTime as endTime, 
              e.emotions as emotions, e.session_id as sessionId
-      ORDER BY e.begin_time
+      ORDER BY e.BeginTime
     `;
     
     const emotionResults = await client.query(emotionQuery, { participantId });
@@ -157,10 +161,17 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       const timestamp = event.timestamp;
       const word = event.payload?.word || 'Unknown';
       
-      // 対応する感情データを検索
-      const relatedEmotions = emotionData.filter(emotion => 
-        emotion.beginTime <= timestamp && emotion.endTime >= timestamp
-      );
+      // 対応する感情データを検索（時間範囲でマッチング）
+      const relatedEmotions = emotionData.filter(emotion => {
+        // 感情データの時間は秒単位、セッションイベントはミリ秒単位
+        // セッション開始時刻を基準に相対時間でマッチング
+        const sessionStartTime = sessionData.startTime || 0;
+        const relativeTimestamp = timestamp - sessionStartTime; // 相対時間（ミリ秒）
+        const beginTime = (emotion.beginTime || 0) * 1000; // 秒をミリ秒に変換
+        const endTime = (emotion.endTime || 0) * 1000; // 秒をミリ秒に変換
+        
+        return beginTime <= relativeTimestamp && endTime >= relativeTimestamp;
+      });
       
       // 対応する生理データを検索（時間範囲でマッチング）
       const relatedPhysiological = physiologicalData.filter(physio => {

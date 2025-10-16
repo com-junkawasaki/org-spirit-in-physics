@@ -1,0 +1,11 @@
+{
+  "participantId": "25111604-c7db-4bfd-8662-e55060e332d6",
+  "signature": "participant_signature_25111604",
+  "agreements": {
+    "understand": true,
+    "voluntary": true,
+    "withdraw": true,
+    "recording": true
+  },
+  "agreedAt": "2025-10-16T05:27:00.000Z"
+}

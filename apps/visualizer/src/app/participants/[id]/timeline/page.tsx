@@ -22,23 +22,8 @@ interface TimelinePageProps {
   params: Promise<{ id: string }>
 }
 
-export default function TimelinePage({ params }: TimelinePageProps) {
-  const [participantId, setParticipantId] = React.useState<string>('')
-
-  React.useEffect(() => {
-    params.then(({ id }) => {
-      setParticipantId(id)
-    })
-  }, [params])
-
-  if (!participantId) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">読み込み中...</span>
-      </div>
-    )
-  }
+export default async function TimelinePage({ params }: TimelinePageProps) {
+  const { id: participantId } = await params
 
   return (
     <div className="p-4 space-y-6">
