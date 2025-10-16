@@ -85,6 +85,12 @@ export default function TimelineVisualization({
     showEmotionDetails: true,
     showWordLabels: true
   })
+  // Kawasaki model hyperparameters
+  const [alpha, setAlpha] = useState(1.0)  // 反応時間の指数 α
+  const [gamma, setGamma] = useState(1.0)  // ΔSP の係数 γ
+  const [lambda, setLambda] = useState(1.0) // ΔSP のスケール λ
+  const [eta, setEta] = useState(1.0)    // 感情スコア係数 η
+  const [topNWords, setTopNWords] = useState(100)
   
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
@@ -245,7 +251,7 @@ export default function TimelineVisualization({
   const prepareForce3DGraph = React.useCallback((): { nodes: WordNode[]; links: WordLink[] } => {
     if (data.length === 0) return { nodes: [], links: [] }
 
-    // 単語ごとに集約
+    // 単語ごとに集約（ノード指標）
     const groups = data.reduce((acc, d) => {
       if (!acc[d.word]) acc[d.word] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 }
       acc[d.word].count += 1
@@ -262,8 +268,7 @@ export default function TimelineVisualization({
     })
 
     // 上位N語に制限（描画安定性のため）
-    const TOP_N = 40
-    const top = nodeEntries.sort((a, b) => b.raw - a.raw).slice(0, TOP_N)
+    const top = nodeEntries.sort((a, b) => b.raw - a.raw).slice(0, Math.max(10, Math.min(100, topNWords)))
 
     const rawMin = Math.min(...top.map(n => n.raw))
     const rawMax = Math.max(...top.map(n => n.raw))
@@ -276,19 +281,44 @@ export default function TimelineVisualization({
       scale: 0.5 + 5.5 * ((n.raw - rawMin) / denom)
     }))
 
-    // 完全グラフの辺
-    const links: WordLink[] = []
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const wi = top[i]
-        const wj = top[j]
-        // 辺スケールはノードスケール（正規化前raw）の積を基に正規化
-        const prod = wi.raw * wj.raw
-        links.push({ source: i, target: j, weight: prod })
-      }
+    // 連続イベントから w_I -> w_O を抽出し、エッジ重みを川崎モデルで加算
+    const wordToIndex: Record<string, number> = Object.fromEntries(nodes.map((n, i) => [n.label, i]))
+    const pairWeight = new Map<string, number>()
+
+    const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp)
+    const eps = 1e-3
+    for (let k = 0; k < sorted.length - 1; k++) {
+      const wi = sorted[k]
+      const wo = sorted[k + 1]
+      const i = wordToIndex[wi.word]
+      const j = wordToIndex[wo.word]
+      if (i === undefined || j === undefined || i === j) continue
+
+      // r(w_I, w_O) = 1/(T(w_I, w_O)+eps) → ここでは後続イベントの反応時間を採用
+      const r = 1 / (Math.max(0, wo.reactionTime) + eps)
+      // ΔSP: 生理データ平均の差（存在しない場合0）
+      const spI = (wi.physiological as unknown as { average?: number } | undefined)?.average ?? 0
+      const spO = (wo.physiological as unknown as { average?: number } | undefined)?.average ?? 0
+      const deltaSP = spO - spI
+      // F: 感情スコア（後続イベントの平均スコア）
+      const f = wo.emotions && wo.emotions.length > 0
+        ? wo.emotions.reduce((s, e) => s + (e.score || 0), 0) / wo.emotions.length
+        : 0
+
+      // 川崎モデルに基づく重み（Word2Vec項は未提供のため1とする）
+      const w = Math.pow(r, alpha) * Math.exp(gamma * (deltaSP / (lambda || 1))) * Math.exp(eta * f)
+      const key = i < j ? `${i}-${j}` : `${j}-${i}`
+      pairWeight.set(key, (pairWeight.get(key) || 0) + w)
     }
 
-    // 辺スケール正規化（0.1〜1.0）
+    // 完全グラフに近いが、観測された遷移のみに限定（密度が高い場合は十分密）
+    const links: WordLink[] = []
+    for (const [key, w] of pairWeight.entries()) {
+      const [a, b] = key.split('-').map(Number)
+      links.push({ source: a, target: b, weight: w })
+    }
+
+    // エッジ重みの正規化（0.1〜1.0）
     if (links.length > 0) {
       const wMin = Math.min(...links.map(l => l.weight))
       const wMax = Math.max(...links.map(l => l.weight))
@@ -300,7 +330,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes, links }
-  }, [data])
+  }, [data, alpha, gamma, lambda, eta, topNWords])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -1315,12 +1345,37 @@ export default function TimelineVisualization({
         
         {visualizationMode === 'small-multiples' && renderSmallMultiples()}
 
+        {visualizationMode === 'force-3d' && (
+          <div className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+            <label className="flex items-center space-x-2">
+              <span>α</span>
+              <input type="number" step="0.1" value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>γ</span>
+              <input type="number" step="0.1" value={gamma} onChange={(e) => setGamma(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>λ</span>
+              <input type="number" step="0.1" value={lambda} onChange={(e) => setLambda(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>η</span>
+              <input type="number" step="0.1" value={eta} onChange={(e) => setEta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>Top N</span>
+              <input type="number" min="10" max="100" value={topNWords} onChange={(e) => setTopNWords(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+          </div>
+        )}
+
         {visualizationMode === 'force-3d' && mounted && (() => {
           const Force3D = dynamic(() => import('@/components/Force3DWordGraph'), { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(500, height)} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} />
             </div>
           )
         })()}

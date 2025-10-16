@@ -239,24 +239,13 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       animRef.current = requestAnimationFrame(tick)
     }
 
-    // 初回描画
-    const controlsLocal = controlsRef.current
-    const rendererLocal = rendererRef.current
-    const sceneLocal = sceneRef.current
-    const cameraLocal = cameraRef.current
-    const onChange = () => {
-      if (!controlsLocal || !rendererLocal || !sceneLocal || !cameraLocal) return
-      controlsLocal.update()
-      rendererLocal.render(sceneLocal, cameraLocal)
-    }
-    if (controlsLocal) controlsLocal.addEventListener('change', onChange)
+    // 初回描画（以降は tick 内で更新・描画）
 
     animRef.current = requestAnimationFrame(tick)
 
     // クリーンアップ
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current)
-      if (controlsLocal) controlsLocal.removeEventListener('change', onChange)
       controlsRef.current?.dispose()
       rendererRef.current?.dispose()
       if (rendererRef.current) containerRef.current?.removeChild(rendererRef.current.domElement)
