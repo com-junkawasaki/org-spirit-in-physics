@@ -31,6 +31,11 @@ interface FilterSettings {
   verticalScale: number
 }
 
+interface TimeRange {
+  start: number
+  end: number
+}
+
 type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples'
 
 interface TimelineVisualizationProps {
@@ -49,6 +54,7 @@ export default function TimelineVisualization({
   const [error, setError] = useState<string | null>(null)
   const [selectedDataPoint, setSelectedDataPoint] = useState<TimelineDataPoint | null>(null)
   const [visualizationMode, setVisualizationMode] = useState<VisualizationMode>('timeline')
+  const [timeRange, setTimeRange] = useState<TimeRange | null>(null)
   const [filters, setFilters] = useState<FilterSettings>({
     emotions: true,
     physiological: true,
@@ -63,6 +69,7 @@ export default function TimelineVisualization({
   })
   
   const svgRef = useRef<SVGSVGElement>(null)
+  const overviewSvgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   const fetchTimelineData = React.useCallback(async () => {
@@ -450,6 +457,125 @@ export default function TimelineVisualization({
     )
   }, [prepareSmallMultiplesData])
 
+  // 時間範囲を初期化
+  const initializeTimeRange = React.useCallback(() => {
+    if (data.length === 0) return
+
+    const timeExtent = d3.extent(data, d => d.timestamp) as [number, number]
+    const range = timeExtent[1] - timeExtent[0]
+    const initialRange = {
+      start: timeExtent[0] + range * 0.2, // 20%から開始
+      end: timeExtent[1] - range * 0.2   // 80%で終了
+    }
+    setTimeRange(initialRange)
+  }, [data])
+
+  // 概要チャート（ナビゲーター）レンダリング
+  const renderOverviewChart = React.useCallback(() => {
+    if (!overviewSvgRef.current || data.length === 0) return
+
+    const svg = d3.select(overviewSvgRef.current)
+    svg.selectAll('*').remove()
+
+    const margin = { top: 10, right: 20, bottom: 30, left: 20 }
+    const overviewWidth = width - margin.left - margin.right
+    const overviewHeight = 80 - margin.top - margin.bottom
+
+    svg.attr('width', width).attr('height', 80)
+
+    const g = svg.append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`)
+
+    // 時間範囲
+    const timeExtent = d3.extent(data, d => d.timestamp) as [Date, Date]
+    const xScale = d3.scaleTime()
+      .domain(timeExtent)
+      .range([0, overviewWidth])
+
+    // 反応値のスケール
+    const yScale = d3.scaleLinear()
+      .domain(d3.extent(data, d => d.reactionValue) as [number, number])
+      .range([overviewHeight, 0])
+
+    // メインライン
+    const line = d3.line<TimelineDataPoint>()
+      .x(d => xScale(new Date(d.timestamp)))
+      .y(d => yScale(d.reactionValue))
+      .curve(d3.curveMonotoneX)
+
+    g.append('path')
+      .datum(data)
+      .attr('class', 'overview-line')
+      .attr('d', line)
+      .style('fill', 'none')
+      .style('stroke', '#666')
+      .style('stroke-width', 1)
+
+    // 選択範囲のハイライト
+    if (timeRange) {
+      g.append('rect')
+        .attr('class', 'brush-area')
+        .attr('x', xScale(new Date(timeRange.start)))
+        .attr('y', 0)
+        .attr('width', xScale(new Date(timeRange.end)) - xScale(new Date(timeRange.start)))
+        .attr('height', overviewHeight)
+        .style('fill', '#3b82f6')
+        .style('opacity', 0.2)
+        .style('stroke', '#3b82f6')
+        .style('stroke-width', 1)
+
+      // ドラッグハンドル
+      g.append('rect')
+        .attr('class', 'brush-handle-left')
+        .attr('x', xScale(new Date(timeRange.start)) - 2)
+        .attr('y', 0)
+        .attr('width', 4)
+        .attr('height', overviewHeight)
+        .style('fill', '#3b82f6')
+        .style('cursor', 'ew-resize')
+
+      g.append('rect')
+        .attr('class', 'brush-handle-right')
+        .attr('x', xScale(new Date(timeRange.end)) - 2)
+        .attr('y', 0)
+        .attr('width', 4)
+        .attr('height', overviewHeight)
+        .style('fill', '#3b82f6')
+        .style('cursor', 'ew-resize')
+
+      // ブラシ機能
+      const brush = d3.brushX()
+        .extent([[0, 0], [overviewWidth, overviewHeight]])
+        .on('brush', (event) => {
+          const selection = event.selection
+          if (selection) {
+            const [x0, x1] = selection.map(xScale.invert)
+            setTimeRange({
+              start: x0.getTime(),
+              end: x1.getTime()
+            })
+          }
+        })
+
+      g.append('g')
+        .attr('class', 'brush')
+        .call(brush as unknown as any)
+    }
+
+    // X軸
+    g.append('g')
+      .attr('class', 'x-axis-overview')
+      .attr('transform', `translate(0,${overviewHeight})`)
+      .call(d3.axisBottom(xScale)
+        .tickFormat(d3.timeFormat('%H:%M'))
+        .ticks(5)
+      )
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('fill', '#666')
+
+  }, [data, width, timeRange])
+
   const renderTimeline = React.useCallback(() => {
     if (!svgRef.current || data.length === 0) return
 
@@ -460,13 +586,22 @@ export default function TimelineVisualization({
     const innerWidth = width - margin.left - margin.right
     const innerHeight = height - margin.top - margin.bottom
 
+    // フィルタリングされたデータ
+    const filteredData = timeRange 
+      ? data.filter(d => d.timestamp >= timeRange.start && d.timestamp <= timeRange.end)
+      : data
+
     // スケール設定
+    const timeExtent = timeRange 
+      ? [new Date(timeRange.start), new Date(timeRange.end)] as [Date, Date]
+      : d3.extent(data, d => new Date(d.timestamp)) as [Date, Date]
+    
     const xScale = d3.scaleTime()
-      .domain(d3.extent(data, d => new Date(d.timestamp)) as [Date, Date])
+      .domain(timeExtent)
       .range([0, innerWidth])
 
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d.reactionValue) || 100])
+      .domain([0, d3.max(filteredData, d => d.reactionValue) || 100])
       .range([innerHeight, 0])
 
     // メイングループ
@@ -517,7 +652,7 @@ export default function TimelineVisualization({
     // 単語表示（時間軸上）
     if (filters.wordDisplay) {
       g.selectAll('.word-label')
-        .data(data)
+        .data(filteredData)
         .enter()
         .append('text')
         .attr('class', 'word-label')
@@ -533,7 +668,7 @@ export default function TimelineVisualization({
     // 反応値データポイント
     if (filters.reactionValues) {
       g.selectAll('.reaction-value-point')
-        .data(data)
+        .data(filteredData)
         .enter()
         .append('circle')
         .attr('class', 'reaction-value-point')
@@ -557,7 +692,7 @@ export default function TimelineVisualization({
     // 反応時間データポイント
     if (filters.reactionTime) {
       g.selectAll('.reaction-time-point')
-        .data(data.filter(d => d.hasResponse))
+        .data(filteredData.filter(d => d.hasResponse))
         .enter()
         .append('circle')
         .attr('class', 'reaction-time-point')
@@ -573,7 +708,7 @@ export default function TimelineVisualization({
     // 生理データ閾値
     if (filters.physiologicalThreshold) {
       g.selectAll('.physiological-point')
-        .data(data.filter(d => d.physiological.length > 0))
+        .data(filteredData.filter(d => d.physiological.length > 0))
         .enter()
         .append('circle')
         .attr('class', 'physiological-point')
@@ -589,7 +724,7 @@ export default function TimelineVisualization({
     // 感情変化
     if (filters.emotionChange) {
       g.selectAll('.emotion-change-point')
-        .data(data.filter(d => d.emotions.length > 0))
+        .data(filteredData.filter(d => d.emotions.length > 0))
         .enter()
         .append('circle')
         .attr('class', 'emotion-change-point')
@@ -610,7 +745,7 @@ export default function TimelineVisualization({
         .curve(d3.curveMonotoneX)
 
       g.append('path')
-        .datum(data.filter(d => 
+        .datum(filteredData.filter(d => 
           d.reactionValue >= filters.minReactionValue && 
           d.reactionValue <= filters.maxReactionValue
         ))
@@ -706,7 +841,7 @@ export default function TimelineVisualization({
       })
 
     svg.call(zoom as unknown)
-  }, [data, filters, width, height, showTooltip, hideTooltip])
+  }, [data, filters, width, height, showTooltip, hideTooltip, timeRange])
 
 
   // データ取得
@@ -714,12 +849,20 @@ export default function TimelineVisualization({
     fetchTimelineData()
   }, [fetchTimelineData])
 
+  // 時間範囲初期化
+  useEffect(() => {
+    if (data.length > 0 && !timeRange) {
+      initializeTimeRange()
+    }
+  }, [data, timeRange, initializeTimeRange])
+
   // D3可視化
   useEffect(() => {
     if (data.length > 0 && svgRef.current) {
       switch (visualizationMode) {
         case 'timeline':
           renderTimeline()
+          renderOverviewChart()
           break
         case 'dumbbell':
           renderDumbbellChart()
@@ -728,7 +871,7 @@ export default function TimelineVisualization({
           break
       }
     }
-  }, [data, renderTimeline, renderDumbbellChart, visualizationMode])
+  }, [data, renderTimeline, renderDumbbellChart, renderOverviewChart, visualizationMode])
 
 
   if (loading) {
@@ -895,12 +1038,26 @@ export default function TimelineVisualization({
         </h3>
         
         {visualizationMode === 'timeline' && (
-          <svg
-            ref={svgRef}
-            width={width}
-            height={height}
-            className="border"
-          />
+          <div className="space-y-4">
+            {/* メインチャート */}
+            <svg
+              ref={svgRef}
+              width={width}
+              height={height}
+              className="border"
+            />
+            
+            {/* 概要チャート（ナビゲーター） */}
+            <div className="bg-gray-50 p-2 rounded">
+              <div className="text-xs text-gray-600 mb-1">時間範囲選択</div>
+              <svg
+                ref={overviewSvgRef}
+                width={width}
+                height={80}
+                className="border border-gray-300"
+              />
+            </div>
+          </div>
         )}
         
         {visualizationMode === 'kpi' && renderKPICards()}
