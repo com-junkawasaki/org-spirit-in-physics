@@ -94,6 +94,9 @@ export default function ProcsPage() {
           <a href="/process/emotions" className="px-3 py-1 bg-purple-100 text-purple-800 rounded text-sm hover:bg-purple-200">
             😊 感情データインポート
           </a>
+          <a href="/process/physiological" className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm hover:bg-green-200">
+            💓 生理データインポート
+          </a>
         </div>
       </div>
 

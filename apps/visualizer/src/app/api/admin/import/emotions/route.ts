@@ -73,8 +73,14 @@ export async function POST(request: NextRequest) {
 
         // Merkle DAG: import.emotions.check_existing
         // 既存感情データのチェック
-        const existingEmotions = await client.getEmotionDataByParticipantId(participantId);
-        if (existingEmotions && existingEmotions.length > 0) {
+        const existingEmotionsQuery = `
+          MATCH (:Participant {id: $participantId})-[:HAS_SESSION]->(:ExperimentSession)-[:HAS_RESPONSE]->(:Response)-[:HAS_EMOTION_ANALYSIS]->(e:EmotionAnalysis)
+          RETURN count(e) as emotion_count
+        `;
+        const existingEmotionsResult = await client.query(existingEmotionsQuery, { participantId });
+        const emotionCount = existingEmotionsResult[0]?.emotion_count || 0;
+        
+        if (emotionCount > 0) {
           results.push({
             participantId,
             status: 'skipped',
@@ -233,9 +239,23 @@ async function processEmotionData(client: any, participantId: string, prediction
       }
     }
 
-    // バッチで感情データをNeo4jに格納
+    // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
     if (emotionEntries.length > 0) {
-      await client.createEmotionEntries(emotionEntries);
+      const emotionData = emotionEntries.map((entry: any) => ({
+        id: `emotion_${entry.participant_id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        participant_id: entry.participant_id,
+        registry_uuid: entry.registry_uuid,
+        text: entry.text,
+        begin_time: entry.begin_time,
+        end_time: entry.end_time,
+        confidence: entry.confidence,
+        emotions: entry.emotions,
+        position: entry.position,
+        created_at: entry.imported_at,
+        updated_at: entry.imported_at
+      }));
+      
+      await client.bulkInsertNodes('EmotionAnalysis', emotionData, 100);
     }
   }
 

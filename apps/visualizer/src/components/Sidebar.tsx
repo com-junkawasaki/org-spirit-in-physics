@@ -62,6 +62,13 @@ const menuItems: MenuItem[] = [
         description: '感情分析データインポート'
     },
     {
+        id: 'process-physiological',
+        label: '生理データインポート',
+        href: '/process/physiological',
+        icon: '💓',
+        description: '生理データインポート'
+    },
+    {
         id: 'import',
         label: 'インポート管理',
         href: '/import',
