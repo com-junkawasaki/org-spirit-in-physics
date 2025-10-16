@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
     const filterParticipantIds = searchParams.get('participantIds')?.split(',') || null;
 
     // Merkle DAG: import.status.scan_files
-    // データセットファイルスキャン
-    const datasetPath = path.join(process.cwd(), 'dataset', 'participants');
+    // データセットファイルスキャン（複数候補から解決）
+    const datasetPath = await resolveDatasetParticipantsPath();
 
     let availableFiles: any[] = [];
     try {
@@ -107,6 +107,31 @@ async function scanDatasetFiles(datasetPath: string): Promise<any[]> {
   }
 
   return files;
+}
+
+// Merkle DAG: import.status.resolve_dataset_path
+// dataset/participants の実体パスを複数候補から解決
+async function resolveDatasetParticipantsPath(): Promise<string> {
+  const candidates = [
+    // Docker 本番/開発（visualizer コンテナ）
+    path.join(process.cwd(), 'dataset', 'participants'),           // /app/dataset/participants
+    '/app/dataset/participants',                                    // 明示フルパス
+    // リポジトリ直下（ホスト開発時の Next dev 実行）
+    path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants'),
+    path.join(process.cwd(), 'src', 'dataset', 'participants')
+  ];
+
+  for (const p of candidates) {
+    try {
+      await fs.access(p);
+      return p;
+    } catch {
+      // try next
+    }
+  }
+
+  // 最後にデフォルト（従来挙動）を返す
+  return path.join(process.cwd(), 'dataset', 'participants');
 }
 
 // Merkle DAG: import.status.get_imported

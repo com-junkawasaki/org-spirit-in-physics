@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
     const results = [];
 
     // Merkle DAG: import.sessions.scan
-    // データセットディレクトリをスキャン
-    const datasetPath = path.join(process.cwd(), 'dataset', 'participants');
+    // データセットディレクトリをスキャン（複数候補から解決）
+    const datasetPath = await resolveDatasetParticipantsPath();
 
     try {
       await fs.access(datasetPath);
@@ -292,4 +292,18 @@ function calculateSessionStatistics(events: any[]) {
     averageReactionTime,
     responseCount
   };
+}
+
+// Merkle DAG: import.sessions.resolve_dataset_path
+async function resolveDatasetParticipantsPath(): Promise<string> {
+  const candidates = [
+    path.join(process.cwd(), 'dataset', 'participants'),
+    '/app/dataset/participants',
+    path.join(process.cwd(), 'apps', 'visualizer', 'src', 'dataset', 'participants'),
+    path.join(process.cwd(), 'src', 'dataset', 'participants')
+  ];
+  for (const p of candidates) {
+    try { await fs.access(p); return p; } catch {}
+  }
+  return path.join(process.cwd(), 'dataset', 'participants');
 }
