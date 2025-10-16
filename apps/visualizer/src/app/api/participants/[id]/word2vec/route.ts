@@ -7,10 +7,10 @@ import { createNeo4jClient } from '@/lib/neo4j';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: participantId } = await params;
+    const { id: participantId } = params;
     console.log(`API: Fetching Word2Vec data for participant ${participantId}`);
 
     const client = createNeo4jClient();
@@ -81,7 +81,7 @@ export async function GET(
       { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
-        participantId: (await params).id
+        participantId: params.id
       },
       { status: 500 }
     );

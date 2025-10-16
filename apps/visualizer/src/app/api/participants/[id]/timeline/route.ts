@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 import { createNeo4jClient } from '@/lib/neo4j';
 import fs from 'fs';
 import path from 'path';
@@ -10,10 +11,10 @@ import path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: participantId } = await params;
+    const { id: participantId } = params;
     console.log(`API: Fetching timeline data for participant ${participantId}`);
 
     const client = createNeo4jClient();
@@ -215,8 +216,8 @@ function processVisualizationDataset(dataset: any): any[] {
   const dataPoints = [];
   const baseTime = Date.now() - 600000; // 10分前から開始
   
-  // 単語提示イベントを生成
-  const words = ['spirit', 'physics', 'research', 'consciousness', 'quantum', 'mind', 'soul', 'energy', 'vibration', 'frequency'];
+  // 単語提示イベントを生成（ユングの日本語100語に合わせる）
+  const words = JUNG_STIMULUS_WORDS.map(w => w.japanese)
   
   for (let i = 0; i < 20; i++) {
     const timestamp = baseTime + (i * 30000); // 30秒間隔

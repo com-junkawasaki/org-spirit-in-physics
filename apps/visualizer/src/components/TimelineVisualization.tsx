@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import dynamic from 'next/dynamic'
+import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
 // Force3D 用型（型のみローカル定義して実行時依存を最小化）
 interface WordNode { id: string; label: string; scale: number }
@@ -91,7 +92,6 @@ export default function TimelineVisualization({
   const [gamma, setGamma] = useState(1.0)  // ΔSP の係数 γ
   const [lambda, setLambda] = useState(1.0) // ΔSP のスケール λ
   const [eta, setEta] = useState(1.0)    // 感情スコア係数 η
-  const [topNWords, setTopNWords] = useState(100)
   const [beta, setBeta] = useState(1.0)  // ベクトル項の温度 β
   const [springK, setSpringK] = useState(3.0)
   const [repulsionK, setRepulsionK] = useState(800.0)
@@ -280,30 +280,32 @@ export default function TimelineVisualization({
   const prepareForce3DGraph = React.useCallback((): { nodes: WordNode[]; links: WordLink[] } => {
     if (data.length === 0) return { nodes: [], links: [] }
 
-    // 単語ごとに集約（ノード指標）
-    const groups = data.reduce((acc, d) => {
-      if (!acc[d.word]) acc[d.word] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 }
-      acc[d.word].count += 1
-      acc[d.word].sumReactionValue += d.reactionValue
-      acc[d.word].sumReactionTime += d.reactionTime
-      return acc
-    }, {} as Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }>)
+    // ユング100語（日本語）を固定ノード集合として使用
+    const jungWords = JUNG_STIMULUS_WORDS.map(w => ({ word: w.japanese, key: w.id }))
 
-    // ノードの生スケール: 平均反応値 × log(1+回数)
-    const nodeEntries = Object.entries(groups).map(([word, g]) => {
-      const avgRV = g.sumReactionValue / Math.max(1, g.count)
+    // 集約（ノード指標）。全語を初期化し、セッション実データで加算
+    const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
+    jungWords.forEach(({ word }) => { accum[word] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+    for (const d of data) {
+      if (!accum[d.word]) continue // セッション語がユング語に無い場合は無視
+      accum[d.word].count += 1
+      accum[d.word].sumReactionValue += d.reactionValue
+      accum[d.word].sumReactionTime += d.reactionTime
+    }
+
+    // 生スケール: 平均反応値 × log(1+回数)
+    const nodeEntries = jungWords.map(({ word }) => {
+      const g = accum[word]
+      const avgRV = g.count > 0 ? g.sumReactionValue / g.count : 0
       const raw = avgRV * Math.log1p(g.count)
       return { word, count: g.count, avgReactionValue: avgRV, raw }
     })
 
-    // 上位N語に制限（描画安定性のため）
-    const top = nodeEntries.sort((a, b) => b.raw - a.raw).slice(0, Math.max(10, Math.min(100, topNWords)))
-
-    const rawMin = Math.min(...top.map(n => n.raw))
-    const rawMax = Math.max(...top.map(n => n.raw))
+    const rawMin = Math.min(...nodeEntries.map(n => n.raw))
+    const rawMax = Math.max(...nodeEntries.map(n => n.raw))
     const denom = rawMax - rawMin || 1
 
-    const nodes: WordNode[] = top.map((n, idx) => ({
+    const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
       id: String(idx),
       label: n.word,
       // 0.5〜6.0程度に正規化（視認性のため）
@@ -396,7 +398,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, topNWords, embeddingsByWord, beta])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, beta])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -1433,10 +1435,6 @@ export default function TimelineVisualization({
             <label className="flex items-center space-x-2">
               <span>β</span>
               <input type="number" step="0.1" value={beta} onChange={(e) => setBeta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>Top N</span>
-              <input type="number" min="10" max="100" value={topNWords} onChange={(e) => setTopNWords(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>K</span>
