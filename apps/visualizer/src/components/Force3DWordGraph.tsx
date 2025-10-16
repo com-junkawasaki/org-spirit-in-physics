@@ -33,6 +33,7 @@ interface Force3DWordGraphProps {
     damping: number
     restLength: number
     maxSpeed: number
+    timeScale?: number
   }
 }
 export default function Force3DWordGraph({ nodes, links, width = 1000, height = 600, background = '#0b1020', physics }: Force3DWordGraphProps) {
@@ -61,6 +62,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     damping: physics?.damping ?? 0.95,
     restLength: physics?.restLength ?? 60,
     maxSpeed: physics?.maxSpeed ?? 120,
+    timeScale: physics?.timeScale ?? 1.0,
   })
 
   // 色スケール
@@ -88,6 +90,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       damping: physics?.damping ?? physicsRef.current.damping,
       restLength: physics?.restLength ?? physicsRef.current.restLength,
       maxSpeed: physics?.maxSpeed ?? physicsRef.current.maxSpeed,
+      timeScale: physics?.timeScale ?? physicsRef.current.timeScale,
     }
   }, [physics])
 
@@ -215,14 +218,15 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     let lastTime = performance.now()
     const tick = () => {
       const now = performance.now()
-      const delta = Math.min(0.05, (now - lastTime) / 1000)
+      const rawDelta = Math.min(0.05, (now - lastTime) / 1000)
       lastTime = now
 
       const p = positionsRef.current as Float32Array
       const v = velocitiesRef.current as Float32Array
       const n = nodesRef.current.length
 
-      const { springK, repulsionK, damping, restLength, maxSpeed } = physicsRef.current
+      const { springK, repulsionK, damping, restLength, maxSpeed, timeScale } = physicsRef.current
+      const delta = rawDelta * (timeScale ?? 1)
 
       // 斥力
       for (let i = 0; i < n; i++) {

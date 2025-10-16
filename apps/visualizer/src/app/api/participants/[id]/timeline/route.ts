@@ -19,34 +19,15 @@ export async function GET(
 
     const client = createNeo4jClient();
 
-    // 1. 描画用データセットの取得
-    const visualizationDataset = await getVisualizationDataset(client, participantId);
-    
-    if (visualizationDataset) {
-      // 描画用データセットが存在する場合はそれを使用
-      const timelineData = processVisualizationDataset(visualizationDataset);
-      
-      return NextResponse.json({
-        success: true,
-        data: {
-          participantId,
-          timelineData,
-          metadata: {
-            sessionEvents: timelineData.length,
-            emotionEntries: timelineData.filter(d => d.emotions.length > 0).length,
-            physiologicalEntries: timelineData.filter(d => d.physiological.length > 0).length,
-            totalDataPoints: timelineData.length,
-            dataSource: 'visualization_dataset'
-          }
-        }
-      });
-    }
+    // 1. 直接、セッション＋感情＋生理データを統合（可視化データセットはデモ生成のため使用しない）
 
     // 2. フォールバック: 従来の方法でデータ取得
     const sessionData = await getSessionData(participantId);
     const emotionData = await getEmotionData(client, participantId);
     const physiologicalData = await getPhysiologicalData(client, participantId);
     const timelineData = integrateTimelineData(sessionData, emotionData, physiologicalData);
+    
+    // 連続する "word_displayed" だけでなく、応答系列も取り込み、1語につきイベントを揃える
 
     return NextResponse.json({
       success: true,

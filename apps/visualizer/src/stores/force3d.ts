@@ -17,10 +17,11 @@ type Force3DState = {
   restLength: number
   damping: number
   maxSpeed: number
+  timeScale: number
 
   // Updaters
   setParams: (p: Partial<Pick<Force3DState, 'alpha' | 'gamma' | 'lambda' | 'eta' | 'beta'>>) => void
-  setPhysics: (p: Partial<Pick<Force3DState, 'springK' | 'repulsionK' | 'restLength' | 'damping' | 'maxSpeed'>>) => void
+  setPhysics: (p: Partial<Pick<Force3DState, 'springK' | 'repulsionK' | 'restLength' | 'damping' | 'maxSpeed' | 'timeScale'>>) => void
 }
 
 export const useForce3DStore = create<Force3DState>((set) => ({
@@ -35,6 +36,7 @@ export const useForce3DStore = create<Force3DState>((set) => ({
   restLength: 60,
   damping: 0.95,
   maxSpeed: 120,
+  timeScale: 1.0,
 
   setParams: (p) => set((s) => ({ ...s, ...p })),
   setPhysics: (p) => set((s) => ({ ...s, ...p })),

@@ -96,6 +96,7 @@ export default function TimelineVisualization({
   } = useForce3DStore()
   
   const svgRef = useRef<SVGSVGElement>(null)
+  const dumbbellSvgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
@@ -234,17 +235,17 @@ export default function TimelineVisualization({
       return {
         word,
         firstHalf: {
-          avgReactionTime: firstHalf.reduce((sum, d) => sum + d.reactionTime, 0) / firstHalf.length,
-          avgReactionValue: firstHalf.reduce((sum, d) => sum + d.reactionValue, 0) / firstHalf.length,
+          avgReactionTime: firstHalf.length > 0 ? firstHalf.reduce((sum, d) => sum + d.reactionTime, 0) / firstHalf.length : 0,
+          avgReactionValue: firstHalf.length > 0 ? firstHalf.reduce((sum, d) => sum + d.reactionValue, 0) / firstHalf.length : 0,
           count: firstHalf.length
         },
         secondHalf: {
-          avgReactionTime: secondHalf.reduce((sum, d) => sum + d.reactionTime, 0) / secondHalf.length,
-          avgReactionValue: secondHalf.reduce((sum, d) => sum + d.reactionValue, 0) / secondHalf.length,
+          avgReactionTime: secondHalf.length > 0 ? secondHalf.reduce((sum, d) => sum + d.reactionTime, 0) / secondHalf.length : (firstHalf.length > 0 ? firstHalf.reduce((s, d)=> s + d.reactionTime, 0) / firstHalf.length : 0),
+          avgReactionValue: secondHalf.length > 0 ? secondHalf.reduce((sum, d) => sum + d.reactionValue, 0) / secondHalf.length : (firstHalf.length > 0 ? firstHalf.reduce((s, d)=> s + d.reactionValue, 0) / firstHalf.length : 0),
           count: secondHalf.length
         }
       }
-    }).filter(d => d.firstHalf.count > 0 && d.secondHalf.count > 0)
+    })
   }, [data])
 
   // スモールマルチプル用データ準備
@@ -471,13 +472,14 @@ export default function TimelineVisualization({
   // ダンベルチャートレンダリング
   const renderDumbbellChart = React.useCallback(() => {
     const dumbbellData = prepareDumbbellData()
+    console.log('[Dumbbell] items:', dumbbellData.length)
     if (dumbbellData.length === 0) return null
 
     const margin = { top: 20, right: 30, bottom: 60, left: 120 }
     const innerWidth = width - margin.left - margin.right
     const innerHeight = Math.max(400, dumbbellData.length * 30)
 
-    const svg = d3.select(svgRef.current)
+    const svg = d3.select(dumbbellSvgRef.current)
     svg.selectAll('*').remove()
     svg.attr('width', width).attr('height', innerHeight + margin.top + margin.bottom)
 
@@ -491,7 +493,7 @@ export default function TimelineVisualization({
       .padding(0.1)
 
     const xScale = d3.scaleLinear()
-      .domain([0, d3.max(dumbbellData, d => Math.max(d.firstHalf.avgReactionValue, d.secondHalf.avgReactionValue)) || 1])
+      .domain([0, d3.max(dumbbellData, d => Math.max(d.firstHalf.avgReactionValue || 0, d.secondHalf.avgReactionValue || 0)) || 1])
       .range([0, innerWidth])
 
     // 線を描画
@@ -500,8 +502,8 @@ export default function TimelineVisualization({
       .enter()
       .append('line')
       .attr('class', 'dumbbell-line')
-      .attr('x1', d => xScale(d.firstHalf.avgReactionValue))
-      .attr('x2', d => xScale(d.secondHalf.avgReactionValue))
+      .attr('x1', d => xScale(d.firstHalf.avgReactionValue || d.secondHalf.avgReactionValue))
+      .attr('x2', d => xScale(d.secondHalf.avgReactionValue || d.firstHalf.avgReactionValue))
       .attr('y1', d => (yScale(d.word) || 0) + yScale.bandwidth() / 2)
       .attr('y2', d => (yScale(d.word) || 0) + yScale.bandwidth() / 2)
       .style('stroke', '#666')
@@ -513,7 +515,7 @@ export default function TimelineVisualization({
       .enter()
       .append('circle')
       .attr('class', 'first-half-point')
-      .attr('cx', d => xScale(d.firstHalf.avgReactionValue))
+      .attr('cx', d => xScale(d.firstHalf.avgReactionValue || d.secondHalf.avgReactionValue))
       .attr('cy', d => (yScale(d.word) || 0) + yScale.bandwidth() / 2)
       .attr('r', 6)
       .style('fill', '#3b82f6')
@@ -526,7 +528,7 @@ export default function TimelineVisualization({
       .enter()
       .append('circle')
       .attr('class', 'second-half-point')
-      .attr('cx', d => xScale(d.secondHalf.avgReactionValue))
+      .attr('cx', d => xScale(d.secondHalf.avgReactionValue || d.firstHalf.avgReactionValue))
       .attr('cy', d => (yScale(d.word) || 0) + yScale.bandwidth() / 2)
       .attr('r', 6)
       .style('fill', d => d.secondHalf.avgReactionValue > d.firstHalf.avgReactionValue ? '#10b981' : '#ef4444')
@@ -602,7 +604,12 @@ export default function TimelineVisualization({
   // スモールマルチプルレンダリング
   const renderSmallMultiples = React.useCallback(() => {
     const smallMultiplesData = prepareSmallMultiplesData()
-    if (smallMultiplesData.length === 0) return null
+    if (smallMultiplesData.length === 0) {
+      console.log('[SmallMultiples] empty dataset')
+      return (
+        <div className="text-sm text-gray-500">表示可能なデータがありません（0件）。</div>
+      )
+    }
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1345,7 +1352,11 @@ export default function TimelineVisualization({
               max="5"
               step="0.1"
               value={filters.timeScale}
-              onChange={(e) => setFilters(prev => ({ ...prev, timeScale: Number(e.target.value) }))}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setFilters(prev => ({ ...prev, timeScale: v }))
+                setPhysics({ timeScale: v })
+              }}
               className="flex-1"
             />
             <span className="text-sm">{filters.timeScale.toFixed(1)}x</span>
@@ -1402,7 +1413,7 @@ export default function TimelineVisualization({
         
         {visualizationMode === 'dumbbell' && (
           <svg
-            ref={svgRef}
+            ref={dumbbellSvgRef}
             width={width}
             height={height}
             className="border"
@@ -1457,7 +1468,7 @@ export default function TimelineVisualization({
             const { nodes, links } = prepareForce3DGraph()
             return (
               <div className="border rounded overflow-hidden">
-                <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120 }} />
+                <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, timeScale: filters.timeScale }} />
               </div>
             )
           })()
