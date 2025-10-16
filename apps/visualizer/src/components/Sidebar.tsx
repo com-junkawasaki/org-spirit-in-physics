@@ -102,6 +102,13 @@ const menuItems: MenuItem[] = [
         href: '/import',
         icon: '📥',
         description: 'データインポート処理'
+    },
+    {
+        id: 'timeline',
+        label: '時系列可視化',
+        href: '/participants/2a0d7a69-f953-4c29-87a5-8a8e4e8bd413/timeline',
+        icon: '📈',
+        description: '時系列統合可視化'
     }
 ]
 

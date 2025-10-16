@@ -43,7 +43,9 @@ export default function IntegratedPipelinePage() {
         // 各フェーズの結果をログに追加
         if (data.results.phases) {
           Object.entries(data.results.phases).forEach(([phaseName, phaseResult]: [string, any]) => {
-            if (phaseName === 'dataImport') {
+            if (phaseName === 'experimentCreation') {
+              setLogLines(l => [...l, `実験作成: ${phaseResult.success ? '成功' : '失敗'} (Experiment ID: ${phaseResult.experimentId || 'N/A'})`])
+            } else if (phaseName === 'dataImport') {
               setLogLines(l => [...l, `データインポート: セッション ${phaseResult.sessionImport?.success ? '成功' : '失敗'}, 感情 ${phaseResult.emotionImport?.success ? '成功' : '失敗'}, 生理 ${phaseResult.physiologicalImport?.success ? '成功' : '失敗'}`])
             } else if (phaseName === 'analysis') {
               setLogLines(l => [...l, `解析: Word2Vec ${phaseResult.word2VecAnalysis?.status}, 感情 ${phaseResult.emotionAnalysis?.status}, 生理 ${phaseResult.physiologicalAnalysis?.status}`])
@@ -70,8 +72,8 @@ export default function IntegratedPipelinePage() {
       <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4">
         <h2 className="font-semibold text-blue-800 mb-2">プロセス概要</h2>
         <p className="text-blue-700 text-sm mb-3">
-          データインポートから解析までの統合パイプラインです。セッション、感情、生理データを並列インポートし、
-          その後Word2Vec、感情分析、生理データ分析を並列実行してSpirit確率を計算します。
+          データインポートから解析までの統合パイプラインです（Experiment階層対応）。参加者→実験→セッション階層でデータを管理し、
+          セッション、感情、生理データを並列インポート後、Word2Vec、感情分析、生理データ分析を並列実行してSpirit確率を計算します。
         </p>
         <div className="grid grid-cols-2 gap-4 text-sm text-blue-700">
           <div>
@@ -83,11 +85,15 @@ export default function IntegratedPipelinePage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span>実験作成（Experiment階層）</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                 <span>並列データインポート</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span>データ検証</span>
+                <span>データ検証（Experiment階層）</span>
               </div>
             </div>
           </div>
@@ -96,15 +102,15 @@ export default function IntegratedPipelinePage() {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span>並列解析実行</span>
+                <span>並列解析実行（Experiment階層）</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span>特徴量抽出</span>
+                <span>特徴量抽出（Experiment階層）</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span>Spirit確率計算</span>
+                <span>Spirit確率計算（Experiment階層）</span>
               </div>
             </div>
           </div>
@@ -209,20 +215,21 @@ export default function IntegratedPipelinePage() {
         <h3 className="font-semibold text-gray-800 mb-2">統合パイプラインコンポーネント</h3>
         <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
           <div>
-            <h4 className="font-semibold mb-1">インポートコンポーネント</h4>
+            <h4 className="font-semibold mb-1">インポートコンポーネント（Experiment階層対応）</h4>
             <div className="space-y-1">
+              <div>• 実験作成: Participant → Experiment → Session階層</div>
               <div>• セッションデータ: 実験セッションと応答データ</div>
               <div>• 感情データ: HumeAI感情分析結果</div>
               <div>• 生理データ: 皮膚電位などの生体信号</div>
             </div>
           </div>
           <div>
-            <h4 className="font-semibold mb-1">解析コンポーネント</h4>
+            <h4 className="font-semibold mb-1">解析コンポーネント（Experiment階層対応）</h4>
             <div className="space-y-1">
-              <div>• Word2Vec分析: 単語埋め込みと意味的類似度</div>
-              <div>• 感情分析: 感情分布と信頼度の分析</div>
-              <div>• 生理データ分析: 統計的特徴量抽出</div>
-              <div>• Spirit確率: 統合機械学習モデル</div>
+              <div>• Word2Vec分析: Experiment階層経由の単語埋め込み</div>
+              <div>• 感情分析: Experiment階層経由の感情分布</div>
+              <div>• 生理データ分析: Experiment階層経由の統計的特徴量</div>
+              <div>• Spirit確率: Experiment階層対応の統合モデル</div>
             </div>
           </div>
         </div>

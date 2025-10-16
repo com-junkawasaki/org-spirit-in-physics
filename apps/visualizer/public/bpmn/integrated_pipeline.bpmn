@@ -12,6 +12,12 @@
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
     </bpmn:serviceTask>
     
+    <!-- Experiment Creation -->
+    <bpmn:serviceTask id="Task_CreateExperiment" name="実験作成" implementation="experiment-creator">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_4a</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
     <!-- Gateway for Participant Check -->
     <bpmn:exclusiveGateway id="Gateway_ParticipantCheck" name="参加者存在チェック">
       <bpmn:incoming>Flow_2</bpmn:incoming>
@@ -26,26 +32,26 @@
     
     <!-- Parallel Gateway for Data Import -->
     <bpmn:parallelGateway id="Gateway_ParallelImport" name="並列インポート開始">
-      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:incoming>Flow_4a</bpmn:incoming>
       <bpmn:outgoing>Flow_5</bpmn:outgoing>
       <bpmn:outgoing>Flow_6</bpmn:outgoing>
       <bpmn:outgoing>Flow_7</bpmn:outgoing>
     </bpmn:parallelGateway>
     
     <!-- Session Data Import -->
-    <bpmn:serviceTask id="Task_SessionImport" name="セッションデータインポート" implementation="session-importer">
+    <bpmn:serviceTask id="Task_SessionImport" name="セッションデータインポート（Experiment階層対応）" implementation="session-importer-experiment">
       <bpmn:incoming>Flow_5</bpmn:incoming>
       <bpmn:outgoing>Flow_8</bpmn:outgoing>
     </bpmn:serviceTask>
     
     <!-- Emotion Data Import -->
-    <bpmn:serviceTask id="Task_EmotionImport" name="感情データインポート" implementation="emotion-importer">
+    <bpmn:serviceTask id="Task_EmotionImport" name="感情データインポート（Experiment階層対応）" implementation="emotion-importer-experiment">
       <bpmn:incoming>Flow_6</bpmn:incoming>
       <bpmn:outgoing>Flow_9</bpmn:outgoing>
     </bpmn:serviceTask>
     
     <!-- Physiological Data Import -->
-    <bpmn:serviceTask id="Task_PhysiologicalImport" name="生理データインポート" implementation="physiological-importer">
+    <bpmn:serviceTask id="Task_PhysiologicalImport" name="生理データインポート（Experiment階層対応）" implementation="physiological-importer-experiment">
       <bpmn:incoming>Flow_7</bpmn:incoming>
       <bpmn:outgoing>Flow_10</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -59,7 +65,7 @@
     </bpmn:parallelGateway>
     
     <!-- Data Validation -->
-    <bpmn:serviceTask id="Task_ValidateData" name="データ検証" implementation="data-validator">
+    <bpmn:serviceTask id="Task_ValidateData" name="データ検証（Experiment階層対応）" implementation="data-validator-experiment">
       <bpmn:incoming>Flow_11</bpmn:incoming>
       <bpmn:outgoing>Flow_12</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -85,19 +91,19 @@
     </bpmn:parallelGateway>
     
     <!-- Word2Vec Analysis -->
-    <bpmn:serviceTask id="Task_Word2VecAnalysis" name="Word2Vec分析" implementation="word2vec-analyzer">
+    <bpmn:serviceTask id="Task_Word2VecAnalysis" name="Word2Vec分析（Experiment階層対応）" implementation="word2vec-analyzer-experiment">
       <bpmn:incoming>Flow_15</bpmn:incoming>
       <bpmn:outgoing>Flow_18</bpmn:outgoing>
     </bpmn:serviceTask>
     
     <!-- Emotion Analysis -->
-    <bpmn:serviceTask id="Task_EmotionAnalysis" name="感情分析" implementation="emotion-analyzer">
+    <bpmn:serviceTask id="Task_EmotionAnalysis" name="感情分析（Experiment階層対応）" implementation="emotion-analyzer-experiment">
       <bpmn:incoming>Flow_16</bpmn:incoming>
       <bpmn:outgoing>Flow_19</bpmn:outgoing>
     </bpmn:serviceTask>
     
     <!-- Physiological Analysis -->
-    <bpmn:serviceTask id="Task_PhysiologicalAnalysis" name="生理データ分析" implementation="physiological-analyzer">
+    <bpmn:serviceTask id="Task_PhysiologicalAnalysis" name="生理データ分析（Experiment階層対応）" implementation="physiological-analyzer-experiment">
       <bpmn:incoming>Flow_17</bpmn:incoming>
       <bpmn:outgoing>Flow_20</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -111,25 +117,25 @@
     </bpmn:parallelGateway>
     
     <!-- Feature Extraction -->
-    <bpmn:serviceTask id="Task_FeatureExtraction" name="特徴量抽出" implementation="feature-extractor">
+    <bpmn:serviceTask id="Task_FeatureExtraction" name="特徴量抽出（Experiment階層対応）" implementation="feature-extractor-experiment">
       <bpmn:incoming>Flow_21</bpmn:incoming>
       <bpmn:outgoing>Flow_22</bpmn:outgoing>
     </bpmn:serviceTask>
     
     <!-- Spirit Probability Calculation -->
-    <bpmn:serviceTask id="Task_SpiritProbability" name="Spirit確率計算" implementation="spirit-calculator">
+    <bpmn:serviceTask id="Task_SpiritProbability" name="Spirit確率計算（Experiment階層対応）" implementation="spirit-calculator-experiment">
       <bpmn:incoming>Flow_22</bpmn:incoming>
       <bpmn:outgoing>Flow_23</bpmn:outgoing>
     </bpmn:serviceTask>
     
     <!-- Results Aggregation -->
-    <bpmn:serviceTask id="Task_ResultsAggregation" name="結果集約" implementation="results-aggregator">
+    <bpmn:serviceTask id="Task_ResultsAggregation" name="結果集約（Experiment階層対応）" implementation="results-aggregator-experiment">
       <bpmn:incoming>Flow_23</bpmn:incoming>
       <bpmn:outgoing>Flow_24</bpmn:outgoing>
     </bpmn:serviceTask>
     
     <!-- Update Statistics -->
-    <bpmn:serviceTask id="Task_UpdateStatistics" name="統計更新" implementation="statistics-updater">
+    <bpmn:serviceTask id="Task_UpdateStatistics" name="統計更新（Experiment階層対応）" implementation="statistics-updater-experiment">
       <bpmn:incoming>Flow_24</bpmn:incoming>
       <bpmn:outgoing>Flow_25</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -143,7 +149,8 @@
     <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_ValidateParticipant" />
     <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_ValidateParticipant" targetRef="Gateway_ParticipantCheck" />
     <bpmn:sequenceFlow id="Flow_3" name="参加者未発見" sourceRef="Gateway_ParticipantCheck" targetRef="EndEvent_ParticipantNotFound" />
-    <bpmn:sequenceFlow id="Flow_4" name="参加者存在" sourceRef="Gateway_ParticipantCheck" targetRef="Gateway_ParallelImport" />
+    <bpmn:sequenceFlow id="Flow_4" name="参加者存在" sourceRef="Gateway_ParticipantCheck" targetRef="Task_CreateExperiment" />
+    <bpmn:sequenceFlow id="Flow_4a" sourceRef="Task_CreateExperiment" targetRef="Gateway_ParallelImport" />
     <bpmn:sequenceFlow id="Flow_5" sourceRef="Gateway_ParallelImport" targetRef="Task_SessionImport" />
     <bpmn:sequenceFlow id="Flow_6" sourceRef="Gateway_ParallelImport" targetRef="Task_EmotionImport" />
     <bpmn:sequenceFlow id="Flow_7" sourceRef="Gateway_ParallelImport" targetRef="Task_PhysiologicalImport" />
