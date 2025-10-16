@@ -45,12 +45,23 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
   const nodeMeshesRef = useRef<THREE.Mesh[]>([])
   const labelSpritesRef = useRef<THREE.Sprite[]>([])
   const lineGeometryRef = useRef<THREE.BufferGeometry | null>(null)
-  const linePositionsRef = useRef<Float32Array>(new Float32Array(links.length * 2 * 3))
-  const lineColorsRef = useRef<Float32Array>(new Float32Array(links.length * 2 * 3))
+  const linePositionsRef = useRef<Float32Array | null>(null)
+  const lineColorsRef = useRef<Float32Array | null>(null)
 
-  const positionsRef = useRef<Float32Array>(new Float32Array(nodes.length * 3))
-  const velocitiesRef = useRef<Float32Array>(new Float32Array(nodes.length * 3))
+  const positionsRef = useRef<Float32Array | null>(null)
+  const velocitiesRef = useRef<Float32Array | null>(null)
   const animRef = useRef<number | null>(null)
+
+  // 差分更新用の参照
+  const nodesRef = useRef<WordNode[]>(nodes)
+  const linksRef = useRef<WordLink[]>(links)
+  const physicsRef = useRef({
+    springK: physics?.springK ?? 3.0,
+    repulsionK: physics?.repulsionK ?? 800.0,
+    damping: physics?.damping ?? 0.95,
+    restLength: physics?.restLength ?? 60,
+    maxSpeed: physics?.maxSpeed ?? 120,
+  })
 
   // 色スケール
   const scaleExtent = useMemo(() => {
@@ -66,6 +77,37 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     return new THREE.Color(t, 0.5, 1 - t)
   }, [scaleExtent.min, scaleExtent.max])
 
+  const colorForScaleRef = useRef(colorForScale)
+  useEffect(() => { colorForScaleRef.current = colorForScale }, [colorForScale])
+
+  // 物理パラメータの差分反映
+  useEffect(() => {
+    physicsRef.current = {
+      springK: physics?.springK ?? physicsRef.current.springK,
+      repulsionK: physics?.repulsionK ?? physicsRef.current.repulsionK,
+      damping: physics?.damping ?? physicsRef.current.damping,
+      restLength: physics?.restLength ?? physicsRef.current.restLength,
+      maxSpeed: physics?.maxSpeed ?? physicsRef.current.maxSpeed,
+    }
+  }, [physics])
+
+  // サイズ変更
+  useEffect(() => {
+    const renderer = rendererRef.current
+    const camera = cameraRef.current
+    if (renderer && camera) {
+      renderer.setSize(width, height)
+      camera.aspect = width / height
+      camera.updateProjectionMatrix()
+    }
+  }, [width, height])
+
+  // 背景色変更
+  useEffect(() => {
+    if (sceneRef.current) sceneRef.current.background = new THREE.Color(background)
+  }, [background])
+
+  // 初期化は一度だけ実行し、以降は差分更新
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -101,9 +143,12 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     scene.add(dl)
 
     // 初期位置
-    const pos = positionsRef.current
-    const vel = velocitiesRef.current
-    for (let i = 0; i < nodes.length; i++) {
+    const N = nodesRef.current.length
+    positionsRef.current = new Float32Array(N * 3)
+    velocitiesRef.current = new Float32Array(N * 3)
+    const pos = positionsRef.current as Float32Array
+    const vel = velocitiesRef.current as Float32Array
+    for (let i = 0; i < N; i++) {
       const theta = Math.random() * Math.PI * 2
       const phi = Math.acos(2 * Math.random() - 1)
       const r = 120 + Math.random() * 40
@@ -116,12 +161,13 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     }
 
     // ノード
-    nodeMeshesRef.current = nodes.map((n) => {
-      const color = colorForScale(n.scale)
-      const radius = Math.max(2, Math.min(10, 2 + n.scale))
-      const geo = new THREE.SphereGeometry(radius, 16, 16)
+    const unitGeo = new THREE.SphereGeometry(1, 16, 16)
+    nodeMeshesRef.current = nodesRef.current.map((n) => {
+      const color = colorForScaleRef.current(n.scale)
       const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.2 })
-      const mesh = new THREE.Mesh(geo, mat)
+      const mesh = new THREE.Mesh(unitGeo, mat)
+      const radius = Math.max(2, Math.min(10, 2 + n.scale))
+      mesh.scale.set(radius, radius, radius)
       scene.add(mesh)
       return mesh
     })
@@ -150,7 +196,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       return sprite
     }
 
-    labelSpritesRef.current = nodes.map((n) => {
+    labelSpritesRef.current = nodesRef.current.map((n) => {
       const s = makeLabel(n.label)
       scene.add(s)
       return s
@@ -158,18 +204,13 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
 
     // エッジ
     lineGeometryRef.current = new THREE.BufferGeometry()
+    linePositionsRef.current = new Float32Array(linksRef.current.length * 2 * 3)
+    lineColorsRef.current = new Float32Array(linksRef.current.length * 2 * 3)
     lineGeometryRef.current.setAttribute('position', new THREE.BufferAttribute(linePositionsRef.current, 3))
     lineGeometryRef.current.setAttribute('color', new THREE.BufferAttribute(lineColorsRef.current, 3))
     const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.6 })
     const lines = new THREE.LineSegments(lineGeometryRef.current, lineMat)
     scene.add(lines)
-
-    // 物理パラメータ
-    const springK = physics?.springK ?? 3.0
-    const repulsionK = physics?.repulsionK ?? 800.0
-    const damping = physics?.damping ?? 0.95
-    const restLength = physics?.restLength ?? 60
-    const maxSpeed = physics?.maxSpeed ?? 120
 
     let lastTime = performance.now()
     const tick = () => {
@@ -177,9 +218,11 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       const delta = Math.min(0.05, (now - lastTime) / 1000)
       lastTime = now
 
-      const p = positionsRef.current
-      const v = velocitiesRef.current
-      const n = nodes.length
+      const p = positionsRef.current as Float32Array
+      const v = velocitiesRef.current as Float32Array
+      const n = nodesRef.current.length
+
+      const { springK, repulsionK, damping, restLength, maxSpeed } = physicsRef.current
 
       // 斥力
       for (let i = 0; i < n; i++) {
@@ -205,8 +248,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       }
 
       // バネ
-      for (let k = 0; k < links.length; k++) {
-        const { source, target, weight } = links[k]
+      for (let k = 0; k < linksRef.current.length; k++) {
+        const { source, target, weight } = linksRef.current[k]
         const i = source * 3
         const j = target * 3
         const dx = p[j] - p[i]
@@ -246,7 +289,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       }
 
       // ノード位置反映
-      for (let i = 0; i < nodes.length; i++) {
+      for (let i = 0; i < nodesRef.current.length; i++) {
         const mesh = nodeMeshesRef.current[i]
         if (!mesh) continue
         mesh.position.set(p[i * 3], p[i * 3 + 1], p[i * 3 + 2])
@@ -255,17 +298,17 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       }
 
       // エッジ頂点更新
-      const lp = linePositionsRef.current
-      const lc = lineColorsRef.current
-      for (let e = 0; e < links.length; e++) {
-        const { source, target } = links[e]
+      const lp = linePositionsRef.current as Float32Array
+      const lc = lineColorsRef.current as Float32Array
+      for (let e = 0; e < linksRef.current.length; e++) {
+        const { source, target } = linksRef.current[e]
         const s3 = source * 3
         const t3 = target * 3
         const i = e * 2 * 3
         lp[i] = p[s3]; lp[i + 1] = p[s3 + 1]; lp[i + 2] = p[s3 + 2]
         lp[i + 3] = p[t3]; lp[i + 4] = p[t3 + 1]; lp[i + 5] = p[t3 + 2]
-        const c1 = colorForScale(nodes[source].scale)
-        const c2 = colorForScale(nodes[target].scale)
+        const c1 = colorForScaleRef.current(nodesRef.current[source].scale)
+        const c2 = colorForScaleRef.current(nodesRef.current[target].scale)
         lc[i] = c1.r; lc[i + 1] = c1.g; lc[i + 2] = c1.b
         lc[i + 3] = c2.r; lc[i + 4] = c2.g; lc[i + 5] = c2.b
       }
@@ -280,7 +323,6 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     }
 
     // 初回描画（以降は tick 内で更新・描画）
-
     animRef.current = requestAnimationFrame(tick)
 
     // クリーンアップ
@@ -301,7 +343,36 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       })
       if (lineGeometryRef.current) lineGeometryRef.current.dispose()
     }
-  }, [nodes, links, width, height, background, colorForScale, physics?.springK, physics?.repulsionK, physics?.damping, physics?.restLength, physics?.maxSpeed])
+  }, [width, height, background])
+
+  // ノードの差分反映（長さ不変を前提にスケールと色のみ更新）
+  useEffect(() => {
+    nodesRef.current = nodes
+    if (nodeMeshesRef.current.length === nodes.length) {
+      nodes.forEach((n, i) => {
+        const mesh = nodeMeshesRef.current[i]
+        if (!mesh) return
+        const radius = Math.max(2, Math.min(10, 2 + n.scale))
+        mesh.scale.set(radius, radius, radius)
+        const color = colorForScaleRef.current(n.scale)
+        const mat = mesh.material as THREE.MeshStandardMaterial
+        mat.color = color
+        mat.emissive = color
+      })
+    }
+  }, [nodes])
+
+  // リンクの差分反映（長さが変わる場合はバッファを再割当）
+  useEffect(() => {
+    linksRef.current = links
+    if (!lineGeometryRef.current) return
+    if (!linePositionsRef.current || linePositionsRef.current.length !== links.length * 2 * 3) {
+      linePositionsRef.current = new Float32Array(links.length * 2 * 3)
+      lineColorsRef.current = new Float32Array(links.length * 2 * 3)
+      lineGeometryRef.current.setAttribute('position', new THREE.BufferAttribute(linePositionsRef.current, 3))
+      lineGeometryRef.current.setAttribute('color', new THREE.BufferAttribute(lineColorsRef.current, 3))
+    }
+  }, [links])
 
   return <div ref={containerRef} style={{ width, height }} />
 }
