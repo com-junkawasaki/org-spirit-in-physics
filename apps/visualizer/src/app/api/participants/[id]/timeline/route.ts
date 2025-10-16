@@ -332,7 +332,34 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         return Math.abs(physioTimestamp - timestamp) <= 5000; // 5秒以内
       });
       
-      // 感情データの統合
+      // 感情データの統合（詳細な感情情報を保持）
+      const emotionDetails: any[] = [];
+      
+      relatedEmotions.forEach(emotion => {
+        const emotions = emotion.emotions || [];
+        
+        if (emotions.length > 0) {
+          // 実際の感情データがある場合
+          emotions.forEach((e: any) => {
+            emotionDetails.push({
+              name: e.name || 'unknown',
+              score: e.score || 0,
+              fileType: emotion.fileType || 'unknown'
+            });
+          });
+        } else {
+          // デモ用：感情データがnullの場合はランダムな値を生成
+          const emotionNames = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'calm', 'focus'];
+          const randomEmotion = emotionNames[Math.floor(Math.random() * emotionNames.length)];
+          emotionDetails.push({
+            name: randomEmotion,
+            score: Math.random() * 0.5 + 0.1, // 0.1-0.6の範囲でランダム値
+            fileType: emotion.fileType || 'unknown'
+          });
+        }
+      });
+      
+      // 従来の数値データも計算（後方互換性のため）
       const emotionValues = {
         burst: 0,
         face: 0,
@@ -341,28 +368,22 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         total: 0
       };
       
-      relatedEmotions.forEach(emotion => {
-        const emotions = emotion.emotions || [];
-        // デモ用：感情データがnullの場合はランダムな値を生成
-        const emotionScore = emotions.length > 0 
-          ? emotions.reduce((sum: number, e: any) => sum + (e.score || 0), 0)
-          : Math.random() * 0.5 + 0.1; // 0.1-0.6の範囲でランダム値
-        
+      emotionDetails.forEach(emotion => {
         switch (emotion.fileType) {
           case 'burst':
-            emotionValues.burst += emotionScore;
+            emotionValues.burst += emotion.score;
             break;
           case 'face':
-            emotionValues.face += emotionScore;
+            emotionValues.face += emotion.score;
             break;
           case 'language':
-            emotionValues.language += emotionScore;
+            emotionValues.language += emotion.score;
             break;
           case 'prosody':
-            emotionValues.prosody += emotionScore;
+            emotionValues.prosody += emotion.score;
             break;
         }
-        emotionValues.total += emotionScore;
+        emotionValues.total += emotion.score;
       });
       
       // 生理データの統合
@@ -391,7 +412,7 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         timestamp,
         word,
         eventType: event.type,
-        emotions: emotionValues,
+        emotions: emotionDetails, // 詳細な感情データ
         physiological: physiologicalValues,
         reactionValue: emotionValues.total + physiologicalValues.average,
         metadata: {

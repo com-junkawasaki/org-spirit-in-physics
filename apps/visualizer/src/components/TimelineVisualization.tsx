@@ -8,12 +8,18 @@ import * as d3 from 'd3'
 // 依存関係: React, D3.js, timeline API
 // BPMN: TimelineVisualizationComponent
 
+interface EmotionData {
+  name: string
+  score: number
+  fileType: string
+}
+
 interface TimelineDataPoint {
   timestamp: number
   word: string
   reactionTime: number
   hasResponse: boolean
-  emotions: unknown[]
+  emotions: EmotionData[]
   physiological: unknown[]
   reactionValue: number
 }
@@ -29,6 +35,8 @@ interface FilterSettings {
   range: number
   timeScale: number
   verticalScale: number
+  showEmotionDetails: boolean
+  showWordLabels: boolean
 }
 
 interface TimeRange {
@@ -65,7 +73,9 @@ export default function TimelineVisualization({
     emotionChange: true,
     range: 100,
     timeScale: 1.0,
-    verticalScale: 1.0
+    verticalScale: 1.0,
+    showEmotionDetails: true,
+    showWordLabels: true
   })
   
   const svgRef = useRef<SVGSVGElement>(null)
@@ -98,11 +108,30 @@ export default function TimelineVisualization({
     tooltip.style.left = `${event.pageX + 10}px`
     tooltip.style.top = `${event.pageY - 10}px`
     
+    // 感情データの詳細表示
+    const emotionDetails = d.emotions.length > 0 
+      ? d.emotions.map(emotion => 
+          `<div class="text-xs">
+            <span class="font-medium">${emotion.name || 'unknown'}</span>: 
+            <span class="text-blue-600">${(emotion.score || 0).toFixed(2)}</span>
+            <span class="text-gray-500">(${emotion.fileType || 'unknown'})</span>
+          </div>`
+        ).join('')
+      : '<div class="text-xs text-gray-500">感情データなし</div>'
+    
     tooltip.innerHTML = `
-      <div><strong>${d.word}</strong></div>
-      <div>時間: ${new Date(d.timestamp).toLocaleTimeString()}</div>
-      <div>反応値: ${d.reactionValue.toFixed(2)}</div>
-      <div>反応時間: ${d.reactionTime}ms</div>
+      <div class="bg-white border border-gray-300 rounded-lg p-3 shadow-lg text-sm">
+        <div class="font-semibold text-gray-900 mb-2">${d.word}</div>
+        <div class="text-gray-600 mb-2">時間: ${new Date(d.timestamp).toLocaleTimeString()}</div>
+        <div class="grid grid-cols-2 gap-2 text-xs mb-2">
+          <div>反応値: <span class="font-medium">${d.reactionValue.toFixed(2)}</span></div>
+          <div>反応時間: <span class="font-medium">${d.reactionTime}ms</span></div>
+        </div>
+        <div class="border-t pt-2">
+          <div class="text-xs font-medium text-gray-700 mb-1">感情データ:</div>
+          ${emotionDetails}
+        </div>
+      </div>
     `
   }, [])
 
@@ -650,7 +679,7 @@ export default function TimelineVisualization({
       .range([axisHeight * 3.5, axisHeight * 3.1]);
 
     // 単語表示（時間軸上）
-    if (filters.wordDisplay) {
+    if (filters.wordDisplay && filters.showWordLabels) {
       g.selectAll('.word-label')
         .data(filteredData)
         .enter()
@@ -659,10 +688,19 @@ export default function TimelineVisualization({
         .attr('x', d => xScale(new Date(d.timestamp)))
         .attr('y', innerHeight + 20)
         .attr('text-anchor', 'middle')
-        .attr('font-size', '10px')
-        .attr('fill', '#666')
+        .attr('font-size', '11px')
+        .attr('font-weight', '500')
+        .attr('fill', '#374151')
         .text(d => d.word)
-        .style('opacity', 0.8);
+        .style('opacity', 0.9)
+        .on('mouseover', (event, d) => {
+          setSelectedDataPoint(d)
+          showTooltip(event, d)
+        })
+        .on('mouseout', () => {
+          setSelectedDataPoint(null)
+          hideTooltip()
+        });
     }
 
     // 反応値データポイント
@@ -734,7 +772,70 @@ export default function TimelineVisualization({
         .style('fill', '#9333ea')
         .style('stroke', '#fff')
         .style('stroke-width', 1)
-        .style('cursor', 'pointer');
+        .style('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+          setSelectedDataPoint(d)
+          showTooltip(event, d)
+        })
+        .on('mouseout', () => {
+          setSelectedDataPoint(null)
+          hideTooltip()
+        });
+    }
+
+    // 感情データの詳細表示
+    if (filters.showEmotionDetails) {
+      filteredData.forEach(d => {
+        if (d.emotions.length > 0) {
+          // 感情データポイントを個別に表示
+          d.emotions.forEach((emotion) => {
+            const emotionGroup = g.append('g')
+              .attr('class', 'emotion-detail-group')
+              .attr('transform', `translate(${xScale(new Date(d.timestamp))}, ${emotionScale(emotion.score)})`)
+
+            // 感情の色を決定
+            const emotionColors: Record<string, string> = {
+              'joy': '#fbbf24',
+              'sadness': '#3b82f6',
+              'anger': '#ef4444',
+              'fear': '#8b5cf6',
+              'surprise': '#10b981',
+              'disgust': '#6b7280',
+              'calm': '#84cc16',
+              'focus': '#f59e0b',
+              'excitement': '#ec4899',
+              'confusion': '#6366f1'
+            }
+
+            const color = emotionColors[(emotion.name || 'unknown').toLowerCase()] || '#9333ea'
+
+            emotionGroup.append('circle')
+              .attr('r', 4)
+              .style('fill', color)
+              .style('stroke', '#fff')
+              .style('stroke-width', 2)
+              .style('cursor', 'pointer')
+              .on('mouseover', (event) => {
+                setSelectedDataPoint(d)
+                showTooltip(event, d)
+              })
+              .on('mouseout', () => {
+                setSelectedDataPoint(null)
+                hideTooltip()
+              })
+
+            // 感情名のラベル
+            emotionGroup.append('text')
+              .attr('x', 8)
+              .attr('y', 4)
+              .attr('font-size', '9px')
+              .attr('font-weight', '500')
+              .attr('fill', color)
+              .text(emotion.name || 'unknown')
+              .style('opacity', 0.8)
+          })
+        }
+      })
     }
 
     // 線の描画
@@ -841,6 +942,56 @@ export default function TimelineVisualization({
       })
 
     svg.call(zoom as unknown)
+
+    // 感情の凡例
+    if (filters.showEmotionDetails) {
+      const legend = g.append('g')
+        .attr('class', 'emotion-legend')
+        .attr('transform', `translate(${innerWidth - 200}, 20)`)
+
+      const emotionColors: Record<string, string> = {
+        'joy': '#fbbf24',
+        'sadness': '#3b82f6',
+        'anger': '#ef4444',
+        'fear': '#8b5cf6',
+        'surprise': '#10b981',
+        'disgust': '#6b7280',
+        'calm': '#84cc16',
+        'focus': '#f59e0b',
+        'excitement': '#ec4899',
+        'confusion': '#6366f1'
+      }
+
+      const emotions = Object.keys(emotionColors)
+      const legendItems = legend.selectAll('.legend-item')
+        .data(emotions)
+        .enter()
+        .append('g')
+        .attr('class', 'legend-item')
+        .attr('transform', (_d, i) => `translate(0, ${i * 20})`)
+
+      legendItems.append('circle')
+        .attr('r', 4)
+        .style('fill', d => emotionColors[d])
+        .style('stroke', '#fff')
+        .style('stroke-width', 1)
+
+      legendItems.append('text')
+        .attr('x', 12)
+        .attr('y', 4)
+        .attr('font-size', '10px')
+        .attr('fill', '#374151')
+        .text(d => d)
+
+      // 凡例の背景
+      legend.insert('rect', ':first-child')
+        .attr('width', 120)
+        .attr('height', emotions.length * 20 + 10)
+        .attr('fill', 'rgba(255, 255, 255, 0.9)')
+        .attr('stroke', '#e5e7eb')
+        .attr('stroke-width', 1)
+        .attr('rx', 4)
+    }
   }, [data, filters, width, height, showTooltip, hideTooltip, timeRange])
 
 
@@ -986,6 +1137,22 @@ export default function TimelineVisualization({
               onChange={(e) => setFilters(prev => ({ ...prev, emotionChange: e.target.checked }))}
             />
             <span className="text-sm">感情変化</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.showEmotionDetails}
+              onChange={(e) => setFilters(prev => ({ ...prev, showEmotionDetails: e.target.checked }))}
+            />
+            <span className="text-sm">感情詳細</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.showWordLabels}
+              onChange={(e) => setFilters(prev => ({ ...prev, showWordLabels: e.target.checked }))}
+            />
+            <span className="text-sm">単語ラベル</span>
           </label>
           <div className="flex items-center space-x-2">
             <span className="text-sm">範囲:</span>
