@@ -83,6 +83,13 @@ const menuItems: MenuItem[] = [
         description: '統合解析パイプライン'
     },
     {
+        id: 'session-comparison',
+        label: 'セッション比較分析',
+        href: '/analysis/session-comparison',
+        icon: '📊',
+        description: 'セッション間差異分析'
+    },
+    {
         id: 'integrated-pipeline',
         label: '統合パイプライン',
         href: '/pipeline/integrated',

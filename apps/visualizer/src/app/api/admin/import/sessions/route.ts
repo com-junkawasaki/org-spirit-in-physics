@@ -123,35 +123,53 @@ export async function POST(request: NextRequest) {
         }
 
     // Merkle DAG: import.sessions.read_session_data
-    // session_data.jsonを読み取り
-    const sessionDataPath = path.join(participantPath, 'session_data.json');
+    // session_data*.jsonファイルを読み取り（複数セッション対応）
+    const sessionFiles = [];
     
-    console.log(`Looking for session_data.json at: ${sessionDataPath}`);
-    console.log(`Participant path: ${participantPath}`);
-    
-    // ファイルの存在確認
+    // session_data.json と session_data_*.json を検索
     try {
-      await fs.access(sessionDataPath);
-      console.log(`session_data.json found at ${sessionDataPath}`);
+      const files = await fs.readdir(participantPath);
+      const sessionDataFiles = files.filter(file => 
+        file.startsWith('session_data') && file.endsWith('.json')
+      );
+      
+      console.log(`Found session files: ${sessionDataFiles.join(', ')}`);
+      console.log(`Total session files found: ${sessionDataFiles.length}`);
+      
+      for (const fileName of sessionDataFiles) {
+        const sessionDataPath = path.join(participantPath, fileName);
+        console.log(`Reading session data from ${sessionDataPath}`);
+        const sessionData = JSON.parse(await fs.readFile(sessionDataPath, 'utf-8'));
+        console.log(`Session data loaded from ${fileName}: ${sessionData.events?.length || 0} events`);
+        sessionFiles.push({ fileName, sessionData });
+      }
+      
+      console.log(`Total session files to process: ${sessionFiles.length}`);
     } catch (error) {
-      console.log(`session_data.json not found at ${sessionDataPath}`);
+      console.log(`Error reading session files from ${participantPath}:`, error);
       results.push({
         participantId,
         status: 'skipped',
-        message: 'session_data.json not found'
+        message: 'No session data files found'
       });
       continue;
     }
     
-    console.log(`Reading session data from ${sessionDataPath}`);
-    const sessionData = JSON.parse(await fs.readFile(sessionDataPath, 'utf-8'));
-    console.log(`Session data loaded: ${sessionData.events?.length || 0} events`);
-    console.log(`First few event types: ${sessionData.events?.slice(0, 5).map((e: any) => e.type).join(', ')}`);
+    if (sessionFiles.length === 0) {
+      results.push({
+        participantId,
+        status: 'skipped',
+        message: 'No session data files found'
+      });
+      continue;
+    }
 
         // Merkle DAG: import.sessions.validate_session_data
         // セッションデータの検証
-        if (!sessionData.participantId || !sessionData.events) {
-          throw new Error('Invalid session data structure');
+        for (const { fileName, sessionData } of sessionFiles) {
+          if (!sessionData.events) {
+            throw new Error(`Invalid session data structure in ${fileName}`);
+          }
         }
 
         // Merkle DAG: import.sessions.check_existing
@@ -187,76 +205,101 @@ export async function POST(request: NextRequest) {
         }
 
         // Merkle DAG: import.sessions.create_session
-        // セッションイベントを処理してNeo4jに格納
-        const sessionEvents = sessionData.events.map((event: any) => ({
-          participant_id: participantId,
-          type: event.type,
-          timestamp: new Date(event.timestamp).toISOString(),
-          payload: event.payload || {},
-          imported_at: new Date().toISOString()
-        }));
+        // 各セッションファイルを処理してNeo4jに格納
+        let totalEvents = 0;
+        let totalWordResponses = 0;
+        let totalPhysiologicalRecords = 0;
+        let totalReactionTime = 0;
+        let sessionDuration = 0;
 
-        // ガイドライン: MERGE操作の段階化
-        const sessionId = `session_${participantId}_${Date.now()}`;
-        await client.mergeNode('ExperimentSession', {
-          id: sessionId,
-          participant_id: participantId,
-          start_ts: new Date().toISOString(),
-          status: 'completed',
-          total_responses: sessionData.events.filter((e: any) => e.type === 'response_window_closed').length,
-          completed_responses: sessionData.events.filter((e: any) => e.type === 'response_window_closed').length,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-        // Merkle DAG: import.sessions.create_participant_session_relationship
-        // 参加者→セッションのリレーションを作成
-        const participantSessionRelationshipQuery = `
-          MATCH (p:Participant {id: $participantId})
-          MATCH (s:ExperimentSession {id: $sessionId})
-          MERGE (p)-[:HAS_SESSION]->(s)
-          RETURN count(s) as relationship_count
-        `;
-        await client.query(participantSessionRelationshipQuery, { participantId, sessionId });
-
-        // Merkle DAG: import.sessions.create_word_responses
-        // 単語応答データを抽出して格納
-        console.log(`Extracting word responses from ${sessionData.events.length} events`);
-        const wordResponses = extractWordResponses(sessionData.events);
-        console.log(`Extracted ${wordResponses.length} word responses`);
-        if (wordResponses.length > 0) {
-          // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
-          const responseData = wordResponses.map((response: any) => ({
-            id: `response_${participantId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        console.log(`Starting to process ${sessionFiles.length} session files`);
+        console.log(`Session files to process:`, sessionFiles.map(f => f.fileName));
+        
+        for (let i = 0; i < sessionFiles.length; i++) {
+          const { fileName, sessionData } = sessionFiles[i];
+          console.log(`Processing session file ${i + 1}/${sessionFiles.length}: ${fileName}`);
+          console.log(`Session data events count: ${sessionData.events?.length || 0}`);
+          
+          // セッションIDを生成（ファイル名ベース）
+          const sessionId = `session_${participantId}_${Date.now()}_${fileName.replace('.json', '')}`;
+          console.log(`Generated session ID: ${sessionId}`);
+          
+          const sessionEvents = sessionData.events.map((event: any) => ({
             participant_id: participantId,
             session_id: sessionId,
-            stimulus_word: response.stimulus_word,
-            response_word: response.response_word,
-            reaction_time_ms: response.reaction_time_ms,
-            event_ts: response.timestamp,
-            emotion: response.emotion,
-            emotion_confidence: response.emotion_confidence,
-            spirit_probability: response.spirit_probability || 0.5,
+            type: event.type,
+            timestamp: new Date(event.timestamp).toISOString(),
+            payload: event.payload || {},
+            imported_at: new Date().toISOString()
+          }));
+
+          // ガイドライン: MERGE操作の段階化
+          await client.mergeNode('ExperimentSession', {
+            id: sessionId,
+            participant_id: participantId,
+            start_ts: sessionEvents.find(e => e.type === 'session_started')?.timestamp || new Date().toISOString(),
+            end_ts: sessionEvents.find(e => e.type === 'session_ended')?.timestamp || new Date().toISOString(),
+            status: 'completed',
+            total_responses: sessionEvents.filter(e => e.type === 'word_response').length,
+            completed_responses: sessionEvents.filter(e => e.type === 'word_response').length,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          }));
-          
-          await client.bulkInsertNodes('Response', responseData, 100);
+          });
 
-          // Merkle DAG: import.sessions.create_relationships
-          // セッション→応答のリレーションを作成
-          const relationshipQuery = `
+          // Merkle DAG: import.sessions.create_participant_session_relationship
+          // 参加者→セッションのリレーションを作成
+          const participantSessionRelationshipQuery = `
+            MATCH (p:Participant {id: $participantId})
             MATCH (s:ExperimentSession {id: $sessionId})
-            MATCH (r:Response {session_id: $sessionId})
-            MERGE (s)-[:HAS_RESPONSE]->(r)
-            RETURN count(r) as relationship_count
+            MERGE (p)-[:HAS_SESSION]->(s)
+            RETURN count(s) as relationship_count
           `;
-          await client.query(relationshipQuery, { sessionId });
+          await client.query(participantSessionRelationshipQuery, { participantId, sessionId });
+
+          // Merkle DAG: import.sessions.create_word_responses
+          // 単語応答データを抽出して格納
+          console.log(`Extracting word responses from ${sessionData.events.length} events`);
+          const wordResponses = extractWordResponses(sessionData.events);
+          console.log(`Extracted ${wordResponses.length} word responses`);
+          if (wordResponses.length > 0) {
+            // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
+            const responseData = wordResponses.map((response: any) => ({
+              id: `response_${participantId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              participant_id: participantId,
+              session_id: sessionId,
+              stimulus_word: response.stimulus_word,
+              response_word: response.response_word,
+              reaction_time_ms: response.reaction_time_ms,
+              event_ts: response.timestamp,
+              emotion: response.emotion,
+              emotion_confidence: response.emotion_confidence,
+              spirit_probability: response.spirit_probability || 0.5,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }));
+            
+            await client.bulkInsertNodes('Response', responseData, 100);
+
+            // Merkle DAG: import.sessions.create_relationships
+            // セッション→応答のリレーションを作成
+            const relationshipQuery = `
+              MATCH (s:ExperimentSession {id: $sessionId})
+              MATCH (r:Response {session_id: $sessionId})
+              MERGE (s)-[:HAS_RESPONSE]->(r)
+              RETURN count(r) as relationship_count
+            `;
+            await client.query(relationshipQuery, { sessionId });
+            
+            // 統計を累積
+            totalEvents += sessionData.events.length;
+            totalWordResponses += wordResponses.length;
+            totalReactionTime += wordResponses.reduce((sum: number, r: any) => sum + (r.reaction_time_ms || 0), 0);
+          }
         }
 
         // Merkle DAG: import.sessions.calculate_statistics
         // セッション統計を計算
-        const statistics = calculateSessionStatistics(sessionData.events);
+        const averageReactionTime = totalWordResponses > 0 ? totalReactionTime / totalWordResponses : 0;
 
         // Merkle DAG: import.sessions.process_csv_data
         // 生理データCSVファイルを処理
@@ -329,11 +372,11 @@ export async function POST(request: NextRequest) {
           status: 'success',
           message: 'Session data imported successfully',
           statistics: {
-            totalEvents: sessionData.events.length,
-            wordResponsesCount: wordResponses.length,
+            totalEvents,
+            wordResponsesCount: totalWordResponses,
             physiologicalRecordsCount,
-            averageReactionTime: statistics.averageReactionTime,
-            sessionDuration: statistics.duration
+            averageReactionTime,
+            sessionDuration: 0 // TODO: 複数セッションの総時間を計算
           }
         });
 
@@ -408,6 +451,7 @@ function extractWordResponses(events: any[]) {
     for (const event of events) {
       if (event.type === 'word_displayed' && event.payload?.word) {
         wordDisplayEvents.set(event.payload.word, event.timestamp);
+        console.log(`Found word_displayed: ${event.payload.word} at ${event.timestamp}`);
       }
     }
 
@@ -419,12 +463,12 @@ function extractWordResponses(events: any[]) {
         const displayTimestamp = wordDisplayEvents.get(stimulusWord);
         
         // 反応時間を計算（ミリ秒）
-        const reactionTimeMs = displayTimestamp ? responseTimestamp - displayTimestamp : 0;
+        const reactionTimeMs = displayTimestamp ? new Date(responseTimestamp).getTime() - new Date(displayTimestamp).getTime() : 0;
         
         // デバッグログ追加
         console.log(`Event type: ${event.type}, stimulus: ${stimulusWord}, reaction_time_ms: ${reactionTimeMs}, display_timestamp: ${displayTimestamp}, response_timestamp: ${responseTimestamp}`);
         
-        if (stimulusWord) {
+        if (stimulusWord && reactionTimeMs > 0) { // 正の値のみ保存
           wordResponses.push({
             stimulus_word: stimulusWord,
             response_word: '', // response_window_closed には応答語がない

@@ -1,0 +1,197 @@
+{
+  "events": [
+    {
+      "type": "participant_initialized",
+      "timestamp": "2025-07-31T07:30:00.000Z",
+      "payload": {
+        "participant_id": "2a0d7a69-f953-4c29-87a5-8a8e4e8bd413"
+      }
+    },
+    {
+      "type": "session_started",
+      "timestamp": "2025-07-31T08:00:00.000Z",
+      "payload": {
+        "session_id": "session_2_2a0d7a69-f953-4c29-87a5-8a8e4e8bd413_1760590625749",
+        "session_type": "word_association_2"
+      }
+    },
+    {
+      "type": "word_displayed",
+      "timestamp": "2025-07-31T08:00:05.000Z",
+      "payload": {
+        "word": "spirit"
+      }
+    },
+    {
+      "type": "response_window_opened",
+      "timestamp": "2025-07-31T08:00:05.100Z",
+      "payload": {
+        "word": "spirit"
+      }
+    },
+    {
+      "type": "word_response",
+      "timestamp": "2025-07-31T08:00:06.500Z",
+      "payload": {
+        "stimulus_word": "spirit",
+        "response_word": "mind",
+        "reaction_time_ms": 1500,
+        "is_delayed": false,
+        "emotion": "contemplation",
+        "emotion_confidence": 0.75,
+        "spirit_probability": 0.68
+      }
+    },
+    {
+      "type": "response_window_closed",
+      "timestamp": "2025-07-31T08:00:06.600Z",
+      "payload": {
+        "word": "spirit"
+      }
+    },
+    {
+      "type": "word_displayed",
+      "timestamp": "2025-07-31T08:00:07.000Z",
+      "payload": {
+        "word": "energy"
+      }
+    },
+    {
+      "type": "response_window_opened",
+      "timestamp": "2025-07-31T08:00:07.100Z",
+      "payload": {
+        "word": "energy"
+      }
+    },
+    {
+      "type": "word_response",
+      "timestamp": "2025-07-31T08:00:08.200Z",
+      "payload": {
+        "stimulus_word": "energy",
+        "response_word": "force",
+        "reaction_time_ms": 1100,
+        "is_delayed": false,
+        "emotion": "excitement",
+        "emotion_confidence": 0.88,
+        "spirit_probability": 0.72
+      }
+    },
+    {
+      "type": "response_window_closed",
+      "timestamp": "2025-07-31T08:00:08.300Z",
+      "payload": {
+        "word": "energy"
+      }
+    },
+    {
+      "type": "word_displayed",
+      "timestamp": "2025-07-31T08:00:09.000Z",
+      "payload": {
+        "word": "consciousness"
+      }
+    },
+    {
+      "type": "response_window_opened",
+      "timestamp": "2025-07-31T08:00:09.100Z",
+      "payload": {
+        "word": "consciousness"
+      }
+    },
+    {
+      "type": "word_response",
+      "timestamp": "2025-07-31T08:00:10.800Z",
+      "payload": {
+        "stimulus_word": "consciousness",
+        "response_word": "thought",
+        "reaction_time_ms": 1700,
+        "is_delayed": false,
+        "emotion": "curiosity",
+        "emotion_confidence": 0.82,
+        "spirit_probability": 0.75
+      }
+    },
+    {
+      "type": "response_window_closed",
+      "timestamp": "2025-07-31T08:00:10.900Z",
+      "payload": {
+        "word": "consciousness"
+      }
+    },
+    {
+      "type": "word_displayed",
+      "timestamp": "2025-07-31T08:00:11.000Z",
+      "payload": {
+        "word": "quantum"
+      }
+    },
+    {
+      "type": "response_window_opened",
+      "timestamp": "2025-07-31T08:00:11.100Z",
+      "payload": {
+        "word": "quantum"
+      }
+    },
+    {
+      "type": "word_response",
+      "timestamp": "2025-07-31T08:00:12.500Z",
+      "payload": {
+        "stimulus_word": "quantum",
+        "response_word": "wave",
+        "reaction_time_ms": 1400,
+        "is_delayed": false,
+        "emotion": "wonder",
+        "emotion_confidence": 0.90,
+        "spirit_probability": 0.80
+      }
+    },
+    {
+      "type": "response_window_closed",
+      "timestamp": "2025-07-31T08:00:12.600Z",
+      "payload": {
+        "word": "quantum"
+      }
+    },
+    {
+      "type": "word_displayed",
+      "timestamp": "2025-07-31T08:00:13.000Z",
+      "payload": {
+        "word": "universe"
+      }
+    },
+    {
+      "type": "response_window_opened",
+      "timestamp": "2025-07-31T08:00:13.100Z",
+      "payload": {
+        "word": "universe"
+      }
+    },
+    {
+      "type": "word_response",
+      "timestamp": "2025-07-31T08:00:14.300Z",
+      "payload": {
+        "stimulus_word": "universe",
+        "response_word": "cosmos",
+        "reaction_time_ms": 1200,
+        "is_delayed": false,
+        "emotion": "awe",
+        "emotion_confidence": 0.95,
+        "spirit_probability": 0.85
+      }
+    },
+    {
+      "type": "response_window_closed",
+      "timestamp": "2025-07-31T08:00:14.400Z",
+      "payload": {
+        "word": "universe"
+      }
+    },
+    {
+      "type": "session_ended",
+      "timestamp": "2025-07-31T08:00:15.000Z",
+      "payload": {
+        "session_id": "session_2_2a0d7a69-f953-4c29-87a5-8a8e4e8bd413_1760590625749",
+        "participant_id": "2a0d7a69-f953-4c29-87a5-8a8e4e8bd413"
+      }
+    }
+  ]
+}
