@@ -2,7 +2,41 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { Word2Vec3DVisualization } from '@/components/Word2Vec3DVisualization'
+import dynamic from 'next/dynamic'
+
+// 3D可視化コンポーネントを一時的に無効化
+// const Word2Vec3DVisualization = dynamic(() => import('@/components/Word2Vec3DVisualization').then(mod => ({ default: mod.Word2Vec3DVisualization })), {
+//   ssr: false,
+//   loading: () => <div className="flex items-center justify-center h-[600px]">3D可視化を読み込み中...</div>
+// })
+
+// シンプルな2D可視化コンポーネント
+const Word2VecVisualization = ({ wordData }: { wordData: any[] }) => {
+  return (
+    <div className="h-[600px] overflow-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+        {wordData.map((data, index) => (
+          <div key={data.responseId} className="bg-white rounded-lg shadow-md p-4 border">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-lg">{data.word}</h3>
+              <div 
+                className="w-4 h-4 rounded-full"
+                style={{
+                  backgroundColor: `hsl(${(1 - data.spiritProbability) * 240}, 70%, 50%)`
+                }}
+              />
+            </div>
+            <div className="space-y-1 text-sm text-gray-600">
+              <div>Spirit確率: {(data.spiritProbability * 100).toFixed(1)}%</div>
+              <div>反応時間: {data.reactionTime}ms</div>
+              <div>時刻: {new Date(data.timestamp).toLocaleString('ja-JP')}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -263,10 +297,8 @@ export default function ParticipantDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="h-[600px] w-full">
-                <Word2Vec3DVisualization 
+                <Word2VecVisualization 
                   wordData={wordData}
-                  participantId={participantId}
-                  className="h-full w-full"
                 />
               </div>
             </CardContent>

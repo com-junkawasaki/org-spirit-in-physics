@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
       const word2VecAnalysisPromise = performWord2VecAnalysis(participantId, pipelineOptions);
       
       // BPMN: Task_EmotionAnalysis - 感情分析
+      console.log('Starting emotion analysis...');
       const emotionAnalysisPromise = performEmotionAnalysis(participantId, pipelineOptions);
       
       // BPMN: Task_PhysiologicalAnalysis - 生理データ分析
@@ -264,10 +265,13 @@ async function importEmotionData(participantId: string, options: any): Promise<a
   try {
     console.log('Importing emotion data...');
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/admin/import/emotions`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/admin/import/emotions/integrated`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ participantIds: [participantId] })
+      body: JSON.stringify({ 
+        participantId: participantId, 
+        sessionId: `session_${participantId}_default` 
+      })
     });
 
     const data = await response.json();
@@ -276,7 +280,7 @@ async function importEmotionData(participantId: string, options: any): Promise<a
       status: data.success ? 'completed' : 'failed',
       success: data.success,
       message: data.success ? 'Emotion data imported successfully' : 'Emotion data import failed',
-      statistics: data.results?.[0]?.statistics || {},
+      statistics: data.results?.statistics || {},
       error: data.error
     };
 
@@ -350,7 +354,7 @@ async function validateImportedData(participantId: string): Promise<any> {
 
     // 感情データ確認
     const emotionQuery = `
-      MATCH (:Participant {id: $participantId})-[:HAS_SESSION]->(:ExperimentSession)-[:HAS_RESPONSE]->(:Response)-[:HAS_EMOTION_ANALYSIS]->(e:EmotionAnalysis)
+      MATCH (e:EmotionAnalysis {participant_id: $participantId})
       RETURN count(e) as emotion_count
     `;
     const emotionResult = await client.query(emotionQuery, { participantId });
@@ -449,11 +453,16 @@ async function performEmotionAnalysis(participantId: string, options: any): Prom
     const client = createNeo4jClient();
     
     const emotionQuery = `
-      MATCH (:Participant {id: $participantId})-[:HAS_SESSION]->(:ExperimentSession)-[:HAS_RESPONSE]->(:Response)-[:HAS_EMOTION_ANALYSIS]->(e:EmotionAnalysis)
-      RETURN e.emotions as emotions, e.confidence as confidence, e.text as text
+      MATCH (e:EmotionAnalysis {participant_id: $participantId})
+      RETURN e.emotions as emotions, e.file_type as file_type, e.begin_time as begin_time, e.session_id as session_id
       ORDER BY e.begin_time
     `;
     const emotions = await client.query(emotionQuery, { participantId });
+    
+    console.log(`Emotion analysis query result: ${emotions.length} records found`);
+    if (emotions.length > 0) {
+      console.log(`Sample emotion record:`, emotions[0]);
+    }
 
     if (emotions.length === 0) {
       return {
@@ -465,7 +474,13 @@ async function performEmotionAnalysis(participantId: string, options: any): Prom
       };
     }
 
-    const allEmotions = emotions.flatMap(e => e.emotions || []);
+    const allEmotions = emotions.flatMap(e => {
+      try {
+        return JSON.parse(e.emotions || '[]');
+      } catch {
+        return [];
+      }
+    });
     const emotionCounts = allEmotions.reduce((acc, emotion) => {
       acc[emotion.name] = (acc[emotion.name] || 0) + 1;
       return acc;
@@ -474,12 +489,14 @@ async function performEmotionAnalysis(participantId: string, options: any): Prom
     const dominantEmotion = Object.entries(emotionCounts)
       .sort(([,a], [,b]) => b - a)[0]?.[0] || null;
 
-    const averageConfidence = emotions.reduce((sum, e) => sum + (e.confidence || 0), 0) / emotions.length;
+    const averageConfidence = allEmotions.length > 0 
+      ? allEmotions.reduce((sum, e) => sum + (e.score || 0), 0) / allEmotions.length 
+      : 0;
 
     return {
       status: 'completed',
       message: 'Emotion analysis completed',
-      emotionCount: emotions.length,
+      emotionCount: allEmotions.length,
       averageConfidence,
       dominantEmotion,
       emotionDistribution: emotionCounts,
