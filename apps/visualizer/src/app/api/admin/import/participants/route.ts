@@ -70,11 +70,32 @@ export async function POST(request: NextRequest) {
           participant_id: participantId,
           signature: consentData.signature,
           agreed_at: new Date(consentData.agreedAt).toISOString(),
-          agreements: consentData.agreements,
+          agreements_json: JSON.stringify(consentData.agreements || {}),
           imported_at: new Date().toISOString()
         };
 
-        await (client as any).createParticipant(participantData);
+        if (typeof (client as any).createParticipant === 'function') {
+          await (client as any).createParticipant(participantData);
+        } else {
+          // フォールバック: 直接Cypherで作成
+          await (client as any).query(
+            `CREATE (p:Participant {
+              id: $participant_id,
+              participant_id: $participant_id,
+              signature: $signature,
+              agreed_at: datetime($agreed_at),
+              agreements_json: $agreements_json,
+              created_at: datetime($imported_at)
+            })`,
+            {
+              participant_id: participantData.participant_id,
+              signature: participantData.signature ?? null,
+              agreed_at: participantData.agreed_at ?? new Date().toISOString(),
+              agreements_json: participantData.agreements_json ?? '{}',
+              imported_at: participantData.imported_at ?? new Date().toISOString(),
+            }
+          );
+        }
 
         // Merkle DAG: import.participants.check_files
         // 関連ファイルの存在確認

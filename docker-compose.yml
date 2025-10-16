@@ -136,6 +136,21 @@ services:
           - spirit-network
         restart: unless-stopped
 
+  # BPMN Runner (optional orchestrator for imports)
+  bpmn-runner:
+        build:
+          context: ./apps/pipeline/services/bpmn_runner
+          dockerfile: Dockerfile
+        container_name: spirit-bpmn-runner
+        environment:
+          - API_BASE=http://visualizer:3000
+          - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
+        depends_on:
+          - visualizer
+        networks:
+          - spirit-network
+        restart: "no"
+
   # API Gateway Service (Unified Pipeline API)
   pipeline:
         build:

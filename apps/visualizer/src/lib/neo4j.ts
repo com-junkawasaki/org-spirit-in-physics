@@ -121,7 +121,7 @@ class Neo4jClient {
       })
 
       if (!participant) {
-        throw new Error(`Participant ${participantId} not found`)
+        return null
       }
 
       return {
@@ -132,7 +132,7 @@ class Neo4jClient {
       }
     } catch (error) {
       console.error('Error in getParticipantDetails:', error)
-      throw error
+      return null
     }
   }
 
@@ -174,7 +174,7 @@ const neo4jConfig: Neo4jConfig = {
   uri: process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'bolt://localhost:7687',
   user: process.env.NEO4J_USER || 'neo4j',
   password: process.env.NEO4J_PASSWORD || 'password',
-  database: process.env.NEO4J_DATABASE || 'myDb'
+  database: process.env.NEO4J_DATABASE || 'neo4j'
 }
 
 // Create singleton client instance
@@ -406,6 +406,143 @@ export class Neo4jManager {
       console.error('Error in createPhysiologicalData:', error)
       throw error
     }
+  }
+
+  // Merkle DAG: neo4j.methods.create_participant
+  // 参加者ノード作成
+  async createParticipant(participantData: { participant_id: string; signature?: string; agreed_at?: string; agreements_json?: string; imported_at?: string }): Promise<void> {
+    await this.neogma.queryRunner.run(
+      `CREATE (p:Participant {
+        id: $participant_id,
+        participant_id: $participant_id,
+        signature: $signature,
+        agreed_at: datetime($agreed_at),
+        agreements_json: $agreements_json,
+        created_at: datetime($imported_at)
+      })`,
+      {
+        participant_id: participantData.participant_id,
+        signature: participantData.signature ?? null,
+        agreed_at: participantData.agreed_at ?? new Date().toISOString(),
+        agreements_json: participantData.agreements_json ?? '{}',
+        imported_at: participantData.imported_at ?? new Date().toISOString(),
+      }
+    )
+  }
+
+  // Merkle DAG: neo4j.methods.create_session_events
+  // セッションイベント作成（簡易: SessionEventノードとして保存）
+  async createSessionEvents(events: Array<{ participant_id: string; type: string; timestamp: string; payload: any; imported_at: string }>): Promise<void> {
+    for (const ev of events) {
+      await this.neogma.queryRunner.run(
+        `MERGE (p:Participant { id: $participant_id })
+         MERGE (s:ExperimentSession { id: $session_id })
+           ON CREATE SET s.participant_id = $participant_id, s.created_at = datetime($imported_at)
+         CREATE (e:SessionEvent {
+           id: $event_id,
+           participant_id: $participant_id,
+           type: $type,
+           timestamp: datetime($timestamp),
+           payload: $payload,
+           imported_at: datetime($imported_at)
+         })-[:IN_SESSION]->(s)`,
+        {
+          participant_id: ev.participant_id,
+          session_id: `session_${ev.participant_id}`,
+          event_id: `evt_${ev.participant_id}_${Date.parse(ev.timestamp)}`,
+          type: ev.type,
+          timestamp: ev.timestamp,
+          payload: ev.payload ?? {},
+          imported_at: ev.imported_at,
+        }
+      )
+    }
+  }
+
+  // Merkle DAG: neo4j.methods.create_word_responses
+  async createWordResponses(participantId: string, responses: Array<{ stimulusWord: string; responseWord: string; reactionTimeMs: number; isDelayed: boolean; timestamp: string }>): Promise<void> {
+    for (const r of responses) {
+      await this.neogma.queryRunner.run(
+        `CREATE (resp:Response {
+          id: $id,
+          participant_id: $participant_id,
+          stimulus_word: $stimulus_word,
+          response_word: $response_word,
+          reaction_time_ms: $reaction_time_ms,
+          is_delayed: $is_delayed,
+          event_ts: datetime($event_ts)
+        })`,
+        {
+          id: `resp_${participantId}_${Date.parse(r.timestamp)}`,
+          participant_id: participantId,
+          stimulus_word: r.stimulusWord,
+          response_word: r.responseWord,
+          reaction_time_ms: r.reactionTimeMs ?? 0,
+          is_delayed: !!r.isDelayed,
+          event_ts: r.timestamp,
+        }
+      )
+    }
+  }
+
+  // Merkle DAG: neo4j.methods.get_sessions_by_participant
+  async getSessionsByParticipantId(participantId: string): Promise<any[]> {
+    const res = await this.neogma.queryRunner.run(
+      `MATCH (s:ExperimentSession) WHERE s.participant_id = $participant_id RETURN s AS session`,
+      { participant_id: participantId }
+    )
+    return res.records?.map(r => r.get('session')) ?? []
+  }
+
+  // Merkle DAG: neo4j.methods.create_emotion_entries
+  async createEmotionEntries(entries: Array<{ participant_id: string; registry_uuid?: string; text?: string; begin_time?: number; end_time?: number; confidence?: number; emotions?: any; position?: any; imported_at?: string }>): Promise<void> {
+    for (const e of entries) {
+      await this.neogma.queryRunner.run(
+        `CREATE (em:EmotionEntry {
+          id: $id,
+          participant_id: $participant_id,
+          registry_uuid: $registry_uuid,
+          text: $text,
+          begin_time: $begin_time,
+          end_time: $end_time,
+          confidence: $confidence,
+          emotions: $emotions,
+          position: $position,
+          imported_at: datetime($imported_at)
+        })`,
+        {
+          id: `emo_${e.participant_id}_${Date.now()}`,
+          participant_id: e.participant_id,
+          registry_uuid: e.registry_uuid ?? null,
+          text: e.text ?? null,
+          begin_time: e.begin_time ?? null,
+          end_time: e.end_time ?? null,
+          confidence: e.confidence ?? null,
+          emotions: e.emotions ?? [],
+          position: e.position ?? null,
+          imported_at: e.imported_at ?? new Date().toISOString(),
+        }
+      )
+    }
+  }
+
+  // Merkle DAG: neo4j.methods.create_csv_elements
+  async createCSVElements(elements: Array<Record<string, unknown>>): Promise<void> {
+    for (const element of elements) {
+      await this.neogma.queryRunner.run(
+        `CREATE (c:CSVElement $props)`,
+        { props: element }
+      )
+    }
+  }
+
+  // Merkle DAG: neo4j.methods.get_emotions_by_participant
+  async getEmotionDataByParticipantId(participantId: string): Promise<any[]> {
+    const res = await this.neogma.queryRunner.run(
+      `MATCH (e:EmotionEntry) WHERE e.participant_id = $participant_id RETURN e AS emotion`,
+      { participant_id: participantId }
+    )
+    return res.records?.map(r => r.get('emotion')) ?? []
   }
 
   async close(): Promise<void> {

@@ -1,0 +1,16 @@
+{
+  "name": "@spirit-in-physics/bpmn-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "bpmn-engine": "^8.3.0"
+  }
+}
+
+
