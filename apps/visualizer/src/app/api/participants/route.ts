@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
 
     // Process participants data for frontend
     const processedParticipants = (participants || []).map((participant: any) => ({
-      id: participant.id,
-      name: `参加者 ${participant.id.slice(0, 8)}`, // Default name format
+      id: participant.id || 'unknown',
+      name: `参加者 ${participant.id ? participant.id.slice(0, 8) : 'unknown'}`, // Default name format
       sessionCount: 0, // Will be fetched separately if needed
       responseCount: 0, // Will be fetched separately if needed
       averageSpiritProbability: 0, // Will be fetched separately if needed

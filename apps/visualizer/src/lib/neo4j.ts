@@ -68,6 +68,90 @@ class Neo4jClient {
     }
   }
 
+  // ガイドライン: MERGE操作の段階化
+  async mergeNode(
+    nodeLabel: string,
+    properties: Record<string, unknown>,
+    updateProperties: Record<string, unknown> = {}
+  ): Promise<unknown> {
+    try {
+      const query = `
+        MERGE (n:${nodeLabel} {id: $id})
+        SET n += $properties
+        RETURN n
+      `;
+      
+      const params = {
+        id: properties.id,
+        properties: { ...properties, ...updateProperties }
+      };
+      
+      const result = await this.query(query, params);
+      return result[0]?.n || result[0];
+    } catch (error) {
+      console.error('Error in mergeNode:', error);
+      throw error;
+    }
+  }
+
+  // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
+  async bulkInsertNodes(
+    nodeLabel: string,
+    dataArray: Record<string, unknown>[],
+    batchSize: number = 1000
+  ): Promise<unknown> {
+    try {
+      const query = `
+        UNWIND $data as item
+        CREATE (n:${nodeLabel})
+        SET n += item
+        RETURN count(n) as created_count
+      `;
+      
+      const params = {
+        data: dataArray
+      };
+      
+      const result = await this.query(query, params);
+      return result[0]?.created_count || 0;
+    } catch (error) {
+      console.error('Error in bulkInsertNodes:', error);
+      throw error;
+    }
+  }
+
+  // ガイドライン: 過取得の抑制：投影は最小限
+  async projectMinimalFields(
+    nodeLabel: string,
+    projectionFields: string[],
+    conditions: Record<string, unknown> = {},
+    options: { limit?: number; skip?: number } = {}
+  ): Promise<unknown[]> {
+    try {
+      const fields = projectionFields.map(field => `n.${field} as ${field}`).join(', ');
+      const whereClause = Object.keys(conditions).length > 0 
+        ? `WHERE ${Object.keys(conditions).map(key => `n.${key} = $${key}`).join(' AND ')}`
+        : '';
+      
+      const limitClause = options.limit ? `LIMIT ${options.limit}` : '';
+      const skipClause = options.skip ? `SKIP ${options.skip}` : '';
+      
+      const query = `
+        MATCH (n:${nodeLabel})
+        ${whereClause}
+        RETURN ${fields}
+        ${skipClause}
+        ${limitClause}
+      `;
+      
+      const result = await this.query(query, conditions);
+      return result;
+    } catch (error) {
+      console.error('Error in projectMinimalFields:', error);
+      throw error;
+    }
+  }
+
   async close(): Promise<void> {
     await this.neogma.driver.close()
   }

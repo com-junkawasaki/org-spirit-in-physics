@@ -145,8 +145,14 @@ export async function POST(request: NextRequest) {
 
         // Merkle DAG: import.sessions.check_existing
         // 既存セッションデータのチェック
-        const existingSessions = await client.getSessionsByParticipantId(participantId);
-        if (existingSessions && existingSessions.length > 0) {
+        const existingSessionsQuery = `
+          MATCH (:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
+          RETURN count(s) as session_count
+        `;
+        const existingSessionsResult = await client.query(existingSessionsQuery, { participantId });
+        const sessionCount = existingSessionsResult[0]?.session_count || 0;
+        
+        if (sessionCount > 0) {
           results.push({
             participantId,
             status: 'skipped',
@@ -165,13 +171,40 @@ export async function POST(request: NextRequest) {
           imported_at: new Date().toISOString()
         }));
 
-        await (client as any).createSessionEvents(sessionEvents);
+        // ガイドライン: MERGE操作の段階化
+        const sessionId = `session_${participantId}_${Date.now()}`;
+        await client.mergeNode('ExperimentSession', {
+          id: sessionId,
+          participant_id: participantId,
+          start_ts: new Date().toISOString(),
+          status: 'completed',
+          total_responses: sessionData.events.filter((e: any) => e.type === 'response_window_closed').length,
+          completed_responses: sessionData.events.filter((e: any) => e.type === 'response_window_closed').length,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
 
         // Merkle DAG: import.sessions.create_word_responses
         // 単語応答データを抽出して格納
         const wordResponses = extractWordResponses(sessionData.events);
         if (wordResponses.length > 0) {
-          await (client as any).createWordResponses(participantId, wordResponses);
+          // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
+          const responseData = wordResponses.map((response: any) => ({
+            id: `response_${participantId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            participant_id: participantId,
+            session_id: sessionId,
+            stimulus_word: response.stimulus_word,
+            response_word: response.response_word,
+            reaction_time_ms: response.reaction_time_ms,
+            event_ts: response.timestamp,
+            emotion: response.emotion,
+            emotion_confidence: response.emotion_confidence,
+            spirit_probability: response.spirit_probability || 0.5,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }));
+          
+          await client.bulkInsertNodes('Response', responseData, 100);
         }
 
         // Merkle DAG: import.sessions.calculate_statistics
@@ -202,7 +235,26 @@ export async function POST(request: NextRequest) {
                 // セッションIDを生成（既存のセッションを使用）
                 const sessionId = `session_${participantId}_${new Date(metadata.date).getTime()}`;
 
-                await (client as any).createPhysiologicalData(participantId, sessionId, data);
+                // ガイドライン: UNWINDバルク挿入・更新でラウンドトリップ最小化
+                const physiologicalData = data.map((record: any) => ({
+                  id: `physio_${participantId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  participant_id: participantId,
+                  session_id: sessionId,
+                  time_sec: record.time_sec,
+                  ch1: record.ch1,
+                  ch2: record.ch2,
+                  ch3: record.ch3,
+                  ch4: record.ch4,
+                  ch5: record.ch5,
+                  ch6: record.ch6,
+                  ch7: record.ch7,
+                  ch8: record.ch8,
+                  timestamp: record.timestamp,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }));
+                
+                await client.bulkInsertNodes('PhysiologicalData', physiologicalData, 100);
                 physiologicalRecordsCount += data.length;
 
                 console.log(`Imported ${data.length} physiological records from ${csvFile.name}`);
