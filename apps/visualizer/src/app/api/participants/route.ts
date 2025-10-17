@@ -6,25 +6,21 @@ export async function GET(request: NextRequest) {
     console.log('API: Fetching participants from Neo4j...')
     const client = createNeo4jClient()
 
-    // ガイドライン: 過取得の抑制：投影は最小限、リレーションは必要本数のみ
-    const participants = await client.projectMinimalFields(
-      'Participant',
-      ['id', 'age', 'gender', 'handedness', 'consent_given', 'consent_timestamp', 'created_at'],
-      {},
-      { limit: 100 }
-    )
+    // Merkle DAG: participants_api -> neo4j_client -> getParticipants
+    // 統計情報を含む参加者データを取得
+    const participants = await client.getParticipants()
 
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
     console.log('API: Participants sample:', participants?.slice(0, 2))
 
     // Process participants data for frontend
     const processedParticipants = (participants || []).map((participant: any) => ({
-      id: participant.id || 'unknown',
-      name: `参加者 ${participant.id ? participant.id.slice(0, 8) : 'unknown'}`, // Default name format
-      sessionCount: 0, // Will be fetched separately if needed
-      responseCount: 0, // Will be fetched separately if needed
-      averageSpiritProbability: 0, // Will be fetched separately if needed
-      lastActivity: participant.created_at ? new Date(participant.created_at).getTime() : null,
+      id: participant.participant_id || 'unknown',
+      name: `参加者 ${participant.participant_id ? participant.participant_id.slice(0, 8) : 'unknown'}`, // Default name format
+      sessionCount: participant.session_count || 0,
+      responseCount: participant.total_responses || 0,
+      averageSpiritProbability: participant.average_spirit_probability || 0,
+      lastActivity: participant.last_activity ? new Date(participant.last_activity).getTime() : null,
       sessions: [] // Simplified for now
     }))
 

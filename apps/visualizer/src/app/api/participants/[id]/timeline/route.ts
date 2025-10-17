@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 import { createNeo4jClient } from '@/lib/neo4j';
-import fs from 'fs';
-import path from 'path';
 
 // Merkle DAG: participants.timeline.endpoint
 // 時系列統合可視化データ取得APIエンドポイント
@@ -19,36 +16,14 @@ export async function GET(
 
     const client = createNeo4jClient();
 
-    // demo=1 の場合のみデモデータを使用
-    const { searchParams } = new URL(request.url)
-    const useDemo = searchParams.get('demo') === '1'
-    if (useDemo) {
-      const visualizationDataset = await getVisualizationDataset(client, participantId);
-      if (visualizationDataset) {
-        const timelineData = processVisualizationDataset(visualizationDataset);
-        return NextResponse.json({
-          success: true,
-          data: {
-            participantId,
-            timelineData,
-            metadata: {
-              sessionEvents: timelineData.length,
-              emotionEntries: timelineData.filter(d => d.emotions.length > 0).length,
-              physiologicalEntries: timelineData.filter(d => d.physiological.length > 0).length,
-              totalDataPoints: timelineData.length,
-              dataSource: 'demo_visualization_dataset'
-            }
-          }
-        });
-      }
-    }
+    // デモモード機能を除去 - 実データのみを使用
 
     // 実データ取得（失敗は収集してクライアントに返す）
     const errors: string[] = []
 
     let sessionData: any
     try {
-      sessionData = await getSessionData(participantId)
+      sessionData = await getSessionData(client, participantId)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`session_data: ${msg}`)
@@ -101,21 +76,32 @@ export async function GET(
   }
 }
 
-// Merkle DAG: participants.timeline.get_session_data
-// セッションデータ取得関数
-async function getSessionData(participantId: string): Promise<any> {
+// Merkle DAG: participants.timeline.get_session_data_from_neo4j
+// Neo4jからセッションデータ取得関数
+async function getSessionData(client: any, participantId: string): Promise<any> {
   try {
-    const sessionDataPath = path.join(process.cwd(), 'src', 'dataset', 'participants', participantId, 'session_data.json');
+    console.log('Getting session data from Neo4j for participant:', participantId);
     
-    if (!fs.existsSync(sessionDataPath)) {
-      throw new Error(`Session data file not found: ${sessionDataPath}`);
+    const sessionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      RETURN s.session_data as sessionData, s.id as sessionId, s.start_ts as startTs
+      ORDER BY s.start_ts DESC
+      LIMIT 1
+    `;
+    
+    console.log('Executing session query:', sessionQuery);
+    const sessionResults = await client.query(sessionQuery, { participantId });
+    console.log('Session query results count:', sessionResults.length);
+    
+    if (sessionResults.length === 0) {
+      throw new Error(`No session data found for participant: ${participantId}`);
     }
-
-    const sessionDataContent = fs.readFileSync(sessionDataPath, 'utf-8');
-    const sessionData = JSON.parse(sessionDataContent);
+    
+    const sessionData = JSON.parse(sessionResults[0].sessionData || '{}');
+    console.log('Parsed session data events count:', sessionData.events?.length || 0);
 
     // 単語表示イベントを基準点として抽出
-    const wordEvents = sessionData.events.filter((event: any) => 
+    const wordEvents = (sessionData.events || []).filter((event: any) => 
       event.type === 'word_displayed' || 
       event.type === 'response_window_opened' || 
       event.type === 'response_window_closed' ||
@@ -123,204 +109,114 @@ async function getSessionData(participantId: string): Promise<any> {
     );
 
     // セッション開始時刻を最初のイベントのtimestampから取得
-    const startTime = sessionData.events.length > 0 ? sessionData.events[0].timestamp : 0;
+    const startTime = sessionData.events?.length > 0 ? sessionData.events[0].timestamp : 0;
 
-      return {
+    return {
       ...sessionData,
       wordEvents,
-      events: sessionData.events,
-      startTime
+      events: sessionData.events || [],
+      startTime,
+      sessionId: sessionResults[0].sessionId,
+      startTs: sessionResults[0].startTs
     };
 
   } catch (error) {
-    console.error('Session data read error:', error);
+    console.error('Neo4j session data read error:', error);
     throw error;
   }
 }
 
-// Merkle DAG: participants.timeline.get_emotion_data
-// 感情データ取得関数
+// Merkle DAG: participants.timeline.get_emotion_data_from_neo4j
+// Neo4jから感情データ取得関数
 async function getEmotionData(client: any, participantId: string): Promise<any[]> {
   try {
-    console.log('Getting emotion data for participant:', participantId);
+    console.log('Getting emotion data from Neo4j for participant:', participantId);
     
     const emotionQuery = `
-      MATCH (e:EmotionAnalysis {participant_id: $participantId})
-      RETURN e.file_type as fileType, e.BeginTime as beginTime, e.EndTime as endTime, 
-             e.emotions as emotions, e.session_id as sessionId
-      ORDER BY e.BeginTime
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
+      RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
+      ORDER BY ed.timestamp
     `;
     
     console.log('Executing emotion query:', emotionQuery);
-    console.log('Query params:', { participantId });
     const emotionResults = await client.query(emotionQuery, { participantId });
     console.log('Emotion query results count:', emotionResults.length);
-    console.log('First result:', emotionResults[0]);
     
     const mappedResults = emotionResults.map((result: any) => ({
-      fileType: result.fileType,
-      beginTime: result.beginTime,
-      endTime: result.endTime,
-      emotions: JSON.parse(result.emotions || '[]'),
-      sessionId: result.sessionId
+      fileType: result.source || 'unknown',
+      beginTime: result.timestamp,
+      endTime: result.timestamp + 1000, // 1秒間隔で仮定
+      emotions: [{ name: result.name, score: result.score }],
+      sessionId: 'unknown'
     }));
 
-    // デバッグ：マッピング後の最初の数件を確認
     console.log('Mapped emotion results:', mappedResults.slice(0, 3));
-
-    // デバッグログ：最初の数件の感情データを確認
-    console.log('Emotion data sample:', mappedResults.slice(0, 3));
-    
     return mappedResults;
 
   } catch (error) {
-    console.error('Emotion data query error:', error);
-    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Neo4j emotion data query error:', error);
     return [];
   }
 }
 
-// Merkle DAG: participants.timeline.get_physiological_data
-// 生理データ取得関数
+// Merkle DAG: participants.timeline.get_physiological_data_from_neo4j
+// Neo4jから生理データ取得関数
 async function getPhysiologicalData(client: any, participantId: string): Promise<any[]> {
   try {
+    console.log('Getting physiological data from Neo4j for participant:', participantId);
+    
     const physiologicalQuery = `
-      MATCH (:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(:Experiment)-[:HAS_SESSION]->(:ExperimentSession)-[:HAS_PHYSIOLOGICAL_DATA]->(p:PhysiologicalData)
-      RETURN p.time_sec as timeSec, p.ch1 as ch1, p.ch2 as ch2, p.ch3 as ch3, p.ch4 as ch4, 
-             p.ch5 as ch5, p.ch6 as ch6, p.ch7 as ch7, p.ch8 as ch8
-      ORDER BY p.time_sec
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
+      RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
+      ORDER BY pd.timestamp
     `;
     
+    console.log('Executing physiological query:', physiologicalQuery);
     const physiologicalResults = await client.query(physiologicalQuery, { participantId });
+    console.log('Physiological query results count:', physiologicalResults.length);
     
-    return physiologicalResults.map((result: any) => ({
-      timeSec: result.timeSec,
-      channels: {
-        ch1: result.ch1 || 0,
-        ch2: result.ch2 || 0,
-        ch3: result.ch3 || 0,
-        ch4: result.ch4 || 0,
-        ch5: result.ch5 || 0,
-        ch6: result.ch6 || 0,
-        ch7: result.ch7 || 0,
-        ch8: result.ch8 || 0
+    // チャンネル別にデータをグループ化
+    const channelData: Record<string, any[]> = {};
+    physiologicalResults.forEach((result: any) => {
+      const channel = result.channel;
+      if (!channelData[channel]) {
+        channelData[channel] = [];
       }
-    }));
+      channelData[channel].push({
+        timestamp: result.timestamp,
+        value: result.value,
+        quality: result.quality || 1.0
+      });
+    });
+    
+    // 時系列データポイントに変換
+    const timePoints: Record<number, any> = {};
+    Object.entries(channelData).forEach(([channel, data]) => {
+      data.forEach(point => {
+        const timeKey = Math.floor(point.timestamp / 1000) * 1000; // 1秒単位でグループ化
+        if (!timePoints[timeKey]) {
+          timePoints[timeKey] = {
+            timeSec: point.timestamp / 1000,
+            channels: {}
+          };
+        }
+        timePoints[timeKey].channels[channel] = point.value;
+      });
+    });
+    
+    const result = Object.values(timePoints).sort((a: any, b: any) => a.timeSec - b.timeSec);
+    console.log('Processed physiological data points:', result.length);
+    return result;
 
   } catch (error) {
-    console.error('Physiological data query error:', error);
+    console.error('Neo4j physiological data query error:', error);
     return [];
   }
 }
 
-// Merkle DAG: timeline.visualization_dataset_processing
-async function getVisualizationDataset(client: any, participantId: string): Promise<any | null> {
-  try {
-    const query = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_VISUALIZATION_DATASET]->(vd:VisualizationDataset)
-      RETURN vd.id as id, vd.metadata as metadata, vd.data_points_count as dataPointsCount
-      ORDER BY vd.generated_at DESC
-      LIMIT 1
-    `;
-    
-    const result = await client.query(query, { participantId });
-    
-    if (result.length === 0) {
-      return null;
-    }
-    
-    return {
-      id: result[0].id,
-      metadata: JSON.parse(result[0].metadata || '{}'),
-      dataPointsCount: result[0].dataPointsCount
-    };
-  } catch (error) {
-    console.error('Visualization dataset query error:', error);
-    return null;
-  }
-}
-
-function processVisualizationDataset(dataset: any): any[] {
-  // デモ用：描画用データセットから時系列データを生成（理想：200点以上）
-  const dataPoints: any[] = [];
-  const desiredCount = typeof dataset?.dataPointsCount === 'number' && dataset.dataPointsCount > 0
-    ? Math.max(200, dataset.dataPointsCount)
-    : 240; // 既定値
-
-  // 10秒刻みで desiredCount 件、過去 desiredCount*10 秒分を生成
-  const stepMs = 10_000;
-  const baseTime = Date.now() - desiredCount * stepMs;
-
-  // 単語提示イベント（ユング100語）
-  const words = JUNG_STIMULUS_WORDS.map(w => w.japanese)
-
-  for (let i = 0; i < desiredCount; i++) {
-    const timestamp = baseTime + i * stepMs;
-    const word = words[i % words.length];
-    const reactionTime = Math.random() * 2000 + 500; // 500-2500ms
-    const hasResponse = Math.random() > 0.2; // 80%反応
-
-    // 感情データ（burst, face, language, prosody）を2〜3ソース混在
-    const sources = ['burst', 'face', 'language', 'prosody']
-    const emotions: any[] = []
-    const pickCount = 2 + Math.floor(Math.random() * 2) // 2〜3
-    const shuffled = sources.sort(() => Math.random() - 0.5)
-    for (let k = 0; k < pickCount; k++) {
-      const ft = shuffled[k]
-      const begin = i * (stepMs / 1000)
-      const dur = 3 + Math.floor(Math.random() * 4) // 3-6秒
-      const emoList = [
-        { name: 'joy', score: Math.random() * 0.7 + 0.1 },
-        { name: 'surprise', score: Math.random() * 0.6 },
-        { name: 'calm', score: Math.random() * 0.6 },
-        { name: 'focus', score: Math.random() * 0.7 },
-        { name: 'anger', score: Math.random() * 0.4 },
-        { name: 'sadness', score: Math.random() * 0.4 },
-      ].filter(e => e.score > 0.05)
-      emotions.push({ fileType: ft, beginTime: begin, endTime: begin + dur, emotions: emoList })
-    }
-
-    // 生理データ（8ch）
-    const physiological: any[] = []
-    const base = 80 + 10 * Math.sin(i / 10)
-    physiological.push({
-      timeSec: i * (stepMs / 1000),
-      ch1: base + Math.random() * 20,
-      ch2: base + Math.random() * 15,
-      ch3: base + Math.random() * 25,
-      ch4: base + Math.random() * 18,
-      ch5: base + Math.random() * 22,
-      ch6: base + Math.random() * 17,
-      ch7: base + Math.random() * 16,
-      ch8: base + Math.random() * 21,
-    })
-
-    dataPoints.push({
-      timestamp,
-      word,
-      reactionTime: hasResponse ? reactionTime : 0,
-      hasResponse,
-      emotions,
-      physiological,
-      reactionValue: calculateReactionValue(emotions, physiological),
-    })
-  }
-
-  return dataPoints
-}
-
-function calculateReactionValue(emotions: any[], physiological: any[]): number {
-  const emotionScore = emotions.reduce((sum, emotion) => {
-    const emotionsArray = emotion.emotions || [];
-    return sum + emotionsArray.reduce((emoSum: number, e: any) => emoSum + (e.score || 0), 0);
-  }, 0);
-
-  const physiologicalScore = physiological.reduce((sum, physio) => {
-    return sum + (physio.ch1 || 0) + (physio.ch2 || 0) + (physio.ch3 || 0) + (physio.ch4 || 0);
-  }, 0);
-
-  return emotionScore + (physiologicalScore / 1000);
-}
+// デモデータ生成機能を除去 - 実データのみを使用
 
 // Merkle DAG: participants.timeline.integrate_timeline_data
 // 時系列データ統合関数
