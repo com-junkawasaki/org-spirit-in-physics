@@ -50,6 +50,8 @@ interface Force3DWordGraphProps {
     torusR?: number
     torusr?: number
     torusK?: number
+    minSep?: number
+    sepK?: number
   }
   // 感情類似の影響倍率（links.weight への指数影響）
   emotionPower?: number
@@ -98,6 +100,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     torusR: physics?.torusR ?? 0,
     torusr: physics?.torusr ?? 0,
     torusK: physics?.torusK ?? 0,
+    minSep: physics?.minSep ?? 20,
+    sepK: physics?.sepK ?? 1500,
   })
 
   // 色スケール
@@ -135,6 +139,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       torusR: physics?.torusR ?? physicsRef.current.torusR,
       torusr: physics?.torusr ?? physicsRef.current.torusr,
       torusK: physics?.torusK ?? physicsRef.current.torusK,
+      minSep: physics?.minSep ?? physicsRef.current.minSep,
+      sepK: physics?.sepK ?? physicsRef.current.sepK,
     }
   }, [physics])
 
@@ -308,9 +314,9 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       const v = velocitiesRef.current as Float32Array
       const n = nodesRef.current.length
 
-      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter, shellKOuter, radialOutK, torusR, torusr, torusK } = physicsRef.current
+      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter, shellKOuter, radialOutK, torusR, torusr, torusK, minSep, sepK } = physicsRef.current
 
-      // 斥力
+      // 斥力（短距離は強反発）
       for (let i = 0; i < n; i++) {
         const ix = i * 3
         for (let j = i + 1; j < n; j++) {
@@ -320,7 +326,11 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
           const dz = p[ix + 2] - p[jx + 2]
           const distSq = dx * dx + dy * dy + dz * dz + 1e-6
           const dist = Math.sqrt(distSq)
-          const force = repulsionK / distSq
+          let force = repulsionK / distSq
+          if (minSep && sepK && dist < minSep) {
+            const s = (minSep - dist) / Math.max(1, minSep)
+            force += sepK * s * s
+          }
           const fx = (force * dx) / dist
           const fy = (force * dy) / dist
           const fz = (force * dz) / dist

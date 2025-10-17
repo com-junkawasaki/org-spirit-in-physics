@@ -807,6 +807,7 @@ export default function TimelineVisualization({
         const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
         const sim = kIdx >= 0 ? ei[kIdx] : (ei.reduce((s, x) => s + x, 0) / Math.max(1, ei.length))
         const w = Math.max(0, Math.min(1, sim))
+        if (w < 0.15) continue // 極弱リンクをスキップ
         const L0 = Math.max(10, restLength * (1 - 0.6 * w))
         const k = springK * (0.3 + 0.7 * w)
         links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
