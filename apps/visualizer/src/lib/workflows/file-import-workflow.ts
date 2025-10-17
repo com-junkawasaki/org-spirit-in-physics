@@ -2,6 +2,7 @@ import { inngest, events, type FileImportEvent } from '../inngest';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
+import { listCsvFilesDeep, isCsvModalityPath, countLinesStream, withConcurrency } from '@/lib/fs-stream-utils';
 
 // Merkle DAG: file_import_workflow -> data_ingestion_pipeline
 // ファイルインポートワークフロー（ローカル実行用）
@@ -69,19 +70,13 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
   const humeArtifactsPattern = /HumeAI_artifacts_[a-f0-9-]+/;
   const baseDirFiles = fs.readdirSync(basePath);
   const humeArtifactsDir = baseDirFiles.find((file: string) => humeArtifactsPattern.test(file));
-  
   if (humeArtifactsDir) {
     const humeDataPath = join(basePath, humeArtifactsDir);
-    const humeFiles = fs.readdirSync(humeDataPath, { recursive: true });
-    const csvFiles = humeFiles.filter((file: string) => file.endsWith('.csv'));
-    
+    const csvFiles = listCsvFilesDeep(humeDataPath, 8);
     validationResults.humeData = {
       exists: csvFiles.length > 0,
-      paths: csvFiles.map((file: string) => join(humeDataPath, file)),
-      totalSize: csvFiles.reduce((total: number, file: string) => {
-        const filePath = join(humeDataPath, file);
-        return total + fs.statSync(filePath).size;
-      }, 0),
+      paths: csvFiles,
+      totalSize: csvFiles.reduce((total: number, file: string) => total + require('fs').statSync(file).size, 0),
     };
   }
 
@@ -134,30 +129,30 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     stats.sessionEvents = sessionData.events?.length || 0;
   }
 
-  // Mod-002 CSV の解析
+  // Mod-002 CSV の解析（ストリーム行数カウント）
   if (validationResults.physioData.exists) {
-    const physioContent = readFileSync(validationResults.physioData.path, 'utf-8');
-    const lines = physioContent.split('\n').filter(line => line.trim());
-    stats.physioSamples = lines.length - 1; // ヘッダーを除く
+    try {
+      const total = await countLinesStream(validationResults.physioData.path);
+      stats.physioSamples = Math.max(0, total - 1);
+    } catch {
+      stats.physioSamples = 0;
+    }
   }
 
-  // Hume CSV の解析
-  validationResults.humeData.paths.forEach((filePath: string) => {
-    const fileName = filePath.split('/').pop() || '';
-    const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n').filter(line => line.trim());
-    const recordCount = lines.length - 1; // ヘッダーを除く
-
-    if (fileName.includes('burst')) {
-      stats.burstRecords += recordCount;
-    } else if (fileName.includes('face')) {
-      stats.faceRecords += recordCount;
-    } else if (fileName.includes('language')) {
-      stats.languageRecords += recordCount;
-    } else if (fileName.includes('prosody')) {
-      stats.prosodyRecords += recordCount;
-    }
-  });
+  // Hume CSV の解析（ストリーム行数カウント並列）
+  {
+    const tasks = validationResults.humeData.paths.map((p: string) => async (): Promise<void> => {
+      const lines = await countLinesStream(p);
+      const count = Math.max(0, lines - 1);
+      const mod = isCsvModalityPath(p);
+      if (mod === 'burst') stats.burstRecords += count;
+      else if (mod === 'face') stats.faceRecords += count;
+      else if (mod === 'language') stats.languageRecords += count;
+      else if (mod === 'prosody') stats.prosodyRecords += count;
+      return;
+    });
+    await withConcurrency(8, tasks);
+  }
 
   stats.humeRecords = stats.burstRecords + stats.faceRecords + stats.languageRecords + stats.prosodyRecords;
 
@@ -166,7 +161,11 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
   return {
     success: true,
     participantId,
-    filesValidated: Object.values(validationResults).every((v: any) => v.exists || (Array.isArray(v) && v.length > 0)),
+    filesValidated: Object.values(validationResults).every((v: { exists?: boolean; path?: string; size?: number } | string[] | { paths: string[] }) => {
+      if (Array.isArray(v)) return v.length > 0;
+      if (v && typeof v === 'object' && 'paths' in v) return Array.isArray((v as { paths: string[] }).paths) && (v as { paths: string[] }).paths.length > 0;
+      return !!(v as { exists?: boolean }).exists;
+    }),
     stats,
     contentHash: hashVerification.computedHash,
   };
@@ -379,7 +378,11 @@ export const fileImportWorkflow = inngest.createFunction(
     return {
       success: true,
       participantId,
-      filesValidated: Object.values(fileValidation).every((v: any) => v.exists || (Array.isArray(v) && v.length > 0)),
+      filesValidated: Object.values(fileValidation).every((v: { exists?: boolean; path?: string; size?: number } | string[] | { paths: string[] }) => {
+        if (Array.isArray(v)) return v.length > 0;
+        if (v && typeof v === 'object' && 'paths' in v) return Array.isArray((v as { paths: string[] }).paths) && (v as { paths: string[] }).paths.length > 0;
+        return !!(v as { exists?: boolean }).exists;
+      }),
       stats: fileParsing,
       contentHash: hashVerification.computedHash,
     };

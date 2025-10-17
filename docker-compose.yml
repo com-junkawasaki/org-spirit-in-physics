@@ -52,7 +52,7 @@ services:
     volumes:
       - ./apps/visualizer:/app
       - /app/node_modules
-      - ./dataset:/app/dataset
+      - ./dataset:/app/dataset:cached
     command: pnpm run dev
     env_file:
       - ./apps/visualizer/env.docker

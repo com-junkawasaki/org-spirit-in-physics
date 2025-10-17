@@ -48,15 +48,24 @@ export async function GET(
       physiologicalData = []
     }
 
-    const timelineData = integrateTimelineData(sessionData, emotionData, physiologicalData);
+    // 簡素化されたデータ処理：セッションデータのみを使用
+    const timelineData = sessionData.wordEvents.slice(0, 100).map((event: any) => ({
+      timestamp: event.timestamp,
+      word: event.payload?.word || 'Unknown',
+      eventType: event.type,
+      emotions: [],
+      physiological: { average: 0, max: 0, min: 0, channels: {} },
+      reactionValue: 0,
+      metadata: { emotionCount: 0, physiologicalCount: 0 }
+    }));
 
     return NextResponse.json({
       success: true,
       data: {
         participantId,
-        timelineData,
+        timelineData: timelineData,
         metadata: {
-          sessionEvents: sessionData.events.length,
+          sessionEvents: sessionData.wordEvents.length,
           emotionEntries: emotionData.length,
           physiologicalEntries: physiologicalData.length,
           totalDataPoints: timelineData.length,
@@ -147,7 +156,10 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
       fileType: result.source || 'unknown',
       beginTime: result.timestamp,
       endTime: result.timestamp + 1000, // 1秒間隔で仮定
-      emotions: [{ name: result.name, score: result.score }],
+      emotions: [{ 
+        name: result.name, 
+        score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
+      }],
       sessionId: 'unknown'
     }));
 
