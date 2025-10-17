@@ -48,57 +48,42 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
       path: physioPath,
       size: stats.size,
     };
-  }
-
-  // Hume CSV の確認（HumeAI_artifacts ディレクトリ内を再帰的に検索）
-  const humeDataPaths = [
-    join(basePath, 'hume_data'),
-    join(basePath, 'HumeAI_artifacts_c5c16907-6638-4791-b93a-f07674a7891f'),
-  ];
-  
-  const humeCsvFiles: string[] = [];
-  let humeTotalSize = 0;
-  
-  for (const humeDataPath of humeDataPaths) {
-    if (existsSync(humeDataPath)) {
-      // 再帰的にCSVファイルを検索
-      const findCsvFiles = (dir: string): string[] => {
-        const files: string[] = [];
-        try {
-          const items = fs.readdirSync(dir, { withFileTypes: true });
-          for (const item of items) {
-            const fullPath = join(dir, item.name);
-            if (item.isDirectory()) {
-              files.push(...findCsvFiles(fullPath));
-            } else if (item.isFile() && item.name.endsWith('.csv')) {
-              files.push(fullPath);
-            }
-          }
-        } catch (error) {
-          console.warn(`Failed to read directory ${dir}:`, error);
-        }
-        return files;
-      };
-      
-      const csvFiles = findCsvFiles(humeDataPath);
-      humeCsvFiles.push(...csvFiles);
-      
-      // ファイルサイズを計算
-      for (const filePath of csvFiles) {
-        try {
-          humeTotalSize += fs.statSync(filePath).size;
-        } catch (error) {
-          console.warn(`Failed to get file size for ${filePath}:`, error);
-        }
+  } else {
+    // Mod-002がファイル名に含まれていない場合、CSVファイルの内容を確認
+    const csvFile = files.find((file: string) => file.endsWith('.CSV'));
+    if (csvFile) {
+      const csvPath = join(basePath, csvFile);
+      const content = fs.readFileSync(csvPath, 'utf-8');
+      if (content.includes('Mod-002')) {
+        const stats = fs.statSync(csvPath);
+        validationResults.physioData = {
+          exists: true,
+          path: csvPath,
+          size: stats.size,
+        };
       }
     }
   }
+
+  // Hume CSV の確認（HumeAI_artifacts_* ディレクトリ内）
+  const humeArtifactsPattern = /HumeAI_artifacts_[a-f0-9-]+/;
+  const baseDirFiles = fs.readdirSync(basePath);
+  const humeArtifactsDir = baseDirFiles.find((file: string) => humeArtifactsPattern.test(file));
   
-  validationResults.humeData = {
-    exists: humeCsvFiles.length > 0,
-    paths: humeCsvFiles,
-    totalSize: humeTotalSize,
-  };
+  if (humeArtifactsDir) {
+    const humeDataPath = join(basePath, humeArtifactsDir);
+    const humeFiles = fs.readdirSync(humeDataPath, { recursive: true });
+    const csvFiles = humeFiles.filter((file: string) => file.endsWith('.csv'));
+    
+    validationResults.humeData = {
+      exists: csvFiles.length > 0,
+      paths: csvFiles.map((file: string) => join(humeDataPath, file)),
+      totalSize: csvFiles.reduce((total: number, file: string) => {
+        const filePath = join(humeDataPath, file);
+        return total + fs.statSync(filePath).size;
+      }, 0),
+    };
+  }
 
   // 必須ファイルの存在確認
   if (!validationResults.sessionData.exists) {
@@ -156,30 +141,21 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     stats.physioSamples = lines.length - 1; // ヘッダーを除く
   }
 
-  // Hume CSV の解析（ファイル名を正規化してモダリティを判定）
+  // Hume CSV の解析
   validationResults.humeData.paths.forEach((filePath: string) => {
     const fileName = filePath.split('/').pop() || '';
-    const normalizedFileName = fileName.toLowerCase();
-    
-    try {
-      const content = readFileSync(filePath, 'utf-8');
-      const lines = content.split('\n').filter(line => line.trim());
-      const recordCount = lines.length - 1; // ヘッダーを除く
+    const content = readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n').filter(line => line.trim());
+    const recordCount = lines.length - 1; // ヘッダーを除く
 
-      // ファイル名の正規化とモダリティ判定
-      if (normalizedFileName.includes('burst')) {
-        stats.burstRecords += recordCount;
-      } else if (normalizedFileName.includes('face')) {
-        stats.faceRecords += recordCount;
-      } else if (normalizedFileName.includes('language')) {
-        stats.languageRecords += recordCount;
-      } else if (normalizedFileName.includes('prosody')) {
-        stats.prosodyRecords += recordCount;
-      } else {
-        console.warn(`Unknown Hume AI modality for file: ${fileName}`);
-      }
-    } catch (error) {
-      console.warn(`Failed to read Hume AI file ${filePath}:`, error);
+    if (fileName.includes('burst')) {
+      stats.burstRecords += recordCount;
+    } else if (fileName.includes('face')) {
+      stats.faceRecords += recordCount;
+    } else if (fileName.includes('language')) {
+      stats.languageRecords += recordCount;
+    } else if (fileName.includes('prosody')) {
+      stats.prosodyRecords += recordCount;
     }
   });
 
@@ -260,55 +236,21 @@ export const fileImportWorkflow = inngest.createFunction(
         };
       }
 
-      // Hume CSV の確認（HumeAI_artifacts ディレクトリ内を再帰的に検索）
-      const humeDataPaths = [
-        join(basePath, 'hume_data'),
-        join(basePath, 'HumeAI_artifacts_c5c16907-6638-4791-b93a-f07674a7891f'),
-      ];
-      
-      const humeCsvFiles: string[] = [];
-      let humeTotalSize = 0;
-      
-      for (const humeDataPath of humeDataPaths) {
-        if (existsSync(humeDataPath)) {
-          // 再帰的にCSVファイルを検索
-          const findCsvFiles = (dir: string): string[] => {
-            const files: string[] = [];
-            try {
-              const items = fs.readdirSync(dir, { withFileTypes: true });
-              for (const item of items) {
-                const fullPath = join(dir, item.name);
-                if (item.isDirectory()) {
-                  files.push(...findCsvFiles(fullPath));
-                } else if (item.isFile() && item.name.endsWith('.csv')) {
-                  files.push(fullPath);
-                }
-              }
-            } catch (error) {
-              logger.warn(`Failed to read directory ${dir}:`, error);
-            }
-            return files;
-          };
-          
-          const csvFiles = findCsvFiles(humeDataPath);
-          humeCsvFiles.push(...csvFiles);
-          
-          // ファイルサイズを計算
-          for (const filePath of csvFiles) {
-            try {
-              humeTotalSize += fs.statSync(filePath).size;
-            } catch (error) {
-              logger.warn(`Failed to get file size for ${filePath}:`, error);
-            }
-          }
-        }
+      // Hume CSV の確認（hume_data ディレクトリ内）
+      const humeDataPath = join(basePath, 'hume_data');
+      if (existsSync(humeDataPath)) {
+        const humeFiles = fs.readdirSync(humeDataPath, { recursive: true });
+        const csvFiles = humeFiles.filter((file: string) => file.endsWith('.csv'));
+        
+        validationResults.humeData = {
+          exists: csvFiles.length > 0,
+          paths: csvFiles.map((file: string) => join(humeDataPath, file)),
+          totalSize: csvFiles.reduce((total: number, file: string) => {
+            const filePath = join(humeDataPath, file);
+            return total + fs.statSync(filePath).size;
+          }, 0),
+        };
       }
-      
-      validationResults.humeData = {
-        exists: humeCsvFiles.length > 0,
-        paths: humeCsvFiles,
-        totalSize: humeTotalSize,
-      };
 
       // 必須ファイルの存在確認
       if (!validationResults.sessionData.exists) {
@@ -382,30 +324,21 @@ export const fileImportWorkflow = inngest.createFunction(
         stats.physioSamples = lines.length - 1; // ヘッダーを除く
       }
 
-      // Hume CSV の解析（ファイル名を正規化してモダリティを判定）
+      // Hume CSV の解析
       fileValidation.humeData.paths.forEach((filePath: string) => {
         const fileName = filePath.split('/').pop() || '';
-        const normalizedFileName = fileName.toLowerCase();
-        
-        try {
-          const content = readFileSync(filePath, 'utf-8');
-          const lines = content.split('\n').filter(line => line.trim());
-          const recordCount = lines.length - 1; // ヘッダーを除く
+        const content = readFileSync(filePath, 'utf-8');
+        const lines = content.split('\n').filter(line => line.trim());
+        const recordCount = lines.length - 1; // ヘッダーを除く
 
-          // ファイル名の正規化とモダリティ判定
-          if (normalizedFileName.includes('burst')) {
-            stats.burstRecords += recordCount;
-          } else if (normalizedFileName.includes('face')) {
-            stats.faceRecords += recordCount;
-          } else if (normalizedFileName.includes('language')) {
-            stats.languageRecords += recordCount;
-          } else if (normalizedFileName.includes('prosody')) {
-            stats.prosodyRecords += recordCount;
-          } else {
-            logger.warn(`Unknown Hume AI modality for file: ${fileName}`);
-          }
-        } catch (error) {
-          logger.warn(`Failed to read Hume AI file ${filePath}:`, error);
+        if (fileName.includes('burst')) {
+          stats.burstRecords += recordCount;
+        } else if (fileName.includes('face')) {
+          stats.faceRecords += recordCount;
+        } else if (fileName.includes('language')) {
+          stats.languageRecords += recordCount;
+        } else if (fileName.includes('prosody')) {
+          stats.prosodyRecords += recordCount;
         }
       });
 
@@ -423,10 +356,10 @@ export const fileImportWorkflow = inngest.createFunction(
         sessionUri: fileValidation.sessionData.path,
         physioUri: fileValidation.physioData.path,
         humeCsvUris: {
-          burst: fileValidation.humeData.paths.filter((p: string) => p.toLowerCase().includes('burst')),
-          face: fileValidation.humeData.paths.filter((p: string) => p.toLowerCase().includes('face')),
-          language: fileValidation.humeData.paths.filter((p: string) => p.toLowerCase().includes('language')),
-          prosody: fileValidation.humeData.paths.filter((p: string) => p.toLowerCase().includes('prosody')),
+          burst: fileValidation.humeData.paths.filter((p: string) => p.includes('burst')),
+          face: fileValidation.humeData.paths.filter((p: string) => p.includes('face')),
+          language: fileValidation.humeData.paths.filter((p: string) => p.includes('language')),
+          prosody: fileValidation.humeData.paths.filter((p: string) => p.includes('prosody')),
         },
         stats: fileParsing,
         tenantId,

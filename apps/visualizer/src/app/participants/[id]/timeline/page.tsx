@@ -14,7 +14,7 @@ const TimelineVisualization = dynamic(() => import('@/components/TimelineVisuali
 // Merkle DAG: participants.timeline.page
 // 時系列統合可視化ページ
 // 依存関係: TimelineVisualization component
-// Merkle DAG: timeline_visualization_page -> interactive_timeline_ui
+// BPMN: TimelineVisualizationPage
 
 interface TimelinePageProps {
   params: { id: string }

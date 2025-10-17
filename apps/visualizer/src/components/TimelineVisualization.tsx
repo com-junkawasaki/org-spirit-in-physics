@@ -14,7 +14,7 @@ interface WordLink { source: number; target: number; weight: number; mode?: 'ten
 // Merkle DAG: components.timeline_visualization
 // 時系列統合可視化コンポーネント
 // 依存関係: React, D3.js, timeline API
-// Merkle DAG: timeline_visualization_component -> interactive_chart_display
+// BPMN: TimelineVisualizationComponent
 
 // Force3DWordGraph は dynamic import で any として扱う（型はローカルで定義しない）
 
