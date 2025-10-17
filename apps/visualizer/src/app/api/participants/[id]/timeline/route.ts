@@ -241,61 +241,60 @@ async function getVisualizationDataset(client: any, participantId: string): Prom
 }
 
 function processVisualizationDataset(dataset: any): any[] {
-  // デモ用：描画用データセットから時系列データを生成
-  const dataPoints = [];
-  const baseTime = Date.now() - 600000; // 10分前から開始
-  
-  // 単語提示イベントを生成（ユングの日本語100語に合わせる）
+  // デモ用：描画用データセットから時系列データを生成（理想：200点以上）
+  const dataPoints: any[] = [];
+  const desiredCount = typeof dataset?.dataPointsCount === 'number' && dataset.dataPointsCount > 0
+    ? Math.max(200, dataset.dataPointsCount)
+    : 240; // 既定値
+
+  // 10秒刻みで desiredCount 件、過去 desiredCount*10 秒分を生成
+  const stepMs = 10_000;
+  const baseTime = Date.now() - desiredCount * stepMs;
+
+  // 単語提示イベント（ユング100語）
   const words = JUNG_STIMULUS_WORDS.map(w => w.japanese)
-  
-  for (let i = 0; i < 20; i++) {
-    const timestamp = baseTime + (i * 30000); // 30秒間隔
+
+  for (let i = 0; i < desiredCount; i++) {
+    const timestamp = baseTime + i * stepMs;
     const word = words[i % words.length];
     const reactionTime = Math.random() * 2000 + 500; // 500-2500ms
-    const hasResponse = Math.random() > 0.3; // 70%の確率で反応
-    
-    // 感情データ（burst, face, language, prosody）
-    const emotions = [];
-    if (Math.random() > 0.4) {
-      emotions.push({
-        fileType: 'burst',
-        beginTime: i * 30,
-        endTime: (i * 30) + 5,
-        emotions: Math.random() > 0.5 ? [
-          { name: 'joy', score: Math.random() * 0.8 + 0.1 },
-          { name: 'surprise', score: Math.random() * 0.6 + 0.1 }
-        ] : []
-      });
+    const hasResponse = Math.random() > 0.2; // 80%反応
+
+    // 感情データ（burst, face, language, prosody）を2〜3ソース混在
+    const sources = ['burst', 'face', 'language', 'prosody']
+    const emotions: any[] = []
+    const pickCount = 2 + Math.floor(Math.random() * 2) // 2〜3
+    const shuffled = sources.sort(() => Math.random() - 0.5)
+    for (let k = 0; k < pickCount; k++) {
+      const ft = shuffled[k]
+      const begin = i * (stepMs / 1000)
+      const dur = 3 + Math.floor(Math.random() * 4) // 3-6秒
+      const emoList = [
+        { name: 'joy', score: Math.random() * 0.7 + 0.1 },
+        { name: 'surprise', score: Math.random() * 0.6 },
+        { name: 'calm', score: Math.random() * 0.6 },
+        { name: 'focus', score: Math.random() * 0.7 },
+        { name: 'anger', score: Math.random() * 0.4 },
+        { name: 'sadness', score: Math.random() * 0.4 },
+      ].filter(e => e.score > 0.05)
+      emotions.push({ fileType: ft, beginTime: begin, endTime: begin + dur, emotions: emoList })
     }
-    
-    if (Math.random() > 0.6) {
-      emotions.push({
-        fileType: 'face',
-        beginTime: i * 30,
-        endTime: (i * 30) + 3,
-        emotions: Math.random() > 0.5 ? [
-          { name: 'calm', score: Math.random() * 0.7 + 0.2 },
-          { name: 'focus', score: Math.random() * 0.9 + 0.1 }
-        ] : []
-      });
-    }
-    
-    // 生理データ
-    const physiological = [];
-    if (Math.random() > 0.3) {
-      physiological.push({
-        timeSec: i * 30,
-        ch1: Math.random() * 100 + 50,
-        ch2: Math.random() * 80 + 40,
-        ch3: Math.random() * 120 + 60,
-        ch4: Math.random() * 90 + 45,
-        ch5: Math.random() * 110 + 55,
-        ch6: Math.random() * 95 + 48,
-        ch7: Math.random() * 85 + 42,
-        ch8: Math.random() * 105 + 52
-      });
-    }
-    
+
+    // 生理データ（8ch）
+    const physiological: any[] = []
+    const base = 80 + 10 * Math.sin(i / 10)
+    physiological.push({
+      timeSec: i * (stepMs / 1000),
+      ch1: base + Math.random() * 20,
+      ch2: base + Math.random() * 15,
+      ch3: base + Math.random() * 25,
+      ch4: base + Math.random() * 18,
+      ch5: base + Math.random() * 22,
+      ch6: base + Math.random() * 17,
+      ch7: base + Math.random() * 16,
+      ch8: base + Math.random() * 21,
+    })
+
     dataPoints.push({
       timestamp,
       word,
@@ -303,11 +302,11 @@ function processVisualizationDataset(dataset: any): any[] {
       hasResponse,
       emotions,
       physiological,
-      reactionValue: calculateReactionValue(emotions, physiological)
-    });
+      reactionValue: calculateReactionValue(emotions, physiological),
+    })
   }
-  
-  return dataPoints;
+
+  return dataPoints
 }
 
 function calculateReactionValue(emotions: any[], physiological: any[]): number {

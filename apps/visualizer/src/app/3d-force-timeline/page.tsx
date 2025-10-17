@@ -66,6 +66,7 @@ export default function ForceTimelinePage() {
         height={560}
         forceMode="force-3d"
         hideFilters
+        useDemo
       />
     </DashboardLayout>
   )

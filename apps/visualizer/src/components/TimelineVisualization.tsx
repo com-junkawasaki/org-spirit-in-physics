@@ -66,6 +66,8 @@ interface TimelineVisualizationProps {
   forceMode?: VisualizationMode
   // フィルターUIを非表示にする
   hideFilters?: boolean
+  // デモ用可視化データセットをAPIから取得
+  useDemo?: boolean
 }
 
 export default function TimelineVisualization({ 
@@ -74,6 +76,7 @@ export default function TimelineVisualization({
   height = 400,
   forceMode,
   hideFilters = false,
+  useDemo = false,
 }: TimelineVisualizationProps) {
   const [mounted, setMounted] = useState(false)
   const [data, setData] = useState<TimelineDataPoint[]>([])
@@ -152,7 +155,10 @@ export default function TimelineVisualization({
   const fetchTimelineData = React.useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/participants/${participantId}/timeline`)
+      const apiUrl = useDemo
+        ? `/api/participants/${participantId}/timeline?demo=1`
+        : `/api/participants/${participantId}/timeline`
+      const response = await fetch(apiUrl)
       const result = await response.json()
       
       if (result.success) {
@@ -172,7 +178,7 @@ export default function TimelineVisualization({
     } finally {
       setLoading(false)
     }
-  }, [participantId])
+  }, [participantId, useDemo])
 
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = React.useCallback(async () => {
