@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useRef } from 'react'
 import * as THREE from 'three'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import type { ConnectomeScene } from '@/neuron/types'
 
@@ -11,9 +11,6 @@ import type { ConnectomeScene } from '@/neuron/types'
 
 function SceneContent({ scene }: { scene: ConnectomeScene }) {
   const groupRef = useRef<THREE.Group>(null)
-  const points = useMemo(() => {
-    return scene.regions.map(r => new THREE.Vector3(r.x, r.y, r.z))
-  }, [scene.regions])
 
   // 軽い回転で存在感
   useFrame((_, delta) => {
@@ -24,7 +21,7 @@ function SceneContent({ scene }: { scene: ConnectomeScene }) {
     <group ref={groupRef}>
       {/* Regions as spheres */}
       {scene.regions.map((r) => (
-        <mesh key={r.id} position={[r.x, r.y, r.z] as any}>
+        <mesh key={r.id} position={[r.x, r.y, r.z] as [number, number, number]}>
           <sphereGeometry args={[3.2, 16, 16]} />
           <meshStandardMaterial color={0x88aaff} emissive={0x112244} />
         </mesh>
@@ -39,18 +36,18 @@ function SceneContent({ scene }: { scene: ConnectomeScene }) {
           new THREE.Vector3(s.x, s.y, s.z),
           new THREE.Vector3(t.x, t.y, t.z)
         ])
-        return <line key={idx} geometry={geometry} material={material as any} />
+        return <line key={`${e.source}-${e.target}-${idx}`} geometry={geometry} material={material as unknown as THREE.Material} />
       })}
       {/* Concepts as small billboards */}
       {scene.concepts.map((c, i) => (
-        <mesh key={c.id} position={[30 * Math.cos(i), 20, 30 * Math.sin(i)] as any}>
+        <mesh key={c.id} position={[30 * Math.cos(i), 20, 30 * Math.sin(i)] as [number, number, number]}>
           <sphereGeometry args={[2, 12, 12]} />
           <meshStandardMaterial color={0xffaa66} emissive={0x332211} />
         </mesh>
       ))}
       {/* Events as pulsing points */}
       {scene.events.map((e, i) => (
-        <mesh key={e.id} position={[30 * Math.cos(i), -10, 30 * Math.sin(i)] as any}>
+        <mesh key={e.id} position={[30 * Math.cos(i), -10, 30 * Math.sin(i)] as [number, number, number]}>
           <sphereGeometry args={[2.4, 12, 12]} />
           <meshStandardMaterial color={0x66ddaa} emissive={0x113322} />
         </mesh>

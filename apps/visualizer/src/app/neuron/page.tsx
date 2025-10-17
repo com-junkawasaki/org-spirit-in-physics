@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { DashboardLayout } from '@/components/layout/PageLayout'
 import type { ConnectomeScene } from '@/neuron/types'
@@ -20,8 +20,9 @@ export default function NeuronPage() {
         setLoading(true)
         const s = await loadSampleConnectomeScene('/brain')
         if (!cancelled) setScene(s)
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? 'failed to load sample connectome')
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'failed to load sample connectome'
+        if (!cancelled) setError(message)
       } finally {
         if (!cancelled) setLoading(false)
       }

@@ -498,11 +498,7 @@ export default function TimelineVisualization({
       }
       // 逐次直交化（一次・二次・三次）
       const dotv = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i], 0)
-      const sub = (a: number[], b: number[]) => a.map((x, i) => x - b[i])
-      const proj = (v: number[], u: number[]) => {
-        const c = dotv(v, u)
-        return u.map(x => c * x)
-      }
+      // 補助関数（未使用）を削除
       const v1 = powerIter(C)
       // C を v1 に沿ってデフレート
       const C2 = Array.from({ length: dim }, (_, i) => C[i].slice())
@@ -1727,12 +1723,12 @@ export default function TimelineVisualization({
         )}
 
         {visualizationMode === 'force-3d' && mounted && (() => {
-          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number }; emotionPower?: number }
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number }; emotionPower?: number }
           const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraph.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2) }} emotionPower={emotionGain} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK: 60 }} emotionPower={emotionGain} />
             </div>
           )
         })()}

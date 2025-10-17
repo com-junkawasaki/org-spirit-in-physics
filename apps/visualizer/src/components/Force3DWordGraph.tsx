@@ -42,6 +42,7 @@ interface Force3DWordGraphProps {
     shellK?: number
     shellRadiusOuter?: number
     shellKOuter?: number
+    radialOutK?: number
   }
   // 感情類似の影響倍率（links.weight への指数影響）
   emotionPower?: number
@@ -84,6 +85,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     shellK: physics?.shellK ?? 3.0,
     shellRadiusOuter: physics?.shellRadiusOuter ?? (physics?.shellRadius ? physics.shellRadius * 1.6 : 288),
     shellKOuter: physics?.shellKOuter ?? 1.5,
+    radialOutK: physics?.radialOutK ?? 0,
   })
 
   // 色スケール
@@ -115,6 +117,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       shellK: physics?.shellK ?? physicsRef.current.shellK,
       shellRadiusOuter: physics?.shellRadiusOuter ?? physicsRef.current.shellRadiusOuter,
       shellKOuter: physics?.shellKOuter ?? physicsRef.current.shellKOuter,
+      radialOutK: physics?.radialOutK ?? physicsRef.current.radialOutK,
     }
   }, [physics])
 
@@ -205,7 +208,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.2 })
       const mesh = new THREE.Mesh(unitGeo, mat)
       const radius = Math.max(2, Math.min(10, 2 + n.scale))
-      mesh.scale.set(radius, radius, radius)
+      // 棒状スケーリング（軸方向を長く）
+      mesh.scale.set(radius * 0.6, radius * 1.8, radius * 0.6)
       // 感情主方向軸（提供なければランダム）
       const ax = (n.axis
         ? new THREE.Vector3(n.axis[0], n.axis[1], n.axis[2])
@@ -216,7 +220,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       scene.add(mesh)
 
       // in/out キャップ
-      const capOffset = radius // 軸方向のオフセット（中心→端）
+      const capOffset = radius * 0.9 // 軸方向のオフセット（中心→端）
       capOffsetRef.current[idx] = capOffset
       nodeAxesRef.current[idx] = ax
       const capIn = new THREE.Mesh(capGeo, capMatIn)
@@ -280,7 +284,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       const v = velocitiesRef.current as Float32Array
       const n = nodesRef.current.length
 
-      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter, shellKOuter } = physicsRef.current
+      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter, shellKOuter, radialOutK } = physicsRef.current
 
       // 斥力
       for (let i = 0; i < n; i++) {
@@ -396,6 +400,21 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
           v[ix] += fr * ux * 0.016
           v[ix + 1] += fr * uy * 0.016
           v[ix + 2] += fr * uz * 0.016
+        }
+
+        // 中心からのラジアル斥力（常に外向き、距離で減衰）
+        if (radialOutK && radialOutK > 0) {
+          const rx = p[ix]
+          const ry = p[ix + 1]
+          const rz = p[ix + 2]
+          const rlen = Math.hypot(rx, ry, rz) + 1e-6
+          const ux = rx / rlen
+          const uy = ry / rlen
+          const uz = rz / rlen
+          const fr = radialOutK / (1 + rlen)
+          v[ix] += fr * ux * delta
+          v[ix + 1] += fr * uy * delta
+          v[ix + 2] += fr * uz * delta
         }
         const sp2 = Math.hypot(v[ix], v[ix + 1], v[ix + 2])
         if (sp2 > maxSpeed) {
