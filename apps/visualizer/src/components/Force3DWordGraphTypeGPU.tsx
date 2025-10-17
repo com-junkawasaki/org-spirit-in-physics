@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 
 // Merkle DAG: components.force3d_word_graph_typegpu
 // TypeGPU版ユング単語連合の語ごとスケールを反映した完全グラフ3D可視化
@@ -75,6 +75,51 @@ export default function Force3DWordGraphTypeGPU({
   const nodesRef = useRef<WordNode[]>(nodes)
   const linksRef = useRef<WordLink[]>(links)
   
+  // カメラ制御用の状態
+  const cameraRef = useRef({
+    distance: 400,
+    rotationX: 0,
+    rotationY: 0,
+    centerX: 0,
+    centerY: 0,
+    centerZ: 0
+  })
+  
+  const isDraggingRef = useRef(false)
+  const lastMouseRef = useRef({ x: 0, y: 0 })
+  
+  // カメラ制御関数
+  const handleMouseDown = useCallback((e: MouseEvent) => {
+    isDraggingRef.current = true
+    lastMouseRef.current = { x: e.clientX, y: e.clientY }
+  }, [])
+  
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingRef.current) return
+    
+    const deltaX = e.clientX - lastMouseRef.current.x
+    const deltaY = e.clientY - lastMouseRef.current.y
+    
+    cameraRef.current.rotationY += deltaX * 0.01
+    cameraRef.current.rotationX += deltaY * 0.01
+    
+    // 回転制限
+    cameraRef.current.rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, cameraRef.current.rotationX))
+    
+    lastMouseRef.current = { x: e.clientX, y: e.clientY }
+  }, [])
+  
+  const handleMouseUp = useCallback(() => {
+    isDraggingRef.current = false
+  }, [])
+  
+  const handleWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? 1.1 : 0.9
+    cameraRef.current.distance *= delta
+    cameraRef.current.distance = Math.max(50, Math.min(2000, cameraRef.current.distance))
+  }, [])
+  
   const physicsRef = useRef({
     springK: physics?.springK ?? 3.0,
     repulsionK: physics?.repulsionK ?? 800.0,
@@ -94,6 +139,28 @@ export default function Force3DWordGraphTypeGPU({
     minSep: physics?.minSep ?? 20,
     sepK: physics?.sepK ?? 1500,
   })
+
+  // カメラ制御イベントリスナーの設定
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    canvas.addEventListener('mousedown', handleMouseDown)
+    canvas.addEventListener('mousemove', handleMouseMove)
+    canvas.addEventListener('mouseup', handleMouseUp)
+    canvas.addEventListener('wheel', handleWheel)
+    
+    // キャンバス外でのマウスアップも処理
+    document.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      canvas.removeEventListener('mousedown', handleMouseDown)
+      canvas.removeEventListener('mousemove', handleMouseMove)
+      canvas.removeEventListener('mouseup', handleMouseUp)
+      canvas.removeEventListener('wheel', handleWheel)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel])
 
   // WebGPU 初期化
   useEffect(() => {
@@ -124,6 +191,8 @@ export default function Force3DWordGraphTypeGPU({
         const pos = positionsRef.current as Float32Array
         const vel = velocitiesRef.current as Float32Array
         
+        let centerX = 0, centerY = 0, centerZ = 0
+        
         for (let i = 0; i < N; i++) {
           const init = nodesRef.current[i]?.initial
           if (init) {
@@ -138,9 +207,19 @@ export default function Force3DWordGraphTypeGPU({
             pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
             pos[i * 3 + 2] = r * Math.cos(phi)
           }
+          centerX += pos[i * 3]
+          centerY += pos[i * 3 + 1]
+          centerZ += pos[i * 3 + 2]
           vel[i * 3] = 0
           vel[i * 3 + 1] = 0
           vel[i * 3 + 2] = 0
+        }
+        
+        // カメラの中心点をノード群の重心に設定
+        if (N > 0) {
+          cameraRef.current.centerX = centerX / N
+          cameraRef.current.centerY = centerY / N
+          cameraRef.current.centerZ = centerZ / N
         }
 
         // WebGPUシェーダーコード
@@ -449,10 +528,32 @@ export default function Force3DWordGraphTypeGPU({
                 const y = pos[ix + 1]
                 const z = pos[ix + 2]
                 
-                // 3D → 2D 投影
-                const scale = Math.max(0.1, 200 / (z + 200)) // 最小スケールを0.1に制限
-                const screenX = width / 2 + x * scale
-                const screenY = height / 2 + y * scale
+                // 3D → 2D 投影（カメラ行列ベース）
+                const camera = cameraRef.current
+                
+                // ワールド座標をカメラ座標に変換
+                const wx = x - camera.centerX
+                const wy = y - camera.centerY
+                const wz = z - camera.centerZ
+                
+                // Y軸回転
+                const cosY = Math.cos(camera.rotationY)
+                const sinY = Math.sin(camera.rotationY)
+                const rx = wx * cosY - wz * sinY
+                const ry = wy
+                const rz = wx * sinY + wz * cosY
+                
+                // X軸回転
+                const cosX = Math.cos(camera.rotationX)
+                const sinX = Math.sin(camera.rotationX)
+                const cx = rx
+                const cy = ry * cosX - rz * sinX
+                const cz = ry * sinX + rz * cosX
+                
+                // 透視投影
+                const scale = Math.max(0.1, camera.distance / (cz + camera.distance))
+                const screenX = width / 2 + cx * scale
+                const screenY = height / 2 + cy * scale
                 
                 const node = nodesRef.current[i]
                 const radius = Math.max(1, Math.min(10, 2 + node.scale)) * scale // 最小半径を1に制限
@@ -484,12 +585,33 @@ export default function Force3DWordGraphTypeGPU({
                 const ty = pos[target * 3 + 1]
                 const tz = pos[target * 3 + 2]
                 
-                const sScale = Math.max(0.1, 200 / (sz + 200))
-                const tScale = Math.max(0.1, 200 / (tz + 200))
-                const sScreenX = width / 2 + sx * sScale
-                const sScreenY = height / 2 + sy * sScale
-                const tScreenX = width / 2 + tx * tScale
-                const tScreenY = height / 2 + ty * tScale
+                // ソースノードのカメラ変換
+                const swx = sx - camera.centerX
+                const swy = sy - camera.centerY
+                const swz = sz - camera.centerZ
+                const srx = swx * cosY - swz * sinY
+                const sry = swy
+                const srz = swx * sinY + swz * cosY
+                const scx = srx
+                const scy = sry * cosX - srz * sinX
+                const scz = sry * sinX + srz * cosX
+                const sScale = Math.max(0.1, camera.distance / (scz + camera.distance))
+                const sScreenX = width / 2 + scx * sScale
+                const sScreenY = height / 2 + scy * sScale
+                
+                // ターゲットノードのカメラ変換
+                const twx = tx - camera.centerX
+                const twy = ty - camera.centerY
+                const twz = tz - camera.centerZ
+                const trx = twx * cosY - twz * sinY
+                const try_ = twy
+                const trz = twx * sinY + twz * cosY
+                const tcx = trx
+                const tcy = try_ * cosX - trz * sinX
+                const tcz = try_ * sinX + trz * cosX
+                const tScale = Math.max(0.1, camera.distance / (tcz + camera.distance))
+                const tScreenX = width / 2 + tcx * tScale
+                const tScreenY = height / 2 + tcy * tScale
                 
                 ctx.beginPath()
                 ctx.moveTo(sScreenX, sScreenY)
@@ -551,7 +673,11 @@ export default function Force3DWordGraphTypeGPU({
         ref={canvasRef}
         width={width}
         height={height}
-        style={{ width: '100%', height: '100%' }}
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          cursor: isDraggingRef.current ? 'grabbing' : 'grab'
+        }}
       />
     </div>
   )
