@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     
     const {
       participantId,
-      dataRootPath = '/Users/junkawasaki/jun784/spirit-in-physics/apps/visualizer/public/dataset',
+      dataRootPath = '/app/public/dataset',
       dimensions,
       k,
       normalization,
@@ -40,17 +40,34 @@ export async function POST(request: NextRequest) {
     } = validatedData;
 
     // Merkle DAG: workflow_trigger -> pipeline_initiation
-    // ファイルインポートワークフローの開始
-    const importResult = await inngest.send({
-      name: 'pipeline.file_import.requested',
-      data: {
+    // ファイルインポートワークフローの開始（ローカル開発では直接実行）
+    let importResult;
+    try {
+      importResult = await inngest.send({
+        name: 'pipeline.file_import.requested',
+        data: {
+          participantId,
+          dataRootPath,
+          tenantId: 'default', // デフォルトテナント
+          userId: 'system', // システムユーザー
+          priority,
+        },
+      });
+    } catch (error) {
+      console.log('Inngest send failed, running workflow directly:', error);
+      // ローカル開発では直接ワークフローを実行
+      const { executeFileImportWorkflow } = await import('@/lib/workflows/file-import-workflow');
+      const result = await executeFileImportWorkflow({
         participantId,
         dataRootPath,
-        tenantId: 'default', // デフォルトテナント
-        userId: 'system', // システムユーザー
+        tenantId: 'default',
+        userId: 'system',
         priority,
-      },
-    });
+      });
+      console.log('File import workflow completed:', result);
+      // フォールバック用のimportResultを作成
+      importResult = { ids: ['local-execution-' + Date.now()] };
+    }
 
     // Merkle DAG: response_generation -> api_response
     // レスポンスの生成

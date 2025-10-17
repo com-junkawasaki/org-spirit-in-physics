@@ -7,10 +7,6 @@ export const inngest = new Inngest({
   name: 'Spirit-in-Physics Kernel Fusion Pipeline',
   concurrency: 3, // 同時実行数（核融合処理は重いため控えめに）
   retries: 3, // リトライ回数
-  // ローカル開発環境の設定
-  baseUrl: 'http://localhost:3000',
-  eventKey: 'local_dev_key',
-  signingKey: 'local_dev_signing_key',
 });
 
 // Merkle DAG: event_types -> workflow_triggers
