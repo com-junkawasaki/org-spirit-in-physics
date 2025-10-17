@@ -114,6 +114,7 @@ export default function TimelineVisualization({
   const [emotionWeak, setEmotionWeak] = useState(0.6)
   const [emotionStrong, setEmotionStrong] = useState(1.6)
   const [emotionGain, setEmotionGain] = useState(1.5)
+  const [emotionMix, setEmotionMix] = useState(0.7) // 0..1 感情寄与の重み
   const [emotionGainMin, setEmotionGainMin] = useState(0.5)
   const [emotionGainMax, setEmotionGainMax] = useState(4.0)
   // 3D Force プリセット
@@ -447,7 +448,7 @@ export default function TimelineVisualization({
       normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
     })
 
-    // 全結合エッジ: weight = exp(β·cos) * normalized(observedWeight)
+    // 全結合エッジ: weight = mix(emo, structure)
     const links: WordLink[] = []
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
@@ -456,12 +457,12 @@ export default function TimelineVisualization({
         const vi = normalizedEmb[wi] || []
         const vj = normalizedEmb[wj] || []
         const sim = (vi.length && vj.length) ? Math.max(-1, Math.min(1, dot(vi, vj))) : 0
-        const vecFactor = Math.exp(beta * sim)
+        const sim01 = 0.5 * (sim + 1)
 
         const key = i < j ? `${i}-${j}` : `${j}-${i}`
         const obsRaw = pairWeight.get(key)
         const obsNorm = obsRaw != null ? ((obsRaw - obsMin) / (obsDen || 1)) : 0
-        const obsFactor = 0.1 + 0.9 * obsNorm
+        const structComponent = Math.max(0, Math.min(1, (sim01 + obsNorm) / 2))
 
         // 感情類似度係数（[-1,1]に正規化されたコサイン類似度→[0,1]へ）
         const ei = normalizedEmotionVec[wi] || []
@@ -469,12 +470,12 @@ export default function TimelineVisualization({
         const emoCos = (ei.length && ej.length) ? Math.max(-1, Math.min(1, dot(ei, ej))) : 0
         // 非負ベクトルなので多くの場合[0,1]だが、一般式として[0,1]に射影
         const emoSim01 = 0.5 * (emoCos + 1)
-        // 対称な増幅: t∈[-1,1] を |t|^gain で強調し 0..1 に戻す
         const t = Math.max(-1, Math.min(1, 2 * emoSim01 - 1))
         const emoAmplified = 0.5 * (Math.sign(t) * Math.pow(Math.abs(t), Math.max(0.5, emotionGain)) + 1)
         const emoFactor = emotionWeak + (emotionStrong - emotionWeak) * emoAmplified
 
-        links.push({ source: i, target: j, weight: vecFactor * obsFactor * emoFactor })
+        const combined = Math.max(0, Math.min(1, emotionMix * emoFactor + (1 - emotionMix) * structComponent))
+        links.push({ source: i, target: j, weight: combined })
       }
     }
 
@@ -490,7 +491,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, beta, emotionWeak, emotionStrong, emotionGain])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionWeak, emotionStrong, emotionGain, emotionMix])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -1565,6 +1566,19 @@ export default function TimelineVisualization({
               <span className="text-xs text-gray-500">max</span>
               <input type="number" step="0.1" value={emotionGainMax} onChange={(e) => setEmotionGainMax(Number(e.target.value))} className="w-16 border rounded px-2 py-1" />
             </div>
+            <label className="flex items-center space-x-2 col-span-2">
+              <span>Emo Mix</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step="0.05"
+                value={emotionMix}
+                onChange={(e) => setEmotionMix(Number(e.target.value))}
+                className="flex-1"
+              />
+              <span className="w-10 text-right">{emotionMix.toFixed(2)}</span>
+            </label>
             <label className="flex items-center space-x-2">
               <span>K</span>
               <input type="number" step="0.1" value={springK} onChange={(e) => setSpringK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
