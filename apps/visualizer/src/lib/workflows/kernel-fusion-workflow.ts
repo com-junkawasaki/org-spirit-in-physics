@@ -72,7 +72,7 @@ export const kernelFusionWorkflow = inngest.createFunction(
       });
 
       try {
-        const result = fuseKernels(distanceMatrices, {
+        const result = fuseKernels(distanceMatrices as Array<{ name: string; matrix: number[][]; kind: 'distance' }>, {
           normalization: options.normalization,
           nonNegativeWeights: options.nonNegativeWeights,
           timeKernel: options.timeKernel,

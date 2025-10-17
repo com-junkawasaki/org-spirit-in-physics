@@ -35,7 +35,7 @@ export const USE_CASES = {
 } as const;
 
 // ユースケース実装の登録
-export function registerUseCases(transactionManager: unknown) {
+export function registerUseCases(transactionManager: any) {
   // 参加者登録ユースケース
   transactionManager.registerUseCase({
     id: USE_CASES.PARTICIPANT_REGISTRATION,
@@ -270,7 +270,7 @@ export function registerUseCases(transactionManager: unknown) {
 
 // ユースケース実行ヘルパー関数
 export class UseCaseExecutor {
-  constructor(private transactionManager: unknown) {}
+  constructor(private transactionManager: any) {}
 
   // 参加者登録
   async registerParticipant(participantData: {

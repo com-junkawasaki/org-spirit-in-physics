@@ -19,6 +19,7 @@ export interface EmbeddingResult {
     explainedVariance?: number;
     perplexity?: number;
     nNeighbors?: number;
+    minDist?: number;
   };
 }
 
@@ -272,7 +273,7 @@ export function calculateUMAP(
     metadata: {
       totalPoints: n,
       nNeighbors,
-      minDist
+      minDist: minDist as number
     }
   };
 }

@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       participantId: string;
       status: string;
       startTime: string;
+      endTime?: string;
       phases: Record<string, unknown>;
       summary: Record<string, unknown>;
       error?: string;
@@ -810,7 +811,7 @@ async function performEmotionAnalysisExperiment(participantId: string, experimen
     }, {} as Record<string, number>);
 
     const dominantEmotion = Object.entries(emotionCounts)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || null;
+      .sort(([,a], [,b]) => (b as number) - (a as number))[0]?.[0] || null;
 
     const averageConfidence = allEmotions.length > 0 
       ? allEmotions.reduce((sum, e) => sum + (e.score || 0), 0) / allEmotions.length 
@@ -883,7 +884,7 @@ async function performEmotionAnalysis(participantId: string, options: any): Prom
     }, {} as Record<string, number>);
 
     const dominantEmotion = Object.entries(emotionCounts)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || null;
+      .sort(([,a], [,b]) => (b as number) - (a as number))[0]?.[0] || null;
 
     const averageConfidence = allEmotions.length > 0 
       ? allEmotions.reduce((sum, e) => sum + (e.score || 0), 0) / allEmotions.length 

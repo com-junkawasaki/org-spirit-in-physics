@@ -159,7 +159,7 @@ export default function EmotionDistanceVisualization({
       source: parseInt(edge.source.replace('node_', '')),
       target: parseInt(edge.target.replace('node_', '')),
       weight: edge.weight,
-      mode: 0, // デフォルトモード
+      mode: 'tension' as const, // デフォルトモード
       L0: 0,
       k: 0
     }));

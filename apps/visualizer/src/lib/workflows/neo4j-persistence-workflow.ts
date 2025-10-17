@@ -36,7 +36,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         });
 
         // 接続テスト
-        await neogma.query('RETURN 1 as test');
+        await (neogma as any).query('RETURN 1 as test');
         
         logger.info(`Neo4j connection established for ${participantId}`);
         return neogma;
@@ -51,7 +51,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         await step.run('create-participant-node', async () => {
       try {
         // 参加者ノードの存在確認
-        const existingParticipant = await neo4jConnection.query(
+        const existingParticipant = await (neo4jConnection as any).query(
           'MATCH (p:Participant {id: $participantId}) RETURN p',
           { participantId }
         );
@@ -62,7 +62,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         }
 
         // 新しい参加者ノードを作成
-        await neo4jConnection.query(
+        await (neo4jConnection as any).query(
           'CREATE (p:Participant {id: $participantId, createdAt: datetime(), updatedAt: datetime()}) RETURN p',
           { participantId }
         );
@@ -80,13 +80,13 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
       try {
         const experimentId = `exp_${participantId}_${Date.now()}`;
         
-        const createResult = await neo4jConnection.query(
+        const createResult = await (neo4jConnection as any).query(
           'CREATE (e:Experiment {id: $experimentId, participantId: $participantId, createdAt: datetime(), updatedAt: datetime()}) RETURN e',
           { experimentId, participantId }
         );
 
         // 参加者と実験の関係を作成
-        await neo4jConnection.query(
+        await (neo4jConnection as any).query(
           'MATCH (p:Participant {id: $participantId}), (e:Experiment {id: $experimentId}) CREATE (p)-[:HAS_EXPERIMENT]->(e)',
           { participantId, experimentId }
         );
@@ -107,7 +107,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         for (const window of windows) {
           const windowId = `window_${participantId}_${window.start}_${window.end}`;
           
-          const createResult = await neo4jConnection.query(
+          const createResult = await (neo4jConnection as any).query(
             `CREATE (w:Window {
               id: $windowId,
               participantId: $participantId,
@@ -129,7 +129,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
           );
 
           // 実験とウィンドウの関係を作成
-          await neo4jConnection.query(
+          await (neo4jConnection as any).query(
             'MATCH (e:Experiment {participantId: $participantId}), (w:Window {id: $windowId}) CREATE (e)-[:HAS_WINDOW]->(w)',
             { participantId, windowId }
           );
@@ -168,7 +168,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
             for (const [emotionName, score] of Object.entries(emotions)) {
               const emotionId = `emotion_${windowId}_${modality}_${emotionName}`;
               
-              const createResult = await neo4jConnection.query(
+              const createResult = await (neo4jConnection as any).query(
                 `CREATE (ea:EmotionAggregation {
                   id: $emotionId,
                   windowId: $windowId,
@@ -188,7 +188,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
               );
 
               // ウィンドウと感情集約の関係を作成
-              await neo4jConnection.query(
+              await (neo4jConnection as any).query(
                 'MATCH (w:Window {id: $windowId}), (ea:EmotionAggregation {id: $emotionId}) CREATE (w)-[:HAS_EMOTION_AGG]->(ea)',
                 { windowId, emotionId }
               );
@@ -226,7 +226,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
           const windowId = `window_${participantId}_${window.start}_${window.end}`;
           const physioId = `physio_${windowId}`;
           
-          const createResult = await neo4jConnection.query(
+          const createResult = await (neo4jConnection as any).query(
             `CREATE (pa:PhysiologicalAggregation {
               id: $physioId,
               windowId: $windowId,
@@ -246,7 +246,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
           );
 
           // ウィンドウと生理集約の関係を作成
-          await neo4jConnection.query(
+          await (neo4jConnection as any).query(
             'MATCH (w:Window {id: $windowId}), (pa:PhysiologicalAggregation {id: $physioId}) CREATE (w)-[:HAS_PHYSIO_AGG]->(pa)',
             { windowId, physioId }
           );
@@ -276,7 +276,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
       try {
         const fusionRunId = `fusion_${participantId}_${Date.now()}`;
         
-        const createResult = await neo4jConnection.query(
+        const createResult = await (neo4jConnection as any).query(
           `CREATE (fr:KernelFusionRun {
             id: $fusionRunId,
             participantId: $participantId,
@@ -297,7 +297,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         );
 
         // 実験と核融合実行の関係を作成
-        await neo4jConnection.query(
+        await (neo4jConnection as any).query(
           'MATCH (e:Experiment {participantId: $participantId}), (fr:KernelFusionRun {id: $fusionRunId}) CREATE (e)-[:HAS_FUSION_RUN]->(fr)',
           { participantId, fusionRunId }
         );
@@ -319,7 +319,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
           const embedding = embeddings[i];
           const embeddingId = `embedding_${participantId}_${i}`;
           
-          const createResult = await neo4jConnection.query(
+          const createResult = await (neo4jConnection as any).query(
             `CREATE (er:EmbeddingResult {
               id: $embeddingId,
               participantId: $participantId,
@@ -339,7 +339,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
           );
 
           // 核融合実行と埋め込み結果の関係を作成
-          await neo4jConnection.query(
+          await (neo4jConnection as any).query(
             'MATCH (fr:KernelFusionRun {participantId: $participantId}), (er:EmbeddingResult {id: $embeddingId}) CREATE (fr)-[:HAS_EMBEDDING]->(er)',
             { participantId, embeddingId }
           );

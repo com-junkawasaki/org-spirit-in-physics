@@ -76,7 +76,7 @@ export function extractEmotionTimeSeries(
         emotionSeriesMap.set(key, {
           emotion: emotion.name,
           points: [],
-          source: emotion.source
+          source: emotion.source as 'language' | 'burst' | 'face' | 'prosody'
         });
       }
       

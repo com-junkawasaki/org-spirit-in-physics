@@ -19,7 +19,7 @@ export class Neo4jSchemaUpdater {
     
     for (const constraint of constraints) {
       try {
-        await this.client.query(constraint);
+        await (this.client as any).query(constraint);
         console.log(`✓ Created constraint: ${constraint.split(' ')[2]}`);
       } catch (error) {
         console.warn(`⚠ Constraint may already exist: ${constraint.split(' ')[2]}`, error);
@@ -37,7 +37,7 @@ export class Neo4jSchemaUpdater {
     
     for (const index of indexes) {
       try {
-        await this.client.query(index);
+        await (this.client as any).query(index);
         console.log(`✓ Created index: ${index.split(' ')[2]}`);
       } catch (error) {
         console.warn(`⚠ Index may already exist: ${index.split(' ')[2]}`, error);
@@ -71,7 +71,7 @@ export class Neo4jSchemaUpdater {
         SHOW CONSTRAINTS
         RETURN count(*) as constraint_count
       `;
-      const constraintsResult = await this.client.query(constraintsQuery);
+      const constraintsResult = await (this.client as any).query(constraintsQuery);
       const constraintCount = constraintsResult[0]?.constraint_count || 0;
       
       // インデックスの存在確認
@@ -79,7 +79,7 @@ export class Neo4jSchemaUpdater {
         SHOW INDEXES
         RETURN count(*) as index_count
       `;
-      const indexesResult = await this.client.query(indexesQuery);
+      const indexesResult = await (this.client as any).query(indexesQuery);
       const indexCount = indexesResult[0]?.index_count || 0;
       
       console.log(`✓ Schema validation completed. Constraints: ${constraintCount}, Indexes: ${indexCount}`);
@@ -103,12 +103,12 @@ export class Neo4jSchemaUpdater {
     try {
       // 制約数
       const constraintsQuery = `SHOW CONSTRAINTS RETURN count(*) as constraint_count`;
-      const constraintsResult = await this.client.query(constraintsQuery);
+      const constraintsResult = await (this.client as any).query(constraintsQuery);
       const constraintCount = constraintsResult[0]?.constraint_count || 0;
       
       // インデックス数
       const indexesQuery = `SHOW INDEXES RETURN count(*) as index_count`;
-      const indexesResult = await this.client.query(indexesQuery);
+      const indexesResult = await (this.client as any).query(indexesQuery);
       const indexCount = indexesResult[0]?.index_count || 0;
       
       // ノード数
@@ -118,9 +118,9 @@ export class Neo4jSchemaUpdater {
         RETURN label, value.count as count
         ORDER BY count DESC
       `;
-      const nodeCountsResult = await this.client.query(nodeCountsQuery);
+      const nodeCountsResult = await (this.client as any).query(nodeCountsQuery);
       const nodeCounts: Record<string, number> = {};
-      nodeCountsResult.forEach((row: unknown) => {
+      nodeCountsResult.forEach((row: any) => {
         nodeCounts[row.label] = row.count;
       });
       
@@ -131,9 +131,9 @@ export class Neo4jSchemaUpdater {
         RETURN relationshipType, value.count as count
         ORDER BY count DESC
       `;
-      const relationshipCountsResult = await this.client.query(relationshipCountsQuery);
+      const relationshipCountsResult = await (this.client as any).query(relationshipCountsQuery);
       const relationshipCounts: Record<string, number> = {};
-      relationshipCountsResult.forEach((row: unknown) => {
+      relationshipCountsResult.forEach((row: any) => {
         relationshipCounts[row.relationshipType] = row.count;
       });
       
@@ -186,11 +186,11 @@ export class Neo4jSchemaUpdater {
         WHERE name IS NOT NULL
         RETURN 'DROP INDEX ' + name as drop_command
       `;
-      const dropIndexesResult = await this.client.query(dropIndexesQuery);
+      const dropIndexesResult = await (this.client as any).query(dropIndexesQuery);
       
       for (const row of dropIndexesResult) {
         try {
-          await this.client.query(row.drop_command);
+          await (this.client as any).query(row.drop_command);
           console.log(`✓ Dropped index: ${row.drop_command}`);
         } catch (error) {
           console.warn(`⚠ Failed to drop index: ${row.drop_command}`, error);
@@ -203,11 +203,11 @@ export class Neo4jSchemaUpdater {
         WHERE name IS NOT NULL
         RETURN 'DROP CONSTRAINT ' + name as drop_command
       `;
-      const dropConstraintsResult = await this.client.query(dropConstraintsQuery);
+      const dropConstraintsResult = await (this.client as any).query(dropConstraintsQuery);
       
       for (const row of dropConstraintsResult) {
         try {
-          await this.client.query(row.drop_command);
+          await (this.client as any).query(row.drop_command);
           console.log(`✓ Dropped constraint: ${row.drop_command}`);
         } catch (error) {
           console.warn(`⚠ Failed to drop constraint: ${row.drop_command}`, error);

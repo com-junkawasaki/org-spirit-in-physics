@@ -25,11 +25,11 @@ export class Neo4jPerformanceOptimizer {
       
       // EXPLAINでクエリプランを取得
       const explainQuery = `EXPLAIN ${query}`;
-      const explainResult = await this.client.query(explainQuery, params);
+      const explainResult = await (this.client as any).query(explainQuery, params);
       
       // PROFILEで実行統計を取得
       const profileQuery = `PROFILE ${query}`;
-      const profileResult = await this.client.query(profileQuery, params);
+      const profileResult = await (this.client as any).query(profileQuery, params);
       
       const executionTime = Date.now() - startTime;
       
@@ -66,7 +66,7 @@ export class Neo4jPerformanceOptimizer {
         RETURN name, type, labelsOrTypes, properties
         ORDER BY name
       `;
-      const usedIndexesResult = await this.client.query(usedIndexesQuery);
+      const usedIndexesResult = await (this.client as any).query(usedIndexesQuery);
       
       // 推奨インデックスを確認
       const recommendationsQuery = `
@@ -76,11 +76,11 @@ export class Neo4jPerformanceOptimizer {
         RETURN name, labelsOrTypes, properties
         ORDER BY name
       `;
-      const recommendationsResult = await this.client.query(recommendationsQuery);
+      const recommendationsResult = await (this.client as any).query(recommendationsQuery);
       
-      const usedIndexes = usedIndexesResult.map((row: unknown) => row.name);
+      const usedIndexes = usedIndexesResult.map((row: any) => row.name);
       const unusedIndexes: string[] = []; // 実際の使用状況を監視する必要がある
-      const recommendations = recommendationsResult.map((row: unknown) => 
+      const recommendations = recommendationsResult.map((row: any) => 
         `Consider composite index on ${row.labelsOrTypes.join(', ')} for properties: ${row.properties.join(', ')}`
       );
       

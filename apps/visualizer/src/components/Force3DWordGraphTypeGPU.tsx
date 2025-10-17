@@ -2,6 +2,43 @@
 
 import { useRef, useEffect, useCallback, useState } from 'react'
 
+// WebGPU型定義（簡略版）
+declare global {
+  interface GPUDevice {
+    createBuffer(descriptor: any): any
+    createComputePipeline(descriptor: any): any
+    createBindGroup(descriptor: any): any
+    createCommandEncoder(): any
+    createShaderModule(descriptor: any): any
+    queue: any
+  }
+  
+  interface GPUAdapter {
+    requestDevice(): Promise<GPUDevice>
+  }
+  
+  interface GPU {
+    requestAdapter(): Promise<GPUAdapter | null>
+  }
+  
+  interface Navigator {
+    gpu: GPU
+  }
+  
+  const GPUBufferUsage: {
+    STORAGE: number
+    COPY_DST: number
+    COPY_SRC: number
+    UNIFORM: number
+    MAP_READ: number
+  }
+  
+  const GPUMapMode: {
+    READ: number
+    WRITE: number
+  }
+}
+
 // Merkle DAG: components.force3d_word_graph_typegpu
 // TypeGPU版ユング単語連合の語ごとスケールを反映した完全グラフ3D可視化
 // 依存: React, TypeGPU (WebGPU)
