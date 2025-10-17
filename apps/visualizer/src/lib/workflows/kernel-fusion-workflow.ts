@@ -1,5 +1,7 @@
 import { inngest, events, type KernelFusionEvent } from '../inngest';
 import { fuseKernels } from '../kernel-fusion';
+import { loadManifest, isUnchanged, upsertManifest, saveManifest } from '@/lib/import-manifest';
+import { writeFileSync, existsSync, readFileSync } from 'node:fs';
 
 // Merkle DAG: kernel_fusion_workflow -> multimodal_integration
 // 核融合ワークフロー
@@ -24,6 +26,8 @@ export const kernelFusionWorkflow = inngest.createFunction(
       modalities: Object.keys(distances),
       options,
     });
+
+    const manifest = loadManifest();
 
     // Merkle DAG: distance_matrix_loading -> data_preparation
     // ステップ1: 距離行列の読み込み
@@ -64,6 +68,20 @@ export const kernelFusionWorkflow = inngest.createFunction(
     // Merkle DAG: kernel_fusion_computation -> multimodal_integration
     // ステップ2: 核融合の実行
     const fusionResult = await step.run('compute-kernel-fusion', async () => {
+      const fusedPath = `/tmp/${participantId}_fused_kernel.json`;
+      const embPath = `/tmp/${participantId}_embedding.json`;
+
+      // 再利用（キャッシュが新しければ読み出し）
+      try {
+        const skipFused = existsSync(fusedPath) && await isUnchanged(fusedPath, manifest, { requireHash: false });
+        const skipEmb = existsSync(embPath) && await isUnchanged(embPath, manifest, { requireHash: false });
+        if (skipFused && skipEmb) {
+          const cachedFusion = JSON.parse(readFileSync(fusedPath, 'utf-8'));
+          const cachedEmbedding = JSON.parse(readFileSync(embPath, 'utf-8'));
+          return { ...cachedFusion, embedding: cachedEmbedding };
+        }
+      } catch {}
+
       logger.info(`Computing kernel fusion for ${participantId}`, {
         inputCount: distanceMatrices.length,
         normalization: options.normalization,
@@ -84,6 +102,19 @@ export const kernelFusionWorkflow = inngest.createFunction(
           embeddingDimensions: result.embedding.length,
           eigenValues: result.eigenValues.slice(0, 5), // 上位5つの固有値をログ
         });
+
+        // キャッシュ保存
+        try {
+          writeFileSync(fusedPath, JSON.stringify({
+            fusedKernel: result.fusedKernel,
+            weights: result.weights,
+            eigenValues: result.eigenValues,
+          }), 'utf-8');
+          writeFileSync(embPath, JSON.stringify(result.embedding), 'utf-8');
+          await upsertManifest(fusedPath, manifest, false);
+          await upsertManifest(embPath, manifest, false);
+          saveManifest(manifest);
+        } catch {}
 
         return result;
       } catch (error) {

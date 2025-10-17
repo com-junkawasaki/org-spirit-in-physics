@@ -2436,7 +2436,7 @@ export default function TimelineVisualization({
 
         {visualizationMode === 'force-3d-typegpu' && mounted && (() => {
           type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number; minSep?: number; sepK?: number } }
-          const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraphTypeGPU.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
+          const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraphTypeGPU') as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">

@@ -1,5 +1,6 @@
 import { inngest, events, type WindowsGenerationEvent } from '../inngest';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
+import { loadManifest, isUnchanged, upsertManifest, saveManifest } from '@/lib/import-manifest';
 
 // Merkle DAG: windows_generation_workflow -> temporal_segmentation
 // ウィンドウ生成ワークフロー（ローカル実行用）
@@ -144,7 +145,11 @@ async function parseHumeData(humeCsvUris: { burst: string[]; face: string[]; lan
 
 // Merkle DAG: window_definition -> temporal_segmentation
 // ウィンドウ定義の生成
-async function defineEmotionWindows(sessionData: any, physioData: any, humeData: any, participantId: string) {
+type SessionParsed = { events: unknown[]; wordDisplayedEvents: Array<{ timestamp: number; payload?: { word?: string }; word?: string }>; speechDetectedEvents: Array<{ timestamp: number }> };
+type PhysioParsed = { samples: Array<Record<string, string>>; channels: string[] };
+type HumeParsed = Record<string, Array<Record<string, string>>>;
+
+async function defineEmotionWindows(sessionData: SessionParsed, physioData: PhysioParsed, humeData: HumeParsed, _participantId: string) {
   const emotionWindows: Array<{
     word: string;
     start: number;
@@ -247,6 +252,7 @@ export const windowsGenerationWorkflow = inngest.createFunction(
   },
   async ({ event, step, logger }) => {
     const { participantId, sessionUri, physioUri, humeCsvUris, stats } = event.data as WindowsGenerationEvent;
+    const manifest = loadManifest();
 
     logger.info(`Starting windows generation for participant ${participantId}`, {
       participantId,
@@ -256,21 +262,33 @@ export const windowsGenerationWorkflow = inngest.createFunction(
     });
 
     // Merkle DAG: session_data_parsing -> event_extraction
-    // ステップ1: セッションデータの解析
+    // ステップ1: セッションデータの解析（再利用チェック）
     const sessionData = await step.run('parse-session-data', async () => {
-      return await parseSessionData(sessionUri, participantId);
+      const skip = await isUnchanged(sessionUri, manifest, { requireHash: false });
+      const data = await parseSessionData(sessionUri, participantId);
+      if (!skip) await upsertManifest(sessionUri, manifest, false);
+      return data;
     });
 
     // Merkle DAG: physiological_data_parsing -> signal_processing
-    // ステップ2: 生理データの解析
+    // ステップ2: 生理データの解析（再利用チェック）
     const physioData = await step.run('parse-physiological-data', async () => {
-      return await parsePhysiologicalData(physioUri, participantId);
+      const skip = physioUri ? await isUnchanged(physioUri, manifest, { requireHash: false }) : false;
+      const data = await parsePhysiologicalData(physioUri, participantId);
+      if (physioUri && !skip) await upsertManifest(physioUri, manifest, false);
+      return data;
     });
 
     // Merkle DAG: hume_data_parsing -> emotion_analysis
-    // ステップ3: Hume AIデータの解析
+    // ステップ3: Hume AIデータの解析（再利用チェック）
     const humeData = await step.run('parse-hume-data', async () => {
-      return await parseHumeData(humeCsvUris, participantId);
+      const entries = [...(humeCsvUris.burst||[]), ...(humeCsvUris.face||[]), ...(humeCsvUris.language||[]), ...(humeCsvUris.prosody||[])];
+      const data = await parseHumeData(humeCsvUris, participantId);
+      for (const p of entries) {
+        const skip = await isUnchanged(p, manifest, { requireHash: false });
+        if (!skip) await upsertManifest(p, manifest, false);
+      }
+      return data;
     });
 
     // Merkle DAG: window_definition -> temporal_segmentation
@@ -279,8 +297,12 @@ export const windowsGenerationWorkflow = inngest.createFunction(
       return await defineEmotionWindows(sessionData, physioData, humeData, participantId);
     });
 
-    // TODO: Save windows to a temporary file/blob storage and pass URI
-    const windowsUri = `/tmp/${participantId}_windows.json`; // Placeholder
+    // 再利用: ウィンドウJSONキャッシュ
+    const windowsUri = `/tmp/${participantId}_windows.json`;
+    try {
+      writeFileSync(windowsUri, JSON.stringify(windows), 'utf-8');
+    } catch {}
+    saveManifest(manifest);
 
     await step.sendEvent('windows-ready-event', {
       name: events.WINDOWS_GENERATION_COMPLETED,

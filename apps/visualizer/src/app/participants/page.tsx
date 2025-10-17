@@ -1,9 +1,8 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Activity, Brain, BarChart3, ArrowRight } from 'lucide-react'
+import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
 import { getAllParticipants } from '@/lib/data'
 import { getSpiritProbabilityColor } from '@/components/SpiritProbabilityBadge'
 
@@ -183,12 +182,7 @@ export default async function ParticipantsPage() {
               Spirit in Physics実験に参加した被験者の検査結果一覧です。各被験者の詳細な分析結果を確認できます。
             </p>
           </div>
-          <Link href="/participants/analysis-report">
-            <Button variant="outline">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              分析レポート
-            </Button>
-          </Link>
+          {/* 分析レポートページは削除済み */}
         </div>
       </div>
 

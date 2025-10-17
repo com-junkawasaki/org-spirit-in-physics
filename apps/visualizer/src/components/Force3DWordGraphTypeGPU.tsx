@@ -305,8 +305,8 @@ export default function Force3DWordGraphTypeGPU({
           }
           
           struct Link {
-            source: u32,
-            target: u32,
+            src: u32,
+            dst: u32,
             weight: f32,
             mode: u32,
             L0: f32,
@@ -366,9 +366,9 @@ export default function Force3DWordGraphTypeGPU({
             // Spring forces
             for (var k = 0u; k < arrayLength(&links); k++) {
               let link = links[k];
-              if (link.source != i && link.target != i) { continue; }
+              if (link.src != i && link.dst != i) { continue; }
               
-              let otherIndex = select(link.target, link.source, link.source == i);
+              let otherIndex = select(link.dst, link.src, link.src == i);
               let other = nodes[otherIndex];
               
               let dx = other.position - node.position;
@@ -395,7 +395,7 @@ export default function Force3DWordGraphTypeGPU({
                 springForce = kFinal * x;
               }
               
-              let sign = select(-1.0, 1.0, link.source == i);
+              let sign = select(-1.0, 1.0, link.src == i);
               force += sign * (springForce / dist) * dx;
             }
             
@@ -508,7 +508,7 @@ export default function Force3DWordGraphTypeGPU({
           }
           
           // リンクデータをWebGPUバッファに書き込み
-          const linkData = new Float32Array(l * 6) // source(1) + target(1) + weight(1) + mode(1) + L0(1) + k(1)
+          const linkData = new Float32Array(l * 6) // src(1) + dst(1) + weight(1) + mode(1) + L0(1) + k(1)
           for (let k = 0; k < l; k++) {
             const link = linksRef.current[k]
             linkData[k * 6] = link.source
