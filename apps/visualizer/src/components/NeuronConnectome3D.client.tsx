@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import type { ConnectomeScene } from '@/neuron/types'
+import type { ConnectomeScene, BrainRegion } from '@/neuron/types'
+import { computeWordAnchorSprings, computeEventAnchorSprings } from '@/neuron/mapping'
 
 // Merkle DAG: components.neuron_connectome_3d
 // 脳アンカー（固定）と概念・イベントの簡易3D表示（最小版）
@@ -63,23 +64,84 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
       group.add(line)
     }
 
-    // Concepts
-    const conceptMaterial = new THREE.MeshStandardMaterial({ color: 0xffaa66, emissive: 0x332211 })
-    scene.concepts.forEach((c, i) => {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(2, 12, 12), conceptMaterial)
-      mesh.position.set(30 * Math.cos(i), 20, 30 * Math.sin(i))
-      mesh.userData = { id: c.id, type: 'concept' }
-      group.add(mesh)
-    })
+    // ===== Anchor-based placement helpers =====
+    const wordSprings = computeWordAnchorSprings(scene.regions, scene.concepts, 1.2)
+    const eventSprings = computeEventAnchorSprings(scene.regions, scene.events, 0.8)
 
-    // Events
-    const eventMaterial = new THREE.MeshStandardMaterial({ color: 0x66ddaa, emissive: 0x113322 })
-    scene.events.forEach((e, i) => {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.4, 12, 12), eventMaterial)
-      mesh.position.set(30 * Math.cos(i), -10, 30 * Math.sin(i))
-      mesh.userData = { id: e.id, type: 'event' }
+    function pickDominantRegion(targetId: string, springs: { regionId: string; targetId: string; k: number }[]): {
+      region: BrainRegion | null; k: number
+    } {
+      let best: { regionId: string; k: number } | null = null
+      for (const s of springs) {
+        if (s.targetId !== targetId) continue
+        if (!best || s.k > best.k) best = { regionId: s.regionId, k: s.k }
+      }
+      if (!best) return { region: null, k: 0 }
+      const region = scene.regions.find(r => r.id === best.regionId) || null
+      return { region, k: best.k }
+    }
+
+    function jitterAround(region: BrainRegion, k: number, altitude = 0): THREE.Vector3 {
+      const base = new THREE.Vector3(region.x, region.y + altitude, region.z)
+      const radius = Math.max(2, 12 / Math.max(k, 0.1)) // 強い係留ほど近い
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+      const dx = radius * Math.sin(phi) * Math.cos(theta)
+      const dy = radius * Math.cos(phi)
+      const dz = radius * Math.sin(phi) * Math.sin(theta)
+      return new THREE.Vector3(base.x + dx, base.y + dy, base.z + dz)
+    }
+
+    function emotionToHex(name?: string): number {
+      switch (name) {
+        case 'joy': return 0xffc857
+        case 'sadness': return 0x4e79a7
+        case 'anger': return 0xe15759
+        case 'fear': return 0x76b7b2
+        case 'surprise': return 0xf28e2b
+        case 'disgust': return 0x59a14f
+        case 'contempt': return 0x9c755f
+        default: return 0x66ddaa
+      }
+    }
+
+    function normalize(value: number, min: number, max: number): number {
+      if (max <= min) return 0
+      return Math.min(1, Math.max(0, (value - min) / (max - min)))
+    }
+
+    // ===== Concepts near anchors =====
+    for (const c of scene.concepts) {
+      const { region, k } = pickDominantRegion(c.id, wordSprings)
+      const pos = region ? jitterAround(region, k, 8) : new THREE.Vector3(0, 20, 0)
+      const material = new THREE.MeshStandardMaterial({ color: 0xffaa66, emissive: 0x332211 })
+      const size = 1.8 + Math.min(1.4, (k || 0.5) * 0.3)
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 16, 16), material)
+      mesh.position.copy(pos)
+      mesh.userData = { id: c.id, type: 'concept', k }
       group.add(mesh)
-    })
+    }
+
+    // ===== Events near anchors; color & size encoding =====
+    for (const e of scene.events) {
+      const { region, k } = pickDominantRegion(e.id, eventSprings)
+      const pos = region ? jitterAround(region, k, -6) : new THREE.Vector3(0, -10, 0)
+      const primaryEmotion = e.emotions && e.emotions.length > 0 ?
+        [...e.emotions].sort((a, b) => b.score - a.score)[0].name : undefined
+      const color = emotionToHex(primaryEmotion)
+      const physiological = (typeof e.physiological === 'object' && e.physiological && 'average' in e.physiological)
+        ? Math.abs((e.physiological as { average?: number }).average ?? 0)
+        : 0
+      const rt = e.reactionTime ?? 800
+      const rtNorm = normalize(rt, 350, 2400)
+      const physNorm = normalize(physiological, 0, 0.2)
+      const size = 1.6 + 2.0 * rtNorm + 1.4 * physNorm
+      const material = new THREE.MeshStandardMaterial({ color, emissive: 0x111111 })
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 16, 16), material)
+      mesh.position.copy(pos)
+      mesh.userData = { id: e.id, type: 'event', k, rt, physiological }
+      group.add(mesh)
+    }
 
     let raf = 0
     const animate = () => {

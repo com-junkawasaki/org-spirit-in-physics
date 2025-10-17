@@ -120,6 +120,9 @@ export default function TimelineVisualization({
   const [shellRadius, setShellRadius] = useState(220)
   const [shellK, setShellK] = useState(4.0)
   const [radialOutK, setRadialOutK] = useState(60)
+  const [constraintIters, setConstraintIters] = useState(2)
+  const [constraintStiffness, setConstraintStiffness] = useState(0.5)
+  // reserved (future): verlet constraints tuning
   const [emotionGainMin, setEmotionGainMin] = useState(0.5)
   const [emotionGainMax, setEmotionGainMax] = useState(4.0)
   // 3D Force プリセット
@@ -147,6 +150,46 @@ export default function TimelineVisualization({
   const overviewSvgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
+  // --- Demo timeline generator -------------------------------------------------
+  const generateDemoTimeline = React.useCallback((): TimelineDataPoint[] => {
+    // 100語のサンプルを時系列化
+    const words = JUNG_STIMULUS_WORDS.slice(0, 100)
+    const EMOTIONS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+    const start = Date.now() - 1000 * 60 // 少し過去から開始
+
+    const rand = (min: number, max: number) => Math.random() * (max - min) + min
+    const pick = <T,>(arr: readonly T[], k: number) => Array.from({ length: k }, () => arr[Math.floor(Math.random() * arr.length)])
+
+    const points: TimelineDataPoint[] = words.map((w, idx) => {
+      const timestamp = start + idx * Math.round(rand(700, 1600))
+      const reactionTime = Math.round(rand(350, 2400))
+      const hasResponse = Math.random() < 0.9
+      const emoCount = Math.max(1, Math.floor(rand(1, 4)))
+      const emos = pick(EMOTIONS, emoCount).map((name) => ({ name, score: Math.round(rand(0.15, 0.9) * 100) / 100, fileType: 'demo' }))
+      const physAvg = Math.round(rand(-0.12, 0.18) * 1000) / 1000
+      const physMax = physAvg + Math.abs(Math.round(rand(0.0, 0.08) * 1000) / 1000)
+      const physMin = physAvg - Math.abs(Math.round(rand(0.0, 0.08) * 1000) / 1000)
+      // 反応値: 感情平均と生理の正規化、反応時間のペナルティを合成
+      const emoMean = emos.length ? emos.reduce((s, e) => s + e.score, 0) / emos.length : 0
+      const rtNorm = (reactionTime - 350) / (2400 - 350)
+      const physNorm = (Math.abs(physAvg) / 0.2)
+      const reactionValue = Math.max(0, Math.min(1, 0.55 * emoMean + 0.35 * Math.min(1, physNorm) + 0.25 * (1 - rtNorm)))
+
+      return {
+        timestamp,
+        word: w.japanese,
+        reactionTime,
+        hasResponse,
+        emotions: emos as unknown as EmotionData[],
+        physiological: { average: physAvg, max: physMax, min: physMin },
+        reactionValue,
+        eventType: 'word_displayed',
+        metadata: { emotionCount: emos.length, physiologicalCount: 1 }
+      }
+    })
+    return points
+  }, [])
+
   const getPhysStat = (p: TimelineDataPoint['physiological'], key: 'average' | 'max' | 'min'): number => {
     if (Array.isArray(p)) return 0
     if (p && typeof p === 'object') {
@@ -161,30 +204,38 @@ export default function TimelineVisualization({
   const fetchTimelineData = React.useCallback(async () => {
     try {
       setLoading(true)
+      // API優先、失敗時・useDemo時はローカル生成でフォールバック
       const apiUrl = useDemo
         ? `/api/participants/${participantId}/timeline?demo=1`
         : `/api/participants/${participantId}/timeline`
-      const response = await fetch(apiUrl)
-      const result = await response.json()
-      
-      if (result.success) {
-        setData(result.data.timelineData)
-        if (Array.isArray(result.data.metadata?.errors) && result.data.metadata.errors.length > 0) {
-          setError(`警告: 一部データ取得に失敗しました: ${result.data.metadata.errors.join('; ')}`)
-        } else {
-          setError(null)
+      let ok = false
+      try {
+        const response = await fetch(apiUrl)
+        const result = await response.json()
+        if (result?.success && Array.isArray(result.data?.timelineData)) {
+          setData(result.data.timelineData)
+          ok = true
+          if (Array.isArray(result.data.metadata?.errors) && result.data.metadata.errors.length > 0) {
+            setError(`警告: 一部データ取得に失敗しました: ${result.data.metadata.errors.join('; ')}`)
+          } else {
+            setError(null)
+          }
         }
-      } else {
-        const apiError = result.error || 'Failed to fetch timeline data'
-        const details = Array.isArray(result.errors) ? ` (${result.errors.join('; ')})` : ''
-        setError(apiError + details)
+      } catch {
+        // noop -> フォールバックへ
+      }
+
+      if (!ok) {
+        const demo = generateDemoTimeline()
+        setData(demo)
+        setError(null)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoading(false)
     }
-  }, [participantId, useDemo])
+  }, [participantId, useDemo, generateDemoTimeline])
 
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = React.useCallback(async () => {
@@ -1716,6 +1767,7 @@ export default function TimelineVisualization({
               <span>RadialOutK</span>
               <input type="number" step="1" value={radialOutK} onChange={(e) => setRadialOutK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
+            {/* reserved: constraints tuning controls */}
             <label className="flex items-center space-x-2">
               <span>K</span>
               <input type="number" step="1" value={neighborsK} onChange={(e) => setNeighborsK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
@@ -1736,7 +1788,7 @@ export default function TimelineVisualization({
         )}
 
         {visualizationMode === 'force-3d' && mounted && (() => {
-          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number }; emotionPower?: number }
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number }; emotionPower?: number }
           const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraph.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (

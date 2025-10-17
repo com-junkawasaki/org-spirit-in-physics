@@ -43,6 +43,8 @@ interface Force3DWordGraphProps {
     shellRadiusOuter?: number
     shellKOuter?: number
     radialOutK?: number
+    constraintIters?: number
+    constraintStiffness?: number
   }
   // 感情類似の影響倍率（links.weight への指数影響）
   emotionPower?: number
@@ -86,6 +88,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     shellRadiusOuter: physics?.shellRadiusOuter ?? (physics?.shellRadius ? physics.shellRadius * 1.6 : 288),
     shellKOuter: physics?.shellKOuter ?? 1.5,
     radialOutK: physics?.radialOutK ?? 0,
+    constraintIters: physics?.constraintIters ?? 2,
+    constraintStiffness: physics?.constraintStiffness ?? 0.5,
   })
 
   // 色スケール
@@ -118,6 +122,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       shellRadiusOuter: physics?.shellRadiusOuter ?? physicsRef.current.shellRadiusOuter,
       shellKOuter: physics?.shellKOuter ?? physicsRef.current.shellKOuter,
       radialOutK: physics?.radialOutK ?? physicsRef.current.radialOutK,
+      constraintIters: physics?.constraintIters ?? physicsRef.current.constraintIters,
+      constraintStiffness: physics?.constraintStiffness ?? physicsRef.current.constraintStiffness,
     }
   }, [physics])
 
@@ -425,6 +431,41 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
           v[ix + 1] *= s
           v[ix + 2] *= s
         }
+      }
+
+      // PBD風 長さ拘束（unilateral）
+      const iters = Math.max(0, Math.floor(physicsRef.current.constraintIters || 0))
+      const stiff = Math.max(0, Math.min(1, physicsRef.current.constraintStiffness || 0))
+      for (let it = 0; it < iters; it++) {
+        for (let k = 0; k < linksRef.current.length; k++) {
+          const { source, target, mode, L0: L0in } = linksRef.current[k]
+          const i = source * 3
+          const j = target * 3
+          const dx = p[j] - p[i]
+          const dy = p[j + 1] - p[i + 1]
+          const dz = p[j + 2] - p[i + 2]
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-6
+          const ux = dx / dist, uy = dy / dist, uz = dz / dist
+          const L0 = Number.isFinite(L0in as number) ? (L0in as number) : physicsRef.current.restLength
+          if (mode === 'tension') {
+            if (dist > L0) {
+              const corr = (dist - L0) * 0.5 * stiff
+              p[i] += ux * corr; p[i + 1] += uy * corr; p[i + 2] += uz * corr
+              p[j] -= ux * corr; p[j + 1] -= uy * corr; p[j + 2] -= uz * corr
+            }
+          } else if (mode === 'compression') {
+            if (dist < L0) {
+              const corr = (L0 - dist) * 0.5 * stiff
+              p[i] -= ux * corr; p[i + 1] -= uy * corr; p[i + 2] -= uz * corr
+              p[j] += ux * corr; p[j + 1] += uy * corr; p[j + 2] += uz * corr
+            }
+          }
+        }
+      }
+
+      // 最終位置積分
+      for (let i = 0; i < n; i++) {
+        const ix = i * 3
         p[ix] += v[ix] * delta
         p[ix + 1] += v[ix + 1] * delta
         p[ix + 2] += v[ix + 2] * delta
