@@ -116,6 +116,13 @@ const menuItems: MenuItem[] = [
         href: '/participants/2a0d7a69-f953-4c29-87a5-8a8e4e8bd413/timeline',
         icon: '📈',
         description: '時系列統合可視化'
+    },
+    {
+        id: 'force-timeline',
+        label: '3D Force Timeline',
+        href: '/3d-force-timeline',
+        icon: '🧲',
+        description: '感情距離フォース統合の専用ページ'
     }
 ]
 

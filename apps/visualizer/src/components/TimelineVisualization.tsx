@@ -62,19 +62,25 @@ interface TimelineVisualizationProps {
   participantId: string
   width?: number
   height?: number
+  // このページでモードを固定したい場合に指定（例: 'force-3d'）
+  forceMode?: VisualizationMode
+  // フィルターUIを非表示にする
+  hideFilters?: boolean
 }
 
 export default function TimelineVisualization({ 
   participantId, 
   width = 800, 
-  height = 400 
+  height = 400,
+  forceMode,
+  hideFilters = false,
 }: TimelineVisualizationProps) {
   const [mounted, setMounted] = useState(false)
   const [data, setData] = useState<TimelineDataPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDataPoint, setSelectedDataPoint] = useState<TimelineDataPoint | null>(null)
-  const [visualizationMode, setVisualizationMode] = useState<VisualizationMode>('timeline')
+  const [visualizationMode, setVisualizationMode] = useState<VisualizationMode>(forceMode ?? 'timeline')
   const [timeRange, setTimeRange] = useState<TimeRange | null>(null)
   const [embeddingsByWord, setEmbeddingsByWord] = useState<Record<string, number[]>>({})
   const [filters, setFilters] = useState<FilterSettings>({
@@ -1298,34 +1304,37 @@ export default function TimelineVisualization({
   return (
     <div className="space-y-4">
       {/* 表示モード切り替え */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <h3 className="font-semibold mb-3">表示モード</h3>
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-          {[
-            { id: 'timeline', label: '時系列', icon: '📈' },
-            { id: 'kpi', label: 'KPIカード', icon: '📊' },
-            { id: 'dumbbell', label: 'Before-After', icon: '⚖️' },
-            { id: 'small-multiples', label: 'スモールマルチプル', icon: '🔢' },
-            { id: 'force-3d', label: '3D Force', icon: '🧲' }
-          ].map((mode) => (
-            <button
-              key={mode.id}
-              type="button"
-              onClick={() => setVisualizationMode(mode.id as VisualizationMode)}
-              className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                visualizationMode === mode.id
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <span>{mode.icon}</span>
-              <span>{mode.label}</span>
-            </button>
-          ))}
+      {!forceMode && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <h3 className="font-semibold mb-3">表示モード</h3>
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            {[
+              { id: 'timeline', label: '時系列', icon: '📈' },
+              { id: 'kpi', label: 'KPIカード', icon: '📊' },
+              { id: 'dumbbell', label: 'Before-After', icon: '⚖️' },
+              { id: 'small-multiples', label: 'スモールマルチプル', icon: '🔢' },
+              { id: 'force-3d', label: '3D Force', icon: '🧲' }
+            ].map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                onClick={() => setVisualizationMode(mode.id as VisualizationMode)}
+                className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  visualizationMode === mode.id
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>{mode.icon}</span>
+                <span>{mode.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* フィルターコントロール */}
+      {!hideFilters && (
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="font-semibold mb-3">フィルター設定</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1441,6 +1450,7 @@ export default function TimelineVisualization({
           </div>
         </div>
       </div>
+      )}
 
       {/* メインコンテンツ */}
       <div className="bg-white border rounded-lg p-4">
