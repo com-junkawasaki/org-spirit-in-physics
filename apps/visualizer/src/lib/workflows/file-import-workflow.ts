@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
 import { listCsvFilesDeep, isCsvModalityPath, countLinesStream, withConcurrency } from '@/lib/fs-stream-utils';
+import { loadManifest, saveManifest, isUnchanged, upsertManifest } from '@/lib/import-manifest';
 
 // Merkle DAG: file_import_workflow -> data_ingestion_pipeline
 // ファイルインポートワークフロー（ローカル実行用）
@@ -27,6 +28,9 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     physioData: { exists: false, path: '', size: 0 },
     humeData: { exists: false, paths: [] as string[], totalSize: 0 },
   };
+
+  // マニフェストの読み込み
+  const manifest = loadManifest();
 
   // session_data.json の確認
   const sessionPath = join(basePath, 'session_data.json');
@@ -136,26 +140,34 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     stats.sessionEvents = sessionData.events?.length || 0;
   }
 
-  // Mod-002 CSV の解析（ストリーム行数カウント）
+  // Mod-002 CSV の解析（マニフェストによるスキップ＋ストリーム行数カウント）
   if (validationResults.physioData.exists) {
-    try {
-      const total = await countLinesStream(validationResults.physioData.path);
-      stats.physioSamples = Math.max(0, total - 1);
-    } catch {
-      stats.physioSamples = 0;
+    const shouldSkip = await isUnchanged(validationResults.physioData.path, manifest, { requireHash: false });
+    if (!shouldSkip) {
+      try {
+        const total = await countLinesStream(validationResults.physioData.path);
+        stats.physioSamples = Math.max(0, total - 1);
+        await upsertManifest(validationResults.physioData.path, manifest, false);
+      } catch {
+        stats.physioSamples = 0;
+      }
     }
   }
 
   // Hume CSV の解析（ストリーム行数カウント並列）
   {
     const tasks = validationResults.humeData.paths.map((p: string) => async (): Promise<void> => {
-      const lines = await countLinesStream(p);
-      const count = Math.max(0, lines - 1);
-      const mod = isCsvModalityPath(p);
-      if (mod === 'burst') stats.burstRecords += count;
-      else if (mod === 'face') stats.faceRecords += count;
-      else if (mod === 'language') stats.languageRecords += count;
-      else if (mod === 'prosody') stats.prosodyRecords += count;
+      const skip = await isUnchanged(p, manifest, { requireHash: false });
+      if (!skip) {
+        const lines = await countLinesStream(p);
+        const count = Math.max(0, lines - 1);
+        const mod = isCsvModalityPath(p);
+        if (mod === 'burst') stats.burstRecords += count;
+        else if (mod === 'face') stats.faceRecords += count;
+        else if (mod === 'language') stats.languageRecords += count;
+        else if (mod === 'prosody') stats.prosodyRecords += count;
+        await upsertManifest(p, manifest, false);
+      }
       return;
     });
     await withConcurrency(8, tasks);
@@ -168,6 +180,9 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     ms: Date.now() - tParse0,
     totalMs: Date.now() - t0,
   });
+
+  // マニフェスト保存
+  saveManifest(manifest);
 
   return {
     success: true,

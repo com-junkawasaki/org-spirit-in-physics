@@ -67,7 +67,7 @@ export default function ForceTimelinePage() {
         participantId={participantId}
         width={1000}
         height={560}
-        forceMode="force-3d-typegpu"
+        forceMode="timeline"
         hideFilters
         useDemo={false}
       />
