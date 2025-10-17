@@ -275,11 +275,16 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         const dy = p[j + 1] - p[i + 1]
         const dz = p[j + 2] - p[i + 2]
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-6
-        // 重みが大きいほど強く短縮＆強く引き寄せ（emotionPowerで増幅）
-        const wAmplified = Math.pow(weight, Math.max(0.1, emotionPower))
-        const L0 = Math.max(10, restLength / Math.sqrt(1 + wAmplified))
+        // 重みが大きいほど近い目標長＆強い引力。弱い結合は長い目標長・弱い引力
+        const wAmp = Math.pow(Math.max(0, Math.min(1, weight)), Math.max(0.1, emotionPower))
+        // 目標長: 強い結合→restLength, 弱い結合→最大2*restLength まで延長
+        const L0 = Math.max(10, restLength * (1 + (1 - weight)))
         const x = dist - L0
-        const force = springK * (1 + wAmplified) * x
+        // 有効バネ定数: ノード次数で正規化（密結合ハブの吸込み抑制）
+        const sums = nodeWeightedScaleRef.current
+        const degNorm = sums ? (1 / Math.max(1, Math.sqrt((sums[source] || 0) + (sums[target] || 0)))) : 1
+        const kEff = springK * (0.2 + 0.8 * wAmp) * degNorm
+        const force = kEff * x
         const fx = (force * dx) / dist
         const fy = (force * dy) / dist
         const fz = (force * dz) / dist
@@ -294,6 +299,15 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       // 減衰と位置更新
       for (let i = 0; i < n; i++) {
         const ix = i * 3
+        // 過度な中心寄せを抑えるため、速度に上限を課す（ソフトクランプ）
+        const sp1 = Math.hypot(v[ix], v[ix + 1], v[ix + 2])
+        const vmax = maxSpeed * 0.6
+        if (sp1 > vmax) {
+          const s = vmax / (sp1 + 1e-6)
+          v[ix] *= s
+          v[ix + 1] *= s
+          v[ix + 2] *= s
+        }
         v[ix] *= damping
         v[ix + 1] *= damping
         v[ix + 2] *= damping
@@ -311,9 +325,9 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
           const ux = rx / rlen
           const uy = ry / rlen
           const uz = rz / rlen
-          v[ix] += fr * ux * (1/60)
-          v[ix + 1] += fr * uy * (1/60)
-          v[ix + 2] += fr * uz * (1/60)
+          v[ix] += fr * ux * 0.016
+          v[ix + 1] += fr * uy * 0.016
+          v[ix + 2] += fr * uz * 0.016
         }
 
         // 外殻への吸引（リング/外層を形成）
@@ -328,13 +342,13 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
           const ux = rx / rlen
           const uy = ry / rlen
           const uz = rz / rlen
-          v[ix] += fr * ux * (1/60)
-          v[ix + 1] += fr * uy * (1/60)
-          v[ix + 2] += fr * uz * (1/60)
+          v[ix] += fr * ux * 0.016
+          v[ix + 1] += fr * uy * 0.016
+          v[ix + 2] += fr * uz * 0.016
         }
-        const speed = Math.hypot(v[ix], v[ix + 1], v[ix + 2])
-        if (speed > maxSpeed) {
-          const s = maxSpeed / (speed + 1e-6)
+        const sp2 = Math.hypot(v[ix], v[ix + 1], v[ix + 2])
+        if (sp2 > maxSpeed) {
+          const s = maxSpeed / (sp2 + 1e-6)
           v[ix] *= s
           v[ix + 1] *= s
           v[ix + 2] *= s
