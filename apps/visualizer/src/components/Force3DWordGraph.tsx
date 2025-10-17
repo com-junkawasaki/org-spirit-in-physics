@@ -58,6 +58,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
   const positionsRef = useRef<Float32Array | null>(null)
   const velocitiesRef = useRef<Float32Array | null>(null)
   const animRef = useRef<number | null>(null)
+  const smoothTargetRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0))
 
   // 差分更新用の参照
   const nodesRef = useRef<WordNode[]>(nodes)
@@ -172,7 +173,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     }
 
     // ノード
-    const unitGeo = new THREE.SphereGeometry(1, 16, 16)
+    // 正12面体ジオメトリ（球から変更）
+    const unitGeo = new THREE.DodecahedronGeometry(1, 0)
     nodeMeshesRef.current = nodesRef.current.map((n) => {
       const color = colorForScaleRef.current(n.scale)
       const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.2 })
@@ -362,6 +364,23 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       if (lineGeometryRef.current) {
         lineGeometryRef.current.attributes.position.needsUpdate = true
         lineGeometryRef.current.attributes.color.needsUpdate = true
+      }
+
+      // 力学の重心にカメラを向ける（スムージング）
+      {
+        let cx = 0, cy = 0, cz = 0
+        for (let i = 0; i < n; i++) {
+          cx += p[i * 3]
+          cy += p[i * 3 + 1]
+          cz += p[i * 3 + 2]
+        }
+        cx /= Math.max(1, n)
+        cy /= Math.max(1, n)
+        cz /= Math.max(1, n)
+        const st = smoothTargetRef.current
+        st.lerp(new THREE.Vector3(cx, cy, cz), 0.1)
+        controls.target.copy(st)
+        camera.lookAt(st)
       }
 
       controls.update()

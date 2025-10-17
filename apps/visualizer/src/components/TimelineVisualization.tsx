@@ -116,6 +116,9 @@ export default function TimelineVisualization({
   const [emotionGain, setEmotionGain] = useState(1.5)
   const [emotionMix, setEmotionMix] = useState(0.7) // 0..1 感情寄与の重み
   const [neighborsK, setNeighborsK] = useState(6) // k-NN エッジ数
+  const [weightGamma, setWeightGamma] = useState(1.5) // 重みのダイナミックレンジ拡張
+  const [shellRadius, setShellRadius] = useState(220)
+  const [shellK, setShellK] = useState(4.0)
   const [emotionGainMin, setEmotionGainMin] = useState(0.5)
   const [emotionGainMax, setEmotionGainMax] = useState(4.0)
   // 3D Force プリセット
@@ -482,7 +485,28 @@ export default function TimelineVisualization({
       }
     }
 
-    // 各ノードの上位Kのみをリンクとして採用
+    // 重みの分布を正規化してダイナミックレンジ拡張
+    let gMin = Infinity, gMax = -Infinity
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = 0; j < nodes.length; j++) {
+        if (i === j) continue
+        const v = combinedMatrix[i][j]
+        if (v < gMin) gMin = v
+        if (v > gMax) gMax = v
+      }
+    }
+    const den = gMax - gMin || 1
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = 0; j < nodes.length; j++) {
+        if (i === j) continue
+        // 0..1 正規化 → べき乗で拡張
+        const t = Math.max(0, Math.min(1, (combinedMatrix[i][j] - gMin) / den))
+        combinedMatrix[i][j] = Math.pow(t, Math.max(0.1, weightGamma))
+      }
+    }
+
+    // mutual k-NN：各ノードの上位Kを求め、相互選択のみ採用
+    const topK: Array<Set<number>> = []
     for (let i = 0; i < nodes.length; i++) {
       const scored: Array<{ j: number; w: number }> = []
       for (let j = 0; j < nodes.length; j++) {
@@ -491,13 +515,18 @@ export default function TimelineVisualization({
         if (w > 0) scored.push({ j, w })
       }
       scored.sort((a, b) => b.w - a.w)
-      const top = scored.slice(0, Math.max(1, neighborsK))
-      for (const { j, w } of top) {
-        const s = Math.min(i, j)
-        const t = Math.max(i, j)
-        // 重複を避けるため既存チェック
-        if (!links.find(l => l.source === s && l.target === t)) {
-          links.push({ source: s, target: t, weight: w })
+      const s = new Set<number>()
+      for (const { j } of scored.slice(0, Math.max(1, neighborsK))) s.add(j)
+      topK.push(s)
+    }
+    for (let i = 0; i < nodes.length; i++) {
+      for (const j of topK[i]) {
+        if (topK[j]?.has(i)) {
+          const s = Math.min(i, j)
+          const t = Math.max(i, j)
+          if (!links.find(l => l.source === s && l.target === t)) {
+            links.push({ source: s, target: t, weight: (combinedMatrix[i][j] + combinedMatrix[j][i]) / 2 })
+          }
         }
       }
     }
@@ -514,7 +543,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionWeak, emotionStrong, emotionGain, emotionMix, neighborsK])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionWeak, emotionStrong, emotionGain, emotionMix, neighborsK, weightGamma])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -1603,6 +1632,18 @@ export default function TimelineVisualization({
               <span className="w-10 text-right">{emotionMix.toFixed(2)}</span>
             </label>
             <label className="flex items-center space-x-2">
+              <span>γ(w)</span>
+              <input type="number" step="0.1" value={weightGamma} onChange={(e) => setWeightGamma(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>ShellR</span>
+              <input type="number" step="10" value={shellRadius} onChange={(e) => setShellRadius(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>ShellK</span>
+              <input type="number" step="0.1" value={shellK} onChange={(e) => setShellK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
               <span>K</span>
               <input type="number" step="1" value={neighborsK} onChange={(e) => setNeighborsK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
@@ -1627,7 +1668,7 @@ export default function TimelineVisualization({
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius: 220, shellK: 4.0 }} emotionPower={emotionGain} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK }} emotionPower={emotionGain} />
             </div>
           )
         })()}
