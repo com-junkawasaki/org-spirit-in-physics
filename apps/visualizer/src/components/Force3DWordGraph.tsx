@@ -16,6 +16,7 @@ export interface WordNode {
   axis?: [number, number, number] // 視覚方向（emotion PCA等で与える）
   fixed?: boolean
   initial?: [number, number, number]
+  color?: string
 }
 
 export interface WordLink {
@@ -55,8 +56,10 @@ interface Force3DWordGraphProps {
   }
   // 感情類似の影響倍率（links.weight への指数影響）
   emotionPower?: number
+  // 感情場（アンカーに基づく色分布）
+  emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number }
 }
-export default function Force3DWordGraph({ nodes, links, width = 1000, height = 600, background = '#0b1020', physics, emotionPower = 1 }: Force3DWordGraphProps) {
+export default function Force3DWordGraph({ nodes, links, width = 1000, height = 600, background = '#0b1020', physics, emotionPower = 1, emotionField }: Force3DWordGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
@@ -80,6 +83,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
   const velocitiesRef = useRef<Float32Array | null>(null)
   const animRef = useRef<number | null>(null)
   const smoothTargetRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0))
+  const fieldMeshRef = useRef<THREE.Mesh | null>(null)
+  const fieldUniformsRef = useRef<{ uAnchorCount: { value: number }; uAnchorPos: { value: THREE.Vector3[] }; uAnchorCol: { value: THREE.Color[] }; uSigma: { value: number }; uAlpha: { value: number } } | null>(null)
 
   // 差分更新用の参照
   const nodesRef = useRef<WordNode[]>(nodes)
@@ -303,6 +308,69 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.6 })
     const lines = new THREE.LineSegments(lineGeometryRef.current, lineMat)
     scene.add(lines)
+
+    // 感情色フィールド（大型スフィアの裏面シェーダ）
+    if (emotionField?.enabled) {
+      const R = emotionField.radius ?? 1200
+      const geo = new THREE.SphereGeometry(R, 64, 64)
+      const maxAnchors = 24
+      // アンカー抽出
+      const anchors = nodesRef.current
+        .map((n, i) => ({ n, i }))
+        .filter(x => x.n.fixed && x.n.initial)
+        .slice(0, maxAnchors)
+      const posArr = anchors.map(a => {
+        const ini = a.n.initial as [number, number, number]
+        return new THREE.Vector3(ini[0], ini[1], ini[2])
+      })
+      const colArr = anchors.map(a => new THREE.Color(a.n.color || '#8888ff'))
+      const uniforms = {
+        uAnchorCount: { value: anchors.length },
+        uAnchorPos: { value: posArr },
+        uAnchorCol: { value: colArr },
+        uSigma: { value: emotionField.sigma ?? 200 },
+        uAlpha: { value: emotionField.alpha ?? 0.35 },
+      }
+      const mat = new THREE.ShaderMaterial({
+        transparent: true,
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms,
+        vertexShader: `
+          varying vec3 vWorldPos;
+          void main(){
+            vec4 wp = modelMatrix * vec4(position,1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform int uAnchorCount;
+          uniform vec3 uAnchorPos[24];
+          uniform vec3 uAnchorCol[24];
+          uniform float uSigma; // world units
+          uniform float uAlpha;
+          varying vec3 vWorldPos;
+          void main(){
+            vec3 num = vec3(0.0); float den = 0.0;
+            float sig2 = max(1e-6, uSigma*uSigma);
+            for(int i=0;i<24;i++){
+              if(i>=uAnchorCount) break;
+              float d2 = dot(vWorldPos - uAnchorPos[i], vWorldPos - uAnchorPos[i]);
+              float w = exp(-d2 / (2.0*sig2));
+              num += uAnchorCol[i] * w;
+              den += w;
+            }
+            vec3 col = den>0.0 ? num/den : vec3(0.1,0.1,0.2);
+            gl_FragColor = vec4(col, uAlpha);
+          }
+        `,
+      })
+      const m = new THREE.Mesh(geo, mat)
+      scene.add(m)
+      fieldMeshRef.current = m
+      fieldUniformsRef.current = uniforms
+    }
 
     let lastTime = performance.now()
     const tick = () => {
@@ -599,6 +667,12 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         camera.lookAt(st)
       }
 
+      // フィールドパラメータの追従（可変 σ・α）
+      if (fieldUniformsRef.current && emotionField?.enabled) {
+        fieldUniformsRef.current.uSigma.value = emotionField.sigma ?? fieldUniformsRef.current.uSigma.value
+        fieldUniformsRef.current.uAlpha.value = emotionField.alpha ?? fieldUniformsRef.current.uAlpha.value
+      }
+
       controls.update()
       renderer.render(scene, camera)
       animRef.current = requestAnimationFrame(tick)
@@ -624,8 +698,12 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         s.removeFromParent()
       })
       if (lineGeometryRef.current) lineGeometryRef.current.dispose()
+      if (fieldMeshRef.current) {
+        (fieldMeshRef.current.material as THREE.Material).dispose()
+        fieldMeshRef.current.geometry.dispose()
+      }
     }
-  }, [width, height, background, emotionPower])
+  }, [width, height, background, emotionPower, emotionField?.enabled, emotionField?.radius, emotionField?.sigma, emotionField?.alpha])
 
   // ノードの差分反映（長さ不変を前提にスケールと色のみ更新）
   useEffect(() => {

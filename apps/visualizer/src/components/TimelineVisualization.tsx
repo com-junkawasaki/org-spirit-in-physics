@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
 // Force3D 用型（型のみローカル定義して実行時依存を最小化）
-interface WordNode { id: string; label: string; scale: number; axis?: [number, number, number]; fixed?: boolean; nodeType?: 'word' | 'anchor'; initial?: [number, number, number] }
+interface WordNode { id: string; label: string; scale: number; axis?: [number, number, number]; fixed?: boolean; nodeType?: 'word' | 'anchor'; initial?: [number, number, number]; color?: string }
 interface WordLink { source: number; target: number; weight: number; mode?: 'tension' | 'compression'; L0?: number; k?: number }
 
 // Force3D コンポーネントは選択時にのみ遅延読み込み
@@ -712,6 +712,7 @@ export default function TimelineVisualization({
         fixed: true,
         nodeType: 'anchor',
         initial: [x, y, z],
+        color: a.color,
       }
     })
 
@@ -1948,12 +1949,12 @@ export default function TimelineVisualization({
         )}
 
         {visualizationMode === 'force-3d' && mounted && (() => {
-          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number }; emotionPower?: number }
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number }; emotionPower?: number; emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number } }
           const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraph.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0 }} emotionPower={emotionGain} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0 }} emotionPower={emotionGain} emotionField={{ enabled: true, radius: 1200, sigma: 220, alpha: 0.35 }} />
             </div>
           )
         })()}
