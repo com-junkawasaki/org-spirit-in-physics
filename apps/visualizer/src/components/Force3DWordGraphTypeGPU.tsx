@@ -121,23 +121,23 @@ export default function Force3DWordGraphTypeGPU({
   }, [])
   
   const physicsRef = useRef({
-    springK: physics?.springK ?? 3.0,
-    repulsionK: physics?.repulsionK ?? 800.0,
-    damping: physics?.damping ?? 0.95,
-    restLength: physics?.restLength ?? 60,
-    maxSpeed: physics?.maxSpeed ?? 120,
-    shellRadius: physics?.shellRadius ?? 180,
-    shellK: physics?.shellK ?? 3.0,
-    shellRadiusOuter: physics?.shellRadiusOuter ?? (physics?.shellRadius ? physics.shellRadius * 1.6 : 288),
-    shellKOuter: physics?.shellKOuter ?? 1.5,
+    springK: physics?.springK ?? 2.0, // バネ定数を弱める
+    repulsionK: physics?.repulsionK ?? 2000.0, // 反発力を大幅に強化
+    damping: physics?.damping ?? 0.92, // ダンピングを弱めて動きを活発に
+    restLength: physics?.restLength ?? 80, // バネの自然長を延長
+    maxSpeed: physics?.maxSpeed ?? 200, // 最大速度を上げて動きを活発に
+    shellRadius: physics?.shellRadius ?? 300, // シェル半径を大幅に拡大
+    shellK: physics?.shellK ?? 1.5, // シェル力を弱める
+    shellRadiusOuter: physics?.shellRadiusOuter ?? (physics?.shellRadius ? physics.shellRadius * 1.5 : 450),
+    shellKOuter: physics?.shellKOuter ?? 0.8, // 外側シェル力を弱める
     radialOutK: physics?.radialOutK ?? 0,
     constraintIters: physics?.constraintIters ?? 2,
     constraintStiffness: physics?.constraintStiffness ?? 0.5,
     torusR: physics?.torusR ?? 0,
     torusr: physics?.torusr ?? 0,
     torusK: physics?.torusK ?? 0,
-    minSep: physics?.minSep ?? 20,
-    sepK: physics?.sepK ?? 1500,
+    minSep: physics?.minSep ?? 40, // 最小分離距離を拡大
+    sepK: physics?.sepK ?? 3000, // 分離力を強化
   })
 
   // カメラ制御イベントリスナーの設定
@@ -200,9 +200,10 @@ export default function Force3DWordGraphTypeGPU({
             pos[i * 3 + 1] = init[1]
             pos[i * 3 + 2] = init[2]
           } else {
+            // より広い範囲に初期配置（半径200-400の球面）
             const theta = Math.random() * Math.PI * 2
             const phi = Math.acos(2 * Math.random() - 1)
-            const r = 120 + Math.random() * 40
+            const r = 200 + Math.random() * 200 // 半径を大幅に拡大
             pos[i * 3] = r * Math.sin(phi) * Math.cos(theta)
             pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
             pos[i * 3 + 2] = r * Math.cos(phi)
@@ -584,6 +585,15 @@ export default function Force3DWordGraphTypeGPU({
                 const tx = pos[target * 3]
                 const ty = pos[target * 3 + 1]
                 const tz = pos[target * 3 + 2]
+                
+                // カメラ参照を取得
+                const camera = cameraRef.current
+                
+                // 三角関数値を計算
+                const cosY = Math.cos(camera.rotationY)
+                const sinY = Math.sin(camera.rotationY)
+                const cosX = Math.cos(camera.rotationX)
+                const sinX = Math.sin(camera.rotationX)
                 
                 // ソースノードのカメラ変換
                 const swx = sx - camera.centerX
