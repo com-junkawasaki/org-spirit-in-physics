@@ -122,6 +122,8 @@ export default function TimelineVisualization({
   const [radialOutK, setRadialOutK] = useState(60)
   const [constraintIters, setConstraintIters] = useState(2)
   const [constraintStiffness, setConstraintStiffness] = useState(0.5)
+  const [kernelSigma, setKernelSigma] = useState(0.8)
+  const [useSpectralInit, setUseSpectralInit] = useState(true)
   // reserved (future): verlet constraints tuning
   const [emotionGainMin, setEmotionGainMin] = useState(0.5)
   const [emotionGainMax, setEmotionGainMax] = useState(4.0)
@@ -586,6 +588,67 @@ export default function TimelineVisualization({
       }
     }
 
+    // --- Spectral Embedding（ラプラシアンの固有ベクトル）で初期3D座標を与える ---
+    if (useSpectralInit) {
+      const words = nodes.map(n => n.label)
+      const V = words.map(w => normalizedEmotionVec[w] || new Array(10).fill(0))
+      const n = words.length
+      // RBFカーネル重み行列 W
+      const W: number[][] = Array.from({ length: n }, () => new Array(n).fill(0))
+      const sig2 = Math.max(1e-6, kernelSigma * kernelSigma)
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          let d2 = 0
+          for (let k = 0; k < 10; k++) {
+            const diff = (V[i][k] || 0) - (V[j][k] || 0)
+            d2 += diff * diff
+          }
+          const w = Math.exp(-d2 / sig2)
+          W[i][j] = w; W[j][i] = w
+        }
+      }
+      const D = new Array(n).fill(0)
+      for (let i = 0; i < n; i++) {
+        let s = 0; for (let j = 0; j < n; j++) s += W[i][j]
+        D[i] = s
+      }
+      // 反復法で2〜4番目の固有ベクトル（ゼロ和を満たす次元）を近似
+      const lapMul = (x: number[]): number[] => {
+        const y = new Array(n).fill(0)
+        for (let i = 0; i < n; i++) {
+          let s = D[i] * x[i]
+          for (let j = 0; j < n; j++) s -= W[i][j] * x[j]
+          y[i] = s
+        }
+        return y
+      }
+      const power = (orth: number[][]): number[] => {
+        let v = Array.from({ length: n }, () => Math.random())
+        const normv = () => { const nn = Math.hypot(...v); if (nn > 0) v = v.map(x => x / nn) }
+        const proj = (u: number[]) => {
+          const dot = v.reduce((s, x, i) => s + x * u[i], 0)
+          for (let i = 0; i < n; i++) v[i] -= dot * u[i]
+        }
+        normv()
+        for (let t = 0; t < 48; t++) {
+          for (const u of orth) proj(u)
+          const y = lapMul(v)
+          v = y
+          normv()
+        }
+        return v
+      }
+      const ones = Array.from({ length: n }, () => 1 / Math.sqrt(n))
+      const e2 = power([ones])
+      const e3 = power([ones, e2])
+      const e4 = power([ones, e2, e3])
+      // 座標へ割当（スケール調整）
+      const scale = shellRadius * 0.8
+      for (let i = 0; i < n; i++) {
+        nodes[i].initial = [e2[i] * scale, e3[i] * scale, e4[i] * scale]
+      }
+    }
+
     // 感情アンカー（2Dマップを球面へ射影）
     const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
       { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
@@ -719,7 +782,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes: allNodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK, shellRadius])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK, shellRadius, kernelSigma, useSpectralInit])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -1839,6 +1902,14 @@ export default function TimelineVisualization({
             <label className="flex items-center space-x-2">
               <span>Damping</span>
               <input type="number" step="0.01" value={damping} onChange={(e) => setDamping(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>σ</span>
+              <input type="number" step="0.05" min="0.1" max="3" value={kernelSigma} onChange={(e) => setKernelSigma(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>Spectral Init</span>
+              <input type="checkbox" checked={useSpectralInit} onChange={(e) => setUseSpectralInit(e.target.checked)} />
             </label>
           </div>
         )}

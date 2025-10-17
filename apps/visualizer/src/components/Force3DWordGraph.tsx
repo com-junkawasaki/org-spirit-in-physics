@@ -14,6 +14,8 @@ export interface WordNode {
   label: string
   scale: number // 単語スケール（ノード半径・重み）
   axis?: [number, number, number] // 視覚方向（emotion PCA等で与える）
+  fixed?: boolean
+  initial?: [number, number, number]
 }
 
 export interface WordLink {
@@ -185,12 +187,19 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     const pos = positionsRef.current as Float32Array
     const vel = velocitiesRef.current as Float32Array
     for (let i = 0; i < N; i++) {
-      const theta = Math.random() * Math.PI * 2
-      const phi = Math.acos(2 * Math.random() - 1)
-      const r = 120 + Math.random() * 40
-      pos[i * 3] = r * Math.sin(phi) * Math.cos(theta)
-      pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
-      pos[i * 3 + 2] = r * Math.cos(phi)
+      const init = nodesRef.current[i]?.initial
+      if (init) {
+        pos[i * 3] = init[0]
+        pos[i * 3 + 1] = init[1]
+        pos[i * 3 + 2] = init[2]
+      } else {
+        const theta = Math.random() * Math.PI * 2
+        const phi = Math.acos(2 * Math.random() - 1)
+        const r = 120 + Math.random() * 40
+        pos[i * 3] = r * Math.sin(phi) * Math.cos(theta)
+        pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
+        pos[i * 3 + 2] = r * Math.cos(phi)
+      }
       vel[i * 3] = 0
       vel[i * 3 + 1] = 0
       vel[i * 3 + 2] = 0
@@ -463,12 +472,20 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         }
       }
 
-      // 最終位置積分
+      // 最終位置積分（固定ノードは初期位置を維持）
       for (let i = 0; i < n; i++) {
         const ix = i * 3
-        p[ix] += v[ix] * delta
-        p[ix + 1] += v[ix + 1] * delta
-        p[ix + 2] += v[ix + 2] * delta
+        const node = nodesRef.current[i]
+        if (node?.fixed && node.initial) {
+          p[ix] = node.initial[0]
+          p[ix + 1] = node.initial[1]
+          p[ix + 2] = node.initial[2]
+          v[ix] = 0; v[ix + 1] = 0; v[ix + 2] = 0
+        } else {
+          p[ix] += v[ix] * delta
+          p[ix + 1] += v[ix + 1] * delta
+          p[ix + 2] += v[ix + 2] * delta
+        }
       }
 
       // ノード位置反映（重み合計でスケールをダイナミックに）
