@@ -63,7 +63,7 @@ export default function Force3DWordGraphTypeGPU({
   links,
   width = 1000,
   height = 600,
-  background = '#0b1020',
+  background = '#ffffff',
   physics,
   emotionPower = 1
 }: Force3DWordGraphTypeGPUProps) {
@@ -450,27 +450,27 @@ export default function Force3DWordGraphTypeGPU({
                 const z = pos[ix + 2]
                 
                 // 3D → 2D 投影
-                const scale = 200 / (z + 200)
+                const scale = Math.max(0.1, 200 / (z + 200)) // 最小スケールを0.1に制限
                 const screenX = width / 2 + x * scale
                 const screenY = height / 2 + y * scale
                 
                 const node = nodesRef.current[i]
-                const radius = Math.max(2, Math.min(10, 2 + node.scale)) * scale
+                const radius = Math.max(1, Math.min(10, 2 + node.scale)) * scale // 最小半径を1に制限
                 
                 ctx.beginPath()
                 ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
-                ctx.fillStyle = node.color || '#3b82f6'
+                ctx.fillStyle = node.color || '#1e40af'
                 ctx.fill()
                 
                 // ラベル
-                ctx.fillStyle = '#ffffff'
+                ctx.fillStyle = '#1f2937'
                 ctx.font = '12px sans-serif'
                 ctx.textAlign = 'center'
                 ctx.fillText(node.label, screenX, screenY + 4)
               }
               
               // エッジ描画
-              ctx.strokeStyle = 'rgba(59, 130, 246, 0.3)'
+              ctx.strokeStyle = 'rgba(30, 64, 175, 0.4)'
               ctx.lineWidth = 1
               for (let k = 0; k < l; k++) {
                 const link = linksRef.current[k]
@@ -484,8 +484,8 @@ export default function Force3DWordGraphTypeGPU({
                 const ty = pos[target * 3 + 1]
                 const tz = pos[target * 3 + 2]
                 
-                const sScale = 200 / (sz + 200)
-                const tScale = 200 / (tz + 200)
+                const sScale = Math.max(0.1, 200 / (sz + 200))
+                const tScale = Math.max(0.1, 200 / (tz + 200))
                 const sScreenX = width / 2 + sx * sScale
                 const sScreenY = height / 2 + sy * sScale
                 const tScreenX = width / 2 + tx * tScale

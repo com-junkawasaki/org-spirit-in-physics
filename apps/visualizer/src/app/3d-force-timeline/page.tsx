@@ -6,9 +6,7 @@ import TimelineVisualization from '@/components/TimelineVisualization'
 
 export default function ForceTimelinePage() {
   const [participantId, setParticipantId] = useState<string>('2a0d7a69-f953-4c29-87a5-8a8e4e8bd413')
-  const [useTypeGPU, setUseTypeGPU] = useState<boolean>(false)
   const inputId = useId()
-  const typeGPUId = useId()
   const [options, setOptions] = useState<Array<{ id: string; label: string }>>([])
   const [loading, setLoading] = useState<boolean>(false)
 
@@ -63,26 +61,13 @@ export default function ForceTimelinePage() {
           </select>
         </div>
         
-        <div className="flex items-center gap-2">
-          <label htmlFor={typeGPUId} className="text-sm">GPU Acceleration</label>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id={typeGPUId}
-              checked={useTypeGPU}
-              onChange={(e) => setUseTypeGPU(e.target.checked)}
-              className="rounded"
-            />
-            <label htmlFor={typeGPUId} className="text-sm cursor-pointer">TypeGPU (GPU.js)</label>
-          </div>
-        </div>
       </div>
 
       <TimelineVisualization
         participantId={participantId}
         width={1000}
         height={560}
-        forceMode={useTypeGPU ? "force-3d-typegpu" : "force-3d"}
+        forceMode="force-3d-typegpu"
         hideFilters
         useDemo
       />

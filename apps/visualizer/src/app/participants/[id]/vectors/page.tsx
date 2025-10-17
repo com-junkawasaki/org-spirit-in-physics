@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Layers, Activity, Brain, Zap } from 'lucide-react'
 import { SpiritProbabilityBadge } from '@/components/SpiritProbabilityBadge'
-import { ThreeVectorVisualization } from '@/components/ThreeVectorVisualization'
+// import { ThreeVectorVisualization } from '@/components/ThreeVectorVisualization' // Three.js依存のため削除
 
 interface AnalysisResult {
   id: string
@@ -141,12 +141,12 @@ function VectorsContent() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <ThreeVectorVisualization
-              vectorData={vectorData}
-              width={800}
-              height={600}
-            />
+          <div className="mb-4 p-8 text-center bg-muted rounded-lg">
+            <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-muted-foreground">3D視覚化は一時的に無効化されています</h3>
+            <p className="text-sm text-muted-foreground mt-2">
+              TypeGPU版への移行により、3Dベクトル視覚化は一時的に無効化されています。
+            </p>
           </div>
 
           {/* Vector Statistics（川崎モデル統合視覚化） */}

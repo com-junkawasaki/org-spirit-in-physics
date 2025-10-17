@@ -5,13 +5,9 @@ import * as d3 from 'd3'
 import dynamic from 'next/dynamic'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
-// Force3D 用型（型のみローカル定義して実行時依存を最小化）
+// TypeGPU 用型
 interface WordNode { id: string; label: string; scale: number; axis?: [number, number, number]; fixed?: boolean; nodeType?: 'word' | 'anchor'; initial?: [number, number, number]; color?: string }
 interface WordLink { source: number; target: number; weight: number; mode?: 'tension' | 'compression'; L0?: number; k?: number }
-
-// TypeGPU 用型（GPU.js版）
-interface WordNodeTypeGPU { id: string; label: string; scale: number; axis?: [number, number, number]; fixed?: boolean; initial?: [number, number, number]; color?: string }
-interface WordLinkTypeGPU { source: number; target: number; weight: number; mode?: 'tension' | 'compression'; L0?: number; k?: number }
 
 // Force3D コンポーネントは選択時にのみ遅延読み込み
 
@@ -60,13 +56,13 @@ interface TimeRange {
   end: number
 }
 
-type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d' | 'force-3d-typegpu'
+type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d-typegpu'
 
 interface TimelineVisualizationProps {
   participantId: string
   width?: number
   height?: number
-  // このページでモードを固定したい場合に指定（例: 'force-3d'）
+  // このページでモードを固定したい場合に指定（例: 'force-3d-typegpu'）
   forceMode?: VisualizationMode
   // フィルターUIを非表示にする
   hideFilters?: boolean
@@ -398,7 +394,7 @@ export default function TimelineVisualization({
   }, [data])
 
   // TypeGPU版用 完全グラフデータ生成（語ごとスケール、辺スケール）
-  const prepareForce3DGraphTypeGPU = React.useCallback((): { nodes: WordNodeTypeGPU[]; links: WordLinkTypeGPU[] } => {
+  const prepareForce3DGraph = React.useCallback((): { nodes: WordNode[]; links: WordLink[] } => {
     if (data.length === 0) return { nodes: [], links: [] }
 
     // ユング100語（日本語）を固定ノード集合として使用
@@ -426,7 +422,7 @@ export default function TimelineVisualization({
     const rawMax = Math.max(...nodeEntries.map(n => n.raw))
     const denom = rawMax - rawMin || 1
 
-    const nodes: WordNodeTypeGPU[] = nodeEntries.map((n, idx) => ({
+    const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
       id: String(idx),
       label: n.word,
       // 0.5〜6.0程度に正規化（視認性のため）
@@ -705,7 +701,7 @@ export default function TimelineVisualization({
       const cz = Math.sin(v)
       return [anchorRadius * cx, anchorRadius * cy, anchorRadius * cz]
     }
-    const anchorNodes: WordNodeTypeGPU[] = anchor2d.map((a, idx) => {
+    const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
       const [x, y, z] = toSphere(a.x, a.y)
       return {
         id: `A${idx}`,
@@ -781,7 +777,7 @@ export default function TimelineVisualization({
     const sortedBySAsc = [...combined].sort((a, b) => a.wS - b.wS)
     const compressionSet = new Set(sortedBySAsc.slice(0, Ccount).map(x => `${x.i}-${x.j}`))
 
-    const links: WordLinkTypeGPU[] = combined.map((p) => {
+    const links: WordLink[] = combined.map((p) => {
       const key = `${p.i}-${p.j}`
       if (tensionSet.has(key)) {
         const L0 = Math.max(10, restLength * (1 - 0.4 * Math.pow(p.wE, 2)))
@@ -820,7 +816,8 @@ export default function TimelineVisualization({
     return { nodes: allNodes, links }
   }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK, shellRadius, kernelSigma, useSpectralInit])
 
-  // 3Dフォース用 完全グラフデータ生成（語ごとスケール、辺スケール）
+  // 3Dフォース用 完全グラフデータ生成（語ごとスケール、辺スケール） - 重複削除
+  /*
   const prepareForce3DGraph = React.useCallback((): { nodes: WordNode[]; links: WordLink[] } => {
     if (data.length === 0) return { nodes: [], links: [] }
 
@@ -1244,6 +1241,7 @@ export default function TimelineVisualization({
 
     return { nodes: allNodes, links }
   }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK, shellRadius, kernelSigma, useSpectralInit])
+  */
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -2033,9 +2031,6 @@ export default function TimelineVisualization({
         case 'dumbbell':
           renderDumbbellChart()
           break
-        case 'force-3d':
-          // three.js 側で描画するため、ここではD3描画なし
-          break
         default:
           break
       }
@@ -2079,8 +2074,7 @@ export default function TimelineVisualization({
               { id: 'kpi', label: 'KPIカード', icon: '📊' },
               { id: 'dumbbell', label: 'Before-After', icon: '⚖️' },
               { id: 'small-multiples', label: 'スモールマルチプル', icon: '🔢' },
-              { id: 'force-3d', label: '3D Force', icon: '🧲' },
-              { id: 'force-3d-typegpu', label: '3D Force TypeGPU', icon: '⚡' }
+              { id: 'force-3d-typegpu', label: '3D Force', icon: '⚡' }
             ].map((mode) => (
               <button
                 key={mode.id}
@@ -2264,7 +2258,7 @@ export default function TimelineVisualization({
         
         {visualizationMode === 'small-multiples' && renderSmallMultiples()}
 
-        {visualizationMode === 'force-3d' && (
+        {visualizationMode === 'force-3d-typegpu' && (
           <div className="mb-4 grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
             <label className="flex items-center space-x-2 col-span-2 md:col-span-2">
               <span>Preset</span>
@@ -2376,24 +2370,14 @@ export default function TimelineVisualization({
           </div>
         )}
 
-        {visualizationMode === 'force-3d' && mounted && (() => {
+
+        {visualizationMode === 'force-3d-typegpu' && mounted && (() => {
           type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number }; emotionPower?: number; emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number } }
-          const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraph.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
+          const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraphTypeGPU.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
               <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0 }} emotionPower={emotionGain} emotionField={{ enabled: true, radius: 1200, sigma: 220, alpha: 0.35 }} />
-            </div>
-          )
-        })()}
-
-        {visualizationMode === 'force-3d-typegpu' && mounted && (() => {
-          type Force3DTypeGPUProps = { nodes: WordNodeTypeGPU[]; links: WordLinkTypeGPU[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number }; emotionPower?: number; emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number } }
-          const Force3DTypeGPU = dynamic<Force3DTypeGPUProps>(() => import('./Force3DWordGraphTypeGPU.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DTypeGPUProps> }>, { ssr: false })
-          const { nodes, links } = prepareForce3DGraphTypeGPU()
-          return (
-            <div className="border rounded overflow-hidden">
-              <Force3DTypeGPU nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0 }} emotionPower={emotionGain} emotionField={{ enabled: true, radius: 1200, sigma: 220, alpha: 0.35 }} />
             </div>
           )
         })()}
