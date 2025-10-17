@@ -1,9 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+// __dirname は CommonJS 変換時に利用可能
+// ESM の import.meta は CommonJS 出力では使用不可のため削除
 
 // Merkle DAG: scripts.sync_participants
 // ルート dataset/participants -> apps/visualizer/src/dataset/participants へ不足分を同期

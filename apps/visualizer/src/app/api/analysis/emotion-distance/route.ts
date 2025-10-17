@@ -325,7 +325,11 @@ export async function POST(request: NextRequest) {
 
 // Merkle DAG: api.analysis.emotion_distance.session_data_extraction
 // セッションデータの抽出
-async function extractSessionData(client: unknown, participantId: string, experimentId?: string): Promise<unknown[]> {
+async function extractSessionData(
+  client: unknown,
+  participantId: string,
+  experimentId?: string
+): Promise<Array<{ event_type: string; timestamp: number; payload?: { word?: string } }>> {
   const query = experimentId 
     ? `
       MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)
@@ -346,18 +350,35 @@ async function extractSessionData(client: unknown, participantId: string, experi
     ? { participantId, experimentId }
     : { participantId };
 
-  const result = await client.query(query, params);
+  const db = client as { query: (q: string, p: unknown) => Promise<any[]> };
+  const result = await db.query(query, params);
   
   if (result.length === 0) {
     return [];
   }
 
-  const sessionData = result[0].sessionData;
-  if (!sessionData || !sessionData.events) {
-    return [];
+  const sessionData = result[0].sessionData as { events?: unknown[] } | null | undefined;
+  const rawEvents = (sessionData && Array.isArray(sessionData.events)) ? sessionData.events : [];
+
+  // 型安全に整形
+  const events: Array<{ event_type: string; timestamp: number; payload?: { word?: string } }> = [];
+  for (const ev of rawEvents) {
+    if (ev && typeof ev === 'object') {
+      const e = ev as Record<string, unknown>;
+      const event_type = typeof e.event_type === 'string' ? e.event_type : undefined;
+      const timestamp = typeof e.timestamp === 'number' ? e.timestamp : undefined;
+      const payload = (e.payload && typeof e.payload === 'object') ? e.payload as { word?: unknown } : undefined;
+      if (event_type && typeof timestamp === 'number') {
+        events.push({
+          event_type,
+          timestamp,
+          payload: payload ? { word: typeof payload.word === 'string' ? payload.word : undefined } : undefined,
+        });
+      }
+    }
   }
 
-  return sessionData.events;
+  return events;
 }
 
 // Merkle DAG: api.analysis.emotion_distance.emotion_data_extraction
@@ -387,7 +408,8 @@ async function extractEmotionData(client: unknown, participantId: string, experi
     ? { participantId, experimentId }
     : { participantId };
 
-  const result = await client.query(query, params);
+  const db = client as { query: (q: string, p: unknown) => Promise<any[]> };
+  const result = await db.query(query, params);
   
   return result.map((row: { emotions?: string; fileType?: string; beginTime: number; endTime: number; confidence?: number }) => ({
     emotions: row.emotions ? (JSON.parse(row.emotions) as Array<{ name: string; score: number }>) : [],
@@ -424,7 +446,8 @@ async function extractPhysiologicalData(client: unknown, participantId: string, 
     ? { participantId, experimentId }
     : { participantId };
 
-  const result = await client.query(query, params);
+  const db = client as { query: (q: string, p: unknown) => Promise<any[]> };
+  const result = await db.query(query, params);
   
   return result.map((row: { channel: string; value: number; timestamp: number; quality?: number }) => ({
     channel: row.channel,

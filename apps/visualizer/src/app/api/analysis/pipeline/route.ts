@@ -23,7 +23,16 @@ export async function POST(request: NextRequest) {
 
     const client = createNeo4jClient();
     const analysisId = `analysis_${participantId}_${Date.now()}`;
-    const results = {
+    const results: {
+      analysisId: string;
+      participantId: string;
+      status: 'running' | 'failed' | 'completed';
+      startTime: string;
+      endTime?: string;
+      error?: string;
+      summary?: Record<string, unknown>;
+      steps: Record<string, unknown>;
+    } = {
       analysisId,
       participantId,
       status: 'running',
