@@ -36,13 +36,15 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const client = createNeo4jClient();
-
     // Merkle DAG: api.analysis.emotion_distance.data_extraction
-    // データの抽出
-    const sessionData = await extractSessionData(client, participantId, experimentId);
-    const emotionData = await extractEmotionData(client, participantId, experimentId);
-    const physiologicalData = await extractPhysiologicalData(client, participantId, experimentId);
+    // データの抽出（ファイルベース）
+    const dataRootPath = '/app/public/dataset';
+    const basePath = `${dataRootPath}/participants/${participantId}`;
+    
+    // セッションデータの読み込み
+    const sessionData = await loadSessionDataFromFile(basePath);
+    const emotionData = await loadEmotionDataFromFile(basePath);
+    const physiologicalData = await loadPhysiologicalDataFromFile(basePath);
 
     if (!sessionData || sessionData.length === 0) {
       return NextResponse.json({

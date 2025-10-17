@@ -27,13 +27,6 @@ const menuItems: MenuItem[] = [
         description: '参加者データ管理'
     },
     {
-        id: 'import',
-        label: 'インポート管理',
-        href: '/import',
-        icon: '📥',
-        description: 'データインポート処理'
-    },
-    {
         id: 'timeline',
         label: '時系列可視化',
         href: '/participants/2a0d7a69-f953-4c29-87a5-8a8e4e8bd413/timeline',
