@@ -319,7 +319,7 @@ async function performEmotionAnalysis(client: any, participantId: string, option
     }, {} as Record<string, number>);
 
     const dominantEmotion = Object.entries(emotionCounts)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || null;
+      .sort(([,a], [,b]) => (b as number) - (a as number))[0]?.[0] || null;
 
     const averageConfidence = emotions.reduce((sum, e) => sum + (e.confidence || 0), 0) / emotions.length;
 
