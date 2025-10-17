@@ -1,35 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAnalysisResultsForParticipant } from '@/lib/data'
+import { getAnalysisResultsForParticipant, getAnalysisResults } from '@/lib/data'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const participantId = searchParams.get('participantId')
 
-    if (!participantId) {
-      return NextResponse.json(
-        { error: 'participantId is required' },
-        { status: 400 }
-      )
+    let results
+    if (participantId) {
+      // Get analysis results for the specific participant
+      results = await getAnalysisResultsForParticipant(participantId)
+    } else {
+      // Get all analysis results
+      results = await getAnalysisResults()
     }
 
-    const results = await getAnalysisResultsForParticipant(participantId)
-
-    // Transform the data for the frontend
+    // Transform the data for the frontend (already in correct format from lib/data.ts)
     const transformedResults = results.map(result => ({
       id: result.id,
-      stimulusWord: result.stimulus_word,
-      responseWord: result.response_word,
-      spiritProbability: result.kawasaki_p_value,
-      reactionTime: result.reaction_time_ms,
-      emotionData: result.emotion_data || {},
-      timestamp: result.created_at,
-      components: {
-        word2vec: result.word2vec_component || 0,
-        reaction_time: result.reaction_time_component || 0,
-        skin_potential: result.skin_potential_component || 0,
-        emotion: result.emotion_component || 0
-      }
+      stimulus_word: result.stimulus_word,
+      response_word: result.response_word,
+      p_value: result.p_value,
+      emotion_data: result.emotion_data || {},
+      created_at: result.created_at,
+      word2vec_component: result.word2vec_component || 0,
+      reaction_time_component: result.reaction_time_component || 0,
+      skin_potential_component: result.skin_potential_component || 0,
+      emotion_component: result.emotion_component || 0,
+      physiological_data: result.physiological_data || null
     }))
 
     return NextResponse.json(transformedResults)

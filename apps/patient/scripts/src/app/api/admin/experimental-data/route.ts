@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "scripts/src/lib/supabase";
-import { parseWordResponsesFromEvents, getParticipantStatistics } from "scripts/src/lib/data-loader";
+import { parseWordResponsesFromEvents, getParticipantStatistics, loadAllSessionData } from "scripts/src/lib/data-loader";
+import { neo4jManager } from "scripts/src/lib/database/neo4j-manager";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,44 +10,34 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Supabaseから参加者データを取得
-        const { data: participantsData, error: supabaseError } = await supabase
-          .from('participants')
-          .select(`
-            *,
-            sessions (
-              id
-            ),
-            video_files (
-              id,
-              file_name,
-              file_path,
-              file_size
-            )
-          `)
-          .order('created_at', { ascending: false });
+        // Neo4jから参加者データを取得
+        const neo4jParticipants = await neo4jManager.getAllParticipants();
 
-        if (supabaseError) {
-          console.error('Error fetching participants:', supabaseError);
-          return NextResponse.json({
-            error: "Failed to fetch participants"
-          }, { status: 500 });
-        }
+        // Convert to data-loader Participant format
+        const participantsData: import("scripts/src/lib/data-loader").Participant[] = neo4jParticipants.map(p => ({
+          id: p.id,
+          signature: p.signature || "unknown",
+          agreedAt: p.agreedAt || new Date(),
+          agreements: p.agreements || {},
+          hasSessionData: p.hasSessionData || false,
+          hasVideoFiles: p.hasVideoFiles || false,
+          videoFiles: p.videoFiles || []
+        }));
 
-        const participantStats = getParticipantStatistics(participantsData || []);
+        const participantStats = getParticipantStatistics(participantsData);
 
         // Transform to match expected format
         const formattedParticipants = (participantsData || []).map((p: any) => ({
           id: p.id,
-          age: null, // Age not available in current data
-          gender: null, // Gender not available in current data
-          handedness: null, // Handedness not available in current data
-          createdAt: p.agreed_at,
-          sessionCount: p.sessions?.length || 0,
-          lastActivity: p.updated_at || p.created_at,
-          status: (p.sessions?.length || 0) > 0 ? 'completed' : 'in_progress',
-          hasVideoFiles: (p.video_files?.length || 0) > 0,
-          videoFiles: p.video_files || []
+          age: p.age,
+          gender: p.gender,
+          handedness: p.handedness,
+          createdAt: p.agreedAt || p.createdAt,
+          sessionCount: p.sessionCount || 0,
+          lastActivity: p.agreedAt || p.createdAt,
+          status: (p.sessionCount || 0) > 0 ? 'completed' : 'in_progress',
+          hasVideoFiles: p.hasVideoFiles || false,
+          videoFiles: p.videoFiles || []
         }));
 
         return NextResponse.json({
@@ -64,25 +54,10 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        const { data: participant, error: participantError } = await supabase
-          .from('participants')
-          .select(`
-            *,
-            sessions (
-              id
-            ),
-            video_files (
-              id,
-              file_name,
-              file_path,
-              file_size
-            )
-          `)
-          .eq('id', participantId)
-          .single();
+        // Neo4jから参加者データを取得
+        const participant = await neo4jManager.getParticipant(participantId);
 
-        if (participantError) {
-          console.error('Error fetching participant:', participantError);
+        if (!participant) {
           return NextResponse.json({
             error: "Participant not found"
           }, { status: 404 });
@@ -91,48 +66,29 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           success: true,
           data: {
-            id: participant.id,
-            signature: participant.signature,
-            agreedAt: participant.agreed_at,
-            hasSessionData: (participant.sessions?.length || 0) > 0,
-            hasVideoFiles: (participant.video_files?.length || 0) > 0,
-            videoFiles: participant.video_files || []
+            id: participantId,
+            signature: participant.signature || "unknown",
+            agreedAt: participant.agreedAt || new Date().toISOString(),
+            hasSessionData: participant.hasSessionData || false,
+            hasVideoFiles: participant.hasVideoFiles || false,
+            videoFiles: participant.videoFiles || []
           }
         });
 
       case 'sessions':
-        let query = supabase
-          .from('sessions')
-          .select(`
-            *,
-            participants (
-              signature
-            )
-          `)
-          .order('created_at', { ascending: false });
-
-        if (participantId) {
-          query = query.eq('participant_id', participantId);
-        }
-
-        const { data: sessionsData, error: sessionsError } = await query;
-
-        if (sessionsError) {
-          console.error('Error fetching sessions:', sessionsError);
-          return NextResponse.json({
-            error: "Failed to fetch sessions"
-          }, { status: 500 });
-        }
+        // Neo4jからセッションデータを取得
+        const sessionsData = await loadAllSessionData();
 
         // Transform session data to match expected format
-        const formattedSessions = (sessionsData || []).map((session: any) => {
+        const formattedSessions = (sessionsData || []).map((record: any) => {
+          const session = record.sessionData;
           const wordResponses = parseWordResponsesFromEvents(session.events || []);
 
           // Extract session start/end times from events
           const sessionStartedEvent = (session.events || []).find((e: any) => e.type === 'session_started');
           const sessionStartTime = sessionStartedEvent
             ? new Date(sessionStartedEvent.timestamp).toISOString()
-            : session.created_at;
+            : new Date().toISOString();
 
           const sessionEndedEvent = (session.events || [])
             .filter((e: any) => e.type === 'response_window_closed')
@@ -142,9 +98,9 @@ export async function GET(request: NextRequest) {
             : sessionStartTime;
 
           return {
-            participantId: session.participant_id,
-            sessionId: session.id,
-            sessionType: session.id,
+            participantId: record.participantId,
+            sessionId: session.participantId, // Using participantId as sessionId for now
+            sessionType: session.participantId,
             startTime: sessionStartTime,
             endTime: sessionEndTime,
             wordResponses,
@@ -162,60 +118,47 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Supabaseからデータを取得
-        const { data: participants, error: participantsError } = await supabase
-          .from('participants')
-          .select(`
-            *,
-            sessions (
-              id,
-              events
-            ),
-            video_files (
-              id
-            )
-          `);
+        // Neo4jからデータを取得
+        const analyticsNeo4jParticipants = await neo4jManager.getAllParticipants();
 
-        if (participantsError) {
-          console.error('Error fetching analytics data:', participantsError);
-          return NextResponse.json({
-            error: "Failed to fetch analytics data"
-          }, { status: 500 });
-        }
+        // Convert to data-loader Participant format
+        const participants: import("scripts/src/lib/data-loader").Participant[] = analyticsNeo4jParticipants.map(p => ({
+          id: p.id,
+          signature: p.signature || "unknown",
+          agreedAt: p.agreedAt || new Date(),
+          agreements: p.agreements || {},
+          hasSessionData: p.hasSessionData || false,
+          hasVideoFiles: p.hasVideoFiles || false,
+          videoFiles: p.videoFiles || []
+        }));
 
-        const stats = getParticipantStatistics(participants || []);
+        const stats = getParticipantStatistics(participants);
 
-        // Calculate reaction time statistics from Supabase data
+        // Calculate reaction time statistics from Neo4j data
         let totalReactionTime = 0;
         let totalResponses = 0;
 
-        (participants || []).forEach((participant: any) => {
-          (participant.sessions || []).forEach((session: any) => {
-            const wordResponses = parseWordResponsesFromEvents(session.events || []);
-            wordResponses.forEach((response: any) => {
-              totalReactionTime += response.reactionTimeMs;
-              totalResponses += 1;
-            });
+        // Get sessions data for reaction time calculation
+        const analyticsSessionsData = await loadAllSessionData();
+        analyticsSessionsData.forEach((sessionRecord: any) => {
+          const wordResponses = parseWordResponsesFromEvents(sessionRecord.sessionData.events || []);
+          wordResponses.forEach((response: any) => {
+            totalReactionTime += response.reactionTimeMs;
+            totalResponses += 1;
           });
         });
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Supabaseから感情統計を取得
-        const { data: emotions, error: emotionsError } = await supabase
-          .from('emotions')
-          .select('name');
+        // Neo4jから感情統計を取得
+        const emotionStats = await neo4jManager.getEmotionStatistics();
+        const emotionDistribution: Record<string, number> = {};
+        emotionStats.dominantEmotions.forEach((item: any) => {
+          emotionDistribution[item.emotion] = item.count;
+        });
 
-        let emotionDistribution: Record<string, number> = {};
-        if (!emotionsError && emotions) {
-          emotionDistribution = emotions.reduce((acc: Record<string, number>, emotion: any) => {
-            acc[emotion.name] = (acc[emotion.name] || 0) + 1;
-            return acc;
-          }, {});
-        }
-
-        const totalSessions = (participants || []).reduce((acc: number, p: any) =>
-          acc + (p.sessions?.length || 0), 0);
+        const totalSessions = participants.reduce((acc: number, p: any) =>
+          acc + (p.sessionCount || 0), 0);
 
         return NextResponse.json({
           success: true,
@@ -232,30 +175,23 @@ export async function GET(request: NextRequest) {
         });
 
       case 'reaction-times':
-        const { data: sessions, error } = await supabase
-          .from('sessions')
-          .select('participant_id, events')
-          .not('events', 'is', null);
+        // Neo4jからreaction timeデータを取得
+        const reactionTimeSessionsData = await loadAllSessionData();
+        const reactionTimeData: any[] = [];
 
-        if (error) {
-          console.error('Error fetching reaction time data:', error);
-          return NextResponse.json({
-            error: "Failed to fetch reaction time data"
-          }, { status: 500 });
-        }
-
-        const reactionTimeData = (sessions || []).flatMap((session: any) => {
-          const wordResponses = parseWordResponsesFromEvents(session.events || []);
-
-          return wordResponses.map((response: any) => ({
-            participantId: session.participant_id,
-            sessionType: 'session-1', // Simplified
-            stimulusWord: response.stimulusWord,
-            responseWord: response.responseWord,
-            reactionTimeMs: response.reactionTimeMs,
-            isDelayed: response.isDelayed,
-            timestamp: new Date(response.timestamp).toISOString()
-          }));
+        reactionTimeSessionsData.forEach((sessionRecord: any) => {
+          const wordResponses = parseWordResponsesFromEvents(sessionRecord.sessionData.events || []);
+          wordResponses.forEach((response: any) => {
+            reactionTimeData.push({
+              participantId: sessionRecord.participantId,
+              sessionType: sessionRecord.participantId, // Using participantId as sessionType
+              stimulusWord: response.stimulusWord,
+              responseWord: response.responseWord,
+              reactionTimeMs: response.reactionTimeMs,
+              isDelayed: response.isDelayed,
+              timestamp: response.timestamp
+            });
+          });
         });
 
         return NextResponse.json({

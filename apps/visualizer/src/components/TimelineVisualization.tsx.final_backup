@@ -1,0 +1,952 @@
+'use client'
+
+import React, { useState, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
+import { useTimelineData } from './timeline/useTimelineData'
+import TimelineChart from './timeline/TimelineChart'
+import KPICards from './timeline/KPICards'
+import Force3DControls from './timeline/Force3DControls'
+import type {
+  TimelineVisualizationProps,
+  ForcePreset,
+  WordNode,
+  WordLink
+} from './timeline/types'
+import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
+
+// Merkle DAG: components.timeline_visualization
+// 時系列統合可視化コンポーネント
+// 依存関係: React, timeline modules
+// BPMN: TimelineVisualizationComponent
+
+export default function TimelineVisualization({
+  participantId,
+  width = 800,
+  height = 400,
+  hideFilters = false,
+}: Omit<TimelineVisualizationProps, 'forceMode' | 'useDemo'>) {
+  // 3D Force パラメータ
+  const [springK, setSpringK] = useState(2.0)
+  const [repulsionK, setRepulsionK] = useState(2000.0)
+  const [restLength, setRestLength] = useState(80)
+  const [damping, setDamping] = useState(0.92)
+  const [emotionGain, setEmotionGain] = useState(1.5)
+  const [shellRadius, setShellRadius] = useState(300)
+  const [shellK, setShellK] = useState(1.5)
+  const [radialOutK] = useState(0)
+  const [constraintIters] = useState(2)
+  const [constraintStiffness] = useState(0.5)
+  const [minSep, setMinSep] = useState(40)
+  const [sepK, setSepK] = useState(3000)
+
+  // Kawasaki model hyperparameters
+  const [alpha, setAlpha] = useState(1.0)  // 反応時間の指数 α
+  const [gamma, setGamma] = useState(1.0)  // ΔSP の係数 γ
+  const [lambda, setLambda] = useState(1.0) // ΔSP のスケール λ
+  const [eta, setEta] = useState(1.0)    // 感情スコア係数 η
+
+  // データ管理フックを使用
+  const {
+    mounted,
+    data,
+    loading,
+    error,
+    selectedDataPoint,
+    setSelectedDataPoint,
+    timeRange,
+    filters,
+    getPhysStat,
+    refetchData
+  } = useTimelineData({ participantId })
+
+  // 3D Force プリセット
+  const forcePresets: readonly ForcePreset[] = [
+    { id: 'balanced', label: 'Balanced', springK: 2.0, repulsionK: 2000, restLength: 80, damping: 0.92, emoWeak: 0.6, emoStrong: 1.6, emoGain: 1.5 },
+    { id: 'tight', label: 'Tight clusters', springK: 3.0, repulsionK: 3000, restLength: 60, damping: 0.90, emoWeak: 0.6, emoStrong: 1.8, emoGain: 2.5 },
+    { id: 'loose', label: 'Loose clusters', springK: 1.5, repulsionK: 1500, restLength: 100, damping: 0.94, emoWeak: 0.7, emoStrong: 1.4, emoGain: 1.0 },
+    { id: 'slow', label: 'Slow precise', springK: 2.0, repulsionK: 2500, restLength: 80, damping: 0.96, emoWeak: 0.6, emoStrong: 1.6, emoGain: 2.0 },
+  ]
+  const [forcePresetId, setForcePresetId] = useState<ForcePreset['id']>('balanced')
+
+  const applyForcePreset = useCallback((id: ForcePreset['id']) => {
+    const p = forcePresets.find(x => x.id === id)
+    if (!p) return
+    setForcePresetId(id)
+    setSpringK(p.springK)
+    setRepulsionK(p.repulsionK)
+    setRestLength(p.restLength)
+    setDamping(p.damping)
+    setEmotionGain(p.emoGain)
+  }, [forcePresets])
+
+  const tooltipRef = useRef<HTMLDivElement>(null)
+
+  // --- Demo timeline generator -------------------------------------------------
+  const generateDemoTimeline = React.useCallback((): TimelineDataPoint[] => {
+    // 100語のサンプルを時系列化
+    const words = JUNG_STIMULUS_WORDS.slice(0, 100)
+    const EMOTIONS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+    const start = Date.now() - 1000 * 60 // 少し過去から開始
+
+    const rand = (min: number, max: number) => Math.random() * (max - min) + min
+    const pick = <T,>(arr: readonly T[], k: number) => Array.from({ length: k }, () => arr[Math.floor(Math.random() * arr.length)])
+
+    const points: TimelineDataPoint[] = words.map((w, idx) => {
+      const timestamp = start + idx * Math.round(rand(700, 1600))
+      const reactionTime = Math.round(rand(350, 2400))
+      const hasResponse = Math.random() < 0.9
+      const emoCount = Math.max(1, Math.floor(rand(1, 4)))
+      const emos = pick(EMOTIONS, emoCount).map((name) => ({ name, score: Math.round(rand(0.15, 0.9) * 100) / 100, fileType: 'demo' }))
+      const physAvg = Math.round(rand(-0.12, 0.18) * 1000) / 1000
+      const physMax = physAvg + Math.abs(Math.round(rand(0.0, 0.08) * 1000) / 1000)
+      const physMin = physAvg - Math.abs(Math.round(rand(0.0, 0.08) * 1000) / 1000)
+      // 反応値: 感情平均と生理の正規化、反応時間のペナルティを合成
+      const emoMean = emos.length ? emos.reduce((s, e) => s + e.score, 0) / emos.length : 0
+      const rtNorm = (reactionTime - 350) / (2400 - 350)
+      const physNorm = (Math.abs(physAvg) / 0.2)
+      const reactionValue = Math.max(0, Math.min(1, 0.55 * emoMean + 0.35 * Math.min(1, physNorm) + 0.25 * (1 - rtNorm)))
+
+      return {
+        timestamp,
+        word: w.japanese,
+        reactionTime,
+        hasResponse,
+        emotions: emos as unknown as EmotionData[],
+        physiological: { average: physAvg, max: physMax, min: physMin },
+        reactionValue,
+        eventType: 'word_displayed',
+        metadata: { emotionCount: emos.length, physiologicalCount: 1 }
+      }
+    })
+    return points
+  }, [])
+
+  const getPhysStat = (p: TimelineDataPoint['physiological'], key: 'average' | 'max' | 'min'): number => {
+    if (Array.isArray(p)) return 0
+    if (p && typeof p === 'object') {
+      const v = (p as Record<string, unknown>)[key]
+      return typeof v === 'number' && Number.isFinite(v) ? v : 0
+    }
+    return 0
+  }
+
+  useEffect(() => { setMounted(true) }, [])
+
+  const fetchTimelineData = React.useCallback(async () => {
+    try {
+      setLoading(true)
+      console.log('TimelineVisualization: Starting data fetch for participant:', participantId)
+      // APIからデータを取得
+      const apiUrl = `/api/participants/${participantId}/timeline`
+      console.log('TimelineVisualization: API URL:', apiUrl)
+      let ok = false
+      try {
+        const response = await fetch(apiUrl)
+        console.log('TimelineVisualization: API response status:', response.status)
+        const result = await response.json()
+        console.log('TimelineVisualization: API result:', result)
+        if (result?.success && Array.isArray(result.data?.timelineData)) {
+          console.log('TimelineVisualization: Converting data, count:', result.data.timelineData.length)
+          // 短縮フィールドをTimelineDataPoint形式に変換
+          const convertedData = result.data.timelineData.map((item: any) => ({
+            timestamp: item.t || item.timestamp,
+            word: item.w || item.word,
+            reactionTime: 0, // デフォルト値
+            hasResponse: true, // デフォルト値
+            emotions: item.em || item.emotions || [],
+            physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
+            reactionValue: item.rv || item.reactionValue || 0,
+            eventType: item.e || item.eventType,
+            metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
+          }))
+          console.log('TimelineVisualization: Converted data sample:', convertedData[0])
+          setData(convertedData)
+          ok = true
+          if (Array.isArray(result.data.metadata?.errors) && result.data.metadata.errors.length > 0) {
+            setError(`警告: 一部データ取得に失敗しました: ${result.data.metadata.errors.join('; ')}`)
+          } else {
+            setError(null)
+          }
+        } else {
+          console.log('TimelineVisualization: API response not successful or no data')
+        }
+      } catch (error) {
+        console.error('TimelineVisualization: API fetch error:', error)
+        // noop -> フォールバックへ
+      }
+
+      if (!ok) {
+        const demo = generateDemoTimeline()
+        setData(demo)
+        setError(null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }, [participantId, useDemo, generateDemoTimeline])
+
+  // Word2Vec 埋め込み（平均）を単語ごとに取得
+  const fetchWordEmbeddings = React.useCallback(async () => {
+    try {
+      const res = await fetch(`/api/participants/${participantId}/word2vec`)
+      const json = await res.json()
+      if (!json?.success) return
+      const byWord: Record<string, { sum: number[]; count: number }> = {}
+      ;(json.wordData as Array<{ word: string; embedding: number[] }>).forEach((item) => {
+        if (!byWord[item.word]) byWord[item.word] = { sum: new Array(item.embedding.length).fill(0), count: 0 }
+        const acc = byWord[item.word]
+        for (let i = 0; i < item.embedding.length; i++) acc.sum[i] += item.embedding[i]
+        acc.count += 1
+      })
+      const averaged: Record<string, number[]> = {}
+      Object.entries(byWord).forEach(([w, { sum, count }]) => {
+        averaged[w] = sum.map((v) => v / Math.max(1, count))
+      })
+      setEmbeddingsByWord(averaged)
+    } catch {
+      // 失敗時は無視（ベクトル項なしでも描画可能）
+    }
+  }, [participantId])
+
+  const showTooltip = React.useCallback((event: MouseEvent, d: TimelineDataPoint) => {
+    if (!tooltipRef.current) return
+
+    const tooltip = tooltipRef.current
+    tooltip.style.display = 'block'
+    tooltip.style.left = `${event.pageX + 10}px`
+    tooltip.style.top = `${event.pageY - 10}px`
+    
+    // 感情データの詳細表示
+    const emotionDetails = d.emotions.length > 0 
+      ? d.emotions.map(emotion => 
+          `<div class="text-xs">
+            <span class="font-medium">${emotion.name || 'unknown'}</span>: 
+            <span class="text-blue-600">${(emotion.score || 0).toFixed(2)}</span>
+            <span class="text-gray-500">(${emotion.fileType || 'unknown'})</span>
+          </div>`
+        ).join('')
+      : '<div class="text-xs text-gray-500">感情データなし</div>'
+    
+    tooltip.innerHTML = `
+      <div class="bg-white border border-gray-300 rounded-lg p-3 shadow-lg text-sm">
+        <div class="font-semibold text-gray-900 mb-2">${d.word}</div>
+        <div class="text-gray-600 mb-2">時間: ${new Date(d.timestamp).toLocaleTimeString()}</div>
+        <div class="grid grid-cols-2 gap-2 text-xs mb-2">
+          <div>反応値: <span class="font-medium">${d.reactionValue.toFixed(2)}</span></div>
+          <div>反応時間: <span class="font-medium">${d.reactionTime}ms</span></div>
+        </div>
+        <div class="border-t pt-2">
+          <div class="text-xs font-medium text-gray-700 mb-1">感情データ:</div>
+          ${emotionDetails}
+        </div>
+      </div>
+    `
+  }, [])
+
+  const hideTooltip = React.useCallback(() => {
+    if (tooltipRef.current) {
+      tooltipRef.current.style.display = 'none'
+    }
+  }, [])
+
+  // KPIカード計算
+  const calculateKPIs = React.useCallback(() => {
+    if (data.length === 0) return null
+
+    const currentValues = {
+      avgReactionTime: data.reduce((sum, d) => sum + d.reactionTime, 0) / data.length,
+      avgReactionValue: data.reduce((sum, d) => sum + d.reactionValue, 0) / data.length,
+      responseRate: (data.filter(d => d.hasResponse).length / data.length) * 100,
+      totalResponses: data.filter(d => d.hasResponse).length
+    }
+
+    // 過去の値（デモ用：現在値の90-110%の範囲でランダム）
+    const previousValues = {
+      avgReactionTime: currentValues.avgReactionTime * (0.9 + Math.random() * 0.2),
+      avgReactionValue: currentValues.avgReactionValue * (0.9 + Math.random() * 0.2),
+      responseRate: currentValues.responseRate * (0.9 + Math.random() * 0.2),
+      totalResponses: Math.floor(currentValues.totalResponses * (0.9 + Math.random() * 0.2))
+    }
+
+    // 変化率計算
+    const changes = {
+      avgReactionTime: ((currentValues.avgReactionTime - previousValues.avgReactionTime) / previousValues.avgReactionTime) * 100,
+      avgReactionValue: ((currentValues.avgReactionValue - previousValues.avgReactionValue) / previousValues.avgReactionValue) * 100,
+      responseRate: ((currentValues.responseRate - previousValues.responseRate) / previousValues.responseRate) * 100,
+      totalResponses: ((currentValues.totalResponses - previousValues.totalResponses) / previousValues.totalResponses) * 100
+    }
+
+    return { current: currentValues, previous: previousValues, changes }
+  }, [data])
+
+  // ダンベルチャート用データ準備
+  const prepareDumbbellData = React.useCallback(() => {
+    if (data.length === 0) return []
+
+    // 単語ごとにグループ化
+    const wordGroups = data.reduce((acc, d) => {
+      if (!acc[d.word]) acc[d.word] = []
+      acc[d.word].push(d)
+      return acc
+    }, {} as Record<string, TimelineDataPoint[]>)
+
+    // 各単語の前半・後半の平均値を計算
+    return Object.entries(wordGroups).map(([word, points]) => {
+      const sorted = points.sort((a, b) => a.timestamp - b.timestamp)
+      const mid = Math.floor(sorted.length / 2)
+      const firstHalf = sorted.slice(0, mid)
+      const secondHalf = sorted.slice(mid)
+
+      return {
+        word,
+        firstHalf: {
+          avgReactionTime: firstHalf.reduce((sum, d) => sum + d.reactionTime, 0) / firstHalf.length,
+          avgReactionValue: firstHalf.reduce((sum, d) => sum + d.reactionValue, 0) / firstHalf.length,
+          count: firstHalf.length
+        },
+        secondHalf: {
+          avgReactionTime: secondHalf.reduce((sum, d) => sum + d.reactionTime, 0) / secondHalf.length,
+          avgReactionValue: secondHalf.reduce((sum, d) => sum + d.reactionValue, 0) / secondHalf.length,
+          count: secondHalf.length
+        }
+      }
+    }).filter(d => d.firstHalf.count > 0 && d.secondHalf.count > 0)
+  }, [data])
+
+  // スモールマルチプル用データ準備
+  const prepareSmallMultiplesData = React.useCallback(() => {
+    if (data.length === 0) return []
+
+    // 単語ごとにグループ化して時系列データを作成
+    const wordGroups = data.reduce((acc, d) => {
+      if (!acc[d.word]) acc[d.word] = []
+      acc[d.word].push(d)
+      return acc
+    }, {} as Record<string, TimelineDataPoint[]>)
+
+    return Object.entries(wordGroups)
+      .map(([word, points]) => ({
+        word,
+        data: points.sort((a, b) => a.timestamp - b.timestamp),
+        stats: {
+          avgReactionTime: points.reduce((sum, d) => sum + d.reactionTime, 0) / points.length,
+          avgReactionValue: points.reduce((sum, d) => sum + d.reactionValue, 0) / points.length,
+          maxReactionValue: Math.max(...points.map(d => d.reactionValue)),
+          responseRate: (points.filter(d => d.hasResponse).length / points.length) * 100
+        }
+      }))
+      .sort((a, b) => b.stats.avgReactionValue - a.stats.avgReactionValue)
+      .slice(0, 12) // 上位12単語のみ表示
+  }, [data])
+
+  // TypeGPU版用 完全グラフデータ生成（語ごとスケール、辺スケール）
+  const prepareForce3DGraph = React.useCallback((): { nodes: WordNode[]; links: WordLink[] } => {
+    if (data.length === 0) return { nodes: [], links: [] }
+
+    // ユング100語（日本語）を固定ノード集合として使用
+    const jungWords = JUNG_STIMULUS_WORDS.map(w => ({ word: w.japanese, key: w.id }))
+
+    // 集約（ノード指標）。全語を初期化し、セッション実データで加算
+    const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
+    jungWords.forEach(({ word }) => { accum[word] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+    for (const d of data) {
+      if (!accum[d.word]) continue // セッション語がユング語に無い場合は無視
+      accum[d.word].count += 1
+      accum[d.word].sumReactionValue += d.reactionValue
+      accum[d.word].sumReactionTime += d.reactionTime
+    }
+
+    // 生スケール: 平均反応値 × log(1+回数)
+    const nodeEntries = jungWords.map(({ word }) => {
+      const g = accum[word]
+      const avgRV = g.count > 0 ? g.sumReactionValue / g.count : 0
+      const raw = avgRV * Math.log1p(g.count)
+      return { word, count: g.count, avgReactionValue: avgRV, raw }
+    })
+
+    const rawMin = Math.min(...nodeEntries.map(n => n.raw))
+    const rawMax = Math.max(...nodeEntries.map(n => n.raw))
+    const denom = rawMax - rawMin || 1
+
+    const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
+      id: String(idx),
+      label: n.word,
+      // 0.5〜6.0程度に正規化（視認性のため）
+      scale: 0.5 + 5.5 * ((n.raw - rawMin) / denom),
+      axis: undefined,
+      fixed: false,
+      initial: undefined,
+    }))
+
+    // 連続イベントから w_I -> w_O を抽出し、エッジ重みを川崎モデルで加算
+    const wordToIndex: Record<string, number> = Object.fromEntries(nodes.map((n, i) => [n.label, i]))
+    const pairWeight = new Map<string, number>()
+
+    const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp)
+    const eps = 1e-3
+    for (let k = 0; k < sorted.length - 1; k++) {
+      const wi = sorted[k]
+      const wo = sorted[k + 1]
+      const i = wordToIndex[wi.word]
+      const j = wordToIndex[wo.word]
+      if (i === undefined || j === undefined || i === j) continue
+
+      // r(w_I, w_O) = 1/(T(w_I, w_O)+eps) → ここでは後続イベントの反応時間を採用
+      const r = 1 / (Math.max(0, wo.reactionTime) + eps)
+      // ΔSP: 生理データ平均の差（存在しない場合0）
+      const spI = (wi.physiological as unknown as { average?: number } | undefined)?.average ?? 0
+      const spO = (wo.physiological as unknown as { average?: number } | undefined)?.average ?? 0
+      const deltaSP = spO - spI
+      // F: 感情スコア（後続イベントの平均スコア）
+      const f = wo.emotions && wo.emotions.length > 0
+        ? wo.emotions.reduce((s, e) => s + (e.score || 0), 0) / wo.emotions.length
+        : 0
+
+      // 川崎モデルに基づく重み（Word2Vec項は未提供のため1とする）
+      const w = Math.pow(r, alpha) * Math.exp(gamma * (deltaSP / (lambda || 1))) * Math.exp(eta * f)
+      const key = i < j ? `${i}-${j}` : `${j}-${i}`
+      pairWeight.set(key, (pairWeight.get(key) || 0) + w)
+    }
+
+    // 観測重み正規化の準備
+    let obsMin = Infinity; let obsMax = -Infinity
+    for (const v of pairWeight.values()) { if (v < obsMin) obsMin = v; if (v > obsMax) obsMax = v }
+    const obsDen = (Number.isFinite(obsMax) && Number.isFinite(obsMin) && obsMax - obsMin !== 0) ? (obsMax - obsMin) : 1
+
+    // ベクトル正規化・内積
+    const normalize = (vec: number[]): number[] => {
+      const norm = Math.hypot(...vec)
+      if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+      return vec.map((x) => x / norm)
+    }
+    const dot = (a: number[], b: number[]) => {
+      const n = Math.min(a.length, b.length)
+      let s = 0
+      for (let i = 0; i < n; i++) s += a[i] * b[i]
+      return s
+    }
+
+    const normalizedEmb: Record<string, number[]> = {}
+    nodes.forEach((n) => {
+      const emb = embeddingsByWord[n.label]
+      normalizedEmb[n.label] = emb ? normalize(emb) : []
+    })
+
+    // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
+    const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+    const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
+    const wordEmotionSum: Record<string, number[]> = {}
+
+    for (const dpt of data) {
+      const w = dpt.word
+      if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
+      if (Array.isArray(dpt.emotions)) {
+        for (const e of dpt.emotions) {
+          const key = (e.name || 'unknown').toLowerCase()
+          const idx = emotionIndex[key]
+          if (idx !== undefined) {
+            wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+          }
+        }
+      }
+    }
+    const normalizedEmotionVec: Record<string, number[]> = {}
+    Object.keys(wordEmotionSum).forEach((w) => {
+      normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
+    })
+
+    // --- PCA: 全語の感情行列 -> 上位3主成分スコアを方向ベクトルに ---
+    const wordsWithVec = nodes.map(n => ({ n, v: normalizedEmotionVec[n.label] || new Array(10).fill(0) }))
+    const dim = 10
+    if (wordsWithVec.length > 0) {
+      // 行列 X: rows=語, cols=10感情（平均0へ中心化）
+      const means = new Array(dim).fill(0)
+      for (const { v } of wordsWithVec) for (let j = 0; j < dim; j++) means[j] += (v[j] || 0)
+      for (let j = 0; j < dim; j++) means[j] /= Math.max(1, wordsWithVec.length)
+      const X = wordsWithVec.map(({ v }) => means.map((m, j) => (v[j] || 0) - m))
+
+      // 共分散 C = (X^T X) / (n-1)
+      const C = Array.from({ length: dim }, () => new Array(dim).fill(0))
+      for (let i = 0; i < dim; i++) {
+        for (let j = i; j < dim; j++) {
+          let s = 0
+          for (let r = 0; r < X.length; r++) s += X[r][i] * X[r][j]
+          const val = s / Math.max(1, X.length - 1)
+          C[i][j] = val
+          C[j][i] = val
+        }
+      }
+
+      // パワー反復で上位3固有ベクトル（簡易）
+      const powerIter = (A: number[][], iters = 32): number[] => {
+        let v = Array.from({ length: dim }, () => Math.random())
+        // 正規化
+        const normv = () => {
+          const nrm = Math.hypot(...v)
+          if (nrm > 0) v = v.map(x => x / nrm)
+        }
+        normv()
+        for (let t = 0; t < iters; t++) {
+          const Av = new Array(dim).fill(0)
+          for (let i = 0; i < dim; i++) {
+            let s = 0
+            for (let j = 0; j < dim; j++) s += A[i][j] * v[j]
+            Av[i] = s
+          }
+          v = Av
+          normv()
+        }
+        return v
+      }
+      // 逐次直交化（一次・二次・三次）
+      const dotv = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i], 0)
+      // 補助関数（未使用）を削除
+      const v1 = powerIter(C)
+      // C を v1 に沿ってデフレート
+      const C2 = Array.from({ length: dim }, (_, i) => C[i].slice())
+      for (let i = 0; i < dim; i++) {
+        for (let j = 0; j < dim; j++) {
+          C2[i][j] -= v1[i] * v1[j] * dotv(v1, C.map(row => row[j])) // 近似的デフレ
+        }
+      }
+      const v2 = powerIter(C2)
+      // 二回目のデフレ
+      const C3 = Array.from({ length: dim }, (_, i) => C2[i].slice())
+      for (let i = 0; i < dim; i++) {
+        for (let j = 0; j < dim; j++) {
+          C3[i][j] -= v2[i] * v2[j] * dotv(v2, C2.map(row => row[j]))
+        }
+      }
+      const v3 = powerIter(C3)
+
+      // スコア = X * [v1,v2,v3]
+      const embed3 = wordsWithVec.map(({ n: node }, r) => {
+        const x = X[r]
+        const s1 = dotv(x, v1)
+        const s2 = dotv(x, v2)
+        const s3 = dotv(x, v3)
+        return { node, vec: [s1, s2, s3] as [number, number, number] }
+      })
+      for (const { node, vec } of embed3) {
+        const norm = Math.hypot(vec[0], vec[1], vec[2])
+        if (norm > 0) node.axis = [vec[0] / norm, vec[1] / norm, vec[2] / norm]
+      }
+    }
+
+    // --- Spectral Embedding（ラプラシアンの固有ベクトル）で初期3D座標を与える ---
+    // Spectral initialization always enabled
+      const words = nodes.map(n => n.label)
+      const V = words.map(w => normalizedEmotionVec[w] || new Array(10).fill(0))
+      const n = words.length
+      // RBFカーネル重み行列 W
+      const W: number[][] = Array.from({ length: n }, () => new Array(n).fill(0))
+      // σ 自動推定（メディアン距離）
+      let med = 1
+      {
+        const dists: number[] = []
+        for (let i = 0; i < n; i++) {
+          for (let j = i + 1; j < n; j++) {
+            let d2 = 0
+            for (let k = 0; k < 10; k++) {
+              const diff = (V[i][k] || 0) - (V[j][k] || 0)
+              d2 += diff * diff
+            }
+            dists.push(Math.sqrt(d2))
+          }
+        }
+        dists.sort((a, b) => a - b)
+        med = dists.length > 0 ? dists[Math.floor(dists.length / 2)] : 1
+      }
+      const sigmaEff = Math.max(1e-6, 0.8 * med)
+      const sig2 = sigmaEff * sigmaEff
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          let d2 = 0
+          for (let k = 0; k < 10; k++) {
+            const diff = (V[i][k] || 0) - (V[j][k] || 0)
+            d2 += diff * diff
+          }
+          const w = Math.exp(-d2 / sig2)
+          W[i][j] = w; W[j][i] = w
+        }
+      }
+      const D = new Array(n).fill(0)
+      for (let i = 0; i < n; i++) {
+        let s = 0; for (let j = 0; j < n; j++) s += W[i][j]
+        D[i] = s
+      }
+      // 反復法で2〜4番目の固有ベクトル（ゼロ和を満たす次元）を近似
+      const lapMul = (x: number[]): number[] => {
+        const y = new Array(n).fill(0)
+        for (let i = 0; i < n; i++) {
+          let s = D[i] * x[i]
+          for (let j = 0; j < n; j++) s -= W[i][j] * x[j]
+          y[i] = s
+        }
+        return y
+      }
+      const power = (orth: number[][]): number[] => {
+        let v = Array.from({ length: n }, () => Math.random())
+        const normv = () => { const nn = Math.hypot(...v); if (nn > 0) v = v.map(x => x / nn) }
+        const proj = (u: number[]) => {
+          const dot = v.reduce((s, x, i) => s + x * u[i], 0)
+          for (let i = 0; i < n; i++) v[i] -= dot * u[i]
+        }
+        normv()
+        for (let t = 0; t < 48; t++) {
+          for (const u of orth) proj(u)
+          const y = lapMul(v)
+          v = y
+          normv()
+        }
+        return v
+      }
+      const ones = Array.from({ length: n }, () => 1 / Math.sqrt(n))
+      const e2 = power([ones])
+      const e3 = power([ones, e2])
+      const e4 = power([ones, e2, e3])
+      // 座標へ割当（スケール調整）
+      const scale = shellRadius * 0.8
+      for (let i = 0; i < n; i++) {
+        nodes[i].initial = [e2[i] * scale, e3[i] * scale, e4[i] * scale]
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* フィルターコントロール */}
+      {!hideFilters && (
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-semibold mb-3">フィルター設定</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.emotions}
+                onChange={(e) => setFilters(prev => ({ ...prev, emotions: e.target.checked }))}
+              />
+              <span className="text-sm">感情データ</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.physiological}
+                onChange={(e) => setFilters(prev => ({ ...prev, physiological: e.target.checked }))}
+              />
+              <span className="text-sm">生理データ</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.reactionValues}
+                onChange={(e) => setFilters(prev => ({ ...prev, reactionValues: e.target.checked }))}
+              />
+              <span className="text-sm">反応値</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.wordDisplay}
+                onChange={(e) => setFilters(prev => ({ ...prev, wordDisplay: e.target.checked }))}
+              />
+              <span className="text-sm">単語表示</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.reactionTime}
+                onChange={(e) => setFilters(prev => ({ ...prev, reactionTime: e.target.checked }))}
+              />
+              <span className="text-sm">反応時間</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.physiologicalThreshold}
+                onChange={(e) => setFilters(prev => ({ ...prev, physiologicalThreshold: e.target.checked }))}
+              />
+              <span className="text-sm">生理閾値</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.emotionChange}
+                onChange={(e) => setFilters(prev => ({ ...prev, emotionChange: e.target.checked }))}
+              />
+              <span className="text-sm">感情変化</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.showEmotionDetails}
+                onChange={(e) => setFilters(prev => ({ ...prev, showEmotionDetails: e.target.checked }))}
+              />
+              <span className="text-sm">感情詳細</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.showWordLabels}
+                onChange={(e) => setFilters(prev => ({ ...prev, showWordLabels: e.target.checked }))}
+              />
+              <span className="text-sm">単語ラベル</span>
+            </label>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">範囲:</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={filters.range}
+                onChange={(e) => setFilters(prev => ({ ...prev, range: Number(e.target.value) }))}
+                className="flex-1"
+              />
+              <span className="text-sm">{filters.range}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">時間スケール:</span>
+              <input
+                type="range"
+                min="0.5"
+                max="5"
+                step="0.1"
+                value={filters.timeScale}
+                onChange={(e) => setFilters(prev => ({ ...prev, timeScale: Number(e.target.value) }))}
+                className="flex-1"
+              />
+              <span className="text-sm">{filters.timeScale.toFixed(1)}x</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">縦スケール:</span>
+              <input
+                type="range"
+                min="0.5"
+                max="3"
+                step="0.1"
+                value={filters.verticalScale}
+                onChange={(e) => setFilters(prev => ({ ...prev, verticalScale: Number(e.target.value) }))}
+                className="flex-1"
+              />
+              <span className="text-sm">{filters.verticalScale.toFixed(1)}x</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* メインコンテンツ */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* 時系列チャート */}
+        <div className="bg-white border rounded-lg p-4">
+          <h3 className="font-semibold mb-3">時系列統合可視化</h3>
+          <TimelineChart
+            data={data}
+            filters={filters}
+            width={width}
+            height={height}
+            timeRange={timeRange}
+            onDataPointSelect={setSelectedDataPoint}
+            onTooltipShow={(event, point) => {
+              // TODO: ツールチップ表示ロジック
+            }}
+            onTooltipHide={() => {
+              // TODO: ツールチップ非表示ロジック
+            }}
+          />
+        </div>
+
+        {/* 3D Force グラフ */}
+        <div className="bg-white border rounded-lg p-4">
+          <h3 className="font-semibold mb-3">3D Force 可視化</h3>
+
+          {/* 3D Force コントロール */}
+          <Force3DControls
+            forcePresets={forcePresets}
+            forcePresetId={forcePresetId}
+            onPresetChange={applyForcePreset}
+            springK={springK}
+            onSpringKChange={setSpringK}
+            repulsionK={repulsionK}
+            onRepulsionKChange={setRepulsionK}
+            restLength={restLength}
+            onRestLengthChange={setRestLength}
+            minSep={minSep}
+            onMinSepChange={setMinSep}
+            sepK={sepK}
+            onSepKChange={setSepK}
+            shellRadius={shellRadius}
+            onShellRadiusChange={setShellRadius}
+            shellK={shellK}
+            onShellKChange={setShellK}
+            damping={damping}
+            onDampingChange={setDamping}
+            alpha={alpha}
+            onAlphaChange={setAlpha}
+            gamma={gamma}
+            onGammaChange={setGamma}
+            lambda={lambda}
+            onLambdaChange={setLambda}
+            eta={eta}
+            onEtaChange={setEta}
+          />
+
+          {/* 3D Force グラフ本体 */}
+          {mounted && (() => {
+            // 3Dグラフ生成関数を簡潔に定義
+            const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
+              const jungWords = JUNG_STIMULUS_WORDS.map(w => ({ word: w.japanese, key: w.id }))
+              const nodes: WordNode[] = jungWords.slice(0, 50).map((w, idx) => ({
+                id: String(idx),
+                label: w.word,
+                scale: 1 + Math.random() * 4,
+                nodeType: 'word'
+              }))
+              const links: WordLink[] = []
+              for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < Math.min(i + 3, nodes.length); j++) {
+                  links.push({
+                    source: i,
+                    target: j,
+                    weight: Math.random(),
+                    mode: Math.random() > 0.5 ? 'tension' : 'compression',
+                    L0: 50 + Math.random() * 50,
+                    k: 1 + Math.random() * 2
+                  })
+                }
+              }
+              return { nodes, links }
+            }
+
+            const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
+            const { nodes, links } = generateForce3DGraph()
+            return (
+              <div className="border rounded overflow-hidden">
+                <Force3D
+                  nodes={nodes}
+                  links={links}
+                  width={width}
+                  height={Math.max(400, height)}
+                  physics={{
+                    springK,
+                    repulsionK,
+                    damping,
+                    restLength,
+                    maxSpeed: 200,
+                    shellRadius,
+                    shellK,
+                    radialOutK,
+                    constraintIters,
+                    constraintStiffness,
+                    minSep,
+                    sepK
+                  }}
+                />
+              </div>
+            )
+          })()}
+        </div>
+      </div>
+
+      {/* KPIカード */}
+      <KPICards data={data} />
+
+      {/* 統計情報 */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold mb-2">統計情報</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <div className="font-medium">総データポイント</div>
+            <div className="text-gray-600">{data.length}</div>
+          </div>
+          <div>
+            <div className="font-medium">平均反応値</div>
+            <div className="text-gray-600">
+              {data.length > 0 ? (data.reduce((sum, d) => sum + d.reactionValue, 0) / data.length).toFixed(2) : 'N/A'}
+            </div>
+          </div>
+          <div>
+            <div className="font-medium">最大反応値</div>
+            <div className="text-gray-600">
+              {data.length > 0 ? Math.max(...data.map(d => d.reactionValue)).toFixed(2) : 'N/A'}
+            </div>
+          </div>
+          <div>
+            <div className="font-medium">最小反応値</div>
+            <div className="text-gray-600">
+              {data.length > 0 ? Math.min(...data.map(d => d.reactionValue)).toFixed(2) : 'N/A'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* データポイント詳細 */}
+      {selectedDataPoint && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="font-semibold text-blue-800 mb-2">選択されたデータポイント</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <div className="font-medium">単語</div>
+              <div className="text-gray-600">{selectedDataPoint.word}</div>
+            </div>
+            <div>
+              <div className="font-medium">時間</div>
+              <div className="text-gray-600">{new Date(selectedDataPoint.timestamp).toLocaleTimeString()}</div>
+            </div>
+            <div>
+              <div className="font-medium">反応値</div>
+              <div className="text-gray-600">{selectedDataPoint.reactionValue.toFixed(2)}</div>
+            </div>
+            <div>
+              <div className="font-medium">イベントタイプ</div>
+              <div className="text-gray-600">{selectedDataPoint.eventType}</div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <div className="font-medium">感情データ</div>
+              <div className="text-gray-600">
+                {selectedDataPoint.emotions.length > 0 ? (
+                  selectedDataPoint.emotions.map((emotion, index) => (
+                    <div key={`${emotion.name}-${emotion.fileType}-${index}`} className="text-xs">
+                      <span className="font-medium">{emotion.name || 'unknown'}</span>:
+                      <span className="text-blue-600">{(emotion.score || 0).toFixed(2)}</span>
+                      <span className="text-gray-500">({emotion.fileType || 'unknown'})</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-gray-500">感情データなし</div>
+                )}
+              </div>
+            </div>
+            <div>
+              <div className="font-medium">生理データ</div>
+              <div className="text-gray-600">
+                平均: {getPhysStat(selectedDataPoint.physiological, 'average').toFixed(2)}<br/>
+                最大: {getPhysStat(selectedDataPoint.physiological, 'max').toFixed(2)}<br/>
+                最小: {getPhysStat(selectedDataPoint.physiological, 'min').toFixed(2)}
+              </div>
+            </div>
+            <div>
+              <div className="font-medium">メタデータ</div>
+              <div className="text-gray-600">
+                感情データ数: {selectedDataPoint.metadata?.emotionCount || 0}<br/>
+                生理データ数: {selectedDataPoint.metadata?.physiologicalCount || 0}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ツールチップ */}
+      <div
+        ref={tooltipRef}
+        className="fixed bg-white border border-gray-300 rounded-lg p-2 shadow-lg text-sm z-50 pointer-events-none"
+        style={{ display: 'none' }}
+      />
+    </div>
+  )
+}
+
+// Merkle DAG: components.timeline_visualization -> refactored_complete
+// 時系列統合可視化コンポーネントのモジュール化完了

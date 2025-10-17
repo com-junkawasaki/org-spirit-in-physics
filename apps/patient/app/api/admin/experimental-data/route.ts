@@ -4,9 +4,9 @@ import {
   loadAllSessionData,
   parseWordResponsesFromEvents,
   getParticipantStatistics,
-  initializeSupabaseDatabase
+  initializeNeo4jDatabase
 } from "scripts/src/lib/data-loader";
-import { loadEmotionAnalysisResults, getEmotionStatisticsFromKuzu } from "scripts/src/lib/emotion-analysis";
+import { loadEmotionAnalysisResults, getEmotionStatisticsFromNeo4j } from "scripts/src/lib/emotion-analysis";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Supabaseデータベースの初期化
-        await initializeSupabaseDatabase();
+        // Neo4jデータベースの初期化
+        await initializeNeo4jDatabase();
         const participants = await loadAllParticipants();
         const participantStats = getParticipantStatistics(participants);
 
@@ -113,8 +113,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Supabaseデータベースの初期化
-        await initializeSupabaseDatabase();
+        // Neo4jデータベースの初期化
+        await initializeNeo4jDatabase();
         const participants_for_analytics = await loadAllParticipants();
         const stats = getParticipantStatistics(participants_for_analytics);
         const allSessions = await loadAllSessionData();
@@ -133,8 +133,8 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Supabaseから感情統計を取得
-        const emotionStats = await getEmotionStatisticsFromKuzu();
+        // Neo4jから感情統計を取得
+        const emotionStats = await getEmotionStatisticsFromNeo4j();
         const emotionDistribution: Record<string, number> = {};
         emotionStats.dominantEmotions.forEach(item => {
           emotionDistribution[item.emotion] = item.count;

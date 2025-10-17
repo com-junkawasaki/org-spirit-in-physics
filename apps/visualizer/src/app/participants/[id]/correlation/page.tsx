@@ -1,5 +1,7 @@
-import { useParams } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+'use client'
+
+import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -71,22 +73,45 @@ const STRENGTH_COLORS = {
 }
 
 export default function ParticipantCorrelationPage() {
-  const { id: participantId } = useParams({ from: '/participants/$id/correlation' })
+  const params = useParams()
+  const participantId = params.id as string
 
-  const { data: correlationData, isLoading, error } = useQuery({
-    queryKey: ['participant-correlation', participantId],
-    queryFn: async () => {
-      const response = await fetch(`/api/participants/${participantId}/correlation`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch correlation data')
+  const [correlationData, setCorrelationData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchCorrelationData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch(`/api/participants/${participantId}/correlation`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch correlation data')
+        }
+        const data = await response.json()
+        setCorrelationData(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setIsLoading(false)
       }
-      return response.json()
     }
-  })
+
+    fetchCorrelationData()
+  }, [participantId])
 
   if (isLoading) return <div className="p-8">Loading correlation analysis...</div>
-  if (error) return <div className="p-8">Error loading correlation data</div>
+  if (error) return <div className="p-8">Error loading correlation data: {error}</div>
   if (!correlationData) return <div className="p-8">No correlation data found</div>
+
+  const { component_correlations, time_window_analysis, physiological_emotion_correlations } = correlationData
+
+  // Check if the API endpoint exists for correlation
+  const correlationExists = component_correlations && Object.keys(component_correlations).length > 0
+
+  if (!correlationExists) {
+    return <div className="p-8">Correlation analysis not yet available for this participant</div>
+  }
 
   const { physiological_indicators, emotion_categories, significant_findings } = correlationData
 
@@ -268,29 +293,32 @@ export default function ParticipantCorrelationPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Object.entries(physiological_indicators.indicators).map(([indicator, stats]) => (
+                {Object.entries(physiological_indicators.indicators).map(([indicator, stats]) => {
+                  const indicatorStats = stats as { mean: number; std: number; min: number; max: number; median: number; count: number }
+                  return (
                   <div key={indicator} className="space-y-2">
                     <h4 className="font-semibold uppercase">{indicator}</h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">Mean</p>
-                        <p className="font-medium">{stats.mean.toFixed(3)}</p>
+                        <p className="font-medium">{indicatorStats.mean.toFixed(3)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Std Dev</p>
-                        <p className="font-medium">{stats.std.toFixed(3)}</p>
+                        <p className="font-medium">{indicatorStats.std.toFixed(3)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Min</p>
-                        <p className="font-medium">{stats.min.toFixed(3)}</p>
+                        <p className="font-medium">{indicatorStats.min.toFixed(3)}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Max</p>
-                        <p className="font-medium">{stats.max.toFixed(3)}</p>
+                        <p className="font-medium">{indicatorStats.max.toFixed(3)}</p>
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

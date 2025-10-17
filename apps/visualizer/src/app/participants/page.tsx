@@ -1,9 +1,10 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
+import { getAllParticipants } from '@/lib/data'
+import { getSpiritProbabilityColor } from '@/components/SpiritProbabilityBadge'
 
 interface Participant {
   id: string
@@ -14,29 +15,14 @@ interface Participant {
   lastActivity: number | null
   sessions: Array<{
     id: string
-    sessionType: string
-    startTime: string
-    endTime: string | null
+    sessionType?: string
+    startTime?: string
+    endTime?: string | null
     responseCount: number
   }>
 }
 
-async function getParticipants(): Promise<Participant[]> {
-  try {
-    const response = await fetch('/api/participants', {
-      cache: 'no-store'
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch participants')
-    }
-
-    return response.json()
-  } catch (error) {
-    console.error('Failed to fetch participants:', error)
-    return []
-  }
-}
+// Data is fetched on the server via getAllParticipants (Neo4j)
 
 function formatDate(timestamp: number | null): string {
   if (!timestamp) return 'N/A'
@@ -49,58 +35,9 @@ function formatDate(timestamp: number | null): string {
   })
 }
 
-function getSpiritProbabilityColor(probability: number): string {
-  if (probability >= 0.99) return 'bg-green-100 text-green-800'
-  if (probability >= 0.95) return 'bg-blue-100 text-blue-800'
-  if (probability >= 0.90) return 'bg-yellow-100 text-yellow-800'
-  return 'bg-red-100 text-red-800'
-}
+// Probability color provided via getSpiritProbabilityColor
 
-function ParticipantCard({ participant }: { participant: Participant }) {
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">{participant.name}</CardTitle>
-            <p className="text-sm text-muted-foreground">ID: {participant.id.slice(0, 8)}...</p>
-          </div>
-          <Badge className={getSpiritProbabilityColor(participant.averageSpiritProbability)}>
-            {(participant.averageSpiritProbability * 100).toFixed(1)}%
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="flex items-center space-x-2">
-            <Activity className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              <span className="font-medium">{participant.sessionCount}</span> セッション
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Brain className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              <span className="font-medium">{participant.responseCount}</span> 応答
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-          <span>最終活動:</span>
-          <span>{formatDate(participant.lastActivity)}</span>
-        </div>
-
-        <Link href={`/participants/${participant.id}`}>
-          <Button variant="outline" size="sm" className="w-full">
-            詳細を見る
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  )
-}
+// Card view is not used currently; keep table view for clarity
 
 function ParticipantsTable({ participants }: { participants: Participant[] }) {
   if (participants.length === 0) {
@@ -116,10 +53,63 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {participants.map((participant) => (
-        <ParticipantCard key={participant.id} participant={participant} />
-      ))}
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>参加者</TableHead>
+            <TableHead>セッション数</TableHead>
+            <TableHead>応答数</TableHead>
+            <TableHead>平均Spirit確率</TableHead>
+            <TableHead>最終活動</TableHead>
+            <TableHead className="w-[100px]">アクション</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {participants.map((participant) => (
+            <TableRow key={participant.id}>
+              <TableCell>
+                <div>
+                  <div className="font-medium">
+                    {participant.name || `参加者 ${participant.id.slice(0, 8)}`}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {participant.id.slice(0, 12)}...
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <span>{participant.sessionCount}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2">
+                  <Brain className="h-4 w-4 text-muted-foreground" />
+                  <span>{participant.responseCount}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={getSpiritProbabilityColor(participant.averageSpiritProbability)}>
+                  {(participant.averageSpiritProbability * 100).toFixed(1)}%
+                </Badge>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {formatDate(participant.lastActivity)}
+              </TableCell>
+              <TableCell>
+                <Link href={`/participants/${participant.id}`}>
+                  <Button variant="outline" size="sm">
+                    詳細
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }
@@ -127,48 +117,80 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
 function LoadingSkeleton() {
   const skeletonKeys = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6']
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {skeletonKeys.map((key) => (
-        <Card key={key} className="animate-pulse">
-          <CardHeader className="pb-3">
-            <div className="h-6 bg-muted rounded mb-2"></div>
-            <div className="h-4 bg-muted rounded w-3/4"></div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="h-4 bg-muted rounded"></div>
-              <div className="h-4 bg-muted rounded"></div>
-            </div>
-            <div className="h-4 bg-muted rounded mb-4"></div>
-            <div className="h-9 bg-muted rounded"></div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>参加者</TableHead>
+            <TableHead>セッション数</TableHead>
+            <TableHead>応答数</TableHead>
+            <TableHead>平均Spirit確率</TableHead>
+            <TableHead>最終活動</TableHead>
+            <TableHead className="w-[100px]">アクション</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {skeletonKeys.map((key) => (
+            <TableRow key={key} className="animate-pulse">
+              <TableCell>
+                <div className="space-y-2">
+                  <div className="h-4 bg-muted rounded w-24"></div>
+                  <div className="h-3 bg-muted rounded w-16"></div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="h-4 bg-muted rounded w-8"></div>
+              </TableCell>
+              <TableCell>
+                <div className="h-4 bg-muted rounded w-8"></div>
+              </TableCell>
+              <TableCell>
+                <div className="h-6 bg-muted rounded w-12"></div>
+              </TableCell>
+              <TableCell>
+                <div className="h-4 bg-muted rounded w-20"></div>
+              </TableCell>
+              <TableCell>
+                <div className="h-8 bg-muted rounded w-16"></div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
+}
+
+async function ParticipantsTableWrapper() {
+  const participants = (await getAllParticipants()) as unknown as Participant[]
+  if (!participants || participants.length === 0) {
+    return <LoadingSkeleton />
+  }
+  return <ParticipantsTable participants={participants} />
 }
 
 export default async function ParticipantsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          被験者一覧
-        </h1>
-        <p className="text-muted-foreground">
-          Spirit in Physics実験に参加した被験者の検査結果一覧です。各被験者の詳細な分析結果を確認できます。
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              被験者一覧
+            </h1>
+            <p className="text-muted-foreground">
+              Spirit in Physics実験に参加した被験者の検査結果一覧です。各被験者の詳細な分析結果を確認できます。
+            </p>
+          </div>
+          {/* 分析レポートページは削除済み */}
+        </div>
       </div>
 
-      <Suspense fallback={<LoadingSkeleton />}>
+      {/* Server-rendered table */}
+      {/* Suspense kept for future streaming if needed */}
+      <Suspense>
         <ParticipantsTableWrapper />
       </Suspense>
     </div>
   )
-}
-
-async function ParticipantsTableWrapper() {
-  const participants = await getParticipants()
-
-  return <ParticipantsTable participants={participants} />
 }

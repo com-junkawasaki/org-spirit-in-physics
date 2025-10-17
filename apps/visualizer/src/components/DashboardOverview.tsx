@@ -8,7 +8,7 @@ import { Button } from './ui/button'
 import { RefreshCw, Download, ZoomIn } from 'lucide-react'
 
 // Dynamically import Plotly to avoid SSR issues
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
+const Plot = dynamic(() => import('react-plotly.js'), { ssr: false }) as any
 
 interface DashboardOverviewProps {
   className?: string
@@ -22,7 +22,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
     const loadData = async () => {
       setIsLoading(true)
       try {
-        // Fetch real data from Supabase
+        // Fetch real data from Neo4j
         const [participantsData, analysisResults, dashboardStats] = await Promise.all([
           fetch('/api/participants').then(res => res.json()),
           fetch('/api/analysis-results').then(res => res.json()),

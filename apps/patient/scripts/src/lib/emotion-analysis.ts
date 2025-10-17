@@ -1,8 +1,7 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-
-// Supabaseを使用するため、Kuzu関連のインポートは不要
+import { neo4jClient } from './neo4j';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -18,7 +17,8 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-interface EmotionAnalysisResult {
+// Types for emotion analysis data
+export interface EmotionAnalysisResult {
   participantId: string;
   videoFile: string;
   sessionType: string;
@@ -172,7 +172,9 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
       }
     }
 
-    // Supabaseに保存（storageAdapter経由）
+    // Neo4jに保存（storageAdapter経由）
+    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
+    await storageAdapter.saveEmotionAnalysis(result.participantId, result);
 
   } catch (error) {
     console.error('Error saving emotion analysis result:', error);
@@ -184,7 +186,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
  */
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
-    // storageAdapter経由でSupabaseから感情分析データを取得
+    // storageAdapter経由でNeo4jから感情分析データを取得
     const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
     return await storageAdapter.loadEmotionAnalysis(participantId);
   } catch (error) {
@@ -210,6 +212,7 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       .filter((file: string) => file.endsWith('.webm'));
 
     const results: EmotionAnalysisResult[] = [];
+    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
 
     for (const videoFile of videoFiles) {
       // セッションタイプをファイル名から判定
@@ -218,6 +221,8 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       const result = await analyzeVideoEmotions(participantId, videoFile, sessionType);
       if (result) {
         results.push(result);
+        // Neo4jに個別に保存
+        await storageAdapter.saveEmotionAnalysis(participantId, result);
       }
 
       // APIレート制限を考慮して少し待つ
@@ -232,9 +237,9 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
 }
 
 /**
- * Kuzuから感情分析の統計情報を取得
+ * Neo4jから感情分析の統計情報を取得
  */
-export async function getEmotionStatisticsFromKuzu(): Promise<{
+export async function getEmotionStatisticsFromNeo4j(): Promise<{
   totalAnalyses: number;
   averageEmotions: Record<string, number>;
   dominantEmotions: Array<{ emotion: string; count: number }>;
@@ -243,12 +248,12 @@ export async function getEmotionStatisticsFromKuzu(): Promise<{
     totalTime: number;
   };
 }> {
-  try {
-    // Supabaseマネージャーを使用（後方互換性のため関数名は変更しない）
-    const { supabaseManager } = await import('./database/supabase-manager.ts');
-    return await supabaseManager.getEmotionStatistics();
+    try {
+      // Neo4jマネージャーを使用
+      const { neo4jManager } = await import('./database/neo4j-manager.ts');
+    return await neo4jManager.getEmotionStatistics();
   } catch (error) {
-    console.error('Error getting emotion statistics from Supabase:', error);
+    console.error('Error getting emotion statistics from Neo4j:', error);
   }
 
   // Fallback to empty stats

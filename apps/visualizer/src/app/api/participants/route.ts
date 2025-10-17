@@ -1,42 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllParticipants } from '@/lib/data'
+import { createNeo4jClient } from '@/lib/neo4j'
 
 export async function GET(request: NextRequest) {
   try {
-    const participants = await getAllParticipants()
+    console.log('API: Fetching participants from Neo4j...')
+    const client = createNeo4jClient()
+
+    // Merkle DAG: participants_api -> neo4j_client -> getParticipants
+    // 統計情報を含む参加者データを取得
+    const participants = await client.getParticipants()
+
+    console.log('API: Raw participants data:', participants?.length || 0, 'participants')
+    console.log('API: Participants sample:', participants?.slice(0, 2))
 
     // Process participants data for frontend
-    const processedParticipants = participants.map(participant => {
-      // Calculate average spirit probability
-      const analysisResults = participant.analysisRuns.flatMap(run => run.results)
-      const averageSpiritProbability = analysisResults.length > 0
-        ? analysisResults.reduce((sum, result) => sum + result.kawasaki_p_value, 0) / analysisResults.length
-        : 0
+    const processedParticipants = (participants || []).map((participant: any) => ({
+      id: participant.participant_id || 'unknown',
+      name: `参加者 ${participant.participant_id ? participant.participant_id.slice(0, 8) : 'unknown'}`, // Default name format
+      sessionCount: participant.session_count || 0,
+      responseCount: participant.total_responses || 0,
+      averageSpiritProbability: participant.average_spirit_probability || 0,
+      lastActivity: participant.last_activity ? new Date(participant.last_activity).getTime() : null,
+      sessions: [] // Simplified for now
+    }))
 
-      return {
-        id: participant.id,
-        name: participant.name,
-        sessionCount: participant.sessions.length,
-        responseCount: participant.sessions.reduce((sum, session) => sum + session.responses.length, 0),
-        averageSpiritProbability,
-        lastActivity: participant.sessions.length > 0
-          ? Math.max(...participant.sessions.map(s => new Date(s.start_time || '').getTime()))
-          : null,
-        sessions: participant.sessions.map(session => ({
-          id: session.id,
-          sessionType: session.session_type,
-          startTime: session.start_time,
-          endTime: session.end_time,
-          responseCount: session.responses.length
-        }))
-      }
-    })
-
+    console.log('API: Processed participants:', processedParticipants.length)
     return NextResponse.json(processedParticipants)
   } catch (error) {
-    console.error('Failed to fetch participants:', error)
+    console.error('API: Failed to fetch participants:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch participants' },
+      { error: 'Failed to fetch participants', details: (error as Error).message },
       { status: 500 }
     )
   }

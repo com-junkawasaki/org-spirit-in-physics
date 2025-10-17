@@ -1,0 +1,89 @@
+services:
+  # Neo4j
+  neo4j:
+    image: neo4j:latest
+    container_name: spirit-neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/neo4jpassword
+      - NEO4J_PLUGINS=["graph-data-science"]
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+      - NEO4J_dbms_memory_pagecache_size=512m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4jpassword", "MATCH () RETURN count(*) limit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+
+  # Patient app (Next.js)
+  patient:
+    build:
+      context: ./apps/patient
+      dockerfile: Dockerfile
+    container_name: spirit-patient
+    ports:
+      - "25250:3000"
+    env_file:
+      - ./apps/patient/env.docker
+    depends_on:
+      - neo4j
+    networks:
+      - spirit-network
+
+
+  # Visualizer app (Next.js)
+  visualizer:
+    build:
+      context: ./apps/visualizer
+      dockerfile: Dockerfile
+    container_name: spirit-visualizer
+    ports:
+      - "25260:3000"
+    volumes:
+      - ./apps/visualizer:/app
+      - /app/node_modules
+      - ./dataset:/app/dataset:cached
+    command: pnpm run dev
+    env_file:
+      - ./apps/visualizer/env.docker
+    environment:
+      - NODE_ENV=development
+      - INNGEST_EVENT_KEY=local_dev_key
+      - INNGEST_SIGNING_KEY=local_dev_signing_key
+    depends_on:
+      - neo4j
+    networks:
+      - spirit-network
+
+  # BPMN Runner (optional orchestrator for imports)
+  bpmn-runner:
+        build:
+          context: ./apps/pipeline/services/bpmn_runner
+          dockerfile: Dockerfile
+        container_name: spirit-bpmn-runner
+        environment:
+          - API_BASE=http://visualizer:3000
+          - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
+        depends_on:
+          - visualizer
+        networks:
+          - spirit-network
+        restart: "no"
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+
+networks:
+  spirit-network:
+    driver: bridge

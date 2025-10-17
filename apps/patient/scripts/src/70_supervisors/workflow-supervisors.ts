@@ -57,7 +57,7 @@ export class WorkflowSupervisor {
   static async startDataSyncWorkflow() {
     try {
       // Blob Storageとローカルファイルの同期
-      // Supabaseとの同期
+      // Neo4jとの同期
       // 統計情報の再計算
 
       await AdminSupervisor.updateAnalytics();

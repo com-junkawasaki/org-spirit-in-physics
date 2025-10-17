@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import * as v from 'valibot'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -57,3 +58,16 @@ export function calculateStats(data: number[]): {
 
   return { min, max, mean, median, std }
 }
+
+// Merkle DAG: validation.consent_schema -> consent_data_validation
+export const consentDataSchema = v.object({
+  participantId: v.string('participantId must be a string'),
+  signature: v.string('signature must be a string'),
+  agreements: v.object({
+    understand: v.boolean('understand must be a boolean'),
+    voluntary: v.boolean('voluntary must be a boolean'),
+    withdraw: v.boolean('withdraw must be a boolean'),
+    recording: v.boolean('recording must be a boolean')
+  }),
+  agreedAt: v.string('agreedAt must be a string')
+})

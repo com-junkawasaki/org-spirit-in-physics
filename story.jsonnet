@@ -32,8 +32,8 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[4]
-        act: '耐久性のある研究基盤',
-        summary: 'Supabaseを基盤とした堅牢なデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。',
+    act: '耐久性のある研究基盤',
+    summary: 'Neo4jを基盤とした堅牢なグラフデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[5]
@@ -42,8 +42,8 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[6]
-        act: '初の実験データ解析',
-        summary: '11名の参加者の実験データをSupabaseに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
+    act: '初の実験データ解析',
+    summary: '11名の参加者の実験データをNeo4jに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[7]
@@ -57,8 +57,8 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[9]
-        act: '技術基盤の完全安定化',
-        summary: 'Supabaseローカル開発環境の完全修復を達成し、Hume AI SDKの最新バージョンとの統合を完了。感情分析パイプラインの堅牢なアーキテクチャを確立し、実データ解析に向けた準備を整えた。これにより、研究の信頼性と拡張性を保証する技術インフラが完成した。',
+    act: '技術基盤の完全安定化',
+    summary: 'Neo4jローカル開発環境の完全修復を達成し、Hume AI SDKの最新バージョンとの統合を完了。感情分析パイプラインの堅牢なアーキテクチャを確立し、実データ解析に向けた準備を整えた。これにより、研究の信頼性と拡張性を保証する技術インフラが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[10]
@@ -67,8 +67,8 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[11]
-        act: '生体データ統合の実現',
-        summary: 'Mod-002生体データ測定器から取得した1378個の皮膚電位時系列データをSupabaseデータベースに完全統合。平均-0.092μV、範囲[-0.048, 0.110]μVの生体信号を川崎モデルのΔSP成分として活用可能にし、実験参加者の生理的反応を定量的に測定する基盤を確立。科学的手法による霊性測定の生理的側面を統合した。',
+    act: '生体データ統合の実現',
+    summary: 'Mod-002生体データ測定器から取得した1378個の皮膚電位時系列データをNeo4jデータベースに完全統合。平均-0.092μV、範囲[-0.048, 0.110]μVの生体信号を川崎モデルのΔSP成分として活用可能にし、実験参加者の生理的反応を定量的に測定する基盤を確立。科学的手法による霊性測定の生理的側面を統合した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[12]
@@ -77,13 +77,13 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[13]
-        act: 'KuzuからSupabaseへの完全移行',
-        summary: 'グラフデータベースKuzuからリレーショナルデータベースSupabaseへの完全移行を達成。Kuzu特有のノード・リレーション・プロパティモデルから、participants・participant_consents・participant_experiment_sessions・participant_response_data・video_files・emotion_analyses・emotionsテーブルによる正規化されたスキーマに移行。パフォーマンスとメンテナンス性の向上を実現し、Row Level Securityによるデータ保護と堅牢なトランザクション管理を確保。',
+    act: 'Neo4jグラフデータベース統一',
+    summary: '全てのデータをNeo4jグラフデータベースに統一。ノード・リレーションシップ・プロパティを活用した柔軟なデータ構造により、Participant・Session・Response・VideoFile・EmotionAnalysisノードを統合管理。パフォーマンスとメンテナンス性の向上を実現し、堅牢なデータ保護とトランザクション管理を確保。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[14]
-        act: 'データベースアーキテクチャの完全統一',
-        summary: 'SupabaseManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をPostgreSQLベースに移行。Kuzuの動的スキーマからSupabaseの静的型付きスキーマへの移行により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
+    act: 'データベースアーキテクチャの完全統一',
+    summary: 'Neo4jManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をNeo4jグラフベースに移行。柔軟なノード・リレーションシップ構造により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[15]
@@ -93,7 +93,7 @@
   {
     // Merkle DAG: 物語.ナラティブ[16]
     act: 'Hume AIデータベース統合APIの実現',
-    summary: 'Hume AI実験データをSupabaseデータベースに直接インポート可能なREST APIエンドポイントを開発。participant_hume_analysis_jobs・participant_hume_burst_predictions・participant_hume_prosody_predictions・participant_hume_language_predictionsテーブルを設計し、JSONBによる柔軟な感情データ格納を実現。解析パイプラインをデータベースベースに移行し、CSVファイル処理からSupabase直接クエリへ移行。分析パイプラインの実行効率とデータ完全性を大幅に向上させ、Hume AI感情分析の完全自動化基盤を確立。',
+    summary: 'Hume AI実験データをNeo4jデータベースに直接インポート可能なREST APIエンドポイントを開発。EmotionAnalysisノードを設計し、柔軟な感情データ格納を実現。解析パイプラインをデータベースベースに移行し、CSVファイル処理からNeo4j直接クエリへ移行。分析パイプラインの実行効率とデータ完全性を大幅に向上させ、Hume AI感情分析の完全自動化基盤を確立。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[17]
@@ -135,6 +135,81 @@
     act: '統合時系列可視化システムの構築',
     summary: 'セッションデータ、生理データ、Hume AI感情データを統合した時系列可視化システムを設計・実装。SessionDataProcessorによる時系列イベント処理を基盤とし、単語応答パターン・時間帯分布・応答タイミングを統合分析。参加者ごとのデータ完全性評価システムを完成し、12名参加者のデータ品質を100点満点で評価可能に。科学的手法による霊性測定の時系列的理解を深化させ、実験データの多角的分析と可視化を実現。プロセスネットワークの最適化により、データインポート・解析・可視化の完全統合パイプラインを確立。',
   },
+    {
+    // Merkle DAG: 物語.ナラティブ[25]
+    act: 'Import機能の責任分割と統合',
+    summary: 'analyzerからimporterへのimport機能の責任と権限を適切に分割・統合。importerアプリをデータインポート機能の単一責任源とし、analyzerアプリをデータ分析機能のみに特化。重複コードを排除し、依存関係を明確化（analyzer → importer）。プロセスネットワークの依存DAGを最小化し、SOLID原則に基づく安定したアーキテクチャを確立。科学的手法による霊性測定システムのデータ完全性を保証。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[26]
+    act: 'Neo4jグラフデータベース統合の実現',
+    summary: '全てのデータをNeo4jグラフデータベースに統合。ノード・リレーションシップ・プロパティを活用した柔軟なデータ構造により、Participant・Consent・ExperimentSession・WordStimulus・ResponseDataを統合管理。Cypherクエリ言語を使用したデータ操作と柔軟なデータ表現を実現。科学データにおける複雑な関係性（参加者-実験-応答-刺激語-感情）の自然な表現が可能に。堅牢なデータ管理機能を活用したデータ変更履歴の追跡とコラボレーション機能を統合。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[27]
+    act: 'Neo4jグラフモデルによるデータ構造最適化',
+    summary: 'Neo4jのドキュメント・グラフ構造により、Participant-ResponseData間の多対多関係、感情データの動的拡張、研究データのメタデータ統合を自然に表現可能に。科学的手法による霊性測定のデータ構造がより表現豊かになり、Word2Vec意味ベクトル・Hume AI感情分析・生体データ・反応時間の統合が容易に。グラフ構造によるクエリ性能の向上と分析の柔軟性を獲得。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[28]
+    act: 'Cypherクエリ言語による高度なデータ操作',
+    summary: 'Neo4j Query Language（Cypher）を使用した複雑なグラフ走査と関係性ベースのクエリを実現。実験参加者の感情パターン分析、刺激語の意味的類似性探索、生体データと感情データの相関分析がCypherのグラフクエリで効率的に実行可能に。科学データ分析における高度な関係性探索とパターン発見をサポートするクエリ言語基盤を確立。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[29]
+    act: 'データアクセス層の完全再構築',
+    summary: 'Neo4jManagerクラスによる統一されたデータアクセス層を実装し、CRUD操作のCypherベース実装を完了。Participant・ExperimentSession・ResponseDataの作成・読み取り・更新・削除機能をNeo4jグラフ操作で実現。Neo4jのマルチモデル構造により、システムのダウンタイムなしでのデータ統合を成功。科学データの一貫性と完全性を維持。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[30]
+    act: 'ServerlessワークフローとNeo4jの統合',
+    summary: 'Hume AI感情分析ワークフローにおけるNeo4jActivitiesの実装を完了。ドキュメント・グラフベースのデータ格納とCypherクエリによる非同期処理パイプラインの安定化を実現。実験データのインポート・感情分析・結果格納の一気通貫プロセスがNeo4jのマルチモデル構造で最適化され、科学的手法による霊性測定システムの処理効率が向上。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[31]
+    act: 'Analyzer/VisualizerアプリのNeo4j完全統合',
+    summary: 'analyzerとvisualizerの両アプリをNeo4jに完全統合。analyzerのDataLoader・DataStorerをCypherクエリ使用に変更し、visualizerのReactコンポーネントとAPI routesをNeo4jクライアント統合。TypeScriptでのNeo4jクライアント実装により、マルチモデルデータベースベースのデータアクセスを実現。実験データ分析・可視化システムがNeo4jの柔軟性とパフォーマンスを活用し、科学データにおける複雑な関係性表現が向上。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[32]
+    act: '統合システムのNeo4j最適化',
+    summary: 'importer・analyzer・visualizerの全てがNeo4jを使用する完全統合システムを確立。ドキュメント・グラフ構造による実験参加者・セッション・応答・感情データの関係性モデリングがシステム全体で統一され、Cypherクエリによるクロスコンポーネントデータ連携が可能に。科学的手法による霊性測定のデータフロー全体がNeo4jマルチモデル構造で最適化され、分析精度と処理効率が大幅に向上。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[33]
+    act: 'システム接続状況監視ダッシュボードの実現',
+    summary: 'dashboardページにNeo4j・Serverlessワークフロー・Hume AIの接続状況確認機能を実装。SystemStatusCardコンポーネントによるリアルタイム接続監視、自動更新機能（30秒間隔）、詳細な接続情報表示（応答時間・エラーメッセージ・設定詳細）を実現。管理者がシステムの健全性を効率的に監視・確認できる基盤を確立し、障害発生時の迅速な対応を可能に。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[34]
+    act: '統合ダッシュボードシステムの構築',
+    summary: 'Spirit in Physics実験システムの統合ダッシュボードページ（/dashboard）を構築。システムメトリクス表示、クイックアクション機能、詳細タブ（概要・参加者・インポート・分析）による包括的な管理インターフェースを実現。importページからのナビゲーション機能を追加し、管理者が効率的にシステム全体を監視・管理できる統合プラットフォームを確立。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[35]
+    act: 'Serverlessワークフロー接続問題の完全解決',
+    summary: 'ダッシュボードでワークフロー接続エラーが発生していた問題を完全に解決。Docker環境でのコンテナ間通信設定を最適化し、REST APIによる接続確認ロジックを実装。ワークフローAPIの接続状況を正確に監視可能に。システム監視ダッシュボードの信頼性を向上させ、管理者がリアルタイムでシステム健全性を確認できる基盤を確立。',
+  },
+  {
+    // Merkle DAG: 物語.ナラティブ[36]
+    act: 'Experiment階層アーキテクチャの実現',
+    summary: 'Participant → Experiment → Session階層を実装し、1回の実験に複数セッションを格納可能なデータ構造を確立。NeogmaモデルにExperimentPropertiesとExperimentRelatedNodesを追加し、ExperimentSessionとResponseにexperiment_idを導入。Neo4jスキーマにExperimentノードとHAS_EXPERIMENTリレーションを追加し、複合キー制約とインデックスを最適化。セッションインポートAPIでExperimentノードを自動作成し、Participant → Experiment → Sessionのリレーションを構築。分析APIをExperiment階層経由に更新し、セッション比較とWord2Vec APIが正常に動作。科学的手法による霊性測定システムのデータ構造をより柔軟で拡張可能にし、複数セッション実験の管理基盤を確立。',
+  },
+      {
+        // Merkle DAG: 物語.ナラティブ[37]
+        act: '時系列統合可視化システムの実現',
+        summary: 'session_data.jsonのtimestampを横軸とした時系列統合可視化システムを設計・実装。単語表示イベント（word_displayed）を基準点として、生理データ・burst・face・language・prosodyの反応値を加算・統合表示するインタラクティブなUIを構築。React + D3.js + Chart.jsによる時系列チャート、リアルタイムフィルタリング、ズーム・パン機能、データポイント詳細表示を実装。Experiment階層対応により、Participant → Experiment → Session経由でのデータ取得と可視化を実現。科学的手法による霊性測定の時系列理解を深化させ、研究者が実験プロセスの詳細な反応パターンを直感的に分析できる基盤を確立。',
+      },
+      {
+        // Merkle DAG: 物語.ナラティブ[38]
+        act: '3D Force Timeline と感情距離フォースの導入',
+        summary: '感情類似度をフォースに合成した3D可視化を導入。Emo Weak/Strong/Gain と Emo Mix により、感情と構造（word2vec・観測遷移）の寄与を動的に調整できる設計を実装。上位K近傍（k-NN）で疎グラフ化し、強弱が位置と自然長へ直接反映されるよう最適化。専用ページ /3d-force-timeline を追加し、操作パネルから即時にクラスタの変化を観測可能にした。',
+      },
+      {
+        // Merkle DAG: 物語.ナラティブ[39]
+        act: '可視化用デモデータセット生成とAPI切替',
+        summary: '200点以上の理想的なデモデータセット（感情ソース混在・8ch生理データ）を自動生成。APIの demo=1 切替を実装し、本番統合データとデモスタブの双方を同一UIで検証可能に。タイムラインAPIでは取得失敗を metadata.errors として返却し、画面上で警告表示して原因追跡を容易化。',
+      },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -166,14 +241,16 @@
           sub_processes: [
             '川崎モデルの開発',
             'Hume AI感情分析統合',
-            'Supabaseデータベースアーキテクチャ完全統一',
-            'KuzuからSupabaseへの完全移行',
+            'Neo4jデータベースアーキテクチャ完全統一',
+            'Neo4jマルチモデルデータベース統一',
             '耐久性のあるジョブ処理システム',
             'REST APIによる結果提供',
             '科学的手法による霊性測定',
             'プロセスネットワーク最適化',
             'SOLID原則完全実装',
             'Hexagonal Architecture + CQRSパターン',
+            'Unified Pipeline Workflow',
+            'importerとanalyzerをpipelineに統合',
             'Hume AIデータベース統合API',
             'データベースベース解析パイプライン',
             'JSONB感情データ格納構造',
@@ -227,32 +304,66 @@
           name: '技術基盤 (Technical Foundation)',
           description: '研究の信頼性と拡張性を保証する技術インフラ',
           sub_processes: [
-            'Supabase Row Level Securityによるデータ保護',
-            'PostgreSQLリレーショナルデータベース完全移行',
-            '静的型付きスキーマによる開発効率向上',
+            'Neo4jグラフデータベース統合',
+            'Neo4jグラフによる柔軟なデータモデリング',
+            'Neo4jノードによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseData定義',
+            'Cypherクエリ言語による高度なデータ操作',
+            'Gitのようなバージョン管理によるデータ変更履歴追跡',
+            'Neo4jリレーションシップによる複雑な関係性表現',
+            'Neo4jによるデータ保護',
             '非同期ジョブ管理と依存関係解決',
             '中間結果のキャッシュシステム',
             '自動リトライとエラーハンドリング',
             'RESTful APIによる外部連携',
             'モニタリングとログ管理',
-            'Kuzu依存関係完全除去',
-            'データベースアーキテクチャ統一',
+            'Unified Pipeline Workflow',
+            'importerとanalyzerをpipelineに統合',
             'プロセスネットワークグラフモデル実装',
-            'Merkle DAGによる状態管理'
+            'Merkle DAGによる状態管理',
+            'Neo4jActivitiesによるServerlessワークフローワークフロー統合',
+            'Neo4jベースのHume AI感情データ格納',
+            'Cypherによる感情パターン分析クエリ',
+            'グラフ構造による相関分析最適化',
+            'Serverlessワークフロー接続監視システムの完全実装',
+            'Docker環境でのコンテナ間通信設定最適化',
+            'gRPCプロトコル対応接続確認ロジック',
+            'HTTPParserError検出によるServerlessワークフロー稼働状態判定',
+            'システム監視ダッシュボードの信頼性向上',
+            'Experiment階層アーキテクチャ実装',
+            'Participant → Experiment → Session階層設計',
+            'Neogma ExperimentProperties・ExperimentRelatedNodes追加',
+            'ExperimentSession・Responseにexperiment_id導入',
+            'Neo4j Experimentノード・HAS_EXPERIMENTリレーション追加',
+            '複合キー制約・インデックス最適化',
+            'セッションインポートAPI Experiment自動作成',
+            'Participant → Experiment → Sessionリレーション構築',
+            '分析API Experiment階層経由更新',
+            'セッション比較・Word2Vec API正常動作確認',
+            '複数セッション実験管理基盤確立',
+            '時系列統合可視化システム実装',
+            'session_data.json timestamp軸可視化',
+            '単語表示イベント基準点設定',
+            '生理データ・burst・face・language・prosody統合表示',
+            'React + D3.js + Chart.js時系列チャート',
+            'リアルタイムフィルタリング機能',
+            'ズーム・パン・データポイント詳細表示',
+            'Experiment階層対応時系列データ取得',
+            'インタラクティブな反応パターン分析UI',
+            '科学的手法による霊性測定時系列理解深化'
           ],
         },
       ],
     },
         metadata: {
-          version: '1.17.0',
+          version: '1.23.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: '詳細相関分析・レポート生成システム版',
-          last_updated: '2025-10-05',
+          merkle_root: '時系列統合可視化システム版',
+          last_updated: '2025-10-16',
           implemented_features: [
             '川崎モデルの数式実装',
             'Hume AI Expression Measurement統合',
-            'Supabase Row Level Security',
+            'Neo4jデータ保護',
             '耐久性のあるジョブベース処理システム',
             'Hume AIデータベース統合API',
             '管理者ダッシュボードUI',
@@ -267,8 +378,9 @@
             'REST APIによる結果提供',
             '感情・生理・言語データの統合分析',
             '実験データインポート機能',
-            'ローカル解析パイプライン',
             'インタラクティブ可視化ダッシュボード',
+            'Unified Pipeline Workflow',
+            'importerとanalyzerをpipelineに統合',
             '11名参加者のSpirit確率解析',
             'Word2Vec日本語対応',
             '包括的分析レポート生成',
@@ -293,7 +405,7 @@
             '感情スコア可視化',
             '川崎モデルコンポーネント内訳表示',
             '研究者向け効率的データ分析支援',
-            'Supabaseローカル環境完全修復',
+            'Neo4jローカル環境完全修復',
             'Hume AI SDK最新版完全統合',
             'AsyncHumeClient 非同期API実装',
             'FaceConfig & ProsodyConfig設定',
@@ -337,9 +449,9 @@
             '多言語統合意味表現',
             'ユング刺激語詳細メタデータ活用',
             '意味的類似性精度向上',
-            'KuzuからSupabaseへの完全移行',
+            'Neo4jマルチモデルデータベース統一',
             'PostgreSQL正規化スキーマ実装',
-            'SupabaseManager統一データアクセス層',
+            'Neo4jManager統一データアクセス層',
             '静的型付きスキーマ移行',
             'Row Level Securityデータ保護',
             '堅牢なトランザクション管理',
@@ -361,7 +473,7 @@
             '解析パイプラインのデータベースベース移行',
             'REST API Humeデータインポートエンドポイント',
             'HumeDataImporterクラス実装',
-            'CSVからSupabase直接クエリ移行',
+            'CSVからNeo4j直接クエリ移行',
             '分析パイプライン実行効率向上',
             'データ完全性と再現性保証',
             'SessionDataProcessor時系列分析クラス',
@@ -375,7 +487,79 @@
             'ビデオ・Humeデータ存在確認',
             '時系列イベント可視化データ生成',
             '統合時系列可視化システム設計',
-            '多角的データ統合分析基盤'
+            '多角的データ統合分析基盤',
+            'AnalyzerデータNeo4j完全統合',
+            '11名参加者同意情報インポート',
+            '21件実験セッション統合',
+            '11件応答データ格納',
+            '9件Hume AIジョブ管理',
+            '4240件言語予測データ統合',
+            '518件バースト予測データ統合',
+            '1825件韻律予測データ統合',
+            '100件単語刺激データ格納',
+            '川崎モデル分析基盤確立',
+            '科学的手法による霊性測定データ完全性保証',
+            'Neo4jグラフデータベース統合',
+            'グラフベースParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataモデル',
+            'Cypherスキーマ定義と関係性モデリング',
+            'Cypherクエリ言語による高度なデータ操作',
+            'Gitバージョン管理によるデータ変更履歴追跡',
+            'Neo4jリレーションシップによる複雑な関係性表現',
+            'Neo4jDataAccessクラスによるCRUD操作',
+            'Neo4jグラフデータベース統合',
+            'Neo4jActivitiesによるServerlessワークフローワークフロー統合',
+            'Neo4jベースのHume AI感情データ格納',
+            'Cypherによる感情パターン分析クエリ',
+            'グラフ構造による相関分析最適化',
+            'RDFグラフモデルによるデータ構造最適化',
+            '科学データにおける複雑な関係性の自然表現',
+            'Analyzer/Visualizer Neo4j完全統合',
+            'DataLoader/DataStorer Cypherクエリ実装',
+            'TypeScript Neo4jクライアント開発',
+            'React API routes グラフデータ統合',
+            'クロスコンポーネントグラフデータ連携',
+            'グラフデータベース統合システム確立',
+            'システム接続状況監視ダッシュボード実装',
+            'SystemStatusCardリアルタイム監視コンポーネント',
+            'Neo4j・Serverlessワークフロー・Hume AI接続状況確認API',
+            '自動更新機能（30秒間隔）による継続監視',
+            '詳細接続情報表示（応答時間・エラー・設定）',
+            '管理者向けシステム健全性監視基盤',
+            '障害発生時迅速対応システム確立',
+            '統合ダッシュボードページ（/dashboard）構築',
+            'システムメトリクス統合表示機能',
+            'クイックアクション機能実装',
+            '詳細タブ（概要・参加者・インポート・分析）',
+            'importページからのナビゲーション機能',
+            '管理者向け統合管理プラットフォーム',
+            '包括的システム監視・管理インターフェース',
+            'Serverlessワークフロー接続問題の完全解決',
+            'Docker環境コンテナ間通信設定最適化',
+            'gRPCプロトコル対応接続確認ロジック実装',
+            'HTTPParserError検出によるServerlessワークフロー稼働状態判定',
+            'システム監視ダッシュボード信頼性向上',
+            'リアルタイムシステム健全性確認基盤確立',
+            'Experiment階層アーキテクチャ実装',
+            'Participant → Experiment → Session階層設計',
+            'Neogma ExperimentProperties・ExperimentRelatedNodes追加',
+            'ExperimentSession・Responseにexperiment_id導入',
+            'Neo4j Experimentノード・HAS_EXPERIMENTリレーション追加',
+            '複合キー制約・インデックス最適化',
+            'セッションインポートAPI Experiment自動作成',
+            'Participant → Experiment → Sessionリレーション構築',
+            '分析API Experiment階層経由更新',
+            'セッション比較・Word2Vec API正常動作確認',
+            '複数セッション実験管理基盤確立',
+            '時系列統合可視化システム実装',
+            'session_data.json timestamp軸可視化',
+            '単語表示イベント基準点設定',
+            '生理データ・burst・face・language・prosody統合表示',
+            'React + D3.js + Chart.js時系列チャート',
+            'リアルタイムフィルタリング機能',
+            'ズーム・パン・データポイント詳細表示',
+            'Experiment階層対応時系列データ取得',
+            'インタラクティブな反応パターン分析UI',
+            '科学的手法による霊性測定時系列理解深化'
           ],
         },
   },

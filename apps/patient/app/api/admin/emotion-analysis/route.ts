@@ -5,7 +5,7 @@ import {
   loadEmotionAnalysisResults,
   generateEmotionStatistics
 } from "scripts/src/lib/emotion-analysis";
-import { supabase } from "scripts/src/lib/supabase";
+import { createNeo4jClient } from "scripts/src/lib/neo4j";
 import { WorkflowService } from "scripts/src/lib/workflow-service";
 
 export async function GET(request: NextRequest) {
@@ -83,29 +83,25 @@ export async function GET(request: NextRequest) {
           "e41a9cd2-d803-49a8-9020-0260e55cd03e"
         ];
 
-        // Supabaseから感情統計を取得
-        const { data: emotions, error } = await supabase
-          .from('emotions')
-          .select('name, score');
-
-        if (error) {
-          console.error('Error fetching emotion statistics:', error);
-          return NextResponse.json({
-            error: "Failed to fetch emotion statistics"
-          }, { status: 500 });
-        }
+        // Neo4jから感情統計を取得
+        const neo4jClient = createNeo4jClient();
+        const emotions = await neo4jClient.query(`
+          MATCH (r:Response)
+          WHERE r.emotion IS NOT NULL
+          RETURN r.emotion as name, count(r) as score
+        `);
 
         const emotionMap = (emotions || []).reduce((acc: Record<string, { count: number; totalScore: number }>, emotion: any) => {
           if (!acc[emotion.name]) {
             acc[emotion.name] = { count: 0, totalScore: 0 };
           }
-          acc[emotion.name].count += 1;
+          acc[emotion.name].count += emotion.score; // score is count from Neo4j query
           acc[emotion.name].totalScore += emotion.score;
           return acc;
         }, {});
 
         const dominantEmotions = Object.entries(emotionMap)
-          .map(([emotion, stats]) => ({
+          .map(([emotion, stats]: [string, { count: number; totalScore: number }]) => ({
             emotion,
             count: stats.count,
             averageScore: stats.totalScore / stats.count

@@ -1,5 +1,6 @@
 import { inngest, events, VideoAnalysisEvent, AnalysisResultEvent } from '../inngest';
 import { analyzeVideoEmotions, saveEmotionAnalysisResult } from '../emotion-analysis';
+import { EmotionAnalysisResult } from '../../00_schema/emotion';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
@@ -97,11 +98,11 @@ export const videoAnalysisWorkflow = inngest.createFunction(
     // ステップ4: 結果の永続化
     await step.run('persist-results', async () => {
       try {
-        saveEmotionAnalysisResult(analysisResult);
+        await saveEmotionAnalysisResult(analysisResult as EmotionAnalysisResult);
 
         logger.info(`Analysis results persisted for ${participantId}/${videoFile}`, {
-          emotionsCount: analysisResult.emotions.length,
-          dominantEmotion: analysisResult.emotions[0]?.name,
+          emotionsCount: (analysisResult as EmotionAnalysisResult).emotions.length,
+          dominantEmotion: (analysisResult as EmotionAnalysisResult).emotions[0]?.name,
         });
       } catch (error) {
         logger.error(`Failed to persist results for ${participantId}/${videoFile}`, {
@@ -117,11 +118,11 @@ export const videoAnalysisWorkflow = inngest.createFunction(
         participantId,
         videoFile,
         results: analysisResult,
-        processingTime: analysisResult.processingTime,
+        processingTime: (analysisResult as EmotionAnalysisResult).processingTime,
         metadata: {
           sessionType,
-          emotionsDetected: analysisResult.emotions.length,
-          timestamp: analysisResult.timestamp,
+          emotionsDetected: (analysisResult as EmotionAnalysisResult).emotions.length,
+          timestamp: (analysisResult as EmotionAnalysisResult).timestamp,
         },
       };
 
@@ -139,8 +140,8 @@ export const videoAnalysisWorkflow = inngest.createFunction(
       participantId,
       videoFile,
       sessionType,
-      emotionsDetected: analysisResult.emotions.length,
-      processingTime: analysisResult.processingTime,
+      emotionsDetected: (analysisResult as EmotionAnalysisResult).emotions.length,
+      processingTime: (analysisResult as EmotionAnalysisResult).processingTime,
     };
   }
 );

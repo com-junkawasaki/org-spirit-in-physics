@@ -2,15 +2,15 @@
 
 import { StoragePort } from 'scripts/src/20_ports';
 import { ConsentData, SaveStructuredDataPayload, EmotionAnalysisResult, Participant, ParticipantWithFiles, SessionData } from 'scripts/src/00_schema';
-import { supabaseManager } from 'scripts/src/lib/database/supabase-manager';
+import { neo4jManager } from 'scripts/src/lib/database/neo4j-manager';
 
 export class StorageAdapter implements StoragePort {
   async saveStructuredData(payload: SaveStructuredDataPayload): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
+    // Neo4jデータベースに保存（一本化）
     if (payload.type === "consent") {
       await this.saveConsentData(payload.data);
     } else if (payload.type === "session-data") {
-      await supabaseManager.saveSession({
+      await neo4jManager.saveSession({
         id: `${payload.data.participantId}_session`,
         participantId: payload.data.participantId,
         events: payload.data.events,
@@ -20,8 +20,8 @@ export class StorageAdapter implements StoragePort {
   }
 
   async saveConsentData(data: ConsentData): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
-    await supabaseManager.saveParticipant({
+    // Neo4jデータベースに保存（一本化）
+    await neo4jManager.saveParticipant({
       id: data.participantId,
       signature: data.signature,
       agreedAt: new Date(data.agreedAt),
@@ -30,7 +30,7 @@ export class StorageAdapter implements StoragePort {
   }
 
   async saveEmotionAnalysis(participantId: string, result: EmotionAnalysisResult): Promise<void> {
-    // Supabaseデータベースに保存（一本化）
+    // Neo4jデータベースに保存（一本化）
     const analysis = {
       id: `${result.participantId}_${result.videoFile}_${Date.now()}`,
       participantId: result.participantId,
@@ -41,14 +41,14 @@ export class StorageAdapter implements StoragePort {
       emotions: result.emotions
     };
 
-    await supabaseManager.saveEmotionAnalysis(analysis);
+    await neo4jManager.saveEmotionAnalysis(analysis);
   }
 
   async loadEmotionAnalysis(participantId: string): Promise<EmotionAnalysisResult[]> {
-    // Supabaseデータベースから読み込み（一本化）
+    // Neo4jデータベースから読み込み（一本化）
     try {
-      const supabaseResults = await supabaseManager.getEmotionAnalysis(participantId);
-      return supabaseResults.map(sa => ({
+      const neo4jResults = await neo4jManager.getEmotionAnalysis(participantId);
+      return neo4jResults.map(sa => ({
         participantId: sa.participantId,
         videoFile: sa.videoFileId.replace(`${sa.participantId}_`, ''),
         sessionType: sa.sessionType,
@@ -57,7 +57,7 @@ export class StorageAdapter implements StoragePort {
         processingTime: sa.processingTime
       }));
     } catch (error) {
-      console.warn('Failed to load emotion analysis from Supabase:', error);
+      console.warn('Failed to load emotion analysis from Neo4j:', error);
       return [];
     }
   }
@@ -65,19 +65,19 @@ export class StorageAdapter implements StoragePort {
   async saveArtifact(participantId: string, type: string, filename: string, data: Buffer): Promise<string> {
     // アーティファクト保存は未実装（必要に応じて実装）
       // 現在はURLを返すダミー実装
-      return `supabase://artifacts/${participantId}/${filename}`;
+      return `neo4j://artifacts/${participantId}/${filename}`;
   }
 
   // data-loader.ts から統合した追加メソッド
   async loadAllParticipants(): Promise<ParticipantWithFiles[]> {
-    // Supabaseデータベースから参加者データを取得（一本化）
+    // Neo4jデータベースから参加者データを取得（一本化）
     try {
-      const supabaseParticipants = await supabaseManager.getAllParticipants();
-      return supabaseParticipants.map(sp => ({
+      const neo4jParticipants = await neo4jManager.getAllParticipants();
+      return neo4jParticipants.map(sp => ({
         id: sp.id,
-        age: undefined, // SupabaseParticipantにはない
-        gender: undefined, // SupabaseParticipantにはない
-        handedness: undefined, // SupabaseParticipantにはない
+        age: undefined, // Neo4jParticipantにはない
+        gender: undefined, // Neo4jParticipantにはない
+        handedness: undefined, // Neo4jParticipantにはない
         createdAt: new Date(sp.agreedAt), // agreedAtを使用
         signature: sp.signature,
         agreedAt: sp.agreedAt?.toISOString() || new Date().toISOString(),
@@ -87,20 +87,20 @@ export class StorageAdapter implements StoragePort {
         videoFiles: []
       }));
     } catch (error) {
-      console.warn('Failed to load participants from Supabase:', error);
+      console.warn('Failed to load participants from Neo4j:', error);
       return [];
     }
   }
 
   async loadSessionData(participantId: string): Promise<SessionData | null> {
-    // Supabaseデータベースからセッションデータを取得（一本化）
+    // Neo4jデータベースからセッションデータを取得（一本化）
     try {
-      // SupabaseManagerからセッションデータを取得
+      // Neo4jManagerからセッションデータを取得
       // 現時点では仮の実装
-      console.log(`Loading session data from Supabase for ${participantId}`);
+      console.log(`Loading session data from Neo4j for ${participantId}`);
       return null; // 仮実装
     } catch (error) {
-      console.warn('Failed to load session data from Supabase:', error);
+      console.warn('Failed to load session data from Neo4j:', error);
       return null;
     }
   }
