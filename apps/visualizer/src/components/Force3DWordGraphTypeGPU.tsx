@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 
 // Merkle DAG: components.force3d_word_graph_typegpu
 // TypeGPU版ユング単語連合の語ごとスケールを反映した完全グラフ3D可視化
@@ -75,11 +75,14 @@ export default function Force3DWordGraphTypeGPU({
   const nodesRef = useRef<WordNode[]>(nodes)
   const linksRef = useRef<WordLink[]>(links)
   
+  // ズームレベル表示用のstate
+  const [zoomLevel, setZoomLevel] = useState(600)
+  
   // カメラ制御用の状態
   const cameraRef = useRef({
-    distance: 400,
-    rotationX: 0,
-    rotationY: 0,
+    distance: 600, // 初期距離を少し遠くに設定
+    rotationX: 0.2, // 少し下から見上げる角度
+    rotationY: 0.5, // 少し回転させて立体感を出す
     centerX: 0,
     centerY: 0,
     centerZ: 0
@@ -115,9 +118,32 @@ export default function Force3DWordGraphTypeGPU({
   
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault()
-    const delta = e.deltaY > 0 ? 1.1 : 0.9
+    // 直感的なズーム: 上にスクロールでズームイン（距離を短く）、下にスクロールでズームアウト（距離を長く）
+    const zoomSpeed = 0.05 // より細かい調整
+    const delta = e.deltaY > 0 ? 1 + zoomSpeed : 1 - zoomSpeed
     cameraRef.current.distance *= delta
-    cameraRef.current.distance = Math.max(50, Math.min(2000, cameraRef.current.distance))
+    
+    // ノード群のサイズに基づいて動的にズーム範囲を調整
+    const nodes = nodesRef.current
+    if (nodes.length > 0) {
+      let maxDistance = 0
+      for (let i = 0; i < nodes.length; i++) {
+        const dx = nodes[i].initial?.[0] || 0 - cameraRef.current.centerX
+        const dy = nodes[i].initial?.[1] || 0 - cameraRef.current.centerY
+        const dz = nodes[i].initial?.[2] || 0 - cameraRef.current.centerZ
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
+        maxDistance = Math.max(maxDistance, distance)
+      }
+      
+      const minDistance = Math.max(50, maxDistance * 0.5)
+      const maxDistanceLimit = Math.max(1000, maxDistance * 5)
+      cameraRef.current.distance = Math.max(minDistance, Math.min(maxDistanceLimit, cameraRef.current.distance))
+    } else {
+      cameraRef.current.distance = Math.max(100, Math.min(1500, cameraRef.current.distance))
+    }
+    
+    // ズームレベル表示を更新
+    setZoomLevel(cameraRef.current.distance)
   }, [])
   
   const physicsRef = useRef({
@@ -221,6 +247,20 @@ export default function Force3DWordGraphTypeGPU({
           cameraRef.current.centerX = centerX / N
           cameraRef.current.centerY = centerY / N
           cameraRef.current.centerZ = centerZ / N
+          
+          // ノード群のサイズに基づいてカメラ距離を調整
+          let maxDistance = 0
+          for (let i = 0; i < N; i++) {
+            const dx = pos[i * 3] - cameraRef.current.centerX
+            const dy = pos[i * 3 + 1] - cameraRef.current.centerY
+            const dz = pos[i * 3 + 2] - cameraRef.current.centerZ
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
+            maxDistance = Math.max(maxDistance, distance)
+          }
+          
+          // ノード群の最大距離の2.5倍をカメラ距離に設定
+          cameraRef.current.distance = Math.max(400, maxDistance * 2.5)
+          setZoomLevel(cameraRef.current.distance)
         }
 
         // WebGPUシェーダーコード
@@ -678,7 +718,7 @@ export default function Force3DWordGraphTypeGPU({
   }, [nodes, links])
 
   return (
-    <div style={{ width, height, background }}>
+    <div style={{ width, height, background, position: 'relative' }}>
       <canvas
         ref={canvasRef}
         width={width}
@@ -689,6 +729,38 @@ export default function Force3DWordGraphTypeGPU({
           cursor: isDraggingRef.current ? 'grabbing' : 'grab'
         }}
       />
+      {/* ズームレベル表示 */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        background: 'rgba(0, 0, 0, 0.7)',
+        color: 'white',
+        padding: '8px 12px',
+        borderRadius: '6px',
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        pointerEvents: 'none',
+        zIndex: 10
+      }}>
+        Zoom: {zoomLevel.toFixed(0)}
+      </div>
+      {/* 操作説明 */}
+      <div style={{
+        position: 'absolute',
+        bottom: '10px',
+        left: '10px',
+        background: 'rgba(0, 0, 0, 0.7)',
+        color: 'white',
+        padding: '8px 12px',
+        borderRadius: '6px',
+        fontSize: '11px',
+        fontFamily: 'monospace',
+        pointerEvents: 'none',
+        zIndex: 10
+      }}>
+        Drag: Rotate | Wheel: Zoom
+      </div>
     </div>
   )
 }

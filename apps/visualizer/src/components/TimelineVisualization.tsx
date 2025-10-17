@@ -105,30 +105,18 @@ export default function TimelineVisualization({
   const [gamma, setGamma] = useState(1.0)  // ΔSP の係数 γ
   const [lambda, setLambda] = useState(1.0) // ΔSP のスケール λ
   const [eta, setEta] = useState(1.0)    // 感情スコア係数 η
-  const [beta, setBeta] = useState(1.0)  // ベクトル項の温度 β
-  const [springK, setSpringK] = useState(3.0)
-  const [repulsionK, setRepulsionK] = useState(800.0)
-  const [restLength, setRestLength] = useState(60)
-  const [damping, setDamping] = useState(0.95)
-  // 感情類似フォース係数（弱・強）
-  const [emotionWeak, setEmotionWeak] = useState(0.6)
-  const [emotionStrong, setEmotionStrong] = useState(1.6)
+  const [springK, setSpringK] = useState(2.0)
+  const [repulsionK, setRepulsionK] = useState(2000.0)
+  const [restLength, setRestLength] = useState(80)
+  const [damping, setDamping] = useState(0.92)
   const [emotionGain, setEmotionGain] = useState(1.5)
-  const [emotionMix, setEmotionMix] = useState(0.7) // 0..1 感情寄与の重み
-  const [neighborsK, setNeighborsK] = useState(6) // k-NN エッジ数
-  const [weightGamma, setWeightGamma] = useState(1.5) // 重みのダイナミックレンジ拡張
   const [shellRadius, setShellRadius] = useState(300)
   const [shellK, setShellK] = useState(1.5)
-  const [radialOutK, setRadialOutK] = useState(0)
+  const [radialOutK] = useState(0)
   const [constraintIters] = useState(2)
   const [constraintStiffness] = useState(0.5)
   const [minSep, setMinSep] = useState(40)
   const [sepK, setSepK] = useState(3000)
-  const [kernelSigma, setKernelSigma] = useState(0.8)
-  const [useSpectralInit, setUseSpectralInit] = useState(true)
-  // reserved (future): verlet constraints tuning
-  const [emotionGainMin, setEmotionGainMin] = useState(0.5)
-  const [emotionGainMax, setEmotionGainMax] = useState(4.0)
   // 3D Force プリセット
   const forcePresets = [
     { id: 'balanced', label: 'Balanced', springK: 2.0, repulsionK: 2000, restLength: 80, damping: 0.92, emoWeak: 0.6, emoStrong: 1.6, emoGain: 1.5 },
@@ -145,8 +133,6 @@ export default function TimelineVisualization({
     setRepulsionK(p.repulsionK)
     setRestLength(p.restLength)
     setDamping(p.damping)
-    setEmotionWeak(p.emoWeak)
-    setEmotionStrong(p.emoStrong)
     setEmotionGain(p.emoGain)
   }
   
@@ -590,7 +576,7 @@ export default function TimelineVisualization({
     }
 
     // --- Spectral Embedding（ラプラシアンの固有ベクトル）で初期3D座標を与える ---
-    if (useSpectralInit) {
+    if (true) { // Spectral initialization always enabled
       const words = nodes.map(n => n.label)
       const V = words.map(w => normalizedEmotionVec[w] || new Array(10).fill(0))
       const n = words.length
@@ -613,7 +599,7 @@ export default function TimelineVisualization({
         dists.sort((a, b) => a - b)
         med = dists.length > 0 ? dists[Math.floor(dists.length / 2)] : 1
       }
-      const sigmaEff = Math.max(1e-6, (kernelSigma || 0.8) * med)
+      const sigmaEff = Math.max(1e-6, 0.8 * med)
       const sig2 = sigmaEff * sigmaEff
       for (let i = 0; i < n; i++) {
         for (let j = i + 1; j < n; j++) {
@@ -755,9 +741,9 @@ export default function TimelineVisualization({
     const combined: Array<{ i: number; j: number; w: number; wE: number; wS: number }> = rawPairs.map(p => {
       const wE = (p.wEmotion - eMin) / eDen
       // 構造と感情のミックス
-      let w = Math.max(0, Math.min(1, emotionMix * wE + (1 - emotionMix) * p.wStruct))
+      let w = Math.max(0, Math.min(1, wE))
       // 1) べき乗強調（既存）
-      w = Math.pow(w, Math.max(0.1, weightGamma))
+      w = Math.pow(w, Math.max(0.1, 1.5))
       // 2) 強コントラスト（ロジスティック）: 中央0.5を境に急峻化
       const a = 8 // 勾配（大きいほど0/1へ張り付く）
       const b = 0.5
@@ -816,7 +802,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes: allNodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK, shellRadius, kernelSigma, useSpectralInit])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, restLength, springK, shellRadius])
 
   // 3Dフォース用 完全グラフデータ生成（語ごとスケール、辺スケール） - 重複削除
   /*
@@ -1015,7 +1001,7 @@ export default function TimelineVisualization({
     }
 
     // --- Spectral Embedding（ラプラシアンの固有ベクトル）で初期3D座標を与える ---
-    if (useSpectralInit) {
+    if (true) { // Spectral initialization always enabled
       const words = nodes.map(n => n.label)
       const V = words.map(w => normalizedEmotionVec[w] || new Array(10).fill(0))
       const n = words.length
@@ -1038,7 +1024,7 @@ export default function TimelineVisualization({
         dists.sort((a, b) => a - b)
         med = dists.length > 0 ? dists[Math.floor(dists.length / 2)] : 1
       }
-      const sigmaEff = Math.max(1e-6, (kernelSigma || 0.8) * med)
+      const sigmaEff = Math.max(1e-6, 0.8 * med)
       const sig2 = sigmaEff * sigmaEff
       for (let i = 0; i < n; i++) {
         for (let j = i + 1; j < n; j++) {
@@ -1181,9 +1167,9 @@ export default function TimelineVisualization({
     const combined: Array<{ i: number; j: number; w: number; wE: number; wS: number }> = rawPairs.map(p => {
       const wE = (p.wEmotion - eMin) / eDen
       // 構造と感情のミックス
-      let w = Math.max(0, Math.min(1, emotionMix * wE + (1 - emotionMix) * p.wStruct))
+      let w = Math.max(0, Math.min(1, wE))
       // 1) べき乗強調（既存）
-      w = Math.pow(w, Math.max(0.1, weightGamma))
+      w = Math.pow(w, Math.max(0.1, 1.5))
       // 2) 強コントラスト（ロジスティック）: 中央0.5を境に急峻化
       const a = 8 // 勾配（大きいほど0/1へ張り付く）
       const b = 0.5
@@ -1242,7 +1228,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes: allNodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK, shellRadius, kernelSigma, useSpectralInit])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, restLength, springK, shellRadius])
   */
 
   // KPIカードレンダリング
@@ -2261,122 +2247,232 @@ export default function TimelineVisualization({
         {visualizationMode === 'small-multiples' && renderSmallMultiples()}
 
         {visualizationMode === 'force-3d-typegpu' && (
-          <div className="mb-4 grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
-            <label className="flex items-center space-x-2 col-span-2 md:col-span-2">
-              <span>Preset</span>
-              <select className="border rounded px-2 py-1" value={forcePresetId} onChange={(e) => applyForcePreset(e.target.value as typeof forcePresetId)}>
+          <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            {/* プリセット選択 */}
+            <div className="mb-4">
+              <div className="block text-sm font-medium text-gray-700 mb-2">Preset Configuration</div>
+              <div className="flex flex-wrap gap-2">
                 {forcePresets.map(p => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => applyForcePreset(p.id)}
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      forcePresetId === p.id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
                 ))}
-              </select>
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>α</span>
-              <input type="number" step="0.1" value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>γ</span>
-              <input type="number" step="0.1" value={gamma} onChange={(e) => setGamma(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>λ</span>
-              <input type="number" step="0.1" value={lambda} onChange={(e) => setLambda(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>η</span>
-              <input type="number" step="0.1" value={eta} onChange={(e) => setEta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>β</span>
-              <input type="number" step="0.1" value={beta} onChange={(e) => setBeta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>Emo Weak</span>
-              <input type="number" step="0.1" value={emotionWeak} onChange={(e) => setEmotionWeak(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>Emo Strong</span>
-              <input type="number" step="0.1" value={emotionStrong} onChange={(e) => setEmotionStrong(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <div className="flex items-center space-x-2 col-span-2">
-              <span>Emo Gain</span>
-              <input
-                type="range"
-                min={emotionGainMin}
-                max={emotionGainMax}
-                step="0.1"
-                value={emotionGain}
-                onChange={(e) => setEmotionGain(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="w-10 text-right">{emotionGain.toFixed(1)}</span>
-              <span className="ml-2 text-xs text-gray-500">min</span>
-              <input type="number" step="0.1" value={emotionGainMin} onChange={(e) => setEmotionGainMin(Number(e.target.value))} className="w-16 border rounded px-2 py-1" />
-              <span className="text-xs text-gray-500">max</span>
-              <input type="number" step="0.1" value={emotionGainMax} onChange={(e) => setEmotionGainMax(Number(e.target.value))} className="w-16 border rounded px-2 py-1" />
+              </div>
             </div>
-            <label className="flex items-center space-x-2 col-span-2">
-              <span>Emo Mix</span>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step="0.05"
-                value={emotionMix}
-                onChange={(e) => setEmotionMix(Number(e.target.value))}
-                className="flex-1"
-              />
-              <span className="w-10 text-right">{emotionMix.toFixed(2)}</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>γ(w)</span>
-              <input type="number" step="0.1" value={weightGamma} onChange={(e) => setWeightGamma(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>ShellR</span>
-              <input type="number" step="10" value={shellRadius} onChange={(e) => setShellRadius(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>ShellK</span>
-              <input type="number" step="0.1" value={shellK} onChange={(e) => setShellK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>RadialOutK</span>
-              <input type="number" step="1" value={radialOutK} onChange={(e) => setRadialOutK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            {/* reserved: constraints tuning controls */}
-            <label className="flex items-center space-x-2">
-              <span>K</span>
-              <input type="number" step="1" value={neighborsK} onChange={(e) => setNeighborsK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>Repulsion</span>
-              <input type="number" step="10" value={repulsionK} onChange={(e) => setRepulsionK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>L0</span>
-              <input type="number" step="1" value={restLength} onChange={(e) => setRestLength(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>Damping</span>
-              <input type="number" step="0.01" value={damping} onChange={(e) => setDamping(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>MinSep</span>
-              <input type="number" step="5" value={minSep} onChange={(e) => setMinSep(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>SepK</span>
-              <input type="number" step="100" value={sepK} onChange={(e) => setSepK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>σ</span>
-              <input type="number" step="0.05" min="0.1" max="3" value={kernelSigma} onChange={(e) => setKernelSigma(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
-            </label>
-            <label className="flex items-center space-x-2">
-              <span>Spectral Init</span>
-              <input type="checkbox" checked={useSpectralInit} onChange={(e) => setUseSpectralInit(e.target.checked)} />
-            </label>
+
+            {/* 物理パラメータコントロール */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* バネ力コントロール */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700 border-b pb-1">Spring Forces</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Spring K</span>
+                    <span className="text-xs text-gray-500">{springK.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="5.0"
+                    step="0.1"
+                    value={springK}
+                    onChange={(e) => setSpringK(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Rest Length</span>
+                    <span className="text-xs text-gray-500">{restLength}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="30"
+                    max="150"
+                    step="5"
+                    value={restLength}
+                    onChange={(e) => setRestLength(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+              </div>
+
+              {/* 反発力コントロール */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700 border-b pb-1">Repulsion Forces</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Repulsion K</span>
+                    <span className="text-xs text-gray-500">{repulsionK.toFixed(0)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="500"
+                    max="5000"
+                    step="100"
+                    value={repulsionK}
+                    onChange={(e) => setRepulsionK(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Min Separation</span>
+                    <span className="text-xs text-gray-500">{minSep}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    step="5"
+                    value={minSep}
+                    onChange={(e) => setMinSep(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Separation K</span>
+                    <span className="text-xs text-gray-500">{sepK.toFixed(0)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1000"
+                    max="8000"
+                    step="200"
+                    value={sepK}
+                    onChange={(e) => setSepK(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+              </div>
+
+              {/* シェル力コントロール */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-700 border-b pb-1">Shell Forces</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Shell Radius</span>
+                    <span className="text-xs text-gray-500">{shellRadius}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="100"
+                    max="600"
+                    step="20"
+                    value={shellRadius}
+                    onChange={(e) => setShellRadius(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Shell K</span>
+                    <span className="text-xs text-gray-500">{shellK.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="5.0"
+                    step="0.1"
+                    value={shellK}
+                    onChange={(e) => setShellK(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Damping</span>
+                    <span className="text-xs text-gray-500">{damping.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.85"
+                    max="0.99"
+                    step="0.01"
+                    value={damping}
+                    onChange={(e) => setDamping(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 感情パラメータコントロール */}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Emotion Parameters</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">α</span>
+                    <span className="text-xs text-gray-500">{alpha.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="3.0"
+                    step="0.1"
+                    value={alpha}
+                    onChange={(e) => setAlpha(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">γ</span>
+                    <span className="text-xs text-gray-500">{gamma.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="3.0"
+                    step="0.1"
+                    value={gamma}
+                    onChange={(e) => setGamma(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">λ</span>
+                    <span className="text-xs text-gray-500">{lambda.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="3.0"
+                    step="0.1"
+                    value={lambda}
+                    onChange={(e) => setLambda(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">η</span>
+                    <span className="text-xs text-gray-500">{eta.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="3.0"
+                    step="0.1"
+                    value={eta}
+                    onChange={(e) => setEta(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
