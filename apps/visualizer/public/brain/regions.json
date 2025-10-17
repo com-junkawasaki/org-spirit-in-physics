@@ -1,9 +1,0 @@
-[
-  { "id": "IFGoperc_L", "label": "Inferior Frontal Gyrus (opercular) L", "x": -48, "y": 14, "z": 8 },
-  { "id": "IFGoperc_R", "label": "Inferior Frontal Gyrus (opercular) R", "x": 52, "y": 16, "z": 10 },
-  { "id": "STG_L", "label": "Superior Temporal Gyrus L", "x": -54, "y": -20, "z": 6 },
-  { "id": "STG_R", "label": "Superior Temporal Gyrus R", "x": 56, "y": -18, "z": 8 },
-  { "id": "MTG_L", "label": "Middle Temporal Gyrus L", "x": -60, "y": -34, "z": -2 },
-  { "id": "MTG_R", "label": "Middle Temporal Gyrus R", "x": 62, "y": -32, "z": 0 }
-]
-

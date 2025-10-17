@@ -1,7 +1,0 @@
-[
-  { "source": "IFGoperc_L", "target": "STG_L", "weight": 0.4 },
-  { "source": "IFGoperc_R", "target": "STG_R", "weight": 0.4 },
-  { "source": "STG_L", "target": "MTG_L", "weight": 0.3 },
-  { "source": "STG_R", "target": "MTG_R", "weight": 0.3 }
-]
-

@@ -56,7 +56,7 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     join(basePath, 'HumeAI_artifacts_c5c16907-6638-4791-b93a-f07674a7891f'),
   ];
   
-  let humeCsvFiles: string[] = [];
+  const humeCsvFiles: string[] = [];
   let humeTotalSize = 0;
   
   for (const humeDataPath of humeDataPaths) {
@@ -266,7 +266,7 @@ export const fileImportWorkflow = inngest.createFunction(
         join(basePath, 'HumeAI_artifacts_c5c16907-6638-4791-b93a-f07674a7891f'),
       ];
       
-      let humeCsvFiles: string[] = [];
+      const humeCsvFiles: string[] = [];
       let humeTotalSize = 0;
       
       for (const humeDataPath of humeDataPaths) {
@@ -423,10 +423,10 @@ export const fileImportWorkflow = inngest.createFunction(
         sessionUri: fileValidation.sessionData.path,
         physioUri: fileValidation.physioData.path,
         humeCsvUris: {
-          burst: fileValidation.humeData.paths.filter((p: string) => p.includes('burst')),
-          face: fileValidation.humeData.paths.filter((p: string) => p.includes('face')),
-          language: fileValidation.humeData.paths.filter((p: string) => p.includes('language')),
-          prosody: fileValidation.humeData.paths.filter((p: string) => p.includes('prosody')),
+          burst: fileValidation.humeData.paths.filter((p: string) => p.toLowerCase().includes('burst')),
+          face: fileValidation.humeData.paths.filter((p: string) => p.toLowerCase().includes('face')),
+          language: fileValidation.humeData.paths.filter((p: string) => p.toLowerCase().includes('language')),
+          prosody: fileValidation.humeData.paths.filter((p: string) => p.toLowerCase().includes('prosody')),
         },
         stats: fileParsing,
         tenantId,

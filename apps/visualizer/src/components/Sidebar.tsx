@@ -20,13 +20,6 @@ const menuItems: MenuItem[] = [
         description: 'システム概要と統計'
     },
     {
-        id: 'system-metrics',
-        label: 'システムメトリクス',
-        href: '/system-metrics',
-        icon: '📈',
-        description: 'システムパフォーマンス監視'
-    },
-    {
         id: 'participants',
         label: '被験者一覧',
         href: '/participants',
@@ -53,13 +46,6 @@ const menuItems: MenuItem[] = [
         href: '/process/emotions',
         icon: '😊',
         description: '感情分析データインポート'
-    },
-    {
-        id: 'session-comparison',
-        label: 'セッション比較分析',
-        href: '/analysis/session-comparison',
-        icon: '📊',
-        description: 'セッション間差異分析'
     },
     {
         id: 'import',
