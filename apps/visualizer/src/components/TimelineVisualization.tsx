@@ -595,7 +595,25 @@ export default function TimelineVisualization({
       const n = words.length
       // RBFカーネル重み行列 W
       const W: number[][] = Array.from({ length: n }, () => new Array(n).fill(0))
-      const sig2 = Math.max(1e-6, kernelSigma * kernelSigma)
+      // σ 自動推定（メディアン距離）
+      let med = 1
+      {
+        const dists: number[] = []
+        for (let i = 0; i < n; i++) {
+          for (let j = i + 1; j < n; j++) {
+            let d2 = 0
+            for (let k = 0; k < 10; k++) {
+              const diff = (V[i][k] || 0) - (V[j][k] || 0)
+              d2 += diff * diff
+            }
+            dists.push(Math.sqrt(d2))
+          }
+        }
+        dists.sort((a, b) => a - b)
+        med = dists.length > 0 ? dists[Math.floor(dists.length / 2)] : 1
+      }
+      const sigmaEff = Math.max(1e-6, (kernelSigma || 0.8) * med)
+      const sig2 = sigmaEff * sigmaEff
       for (let i = 0; i < n; i++) {
         for (let j = i + 1; j < n; j++) {
           let d2 = 0
@@ -662,6 +680,19 @@ export default function TimelineVisualization({
       { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
       { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
     ]
+    // アンカー→内部10感情キーの正規マッピング
+    const anchorToKey: Record<string, typeof EMOTION_KEYS[number]> = {
+      Joy: 'joy',
+      Sadness: 'sadness',
+      Anger: 'anger',
+      Fear: 'fear',
+      Disgust: 'disgust',
+      Calmness: 'calm',
+      Interest: 'focus',
+      Surprise: 'surprise',
+      Confusion: 'confusion',
+      Determination: 'focus',
+    }
     const anchorRadius = shellRadius // 球殻上に配置
     const toSphere = (x01: number, y01: number): [number, number, number] => {
       const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
@@ -767,16 +798,17 @@ export default function TimelineVisualization({
     const baseOffset = nodes.length
     const allNodes = [...anchorNodes, ...nodes]
     for (let ai = 0; ai < anchorNodes.length; ai++) {
+      const anchor = anchorNodes[ai]
       const anchorIndex = ai
+      const key = anchorToKey[anchor.label] as typeof EMOTION_KEYS[number] | undefined
+      const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
       for (let wi = 0; wi < nodes.length; wi++) {
         const wordIndex = baseOffset + wi
         const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
-        // アンカー名に対応する感情次元があるならその軸、なければ平均
-        const ej = ei // 近似: 同一空間で平均的に張る（詳細マッピングは後続）
-        const sim = ei.reduce((s, x, k) => s + x * (ej[k] || 0), 0)
-        const w = Math.max(0, Math.min(1, (sim + 1) / 2))
-        const L0 = Math.max(10, restLength * (1 - 0.5 * w))
-        const k = springK * (0.4 + 0.6 * w)
+        const sim = kIdx >= 0 ? ei[kIdx] : (ei.reduce((s, x) => s + x, 0) / Math.max(1, ei.length))
+        const w = Math.max(0, Math.min(1, sim))
+        const L0 = Math.max(10, restLength * (1 - 0.6 * w))
+        const k = springK * (0.3 + 0.7 * w)
         links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
       }
     }
@@ -1915,12 +1947,12 @@ export default function TimelineVisualization({
         )}
 
         {visualizationMode === 'force-3d' && mounted && (() => {
-          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number }; emotionPower?: number }
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number }; emotionPower?: number }
           const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraph.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK }} emotionPower={emotionGain} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0 }} emotionPower={emotionGain} />
             </div>
           )
         })()}

@@ -47,6 +47,9 @@ interface Force3DWordGraphProps {
     radialOutK?: number
     constraintIters?: number
     constraintStiffness?: number
+    torusR?: number
+    torusr?: number
+    torusK?: number
   }
   // 感情類似の影響倍率（links.weight への指数影響）
   emotionPower?: number
@@ -92,6 +95,9 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     radialOutK: physics?.radialOutK ?? 0,
     constraintIters: physics?.constraintIters ?? 2,
     constraintStiffness: physics?.constraintStiffness ?? 0.5,
+    torusR: physics?.torusR ?? 0,
+    torusr: physics?.torusr ?? 0,
+    torusK: physics?.torusK ?? 0,
   })
 
   // 色スケール
@@ -126,6 +132,9 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       radialOutK: physics?.radialOutK ?? physicsRef.current.radialOutK,
       constraintIters: physics?.constraintIters ?? physicsRef.current.constraintIters,
       constraintStiffness: physics?.constraintStiffness ?? physicsRef.current.constraintStiffness,
+      torusR: physics?.torusR ?? physicsRef.current.torusR,
+      torusr: physics?.torusr ?? physicsRef.current.torusr,
+      torusK: physics?.torusK ?? physicsRef.current.torusK,
     }
   }, [physics])
 
@@ -299,7 +308,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       const v = velocitiesRef.current as Float32Array
       const n = nodesRef.current.length
 
-      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter, shellKOuter, radialOutK } = physicsRef.current
+      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter, shellKOuter, radialOutK, torusR, torusr, torusK } = physicsRef.current
 
       // 斥力
       for (let i = 0; i < n; i++) {
@@ -432,6 +441,25 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
           v[ix] += fr * ux * delta
           v[ix + 1] += fr * uy * delta
           v[ix + 2] += fr * uz * delta
+        }
+
+        // トーラス吸引（y軸周り）
+        if (torusK && torusK > 0 && torusR && torusr) {
+          const x = p[ix]
+          const y = p[ix + 1]
+          const z = p[ix + 2]
+          const rho = Math.hypot(x, z) + 1e-6
+          const dr = rho - torusR
+          const tube = Math.hypot(dr, y) + 1e-6
+          const diff = torusr - tube
+          const urx = x / rho
+          const urz = z / rho
+          const gX = (dr / tube) * urx
+          const gY = (y / tube)
+          const gZ = (dr / tube) * urz
+          v[ix] += (torusK * diff) * gX * delta
+          v[ix + 1] += (torusK * diff) * gY * delta
+          v[ix + 2] += (torusK * diff) * gZ * delta
         }
         const sp2 = Math.hypot(v[ix], v[ix + 1], v[ix + 2])
         if (sp2 > maxSpeed) {
