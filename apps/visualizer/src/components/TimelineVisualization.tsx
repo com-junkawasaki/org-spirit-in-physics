@@ -16,6 +16,8 @@ interface WordLink { source: number; target: number; weight: number }
 // 依存関係: React, D3.js, timeline API
 // BPMN: TimelineVisualizationComponent
 
+// Force3DWordGraph は dynamic import で any として扱う（型はローカルで定義しない）
+
 interface EmotionData {
   name: string
   score: number
@@ -28,8 +30,10 @@ interface TimelineDataPoint {
   reactionTime: number
   hasResponse: boolean
   emotions: EmotionData[]
-  physiological: unknown[]
+  physiological: { average?: number; max?: number; min?: number } | unknown[]
   reactionValue: number
+  eventType?: string
+  metadata?: { emotionCount?: number; physiologicalCount?: number }
 }
 
 interface FilterSettings {
@@ -97,10 +101,22 @@ export default function TimelineVisualization({
   const [repulsionK, setRepulsionK] = useState(800.0)
   const [restLength, setRestLength] = useState(60)
   const [damping, setDamping] = useState(0.95)
+  // 感情類似フォース係数（弱・強）
+  const [emotionWeak, setEmotionWeak] = useState(0.6)
+  const [emotionStrong, setEmotionStrong] = useState(1.6)
   
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
+
+  const getPhysStat = (p: TimelineDataPoint['physiological'], key: 'average' | 'max' | 'min'): number => {
+    if (Array.isArray(p)) return 0
+    if (p && typeof p === 'object') {
+      const v = (p as Record<string, unknown>)[key]
+      return typeof v === 'number' && Number.isFinite(v) ? v : 0
+    }
+    return 0
+  }
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -366,6 +382,29 @@ export default function TimelineVisualization({
       normalizedEmb[n.label] = emb ? normalize(emb) : []
     })
 
+    // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
+    const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+    const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
+    const wordEmotionSum: Record<string, number[]> = {}
+
+    for (const dpt of data) {
+      const w = dpt.word
+      if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
+      if (Array.isArray(dpt.emotions)) {
+        for (const e of dpt.emotions) {
+          const key = (e.name || 'unknown').toLowerCase()
+          const idx = emotionIndex[key]
+          if (idx !== undefined) {
+            wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+          }
+        }
+      }
+    }
+    const normalizedEmotionVec: Record<string, number[]> = {}
+    Object.keys(wordEmotionSum).forEach((w) => {
+      normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
+    })
+
     // 全結合エッジ: weight = exp(β·cos) * normalized(observedWeight)
     const links: WordLink[] = []
     for (let i = 0; i < nodes.length; i++) {
@@ -382,7 +421,15 @@ export default function TimelineVisualization({
         const obsNorm = obsRaw != null ? ((obsRaw - obsMin) / (obsDen || 1)) : 0
         const obsFactor = 0.1 + 0.9 * obsNorm
 
-        links.push({ source: i, target: j, weight: vecFactor * obsFactor })
+        // 感情類似度係数（[-1,1]に正規化されたコサイン類似度→[0,1]へ）
+        const ei = normalizedEmotionVec[wi] || []
+        const ej = normalizedEmotionVec[wj] || []
+        const emoCos = (ei.length && ej.length) ? Math.max(-1, Math.min(1, dot(ei, ej))) : 0
+        // 非負ベクトルなので多くの場合[0,1]だが、一般式として[0,1]に射影
+        const emoSim01 = 0.5 * (emoCos + 1)
+        const emoFactor = emotionWeak + (emotionStrong - emotionWeak) * emoSim01
+
+        links.push({ source: i, target: j, weight: vecFactor * obsFactor * emoFactor })
       }
     }
 
@@ -398,7 +445,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, beta])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, beta, emotionWeak, emotionStrong])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -915,7 +962,10 @@ export default function TimelineVisualization({
     // 生理データ閾値
     if (filters.physiologicalThreshold) {
       g.selectAll('.physiological-point')
-        .data(filteredData.filter(d => d.physiological.length > 0))
+        .data(filteredData.filter(d => {
+          const p = d.physiological as unknown
+          return Array.isArray(p) ? p.length > 0 : typeof p === 'object'
+        }))
         .enter()
         .append('circle')
         .attr('class', 'physiological-point')
@@ -1007,18 +1057,15 @@ export default function TimelineVisualization({
       })
     }
 
-    // 線の描画
-    if (filters.showReactionValue) {
+    // 線の描画（反応値）
+    if (filters.reactionValues) {
       const line = d3.line<TimelineDataPoint>()
         .x(d => xScale(new Date(d.timestamp)))
         .y(d => yScale(d.reactionValue))
         .curve(d3.curveMonotoneX)
 
       g.append('path')
-        .datum(filteredData.filter(d => 
-          d.reactionValue >= filters.minReactionValue && 
-          d.reactionValue <= filters.maxReactionValue
-        ))
+        .datum(filteredData)
         .attr('class', 'reaction-line')
         .attr('d', line)
         .style('fill', 'none')
@@ -1110,7 +1157,7 @@ export default function TimelineVisualization({
         g.attr('transform', `translate(${margin.left + transform.x},${margin.top + transform.y}) scale(${transform.k})`)
       })
 
-    svg.call(zoom as unknown)
+    svg.call(zoom as unknown as (selection: d3.Selection<SVGSVGElement, unknown, null, undefined>) => void)
 
     // 感情の凡例
     if (filters.showEmotionDetails) {
@@ -1437,6 +1484,14 @@ export default function TimelineVisualization({
               <input type="number" step="0.1" value={beta} onChange={(e) => setBeta(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
+              <span>Emo Weak</span>
+              <input type="number" step="0.1" value={emotionWeak} onChange={(e) => setEmotionWeak(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>Emo Strong</span>
+              <input type="number" step="0.1" value={emotionStrong} onChange={(e) => setEmotionStrong(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
               <span>K</span>
               <input type="number" step="0.1" value={springK} onChange={(e) => setSpringK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
@@ -1456,7 +1511,8 @@ export default function TimelineVisualization({
         )}
 
         {visualizationMode === 'force-3d' && mounted && (() => {
-          const Force3D = dynamic(() => import('@/components/Force3DWordGraph'), { ssr: false })
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number } }
+          const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraph.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
@@ -1509,9 +1565,9 @@ export default function TimelineVisualization({
             <div>
               <div className="font-medium">生理データ</div>
               <div className="text-gray-600">
-                平均: {(selectedDataPoint.physiological?.average || 0).toFixed(2)}<br/>
-                最大: {(selectedDataPoint.physiological?.max || 0).toFixed(2)}<br/>
-                最小: {(selectedDataPoint.physiological?.min || 0).toFixed(2)}
+                平均: {getPhysStat(selectedDataPoint.physiological, 'average').toFixed(2)}<br/>
+                最大: {getPhysStat(selectedDataPoint.physiological, 'max').toFixed(2)}<br/>
+                最小: {getPhysStat(selectedDataPoint.physiological, 'min').toFixed(2)}
               </div>
             </div>
             <div>
