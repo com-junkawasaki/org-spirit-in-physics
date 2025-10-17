@@ -142,23 +142,23 @@ export default function Force3DWordGraphTypeGPU({
   }, [])
   
   const physicsRef = useRef({
-    springK: physics?.springK ?? 2.0, // バネ定数を弱める
-    repulsionK: physics?.repulsionK ?? 2000.0, // 反発力を大幅に強化
-    damping: physics?.damping ?? 0.92, // ダンピングを弱めて動きを活発に
-    restLength: physics?.restLength ?? 80, // バネの自然長を延長
-    maxSpeed: physics?.maxSpeed ?? 200, // 最大速度を上げて動きを活発に
-    shellRadius: physics?.shellRadius ?? 300, // シェル半径を大幅に拡大
-    shellK: physics?.shellK ?? 1.5, // シェル力を弱める
-    shellRadiusOuter: physics?.shellRadiusOuter ?? (physics?.shellRadius ? physics.shellRadius * 1.5 : 450),
-    shellKOuter: physics?.shellKOuter ?? 0.8, // 外側シェル力を弱める
-    radialOutK: physics?.radialOutK ?? 0,
+    springK: physics?.springK ?? 2.0,
+    repulsionK: physics?.repulsionK ?? 3500.0,
+    damping: physics?.damping ?? 0.93,
+    restLength: physics?.restLength ?? 90,
+    maxSpeed: physics?.maxSpeed ?? 220,
+    shellRadius: physics?.shellRadius ?? 500,
+    shellK: physics?.shellK ?? 1.2,
+    shellRadiusOuter: physics?.shellRadiusOuter ?? (physics?.shellRadius ? physics.shellRadius * 1.6 : 800),
+    shellKOuter: physics?.shellKOuter ?? 0.6,
+    radialOutK: physics?.radialOutK ?? 120,
     constraintIters: physics?.constraintIters ?? 2,
     constraintStiffness: physics?.constraintStiffness ?? 0.5,
     torusR: physics?.torusR ?? 0,
     torusr: physics?.torusr ?? 0,
     torusK: physics?.torusK ?? 0,
-    minSep: physics?.minSep ?? 40, // 最小分離距離を拡大
-    sepK: physics?.sepK ?? 3000, // 分離力を強化
+    minSep: physics?.minSep ?? 60,
+    sepK: physics?.sepK ?? 5000,
   })
 
   // カメラ制御イベントリスナーの設定
@@ -583,15 +583,15 @@ export default function Force3DWordGraphTypeGPU({
                 const sinX = Math.sin(camera.rotationX)
                 const cx = rx
                 const cy = ry * cosX - rz * sinX
-                const cz = ry * sinX + rz * cosX
+                const cz = ry * sinX + rz * cosX; void cz
                 
-                // 透視投影
-                const scale = Math.max(0.1, camera.distance / (cz + camera.distance))
-                const screenX = width / 2 + cx * scale
-                const screenY = height / 2 + cy * scale
+                // 正射投影（魚眼感を抑制）
+                const zoom = Math.max(0.05, 600 / Math.max(50, camera.distance))
+                const screenX = width / 2 + cx * zoom
+                const screenY = height / 2 + cy * zoom
                 
                 const node = nodesRef.current[i]
-                const radius = Math.max(1, Math.min(10, 2 + node.scale)) * scale // 最小半径を1に制限
+                const radius = Math.max(1, Math.min(10, 2 + node.scale)) * zoom // 最小半径を1に制限
                 
                 ctx.beginPath()
                 ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
@@ -638,10 +638,10 @@ export default function Force3DWordGraphTypeGPU({
                 const srz = swx * sinY + swz * cosY
                 const scx = srx
                 const scy = sry * cosX - srz * sinX
-                const scz = sry * sinX + srz * cosX
-                const sScale = Math.max(0.1, camera.distance / (scz + camera.distance))
-                const sScreenX = width / 2 + scx * sScale
-                const sScreenY = height / 2 + scy * sScale
+                const scz = sry * sinX + srz * cosX; void scz
+                const zoom = Math.max(0.05, 600 / Math.max(50, camera.distance))
+                const sScreenX = width / 2 + scx * zoom
+                const sScreenY = height / 2 + scy * zoom
                 
                 // ターゲットノードのカメラ変換
                 const twx = tx - camera.centerX
@@ -652,10 +652,9 @@ export default function Force3DWordGraphTypeGPU({
                 const trz = twx * sinY + twz * cosY
                 const tcx = trx
                 const tcy = try_ * cosX - trz * sinX
-                const tcz = try_ * sinX + trz * cosX
-                const tScale = Math.max(0.1, camera.distance / (tcz + camera.distance))
-                const tScreenX = width / 2 + tcx * tScale
-                const tScreenY = height / 2 + tcy * tScale
+                const tcz = try_ * sinX + trz * cosX; void tcz
+                const tScreenX = width / 2 + tcx * zoom
+                const tScreenY = height / 2 + tcy * zoom
                 
                 ctx.beginPath()
                 ctx.moveTo(sScreenX, sScreenY)
