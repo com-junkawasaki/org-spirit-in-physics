@@ -56,6 +56,10 @@ services:
     command: pnpm run dev
     env_file:
       - ./apps/visualizer/env.docker
+    environment:
+      - NODE_ENV=development
+      - INNGEST_EVENT_KEY=local_dev_key
+      - INNGEST_SIGNING_KEY=local_dev_signing_key
     depends_on:
       - neo4j
     networks:
