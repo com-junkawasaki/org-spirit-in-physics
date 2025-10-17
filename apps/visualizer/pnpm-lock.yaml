@@ -104,6 +104,9 @@ importers:
       three:
         specifier: ^0.180.0
         version: 0.180.0
+      typegpu:
+        specifier: ^0.7.1
+        version: 0.7.1
       valibot:
         specifier: ^1.1.0
         version: 1.1.0(typescript@5.3.3)
@@ -3919,6 +3922,10 @@ packages:
   tinycolor2@1.6.0:
     resolution: {integrity: sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==}
 
+  tinyest@0.1.1:
+    resolution: {integrity: sha512-YNHlB8BOXgW6RPzrfqqAkgyY9xj33sjXJcJlOl3MwY0BXXx26m3JUqf5yV8iBdwJPNe51DmxypR9Zbbd266biQ==}
+    engines: {node: '>=12.20.0'}
+
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
@@ -4001,11 +4008,18 @@ packages:
     resolution: {integrity: sha512-3KS2b+kL7fsuk/eJZ7EQdnEmQoaho/r6KUef7hxvltNA5DR8NAUM+8wJMbJyZ4G9/7i3v5zPBIMN5aybAh2/Jg==}
     engines: {node: '>= 0.4'}
 
+  typed-binary@4.3.2:
+    resolution: {integrity: sha512-HT3pIBM2njCZUmeczDaQUUErGiM6GXFCqMsHegE12HCoBtvHCkfR10JJni0TeGOTnLilTd6YFyj+YhflqQDrDQ==}
+
   typedarray-pool@1.2.0:
     resolution: {integrity: sha512-YTSQbzX43yvtpfRtIDAYygoYtgT+Rpjuxy9iOpczrjpXLgGoyG7aS5USJXV2d3nn8uHTeb9rXDvzS27zUg5KYQ==}
 
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
+
+  typegpu@0.7.1:
+    resolution: {integrity: sha512-PyP/ZRsX8lCX27fNzBE5TjwxC8Vj88RcLlCv4VXg5sVd6gBuiPZTJQoC5HR15hjTJoRAfayT/TXQ4phWOkA/aA==}
+    engines: {node: '>=12.20.0'}
 
   typescript@5.3.3:
     resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
@@ -8517,6 +8531,8 @@ snapshots:
 
   tinycolor2@1.6.0: {}
 
+  tinyest@0.1.1: {}
+
   tinyglobby@0.2.15:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.3)
@@ -8618,12 +8634,19 @@ snapshots:
       possible-typed-array-names: 1.1.0
       reflect.getprototypeof: 1.0.10
 
+  typed-binary@4.3.2: {}
+
   typedarray-pool@1.2.0:
     dependencies:
       bit-twiddle: 1.0.2
       dup: 1.0.0
 
   typedarray@0.0.6: {}
+
+  typegpu@0.7.1:
+    dependencies:
+      tinyest: 0.1.1
+      typed-binary: 4.3.2
 
   typescript@5.3.3: {}
 

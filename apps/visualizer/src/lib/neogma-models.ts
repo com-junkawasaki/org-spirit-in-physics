@@ -11,7 +11,8 @@ interface BaseNode {
   updated_at?: string;
   // Map的フィールドは最後に配置
   metadata?: Record<string, unknown>;
-  [key: string]: unknown; // Neogmaの制約を満たすためのインデックスシグネチャ
+  // Neogmaの型制約対応（拡張フィールド許容）
+  [key: string]: any;
 }
 
 // モデル型定義 - 実行時にcreateNeogmaModels関数でインスタンス化されます
@@ -45,7 +46,7 @@ interface ExperimentProperties extends BaseNode {
 interface ParticipantRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   experiments: ModelRelatedNodesI<
-    unknown, // 循環参照を避けるためunknownを使用
+    any,
     {
       id: string;
       participant_id: string;
@@ -54,8 +55,13 @@ interface ParticipantRelatedNodes {
       status?: string;
     }
   >;
+  // 可視化用データセット（TimelineVisualizationで使用）
+  visualizationDatasets: ModelRelatedNodesI<
+    any,
+    VisualizationDatasetProperties
+  >;
   sessions: ModelRelatedNodesI<
-    unknown, // 循環参照を避けるためunknownを使用
+    any,
     {
       id: string;
       participant_id: string;
@@ -66,7 +72,7 @@ interface ParticipantRelatedNodes {
     }
   >;
   responses: ModelRelatedNodesI<
-    unknown, // 循環参照を避けるためunknownを使用
+    any,
     {
       id: string;
       participant_id: string;
@@ -86,11 +92,11 @@ interface ParticipantRelatedNodes {
 interface ExperimentRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   participant: ModelRelatedNodesI<
-    unknown,
+    any,
     ParticipantProperties
   >;
   sessions: ModelRelatedNodesI<
-    unknown,
+    any,
     {
       id: string;
       participant_id: string;
@@ -120,15 +126,15 @@ interface ExperimentSessionProperties extends BaseNode {
 interface ExperimentSessionRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   participant: ModelRelatedNodesI<
-    unknown,
+    any,
     ParticipantProperties
   >;
   experiment: ModelRelatedNodesI<
-    unknown,
+    any,
     ExperimentProperties
   >;
   responses: ModelRelatedNodesI<
-    unknown,
+    any,
     {
       id: string;
       participant_id: string;
@@ -165,19 +171,19 @@ interface ResponseProperties extends BaseNode {
 interface ResponseRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   participant: ModelRelatedNodesI<
-    unknown,
+    any,
     ParticipantProperties
   >;
   experiment: ModelRelatedNodesI<
-    unknown,
+    any,
     ExperimentProperties
   >;
   session: ModelRelatedNodesI<
-    unknown,
+    any,
     ExperimentSessionProperties
   >;
   emotionAnalysis: ModelRelatedNodesI<
-    unknown,
+    any,
     {
       id: string;
       response_id: string;
@@ -204,7 +210,7 @@ interface EmotionAnalysisProperties extends BaseNode {
 interface EmotionAnalysisRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   response: ModelRelatedNodesI<
-    unknown,
+    any,
     ResponseProperties
   >;
 }
@@ -246,22 +252,7 @@ interface VisualizationDatasetProperties extends BaseNode {
 }
 
 interface VisualizationDatasetRelatedNodes {
-  points: ModelRelatedNodesI<
-    unknown,
-    {
-      id: string;
-      dataset_id: string;
-      // タイムラインの個別ポイント
-      timestamp: number;
-      word: string;
-      has_response: boolean;
-      reaction_time_ms?: number;
-      emotions?: Record<string, unknown>[]; // { name, score, fileType }
-      physiological?: Record<string, unknown>; // { average, max, min, channels }
-      reaction_value: number;
-      session_id?: string;
-    }
-  >
+  points: ModelRelatedNodesI<any, VisualizationPointProperties>
 }
 
 // VisualizationPoint（Timelineの1点）
@@ -276,6 +267,8 @@ interface VisualizationPointProperties extends BaseNode {
   physiological?: { average?: number; max?: number; min?: number; channels?: Record<string, number> };
   reaction_value: number;
   session_id?: string;
+  // TimelineVisualization のツールチップで使用するイベント種別
+  event_type?: string;
   point_metadata?: Record<string, unknown>;
 }
 
@@ -482,6 +475,7 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
         reaction_time_ms: { type: 'number', minimum: 0 },
         reaction_value: { type: 'number' },
         session_id: { type: 'string' },
+        event_type: { type: 'string' },
         created_at: { type: 'string' },
         updated_at: { type: 'string' },
         emotions: { type: 'array' },

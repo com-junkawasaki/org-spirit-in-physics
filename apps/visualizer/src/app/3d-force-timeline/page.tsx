@@ -6,7 +6,9 @@ import TimelineVisualization from '@/components/TimelineVisualization'
 
 export default function ForceTimelinePage() {
   const [participantId, setParticipantId] = useState<string>('2a0d7a69-f953-4c29-87a5-8a8e4e8bd413')
+  const [useTypeGPU, setUseTypeGPU] = useState<boolean>(false)
   const inputId = useId()
+  const typeGPUId = useId()
   const [options, setOptions] = useState<Array<{ id: string; label: string }>>([])
   const [loading, setLoading] = useState<boolean>(false)
 
@@ -42,29 +44,45 @@ export default function ForceTimelinePage() {
         backLabel: '参加者一覧へ'
       }}
     >
-      <div className="mb-4 flex items-center gap-2">
-        <label className="text-sm" htmlFor={inputId}>Participant</label>
-        <select
-          id={inputId}
-          value={participantId}
-          onChange={(e) => setParticipantId(e.target.value)}
-          className="border rounded px-2 py-1 min-w-[320px]"
-          disabled={loading}
-        >
-          {options.map((o) => (
-            <option key={o.id} value={o.id}>{o.label} — {o.id}</option>
-          ))}
-          {options.length === 0 && (
-            <option value={participantId}>{participantId}</option>
-          )}
-        </select>
+      <div className="mb-4 flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm" htmlFor={inputId}>Participant</label>
+          <select
+            id={inputId}
+            value={participantId}
+            onChange={(e) => setParticipantId(e.target.value)}
+            className="border rounded px-2 py-1 min-w-[320px]"
+            disabled={loading}
+          >
+            {options.map((o) => (
+              <option key={o.id} value={o.id}>{o.label} — {o.id}</option>
+            ))}
+            {options.length === 0 && (
+              <option value={participantId}>{participantId}</option>
+            )}
+          </select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <label htmlFor={typeGPUId} className="text-sm">GPU Acceleration</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id={typeGPUId}
+              checked={useTypeGPU}
+              onChange={(e) => setUseTypeGPU(e.target.checked)}
+              className="rounded"
+            />
+            <label htmlFor={typeGPUId} className="text-sm cursor-pointer">TypeGPU (GPU.js)</label>
+          </div>
+        </div>
       </div>
 
       <TimelineVisualization
         participantId={participantId}
         width={1000}
         height={560}
-        forceMode="force-3d"
+        forceMode={useTypeGPU ? "force-3d-typegpu" : "force-3d"}
         hideFilters
         useDemo
       />

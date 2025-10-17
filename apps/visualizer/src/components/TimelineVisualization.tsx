@@ -9,6 +9,10 @@ import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 interface WordNode { id: string; label: string; scale: number; axis?: [number, number, number]; fixed?: boolean; nodeType?: 'word' | 'anchor'; initial?: [number, number, number]; color?: string }
 interface WordLink { source: number; target: number; weight: number; mode?: 'tension' | 'compression'; L0?: number; k?: number }
 
+// TypeGPU 用型（GPU.js版）
+interface WordNodeTypeGPU { id: string; label: string; scale: number; axis?: [number, number, number]; fixed?: boolean; initial?: [number, number, number]; color?: string }
+interface WordLinkTypeGPU { source: number; target: number; weight: number; mode?: 'tension' | 'compression'; L0?: number; k?: number }
+
 // Force3D コンポーネントは選択時にのみ遅延読み込み
 
 // Merkle DAG: components.timeline_visualization
@@ -56,7 +60,7 @@ interface TimeRange {
   end: number
 }
 
-type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d'
+type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d' | 'force-3d-typegpu'
 
 interface TimelineVisualizationProps {
   participantId: string
@@ -120,8 +124,8 @@ export default function TimelineVisualization({
   const [shellRadius, setShellRadius] = useState(220)
   const [shellK, setShellK] = useState(4.0)
   const [radialOutK, setRadialOutK] = useState(60)
-  const [constraintIters, setConstraintIters] = useState(2)
-  const [constraintStiffness, setConstraintStiffness] = useState(0.5)
+  const [constraintIters] = useState(2)
+  const [constraintStiffness] = useState(0.5)
   const [kernelSigma, setKernelSigma] = useState(0.8)
   const [useSpectralInit, setUseSpectralInit] = useState(true)
   // reserved (future): verlet constraints tuning
@@ -392,6 +396,429 @@ export default function TimelineVisualization({
       .sort((a, b) => b.stats.avgReactionValue - a.stats.avgReactionValue)
       .slice(0, 12) // 上位12単語のみ表示
   }, [data])
+
+  // TypeGPU版用 完全グラフデータ生成（語ごとスケール、辺スケール）
+  const prepareForce3DGraphTypeGPU = React.useCallback((): { nodes: WordNodeTypeGPU[]; links: WordLinkTypeGPU[] } => {
+    if (data.length === 0) return { nodes: [], links: [] }
+
+    // ユング100語（日本語）を固定ノード集合として使用
+    const jungWords = JUNG_STIMULUS_WORDS.map(w => ({ word: w.japanese, key: w.id }))
+
+    // 集約（ノード指標）。全語を初期化し、セッション実データで加算
+    const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
+    jungWords.forEach(({ word }) => { accum[word] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+    for (const d of data) {
+      if (!accum[d.word]) continue // セッション語がユング語に無い場合は無視
+      accum[d.word].count += 1
+      accum[d.word].sumReactionValue += d.reactionValue
+      accum[d.word].sumReactionTime += d.reactionTime
+    }
+
+    // 生スケール: 平均反応値 × log(1+回数)
+    const nodeEntries = jungWords.map(({ word }) => {
+      const g = accum[word]
+      const avgRV = g.count > 0 ? g.sumReactionValue / g.count : 0
+      const raw = avgRV * Math.log1p(g.count)
+      return { word, count: g.count, avgReactionValue: avgRV, raw }
+    })
+
+    const rawMin = Math.min(...nodeEntries.map(n => n.raw))
+    const rawMax = Math.max(...nodeEntries.map(n => n.raw))
+    const denom = rawMax - rawMin || 1
+
+    const nodes: WordNodeTypeGPU[] = nodeEntries.map((n, idx) => ({
+      id: String(idx),
+      label: n.word,
+      // 0.5〜6.0程度に正規化（視認性のため）
+      scale: 0.5 + 5.5 * ((n.raw - rawMin) / denom),
+      axis: undefined,
+      fixed: false,
+      initial: undefined,
+    }))
+
+    // 連続イベントから w_I -> w_O を抽出し、エッジ重みを川崎モデルで加算
+    const wordToIndex: Record<string, number> = Object.fromEntries(nodes.map((n, i) => [n.label, i]))
+    const pairWeight = new Map<string, number>()
+
+    const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp)
+    const eps = 1e-3
+    for (let k = 0; k < sorted.length - 1; k++) {
+      const wi = sorted[k]
+      const wo = sorted[k + 1]
+      const i = wordToIndex[wi.word]
+      const j = wordToIndex[wo.word]
+      if (i === undefined || j === undefined || i === j) continue
+
+      // r(w_I, w_O) = 1/(T(w_I, w_O)+eps) → ここでは後続イベントの反応時間を採用
+      const r = 1 / (Math.max(0, wo.reactionTime) + eps)
+      // ΔSP: 生理データ平均の差（存在しない場合0）
+      const spI = (wi.physiological as unknown as { average?: number } | undefined)?.average ?? 0
+      const spO = (wo.physiological as unknown as { average?: number } | undefined)?.average ?? 0
+      const deltaSP = spO - spI
+      // F: 感情スコア（後続イベントの平均スコア）
+      const f = wo.emotions && wo.emotions.length > 0
+        ? wo.emotions.reduce((s, e) => s + (e.score || 0), 0) / wo.emotions.length
+        : 0
+
+      // 川崎モデルに基づく重み（Word2Vec項は未提供のため1とする）
+      const w = Math.pow(r, alpha) * Math.exp(gamma * (deltaSP / (lambda || 1))) * Math.exp(eta * f)
+      const key = i < j ? `${i}-${j}` : `${j}-${i}`
+      pairWeight.set(key, (pairWeight.get(key) || 0) + w)
+    }
+
+    // 観測重み正規化の準備
+    let obsMin = Infinity; let obsMax = -Infinity
+    for (const v of pairWeight.values()) { if (v < obsMin) obsMin = v; if (v > obsMax) obsMax = v }
+    const obsDen = (Number.isFinite(obsMax) && Number.isFinite(obsMin) && obsMax - obsMin !== 0) ? (obsMax - obsMin) : 1
+
+    // ベクトル正規化・内積
+    const normalize = (vec: number[]): number[] => {
+      const norm = Math.hypot(...vec)
+      if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+      return vec.map((x) => x / norm)
+    }
+    const dot = (a: number[], b: number[]) => {
+      const n = Math.min(a.length, b.length)
+      let s = 0
+      for (let i = 0; i < n; i++) s += a[i] * b[i]
+      return s
+    }
+
+    const normalizedEmb: Record<string, number[]> = {}
+    nodes.forEach((n) => {
+      const emb = embeddingsByWord[n.label]
+      normalizedEmb[n.label] = emb ? normalize(emb) : []
+    })
+
+    // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
+    const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+    const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
+    const wordEmotionSum: Record<string, number[]> = {}
+
+    for (const dpt of data) {
+      const w = dpt.word
+      if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
+      if (Array.isArray(dpt.emotions)) {
+        for (const e of dpt.emotions) {
+          const key = (e.name || 'unknown').toLowerCase()
+          const idx = emotionIndex[key]
+          if (idx !== undefined) {
+            wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+          }
+        }
+      }
+    }
+    const normalizedEmotionVec: Record<string, number[]> = {}
+    Object.keys(wordEmotionSum).forEach((w) => {
+      normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
+    })
+
+    // --- PCA: 全語の感情行列 -> 上位3主成分スコアを方向ベクトルに ---
+    const wordsWithVec = nodes.map(n => ({ n, v: normalizedEmotionVec[n.label] || new Array(10).fill(0) }))
+    const dim = 10
+    if (wordsWithVec.length > 0) {
+      // 行列 X: rows=語, cols=10感情（平均0へ中心化）
+      const means = new Array(dim).fill(0)
+      for (const { v } of wordsWithVec) for (let j = 0; j < dim; j++) means[j] += (v[j] || 0)
+      for (let j = 0; j < dim; j++) means[j] /= Math.max(1, wordsWithVec.length)
+      const X = wordsWithVec.map(({ v }) => means.map((m, j) => (v[j] || 0) - m))
+
+      // 共分散 C = (X^T X) / (n-1)
+      const C = Array.from({ length: dim }, () => new Array(dim).fill(0))
+      for (let i = 0; i < dim; i++) {
+        for (let j = i; j < dim; j++) {
+          let s = 0
+          for (let r = 0; r < X.length; r++) s += X[r][i] * X[r][j]
+          const val = s / Math.max(1, X.length - 1)
+          C[i][j] = val
+          C[j][i] = val
+        }
+      }
+
+      // パワー反復で上位3固有ベクトル（簡易）
+      const powerIter = (A: number[][], iters = 32): number[] => {
+        let v = Array.from({ length: dim }, () => Math.random())
+        // 正規化
+        const normv = () => {
+          const nrm = Math.hypot(...v)
+          if (nrm > 0) v = v.map(x => x / nrm)
+        }
+        normv()
+        for (let t = 0; t < iters; t++) {
+          const Av = new Array(dim).fill(0)
+          for (let i = 0; i < dim; i++) {
+            let s = 0
+            for (let j = 0; j < dim; j++) s += A[i][j] * v[j]
+            Av[i] = s
+          }
+          v = Av
+          normv()
+        }
+        return v
+      }
+      // 逐次直交化（一次・二次・三次）
+      const dotv = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i], 0)
+      // 補助関数（未使用）を削除
+      const v1 = powerIter(C)
+      // C を v1 に沿ってデフレート
+      const C2 = Array.from({ length: dim }, (_, i) => C[i].slice())
+      for (let i = 0; i < dim; i++) {
+        for (let j = 0; j < dim; j++) {
+          C2[i][j] -= v1[i] * v1[j] * dotv(v1, C.map(row => row[j])) // 近似的デフレ
+        }
+      }
+      const v2 = powerIter(C2)
+      // 二回目のデフレ
+      const C3 = Array.from({ length: dim }, (_, i) => C2[i].slice())
+      for (let i = 0; i < dim; i++) {
+        for (let j = 0; j < dim; j++) {
+          C3[i][j] -= v2[i] * v2[j] * dotv(v2, C2.map(row => row[j]))
+        }
+      }
+      const v3 = powerIter(C3)
+
+      // スコア = X * [v1,v2,v3]
+      const embed3 = wordsWithVec.map(({ n: node }, r) => {
+        const x = X[r]
+        const s1 = dotv(x, v1)
+        const s2 = dotv(x, v2)
+        const s3 = dotv(x, v3)
+        return { node, vec: [s1, s2, s3] as [number, number, number] }
+      })
+      for (const { node, vec } of embed3) {
+        const norm = Math.hypot(vec[0], vec[1], vec[2])
+        if (norm > 0) node.axis = [vec[0] / norm, vec[1] / norm, vec[2] / norm]
+      }
+    }
+
+    // --- Spectral Embedding（ラプラシアンの固有ベクトル）で初期3D座標を与える ---
+    if (useSpectralInit) {
+      const words = nodes.map(n => n.label)
+      const V = words.map(w => normalizedEmotionVec[w] || new Array(10).fill(0))
+      const n = words.length
+      // RBFカーネル重み行列 W
+      const W: number[][] = Array.from({ length: n }, () => new Array(n).fill(0))
+      // σ 自動推定（メディアン距離）
+      let med = 1
+      {
+        const dists: number[] = []
+        for (let i = 0; i < n; i++) {
+          for (let j = i + 1; j < n; j++) {
+            let d2 = 0
+            for (let k = 0; k < 10; k++) {
+              const diff = (V[i][k] || 0) - (V[j][k] || 0)
+              d2 += diff * diff
+            }
+            dists.push(Math.sqrt(d2))
+          }
+        }
+        dists.sort((a, b) => a - b)
+        med = dists.length > 0 ? dists[Math.floor(dists.length / 2)] : 1
+      }
+      const sigmaEff = Math.max(1e-6, (kernelSigma || 0.8) * med)
+      const sig2 = sigmaEff * sigmaEff
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          let d2 = 0
+          for (let k = 0; k < 10; k++) {
+            const diff = (V[i][k] || 0) - (V[j][k] || 0)
+            d2 += diff * diff
+          }
+          const w = Math.exp(-d2 / sig2)
+          W[i][j] = w; W[j][i] = w
+        }
+      }
+      const D = new Array(n).fill(0)
+      for (let i = 0; i < n; i++) {
+        let s = 0; for (let j = 0; j < n; j++) s += W[i][j]
+        D[i] = s
+      }
+      // 反復法で2〜4番目の固有ベクトル（ゼロ和を満たす次元）を近似
+      const lapMul = (x: number[]): number[] => {
+        const y = new Array(n).fill(0)
+        for (let i = 0; i < n; i++) {
+          let s = D[i] * x[i]
+          for (let j = 0; j < n; j++) s -= W[i][j] * x[j]
+          y[i] = s
+        }
+        return y
+      }
+      const power = (orth: number[][]): number[] => {
+        let v = Array.from({ length: n }, () => Math.random())
+        const normv = () => { const nn = Math.hypot(...v); if (nn > 0) v = v.map(x => x / nn) }
+        const proj = (u: number[]) => {
+          const dot = v.reduce((s, x, i) => s + x * u[i], 0)
+          for (let i = 0; i < n; i++) v[i] -= dot * u[i]
+        }
+        normv()
+        for (let t = 0; t < 48; t++) {
+          for (const u of orth) proj(u)
+          const y = lapMul(v)
+          v = y
+          normv()
+        }
+        return v
+      }
+      const ones = Array.from({ length: n }, () => 1 / Math.sqrt(n))
+      const e2 = power([ones])
+      const e3 = power([ones, e2])
+      const e4 = power([ones, e2, e3])
+      // 座標へ割当（スケール調整）
+      const scale = shellRadius * 0.8
+      for (let i = 0; i < n; i++) {
+        nodes[i].initial = [e2[i] * scale, e3[i] * scale, e4[i] * scale]
+      }
+    }
+
+    // 感情アンカー（2Dマップを球面へ射影）
+    const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
+      { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
+      { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
+      { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
+      { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
+      { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
+      { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
+      { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
+      { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
+      { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
+      { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
+    ]
+    // アンカー→内部10感情キーの正規マッピング
+    const anchorToKey: Record<string, typeof EMOTION_KEYS[number]> = {
+      Joy: 'joy',
+      Sadness: 'sadness',
+      Anger: 'anger',
+      Fear: 'fear',
+      Disgust: 'disgust',
+      Calmness: 'calm',
+      Interest: 'focus',
+      Surprise: 'surprise',
+      Confusion: 'confusion',
+      Determination: 'focus',
+    }
+    const anchorRadius = shellRadius // 球殻上に配置
+    const toSphere = (x01: number, y01: number): [number, number, number] => {
+      const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
+      const v = (y01 - 0.5) * Math.PI // 縦
+      const cx = Math.cos(v) * Math.cos(u)
+      const cy = Math.cos(v) * Math.sin(u)
+      const cz = Math.sin(v)
+      return [anchorRadius * cx, anchorRadius * cy, anchorRadius * cz]
+    }
+    const anchorNodes: WordNodeTypeGPU[] = anchor2d.map((a, idx) => {
+      const [x, y, z] = toSphere(a.x, a.y)
+      return {
+        id: `A${idx}`,
+        label: a.name,
+        scale: 6,
+        axis: undefined,
+        fixed: true,
+        initial: [x, y, z],
+        color: a.color,
+      }
+    })
+
+    // 全結合 + 10感情を統合した単一エッジ（強スコア=強結合）
+    // まず全ペアの生の感情結合スコアを計算
+    const rawPairs: Array<{ i: number; j: number; wEmotion: number; wStruct: number }> = []
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const wi = nodes[i].label
+        const wj = nodes[j].label
+        const vi = normalizedEmb[wi] || []
+        const vj = normalizedEmb[wj] || []
+        const sim = (vi.length && vj.length) ? Math.max(-1, Math.min(1, dot(vi, vj))) : 0
+        const sim01 = 0.5 * (sim + 1)
+
+        const key = `${i}-${j}`
+        const obsRaw = pairWeight.get(key)
+        const obsNorm = obsRaw != null ? ((obsRaw - obsMin) / (obsDen || 1)) : 0
+        const structComponent = Math.max(0, Math.min(1, (sim01 + obsNorm) / 2))
+
+        const ei = normalizedEmotionVec[wi] || new Array(EMOTION_KEYS.length).fill(0)
+        const ej = normalizedEmotionVec[wj] || new Array(EMOTION_KEYS.length).fill(0)
+
+        // 10感情の積（両者が高いほど強い）を平均
+        let sum = 0
+        for (let k = 0; k < EMOTION_KEYS.length; k++) {
+          const emoSpec = Math.max(0, Math.min(1, (ei[k] || 0) * (ej[k] || 0)))
+          sum += Math.pow(emoSpec, Math.max(0.1, emotionGain))
+        }
+        const wEmotion = sum / EMOTION_KEYS.length
+        rawPairs.push({ i, j, wEmotion, wStruct: structComponent })
+      }
+    }
+
+    // 正規化してダイナミックレンジ拡張
+    let eMin = Infinity, eMax = -Infinity
+    for (const p of rawPairs) { if (p.wEmotion < eMin) eMin = p.wEmotion; if (p.wEmotion > eMax) eMax = p.wEmotion }
+    const eDen = eMax - eMin || 1
+    // テンセグリティ: 上位の感情結合を張力ケーブル、少数の構造補完を圧縮ストラットに分類
+    const combined: Array<{ i: number; j: number; w: number; wE: number; wS: number }> = rawPairs.map(p => {
+      const wE = (p.wEmotion - eMin) / eDen
+      // 構造と感情のミックス
+      let w = Math.max(0, Math.min(1, emotionMix * wE + (1 - emotionMix) * p.wStruct))
+      // 1) べき乗強調（既存）
+      w = Math.pow(w, Math.max(0.1, weightGamma))
+      // 2) 強コントラスト（ロジスティック）: 中央0.5を境に急峻化
+      const a = 8 // 勾配（大きいほど0/1へ張り付く）
+      const b = 0.5
+      const wc = 1 / (1 + Math.exp(-a * (w - b)))
+      // 3) 底上げ/天井: 極弱はほぼ0、強は1に近づける
+      const wFinal = Math.min(1, Math.max(0, wc))
+      return { i: p.i, j: p.j, w: wFinal, wE, wS: p.wStruct }
+    })
+
+    // 上位p%を tension、ランダムにわずかを compression
+    const tensionFrac = 0.25
+    const compressionFrac = 0.08
+    const sortedByE = [...combined].sort((a, b) => b.wE - a.wE)
+    const Tcount = Math.max(1, Math.floor(sortedByE.length * tensionFrac))
+    const Ccount = Math.max(1, Math.floor(sortedByE.length * compressionFrac))
+
+    const tensionSet = new Set(sortedByE.slice(0, Tcount).map(x => `${x.i}-${x.j}`))
+    // 圧縮は構造の遠さを優先（wS低→遠い）から抽出
+    const sortedBySAsc = [...combined].sort((a, b) => a.wS - b.wS)
+    const compressionSet = new Set(sortedBySAsc.slice(0, Ccount).map(x => `${x.i}-${x.j}`))
+
+    const links: WordLinkTypeGPU[] = combined.map((p) => {
+      const key = `${p.i}-${p.j}`
+      if (tensionSet.has(key)) {
+        const L0 = Math.max(10, restLength * (1 - 0.4 * Math.pow(p.wE, 2)))
+        const k = springK * (0.4 + 0.6 * Math.pow(p.w, 2))
+        return { source: p.i, target: p.j, weight: p.w, mode: 'tension', L0, k }
+      }
+      if (compressionSet.has(key)) {
+        const L0 = Math.max(10, restLength * (1 + 0.6 * (1 - p.wS)))
+        const k = springK * (0.6 + 0.8 * (1 - p.wS))
+        return { source: p.i, target: p.j, weight: p.w, mode: 'compression', L0, k }
+      }
+      // それ以外は従来の両側バネ
+      return { source: p.i, target: p.j, weight: p.w }
+    })
+
+    // アンカー追加と接続
+    const baseOffset = nodes.length
+    const allNodes = [...anchorNodes, ...nodes]
+    for (let ai = 0; ai < anchorNodes.length; ai++) {
+      const anchor = anchorNodes[ai]
+      const anchorIndex = ai
+      const key = anchorToKey[anchor.label] as typeof EMOTION_KEYS[number] | undefined
+      const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
+      for (let wi = 0; wi < nodes.length; wi++) {
+        const wordIndex = baseOffset + wi
+        const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
+        const sim = kIdx >= 0 ? ei[kIdx] : (ei.reduce((s, x) => s + x, 0) / Math.max(1, ei.length))
+        const w = Math.max(0, Math.min(1, sim))
+        if (w < 0.15) continue // 極弱リンクをスキップ
+        const L0 = Math.max(10, restLength * (1 - 0.6 * w))
+        const k = springK * (0.3 + 0.7 * w)
+        links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
+      }
+    }
+
+    return { nodes: allNodes, links }
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK, shellRadius, kernelSigma, useSpectralInit])
 
   // 3Dフォース用 完全グラフデータ生成（語ごとスケール、辺スケール）
   const prepareForce3DGraph = React.useCallback((): { nodes: WordNode[]; links: WordLink[] } => {
@@ -1652,7 +2079,8 @@ export default function TimelineVisualization({
               { id: 'kpi', label: 'KPIカード', icon: '📊' },
               { id: 'dumbbell', label: 'Before-After', icon: '⚖️' },
               { id: 'small-multiples', label: 'スモールマルチプル', icon: '🔢' },
-              { id: 'force-3d', label: '3D Force', icon: '🧲' }
+              { id: 'force-3d', label: '3D Force', icon: '🧲' },
+              { id: 'force-3d-typegpu', label: '3D Force TypeGPU', icon: '⚡' }
             ].map((mode) => (
               <button
                 key={mode.id}
@@ -1955,6 +2383,17 @@ export default function TimelineVisualization({
           return (
             <div className="border rounded overflow-hidden">
               <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0 }} emotionPower={emotionGain} emotionField={{ enabled: true, radius: 1200, sigma: 220, alpha: 0.35 }} />
+            </div>
+          )
+        })()}
+
+        {visualizationMode === 'force-3d-typegpu' && mounted && (() => {
+          type Force3DTypeGPUProps = { nodes: WordNodeTypeGPU[]; links: WordLinkTypeGPU[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number }; emotionPower?: number; emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number } }
+          const Force3DTypeGPU = dynamic<Force3DTypeGPUProps>(() => import('./Force3DWordGraphTypeGPU.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DTypeGPUProps> }>, { ssr: false })
+          const { nodes, links } = prepareForce3DGraphTypeGPU()
+          return (
+            <div className="border rounded overflow-hidden">
+              <Force3DTypeGPU nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0 }} emotionPower={emotionGain} emotionField={{ enabled: true, radius: 1200, sigma: 220, alpha: 0.35 }} />
             </div>
           )
         })()}
