@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
 // Force3D 用型（型のみローカル定義して実行時依存を最小化）
-interface WordNode { id: string; label: string; scale: number; axis?: [number, number, number] }
+interface WordNode { id: string; label: string; scale: number; axis?: [number, number, number]; fixed?: boolean; nodeType?: 'word' | 'anchor'; initial?: [number, number, number] }
 interface WordLink { source: number; target: number; weight: number; mode?: 'tension' | 'compression'; L0?: number; k?: number }
 
 // Force3D コンポーネントは選択時にのみ遅延読み込み
@@ -426,6 +426,9 @@ export default function TimelineVisualization({
       // 0.5〜6.0程度に正規化（視認性のため）
       scale: 0.5 + 5.5 * ((n.raw - rawMin) / denom),
       axis: undefined,
+      fixed: false,
+      nodeType: 'word',
+      initial: undefined,
     }))
 
     // 連続イベントから w_I -> w_O を抽出し、エッジ重みを川崎モデルで加算
@@ -583,6 +586,41 @@ export default function TimelineVisualization({
       }
     }
 
+    // 感情アンカー（2Dマップを球面へ射影）
+    const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
+      { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
+      { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
+      { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
+      { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
+      { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
+      { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
+      { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
+      { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
+      { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
+      { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
+    ]
+    const anchorRadius = shellRadius // 球殻上に配置
+    const toSphere = (x01: number, y01: number): [number, number, number] => {
+      const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
+      const v = (y01 - 0.5) * Math.PI // 縦
+      const cx = Math.cos(v) * Math.cos(u)
+      const cy = Math.cos(v) * Math.sin(u)
+      const cz = Math.sin(v)
+      return [anchorRadius * cx, anchorRadius * cy, anchorRadius * cz]
+    }
+    const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
+      const [x, y, z] = toSphere(a.x, a.y)
+      return {
+        id: `A${idx}`,
+        label: a.name,
+        scale: 6,
+        axis: undefined,
+        fixed: true,
+        nodeType: 'anchor',
+        initial: [x, y, z],
+      }
+    })
+
     // 全結合 + 10感情を統合した単一エッジ（強スコア=強結合）
     // まず全ペアの生の感情結合スコアを計算
     const rawPairs: Array<{ i: number; j: number; wEmotion: number; wStruct: number }> = []
@@ -662,8 +700,26 @@ export default function TimelineVisualization({
       return { source: p.i, target: p.j, weight: p.w }
     })
 
-    return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK])
+    // アンカー追加と接続
+    const baseOffset = nodes.length
+    const allNodes = [...anchorNodes, ...nodes]
+    for (let ai = 0; ai < anchorNodes.length; ai++) {
+      const anchorIndex = ai
+      for (let wi = 0; wi < nodes.length; wi++) {
+        const wordIndex = baseOffset + wi
+        const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
+        // アンカー名に対応する感情次元があるならその軸、なければ平均
+        const ej = ei // 近似: 同一空間で平均的に張る（詳細マッピングは後続）
+        const sim = ei.reduce((s, x, k) => s + x * (ej[k] || 0), 0)
+        const w = Math.max(0, Math.min(1, (sim + 1) / 2))
+        const L0 = Math.max(10, restLength * (1 - 0.5 * w))
+        const k = springK * (0.4 + 0.6 * w)
+        links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
+      }
+    }
+
+    return { nodes: allNodes, links }
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK, shellRadius])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
