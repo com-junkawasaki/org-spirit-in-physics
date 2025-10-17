@@ -42,7 +42,7 @@ declare global {
 // Merkle DAG: components.force3d_word_graph_typegpu
 // TypeGPU版ユング単語連合の語ごとスケールを反映した完全グラフ3D可視化
 // 依存: React, TypeGPU (WebGPU)
-// BPMN: Force3DWordGraphTypeGPU
+// Merkle DAG: force_3d_word_graph -> interactive_3d_visualization
 
 export interface WordNode {
   id: string

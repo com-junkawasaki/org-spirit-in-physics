@@ -34,13 +34,6 @@ const menuItems: MenuItem[] = [
         description: '参加者データ管理'
     },
     {
-        id: 'procs',
-        label: 'プロセス',
-        href: '/procs',
-        icon: '🧩',
-        description: 'BPMN 可視化・実行'
-    },
-    {
         id: 'process-participants',
         label: '参加者インポート',
         href: '/process/participants',
@@ -62,46 +55,11 @@ const menuItems: MenuItem[] = [
         description: '感情分析データインポート'
     },
     {
-        id: 'process-emotions-integrated',
-        label: '統合感情データインポート',
-        href: '/process/emotions-integrated',
-        icon: '🎭',
-        description: 'BPMN統合感情データインポート'
-    },
-    {
-        id: 'process-physiological',
-        label: '生理データインポート',
-        href: '/process/physiological',
-        icon: '💓',
-        description: '生理データインポート'
-    },
-    {
-        id: 'analysis-pipeline',
-        label: '解析パイプライン',
-        href: '/analysis/pipeline',
-        icon: '🔬',
-        description: '統合解析パイプライン'
-    },
-    {
         id: 'session-comparison',
         label: 'セッション比較分析',
         href: '/analysis/session-comparison',
         icon: '📊',
         description: 'セッション間差異分析'
-    },
-    {
-        id: 'integrated-pipeline',
-        label: '統合パイプライン',
-        href: '/pipeline/integrated',
-        icon: '🚀',
-        description: 'データインポートから解析まで'
-    },
-    {
-        id: 'visualization-dataset',
-        label: '描画用データセット生成',
-        href: '/pipeline/visualization-dataset',
-        icon: '📊',
-        description: '時系列可視化用データセット生成'
     },
     {
         id: 'import',

@@ -7,7 +7,7 @@ import path from 'path';
 // Merkle DAG: participants.timeline.endpoint
 // 時系列統合可視化データ取得APIエンドポイント
 // 依存関係: neo4j, session_data.json, emotion_data, physiological_data
-// BPMN: TimelineVisualizationProcess
+// Merkle DAG: timeline_data_api -> real_time_data_provider
 
 export async function GET(
   request: NextRequest,
