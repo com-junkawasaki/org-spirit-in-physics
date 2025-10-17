@@ -319,11 +319,18 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         .map((n, i) => ({ n, i }))
         .filter(x => x.n.fixed && x.n.initial)
         .slice(0, maxAnchors)
-      const posArr = anchors.map(a => {
-        const ini = a.n.initial as [number, number, number]
-        return new THREE.Vector3(ini[0], ini[1], ini[2])
-      })
-      const colArr = anchors.map(a => new THREE.Color(a.n.color || '#8888ff'))
+      const posArr: THREE.Vector3[] = []
+      const colArr: THREE.Color[] = []
+      for (let i = 0; i < maxAnchors; i++) {
+        if (i < anchors.length) {
+          const ini = anchors[i].n.initial as [number, number, number]
+          posArr.push(new THREE.Vector3(ini[0], ini[1], ini[2]))
+          colArr.push(new THREE.Color(anchors[i].n.color || '#8888ff'))
+        } else {
+          posArr.push(new THREE.Vector3(0, 0, 0))
+          colArr.push(new THREE.Color('#000000'))
+        }
+      }
       const uniforms = {
         uAnchorCount: { value: anchors.length },
         uAnchorPos: { value: posArr },
@@ -673,8 +680,14 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         fieldUniformsRef.current.uAlpha.value = emotionField.alpha ?? fieldUniformsRef.current.uAlpha.value
       }
 
-      controls.update()
-      renderer.render(scene, camera)
+      // 安全に参照を取り直してレンダリング
+      controlsRef.current?.update()
+      const rNow = rendererRef.current
+      const sNow = sceneRef.current
+      const cNow = cameraRef.current
+      if (rNow && sNow && cNow) {
+        rNow.render(sNow, cNow)
+      }
       animRef.current = requestAnimationFrame(tick)
     }
 
