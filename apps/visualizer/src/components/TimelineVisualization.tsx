@@ -2211,23 +2211,23 @@ export default function TimelineVisualization({
                     <span className="text-sm text-gray-600">Spring K</span>
                     <span className="text-xs text-gray-500">{springK.toFixed(1)}</span>
                   </div>
-                  <input
-                    type="range"
+              <input
+                type="range"
                     min="0.5"
                     max="5.0"
-                    step="0.1"
+                step="0.1"
                     value={springK}
                     onChange={(e) => setSpringK(Number(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                   />
-                </div>
+            </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Rest Length</span>
                     <span className="text-xs text-gray-500">{restLength}</span>
                   </div>
-                  <input
-                    type="range"
+              <input
+                type="range"
                     min="30"
                     max="150"
                     step="5"
