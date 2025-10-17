@@ -117,11 +117,13 @@ export default function TimelineVisualization({
   const [emotionMix, setEmotionMix] = useState(0.7) // 0..1 感情寄与の重み
   const [neighborsK, setNeighborsK] = useState(6) // k-NN エッジ数
   const [weightGamma, setWeightGamma] = useState(1.5) // 重みのダイナミックレンジ拡張
-  const [shellRadius, setShellRadius] = useState(220)
-  const [shellK, setShellK] = useState(4.0)
-  const [radialOutK, setRadialOutK] = useState(60)
+  const [shellRadius, setShellRadius] = useState(300)
+  const [shellK, setShellK] = useState(1.5)
+  const [radialOutK, setRadialOutK] = useState(0)
   const [constraintIters] = useState(2)
   const [constraintStiffness] = useState(0.5)
+  const [minSep, setMinSep] = useState(40)
+  const [sepK, setSepK] = useState(3000)
   const [kernelSigma, setKernelSigma] = useState(0.8)
   const [useSpectralInit, setUseSpectralInit] = useState(true)
   // reserved (future): verlet constraints tuning
@@ -129,10 +131,10 @@ export default function TimelineVisualization({
   const [emotionGainMax, setEmotionGainMax] = useState(4.0)
   // 3D Force プリセット
   const forcePresets = [
-    { id: 'balanced', label: 'Balanced', springK: 3.0, repulsionK: 800, restLength: 60, damping: 0.95, emoWeak: 0.6, emoStrong: 1.6, emoGain: 1.5 },
-    { id: 'tight', label: 'Tight clusters', springK: 4.0, repulsionK: 1200, restLength: 45, damping: 0.92, emoWeak: 0.6, emoStrong: 1.8, emoGain: 2.5 },
-    { id: 'loose', label: 'Loose clusters', springK: 2.0, repulsionK: 600, restLength: 75, damping: 0.97, emoWeak: 0.7, emoStrong: 1.4, emoGain: 1.0 },
-    { id: 'slow', label: 'Slow precise', springK: 3.0, repulsionK: 900, restLength: 60, damping: 0.98, emoWeak: 0.6, emoStrong: 1.6, emoGain: 2.0 },
+    { id: 'balanced', label: 'Balanced', springK: 2.0, repulsionK: 2000, restLength: 80, damping: 0.92, emoWeak: 0.6, emoStrong: 1.6, emoGain: 1.5 },
+    { id: 'tight', label: 'Tight clusters', springK: 3.0, repulsionK: 3000, restLength: 60, damping: 0.90, emoWeak: 0.6, emoStrong: 1.8, emoGain: 2.5 },
+    { id: 'loose', label: 'Loose clusters', springK: 1.5, repulsionK: 1500, restLength: 100, damping: 0.94, emoWeak: 0.7, emoStrong: 1.4, emoGain: 1.0 },
+    { id: 'slow', label: 'Slow precise', springK: 2.0, repulsionK: 2500, restLength: 80, damping: 0.96, emoWeak: 0.6, emoStrong: 1.6, emoGain: 2.0 },
   ] as const
   const [forcePresetId, setForcePresetId] = useState<typeof forcePresets[number]['id']>('balanced')
   const applyForcePreset = (id: typeof forcePresets[number]['id']) => {
@@ -2360,6 +2362,14 @@ export default function TimelineVisualization({
               <input type="number" step="0.01" value={damping} onChange={(e) => setDamping(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
+              <span>MinSep</span>
+              <input type="number" step="5" value={minSep} onChange={(e) => setMinSep(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
+              <span>SepK</span>
+              <input type="number" step="100" value={sepK} onChange={(e) => setSepK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
               <span>σ</span>
               <input type="number" step="0.05" min="0.1" max="3" value={kernelSigma} onChange={(e) => setKernelSigma(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
@@ -2372,12 +2382,12 @@ export default function TimelineVisualization({
 
 
         {visualizationMode === 'force-3d-typegpu' && mounted && (() => {
-          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number }; emotionPower?: number; emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number } }
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number; minSep?: number; sepK?: number }; emotionPower?: number; emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number } }
           const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraphTypeGPU.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0 }} emotionPower={emotionGain} emotionField={{ enabled: true, radius: 1200, sigma: 220, alpha: 0.35 }} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.5, shellKOuter: Math.max(0, shellK - 1.5), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0, minSep, sepK }} emotionPower={emotionGain} emotionField={{ enabled: true, radius: 1200, sigma: 220, alpha: 0.35 }} />
             </div>
           )
         })()}
