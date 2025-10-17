@@ -33,6 +33,8 @@ interface Force3DWordGraphProps {
     damping: number
     restLength: number
     maxSpeed: number
+    shellRadius?: number
+    shellK?: number
   }
   // 感情類似の影響倍率（links.weight への指数影響）
   emotionPower?: number
@@ -49,6 +51,9 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
   const lineGeometryRef = useRef<THREE.BufferGeometry | null>(null)
   const linePositionsRef = useRef<Float32Array | null>(null)
   const lineColorsRef = useRef<Float32Array | null>(null)
+  const linkWeightMinRef = useRef<number>(0)
+  const linkWeightMaxRef = useRef<number>(1)
+  const nodeWeightedScaleRef = useRef<number[] | null>(null)
 
   const positionsRef = useRef<Float32Array | null>(null)
   const velocitiesRef = useRef<Float32Array | null>(null)
@@ -63,6 +68,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     damping: physics?.damping ?? 0.95,
     restLength: physics?.restLength ?? 60,
     maxSpeed: physics?.maxSpeed ?? 120,
+    shellRadius: physics?.shellRadius ?? 180,
+    shellK: physics?.shellK ?? 3.0,
   })
 
   // 色スケール
@@ -90,6 +97,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       damping: physics?.damping ?? physicsRef.current.damping,
       restLength: physics?.restLength ?? physicsRef.current.restLength,
       maxSpeed: physics?.maxSpeed ?? physicsRef.current.maxSpeed,
+      shellRadius: physics?.shellRadius ?? physicsRef.current.shellRadius,
+      shellK: physics?.shellK ?? physicsRef.current.shellK,
     }
   }, [physics])
 
@@ -224,7 +233,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       const v = velocitiesRef.current as Float32Array
       const n = nodesRef.current.length
 
-      const { springK, repulsionK, damping, restLength, maxSpeed } = physicsRef.current
+      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK } = physicsRef.current
 
       // 斥力
       for (let i = 0; i < n; i++) {
@@ -258,11 +267,11 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         const dy = p[j + 1] - p[i + 1]
         const dz = p[j + 2] - p[i + 2]
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-6
-        // 重みが大きいほど強く短縮する（emotionPowerで増幅）
+        // 重みが大きいほど強く短縮＆強く引き寄せ（emotionPowerで増幅）
         const wAmplified = Math.pow(weight, Math.max(0.1, emotionPower))
         const L0 = Math.max(10, restLength / Math.sqrt(1 + wAmplified))
         const x = dist - L0
-        const force = springK * x
+        const force = springK * (1 + wAmplified) * x
         const fx = (force * dx) / dist
         const fy = (force * dy) / dist
         const fz = (force * dz) / dist
@@ -280,6 +289,24 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         v[ix] *= damping
         v[ix + 1] *= damping
         v[ix + 2] *= damping
+
+        // ラジアルフォース：殻半径へ押し出し（内側→外側、外側→内側）
+        {
+          const rx = p[ix]
+          const ry = p[ix + 1]
+          const rz = p[ix + 2]
+          const rlen = Math.hypot(rx, ry, rz) + 1e-6
+          const target = shellRadius
+          const k = shellK
+          // 正: 外向き、負: 内向き
+          const fr = (target - rlen) * k
+          const ux = rx / rlen
+          const uy = ry / rlen
+          const uz = rz / rlen
+          v[ix] += fr * ux * (1/60)
+          v[ix + 1] += fr * uy * (1/60)
+          v[ix + 2] += fr * uz * (1/60)
+        }
         const speed = Math.hypot(v[ix], v[ix + 1], v[ix + 2])
         if (speed > maxSpeed) {
           const s = maxSpeed / (speed + 1e-6)
@@ -292,11 +319,23 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         p[ix + 2] += v[ix + 2] * delta
       }
 
-      // ノード位置反映
+      // ノード位置反映（重み合計でスケールをダイナミックに）
       for (let i = 0; i < nodesRef.current.length; i++) {
         const mesh = nodeMeshesRef.current[i]
         if (!mesh) continue
         mesh.position.set(p[i * 3], p[i * 3 + 1], p[i * 3 + 2])
+        const sums = nodeWeightedScaleRef.current
+        if (sums) {
+          const s = sums[i]
+          const sMin = Math.min(...sums)
+          const sMax = Math.max(...sums)
+          const t = sMax > sMin ? (s - sMin) / (sMax - sMin) : 0
+          const base = Math.max(2, Math.min(10, 2 + nodesRef.current[i].scale))
+          const targetScale = base * (1 + 0.4 * t)
+          const cur = mesh.scale.x
+          const lerp = cur + (targetScale - cur) * 0.1
+          mesh.scale.set(lerp, lerp, lerp)
+        }
         const label = labelSpritesRef.current[i]
         if (label) label.position.set(p[i * 3], p[i * 3 + 1] + 12, p[i * 3 + 2])
       }
@@ -311,8 +350,12 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         const i = e * 2 * 3
         lp[i] = p[s3]; lp[i + 1] = p[s3 + 1]; lp[i + 2] = p[s3 + 2]
         lp[i + 3] = p[t3]; lp[i + 4] = p[t3 + 1]; lp[i + 5] = p[t3 + 2]
-        const c1 = colorForScaleRef.current(nodesRef.current[source].scale)
-        const c2 = colorForScaleRef.current(nodesRef.current[target].scale)
+        // 重みで色づけ（弱=淡、強=鮮やか）
+        const w = (linksRef.current[e].weight - linkWeightMinRef.current) / ((linkWeightMaxRef.current - linkWeightMinRef.current) || 1)
+        const low = new THREE.Color(0.6, 0.7, 1.0)
+        const high = new THREE.Color(0.0, 0.4, 1.0)
+        const c1 = low.clone().lerp(high, w)
+        const c2 = c1
         lc[i] = c1.r; lc[i + 1] = c1.g; lc[i + 2] = c1.b
         lc[i + 3] = c2.r; lc[i + 4] = c2.g; lc[i + 5] = c2.b
       }
@@ -375,6 +418,20 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       lineColorsRef.current = new Float32Array(links.length * 2 * 3)
       lineGeometryRef.current.setAttribute('position', new THREE.BufferAttribute(linePositionsRef.current, 3))
       lineGeometryRef.current.setAttribute('color', new THREE.BufferAttribute(lineColorsRef.current, 3))
+    }
+
+    if (links.length > 0) {
+      let wMin = Infinity, wMax = -Infinity
+      const sums = new Array(nodesRef.current.length).fill(0)
+      for (const { source, target, weight } of links) {
+        if (weight < wMin) wMin = weight
+        if (weight > wMax) wMax = weight
+        sums[source] += weight
+        sums[target] += weight
+      }
+      linkWeightMinRef.current = Number.isFinite(wMin) ? wMin : 0
+      linkWeightMaxRef.current = Number.isFinite(wMax) ? wMax : 1
+      nodeWeightedScaleRef.current = sums
     }
   }, [links])
 

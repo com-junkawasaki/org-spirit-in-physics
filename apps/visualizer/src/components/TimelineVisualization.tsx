@@ -115,6 +115,7 @@ export default function TimelineVisualization({
   const [emotionStrong, setEmotionStrong] = useState(1.6)
   const [emotionGain, setEmotionGain] = useState(1.5)
   const [emotionMix, setEmotionMix] = useState(0.7) // 0..1 感情寄与の重み
+  const [neighborsK, setNeighborsK] = useState(6) // k-NN エッジ数
   const [emotionGainMin, setEmotionGainMin] = useState(0.5)
   const [emotionGainMax, setEmotionGainMax] = useState(4.0)
   // 3D Force プリセット
@@ -448,8 +449,9 @@ export default function TimelineVisualization({
       normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
     })
 
-    // 全結合エッジ: weight = mix(emo, structure)
+    // k-NN（emotionMix を強調）で疎グラフ化し重みを明確化
     const links: WordLink[] = []
+    const combinedMatrix: number[][] = Array.from({ length: nodes.length }, () => new Array(nodes.length).fill(0))
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const wi = nodes[i].label
@@ -475,7 +477,28 @@ export default function TimelineVisualization({
         const emoFactor = emotionWeak + (emotionStrong - emotionWeak) * emoAmplified
 
         const combined = Math.max(0, Math.min(1, emotionMix * emoFactor + (1 - emotionMix) * structComponent))
-        links.push({ source: i, target: j, weight: combined })
+        combinedMatrix[i][j] = combined
+        combinedMatrix[j][i] = combined
+      }
+    }
+
+    // 各ノードの上位Kのみをリンクとして採用
+    for (let i = 0; i < nodes.length; i++) {
+      const scored: Array<{ j: number; w: number }> = []
+      for (let j = 0; j < nodes.length; j++) {
+        if (i === j) continue
+        const w = combinedMatrix[i][j]
+        if (w > 0) scored.push({ j, w })
+      }
+      scored.sort((a, b) => b.w - a.w)
+      const top = scored.slice(0, Math.max(1, neighborsK))
+      for (const { j, w } of top) {
+        const s = Math.min(i, j)
+        const t = Math.max(i, j)
+        // 重複を避けるため既存チェック
+        if (!links.find(l => l.source === s && l.target === t)) {
+          links.push({ source: s, target: t, weight: w })
+        }
       }
     }
 
@@ -491,7 +514,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionWeak, emotionStrong, emotionGain, emotionMix])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionWeak, emotionStrong, emotionGain, emotionMix, neighborsK])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -1581,7 +1604,7 @@ export default function TimelineVisualization({
             </label>
             <label className="flex items-center space-x-2">
               <span>K</span>
-              <input type="number" step="0.1" value={springK} onChange={(e) => setSpringK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+              <input type="number" step="1" value={neighborsK} onChange={(e) => setNeighborsK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
               <span>Repulsion</span>
@@ -1599,12 +1622,12 @@ export default function TimelineVisualization({
         )}
 
         {visualizationMode === 'force-3d' && mounted && (() => {
-          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number }; emotionPower?: number }
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number }; emotionPower?: number }
           const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraph.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120 }} emotionPower={emotionGain} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius: 220, shellK: 4.0 }} emotionPower={emotionGain} />
             </div>
           )
         })()}

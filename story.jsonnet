@@ -195,11 +195,21 @@
     act: 'Experiment階層アーキテクチャの実現',
     summary: 'Participant → Experiment → Session階層を実装し、1回の実験に複数セッションを格納可能なデータ構造を確立。NeogmaモデルにExperimentPropertiesとExperimentRelatedNodesを追加し、ExperimentSessionとResponseにexperiment_idを導入。Neo4jスキーマにExperimentノードとHAS_EXPERIMENTリレーションを追加し、複合キー制約とインデックスを最適化。セッションインポートAPIでExperimentノードを自動作成し、Participant → Experiment → Sessionのリレーションを構築。分析APIをExperiment階層経由に更新し、セッション比較とWord2Vec APIが正常に動作。科学的手法による霊性測定システムのデータ構造をより柔軟で拡張可能にし、複数セッション実験の管理基盤を確立。',
   },
-  {
-    // Merkle DAG: 物語.ナラティブ[37]
-    act: '時系列統合可視化システムの実現',
-    summary: 'session_data.jsonのtimestampを横軸とした時系列統合可視化システムを設計・実装。単語表示イベント（word_displayed）を基準点として、生理データ・burst・face・language・prosodyの反応値を加算・統合表示するインタラクティブなUIを構築。React + D3.js + Chart.jsによる時系列チャート、リアルタイムフィルタリング、ズーム・パン機能、データポイント詳細表示を実装。Experiment階層対応により、Participant → Experiment → Session経由でのデータ取得と可視化を実現。科学的手法による霊性測定の時系列理解を深化させ、研究者が実験プロセスの詳細な反応パターンを直感的に分析できる基盤を確立。',
-  },
+      {
+        // Merkle DAG: 物語.ナラティブ[37]
+        act: '時系列統合可視化システムの実現',
+        summary: 'session_data.jsonのtimestampを横軸とした時系列統合可視化システムを設計・実装。単語表示イベント（word_displayed）を基準点として、生理データ・burst・face・language・prosodyの反応値を加算・統合表示するインタラクティブなUIを構築。React + D3.js + Chart.jsによる時系列チャート、リアルタイムフィルタリング、ズーム・パン機能、データポイント詳細表示を実装。Experiment階層対応により、Participant → Experiment → Session経由でのデータ取得と可視化を実現。科学的手法による霊性測定の時系列理解を深化させ、研究者が実験プロセスの詳細な反応パターンを直感的に分析できる基盤を確立。',
+      },
+      {
+        // Merkle DAG: 物語.ナラティブ[38]
+        act: '3D Force Timeline と感情距離フォースの導入',
+        summary: '感情類似度をフォースに合成した3D可視化を導入。Emo Weak/Strong/Gain と Emo Mix により、感情と構造（word2vec・観測遷移）の寄与を動的に調整できる設計を実装。上位K近傍（k-NN）で疎グラフ化し、強弱が位置と自然長へ直接反映されるよう最適化。専用ページ /3d-force-timeline を追加し、操作パネルから即時にクラスタの変化を観測可能にした。',
+      },
+      {
+        // Merkle DAG: 物語.ナラティブ[39]
+        act: '可視化用デモデータセット生成とAPI切替',
+        summary: '200点以上の理想的なデモデータセット（感情ソース混在・8ch生理データ）を自動生成。APIの demo=1 切替を実装し、本番統合データとデモスタブの双方を同一UIで検証可能に。タイムラインAPIでは取得失敗を metadata.errors として返却し、画面上で警告表示して原因追跡を容易化。',
+      },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
