@@ -183,6 +183,26 @@ export function ThreeVectorVisualization({ vectorData }: ThreeVectorVisualizatio
   const [relaxIterations, setRelaxIterations] = useState(20)
   const [relaxStep, setRelaxStep] = useState(0.15)
 
+  // プリセット定義
+  const relaxationPresets = [
+    { id: 'balanced', label: 'Balanced', minL: 0.25, maxL: 1.2, iterations: 20, step: 0.15 },
+    { id: 'tight', label: 'Tight clusters', minL: 0.20, maxL: 0.90, iterations: 30, step: 0.15 },
+    { id: 'loose', label: 'Loose clusters', minL: 0.35, maxL: 1.50, iterations: 12, step: 0.10 },
+    { id: 'precise', label: 'High-precision slow', minL: 0.25, maxL: 1.00, iterations: 50, step: 0.07 },
+  ] as const
+
+  const [presetId, setPresetId] = useState<typeof relaxationPresets[number]['id']>('balanced')
+
+  const applyPreset = (id: typeof relaxationPresets[number]['id']) => {
+    const p = relaxationPresets.find((x) => x.id === id)
+    if (!p) return
+    setPresetId(id)
+    setMinLength(p.minL)
+    setMaxLength(p.maxL)
+    setRelaxIterations(p.iterations)
+    setRelaxStep(p.step)
+  }
+
   // 安全な値チェック関数
   const safeValue = useCallback((value: number | undefined, defaultValue: number = 0): number => {
     return typeof value === 'number' && !Number.isNaN(value) ? value : defaultValue
@@ -420,6 +440,18 @@ export function ThreeVectorVisualization({ vectorData }: ThreeVectorVisualizatio
 
       {/* リラクゼーション制御パネル */}
       <div className="absolute top-2 left-2 bg-white/80 backdrop-blur-sm p-2 rounded shadow text-xs space-x-2 flex items-center">
+        <label className="flex items-center gap-1">
+          <span>Preset</span>
+          <select
+            className="border rounded px-1 py-0.5"
+            value={presetId}
+            onChange={(e) => applyPreset(e.target.value as typeof presetId)}
+          >
+            {relaxationPresets.map((p) => (
+              <option key={p.id} value={p.id}>{p.label}</option>
+            ))}
+          </select>
+        </label>
         <label className="flex items-center gap-1">
           <span>minL</span>
           <input type="number" step={0.01} value={minLength} onChange={(e) => setMinLength(Number(e.target.value))} className="w-16 border rounded px-1 py-0.5" />

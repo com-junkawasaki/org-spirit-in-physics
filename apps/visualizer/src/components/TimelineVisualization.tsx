@@ -104,6 +104,25 @@ export default function TimelineVisualization({
   // 感情類似フォース係数（弱・強）
   const [emotionWeak, setEmotionWeak] = useState(0.6)
   const [emotionStrong, setEmotionStrong] = useState(1.6)
+  // 3D Force プリセット
+  const forcePresets = [
+    { id: 'balanced', label: 'Balanced', springK: 3.0, repulsionK: 800, restLength: 60, damping: 0.95, emoWeak: 0.6, emoStrong: 1.6 },
+    { id: 'tight', label: 'Tight clusters', springK: 4.0, repulsionK: 1200, restLength: 45, damping: 0.92, emoWeak: 0.6, emoStrong: 1.8 },
+    { id: 'loose', label: 'Loose clusters', springK: 2.0, repulsionK: 600, restLength: 75, damping: 0.97, emoWeak: 0.7, emoStrong: 1.4 },
+    { id: 'slow', label: 'Slow precise', springK: 3.0, repulsionK: 900, restLength: 60, damping: 0.98, emoWeak: 0.6, emoStrong: 1.6 },
+  ] as const
+  const [forcePresetId, setForcePresetId] = useState<typeof forcePresets[number]['id']>('balanced')
+  const applyForcePreset = (id: typeof forcePresets[number]['id']) => {
+    const p = forcePresets.find(x => x.id === id)
+    if (!p) return
+    setForcePresetId(id)
+    setSpringK(p.springK)
+    setRepulsionK(p.repulsionK)
+    setRestLength(p.restLength)
+    setDamping(p.damping)
+    setEmotionWeak(p.emoWeak)
+    setEmotionStrong(p.emoStrong)
+  }
   
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
@@ -1463,6 +1482,14 @@ export default function TimelineVisualization({
 
         {visualizationMode === 'force-3d' && (
           <div className="mb-4 grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
+            <label className="flex items-center space-x-2 col-span-2 md:col-span-2">
+              <span>Preset</span>
+              <select className="border rounded px-2 py-1" value={forcePresetId} onChange={(e) => applyForcePreset(e.target.value as typeof forcePresetId)}>
+                {forcePresets.map(p => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+            </label>
             <label className="flex items-center space-x-2">
               <span>α</span>
               <input type="number" step="0.1" value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
