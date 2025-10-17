@@ -450,8 +450,9 @@ export default function TimelineVisualization({
         const emoCos = (ei.length && ej.length) ? Math.max(-1, Math.min(1, dot(ei, ej))) : 0
         // 非負ベクトルなので多くの場合[0,1]だが、一般式として[0,1]に射影
         const emoSim01 = 0.5 * (emoCos + 1)
-        // 類似度の寄与を強調（gain > 1 で強化）
-        const emoAmplified = Math.pow(Math.max(0, Math.min(1, emoSim01)), Math.max(0.1, emotionGain))
+        // 対称な増幅: t∈[-1,1] を |t|^gain で強調し 0..1 に戻す
+        const t = Math.max(-1, Math.min(1, 2 * emoSim01 - 1))
+        const emoAmplified = 0.5 * (Math.sign(t) * Math.pow(Math.abs(t), Math.max(0.5, emotionGain)) + 1)
         const emoFactor = emotionWeak + (emotionStrong - emotionWeak) * emoAmplified
 
         links.push({ source: i, target: j, weight: vecFactor * obsFactor * emoFactor })
