@@ -34,8 +34,10 @@ interface Force3DWordGraphProps {
     restLength: number
     maxSpeed: number
   }
+  // 感情類似の影響倍率（links.weight への指数影響）
+  emotionPower?: number
 }
-export default function Force3DWordGraph({ nodes, links, width = 1000, height = 600, background = '#0b1020', physics }: Force3DWordGraphProps) {
+export default function Force3DWordGraph({ nodes, links, width = 1000, height = 600, background = '#0b1020', physics, emotionPower = 1 }: Force3DWordGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
@@ -256,7 +258,9 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         const dy = p[j + 1] - p[i + 1]
         const dz = p[j + 2] - p[i + 2]
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-6
-        const L0 = Math.max(10, restLength / Math.sqrt(1 + weight))
+        // 重みが大きいほど強く短縮する（emotionPowerで増幅）
+        const wAmplified = Math.pow(weight, Math.max(0.1, emotionPower))
+        const L0 = Math.max(10, restLength / Math.sqrt(1 + wAmplified))
         const x = dist - L0
         const force = springK * x
         const fx = (force * dx) / dist
@@ -343,7 +347,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       })
       if (lineGeometryRef.current) lineGeometryRef.current.dispose()
     }
-  }, [width, height, background])
+  }, [width, height, background, emotionPower])
 
   // ノードの差分反映（長さ不変を前提にスケールと色のみ更新）
   useEffect(() => {

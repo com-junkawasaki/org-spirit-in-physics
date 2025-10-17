@@ -104,12 +104,15 @@ export default function TimelineVisualization({
   // 感情類似フォース係数（弱・強）
   const [emotionWeak, setEmotionWeak] = useState(0.6)
   const [emotionStrong, setEmotionStrong] = useState(1.6)
+  const [emotionGain, setEmotionGain] = useState(1.5)
+  const [emotionGainMin, setEmotionGainMin] = useState(0.5)
+  const [emotionGainMax, setEmotionGainMax] = useState(4.0)
   // 3D Force プリセット
   const forcePresets = [
-    { id: 'balanced', label: 'Balanced', springK: 3.0, repulsionK: 800, restLength: 60, damping: 0.95, emoWeak: 0.6, emoStrong: 1.6 },
-    { id: 'tight', label: 'Tight clusters', springK: 4.0, repulsionK: 1200, restLength: 45, damping: 0.92, emoWeak: 0.6, emoStrong: 1.8 },
-    { id: 'loose', label: 'Loose clusters', springK: 2.0, repulsionK: 600, restLength: 75, damping: 0.97, emoWeak: 0.7, emoStrong: 1.4 },
-    { id: 'slow', label: 'Slow precise', springK: 3.0, repulsionK: 900, restLength: 60, damping: 0.98, emoWeak: 0.6, emoStrong: 1.6 },
+    { id: 'balanced', label: 'Balanced', springK: 3.0, repulsionK: 800, restLength: 60, damping: 0.95, emoWeak: 0.6, emoStrong: 1.6, emoGain: 1.5 },
+    { id: 'tight', label: 'Tight clusters', springK: 4.0, repulsionK: 1200, restLength: 45, damping: 0.92, emoWeak: 0.6, emoStrong: 1.8, emoGain: 2.5 },
+    { id: 'loose', label: 'Loose clusters', springK: 2.0, repulsionK: 600, restLength: 75, damping: 0.97, emoWeak: 0.7, emoStrong: 1.4, emoGain: 1.0 },
+    { id: 'slow', label: 'Slow precise', springK: 3.0, repulsionK: 900, restLength: 60, damping: 0.98, emoWeak: 0.6, emoStrong: 1.6, emoGain: 2.0 },
   ] as const
   const [forcePresetId, setForcePresetId] = useState<typeof forcePresets[number]['id']>('balanced')
   const applyForcePreset = (id: typeof forcePresets[number]['id']) => {
@@ -122,6 +125,7 @@ export default function TimelineVisualization({
     setDamping(p.damping)
     setEmotionWeak(p.emoWeak)
     setEmotionStrong(p.emoStrong)
+    setEmotionGain(p.emoGain)
   }
   
   const svgRef = useRef<SVGSVGElement>(null)
@@ -446,7 +450,9 @@ export default function TimelineVisualization({
         const emoCos = (ei.length && ej.length) ? Math.max(-1, Math.min(1, dot(ei, ej))) : 0
         // 非負ベクトルなので多くの場合[0,1]だが、一般式として[0,1]に射影
         const emoSim01 = 0.5 * (emoCos + 1)
-        const emoFactor = emotionWeak + (emotionStrong - emotionWeak) * emoSim01
+        // 類似度の寄与を強調（gain > 1 で強化）
+        const emoAmplified = Math.pow(Math.max(0, Math.min(1, emoSim01)), Math.max(0.1, emotionGain))
+        const emoFactor = emotionWeak + (emotionStrong - emotionWeak) * emoAmplified
 
         links.push({ source: i, target: j, weight: vecFactor * obsFactor * emoFactor })
       }
@@ -464,7 +470,7 @@ export default function TimelineVisualization({
     }
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, beta, emotionWeak, emotionStrong])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, beta, emotionWeak, emotionStrong, emotionGain])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
@@ -1518,6 +1524,23 @@ export default function TimelineVisualization({
               <span>Emo Strong</span>
               <input type="number" step="0.1" value={emotionStrong} onChange={(e) => setEmotionStrong(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
+            <div className="flex items-center space-x-2 col-span-2">
+              <span>Emo Gain</span>
+              <input
+                type="range"
+                min={emotionGainMin}
+                max={emotionGainMax}
+                step="0.1"
+                value={emotionGain}
+                onChange={(e) => setEmotionGain(Number(e.target.value))}
+                className="flex-1"
+              />
+              <span className="w-10 text-right">{emotionGain.toFixed(1)}</span>
+              <span className="ml-2 text-xs text-gray-500">min</span>
+              <input type="number" step="0.1" value={emotionGainMin} onChange={(e) => setEmotionGainMin(Number(e.target.value))} className="w-16 border rounded px-2 py-1" />
+              <span className="text-xs text-gray-500">max</span>
+              <input type="number" step="0.1" value={emotionGainMax} onChange={(e) => setEmotionGainMax(Number(e.target.value))} className="w-16 border rounded px-2 py-1" />
+            </div>
             <label className="flex items-center space-x-2">
               <span>K</span>
               <input type="number" step="0.1" value={springK} onChange={(e) => setSpringK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
@@ -1538,12 +1561,12 @@ export default function TimelineVisualization({
         )}
 
         {visualizationMode === 'force-3d' && mounted && (() => {
-          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number } }
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number }; emotionPower?: number }
           const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraph.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120 }} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120 }} emotionPower={emotionGain} />
             </div>
           )
         })()}
