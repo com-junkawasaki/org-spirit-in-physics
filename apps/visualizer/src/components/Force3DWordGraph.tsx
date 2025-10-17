@@ -35,6 +35,8 @@ interface Force3DWordGraphProps {
     maxSpeed: number
     shellRadius?: number
     shellK?: number
+    shellRadiusOuter?: number
+    shellKOuter?: number
   }
   // 感情類似の影響倍率（links.weight への指数影響）
   emotionPower?: number
@@ -71,6 +73,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     maxSpeed: physics?.maxSpeed ?? 120,
     shellRadius: physics?.shellRadius ?? 180,
     shellK: physics?.shellK ?? 3.0,
+    shellRadiusOuter: physics?.shellRadiusOuter ?? (physics?.shellRadius ? physics.shellRadius * 1.6 : 288),
+    shellKOuter: physics?.shellKOuter ?? 1.5,
   })
 
   // 色スケール
@@ -100,6 +104,8 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       maxSpeed: physics?.maxSpeed ?? physicsRef.current.maxSpeed,
       shellRadius: physics?.shellRadius ?? physicsRef.current.shellRadius,
       shellK: physics?.shellK ?? physicsRef.current.shellK,
+      shellRadiusOuter: physics?.shellRadiusOuter ?? physicsRef.current.shellRadiusOuter,
+      shellKOuter: physics?.shellKOuter ?? physicsRef.current.shellKOuter,
     }
   }, [physics])
 
@@ -235,7 +241,7 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
       const v = velocitiesRef.current as Float32Array
       const n = nodesRef.current.length
 
-      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK } = physicsRef.current
+      const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter, shellKOuter } = physicsRef.current
 
       // 斥力
       for (let i = 0; i < n; i++) {
@@ -301,6 +307,23 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
           const target = shellRadius
           const k = shellK
           // 正: 外向き、負: 内向き
+          const fr = (target - rlen) * k
+          const ux = rx / rlen
+          const uy = ry / rlen
+          const uz = rz / rlen
+          v[ix] += fr * ux * (1/60)
+          v[ix + 1] += fr * uy * (1/60)
+          v[ix + 2] += fr * uz * (1/60)
+        }
+
+        // 外殻への吸引（リング/外層を形成）
+        {
+          const rx = p[ix]
+          const ry = p[ix + 1]
+          const rz = p[ix + 2]
+          const rlen = Math.hypot(rx, ry, rz) + 1e-6
+          const target = shellRadiusOuter
+          const k = shellKOuter
           const fr = (target - rlen) * k
           const ux = rx / rlen
           const uy = ry / rlen
