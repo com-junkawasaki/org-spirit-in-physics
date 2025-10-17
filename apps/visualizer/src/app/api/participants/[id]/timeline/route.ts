@@ -48,18 +48,20 @@ export async function GET(
       physiologicalData = []
     }
 
-    // 簡素化されたデータ処理：セッションデータのみを使用
-    const timelineData = sessionData.wordEvents.slice(0, 100).map((event: any) => ({
-      timestamp: event.timestamp,
-      word: event.payload?.word || 'Unknown',
-      eventType: event.type,
-      emotions: [],
-      physiological: { average: 0, max: 0, min: 0, channels: {} },
-      reactionValue: 0,
-      metadata: { emotionCount: 0, physiologicalCount: 0 }
+    // データ構造最適化：必要最小限の情報のみ保持
+    const timelineData = sessionData.wordEvents.map((event: any) => ({
+      t: event.timestamp, // timestampを短縮
+      w: event.payload?.word || 'Unknown', // wordを短縮
+      e: event.type, // eventTypeを短縮
+      // emotionsとphysiologicalは空配列で軽量化
+      em: [], // emotionsを短縮
+      ph: { avg: 0, max: 0, min: 0, ch: {} }, // physiologicalを短縮
+      rv: 0, // reactionValueを短縮
+      m: { ec: 0, pc: 0 } // metadataを短縮
     }));
 
-    return NextResponse.json({
+    // ストリーミングレスポンスで大きなデータを効率的に送信
+    const responseData = {
       success: true,
       data: {
         participantId,
@@ -73,7 +75,40 @@ export async function GET(
           errors
         }
       }
-    });
+    };
+
+    // JSON文字列化の前にサイズチェック
+    try {
+      const jsonString = JSON.stringify(responseData);
+      console.log('Response size:', jsonString.length, 'bytes');
+      
+      // 10MB制限チェック（Next.jsのデフォルト制限）
+      if (jsonString.length > 10 * 1024 * 1024) {
+        console.warn('Response size exceeds 10MB limit, returning summary only');
+        return NextResponse.json({
+          success: true,
+          data: {
+            participantId,
+            timelineData: timelineData.slice(0, 1000), // フォールバック：1000件まで
+            metadata: {
+              ...responseData.data.metadata,
+              totalDataPoints: Math.min(timelineData.length, 1000),
+              truncated: true,
+              originalSize: timelineData.length
+            }
+          }
+        });
+      }
+      
+      return NextResponse.json(responseData);
+    } catch (error) {
+      console.error('JSON serialization error:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'Data serialization failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
   } catch (error) {
     console.error('Timeline API error:', error);

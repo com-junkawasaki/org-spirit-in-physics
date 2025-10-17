@@ -17,6 +17,8 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     retryCount,
   });
 
+  const t0 = Date.now();
+
   // ステップ1: ファイル存在確認と検証
   const basePath = join(dataRootPath, 'participants', participantId);
   
@@ -85,7 +87,10 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     throw new Error(`Required file not found: session_data.json`);
   }
 
-  console.log(`File validation completed for ${participantId}`, validationResults);
+  console.log(`File validation completed for ${participantId}`, {
+    ...validationResults,
+    ms: Date.now() - t0,
+  });
 
   // ステップ2: コンテンツハッシュの検証（提供されている場合）
   let hashVerification = { verified: true, computedHash: null };
@@ -122,6 +127,8 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
     prosodyRecords: 0,
   };
 
+  const tParse0 = Date.now();
+
   // session_data.json の解析
   if (validationResults.sessionData.exists) {
     const sessionContent = readFileSync(validationResults.sessionData.path, 'utf-8');
@@ -156,7 +163,11 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
 
   stats.humeRecords = stats.burstRecords + stats.faceRecords + stats.languageRecords + stats.prosodyRecords;
 
-  console.log(`File parsing completed for ${participantId}`, stats);
+  console.log(`File parsing completed for ${participantId}`, {
+    ...stats,
+    ms: Date.now() - tParse0,
+    totalMs: Date.now() - t0,
+  });
 
   return {
     success: true,

@@ -1,3 +1,24 @@
+// Merkle DAG: neo4j_schema -> schema_definition
+// 主要ラベルに対する主キー制約とインデックス
+
+export const SCHEMA_CONSTRAINTS_PRIMARY = {
+  participant_pk: `CREATE CONSTRAINT participant_pk IF NOT EXISTS FOR (n:Participant) REQUIRE n.id IS UNIQUE`,
+  experiment_pk: `CREATE CONSTRAINT experiment_pk IF NOT EXISTS FOR (n:Experiment) REQUIRE n.id IS UNIQUE`,
+  window_pk: `CREATE CONSTRAINT window_pk IF NOT EXISTS FOR (n:Window) REQUIRE n.id IS UNIQUE`,
+  emotionAgg_pk: `CREATE CONSTRAINT emotionAgg_pk IF NOT EXISTS FOR (n:EmotionAggregation) REQUIRE n.id IS UNIQUE`,
+  physioAgg_pk: `CREATE CONSTRAINT physioAgg_pk IF NOT EXISTS FOR (n:PhysiologicalAggregation) REQUIRE n.id IS UNIQUE`,
+  embedding_pk: `CREATE CONSTRAINT embedding_pk IF NOT EXISTS FOR (n:EmbeddingResult) REQUIRE n.id IS UNIQUE`,
+  fusion_pk: `CREATE CONSTRAINT fusion_pk IF NOT EXISTS FOR (n:KernelFusionRun) REQUIRE n.id IS UNIQUE`,
+};
+
+export const SCHEMA_INDEXES_PRIMARY = {
+  exp_participant: `CREATE INDEX exp_participant IF NOT EXISTS FOR (n:Experiment) ON (n.participantId)`,
+  win_participant: `CREATE INDEX win_participant IF NOT EXISTS FOR (n:Window) ON (n.participantId)`,
+  emo_window: `CREATE INDEX emo_window IF NOT EXISTS FOR (n:EmotionAggregation) ON (n.windowId)`,
+  physio_window: `CREATE INDEX physio_window IF NOT EXISTS FOR (n:PhysiologicalAggregation) ON (n.windowId)`,
+  embed_participant: `CREATE INDEX embed_participant IF NOT EXISTS FOR (n:EmbeddingResult) ON (n.participantId)`,
+};
+
 // Merkle DAG: Neo4jスキーマ定義
 // Spirit in PhysicsプロジェクトのNeo4jグラフデータモデル
 
@@ -131,8 +152,10 @@ export const SCHEMA_INDEXES = {
 export const getSchemaInitializationQueries = (): string[] => {
   return [
     // 制約作成
+    ...Object.values(SCHEMA_CONSTRAINTS_PRIMARY),
     ...Object.values(SCHEMA_CONSTRAINTS),
     // インデックス作成
+    ...Object.values(SCHEMA_INDEXES_PRIMARY),
     ...Object.values(SCHEMA_INDEXES),
   ];
 };

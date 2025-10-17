@@ -17,6 +17,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
   },
   async ({ event, step, logger }) => {
     const { participantId, windows, embeddings, fusionResults, metadata } = event.data as Neo4jPersistenceEvent;
+    const experimentId = `exp_${participantId}_${Date.now()}`;
 
     logger.info(`Starting Neo4j persistence for participant ${participantId}`, {
       participantId,
@@ -78,9 +79,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
     // ステップ3: 実験ノードの作成
     await step.run('create-experiment-node', async () => {
       try {
-        const experimentId = `exp_${participantId}_${Date.now()}`;
-        
-        const createResult = await (neo4jConnection as any).query(
+        await (neo4jConnection as any).query(
           'CREATE (e:Experiment {id: $experimentId, participantId: $participantId, createdAt: datetime(), updatedAt: datetime()}) RETURN e',
           { experimentId, participantId }
         );
@@ -102,51 +101,33 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
     // ステップ4: ウィンドウノードの作成
     const windowNodes = await step.run('create-window-nodes', async () => {
       try {
-        const windowNodes: Array<{ id: string; word: string; start: number; end: number }> = [];
+        const payload = windows.map(w => ({
+          id: `window_${participantId}_${w.start}_${w.end}`,
+          word: w.word,
+          start: w.start,
+          end: w.end,
+          reactionTimeMs: w.reactionTimeMs ?? null,
+        }));
 
-        for (const window of windows) {
-          const windowId = `window_${participantId}_${window.start}_${window.end}`;
-          
-          const createResult = await (neo4jConnection as any).query(
-            `CREATE (w:Window {
-              id: $windowId,
-              participantId: $participantId,
-              word: $word,
-              start: $start,
-              end: $end,
-              reactionTimeMs: $reactionTimeMs,
-              createdAt: datetime(),
-              updatedAt: datetime()
-            }) RETURN w`,
-            {
-              windowId,
-              participantId,
-              word: window.word,
-              start: window.start,
-              end: window.end,
-              reactionTimeMs: window.reactionTimeMs,
-            }
-          );
-
-          // 実験とウィンドウの関係を作成
-          await (neo4jConnection as any).query(
-            'MATCH (e:Experiment {participantId: $participantId}), (w:Window {id: $windowId}) CREATE (e)-[:HAS_WINDOW]->(w)',
-            { participantId, windowId }
-          );
-
-          windowNodes.push({
-            id: windowId,
-            word: window.word,
-            start: window.start,
-            end: window.end,
-          });
-        }
+        await (neo4jConnection as any).query(
+          `UNWIND $windows AS w
+           MERGE (e:Experiment {id: $experimentId})
+           MERGE (win:Window {id: w.id})
+           ON CREATE SET win.createdAt = datetime()
+           SET win.participantId = $participantId,
+               win.word = w.word,
+               win.start = w.start,
+               win.end = w.end,
+               win.reactionTimeMs = w.reactionTimeMs,
+               win.updatedAt = datetime()
+           MERGE (e)-[:HAS_WINDOW]->(win)`,
+          { participantId, experimentId, windows: payload }
+        );
 
         logger.info(`Window nodes created for ${participantId}`, {
-          count: windowNodes.length,
+          count: payload.length,
         });
-
-        return windowNodes;
+        return payload as Array<{ id: string; word: string; start: number; end: number }>;
       } catch (error) {
         logger.error(`Failed to create window nodes for ${participantId}`, { error });
         throw error;
@@ -157,44 +138,15 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
     // ステップ5: 感情集約ノードの作成
     const emotionAggregationNodes = await step.run('create-emotion-aggregation-nodes', async () => {
       try {
-        const emotionNodes: Array<{ id: string; source: string; emotion: string; score: number }> = [];
-
-        for (const window of windows) {
-          if (!window.humeAggregation) continue;
-
-          const windowId = `window_${participantId}_${window.start}_${window.end}`;
-
-          for (const [modality, emotions] of Object.entries(window.humeAggregation)) {
+        const emotionsPayload: Array<{ id: string; windowId: string; source: string; emotion: string; score: number }> = [];
+        for (const w of windows) {
+          if (!w.humeAggregation) continue;
+          const windowId = `window_${participantId}_${w.start}_${w.end}`;
+          for (const [modality, emotions] of Object.entries(w.humeAggregation)) {
             for (const [emotionName, score] of Object.entries(emotions)) {
-              const emotionId = `emotion_${windowId}_${modality}_${emotionName}`;
-              
-              const createResult = await (neo4jConnection as any).query(
-                `CREATE (ea:EmotionAggregation {
-                  id: $emotionId,
-                  windowId: $windowId,
-                  source: $source,
-                  emotion: $emotion,
-                  score: $score,
-                  createdAt: datetime(),
-                  updatedAt: datetime()
-                }) RETURN ea`,
-                {
-                  emotionId,
-                  windowId,
-                  source: modality,
-                  emotion: emotionName,
-                  score: score as number,
-                }
-              );
-
-              // ウィンドウと感情集約の関係を作成
-              await (neo4jConnection as any).query(
-                'MATCH (w:Window {id: $windowId}), (ea:EmotionAggregation {id: $emotionId}) CREATE (w)-[:HAS_EMOTION_AGG]->(ea)',
-                { windowId, emotionId }
-              );
-
-              emotionNodes.push({
-                id: emotionId,
+              emotionsPayload.push({
+                id: `emotion_${windowId}_${modality}_${emotionName}`,
+                windowId,
                 source: modality,
                 emotion: emotionName,
                 score: score as number,
@@ -203,11 +155,26 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
           }
         }
 
-        logger.info(`Emotion aggregation nodes created for ${participantId}`, {
-          count: emotionNodes.length,
-        });
+        if (emotionsPayload.length > 0) {
+          await (neo4jConnection as any).query(
+            `UNWIND $rows AS ea
+             MERGE (w:Window {id: ea.windowId})
+             MERGE (n:EmotionAggregation {id: ea.id})
+             ON CREATE SET n.createdAt = datetime()
+             SET n.windowId = ea.windowId,
+                 n.source = ea.source,
+                 n.emotion = ea.emotion,
+                 n.score = ea.score,
+                 n.updatedAt = datetime()
+             MERGE (w)-[:HAS_EMOTION_AGG]->(n)`,
+            { rows: emotionsPayload }
+          );
+        }
 
-        return emotionNodes;
+        logger.info(`Emotion aggregation nodes created for ${participantId}`, {
+          count: emotionsPayload.length,
+        });
+        return emotionsPayload;
       } catch (error) {
         logger.error(`Failed to create emotion aggregation nodes for ${participantId}`, { error });
         throw error;
@@ -218,52 +185,43 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
     // ステップ6: 生理集約ノードの作成
     const physioAggregationNodes = await step.run('create-physiological-aggregation-nodes', async () => {
       try {
-        const physioNodes: Array<{ id: string; channels: string[]; avg: number; quality: number }> = [];
-
-        for (const window of windows) {
-          if (!window.physioAggregation) continue;
-
-          const windowId = `window_${participantId}_${window.start}_${window.end}`;
-          const physioId = `physio_${windowId}`;
-          
-          const createResult = await (neo4jConnection as any).query(
-            `CREATE (pa:PhysiologicalAggregation {
-              id: $physioId,
-              windowId: $windowId,
-              channels: $channels,
-              avg: $avg,
-              quality: $quality,
-              createdAt: datetime(),
-              updatedAt: datetime()
-            }) RETURN pa`,
-            {
-              physioId,
-              windowId,
-              channels: Object.keys(window.physioAggregation),
-              avg: Object.values(window.physioAggregation).reduce((sum, val) => sum + (val as number), 0) / Object.keys(window.physioAggregation).length,
-              quality: 1.0, // デフォルト品質スコア
-            }
-          );
-
-          // ウィンドウと生理集約の関係を作成
-          await (neo4jConnection as any).query(
-            'MATCH (w:Window {id: $windowId}), (pa:PhysiologicalAggregation {id: $physioId}) CREATE (w)-[:HAS_PHYSIO_AGG]->(pa)',
-            { windowId, physioId }
-          );
-
-          physioNodes.push({
-            id: physioId,
-            channels: Object.keys(window.physioAggregation),
-            avg: Object.values(window.physioAggregation).reduce((sum, val) => sum + (val as number), 0) / Object.keys(window.physioAggregation).length,
+        const physPayload: Array<{ id: string; windowId: string; channels: string[]; avg: number; quality: number }> = [];
+        for (const w of windows) {
+          if (!w.physioAggregation) continue;
+          const windowId = `window_${participantId}_${w.start}_${w.end}`;
+          const channels = Object.keys(w.physioAggregation);
+          const avg = channels.length
+            ? channels.reduce((s, c) => s + (w.physioAggregation![c] as number), 0) / channels.length
+            : 0;
+          physPayload.push({
+            id: `physio_${windowId}`,
+            windowId,
+            channels,
+            avg,
             quality: 1.0,
           });
         }
 
-        logger.info(`Physiological aggregation nodes created for ${participantId}`, {
-          count: physioNodes.length,
-        });
+        if (physPayload.length > 0) {
+          await (neo4jConnection as any).query(
+            `UNWIND $rows AS pa
+             MERGE (w:Window {id: pa.windowId})
+             MERGE (n:PhysiologicalAggregation {id: pa.id})
+             ON CREATE SET n.createdAt = datetime()
+             SET n.windowId = pa.windowId,
+                 n.channels = pa.channels,
+                 n.avg = pa.avg,
+                 n.quality = pa.quality,
+                 n.updatedAt = datetime()
+             MERGE (w)-[:HAS_PHYSIO_AGG]->(n)`,
+            { rows: physPayload }
+          );
+        }
 
-        return physioNodes;
+        logger.info(`Physiological aggregation nodes created for ${participantId}`, {
+          count: physPayload.length,
+        });
+        return physPayload;
       } catch (error) {
         logger.error(`Failed to create physiological aggregation nodes for ${participantId}`, { error });
         throw error;
@@ -276,7 +234,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
       try {
         const fusionRunId = `fusion_${participantId}_${Date.now()}`;
         
-        const createResult = await (neo4jConnection as any).query(
+        await (neo4jConnection as any).query(
           `CREATE (fr:KernelFusionRun {
             id: $fusionRunId,
             participantId: $participantId,
@@ -298,8 +256,8 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
 
         // 実験と核融合実行の関係を作成
         await (neo4jConnection as any).query(
-          'MATCH (e:Experiment {participantId: $participantId}), (fr:KernelFusionRun {id: $fusionRunId}) CREATE (e)-[:HAS_FUSION_RUN]->(fr)',
-          { participantId, fusionRunId }
+          'MATCH (e:Experiment {id: $experimentId}), (fr:KernelFusionRun {id: $fusionRunId}) CREATE (e)-[:HAS_FUSION_RUN]->(fr)',
+          { experimentId, fusionRunId }
         );
 
         logger.info(`Fusion run node created: ${fusionRunId}`);
@@ -313,50 +271,37 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
     // ステップ8: 埋め込み結果ノードの作成
     const embeddingResultNodes = await step.run('create-embedding-result-nodes', async () => {
       try {
-        const embeddingNodes: Array<{ id: string; method: string; dimensions: number; points: number[] }> = [];
+        const embPayload = embeddings.map((embedding, i) => ({
+          id: `embedding_${participantId}_${i}`,
+          method: 'kernel_fusion',
+          dimensions: embedding.length,
+          points: embedding,
+        }));
 
-        for (let i = 0; i < embeddings.length; i++) {
-          const embedding = embeddings[i];
-          const embeddingId = `embedding_${participantId}_${i}`;
-          
-          const createResult = await (neo4jConnection as any).query(
-            `CREATE (er:EmbeddingResult {
-              id: $embeddingId,
-              participantId: $participantId,
-              method: $method,
-              dimensions: $dimensions,
-              points: $points,
-              createdAt: datetime(),
-              updatedAt: datetime()
-            }) RETURN er`,
-            {
-              embeddingId,
-              participantId,
-              method: 'kernel_fusion',
-              dimensions: embedding.length,
-              points: embedding,
-            }
-          );
-
-          // 核融合実行と埋め込み結果の関係を作成
+        if (embPayload.length > 0) {
           await (neo4jConnection as any).query(
-            'MATCH (fr:KernelFusionRun {participantId: $participantId}), (er:EmbeddingResult {id: $embeddingId}) CREATE (fr)-[:HAS_EMBEDDING]->(er)',
-            { participantId, embeddingId }
+            `UNWIND $rows AS er
+             MERGE (n:EmbeddingResult {id: er.id})
+             ON CREATE SET n.createdAt = datetime()
+             SET n.participantId = $participantId,
+                 n.method = er.method,
+                 n.dimensions = er.dimensions,
+                 n.points = er.points,
+                 n.updatedAt = datetime()`,
+            { participantId, rows: embPayload }
           );
-
-          embeddingNodes.push({
-            id: embeddingId,
-            method: 'kernel_fusion',
-            dimensions: embedding.length,
-            points: embedding,
-          });
+          await (neo4jConnection as any).query(
+            `UNWIND $rows AS er
+             MATCH (fr:KernelFusionRun {participantId: $participantId}), (n:EmbeddingResult {id: er.id})
+             MERGE (fr)-[:HAS_EMBEDDING]->(n)`,
+            { participantId, rows: embPayload }
+          );
         }
 
         logger.info(`Embedding result nodes created for ${participantId}`, {
-          count: embeddingNodes.length,
+          count: embPayload.length,
         });
-
-        return embeddingNodes;
+        return embPayload as Array<{ id: string; method: string; dimensions: number; points: number[] }>;
       } catch (error) {
         logger.error(`Failed to create embedding result nodes for ${participantId}`, { error });
         throw error;
