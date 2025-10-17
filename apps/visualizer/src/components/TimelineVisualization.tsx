@@ -452,9 +452,9 @@ export default function TimelineVisualization({
       normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
     })
 
-    // k-NN（emotionMix を強調）で疎グラフ化し重みを明確化
-    const links: WordLink[] = []
-    const combinedMatrix: number[][] = Array.from({ length: nodes.length }, () => new Array(nodes.length).fill(0))
+    // 全結合 + 10感情を統合した単一エッジ（強スコア=強結合）
+    // まず全ペアの生の感情結合スコアを計算
+    const rawPairs: Array<{ i: number; j: number; wEmotion: number; wStruct: number }> = []
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const wi = nodes[i].label
@@ -464,86 +464,39 @@ export default function TimelineVisualization({
         const sim = (vi.length && vj.length) ? Math.max(-1, Math.min(1, dot(vi, vj))) : 0
         const sim01 = 0.5 * (sim + 1)
 
-        const key = i < j ? `${i}-${j}` : `${j}-${i}`
+        const key = `${i}-${j}`
         const obsRaw = pairWeight.get(key)
         const obsNorm = obsRaw != null ? ((obsRaw - obsMin) / (obsDen || 1)) : 0
         const structComponent = Math.max(0, Math.min(1, (sim01 + obsNorm) / 2))
 
-        // 感情類似度係数（[-1,1]に正規化されたコサイン類似度→[0,1]へ）
-        const ei = normalizedEmotionVec[wi] || []
-        const ej = normalizedEmotionVec[wj] || []
-        const emoCos = (ei.length && ej.length) ? Math.max(-1, Math.min(1, dot(ei, ej))) : 0
-        // 非負ベクトルなので多くの場合[0,1]だが、一般式として[0,1]に射影
-        const emoSim01 = 0.5 * (emoCos + 1)
-        const t = Math.max(-1, Math.min(1, 2 * emoSim01 - 1))
-        const emoAmplified = 0.5 * (Math.sign(t) * Math.pow(Math.abs(t), Math.max(0.5, emotionGain)) + 1)
-        const emoFactor = emotionWeak + (emotionStrong - emotionWeak) * emoAmplified
+        const ei = normalizedEmotionVec[wi] || new Array(EMOTION_KEYS.length).fill(0)
+        const ej = normalizedEmotionVec[wj] || new Array(EMOTION_KEYS.length).fill(0)
 
-        const combined = Math.max(0, Math.min(1, emotionMix * emoFactor + (1 - emotionMix) * structComponent))
-        combinedMatrix[i][j] = combined
-        combinedMatrix[j][i] = combined
-      }
-    }
-
-    // 重みの分布を正規化してダイナミックレンジ拡張
-    let gMin = Infinity, gMax = -Infinity
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = 0; j < nodes.length; j++) {
-        if (i === j) continue
-        const v = combinedMatrix[i][j]
-        if (v < gMin) gMin = v
-        if (v > gMax) gMax = v
-      }
-    }
-    const den = gMax - gMin || 1
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = 0; j < nodes.length; j++) {
-        if (i === j) continue
-        // 0..1 正規化 → べき乗で拡張
-        const t = Math.max(0, Math.min(1, (combinedMatrix[i][j] - gMin) / den))
-        combinedMatrix[i][j] = Math.pow(t, Math.max(0.1, weightGamma))
-      }
-    }
-
-    // mutual k-NN：各ノードの上位Kを求め、相互選択のみ採用
-    const topK: Array<Set<number>> = []
-    for (let i = 0; i < nodes.length; i++) {
-      const scored: Array<{ j: number; w: number }> = []
-      for (let j = 0; j < nodes.length; j++) {
-        if (i === j) continue
-        const w = combinedMatrix[i][j]
-        if (w > 0) scored.push({ j, w })
-      }
-      scored.sort((a, b) => b.w - a.w)
-      const s = new Set<number>()
-      for (const { j } of scored.slice(0, Math.max(1, neighborsK))) s.add(j)
-      topK.push(s)
-    }
-    for (let i = 0; i < nodes.length; i++) {
-      for (const j of topK[i]) {
-        if (topK[j]?.has(i)) {
-          const s = Math.min(i, j)
-          const t = Math.max(i, j)
-          if (!links.find(l => l.source === s && l.target === t)) {
-            links.push({ source: s, target: t, weight: (combinedMatrix[i][j] + combinedMatrix[j][i]) / 2 })
-          }
+        // 10感情の積（両者が高いほど強い）を平均
+        let sum = 0
+        for (let k = 0; k < EMOTION_KEYS.length; k++) {
+          const emoSpec = Math.max(0, Math.min(1, (ei[k] || 0) * (ej[k] || 0)))
+          sum += Math.pow(emoSpec, Math.max(0.1, emotionGain))
         }
+        const wEmotion = sum / EMOTION_KEYS.length
+        rawPairs.push({ i, j, wEmotion, wStruct: structComponent })
       }
     }
 
-    // 最終正規化（0.1〜1.0）
-    if (links.length > 0) {
-      const wMin = Math.min(...links.map(l => l.weight))
-      const wMax = Math.max(...links.map(l => l.weight))
-      const wDen = wMax - wMin || 1
-      for (const l of links) {
-        const t = (l.weight - wMin) / wDen
-        l.weight = 0.1 + 0.9 * t
-      }
+    // 正規化してダイナミックレンジ拡張
+    let eMin = Infinity, eMax = -Infinity
+    for (const p of rawPairs) { if (p.wEmotion < eMin) eMin = p.wEmotion; if (p.wEmotion > eMax) eMax = p.wEmotion }
+    const eDen = eMax - eMin || 1
+    const links: WordLink[] = []
+    for (const p of rawPairs) {
+      const wE = (p.wEmotion - eMin) / eDen
+      let w = Math.max(0, Math.min(1, emotionMix * wE + (1 - emotionMix) * p.wStruct))
+      w = Math.pow(w, Math.max(0.1, weightGamma))
+      links.push({ source: p.i, target: p.j, weight: w })
     }
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionWeak, emotionStrong, emotionGain, emotionMix, neighborsK, weightGamma])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
