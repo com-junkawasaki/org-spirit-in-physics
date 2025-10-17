@@ -157,8 +157,15 @@ export default function TimelineVisualization({
       
       if (result.success) {
         setData(result.data.timelineData)
+        if (Array.isArray(result.data.metadata?.errors) && result.data.metadata.errors.length > 0) {
+          setError(`警告: 一部データ取得に失敗しました: ${result.data.metadata.errors.join('; ')}`)
+        } else {
+          setError(null)
+        }
       } else {
-        setError(result.error || 'Failed to fetch timeline data')
+        const apiError = result.error || 'Failed to fetch timeline data'
+        const details = Array.isArray(result.errors) ? ` (${result.errors.join('; ')})` : ''
+        setError(apiError + details)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')

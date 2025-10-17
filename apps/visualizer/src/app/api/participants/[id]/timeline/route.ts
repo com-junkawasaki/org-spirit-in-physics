@@ -19,33 +19,60 @@ export async function GET(
 
     const client = createNeo4jClient();
 
-    // 1. 描画用データセットの取得
-    const visualizationDataset = await getVisualizationDataset(client, participantId);
-    
-    if (visualizationDataset) {
-      // 描画用データセットが存在する場合はそれを使用
-      const timelineData = processVisualizationDataset(visualizationDataset);
-      
-      return NextResponse.json({
-        success: true,
-        data: {
-          participantId,
-          timelineData,
-          metadata: {
-            sessionEvents: timelineData.length,
-            emotionEntries: timelineData.filter(d => d.emotions.length > 0).length,
-            physiologicalEntries: timelineData.filter(d => d.physiological.length > 0).length,
-            totalDataPoints: timelineData.length,
-            dataSource: 'visualization_dataset'
+    // demo=1 の場合のみデモデータを使用
+    const { searchParams } = new URL(request.url)
+    const useDemo = searchParams.get('demo') === '1'
+    if (useDemo) {
+      const visualizationDataset = await getVisualizationDataset(client, participantId);
+      if (visualizationDataset) {
+        const timelineData = processVisualizationDataset(visualizationDataset);
+        return NextResponse.json({
+          success: true,
+          data: {
+            participantId,
+            timelineData,
+            metadata: {
+              sessionEvents: timelineData.length,
+              emotionEntries: timelineData.filter(d => d.emotions.length > 0).length,
+              physiologicalEntries: timelineData.filter(d => d.physiological.length > 0).length,
+              totalDataPoints: timelineData.length,
+              dataSource: 'demo_visualization_dataset'
+            }
           }
-        }
-      });
+        });
+      }
     }
 
-    // 2. フォールバック: 従来の方法でデータ取得
-    const sessionData = await getSessionData(participantId);
-    const emotionData = await getEmotionData(client, participantId);
-    const physiologicalData = await getPhysiologicalData(client, participantId);
+    // 実データ取得（失敗は収集してクライアントに返す）
+    const errors: string[] = []
+
+    let sessionData: any
+    try {
+      sessionData = await getSessionData(participantId)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error'
+      errors.push(`session_data: ${msg}`)
+      return NextResponse.json({ success: false, error: `Failed to load session data: ${msg}`, errors }, { status: 500 })
+    }
+
+    let emotionData: any[] = []
+    try {
+      emotionData = await getEmotionData(client, participantId)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error'
+      errors.push(`emotion_data: ${msg}`)
+      emotionData = []
+    }
+
+    let physiologicalData: any[] = []
+    try {
+      physiologicalData = await getPhysiologicalData(client, participantId)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error'
+      errors.push(`physiological_data: ${msg}`)
+      physiologicalData = []
+    }
+
     const timelineData = integrateTimelineData(sessionData, emotionData, physiologicalData);
 
     return NextResponse.json({
@@ -57,7 +84,9 @@ export async function GET(
           sessionEvents: sessionData.events.length,
           emotionEntries: emotionData.length,
           physiologicalEntries: physiologicalData.length,
-          totalDataPoints: timelineData.length
+          totalDataPoints: timelineData.length,
+          dataSource: 'integrated_realtime',
+          errors
         }
       }
     });

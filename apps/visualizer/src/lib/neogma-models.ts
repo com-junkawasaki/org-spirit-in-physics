@@ -234,6 +234,51 @@ interface ImportJobProperties extends BaseNode {
   job_metadata?: Record<string, unknown>;
 }
 
+// VisualizationDataset（デモ/可視化用データセット）
+// ガイドライン: 関係から決める型の写像（Participant → VisualizationDataset → VisualizationPoint）
+interface VisualizationDatasetProperties extends BaseNode {
+  participant_id: string; // どの参加者のデータか
+  data_points_count?: number; // 生成ポイント数
+  generated_at: string; // 生成日時 ISO8601
+  pipeline_version?: string; // 生成パイプラインのバージョン
+  // Map 的フィールド
+  metadata?: Record<string, unknown>;
+}
+
+interface VisualizationDatasetRelatedNodes {
+  points: ModelRelatedNodesI<
+    unknown,
+    {
+      id: string;
+      dataset_id: string;
+      // タイムラインの個別ポイント
+      timestamp: number;
+      word: string;
+      has_response: boolean;
+      reaction_time_ms?: number;
+      emotions?: Record<string, unknown>[]; // { name, score, fileType }
+      physiological?: Record<string, unknown>; // { average, max, min, channels }
+      reaction_value: number;
+      session_id?: string;
+    }
+  >
+}
+
+// VisualizationPoint（Timelineの1点）
+interface VisualizationPointProperties extends BaseNode {
+  dataset_id: string; // 親データセット
+  timestamp: number; // ms epoch
+  word: string;
+  has_response: boolean;
+  reaction_time_ms?: number;
+  // 詳細データはMap的フィールドで格納（疎）
+  emotions?: Array<{ name: string; score: number; fileType: string }>; // JSONB想定
+  physiological?: { average?: number; max?: number; min?: number; channels?: Record<string, number> };
+  reaction_value: number;
+  session_id?: string;
+  point_metadata?: Record<string, unknown>;
+}
+
 // Neogmaモデル初期化関数 - ガイドライン: 主キーはアプリ側の安定ID＋DB制約で固める
 export function createNeogmaModels(neogmaInstance: Neogma) {
   // Neogmaインスタンスを使ってモデルを再作成
@@ -407,6 +452,48 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
     neogmaInstance
   );
 
+  const VisualizationDatasetModel = ModelFactory<VisualizationDatasetProperties, VisualizationDatasetRelatedNodes>(
+    {
+      label: 'VisualizationDataset',
+      schema: {
+        id: { type: 'string', required: true },
+        participant_id: { type: 'string', required: true },
+        data_points_count: { type: 'number', minimum: 0 },
+        generated_at: { type: 'string', required: true },
+        pipeline_version: { type: 'string' },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+        metadata: { type: 'object' },
+      },
+      primaryKeyField: 'id',
+    },
+    neogmaInstance
+  )
+
+  const VisualizationPointModel = ModelFactory<VisualizationPointProperties, Record<string, never>>(
+    {
+      label: 'VisualizationPoint',
+      schema: {
+        id: { type: 'string', required: true },
+        dataset_id: { type: 'string', required: true },
+        timestamp: { type: 'number', minimum: 0 },
+        word: { type: 'string', required: true },
+        has_response: { type: 'boolean', default: false },
+        reaction_time_ms: { type: 'number', minimum: 0 },
+        reaction_value: { type: 'number' },
+        session_id: { type: 'string' },
+        created_at: { type: 'string' },
+        updated_at: { type: 'string' },
+        emotions: { type: 'array' },
+        physiological: { type: 'object' },
+        point_metadata: { type: 'object' },
+        metadata: { type: 'object' },
+      },
+      primaryKeyField: 'id',
+    },
+    neogmaInstance
+  )
+
   return {
     Participant: ParticipantModel,
     Experiment: ExperimentModel,
@@ -415,6 +502,8 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
     EmotionAnalysis: EmotionAnalysisModel,
     WordStimulus: WordStimulusModel,
     ImportJob: ImportJobModel,
+    VisualizationDataset: VisualizationDatasetModel,
+    VisualizationPoint: VisualizationPointModel,
   };
 }
 
