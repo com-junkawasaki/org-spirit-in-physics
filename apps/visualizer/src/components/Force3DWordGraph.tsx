@@ -19,6 +19,10 @@ export interface WordLink {
   source: number // インデックス（ノード配列参照）
   target: number
   weight: number // 辺スケール（太さ）
+  // テンセグリティ拡張: 片側拘束の種別とパラメータ
+  mode?: 'tension' | 'compression' // 省略時は従来の両側バネとして扱う
+  L0?: number // 目標長さ（与えられない場合は weight から推定）
+  k?: number  // 個別バネ定数（省略可）
 }
 
 interface Force3DWordGraphProps {
@@ -266,25 +270,37 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         }
       }
 
-      // バネ
+      // バネ（テンセグリティ: 片側拘束対応）
       for (let k = 0; k < linksRef.current.length; k++) {
-        const { source, target, weight } = linksRef.current[k]
+        const { source, target, weight, mode, L0: L0in, k: kin } = linksRef.current[k]
         const i = source * 3
         const j = target * 3
         const dx = p[j] - p[i]
         const dy = p[j + 1] - p[i + 1]
         const dz = p[j + 2] - p[i + 2]
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-6
-        // 重みが大きいほど近い目標長＆強い引力。弱い結合は長い目標長・弱い引力
-        const wAmp = Math.pow(Math.max(0, Math.min(1, weight)), Math.max(0.1, emotionPower))
-        // 目標長: 強い結合→restLength, 弱い結合→最大2*restLength まで延長
-        const L0 = Math.max(10, restLength * (1 + (1 - weight)))
-        const x = dist - L0
-        // 有効バネ定数: ノード次数で正規化（密結合ハブの吸込み抑制）
+        const wClamped = Math.max(0, Math.min(1, weight))
+        const wAmp = Math.pow(wClamped, Math.max(0.1, emotionPower))
+        // 既定 L0/k を推定（リンク固有値優先）
+        const L0guess = Math.max(10, restLength * (mode === 'compression' ? (1 + (1 - wClamped)) : (1 - 0.5 * wClamped)))
+        const L0 = Number.isFinite(L0in as number) ? (L0in as number) : L0guess
         const sums = nodeWeightedScaleRef.current
         const degNorm = sums ? (1 / Math.max(1, Math.sqrt((sums[source] || 0) + (sums[target] || 0)))) : 1
-        const kEff = springK * (0.2 + 0.8 * wAmp) * degNorm
-        const force = kEff * x
+        const kBase = springK * (0.2 + 0.8 * wAmp) * degNorm
+        const kEff = Number.isFinite(kin as number) ? (kin as number) : kBase
+
+        let force = 0
+        const x = dist - L0
+        if (mode === 'tension') {
+          // 張力のみ: 伸びたときだけ引く
+          if (x > 0) force = kEff * x
+        } else if (mode === 'compression') {
+          // 圧縮のみ: 縮んだときだけ押す（負のx）
+          if (x < 0) force = kEff * x
+        } else {
+          // 従来の両側バネ
+          force = kEff * x
+        }
         const fx = (force * dx) / dist
         const fy = (force * dy) / dist
         const fz = (force * dz) / dist

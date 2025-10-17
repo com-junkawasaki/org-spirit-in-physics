@@ -7,7 +7,7 @@ import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
 // Force3D 用型（型のみローカル定義して実行時依存を最小化）
 interface WordNode { id: string; label: string; scale: number }
-interface WordLink { source: number; target: number; weight: number }
+interface WordLink { source: number; target: number; weight: number; mode?: 'tension' | 'compression'; L0?: number; k?: number }
 
 // Force3D コンポーネントは選択時にのみ遅延読み込み
 
@@ -487,16 +487,44 @@ export default function TimelineVisualization({
     let eMin = Infinity, eMax = -Infinity
     for (const p of rawPairs) { if (p.wEmotion < eMin) eMin = p.wEmotion; if (p.wEmotion > eMax) eMax = p.wEmotion }
     const eDen = eMax - eMin || 1
-    const links: WordLink[] = []
-    for (const p of rawPairs) {
+    // テンセグリティ: 上位の感情結合を張力ケーブル、少数の構造補完を圧縮ストラットに分類
+    const combined: Array<{ i: number; j: number; w: number; wE: number; wS: number }> = rawPairs.map(p => {
       const wE = (p.wEmotion - eMin) / eDen
       let w = Math.max(0, Math.min(1, emotionMix * wE + (1 - emotionMix) * p.wStruct))
       w = Math.pow(w, Math.max(0.1, weightGamma))
-      links.push({ source: p.i, target: p.j, weight: w })
-    }
+      return { i: p.i, j: p.j, w, wE, wS: p.wStruct }
+    })
+
+    // 上位p%を tension、ランダムにわずかを compression
+    const tensionFrac = 0.35
+    const compressionFrac = 0.06
+    const sortedByE = [...combined].sort((a, b) => b.wE - a.wE)
+    const Tcount = Math.max(1, Math.floor(sortedByE.length * tensionFrac))
+    const Ccount = Math.max(1, Math.floor(sortedByE.length * compressionFrac))
+
+    const tensionSet = new Set(sortedByE.slice(0, Tcount).map(x => `${x.i}-${x.j}`))
+    // 圧縮は構造の遠さを優先（wS低→遠い）から抽出
+    const sortedBySAsc = [...combined].sort((a, b) => a.wS - b.wS)
+    const compressionSet = new Set(sortedBySAsc.slice(0, Ccount).map(x => `${x.i}-${x.j}`))
+
+    const links: WordLink[] = combined.map((p) => {
+      const key = `${p.i}-${p.j}`
+      if (tensionSet.has(key)) {
+        const L0 = Math.max(10, restLength * (1 - 0.4 * Math.pow(p.wE, 2)))
+        const k = springK * (0.4 + 0.6 * Math.pow(p.w, 2))
+        return { source: p.i, target: p.j, weight: p.w, mode: 'tension', L0, k }
+      }
+      if (compressionSet.has(key)) {
+        const L0 = Math.max(10, restLength * (1 + 0.6 * (1 - p.wS)))
+        const k = springK * (0.6 + 0.8 * (1 - p.wS))
+        return { source: p.i, target: p.j, weight: p.w, mode: 'compression', L0, k }
+      }
+      // それ以外は従来の両側バネ
+      return { source: p.i, target: p.j, weight: p.w }
+    })
 
     return { nodes, links }
-  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma])
+  }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, emotionMix, weightGamma, restLength, springK])
 
   // KPIカードレンダリング
   const renderKPICards = React.useCallback(() => {
