@@ -424,7 +424,7 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       };
       
       if (relatedPhysiological.length > 0) {
-        const allValues = relatedPhysiological.flatMap(p => Object.values(p.channels));
+        const allValues = relatedPhysiological.flatMap(p => Object.values(p.channels)) as number[];
         physiologicalValues.average = allValues.reduce((sum, val) => sum + val, 0) / allValues.length;
         physiologicalValues.max = Math.max(...allValues);
         physiologicalValues.min = Math.min(...allValues);

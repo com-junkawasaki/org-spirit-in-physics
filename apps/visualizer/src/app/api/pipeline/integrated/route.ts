@@ -22,7 +22,15 @@ export async function POST(request: NextRequest) {
     }
 
     const pipelineId = `pipeline_${participantId}_${Date.now()}`;
-    const results = {
+    const results: {
+      pipelineId: string;
+      participantId: string;
+      status: string;
+      startTime: string;
+      phases: Record<string, unknown>;
+      summary: Record<string, unknown>;
+      error?: string;
+    } = {
       pipelineId,
       participantId,
       status: 'running',
