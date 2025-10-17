@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/layout/PageLayout'
 import TimelineVisualization from '@/components/TimelineVisualization'
 
 export default function ForceTimelinePage() {
-  const [participantId, setParticipantId] = useState<string>('2a0d7a69-f953-4c29-87a5-8a8e4e8bd413')
+  const [participantId, setParticipantId] = useState<string>('144b325f-5966-4d59-a629-f2ca421388cc')
   const inputId = useId()
   const [options, setOptions] = useState<Array<{ id: string; label: string }>>([])
   const [loading, setLoading] = useState<boolean>(false)
@@ -69,7 +69,7 @@ export default function ForceTimelinePage() {
         height={560}
         forceMode="force-3d-typegpu"
         hideFilters
-        useDemo
+        useDemo={false}
       />
     </DashboardLayout>
   )

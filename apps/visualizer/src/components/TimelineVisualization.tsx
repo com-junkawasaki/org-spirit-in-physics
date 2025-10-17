@@ -194,24 +194,45 @@ export default function TimelineVisualization({
   const fetchTimelineData = React.useCallback(async () => {
     try {
       setLoading(true)
+      console.log('TimelineVisualization: Starting data fetch for participant:', participantId)
       // API優先、失敗時・useDemo時はローカル生成でフォールバック
       const apiUrl = useDemo
         ? `/api/participants/${participantId}/timeline?demo=1`
         : `/api/participants/${participantId}/timeline`
+      console.log('TimelineVisualization: API URL:', apiUrl)
       let ok = false
       try {
         const response = await fetch(apiUrl)
+        console.log('TimelineVisualization: API response status:', response.status)
         const result = await response.json()
+        console.log('TimelineVisualization: API result:', result)
         if (result?.success && Array.isArray(result.data?.timelineData)) {
-          setData(result.data.timelineData)
+          console.log('TimelineVisualization: Converting data, count:', result.data.timelineData.length)
+          // 短縮フィールドをTimelineDataPoint形式に変換
+          const convertedData = result.data.timelineData.map((item: any) => ({
+            timestamp: item.t || item.timestamp,
+            word: item.w || item.word,
+            reactionTime: 0, // デフォルト値
+            hasResponse: true, // デフォルト値
+            emotions: item.em || item.emotions || [],
+            physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
+            reactionValue: item.rv || item.reactionValue || 0,
+            eventType: item.e || item.eventType,
+            metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
+          }))
+          console.log('TimelineVisualization: Converted data sample:', convertedData[0])
+          setData(convertedData)
           ok = true
           if (Array.isArray(result.data.metadata?.errors) && result.data.metadata.errors.length > 0) {
             setError(`警告: 一部データ取得に失敗しました: ${result.data.metadata.errors.join('; ')}`)
           } else {
             setError(null)
           }
+        } else {
+          console.log('TimelineVisualization: API response not successful or no data')
         }
-      } catch {
+      } catch (error) {
+        console.error('TimelineVisualization: API fetch error:', error)
         // noop -> フォールバックへ
       }
 
@@ -1929,9 +1950,13 @@ export default function TimelineVisualization({
 
   // データ取得
   useEffect(() => {
-    fetchTimelineData()
-    fetchWordEmbeddings()
-  }, [fetchTimelineData, fetchWordEmbeddings])
+    console.log('TimelineVisualization: useEffect triggered, mounted:', mounted)
+    if (mounted) {
+      console.log('TimelineVisualization: Calling fetchTimelineData')
+      fetchTimelineData()
+      fetchWordEmbeddings()
+    }
+  }, [fetchTimelineData, fetchWordEmbeddings, mounted])
 
   // 時間範囲初期化
   useEffect(() => {
