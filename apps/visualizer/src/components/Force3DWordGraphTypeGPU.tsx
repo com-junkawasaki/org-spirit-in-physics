@@ -11,7 +11,7 @@ export interface WordNode {
   id: string
   label: string
   scale: number // 単語スケール（ノード半径・重み）
-  axis?: [number, number, number] // 視覚方向（emotion PCA等で与える）
+  axis?: [number, number, number] // 視覚方向
   fixed?: boolean
   initial?: [number, number, number]
   color?: string
@@ -52,10 +52,6 @@ interface Force3DWordGraphTypeGPUProps {
     minSep?: number
     sepK?: number
   }
-  // 感情類似の影響倍率（links.weight への指数影響）
-  emotionPower?: number
-  // 感情場（アンカーに基づく色分布）
-  emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number }
 }
 
 export default function Force3DWordGraphTypeGPU({
@@ -64,8 +60,7 @@ export default function Force3DWordGraphTypeGPU({
   width = 1000,
   height = 600,
   background = '#ffffff',
-  physics,
-  emotionPower = 1
+  physics
 }: Force3DWordGraphTypeGPUProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const deviceRef = useRef<GPUDevice | null>(null)
@@ -295,7 +290,6 @@ export default function Force3DWordGraphTypeGPU({
             minSep: f32,
             sepK: f32,
             delta: f32,
-            emotionPower: f32,
           }
           
           @group(0) @binding(0) var<storage, read_write> nodes: array<Node>;
@@ -344,7 +338,7 @@ export default function Force3DWordGraphTypeGPU({
               let dist = length(dx) + 1e-6;
               
               let wClamped = clamp(link.weight, 0.0, 1.0);
-              let wAmp = pow(wClamped, max(0.1, params.emotionPower));
+              let wAmp = wClamped;
               let L0guess = max(10.0, params.restLength * select(
                 1.0 - 0.7 * wClamped,
                 1.0 + (1.0 - wClamped) * 1.2,
@@ -492,7 +486,7 @@ export default function Force3DWordGraphTypeGPU({
           const { springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter, shellKOuter, radialOutK, minSep, sepK } = physicsRef.current
           const paramsData = new Float32Array([
             springK, repulsionK, damping, restLength, maxSpeed, shellRadius, shellK, shellRadiusOuter,
-            shellKOuter, radialOutK, minSep, sepK, delta, emotionPower, 0, 0 // padding
+            shellKOuter, radialOutK, minSep, sepK, delta, 0, 0, 0 // padding
           ])
           
           // バッファにデータを書き込み
@@ -686,7 +680,7 @@ export default function Force3DWordGraphTypeGPU({
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current)
     }
-  }, [width, height, background, emotionPower])
+  }, [width, height, background])
 
   // 物理パラメータの差分反映
   useEffect(() => {

@@ -576,7 +576,7 @@ export default function TimelineVisualization({
     }
 
     // --- Spectral Embedding（ラプラシアンの固有ベクトル）で初期3D座標を与える ---
-    if (true) { // Spectral initialization always enabled
+    // Spectral initialization always enabled
       const words = nodes.map(n => n.label)
       const V = words.map(w => normalizedEmotionVec[w] || new Array(10).fill(0))
       const n = words.length
@@ -652,57 +652,9 @@ export default function TimelineVisualization({
       for (let i = 0; i < n; i++) {
         nodes[i].initial = [e2[i] * scale, e3[i] * scale, e4[i] * scale]
       }
-    }
+    
 
-    // 感情アンカー（2Dマップを球面へ射影）
-    const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
-      { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
-      { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
-      { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
-      { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
-      { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
-      { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
-      { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
-      { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
-      { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
-      { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
-    ]
-    // アンカー→内部10感情キーの正規マッピング
-    const anchorToKey: Record<string, typeof EMOTION_KEYS[number]> = {
-      Joy: 'joy',
-      Sadness: 'sadness',
-      Anger: 'anger',
-      Fear: 'fear',
-      Disgust: 'disgust',
-      Calmness: 'calm',
-      Interest: 'focus',
-      Surprise: 'surprise',
-      Confusion: 'confusion',
-      Determination: 'focus',
-    }
-    const anchorRadius = shellRadius // 球殻上に配置
-    const toSphere = (x01: number, y01: number): [number, number, number] => {
-      const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
-      const v = (y01 - 0.5) * Math.PI // 縦
-      const cx = Math.cos(v) * Math.cos(u)
-      const cy = Math.cos(v) * Math.sin(u)
-      const cz = Math.sin(v)
-      return [anchorRadius * cx, anchorRadius * cy, anchorRadius * cz]
-    }
-    const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-      const [x, y, z] = toSphere(a.x, a.y)
-      return {
-        id: `A${idx}`,
-        label: a.name,
-        scale: 6,
-        axis: undefined,
-        fixed: true,
-        initial: [x, y, z],
-        color: a.color,
-      }
-    })
-
-    // 全結合 + 10感情を統合した単一エッジ（強スコア=強結合）
+    // 全結合（強スコア=強結合）
     // まず全ペアの生の感情結合スコアを計算
     const rawPairs: Array<{ i: number; j: number; wEmotion: number; wStruct: number }> = []
     for (let i = 0; i < nodes.length; i++) {
@@ -781,27 +733,7 @@ export default function TimelineVisualization({
       return { source: p.i, target: p.j, weight: p.w }
     })
 
-    // アンカー追加と接続
-    const baseOffset = nodes.length
-    const allNodes = [...anchorNodes, ...nodes]
-    for (let ai = 0; ai < anchorNodes.length; ai++) {
-      const anchor = anchorNodes[ai]
-      const anchorIndex = ai
-      const key = anchorToKey[anchor.label] as typeof EMOTION_KEYS[number] | undefined
-      const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
-      for (let wi = 0; wi < nodes.length; wi++) {
-        const wordIndex = baseOffset + wi
-        const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
-        const sim = kIdx >= 0 ? ei[kIdx] : (ei.reduce((s, x) => s + x, 0) / Math.max(1, ei.length))
-        const w = Math.max(0, Math.min(1, sim))
-        if (w < 0.15) continue // 極弱リンクをスキップ
-        const L0 = Math.max(10, restLength * (1 - 0.6 * w))
-        const k = springK * (0.3 + 0.7 * w)
-        links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
-      }
-    }
-
-    return { nodes: allNodes, links }
+    return { nodes, links }
   }, [data, alpha, gamma, lambda, eta, embeddingsByWord, emotionGain, restLength, springK, shellRadius])
 
   // 3Dフォース用 完全グラフデータ生成（語ごとスケール、辺スケール） - 重複削除
@@ -2478,12 +2410,12 @@ export default function TimelineVisualization({
 
 
         {visualizationMode === 'force-3d-typegpu' && mounted && (() => {
-          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number; minSep?: number; sepK?: number }; emotionPower?: number; emotionField?: { enabled?: boolean; radius?: number; sigma?: number; alpha?: number } }
+          type Force3DProps = { nodes: WordNode[]; links: WordLink[]; width: number; height: number; physics: { springK: number; repulsionK: number; damping: number; restLength: number; maxSpeed: number; shellRadius?: number; shellK?: number; shellRadiusOuter?: number; shellKOuter?: number; radialOutK?: number; constraintIters?: number; constraintStiffness?: number; torusR?: number; torusr?: number; torusK?: number; minSep?: number; sepK?: number } }
           const Force3D = dynamic<Force3DProps>(() => import('./Force3DWordGraphTypeGPU.tsx') as unknown as Promise<{ default: React.ComponentType<Force3DProps> }>, { ssr: false })
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.5, shellKOuter: Math.max(0, shellK - 1.5), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0, minSep, sepK }} emotionPower={emotionGain} emotionField={{ enabled: true, radius: 1200, sigma: 220, alpha: 0.35 }} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.5, shellKOuter: Math.max(0, shellK - 1.5), radialOutK, constraintIters, constraintStiffness, torusR: shellRadius, torusr: Math.max(20, shellRadius * 0.3), torusK: 2.0, minSep, sepK }} />
             </div>
           )
         })()}

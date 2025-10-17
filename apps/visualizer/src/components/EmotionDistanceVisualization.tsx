@@ -4,7 +4,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 
 // 3D可視化コンポーネントの動的インポート
@@ -18,7 +18,7 @@ interface EmotionDistanceVisualizationProps {
   experimentId?: string;
   width?: number;
   height?: number;
-  method?: 'cosine' | 'weighted_cosine' | 'gower' | 'combined';
+  method?: 'cosine' | 'weighted_cosine' | 'gower' | 'combined' | 'fusion';
   embeddingMethod?: 'pca' | 'umap' | 'force';
   dimensions?: 2 | 3;
   k?: number;
@@ -78,6 +78,11 @@ export default function EmotionDistanceVisualization({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  // ローカルコントロール状態（親未管理でも動作するように）
+  const [methodLocal, setMethodLocal] = useState<Required<EmotionDistanceVisualizationProps>['method']>(method);
+  const [embeddingLocal, setEmbeddingLocal] = useState<Required<EmotionDistanceVisualizationProps>['embeddingMethod']>(embeddingMethod);
+  const [dimensionsLocal, setDimensionsLocal] = useState<Required<EmotionDistanceVisualizationProps>['dimensions']>(dimensions);
+  const [kLocal, setKLocal] = useState<number>(k);
 
   // Merkle DAG: components.emotion_distance_visualization.data_fetching
   // データの取得
@@ -94,10 +99,10 @@ export default function EmotionDistanceVisualization({
         body: JSON.stringify({
           participantId,
           experimentId,
-          method,
-          embeddingMethod,
-          dimensions,
-          k,
+          method: methodLocal,
+          embeddingMethod: embeddingLocal,
+          dimensions: dimensionsLocal,
+          k: kLocal,
           gamma,
           alpha,
           topKEmotions
@@ -121,7 +126,7 @@ export default function EmotionDistanceVisualization({
     } finally {
       setLoading(false);
     }
-  }, [participantId, experimentId, method, embeddingMethod, dimensions, k, gamma, alpha, topKEmotions]);
+  }, [participantId, experimentId, methodLocal, embeddingLocal, dimensionsLocal, kLocal, gamma, alpha, topKEmotions]);
 
   // Merkle DAG: components.emotion_distance_visualization.effect_hooks
   // エフェクトフック
@@ -251,7 +256,6 @@ export default function EmotionDistanceVisualization({
             minSep: 40,
             sepK: 3000
           }}
-          emotionPower={1}
         />
       </div>
 
@@ -263,16 +267,15 @@ export default function EmotionDistanceVisualization({
               Method
             </div>
             <select
-              value={method}
-              onChange={(e) => {
-                // パラメータ変更時の再計算は親コンポーネントで処理
-              }}
+              value={methodLocal}
+              onChange={(e) => setMethodLocal(e.target.value as EmotionDistanceVisualizationProps['method'])}
               className="w-full border rounded px-2 py-1 text-sm"
             >
               <option value="cosine">Cosine Distance</option>
               <option value="weighted_cosine">Weighted Cosine</option>
               <option value="gower">Gower Distance</option>
               <option value="combined">Combined (Cosine + Soft-DTW)</option>
+              <option value="fusion">Fusion (Kernel CKA)</option>
             </select>
           </div>
 
@@ -281,10 +284,8 @@ export default function EmotionDistanceVisualization({
               Embedding
             </div>
             <select
-              value={embeddingMethod}
-              onChange={(e) => {
-                // パラメータ変更時の再計算は親コンポーネントで処理
-              }}
+              value={embeddingLocal}
+              onChange={(e) => setEmbeddingLocal(e.target.value as EmotionDistanceVisualizationProps['embeddingMethod'])}
               className="w-full border rounded px-2 py-1 text-sm"
             >
               <option value="pca">PCA</option>
@@ -298,10 +299,8 @@ export default function EmotionDistanceVisualization({
               Dimensions
             </div>
             <select
-              value={dimensions}
-              onChange={(e) => {
-                // パラメータ変更時の再計算は親コンポーネントで処理
-              }}
+              value={dimensionsLocal}
+              onChange={(e) => setDimensionsLocal(Number(e.target.value) as 2 | 3)}
               className="w-full border rounded px-2 py-1 text-sm"
             >
               <option value={2}>2D</option>
@@ -317,10 +316,8 @@ export default function EmotionDistanceVisualization({
               type="number"
               min="3"
               max="20"
-              value={k}
-              onChange={(e) => {
-                // パラメータ変更時の再計算は親コンポーネントで処理
-              }}
+              value={kLocal}
+              onChange={(e) => setKLocal(Number(e.target.value))}
               className="w-full border rounded px-2 py-1 text-sm"
             />
           </div>
