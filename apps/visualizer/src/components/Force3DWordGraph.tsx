@@ -13,6 +13,7 @@ export interface WordNode {
   id: string
   label: string
   scale: number // 単語スケール（ノード半径・重み）
+  axis?: [number, number, number] // 視覚方向（emotion PCA等で与える）
 }
 
 export interface WordLink {
@@ -53,6 +54,10 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
   const controlsRef = useRef<OrbitControls | null>(null)
 
   const nodeMeshesRef = useRef<THREE.Mesh[]>([])
+  const nodeAxesRef = useRef<THREE.Vector3[]>([])
+  const capInMeshesRef = useRef<THREE.Mesh[]>([])
+  const capOutMeshesRef = useRef<THREE.Mesh[]>([])
+  const capOffsetRef = useRef<number[]>([])
   const labelSpritesRef = useRef<THREE.Sprite[]>([])
   const lineGeometryRef = useRef<THREE.BufferGeometry | null>(null)
   const linePositionsRef = useRef<Float32Array | null>(null)
@@ -183,15 +188,45 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
     }
 
     // ノード
-    // 正12面体ジオメトリ（球から変更）
-    const unitGeo = new THREE.DodecahedronGeometry(1, 0)
-    nodeMeshesRef.current = nodesRef.current.map((n) => {
+    // 12面の長方形（正12角柱の側面のみを使用）
+    // 半径1, 高さ2, 12セグメント, 開放端（上下フタなし）
+    const unitGeo = new THREE.CylinderGeometry(1, 1, 2, 12, 1, true)
+    const yAxis = new THREE.Vector3(0, 1, 0)
+    const capGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.3, 12, 1, false)
+    const capMatIn = new THREE.MeshStandardMaterial({ color: new THREE.Color('#ef4444') })
+    const capMatOut = new THREE.MeshStandardMaterial({ color: new THREE.Color('#10b981') })
+
+    nodeAxesRef.current = []
+    capInMeshesRef.current = []
+    capOutMeshesRef.current = []
+    capOffsetRef.current = []
+    nodeMeshesRef.current = nodesRef.current.map((n, idx) => {
       const color = colorForScaleRef.current(n.scale)
       const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.2 })
       const mesh = new THREE.Mesh(unitGeo, mat)
       const radius = Math.max(2, Math.min(10, 2 + n.scale))
       mesh.scale.set(radius, radius, radius)
+      // 感情主方向軸（提供なければランダム）
+      const ax = (n.axis
+        ? new THREE.Vector3(n.axis[0], n.axis[1], n.axis[2])
+        : new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1)
+      ).normalize()
+      const q = new THREE.Quaternion().setFromUnitVectors(yAxis, ax)
+      mesh.quaternion.copy(q)
       scene.add(mesh)
+
+      // in/out キャップ
+      const capOffset = radius // 軸方向のオフセット（中心→端）
+      capOffsetRef.current[idx] = capOffset
+      nodeAxesRef.current[idx] = ax
+      const capIn = new THREE.Mesh(capGeo, capMatIn)
+      const capOut = new THREE.Mesh(capGeo, capMatOut)
+      capIn.quaternion.copy(q)
+      capOut.quaternion.copy(q)
+      scene.add(capIn)
+      scene.add(capOut)
+      capInMeshesRef.current[idx] = capIn
+      capOutMeshesRef.current[idx] = capOut
       return mesh
     })
 
@@ -391,6 +426,17 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
           const lerp = cur + (targetScale - cur) * 0.1
           mesh.scale.set(lerp, lerp, lerp)
         }
+        // in/out キャップの位置更新（ローカル軸方向±）
+        const ax = nodeAxesRef.current[i]
+        const off = capOffsetRef.current[i] || 0
+        const capIn = capInMeshesRef.current[i]
+        const capOut = capOutMeshesRef.current[i]
+        if (ax && capIn && capOut) {
+          const vx = ax.x * off, vy = ax.y * off, vz = ax.z * off
+          capIn.position.set(p[i * 3] - vx, p[i * 3 + 1] - vy, p[i * 3 + 2] - vz)
+          capOut.position.set(p[i * 3] + vx, p[i * 3 + 1] + vy, p[i * 3 + 2] + vz)
+        }
+
         const label = labelSpritesRef.current[i]
         if (label) label.position.set(p[i * 3], p[i * 3 + 1] + 12, p[i * 3 + 2])
       }

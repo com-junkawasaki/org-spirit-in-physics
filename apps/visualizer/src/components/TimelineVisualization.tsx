@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
 // Force3D 用型（型のみローカル定義して実行時依存を最小化）
-interface WordNode { id: string; label: string; scale: number }
+interface WordNode { id: string; label: string; scale: number; axis?: [number, number, number] }
 interface WordLink { source: number; target: number; weight: number; mode?: 'tension' | 'compression'; L0?: number; k?: number }
 
 // Force3D コンポーネントは選択時にのみ遅延読み込み
@@ -372,7 +372,8 @@ export default function TimelineVisualization({
       id: String(idx),
       label: n.word,
       // 0.5〜6.0程度に正規化（視認性のため）
-      scale: 0.5 + 5.5 * ((n.raw - rawMin) / denom)
+      scale: 0.5 + 5.5 * ((n.raw - rawMin) / denom),
+      axis: undefined,
     }))
 
     // 連続イベントから w_I -> w_O を抽出し、エッジ重みを川崎モデルで加算
@@ -451,6 +452,88 @@ export default function TimelineVisualization({
     Object.keys(wordEmotionSum).forEach((w) => {
       normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
     })
+
+    // --- PCA: 全語の感情行列 -> 上位3主成分スコアを方向ベクトルに ---
+    const wordsWithVec = nodes.map(n => ({ n, v: normalizedEmotionVec[n.label] || new Array(10).fill(0) }))
+    const dim = 10
+    if (wordsWithVec.length > 0) {
+      // 行列 X: rows=語, cols=10感情（平均0へ中心化）
+      const means = new Array(dim).fill(0)
+      for (const { v } of wordsWithVec) for (let j = 0; j < dim; j++) means[j] += (v[j] || 0)
+      for (let j = 0; j < dim; j++) means[j] /= Math.max(1, wordsWithVec.length)
+      const X = wordsWithVec.map(({ v }) => means.map((m, j) => (v[j] || 0) - m))
+
+      // 共分散 C = (X^T X) / (n-1)
+      const C = Array.from({ length: dim }, () => new Array(dim).fill(0))
+      for (let i = 0; i < dim; i++) {
+        for (let j = i; j < dim; j++) {
+          let s = 0
+          for (let r = 0; r < X.length; r++) s += X[r][i] * X[r][j]
+          const val = s / Math.max(1, X.length - 1)
+          C[i][j] = val
+          C[j][i] = val
+        }
+      }
+
+      // パワー反復で上位3固有ベクトル（簡易）
+      const powerIter = (A: number[][], iters = 32): number[] => {
+        let v = Array.from({ length: dim }, () => Math.random())
+        // 正規化
+        const normv = () => {
+          const nrm = Math.hypot(...v)
+          if (nrm > 0) v = v.map(x => x / nrm)
+        }
+        normv()
+        for (let t = 0; t < iters; t++) {
+          const Av = new Array(dim).fill(0)
+          for (let i = 0; i < dim; i++) {
+            let s = 0
+            for (let j = 0; j < dim; j++) s += A[i][j] * v[j]
+            Av[i] = s
+          }
+          v = Av
+          normv()
+        }
+        return v
+      }
+      // 逐次直交化（一次・二次・三次）
+      const dotv = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i], 0)
+      const sub = (a: number[], b: number[]) => a.map((x, i) => x - b[i])
+      const proj = (v: number[], u: number[]) => {
+        const c = dotv(v, u)
+        return u.map(x => c * x)
+      }
+      const v1 = powerIter(C)
+      // C を v1 に沿ってデフレート
+      const C2 = Array.from({ length: dim }, (_, i) => C[i].slice())
+      for (let i = 0; i < dim; i++) {
+        for (let j = 0; j < dim; j++) {
+          C2[i][j] -= v1[i] * v1[j] * dotv(v1, C.map(row => row[j])) // 近似的デフレ
+        }
+      }
+      const v2 = powerIter(C2)
+      // 二回目のデフレ
+      const C3 = Array.from({ length: dim }, (_, i) => C2[i].slice())
+      for (let i = 0; i < dim; i++) {
+        for (let j = 0; j < dim; j++) {
+          C3[i][j] -= v2[i] * v2[j] * dotv(v2, C2.map(row => row[j]))
+        }
+      }
+      const v3 = powerIter(C3)
+
+      // スコア = X * [v1,v2,v3]
+      const embed3 = wordsWithVec.map(({ n: node }, r) => {
+        const x = X[r]
+        const s1 = dotv(x, v1)
+        const s2 = dotv(x, v2)
+        const s3 = dotv(x, v3)
+        return { node, vec: [s1, s2, s3] as [number, number, number] }
+      })
+      for (const { node, vec } of embed3) {
+        const norm = Math.hypot(vec[0], vec[1], vec[2])
+        if (norm > 0) node.axis = [vec[0] / norm, vec[1] / norm, vec[2] / norm]
+      }
+    }
 
     // 全結合 + 10感情を統合した単一エッジ（強スコア=強結合）
     // まず全ペアの生の感情結合スコアを計算
