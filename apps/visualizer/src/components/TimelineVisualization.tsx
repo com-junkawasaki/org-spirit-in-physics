@@ -119,6 +119,7 @@ export default function TimelineVisualization({
   const [weightGamma, setWeightGamma] = useState(1.5) // 重みのダイナミックレンジ拡張
   const [shellRadius, setShellRadius] = useState(220)
   const [shellK, setShellK] = useState(4.0)
+  const [radialOutK, setRadialOutK] = useState(60)
   const [emotionGainMin, setEmotionGainMin] = useState(0.5)
   const [emotionGainMax, setEmotionGainMax] = useState(4.0)
   // 3D Force プリセット
@@ -569,14 +570,22 @@ export default function TimelineVisualization({
     // テンセグリティ: 上位の感情結合を張力ケーブル、少数の構造補完を圧縮ストラットに分類
     const combined: Array<{ i: number; j: number; w: number; wE: number; wS: number }> = rawPairs.map(p => {
       const wE = (p.wEmotion - eMin) / eDen
+      // 構造と感情のミックス
       let w = Math.max(0, Math.min(1, emotionMix * wE + (1 - emotionMix) * p.wStruct))
+      // 1) べき乗強調（既存）
       w = Math.pow(w, Math.max(0.1, weightGamma))
-      return { i: p.i, j: p.j, w, wE, wS: p.wStruct }
+      // 2) 強コントラスト（ロジスティック）: 中央0.5を境に急峻化
+      const a = 8 // 勾配（大きいほど0/1へ張り付く）
+      const b = 0.5
+      const wc = 1 / (1 + Math.exp(-a * (w - b)))
+      // 3) 底上げ/天井: 極弱はほぼ0、強は1に近づける
+      const wFinal = Math.min(1, Math.max(0, wc))
+      return { i: p.i, j: p.j, w: wFinal, wE, wS: p.wStruct }
     })
 
     // 上位p%を tension、ランダムにわずかを compression
-    const tensionFrac = 0.35
-    const compressionFrac = 0.06
+    const tensionFrac = 0.25
+    const compressionFrac = 0.08
     const sortedByE = [...combined].sort((a, b) => b.wE - a.wE)
     const Tcount = Math.max(1, Math.floor(sortedByE.length * tensionFrac))
     const Ccount = Math.max(1, Math.floor(sortedByE.length * compressionFrac))
@@ -1704,6 +1713,10 @@ export default function TimelineVisualization({
               <input type="number" step="0.1" value={shellK} onChange={(e) => setShellK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
             <label className="flex items-center space-x-2">
+              <span>RadialOutK</span>
+              <input type="number" step="1" value={radialOutK} onChange={(e) => setRadialOutK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
+            </label>
+            <label className="flex items-center space-x-2">
               <span>K</span>
               <input type="number" step="1" value={neighborsK} onChange={(e) => setNeighborsK(Number(e.target.value))} className="w-24 border rounded px-2 py-1" />
             </label>
@@ -1728,7 +1741,7 @@ export default function TimelineVisualization({
           const { nodes, links } = prepareForce3DGraph()
           return (
             <div className="border rounded overflow-hidden">
-              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK: 60 }} emotionPower={emotionGain} />
+              <Force3D nodes={nodes} links={links} width={width} height={Math.max(600, height)} physics={{ springK, repulsionK, damping, restLength, maxSpeed: 120, shellRadius, shellK, shellRadiusOuter: shellRadius * 1.6, shellKOuter: Math.max(0, shellK - 2), radialOutK }} emotionPower={emotionGain} />
             </div>
           )
         })()}

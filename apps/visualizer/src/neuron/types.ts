@@ -25,6 +25,7 @@ export interface EventNode {
   id: string
   timestamp: number
   word?: string
+  reactionTime?: number
   emotions?: { name: string; score: number }[]
   physiological?: { average?: number; max?: number; min?: number }
 }

@@ -321,11 +321,13 @@ export default function Force3DWordGraph({ nodes, links, width = 1000, height = 
         const wClamped = Math.max(0, Math.min(1, weight))
         const wAmp = Math.pow(wClamped, Math.max(0.1, emotionPower))
         // 既定 L0/k を推定（リンク固有値優先）
-        const L0guess = Math.max(10, restLength * (mode === 'compression' ? (1 + (1 - wClamped)) : (1 - 0.5 * wClamped)))
+        // 強結合→短いL0、弱結合→長いL0（コントラスト強化）
+        const L0guess = Math.max(10, restLength * (mode === 'compression' ? (1 + (1 - wClamped) * 1.2) : (1 - 0.7 * wClamped)))
         const L0 = Number.isFinite(L0in as number) ? (L0in as number) : L0guess
         const sums = nodeWeightedScaleRef.current
         const degNorm = sums ? (1 / Math.max(1, Math.sqrt((sums[source] || 0) + (sums[target] || 0)))) : 1
-        const kBase = springK * (0.2 + 0.8 * wAmp) * degNorm
+        // バネ定数もコントラスト強化（弱結合はかなり弱く、強結合は強く）
+        const kBase = springK * (0.1 + 0.9 * wAmp) * degNorm
         const kEff = Number.isFinite(kin as number) ? (kin as number) : kBase
 
         let force = 0
