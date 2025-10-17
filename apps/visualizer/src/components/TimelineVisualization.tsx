@@ -244,7 +244,7 @@ export default function TimelineVisualization({
             try {
               // 実際のデータから3Dグラフを生成
               const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
-              const jungWords = JUNG_STIMULUS_WORDS.slice(0, 20) // データ量を制限してデバッグしやすくする
+              const jungWords = JUNG_STIMULUS_WORDS // 全てのデータを表示
 
               // 集約（ノード指標）。全語を初期化し、セッション実データで加算
               const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
