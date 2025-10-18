@@ -83,7 +83,7 @@ export default function TimelineVisualization({
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   // 表示モードの状態
-  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'split'>('timeline')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'split' | 'compare'>('timeline')
 
   // ローディング状態
   if (loading) {
@@ -162,6 +162,7 @@ export default function TimelineVisualization({
               { id: 'timeline', label: '時系列統合', icon: '📈' },
               { id: 'force3d', label: '3D Force', icon: '⚡' },
               { id: 'split', label: '分割表示', icon: '📊' },
+              { id: 'compare', label: '前後比較', icon: '⚖️' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -178,6 +179,13 @@ export default function TimelineVisualization({
               </button>
             ))}
           </nav>
+        </div>
+
+        {/* タブコンテンツ（ダミーの欠落を修正）*/}
+        <div className="p-4">
+          {activeTab === 'timeline' && (
+            <div />
+          )}
         </div>
 
         {/* タブコンテンツ */}
@@ -336,67 +344,121 @@ export default function TimelineVisualization({
                       normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
                     })
 
-                    // 感情アンカー（2Dマップを球面へ射影）
-                    const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
-                      { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
-                      { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
-                      { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
-                      { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
-                      { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
-                      { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
-                      { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
-                      { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
-                      { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
-                      { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
-                    ]
-
-                    const anchorToKey: Record<string, typeof EMOTION_KEYS[number]> = {
-                      Joy: 'joy',
-                      Sadness: 'sadness',
-                      Anger: 'anger',
-                      Fear: 'fear',
-                      Disgust: 'disgust',
-                      Calmness: 'calm',
-                      Interest: 'focus',
-                      Surprise: 'surprise',
-                      Confusion: 'confusion',
-                      Determination: 'focus',
+                    // 感情の色空間配置（感情ベクトルに基づく3D配置）
+                    const emotionColors: Record<string, string> = {
+                      joy: '#f59e0b',
+                      sadness: '#1f2937',
+                      anger: '#ef4444',
+                      fear: '#a78bfa',
+                      surprise: '#10b981',
+                      disgust: '#6b7280',
+                      calm: '#84cc16',
+                      focus: '#f59e0b',
+                      excitement: '#ec4899',
+                      confusion: '#6366f1'
                     }
 
-                    const anchorRadius = shellRadius // 球殻上に配置
-                    const toSphere = (x01: number, y01: number): [number, number, number] => {
-                      const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
-                      const v = (y01 - 0.5) * Math.PI // 縦
-                      const cx = Math.cos(v) * Math.cos(u)
-                      const cy = Math.cos(v) * Math.sin(u)
-                      const cz = Math.sin(v)
-                      return [anchorRadius * cx, anchorRadius * cy, anchorRadius * cz]
-                    }
+                    // 感情空間の主成分分析で配置を決定
+                    const emotionPCA = () => {
+                      const wordsWithVec = nodes.map(n => ({ n, v: normalizedEmotionVec[n.label] || new Array(10).fill(0) }))
+                      const dim = 10
+                      if (wordsWithVec.length === 0) return wordsWithVec.map(({ n }) => ({ n, vec: [0, 0, 0] as [number, number, number] }))
 
-                    const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-                      const [x, y, z] = toSphere(a.x, a.y)
-                      return {
-                        id: `A${idx}`,
-                        label: a.name,
-                        scale: 6,
-                        fixed: true,
-                        nodeType: 'anchor',
-                        initial: [x, y, z],
-                        color: a.color,
+                      // 行列 X: rows=語, cols=10感情（平均0へ中心化）
+                      const means = new Array(dim).fill(0)
+                      for (const { v } of wordsWithVec) for (let j = 0; j < dim; j++) means[j] += (v[j] || 0)
+                      for (let j = 0; j < dim; j++) means[j] /= Math.max(1, wordsWithVec.length)
+                      const X = wordsWithVec.map(({ v }) => means.map((m, j) => (v[j] || 0) - m))
+
+                      // 共分散 C = (X^T X) / (n-1)
+                      const C = Array.from({ length: dim }, () => new Array(dim).fill(0))
+                      for (let i = 0; i < dim; i++) {
+                        for (let j = i; j < dim; j++) {
+                          let s = 0
+                          for (let r = 0; r < X.length; r++) s += X[r][i] * X[r][j]
+                          const val = s / Math.max(1, X.length - 1)
+                          C[i][j] = val
+                          C[j][i] = val
+                        }
                       }
-                    })
+
+                      // パワー反復で上位3固有ベクトル（簡易）
+                      const powerIter = (A: number[][], iters = 32): number[] => {
+                        let v = Array.from({ length: dim }, () => Math.random())
+                        const normv = () => {
+                          const nrm = Math.hypot(...v)
+                          if (nrm > 0) v = v.map(x => x / nrm)
+                        }
+                        normv()
+                        for (let t = 0; t < iters; t++) {
+                          const Av = new Array(dim).fill(0)
+                          for (let i = 0; i < dim; i++) {
+                            let s = 0
+                            for (let j = 0; j < dim; j++) s += A[i][j] * v[j]
+                            Av[i] = s
+                          }
+                          v = Av
+                          normv()
+                        }
+                        return v
+                      }
+
+                      const dotv = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i], 0)
+                      const v1 = powerIter(C)
+                      const C2 = Array.from({ length: dim }, (_, i) => C[i].slice())
+                      for (let i = 0; i < dim; i++) {
+                        for (let j = 0; j < dim; j++) {
+                          C2[i][j] -= v1[i] * v1[j] * dotv(v1, C.map(row => row[j]))
+                        }
+                      }
+                      const v2 = powerIter(C2)
+                      const C3 = Array.from({ length: dim }, (_, i) => C2[i].slice())
+                      for (let i = 0; i < dim; i++) {
+                        for (let j = 0; j < dim; j++) {
+                          C3[i][j] -= v2[i] * v2[j] * dotv(v2, C2.map(row => row[j]))
+                        }
+                      }
+                      const v3 = powerIter(C3)
+
+                      // スコア = X * [v1,v2,v3]
+                      const embed3 = wordsWithVec.map(({ n: node }, r) => {
+                        const x = X[r]
+                        const s1 = dotv(x, v1)
+                        const s2 = dotv(x, v2)
+                        const s3 = dotv(x, v3)
+                        return { node, vec: [s1, s2, s3] as [number, number, number] }
+                      })
+
+                      // スケール調整と正規化
+                      const scale = shellRadius * 0.6
+                      return embed3.map(({ node, vec }) => {
+                        const norm = Math.hypot(vec[0], vec[1], vec[2])
+                        if (norm > 0) node.initial = [vec[0] / norm * scale, vec[1] / norm * scale, vec[2] / norm * scale]
+                        return { node, vec }
+                      })
+                    }
+
+                    // 感情の色に基づく配置（感情空間の中心に配置）
+                    const emotionAnchors = emotionPCA()
+                    const anchorNodes: WordNode[] = emotionAnchors.map(({ node }, idx) => ({
+                      ...node,
+                      scale: 8,
+                      fixed: true,
+                      nodeType: 'anchor',
+                      color: emotionColors[EMOTION_KEYS[idx]] || '#999999',
+                    }))
 
                     // アンカー追加と接続
                     const baseOffset = nodes.length
                     const allNodes = [...anchorNodes, ...nodes]
 
-                    // 感情結合に基づくリンク生成
-                    const links: WordLink[] = []
+                    // 感情結合に基づくリンク生成（感情アンカー → 単語ノード）
+                    const emotionLinks: WordLink[] = []
                     for (let ai = 0; ai < anchorNodes.length; ai++) {
                       const anchor = anchorNodes[ai]
                       const anchorIndex = ai
-                      const key = anchorToKey[anchor.label] as typeof EMOTION_KEYS[number] | undefined
-                      const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
+                      const key = EMOTION_KEYS[ai] // インデックスから感情キーを取得
+                      const kIdx = emotionIndex[key]
 
                       for (let wi = 0; wi < nodes.length; wi++) {
                         const wordIndex = baseOffset + wi
@@ -406,17 +468,116 @@ export default function TimelineVisualization({
                         if (w < 0.15) continue // 極弱リンクをスキップ
                         const L0 = Math.max(10, restLength * (1 - 0.6 * w))
                         const k = springK * (0.3 + 0.7 * w)
-                        links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
+                        emotionLinks.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
                       }
                     }
 
+                    // 単語間の関係性に基づくリンク生成（単語ノード → 単語ノード）
+                    const wordLinks: WordLink[] = []
+                    const wordNodes = nodes
+                    const wordToIndex = Object.fromEntries(wordNodes.map((n, i) => [n.label, baseOffset + i]))
+
+                    // 単語間の感情ベクトル類似度を計算
+                    for (let i = 0; i < wordNodes.length; i++) {
+                      for (let j = i + 1; j < wordNodes.length; j++) {
+                        const wordI = wordNodes[i].label
+                        const wordJ = wordNodes[j].label
+
+                        const vecI = normalizedEmotionVec[wordI] || new Array(10).fill(0)
+                        const vecJ = normalizedEmotionVec[wordJ] || new Array(10).fill(0)
+
+                        // コサイン類似度を計算
+                        const dot = vecI.reduce((sum, v, idx) => sum + v * (vecJ[idx] || 0), 0)
+                        const normI = Math.hypot(...vecI)
+                        const normJ = Math.hypot(...vecJ)
+                        const sim = (normI * normJ > 0) ? dot / (normI * normJ) : 0
+
+                        const w = Math.max(0, Math.min(1, (sim + 1) / 2)) // -1〜1を0〜1に正規化
+                        if (w < 0.1) continue // 弱い関連性はスキップ
+
+                        const L0 = Math.max(10, restLength * (1 + 0.8 * (1 - w))) // 類似度が高いほど近い距離
+                        const k = springK * (0.2 + 0.6 * w)
+                        wordLinks.push({
+                          source: wordToIndex[wordI],
+                          target: wordToIndex[wordJ],
+                          weight: w,
+                          mode: 'tension',
+                          L0,
+                          k
+                        })
+                      }
+                    }
+
+                    const links = [...emotionLinks, ...wordLinks]
                     return { nodes: allNodes, links }
                   }
 
                   const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
                   const { nodes, links } = generateForce3DGraph()
 
-                  console.log('3Dグラフデータ:', { nodes: nodes.length, links: links.length })
+                  // 感情空間に基づく背景色の計算
+                  const calculateBackgroundColor = () => {
+                    const avgEmotionVec = new Array(10).fill(0)
+
+                    // 全単語の感情ベクトルの平均を計算
+                    const wordNodes = nodes.filter(n => n.nodeType === 'word')
+                    for (const node of wordNodes) {
+                      const vec = normalizedEmotionVec[node.label]
+                      if (vec) {
+                        for (let i = 0; i < 10; i++) {
+                          avgEmotionVec[i] += vec[i] || 0
+                        }
+                      }
+                    }
+
+                    // 平均を計算
+                    for (let i = 0; i < 10; i++) {
+                      avgEmotionVec[i] /= Math.max(1, wordNodes.length)
+                    }
+
+                    // 感情の色を混合して背景色を決定
+                    const emotionColors: Record<string, [number, number, number]> = {
+                      joy: [245, 158, 11],      // #f59e0b
+                      sadness: [31, 41, 55],    // #1f2937
+                      anger: [239, 68, 68],     // #ef4444
+                      fear: [167, 139, 250],    // #a78bfa
+                      surprise: [16, 163, 74],  // #10b981
+                      disgust: [107, 114, 128], // #6b7280
+                      calm: [132, 204, 22],     // #84cc16
+                      focus: [245, 158, 11],    // #f59e0b
+                      excitement: [236, 72, 153], // #ec4899
+                      confusion: [99, 102, 241] // #6366f1
+                    }
+
+                    // 感情ベクトルに基づいて色を混合
+                    let r = 0, g = 0, b = 0
+                    let totalWeight = 0
+
+                    for (let i = 0; i < EMOTION_KEYS.length; i++) {
+                      const emotion = EMOTION_KEYS[i]
+                      const weight = Math.max(0, avgEmotionVec[i] || 0)
+                      const [cr, cg, cb] = emotionColors[emotion]
+
+                      r += cr * weight
+                      g += cg * weight
+                      b += cb * weight
+                      totalWeight += weight
+                    }
+
+                    if (totalWeight > 0) {
+                      r = Math.round(r / totalWeight)
+                      g = Math.round(g / totalWeight)
+                      b = Math.round(b / totalWeight)
+                    } else {
+                      // デフォルトの背景色（中間色）
+                      r = 240, g = 240, b = 240
+                    }
+
+                    return `rgb(${r}, ${g}, ${b})`
+                  }
+
+                  const backgroundColor = calculateBackgroundColor()
+                  console.log('3Dグラフデータ:', { nodes: nodes.length, links: links.length, backgroundColor })
 
                   return (
                     <div className="border rounded overflow-hidden">
@@ -425,6 +586,7 @@ export default function TimelineVisualization({
                         links={links}
                         width={width}
                         height={Math.max(500, height)}
+                        background={backgroundColor}
                         physics={{
                           springK,
                           repulsionK,
@@ -542,67 +704,121 @@ export default function TimelineVisualization({
                           normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
                         })
 
-                        // 感情アンカー（2Dマップを球面へ射影）
-                        const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
-                          { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
-                          { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
-                          { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
-                          { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
-                          { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
-                          { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
-                          { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
-                          { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
-                          { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
-                          { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
-                        ]
-
-                        const anchorToKey: Record<string, typeof EMOTION_KEYS[number]> = {
-                          Joy: 'joy',
-                          Sadness: 'sadness',
-                          Anger: 'anger',
-                          Fear: 'fear',
-                          Disgust: 'disgust',
-                          Calmness: 'calm',
-                          Interest: 'focus',
-                          Surprise: 'surprise',
-                          Confusion: 'confusion',
-                          Determination: 'focus',
+                        // 感情の色空間配置（感情ベクトルに基づく3D配置）
+                        const emotionColors: Record<string, string> = {
+                          joy: '#f59e0b',
+                          sadness: '#1f2937',
+                          anger: '#ef4444',
+                          fear: '#a78bfa',
+                          surprise: '#10b981',
+                          disgust: '#6b7280',
+                          calm: '#84cc16',
+                          focus: '#f59e0b',
+                          excitement: '#ec4899',
+                          confusion: '#6366f1'
                         }
 
-                        const anchorRadius = shellRadius // 球殻上に配置
-                        const toSphere = (x01: number, y01: number): [number, number, number] => {
-                          const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
-                          const v = (y01 - 0.5) * Math.PI // 縦
-                          const cx = Math.cos(v) * Math.cos(u)
-                          const cy = Math.cos(v) * Math.sin(u)
-                          const cz = Math.sin(v)
-                          return [anchorRadius * cx, anchorRadius * cy, anchorRadius * cz]
-                        }
+                        // 感情空間の主成分分析で配置を決定
+                        const emotionPCA = () => {
+                          const wordsWithVec = nodes.map(n => ({ n, v: normalizedEmotionVec[n.label] || new Array(10).fill(0) }))
+                          const dim = 10
+                          if (wordsWithVec.length === 0) return wordsWithVec.map(({ n }) => ({ n, vec: [0, 0, 0] as [number, number, number] }))
 
-                        const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-                          const [x, y, z] = toSphere(a.x, a.y)
-                          return {
-                            id: `A${idx}`,
-                            label: a.name,
-                            scale: 6,
-                            fixed: true,
-                            nodeType: 'anchor',
-                            initial: [x, y, z],
-                            color: a.color,
+                          // 行列 X: rows=語, cols=10感情（平均0へ中心化）
+                          const means = new Array(dim).fill(0)
+                          for (const { v } of wordsWithVec) for (let j = 0; j < dim; j++) means[j] += (v[j] || 0)
+                          for (let j = 0; j < dim; j++) means[j] /= Math.max(1, wordsWithVec.length)
+                          const X = wordsWithVec.map(({ v }) => means.map((m, j) => (v[j] || 0) - m))
+
+                          // 共分散 C = (X^T X) / (n-1)
+                          const C = Array.from({ length: dim }, () => new Array(dim).fill(0))
+                          for (let i = 0; i < dim; i++) {
+                            for (let j = i; j < dim; j++) {
+                              let s = 0
+                              for (let r = 0; r < X.length; r++) s += X[r][i] * X[r][j]
+                              const val = s / Math.max(1, X.length - 1)
+                              C[i][j] = val
+                              C[j][i] = val
+                            }
                           }
-                        })
+
+                          // パワー反復で上位3固有ベクトル（簡易）
+                          const powerIter = (A: number[][], iters = 32): number[] => {
+                            let v = Array.from({ length: dim }, () => Math.random())
+                            const normv = () => {
+                              const nrm = Math.hypot(...v)
+                              if (nrm > 0) v = v.map(x => x / nrm)
+                            }
+                            normv()
+                            for (let t = 0; t < iters; t++) {
+                              const Av = new Array(dim).fill(0)
+                              for (let i = 0; i < dim; i++) {
+                                let s = 0
+                                for (let j = 0; j < dim; j++) s += A[i][j] * v[j]
+                                Av[i] = s
+                              }
+                              v = Av
+                              normv()
+                            }
+                            return v
+                          }
+
+                          const dotv = (a: number[], b: number[]) => a.reduce((s, x, i) => s + x * b[i], 0)
+                          const v1 = powerIter(C)
+                          const C2 = Array.from({ length: dim }, (_, i) => C[i].slice())
+                          for (let i = 0; i < dim; i++) {
+                            for (let j = 0; j < dim; j++) {
+                              C2[i][j] -= v1[i] * v1[j] * dotv(v1, C.map(row => row[j]))
+                            }
+                          }
+                          const v2 = powerIter(C2)
+                          const C3 = Array.from({ length: dim }, (_, i) => C2[i].slice())
+                          for (let i = 0; i < dim; i++) {
+                            for (let j = 0; j < dim; j++) {
+                              C3[i][j] -= v2[i] * v2[j] * dotv(v2, C2.map(row => row[j]))
+                            }
+                          }
+                          const v3 = powerIter(C3)
+
+                          // スコア = X * [v1,v2,v3]
+                          const embed3 = wordsWithVec.map(({ n: node }, r) => {
+                            const x = X[r]
+                            const s1 = dotv(x, v1)
+                            const s2 = dotv(x, v2)
+                            const s3 = dotv(x, v3)
+                            return { node, vec: [s1, s2, s3] as [number, number, number] }
+                          })
+
+                          // スケール調整と正規化
+                          const scale = shellRadius * 0.4
+                          return embed3.map(({ node, vec }) => {
+                            const norm = Math.hypot(vec[0], vec[1], vec[2])
+                            if (norm > 0) node.initial = [vec[0] / norm * scale, vec[1] / norm * scale, vec[2] / norm * scale]
+                            return { node, vec }
+                          })
+                        }
+
+                        // 感情の色に基づく配置（感情空間の中心に配置）
+                        const emotionAnchors = emotionPCA()
+                        const anchorNodes: WordNode[] = emotionAnchors.map(({ node }, idx) => ({
+                          ...node,
+                          scale: 6,
+                          fixed: true,
+                          nodeType: 'anchor',
+                          color: emotionColors[EMOTION_KEYS[idx]] || '#999999',
+                        }))
 
                         // アンカー追加と接続
                         const baseOffset = nodes.length
                         const allNodes = [...anchorNodes, ...nodes]
 
-                        // 感情結合に基づくリンク生成
-                        const links: WordLink[] = []
+                        // 感情結合に基づくリンク生成（感情アンカー → 単語ノード）
+                        const emotionLinks: WordLink[] = []
                         for (let ai = 0; ai < anchorNodes.length; ai++) {
                           const anchor = anchorNodes[ai]
                           const anchorIndex = ai
-                          const key = anchorToKey[anchor.label] as typeof EMOTION_KEYS[number] | undefined
-                          const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
+                          const key = EMOTION_KEYS[ai] // インデックスから感情キーを取得
+                          const kIdx = emotionIndex[key]
 
                           for (let wi = 0; wi < nodes.length; wi++) {
                             const wordIndex = baseOffset + wi
@@ -612,15 +828,115 @@ export default function TimelineVisualization({
                             if (w < 0.15) continue // 極弱リンクをスキップ
                             const L0 = Math.max(10, restLength * (1 - 0.6 * w))
                             const k = springK * (0.3 + 0.7 * w)
-                            links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
+                            emotionLinks.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
                           }
                         }
 
+                        // 単語間の関係性に基づくリンク生成（単語ノード → 単語ノード）
+                        const wordLinks: WordLink[] = []
+                        const wordNodes = nodes
+                        const wordToIndex = Object.fromEntries(wordNodes.map((n, i) => [n.label, baseOffset + i]))
+
+                        // 単語間の感情ベクトル類似度を計算
+                        for (let i = 0; i < wordNodes.length; i++) {
+                          for (let j = i + 1; j < wordNodes.length; j++) {
+                            const wordI = wordNodes[i].label
+                            const wordJ = wordNodes[j].label
+
+                            const vecI = normalizedEmotionVec[wordI] || new Array(10).fill(0)
+                            const vecJ = normalizedEmotionVec[wordJ] || new Array(10).fill(0)
+
+                            // コサイン類似度を計算
+                            const dot = vecI.reduce((sum, v, idx) => sum + v * (vecJ[idx] || 0), 0)
+                            const normI = Math.hypot(...vecI)
+                            const normJ = Math.hypot(...vecJ)
+                            const sim = (normI * normJ > 0) ? dot / (normI * normJ) : 0
+
+                            const w = Math.max(0, Math.min(1, (sim + 1) / 2)) // -1〜1を0〜1に正規化
+                            if (w < 0.1) continue // 弱い関連性はスキップ
+
+                            const L0 = Math.max(10, restLength * (1 + 0.8 * (1 - w))) // 類似度が高いほど近い距離
+                            const k = springK * (0.2 + 0.6 * w)
+                            wordLinks.push({
+                              source: wordToIndex[wordI],
+                              target: wordToIndex[wordJ],
+                              weight: w,
+                              mode: 'tension',
+                              L0,
+                              k
+                            })
+                          }
+                        }
+
+                        const links = [...emotionLinks, ...wordLinks]
                         return { nodes: allNodes, links }
                       }
 
                       const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
                       const { nodes, links } = generateForce3DGraph()
+
+                      // 感情空間に基づく背景色の計算（分割表示用）
+                      const calculateBackgroundColorSplit = () => {
+                        const avgEmotionVec = new Array(10).fill(0)
+
+                        // 全単語の感情ベクトルの平均を計算
+                        const wordNodes = nodes.filter(n => n.nodeType === 'word')
+                        for (const node of wordNodes) {
+                          const vec = normalizedEmotionVec[node.label]
+                          if (vec) {
+                            for (let i = 0; i < 10; i++) {
+                              avgEmotionVec[i] += vec[i] || 0
+                            }
+                          }
+                        }
+
+                        // 平均を計算
+                        for (let i = 0; i < 10; i++) {
+                          avgEmotionVec[i] /= Math.max(1, wordNodes.length)
+                        }
+
+                        // 感情の色を混合して背景色を決定
+                        const emotionColors: Record<string, [number, number, number]> = {
+                          joy: [245, 158, 11],      // #f59e0b
+                          sadness: [31, 41, 55],    // #1f2937
+                          anger: [239, 68, 68],     // #ef4444
+                          fear: [167, 139, 250],    // #a78bfa
+                          surprise: [16, 163, 74],  // #10b981
+                          disgust: [107, 114, 128], // #6b7280
+                          calm: [132, 204, 22],     // #84cc16
+                          focus: [245, 158, 11],    // #f59e0b
+                          excitement: [236, 72, 153], // #ec4899
+                          confusion: [99, 102, 241] // #6366f1
+                        }
+
+                        // 感情ベクトルに基づいて色を混合
+                        let r = 0, g = 0, b = 0
+                        let totalWeight = 0
+
+                        for (let i = 0; i < EMOTION_KEYS.length; i++) {
+                          const emotion = EMOTION_KEYS[i]
+                          const weight = Math.max(0, avgEmotionVec[i] || 0)
+                          const [cr, cg, cb] = emotionColors[emotion]
+
+                          r += cr * weight
+                          g += cg * weight
+                          b += cb * weight
+                          totalWeight += weight
+                        }
+
+                        if (totalWeight > 0) {
+                          r = Math.round(r / totalWeight)
+                          g = Math.round(g / totalWeight)
+                          b = Math.round(b / totalWeight)
+                        } else {
+                          // デフォルトの背景色（中間色）
+                          r = 240, g = 240, b = 240
+                        }
+
+                        return `rgb(${r}, ${g}, ${b})`
+                      }
+
+                      const backgroundColor = calculateBackgroundColorSplit()
 
                       return (
                         <div className="border rounded overflow-hidden">
@@ -629,6 +945,7 @@ export default function TimelineVisualization({
                             links={links}
                             width={Math.min(width / 2 - 40, 600)}
                             height={Math.max(300, height - 200)}
+                            background={backgroundColor}
                             physics={{
                               springK,
                               repulsionK,
@@ -659,6 +976,215 @@ export default function TimelineVisualization({
               </div>
             </div>
           )}
+
+          {activeTab === 'compare' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="bg-white border rounded-lg p-4">
+                <h3 className="font-semibold mb-3">前半（最初の100語）</h3>
+                {mounted && (() => {
+                  try {
+                    const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
+                    const half = Math.floor(data.length / 2)
+                    const firstData = data.slice(0, Math.max(1, Math.min(100, half)))
+                    // 部分データからグラフを構築（dataを書き換えない）
+                    const buildFrom = (input: typeof data): { nodes: WordNode[]; links: WordLink[] } => {
+                      const jungWords = JUNG_STIMULUS_WORDS
+                      const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
+                      jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+                      for (const d of input) {
+                        if (!accum[d.word]) continue
+                        accum[d.word].count += 1
+                        accum[d.word].sumReactionValue += d.reactionValue
+                        accum[d.word].sumReactionTime += d.reactionTime
+                      }
+                      const nodeEntries = jungWords.map(({ japanese }) => {
+                        const g = accum[japanese]
+                        const avgRV = g.count > 0 ? g.sumReactionValue / g.count : 0
+                        const raw = avgRV * Math.log1p(g.count)
+                        return { japanese, count: g.count, avgReactionValue: avgRV, raw }
+                      })
+                      const rawMin = Math.min(...nodeEntries.map(n => n.raw))
+                      const rawMax = Math.max(...nodeEntries.map(n => n.raw))
+                      const denom = rawMax - rawMin || 1
+                      const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
+                        id: String(idx),
+                        label: n.japanese,
+                        scale: Math.max(0.5, 0.5 + 5.5 * ((n.raw - rawMin) / denom)),
+                        nodeType: 'word'
+                      }))
+                      const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+                      const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
+                      const wordEmotionSum: Record<string, number[]> = {}
+                      for (const dpt of input) {
+                        const w = dpt.word
+                        if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
+                        if (Array.isArray(dpt.emotions)) {
+                          for (const e of dpt.emotions) {
+                            const key = (e.name || 'unknown').toLowerCase()
+                            const idx = emotionIndex[key]
+                            if (idx !== undefined) {
+                              wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+                            }
+                          }
+                        }
+                      }
+                      const normalize = (vec: number[]): number[] => {
+                        const norm = Math.hypot(...vec)
+                        if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+                        return vec.map((x) => x / norm)
+                      }
+                      const normalizedEmotionVec: Record<string, number[]> = {}
+                      Object.keys(wordEmotionSum).forEach((w) => { normalizedEmotionVec[w] = normalize(wordEmotionSum[w]) })
+                      const anchorNames = ['Joy','Sadness','Anger','Fear','Disgust','Calmness','Interest','Surprise','Confusion','Determination']
+                      const anchorColors = ['#f59e0b','#1f2937','#ef4444','#a78bfa','#10b981','#93c5fd','#60a5fa','#22c55e','#64748b','#f97316']
+                      const toSphere = (x01: number, y01: number): [number, number, number] => {
+                        const u = (x01 - 0.5) * Math.PI * 1.6
+                        const v = (y01 - 0.5) * Math.PI
+                        const cx = Math.cos(v) * Math.cos(u)
+                        const cy = Math.cos(v) * Math.sin(u)
+                        const cz = Math.sin(v)
+                        return [shellRadius * cx, shellRadius * cy, shellRadius * cz]
+                      }
+                      const anchorNodes: WordNode[] = anchorNames.map((name, idx) => {
+                        const [x, y, z] = toSphere(0.1 + 0.8 * (idx / anchorNames.length), 0.2 + 0.6 * (idx / anchorNames.length))
+                        return { id: `A${idx}`, label: name, scale: 6, fixed: true, nodeType: 'anchor', initial: [x, y, z], color: anchorColors[idx] }
+                      })
+                      const baseOffset = nodes.length
+                      const allNodes = [...anchorNodes, ...nodes]
+                      const links: WordLink[] = []
+                      for (let ai = 0; ai < anchorNodes.length; ai++) {
+                        const key = (['joy','sadness','anger','fear','disgust','calm','focus','surprise','confusion','focus'] as const)[ai]
+                        const kIdx = emotionIndex[key]
+                        for (let wi = 0; wi < nodes.length; wi++) {
+                          const wordIndex = baseOffset + wi
+                          const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
+                          const sim = kIdx >= 0 ? ei[kIdx] || 0 : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
+                          const w = Math.max(0, Math.min(1, sim))
+                          if (w < 0.15) continue
+                          const L0 = Math.max(10, restLength * (1 - 0.6 * w))
+                          const k = springK * (0.3 + 0.7 * w)
+                          links.push({ source: ai, target: wordIndex, weight: w, mode: 'tension', L0, k })
+                        }
+                      }
+                      return { nodes: allNodes, links }
+                    }
+                    const { nodes, links } = buildFrom(firstData)
+                    return (
+                      <div className="border rounded overflow-hidden">
+                        <Force3D nodes={nodes} links={links} width={width} height={Math.max(420, height - 80)} physics={{
+                          springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK: radialOutK, constraintIters, constraintStiffness, minSep, sepK
+                        }} />
+                      </div>
+                    )
+                  } catch {
+                    return <div className="text-red-600">前半モデル生成エラー</div>
+                  }
+                })()}
+              </div>
+
+              <div className="bg-white border rounded-lg p-4">
+                <h3 className="font-semibold mb-3">後半（最後の100語）</h3>
+                {mounted && (() => {
+                  try {
+                    const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
+                    const half = Math.floor(data.length / 2)
+                    const secondData = data.slice(Math.max(0, data.length - Math.max(1, Math.min(100, half))))
+                    const buildFrom = (input: typeof data): { nodes: WordNode[]; links: WordLink[] } => {
+                      const jungWords = JUNG_STIMULUS_WORDS
+                      const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
+                      jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+                      for (const d of input) {
+                        if (!accum[d.word]) continue
+                        accum[d.word].count += 1
+                        accum[d.word].sumReactionValue += d.reactionValue
+                        accum[d.word].sumReactionTime += d.reactionTime
+                      }
+                      const nodeEntries = jungWords.map(({ japanese }) => {
+                        const g = accum[japanese]
+                        const avgRV = g.count > 0 ? g.sumReactionValue / g.count : 0
+                        const raw = avgRV * Math.log1p(g.count)
+                        return { japanese, count: g.count, avgReactionValue: avgRV, raw }
+                      })
+                      const rawMin = Math.min(...nodeEntries.map(n => n.raw))
+                      const rawMax = Math.max(...nodeEntries.map(n => n.raw))
+                      const denom = rawMax - rawMin || 1
+                      const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
+                        id: String(idx),
+                        label: n.japanese,
+                        scale: Math.max(0.5, 0.5 + 5.5 * ((n.raw - rawMin) / denom)),
+                        nodeType: 'word'
+                      }))
+                      const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+                      const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
+                      const wordEmotionSum: Record<string, number[]> = {}
+                      for (const dpt of input) {
+                        const w = dpt.word
+                        if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
+                        if (Array.isArray(dpt.emotions)) {
+                          for (const e of dpt.emotions) {
+                            const key = (e.name || 'unknown').toLowerCase()
+                            const idx = emotionIndex[key]
+                            if (idx !== undefined) {
+                              wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+                            }
+                          }
+                        }
+                      }
+                      const normalize = (vec: number[]): number[] => {
+                        const norm = Math.hypot(...vec)
+                        if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+                        return vec.map((x) => x / norm)
+                      }
+                      const normalizedEmotionVec: Record<string, number[]> = {}
+                      Object.keys(wordEmotionSum).forEach((w) => { normalizedEmotionVec[w] = normalize(wordEmotionSum[w]) })
+                      const anchorNames = ['Joy','Sadness','Anger','Fear','Disgust','Calmness','Interest','Surprise','Confusion','Determination']
+                      const anchorColors = ['#f59e0b','#1f2937','#ef4444','#a78bfa','#10b981','#93c5fd','#60a5fa','#22c55e','#64748b','#f97316']
+                      const toSphere = (x01: number, y01: number): [number, number, number] => {
+                        const u = (x01 - 0.5) * Math.PI * 1.6
+                        const v = (y01 - 0.5) * Math.PI
+                        const cx = Math.cos(v) * Math.cos(u)
+                        const cy = Math.cos(v) * Math.sin(u)
+                        const cz = Math.sin(v)
+                        return [shellRadius * cx, shellRadius * cy, shellRadius * cz]
+                      }
+                      const anchorNodes: WordNode[] = anchorNames.map((name, idx) => {
+                        const [x, y, z] = toSphere(0.1 + 0.8 * (idx / anchorNames.length), 0.2 + 0.6 * (idx / anchorNames.length))
+                        return { id: `A${idx}`, label: name, scale: 6, fixed: true, nodeType: 'anchor', initial: [x, y, z], color: anchorColors[idx] }
+                      })
+                      const baseOffset = nodes.length
+                      const allNodes = [...anchorNodes, ...nodes]
+                      const links: WordLink[] = []
+                      for (let ai = 0; ai < anchorNodes.length; ai++) {
+                        const key = (['joy','sadness','anger','fear','disgust','calm','focus','surprise','confusion','focus'] as const)[ai]
+                        const kIdx = emotionIndex[key]
+                        for (let wi = 0; wi < nodes.length; wi++) {
+                          const wordIndex = baseOffset + wi
+                          const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
+                          const sim = kIdx >= 0 ? ei[kIdx] || 0 : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
+                          const w = Math.max(0, Math.min(1, sim))
+                          if (w < 0.15) continue
+                          const L0 = Math.max(10, restLength * (1 - 0.6 * w))
+                          const k = springK * (0.3 + 0.7 * w)
+                          links.push({ source: ai, target: wordIndex, weight: w, mode: 'tension', L0, k })
+                        }
+                      }
+                      return { nodes: allNodes, links }
+                    }
+                    const { nodes, links } = buildFrom(secondData)
+                    return (
+                      <div className="border rounded overflow-hidden">
+                        <Force3D nodes={nodes} links={links} width={width} height={Math.max(420, height - 80)} physics={{
+                          springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK: radialOutK, constraintIters, constraintStiffness, minSep, sepK
+                        }} />
+                      </div>
+                    )
+                  } catch {
+                    return <div className="text-red-600">後半モデル生成エラー</div>
+                  }
+                })()}
+              </div>
+            </div>
+          )}
         </div>
       </div>
           
@@ -667,6 +1193,8 @@ export default function TimelineVisualization({
     </div>
   )
 }
+
+// 追加: 前後比較レンダリング（下部タブとして実装）
 
 // Merkle DAG: components.timeline_visualization -> refactored_complete
 // 時系列統合可視化コンポーネントのモジュール化完了

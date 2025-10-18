@@ -642,9 +642,7 @@ export default function Force3DWordGraphTypeGPU({
                 ctx.fillText(node.label, screenX, screenY + 4)
               }
               
-              // エッジ描画
-              ctx.strokeStyle = 'rgba(30, 64, 175, 0.4)'
-              ctx.lineWidth = 1
+              // エッジ描画（重みに応じて半透明・太さ可変）
               for (let k = 0; k < l; k++) {
                 const link = linksRef.current[k]
                 const source = link.source
@@ -693,6 +691,12 @@ export default function Force3DWordGraphTypeGPU({
                 const tScreenX = width / 2 + tcx * zoom
                 const tScreenY = height / 2 + tcy * zoom
                 
+                // 重みに基づく可視化調整
+                const alpha = Math.max(0.06, Math.min(0.5, 0.08 + 0.6 * (link.weight || 0)))
+                const zoomAlpha = Math.max(0.04, Math.min(0.6, alpha))
+                ctx.strokeStyle = `rgba(30, 64, 175, ${zoomAlpha})`
+                ctx.lineWidth = Math.max(0.3, (link.weight || 0.5) * 1.2 * Math.max(0.5, Math.min(2, 600 / Math.max(50, camera.distance))))
+
                 ctx.beginPath()
                 ctx.moveTo(sScreenX, sScreenY)
                 ctx.lineTo(tScreenX, tScreenY)
