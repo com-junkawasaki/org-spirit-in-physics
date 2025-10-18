@@ -434,19 +434,18 @@ export default function TimelineVisualization({
                       return embed3.map(({ node, vec }) => {
                         const norm = Math.hypot(vec[0], vec[1], vec[2])
                         if (norm > 0) node.initial = [vec[0] / norm * scale, vec[1] / norm * scale, vec[2] / norm * scale]
-                        return { node, vec }
+                        return {
+                          ...node,
+                          scale: 8,
+                          fixed: true,
+                          nodeType: 'anchor',
+                          color: emotionColors[EMOTION_KEYS[embed3.indexOf({ node, vec })] || '#999999',
+                        }
                       })
                     }
 
                     // 感情の色に基づく配置（感情空間の中心に配置）
-                    const emotionAnchors = emotionPCA()
-                    const anchorNodes: WordNode[] = emotionAnchors.map(({ node }, idx) => ({
-                      ...node,
-                      scale: 8,
-                      fixed: true,
-                      nodeType: 'anchor',
-                      color: emotionColors[EMOTION_KEYS[idx]] || '#999999',
-                    }))
+                    const anchorNodes = emotionPCA()
 
                   // アンカー追加と接続
                   const baseOffset = anchorNodes.length

@@ -326,3 +326,35 @@ export const windowsGenerationWorkflow = inngest.createFunction(
     };
   }
 );
+
+// Merkle DAG: windows_generation_failure_handler -> error_recovery
+// ウィンドウ生成失敗時の処理ワークフロー
+export const windowsGenerationFailureWorkflow = inngest.createFunction(
+  {
+    id: 'windows-generation-failure-handler',
+    name: 'Windows Generation Failure Handler',
+  },
+  {
+    event: events.WINDOWS_GENERATION_FAILED,
+  },
+  async ({ event, step }) => {
+    const { participantId, error } = event.data;
+
+    console.error(`Windows generation failed for participant ${participantId}:`, error);
+
+    // エラーをログに記録
+    await step.run('log-error', async () => {
+      console.error('Windows generation error details:', {
+        participantId,
+        error: error.message || error,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    return {
+      status: 'failed',
+      participantId,
+      error: error.message || 'Unknown error',
+    };
+  }
+);

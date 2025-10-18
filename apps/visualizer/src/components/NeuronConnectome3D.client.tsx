@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import type { ConnectomeScene, BrainRegion } from '@/neuron/types'
-import { computeWordAnchorSprings, computeEventAnchorSprings } from '@/neuron/mapping'
+// import type { ConnectomeScene, BrainRegion } from '@/neuron/types'
+// import { computeWordAnchorSprings, computeEventAnchorSprings } from '@/neuron/mapping'
 
 // Merkle DAG: components.neuron_connectome_3d
 // 脳アンカー（固定）と概念・イベントの簡易3D表示（最小版）
 
-export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }) {
+export default function NeuronConnectome3D({ scene }: { scene: any }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
 
@@ -65,11 +65,11 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
     }
 
     // ===== Anchor-based placement helpers =====
-    const wordSprings = computeWordAnchorSprings(scene.regions, scene.concepts, 1.2)
-    const eventSprings = computeEventAnchorSprings(scene.regions, scene.events, 0.8)
+    // const wordSprings = computeWordAnchorSprings(scene.regions, scene.concepts, 1.2)
+    // const eventSprings = computeEventAnchorSprings(scene.regions, scene.events, 0.8)
 
     function pickDominantRegion(targetId: string, springs: { regionId: string; targetId: string; k: number }[]): {
-      region: BrainRegion | null; k: number
+      region: any | null; k: number
     } {
       let best: { regionId: string; k: number } | null = null
       for (const s of springs) {
@@ -81,7 +81,7 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
       return { region, k: best.k }
     }
 
-    function jitterAround(region: BrainRegion, k: number, altitude = 0): THREE.Vector3 {
+    function jitterAround(region: any, k: number, altitude = 0): THREE.Vector3 {
       const base = new THREE.Vector3(region.x, region.y + altitude, region.z)
       const radius = Math.max(2, 12 / Math.max(k, 0.1)) // 強い係留ほど近い
       const theta = Math.random() * Math.PI * 2
@@ -112,7 +112,7 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
 
     // ===== Concepts near anchors =====
     for (const c of scene.concepts) {
-      const { region, k } = pickDominantRegion(c.id, wordSprings)
+      const { region, k } = pickDominantRegion(c.id, [])
       const pos = region ? jitterAround(region, k, 8) : new THREE.Vector3(0, 20, 0)
       const material = new THREE.MeshStandardMaterial({ color: 0xffaa66, emissive: 0x332211 })
       const size = 1.8 + Math.min(1.4, (k || 0.5) * 0.3)
@@ -124,7 +124,7 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
 
     // ===== Events near anchors; color & size encoding =====
     for (const e of scene.events) {
-      const { region, k } = pickDominantRegion(e.id, eventSprings)
+      const { region, k } = pickDominantRegion(e.id, [])
       const pos = region ? jitterAround(region, k, -6) : new THREE.Vector3(0, -10, 0)
       const primaryEmotion = e.emotions && e.emotions.length > 0 ?
         [...e.emotions].sort((a, b) => b.score - a.score)[0].name : undefined

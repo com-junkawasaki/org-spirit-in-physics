@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
 import { getAllParticipants } from '@/lib/data'

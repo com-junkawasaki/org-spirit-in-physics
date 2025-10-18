@@ -84,7 +84,20 @@ export interface WindowsGenerationEvent {
     sessionEvents: number;
     physioSamples: number;
     humeRecords: number;
+    burstRecords: number;
+    faceRecords: number;
+    languageRecords: number;
+    prosodyRecords: number;
   };
+  dimensions: number;
+  k: number;
+  normalization: 'trace' | 'fro';
+  nonNegativeWeights: boolean;
+  timeKernel?: {
+    timestamps: number[];
+    tau: number;
+    weight: number;
+  } | null;
 }
 
 export interface DistanceCalculationEvent {

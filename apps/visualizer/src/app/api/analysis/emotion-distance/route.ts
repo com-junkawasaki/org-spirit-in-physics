@@ -10,6 +10,7 @@ import { calculateTimeSeriesDistanceMatrix } from '@/lib/soft-dtw-calculator';
 import { calculateEmbedding } from '@/lib/embedding-calculator';
 import { processDistanceMatrix } from '@/lib/distance-matrix-processor';
 import { fuseKernels } from '@/lib/kernel-fusion';
+import { getParticipantData } from '@/lib/data';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,16 +38,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Merkle DAG: api.analysis.emotion_distance.data_extraction
-    // データの抽出（ファイルベース）
-    const dataRootPath = '/app/public/dataset';
-    const basePath = `${dataRootPath}/participants/${participantId}`;
-    
-    // セッションデータの読み込み
-    const sessionData = await loadSessionDataFromFile(basePath);
-    const emotionData = await loadEmotionDataFromFile(basePath);
-    const physiologicalData = await loadPhysiologicalDataFromFile(basePath);
+    // データの抽出（Neo4jベース）
+    const participantData = await getParticipantData(participantId);
 
-    if (!sessionData || sessionData.length === 0) {
+    if (!participantData || participantData.sessions.length === 0) {
       return NextResponse.json({
         error: 'No session data found',
         participantId,
@@ -54,11 +49,36 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
+    // セッションデータを統合（イベント形式に変換）
+    const sessionEvents = participantData.sessions.flatMap((session, sessionIndex) =>
+      session.responses.map((response, responseIndex) => ({
+        event_type: 'word_displayed',
+        timestamp: sessionIndex * 1000 + responseIndex, // セッションとレスポンスのインデックスからタイムスタンプを生成
+        payload: { word: response.response_word }
+      }))
+    );
+
+    // 感情データをイベント形式に変換
+    const emotionData = participantData.sessions.flatMap((session, sessionIndex) =>
+      session.responses
+        .filter(response => response.emotion)
+        .map((response, responseIndex) => ({
+          beginTime: sessionIndex * 1000 + responseIndex,
+          endTime: sessionIndex * 1000 + responseIndex + 1000, // 適当な終了時間
+          emotions: [{ name: response.emotion!, score: response.emotion_confidence || 0 }],
+          confidence: response.emotion_confidence || 0,
+          file_type: 'response'
+        }))
+    );
+
+    // 生理データ（モックデータ）
+    const physiologicalData: Array<{ channel?: string; value: number; timestamp: number; quality?: number }> = [];
+
     // Merkle DAG: api.analysis.emotion_distance.distance_calculation
     // 通常モード or 融合モードを分岐
     if (method === 'fusion') {
       // 1) 窓定義
-      const windows = defineEmotionWindows(sessionData, emotionData, physiologicalData);
+      const windows = defineEmotionWindows(sessionEvents, emotionData, physiologicalData);
 
       type WindowT = {
         id: string;
@@ -235,7 +255,7 @@ export async function POST(request: NextRequest) {
 
     // 通常モード
     const distanceMatrix = calculateEmotionDistanceMatrix(
-      sessionData,
+      sessionEvents,
       emotionData,
       physiologicalData,
       method as 'cosine' | 'weighted_cosine' | 'gower'
@@ -245,7 +265,7 @@ export async function POST(request: NextRequest) {
     // 時系列距離の計算（オプション）
     let timeSeriesMatrix = null;
     if (method === 'combined') {
-      const windows = defineEmotionWindows(sessionData, emotionData, physiologicalData);
+      const windows = defineEmotionWindows(sessionEvents, emotionData, physiologicalData);
       timeSeriesMatrix = calculateTimeSeriesDistanceMatrix(
         windows,
         topKEmotions,
