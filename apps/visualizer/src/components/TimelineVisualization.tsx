@@ -448,8 +448,8 @@ export default function TimelineVisualization({
                       color: emotionColors[EMOTION_KEYS[idx]] || '#999999',
                     }))
 
-                    // アンカー追加と接続
-                    const baseOffset = nodes.length
+                  // アンカー追加と接続
+                  const baseOffset = anchorNodes.length
                     const allNodes = [...anchorNodes, ...nodes]
 
                     // 感情結合に基づくリンク生成（感情アンカー → 単語ノード）
@@ -808,8 +808,8 @@ export default function TimelineVisualization({
                           color: emotionColors[EMOTION_KEYS[idx]] || '#999999',
                         }))
 
-                        // アンカー追加と接続
-                        const baseOffset = nodes.length
+                // アンカー追加と接続
+                const baseOffset = anchorNodes.length
                         const allNodes = [...anchorNodes, ...nodes]
 
                         // 感情結合に基づくリンク生成（感情アンカー → 単語ノード）
@@ -1068,10 +1068,21 @@ export default function TimelineVisualization({
                       }
                       return { nodes: allNodes, links }
                     }
-                    const { nodes, links } = buildFrom(firstData)
+                    const { nodes: nodes1, links: links1 } = buildFrom(firstData)
+                    // 後半を重ねるために同じ関数で算出
+                    const half2 = Math.floor(data.length / 2)
+                    const secondData2 = data.slice(Math.max(0, data.length - Math.max(1, Math.min(100, half2))))
+                    const { nodes: nodes2, links: links2 } = buildFrom(secondData2)
+
+                    // ノードは前半のまま（重心・配置を維持）。エッジは二重に描画するため色分け
+                    const mergedLinks = [
+                      ...links1.map(l => ({ ...l, color: 'rgba(59,130,246,0.35)' })),   // 前半: 青
+                      ...links2.map(l => ({ ...l, color: 'rgba(239,68,68,0.28)' }))     // 後半: 赤
+                    ]
+                    const mergedNodes = nodes1.map(n => ({ ...n }))
                     return (
                       <div className="border rounded overflow-hidden">
-                        <Force3D nodes={nodes} links={links} width={width} height={Math.max(420, height - 80)} physics={{
+                        <Force3D nodes={mergedNodes} links={mergedLinks} width={width} height={Math.max(420, height - 80)} physics={{
                           springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK: radialOutK, constraintIters, constraintStiffness, minSep, sepK
                         }} />
                       </div>
@@ -1170,10 +1181,20 @@ export default function TimelineVisualization({
                       }
                       return { nodes: allNodes, links }
                     }
-                    const { nodes, links } = buildFrom(secondData)
+                    const { nodes: nodes2, links: links2 } = buildFrom(secondData)
+                    const half1 = Math.floor(data.length / 2)
+                    const firstData2 = data.slice(0, Math.max(1, Math.min(100, half1)))
+                    const { nodes: nodes1, links: links1 } = buildFrom(firstData2)
+
+                    // 後半配置を基準に、前半のリンクを重ねて比較
+                    const mergedLinks = [
+                      ...links1.map(l => ({ ...l, color: 'rgba(59,130,246,0.30)' })),
+                      ...links2.map(l => ({ ...l, color: 'rgba(239,68,68,0.40)' }))
+                    ]
+                    const mergedNodes = nodes2.map(n => ({ ...n }))
                     return (
                       <div className="border rounded overflow-hidden">
-                        <Force3D nodes={nodes} links={links} width={width} height={Math.max(420, height - 80)} physics={{
+                        <Force3D nodes={mergedNodes} links={mergedLinks} width={width} height={Math.max(420, height - 80)} physics={{
                           springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK: radialOutK, constraintIters, constraintStiffness, minSep, sepK
                         }} />
                       </div>

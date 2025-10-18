@@ -62,6 +62,7 @@ export interface WordLink {
   mode?: 'tension' | 'compression' // 省略時は従来の両側バネとして扱う
   L0?: number // 目標長さ（与えられない場合は weight から推定）
   k?: number  // 個別バネ定数（省略可）
+  color?: string // 個別エッジ色（RGBA推奨）
 }
 
 interface Force3DWordGraphTypeGPUProps {
@@ -642,7 +643,7 @@ export default function Force3DWordGraphTypeGPU({
                 ctx.fillText(node.label, screenX, screenY + 4)
               }
               
-              // エッジ描画（重みに応じて半透明・太さ可変）
+              // エッジ描画（重みに応じて半透明・太さ可変、個別色対応）
               for (let k = 0; k < l; k++) {
                 const link = linksRef.current[k]
                 const source = link.source
@@ -694,7 +695,11 @@ export default function Force3DWordGraphTypeGPU({
                 // 重みに基づく可視化調整
                 const alpha = Math.max(0.06, Math.min(0.5, 0.08 + 0.6 * (link.weight || 0)))
                 const zoomAlpha = Math.max(0.04, Math.min(0.6, alpha))
-                ctx.strokeStyle = `rgba(30, 64, 175, ${zoomAlpha})`
+                if (link.color) {
+                  ctx.strokeStyle = link.color
+                } else {
+                  ctx.strokeStyle = `rgba(30, 64, 175, ${zoomAlpha})`
+                }
                 ctx.lineWidth = Math.max(0.3, (link.weight || 0.5) * 1.2 * Math.max(0.5, Math.min(2, 600 / Math.max(50, camera.distance))))
 
                 ctx.beginPath()

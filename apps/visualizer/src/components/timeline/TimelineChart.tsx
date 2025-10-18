@@ -45,14 +45,16 @@ export default function TimelineChart({
       .attr('transform', `translate(${margin.left},${margin.top})`)
 
     // 時間範囲
-    const timeExtent = d3.extent(data, d => d.timestamp) as [Date, Date]
+    const validTimestamps = data.map(d => new Date(d.timestamp)).filter(d => Number.isFinite(d.getTime()))
+    const timeExtent = d3.extent(validTimestamps) as [Date, Date]
     const xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, overviewWidth])
 
     // 反応値のスケール
+    const reactionValues = data.map(d => d.reactionValue).filter(v => Number.isFinite(v))
     const yScale = d3.scaleLinear()
-      .domain(d3.extent(data, d => d.reactionValue) as [number, number])
+      .domain(d3.extent(reactionValues) as [number, number])
       .range([overviewHeight, 0])
 
     // メインライン
@@ -62,7 +64,7 @@ export default function TimelineChart({
       .curve(d3.curveMonotoneX)
 
     g.append('path')
-      .datum(data)
+      .datum(data.filter(d => Number.isFinite(new Date(d.timestamp).getTime()) && Number.isFinite(d.reactionValue)))
       .attr('class', 'overview-line')
       .attr('d', line)
       .style('fill', 'none')
@@ -71,11 +73,15 @@ export default function TimelineChart({
 
     // 選択範囲のハイライト
     if (timeRange) {
+      const xStart = xScale(new Date(timeRange.start))
+      const xEnd = xScale(new Date(timeRange.end))
+      const selX = Number.isFinite(xStart) ? xStart : 0
+      const selW = Number.isFinite(xEnd - xStart) ? (xEnd - xStart) : 0
       g.append('rect')
         .attr('class', 'brush-area')
-        .attr('x', xScale(new Date(timeRange.start)))
+        .attr('x', selX)
         .attr('y', 0)
-        .attr('width', xScale(new Date(timeRange.end)) - xScale(new Date(timeRange.start)))
+        .attr('width', Math.max(0, selW))
         .attr('height', overviewHeight)
         .style('fill', '#3b82f6')
         .style('opacity', 0.2)
@@ -108,21 +114,22 @@ export default function TimelineChart({
     const innerHeight = height - margin.top - margin.bottom
 
     // フィルタリングされたデータ
-    const filteredData = timeRange
+    const filteredDataRaw = timeRange
       ? data.filter(d => d.timestamp >= timeRange.start && d.timestamp <= timeRange.end)
       : data
+    const filteredData = filteredDataRaw.filter(d => Number.isFinite(new Date(d.timestamp).getTime()))
 
     // スケール設定
     const timeExtent = timeRange
       ? [new Date(timeRange.start), new Date(timeRange.end)] as [Date, Date]
-      : d3.extent(data, d => new Date(d.timestamp)) as [Date, Date]
+      : d3.extent(filteredData, d => new Date(d.timestamp)) as [Date, Date]
 
     const xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, innerWidth])
 
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(filteredData, d => d.reactionValue) || 100])
+      .domain([0, d3.max(filteredData.map(d => d.reactionValue).filter(v => Number.isFinite(v))) || 100])
       .range([innerHeight, 0])
 
     // メイングループ
