@@ -44,8 +44,9 @@ export default function TimelineChart({
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`)
 
-    // 時間範囲
-    const timeExtent = d3.extent(data, d => d.timestamp) as [Date, Date]
+    // 時間範囲（x は単調増加前提のため昇順に整列）
+    const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp)
+    const timeExtent = d3.extent(sorted, d => new Date(d.timestamp)) as [Date, Date]
     const xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, overviewWidth])
@@ -62,7 +63,7 @@ export default function TimelineChart({
       .curve(d3.curveMonotoneX)
 
     g.append('path')
-      .datum(data)
+      .datum(sorted)
       .attr('class', 'overview-line')
       .attr('d', line)
       .style('fill', 'none')
@@ -111,11 +112,12 @@ export default function TimelineChart({
     const filteredData = timeRange
       ? data.filter(d => d.timestamp >= timeRange.start && d.timestamp <= timeRange.end)
       : data
+    const filteredDataSorted = [...filteredData].sort((a, b) => a.timestamp - b.timestamp)
 
     // スケール設定
     const timeExtent = timeRange
       ? [new Date(timeRange.start), new Date(timeRange.end)] as [Date, Date]
-      : d3.extent(data, d => new Date(d.timestamp)) as [Date, Date]
+      : d3.extent(filteredDataSorted, d => new Date(d.timestamp)) as [Date, Date]
 
     const xScale = d3.scaleTime()
       .domain(timeExtent)
@@ -173,7 +175,7 @@ export default function TimelineChart({
     // 単語表示（時間軸上）
     if (filters.wordDisplay && filters.showWordLabels) {
       g.selectAll('.word-label')
-        .data(filteredData)
+        .data(filteredDataSorted)
         .enter()
         .append('text')
         .attr('class', 'word-label')
@@ -198,7 +200,7 @@ export default function TimelineChart({
     // 反応値データポイント
     if (filters.reactionValues) {
       g.selectAll('.reaction-value-point')
-        .data(filteredData)
+        .data(filteredDataSorted)
         .enter()
         .append('circle')
         .attr('class', 'reaction-value-point')
@@ -222,7 +224,7 @@ export default function TimelineChart({
     // 反応時間データポイント
     if (filters.reactionTime) {
       g.selectAll('.reaction-time-point')
-        .data(filteredData.filter(d => d.hasResponse))
+        .data(filteredDataSorted.filter(d => d.hasResponse))
         .enter()
         .append('circle')
         .attr('class', 'reaction-time-point')
@@ -238,7 +240,7 @@ export default function TimelineChart({
     // 生理データ閾値
     if (filters.physiologicalThreshold) {
       g.selectAll('.physiological-point')
-        .data(filteredData.filter(d => {
+        .data(filteredDataSorted.filter(d => {
           const p = d.physiological as unknown
           return Array.isArray(p) ? p.length > 0 : typeof p === 'object'
         }))
@@ -257,7 +259,7 @@ export default function TimelineChart({
     // 感情変化
     if (filters.emotionChange) {
       g.selectAll('.emotion-change-point')
-        .data(filteredData.filter(d => d.emotions.length > 0))
+        .data(filteredDataSorted.filter(d => d.emotions.length > 0))
         .enter()
         .append('circle')
         .attr('class', 'emotion-change-point')
@@ -280,7 +282,7 @@ export default function TimelineChart({
 
     // 感情データの詳細表示
     if (filters.showEmotionDetails) {
-      filteredData.forEach(d => {
+      filteredDataSorted.forEach(d => {
         if (d.emotions.length > 0) {
           // 感情データポイントを個別に表示
           d.emotions.forEach((emotion) => {
@@ -341,7 +343,7 @@ export default function TimelineChart({
         .curve(d3.curveMonotoneX)
 
       g.append('path')
-        .datum(filteredData)
+        .datum(filteredDataSorted)
         .attr('class', 'reaction-line')
         .attr('d', line)
         .style('fill', 'none')
