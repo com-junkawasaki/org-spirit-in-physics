@@ -778,9 +778,8 @@ export default function TimelineVisualization({
                     ))}
                   </div>
 
-                  {/* 単語詳細: overall / first / second の統計 */}
+                  {/* 単語詳細テーブル: overall / first / second */}
                   {selectedWord && (() => {
-                    // セグメントに関わらず、全データから1回目/2回目を分割
                     const occurrences = data.filter(d => d.word === selectedWord)
                     const split = [occurrences[0] ? [occurrences[0]] : [], occurrences.slice(1)] as const
                     const sections = {
@@ -801,24 +800,82 @@ export default function TimelineVisualization({
                     const overall = avgObj(sections.overall)
                     const first = avgObj(sections.first)
                     const second = avgObj(sections.second)
-                    const Row = ({ title, v }: { title: string; v: { reactionTimeAvg: number; physioAvg: number; reactionValueAvg: number; prosodyAvg: number; burstAvg: number; faceAvg: number; languageAvg: number } }) => (
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                        <div className="text-gray-600">{title}</div>
-                        <div className="text-right">RT {Math.round(v.reactionTimeAvg)}ms ・ Phys {v.physioAvg.toFixed(3)} ・ RV {v.reactionValueAvg.toFixed(2)}</div>
-                        <div></div>
-                        <div className="text-right">P {v.prosodyAvg.toFixed(2)} ・ B {v.burstAvg.toFixed(2)} ・ F {v.faceAvg.toFixed(2)} ・ L {v.languageAvg.toFixed(2)}</div>
-                      </div>
-                    )
+                    const cell = (v: number, digits = 2) => Number.isFinite(v) ? v.toFixed(digits) : '-'
                     return (
-                      <div className="mt-4 border rounded p-3 bg-white/60">
-                        <div className="text-sm font-medium mb-2">単語詳細: {selectedWord}</div>
-                        <Row title="全体" v={overall} />
-                        <Row title="1回目" v={first} />
-                        <Row title="2回目以降" v={second} />
+                      <div className="mt-4 border rounded bg-white/60 overflow-auto">
+                        <div className="text-sm font-medium p-3 pb-0">単語詳細: {selectedWord}</div>
+                        <table className="min-w-full text-xs">
+                          <thead>
+                            <tr className="text-gray-500">
+                              <th className="text-left px-3 py-2">区分</th>
+                              <th className="text-right px-3 py-2">反応時間(ms)</th>
+                              <th className="text-right px-3 py-2">生理</th>
+                              <th className="text-right px-3 py-2">反応値</th>
+                              <th className="text-right px-3 py-2">Prosody</th>
+                              <th className="text-right px-3 py-2">Burst</th>
+                              <th className="text-right px-3 py-2">Face</th>
+                              <th className="text-right px-3 py-2">Language</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="px-3 py-2 text-gray-700">全体</td>
+                              <td className="px-3 py-2 text-right">{Math.round(overall.reactionTimeAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(overall.physioAvg, 3)}</td>
+                              <td className="px-3 py-2 text-right">{cell(overall.reactionValueAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(overall.prosodyAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(overall.burstAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(overall.faceAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(overall.languageAvg)}</td>
+                            </tr>
+                            <tr className="bg-gray-50/70">
+                              <td className="px-3 py-2 text-gray-700">1回目</td>
+                              <td className="px-3 py-2 text-right">{Math.round(first.reactionTimeAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(first.physioAvg, 3)}</td>
+                              <td className="px-3 py-2 text-right">{cell(first.reactionValueAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(first.prosodyAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(first.burstAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(first.faceAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(first.languageAvg)}</td>
+                            </tr>
+                            <tr>
+                              <td className="px-3 py-2 text-gray-700">2回目以降</td>
+                              <td className="px-3 py-2 text-right">{Math.round(second.reactionTimeAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(second.physioAvg, 3)}</td>
+                              <td className="px-3 py-2 text-right">{cell(second.reactionValueAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(second.prosodyAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(second.burstAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(second.faceAvg)}</td>
+                              <td className="px-3 py-2 text-right">{cell(second.languageAvg)}</td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     )
                   })()}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'words' && (
+            <div className="bg-white border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-sm">単語一覧</h4>
+                <div className="text-xs text-gray-500">Tap to center and show details</div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
+                {(() => {
+                  const counts: Record<string, number> = {}
+                  for (const dpt of data) counts[dpt.word] = (counts[dpt.word] ?? 0) + 1
+                  return Object.entries(counts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([w, c]) => (
+                      <button key={w} type="button" className={`text-left px-2 py-1 rounded border ${selectedWord === w ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`} onClick={() => setSelectedWord(prev => prev === w ? null : w)}>
+                        <div className="flex items-center justify-between"><span>{w}</span><span className="text-xs text-gray-500">{c}</span></div>
+                      </button>
+                    ))
+                })()}
               </div>
             </div>
           )}

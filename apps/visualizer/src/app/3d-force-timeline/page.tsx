@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/PageLayout'
 import TimelineVisualization from '@/components/TimelineVisualization'
 
@@ -9,6 +9,8 @@ export default function ForceTimelinePage() {
   const inputId = useId()
   const [options, setOptions] = useState<Array<{ id: string; label: string }>>([])
   const [loading, setLoading] = useState<boolean>(false)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 960, height: 540 })
 
   useEffect(() => {
     let cancelled = false
@@ -33,6 +35,36 @@ export default function ForceTimelinePage() {
     return () => { cancelled = true }
   }, [participantId])
 
+  // iPad向け: コンテナにフィットするキャンバスサイズを算出（1画面に収める）
+  useEffect(() => {
+    if (!containerRef.current) return
+    const el = containerRef.current
+
+    const compute = () => {
+      const rect = el.getBoundingClientRect()
+      const safeTop = (window as any).visualViewport?.offsetTop || 0
+      const safeBottomInset = 0 // bodyにenv(safe-area-inset-bottom)を適用済
+      const headerReserved = 56 // compact header 高さ相当
+      const controlsReserved = 48 // コントロール行の高さ相当
+      const verticalPadding = 16 // container-ipad の余白相当
+
+      const height = Math.max(320, Math.floor((window.innerHeight - safeTop - safeBottomInset - headerReserved - controlsReserved - verticalPadding * 2)))
+      const width = Math.max(600, Math.floor(rect.width))
+      setViewport({ width, height })
+    }
+
+    compute()
+    const ro = new ResizeObserver(() => compute())
+    ro.observe(el)
+    window.addEventListener('orientationchange', compute)
+    window.addEventListener('resize', compute)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('orientationchange', compute)
+      window.removeEventListener('resize', compute)
+    }
+  }, [])
+
   return (
     <DashboardLayout
       header={{
@@ -42,14 +74,14 @@ export default function ForceTimelinePage() {
         backLabel: '参加者一覧へ'
       }}
     >
-      <div className="mb-4 flex items-center gap-4">
+      <div ref={containerRef} className="mb-3 md:mb-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div className="flex items-center gap-2">
-          <label className="text-sm" htmlFor={inputId}>Participant</label>
+          <label className="subtitle-ipad md:text-sm" htmlFor={inputId}>Participant</label>
           <select
             id={inputId}
             value={participantId}
             onChange={(e) => setParticipantId(e.target.value)}
-            className="border rounded px-2 py-1 min-w-[320px]"
+            className="border rounded px-2 py-1 min-w-[240px] md:min-w-[320px]"
             disabled={loading}
           >
             {options.map((o) => (
@@ -60,13 +92,13 @@ export default function ForceTimelinePage() {
             )}
           </select>
         </div>
-        
+        {/* 追加のコントロールが増えてもwrapで1行に収まる */}
       </div>
 
       <TimelineVisualization
         participantId={participantId}
-        width={1000}
-        height={560}
+        width={viewport.width}
+        height={viewport.height}
         hideFilters
       />
     </DashboardLayout>
