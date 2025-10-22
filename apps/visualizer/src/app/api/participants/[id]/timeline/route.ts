@@ -48,17 +48,25 @@ export async function GET(
       physiologicalData = []
     }
 
-    // データ構造最適化：必要最小限の情報のみ保持
-    const timelineData = sessionData.wordEvents.map((event: any) => ({
-      t: event.timestamp, // timestampを短縮
-      w: event.payload?.word || 'Unknown', // wordを短縮
-      e: event.type, // eventTypeを短縮
-      // emotionsとphysiologicalは空配列で軽量化
-      em: [], // emotionsを短縮
-      ph: { avg: 0, max: 0, min: 0, ch: {} }, // physiologicalを短縮
-      rv: 0, // reactionValueを短縮
-      m: { ec: 0, pc: 0 } // metadataを短縮
-    }));
+    // 実データを統合（セッション×感情×生理）し、クライアント期待形式へ変換
+    const integrated = integrateTimelineData(sessionData, emotionData, physiologicalData)
+    const timelineData = integrated.map((pt: any) => ({
+      t: pt.timestamp,
+      w: pt.word,
+      e: pt.eventType,
+      em: Array.isArray(pt.emotions) ? pt.emotions : [],
+      ph: {
+        average: pt?.physiological?.average ?? 0,
+        max: pt?.physiological?.max ?? 0,
+        min: pt?.physiological?.min ?? 0,
+        channels: pt?.physiological?.channels ?? {}
+      },
+      rv: pt?.reactionValue ?? 0,
+      m: {
+        ec: pt?.metadata?.emotionCount ?? 0,
+        pc: pt?.metadata?.physiologicalCount ?? 0
+      }
+    }))
 
     // ストリーミングレスポンスで大きなデータを効率的に送信
     const responseData = {

@@ -8,9 +8,6 @@ import TimelineVisualization from '@/components/TimelineVisualization'
 export default function ForceTimelinePage() {
   const { id } = useParams<{ id: string }>()
   const [participantId, setParticipantId] = useState<string>(id || '')
-  const inputId = 'participant-select'
-  const [options, setOptions] = useState<Array<{ id: string; label: string }>>([])
-  const [loading, setLoading] = useState<boolean>(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 960, height: 540 })
 
@@ -18,29 +15,6 @@ export default function ForceTimelinePage() {
   useEffect(() => {
     if (id && id !== participantId) setParticipantId(id)
   }, [id])
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        setLoading(true)
-        const res = await fetch('/api/participants', { cache: 'no-store' })
-        const data = await res.json()
-        if (!Array.isArray(data)) return
-        const opts = (data as Array<{ id: string; name?: string }>).map((p) => ({ id: p.id, label: p.name || (p.id ?? '').slice(0, 8) }))
-        if (!cancelled) {
-          setOptions(opts)
-          // デフォルトが一覧にない場合は先頭を採用
-          // 既存の participantId は維持し、未設定時のみ先頭を選ぶ
-          if (!participantId && opts.length > 0) setParticipantId(opts[0].id)
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [participantId])
 
   // iPad向け: コンテナにフィットするキャンバスサイズを算出（1画面に収める）
   useEffect(() => {
@@ -82,26 +56,7 @@ export default function ForceTimelinePage() {
       }}
       compact
     >
-      <div ref={containerRef} className="mb-3 md:mb-4 flex flex-wrap items-center gap-3 md:gap-4">
-        <div className="flex items-center gap-2">
-          <label className="subtitle-ipad md:text-sm" htmlFor={inputId}>Participant</label>
-          <select
-            id={inputId}
-            value={participantId}
-            onChange={(e) => setParticipantId(e.target.value)}
-            className="border rounded px-2 py-1 min-w-[240px] md:min-w-[320px]"
-            disabled={loading}
-          >
-            {options.map((o) => (
-              <option key={o.id} value={o.id}>{o.label} — {o.id}</option>
-            ))}
-            {options.length === 0 && (
-              <option value={participantId}>{participantId}</option>
-            )}
-          </select>
-        </div>
-        {/* 追加のコントロールが増えてもwrapで1行に収まる */}
-      </div>
+      <div ref={containerRef} className="mb-3 md:mb-4" />
 
       <TimelineVisualization
         participantId={participantId}
