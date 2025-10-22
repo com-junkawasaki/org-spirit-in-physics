@@ -52,6 +52,8 @@ export interface WordNode {
   fixed?: boolean
   initial?: [number, number, number]
   color?: string
+  // 感情スコア（0..1）。存在する場合は色合成に使用
+  emotion?: Partial<Record<'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'disgust' | 'calm' | 'focus' | 'excitement' | 'confusion', number>>
 }
 
 export interface WordLink {
@@ -124,6 +126,45 @@ export default function Force3DWordGraphTypeGPU({
   
   const isDraggingRef = useRef(false)
   const lastMouseRef = useRef({ x: 0, y: 0 })
+
+  // 感情カラー合成（線形混色）
+  const mixEmotionColor = useCallback((node: WordNode, alpha: number): string => {
+    const emo = node.emotion
+    if (!emo) return node.color || '#1e40af'
+
+    // 代表色（Hume → 一般7感情系 + 補助）
+    const palette: Record<string, [number, number, number]> = {
+      joy: [255, 171, 0],        // amber
+      sadness: [107, 114, 128],  // gray-500
+      anger: [239, 68, 68],      // red-500
+      fear: [99, 102, 241],      // indigo-500
+      surprise: [16, 185, 129],  // emerald-500
+      disgust: [34, 197, 94],    // green-500
+      calm: [59, 130, 246],      // blue-500
+      focus: [147, 51, 234],     // purple-600
+      excitement: [245, 158, 11],// orange-500
+      confusion: [14, 165, 233], // sky-500
+    }
+
+    let r = 0, g = 0, b = 0, w = 0
+    for (const key in emo) {
+      const v = Math.max(0, Math.min(1, (emo as any)[key] ?? 0))
+      if (v <= 0) continue
+      const c = palette[key]
+      if (!c) continue
+      r += c[0] * v
+      g += c[1] * v
+      b += c[2] * v
+      w += v
+    }
+
+    if (w <= 0) return node.color || '#1e40af'
+    r = Math.round(r / w)
+    g = Math.round(g / w)
+    b = Math.round(b / w)
+    const a = Math.max(0, Math.min(1, alpha))
+    return `rgba(${r}, ${g}, ${b}, ${a})`
+  }, [])
   
   // カメラ制御関数
   const handleMouseDown = useCallback((e: MouseEvent) => {
@@ -730,7 +771,9 @@ export default function Force3DWordGraphTypeGPU({
                 ctx.globalAlpha = alpha
                 ctx.beginPath()
                 ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
-                ctx.fillStyle = node.color || '#1e40af'
+                // 感情色を合成
+                const fillColor = mixEmotionColor(node, alpha)
+                ctx.fillStyle = fillColor
                 ctx.fill()
                 
                 // ラベル
