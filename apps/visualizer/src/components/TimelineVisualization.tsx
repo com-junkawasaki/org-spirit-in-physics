@@ -367,6 +367,18 @@ export default function TimelineVisualization({
                       Determination: 'focus',
                     }
 
+                    const emotionColor: Record<typeof EMOTION_KEYS[number], string> = {
+                      joy: '#f59e0b',
+                      sadness: '#1f2937',
+                      anger: '#ef4444',
+                      fear: '#a78bfa',
+                      disgust: '#10b981',
+                      calm: '#93c5fd',
+                      focus: '#60a5fa',
+                      excitement: '#22d3ee',
+                      confusion: '#64748b',
+                    }
+
                     const anchorRadius = shellRadius // 球殻上に配置
                     const toSphere = (x01: number, y01: number): [number, number, number] => {
                       const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
@@ -441,12 +453,15 @@ export default function TimelineVisualization({
                         }
                       }
 
-                      // リンク生成
+                      // リンク生成（感情色を付与）
                       for (const c of chosen) {
+                        const a = anchorNodes[c.ai]
+                        const key = anchorToKey[a.label]
+                        const color = key ? emotionColor[key] : undefined
                         const w = Math.max(0, Math.min(1, c.w))
                         const L0 = Math.max(20, restLength * (1 - 0.6 * w))
                         const k = springK * (0.3 + 0.7 * w)
-                        links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k })
+                        links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k, color })
                       }
                     }
 
@@ -609,6 +624,18 @@ export default function TimelineVisualization({
                           Determination: 'focus',
                         }
 
+                        const emotionColor: Record<typeof EMOTION_KEYS[number], string> = {
+                          joy: '#f59e0b',
+                          sadness: '#1f2937',
+                          anger: '#ef4444',
+                          fear: '#a78bfa',
+                          disgust: '#10b981',
+                          calm: '#93c5fd',
+                          focus: '#60a5fa',
+                          excitement: '#22d3ee',
+                          confusion: '#64748b',
+                        }
+
                         const anchorRadius = shellRadius // 球殻上に配置
                         const toSphere = (x01: number, y01: number): [number, number, number] => {
                           const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
@@ -680,10 +707,13 @@ export default function TimelineVisualization({
                           }
 
                           for (const c of chosen) {
+                            const a = anchorNodes[c.ai]
+                            const key = anchorToKey[a.label]
+                            const color = key ? emotionColor[key] : undefined
                             const w = Math.max(0, Math.min(1, c.w))
                             const L0 = Math.max(20, restLength * (1 - 0.6 * w))
                             const k = springK * (0.3 + 0.7 * w)
-                            links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k })
+                            links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k, color })
                           }
                         }
 

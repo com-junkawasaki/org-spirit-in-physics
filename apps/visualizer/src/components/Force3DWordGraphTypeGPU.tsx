@@ -710,8 +710,7 @@ export default function Force3DWordGraphTypeGPU({
               }
               
               // エッジ描画
-              ctx.strokeStyle = 'rgba(30, 64, 175, 0.4)'
-              ctx.lineWidth = 1
+          ctx.lineWidth = 1
               for (let k = 0; k < l; k++) {
                 const link = linksRef.current[k]
                 const source = link.source
@@ -760,7 +759,8 @@ export default function Force3DWordGraphTypeGPU({
                 const tScreenX = width / 2 + tcx * zoom
                 const tScreenY = height / 2 + tcy * zoom
                 
-                ctx.beginPath()
+            ctx.beginPath()
+            ctx.strokeStyle = link.color || 'rgba(30, 64, 175, 0.4)'
                 ctx.moveTo(sScreenX, sScreenY)
                 ctx.lineTo(tScreenX, tScreenY)
                 ctx.stroke()

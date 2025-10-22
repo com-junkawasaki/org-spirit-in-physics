@@ -20,6 +20,7 @@ export interface WordLink {
   mode?: 'tension' | 'compression'
   L0?: number
   k?: number
+  color?: string
 }
 
 export interface EmotionData {
