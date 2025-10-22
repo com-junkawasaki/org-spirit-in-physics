@@ -78,3 +78,6 @@ yarn.lock
 # Archive (keep but don't track changes)
 archive/
 _archive/
+
+# clerk configuration (can include secrets)
+/.clerk/
