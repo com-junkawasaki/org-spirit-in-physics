@@ -23,6 +23,21 @@ export interface WordLink {
   color?: string
 }
 
+export interface WordDetailStats {
+  word: string
+  overall: {
+    reactionTimeAvg: number
+    physioAvg: number
+    reactionValueAvg: number
+    prosodyAvg: number
+    burstAvg: number
+    faceAvg: number
+    languageAvg: number
+  }
+  first: WordDetailStats['overall']
+  second: WordDetailStats['overall']
+}
+
 export interface EmotionData {
   name: string
   score: number

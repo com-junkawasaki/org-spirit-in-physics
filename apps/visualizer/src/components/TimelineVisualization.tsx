@@ -94,11 +94,16 @@ export default function TimelineVisualization({
   const [selectedEmotions, setSelectedEmotions] = useState<Set<typeof EMOTION_KEYS[number]>>(new Set(EMOTION_KEYS))
   const [physicsMode, setPhysicsMode] = useState<'all' | 'emotion' | 'physio' | 'reactionSpeed'>('emotion')
   const [segment, setSegment] = useState<'all' | 'first100' | 'next100'>('all')
+  // モダリティ（Hume: prosody/burst/face/language）
+  const MOD_KEYS = ['prosody','burst','face','language'] as const
+  const [selectedModalities, setSelectedModalities] = useState<Set<typeof MOD_KEYS[number]>>(new Set(MOD_KEYS))
   // トポロジ調整パラメータ（UIで調整可能）
   const [topK, setTopK] = useState<number>(2)
   const [minW, setMinW] = useState<number>(0.25)
   const [weightGamma, setWeightGamma] = useState<number>(1.6)
   const [animateTransitions, setAnimateTransitions] = useState<boolean>(true)
+  // 画面内収まり: 詳細コントロールは折りたたみ（初期非表示）
+  const [showAdvancedControls, setShowAdvancedControls] = useState<boolean>(false)
 
   // ローディング状態
   if (loading) {
@@ -297,39 +302,46 @@ export default function TimelineVisualization({
               {/* 単語選択: 上位100語 */}
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 <div className="lg:col-span-3 order-2 lg:order-1">
-
-              {/* 3D Force コントロール */}
-              <Force3DControls
-                forcePresets={forcePresets}
-                forcePresetId={forcePresetId}
-                onPresetChange={applyForcePreset}
-                springK={springK}
-                onSpringKChange={setSpringK}
-                repulsionK={repulsionK}
-                onRepulsionKChange={setRepulsionK}
-                restLength={restLength}
-                onRestLengthChange={setRestLength}
-                minSep={minSep}
-                onMinSepChange={setMinSep}
-                sepK={sepK}
-                onSepKChange={setSepK}
-                shellRadius={shellRadius}
-                onShellRadiusChange={setShellRadius}
-                shellK={shellK}
-                onShellKChange={setShellK}
-                radialOutK={radialOutK}
-                onRadialOutKChange={setRadialOutK}
-                damping={damping}
-                onDampingChange={setDamping}
-                alpha={alpha}
-                onAlphaChange={setAlpha}
-                gamma={gamma}
-                onGammaChange={setGamma}
-                lambda={lambda}
-                onLambdaChange={setLambda}
-                eta={eta}
-                onEtaChange={setEta}
-              />
+                  <div className="flex items-center justify-end mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedControls(v => !v)}
+                      className="px-3 py-1.5 text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
+                    >{showAdvancedControls ? 'Hide Advanced' : 'Show Advanced'}</button>
+                  </div>
+                  {showAdvancedControls && (
+                    <Force3DControls
+                      forcePresets={forcePresets}
+                      forcePresetId={forcePresetId}
+                      onPresetChange={applyForcePreset}
+                      springK={springK}
+                      onSpringKChange={setSpringK}
+                      repulsionK={repulsionK}
+                      onRepulsionKChange={setRepulsionK}
+                      restLength={restLength}
+                      onRestLengthChange={setRestLength}
+                      minSep={minSep}
+                      onMinSepChange={setMinSep}
+                      sepK={sepK}
+                      onSepKChange={setSepK}
+                      shellRadius={shellRadius}
+                      onShellRadiusChange={setShellRadius}
+                      shellK={shellK}
+                      onShellKChange={setShellK}
+                      radialOutK={radialOutK}
+                      onRadialOutKChange={setRadialOutK}
+                      damping={damping}
+                      onDampingChange={setDamping}
+                      alpha={alpha}
+                      onAlphaChange={setAlpha}
+                      gamma={gamma}
+                      onGammaChange={setGamma}
+                      lambda={lambda}
+                      onLambdaChange={setLambda}
+                      eta={eta}
+                      onEtaChange={setEta}
+                    />
+                  )}
 
                   {/* 3D Force グラフ本体 */}
                   {mounted && (() => {
@@ -397,7 +409,11 @@ export default function TimelineVisualization({
                         for (const e of dpt.emotions) {
                           const key = (e.name || 'unknown').toLowerCase()
                           const idx = emotionIndex[key]
-                          if (idx !== undefined) {
+                          // モダリティフィルタ
+                          const ft = String((e as any).fileType || '')
+                          const ftLow = ft.toLowerCase()
+                          const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+                          if (idx !== undefined && (!mod || selectedModalities.has(mod))) {
                             wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
                           }
                         }
@@ -621,7 +637,7 @@ export default function TimelineVisualization({
                         nodes={nodes}
                         links={links}
                         width={width}
-                        height={Math.max(500, height)}
+                        height={Math.min(460, Math.max(360, height))}
                         physics={{
                           springK,
                           repulsionK,
@@ -689,6 +705,20 @@ export default function TimelineVisualization({
                           }}
                         />
                         <span>{k}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <h4 className="font-medium mt-4 mb-2 text-sm">モダリティ（感情抽出元）</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {MOD_KEYS.map((m) => (
+                      <label key={m} className="flex items-center gap-1 text-sm border rounded px-2 py-1 bg-white">
+                        <input
+                          type="checkbox"
+                          checked={selectedModalities.has(m)}
+                          onChange={(e) => setSelectedModalities(prev => { const next = new Set(prev); if (e.target.checked) next.add(m); else next.delete(m); return next })}
+                        />
+                        <span>{m}</span>
                       </label>
                     ))}
                   </div>
@@ -992,11 +1022,11 @@ export default function TimelineVisualization({
 
                       return (
                         <div className="border rounded overflow-hidden">
-                          <Force3D
+                            <Force3D
                             nodes={nodes}
                             links={links}
                             width={Math.min(width / 2 - 40, 600)}
-                            height={Math.max(300, height - 200)}
+                              height={Math.min(360, Math.max(280, height - 240))}
                             physics={{
                               springK,
                               repulsionK,
