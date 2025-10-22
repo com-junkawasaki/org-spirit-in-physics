@@ -106,6 +106,8 @@ export default function Force3DWordGraphTypeGPU({
   const animRef = useRef<number | null>(null)
   const nodesRef = useRef<WordNode[]>(nodes)
   const linksRef = useRef<WordLink[]>(links)
+  // Merkle DAG: rendering.connectivity ー ノード接続度の正規化値を保持
+  const connectivityRef = useRef<Float32Array | null>(null)
   
   // ズームレベル表示用のstate
   const [zoomLevel, setZoomLevel] = useState(600)
@@ -649,6 +651,24 @@ export default function Force3DWordGraphTypeGPU({
             }
           })
 
+          // 接続度（degree）を正規化してキャッシュ
+          if (n > 0) {
+            const deg = new Float32Array(n)
+            let maxDeg = 0
+            for (let k = 0; k < l; k++) {
+              const link = linksRef.current[k]
+              const w = Math.max(1e-3, link.weight || 1)
+              if (link.source >= 0 && link.source < n) deg[link.source] += w
+              if (link.target >= 0 && link.target < n) deg[link.target] += w
+            }
+            for (let i = 0; i < n; i++) maxDeg = Math.max(maxDeg, deg[i])
+            const conn = connectivityRef.current && connectivityRef.current.length === n
+              ? connectivityRef.current
+              : new Float32Array(n)
+            for (let i = 0; i < n; i++) conn[i] = maxDeg > 0 ? deg[i] / maxDeg : 0
+            connectivityRef.current = conn
+          }
+
           // 2D描画（簡易版）
           const canvas = canvasRef.current
           if (canvas) {
@@ -660,7 +680,7 @@ export default function Force3DWordGraphTypeGPU({
               const pos = positionsRef.current
               if (!pos) return
               
-              // ノード描画
+              // ノード描画（距離×接続度でスケーリング/濃淡）
               for (let i = 0; i < n; i++) {
                 const ix = i * 3
                 const x = pos[ix]
@@ -687,7 +707,7 @@ export default function Force3DWordGraphTypeGPU({
                 const sinX = Math.sin(camera.rotationX)
                 const cx = rx
                 const cy = ry * cosX - rz * sinX
-                const cz = ry * sinX + rz * cosX; void cz
+                const cz = ry * sinX + rz * cosX
                 
                 // 正射投影（魚眼感を抑制）
                 const zoom = Math.max(0.05, 600 / Math.max(50, camera.distance))
@@ -695,22 +715,35 @@ export default function Force3DWordGraphTypeGPU({
                 const screenY = height / 2 + cy * zoom
                 
                 const node = nodesRef.current[i]
-                const radius = Math.max(1, Math.min(10, 2 + node.scale)) * zoom // 最小半径を1に制限
+                const baseRadius = Math.max(1, Math.min(10, 2 + node.scale)) * zoom
+                // 距離に応じてサイズ・アルファを調整（近い=大/濃、遠い=小/薄）
+                const maxDepth = Math.max(100, camera.distance)
+                const depthWeight = 1 - Math.min(1, Math.abs(cz) / maxDepth) // 0..1 (遠い→0, 近い→1)
+                const radius = baseRadius * (0.7 + 0.9 * depthWeight)
+                const conn = connectivityRef.current?.[i] ?? 0
+                const alphaDepth = 0.35 + 0.65 * depthWeight
+                const alphaConn = 0.05 + 0.95 * conn // 孤立ノードはほぼ透明、強接続は1に近い
+                const alpha = Math.max(0.03, Math.min(1, alphaDepth * alphaConn))
                 
+                ctx.globalAlpha = alpha
                 ctx.beginPath()
                 ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
                 ctx.fillStyle = node.color || '#1e40af'
                 ctx.fill()
                 
                 // ラベル
+                ctx.globalAlpha = Math.max(0.2, alpha)
                 ctx.fillStyle = '#1f2937'
-                ctx.font = '12px sans-serif'
+                const labelSize = Math.round(10 + 4 * depthWeight)
+                ctx.font = `${labelSize}px sans-serif`
                 ctx.textAlign = 'center'
                 ctx.fillText(node.label, screenX, screenY + 4)
               }
+              // 状態復元
+              ctx.globalAlpha = 1
               
-              // エッジ描画
-          ctx.lineWidth = 1
+              // エッジ描画（距離×接続度で太さ/濃淡）
+              ctx.lineWidth = 1
               for (let k = 0; k < l; k++) {
                 const link = linksRef.current[k]
                 const source = link.source
@@ -741,7 +774,7 @@ export default function Force3DWordGraphTypeGPU({
                 const srz = swx * sinY + swz * cosY
                 const scx = srx
                 const scy = sry * cosX - srz * sinX
-                const scz = sry * sinX + srz * cosX; void scz
+                const scz = sry * sinX + srz * cosX
                 const zoom = Math.max(0.05, 600 / Math.max(50, camera.distance))
                 const sScreenX = width / 2 + scx * zoom
                 const sScreenY = height / 2 + scy * zoom
@@ -755,16 +788,32 @@ export default function Force3DWordGraphTypeGPU({
                 const trz = twx * sinY + twz * cosY
                 const tcx = trx
                 const tcy = try_ * cosX - trz * sinX
-                const tcz = try_ * sinX + trz * cosX; void tcz
+                const tcz = try_ * sinX + trz * cosX
                 const tScreenX = width / 2 + tcx * zoom
                 const tScreenY = height / 2 + tcy * zoom
                 
-            ctx.beginPath()
-            ctx.strokeStyle = link.color || 'rgba(30, 64, 175, 0.4)'
+                // 深度と接続度に応じて線の太さと透明度を調整
+                const maxDepth = Math.max(100, camera.distance)
+                const sw = 1 - Math.min(1, Math.abs(scz) / maxDepth)
+                const tw = 1 - Math.min(1, Math.abs(tcz) / maxDepth)
+                const w = 0.5 * (sw + tw) // 深度係数
+                const cs = connectivityRef.current?.[source] ?? 0
+                const ct = connectivityRef.current?.[target] ?? 0
+                const wc = 0.5 * (cs + ct) // 接続度係数
+                const alphaDepth = 0.25 + 0.55 * w
+                const alphaConn = 0.1 + 0.9 * wc
+                ctx.globalAlpha = Math.max(0.03, Math.min(1, alphaDepth * alphaConn))
+                ctx.lineWidth = (0.5 + 1.5 * w) * (0.6 + 1.2 * wc)
+
+                ctx.beginPath()
+                ctx.strokeStyle = link.color || '#1e40af'
                 ctx.moveTo(sScreenX, sScreenY)
                 ctx.lineTo(tScreenX, tScreenY)
                 ctx.stroke()
               }
+              // 状態復元
+              ctx.globalAlpha = 1
+              ctx.lineWidth = 1
             }
           }
 

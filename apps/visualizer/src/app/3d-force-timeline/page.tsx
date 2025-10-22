@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/PageLayout'
 import TimelineVisualization from '@/components/TimelineVisualization'
 
 export default function ForceTimelinePage() {
   const [participantId, setParticipantId] = useState<string>('144b325f-5966-4d59-a629-f2ca421388cc')
-  const inputId = useId()
+  const inputId = 'participant-select'
   const [options, setOptions] = useState<Array<{ id: string; label: string }>>([])
   const [loading, setLoading] = useState<boolean>(false)
   const containerRef = useRef<HTMLDivElement | null>(null)

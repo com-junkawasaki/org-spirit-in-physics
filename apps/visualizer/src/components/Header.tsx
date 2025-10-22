@@ -16,16 +16,11 @@ export function Header() {
         >
           <span className="text-lg">☰</span>
         </button>
-        <div>
-          <h2 className="title-ipad md:text-lg font-semibold">Analysis Dashboard</h2>
-          <p className="subtitle-ipad md:text-sm text-muted-foreground">
-            Spirit in Physics Research Platform
-          </p>
-        </div>
+        {/* タイトルブロックはiPadでは冗長のため削除し、情報密度を最適化 */}
       </div>
 
       <div className="flex items-center space-x-4">
-        <div className="hidden md:flex items-center space-x-2 subtitle-ipad md:text-sm text-muted-foreground">
+        <div className="hidden lg:flex items-center space-x-2 subtitle-ipad md:text-sm text-muted-foreground">
           <span>Powered by Hume AI & Neo4j</span>
           <span>•</span>
           <span>Next.js & TypeScript</span>

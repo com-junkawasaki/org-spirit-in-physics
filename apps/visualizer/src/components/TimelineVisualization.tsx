@@ -104,6 +104,9 @@ export default function TimelineVisualization({
   const [animateTransitions, setAnimateTransitions] = useState<boolean>(true)
   // 画面内収まり: 詳細コントロールは折りたたみ（初期非表示）
   const [showAdvancedControls, setShowAdvancedControls] = useState<boolean>(false)
+  // 単語テーブルの並び順
+  const [wordsSortKey, setWordsSortKey] = useState<'count' | 'rv_o' | 'rt_o' | 'ph_o'>('count')
+  const [wordsSortDir, setWordsSortDir] = useState<'asc' | 'desc'>('desc')
 
   // ローディング状態
   if (loading) {
@@ -859,10 +862,25 @@ export default function TimelineVisualization({
           )}
 
           {activeTab === 'words' && (
-            <div className="bg-white border rounded-lg p-4">
+              <div className="bg-white border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-sm">単語一覧</h4>
-                <div className="text-xs text-gray-500">Tap to center and show details</div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span>Tap to center and show details</span>
+                  <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Sort">
+                    {[
+                      { id: 'count', label: 'Count' },
+                      { id: 'rv_o', label: 'RV' },
+                      { id: 'rt_o', label: 'RT' },
+                      { id: 'ph_o', label: 'Phys' },
+                    ].map(o => (
+                      <button key={o.id} type="button" aria-pressed={wordsSortKey === o.id}
+                        className={`px-2 py-1 rounded-md border ${wordsSortKey === (o.id as any) ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-gray-200 text-gray-700'}`}
+                        onClick={() => setWordsSortKey(o.id as typeof wordsSortKey)}>{o.label}</button>
+                    ))}
+                    <button type="button" className="px-2 py-1 rounded-md border bg-white border-gray-200 text-gray-700" onClick={() => setWordsSortDir(d => d === 'asc' ? 'desc' : 'asc')}>{wordsSortDir === 'asc' ? '▲' : '▼'}</button>
+                  </div>
+                </div>
               </div>
               {/* 選択語の詳細テーブル（一覧タブにも表示） */}
               {selectedWord && (() => {
@@ -935,17 +953,121 @@ export default function TimelineVisualization({
                   </div>
                 )
               })()}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
+              <div className="border rounded overflow-auto">
                 {(() => {
-                  const counts: Record<string, number> = {}
-                  for (const dpt of data) counts[dpt.word] = (counts[dpt.word] ?? 0) + 1
-                  return Object.entries(counts)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([w, c]) => (
-                      <button key={w} type="button" className={`text-left px-2 py-1 rounded border ${selectedWord === w ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`} onClick={() => setSelectedWord(prev => prev === w ? null : w)}>
-                        <div className="flex items-center justify-between"><span>{w}</span><span className="text-xs text-gray-500">{c}</span></div>
-                      </button>
-                    ))
+                  type Row = {
+                    word: string
+                    id: number
+                    count: number
+                    rt_o: number; rt_1: number; rt_2: number
+                    ph_o: number; ph_1: number; ph_2: number
+                    rv_o: number; rv_1: number; rv_2: number
+                    p_o: number; p_1: number; p_2: number
+                    b_o: number; b_1: number; b_2: number
+                    f_o: number; f_1: number; f_2: number
+                    l_o: number; l_1: number; l_2: number
+                  }
+
+                  const words = Array.from(new Set(data.map(d => d.word)))
+                  let stats: Row[] = words.map(w => {
+                    const occ = data.filter(d => d.word === w)
+                    const first = occ[0] ? [occ[0]] : []
+                    const second = occ.slice(1)
+                    const getAvg = (arr: typeof occ, f: (d: typeof occ[number]) => number) => arr.length ? arr.reduce((s, d) => s + f(d), 0) / arr.length : 0
+                    const avg = (arr: typeof occ) => ({
+                      rt: getAvg(arr, d => d.reactionTime || 0),
+                      ph: getAvg(arr, d => getPhysStat(d.physiological, 'average')),
+                      rv: getAvg(arr, d => d.reactionValue || 0),
+                      p: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('prosody'))?.score) || 0),
+                      b: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('burst'))?.score) || 0),
+                      f: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('face'))?.score) || 0),
+                      l: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('language'))?.score) || 0),
+                    })
+                    const o = avg(occ), a = avg(first), s = avg(second)
+                    const jungIndex = JUNG_STIMULUS_WORDS.findIndex(j => j.japanese === w)
+                    return {
+                      word: w,
+                      id: jungIndex >= 0 ? jungIndex : -1,
+                      count: occ.length,
+                      rt_o: o.rt, rt_1: a.rt, rt_2: s.rt,
+                      ph_o: o.ph, ph_1: a.ph, ph_2: s.ph,
+                      rv_o: o.rv, rv_1: a.rv, rv_2: s.rv,
+                      p_o: o.p, p_1: a.p, p_2: s.p,
+                      b_o: o.b, b_1: a.b, b_2: s.b,
+                      f_o: o.f, f_1: a.f, f_2: s.f,
+                      l_o: o.l, l_1: a.l, l_2: s.l,
+                    }
+                  })
+                  stats = stats.sort((a, b) => {
+                    const key = wordsSortKey
+                    const av = a[key] as number
+                    const bv = b[key] as number
+                    return (wordsSortDir === 'asc' ? (av - bv) : (bv - av))
+                  })
+
+                  const cell = (v: number, d = 2) => Number.isFinite(v) ? v.toFixed(d) : '-'
+                  return (
+                    <table className="min-w-full text-xs whitespace-nowrap">
+                      <thead>
+                        <tr className="bg-gray-50 text-gray-600">
+                          <th className="px-3 py-2 text-left">単語ID</th>
+                          <th className="px-3 py-2 text-left">単語</th>
+                          <th className="px-3 py-2 text-right">Count</th>
+                          <th className="px-3 py-2 text-right">RT(o)</th>
+                          <th className="px-3 py-2 text-right">RT(1)</th>
+                          <th className="px-3 py-2 text-right">RT(2)</th>
+                          <th className="px-3 py-2 text-right">Phys(o)</th>
+                          <th className="px-3 py-2 text-right">Phys(1)</th>
+                          <th className="px-3 py-2 text-right">Phys(2)</th>
+                          <th className="px-3 py-2 text-right">RV(o)</th>
+                          <th className="px-3 py-2 text-right">RV(1)</th>
+                          <th className="px-3 py-2 text-right">RV(2)</th>
+                          <th className="px-3 py-2 text-right">P(o)</th>
+                          <th className="px-3 py-2 text-right">P(1)</th>
+                          <th className="px-3 py-2 text-right">P(2)</th>
+                          <th className="px-3 py-2 text-right">B(o)</th>
+                          <th className="px-3 py-2 text-right">B(1)</th>
+                          <th className="px-3 py-2 text-right">B(2)</th>
+                          <th className="px-3 py-2 text-right">F(o)</th>
+                          <th className="px-3 py-2 text-right">F(1)</th>
+                          <th className="px-3 py-2 text-right">F(2)</th>
+                          <th className="px-3 py-2 text-right">L(o)</th>
+                          <th className="px-3 py-2 text-right">L(1)</th>
+                          <th className="px-3 py-2 text-right">L(2)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stats.map(row => (
+                          <tr key={row.word} className={selectedWord === row.word ? 'bg-blue-50' : ''} style={{ background: `rgba(59,130,246, ${Math.max(0, Math.min(0.18, row.rv_o * 0.18))})` }}>
+                            <td className="px-3 py-2 text-gray-700">{row.id}</td>
+                            <td className="px-3 py-2 text-blue-700 cursor-pointer" onClick={() => setSelectedWord(prev => prev === row.word ? null : row.word)}>{row.word}</td>
+                            <td className="px-3 py-2 text-right">{row.count}</td>
+                            <td className="px-3 py-2 text-right">{Math.round(row.rt_o)}</td>
+                            <td className="px-3 py-2 text-right">{Math.round(row.rt_1)}</td>
+                            <td className="px-3 py-2 text-right">{Math.round(row.rt_2)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.ph_o,3)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.ph_1,3)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.ph_2,3)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.rv_o)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.rv_1)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.rv_2)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.p_o)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.p_1)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.p_2)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.b_o)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.b_1)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.b_2)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.f_o)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.f_1)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.f_2)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.l_o)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.l_1)}</td>
+                            <td className="px-3 py-2 text-right">{cell(row.l_2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )
                 })()}
               </div>
             </div>
