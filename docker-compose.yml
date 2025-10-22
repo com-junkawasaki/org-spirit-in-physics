@@ -34,7 +34,7 @@ services:
     ports:
       - "25250:25250"
     volumes:
-      - ./dataset:/app/dataset:cached
+      - ./apps/visualizer/public/dataset:/app/dataset:cached
     env_file:
       - ./apps/patient/env.docker
     depends_on:
@@ -83,7 +83,7 @@ services:
     ports:
       - "25251:25250"
     volumes:
-      - ./dataset:/app/dataset:cached
+      - ./apps/visualizer/public/dataset:/app/dataset:cached
     env_file:
       - ./apps/patient/env.docker
     environment:

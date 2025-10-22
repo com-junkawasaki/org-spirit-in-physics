@@ -61,7 +61,8 @@ class Neo4jClient {
       created_at: new Date().toISOString()
     }
     const query = `
-      CREATE (p:Participant $props)
+      CREATE (p:Participant)
+      SET p = $props
       RETURN p
     `
     const result = await this.query(query, { props: properties })
@@ -78,7 +79,8 @@ class Neo4jClient {
     }
     const query = `
       MATCH (p:Participant {id: $participantId})
-      CREATE (p)-[:HAS_SESSION]->(s:Session $props)
+      CREATE (p)-[:HAS_SESSION]->(s:Session)
+      SET s = $props
       RETURN s
     `
     const result = await this.query(query, { participantId, props: properties })
@@ -94,7 +96,8 @@ class Neo4jClient {
     }
     const query = `
       MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
-      CREATE (s)-[:HAS_RESPONSE]->(r:Response $props)
+      CREATE (s)-[:HAS_RESPONSE]->(r:Response)
+      SET r = $props
       RETURN r
     `
     const result = await this.query(query, { participantId, sessionId, props: properties })
