@@ -720,10 +720,12 @@ export default function Force3DWordGraphTypeGPU({
                 const maxDepth = Math.max(100, camera.distance)
                 const depthWeight = 1 - Math.min(1, Math.abs(cz) / maxDepth) // 0..1 (遠い→0, 近い→1)
                 const radius = baseRadius * (0.7 + 0.9 * depthWeight)
-                const conn = connectivityRef.current?.[i] ?? 0
-                const alphaDepth = 0.35 + 0.65 * depthWeight
-                const alphaConn = 0.05 + 0.95 * conn // 孤立ノードはほぼ透明、強接続は1に近い
-                const alpha = Math.max(0.03, Math.min(1, alphaDepth * alphaConn))
+                const connRaw = Math.max(0, Math.min(1, connectivityRef.current?.[i] ?? 0))
+                const connBoost = Math.pow(connRaw, 0.4) // 低接続をより持ち上げつつ差を保つ（強ブースト）
+                const alphaDepth = 0.55 + 0.45 * depthWeight // 全体の薄さを改善
+                const minAlphaNode = 0.08
+                const mix = 0.2 + 0.8 * connBoost // 孤立=0.2, 強接続=1.0
+                const alpha = Math.max(0.03, Math.min(1, minAlphaNode + (1 - minAlphaNode) * alphaDepth * mix))
                 
                 ctx.globalAlpha = alpha
                 ctx.beginPath()
@@ -732,7 +734,7 @@ export default function Force3DWordGraphTypeGPU({
                 ctx.fill()
                 
                 // ラベル
-                ctx.globalAlpha = Math.max(0.2, alpha)
+                ctx.globalAlpha = Math.max(0.06, alpha * 0.9)
                 ctx.fillStyle = '#1f2937'
                 const labelSize = Math.round(10 + 4 * depthWeight)
                 ctx.font = `${labelSize}px sans-serif`
@@ -797,13 +799,15 @@ export default function Force3DWordGraphTypeGPU({
                 const sw = 1 - Math.min(1, Math.abs(scz) / maxDepth)
                 const tw = 1 - Math.min(1, Math.abs(tcz) / maxDepth)
                 const w = 0.5 * (sw + tw) // 深度係数
-                const cs = connectivityRef.current?.[source] ?? 0
-                const ct = connectivityRef.current?.[target] ?? 0
-                const wc = 0.5 * (cs + ct) // 接続度係数
-                const alphaDepth = 0.25 + 0.55 * w
-                const alphaConn = 0.1 + 0.9 * wc
-                ctx.globalAlpha = Math.max(0.03, Math.min(1, alphaDepth * alphaConn))
-                ctx.lineWidth = (0.5 + 1.5 * w) * (0.6 + 1.2 * wc)
+                const cs = Math.max(0, Math.min(1, connectivityRef.current?.[source] ?? 0))
+                const ct = Math.max(0, Math.min(1, connectivityRef.current?.[target] ?? 0))
+                const wcRaw = 0.5 * (cs + ct) // 接続度係数
+                const wc = Math.pow(wcRaw, 0.4)
+                const alphaDepth = 0.35 + 0.55 * w
+                const minAlphaEdge = 0.06
+                const mixEdge = 0.2 + 0.8 * wc
+                ctx.globalAlpha = Math.max(0.03, Math.min(1, minAlphaEdge + (1 - minAlphaEdge) * alphaDepth * mixEdge))
+                ctx.lineWidth = (0.6 + 1.6 * w) * (0.7 + 1.1 * wc)
 
                 ctx.beginPath()
                 ctx.strokeStyle = link.color || '#1e40af'
