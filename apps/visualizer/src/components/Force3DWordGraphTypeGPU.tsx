@@ -189,6 +189,9 @@ export default function Force3DWordGraphTypeGPU({
     shellRadiusOuter: physics?.shellRadiusOuter ?? (physics?.shellRadius ? physics.shellRadius * 1.6 : 800),
     shellKOuter: physics?.shellKOuter ?? 0.6,
     radialOutK: physics?.radialOutK ?? 120,
+    // Position-based dynamics style solver parameters
+    // constraintIters: 1回あたりの最小距離制約の反復回数
+    // constraintStiffness: 重なり量に対する修正係数（0〜1）
     constraintIters: physics?.constraintIters ?? 2,
     constraintStiffness: physics?.constraintStiffness ?? 0.5,
     torusR: physics?.torusR ?? 0,
@@ -581,8 +584,12 @@ export default function Force3DWordGraphTypeGPU({
             
             readBuffer.unmap()
 
+            // Merkle DAG: physics.constraint.min_distance
             // CPU側での最小距離制約（Shannon: ノード間の識別可能性を維持）
-            // 固定ノードは動かさず、可動ノードのみを押し広げる
+            // - WebGPUで更新された位置に対してPBD風の衝突解消を行う
+            // - ノードのscaleを半径とみなし、minSep + (ri + rj) を閾値に
+            // - 固定ノードは不動、可動ノードのみに補正を分配
+            // 計算量: O(N^2)。Nは語＋アンカーで中規模に留まる想定
             const pos = positionsRef.current
             if (pos) {
               const baseMin = physicsRef.current.minSep
