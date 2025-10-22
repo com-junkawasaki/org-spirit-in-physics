@@ -83,6 +83,7 @@ export default function TimelineVisualization({
   }, [forcePresets])
   
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const lastInitialsRef = useRef<Map<string, [number, number, number]>>(new Map())
 
   // 表示モードの状態
   const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'split'>('timeline')
@@ -93,6 +94,11 @@ export default function TimelineVisualization({
   const [selectedEmotions, setSelectedEmotions] = useState<Set<typeof EMOTION_KEYS[number]>>(new Set(EMOTION_KEYS))
   const [physicsMode, setPhysicsMode] = useState<'emotion' | 'physio' | 'reactionSpeed'>('emotion')
   const [segment, setSegment] = useState<'all' | 'first100' | 'next100'>('all')
+  // トポロジ調整パラメータ（UIで調整可能）
+  const [topK, setTopK] = useState<number>(2)
+  const [minW, setMinW] = useState<number>(0.25)
+  const [weightGamma, setWeightGamma] = useState<number>(1.6)
+  const [animateTransitions, setAnimateTransitions] = useState<boolean>(true)
 
   // ローディング状態
   if (loading) {
@@ -301,6 +307,8 @@ export default function TimelineVisualization({
                   // 集約（ノード指標）。全語を初期化し、セッション実データで加算
                   const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number; sumPhysAbs: number }> = {}
                   jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+                    const physBySeries: Record<string, number[]> = {}
+                    const rtBySeries: Record<string, number[]> = {}
                     for (const d of sessionData) {
                       if (!accum[d.word]) continue // セッション語がユング語に無い場合は無視
                       accum[d.word].count += 1
@@ -310,7 +318,11 @@ export default function TimelineVisualization({
                       if (Number.isFinite(phys)) {
                         if (!('sumPhysAbs' in accum[d.word])) (accum[d.word] as any).sumPhysAbs = 0
                         ;(accum[d.word] as any).sumPhysAbs += Math.abs(phys as number)
+                        if (!physBySeries[d.word]) physBySeries[d.word] = []
+                        physBySeries[d.word].push(phys as number)
                       }
+                      if (!rtBySeries[d.word]) rtBySeries[d.word] = []
+                      rtBySeries[d.word].push(d.reactionTime)
                     }
 
                     // 生スケール: 平均反応値 × log(1+回数)
@@ -362,25 +374,45 @@ export default function TimelineVisualization({
                       normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
                     })
 
-                    // 力学モードの係数を単語別に算出
+                    // 力学モードの係数を単語別に算出（強度+変動）
                     const physValues: number[] = []
+                    const physStdValues: number[] = []
                     const speedValues: number[] = []
                     const physByWord: Record<string, number> = {}
+                    const physStdByWord: Record<string, number> = {}
                     const speedByWord: Record<string, number> = {}
                     for (const { japanese } of jungWords) {
                       const g = accum[japanese]
                       const c = g?.count || 0
                       const physAvg = c > 0 ? ((g as any).sumPhysAbs || 0) / c : 0
+                      const series = physBySeries[japanese] || []
+                      const mean = series.length ? series.reduce((s, x) => s + x, 0) / series.length : 0
+                      const variance = series.length ? series.reduce((s, x) => s + (x - mean) * (x - mean), 0) / series.length : 0
+                      const physStd = Math.sqrt(Math.max(0, variance))
                       const speed = c > 0 ? (1 / Math.max(1, g.sumReactionTime / c)) : 0
                       physByWord[japanese] = physAvg
+                      physStdByWord[japanese] = physStd
                       speedByWord[japanese] = speed
                       physValues.push(physAvg)
+                      physStdValues.push(physStd)
                       speedValues.push(speed)
                     }
                     const minMax = (arr: number[]) => ({ min: Math.min(...arr, 0), max: Math.max(...arr, 1e-6) })
                     const pm = minMax(physValues)
+                    const psm = minMax(physStdValues)
                     const sm = minMax(speedValues)
                     const norm01 = (x: number, mm: { min: number; max: number }) => (mm.max - mm.min === 0 ? 0 : (x - mm.min) / (mm.max - mm.min))
+
+                    // ノード視覚スケールを強度・変動に応じて補正
+                    for (const node of nodes) {
+                      const w = node.label
+                      const strength = norm01(physByWord[w] || 0, pm)
+                      const change = norm01(physStdByWord[w] || 0, psm)
+                      const m = 0.6 * strength + 0.4 * change
+                      if (physicsMode !== 'emotion') {
+                        node.scale = Math.max(0.5, Math.min(10, node.scale * (0.7 + 1.3 * m)))
+                      }
+                    }
 
                     // 感情アンカー（2Dマップを球面へ射影）
                     const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
@@ -450,9 +482,6 @@ export default function TimelineVisualization({
 
                     // 感情結合に基づくリンク生成（Shannon: Top-Kで疎化し、初期位置をアンカー側へ）
                     const links: WordLink[] = []
-                    const topK = 2
-                    const minW = 0.25
-                    const weightGamma = 1.6
 
                     // アンカーの位置ベクトルを取得
                     const anchorPos: Array<[number, number, number]> = anchorNodes.map(a => (a.initial as [number, number, number]))
@@ -500,7 +529,13 @@ export default function TimelineVisualization({
                           const len = Math.hypot(vx, vy, vz) || 1
                           const r = shellRadius * 0.65
                           const j = 1 + (Math.random() - 0.5) * 0.1 // わずかな揺らぎ
-                          nodes[wi].initial = [ (vx/len) * r * j, (vy/len) * r * j, (vz/len) * r * j ]
+                          let init: [number, number, number] = [ (vx/len) * r * j, (vy/len) * r * j, (vz/len) * r * j ]
+                          if (animateTransitions) {
+                            const prev = lastInitialsRef.current.get(label)
+                            if (prev) init = [ prev[0] * 0.8 + init[0] * 0.2, prev[1] * 0.8 + init[1] * 0.2, prev[2] * 0.8 + init[2] * 0.2 ]
+                          }
+                          nodes[wi].initial = init
+                          lastInitialsRef.current.set(label, init)
                         }
                       }
 
@@ -508,10 +543,12 @@ export default function TimelineVisualization({
                       for (const c of chosen) {
                         const a = anchorNodes[c.ai]
                         const key = anchorToKey[a.label]
-                        const color = key ? emotionColor[key] : undefined
+                        const base = key ? emotionColor[key] : undefined
                         const w = Math.max(0, Math.min(1, c.w * Math.max(0.1, factor)))
                         const L0 = Math.max(20, restLength * (1 - 0.6 * w))
                         const k = springK * (0.3 + 0.7 * w)
+                        const alpha = Math.max(0.12, Math.min(0.95, 0.12 + 0.88 * w))
+                        const color = base ? `rgba(${parseInt(base.slice(1,3),16)}, ${parseInt(base.slice(3,5),16)}, ${parseInt(base.slice(5,7),16)}, ${alpha.toFixed(3)})` : `rgba(30, 64, 175, ${alpha.toFixed(3)})`
                         links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k, color })
                       }
                     }
@@ -626,6 +663,29 @@ export default function TimelineVisualization({
                         className={`px-2 py-1 rounded text-sm ${physicsMode === o.id ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
                       >{o.label}</button>
                     ))}
+                  </div>
+
+                  <h4 className="font-medium mt-4 mb-2 text-sm">Top-K / 閾値 / ガンマ</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600 w-20">Top-K</span>
+                      <input type="range" min="1" max="5" step="1" value={topK} onChange={(e)=>setTopK(Number(e.target.value))} className="flex-1" />
+                      <span className="text-xs w-8 text-right">{topK}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600 w-20">Min W</span>
+                      <input type="range" min="0" max="0.6" step="0.05" value={minW} onChange={(e)=>setMinW(Number(e.target.value))} className="flex-1" />
+                      <span className="text-xs w-8 text-right">{minW.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600 w-20">Gamma</span>
+                      <input type="range" min="1.0" max="3.0" step="0.1" value={weightGamma} onChange={(e)=>setWeightGamma(Number(e.target.value))} className="flex-1" />
+                      <span className="text-xs w-8 text-right">{weightGamma.toFixed(1)}</span>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs text-gray-600">
+                      <input type="checkbox" checked={animateTransitions} onChange={(e)=>setAnimateTransitions(e.target.checked)} />
+                      スナップショット補間（形状変化を滑らかに）
+                    </label>
                   </div>
 
                   <h4 className="font-medium mt-4 mb-2 text-sm">データ範囲</h4>
