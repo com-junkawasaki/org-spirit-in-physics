@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { getAllParticipants } from '@/lib/data'
 import { getSpiritProbabilityColor } from '@/components/SpiritProbabilityBadge'
 

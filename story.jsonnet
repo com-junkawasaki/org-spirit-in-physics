@@ -203,7 +203,17 @@
       {
         // Merkle DAG: 物語.ナラティブ[38]
         act: '3D Force Timeline と感情距離フォースの導入',
-        summary: '感情類似度をフォースに合成した3D可視化を導入。Emo Weak/Strong/Gain と Emo Mix により、感情と構造（word2vec・観測遷移）の寄与を動的に調整できる設計を実装。上位K近傍（k-NN）で疎グラフ化し、強弱が位置と自然長へ直接反映されるよう最適化。専用ページ /3d-force-timeline を追加し、操作パネルから即時にクラスタの変化を観測可能にした。',
+        summary: '感情類似度をフォースに合成した3D可視化を導入。Emo Weak/Strong/Gain と Emo Mix により、感情と構造（word2vec・観測遷移）の寄与を動的に調整できる設計を実装。Top‑K疎化と最小距離制約（PBD）でダマを解消し、radialOutで球殻上に安定配置。prosody/face/language/burst モダリティ別フィルタ、感情色付きエッジ、選択語の原点固定、RT/Phys/Speedの物理モード切替を追加。専用ページ /3d-force-timeline を拡充し、操作パネルとiPad向けツールバーで即時にクラスタの変化を観測可能にした。',
+      },
+      {
+        // Merkle DAG: 物語.ナラティブ[40]
+        act: 'iPad HIG準拠の単一画面UI/UX再設計',
+        summary: 'トップバー（ALL/Emotion/Physio/Speed、All/First/Nextセグメント）と右ペインのタッチ最適コントロール（感情・モダリティ・Top‑K/MinW/Gamma）をsticky化。詳細操作は折りたたみ、キャンバス高さを最適化して1画面に収めた。',
+      },
+      {
+        // Merkle DAG: 物語.ナラティブ[41]
+        act: '単語一覧テーブル主導の分析ビュー',
+        summary: '単語IDを先頭列にしたテーブルを追加し、Count/RV/RT/Physで並び替え可能に。RTは0s→緑、10s→赤の連続グラデ、2.5s以上は赤寄りで強調。Prosody/Cyan・Face/Violet・Language/Amber・Burst/Roseのベース色に強度でα付与した感情強弱カラーマップを実装。行クリックで3Dに原点固定・右ペインに詳細テーブル（全体/1回目/2回目以降のRT/Phys/RVと各モダリティ平均）を表示。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[39]

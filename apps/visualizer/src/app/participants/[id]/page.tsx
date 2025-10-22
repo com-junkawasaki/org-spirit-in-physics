@@ -1,16 +1,23 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/PageLayout'
 import TimelineVisualization from '@/components/TimelineVisualization'
 
 export default function ForceTimelinePage() {
-  const [participantId, setParticipantId] = useState<string>('144b325f-5966-4d59-a629-f2ca421388cc')
+  const { id } = useParams<{ id: string }>()
+  const [participantId, setParticipantId] = useState<string>(id || '')
   const inputId = 'participant-select'
   const [options, setOptions] = useState<Array<{ id: string; label: string }>>([])
   const [loading, setLoading] = useState<boolean>(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 960, height: 540 })
+
+  // ルートパラメータと状態を同期
+  useEffect(() => {
+    if (id && id !== participantId) setParticipantId(id)
+  }, [id])
 
   useEffect(() => {
     let cancelled = false
