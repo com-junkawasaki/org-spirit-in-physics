@@ -95,7 +95,7 @@ export default function TimelineVisualization({
   const [physicsMode, setPhysicsMode] = useState<'all' | 'emotion' | 'physio' | 'reactionSpeed'>('emotion')
   const [segment, setSegment] = useState<'all' | 'first100' | 'next100'>('all')
   // モダリティ（Hume: prosody/burst/face/language）
-  const MOD_KEYS = ['prosody','burst','face','language'] as const
+  const MOD_KEYS = ['prosody','face','language','burst'] as const
   const [selectedModalities, setSelectedModalities] = useState<Set<typeof MOD_KEYS[number]>>(new Set(MOD_KEYS))
   // トポロジ調整パラメータ（UIで調整可能）
   const [topK, setTopK] = useState<number>(2)
