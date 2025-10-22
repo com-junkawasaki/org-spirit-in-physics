@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useRef, useState } from 'react'
+import React, { useEffect, useId, useRef, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/PageLayout'
 import TimelineVisualization from '@/components/TimelineVisualization'
 
@@ -69,10 +69,11 @@ export default function ForceTimelinePage() {
     <DashboardLayout
       header={{
         title: '3D Force Timeline',
-        description: '感情類似度をフォースに統合した時系列×3D可視化の専用ページ',
+        // compact header により説明は省略し冗長さを削減
         backHref: '/participants',
         backLabel: '参加者一覧へ'
       }}
+      compact
     >
       <div ref={containerRef} className="mb-3 md:mb-4 flex flex-wrap items-center gap-3 md:gap-4">
         <div className="flex items-center gap-2">

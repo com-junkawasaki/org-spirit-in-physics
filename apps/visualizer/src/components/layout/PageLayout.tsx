@@ -21,16 +21,17 @@ interface PageHeaderProps {
 }
 
 interface PageLayoutProps {
-  children: ReactNode
+  children?: ReactNode
   header: PageHeaderProps
   className?: string
   isLoading?: boolean
   onRefresh?: () => void
+  compact?: boolean
 }
 
-function PageHeader({ header, onRefresh }: { header: PageHeaderProps; onRefresh?: () => void }) {
+function PageHeader({ header, onRefresh, compact = false }: { header: PageHeaderProps; onRefresh?: () => void; compact?: boolean }) {
   return (
-    <div className="mb-6 md:mb-8">
+    <div className={compact ? 'mb-4 md:mb-6' : 'mb-6 md:mb-8'}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 md:gap-4">
           {header.backHref && (
@@ -43,16 +44,16 @@ function PageHeader({ header, onRefresh }: { header: PageHeaderProps; onRefresh?
           )}
 
           <div>
-            <div className="flex items-center gap-2.5 md:gap-3 mb-1.5 md:mb-2">
+            <div className={compact ? 'flex items-center gap-2.5 md:gap-3 mb-1' : 'flex items-center gap-2.5 md:gap-3 mb-1.5 md:mb-2'}>
               {header.icon && <div className="text-primary">{header.icon}</div>}
-              <h1 className="title-ipad md:text-2xl lg:text-3xl font-bold text-primary">{header.title}</h1>
+              <h1 className={compact ? 'title-ipad md:text-xl lg:text-2xl font-bold text-primary' : 'title-ipad md:text-2xl lg:text-3xl font-bold text-primary'}>{header.title}</h1>
               {header.badge && (
                 <Badge variant={header.badge.variant || 'default'}>
                   {header.badge.text}
                 </Badge>
               )}
             </div>
-            {header.description && (
+            {header.description && !compact && (
               <p className="subtitle-ipad md:text-base text-muted-foreground max-w-2xl">
                 {header.description}
               </p>
@@ -74,10 +75,10 @@ function PageHeader({ header, onRefresh }: { header: PageHeaderProps; onRefresh?
   )
 }
 
-export function PageLayout({ children, header, className = '', isLoading = false, onRefresh }: PageLayoutProps) {
+export function PageLayout({ children, header, className = '', isLoading = false, onRefresh, compact = false }: PageLayoutProps) {
   return (
     <div className={`container container-ipad mx-auto px-3 md:px-4 py-4 md:py-6 ${className}`}>
-      <PageHeader header={header} onRefresh={onRefresh} />
+      <PageHeader header={header} onRefresh={onRefresh} compact={compact} />
 
       {isLoading ? (
         <Card className="p-6 md:p-8">
@@ -96,11 +97,12 @@ export function PageLayout({ children, header, className = '', isLoading = false
 }
 
 // 特定のページタイプ用のレイアウト
-export function DashboardLayout({ children, header, onRefresh }: Omit<PageLayoutProps, 'className'>) {
+export function DashboardLayout({ children, header, onRefresh, compact }: Omit<PageLayoutProps, 'className'>) {
   return (
     <PageLayout
       header={header}
       onRefresh={onRefresh}
+      compact={compact}
       className="max-w-6xl md:max-w-7xl"
     >
       {children}
@@ -108,11 +110,12 @@ export function DashboardLayout({ children, header, onRefresh }: Omit<PageLayout
   )
 }
 
-export function DataManagementLayout({ children, header, onRefresh }: Omit<PageLayoutProps, 'className'>) {
+export function DataManagementLayout({ children, header, onRefresh, compact }: Omit<PageLayoutProps, 'className'>) {
   return (
     <PageLayout
       header={header}
       onRefresh={onRefresh}
+      compact={compact}
       className="max-w-5xl md:max-w-6xl"
     >
       {children}
@@ -120,11 +123,12 @@ export function DataManagementLayout({ children, header, onRefresh }: Omit<PageL
   )
 }
 
-export function AnalysisLayout({ children, header, onRefresh }: Omit<PageLayoutProps, 'className'>) {
+export function AnalysisLayout({ children, header, onRefresh, compact }: Omit<PageLayoutProps, 'className'>) {
   return (
     <PageLayout
       header={header}
       onRefresh={onRefresh}
+      compact={compact}
       className="max-w-4xl md:max-w-5xl"
     >
       {children}

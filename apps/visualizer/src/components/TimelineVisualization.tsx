@@ -864,6 +864,77 @@ export default function TimelineVisualization({
                 <h4 className="font-medium text-sm">単語一覧</h4>
                 <div className="text-xs text-gray-500">Tap to center and show details</div>
               </div>
+              {/* 選択語の詳細テーブル（一覧タブにも表示） */}
+              {selectedWord && (() => {
+                const occurrences = data.filter(d => d.word === selectedWord)
+                const split = [occurrences[0] ? [occurrences[0]] : [], occurrences.slice(1)] as const
+                const sections = { overall: occurrences, first: split[0], second: split[1] }
+                const getAvg = (arr: typeof occurrences, f: (d: typeof occurrences[number]) => number) => arr.length ? arr.reduce((s, d) => s + f(d), 0) / arr.length : 0
+                const avgObj = (arr: typeof occurrences) => ({
+                  reactionTimeAvg: getAvg(arr, d => d.reactionTime || 0),
+                  physioAvg: getAvg(arr, d => getPhysStat(d.physiological, 'average')),
+                  reactionValueAvg: getAvg(arr, d => d.reactionValue || 0),
+                  prosodyAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('prosody'))?.score) || 0),
+                  burstAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('burst'))?.score) || 0),
+                  faceAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('face'))?.score) || 0),
+                  languageAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('language'))?.score) || 0),
+                })
+                const overall = avgObj(sections.overall)
+                const first = avgObj(sections.first)
+                const second = avgObj(sections.second)
+                const cell = (v: number, digits = 2) => Number.isFinite(v) ? v.toFixed(digits) : '-'
+                return (
+                  <div className="mb-4 border rounded bg-white/60 overflow-auto">
+                    <div className="text-sm font-medium p-3 pb-0">単語詳細: {selectedWord}</div>
+                    <table className="min-w-full text-xs">
+                      <thead>
+                        <tr className="text-gray-500">
+                          <th className="text-left px-3 py-2">区分</th>
+                          <th className="text-right px-3 py-2">反応時間(ms)</th>
+                          <th className="text-right px-3 py-2">生理</th>
+                          <th className="text-right px-3 py-2">反応値</th>
+                          <th className="text-right px-3 py-2">Prosody</th>
+                          <th className="text-right px-3 py-2">Burst</th>
+                          <th className="text-right px-3 py-2">Face</th>
+                          <th className="text-right px-3 py-2">Language</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="px-3 py-2 text-gray-700">全体</td>
+                          <td className="px-3 py-2 text-right">{Math.round(overall.reactionTimeAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(overall.physioAvg, 3)}</td>
+                          <td className="px-3 py-2 text-right">{cell(overall.reactionValueAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(overall.prosodyAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(overall.burstAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(overall.faceAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(overall.languageAvg)}</td>
+                        </tr>
+                        <tr className="bg-gray-50/70">
+                          <td className="px-3 py-2 text-gray-700">1回目</td>
+                          <td className="px-3 py-2 text-right">{Math.round(first.reactionTimeAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(first.physioAvg, 3)}</td>
+                          <td className="px-3 py-2 text-right">{cell(first.reactionValueAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(first.prosodyAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(first.burstAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(first.faceAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(first.languageAvg)}</td>
+                        </tr>
+                        <tr>
+                          <td className="px-3 py-2 text-gray-700">2回目以降</td>
+                          <td className="px-3 py-2 text-right">{Math.round(second.reactionTimeAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(second.physioAvg, 3)}</td>
+                          <td className="px-3 py-2 text-right">{cell(second.reactionValueAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(second.prosodyAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(second.burstAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(second.faceAvg)}</td>
+                          <td className="px-3 py-2 text-right">{cell(second.languageAvg)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              })()}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
                 {(() => {
                   const counts: Record<string, number> = {}
