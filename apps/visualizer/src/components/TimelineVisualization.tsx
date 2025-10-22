@@ -33,11 +33,13 @@ export default function TimelineVisualization({
   const [emotionGain, setEmotionGain] = useState(1.5)
   const [shellRadius, setShellRadius] = useState(300)
   const [shellK, setShellK] = useState(1.5)
-  const [radialOutK] = useState(0)
+  // Shannon: 中央集約を抑える外向きラジアル力（既定を有効化）
+  const [radialOutK, setRadialOutK] = useState(120)
   const [constraintIters] = useState(2)
   const [constraintStiffness] = useState(0.5)
-  const [minSep, setMinSep] = useState(40)
-  const [sepK, setSepK] = useState(3000)
+  // Shannon: 近接重なりを抑えるため既定を強めに
+  const [minSep, setMinSep] = useState(80)
+  const [sepK, setSepK] = useState(8000)
 
   // Kawasaki model hyperparameters
   const [alpha, setAlpha] = useState(1.0)  // 反応時間の指数 α
@@ -257,6 +259,8 @@ export default function TimelineVisualization({
                 onShellRadiusChange={setShellRadius}
                 shellK={shellK}
                 onShellKChange={setShellK}
+                radialOutK={radialOutK}
+                onRadialOutKChange={setRadialOutK}
                 damping={damping}
                 onDampingChange={setDamping}
                 alpha={alpha}
@@ -390,23 +394,59 @@ export default function TimelineVisualization({
                     const baseOffset = nodes.length
                     const allNodes = [...anchorNodes, ...nodes]
 
-                    // 感情結合に基づくリンク生成
+                    // 感情結合に基づくリンク生成（Shannon: Top-Kで疎化し、初期位置をアンカー側へ）
                     const links: WordLink[] = []
-                    for (let ai = 0; ai < anchorNodes.length; ai++) {
-                      const anchor = anchorNodes[ai]
-                      const anchorIndex = ai
-                      const key = anchorToKey[anchor.label] as typeof EMOTION_KEYS[number] | undefined
-                      const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
+                    const topK = 2
+                    const minW = 0.25
+                    const weightGamma = 1.6
 
-                      for (let wi = 0; wi < nodes.length; wi++) {
-                        const wordIndex = baseOffset + wi
-                        const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
-                        const sim = kIdx >= 0 ? ei[kIdx] || 0 : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
-                        const w = Math.max(0, Math.min(1, sim))
-                        if (w < 0.15) continue // 極弱リンクをスキップ
-                        const L0 = Math.max(10, restLength * (1 - 0.6 * w))
+                    // アンカーの位置ベクトルを取得
+                    const anchorPos: Array<[number, number, number]> = anchorNodes.map(a => (a.initial as [number, number, number]))
+
+                    for (let wi = 0; wi < nodes.length; wi++) {
+                      const wordIndex = baseOffset + wi
+                      const label = nodes[wi].label
+                      const ei = normalizedEmotionVec[label] || new Array(10).fill(0)
+
+                      // 各アンカーに対する重み
+                      const weights: Array<{ ai: number; w: number }> = anchorNodes.map((a, ai) => {
+                        const key = anchorToKey[a.label] as typeof EMOTION_KEYS[number] | undefined
+                        const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
+                        const sim = kIdx >= 0 ? (ei[kIdx] || 0) : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
+                        const w = Math.pow(Math.max(0, Math.min(1, sim)), weightGamma)
+                        return { ai, w }
+                      })
+
+                      // Top-K選定
+                      weights.sort((a, b) => b.w - a.w)
+                      let chosen = weights.filter(x => x.w >= minW).slice(0, topK)
+                      if (chosen.length === 0 && weights.length > 0) chosen = weights.slice(0, 1)
+
+                      // 初期位置をアンカー側に寄せる
+                      if (chosen.length > 0) {
+                        let vx = 0, vy = 0, vz = 0, sw = 0
+                        for (const c of chosen) {
+                          const p = anchorPos[c.ai]
+                          vx += p[0] * c.w
+                          vy += p[1] * c.w
+                          vz += p[2] * c.w
+                          sw += c.w
+                        }
+                        if (sw > 0) {
+                          vx /= sw; vy /= sw; vz /= sw
+                          const len = Math.hypot(vx, vy, vz) || 1
+                          const r = shellRadius * 0.65
+                          const j = 1 + (Math.random() - 0.5) * 0.1 // わずかな揺らぎ
+                          nodes[wi].initial = [ (vx/len) * r * j, (vy/len) * r * j, (vz/len) * r * j ]
+                        }
+                      }
+
+                      // リンク生成
+                      for (const c of chosen) {
+                        const w = Math.max(0, Math.min(1, c.w))
+                        const L0 = Math.max(20, restLength * (1 - 0.6 * w))
                         const k = springK * (0.3 + 0.7 * w)
-                        links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
+                        links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k })
                       }
                     }
 
@@ -596,23 +636,54 @@ export default function TimelineVisualization({
                         const baseOffset = nodes.length
                         const allNodes = [...anchorNodes, ...nodes]
 
-                        // 感情結合に基づくリンク生成
+                        // 感情結合に基づくリンク生成（Shannon: Top-K疎化 + 初期位置寄せ）
                         const links: WordLink[] = []
-                        for (let ai = 0; ai < anchorNodes.length; ai++) {
-                          const anchor = anchorNodes[ai]
-                          const anchorIndex = ai
-                          const key = anchorToKey[anchor.label] as typeof EMOTION_KEYS[number] | undefined
-                          const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
+                        const topK = 2
+                        const minW = 0.25
+                        const weightGamma = 1.6
 
-                          for (let wi = 0; wi < nodes.length; wi++) {
-                            const wordIndex = baseOffset + wi
-                            const ei = normalizedEmotionVec[nodes[wi].label] || new Array(10).fill(0)
-                            const sim = kIdx >= 0 ? ei[kIdx] || 0 : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
-                            const w = Math.max(0, Math.min(1, sim))
-                            if (w < 0.15) continue // 極弱リンクをスキップ
-                            const L0 = Math.max(10, restLength * (1 - 0.6 * w))
+                        const anchorPos: Array<[number, number, number]> = anchorNodes.map(a => (a.initial as [number, number, number]))
+
+                        for (let wi = 0; wi < nodes.length; wi++) {
+                          const wordIndex = baseOffset + wi
+                          const label = nodes[wi].label
+                          const ei = normalizedEmotionVec[label] || new Array(10).fill(0)
+
+                          const weights: Array<{ ai: number; w: number }> = anchorNodes.map((a, ai) => {
+                            const key = anchorToKey[a.label] as typeof EMOTION_KEYS[number] | undefined
+                            const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
+                            const sim = kIdx >= 0 ? (ei[kIdx] || 0) : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
+                            const w = Math.pow(Math.max(0, Math.min(1, sim)), weightGamma)
+                            return { ai, w }
+                          })
+
+                          weights.sort((a, b) => b.w - a.w)
+                          let chosen = weights.filter(x => x.w >= minW).slice(0, topK)
+                          if (chosen.length === 0 && weights.length > 0) chosen = weights.slice(0, 1)
+
+                          if (chosen.length > 0) {
+                            let vx = 0, vy = 0, vz = 0, sw = 0
+                            for (const c of chosen) {
+                              const p = anchorPos[c.ai]
+                              vx += p[0] * c.w
+                              vy += p[1] * c.w
+                              vz += p[2] * c.w
+                              sw += c.w
+                            }
+                            if (sw > 0) {
+                              vx /= sw; vy /= sw; vz /= sw
+                              const len = Math.hypot(vx, vy, vz) || 1
+                              const r = shellRadius * 0.65
+                              const j = 1 + (Math.random() - 0.5) * 0.1
+                              nodes[wi].initial = [ (vx/len) * r * j, (vy/len) * r * j, (vz/len) * r * j ]
+                            }
+                          }
+
+                          for (const c of chosen) {
+                            const w = Math.max(0, Math.min(1, c.w))
+                            const L0 = Math.max(20, restLength * (1 - 0.6 * w))
                             const k = springK * (0.3 + 0.7 * w)
-                            links.push({ source: anchorIndex, target: wordIndex, weight: w, mode: 'tension', L0, k })
+                            links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k })
                           }
                         }
 

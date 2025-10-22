@@ -22,6 +22,9 @@ interface Force3DControlsProps {
   onShellRadiusChange: (value: number) => void
   shellK: number
   onShellKChange: (value: number) => void
+  // Shannon: 冗長な中心集約を抑えるための外向きラジアル力
+  radialOutK?: number
+  onRadialOutKChange?: (value: number) => void
   damping: number
   onDampingChange: (value: number) => void
   alpha: number
@@ -52,6 +55,8 @@ export default function Force3DControls({
   onShellRadiusChange,
   shellK,
   onShellKChange,
+  radialOutK,
+  onRadialOutKChange,
   damping,
   onDampingChange,
   alpha,
@@ -203,6 +208,21 @@ export default function Force3DControls({
               step="0.1"
               value={shellK}
               onChange={(e) => onShellKChange(Number(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Radial Out K</span>
+              <span className="text-xs text-gray-500">{(radialOutK ?? 0).toFixed(0)}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="300"
+              step="10"
+              value={radialOutK ?? 0}
+              onChange={(e) => onRadialOutKChange?.(Number(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>

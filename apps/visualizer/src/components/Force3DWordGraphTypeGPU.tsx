@@ -580,6 +580,66 @@ export default function Force3DWordGraphTypeGPU({
             }
             
             readBuffer.unmap()
+
+            // CPU側での最小距離制約（Shannon: ノード間の識別可能性を維持）
+            // 固定ノードは動かさず、可動ノードのみを押し広げる
+            const pos = positionsRef.current
+            if (pos) {
+              const baseMin = physicsRef.current.minSep
+              const stiffness = physicsRef.current.constraintStiffness ?? 0.5
+              const iters = Math.max(1, Math.floor(physicsRef.current.constraintIters ?? 2))
+              const scaleFactor = 6 // スケール→衝突半径への写像係数
+
+              for (let iter = 0; iter < iters; iter++) {
+                for (let i = 0; i < n; i++) {
+                  const ni = nodesRef.current[i]
+                  const ix = i * 3
+                  for (let j = i + 1; j < n; j++) {
+                    const nj = nodesRef.current[j]
+                    const jx = j * 3
+
+                    // 固定ノード同士はスキップ
+                    if ((ni?.fixed) && (nj?.fixed)) continue
+
+                    const dx = pos[ix] - pos[jx]
+                    const dy = pos[ix + 1] - pos[jx + 1]
+                    const dz = pos[ix + 2] - pos[jx + 2]
+                    const dist = Math.hypot(dx, dy, dz) || 1
+
+                    const ri = (ni?.scale ?? 1) * scaleFactor
+                    const rj = (nj?.scale ?? 1) * scaleFactor
+                    const minD = Math.max(10, baseMin + ri + rj)
+
+                    if (dist < minD) {
+                      const overlap = minD - dist
+                      const ux = dx / dist
+                      const uy = dy / dist
+                      const uz = dz / dist
+                      const corr = overlap * stiffness
+
+                      // どちらかが固定なら、動ける方だけ動かす
+                      if (ni?.fixed && !nj?.fixed) {
+                        pos[jx] -= ux * corr
+                        pos[jx + 1] -= uy * corr
+                        pos[jx + 2] -= uz * corr
+                      } else if (!ni?.fixed && nj?.fixed) {
+                        pos[ix] += ux * corr
+                        pos[ix + 1] += uy * corr
+                        pos[ix + 2] += uz * corr
+                      } else if (!ni?.fixed && !nj?.fixed) {
+                        const half = corr * 0.5
+                        pos[ix] += ux * half
+                        pos[ix + 1] += uy * half
+                        pos[ix + 2] += uz * half
+                        pos[jx] -= ux * half
+                        pos[jx + 1] -= uy * half
+                        pos[jx + 2] -= uz * half
+                      }
+                    }
+                  }
+                }
+              }
+            }
           })
 
           // 2D描画（簡易版）
