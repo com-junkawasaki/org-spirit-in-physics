@@ -171,8 +171,11 @@ export default function TimelineVisualization({
 
       {/* 表示モード切り替えタブ */}
       <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-4" aria-label="Tabs">
+        {/* Top Toolbar (iPad friendly) */}
+        <div className="border-b border-gray-200 sticky top-0 z-10 bg-white/90 backdrop-blur px-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 py-3">
+            <div className="flex items-center gap-2">
+              <nav className="inline-flex rounded-md shadow-sm" role="tablist" aria-label="View Tabs">
             {[
               { id: 'timeline', label: '時系列統合', icon: '📈' },
               { id: 'force3d', label: '3D Force', icon: '⚡' },
@@ -181,18 +184,55 @@ export default function TimelineVisualization({
               <button
                 key={tab.id}
                 type="button"
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                aria-pressed={activeTab === tab.id}
+                className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${
+                  activeTab === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'
                 }`}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
               >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
+                <span className="mr-1">{tab.icon}</span>
+                <span className="hidden md:inline">{tab.label}</span>
               </button>
             ))}
-          </nav>
+              </nav>
+            </div>
+            {/* Segmented controls: mode & segment */}
+            <div className="flex items-center gap-3">
+              <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Mode">
+                {[
+                  { id: 'emotion', label: 'Emotion' },
+                  { id: 'physio', label: 'Physio' },
+                  { id: 'reactionSpeed', label: 'Speed' },
+                ].map(o => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={physicsMode === o.id}
+                    className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${physicsMode === o.id ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white text-gray-700 border-gray-200'}`}
+                    onClick={() => setPhysicsMode(o.id as typeof physicsMode)}
+                  >{o.label}</button>
+                ))}
+              </div>
+              <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Segment">
+                {[
+                  { id: 'all', label: 'All 200' },
+                  { id: 'first100', label: 'First 100' },
+                  { id: 'next100', label: 'Next 100' },
+                ].map(o => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={segment === o.id}
+                    className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${segment === o.id ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white text-gray-700 border-gray-200'}`}
+                    onClick={() => setSegment(o.id as typeof segment)}
+                  >{o.label}</button>
+                ))}
+              </div>
+              <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => {
+                setSelectedEmotions(new Set(EMOTION_KEYS)); setTopK(2); setMinW(0.25); setWeightGamma(1.6); setAnimateTransitions(true)
+              }}>Reset</button>
+            </div>
+          </div>
         </div>
 
         {/* タブコンテンツ */}
@@ -255,7 +295,7 @@ export default function TimelineVisualization({
 
               {/* 単語選択: 上位100語 */}
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                <div className="lg:col-span-3">
+                <div className="lg:col-span-3 order-2 lg:order-1">
 
               {/* 3D Force コントロール */}
               <Force3DControls
@@ -606,9 +646,10 @@ export default function TimelineVisualization({
                 }
               })()}
                 </div>
-                <div className="lg:col-span-1">
+                {/* Control Panel - iPad sticky and touch-friendly */}
+                <div className="lg:col-span-1 order-1 lg:order-2">
                   <h4 className="font-medium mb-2 text-sm">単語選択（上位100）</h4>
-                  <div className="border rounded max-h-80 overflow-auto p-2 text-sm">
+                  <div className="border rounded max-h-[38vh] overflow-auto p-2 text-sm">
                     {(() => {
                       // データから出現回数順に上位100語
                       const counts: Record<string, number> = {}
@@ -630,7 +671,7 @@ export default function TimelineVisualization({
                     })()}
                   </div>
                   <h4 className="font-medium mt-4 mb-2 text-sm">感情フィルター</h4>
-                  <div className="border rounded max-h-60 overflow-auto p-2 text-sm grid grid-cols-2 gap-1">
+                  <div className="border rounded max-h-[20vh] overflow-auto p-2 text-sm grid grid-cols-2 gap-1">
                     {EMOTION_KEYS.map((k) => (
                       <label key={k} className="flex items-center gap-1">
                         <input
@@ -729,7 +770,30 @@ export default function TimelineVisualization({
 
               {/* 3D Force グラフ（分割表示） */}
               <div className="bg-gray-50 border rounded-lg p-3">
-                <h4 className="font-medium mb-2 text-sm">3D Force</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-sm">3D Force</h4>
+                  {/* ミニコントロール（トップバーと同値） */}
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Mode mini">
+                      {[
+                        { id: 'emotion', label: 'E' },
+                        { id: 'physio', label: 'P' },
+                        { id: 'reactionSpeed', label: 'S' },
+                      ].map(o => (
+                        <button key={o.id} type="button" aria-pressed={physicsMode === o.id} className={`px-2 py-1 text-xs first:rounded-l-md last:rounded-r-md border ${physicsMode === o.id ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white text-gray-700 border-gray-200'}`} onClick={() => setPhysicsMode(o.id as typeof physicsMode)}>{o.label}</button>
+                      ))}
+                    </div>
+                    <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Segment mini">
+                      {[
+                        { id: 'all', label: 'A' },
+                        { id: 'first100', label: 'F' },
+                        { id: 'next100', label: 'N' },
+                      ].map(o => (
+                        <button key={o.id} type="button" aria-pressed={segment === o.id} className={`px-2 py-1 text-xs first:rounded-l-md last:rounded-r-md border ${segment === o.id ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white text-gray-700 border-gray-200'}`} onClick={() => setSegment(o.id as typeof segment)}>{o.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
                 <div className="overflow-auto max-h-96">
                   {mounted && (() => {
                     try {
