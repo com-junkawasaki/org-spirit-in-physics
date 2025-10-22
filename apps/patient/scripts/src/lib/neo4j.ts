@@ -25,7 +25,7 @@ class Neo4jClient {
       },
       {
         logger: console.log,
-        encrypted: true,
+        // Do not force encryption here; Aura uses encrypted URI (neo4j+s)
       }
     )
   }

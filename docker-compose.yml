@@ -32,13 +32,21 @@ services:
       dockerfile: Dockerfile
     container_name: spirit-patient
     ports:
-      - "25250:3000"
+      - "25250:25250"
+    volumes:
+      - ./dataset:/app/dataset:cached
     env_file:
       - ./apps/patient/env.docker
     depends_on:
       - neo4j
     networks:
       - spirit-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:25250" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 
   # Visualizer app (Next.js)
@@ -65,6 +73,57 @@ services:
     networks:
       - spirit-network
 
+  # Patient app for cloud (Aura) profile
+  patient-cloud:
+    profiles: ["cloud"]
+    build:
+      context: ./apps/patient
+      dockerfile: Dockerfile
+    container_name: spirit-patient-cloud
+    ports:
+      - "25251:25250"
+    volumes:
+      - ./dataset:/app/dataset:cached
+    env_file:
+      - ./apps/patient/env.docker
+    environment:
+      - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=ZApfDTJmpJAmBpMXgCHWn826CV69dE9_ntxtPHUc7hI
+      - NEO4J_DATABASE=neo4j
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:25250" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    command: sh -lc "rm -f .env.local && pnpm dev"
+
+  # One-shot importer to push dataset into Neo4j via patient API
+  patient-importer:
+    image: curlimages/curl:8.9.1
+    container_name: spirit-patient-importer
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      patient:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-lc"]
+    command: >-
+      'set -euo pipefail;
+       echo "Triggering participants import";
+       curl -sS -X POST http://patient:25250/api/admin/import/participants || exit 1;
+       echo "Triggering sessions import";
+       curl -sS -X POST http://patient:25250/api/admin/import/sessions || exit 1;
+       echo "Triggering emotions import";
+       curl -sS -X POST http://patient:25250/api/admin/import/emotions || exit 1;
+       echo "Imports completed";'
+    networks:
+      - spirit-network
+    restart: "no"
+
   # BPMN Runner (optional orchestrator for imports)
   bpmn-runner:
         build:
@@ -79,6 +138,28 @@ services:
         networks:
           - spirit-network
         restart: "no"
+
+  # One-shot importer for cloud (Aura)
+  patient-cloud-importer:
+    profiles: ["cloud"]
+    image: curlimages/curl:8.9.1
+    container_name: spirit-patient-cloud-importer
+    depends_on:
+      patient-cloud:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-lc"]
+    command: >-
+      'set -euo pipefail;
+       echo "Triggering participants import (cloud)";
+       curl -sS -X POST http://patient-cloud:25250/api/admin/import/participants || exit 1;
+       echo "Triggering sessions import (cloud)";
+       curl -sS -X POST http://patient-cloud:25250/api/admin/import/sessions || exit 1;
+       echo "Triggering emotions import (cloud)";
+       curl -sS -X POST http://patient-cloud:25250/api/admin/import/emotions || exit 1;
+       echo "Cloud imports completed";'
+    networks:
+      - spirit-network
+    restart: "no"
 
 volumes:
   neo4j_data:
