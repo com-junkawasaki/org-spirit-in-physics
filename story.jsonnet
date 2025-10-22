@@ -220,6 +220,11 @@
         act: '可視化用デモデータセット生成とAPI切替',
         summary: '200点以上の理想的なデモデータセット（感情ソース混在・8ch生理データ）を自動生成。APIの demo=1 切替を実装し、本番統合データとデモスタブの双方を同一UIで検証可能に。タイムラインAPIでは取得失敗を metadata.errors として返却し、画面上で警告表示して原因追跡を容易化。',
       },
+      {
+        // Merkle DAG: 物語.ナラティブ[42]
+        act: '認証統合とアクセス制御',
+        summary: 'Clerkを用いて参加者アプリと研究者アプリに認証を統合。ClerkProviderとmiddlewareで/adminおよび/api/adminを保護し、サインイン/サインアップページとトップページのSignedIn/SignedOut UIを実装。役割に応じた安全な運用基盤を確立。',
+      },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -359,17 +364,20 @@
             'ズーム・パン・データポイント詳細表示',
             'Experiment階層対応時系列データ取得',
             'インタラクティブな反応パターン分析UI',
-            '科学的手法による霊性測定時系列理解深化'
+            '科学的手法による霊性測定時系列理解深化',
+            'Clerkによる認証統合（参加者/研究者）',
+            'Next.js middlewareでのルート保護（/admin, /api/admin）',
+            'サインイン/サインアップUI統合（SignedIn/SignedOut）'
           ],
         },
       ],
     },
         metadata: {
-          version: '1.23.0',
+          version: '1.24.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: '時系列統合可視化システム版',
-          last_updated: '2025-10-16',
+          merkle_root: '認証統合・アクセス制御版',
+          last_updated: '2025-10-22',
           implemented_features: [
             '川崎モデルの数式実装',
             'Hume AI Expression Measurement統合',
@@ -569,7 +577,10 @@
             'ズーム・パン・データポイント詳細表示',
             'Experiment階層対応時系列データ取得',
             'インタラクティブな反応パターン分析UI',
-            '科学的手法による霊性測定時系列理解深化'
+            '科学的手法による霊性測定時系列理解深化',
+            'Clerk認証（参加者アプリ・研究者アプリ）',
+            'Next.js middlewareによる/admin, /api/admin保護',
+            'サインイン/サインアップページ・SignedIn/SignedOut UI'
           ],
         },
   },
