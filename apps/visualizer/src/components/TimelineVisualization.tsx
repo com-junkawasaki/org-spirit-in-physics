@@ -92,7 +92,7 @@ export default function TimelineVisualization({
   // 感情フィルターと力学モード、データセグメント
   const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
   const [selectedEmotions, setSelectedEmotions] = useState<Set<typeof EMOTION_KEYS[number]>>(new Set(EMOTION_KEYS))
-  const [physicsMode, setPhysicsMode] = useState<'emotion' | 'physio' | 'reactionSpeed'>('emotion')
+  const [physicsMode, setPhysicsMode] = useState<'all' | 'emotion' | 'physio' | 'reactionSpeed'>('emotion')
   const [segment, setSegment] = useState<'all' | 'first100' | 'next100'>('all')
   // トポロジ調整パラメータ（UIで調整可能）
   const [topK, setTopK] = useState<number>(2)
@@ -200,6 +200,7 @@ export default function TimelineVisualization({
             <div className="flex items-center gap-3">
               <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Mode">
                 {[
+                  { id: 'all', label: 'ALL' },
                   { id: 'emotion', label: 'Emotion' },
                   { id: 'physio', label: 'Physio' },
                   { id: 'reactionSpeed', label: 'Speed' },
@@ -548,11 +549,13 @@ export default function TimelineVisualization({
                       if (chosen.length === 0 && weights.length > 0) chosen = weights.slice(0, 1)
 
                       // 力学モード: 単語係数
-                      const factor = physicsMode === 'emotion'
-                        ? 1
-                        : physicsMode === 'physio'
-                          ? norm01(physByWord[label] || 0, pm)
-                          : norm01(speedByWord[label] || 0, sm)
+                      const factor = physicsMode === 'all'
+                        ? (0.5 * (ei.reduce((s, x) => s + x, 0) / Math.max(1, ei.length)) + 0.3 * norm01(physByWord[label] || 0, pm) + 0.2 * norm01(speedByWord[label] || 0, sm))
+                        : physicsMode === 'emotion'
+                          ? 1
+                          : physicsMode === 'physio'
+                            ? norm01(physByWord[label] || 0, pm)
+                            : norm01(speedByWord[label] || 0, sm)
 
                       // 初期位置をアンカー側に寄せる
                       if (chosen.length > 0) {
@@ -776,6 +779,7 @@ export default function TimelineVisualization({
                   <div className="flex items-center gap-2">
                     <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Mode mini">
                       {[
+                        { id: 'all', label: 'A' },
                         { id: 'emotion', label: 'E' },
                         { id: 'physio', label: 'P' },
                         { id: 'reactionSpeed', label: 'S' },
