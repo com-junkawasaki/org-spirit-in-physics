@@ -669,7 +669,7 @@ export default function TimelineVisualization({
               })()}
                 </div>
                 {/* Control Panel - iPad sticky and touch-friendly */}
-                <div className="lg:col-span-1 order-1 lg:order-2">
+                <div className="lg:col-span-1 order-1 lg:order-2 sticky top-4 self-start max-h-[78vh] overflow-auto pr-1">
                   <h4 className="font-medium mb-2 text-sm">単語選択（上位100）</h4>
                   <div className="border rounded max-h-[38vh] overflow-auto p-2 text-sm">
                     {(() => {
@@ -1006,6 +1006,35 @@ export default function TimelineVisualization({
                   })
 
                   const cell = (v: number, d = 2) => Number.isFinite(v) ? v.toFixed(d) : '-'
+                  const clamp01 = (x: number) => Math.max(0, Math.min(1, x))
+                  const hexToRgb = (hex: string): [number, number, number] => [
+                    parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)
+                  ]
+                  const mix = (a: [number,number,number], b: [number,number,number], t: number): string => {
+                    const r = Math.round(a[0] + (b[0]-a[0]) * t)
+                    const g = Math.round(a[1] + (b[1]-a[1]) * t)
+                    const b2 = Math.round(a[2] + (b[2]-a[2]) * t)
+                    return `rgb(${r}, ${g}, ${b2})`
+                  }
+                  // 0s→Green(#10b981), 10s→Red(#ef4444). 2.5s以上は赤寄り
+                  const RT_GREEN: [number,number,number] = hexToRgb('#10b981')
+                  const RT_RED: [number,number,number] = hexToRgb('#ef4444')
+                  const rtBg = (ms: number) => {
+                    const sec = (ms || 0) / 1000
+                    const t = clamp01(sec / 10)
+                    const color = mix(RT_GREEN, RT_RED, t)
+                    const alpha = 0.12 + 0.28 * clamp01((sec - 0) / 10)
+                    return `${color.replace('rgb', 'rgba').replace(')', `, ${alpha.toFixed(2)})`)}`
+                  }
+                  // Modality color scales（base色×強度）
+                  const P = hexToRgb('#06b6d4') // cyan-500
+                  const B = hexToRgb('#f43f5e') // rose-500
+                  const F = hexToRgb('#8b5cf6') // violet-500
+                  const Lc = hexToRgb('#f59e0b') // amber-500
+                  const modBg = (hexRgb: [number,number,number], v: number) => {
+                    const alpha = 0.08 + 0.40 * clamp01(v || 0)
+                    return `rgba(${hexRgb[0]}, ${hexRgb[1]}, ${hexRgb[2]}, ${alpha.toFixed(2)})`
+                  }
                   return (
                     <table className="min-w-full text-xs whitespace-nowrap">
                       <thead>
@@ -1038,31 +1067,31 @@ export default function TimelineVisualization({
                       </thead>
                       <tbody>
                         {stats.map(row => (
-                          <tr key={row.word} className={selectedWord === row.word ? 'bg-blue-50' : ''} style={{ background: `rgba(59,130,246, ${Math.max(0, Math.min(0.18, row.rv_o * 0.18))})` }}>
+                          <tr key={row.word} className={selectedWord === row.word ? 'ring-1 ring-blue-300' : ''} style={{ background: rtBg(row.rt_o) }}>
                             <td className="px-3 py-2 text-gray-700">{row.id}</td>
                             <td className="px-3 py-2 text-blue-700 cursor-pointer" onClick={() => setSelectedWord(prev => prev === row.word ? null : row.word)}>{row.word}</td>
                             <td className="px-3 py-2 text-right">{row.count}</td>
-                            <td className="px-3 py-2 text-right">{Math.round(row.rt_o)}</td>
-                            <td className="px-3 py-2 text-right">{Math.round(row.rt_1)}</td>
-                            <td className="px-3 py-2 text-right">{Math.round(row.rt_2)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: rtBg(row.rt_o) }}>{Math.round(row.rt_o)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: rtBg(row.rt_1) }}>{Math.round(row.rt_1)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: rtBg(row.rt_2) }}>{Math.round(row.rt_2)}</td>
                             <td className="px-3 py-2 text-right">{cell(row.ph_o,3)}</td>
                             <td className="px-3 py-2 text-right">{cell(row.ph_1,3)}</td>
                             <td className="px-3 py-2 text-right">{cell(row.ph_2,3)}</td>
                             <td className="px-3 py-2 text-right">{cell(row.rv_o)}</td>
                             <td className="px-3 py-2 text-right">{cell(row.rv_1)}</td>
                             <td className="px-3 py-2 text-right">{cell(row.rv_2)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.p_o)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.p_1)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.p_2)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.b_o)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.b_1)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.b_2)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.f_o)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.f_1)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.f_2)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.l_o)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.l_1)}</td>
-                            <td className="px-3 py-2 text-right">{cell(row.l_2)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(P, row.p_o) }}>{cell(row.p_o)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(P, row.p_1) }}>{cell(row.p_1)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(P, row.p_2) }}>{cell(row.p_2)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(B, row.b_o) }}>{cell(row.b_o)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(B, row.b_1) }}>{cell(row.b_1)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(B, row.b_2) }}>{cell(row.b_2)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(F, row.f_o) }}>{cell(row.f_o)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(F, row.f_1) }}>{cell(row.f_1)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(F, row.f_2) }}>{cell(row.f_2)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(Lc, row.l_o) }}>{cell(row.l_o)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(Lc, row.l_1) }}>{cell(row.l_1)}</td>
+                            <td className="px-3 py-2 text-right" style={{ background: modBg(Lc, row.l_2) }}>{cell(row.l_2)}</td>
                           </tr>
                         ))}
                       </tbody>

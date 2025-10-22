@@ -19,12 +19,7 @@ export function Header() {
         {/* タイトルブロックはiPadでは冗長のため削除し、情報密度を最適化 */}
       </div>
 
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="subtitle-ipad md:text-sm text-muted-foreground">Online</span>
-        </div>
-      </div>
+      <div className="flex items-center space-x-4" />
     </header>
   )
 }
