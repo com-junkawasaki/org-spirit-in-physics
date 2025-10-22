@@ -55,6 +55,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* iPad safe-area padding */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
@@ -122,13 +125,38 @@
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .dashboard-grid {
-    @apply grid-cols-2 gap-6;
+    @apply grid-cols-2 gap-4; /* tighter on iPad to fit one screen */
   }
 }
 
 @media (min-width: 1025px) {
   .dashboard-grid {
     @apply grid-cols-3 gap-6;
+  }
+}
+
+/* iPad specific layout tweaks */
+@media (min-width: 768px) and (max-width: 1024px) {
+  header.sticky-ipad {
+    position: sticky;
+    top: env(safe-area-inset-top);
+    z-index: 30;
+  }
+
+  .container-ipad {
+    max-width: 960px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .title-ipad {
+    font-size: 1.375rem; /* ~22px */
+    line-height: 1.75rem;
+  }
+
+  .subtitle-ipad {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 }
 

@@ -86,7 +86,7 @@ export default function TimelineVisualization({
   const lastInitialsRef = useRef<Map<string, [number, number, number]>>(new Map())
 
   // 表示モードの状態
-  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'split'>('timeline')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words'>('timeline')
   // 単語選択（上位100をUIに表示）
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   // 感情フィルターと力学モード、データセグメント
@@ -181,11 +181,11 @@ export default function TimelineVisualization({
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 py-3">
             <div className="flex items-center gap-2">
               <nav className="inline-flex rounded-md shadow-sm" role="tablist" aria-label="View Tabs">
-            {[
-              { id: 'timeline', label: '時系列統合', icon: '📈' },
-              { id: 'force3d', label: '3D Force', icon: '⚡' },
-              { id: 'split', label: '分割表示', icon: '📊' },
-            ].map((tab) => (
+              {[
+                { id: 'timeline', label: '時系列統合', icon: '📈' },
+                { id: 'force3d', label: '3D Force', icon: '⚡' },
+                { id: 'words', label: '単語一覧', icon: '📝' },
+              ].map((tab) => (
               <button
                 key={tab.id}
                 type="button"
@@ -777,6 +777,47 @@ export default function TimelineVisualization({
                       >{o.label}</button>
                     ))}
                   </div>
+
+                  {/* 単語詳細: overall / first / second の統計 */}
+                  {selectedWord && (() => {
+                    // セグメントに関わらず、全データから1回目/2回目を分割
+                    const occurrences = data.filter(d => d.word === selectedWord)
+                    const split = [occurrences[0] ? [occurrences[0]] : [], occurrences.slice(1)] as const
+                    const sections = {
+                      overall: occurrences,
+                      first: split[0],
+                      second: split[1]
+                    }
+                    const getAvg = (arr: typeof occurrences, f: (d: typeof occurrences[number]) => number) => arr.length ? arr.reduce((s, d) => s + f(d), 0) / arr.length : 0
+                    const avgObj = (arr: typeof occurrences) => ({
+                      reactionTimeAvg: getAvg(arr, d => d.reactionTime || 0),
+                      physioAvg: getAvg(arr, d => getPhysStat(d.physiological, 'average')),
+                      reactionValueAvg: getAvg(arr, d => d.reactionValue || 0),
+                      prosodyAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('prosody'))?.score) || 0),
+                      burstAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('burst'))?.score) || 0),
+                      faceAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('face'))?.score) || 0),
+                      languageAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('language'))?.score) || 0),
+                    })
+                    const overall = avgObj(sections.overall)
+                    const first = avgObj(sections.first)
+                    const second = avgObj(sections.second)
+                    const Row = ({ title, v }: { title: string; v: { reactionTimeAvg: number; physioAvg: number; reactionValueAvg: number; prosodyAvg: number; burstAvg: number; faceAvg: number; languageAvg: number } }) => (
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                        <div className="text-gray-600">{title}</div>
+                        <div className="text-right">RT {Math.round(v.reactionTimeAvg)}ms ・ Phys {v.physioAvg.toFixed(3)} ・ RV {v.reactionValueAvg.toFixed(2)}</div>
+                        <div></div>
+                        <div className="text-right">P {v.prosodyAvg.toFixed(2)} ・ B {v.burstAvg.toFixed(2)} ・ F {v.faceAvg.toFixed(2)} ・ L {v.languageAvg.toFixed(2)}</div>
+                      </div>
+                    )
+                    return (
+                      <div className="mt-4 border rounded p-3 bg-white/60">
+                        <div className="text-sm font-medium mb-2">単語詳細: {selectedWord}</div>
+                        <Row title="全体" v={overall} />
+                        <Row title="1回目" v={first} />
+                        <Row title="2回目以降" v={second} />
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             </div>

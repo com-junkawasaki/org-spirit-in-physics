@@ -30,9 +30,9 @@ interface PageLayoutProps {
 
 function PageHeader({ header, onRefresh }: { header: PageHeaderProps; onRefresh?: () => void }) {
   return (
-    <div className="mb-8">
+    <div className="mb-6 md:mb-8">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4">
           {header.backHref && (
             <Link href={header.backHref}>
               <Button variant="outline" size="sm">
@@ -43,9 +43,9 @@ function PageHeader({ header, onRefresh }: { header: PageHeaderProps; onRefresh?
           )}
 
           <div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-2.5 md:gap-3 mb-1.5 md:mb-2">
               {header.icon && <div className="text-primary">{header.icon}</div>}
-              <h1 className="text-3xl font-bold text-primary">{header.title}</h1>
+              <h1 className="title-ipad md:text-2xl lg:text-3xl font-bold text-primary">{header.title}</h1>
               {header.badge && (
                 <Badge variant={header.badge.variant || 'default'}>
                   {header.badge.text}
@@ -53,7 +53,7 @@ function PageHeader({ header, onRefresh }: { header: PageHeaderProps; onRefresh?
               )}
             </div>
             {header.description && (
-              <p className="text-muted-foreground max-w-2xl">
+              <p className="subtitle-ipad md:text-base text-muted-foreground max-w-2xl">
                 {header.description}
               </p>
             )}
@@ -76,14 +76,14 @@ function PageHeader({ header, onRefresh }: { header: PageHeaderProps; onRefresh?
 
 export function PageLayout({ children, header, className = '', isLoading = false, onRefresh }: PageLayoutProps) {
   return (
-    <div className={`container mx-auto px-4 py-8 ${className}`}>
+    <div className={`container container-ipad mx-auto px-3 md:px-4 py-4 md:py-6 ${className}`}>
       <PageHeader header={header} onRefresh={onRefresh} />
 
       {isLoading ? (
-        <Card className="p-8">
-          <CardContent className="flex items-center justify-center min-h-[200px]">
+        <Card className="p-6 md:p-8">
+          <CardContent className="flex items-center justify-center min-h-[160px] md:min-h-[200px]">
             <div className="text-center">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+              <RefreshCw className="h-6 w-6 md:h-8 md:w-8 animate-spin mx-auto mb-3 md:mb-4 text-muted-foreground" />
               <p className="text-muted-foreground">読み込み中...</p>
             </div>
           </CardContent>
@@ -101,7 +101,7 @@ export function DashboardLayout({ children, header, onRefresh }: Omit<PageLayout
     <PageLayout
       header={header}
       onRefresh={onRefresh}
-      className="max-w-7xl"
+      className="max-w-6xl md:max-w-7xl"
     >
       {children}
     </PageLayout>
@@ -113,7 +113,7 @@ export function DataManagementLayout({ children, header, onRefresh }: Omit<PageL
     <PageLayout
       header={header}
       onRefresh={onRefresh}
-      className="max-w-6xl"
+      className="max-w-5xl md:max-w-6xl"
     >
       {children}
     </PageLayout>
@@ -125,7 +125,7 @@ export function AnalysisLayout({ children, header, onRefresh }: Omit<PageLayoutP
     <PageLayout
       header={header}
       onRefresh={onRefresh}
-      className="max-w-5xl"
+      className="max-w-4xl md:max-w-5xl"
     >
       {children}
     </PageLayout>

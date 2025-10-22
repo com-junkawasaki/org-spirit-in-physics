@@ -48,17 +48,17 @@ export function Sidebar() {
     return (
         <aside
             className={`
-        ${sidebarOpen ? 'w-64' : 'w-16'}
+        ${sidebarOpen ? 'w-60 md:w-64' : 'w-14 md:w-16'}
         fixed lg:static inset-y-0 left-0 z-50
         bg-card border-r transition-all duration-300 ease-in-out
         flex flex-col
       `}
         >
             {/* Sidebar Header */}
-            <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center justify-between p-3 md:p-4 border-b">
                 {sidebarOpen && (
                     <div className="flex items-center space-x-2">
-                        <h1 className="text-xl font-bold text-primary">
+                        <h1 className="text-lg md:text-xl font-bold text-primary">
                             Spirit in Physics
                         </h1>
                     </div>
@@ -76,23 +76,23 @@ export function Sidebar() {
             </div>
 
             {/* Navigation Menu */}
-            <nav className="flex-1 p-4 space-y-2">
+            <nav className="flex-1 p-3 md:p-4 space-y-2 overflow-y-auto">
                 {menuItems.map((item) => (
                     <a
                         key={item.id}
                         href={item.href}
                         className={`
-                  flex items-center space-x-3 p-3 rounded-lg
+                  flex items-center space-x-3 p-2.5 md:p-3 rounded-lg
                   hover:bg-muted transition-colors group
                   ${sidebarOpen ? 'justify-start' : 'justify-center'}
                 `}
                         title={sidebarOpen ? '' : item.description}
                     >
-                        <span className="text-xl">{item.icon}</span>
+                        <span className="text-lg md:text-xl">{item.icon}</span>
                         {sidebarOpen && (
                             <div className="flex-1 min-w-0">
-                                <div className="font-medium text-sm">{item.label}</div>
-                                <div className="text-xs text-muted-foreground truncate">
+                                <div className="font-medium text-sm md:text-sm">{item.label}</div>
+                                <div className="text-xs md:text-xs text-muted-foreground truncate">
                                     {item.description}
                                 </div>
                             </div>
@@ -102,7 +102,7 @@ export function Sidebar() {
             </nav>
 
             {/* Sidebar Footer */}
-            <div className="p-4 border-t">
+            <div className="p-3 md:p-4 border-t">
                 {sidebarOpen ? (
                     <div className="space-y-2">
                         <div className="flex items-center space-x-2">
