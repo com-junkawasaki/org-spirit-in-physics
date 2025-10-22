@@ -86,6 +86,13 @@ export default function TimelineVisualization({
 
   // 表示モードの状態
   const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'split'>('timeline')
+  // 単語選択（上位100をUIに表示）
+  const [selectedWord, setSelectedWord] = useState<string | null>(null)
+  // 感情フィルターと力学モード、データセグメント
+  const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+  const [selectedEmotions, setSelectedEmotions] = useState<Set<typeof EMOTION_KEYS[number]>>(new Set(EMOTION_KEYS))
+  const [physicsMode, setPhysicsMode] = useState<'emotion' | 'physio' | 'reactionSpeed'>('emotion')
+  const [segment, setSegment] = useState<'all' | 'first100' | 'next100'>('all')
 
   // ローディング状態
   if (loading) {
@@ -240,6 +247,10 @@ export default function TimelineVisualization({
             <div className="space-y-4">
               <h3 className="font-semibold mb-3">3D Force 可視化</h3>
 
+              {/* 単語選択: 上位100語 */}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-3">
+
               {/* 3D Force コントロール */}
               <Force3DControls
                 forcePresets={forcePresets}
@@ -273,21 +284,33 @@ export default function TimelineVisualization({
                 onEtaChange={setEta}
               />
 
-              {/* 3D Force グラフ本体 */}
-              {mounted && (() => {
+                  {/* 3D Force グラフ本体 */}
+                  {mounted && (() => {
                 try {
                   // 実際のデータから3Dグラフを生成
                   const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
                   const jungWords = JUNG_STIMULUS_WORDS // 全てのデータを表示
 
+                  // セグメント選択に応じてデータを抽出
+                  const sessionData = (() => {
+                    if (segment === 'first100') return data.slice(0, 100)
+                    if (segment === 'next100') return data.slice(100, 200)
+                    return data
+                  })()
+
                   // 集約（ノード指標）。全語を初期化し、セッション実データで加算
-                  const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
+                  const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number; sumPhysAbs: number }> = {}
                   jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
-                    for (const d of data) {
+                    for (const d of sessionData) {
                       if (!accum[d.word]) continue // セッション語がユング語に無い場合は無視
                       accum[d.word].count += 1
                       accum[d.word].sumReactionValue += d.reactionValue
                       accum[d.word].sumReactionTime += d.reactionTime
+                      const phys = getPhysStat(d.physiological, 'average')
+                      if (Number.isFinite(phys)) {
+                        if (!('sumPhysAbs' in accum[d.word])) (accum[d.word] as any).sumPhysAbs = 0
+                        ;(accum[d.word] as any).sumPhysAbs += Math.abs(phys as number)
+                      }
                     }
 
                     // 生スケール: 平均反応値 × log(1+回数)
@@ -311,11 +334,10 @@ export default function TimelineVisualization({
                     }))
 
                     // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
-                    const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
                     const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
                     const wordEmotionSum: Record<string, number[]> = {}
 
-                    for (const dpt of data) {
+                    for (const dpt of sessionData) {
                       const w = dpt.word
                       if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
                       if (Array.isArray(dpt.emotions)) {
@@ -339,6 +361,26 @@ export default function TimelineVisualization({
                     Object.keys(wordEmotionSum).forEach((w) => {
                       normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
                     })
+
+                    // 力学モードの係数を単語別に算出
+                    const physValues: number[] = []
+                    const speedValues: number[] = []
+                    const physByWord: Record<string, number> = {}
+                    const speedByWord: Record<string, number> = {}
+                    for (const { japanese } of jungWords) {
+                      const g = accum[japanese]
+                      const c = g?.count || 0
+                      const physAvg = c > 0 ? ((g as any).sumPhysAbs || 0) / c : 0
+                      const speed = c > 0 ? (1 / Math.max(1, g.sumReactionTime / c)) : 0
+                      physByWord[japanese] = physAvg
+                      speedByWord[japanese] = speed
+                      physValues.push(physAvg)
+                      speedValues.push(speed)
+                    }
+                    const minMax = (arr: number[]) => ({ min: Math.min(...arr, 0), max: Math.max(...arr, 1e-6) })
+                    const pm = minMax(physValues)
+                    const sm = minMax(speedValues)
+                    const norm01 = (x: number, mm: { min: number; max: number }) => (mm.max - mm.min === 0 ? 0 : (x - mm.min) / (mm.max - mm.min))
 
                     // 感情アンカー（2Dマップを球面へ射影）
                     const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
@@ -423,6 +465,8 @@ export default function TimelineVisualization({
                       // 各アンカーに対する重み
                       const weights: Array<{ ai: number; w: number }> = anchorNodes.map((a, ai) => {
                         const key = anchorToKey[a.label] as typeof EMOTION_KEYS[number] | undefined
+                        // 感情フィルター: 未選択のアンカーは重み0
+                        if (key && !selectedEmotions.has(key)) return { ai, w: 0 }
                         const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
                         const sim = kIdx >= 0 ? (ei[kIdx] || 0) : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
                         const w = Math.pow(Math.max(0, Math.min(1, sim)), weightGamma)
@@ -433,6 +477,13 @@ export default function TimelineVisualization({
                       weights.sort((a, b) => b.w - a.w)
                       let chosen = weights.filter(x => x.w >= minW).slice(0, topK)
                       if (chosen.length === 0 && weights.length > 0) chosen = weights.slice(0, 1)
+
+                      // 力学モード: 単語係数
+                      const factor = physicsMode === 'emotion'
+                        ? 1
+                        : physicsMode === 'physio'
+                          ? norm01(physByWord[label] || 0, pm)
+                          : norm01(speedByWord[label] || 0, sm)
 
                       // 初期位置をアンカー側に寄せる
                       if (chosen.length > 0) {
@@ -458,7 +509,7 @@ export default function TimelineVisualization({
                         const a = anchorNodes[c.ai]
                         const key = anchorToKey[a.label]
                         const color = key ? emotionColor[key] : undefined
-                        const w = Math.max(0, Math.min(1, c.w))
+                        const w = Math.max(0, Math.min(1, c.w * Math.max(0.1, factor)))
                         const L0 = Math.max(20, restLength * (1 - 0.6 * w))
                         const k = springK * (0.3 + 0.7 * w)
                         links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k, color })
@@ -469,7 +520,18 @@ export default function TimelineVisualization({
                   }
 
                   const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
-                  const { nodes, links } = generateForce3DGraph()
+                    const { nodes, links } = generateForce3DGraph()
+
+                    // 選択語を中心へ（固定）し目立たせる
+                    if (selectedWord) {
+                      const idx = nodes.findIndex(n => n.label === selectedWord)
+                      if (idx >= 0) {
+                        nodes[idx].fixed = true
+                        nodes[idx].initial = [0, 0, 0]
+                        nodes[idx].scale = Math.max(nodes[idx].scale, 6)
+                        nodes[idx].color = '#111827'
+                      }
+                    }
 
                   console.log('3Dグラフデータ:', { nodes: nodes.length, links: links.length })
 
@@ -506,6 +568,83 @@ export default function TimelineVisualization({
                   )
                 }
               })()}
+                </div>
+                <div className="lg:col-span-1">
+                  <h4 className="font-medium mb-2 text-sm">単語選択（上位100）</h4>
+                  <div className="border rounded max-h-80 overflow-auto p-2 text-sm">
+                    {(() => {
+                      // データから出現回数順に上位100語
+                      const counts: Record<string, number> = {}
+                      for (const dpt of data) counts[dpt.word] = (counts[dpt.word] ?? 0) + 1
+                      const top = Object.entries(counts)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 100)
+                        .map(([w]) => w)
+                      return top.map((w) => (
+                        <button
+                          key={w}
+                          type="button"
+                          onClick={() => setSelectedWord(prev => prev === w ? null : w)}
+                          className={`w-full text-left px-2 py-1 rounded ${selectedWord === w ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}
+                        >
+                          {w}
+                        </button>
+                      ))
+                    })()}
+                  </div>
+                  <h4 className="font-medium mt-4 mb-2 text-sm">感情フィルター</h4>
+                  <div className="border rounded max-h-60 overflow-auto p-2 text-sm grid grid-cols-2 gap-1">
+                    {EMOTION_KEYS.map((k) => (
+                      <label key={k} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmotions.has(k)}
+                          onChange={(e) => {
+                            setSelectedEmotions(prev => {
+                              const next = new Set(prev)
+                              if (e.target.checked) next.add(k); else next.delete(k)
+                              return next
+                            })
+                          }}
+                        />
+                        <span>{k}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <h4 className="font-medium mt-4 mb-2 text-sm">力学モード</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'emotion', label: 'Emotion' },
+                      { id: 'physio', label: 'Physio' },
+                      { id: 'reactionSpeed', label: 'Speed' },
+                    ].map(o => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setPhysicsMode(o.id as typeof physicsMode)}
+                        className={`px-2 py-1 rounded text-sm ${physicsMode === o.id ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                      >{o.label}</button>
+                    ))}
+                  </div>
+
+                  <h4 className="font-medium mt-4 mb-2 text-sm">データ範囲</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'all', label: 'All 200' },
+                      { id: 'first100', label: 'First 100' },
+                      { id: 'next100', label: 'Next 100' },
+                    ].map(o => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setSegment(o.id as typeof segment)}
+                        className={`px-2 py-1 rounded text-sm ${segment === o.id ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                      >{o.label}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
