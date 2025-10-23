@@ -1,8 +1,7 @@
-'use client';
-
 import Link from 'next/link';
 import { Button } from 'scripts/src/components/ui/button';
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
+
+export const dynamic = 'force-dynamic';
 
 export default function HomePage() {
   return (
@@ -14,14 +13,6 @@ export default function HomePage() {
           </span>
         </h1>
         <div className="flex flex-col space-y-4 items-center">
-          <div className="mb-4">
-            <SignedOut>
-              <SignInButton mode="modal" />
-            </SignedOut>
-            <SignedIn>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
-          </div>
           <Link href="/admin" passHref>
             <Button variant="outline" className="w-64 h-16 text-lg font-semibold">管理者画面</Button>
           </Link>

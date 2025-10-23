@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const dynamic = 'force-dynamic';
 import {
   analyzeVideoEmotions,
   analyzeAllParticipantVideos,
@@ -148,6 +150,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+
   try {
     const body = await request.json();
     const { action, participantId, videoFile, sessionType, priority = 'normal' } = body;

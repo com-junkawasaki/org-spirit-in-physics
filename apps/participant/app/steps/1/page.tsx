@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
+
+export const dynamic = 'force-dynamic';
 import ConsentForm from 'scripts/src/app/ConsentForm';
 import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
 import { useRouter } from 'next/navigation';

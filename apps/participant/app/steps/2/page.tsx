@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+
+export const dynamic = 'force-dynamic';
 import { useRouter } from 'next/navigation';
 import JungVoiceTest from 'scripts/src/components/jung-voice-assessment/JungVoiceTest';
 
