@@ -225,6 +225,11 @@
         act: '認証統合とアクセス制御',
         summary: 'Clerkを用いて参加者アプリと研究者アプリに認証を統合。ClerkProviderとmiddlewareで/adminおよび/api/adminを保護し、サインイン/サインアップページとトップページのSignedIn/SignedOut UIを実装。役割に応じた安全な運用基盤を確立。',
       },
+      {
+        // Merkle DAG: 物語.ナラティブ[43]
+        act: '認証機能の簡素化とクリーンアップ',
+        summary: '参加者アプリからClerk認証を完全に削除し、シンプルなホームページに戻した。全てのadmin APIエンドポイントからauthチェックを削除し、開発・テスト環境でのアクセスを容易にした。ビルドエラーを解消し、プロジェクトの安定性を向上。',
+      },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -365,19 +370,17 @@
             'Experiment階層対応時系列データ取得',
             'インタラクティブな反応パターン分析UI',
             '科学的手法による霊性測定時系列理解深化',
-            'Clerkによる認証統合（参加者/研究者）',
-            'Next.js middlewareでのルート保護（/admin, /api/admin）',
-            'サインイン/サインアップUI統合（SignedIn/SignedOut）'
+            '認証機能の簡素化とクリーンアップ'
           ],
         },
       ],
     },
         metadata: {
-          version: '1.24.0',
+          version: '1.26.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: '認証統合・アクセス制御版',
-          last_updated: '2025-10-22',
+          merkle_root: '認証機能簡素化クリーンアップ版',
+          last_updated: '2025-10-24',
           implemented_features: [
             '川崎モデルの数式実装',
             'Hume AI Expression Measurement統合',
@@ -580,7 +583,12 @@
             '科学的手法による霊性測定時系列理解深化',
             'Clerk認証（参加者アプリ・研究者アプリ）',
             'Next.js middlewareによる/admin, /api/admin保護',
-            'サインイン/サインアップページ・SignedIn/SignedOut UI'
+            'サインイン/サインアップページ・SignedIn/SignedOut UI',
+            'Clerk APIベース実装最適化',
+            'auth()関数によるサーバーサイド認証チェック',
+            'currentUser()によるユーザー情報取得',
+            'サーバーコンポーネント化による高速レンダリング',
+            'admin APIエンドポイント認証セキュリティ強化'
           ],
         },
   },

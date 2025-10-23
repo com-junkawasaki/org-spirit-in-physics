@@ -8,6 +8,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
 
+export const dynamic = 'force-dynamic';
+
 // Merkle DAG: import.sessions.process
 // セッションデータインポート処理関数
 async function importSessionsFromDataset() {
@@ -204,6 +206,7 @@ async function calculateSessionStatistics(events: any[]) {
 }
 
 export async function POST(request: NextRequest) {
+
   try {
     // Merkle DAG: import.sessions.execute
     // インポート処理実行

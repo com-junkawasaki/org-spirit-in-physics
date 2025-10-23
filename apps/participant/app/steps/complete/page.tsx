@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+
+export const dynamic = 'force-dynamic';
 import { Button } from 'scripts/src/components/ui/button';
 import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
 import Link from 'next/link';

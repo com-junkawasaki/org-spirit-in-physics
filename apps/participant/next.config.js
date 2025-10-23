@@ -1,5 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    eslint: {
+        // ESLintの古いオプションを無効化
+        ignoreDuringBuilds: false,
+    },
+    output: 'standalone',
+    // 完全に動的レンダリングを強制
+    trailingSlash: true,
+    experimental: {
+        forceSwcTransforms: true,
+        serverComponentsExternalPackages: [],
+    },
+    images: {
+        unoptimized: true,
+    },
+    generateBuildId: async () => {
+        return 'build-' + Date.now()
+    },
     webpack: (config, { isServer }) => {
       // Node.js ポリフィルの追加（Inngestで必要）
       if (!isServer) {

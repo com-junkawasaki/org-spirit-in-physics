@@ -8,6 +8,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
 
+export const dynamic = 'force-dynamic';
+
 // Merkle DAG: import.emotions.process
 // 感情分析データインポート処理関数
 async function importEmotionsFromDataset() {
@@ -258,6 +260,7 @@ async function storeCSVRecord(csvRecord: any) {
 }
 
 export async function POST(request: NextRequest) {
+
   try {
     // Merkle DAG: import.emotions.execute
     // インポート処理実行
