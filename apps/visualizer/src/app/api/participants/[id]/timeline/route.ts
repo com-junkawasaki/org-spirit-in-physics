@@ -126,7 +126,7 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
   try {
     console.log('Getting session data from Supabase for participant:', participantId);
     
-    // participant_experiment_sessionsからセッションを取得（events JSONBカラムを含む）
+    // participant_experiment_sessionsからセッションを取得
     const { data: sessions, error } = await client
       .from('participant_experiment_sessions')
       .select('*')
@@ -143,25 +143,32 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
     }
     
     const session = sessions[0];
+    const sessionUuid = session.id;
     
-    // events JSONBカラムからイベントを取得
-    let events: any[] = [];
-    if (session.events && Array.isArray(session.events)) {
-      events = session.events;
-    } else if (session.events && typeof session.events === 'string') {
-      // JSON文字列の場合、パースを試みる
-      try {
-        events = JSON.parse(session.events);
-      } catch (parseError) {
-        console.warn('Failed to parse events JSON string:', parseError);
-        events = [];
-      }
+    // participant_session_eventsテーブルからイベントを取得
+    const { data: events, error: eventsError } = await client
+      .from('participant_session_events')
+      .select('*')
+      .eq('participant_id', participantId)
+      .eq('session_id', sessionUuid)
+      .order('timestamp', { ascending: true });
+    
+    if (eventsError) {
+      console.warn('Error fetching session events:', eventsError);
+      // エラーが発生しても空配列で続行
     }
     
-    console.log('Session data events count:', events.length);
+    // イベント形式に変換
+    const formattedEvents = (events || []).map((event: any) => ({
+      type: event.event_type,
+      timestamp: new Date(event.timestamp).getTime(),
+      payload: event.payload || {},
+    }));
+    
+    console.log('Session data events count:', formattedEvents.length);
 
     // 単語表示イベントを基準点として抽出
-    const wordEvents = events.filter((event: any) => 
+    const wordEvents = formattedEvents.filter((event: any) => 
       event.type === 'word_displayed' || 
       event.type === 'response_window_opened' || 
       event.type === 'response_window_closed' ||
@@ -169,12 +176,12 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
     );
 
     // セッション開始時刻を最初のイベントのtimestampから取得、またはstart_timeから取得
-    const startTime = events.length > 0 && events[0].timestamp 
-      ? events[0].timestamp 
+    const startTime = formattedEvents.length > 0 && formattedEvents[0].timestamp 
+      ? formattedEvents[0].timestamp 
       : (session.start_time ? new Date(session.start_time).getTime() : 0);
 
     return {
-      events,
+      events: formattedEvents,
       wordEvents,
       startTime,
       sessionId: session.id,

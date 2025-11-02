@@ -194,27 +194,91 @@ export class SupabaseManager {
 
   /**
    * Merkle DAG: セッションイベントの保存
-   * イベントをJSONとしてparticipant_experiment_sessionsテーブルに保存
+   * イベントごとに個別レコードとしてparticipant_session_eventsテーブルに保存
    */
   async saveSessionEvents(participantId: string, sessionId: string, events: any[]): Promise<void> {
     try {
-      // セッションを更新してイベントをJSONとして保存
-      const { error } = await this.client
-        .from('participant_experiment_sessions')
-        .update({
-          events: events,
-        })
+      // セッションID（UUID）を取得
+      const sessions = await this.getSessionsByParticipantId(participantId);
+      const session = sessions.find(s => s.session_id === sessionId || s.id === sessionId);
+      
+      if (!session) {
+        throw new Error(`Session ${sessionId} not found for participant ${participantId}`);
+      }
+
+      const sessionUuid = session.id;
+
+      // 既存のイベントを削除（重複を防ぐため）
+      await this.client
+        .from('participant_session_events')
+        .delete()
         .eq('participant_id', participantId)
-        .eq('session_id', sessionId);
+        .eq('session_id', sessionUuid);
+
+      // イベントごとにレコードを作成
+      const eventsToInsert = events.map(event => ({
+        participant_id: participantId,
+        session_id: sessionUuid,
+        event_type: event.type || 'unknown',
+        timestamp: event.timestamp 
+          ? new Date(event.timestamp).toISOString()
+          : new Date().toISOString(),
+        payload: event.payload || {},
+      }));
+
+      if (eventsToInsert.length > 0) {
+        const { error } = await this.client
+          .from('participant_session_events')
+          .insert(eventsToInsert);
+
+        if (error) {
+          throw error;
+        }
+
+        console.log(`Saved ${eventsToInsert.length} events as individual records for session ${sessionId}`);
+      }
+    } catch (error) {
+      console.error('Error saving session events:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Merkle DAG: セッションイベントの取得
+   * participant_session_eventsテーブルからイベントを取得
+   */
+  async getSessionEvents(participantId: string, sessionId: string): Promise<any[]> {
+    try {
+      // セッションID（UUID）を取得
+      const sessions = await this.getSessionsByParticipantId(participantId);
+      const session = sessions.find(s => s.session_id === sessionId || s.id === sessionId);
+      
+      if (!session) {
+        return [];
+      }
+
+      const sessionUuid = session.id;
+
+      const { data: events, error } = await this.client
+        .from('participant_session_events')
+        .select('*')
+        .eq('participant_id', participantId)
+        .eq('session_id', sessionUuid)
+        .order('timestamp', { ascending: true });
 
       if (error) {
         throw error;
       }
 
-      console.log(`Saved ${events.length} events for session ${sessionId}`);
+      // イベント形式に変換
+      return (events || []).map(event => ({
+        type: event.event_type,
+        timestamp: new Date(event.timestamp).getTime(),
+        payload: event.payload || {},
+      }));
     } catch (error) {
-      console.error('Error saving session events:', error);
-      throw error;
+      console.error('Error getting session events:', error);
+      return [];
     }
   }
 
