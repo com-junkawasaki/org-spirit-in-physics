@@ -133,40 +133,132 @@ export class SupabaseManager {
   /**
    * Merkle DAG: セッションデータの保存
    */
-  async saveSession(session: Session): Promise<void> {
+  async saveSession(session: Session | { participant_id: string; session_id: string; session_type: string; start_time: string; end_time?: string | null }): Promise<void> {
     try {
-      // イベントデータからセッション情報を抽出
-      const sessionStartedEvent = session.events.find((e: any) => e.type === 'session_started');
-      const sessionEndedEvent = session.events.filter((e: any) => e.type === 'response_window_closed').pop();
+      // Sessionインターフェースの形式と、簡易形式の両方に対応
+      if ('events' in session) {
+        // イベントデータからセッション情報を抽出
+        const sessionStartedEvent = session.events.find((e: any) => e.type === 'session_started');
+        const sessionEndedEvent = session.events.filter((e: any) => e.type === 'response_window_closed').pop();
 
-      // セッションタイプを決定（デフォルトはsession-1）
-      const sessionType = session.id.includes('session-2') ? 'session-2' : 'session-1';
+        // セッションタイプを決定（デフォルトはsession-1）
+        const sessionType = session.id.includes('session-2') ? 'session-2' : 'session-1';
 
-      // participant_experiment_sessionsテーブルにセッションを保存
-      // experiment_idはsession_idと同じ値を使用（Experimentテーブルは使用しない）
-      const { error } = await this.client
+        // participant_experiment_sessionsテーブルにセッションを保存
+        const { error } = await this.client
+          .from('participant_experiment_sessions')
+          .upsert({
+            participant_id: session.participantId,
+            session_id: session.id,
+            session_type: sessionType,
+            start_time: sessionStartedEvent?.timestamp 
+              ? new Date(sessionStartedEvent.timestamp).toISOString()
+              : new Date(session.createdAt).toISOString(),
+            end_time: sessionEndedEvent?.timestamp 
+              ? new Date(sessionEndedEvent.timestamp).toISOString()
+              : null,
+          }, {
+            onConflict: 'participant_id,session_id',
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        console.log(`Session ${session.id} saved to Supabase`);
+      } else {
+        // 簡易形式（直接パラメータ）
+        const { error } = await this.client
+          .from('participant_experiment_sessions')
+          .upsert({
+            participant_id: session.participant_id,
+            session_id: session.session_id,
+            session_type: session.session_type,
+            start_time: session.start_time,
+            end_time: session.end_time || null,
+          }, {
+            onConflict: 'participant_id,session_id',
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        console.log(`Session ${session.session_id} saved to Supabase`);
+      }
+    } catch (error) {
+      console.error('Error saving session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Merkle DAG: 参加者IDによるセッション取得
+   */
+  async getSessionsByParticipantId(participantId: string): Promise<any[]> {
+    try {
+      const { data: sessions, error } = await this.client
         .from('participant_experiment_sessions')
-        .upsert({
-          participant_id: session.participantId,
-          session_id: session.id,
-          session_type: sessionType,
-          start_time: sessionStartedEvent?.timestamp 
-            ? new Date(sessionStartedEvent.timestamp).toISOString()
-            : new Date(session.createdAt).toISOString(),
-          end_time: sessionEndedEvent?.timestamp 
-            ? new Date(sessionEndedEvent.timestamp).toISOString()
-            : null,
-        }, {
-          onConflict: 'participant_id,session_id',
-        });
+        .select('*')
+        .eq('participant_id', participantId)
+        .order('start_time', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      console.log(`Session ${session.id} saved to Supabase`);
+      return sessions || [];
     } catch (error) {
-      console.error('Error saving session:', error);
+      console.error('Error getting sessions by participant ID:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Merkle DAG: 単語応答データの一括作成
+   */
+  async createWordResponses(participantId: string, responses: Array<{
+    stimulusWord: string;
+    responseWord: string;
+    reactionTimeMs: number;
+    isDelayed?: boolean;
+    timestamp: string;
+  }>): Promise<void> {
+    try {
+      // セッションを取得（最新のセッションを使用）
+      const sessions = await this.getSessionsByParticipantId(participantId);
+      if (sessions.length === 0) {
+        throw new Error(`No sessions found for participant ${participantId}`);
+      }
+
+      const sessionId = sessions[0].id;
+      const sessionType = sessions[0].session_type || 'session-1';
+
+      // 応答データを挿入
+      const responsesToInsert = responses.map(response => ({
+        participant_id: participantId,
+        experiment_id: sessionId, // experiment_idとしてsession_idを使用
+        word_stimulus_id: 1, // デフォルト値（word_stimuliテーブルから取得可能）
+        stimulus_word: response.stimulusWord,
+        response_word: response.responseWord,
+        reaction_time_ms: response.reactionTimeMs,
+        session: sessionType,
+        timestamp: response.timestamp,
+      }));
+
+      if (responsesToInsert.length > 0) {
+        const { error } = await this.client
+          .from('participant_response_data')
+          .insert(responsesToInsert);
+
+        if (error) {
+          throw error;
+        }
+
+        console.log(`Created ${responsesToInsert.length} word responses for participant ${participantId}`);
+      }
+    } catch (error) {
+      console.error('Error creating word responses:', error);
       throw error;
     }
   }
