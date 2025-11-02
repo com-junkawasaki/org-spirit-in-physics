@@ -1,6 +1,6 @@
 // Merkle DAG: api.analysis.emotion_distance
 // 感情距離計算API
-// 依存: Neo4j, 感情データ, 時系列データ
+// 依存: Supabase, 感情データ, 時系列データ
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Merkle DAG: api.analysis.emotion_distance.data_extraction
-    // データの抽出（Neo4jベース）
+    // データの抽出（Supabaseベース）
     const participantData = await getParticipantData(participantId);
 
     if (!participantData || participantData.sessions.length === 0) {
@@ -345,65 +345,26 @@ export async function POST(request: NextRequest) {
 }
 
 // Merkle DAG: api.analysis.emotion_distance.session_data_extraction
-// セッションデータの抽出
+// セッションデータの抽出（未使用 - getParticipantData()がSupabase対応済み）
+// 注意: この関数は使用されていません。getParticipantData()がSupabase対応済みで使用されています。
+// 将来的に削除を検討してください。
+/*
 async function extractSessionData(
   client: unknown,
   participantId: string,
   experimentId?: string
 ): Promise<Array<{ event_type: string; timestamp: number; payload?: { word?: string } }>> {
-  const query = experimentId 
-    ? `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_RESPONSE]->(r:Response)
-      RETURN s.session_data as sessionData
-      ORDER BY s.created_at DESC
-      LIMIT 1
-    `
-    : `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_RESPONSE]->(r:Response)
-      RETURN s.session_data as sessionData
-      ORDER BY s.created_at DESC
-      LIMIT 1
-    `;
-
-  const params = experimentId 
-    ? { participantId, experimentId }
-    : { participantId };
-
-  const db = client as { query: (q: string, p: unknown) => Promise<any[]> };
-  const result = await db.query(query, params);
-  
-  if (result.length === 0) {
-    return [];
-  }
-
-  const sessionData = result[0].sessionData as { events?: unknown[] } | null | undefined;
-  const rawEvents = (sessionData && Array.isArray(sessionData.events)) ? sessionData.events : [];
-
-  // 型安全に整形
-  const events: Array<{ event_type: string; timestamp: number; payload?: { word?: string } }> = [];
-  for (const ev of rawEvents) {
-    if (ev && typeof ev === 'object') {
-      const e = ev as Record<string, unknown>;
-      const event_type = typeof e.event_type === 'string' ? e.event_type : undefined;
-      const timestamp = typeof e.timestamp === 'number' ? e.timestamp : undefined;
-      const payload = (e.payload && typeof e.payload === 'object') ? e.payload as { word?: unknown } : undefined;
-      if (event_type && typeof timestamp === 'number') {
-        events.push({
-          event_type,
-          timestamp,
-          payload: payload ? { word: typeof payload.word === 'string' ? payload.word : undefined } : undefined,
-        });
-      }
-    }
-  }
-
-  return events;
+  // 未使用: Neo4j Cypherクエリベースの実装
+  // 実際にはgetParticipantData()がSupabase対応済みで使用されている
+  return [];
 }
+*/
 
 // Merkle DAG: api.analysis.emotion_distance.emotion_data_extraction
-// 感情データの抽出
+// 感情データの抽出（未使用 - getParticipantData()がSupabase対応済み）
+// 注意: この関数は使用されていません。getParticipantData()がSupabase対応済みで使用されています。
+// 将来的に削除を検討してください。
+/*
 async function extractEmotionData(client: unknown, participantId: string, experimentId?: string): Promise<Array<{
   emotions: Array<{ name: string; score: number }>;
   file_type?: string;
@@ -411,72 +372,28 @@ async function extractEmotionData(client: unknown, participantId: string, experi
   endTime: number;
   confidence?: number;
 }>> {
-  const query = experimentId
-    ? `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_EMOTION_ANALYSIS]->(ea:EmotionAnalysis)
-      RETURN ea.emotions as emotions, ea.file_type as fileType, ea.begin_time as beginTime, ea.end_time as endTime, ea.confidence as confidence
-      ORDER BY ea.begin_time
-    `
-    : `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_EMOTION_ANALYSIS]->(ea:EmotionAnalysis)
-      RETURN ea.emotions as emotions, ea.file_type as fileType, ea.begin_time as beginTime, ea.end_time as endTime, ea.confidence as confidence
-      ORDER BY ea.begin_time
-    `;
-
-  const params = experimentId 
-    ? { participantId, experimentId }
-    : { participantId };
-
-  const db = client as { query: (q: string, p: unknown) => Promise<any[]> };
-  const result = await db.query(query, params);
-  
-  return result.map((row: { emotions?: string; fileType?: string; beginTime: number; endTime: number; confidence?: number }) => ({
-    emotions: row.emotions ? (JSON.parse(row.emotions) as Array<{ name: string; score: number }>) : [],
-    file_type: row.fileType,
-    beginTime: row.beginTime,
-    endTime: row.endTime,
-    confidence: row.confidence
-  }));
+  // 未使用: Neo4j Cypherクエリベースの実装
+  // 実際にはgetParticipantData()がSupabase対応済みで使用されている
+  return [];
 }
+*/
 
 // Merkle DAG: api.analysis.emotion_distance.physiological_data_extraction
-// 生理データの抽出
+// 生理データの抽出（未使用 - getParticipantData()がSupabase対応済み）
+// 注意: この関数は使用されていません。getParticipantData()がSupabase対応済みで使用されています。
+// 将来的に削除を検討してください。
+/*
 async function extractPhysiologicalData(client: unknown, participantId: string, experimentId?: string): Promise<Array<{
   channel: string;
   value: number;
   timestamp: number;
   quality?: number;
 }>> {
-  const query = experimentId
-    ? `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment {id: $experimentId})-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-      RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
-      ORDER BY pd.timestamp
-    `
-    : `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-      RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
-      ORDER BY pd.timestamp
-    `;
-
-  const params = experimentId 
-    ? { participantId, experimentId }
-    : { participantId };
-
-  const db = client as { query: (q: string, p: unknown) => Promise<any[]> };
-  const result = await db.query(query, params);
-  
-  return result.map((row: { channel: string; value: number; timestamp: number; quality?: number }) => ({
-    channel: row.channel,
-    value: row.value,
-    timestamp: row.timestamp,
-    quality: row.quality
-  }));
+  // 未使用: Neo4j Cypherクエリベースの実装
+  // 実際にはgetParticipantData()がSupabase対応済みで使用されている
+  return [];
 }
+*/
 
 // Merkle DAG: api.analysis.emotion_distance.window_definition
 // 窓の定義（単語出現ごとに一意の窓）

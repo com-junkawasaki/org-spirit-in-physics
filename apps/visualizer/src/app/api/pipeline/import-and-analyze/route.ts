@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
             'distance_calculation',
             'kernel_fusion',
             'embedding_generation',
-            'neo4j_persistence',
+            'supabase_persistence',
             'export',
           ],
           parameters: {
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
         distance_calculation: 'pending',
         kernel_fusion: 'pending',
         embedding_generation: 'pending',
-        neo4j_persistence: 'pending',
+        supabase_persistence: 'pending',
         export: 'pending',
       },
       progress: 25, // 25%完了
