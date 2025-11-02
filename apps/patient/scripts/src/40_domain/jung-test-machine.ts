@@ -7,8 +7,12 @@ import {
   WordResponse,
   JUNG_STIMULUS_WORDS
 } from 'scripts/src/00_schema';
-import { EventType } from 'scripts/src/10_events';
-import { EventBusPort } from 'scripts/src/20_ports';
+// @deprecated EventTypeとEventBusPortは削除されました。直接実装を使用してください。
+// 型定義のみ残す
+type EventType = string;
+interface EventBusPort {
+  publish(event: { type: string; payload: any; timestamp: number }): Promise<void>;
+}
 
 // コンテキスト型
 export interface JungTestContext {

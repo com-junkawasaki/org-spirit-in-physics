@@ -274,14 +274,13 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
     }
 
     const results: EmotionAnalysisResult[] = [];
-    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
 
     for (const videoFile of videoFiles) {
       const result = await analyzeVideoEmotions(participantId, videoFile.fileName, videoFile.sessionType);
       if (result) {
         results.push(result);
-        // Supabaseに個別に保存
-        await storageAdapter.saveEmotionAnalysis(participantId, result);
+        // Supabaseに直接保存（storageAdapterは削除済み）
+        await saveEmotionAnalysisResult(result);
       }
 
       // APIレート制限を考慮して少し待つ

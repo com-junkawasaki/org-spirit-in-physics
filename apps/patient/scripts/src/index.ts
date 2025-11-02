@@ -17,32 +17,26 @@
 export * from './00_schema';
 
 // 10_events - CMD_*/EV_* 列挙（有限語彙）
-// @deprecated CQRSパターンは削除されました。tRPC mutationを使用してください。
-export * from './10_events';
+// @deprecated 削除済み - tRPC mutationを使用
 
 // 20_ports - 抽象Port（ドメインが依存するだけ）
-// @deprecated Port/Adapterパターンは削除されました。tRPCルーターを直接使用してください。
-export * from './20_ports';
+// @deprecated 削除済み - tRPCルーターを直接使用
 
 // 30_fold - 純関数（MDAG -> 投影）※副作用禁止
-// @deprecated MerkleDAG投影は削除されました。直接Supabaseからデータを取得してください。
-export * from './30_fold';
+// @deprecated 削除済み - 直接Supabaseからデータを取得
 
 // 40_domain - xstate machines（UI非依存）
 // 注意: UI側で使用されているXStateマシンは保持します
 export * from './40_domain';
 
 // 50_adapters - RouteHandler/ServerActions/外部API実装
-// @deprecated Adapterパターンは削除されました。tRPCルーターを直接使用してください。
-export * from './50_adapters';
+// @deprecated 削除済み - 直接実装（scripts/src/lib/inngest.ts, scripts/src/lib/workflows/）を使用
 
 // 60_projection - selectors/ViewModel（foldの薄ラッパ）
-// @deprecated プロジェクションは削除されました。tRPCクエリを使用してください。
-export * from './60_projection';
+// @deprecated 削除済み - tRPCクエリを使用
 
 // 70_supervisors - ルート単位の調停（invalidate/revalidate）
-// @deprecated スーパーバイザーは削除されました。React Queryのキャッシュ管理を使用してください。
-export * from './70_supervisors';
+// @deprecated 削除済み - Next.jsのrevalidatePath/revalidateTagを直接使用
 
 // 80_app - app/(segments)/...（RSC & Client）
 // @deprecated 削除済み - Next.jsのルーティングを直接使用
