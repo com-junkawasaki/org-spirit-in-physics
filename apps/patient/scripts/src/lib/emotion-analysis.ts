@@ -195,40 +195,18 @@ function processHumePredictions(predictions: any): Array<{
  */
 export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): Promise<void> {
   try {
-    // ファイルに保存（既存の動作を維持）
-    const resultPath = join(ARTIFACTS_CACHE_PATH, result.participantId, 'emotion_analysis.json');
-
-    let existingResults: EmotionAnalysisResult[] = [];
-    if (existsSync(resultPath)) {
-      existingResults = JSON.parse(readFileSync(resultPath, 'utf-8'));
-    }
-
-    const existingIndex = existingResults.findIndex(
-      r => r.videoFile === result.videoFile && r.sessionType === result.sessionType
-    );
-
-    if (existingIndex >= 0) {
-      existingResults[existingIndex] = result;
-    } else {
-      existingResults.push(result);
-    }
-
-    writeFileSync(resultPath, JSON.stringify(existingResults, null, 2));
-    console.log(`Emotion analysis result saved to file: ${resultPath}`);
-
-    // Blobにも保存（利用可能な場合）
-    if (blobStorage) {
-      try {
-        await blobStorage.saveEmotionAnalysis(result.participantId, result);
-        console.log(`Emotion analysis result saved to Vercel Blob for ${result.participantId}`);
-      } catch (blobError) {
-        console.warn('Failed to save emotion analysis to Blob:', blobError);
-      }
-    }
-
-    // Neo4jに保存（storageAdapter経由）
-    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
-    await storageAdapter.saveEmotionAnalysis(result.participantId, result);
+    // Supabaseに直接保存（ファイルシステム依存を削除）
+    const { supabaseManager } = await import('./database/supabase-manager.js');
+    // EmotionAnalysisResultをEmotionAnalysis形式に変換
+    await supabaseManager.saveEmotionAnalysis({
+      id: `${result.participantId}_${result.videoFile}_${Date.now()}`,
+      participantId: result.participantId,
+      videoFileId: `${result.participantId}_${result.videoFile}`,
+      sessionType: result.sessionType,
+      emotions: result.emotions,
+      timestamp: result.timestamp,
+      processingTime: result.processingTime,
+    });
 
   } catch (error) {
     console.error('Error saving emotion analysis result:', error);
@@ -241,8 +219,21 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
     // storageAdapter経由でNeo4jから感情分析データを取得
-    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
-    return await storageAdapter.loadEmotionAnalysis(participantId);
+    // Supabaseから直接読み込み（storageAdapterは非推奨）
+    const { supabaseManager } = await import('./database/supabase-manager.js');
+    const emotionAnalysis = await supabaseManager.getEmotionAnalysis(participantId);
+    return emotionAnalysis.map(sa => ({
+      participantId: sa.participantId,
+      videoFile: sa.videoFileId?.replace(`${sa.participantId}_`, '') || '',
+      sessionType: sa.sessionType || 'session-1',
+      emotions: Array.isArray(sa.emotions) ? sa.emotions : (sa.emotions ? Object.entries(sa.emotions).map(([name, data]: [string, any]) => ({
+        name,
+        score: typeof data === 'number' ? data : data?.score || 0,
+        confidence: typeof data === 'number' ? data : data?.confidence || 0,
+      })) : []),
+      timestamp: sa.timestamp || new Date().toISOString(),
+      processingTime: 0, // データベースには保存されていないためデフォルト値
+    }));
   } catch (error) {
     console.error(`Error loading emotion analysis results for ${participantId}:`, error);
     return [];

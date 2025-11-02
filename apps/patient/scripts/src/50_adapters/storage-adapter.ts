@@ -81,7 +81,11 @@ export class StorageAdapter implements StoragePort {
         participantId: sa.participantId,
         videoFile: sa.videoFileId?.replace(`${sa.participantId}_`, '') || '',
         sessionType: sa.sessionType || 'session-1',
-        emotions: sa.emotions || {},
+        emotions: Array.isArray(sa.emotions) ? sa.emotions : (sa.emotions ? Object.entries(sa.emotions).map(([name, data]: [string, any]) => ({
+          name,
+          score: typeof data === 'number' ? data : data?.score || 0,
+          confidence: typeof data === 'number' ? data : data?.confidence || 0,
+        })) : []),
         timestamp: sa.timestamp || new Date().toISOString(),
         processingTime: sa.processingTime || 0
       }));

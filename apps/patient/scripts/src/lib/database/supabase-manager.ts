@@ -508,7 +508,7 @@ export class SupabaseManager {
 
       if (error) {
         // ファイルが存在しない場合はnullを返す
-        if (error.statusCode === 404) {
+        if ((error as any).statusCode === 404 || error.message?.includes('not found')) {
           return null;
         }
         throw error;
@@ -542,7 +542,7 @@ export class SupabaseManager {
 
       if (error) {
         // ファイルが存在しない場合はnullを返す
-        if (error.statusCode === 404) {
+        if ((error as any).statusCode === 404 || error.message?.includes('not found')) {
           return null;
         }
         throw error;

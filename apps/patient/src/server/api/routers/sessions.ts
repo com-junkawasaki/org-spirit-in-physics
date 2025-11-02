@@ -2,14 +2,55 @@ import { z } from 'zod';
 import { router, publicProcedure } from '../../trpc/router';
 import { SaveSessionSchema } from '../../../shared/schemas/session';
 
+// より柔軟な入力スキーマ（Word型も受け入れる）
+const FlexibleSaveSessionSchema = z.object({
+  participantId: z.string().uuid(),
+  events: z.array(z.object({
+    type: z.string(),
+    timestamp: z.union([z.number(), z.string(), z.date()]),
+    payload: z.record(z.string(), z.any()).optional(),
+  })),
+  wordResponses: z.array(z.object({
+    stimulusWord: z.union([
+      z.string(),
+      z.object({
+        word: z.string(),
+        key: z.string(),
+      }),
+    ]),
+    responseWord: z.string(),
+    reactionTimeMs: z.number(),
+    isDelayed: z.boolean().optional(),
+    timestamp: z.string().optional(),
+  })),
+});
+
 export const sessionsRouter = router({
   /**
    * セッションデータ保存
    */
   saveSession: publicProcedure
-    .input(SaveSessionSchema)
+    .input(FlexibleSaveSessionSchema)
     .mutation(async ({ ctx, input }) => {
-      const { participantId, events, wordResponses } = input;
+      const { participantId, events: rawEvents, wordResponses: rawWordResponses } = input;
+      
+      // イベントを正規化（timestampをnumberに統一）
+      const events = rawEvents.map(e => ({
+        ...e,
+        timestamp: typeof e.timestamp === 'number' 
+          ? e.timestamp 
+          : typeof e.timestamp === 'string' 
+            ? new Date(e.timestamp).getTime() 
+            : e.timestamp.getTime(),
+      }));
+      
+      // wordResponsesを正規化（stimulusWordを文字列またはオブジェクトに統一）
+      const wordResponses = rawWordResponses.map(r => ({
+        ...r,
+        stimulusWord: typeof r.stimulusWord === 'object' 
+          ? r.stimulusWord 
+          : { word: r.stimulusWord, key: '' },
+      }));
 
       // セッション開始と終了のタイムスタンプを取得
       const sessionStartedEvent = events.find((e) => e.type === 'session_started');
@@ -38,7 +79,7 @@ export const sessionsRouter = router({
         .from('participant_experiment_sessions')
         .upsert({
           participant_id: participantId,
-          session_id: sessionId,
+          session_id: String(sessionId),
           session_type: sessionType,
           start_time: startTime,
           end_time: endTime,
@@ -58,7 +99,9 @@ export const sessionsRouter = router({
           session_id: sessionUuid,
           event_type: event.type || 'unknown',
           timestamp: event.timestamp
-            ? new Date(event.timestamp as string).toISOString()
+            ? (typeof event.timestamp === 'number'
+                ? new Date(event.timestamp).toISOString()
+                : new Date(event.timestamp as string).toISOString())
             : new Date().toISOString(),
           payload: event.payload || {},
         }));
@@ -106,7 +149,7 @@ export const sessionsRouter = router({
 
       // 分析パイプラインを実行（非同期、エラーはログのみ）
       try {
-        const { analyzeParticipantResponses } = await import('@/lib/workflows/analysis-pipeline');
+        const { analyzeParticipantResponses } = await import('../../../../scripts/src/lib/workflows/analysis-pipeline.js');
         analyzeParticipantResponses(participantId).catch((error) => {
           console.error('Analysis pipeline error (non-blocking):', error);
         });

@@ -194,9 +194,13 @@ export const useKawasakiStore = create<KawasakiStore>()(
         
         const sessionData = {
             participantId,
-            events,
+            events: events.map(e => ({
+                type: e.type,
+                timestamp: typeof e.timestamp === 'number' ? e.timestamp : (typeof e.timestamp === 'string' ? e.timestamp : new Date(e.timestamp).getTime()),
+                payload: e.payload || {},
+            })),
             wordResponses: wordResponses.map(r => ({
-                stimulusWord: r.stimulusWord,
+                stimulusWord: r.stimulusWord, // Word型（{ word: string; key: string }）はそのまま
                 responseWord: r.responseWord,
                 reactionTimeMs: r.reactionTimeMs,
                 isDelayed: r.isDelayed,
