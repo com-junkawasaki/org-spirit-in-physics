@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { blobStorage } from "scripts/src/lib/blob";
+import { storageAdapter } from "scripts/src/50_adapters";
 
 export async function POST(request: NextRequest) {
     try {
@@ -25,22 +25,29 @@ export async function POST(request: NextRequest) {
             ? "consent"
             : "session_data";
 
-        // Blob Storage にアップロード
+        // Supabase Storageにアップロード（storage-adapter経由）
         const buffer = Buffer.from(await file.arrayBuffer());
-        const metadata = await blobStorage.uploadArtifact(buffer, {
-            participantId,
-            type: fileType,
-            sessionId,
-            filename: fileName,
-        });
+        const url = await storageAdapter.saveArtifact(participantId, fileType, fileName, buffer);
 
         return NextResponse.json({
             success: true,
-            message: "Artifact saved successfully",
-            metadata,
+            message: "Artifact saved successfully to Supabase Storage",
+            url,
+            metadata: {
+                participantId,
+                sessionId,
+                fileName,
+                fileType,
+            },
         });
     } catch (error) {
         console.error("Error saving artifact:", error);
-        return new NextResponse("Internal Server Error", { status: 500 });
+        return new NextResponse(
+            JSON.stringify({ 
+                error: "Internal Server Error", 
+                message: error instanceof Error ? error.message : String(error) 
+            }),
+            { status: 500 }
+        );
     }
 }

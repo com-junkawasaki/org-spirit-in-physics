@@ -56,9 +56,33 @@ export class StorageAdapter implements StoragePort {
   }
 
   async saveArtifact(participantId: string, type: string, filename: string, data: Buffer): Promise<string> {
-    // アーティファクト保存は未実装（必要に応じて実装）
-      // 現在はURLを返すダミー実装
-      return `supabase://artifacts/${participantId}/${filename}`;
+    // Supabase Storageにアーティファクトを保存
+    try {
+      if (type === 'video') {
+        // セッションIDをファイル名から抽出（例: session-1-video.webm -> session-1）
+        const sessionMatch = filename.match(/session-(\d+)/);
+        const sessionId = sessionMatch 
+          ? `${participantId}-session-${sessionMatch[1]}`
+          : `${participantId}-session-1`;
+
+        // SupabaseManagerを使用して動画をアップロード
+        const url = await supabaseManager.uploadVideoToStorage(
+          participantId,
+          sessionId,
+          data,
+          filename
+        );
+        return url;
+      } else {
+        // その他のアーティファクト（audio, consent, session_data）は現在未対応
+        // 必要に応じて実装可能
+        console.warn(`Artifact type ${type} not yet supported in Supabase Storage`);
+        return `supabase://artifacts/${participantId}/${type}/${filename}`;
+      }
+    } catch (error) {
+      console.error('Error saving artifact to Supabase Storage:', error);
+      throw error;
+    }
   }
 
   // data-loader.ts から統合した追加メソッド

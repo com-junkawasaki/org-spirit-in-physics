@@ -265,11 +265,160 @@ export class SupabaseManager {
 
   /**
    * Merkle DAG: ビデオファイルの保存
+   * Supabase Storageに動画ファイルを保存
    */
   async saveVideoFile(videoFile: VideoFile): Promise<void> {
-    // TODO: ビデオファイルの保存は現在未実装
-    // 将来的にはSupabase Storageまたは外部ストレージに保存
-    console.log(`Video file ${videoFile.fileName} save not implemented for Supabase`);
+    try {
+      await this.uploadVideoToStorage(
+        videoFile.participantId,
+        videoFile.sessionId,
+        videoFile.filePath,
+        videoFile.fileName
+      );
+      console.log(`Video file ${videoFile.fileName} saved to Supabase Storage`);
+    } catch (error) {
+      console.error('Error saving video file:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Merkle DAG: 動画ファイルをSupabase Storageにアップロード
+   * @param participantId 参加者ID
+   * @param sessionId セッションID
+   * @param filePath ファイルパス（Bufferまたはファイルパス）
+   * @param fileName ファイル名
+   * @returns アップロードされたファイルのURL
+   */
+  async uploadVideoToStorage(
+    participantId: string,
+    sessionId: string,
+    filePath: string | Buffer,
+    fileName: string
+  ): Promise<string> {
+    try {
+      const { readFileSync } = await import('fs');
+      
+      // ファイルパスが文字列の場合は読み込む、Bufferの場合はそのまま使用
+      const fileBuffer = typeof filePath === 'string' 
+        ? readFileSync(filePath)
+        : filePath;
+
+      // Storageパス: participant-videos/{participantId}/{sessionId}/{fileName}
+      const storagePath = `${participantId}/${sessionId}/${fileName}`;
+
+      // Supabase Storageにアップロード
+      const { data, error } = await this.client.storage
+        .from('participant-videos')
+        .upload(storagePath, fileBuffer, {
+          contentType: 'video/webm',
+          upsert: true, // 既存ファイルは上書き
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // 公開URLを取得
+      const { data: urlData } = this.client.storage
+        .from('participant-videos')
+        .getPublicUrl(storagePath);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading video to Supabase Storage:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Merkle DAG: 動画ファイルをSupabase Storageから取得
+   * @param participantId 参加者ID
+   * @param sessionId セッションID
+   * @param fileName ファイル名
+   * @returns 動画ファイルのURL
+   */
+  async getVideoFileUrl(
+    participantId: string,
+    sessionId: string,
+    fileName: string
+  ): Promise<string | null> {
+    try {
+      const storagePath = `${participantId}/${sessionId}/${fileName}`;
+      
+      const { data, error } = await this.client.storage
+        .from('participant-videos')
+        .createSignedUrl(storagePath, 3600); // 1時間有効な署名付きURL
+
+      if (error) {
+        // ファイルが存在しない場合はnullを返す
+        if (error.statusCode === 404) {
+          return null;
+        }
+        throw error;
+      }
+
+      return data.signedUrl;
+    } catch (error) {
+      console.error('Error getting video file URL:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Merkle DAG: 参加者の動画ファイル一覧を取得
+   * @param participantId 参加者ID
+   * @param sessionId セッションID（オプション）
+   * @returns 動画ファイル情報の配列
+   */
+  async listVideoFiles(
+    participantId: string,
+    sessionId?: string
+  ): Promise<Array<{ name: string; url: string; size: number; createdAt: string }>> {
+    try {
+      const prefix = sessionId 
+        ? `${participantId}/${sessionId}/`
+        : `${participantId}/`;
+
+      const { data, error } = await this.client.storage
+        .from('participant-videos')
+        .list(prefix, {
+          limit: 100,
+          sortBy: { column: 'created_at', order: 'desc' },
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // 各ファイルの署名付きURLを取得
+      const filesWithUrls = await Promise.all(
+        (data || []).map(async (file) => {
+          // ファイルがディレクトリの場合はスキップ
+          if (file.id === null) {
+            return null;
+          }
+
+          const fullPath = `${prefix}${file.name}`;
+          const { data: urlData } = await this.client.storage
+            .from('participant-videos')
+            .createSignedUrl(fullPath, 3600);
+
+          return {
+            name: file.name,
+            url: urlData?.signedUrl || '',
+            size: (file.metadata as any)?.size || 0,
+            createdAt: file.created_at || new Date().toISOString(),
+          };
+        })
+      );
+
+      // null値を除外
+      return filesWithUrls.filter((f): f is NonNullable<typeof f> => f !== null);
+    } catch (error) {
+      console.error('Error listing video files:', error);
+      return [];
+    }
   }
 
   /**
@@ -339,6 +488,11 @@ export class SupabaseManager {
         .select('*', { count: 'exact', head: true })
         .eq('participant_id', participantId);
 
+      const [hasVideoFiles, videoFiles] = await Promise.all([
+        this.checkVideoFilesExist(participantId),
+        this.listVideoFiles(participantId),
+      ]);
+
       return {
         id: participantData.id,
         name: participantData.name || undefined,
@@ -349,8 +503,14 @@ export class SupabaseManager {
         agreedAt: consentData?.agreed_at ? new Date(consentData.agreed_at) : undefined,
         agreements: consentData?.agreements || undefined,
         hasSessionData: (sessionCount || 0) > 0,
-        hasVideoFiles: false, // TODO: ビデオファイルの確認を実装
-        videoFiles: [],
+        hasVideoFiles,
+        videoFiles: videoFiles.map(f => ({
+          id: f.name,
+          fileName: f.name,
+          filePath: f.url,
+          fileSize: f.size,
+          createdAt: f.createdAt,
+        })),
       };
     } catch (error) {
       console.error('Error getting participant:', error);
@@ -376,16 +536,22 @@ export class SupabaseManager {
       // 各参加者の同意情報とセッション数を取得
       const participantsWithDetails = await Promise.all(
         participants.map(async (p) => {
-          const { data: consentData } = await this.client
-            .from('participant_consents')
-            .select('*')
-            .eq('participant_id', p.id)
-            .single();
+          const [consentResult, sessionCountResult, hasVideoFiles, videoFiles] = await Promise.all([
+            this.client
+              .from('participant_consents')
+              .select('*')
+              .eq('participant_id', p.id)
+              .single(),
+            this.client
+              .from('participant_experiment_sessions')
+              .select('*', { count: 'exact', head: true })
+              .eq('participant_id', p.id),
+            this.checkVideoFilesExist(p.id),
+            this.listVideoFiles(p.id),
+          ]);
 
-          const { count: sessionCount } = await this.client
-            .from('participant_experiment_sessions')
-            .select('*', { count: 'exact', head: true })
-            .eq('participant_id', p.id);
+          const { data: consentData } = consentResult;
+          const { count: sessionCount } = sessionCountResult;
 
           return {
             id: p.id,
@@ -397,8 +563,14 @@ export class SupabaseManager {
             agreedAt: consentData?.agreed_at ? new Date(consentData.agreed_at) : undefined,
             agreements: consentData?.agreements || undefined,
             hasSessionData: (sessionCount || 0) > 0,
-            hasVideoFiles: false,
-            videoFiles: [],
+            hasVideoFiles,
+            videoFiles: videoFiles.map(f => ({
+              id: f.name,
+              fileName: f.name,
+              filePath: f.url,
+              fileSize: f.size,
+              createdAt: f.createdAt,
+            })),
           };
         })
       );
@@ -530,6 +702,30 @@ export class SupabaseManager {
     // RPC関数を使用するか、クエリビルダーを使用する必要がある
     console.warn('executeQuery is not fully supported in Supabase. Use RPC functions or query builder instead.');
     throw new Error('Direct SQL queries are not supported. Use Supabase query builder or RPC functions.');
+  }
+
+  /**
+   * Merkle DAG: 動画ファイルの存在確認
+   * @param participantId 参加者ID
+   * @returns 動画ファイルが存在するかどうか
+   */
+  private async checkVideoFilesExist(participantId: string): Promise<boolean> {
+    try {
+      const { data, error } = await this.client.storage
+        .from('participant-videos')
+        .list(`${participantId}/`, {
+          limit: 1,
+        });
+
+      if (error) {
+        return false;
+      }
+
+      return (data?.length || 0) > 0;
+    } catch (error) {
+      console.error('Error checking video files:', error);
+      return false;
+    }
   }
 
   /**
