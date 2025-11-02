@@ -5,8 +5,8 @@ import {
   KawasakiStoreState,
   Word,
   WordResponse,
-  JUNG_STIMULUS_WORDS
-} from 'scripts/src/00_schema';
+} from '@/shared/schemas/types';
+import { JUNG_STIMULUS_WORDS } from '@/shared/schemas/constants';
 // @deprecated EventTypeとEventBusPortは削除されました。直接実装を使用してください。
 // 型定義のみ残す
 type EventType = string;

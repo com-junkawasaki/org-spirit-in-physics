@@ -13,8 +13,8 @@
  */
 
 // 00_schema - zod等の型・定数（無依存）
-// 注意: 一部のスキーマは src/shared/schemas/ に移行済み
-export * from './00_schema';
+// @deprecated 削除済み - src/shared/schemas/ に統合済み
+// utils.ts は src/lib/utils/cn.ts に移動済み
 
 // 10_events - CMD_*/EV_* 列挙（有限語彙）
 // @deprecated 削除済み - tRPC mutationを使用
@@ -26,8 +26,7 @@ export * from './00_schema';
 // @deprecated 削除済み - 直接Supabaseからデータを取得
 
 // 40_domain - xstate machines（UI非依存）
-// 注意: UI側で使用されているXStateマシンは保持します
-export * from './40_domain';
+// @deprecated 削除済み - src/lib/domain/ に移動済み
 
 // 50_adapters - RouteHandler/ServerActions/外部API実装
 // @deprecated 削除済み - 直接実装（scripts/src/lib/inngest.ts, scripts/src/lib/workflows/）を使用

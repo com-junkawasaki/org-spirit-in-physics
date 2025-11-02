@@ -1,7 +1,7 @@
 // LLM-BOUNDARY: 40_domain - xstate machines（UI非依存）
 
 import { createMachine, assign, ActorRefFrom } from 'xstate';
-import { EmotionAnalysisResult } from 'scripts/src/00_schema';
+import { EmotionAnalysisResult } from '@/shared/schemas/emotion-schema';
 
 // コンテキスト型
 export interface EmotionAnalysisContext {
