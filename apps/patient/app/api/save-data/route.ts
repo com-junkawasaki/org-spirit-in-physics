@@ -111,6 +111,17 @@ export async function POST(request: NextRequest) {
                 await supabaseManager.createWordResponses(participantId, responsesToSave, sessionId);
             }
 
+            // 分析パイプラインを実行（非同期、エラーはログのみ）
+            try {
+                const { analyzeParticipantResponses } = await import('scripts/src/lib/workflows/analysis-pipeline');
+                // バックグラウンドで実行（awaitしない）
+                analyzeParticipantResponses(participantId).catch((error) => {
+                    console.error('Analysis pipeline error (non-blocking):', error);
+                });
+            } catch (analysisError) {
+                console.warn('Failed to start analysis pipeline:', analysisError);
+            }
+
             console.log(`Successfully saved session data to Supabase`);
             return NextResponse.json({
                 success: true,

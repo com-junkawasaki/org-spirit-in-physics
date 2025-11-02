@@ -1,8 +1,7 @@
 import { HumeClient } from 'hume';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-// Neo4jはSupabaseに移行済み - このインポートは削除
-// import { neo4jClient } from './neo4j';
+import { supabaseManager } from './database/supabase-manager';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -57,18 +56,62 @@ export async function analyzeVideoEmotions(
   sessionType: string
 ): Promise<EmotionAnalysisResult | null> {
   try {
-    const videoPath = join(ARTIFACTS_CACHE_PATH, participantId, videoFileName);
-
-    if (!existsSync(videoPath)) {
-      console.error(`Video file not found: ${videoPath}`);
-      return null;
-    }
-
     console.log(`Starting emotion analysis for ${participantId}/${videoFileName}`);
     const startTime = Date.now();
 
-    // ビデオファイルを読み込み
-    const videoBuffer = readFileSync(videoPath);
+    // セッションIDを取得または生成
+    const sessionId = `${participantId}_${sessionType}`;
+
+    // Supabase Storageから動画ファイルをダウンロード
+    let videoBuffer: Buffer | null = null;
+    let videoUrl: string | null = null;
+
+    try {
+      // まずSupabase Storageからダウンロードを試みる
+      videoBuffer = await supabaseManager.downloadVideoFile(participantId, sessionId, videoFileName);
+      
+      if (!videoBuffer) {
+        // フォールバック: ファイルシステムから読み込む（後方互換性のため）
+        const videoPath = join(ARTIFACTS_CACHE_PATH, participantId, videoFileName);
+        if (existsSync(videoPath)) {
+          const { readFileSync } = await import('fs');
+          videoBuffer = readFileSync(videoPath);
+          console.warn(`Video file not found in Supabase Storage, using file system: ${videoPath}`);
+        } else {
+          console.error(`Video file not found: ${videoFileName} for participant ${participantId}`);
+          return null;
+        }
+      }
+    } catch (downloadError) {
+      console.error(`Error downloading video from Supabase Storage:`, downloadError);
+      // フォールバック: ファイルシステムから読み込む
+      const videoPath = join(ARTIFACTS_CACHE_PATH, participantId, videoFileName);
+      if (existsSync(videoPath)) {
+        const { readFileSync } = await import('fs');
+        videoBuffer = readFileSync(videoPath);
+        console.warn(`Using file system fallback: ${videoPath}`);
+      } else {
+        console.error(`Video file not found in both Supabase Storage and file system`);
+        return null;
+      }
+    }
+
+    // 一時ファイルとして保存してHume APIに渡す（Hume APIはファイルパスまたはURLを要求）
+    const tempFilePath = join(process.cwd(), 'tmp', `${participantId}_${videoFileName}`);
+    const { mkdirSync } = await import('fs');
+    const { dirname } = await import('path');
+    
+    try {
+      mkdirSync(dirname(tempFilePath), { recursive: true });
+      writeFileSync(tempFilePath, videoBuffer);
+    } catch (tempError) {
+      console.error(`Error writing temp file:`, tempError);
+      // 一時ファイル作成に失敗した場合、URLを使用
+      videoUrl = await supabaseManager.getVideoFileUrl(participantId, sessionId, videoFileName);
+      if (!videoUrl) {
+        throw new Error('Failed to get video URL from Supabase Storage');
+      }
+    }
 
     // Hume APIで感情分析を実行
     const job = await hume.expressionMeasurement.batch.startInferenceJob({
@@ -78,7 +121,7 @@ export async function analyzeVideoEmotions(
           descriptions: {}
         }
       },
-      urls: [`file://${videoPath}`] // ファイルパスを指定
+      urls: videoUrl ? [videoUrl] : [`file://${tempFilePath}`]
     });
 
     console.log(`Job started: ${job.jobId}`);
@@ -105,6 +148,16 @@ export async function analyzeVideoEmotions(
 
     // 結果を保存
     await saveEmotionAnalysisResult(result);
+
+    // 一時ファイルを削除
+    try {
+      if (!videoUrl && existsSync(tempFilePath)) {
+        const { unlinkSync } = await import('fs');
+        unlinkSync(tempFilePath);
+      }
+    } catch (cleanupError) {
+      console.warn(`Failed to cleanup temp file:`, cleanupError);
+    }
 
     console.log(`Emotion analysis completed for ${participantId}/${videoFileName}`);
     return result;
@@ -201,28 +254,42 @@ export async function loadEmotionAnalysisResults(participantId: string): Promise
  */
 export async function analyzeAllParticipantVideos(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
-    const participantPath = join(ARTIFACTS_CACHE_PATH, participantId);
+    // Supabaseから動画ファイル一覧を取得
+    const videoFiles = await supabaseManager.getParticipantVideoFiles(participantId);
 
-    if (!existsSync(participantPath)) {
-      console.error(`Participant directory not found: ${participantPath}`);
-      return [];
+    if (videoFiles.length === 0) {
+      // フォールバック: ファイルシステムから取得（後方互換性のため）
+      const participantPath = join(ARTIFACTS_CACHE_PATH, participantId);
+      if (existsSync(participantPath)) {
+        const { readdirSync } = await import('fs');
+        const fileSystemFiles = readdirSync(participantPath)
+          .filter((file: string) => file.endsWith('.webm'))
+          .map((file: string) => ({
+            fileName: file,
+            sessionId: `${participantId}_${file.includes('session-1') ? 'session-1' : 'session-2'}`,
+            sessionType: file.includes('session-1') ? 'session-1' : 'session-2'
+          }));
+        
+        if (fileSystemFiles.length > 0) {
+          console.warn(`Using file system fallback for video files`);
+          videoFiles.push(...fileSystemFiles);
+        }
+      }
     }
 
-    // ビデオファイルを取得
-    const videoFiles = require('fs').readdirSync(participantPath)
-      .filter((file: string) => file.endsWith('.webm'));
+    if (videoFiles.length === 0) {
+      console.error(`No video files found for participant: ${participantId}`);
+      return [];
+    }
 
     const results: EmotionAnalysisResult[] = [];
     const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
 
     for (const videoFile of videoFiles) {
-      // セッションタイプをファイル名から判定
-      const sessionType = videoFile.includes('session-1') ? 'session-1' : 'session-2';
-
-      const result = await analyzeVideoEmotions(participantId, videoFile, sessionType);
+      const result = await analyzeVideoEmotions(participantId, videoFile.fileName, videoFile.sessionType);
       if (result) {
         results.push(result);
-        // Neo4jに個別に保存
+        // Supabaseに個別に保存
         await storageAdapter.saveEmotionAnalysis(participantId, result);
       }
 

@@ -458,6 +458,71 @@ export class SupabaseManager {
   }
 
   /**
+   * Merkle DAG: 動画ファイルをSupabase StorageからダウンロードしてBufferとして取得
+   * @param participantId 参加者ID
+   * @param sessionId セッションID
+   * @param fileName ファイル名
+   * @returns 動画ファイルのBuffer
+   */
+  async downloadVideoFile(
+    participantId: string,
+    sessionId: string,
+    fileName: string
+  ): Promise<Buffer | null> {
+    try {
+      const storagePath = `${participantId}/${sessionId}/${fileName}`;
+      
+      const { data, error } = await this.client.storage
+        .from('participant-videos')
+        .download(storagePath);
+
+      if (error) {
+        // ファイルが存在しない場合はnullを返す
+        if (error.statusCode === 404) {
+          return null;
+        }
+        throw error;
+      }
+
+      // BlobをBufferに変換
+      const arrayBuffer = await data.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch (error) {
+      console.error('Error downloading video file:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Merkle DAG: 参加者の動画ファイル一覧を取得（ファイル名のみ）
+   * @param participantId 参加者ID
+   * @returns 動画ファイル名の配列
+   */
+  async getParticipantVideoFiles(participantId: string): Promise<Array<{ fileName: string; sessionId: string; sessionType: string }>> {
+    try {
+      // セッションから動画ファイル情報を取得
+      const { data: sessions, error } = await this.client
+        .from('participant_experiment_sessions')
+        .select('id, session_id, session_type, video_file_name')
+        .eq('participant_id', participantId)
+        .not('video_file_name', 'is', null);
+
+      if (error) {
+        throw error;
+      }
+
+      return (sessions || []).map((session: any) => ({
+        fileName: session.video_file_name,
+        sessionId: session.session_id || session.id,
+        sessionType: session.session_type || 'session-1'
+      }));
+    } catch (error) {
+      console.error('Error getting participant video files:', error);
+      return [];
+    }
+  }
+
+  /**
    * Merkle DAG: 参加者の動画ファイル一覧を取得
    * @param participantId 参加者ID
    * @param sessionId セッションID（オプション）
@@ -670,6 +735,28 @@ export class SupabaseManager {
       return participantsWithDetails;
     } catch (error) {
       console.error('Error getting all participants:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Merkle DAG: 参加者のレスポンスデータを取得
+   */
+  async getParticipantResponses(participantId: string): Promise<any[]> {
+    try {
+      const { data: responses, error } = await this.client
+        .from('participant_response_data')
+        .select('*')
+        .eq('participant_id', participantId)
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return responses || [];
+    } catch (error) {
+      console.error('Error getting participant responses:', error);
       return [];
     }
   }

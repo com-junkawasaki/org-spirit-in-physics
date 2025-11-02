@@ -126,7 +126,7 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
   try {
     console.log('Getting session data from Supabase for participant:', participantId);
     
-    // participant_experiment_sessionsからセッションを取得
+    // participant_experiment_sessionsからセッションを取得（events JSONBカラムを含む）
     const { data: sessions, error } = await client
       .from('participant_experiment_sessions')
       .select('*')
@@ -142,29 +142,43 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
       throw new Error(`No session data found for participant: ${participantId}`);
     }
     
-    // セッションデータのeventsは現在Supabaseスキーマに保存されていないため、
-    // ファイルシステムから読み込む必要がある（将来的にはJSONBカラムに保存）
-    const sessionData = { events: [] }; // 簡易実装
-    console.log('Session data events count:', sessionData.events?.length || 0);
+    const session = sessions[0];
+    
+    // events JSONBカラムからイベントを取得
+    let events: any[] = [];
+    if (session.events && Array.isArray(session.events)) {
+      events = session.events;
+    } else if (session.events && typeof session.events === 'string') {
+      // JSON文字列の場合、パースを試みる
+      try {
+        events = JSON.parse(session.events);
+      } catch (parseError) {
+        console.warn('Failed to parse events JSON string:', parseError);
+        events = [];
+      }
+    }
+    
+    console.log('Session data events count:', events.length);
 
     // 単語表示イベントを基準点として抽出
-    const wordEvents = (sessionData.events || []).filter((event: any) => 
+    const wordEvents = events.filter((event: any) => 
       event.type === 'word_displayed' || 
       event.type === 'response_window_opened' || 
       event.type === 'response_window_closed' ||
       event.type === 'speech_detected'
     );
 
-    // セッション開始時刻を最初のイベントのtimestampから取得
-    const startTime = sessionData.events?.length > 0 ? sessionData.events[0].timestamp : 0;
+    // セッション開始時刻を最初のイベントのtimestampから取得、またはstart_timeから取得
+    const startTime = events.length > 0 && events[0].timestamp 
+      ? events[0].timestamp 
+      : (session.start_time ? new Date(session.start_time).getTime() : 0);
 
     return {
-      ...sessionData,
+      events,
       wordEvents,
-      events: sessionData.events || [],
-      startTime: sessions[0].start_time ? new Date(sessions[0].start_time).getTime() : 0,
-      sessionId: sessions[0].id,
-      startTs: sessions[0].start_time
+      startTime,
+      sessionId: session.id,
+      startTs: session.start_time
     };
 
   } catch (error) {

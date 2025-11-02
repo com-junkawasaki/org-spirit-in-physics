@@ -3,9 +3,10 @@
 import { EmotionAnalysisPort } from 'scripts/src/20_ports';
 import { EmotionAnalysisResult, EmotionStatistics } from 'scripts/src/00_schema';
 import { HumeClient } from 'hume';
-import { readFileSync, existsSync } from 'fs';
+import { writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { foldEmotionStatistics } from 'scripts/src/30_fold';
+import { supabaseManager } from 'scripts/src/lib/database/supabase-manager';
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
@@ -21,17 +22,62 @@ export class EmotionAnalysisAdapter implements EmotionAnalysisPort {
     sessionType: string
   ): Promise<EmotionAnalysisResult | null> {
     try {
-      const videoPath = join(ARTIFACTS_CACHE_PATH, participantId, videoFileName);
-
-      if (!existsSync(videoPath)) {
-        console.error(`Video file not found: ${videoPath}`);
-        return null;
-      }
-
       console.log(`Starting emotion analysis for ${participantId}/${videoFileName}`);
       const startTime = Date.now();
 
-      const videoBuffer = readFileSync(videoPath);
+      // セッションIDを取得または生成
+      const sessionId = `${participantId}_${sessionType}`;
+
+      // Supabase Storageから動画ファイルをダウンロード
+      let videoBuffer: Buffer | null = null;
+      let videoUrl: string | null = null;
+
+      try {
+        // まずSupabase Storageからダウンロードを試みる
+        videoBuffer = await supabaseManager.downloadVideoFile(participantId, sessionId, videoFileName);
+        
+        if (!videoBuffer) {
+          // フォールバック: ファイルシステムから読み込む（後方互換性のため）
+          const videoPath = join(ARTIFACTS_CACHE_PATH, participantId, videoFileName);
+          if (existsSync(videoPath)) {
+            const { readFileSync } = await import('fs');
+            videoBuffer = readFileSync(videoPath);
+            console.warn(`Video file not found in Supabase Storage, using file system: ${videoPath}`);
+          } else {
+            console.error(`Video file not found: ${videoFileName} for participant ${participantId}`);
+            return null;
+          }
+        }
+      } catch (downloadError) {
+        console.error(`Error downloading video from Supabase Storage:`, downloadError);
+        // フォールバック: ファイルシステムから読み込む
+        const videoPath = join(ARTIFACTS_CACHE_PATH, participantId, videoFileName);
+        if (existsSync(videoPath)) {
+          const { readFileSync } = await import('fs');
+          videoBuffer = readFileSync(videoPath);
+          console.warn(`Using file system fallback: ${videoPath}`);
+        } else {
+          console.error(`Video file not found in both Supabase Storage and file system`);
+          return null;
+        }
+      }
+
+      // 一時ファイルとして保存してHume APIに渡す（Hume APIはファイルパスまたはURLを要求）
+      const tempFilePath = join(process.cwd(), 'tmp', `${participantId}_${videoFileName}`);
+      const { mkdirSync } = await import('fs');
+      const { dirname } = await import('path');
+      
+      try {
+        mkdirSync(dirname(tempFilePath), { recursive: true });
+        writeFileSync(tempFilePath, videoBuffer);
+      } catch (tempError) {
+        console.error(`Error writing temp file:`, tempError);
+        // 一時ファイル作成に失敗した場合、URLを使用
+        videoUrl = await supabaseManager.getVideoFileUrl(participantId, sessionId, videoFileName);
+        if (!videoUrl) {
+          throw new Error('Failed to get video URL from Supabase Storage');
+        }
+      }
 
       const job = await hume.expressionMeasurement.batch.startInferenceJob({
         models: {
@@ -40,7 +86,7 @@ export class EmotionAnalysisAdapter implements EmotionAnalysisPort {
             descriptions: {}
           }
         },
-        urls: [`file://${videoPath}`]
+        urls: videoUrl ? [videoUrl] : [`file://${tempFilePath}`]
       });
 
       console.log(`Job started: ${job.jobId}`);
@@ -60,6 +106,16 @@ export class EmotionAnalysisAdapter implements EmotionAnalysisPort {
         processingTime
       };
 
+      // 一時ファイルを削除
+      try {
+        if (!videoUrl && existsSync(tempFilePath)) {
+          const { unlinkSync } = await import('fs');
+          unlinkSync(tempFilePath);
+        }
+      } catch (cleanupError) {
+        console.warn(`Failed to cleanup temp file:`, cleanupError);
+      }
+
       return result;
 
     } catch (error) {
@@ -70,21 +126,38 @@ export class EmotionAnalysisAdapter implements EmotionAnalysisPort {
 
   async analyzeAllParticipantVideos(participantId: string): Promise<EmotionAnalysisResult[]> {
     try {
-      const participantPath = join(ARTIFACTS_CACHE_PATH, participantId);
+      // Supabaseから動画ファイル一覧を取得
+      const videoFiles = await supabaseManager.getParticipantVideoFiles(participantId);
 
-      if (!existsSync(participantPath)) {
-        console.error(`Participant directory not found: ${participantPath}`);
-        return [];
+      if (videoFiles.length === 0) {
+        // フォールバック: ファイルシステムから取得（後方互換性のため）
+        const participantPath = join(ARTIFACTS_CACHE_PATH, participantId);
+        if (existsSync(participantPath)) {
+          const { readdirSync } = await import('fs');
+          const fileSystemFiles = readdirSync(participantPath)
+            .filter((file: string) => file.endsWith('.webm'))
+            .map((file: string) => ({
+              fileName: file,
+              sessionId: `${participantId}_${file.includes('session-1') ? 'session-1' : 'session-2'}`,
+              sessionType: file.includes('session-1') ? 'session-1' : 'session-2'
+            }));
+          
+          if (fileSystemFiles.length > 0) {
+            console.warn(`Using file system fallback for video files`);
+            videoFiles.push(...fileSystemFiles);
+          }
+        }
       }
 
-      const videoFiles = require('fs').readdirSync(participantPath)
-        .filter((file: string) => file.endsWith('.webm'));
+      if (videoFiles.length === 0) {
+        console.error(`No video files found for participant: ${participantId}`);
+        return [];
+      }
 
       const results: EmotionAnalysisResult[] = [];
 
       for (const videoFile of videoFiles) {
-        const sessionType = videoFile.includes('session-1') ? 'session-1' : 'session-2';
-        const result = await this.analyzeVideoEmotions(participantId, videoFile, sessionType);
+        const result = await this.analyzeVideoEmotions(participantId, videoFile.fileName, videoFile.sessionType);
         if (result) {
           results.push(result);
         }
