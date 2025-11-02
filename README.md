@@ -60,6 +60,23 @@
 
 本プロジェクトは **Turborepo** を使用したモノレポ構成です。
 
+#### 推奨VS Code拡張機能
+
+本プロジェクトは **Semantic Driven Development** を採用しており、RDF/SHACL/OWL/SPARQLファイルの編集をサポートするため、以下のVS Code拡張機能を推奨します：
+
+- **[Mentor RDF for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=faubulous.mentor)** - RDF、RDFS、OWL、SKOS、SHACL、SPARQLの編集サポート
+  - ワークスペースツリーによるRDFファイルのナビゲーション
+  - 定義ツリーによるオントロジー定義の閲覧
+  - SPARQLクエリの実行と結果表示
+  - 構文ハイライトとバリデーション
+  - リファクタリング機能（プレフィックス管理、IRI参照の変換など）
+
+VS Codeを開くと、推奨拡張機能のインストールが促されます。または、手動でインストールする場合は：
+
+```bash
+code --install-extension faubulous.mentor
+```
+
 #### 初回セットアップ
 ```bash
 # 依存関係のインストール

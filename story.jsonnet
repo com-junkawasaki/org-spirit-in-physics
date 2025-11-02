@@ -220,6 +220,11 @@
         act: 'Supabaseデータベースへの完全移行',
         summary: 'Neo4jグラフデータベースからSupabase PostgreSQLデータベースへの完全移行を実現。SupabaseManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をSupabaseクエリビルダーで実現。既存のSupabaseスキーマ（participants, participant_experiment_sessions, participant_response_data, participant_hume_*_predictions）を活用し、Experimentテーブルは使用せずparticipant_experiment_sessionsで管理。Patient AppとVisualizer Appの全APIルートをSupabase対応に更新し、データローダー・アダプター・ワークフローを完全移行。Drizzle ORMは使用せずSupabaseクライアントを直接使用することで、シンプルで効率的なデータアクセス層を確立。科学的手法による霊性測定システムのデータ基盤をより安定で拡張可能なリレーショナルデータベース構造に移行し、開発効率とメンテナンス性を向上。',
       },
+      {
+        // Merkle DAG: 物語.ナラティブ[42]
+        act: 'Mentor RDF VS Code拡張機能の統合',
+        summary: 'Semantic Driven Developmentを支援するため、Mentor RDF for Visual Studio Code拡張機能をプロジェクトに統合。RDF/SHACL/OWL/SPARQLファイルの編集・ナビゲーション・バリデーション機能を提供し、オントロジー定義の閲覧、SPARQLクエリの実行、構文ハイライト、リファクタリング機能を実現。.vscode/extensions.jsonに推奨拡張機能として追加し、開発環境のセマンティック編集機能を強化。科学的手法による霊性測定システムの意味論的基盤をVS Code開発環境で直接編集・管理可能にし、OWL/SHACL駆動開発の効率を向上。',
+      },
     ],
     // この物語から派生したプロセスネットワークグラフ
     process_network: {
@@ -379,7 +384,14 @@
             'Zodスキーマによる単一真実源の確立',
             'tRPCルーターによるAPI統一',
             'React Query + tRPCクライアント統合',
-            '後方互換性を保った段階的移行'
+            '後方互換性を保った段階的移行',
+            'Mentor RDF VS Code拡張機能統合',
+            'RDF/SHACL/OWL/SPARQL編集サポート',
+            'オントロジー定義閲覧機能',
+            'SPARQLクエリ実行機能',
+            '構文ハイライト・バリデーション',
+            'リファクタリング機能（プレフィックス管理）',
+            'VS Code開発環境セマンティック編集強化'
           ],
         },
       ],
@@ -388,8 +400,8 @@
           version: '1.24.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: 'tRPC + Zodアーキテクチャ版',
-          last_updated: '2025-01-02',
+          merkle_root: 'tRPC + Zodアーキテクチャ版 + Mentor RDF統合',
+          last_updated: '2025-01-04',
           implemented_features: [
             '川崎モデルの数式実装',
             'Hume AI Expression Measurement統合',
@@ -598,7 +610,14 @@
             'Video Analysis Supabase Storage統合',
             'エンドツーエンド型安全性確保',
             'React Query + tRPCクライアント統合',
-            '後方互換性を保った段階的移行'
+            '後方互換性を保った段階的移行',
+            'Mentor RDF VS Code拡張機能統合',
+            'RDF/SHACL/OWL/SPARQL編集サポート',
+            'オントロジー定義閲覧機能',
+            'SPARQLクエリ実行機能',
+            '構文ハイライト・バリデーション',
+            'リファクタリング機能（プレフィックス管理）',
+            'VS Code開発環境セマンティック編集強化'
           ],
         },
   },
