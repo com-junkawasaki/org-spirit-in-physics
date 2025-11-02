@@ -38,7 +38,12 @@
     "tailwind-merge": "^3.3.1",
     "uuid": "^11.1.0",
     "zod": "^4.1.12",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.6",
+    "@trpc/server": "^10.45.0",
+    "@trpc/client": "^10.45.0",
+    "@trpc/next": "^10.45.0",
+    "@trpc/react-query": "^10.45.0",
+    "@tanstack/react-query": "^5.0.0"
   },
   "scripts": {
     "dev": "next dev -p 25250",
