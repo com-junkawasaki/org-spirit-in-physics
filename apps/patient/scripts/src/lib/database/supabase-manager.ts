@@ -193,6 +193,32 @@ export class SupabaseManager {
   }
 
   /**
+   * Merkle DAG: セッションイベントの保存
+   * イベントをJSONとしてparticipant_experiment_sessionsテーブルに保存
+   */
+  async saveSessionEvents(participantId: string, sessionId: string, events: any[]): Promise<void> {
+    try {
+      // セッションを更新してイベントをJSONとして保存
+      const { error } = await this.client
+        .from('participant_experiment_sessions')
+        .update({
+          events: events,
+        })
+        .eq('participant_id', participantId)
+        .eq('session_id', sessionId);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`Saved ${events.length} events for session ${sessionId}`);
+    } catch (error) {
+      console.error('Error saving session events:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Merkle DAG: 参加者IDによるセッション取得
    */
   async getSessionsByParticipantId(participantId: string): Promise<any[]> {
@@ -223,21 +249,38 @@ export class SupabaseManager {
     reactionTimeMs: number;
     isDelayed?: boolean;
     timestamp: string;
-  }>): Promise<void> {
+  }>, sessionId?: string): Promise<void> {
     try {
-      // セッションを取得（最新のセッションを使用）
-      const sessions = await this.getSessionsByParticipantId(participantId);
-      if (sessions.length === 0) {
-        throw new Error(`No sessions found for participant ${participantId}`);
+      // セッションIDが指定されていない場合は最新のセッションを使用
+      let sessionRecord: any;
+      if (sessionId) {
+        const { data, error } = await this.client
+          .from('participant_experiment_sessions')
+          .select('*')
+          .eq('participant_id', participantId)
+          .eq('session_id', sessionId)
+          .single();
+        
+        if (error || !data) {
+          throw new Error(`Session ${sessionId} not found for participant ${participantId}`);
+        }
+        sessionRecord = data;
+      } else {
+        // セッションを取得（最新のセッションを使用）
+        const sessions = await this.getSessionsByParticipantId(participantId);
+        if (sessions.length === 0) {
+          throw new Error(`No sessions found for participant ${participantId}`);
+        }
+        sessionRecord = sessions[0];
       }
 
-      const sessionId = sessions[0].id;
-      const sessionType = sessions[0].session_type || 'session-1';
+      const finalSessionId = sessionRecord.id || sessionRecord.session_id;
+      const sessionType = sessionRecord.session_type || 'session-1';
 
       // 応答データを挿入
       const responsesToInsert = responses.map(response => ({
         participant_id: participantId,
-        experiment_id: sessionId, // experiment_idとしてsession_idを使用
+        experiment_id: finalSessionId, // experiment_idとしてsession_idを使用
         word_stimulus_id: 1, // デフォルト値（word_stimuliテーブルから取得可能）
         stimulus_word: response.stimulusWord,
         response_word: response.responseWord,
@@ -324,9 +367,58 @@ export class SupabaseManager {
         .from('participant-videos')
         .getPublicUrl(storagePath);
 
-      return urlData.publicUrl;
+      const publicUrl = urlData.publicUrl;
+
+      // 動画ファイルのメタデータをデータベースに保存
+      try {
+        await this.saveVideoFileMetadata(participantId, sessionId, fileName, publicUrl, fileBuffer.length);
+      } catch (metadataError) {
+        console.warn('Failed to save video file metadata:', metadataError);
+        // メタデータの保存失敗は致命的ではないので続行
+      }
+
+      return publicUrl;
     } catch (error) {
       console.error('Error uploading video to Supabase Storage:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Merkle DAG: 動画ファイルのメタデータをデータベースに保存
+   * @param participantId 参加者ID
+   * @param sessionId セッションID
+   * @param fileName ファイル名
+   * @param fileUrl ファイルURL
+   * @param fileSize ファイルサイズ（バイト）
+   */
+  async saveVideoFileMetadata(
+    participantId: string,
+    sessionId: string,
+    fileName: string,
+    fileUrl: string,
+    fileSize: number
+  ): Promise<void> {
+    try {
+      // participant_video_filesテーブルにメタデータを保存（存在する場合）
+      // テーブルが存在しない場合は、participant_experiment_sessionsテーブルにvideo_file_urlカラムがある場合に更新
+      const { error: updateError } = await this.client
+        .from('participant_experiment_sessions')
+        .update({
+          video_file_url: fileUrl,
+          video_file_name: fileName,
+        })
+        .eq('participant_id', participantId)
+        .eq('session_id', sessionId);
+
+      if (updateError) {
+        // カラムが存在しない場合は無視（スキーマに応じて調整）
+        console.warn('Could not update video file metadata in sessions table:', updateError);
+      } else {
+        console.log(`Video file metadata saved for session ${sessionId}`);
+      }
+    } catch (error) {
+      console.error('Error saving video file metadata:', error);
       throw error;
     }
   }

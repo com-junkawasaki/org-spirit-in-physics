@@ -10,13 +10,49 @@ export class StorageAdapter implements StoragePort {
     if (payload.type === "consent") {
       await this.saveConsentData(payload.data);
     } else if (payload.type === "session-data") {
+      const { participantId, events, wordResponses } = payload.data;
+      
+      // セッション開始と終了のタイムスタンプを取得
+      const sessionStartedEvent = events.find((e: any) => e.type === 'session_started');
+      const sessionEndedEvent = events.filter((e: any) => e.type === 'response_window_closed').pop();
+      const startTime = sessionStartedEvent?.timestamp 
+        ? new Date(sessionStartedEvent.timestamp).toISOString()
+        : events[0]?.timestamp 
+          ? new Date(events[0].timestamp).toISOString()
+          : new Date().toISOString();
+      const endTime = sessionEndedEvent?.timestamp 
+        ? new Date(sessionEndedEvent.timestamp).toISOString()
+        : null;
+
+      // セッションタイプを決定（デフォルトはsession-1）
+      const sessionType = events.some((e: any) => e.type?.includes('session-2')) ? 'session-2' : 'session-1';
+      const sessionId = `${participantId}_${sessionType}`;
+
+      // Save session to Supabase
       await supabaseManager.saveSession({
-        participant_id: payload.data.participantId,
-        session_id: `${payload.data.participantId}_session`,
-        session_type: 'session-1',
-        start_time: payload.data.events[0]?.timestamp || new Date().toISOString(),
-        end_time: null,
+        participant_id: participantId,
+        session_id: sessionId,
+        session_type: sessionType,
+        start_time: startTime,
+        end_time: endTime,
       });
+
+      // Save session events to Supabase
+      if (events && events.length > 0) {
+        await supabaseManager.saveSessionEvents(participantId, sessionId, events);
+      }
+
+      // Save word responses to Supabase
+      if (wordResponses && wordResponses.length > 0) {
+        const responsesToSave = wordResponses.map((wr: any) => ({
+          stimulusWord: typeof wr.stimulusWord === 'object' ? wr.stimulusWord.word : wr.stimulusWord,
+          responseWord: wr.responseWord,
+          reactionTimeMs: wr.reactionTimeMs,
+          isDelayed: wr.isDelayed,
+          timestamp: wr.timestamp || new Date().toISOString(),
+        }));
+        await supabaseManager.createWordResponses(participantId, responsesToSave, sessionId);
+      }
     }
   }
 

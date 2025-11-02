@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { blobStorage } from "scripts/src/lib/blob";
 import { SaveStructuredDataPayloadSchema } from "scripts/src/components/jung-voice-assessment/schema";
+import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
 
 export async function POST(request: NextRequest) {
     try {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
         // Handle consent data
         if (dataToSave.type === "consent") {
-            const { participantId } = dataToSave.data;
+            const { participantId, signature, agreements, agreedAt } = dataToSave.data;
             if (!participantId) {
                 return new NextResponse(
                     JSON.stringify({
@@ -38,20 +38,17 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            // Upload consent data as JSON file to Blob Storage
-            const jsonData = JSON.stringify(dataToSave.data, null, 2);
-            const buffer = Buffer.from(jsonData);
-
-            const metadata = await blobStorage.uploadArtifact(buffer, {
-                participantId,
-                type: "consent",
-                filename: "consent.json",
+            // Save consent data to Supabase
+            await supabaseManager.saveParticipant({
+                id: participantId,
+                signature,
+                agreedAt: new Date(agreedAt),
+                agreements,
             });
 
             return NextResponse.json({
                 success: true,
-                message: "Consent data saved successfully",
-                metadata,
+                message: "Consent data saved successfully to Supabase",
             });
         }
 
@@ -61,7 +58,7 @@ export async function POST(request: NextRequest) {
                 "Received session-data for participant:",
                 dataToSave.data.participantId,
             );
-            const { participantId, ...rest } = dataToSave.data;
+            const { participantId, events, wordResponses } = dataToSave.data;
             if (!participantId) {
                 console.error("Participant ID is missing in session-data");
                 return new NextResponse(
@@ -72,25 +69,52 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            // Upload session data as JSON file to Blob Storage
-            const jsonData = JSON.stringify(
-                { participantId, ...rest },
-                null,
-                2,
-            );
-            const buffer = Buffer.from(jsonData);
+            // セッション開始と終了のタイムスタンプを取得
+            const sessionStartedEvent = events.find((e: any) => e.type === 'session_started');
+            const sessionEndedEvent = events.filter((e: any) => e.type === 'response_window_closed').pop();
+            const startTime = sessionStartedEvent?.timestamp 
+                ? new Date(sessionStartedEvent.timestamp).toISOString()
+                : events[0]?.timestamp 
+                    ? new Date(events[0].timestamp).toISOString()
+                    : new Date().toISOString();
+            const endTime = sessionEndedEvent?.timestamp 
+                ? new Date(sessionEndedEvent.timestamp).toISOString()
+                : null;
 
-            const metadata = await blobStorage.uploadArtifact(buffer, {
-                participantId,
-                type: "session_data",
-                filename: "session_data.json",
+            // セッションタイプを決定（デフォルトはsession-1）
+            const sessionType = events.some((e: any) => e.type?.includes('session-2')) ? 'session-2' : 'session-1';
+            const sessionId = `${participantId}_${sessionType}`;
+
+            // Save session to Supabase
+            await supabaseManager.saveSession({
+                participant_id: participantId,
+                session_id: sessionId,
+                session_type: sessionType,
+                start_time: startTime,
+                end_time: endTime,
             });
 
-            console.log(`Successfully saved session data to Blob Storage`);
+            // Save session events to Supabase (JSONとして保存)
+            if (events && events.length > 0) {
+                await supabaseManager.saveSessionEvents(participantId, sessionId, events);
+            }
+
+            // Save word responses to Supabase
+            if (wordResponses && wordResponses.length > 0) {
+                const responsesToSave = wordResponses.map((wr: any) => ({
+                    stimulusWord: typeof wr.stimulusWord === 'object' ? wr.stimulusWord.word : wr.stimulusWord,
+                    responseWord: wr.responseWord,
+                    reactionTimeMs: wr.reactionTimeMs,
+                    isDelayed: wr.isDelayed,
+                    timestamp: wr.timestamp || new Date().toISOString(),
+                }));
+                await supabaseManager.createWordResponses(participantId, responsesToSave, sessionId);
+            }
+
+            console.log(`Successfully saved session data to Supabase`);
             return NextResponse.json({
                 success: true,
-                message: "Session data saved successfully",
-                metadata,
+                message: "Session data saved successfully to Supabase",
             });
         }
 
@@ -102,6 +126,12 @@ export async function POST(request: NextRequest) {
         );
     } catch (error) {
         console.error("Error saving data:", error);
-        return new NextResponse("Internal Server Error", { status: 500 });
+        return new NextResponse(
+            JSON.stringify({ 
+                error: "Internal Server Error", 
+                message: error instanceof Error ? error.message : String(error) 
+            }),
+            { status: 500 }
+        );
     }
 }
