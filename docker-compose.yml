@@ -1,30 +1,4 @@
 services:
-  # Neo4j
-  neo4j:
-    image: neo4j:latest
-    container_name: spirit-neo4j
-    ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
-    environment:
-      - NEO4J_AUTH=neo4j/neo4jpassword
-      - NEO4J_PLUGINS=["graph-data-science"]
-      - NEO4J_dbms_memory_heap_initial__size=512m
-      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4J_dbms_memory_pagecache_size=512m
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4jpassword", "MATCH () RETURN count(*) limit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-
-
   # Patient app (Next.js)
   patient:
     build:
@@ -35,8 +9,6 @@ services:
       - "25250:3000"
     env_file:
       - ./apps/patient/env.docker
-    depends_on:
-      - neo4j
     networks:
       - spirit-network
 
@@ -60,8 +32,6 @@ services:
       - NODE_ENV=development
       - INNGEST_EVENT_KEY=local_dev_key
       - INNGEST_SIGNING_KEY=local_dev_signing_key
-    depends_on:
-      - neo4j
     networks:
       - spirit-network
 
@@ -79,10 +49,6 @@ services:
         networks:
           - spirit-network
         restart: "no"
-
-volumes:
-  neo4j_data:
-  neo4j_logs:
 
 networks:
   spirit-network:

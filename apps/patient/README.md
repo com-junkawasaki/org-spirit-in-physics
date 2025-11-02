@@ -6,26 +6,23 @@ This process is for experimental research on spirituality, based on Jung's word 
 
 ### Prerequisites
 
-1. **Neo4j Setup**
-   - Install Neo4j (e.g., via Docker)
+1. **Supabase Setup**
+   - Create a Supabase project at https://supabase.com
    - Ensure the database is running and accessible
 
 2. **Environment Variables**
    ```bash
    # Create .env.local in the project root
-   NEO4J_URI=neo4j://localhost:7687
-   NEO4J_USER=neo4j
-   NEO4J_PASSWORD=neo4jpassword
-   NEO4J_DATABASE=neo4j
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    ```
 
 3. **Database Schema**
-   The database schema is managed automatically by the application. The main node types are:
-   - `Participant` - Research participants
-   - `Session` - Experiment sessions
-   - `Response` - Word association responses
-   - `VideoFile` - Uploaded video files
-   - `EmotionAnalysis` - Emotion analysis results
+   The database schema is managed by Supabase. The main tables are:
+   - `participants` - Research participants
+   - `participant_experiment_sessions` - Experiment sessions
+   - `participant_response_data` - Word association responses
+   - `participant_hume_*_predictions` - Emotion analysis results
 
 ### Installation & Development
 
@@ -37,7 +34,7 @@ pnpm dev
 
 ## 🏗️ Architecture
 
-This project implements **Hexagonal Architecture + CQRS** pattern with Neo4j as the primary database:
+This project implements **Hexagonal Architecture + CQRS** pattern with Supabase PostgreSQL as the primary database:
 
 ```
 src/

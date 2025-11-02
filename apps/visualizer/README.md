@@ -1,40 +1,32 @@
 # Spirit in Physics - Visualizer
 
-## Neo4j Migration Complete
+## Supabase Database
 
-This visualizer has been fully migrated from Supabase to **Neo4j**, a powerful graph database.
+This visualizer uses **Supabase PostgreSQL** as the primary database.
 
-## Key Changes
+## Key Features
 
-### Client Library (`src/lib/neo4j.ts`)
-- **Before**: Supabase JavaScript client
-- **After**: Custom Neo4j client with Cypher queries
+### Client Library (`src/lib/supabase.ts`)
+- Supabase JavaScript client with query builder
+- Type-safe data access layer
 
 ### API Routes (`src/app/api/`)
-- **Before**: Supabase queries in API routes
-- **After**: Neo4j client calls with Cypher queries
+- Supabase queries in API routes
+- Efficient relational queries
 
 ### Data Functions (`src/lib/data.ts`)
-- **Before**: Supabase server client queries
-- **After**: Neo4j client integration with graph traversals
+- Supabase server client queries
+- SupabaseManager for unified data access
 
-## Neo4j Client Features
+## Supabase Client Features
 
 ### Participants Query
 ```typescript
 async getParticipants(): Promise<any[]> {
-  const query = `
-    MATCH (p:Participant)
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(:Session)-[:HAS_RESPONSE]->(r:Response)
-    RETURN
-      p.id as participant_id,
-      count(distinct s) as session_count,
-      count(distinct r) as total_responses,
-      0.5 as average_spirit_probability,
-      p.created_at as last_activity
-    ORDER BY p.created_at DESC
-  `
+  const { data } = await client
+    .from('participant_summary')
+    .select('*')
+    .order('participant_created_at', { ascending: false })
   // Returns processed participant data
 }
 ```
@@ -42,13 +34,11 @@ async getParticipants(): Promise<any[]> {
 ### Participant Details Query
 ```typescript
 async getParticipantDetails(participantId: string): Promise<any> {
-  const query = `
-    MATCH (p:Participant {id: $participantId})
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
-    OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
-    RETURN p, s, r
-    ORDER BY s.created_at, r.event_ts
-  `
+  const { data: sessions } = await client
+    .from('participant_experiment_sessions')
+    .select('*')
+    .eq('participant_id', participantId)
+  // Returns participant sessions and responses
 }
 ```
 
@@ -56,18 +46,17 @@ async getParticipantDetails(participantId: string): Promise<any> {
 
 Add to your environment variables:
 ```bash
-NEO4J_URI=neo4j://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=neo4jpassword
-NEO4J_DATABASE=neo4j
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-## Migration Benefits
+## Benefits
 
 1. **Type Safety**: TypeScript interfaces maintained
-2. **Performance**: Direct graph queries for complex relationships
-3. **Scalability**: Efficient handling of connected data
+2. **Performance**: Efficient relational queries
+3. **Scalability**: PostgreSQL scalability
 4. **Consistency**: Unified data access across the application
+5. **Simplicity**: Direct Supabase client usage (no ORM overhead)
 
 ## Usage
 

@@ -54,7 +54,7 @@
 ### 9. データ/API
 - Timeline API から語イベントを取得し、感情・生理指標を集約。
 - 可視化向けダミー（デモ）データも提供可能（`?demo=1`）。
-- Neo4j モデル（Neogma）は別ファイルに定義。
+- Supabase PostgreSQLデータベースを使用（Supabaseクライアント直接使用、Drizzle ORM不使用）。
 
 ### 10. 実行
 ```

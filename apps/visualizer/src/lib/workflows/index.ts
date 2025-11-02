@@ -19,11 +19,11 @@ export {
   kernelFusionFailureWorkflow,
 } from './kernel-fusion-workflow';
 
-// Neo4j保存ワークフロー
-export {
-  neo4jPersistenceWorkflow,
-  neo4jPersistenceFailureWorkflow,
-} from './neo4j-persistence-workflow';
+// Neo4j保存ワークフロー（Supabase移行により無効化）
+// export {
+//   neo4jPersistenceWorkflow,
+//   neo4jPersistenceFailureWorkflow,
+// } from './neo4j-persistence-workflow';
 
 // Inngestクライアントとイベント定義
 export { inngest, events } from '../inngest';

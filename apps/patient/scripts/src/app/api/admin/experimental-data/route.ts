@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseWordResponsesFromEvents, getParticipantStatistics, loadAllSessionData } from "scripts/src/lib/data-loader";
-import { neo4jManager } from "scripts/src/lib/database/neo4j-manager";
+import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Neo4jから参加者データを取得
-        const neo4jParticipants = await neo4jManager.getAllParticipants();
+        // Supabaseから参加者データを取得
+        const neo4jParticipants = await supabaseManager.getAllParticipants();
 
         // Convert to data-loader Participant format
         const participantsData: import("scripts/src/lib/data-loader").Participant[] = neo4jParticipants.map(p => ({
@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        // Neo4jから参加者データを取得
-        const participant = await neo4jManager.getParticipant(participantId);
+        // Supabaseから参加者データを取得
+        const participant = await supabaseManager.getParticipant(participantId);
 
         if (!participant) {
           return NextResponse.json({
@@ -118,8 +118,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Neo4jからデータを取得
-        const analyticsNeo4jParticipants = await neo4jManager.getAllParticipants();
+        // Supabaseからデータを取得
+        const analyticsNeo4jParticipants = await supabaseManager.getAllParticipants();
 
         // Convert to data-loader Participant format
         const participants: import("scripts/src/lib/data-loader").Participant[] = analyticsNeo4jParticipants.map(p => ({
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
 
         const stats = getParticipantStatistics(participants);
 
-        // Calculate reaction time statistics from Neo4j data
+        // Calculate reaction time statistics from Supabase data
         let totalReactionTime = 0;
         let totalResponses = 0;
 
@@ -150,8 +150,8 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Neo4jから感情統計を取得
-        const emotionStats = await neo4jManager.getEmotionStatistics();
+        // Supabaseから感情統計を取得
+        const emotionStats = await supabaseManager.getEmotionStatistics();
         const emotionDistribution: Record<string, number> = {};
         emotionStats.dominantEmotions.forEach((item: any) => {
           emotionDistribution[item.emotion] = item.count;
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
         });
 
       case 'reaction-times':
-        // Neo4jからreaction timeデータを取得
+        // Supabaseからreaction timeデータを取得
         const reactionTimeSessionsData = await loadAllSessionData();
         const reactionTimeData: any[] = [];
 

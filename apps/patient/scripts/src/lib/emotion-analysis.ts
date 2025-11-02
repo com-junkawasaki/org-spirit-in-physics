@@ -1,7 +1,8 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { neo4jClient } from './neo4j';
+// Neo4jはSupabaseに移行済み - このインポートは削除
+// import { neo4jClient } from './neo4j';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -237,7 +238,8 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
 }
 
 /**
- * Neo4jから感情分析の統計情報を取得
+ * Supabaseから感情分析の統計情報を取得（Neo4jから移行）
+ * @deprecated この関数はgetEmotionStatisticsFromSupabaseに置き換えられました
  */
 export async function getEmotionStatisticsFromNeo4j(): Promise<{
   totalAnalyses: number;
@@ -249,11 +251,11 @@ export async function getEmotionStatisticsFromNeo4j(): Promise<{
   };
 }> {
     try {
-      // Neo4jマネージャーを使用
-      const { neo4jManager } = await import('./database/neo4j-manager.ts');
-    return await neo4jManager.getEmotionStatistics();
+      // Supabaseマネージャーを使用
+      const { supabaseManager } = await import('./database/supabase-manager.ts');
+      return await supabaseManager.getEmotionStatistics();
   } catch (error) {
-    console.error('Error getting emotion statistics from Neo4j:', error);
+    console.error('Error getting emotion statistics from Supabase:', error);
   }
 
   // Fallback to empty stats
