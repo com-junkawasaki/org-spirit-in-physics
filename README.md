@@ -56,11 +56,45 @@
 - 可視化向けダミー（デモ）データも提供可能（`?demo=1`）。
 - Supabase PostgreSQLデータベースを使用（Supabaseクライアント直接使用、Drizzle ORM不使用）。
 
-### 10. 実行
+### 10. セットアップと実行
+
+本プロジェクトは **Turborepo** を使用したモノレポ構成です。
+
+#### 初回セットアップ
+```bash
+# 依存関係のインストール
+pnpm install
+
+# 全アプリのビルド
+pnpm build
+
+# 開発サーバーの起動（全アプリ）
+pnpm dev
+
+# 特定のアプリのみ起動
+pnpm --filter @spirit-in-physics/visualizer dev
+pnpm --filter @gftdcojp/spirit-in-physics dev
 ```
-pnpm i
-pnpm -F apps/visualizer dev
+
+#### アプリ構成
+- `apps/patient` - Patientアプリケーション（ポート25250）
+- `apps/visualizer` - Visualizerアプリケーション
+
+#### Turborepoコマンド
+```bash
+# ビルド
+pnpm turbo build
+
+# リント
+pnpm turbo lint
+
+# クリーン
+pnpm turbo clean
+
+# 開発サーバー（全アプリ）
+pnpm turbo dev
 ```
+
 ブラウザで 3D Force Timeline（`/3d-force-timeline`）へアクセス。UI で σ, Spectral Init, Shell/Constraints 等を調整します。
 
 ### 11. 設計の要点（Why it works）

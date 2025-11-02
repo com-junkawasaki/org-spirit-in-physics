@@ -16,6 +16,9 @@ playwright-report/
 build
 dist
 
+# Turborepo
+.turbo
+
 # python
 venv
 __pycache__/

@@ -1,0 +1,23 @@
+{
+  "name": "@gftdcojp/spirit-in-physics",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Spirit-in-Physics Visualizer — Emotion-Kernel Tensegrity 3D Model",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
+
