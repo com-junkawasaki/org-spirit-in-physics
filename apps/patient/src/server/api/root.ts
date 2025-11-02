@@ -19,3 +19,6 @@ export const appRouter = router({
 
 export type AppRouter = typeof appRouter;
 
+// 型としても使用できるように型エクスポート
+export type { AppRouter as AppRouterType };
+

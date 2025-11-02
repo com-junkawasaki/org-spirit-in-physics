@@ -10,7 +10,11 @@ export const SessionTypeSchema = z.enum(['session-1', 'session-2']);
  */
 export const SessionEventSchema = z.object({
   type: z.string(),
-  timestamp: z.number().or(z.string().datetime()),
+  timestamp: z.union([z.number(), z.string(), z.date()]).transform((val) => {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') return new Date(val).getTime();
+    return val.getTime();
+  }),
   payload: z.record(z.any()).optional(),
 });
 

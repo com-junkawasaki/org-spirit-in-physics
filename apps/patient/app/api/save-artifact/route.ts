@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
                     url: '/api/trpc',
                 }),
             ],
+            transformer: undefined, // デフォルトのtransformerを使用
         });
 
         const result = await client.artifacts.saveVideo.mutate({

@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
                     url: '/api/trpc',
                 }),
             ],
+            transformer: undefined, // デフォルトのtransformerを使用
         });
 
         // Handle consent data
