@@ -294,7 +294,12 @@ export const windowsGenerationWorkflow = inngest.createFunction(
     // Merkle DAG: window_definition -> temporal_segmentation
     // ステップ4: ウィンドウ定義の生成
     const windows = await step.run('define-emotion-windows', async () => {
-      return await defineEmotionWindows(sessionData, physioData, humeData, participantId);
+      return await defineEmotionWindows(
+        sessionData as any,
+        physioData as any,
+        humeData as any,
+        participantId
+      );
     });
 
     // 再利用: ウィンドウJSONキャッシュ

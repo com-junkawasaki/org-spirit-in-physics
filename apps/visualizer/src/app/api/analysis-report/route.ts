@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createNeo4jClient } from '@/lib/neo4j'
+import { supabaseManager } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase-client'
 
 export async function GET() {
   try {
-    console.log('API: Generating analysis report from Neo4j...')
-    const client = createNeo4jClient()
+    console.log('API: Generating analysis report from Supabase...')
+    const client = getSupabaseClient()
 
     // Get participants
-    const participants = await client.getParticipants()
+    const participants = await supabaseManager.getParticipants()
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
 
     // Create participant name mapping
@@ -28,7 +29,13 @@ export async function GET() {
     // Get all responses and process them
     for (const participant of participants || []) {
       const participantId = participant.participant_id
-      const responses = await client.getParticipantResponses(participantId)
+      const responses = await supabaseManager.getParticipantResponses(participantId)
+      
+      // 分析結果を取得
+      const { data: analysisResults } = await client
+        .from('participant_analysis_results')
+        .select('*')
+        .eq('participant_id', participantId);
 
       if (!participantStats.has(participantId)) {
         participantStats.set(participantId, {
@@ -42,36 +49,60 @@ export async function GET() {
 
       const stats = participantStats.get(participantId)
 
-      responses.forEach((result: any) => {
-        stats.total_responses++
+      // 分析結果を使用（存在する場合）、なければレスポンスから生成
+      if (analysisResults && analysisResults.length > 0) {
+        analysisResults.forEach((result: any) => {
+          stats.total_responses++
+          const pValue = Number(result.spirit_probability) || 0.5
+          stats.spirit_probabilities.push(pValue)
+          stats.results.push({
+            p_value: pValue,
+            components: {
+              word2vec: Number(result.word2vec_component) || 0,
+              reaction_time: Number(result.reaction_time_component) || 0,
+              skin_potential: Number(result.skin_potential_component) || 0,
+              emotion: Number(result.emotion_component) || 0
+            },
+            stimulus_word: result.stimulus_word,
+            response_word: result.response_word,
+            reaction_time_ms: result.reaction_time_ms
+          })
 
-        // Generate mock Spirit probability (since we don't have real analysis results)
-        // This is a simplified calculation based on reaction time and emotion confidence
-        const baseProbability = 0.5
-        const reactionTimeFactor = Math.max(0, 1 - (result.reaction_time_ms / 10000)) // Faster = higher probability
-        const emotionFactor = result.emotion_confidence || 0.5
-        const mockPValue = Math.min(0.9999, baseProbability + (reactionTimeFactor * 0.3) + (emotionFactor * 0.2))
-
-        stats.spirit_probabilities.push(mockPValue)
-        stats.results.push({
-          p_value: mockPValue,
-          components: {
-            word2vec: (Math.random() - 0.5) * 0.4, // Mock word2vec component
-            reaction_time: 10 / (1 + result.reaction_time_ms / 1000), // Mock reaction time component
-            skin_potential: 0.1, // Mock skin potential
-            emotion: emotionFactor // Mock emotion component
-          },
-          stimulus_word: result.stimulus_word,
-          response_word: result.response_word,
-          reaction_time_ms: result.reaction_time_ms
+          // 感情データの集計
+          if (result.emotion_data && Object.keys(result.emotion_data).length > 0) {
+            emotionStats.totalLanguageDataPoints++
+            emotionStats.emotionSources.add('supabase')
+          }
         })
+      } else {
+        // フォールバック: レスポンスから生成
+        responses.forEach((result: any) => {
+          stats.total_responses++
+          const baseProbability = 0.5
+          const reactionTimeFactor = Math.max(0, 1 - (result.reaction_time_ms / 10000))
+          const emotionFactor = result.emotion_confidence || 0.5
+          const mockPValue = Math.min(0.9999, baseProbability + (reactionTimeFactor * 0.3) + (emotionFactor * 0.2))
 
-        // 感情データの集計
-        if (result.emotion) {
-          emotionStats.totalLanguageDataPoints++
-          emotionStats.emotionSources.add('terminusdb')
-        }
-      })
+          stats.spirit_probabilities.push(mockPValue)
+          stats.results.push({
+            p_value: mockPValue,
+            components: {
+              word2vec: (Math.random() - 0.5) * 0.4,
+              reaction_time: 10 / (1 + result.reaction_time_ms / 1000),
+              skin_potential: 0.1,
+              emotion: emotionFactor
+            },
+            stimulus_word: result.stimulus_word,
+            response_word: result.response_word,
+            reaction_time_ms: result.reaction_time_ms
+          })
+
+          if (result.emotion) {
+            emotionStats.totalLanguageDataPoints++
+            emotionStats.emotionSources.add('supabase')
+          }
+        })
+      }
     }
 
     // 川崎モデル結果の集計
@@ -120,7 +151,7 @@ export async function GET() {
       topPerformingWordPairs: topWordPairs,
       participantStats: allResults,
       conclusion: {
-        message: "Successfully integrated Hume AI emotion analysis with Kawasaki Spirit model using TerminusDB, demonstrating the potential for quantitative measurement of spiritual responses through multimodal emotion analysis.",
+        message: "Successfully integrated Hume AI emotion analysis with Kawasaki Spirit model using Supabase, demonstrating the potential for quantitative measurement of spiritual responses through multimodal emotion analysis.",
         totalParticipants: allResults.length,
         totalResponses: totalAnalyses
       }

@@ -1,7 +1,7 @@
 // Merkle DAG: データベース初期化マネージャー
 // 全てのデータベースの初期化を統括
 
-import { neo4jManager } from './neo4j-manager';
+import { supabaseManager } from './supabase-manager';
 
 export class DatabaseInitializer {
   private initialized = false;
@@ -18,8 +18,8 @@ export class DatabaseInitializer {
     try {
       console.log('Initializing all databases...');
 
-      // Neo4j初期化（メインDB）
-      await neo4jManager.initialize();
+      // Supabase初期化（メインDB）
+      await supabaseManager.initialize();
 
       this.initialized = true;
       console.log('All databases initialized successfully');
@@ -37,7 +37,7 @@ export class DatabaseInitializer {
     try {
       console.log('Closing all databases...');
 
-      await neo4jManager.close();
+      await supabaseManager.close();
 
       this.initialized = false;
       console.log('All databases closed successfully');
@@ -59,5 +59,7 @@ export class DatabaseInitializer {
 // シングルトンインスタンス
 export const databaseInitializer = new DatabaseInitializer();
 
-// Neo4jマネージャーのエクスポート
-export { neo4jManager };
+// Supabaseマネージャーのエクスポート
+export { supabaseManager };
+// 後方互換性のため
+export { supabaseManager as neo4jManager };

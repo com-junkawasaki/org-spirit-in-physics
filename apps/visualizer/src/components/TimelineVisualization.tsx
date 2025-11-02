@@ -359,10 +359,10 @@ export default function TimelineVisualization({
                     }
 
                     // 感情空間の主成分分析で配置を決定
-                    const emotionPCA = () => {
+                    const emotionPCA = (): WordNode[] => {
                       const wordsWithVec = nodes.map(n => ({ n, v: normalizedEmotionVec[n.label] || new Array(10).fill(0) }))
                       const dim = 10
-                      if (wordsWithVec.length === 0) return wordsWithVec.map(({ n }) => ({ n, vec: [0, 0, 0] as [number, number, number] }))
+                      if (wordsWithVec.length === 0) return [] as WordNode[]
 
                       // 行列 X: rows=語, cols=10感情（平均0へ中心化）
                       const means = new Array(dim).fill(0)
@@ -431,15 +431,20 @@ export default function TimelineVisualization({
 
                       // スケール調整と正規化
                       const scale = shellRadius * 0.6
-                      return embed3.map(({ node, vec }) => {
+                      return embed3.map(({ node, vec }, idx) => {
                         const norm = Math.hypot(vec[0], vec[1], vec[2])
-                        if (norm > 0) node.initial = [vec[0] / norm * scale, vec[1] / norm * scale, vec[2] / norm * scale]
+                        if (norm > 0) node.initial = [
+                          (vec[0] / norm) * scale,
+                          (vec[1] / norm) * scale,
+                          (vec[2] / norm) * scale,
+                        ]
+                        const colorKey = EMOTION_KEYS[idx % EMOTION_KEYS.length]
                         return {
                           ...node,
                           scale: 8,
                           fixed: true,
-                          nodeType: 'anchor',
-                          color: emotionColors[EMOTION_KEYS[embed3.indexOf({ node, vec })] || '#999999',
+                          nodeType: 'anchor' as const,
+                          color: emotionColors[colorKey] || '#999999',
                         }
                       })
                     }
@@ -514,65 +519,44 @@ export default function TimelineVisualization({
                   const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
                   const { nodes, links } = generateForce3DGraph()
 
-                  // 感情空間に基づく背景色の計算
+                  // 感情アンカーへのリンク重みから背景色を推定
                   const calculateBackgroundColor = () => {
-                    const avgEmotionVec = new Array(10).fill(0)
+                    // アンカーノード索引と色（rgb）を準備
+                    const anchorIndices = nodes
+                      .map((n, i) => (n.nodeType === 'anchor' ? i : -1))
+                      .filter(i => i >= 0)
+                    if (anchorIndices.length === 0) return 'rgb(240, 240, 240)'
 
-                    // 全単語の感情ベクトルの平均を計算
-                    const wordNodes = nodes.filter(n => n.nodeType === 'word')
-                    for (const node of wordNodes) {
-                      const vec = normalizedEmotionVec[node.label]
-                      if (vec) {
-                        for (let i = 0; i < 10; i++) {
-                          avgEmotionVec[i] += vec[i] || 0
-                        }
+                    const parseRgb = (hex: string): [number, number, number] => {
+                      const h = hex.replace('#', '')
+                      const r = parseInt(h.slice(0, 2), 16)
+                      const g = parseInt(h.slice(2, 4), 16)
+                      const b = parseInt(h.slice(4, 6), 16)
+                      return [r, g, b]
+                    }
+
+                    const anchorColor: Record<number, [number, number, number]> = {}
+                    for (const idx of anchorIndices) {
+                      const c = (nodes[idx] as any).color as string | undefined
+                      anchorColor[idx] = c ? parseRgb(c) : [200, 200, 200]
+                    }
+
+                    let r = 0, g = 0, b = 0
+                    let total = 0
+                    for (const l of links) {
+                      const src = typeof l.source === 'number' ? l.source : (l.source as any)
+                      if (typeof src === 'number' && anchorColor[src]) {
+                        const w = Math.max(0, l.weight || 0)
+                        const [cr, cg, cb] = anchorColor[src]
+                        r += cr * w
+                        g += cg * w
+                        b += cb * w
+                        total += w
                       }
                     }
 
-                    // 平均を計算
-                    for (let i = 0; i < 10; i++) {
-                      avgEmotionVec[i] /= Math.max(1, wordNodes.length)
-                    }
-
-                    // 感情の色を混合して背景色を決定
-                    const emotionColors: Record<string, [number, number, number]> = {
-                      joy: [245, 158, 11],      // #f59e0b
-                      sadness: [31, 41, 55],    // #1f2937
-                      anger: [239, 68, 68],     // #ef4444
-                      fear: [167, 139, 250],    // #a78bfa
-                      surprise: [16, 163, 74],  // #10b981
-                      disgust: [107, 114, 128], // #6b7280
-                      calm: [132, 204, 22],     // #84cc16
-                      focus: [245, 158, 11],    // #f59e0b
-                      excitement: [236, 72, 153], // #ec4899
-                      confusion: [99, 102, 241] // #6366f1
-                    }
-
-                    // 感情ベクトルに基づいて色を混合
-                    let r = 0, g = 0, b = 0
-                    let totalWeight = 0
-
-                    for (let i = 0; i < EMOTION_KEYS.length; i++) {
-                      const emotion = EMOTION_KEYS[i]
-                      const weight = Math.max(0, avgEmotionVec[i] || 0)
-                      const [cr, cg, cb] = emotionColors[emotion]
-
-                      r += cr * weight
-                      g += cg * weight
-                      b += cb * weight
-                      totalWeight += weight
-                    }
-
-                    if (totalWeight > 0) {
-                      r = Math.round(r / totalWeight)
-                      g = Math.round(g / totalWeight)
-                      b = Math.round(b / totalWeight)
-                    } else {
-                      // デフォルトの背景色（中間色）
-                      r = 240, g = 240, b = 240
-                    }
-
-                    return `rgb(${r}, ${g}, ${b})`
+                    if (total <= 0) return 'rgb(240, 240, 240)'
+                    return `rgb(${Math.round(r / total)}, ${Math.round(g / total)}, ${Math.round(b / total)})`
                   }
 
                   const backgroundColor = calculateBackgroundColor()
@@ -718,10 +702,10 @@ export default function TimelineVisualization({
                         }
 
                         // 感情空間の主成分分析で配置を決定
-                        const emotionPCA = () => {
+                        const emotionPCA = (): WordNode[] => {
                           const wordsWithVec = nodes.map(n => ({ n, v: normalizedEmotionVec[n.label] || new Array(10).fill(0) }))
                           const dim = 10
-                          if (wordsWithVec.length === 0) return wordsWithVec.map(({ n }) => ({ n, vec: [0, 0, 0] as [number, number, number] }))
+                          if (wordsWithVec.length === 0) return [] as WordNode[]
 
                           // 行列 X: rows=語, cols=10感情（平均0へ中心化）
                           const means = new Array(dim).fill(0)
@@ -790,22 +774,26 @@ export default function TimelineVisualization({
 
                           // スケール調整と正規化
                           const scale = shellRadius * 0.4
-                          return embed3.map(({ node, vec }) => {
+                          return embed3.map(({ node, vec }, idx) => {
                             const norm = Math.hypot(vec[0], vec[1], vec[2])
-                            if (norm > 0) node.initial = [vec[0] / norm * scale, vec[1] / norm * scale, vec[2] / norm * scale]
-                            return { node, vec }
+                            if (norm > 0) node.initial = [
+                              (vec[0] / norm) * scale,
+                              (vec[1] / norm) * scale,
+                              (vec[2] / norm) * scale,
+                            ]
+                            const colorKey = EMOTION_KEYS[idx % EMOTION_KEYS.length]
+                            return {
+                              ...node,
+                              scale: 6,
+                              fixed: true,
+                              nodeType: 'anchor' as const,
+                              color: emotionColors[colorKey] || '#999999',
+                            }
                           })
                         }
 
                         // 感情の色に基づく配置（感情空間の中心に配置）
-                        const emotionAnchors = emotionPCA()
-                        const anchorNodes: WordNode[] = emotionAnchors.map(({ node }, idx) => ({
-                          ...node,
-                          scale: 6,
-                          fixed: true,
-                          nodeType: 'anchor',
-                          color: emotionColors[EMOTION_KEYS[idx]] || '#999999',
-                        }))
+                        const anchorNodes = emotionPCA()
 
                 // アンカー追加と接続
                 const baseOffset = anchorNodes.length
@@ -874,65 +862,43 @@ export default function TimelineVisualization({
                       const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
                       const { nodes, links } = generateForce3DGraph()
 
-                      // 感情空間に基づく背景色の計算（分割表示用）
+                      // アンカーリンク重みから背景色を推定（分割表示用）
                       const calculateBackgroundColorSplit = () => {
-                        const avgEmotionVec = new Array(10).fill(0)
+                        const anchorIndices = nodes
+                          .map((n, i) => (n.nodeType === 'anchor' ? i : -1))
+                          .filter(i => i >= 0)
+                        if (anchorIndices.length === 0) return 'rgb(240, 240, 240)'
 
-                        // 全単語の感情ベクトルの平均を計算
-                        const wordNodes = nodes.filter(n => n.nodeType === 'word')
-                        for (const node of wordNodes) {
-                          const vec = normalizedEmotionVec[node.label]
-                          if (vec) {
-                            for (let i = 0; i < 10; i++) {
-                              avgEmotionVec[i] += vec[i] || 0
-                            }
+                        const parseRgb = (hex: string): [number, number, number] => {
+                          const h = hex.replace('#', '')
+                          const r = parseInt(h.slice(0, 2), 16)
+                          const g = parseInt(h.slice(2, 4), 16)
+                          const b = parseInt(h.slice(4, 6), 16)
+                          return [r, g, b]
+                        }
+
+                        const anchorColor: Record<number, [number, number, number]> = {}
+                        for (const idx of anchorIndices) {
+                          const c = (nodes[idx] as any).color as string | undefined
+                          anchorColor[idx] = c ? parseRgb(c) : [200, 200, 200]
+                        }
+
+                        let r = 0, g = 0, b = 0
+                        let total = 0
+                        for (const l of links) {
+                          const src = typeof l.source === 'number' ? l.source : (l.source as any)
+                          if (typeof src === 'number' && anchorColor[src]) {
+                            const w = Math.max(0, l.weight || 0)
+                            const [cr, cg, cb] = anchorColor[src]
+                            r += cr * w
+                            g += cg * w
+                            b += cb * w
+                            total += w
                           }
                         }
 
-                        // 平均を計算
-                        for (let i = 0; i < 10; i++) {
-                          avgEmotionVec[i] /= Math.max(1, wordNodes.length)
-                        }
-
-                        // 感情の色を混合して背景色を決定
-                        const emotionColors: Record<string, [number, number, number]> = {
-                          joy: [245, 158, 11],      // #f59e0b
-                          sadness: [31, 41, 55],    // #1f2937
-                          anger: [239, 68, 68],     // #ef4444
-                          fear: [167, 139, 250],    // #a78bfa
-                          surprise: [16, 163, 74],  // #10b981
-                          disgust: [107, 114, 128], // #6b7280
-                          calm: [132, 204, 22],     // #84cc16
-                          focus: [245, 158, 11],    // #f59e0b
-                          excitement: [236, 72, 153], // #ec4899
-                          confusion: [99, 102, 241] // #6366f1
-                        }
-
-                        // 感情ベクトルに基づいて色を混合
-                        let r = 0, g = 0, b = 0
-                        let totalWeight = 0
-
-                        for (let i = 0; i < EMOTION_KEYS.length; i++) {
-                          const emotion = EMOTION_KEYS[i]
-                          const weight = Math.max(0, avgEmotionVec[i] || 0)
-                          const [cr, cg, cb] = emotionColors[emotion]
-
-                          r += cr * weight
-                          g += cg * weight
-                          b += cb * weight
-                          totalWeight += weight
-                        }
-
-                        if (totalWeight > 0) {
-                          r = Math.round(r / totalWeight)
-                          g = Math.round(g / totalWeight)
-                          b = Math.round(b / totalWeight)
-                        } else {
-                          // デフォルトの背景色（中間色）
-                          r = 240, g = 240, b = 240
-                        }
-
-                        return `rgb(${r}, ${g}, ${b})`
+                        if (total <= 0) return 'rgb(240, 240, 240)'
+                        return `rgb(${Math.round(r / total)}, ${Math.round(g / total)}, ${Math.round(b / total)})`
                       }
 
                       const backgroundColor = calculateBackgroundColorSplit()

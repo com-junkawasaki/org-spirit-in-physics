@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createNeo4jClient } from '@/lib/neo4j'
+import { getSupabaseClient } from '@/lib/supabase-client'
 
 interface AnalysisResultData {
   participant_id: string
@@ -29,15 +29,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const client = createNeo4jClient()
+    const client = getSupabaseClient()
 
-    // Validate participant exists in Neo4j
+    // Validate participant exists in Supabase
     if (participantId) {
-      try {
-        await client.getParticipantDetails(participantId)
-      } catch (error) {
+      const { data, error } = await client
+        .from('participants')
+        .select('id')
+        .eq('id', participantId)
+        .single();
+
+      if (error || !data) {
         return NextResponse.json(
-          { error: 'Participant not found in TerminusDB' },
+          { error: 'Participant not found in Supabase' },
           { status: 404 }
         )
       }
@@ -74,15 +78,38 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Note: TerminusDB doesn't have analysis results storage yet
-    // This is a placeholder for future implementation
-    console.log(`Would import ${validatedResults.length} analysis results to TerminusDB`)
+    // participant_analysis_resultsテーブルに保存
+    const analysisResultsToInsert = validatedResults.map(result => ({
+      participant_id: result.participant_id,
+      experiment_id: result.experiment_id,
+      word_stimulus_id: result.word_stimulus_id,
+      stimulus_word: result.stimulus_word,
+      response_word: result.response_word,
+      reaction_time_ms: result.reaction_time_ms,
+      spirit_probability: result.spirit_probability,
+      word2vec_component: result.word2vec_component,
+      reaction_time_component: result.reaction_time_component,
+      skin_potential_component: result.skin_potential_component,
+      emotion_component: result.emotion_component,
+      emotion_data: result.emotion_data || {},
+      physiological_data: result.physiological_data || {},
+    }));
+
+    const { data: insertedResults, error: insertError } = await client
+      .from('participant_analysis_results')
+      .insert(analysisResultsToInsert)
+      .select();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    console.log(`Imported ${insertedResults?.length || 0} analysis results to Supabase`)
 
     return NextResponse.json({
-      message: `Analysis results import prepared for ${validatedResults.length} results (TerminusDB storage not yet implemented)`,
-      count: validatedResults.length,
-      results: validatedResults.map(r => ({ ...r, id: `mock-${Date.now()}` })),
-      note: 'TerminusDB analysis results storage will be implemented in future updates'
+      message: `Analysis results imported successfully`,
+      count: insertedResults?.length || 0,
+      results: insertedResults || []
     })
 
   } catch (error) {

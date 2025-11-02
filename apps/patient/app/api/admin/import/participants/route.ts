@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
+import { initializeSupabaseDatabase } from "scripts/src/lib/data-loader";
+import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
 
 // Merkle DAG: import.participants.process
 // 参加者データインポート処理関数
@@ -28,8 +29,8 @@ async function importParticipantsFromDataset() {
     const participantDirs = entries.filter(entry => entry.isDirectory());
 
     // Merkle DAG: import.participants.initialize_db
-    // Neo4jデータベース初期化
-    await initializeNeo4jDatabase();
+    // Supabaseデータベース初期化
+    await initializeSupabaseDatabase();
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
@@ -122,16 +123,19 @@ async function importParticipantsFromDataset() {
 // Merkle DAG: import.participants.check_existing
 // 既存参加者チェック関数
 async function checkExistingParticipant(participantId: string): Promise<boolean> {
-  // Neo4jクエリで既存参加者をチェック
-  // TODO: Neo4jドライバーを使用した実装
-  return false; // 仮実装
+  const participant = await supabaseManager.getParticipant(participantId);
+  return participant !== null;
 }
 
 // Merkle DAG: import.participants.create_node
 // 参加者ノード作成関数
 async function createParticipantNode(data: any) {
-  // Neo4jクエリで参加者ノードを作成
-  // TODO: Neo4jドライバーを使用した実装
+  await supabaseManager.saveParticipant({
+    id: data.id,
+    signature: data.signature,
+    agreedAt: data.agreedAt ? new Date(data.agreedAt) : undefined,
+    agreements: data.agreements,
+  });
   return { id: data.id, created: true };
 }
 
@@ -160,8 +164,9 @@ async function checkHumeData(participantPath: string): Promise<boolean> {
 // Merkle DAG: import.participants.update_metadata
 // メタデータ更新関数
 async function updateParticipantMetadata(participantId: string, metadata: any) {
-  // Neo4jクエリでメタデータを更新
-  // TODO: Neo4jドライバーを使用した実装
+  // Supabaseではメタデータはparticipantsテーブルに直接保存されるため、
+  // 現時点では特別な更新処理は不要（将来的に拡張可能）
+  console.log(`Metadata updated for participant ${participantId}:`, metadata);
 }
 
 export async function POST(request: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createNeo4jClient } from '@/lib/neo4j';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 // Merkle DAG: participants.timeline.endpoint
 // 時系列統合可視化データ取得APIエンドポイント
@@ -14,7 +14,7 @@ export async function GET(
     const { id: participantId } = params;
     console.log(`API: Fetching timeline data for participant ${participantId}`);
 
-    const client = createNeo4jClient();
+    const client = getSupabaseClient();
 
     // デモモード機能を除去 - 実データのみを使用
 
@@ -120,29 +120,32 @@ export async function GET(
   }
 }
 
-// Merkle DAG: participants.timeline.get_session_data_from_neo4j
-// Neo4jからセッションデータ取得関数
+// Merkle DAG: participants.timeline.get_session_data_from_supabase
+// Supabaseからセッションデータ取得関数
 async function getSessionData(client: any, participantId: string): Promise<any> {
   try {
-    console.log('Getting session data from Neo4j for participant:', participantId);
+    console.log('Getting session data from Supabase for participant:', participantId);
     
-    const sessionQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s.session_data as sessionData, s.id as sessionId, s.start_ts as startTs
-      ORDER BY s.start_ts DESC
-      LIMIT 1
-    `;
+    // participant_experiment_sessionsからセッションを取得
+    const { data: sessions, error } = await client
+      .from('participant_experiment_sessions')
+      .select('*')
+      .eq('participant_id', participantId)
+      .order('start_time', { ascending: false })
+      .limit(1);
     
-    console.log('Executing session query:', sessionQuery);
-    const sessionResults = await client.query(sessionQuery, { participantId });
-    console.log('Session query results count:', sessionResults.length);
+    if (error) {
+      throw error;
+    }
     
-    if (sessionResults.length === 0) {
+    if (!sessions || sessions.length === 0) {
       throw new Error(`No session data found for participant: ${participantId}`);
     }
     
-    const sessionData = JSON.parse(sessionResults[0].sessionData || '{}');
-    console.log('Parsed session data events count:', sessionData.events?.length || 0);
+    // セッションデータのeventsは現在Supabaseスキーマに保存されていないため、
+    // ファイルシステムから読み込む必要がある（将来的にはJSONBカラムに保存）
+    const sessionData = { events: [] }; // 簡易実装
+    console.log('Session data events count:', sessionData.events?.length || 0);
 
     // 単語表示イベントを基準点として抽出
     const wordEvents = (sessionData.events || []).filter((event: any) => 
@@ -159,69 +162,90 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
       ...sessionData,
       wordEvents,
       events: sessionData.events || [],
-      startTime,
-      sessionId: sessionResults[0].sessionId,
-      startTs: sessionResults[0].startTs
+      startTime: sessions[0].start_time ? new Date(sessions[0].start_time).getTime() : 0,
+      sessionId: sessions[0].id,
+      startTs: sessions[0].start_time
     };
 
   } catch (error) {
-    console.error('Neo4j session data read error:', error);
+    console.error('Supabase session data read error:', error);
     throw error;
   }
 }
 
-// Merkle DAG: participants.timeline.get_emotion_data_from_neo4j
-// Neo4jから感情データ取得関数
+// Merkle DAG: participants.timeline.get_emotion_data_from_supabase
+// Supabaseから感情データ取得関数
 async function getEmotionData(client: any, participantId: string): Promise<any[]> {
   try {
-    console.log('Getting emotion data from Neo4j for participant:', participantId);
+    console.log('Getting emotion data from Supabase for participant:', participantId);
     
-    const emotionQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
-      RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
-      ORDER BY ed.timestamp
-    `;
+    // participant_hume_*_predictionsテーブルから感情データを取得
+    // まず、participant_experiment_sessionsからsession_idを取得
+    const { data: sessions } = await client
+      .from('participant_experiment_sessions')
+      .select('id')
+      .eq('participant_id', participantId);
     
-    console.log('Executing emotion query:', emotionQuery);
-    const emotionResults = await client.query(emotionQuery, { participantId });
-    console.log('Emotion query results count:', emotionResults.length);
+    if (!sessions || sessions.length === 0) {
+      return [];
+    }
     
-    const mappedResults = emotionResults.map((result: any) => ({
-      fileType: result.source || 'unknown',
-      beginTime: result.timestamp,
-      endTime: result.timestamp + 1000, // 1秒間隔で仮定
-      emotions: [{ 
-        name: result.name, 
-        score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
-      }],
-      sessionId: 'unknown'
-    }));
-
+    const sessionIds = sessions.map((s: any) => s.id);
+    
+    // participant_hume_analysis_jobsからjob_idを取得
+    const { data: jobs } = await client
+      .from('participant_hume_analysis_jobs')
+      .select('id')
+      .in('participant_experiment_session_id', sessionIds);
+    
+    if (!jobs || jobs.length === 0) {
+      return [];
+    }
+    
+    const jobIds = jobs.map((j: any) => j.id);
+    
+    // 各タイプの感情データを取得
+    const [burstData, faceData, languageData, prosodyData] = await Promise.all([
+      client.from('participant_hume_burst_predictions').select('*').in('job_id', jobIds),
+      client.from('participant_hume_face_predictions').select('*').in('job_id', jobIds).catch(() => ({ data: [] })),
+      client.from('participant_hume_language_predictions').select('*').in('job_id', jobIds),
+      client.from('participant_hume_prosody_predictions').select('*').in('job_id', jobIds),
+    ]);
+    
+    // データを統合
+    const mappedResults: any[] = [];
+    
+    ['burst', 'face', 'language', 'prosody'].forEach((fileType, index) => {
+      const data = [burstData, faceData, languageData, prosodyData][index]?.data || [];
+      data.forEach((record: any) => {
+        mappedResults.push({
+          fileType,
+          beginTime: Number(record.begin_time) || 0,
+          endTime: Number(record.end_time) || 0,
+          emotions: record.emotions || [],
+          sessionId: 'unknown'
+        });
+      });
+    });
+    
     console.log('Mapped emotion results:', mappedResults.slice(0, 3));
     return mappedResults;
 
   } catch (error) {
-    console.error('Neo4j emotion data query error:', error);
+    console.error('Supabase emotion data query error:', error);
     return [];
   }
 }
 
-// Merkle DAG: participants.timeline.get_physiological_data_from_neo4j
-// Neo4jから生理データ取得関数
+// Merkle DAG: participants.timeline.get_physiological_data_from_supabase
+// Supabaseから生理データ取得関数
 async function getPhysiologicalData(client: any, participantId: string): Promise<any[]> {
   try {
-    console.log('Getting physiological data from Neo4j for participant:', participantId);
+    console.log('Getting physiological data from Supabase for participant:', participantId);
     
-    const physiologicalQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-      RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
-      ORDER BY pd.timestamp
-    `;
-    
-    console.log('Executing physiological query:', physiologicalQuery);
-    const physiologicalResults = await client.query(physiologicalQuery, { participantId });
+    // 生理データは現在Supabaseスキーマに保存されていないため、空配列を返す
+    // 将来的にはresponse_skin_potential_timeseriesテーブルを使用
+    const physiologicalResults: any[] = [];
     console.log('Physiological query results count:', physiologicalResults.length);
     
     // チャンネル別にデータをグループ化

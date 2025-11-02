@@ -6,7 +6,7 @@ import {
   getParticipantStatistics,
   initializeNeo4jDatabase
 } from "scripts/src/lib/data-loader";
-import { loadEmotionAnalysisResults, getEmotionStatisticsFromNeo4j } from "scripts/src/lib/emotion-analysis";
+import { loadEmotionAnalysisResults } from "scripts/src/lib/emotion-analysis";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Neo4jデータベースの初期化
-        await initializeNeo4jDatabase();
+        // Supabaseデータベースの初期化
+        await initializeSupabaseDatabase();
         const participants = await loadAllParticipants();
         const participantStats = getParticipantStatistics(participants);
 
@@ -113,8 +113,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Neo4jデータベースの初期化
-        await initializeNeo4jDatabase();
+        // Supabaseデータベースの初期化
+        await initializeSupabaseDatabase();
         const participants_for_analytics = await loadAllParticipants();
         const stats = getParticipantStatistics(participants_for_analytics);
         const allSessions = await loadAllSessionData();
@@ -133,11 +133,17 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Neo4jから感情統計を取得
-        const emotionStats = await getEmotionStatisticsFromNeo4j();
+        // Supabaseから感情統計を取得
+        const client = getSupabaseClient();
+        const { data: emotions } = await client
+          .from('participant_response_data')
+          .select('emotion')
+          .not('emotion', 'is', null);
+        
         const emotionDistribution: Record<string, number> = {};
-        emotionStats.dominantEmotions.forEach(item => {
-          emotionDistribution[item.emotion] = item.count;
+        (emotions || []).forEach((emotion: any) => {
+          const emotionName = emotion.emotion;
+          emotionDistribution[emotionName] = (emotionDistribution[emotionName] || 0) + 1;
         });
 
         return NextResponse.json({

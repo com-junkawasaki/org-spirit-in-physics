@@ -22,7 +22,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
     const loadData = async () => {
       setIsLoading(true)
       try {
-        // Fetch real data from Neo4j
+        // Fetch real data from Supabase
         const [participantsData, analysisResults, dashboardStats] = await Promise.all([
           fetch('/api/participants').then(res => res.json()),
           fetch('/api/analysis-results').then(res => res.json()),

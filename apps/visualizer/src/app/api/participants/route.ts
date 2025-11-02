@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createNeo4jClient } from '@/lib/neo4j'
+import { supabaseManager } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('API: Fetching participants from Neo4j...')
-    const client = createNeo4jClient()
-
-    // Merkle DAG: participants_api -> neo4j_client -> getParticipants
+    console.log('API: Fetching participants from Supabase...')
+    // Merkle DAG: participants_api -> supabase_manager -> getParticipants
     // 統計情報を含む参加者データを取得
-    const participants = await client.getParticipants()
+    const participants = await supabaseManager.getParticipants()
 
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
     console.log('API: Participants sample:', participants?.slice(0, 2))

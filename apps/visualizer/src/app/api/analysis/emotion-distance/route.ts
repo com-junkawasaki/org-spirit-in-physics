@@ -4,7 +4,6 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createNeo4jClient } from '@/lib/neo4j';
 import { calculateEmotionDistanceMatrix } from '@/lib/emotion-distance-calculator';
 import { calculateTimeSeriesDistanceMatrix } from '@/lib/soft-dtw-calculator';
 import { calculateEmbedding } from '@/lib/embedding-calculator';

@@ -6,7 +6,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
+import { initializeSupabaseDatabase } from "scripts/src/lib/data-loader";
+import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
+import { getSupabaseClient } from "scripts/src/lib/database/supabase-client";
 
 // Merkle DAG: import.sessions.process
 // セッションデータインポート処理関数
@@ -28,8 +30,8 @@ async function importSessionsFromDataset() {
     const participantDirs = entries.filter(entry => entry.isDirectory());
 
     // Merkle DAG: import.sessions.initialize_db
-    // Neo4jデータベース初期化
-    await initializeNeo4jDatabase();
+    // Supabaseデータベース初期化
+    await initializeSupabaseDatabase();
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
@@ -124,24 +126,38 @@ async function importSessionsFromDataset() {
 // Merkle DAG: import.sessions.check_participant
 // 参加者存在チェック関数
 async function checkParticipantExists(participantId: string): Promise<boolean> {
-  // Neo4jクエリで参加者存在を確認
-  // TODO: Neo4jドライバーを使用した実装
-  return true; // 仮実装
+  const participant = await supabaseManager.getParticipant(participantId);
+  return participant !== null;
 }
 
 // Merkle DAG: import.sessions.check_existing_session
 // 既存セッション存在チェック関数
 async function checkExistingSession(participantId: string): Promise<boolean> {
-  // Neo4jクエリで既存セッションを確認
-  // TODO: Neo4jドライバーを使用した実装
-  return false; // 仮実装
+  const sessions = await supabaseManager.getSessionsByParticipantId(participantId);
+  return sessions.length > 0;
 }
 
 // Merkle DAG: import.sessions.process_events
 // セッションイベント処理関数
 async function processSessionEvents(participantId: string, events: any[]) {
-  // イベントデータをNeo4jに格納
-  // TODO: Neo4jドライバーを使用した実装
+  // セッション開始・終了イベントを検出
+  const sessionStartedEvent = events.find((e: any) => e.type === 'session_started' || e.event_type === 'session_started');
+  const sessionEndedEvent = events.filter((e: any) => e.type === 'session_ended' || e.event_type === 'session_ended').pop();
+  
+  // participant_experiment_sessionsテーブルにセッションを作成
+  const sessionId = `${participantId}-session-1`;
+  await supabaseManager.saveSession({
+    participant_id: participantId,
+    session_id: sessionId,
+    session_type: 'session-1',
+    start_time: sessionStartedEvent?.timestamp 
+      ? new Date(sessionStartedEvent.timestamp).toISOString()
+      : new Date().toISOString(),
+    end_time: sessionEndedEvent?.timestamp 
+      ? new Date(sessionEndedEvent.timestamp).toISOString()
+      : null,
+  });
+  
   return { eventsProcessed: events.length };
 }
 
@@ -168,8 +184,8 @@ async function extractWordResponses(events: any[]) {
 // Merkle DAG: import.sessions.store_responses
 // 単語応答格納関数
 async function storeWordResponses(participantId: string, responses: any[]) {
-  // 単語応答をNeo4jに格納
-  // TODO: Neo4jドライバーを使用した実装
+  // 単語応答をSupabaseに格納
+  await supabaseManager.createWordResponses(participantId, responses);
 }
 
 // Merkle DAG: import.sessions.calculate_stats

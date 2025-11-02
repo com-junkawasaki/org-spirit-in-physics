@@ -1,4 +1,5 @@
-import { createNeo4jClient } from './neo4j'
+import { getSupabaseClient } from './supabase-client'
+import { supabaseManager } from './supabase'
 
 export interface AnalysisResult {
   id: string
@@ -82,66 +83,45 @@ export interface DashboardStats {
   }
 }
 
-// Server-side data fetching functions - Neogmaベース
+// Server-side data fetching functions - Supabaseベース
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    const client = createNeo4jClient()
-
-    // Helper function to convert Neo4j integers to JavaScript numbers
-    const toNumber = (value: any): number => {
-      if (typeof value === 'object' && value !== null && 'low' in value) {
-        return value.low
-      }
-      return Number(value) || 0
-    }
+    const client = getSupabaseClient()
 
     // Get participants count
-    const participantsQuery = `MATCH (p:Participant) RETURN count(p) as total`
-    const participantsResult = await client.query(participantsQuery)
-    const totalParticipants = toNumber(participantsResult[0]?.total)
+    const { count: totalParticipants } = await client
+      .from('participants')
+      .select('*', { count: 'exact', head: true })
 
     // Get sessions count
-    const sessionsQuery = `MATCH (s:ExperimentSession) RETURN count(s) as total`
-    const sessionsResult = await client.query(sessionsQuery)
-    const totalSessions = toNumber(sessionsResult[0]?.total)
+    const { count: totalSessions } = await client
+      .from('participant_experiment_sessions')
+      .select('*', { count: 'exact', head: true })
 
     // Get responses count
-    const responsesQuery = `MATCH (r:Response) RETURN count(r) as total`
-    const responsesResult = await client.query(responsesQuery)
-    const totalResponses = toNumber(responsesResult[0]?.total)
+    const { count: totalResponses } = await client
+      .from('participant_response_data')
+      .select('*', { count: 'exact', head: true })
 
-    // Cypherクエリを使ってデータを取得（Neogmaのwhere句でnullチェックがサポートされていないため）
-    const emotionQuery = `
-      MATCH (r:Response)
-      WHERE r.emotion IS NOT NULL
-      RETURN r.emotion as emotion
-    `
-    const spiritQuery = `
-      MATCH (r:Response)
-      WHERE r.spirit_probability IS NOT NULL
-      RETURN r.spirit_probability as spirit_probability
-    `
-    const componentsQuery = `
-      MATCH (r:Response)
-      WHERE r.word2vec_component IS NOT NULL AND
-            r.reaction_time_component IS NOT NULL AND
-            r.skin_potential_component IS NOT NULL AND
-            r.emotion_component IS NOT NULL
-      RETURN r.word2vec_component as word2vec_component,
-             r.reaction_time_component as reaction_time_component,
-             r.skin_potential_component as skin_potential_component,
-             r.emotion_component as emotion_component
-    `
+    // Get responses with emotions
+    const { data: responsesWithEmotions } = await client
+      .from('participant_response_data')
+      .select('emotion')
+      .not('emotion', 'is', null)
 
-    const [
-      responsesWithEmotions,
-      responsesWithSpirit,
-      responsesWithComponents
-    ] = await Promise.all([
-      client.query(emotionQuery),
-      client.query(spiritQuery),
-      client.query(componentsQuery),
-    ])
+    // Get analysis results with spirit probability
+    const { data: responsesWithSpirit } = await client
+      .from('participant_analysis_results')
+      .select('spirit_probability')
+
+    // Get analysis results with components
+    const { data: responsesWithComponents } = await client
+      .from('participant_analysis_results')
+      .select('word2vec_component, reaction_time_component, skin_potential_component, emotion_component')
+      .not('word2vec_component', 'is', null)
+      .not('reaction_time_component', 'is', null)
+      .not('skin_potential_component', 'is', null)
+      .not('emotion_component', 'is', null)
 
     // 感情分布を集計
     const emotionDistribution: Record<string, number> = {}
@@ -197,8 +177,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-    const client = createNeo4jClient()
-    const participants = await client.getParticipants()
+    const participants = await supabaseManager.getParticipants()
 
     // For each participant, get detailed data
     const participantsWithData = await Promise.all(
@@ -226,38 +205,19 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    const client = createNeo4jClient()
-
     // 参加者詳細を取得
-    const participant = await client.getParticipantDetails(participantId)
+    const participant = await supabaseManager.getParticipantDetails(participantId)
     if (!participant) return null
 
-    // セッションを取得（Experiment階層経由）
-    const sessionsQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s, e
-      ORDER BY s.start_ts DESC
-    `
-    const sessionsResult = await client.query(sessionsQuery, { participantId })
-    const dbSessions = sessionsResult?.map((record: any) => {
-      const session = record.s
-      const properties = session && typeof session === 'object' && 'properties' in session
-        ? session.properties
-        : session
-      return {
-        id: properties.id,
-        participant_id: properties.participant_id,
-        start_ts: properties.start_ts,
-        end_ts: properties.end_ts,
-        status: properties.status,
-        total_responses: properties.total_responses,
-        completed_responses: properties.completed_responses,
-        created_at: properties.created_at,
-      }
-    }) || []
+    // セッションを取得（participant_experiment_sessionsテーブルから）
+    const { data: dbSessions } = await getSupabaseClient()
+      .from('participant_experiment_sessions')
+      .select('*')
+      .eq('participant_id', participantId)
+      .order('start_time', { ascending: false })
 
     // レスポンスを取得
-    const responses = await client.getParticipantResponses(participantId)
+    const responses = await supabaseManager.getParticipantResponses(participantId)
 
     // Group responses by session
     const sessionMap: Record<string, ResponseData[]> = {}
@@ -280,16 +240,16 @@ export async function getParticipantData(participantId: string): Promise<Partici
     })
 
     // Create sessions array - include both sessions from database and those inferred from responses
-    const sessions: ExperimentSession[] = dbSessions.map((dbSession: any) => {
+    const sessions: ExperimentSession[] = (dbSessions || []).map((dbSession: any) => {
       const sessionId = dbSession.id
       const sessionResponses = sessionMap[sessionId] || []
 
       return {
         id: sessionId,
         session_id: sessionId,
-        session_type: 'word_association', // 固定値として設定
-        start_time: dbSession.start_ts || null,
-        end_time: dbSession.end_ts || null,
+        session_type: dbSession.session_type || 'session-1',
+        start_time: dbSession.start_time || null,
+        end_time: dbSession.end_time || null,
         responses: sessionResponses,
         responseCount: sessionResponses.length,
       }
@@ -416,24 +376,48 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   try {
-    // 参加者のレスポンスを取得
-    const client = createNeo4jClient()
-    const responses = await client.getParticipantResponses(participantId)
+    // 参加者の分析結果を取得（participant_analysis_resultsテーブルから）
+    const { data: analysisResults } = await getSupabaseClient()
+      .from('participant_analysis_results')
+      .select('*')
+      .eq('participant_id', participantId)
+      .order('created_at', { ascending: false })
 
-    // 実際のデータに基づいて分析結果を生成
-    return responses.map((response, index) => ({
-      id: `analysis-${participantId}-${index}`,
-      stimulus_word: response.stimulus_word,
-      response_word: response.response_word,
-      p_value: response.spirit_probability || 0.5,
-      word2vec_component: 0, // TODO: 実際のWord2Vecコンポーネントを実装
-      reaction_time_component: response.reaction_time_ms ? 10 / (1 + response.reaction_time_ms / 1000) : 0,
-      skin_potential_component: 0, // TODO: 生理データコンポーネントを実装
-      emotion_component: response.emotion_confidence || 0,
-      emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence || 0 } : {},
-      physiological_data: {}, // TODO: 生理データを統合
-      created_at: response.event_ts || new Date().toISOString(),
-      reaction_time_ms: response.reaction_time_ms,
+    if (!analysisResults || analysisResults.length === 0) {
+      // フォールバック: レスポンスデータから分析結果を生成
+      const responses = await supabaseManager.getParticipantResponses(participantId)
+
+      // 実際のデータに基づいて分析結果を生成
+      return responses.map((response, index) => ({
+        id: `analysis-${participantId}-${index}`,
+        stimulus_word: response.stimulus_word,
+        response_word: response.response_word,
+        p_value: response.spirit_probability || 0.5,
+        word2vec_component: 0, // TODO: 実際のWord2Vecコンポーネントを実装
+        reaction_time_component: response.reaction_time_ms ? 10 / (1 + response.reaction_time_ms / 1000) : 0,
+        skin_potential_component: 0, // TODO: 生理データコンポーネントを実装
+        emotion_component: response.emotion_confidence || 0,
+        emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence || 0 } : {},
+        physiological_data: {}, // TODO: 生理データを統合
+        created_at: response.event_ts || new Date().toISOString(),
+        reaction_time_ms: response.reaction_time_ms,
+      }))
+    }
+
+    // 分析結果テーブルから直接取得
+    return analysisResults.map((result: any) => ({
+      id: result.id,
+      stimulus_word: result.stimulus_word,
+      response_word: result.response_word,
+      p_value: Number(result.spirit_probability) || 0.5,
+      word2vec_component: Number(result.word2vec_component) || 0,
+      reaction_time_component: Number(result.reaction_time_component) || 0,
+      skin_potential_component: Number(result.skin_potential_component) || 0,
+      emotion_component: Number(result.emotion_component) || 0,
+      emotion_data: result.emotion_data || {},
+      physiological_data: result.physiological_data || {},
+      created_at: result.created_at || new Date().toISOString(),
+      reaction_time_ms: result.reaction_time_ms || undefined,
     }))
   } catch (error) {
     console.error('Failed to get analysis results for participant:', error)

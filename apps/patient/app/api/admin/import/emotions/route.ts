@@ -6,7 +6,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
+import { initializeSupabaseDatabase } from "scripts/src/lib/data-loader";
+import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
+import { getSupabaseClient } from "scripts/src/lib/database/supabase-client";
 
 // Merkle DAG: import.emotions.process
 // 感情分析データインポート処理関数
@@ -28,8 +30,8 @@ async function importEmotionsFromDataset() {
     const participantDirs = entries.filter(entry => entry.isDirectory());
 
     // Merkle DAG: import.emotions.initialize_db
-    // Neo4jデータベース初期化
-    await initializeNeo4jDatabase();
+    // Supabaseデータベース初期化
+    await initializeSupabaseDatabase();
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
@@ -124,9 +126,8 @@ async function importEmotionsFromDataset() {
 // Merkle DAG: import.emotions.check_participant
 // 参加者存在チェック関数
 async function checkParticipantExists(participantId: string): Promise<boolean> {
-  // Neo4jクエリで参加者存在を確認
-  // TODO: Neo4jドライバーを使用した実装
-  return true; // 仮実装
+  const participant = await supabaseManager.getParticipant(participantId);
+  return participant !== null;
 }
 
 // Merkle DAG: import.emotions.find_artifacts
@@ -148,9 +149,20 @@ async function findHumeArtifactsDirectory(participantPath: string): Promise<stri
 // Merkle DAG: import.emotions.check_existing_data
 // 既存感情データチェック関数
 async function checkExistingEmotionData(participantId: string): Promise<boolean> {
-  // Neo4jクエリで既存感情データを確認
-  // TODO: Neo4jドライバーを使用した実装
-  return false; // 仮実装
+  // participant_hume_analysis_jobsから既存データを確認
+  const sessions = await supabaseManager.getSessionsByParticipantId(participantId);
+  if (sessions.length === 0) {
+    return false;
+  }
+  
+  const client = getSupabaseClient();
+  const { data: jobs } = await client
+    .from('participant_hume_analysis_jobs')
+    .select('id')
+    .in('participant_experiment_session_id', sessions.map((s: any) => s.id))
+    .limit(1);
+  
+  return (jobs?.length || 0) > 0;
 }
 
 // Merkle DAG: import.emotions.process_data
@@ -159,30 +171,62 @@ async function processEmotionData(participantId: string, predictionsData: any) {
   let entriesProcessed = 0;
   let totalEmotions = 0;
 
+  // セッションを取得
+  const sessions = await supabaseManager.getSessionsByParticipantId(participantId);
+  if (sessions.length === 0) {
+    throw new Error(`No sessions found for participant ${participantId}`);
+  }
+  
+  const sessionId = sessions[0].id;
+  const client = getSupabaseClient();
+
+  // 感情分析ジョブを作成
+  const { data: job, error: jobError } = await client
+    .from('participant_hume_analysis_jobs')
+    .insert({
+      participant_experiment_session_id: sessionId,
+      status: 'completed',
+      source_media_path: 'imported',
+    })
+    .select()
+    .single();
+
+  if (jobError || !job) {
+    throw new Error(`Failed to create analysis job: ${jobError?.message || 'Unknown error'}`);
+  }
+
+  const jobId = job.id;
+
   // Hume AIの感情データを処理
   if (predictionsData && Array.isArray(predictionsData)) {
+    const predictionsToInsert: any[] = [];
+    
     for (const entry of predictionsData) {
       if (entry.emotions && Array.isArray(entry.emotions)) {
         entriesProcessed++;
-
-        // 各感情エントリを処理
-        const emotionRecord = {
-          participantId,
-          text: entry.text,
-          beginTime: entry.time?.begin,
-          endTime: entry.time?.end,
-          confidence: entry.confidence,
-          emotions: entry.emotions.map((emotion: any) => ({
-            name: emotion.name,
-            score: emotion.score
-          })),
-          position: entry.position
-        };
-
         totalEmotions += entry.emotions.length;
 
-        // Neo4jに感情データを格納
-        await storeEmotionEntry(emotionRecord);
+        // 感情データをparticipant_hume_language_predictionsに保存
+        predictionsToInsert.push({
+          job_id: jobId,
+          begin_time: entry.time?.begin || 0,
+          end_time: entry.time?.end || 0,
+          emotions: entry.emotions.reduce((acc: Record<string, number>, emotion: any) => {
+            acc[emotion.name] = emotion.score;
+            return acc;
+          }, {}),
+        });
+      }
+    }
+
+    // バッチで挿入
+    if (predictionsToInsert.length > 0) {
+      const { error: insertError } = await client
+        .from('participant_hume_language_predictions')
+        .insert(predictionsToInsert);
+
+      if (insertError) {
+        console.error('Error inserting language predictions:', insertError);
       }
     }
   }
@@ -193,8 +237,10 @@ async function processEmotionData(participantId: string, predictionsData: any) {
 // Merkle DAG: import.emotions.store_entry
 // 感情エントリ格納関数
 async function storeEmotionEntry(emotionRecord: any) {
-  // Neo4jクエリで感情データを格納
-  // TODO: Neo4jドライバーを使用した実装
+  // 感情データはparticipant_hume_*_predictionsテーブルに保存される
+  // この関数はJSONファイルからの直接インポート用のため、簡易実装
+  console.log('Storing emotion entry:', emotionRecord);
+  // 実際の実装はprocessEmotionData関数内で行う
 }
 
 // Merkle DAG: import.emotions.process_csv
@@ -231,21 +277,108 @@ async function processEmotionCSVData(participantId: string, artifactsDir: string
 // Merkle DAG: import.emotions.process_csv_file
 // 個別CSVファイル処理関数
 async function processCSVFile(participantId: string, fileName: string, content: string) {
-  // CSVデータを解析してNeo4jに格納
-  // TODO: CSVパーサーを使用した実装
+  // CSVデータを解析してSupabaseに格納
   const lines = content.split('\n');
-  // ヘッダーをスキップしてデータを処理
+  if (lines.length < 2) {
+    return;
+  }
+
+  const header = lines[0].split(',');
+  const fileType = fileName.replace('.csv', '');
+  
+  // セッションとジョブを取得
+  const sessions = await supabaseManager.getSessionsByParticipantId(participantId);
+  if (sessions.length === 0) {
+    throw new Error(`No sessions found for participant ${participantId}`);
+  }
+  
+  const sessionId = sessions[0].id;
+  const client = getSupabaseClient();
+
+  // ジョブを取得または作成
+  const { data: existingJob } = await client
+    .from('participant_hume_analysis_jobs')
+    .select('id')
+    .eq('participant_experiment_session_id', sessionId)
+    .limit(1)
+    .single();
+
+  let jobId = existingJob?.id;
+  
+  if (!jobId) {
+    const { data: newJob, error: jobError } = await client
+      .from('participant_hume_analysis_jobs')
+      .insert({
+        participant_experiment_session_id: sessionId,
+        status: 'completed',
+        source_media_path: 'imported',
+      })
+      .select()
+      .single();
+    
+    if (jobError || !newJob) {
+      throw new Error(`Failed to create analysis job: ${jobError?.message || 'Unknown error'}`);
+    }
+    jobId = newJob.id;
+  }
+
+  // CSVデータをパースして挿入
+  const predictionsToInsert: any[] = [];
+  
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (line) {
-      // CSV行を処理
-      const csvRecord = {
-        participantId,
-        fileType: fileName.replace('.csv', ''),
-        data: line,
-        importedAt: new Date().toISOString()
-      };
-      await storeCSVRecord(csvRecord);
+    if (!line) continue;
+
+    const values = line.split(',');
+    const record: Record<string, string> = {};
+    header.forEach((col, index) => {
+      record[col.trim()] = values[index]?.trim() || '';
+    });
+
+    const beginTime = parseFloat(record.BeginTime || '0');
+    const endTime = parseFloat(record.EndTime || '0');
+    const emotions: Record<string, number> = {};
+
+    // 感情スコアを抽出
+    Object.entries(record).forEach(([key, value]) => {
+      if (key !== 'Id' && key !== 'BeginTime' && key !== 'EndTime' && !isNaN(parseFloat(value))) {
+        emotions[key] = parseFloat(value);
+      }
+    });
+
+    if (Object.keys(emotions).length > 0) {
+      // テーブル名を決定
+      let tableName = 'participant_hume_language_predictions';
+      if (fileType === 'burst') {
+        tableName = 'participant_hume_burst_predictions';
+      } else if (fileType === 'prosody') {
+        tableName = 'participant_hume_prosody_predictions';
+      }
+
+      predictionsToInsert.push({
+        job_id: jobId,
+        begin_time: beginTime,
+        end_time: endTime,
+        emotions,
+      });
+    }
+  }
+
+  // バッチで挿入
+  if (predictionsToInsert.length > 0) {
+    let tableName = 'participant_hume_language_predictions';
+    if (fileType === 'burst') {
+      tableName = 'participant_hume_burst_predictions';
+    } else if (fileType === 'prosody') {
+      tableName = 'participant_hume_prosody_predictions';
+    }
+
+    const { error: insertError } = await client
+      .from(tableName)
+      .insert(predictionsToInsert);
+
+    if (insertError) {
+      console.error(`Error inserting ${fileType} predictions:`, insertError);
     }
   }
 }
@@ -253,8 +386,8 @@ async function processCSVFile(participantId: string, fileName: string, content: 
 // Merkle DAG: import.emotions.store_csv
 // CSVレコード格納関数
 async function storeCSVRecord(csvRecord: any) {
-  // Neo4jクエリでCSVデータを格納
-  // TODO: Neo4jドライバーを使用した実装
+  // CSVデータはprocessEmotionCSVData関数内で処理される
+  console.log('Storing CSV record:', csvRecord);
 }
 
 export async function POST(request: NextRequest) {

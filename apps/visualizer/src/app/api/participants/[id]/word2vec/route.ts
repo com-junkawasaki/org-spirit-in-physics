@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createNeo4jClient } from '@/lib/neo4j';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 // Merkle DAG: api.participants.word2vec -> word2vec_data_fetch
 // 参加者のWord2Vecデータ取得API
@@ -13,26 +13,29 @@ export async function GET(
     const { id: participantId } = params;
     console.log(`API: Fetching Word2Vec data for participant ${participantId}`);
 
-    const client = createNeo4jClient();
+    const client = getSupabaseClient();
 
     // Merkle DAG: api.participants.word2vec.query_responses
-    // 参加者の応答データを取得（Experiment階層経由）
-    const responseQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
-      WHERE r.stimulus_word IS NOT NULL AND r.response_word IS NOT NULL
-      RETURN 
-        r.stimulus_word as stimulus_word,
-        r.response_word as response_word,
-        r.reaction_time_ms as reaction_time_ms,
-        r.spirit_probability as spirit_probability,
-        r.event_ts as timestamp,
-        r.id as response_id,
-        e.id as experiment_id,
-        s.id as session_id
-      ORDER BY r.event_ts
-    `;
+    // 参加者の応答データを取得（Supabaseテーブルから）
+    const { data: responses, error } = await client
+      .from('participant_response_data')
+      .select('id, stimulus_word, response_word, reaction_time_ms, timestamp, experiment_id')
+      .eq('participant_id', participantId)
+      .not('stimulus_word', 'is', null)
+      .not('response_word', 'is', null)
+      .order('timestamp', { ascending: true });
 
-    const responses = await client.query(responseQuery, { participantId });
+    if (error) {
+      throw error;
+    }
+
+    // 分析結果からspirit_probabilityを取得
+    const { data: analysisResults } = await client
+      .from('participant_analysis_results')
+      .select('response_id, spirit_probability')
+      .eq('participant_id', participantId);
+
+    const spiritMap = new Map(analysisResults?.map((r: any) => [r.response_id, r.spirit_probability]) || []);
     console.log(`API: Found ${responses.length} responses for participant ${participantId}`);
 
     if (responses.length === 0) {
@@ -46,18 +49,18 @@ export async function GET(
 
     // Merkle DAG: api.participants.word2vec.generate_embeddings
     // 簡易Word2Vec埋め込み生成（実際の実装では事前学習済みモデルを使用）
-    const wordData = responses.map((response: any, index: number) => {
+    const wordData = (responses || []).map((response: any, index: number) => {
       // 簡易埋め込み生成（実際の実装ではWord2Vecモデルを使用）
       const embedding = generateSimpleEmbedding(response.stimulus_word, response.response_word, index);
       
       return {
         word: response.stimulus_word,
         embedding,
-        spiritProbability: response.spirit_probability || 0.5,
+        spiritProbability: spiritMap.get(response.id) || 0.5,
         reactionTime: response.reaction_time_ms || 0,
         timestamp: response.timestamp,
         participantId,
-        responseId: response.response_id
+        responseId: response.id
       };
     });
 

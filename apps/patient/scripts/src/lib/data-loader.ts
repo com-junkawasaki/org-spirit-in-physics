@@ -1,6 +1,5 @@
-import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
+import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
-import { neo4jClient } from './neo4j';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -16,17 +15,21 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-// Neo4j初期化関数
-export async function initializeNeo4jDatabase(): Promise<void> {
+// Supabase初期化関数
+export async function initializeSupabaseDatabase(): Promise<void> {
   try {
-    // Neo4j接続テスト
-    await neo4jClient.query('RETURN 1');
-
-    console.log('Neo4j database connection established');
+    const { supabaseManager } = await import('./database/supabase-manager.js');
+    await supabaseManager.initialize();
+    console.log('Supabase database connection established');
   } catch (error) {
-    console.error('Failed to initialize Neo4j database:', error);
+    console.error('Failed to initialize Supabase database:', error);
     throw error;
   }
+}
+
+// 後方互換性のため
+export async function initializeNeo4jDatabase(): Promise<void> {
+  return initializeSupabaseDatabase();
 }
 
 
@@ -92,10 +95,10 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
         if (consentData.length > 0) {
           console.log(`Loaded ${consentData.length} participants from Vercel Blob`);
 
-          // Neo4jにも保存
+          // Supabaseにも保存
           for (const data of consentData) {
-            const { neo4jManager } = await import('./database/neo4j-manager.ts');
-            const participant: Participant = {
+            const { supabaseManager } = await import('./database/supabase-manager.js');
+            const participant = {
               id: data.participantId,
               signature: data.signature,
               agreedAt: new Date(data.agreedAt || new Date()),
@@ -106,9 +109,9 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
             };
 
             try {
-              await neo4jManager.saveParticipant(participant);
+              await supabaseManager.saveParticipant(participant);
             } catch (saveError) {
-              console.warn('Failed to save participant to Neo4j:', saveError);
+              console.warn('Failed to save participant to Supabase:', saveError);
             }
           }
 
@@ -151,10 +154,10 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       }
     }
 
-    // Neo4jにも保存
+    // Supabaseにも保存
     for (const data of consentData) {
-      const { neo4jManager } = await import('./database/neo4j-manager.ts');
-      const participant: Participant = {
+      const { supabaseManager } = await import('./database/supabase-manager.js');
+      const participant = {
         id: data.participantId,
         signature: data.signature,
         agreedAt: new Date(data.agreedAt || new Date()),
@@ -165,9 +168,9 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       };
 
       try {
-        await neo4jManager.saveParticipant(participant);
+        await supabaseManager.saveParticipant(participant);
       } catch (saveError) {
-        console.warn('Failed to save participant to Neo4j:', saveError);
+        console.warn('Failed to save participant to Supabase:', saveError);
       }
     }
 
@@ -233,31 +236,38 @@ export function loadParticipantData(participantId: string): Participant | null {
 // Load session data for a participant
 export async function loadSessionData(participantId: string): Promise<SessionData | null> {
   try {
-    // Neo4jデータベースからセッションデータを取得（一本化）
+    // Supabaseデータベースからセッションデータを取得
     try {
-      const { neo4jManager } = await import('./database/neo4j-manager.ts');
+      const { getSupabaseClient } = await import('./database/supabase-client.js');
+      const client = getSupabaseClient();
 
-      // Neo4jからセッションデータを取得
-      const query = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        RETURN s
-        ORDER BY s.created_at DESC
-      `;
-      const sessions = await neo4jManager.executeQuery(query, { participantId });
+      // participant_experiment_sessionsからセッションデータを取得
+      // 注意: eventsは現在Supabaseスキーマに保存されていないため、ファイルシステムから読み込む必要がある
+      const { data: sessions, error } = await client
+        .from('participant_experiment_sessions')
+        .select('*')
+        .eq('participant_id', participantId)
+        .order('start_time', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        throw error;
+      }
 
       if (sessions && sessions.length > 0) {
-        const session = sessions[0].s;
+        // セッションデータのeventsはファイルシステムから読み込む必要がある
+        // ここでは空の配列を返す（実際の実装ではファイルシステムから読み込む）
         return {
           participantId,
-          events: session.events || [],
+          events: [],
           wordResponses: [] // TODO: Implement word responses extraction
         };
       }
 
-      console.log(`No session data found in Neo4j for ${participantId}`);
+      console.log(`No session data found in Supabase for ${participantId}`);
       return null;
-    } catch (neo4jError) {
-      console.warn('Failed to load session data from Neo4j:', neo4jError);
+    } catch (supabaseError) {
+      console.warn('Failed to load session data from Supabase:', supabaseError);
       return null;
     }
   } catch (error) {
@@ -322,13 +332,13 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
 // Load all participants data
 export async function loadAllParticipants(): Promise<Participant[]> {
   try {
-    const { neo4jManager } = await import('./database/neo4j-manager.ts');
-    const neo4jParticipants = await neo4jManager.getAllParticipants();
+    const { supabaseManager } = await import('./database/supabase-manager.js');
+    const supabaseParticipants = await supabaseManager.getAllParticipants();
 
-    console.log(`Loaded ${neo4jParticipants?.length || 0} participants from Neo4j`);
+    console.log(`Loaded ${supabaseParticipants?.length || 0} participants from Supabase`);
 
     // Convert to data-loader Participant format
-    const participants: Participant[] = neo4jParticipants.map(p => ({
+    const participants: Participant[] = supabaseParticipants.map(p => ({
       id: p.id,
       signature: p.signature || "unknown",
       agreedAt: p.agreedAt || new Date(),
@@ -348,23 +358,26 @@ export async function loadAllParticipants(): Promise<Participant[]> {
 // Load all session data
 export async function loadAllSessionData(): Promise<Array<{ participantId: string; sessionData: SessionData }>> {
   try {
-    const { neo4jManager } = await import('./database/neo4j-manager.ts');
+    const { getSupabaseClient } = await import('./database/supabase-client.js');
+    const client = getSupabaseClient();
 
-    // Neo4jからセッションデータを取得
-    const query = `
-      MATCH (p:Participant)-[:HAS_SESSION]->(s:Session)
-      RETURN p.id as participant_id, s
-      ORDER BY p.id, s.created_at DESC
-    `;
-    const sessions = await neo4jManager.executeQuery(query);
+    // Supabaseからセッションデータを取得
+    const { data: sessions, error } = await client
+      .from('participant_experiment_sessions')
+      .select('participant_id, *')
+      .order('start_time', { ascending: false });
 
-    console.log(`Loaded ${sessions?.length || 0} sessions from Neo4j`);
+    if (error) {
+      throw error;
+    }
 
-    return (sessions || []).map((record: any) => ({
-      participantId: record.participant_id,
+    console.log(`Loaded ${sessions?.length || 0} sessions from Supabase`);
+
+    return (sessions || []).map((session: any) => ({
+      participantId: session.participant_id,
       sessionData: {
-        participantId: record.participant_id,
-        events: record.s.events || [],
+        participantId: session.participant_id,
+        events: [], // eventsは現在Supabaseスキーマに保存されていない
         wordResponses: [] // TODO: Implement word responses extraction
       } as SessionData
     }));
