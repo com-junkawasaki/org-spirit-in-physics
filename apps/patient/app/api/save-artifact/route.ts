@@ -1,5 +1,26 @@
+/**
+ * @deprecated This API route is deprecated. Use tRPC instead:
+ * 
+ * import { createTRPCProxyClient } from '@trpc/client';
+ * import { AppRouter } from '@/server/api/root';
+ * 
+ * const client = createTRPCProxyClient<AppRouter>({
+ *   links: [httpBatchLink({ url: '/api/trpc' })],
+ * });
+ * 
+ * // Convert Blob to base64 first
+ * const reader = new FileReader();
+ * reader.readAsDataURL(blob);
+ * reader.onloadend = async () => {
+ *   const base64 = reader.result.split(',')[1];
+ *   await client.artifacts.saveVideo.mutate({
+ *     participantId, sessionId, fileName, fileData: base64
+ *   });
+ * };
+ */
 import { NextRequest, NextResponse } from "next/server";
-import { storageAdapter } from "scripts/src/50_adapters";
+import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import { AppRouter } from '@/server/api/root';
 
 export async function POST(request: NextRequest) {
     try {
@@ -16,28 +37,35 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // ファイルタイプを判定
-        const fileType = fileName.includes("video")
-            ? "video"
-            : fileName.includes("audio")
-            ? "audio"
-            : fileName.includes("consent")
-            ? "consent"
-            : "session_data";
+        // Blobをbase64に変換
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64Data = buffer.toString('base64');
 
-        // Supabase Storageにアップロード（storage-adapter経由）
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const url = await storageAdapter.saveArtifact(participantId, fileType, fileName, buffer);
+        // tRPCクライアントを使用
+        const client = createTRPCProxyClient<AppRouter>({
+            links: [
+                httpBatchLink({
+                    url: '/api/trpc',
+                }),
+            ],
+        });
+
+        const result = await client.artifacts.saveVideo.mutate({
+            participantId,
+            sessionId,
+            fileName,
+            fileData: base64Data,
+        });
 
         return NextResponse.json({
             success: true,
-            message: "Artifact saved successfully to Supabase Storage",
-            url,
+            message: "Artifact saved successfully via tRPC",
+            url: result.fileUrl,
             metadata: {
                 participantId,
                 sessionId,
                 fileName,
-                fileType,
             },
         });
     } catch (error) {

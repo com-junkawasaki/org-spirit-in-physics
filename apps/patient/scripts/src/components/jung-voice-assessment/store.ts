@@ -191,30 +191,36 @@ export const useKawasakiStore = create<KawasakiStore>()(
 
     saveSessionData: async () => {
         const { participantId, events, wordResponses } = get();
-        const payload = {
-            type: 'session-data' as const,
-            data: {
-                participantId,
-                events,
-                wordResponses: wordResponses.map(r => ({
-                    ...r,
-                    audioBlob: undefined,
-                })),
-            }
+        
+        const sessionData = {
+            participantId,
+            events,
+            wordResponses: wordResponses.map(r => ({
+                stimulusWord: r.stimulusWord,
+                responseWord: r.responseWord,
+                reactionTimeMs: r.reactionTimeMs,
+                isDelayed: r.isDelayed,
+            })),
         };
-        console.log('Attempting to save session data:', payload);
-        try {
-            const response = await fetch('/api/save-data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            const responseData = await response.json().catch(() => response.text());
-            console.log('Server response from /api/save-data:', { status: response.status, body: responseData });
 
-            if (!response.ok) {
-                throw new Error(`Failed to save session data. Status: ${response.status}. Details: ${JSON.stringify(responseData)}`);
-            }
+        console.log('Attempting to save session data via tRPC:', sessionData);
+        
+        try {
+            // tRPC Vanilla Clientを使用（Zustandストアから呼び出すため）
+            const { createTRPCProxyClient, httpBatchLink } = await import('@trpc/client');
+            const { AppRouter } = await import('@/server/api/root');
+            
+            const client = createTRPCProxyClient<AppRouter>({
+                links: [
+                    httpBatchLink({
+                        url: '/api/trpc',
+                    }),
+                ],
+            });
+            
+            const result = await client.sessions.saveSession.mutate(sessionData);
+            
+            console.log('Session data saved successfully:', result);
             get().logEvent('session_data_saved');
         } catch (error) {
             console.error('Error in saveSessionData:', error);
@@ -234,33 +240,52 @@ export const useKawasakiStore = create<KawasakiStore>()(
             return;
         }
 
-        const formData = new FormData();
-        formData.append('file', blob, `session-${session}.webm`);
-        formData.append('sessionId', participantId);
-        formData.append('fileName', `session-${session}-video.webm`);
+        // Blobをbase64に変換
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
         
-        console.log(`Attempting to save session video for session ${session}`);
+        reader.onloadend = async () => {
+            const base64Data = reader.result as string;
+            // data:video/webm;base64, プレフィックスを除去
+            const base64Content = base64Data.split(',')[1];
+            
+            const fileName = `session-${session}-video.webm`;
+            const sessionId = `${participantId}_session-${session}`;
 
-        try {
-            const response = await fetch('/api/save-artifact', {
-                method: 'POST',
-                body: formData,
-            });
+            console.log(`Attempting to save session video for session ${session}`);
 
-            const responseText = await response.text();
-            console.log(`Server response from /api/save-artifact for session ${session}:`, { status: response.status, body: responseText });
+            try {
+                // tRPC Vanilla Clientを使用（Zustandストアから呼び出すため）
+                const { createTRPCProxyClient, httpBatchLink } = await import('@trpc/client');
+                const { AppRouter } = await import('@/server/api/root');
+                
+                const client = createTRPCProxyClient<AppRouter>({
+                    links: [
+                        httpBatchLink({
+                            url: '/api/trpc',
+                        }),
+                    ],
+                });
+                
+                const result = await client.artifacts.saveVideo.mutate({
+                    participantId,
+                    sessionId,
+                    fileName,
+                    fileData: base64Content,
+                });
 
-            if (!response.ok) {
-                throw new Error(`Failed to save session video: ${responseText}`);
+                console.log(`Session video saved successfully:`, result);
+                set({ sessionVideoUrl: result.fileUrl });
+                logEvent(`session_${session}_video_saved`, { url: result.fileUrl });
+            } catch (error) {
+                console.error('Error saving session video:', error);
+                setError('動画の保存に失敗しました。');
             }
-            const url = `/artifacts_cache/${participantId}/session-${session}-video.webm`;
-            set({ sessionVideoUrl: url });
-            logEvent(`session_${session}_video_saved`, { url });
+        };
 
-        } catch (error) {
-            console.error(error);
-            setError('動画の保存に失敗しました。');
-        }
+        reader.onerror = () => {
+            setError('動画ファイルの読み込みに失敗しました。');
+        };
     },
   }))
 ); 

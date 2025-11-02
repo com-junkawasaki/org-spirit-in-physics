@@ -1,6 +1,9 @@
 import { router } from '../trpc/router';
 import { participantsRouter } from './routers/participants';
 import { sessionsRouter } from './routers/sessions';
+import { artifactsRouter } from './routers/artifacts';
+import { analysisRouter } from './routers/analysis';
+import { emotionsRouter } from './routers/emotions';
 
 /**
  * ルートルーター
@@ -9,6 +12,9 @@ import { sessionsRouter } from './routers/sessions';
 export const appRouter = router({
   participants: participantsRouter,
   sessions: sessionsRouter,
+  artifacts: artifactsRouter,
+  analysis: analysisRouter,
+  emotions: emotionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

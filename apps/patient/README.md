@@ -34,40 +34,39 @@ pnpm dev
 
 ## 🏗️ Architecture
 
-This project implements **Hexagonal Architecture + CQRS** pattern with Supabase PostgreSQL as the primary database:
+This project implements **tRPC + Zod** for a simple, type-safe API layer with Supabase PostgreSQL as the primary database:
 
 ```
 src/
-├── 00_schema/            # zod等の型・定数（無依存）
-├── 10_events/            # CMD_*/EV_* 列挙（有限語彙）
-├── 20_ports/             # 抽象Port（ドメインが依存するだけ）
-├── 30_fold/              # 純関数（MDAG -> 投影）※副作用禁止
-├── 40_domain/            # xstate machines（UI非依存）
-├── 50_adapters/          # RouteHandler/ServerActions/外部API実装
-├── 60_projection/        # selectors/ViewModel（foldの薄ラッパ）
-├── 70_supervisors/       # ルート単位の調停（invalidate/revalidate）
-└── 80_app/               # app/(segments)/...（RSC & Client）
+├── server/
+│   ├── trpc/              # tRPC設定（context, router）
+│   └── api/
+│       ├── routers/       # tRPCルーター（participants, sessions, etc.）
+│       └── root.ts        # ルートルーター
+├── shared/
+│   └── schemas/          # Zodスキーマ（共通型定義）
+└── app/                   # Next.js App Router
+    ├── api/trpc/          # tRPC HTTPハンドラー
+    └── ...                # ページコンポーネント
 ```
 
-### Architecture Rules
+### Architecture Principles
 
-- **Dependency Direction**: Higher layers can import from lower layers, but not vice versa
-- **Layer Boundaries**: Each layer has a clear responsibility and dependency constraints
-- **CQRS Pattern**: Commands and Events are clearly separated and enumerated
-- **Pure Functions**: Fold functions are side-effect free and deterministic
-- **Port/Adapter Pattern**: Domain depends only on abstract ports, not concrete implementations
+- **Type Safety**: End-to-end type safety with Zod + tRPC
+- **Simplicity**: No complex abstractions, direct Supabase access
+- **Single Source of Truth**: Zod schemas define both validation and types
+- **Code Reuse**: Shared schemas between client and server
 
-### Layer Responsibilities
+### Key Components
 
-- **00_schema**: Type definitions, schemas, and constants (no dependencies)
-- **10_events**: Command and event enumerations (finite vocabulary)
-- **20_ports**: Abstract interfaces that domain depends on
-- **30_fold**: Pure functions that project MerkleDAG to current state
-- **40_domain**: XState machines for business logic (UI-independent)
-- **50_adapters**: Concrete implementations of ports (API handlers, external services)
-- **60_projection**: Selectors and ViewModels (thin wrappers around fold)
-- **70_supervisors**: Route-level orchestration (cache invalidation/revalidation)
-- **80_app**: Next.js application (RSC & Client components)
+- **tRPC Routers**: Define API endpoints with Zod validation
+- **Zod Schemas**: Single source of truth for data validation and types
+- **Supabase Client**: Direct database access (no ORM abstraction)
+- **React Query**: Client-side data fetching and caching
+
+### Migration Note
+
+The project previously used Hexagonal Architecture + CQRS, but has been simplified to tRPC + Zod only. See `scripts/src/DEPRECATED_LAYERS.md` for details on deprecated layers.
 
 ## 🚀 Vercel Deployment
 
@@ -139,7 +138,82 @@ artifacts/
 
 ### API Endpoints
 
-- `POST /api/save-artifact`: Upload artifacts (videos, audio files)
-- `POST /api/save-data`: Save structured data (consent, session data)
+#### tRPC Endpoints (推奨)
 
-All data is automatically stored in Vercel Blob Storage.
+すべてのAPIはtRPC経由でアクセスできます：
+
+```typescript
+import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import { AppRouter } from '@/server/api/root';
+
+const client = createTRPCProxyClient<AppRouter>({
+  links: [httpBatchLink({ url: '/api/trpc' })],
+});
+
+// 参加者管理
+await client.participants.list.query();
+await client.participants.create.mutate({ age: 30, gender: 'male' });
+await client.participants.saveConsent.mutate(consentData);
+
+// セッション管理
+await client.sessions.saveSession.mutate(sessionData);
+await client.sessions.listByParticipant.query({ participantId });
+
+// アーティファクト管理
+await client.artifacts.saveVideo.mutate({ participantId, sessionId, fileName, fileData });
+
+// 分析パイプライン
+await client.analysis.analyzeParticipant.mutate({ participantId });
+await client.analysis.getResults.query({ participantId });
+
+// 感情分析
+await client.emotions.analyzeSingle.mutate({ participantId, videoFile, sessionType });
+await client.emotions.getResults.query({ participantId });
+```
+
+#### Legacy API Endpoints (非推奨)
+
+以下のエンドポイントは後方互換性のため維持されていますが、tRPCの使用を推奨します：
+
+- `POST /api/save-artifact`: Upload artifacts (videos, audio files) - tRPCを使用
+- `POST /api/save-data`: Save structured data (consent, session data) - tRPCを使用
+
+### tRPC Router Structure
+
+```
+appRouter
+├── participants
+│   ├── list (query)
+│   ├── create (mutation)
+│   ├── getById (query)
+│   ├── saveConsent (mutation)
+│   └── getConsent (query)
+├── sessions
+│   ├── saveSession (mutation)
+│   ├── listByParticipant (query)
+│   └── getEvents (query)
+├── artifacts
+│   └── saveVideo (mutation)
+├── analysis
+│   ├── analyzeParticipant (mutation)
+│   ├── analyzeAll (mutation)
+│   └── getResults (query)
+└── emotions
+    ├── analyzeSingle (mutation)
+    ├── analyzeAll (mutation)
+    ├── getResults (query)
+    └── getStatistics (query)
+```
+
+### Data Storage
+
+- **Supabase PostgreSQL**: すべての構造化データ（参加者、セッション、レスポンス、分析結果）
+- **Supabase Storage**: 動画ファイル、アーティファクト
+- **Supabase Tables**:
+  - `participants` - 参加者基本情報
+  - `participant_consents` - 同意情報
+  - `participant_experiment_sessions` - 実験セッション
+  - `participant_session_events` - セッションイベント（個別レコード）
+  - `participant_response_data` - 単語連合応答データ
+  - `participant_analysis_results` - Kawasaki Model分析結果
+  - `participant_hume_*_predictions` - Hume AI感情分析結果
