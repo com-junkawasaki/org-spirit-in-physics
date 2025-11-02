@@ -15,12 +15,18 @@ export const sessionsRouter = router({
       const sessionStartedEvent = events.find((e) => e.type === 'session_started');
       const sessionEndedEvent = events.filter((e) => e.type === 'response_window_closed').pop();
       const startTime = sessionStartedEvent?.timestamp
-        ? new Date(sessionStartedEvent.timestamp as string).toISOString()
+        ? (typeof sessionStartedEvent.timestamp === 'number' 
+            ? new Date(sessionStartedEvent.timestamp).toISOString()
+            : new Date(sessionStartedEvent.timestamp as string).toISOString())
         : events[0]?.timestamp
-          ? new Date(events[0].timestamp as string).toISOString()
+          ? (typeof events[0].timestamp === 'number'
+              ? new Date(events[0].timestamp).toISOString()
+              : new Date(events[0].timestamp as string).toISOString())
           : new Date().toISOString();
       const endTime = sessionEndedEvent?.timestamp
-        ? new Date(sessionEndedEvent.timestamp as string).toISOString()
+        ? (typeof sessionEndedEvent.timestamp === 'number'
+            ? new Date(sessionEndedEvent.timestamp).toISOString()
+            : new Date(sessionEndedEvent.timestamp as string).toISOString())
         : null;
 
       // セッションタイプを決定（デフォルトはsession-1）

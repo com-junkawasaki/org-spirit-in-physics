@@ -45,4 +45,4 @@ export * from './60_projection';
 export * from './70_supervisors';
 
 // 80_app - app/(segments)/...（RSC & Client）
-// Note: 80_appは直接importせず、Next.jsのルーティングを使用
+// @deprecated 削除済み - Next.jsのルーティングを直接使用

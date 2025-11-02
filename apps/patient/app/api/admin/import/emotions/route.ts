@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import { initializeSupabaseDatabase } from "scripts/src/lib/data-loader";
+// initializeSupabaseDatabaseは不要（Supabaseは自動的に初期化される）
 import { supabaseManager } from "scripts/src/lib/database/supabase-manager";
 import { getSupabaseClient } from "scripts/src/lib/database/supabase-client";
 
@@ -31,7 +31,7 @@ async function importEmotionsFromDataset() {
 
     // Merkle DAG: import.emotions.initialize_db
     // Supabaseデータベース初期化
-    await initializeSupabaseDatabase();
+    // Supabaseは自動的に初期化されるため、明示的な初期化は不要
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
