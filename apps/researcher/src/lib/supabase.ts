@@ -40,7 +40,11 @@ class SupabaseClientWrapper {
         throw error;
       }
 
-      return data?.[0] || null;
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        return null;
+      }
+
+      return data[0];
     } catch (error) {
       console.error('Error in mergeNode:', error);
       throw error;
@@ -72,7 +76,9 @@ class SupabaseClientWrapper {
           throw error;
         }
 
-        totalInserted += data?.length || 0;
+        if (data && Array.isArray(data)) {
+          totalInserted += data.length;
+        }
       }
 
       return totalInserted;

@@ -6,8 +6,6 @@ import {
   windowsGenerationFailureWorkflow,
   kernelFusionWorkflow,
   kernelFusionFailureWorkflow,
-  neo4jPersistenceWorkflow,
-  neo4jPersistenceFailureWorkflow,
   inngest,
 } from '@/lib/workflows';
 
@@ -28,8 +26,6 @@ export const { GET, POST, PUT } = serve({
     kernelFusionWorkflow,
     kernelFusionFailureWorkflow,
     
-    // Neo4j保存ワークフロー
-    neo4jPersistenceWorkflow,
-    neo4jPersistenceFailureWorkflow,
+    // Neo4j保存ワークフローはSupabase移行により無効化
   ],
 });

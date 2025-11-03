@@ -756,6 +756,40 @@ export class SupabaseManager {
   }
 
   /**
+   * Merkle DAG: 参加者データの取得（簡易版）
+   * @returns 参加者IDと基本情報の配列
+   */
+  async getParticipants(): Promise<Array<{ participant_id: string; name?: string }>> {
+    try {
+      const { data: participants, error } = await this.client
+        .from('participants')
+        .select('id, name')
+        .order('created_at', { ascending: false });
+
+      if (error || !participants) {
+        return [];
+      }
+
+      return participants.map((p) => ({
+        participant_id: p.id,
+        name: p.name || undefined,
+      }));
+    } catch (error) {
+      console.error('Error getting participants:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Merkle DAG: 参加者詳細データの取得
+   * @param participantId 参加者ID
+   * @returns 参加者の詳細情報
+   */
+  async getParticipantDetails(participantId: string): Promise<Participant | null> {
+    return this.getParticipant(participantId);
+  }
+
+  /**
    * Merkle DAG: 全参加者データの取得
    */
   async getAllParticipants(): Promise<Participant[]> {
