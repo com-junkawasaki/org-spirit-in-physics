@@ -57,37 +57,18 @@ const t = {
   procedure: publicProcedure,
 };
 
-// ルーターオプションを同期的に初期化（可能な限り）
-let routerOptions: RouterOptions = {};
+// ルーターオプションを初期化（遅延読み込み）
+// 注意: researcher関数はオプションなので、提供されない場合はルーターはエラーを返す
+const routerOptions: RouterOptions = {};
 
-// 同期的にインポートを試みる（失敗した場合は空のオプション）
-try {
-  // 分析パイプライン関数
-  const analysisModule = require('../../../../apps/researcher/src/lib/workflows/analysis-pipeline');
-  routerOptions.analysisFunctions = {
-    analyzeParticipantResponses: analysisModule.analyzeParticipantResponses,
-    analyzeAllParticipants: analysisModule.analyzeAllParticipants,
-  };
-} catch (error) {
-  // 動的インポートで後から注入
+// 開発環境またはresearcher関数が利用可能な場合のみ注入
+// 本番環境では環境変数やDIコンテナ経由で注入することを推奨
+if (process.env.NODE_ENV === 'development' || process.env.ENABLE_RESEARCHER_FUNCTIONS === 'true') {
+  // 非同期で読み込む（エラーは無視）
   getRouterOptions().then((options) => {
-    routerOptions = options;
-  });
-}
-
-try {
-  // 感情分析関数
-  const emotionModule = require('../../../../apps/researcher/src/lib/emotion-analysis');
-  routerOptions.emotionAnalysisFunctions = {
-    analyzeVideoEmotions: emotionModule.analyzeVideoEmotions,
-    analyzeAllParticipantVideos: emotionModule.analyzeAllParticipantVideos,
-    loadEmotionAnalysisResults: emotionModule.loadEmotionAnalysisResults,
-    generateEmotionStatistics: emotionModule.generateEmotionStatistics,
-  };
-} catch (error) {
-  // 動的インポートで後から注入
-  getRouterOptions().then((options) => {
-    routerOptions = { ...routerOptions, ...options };
+    Object.assign(routerOptions, options);
+  }).catch((error) => {
+    console.warn('Failed to load researcher functions (optional):', error);
   });
 }
 
