@@ -80,9 +80,16 @@ export type KawasakiStore = KawasakiStoreState & KawasakiStoreActions;
 
 // --- Zustand Store Implementation ---
 
-const JUNG_WORDS: Word[] = Object.entries(JUNG_STIMULUS_WORDS).map(
+const JUNG_WORDS_JA: Word[] = Object.entries(JUNG_STIMULUS_WORDS).map(
   ([key, value]) => ({
     word: value.japanese,
+    key: key,
+  })
+);
+
+const JUNG_WORDS_EN: Word[] = Object.entries(JUNG_STIMULUS_WORDS).map(
+  ([key, value]) => ({
+    word: value.english,
     key: key,
   })
 );
@@ -134,7 +141,9 @@ export const useKawasakiStore = create<KawasakiStore>()(
 
     startSession: (numberOfWords) => {
         const sessionNumber = get().currentSession === 1 ? 1 : 2;
-        const shuffledWords = [...JUNG_WORDS].sort(() => 0.5 - Math.random()).slice(0, numberOfWords);
+        const language = get().language;
+        const wordList = language === 'ja' ? JUNG_WORDS_JA : JUNG_WORDS_EN;
+        const shuffledWords = [...wordList].sort(() => 0.5 - Math.random()).slice(0, numberOfWords);
 
         set(state => {
             state.testStatus = sessionNumber === 1 ? 'session-1-running' : 'session-2-running';
@@ -142,7 +151,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
             state.currentWordIndex = 0;
             state.currentSession = sessionNumber === 1 ? 1 : 2;
         });
-        get().logEvent('session_started', { session: get().currentSession, numberOfWords });
+        get().logEvent('session_started', { session: get().currentSession, numberOfWords, language });
     },
 
     completeSession: () => {

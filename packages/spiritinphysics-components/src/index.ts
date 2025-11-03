@@ -51,12 +51,25 @@ export {
 } from './components/jung-voice-assessment/store';
 
 // Constants
-export { JUNG_STIMULUS_WORDS, JUNG_TEST_WELCOME_MESSAGE } from './components/jung-voice-assessment/constants';
+export { 
+  JUNG_STIMULUS_WORDS, 
+  JUNG_TEST_WELCOME_MESSAGE,
+  JUNG_TEST_WELCOME_MESSAGE_EN,
+  getEnglishAudioFileName,
+  getEnglishAudioFileNameByKey,
+  SYSTEM_AUDIO_FILES,
+} from './components/jung-voice-assessment/constants';
 
 // Types
 export type { TrpcClientConfig } from './types/trpc';
 
 // Utils
 export { cn } from './utils/cn';
-export { setAudioBasePath, getAudioBasePath, getAudioPath } from './utils/audio-paths';
+export { 
+  setAudioBasePath, 
+  getAudioBasePath, 
+  getAudioPath,
+  getWordAudioPath,
+  getSystemAudioPath,
+} from './utils/audio-paths';
 

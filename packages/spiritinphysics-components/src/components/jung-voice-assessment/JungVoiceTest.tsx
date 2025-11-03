@@ -34,19 +34,27 @@ const PreflightScreen = React.memo<{
     }
   };
 
+  const welcomeTitle = language === 'ja' ? 'ようこそ' : 'Welcome';
+  const deviceCheckTitle = language === 'ja' ? 'デバイスチェック' : 'Device Check';
+  const preparingMessage = language === 'ja' ? 'カメラとマイクを準備しています...' : 'Preparing camera and microphone...';
+  const errorMessage = language === 'ja' ? 'デバイスにアクセスできませんでした。' : 'Could not access devices.';
+  const readyMessage = language === 'ja' ? 'カメラとマイクの準備ができました。' : 'Camera and microphone are ready.';
+  const replayButton = language === 'ja' ? '説明をもう一度聞く' : 'Replay Instructions';
+  const startButton = language === 'ja' ? 'セッションを開始' : 'Start Session';
+
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">デバイスチェック</h2>
+      <h2 className="text-2xl font-bold">{deviceCheckTitle}</h2>
 
       <Card className="p-4">
         <CardHeader>
-            <CardTitle>ようこそ</CardTitle>
+            <CardTitle>{welcomeTitle}</CardTitle>
         </CardHeader>
         <CardContent className="text-left">
           <p className="whitespace-pre-wrap">{language === 'ja' ? JUNG_TEST_WELCOME_MESSAGE : JUNG_TEST_WELCOME_MESSAGE_EN}</p>
           <audio ref={audioRef} src={getSystemAudioPath('welcome', language)} autoPlay />
           <Button onClick={playWelcomeAudio} className="mt-4">
-            説明をもう一度聞く
+            {replayButton}
           </Button>
         </CardContent>
       </Card>
@@ -56,21 +64,21 @@ const PreflightScreen = React.memo<{
         {deviceStatus !== 'success' && (
           <div className="absolute inset-0 flex items-center justify-center text-center p-4">
             <p className="text-white/80 text-lg">
-              {deviceStatus === 'pending' && 'カメラとマイクを準備しています...'}
-              {deviceStatus === 'error' && 'デバイスにアクセスできませんでした。'}
+              {deviceStatus === 'pending' && preparingMessage}
+              {deviceStatus === 'error' && errorMessage}
             </p>
           </div>
         )}
       </div>
       {deviceStatus === 'success' && stream && (
         <div className="space-y-3 text-center">
-          <p className="text-green-500">カメラとマイクの準備ができました。</p>
+          <p className="text-green-500">{readyMessage}</p>
           <AudioVisualizer stream={stream} />
         </div>
       )}
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <Button onClick={onStartSession} size="lg" disabled={!stream}>
-        セッションを開始
+        {startButton}
       </Button>
     </div>
   );
@@ -242,13 +250,18 @@ const SessionScreen = React.memo<{
             // if (currentAudioContext && currentAudioContext.state === 'running') currentAudioContext.close(); // Cannot capture due to closure scope
             if (currentAdvanceTimer) clearTimeout(currentAdvanceTimer);
         };
-    }, [currentWordIndex, stimulusWords, onResponse, stream, isListening, logEvent, currentSession]);
+    }, [currentWordIndex, stimulusWords, onResponse, stream, isListening, logEvent, currentSession, language]);
   
   if (currentWordIndex >= stimulusWords.length) {
-    return <div>次の単語を読み込み中...</div>;
+    const loadingMessage = language === 'ja' ? '次の単語を読み込み中...' : 'Loading next word...';
+    return <div>{loadingMessage}</div>;
   }
 
   const progress = ((currentWordIndex + 1) / stimulusWords.length) * 100;
+  const sessionLabel = language === 'ja' ? 'セッション' : 'Session';
+  const wordLabel = language === 'ja' ? '単語' : 'Word';
+  const listeningMessage = language === 'ja' ? '聞き取り中...' : 'Listening...';
+  const recognizedLabel = language === 'ja' ? '認識結果:' : 'Recognized:';
 
   return (
     <div className="space-y-4 flex flex-col items-center">
@@ -258,7 +271,7 @@ const SessionScreen = React.memo<{
       <audio ref={stimulusAudioRef} />
        <div className="w-full max-w-md">
           <p className="text-sm text-gray-500 mb-1">
-              セッション {currentSession} - 単語 {currentWordIndex + 1} / {stimulusWords.length}
+              {sessionLabel} {currentSession} - {wordLabel} {currentWordIndex + 1} / {stimulusWords.length}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
@@ -269,8 +282,8 @@ const SessionScreen = React.memo<{
         {stream && <AudioVisualizer stream={stream} />}
       </div>
       <div className="h-8 text-xl text-gray-600">
-        {isListening ? '聞き取り中...' : ''}
-        {recognizedText && `認識結果: ${recognizedText}`}
+        {isListening ? listeningMessage : ''}
+        {recognizedText && ` ${recognizedLabel} ${recognizedText}`}
       </div>
     </div>
   );
@@ -278,22 +291,44 @@ const SessionScreen = React.memo<{
 SessionScreen.displayName = 'SessionScreen';
 
 
-const BreakScreen = React.memo<{ onStartNextSession: () => void; }>(({ onStartNextSession }) => (
-  <div className="space-y-4">
-    <h2 className="text-2xl font-bold">セッション1が完了しました</h2>
-    <p>短い休憩を取ってください。準備ができたら、セッション2を開始してください。</p>
-    <Button onClick={onStartNextSession} size="lg">セッション2を開始</Button>
-  </div>
-));
+const BreakScreen = React.memo<{ 
+  onStartNextSession: () => void;
+  language: 'ja' | 'en';
+}>(({ onStartNextSession, language }) => {
+  const title = language === 'ja' ? 'セッション1が完了しました' : 'Session 1 Completed';
+  const message = language === 'ja' 
+    ? '短い休憩を取ってください。準備ができたら、セッション2を開始してください。'
+    : 'Please take a short break. When you are ready, start Session 2.';
+  const buttonText = language === 'ja' ? 'セッション2を開始' : 'Start Session 2';
+  
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold">{title}</h2>
+      <p>{message}</p>
+      <Button onClick={onStartNextSession} size="lg">{buttonText}</Button>
+    </div>
+  );
+});
 BreakScreen.displayName = 'BreakScreen';
 
-const CompletionScreen = React.memo<{ onReset: () => void; }>(({ onReset }) => (
+const CompletionScreen = React.memo<{ 
+  onReset: () => void;
+  language: 'ja' | 'en';
+}>(({ onReset, language }) => {
+  const title = language === 'ja' ? '検査完了' : 'Test Completed';
+  const message = language === 'ja' 
+    ? 'ご協力ありがとうございました。データは保存されました。'
+    : 'Thank you for your participation. The data has been saved.';
+  const buttonText = language === 'ja' ? '新しいセッションを開始する' : 'Start New Session';
+  
+  return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">検査完了</h2>
-      <p>ご協力ありがとうございました。データは保存されました。</p>
-      <Button onClick={onReset}>新しいセッションを開始する</Button>
+      <h2 className="text-2xl font-bold">{title}</h2>
+      <p>{message}</p>
+      <Button onClick={onReset}>{buttonText}</Button>
     </div>
-));
+  );
+});
 CompletionScreen.displayName = 'CompletionScreen';
 
 
@@ -303,6 +338,7 @@ export default function JungVoiceTest({
   numberOfWords = 100,
   className = '',
   onComplete,
+  language: propLanguage,
 }: JungVoiceTestProps) {
   const {
     testStatus,
@@ -324,7 +360,19 @@ export default function JungVoiceTest({
     setStream,
     setError,
     recordWordResponse,
+    language: storeLanguage,
+    setLanguage,
   } = useKawasakiStore();
+
+  // 言語設定: propsが優先、なければストアの値を使用
+  const language = propLanguage ?? storeLanguage;
+
+  // propsで言語が指定された場合、ストアに設定
+  useEffect(() => {
+    if (propLanguage && propLanguage !== storeLanguage) {
+      setLanguage(propLanguage);
+    }
+  }, [propLanguage, storeLanguage, setLanguage]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoChunksRef = useRef<Blob[]>([]);
@@ -479,6 +527,7 @@ export default function JungVoiceTest({
           stream={stream}
           deviceStatus={deviceStatus}
           error={error}
+          language={language}
           onStartSession={handleConfirmAndStartSession}
         />;
       case 'session-1-running':
@@ -489,12 +538,13 @@ export default function JungVoiceTest({
           currentSession={currentSession}
           currentWordIndex={currentWordIndex}
           stimulusWords={stimulusWords}
+          language={language}
           onResponse={handleResponse}
         />;
       case 'session-1-complete':
-        return <BreakScreen onStartNextSession={handleStartSecondSession} />;
+        return <BreakScreen onStartNextSession={handleStartSecondSession} language={language} />;
       case 'completed':
-        return <CompletionScreen onReset={resetTest} />;
+        return <CompletionScreen onReset={resetTest} language={language} />;
       case 'idle':
       default:
         return null;
