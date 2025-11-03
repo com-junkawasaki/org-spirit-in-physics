@@ -54,6 +54,7 @@
     "build": "pnpm --filter @spiritinphysics/components copy-public && next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next .turbo node_modules",
     "generate-audio": "tsx scripts/generate-audio.ts",
     "migrate-artifacts": "tsx scripts/migrate-artifacts.ts",

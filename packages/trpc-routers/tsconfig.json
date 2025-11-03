@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["esnext"],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -11,12 +11,13 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "../spiritinphysics-components/src/types/**/*.d.ts"],
   "exclude": ["node_modules"]
 }
 

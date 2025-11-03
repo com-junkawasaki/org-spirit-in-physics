@@ -3,8 +3,9 @@ import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
 import { JUNG_STIMULUS_WORDS } from './constants';
 import type { createTRPCProxyClient } from '@trpc/client';
+import type { AnyRouter } from '@trpc/server';
 
-type TRPCClient<TAppRouter> = ReturnType<typeof createTRPCProxyClient<TAppRouter>>;
+type TRPCClient<TAppRouter extends AnyRouter> = ReturnType<typeof createTRPCProxyClient<TAppRouter>>;
 
 // --- Type Definitions ---
 
@@ -56,7 +57,7 @@ export interface KawasakiStoreState {
   participantId: string | null;
   language: 'ja' | 'en';
   // tRPCクライアント作成関数（外部から注入）
-  trpcClientFactory?: <TAppRouter>() => TRPCClient<TAppRouter>;
+  trpcClientFactory?: <TAppRouter extends AnyRouter>() => TRPCClient<TAppRouter>;
 }
 
 export interface KawasakiStoreActions {
@@ -74,7 +75,7 @@ export interface KawasakiStoreActions {
   startPreflight: () => void;
   saveSessionVideo: (session: 1 | 2, blob: Blob) => void;
   initializeParticipant: () => void;
-  setTrpcClientFactory: <TAppRouter>(factory: () => TRPCClient<TAppRouter>) => void;
+  setTrpcClientFactory: <TAppRouter extends AnyRouter>(factory: () => TRPCClient<TAppRouter>) => void;
   setLanguage: (language: 'ja' | 'en') => void;
 }
 
