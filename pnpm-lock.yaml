@@ -44,6 +44,9 @@ importers:
       '@spiritinphysics/components':
         specifier: workspace:*
         version: link:../../packages/spiritinphysics-components
+      '@spiritinphysics/trpc-routers':
+        specifier: workspace:*
+        version: link:../../packages/trpc-routers
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.78.0
@@ -414,6 +417,28 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.78.0
+    devDependencies:
+      '@types/node':
+        specifier: 24.1.0
+        version: 24.1.0
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+
+  packages/trpc-routers:
+    dependencies:
+      '@spiritinphysics/components':
+        specifier: workspace:*
+        version: link:../spiritinphysics-components
+      '@spiritinphysics/supabase':
+        specifier: workspace:*
+        version: link:../supabase
+      '@trpc/server':
+        specifier: '>=10.0.0'
+        version: 10.45.2
+      zod:
+        specifier: ^4.1.12
+        version: 4.1.12
     devDependencies:
       '@types/node':
         specifier: 24.1.0
