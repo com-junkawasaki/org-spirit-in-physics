@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import ConsentForm from '../../app/ConsentForm';
+import ConsentForm from '../ConsentForm';
 import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
 import { useRouter } from 'next/navigation';
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
-import { AppRouter } from '../../../src/server/api/root';
-import { DemographicData } from '../../../src/shared/schemas/participant';
+import { AppRouter } from '../../server/api/root';
+import { DemographicData } from '../../shared/schemas/participant';
 
 export default function ConsentPage() {
   const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
