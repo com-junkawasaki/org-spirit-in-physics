@@ -1,12 +1,9 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import ConsentForm from '../ConsentForm.ts';
-import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
+import { ConsentForm, useKawasakiStore, createTrpcClient, type DemographicData } from '@spiritinphysics/components';
 import { useRouter } from 'next/navigation';
-import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import { AppRouter } from '../../server/api/root';
-import { DemographicData } from '../../shared/schemas/participant';
 
 export default function ConsentPage() {
   const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
@@ -14,6 +11,13 @@ export default function ConsentPage() {
   const participantId = useKawasakiStore((state) => state.participantId);
 
   const router = useRouter();
+
+  const setTrpcClientFactory = useKawasakiStore((state) => state.setTrpcClientFactory);
+
+  useEffect(() => {
+    // tRPCクライアントファクトリーをストアに設定
+    setTrpcClientFactory(() => createTrpcClient<AppRouter>({ url: '/api/trpc' }));
+  }, [setTrpcClientFactory]);
 
   useEffect(() => {
     // コンポーネントがマウントされたときに参加者IDを初期化
@@ -30,13 +34,8 @@ export default function ConsentPage() {
   ) => {
     try {
       // tRPCクライアントを使用して同意データを保存
-      const client = createTRPCProxyClient<AppRouter>({
-        links: [
-          httpBatchLink({
-            url: '/api/trpc',
-          }),
-        ],
-        transformer: undefined,
+      const client = createTrpcClient<AppRouter>({
+        url: '/api/trpc',
       });
 
       // ユーザーエージェントとIPアドレスを取得（可能な場合）

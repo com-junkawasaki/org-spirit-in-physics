@@ -1,33 +1,33 @@
 services:
-  # Patient app (Next.js)
-  patient:
+  # Participant app (Next.js)
+  participant:
     build:
-      context: ./apps/patient
+      context: ./apps/participant
       dockerfile: Dockerfile
-    container_name: spirit-patient
+    container_name: spirit-participant
     ports:
       - "25250:3000"
     env_file:
-      - ./apps/patient/env.docker
+      - ./apps/participant/env.docker
     networks:
       - spirit-network
 
 
-  # Visualizer app (Next.js)
-  visualizer:
+  # Researcher app (Next.js)
+  researcher:
     build:
-      context: ./apps/visualizer
+      context: ./apps/researcher
       dockerfile: Dockerfile
-    container_name: spirit-visualizer
+    container_name: spirit-researcher
     ports:
       - "25260:3000"
     volumes:
-      - ./apps/visualizer:/app
+      - ./apps/researcher:/app
       - /app/node_modules
       - ./dataset:/app/dataset:cached
     command: pnpm run dev
     env_file:
-      - ./apps/visualizer/env.docker
+      - ./apps/researcher/env.docker
     environment:
       - NODE_ENV=development
       - INNGEST_EVENT_KEY=local_dev_key
@@ -42,10 +42,10 @@ services:
           dockerfile: Dockerfile
         container_name: spirit-bpmn-runner
         environment:
-          - API_BASE=http://visualizer:3000
+          - API_BASE=http://researcher:3000
           - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
         depends_on:
-          - visualizer
+          - researcher
         networks:
           - spirit-network
         restart: "no"

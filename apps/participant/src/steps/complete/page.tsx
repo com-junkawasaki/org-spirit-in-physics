@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from 'scripts/src/components/ui/button';
-import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
+import { Button, useKawasakiStore } from '@spiritinphysics/components';
 import Link from 'next/link';
 
 export default function CompletionPage() {

@@ -1,11 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import JungVoiceTest from 'scripts/src/components/jung-voice-assessment/JungVoiceTest';
+import { JungVoiceTest, useKawasakiStore, createTrpcClient } from '@spiritinphysics/components';
+import { AppRouter } from '../../server/api/root';
 
 export default function TestPage() {
   const router = useRouter();
+  const setTrpcClientFactory = useKawasakiStore((state) => state.setTrpcClientFactory);
+
+  useEffect(() => {
+    // tRPCクライアントファクトリーをストアに設定
+    setTrpcClientFactory(() => createTrpcClient<AppRouter>({ url: '/api/trpc' }));
+  }, [setTrpcClientFactory]);
 
   const handleTestComplete = () => {
     console.log('Test completed, navigating to completion page.');
