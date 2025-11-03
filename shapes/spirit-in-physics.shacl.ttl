@@ -1,0 +1,246 @@
+@prefix spirit: <https://spirit-in-physics.gftd.ai/ontology#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix shacl: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Merkle DAG: shapes.spirit_in_physics
+# Spirit in Physics システムのSHACL形状定義
+
+# ============================================================================
+# ParticipantApplication形状
+# ============================================================================
+
+spirit:ParticipantApplicationShape a sh:NodeShape ;
+    sh:targetClass spirit:ParticipantApplication ;
+    sh:name "Participant Application Shape"@en, "参加者アプリケーション形状"@ja ;
+    sh:description "参加者アプリケーションの責任と権限を定義"@ja ;
+    sh:property [
+        sh:path spirit:hasResponsibility ;
+        sh:class spirit:DataCollectionProcess, spirit:DataStorageProcess ;
+        sh:minCount 1 ;
+        shacl:message "ParticipantApplication must have at least one responsibility"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:class spirit:ParticipantWritePermission ;
+        sh:minCount 1 ;
+        shacl:message "ParticipantApplication must have write permission"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:produces ;
+        sh:class spirit:SessionEvent, spirit:WordResponse, spirit:ConsentData ;
+        sh:minCount 1 ;
+        shacl:message "ParticipantApplication must produce at least one data type"@en ;
+    ] .
+
+# ============================================================================
+# ResearcherApplication形状
+# ============================================================================
+
+spirit:ResearcherApplicationShape a shacl:NodeShape ;
+    sh:targetClass spirit:ResearcherApplication ;
+    sh:name "Researcher Application Shape"@en, "研究者アプリケーション形状"@ja ;
+    sh:description "研究者アプリケーションの責任と権限を定義"@ja ;
+    sh:property [
+        sh:path spirit:hasResponsibility ;
+        sh:class spirit:VisualizationProcess, spirit:AnalysisProcess, spirit:TimelineIntegrationProcess ;
+        sh:minCount 1 ;
+        shacl:message "ResearcherApplication must have at least one responsibility"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:class spirit:ResearcherReadPermission, spirit:ResearcherWritePermission ;
+        sh:minCount 1 ;
+        shacl:message "ResearcherApplication must have read and/or write permission"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:consumes ;
+        sh:class spirit:SessionEvent, spirit:WordResponse, spirit:EmotionData ;
+        sh:minCount 1 ;
+        shacl:message "ResearcherApplication must consume at least one data type"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:produces ;
+        sh:class spirit:AnalysisResult, spirit:TimelineData ;
+        sh:minCount 1 ;
+        shacl:message "ResearcherApplication must produce at least one data type"@en ;
+    ] .
+
+# ============================================================================
+# AnalysisPipeline形状
+# ============================================================================
+
+spirit:AnalysisPipelineShape a shacl:NodeShape ;
+    sh:targetClass spirit:AnalysisPipeline ;
+    sh:name "Analysis Pipeline Shape"@en, "解析パイプライン形状"@ja ;
+    sh:description "解析パイプラインの責任と権限を定義"@ja ;
+    sh:property [
+        sh:path spirit:hasResponsibility ;
+        sh:class spirit:AnalysisProcess ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        shacl:message "AnalysisPipeline must have exactly one AnalysisProcess responsibility"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:class spirit:AnalysisPipelineReadPermission, spirit:AnalysisPipelineWritePermission ;
+        sh:minCount 2 ;
+        shacl:message "AnalysisPipeline must have both read and write permissions"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:consumes ;
+        sh:class spirit:WordResponse ;
+        sh:minCount 1 ;
+        shacl:message "AnalysisPipeline must consume WordResponse data"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:produces ;
+        sh:class spirit:AnalysisResult ;
+        sh:minCount 1 ;
+        shacl:message "AnalysisPipeline must produce AnalysisResult data"@en ;
+    ] .
+
+# ============================================================================
+# TimelineDataFlow形状
+# ============================================================================
+
+spirit:TimelineDataFlowShape a shacl:NodeShape ;
+    sh:targetClass spirit:SupabaseToResearcherTimelineFlow ;
+    sh:name "Timeline Data Flow Shape"@en, "タイムラインデータフロー形状"@ja ;
+    sh:description "タイムラインデータフローの入力と出力を定義"@ja ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:SessionEvent, spirit:EmotionData, spirit:PhysiologicalData ;
+        sh:minCount 1 ;
+        shacl:message "TimelineDataFlow must have at least one input"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasOutput ;
+        sh:class spirit:TimelineData ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        shacl:message "TimelineDataFlow must have exactly one TimelineData output"@en ;
+    ] .
+
+# ============================================================================
+# TimelineData形状
+# ============================================================================
+
+spirit:TimelineDataShape a shacl:NodeShape ;
+    sh:targetClass spirit:TimelineData ;
+    sh:name "Timeline Data Shape"@en, "時系列データ形状"@ja ;
+    sh:description "時系列データの構造を定義"@ja ;
+    sh:property [
+        sh:path spirit:hasTimestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        shacl:message "TimelineData must have exactly one timestamp"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasWord ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        shacl:message "TimelineData must have exactly one word"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasEventType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        shacl:message "TimelineData must have exactly one eventType"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasEmotions ;
+        sh:class spirit:EmotionDetail ;
+        sh:minCount 0 ;
+        shacl:message "TimelineData may have emotion details"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasPhysiological ;
+        sh:class spirit:PhysiologicalValues ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        shacl:message "TimelineData may have physiological values"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasReactionValue ;
+        sh:datatype xsd:double ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        shacl:message "TimelineData may have reaction value"@en ;
+    ] .
+
+# ============================================================================
+# EmotionDetail形状
+# ============================================================================
+
+spirit:EmotionDetailShape a shacl:NodeShape ;
+    sh:targetClass spirit:EmotionDetail ;
+    sh:name "Emotion Detail Shape"@en, "感情詳細形状"@ja ;
+    sh:description "感情詳細データの構造を定義"@ja ;
+    sh:property [
+        sh:path spirit:hasEmotionName ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        shacl:message "EmotionDetail must have exactly one emotion name"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasEmotionScore ;
+        sh:datatype xsd:double ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+        shacl:message "EmotionDetail must have exactly one emotion score between 0.0 and 1.0"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasFileType ;
+        sh:datatype xsd:string ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        shacl:in ("burst" "face" "language" "prosody") ;
+        shacl:message "EmotionDetail fileType must be one of: burst, face, language, prosody"@en ;
+    ] .
+
+# ============================================================================
+# PhysiologicalValues形状
+# ============================================================================
+
+spirit:PhysiologicalValuesShape a shacl:NodeShape ;
+    sh:targetClass spirit:PhysiologicalValues ;
+    sh:name "Physiological Values Shape"@en, "生理値形状"@ja ;
+    sh:description "生理値データの構造を定義"@ja ;
+    sh:property [
+        sh:path spirit:hasAverageValue ;
+        sh:datatype xsd:double ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        shacl:message "PhysiologicalValues may have average value"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasMaxValue ;
+        sh:datatype xsd:double ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        shacl:message "PhysiologicalValues may have max value"@en ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasMinValue ;
+        sh:datatype xsd:double ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        shacl:message "PhysiologicalValues may have min value"@ja ;
+    ] ;
+    sh:property [
+        sh:path spirit:hasChannelValues ;
+        shacl:nodeKind shacl:IRIOrLiteral ;
+        sh:minCount 0 ;
+        shacl:message "PhysiologicalValues may have channel values"@en ;
+    ] .
+

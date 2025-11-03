@@ -1,0 +1,177 @@
+@prefix spirit: <https://spirit-in-physics.gftd.ai/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+
+# Merkle DAG: ontology.processes
+# プロセス詳細定義（特にTimelineIntegrationProcess）
+
+# ============================================================================
+# TimelineIntegrationProcess詳細定義
+# ============================================================================
+
+spirit:TimelineIntegrationProcess a owl:Class ;
+    rdfs:label "Timeline Integration Process"@en, "時系列統合プロセス"@ja ;
+    rdfs:comment "時系列データを統合するプロセスの詳細定義"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:SessionEvent, spirit:EmotionData, spirit:PhysiologicalData ;
+    spirit:hasOutput spirit:TimelineData ;
+    spirit:transforms [ a owl:NamedIndividual ; rdfs:label "Time Range Matching"@en ],
+                      [ a owl:NamedIndividual ; rdfs:label "Emotion Data Integration"@en ],
+                      [ a owl:NamedIndividual ; rdfs:label "Physiological Data Integration"@en ],
+                      [ a owl:NamedIndividual ; rdfs:label "Timeline Data Point Creation"@en ] .
+
+# ============================================================================
+# 変換ルールの詳細定義
+# ============================================================================
+
+spirit:TimeRangeMatchingTransformation a owl:Class ;
+    rdfs:label "Time Range Matching Transformation"@en, "時間範囲マッチング変換"@ja ;
+    rdfs:comment "感情データの時間範囲マッチング変換ルール"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    spirit:hasInput spirit:SessionEvent, spirit:EmotionData ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "Matched Emotion Data"@en ] .
+
+# 時間範囲マッチングの条件
+spirit:timeRangeMatchingCondition a owl:Class ;
+    rdfs:label "Time Range Matching Condition"@en, "時間範囲マッチング条件"@ja ;
+    rdfs:comment "emotion.beginTime <= relativeTimestamp <= emotion.endTime"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:EmotionDataIntegrationTransformation a owl:Class ;
+    rdfs:label "Emotion Data Integration Transformation"@en, "感情データ統合変換"@ja ;
+    rdfs:comment "感情データをemotionDetails[]形式に変換"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    spirit:hasInput spirit:EmotionData ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "Emotion Details Array"@en ] .
+
+# 感情データ統合の構造
+spirit:EmotionDetail a owl:Class ;
+    rdfs:label "Emotion Detail"@en, "感情詳細"@ja ;
+    rdfs:comment "統合された感情データの詳細情報"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:hasEmotionName a owl:DatatypeProperty ;
+    rdfs:label "has emotion name"@en, "感情名を持つ"@ja ;
+    rdfs:domain spirit:EmotionDetail ;
+    rdfs:range xsd:string .
+
+spirit:hasEmotionScore a owl:DatatypeProperty ;
+    rdfs:label "has emotion score"@en, "感情スコアを持つ"@ja ;
+    rdfs:domain spirit:EmotionDetail ;
+    rdfs:range xsd:double .
+
+spirit:hasFileType a owl:DatatypeProperty ;
+    rdfs:label "has file type"@en, "ファイルタイプを持つ"@ja ;
+    rdfs:domain spirit:EmotionDetail ;
+    rdfs:range xsd:string .
+
+spirit:PhysiologicalDataIntegrationTransformation a owl:Class ;
+    rdfs:label "Physiological Data Integration Transformation"@en, "生理データ統合変換"@ja ;
+    rdfs:comment "生理データをphysiologicalValues{}形式に変換"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    spirit:hasInput spirit:PhysiologicalData ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "Physiological Values Object"@en ] .
+
+# 生理データ統合の構造
+spirit:PhysiologicalValues a owl:Class ;
+    rdfs:label "Physiological Values"@en, "生理値"@ja ;
+    rdfs:comment "統合された生理データの値"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:hasAverageValue a owl:DatatypeProperty ;
+    rdfs:label "has average value"@en, "平均値を持つ"@ja ;
+    rdfs:domain spirit:PhysiologicalValues ;
+    rdfs:range xsd:double .
+
+spirit:hasMaxValue a owl:DatatypeProperty ;
+    rdfs:label "has max value"@en, "最大値を持つ"@ja ;
+    rdfs:domain spirit:PhysiologicalValues ;
+    rdfs:range xsd:double .
+
+spirit:hasMinValue a owl:DatatypeProperty ;
+    rdfs:label "has min value"@en, "最小値を持つ"@ja ;
+    rdfs:domain spirit:PhysiologicalValues ;
+    rdfs:range xsd:double .
+
+spirit:hasChannelValues a owl:ObjectProperty ;
+    rdfs:label "has channel values"@en, "チャンネル値を持つ"@ja ;
+    rdfs:domain spirit:PhysiologicalValues ;
+    rdfs:range owl:Thing .
+
+spirit:TimelineDataPointCreationTransformation a owl:Class ;
+    rdfs:label "Timeline Data Point Creation Transformation"@en, "時系列データポイント作成変換"@ja ;
+    rdfs:comment "統合データポイントを作成: {timestamp, word, eventType, emotions, physiological, reactionValue}"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    spirit:hasInput spirit:SessionEvent, spirit:EmotionDetail, spirit:PhysiologicalValues ;
+    spirit:hasOutput spirit:TimelineData .
+
+# ============================================================================
+# TimelineDataの詳細構造
+# ============================================================================
+
+spirit:hasWord a owl:DatatypeProperty ;
+    rdfs:label "has word"@en, "単語を持つ"@ja ;
+    rdfs:domain spirit:TimelineData ;
+    rdfs:range xsd:string .
+
+spirit:hasEventType a owl:DatatypeProperty ;
+    rdfs:label "has event type"@en, "イベントタイプを持つ"@ja ;
+    rdfs:domain spirit:TimelineData ;
+    rdfs:range xsd:string .
+
+spirit:hasEmotions a owl:ObjectProperty ;
+    rdfs:label "has emotions"@en, "感情データを持つ"@ja ;
+    rdfs:domain spirit:TimelineData ;
+    rdfs:range spirit:EmotionDetail .
+
+spirit:hasPhysiological a owl:ObjectProperty ;
+    rdfs:label "has physiological"@en, "生理データを持つ"@ja ;
+    rdfs:domain spirit:TimelineData ;
+    rdfs:range spirit:PhysiologicalValues .
+
+spirit:hasReactionValue a owl:DatatypeProperty ;
+    rdfs:label "has reaction value"@en, "反応値を持つ"@ja ;
+    rdfs:domain spirit:TimelineData ;
+    rdfs:range xsd:double .
+
+spirit:hasMetadata a owl:ObjectProperty ;
+    rdfs:label "has metadata"@en, "メタデータを持つ"@ja ;
+    rdfs:domain spirit:TimelineData ;
+    rdfs:range owl:Thing .
+
+# ============================================================================
+# プロセス実行順序の定義
+# ============================================================================
+
+spirit:hasPrecedingStep a owl:ObjectProperty ;
+    rdfs:label "has preceding step"@en, "前のステップを持つ"@ja ;
+    rdfs:comment "プロセスの実行順序を定義"@ja ;
+    rdfs:domain spirit:Process ;
+    rdfs:range spirit:Process .
+
+spirit:hasFollowingStep a owl:ObjectProperty ;
+    rdfs:label "has following step"@en, "次のステップを持つ"@ja ;
+    rdfs:comment "プロセスの実行順序を定義"@ja ;
+    rdfs:domain spirit:Process ;
+    rdfs:range spirit:Process .
+
+# TimelineIntegrationProcessの実行順序
+spirit:TimelineIntegrationProcess owl:equivalentClass [
+    a owl:Class ;
+    owl:intersectionOf (
+        spirit:Process
+        [ a owl:Restriction ;
+          owl:onProperty spirit:hasPrecedingStep ;
+          owl:someValuesFrom spirit:SessionDataRetrievalStep ]
+        [ a owl:Restriction ;
+          owl:onProperty spirit:hasPrecedingStep ;
+          owl:someValuesFrom spirit:EmotionDataRetrievalStep ]
+        [ a owl:Restriction ;
+          owl:onProperty spirit:hasPrecedingStep ;
+          owl:someValuesFrom spirit:PhysiologicalDataRetrievalStep ]
+    )
+] .
+

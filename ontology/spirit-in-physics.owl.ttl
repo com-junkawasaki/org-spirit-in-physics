@@ -1,0 +1,231 @@
+@prefix spirit: <https://spirit-in-physics.gftd.ai/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+
+# Merkle DAG: ontology.spirit_in_physics
+# Spirit in Physics システムのメインオントロジー
+# アプリケーション、データエンティティ、プロセス、権限を定義
+
+# ============================================================================
+# アプリケーションクラス定義
+# ============================================================================
+
+spirit:ParticipantApplication a owl:Class ;
+    rdfs:label "Participant Application"@en, "参加者アプリケーション"@ja ;
+    rdfs:comment "実験データ収集を担当する参加者向けアプリケーション"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    dc:description "アプリケーション: 実験データ収集、同意取得、セッション管理を担当"@ja .
+
+spirit:ResearcherApplication a owl:Class ;
+    rdfs:label "Researcher Application"@en, "研究者アプリケーション"@ja ;
+    rdfs:comment "データ可視化と解析を担当する研究者向けアプリケーション"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    dc:description "アプリケーション: データ取得、可視化、解析実行を担当"@ja .
+
+spirit:AnalysisPipeline a owl:Class ;
+    rdfs:label "Analysis Pipeline"@en, "解析パイプライン"@ja ;
+    rdfs:comment "participant_response_dataからspirit_probabilityを計算する解析パイプライン"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    dc:description "解析パイプライン: Kawasaki ModelによるSpirit確率計算"@ja .
+
+spirit:DataFlow a owl:Class ;
+    rdfs:label "Data Flow"@en, "データフロー"@ja ;
+    rdfs:comment "データの流れを表現するクラス"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:Process a owl:Class ;
+    rdfs:label "Process"@en, "プロセス"@ja ;
+    rdfs:comment "システム内のプロセスを表現するクラス"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+# ============================================================================
+# データエンティティ定義
+# ============================================================================
+
+spirit:Participant a owl:Class ;
+    rdfs:label "Participant"@en, "参加者"@ja ;
+    rdfs:comment "実験に参加する個人"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:ExperimentSession a owl:Class ;
+    rdfs:label "Experiment Session"@en, "実験セッション"@ja ;
+    rdfs:comment "実験の1回のセッション"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:SessionEvent a owl:Class ;
+    rdfs:label "Session Event"@en, "セッションイベント"@ja ;
+    rdfs:comment "セッション中に発生するイベント（単語表示、応答窓開閉など）"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:WordResponse a owl:Class ;
+    rdfs:label "Word Response"@en, "単語応答"@ja ;
+    rdfs:comment "参加者が提示された単語に対して応答した単語"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:EmotionData a owl:Class ;
+    rdfs:label "Emotion Data"@en, "感情データ"@ja ;
+    rdfs:comment "Hume AIから取得した感情分析データ"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:PhysiologicalData a owl:Class ;
+    rdfs:label "Physiological Data"@en, "生理データ"@ja ;
+    rdfs:comment "皮膚電位などの生理学的データ"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:AnalysisResult a owl:Class ;
+    rdfs:label "Analysis Result"@en, "解析結果"@ja ;
+    rdfs:comment "Kawasaki Modelによる解析結果（spirit_probability等）"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:TimelineData a owl:Class ;
+    rdfs:label "Timeline Data"@en, "時系列データ"@ja ;
+    rdfs:comment "時系列に統合された可視化用データ"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:ConsentData a owl:Class ;
+    rdfs:label "Consent Data"@en, "同意データ"@ja ;
+    rdfs:comment "参加者の研究同意情報"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+# ============================================================================
+# プロパティ定義
+# ============================================================================
+
+spirit:hasResponsibility a owl:ObjectProperty ;
+    rdfs:label "has responsibility"@en, "責任を持つ"@ja ;
+    rdfs:comment "アプリケーションやプロセスが持つ責任"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spirit:Process .
+
+spirit:hasPermission a owl:ObjectProperty ;
+    rdfs:label "has permission"@en, "権限を持つ"@ja ;
+    rdfs:comment "アプリケーションが持つ権限"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing .
+
+spirit:canAccess a owl:ObjectProperty ;
+    rdfs:label "can access"@en, "アクセス可能"@ja ;
+    rdfs:comment "アクセス可能なリソース"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing .
+
+spirit:canWrite a owl:ObjectProperty ;
+    rdfs:label "can write"@en, "書き込み可能"@ja ;
+    rdfs:comment "書き込み可能なリソース"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing .
+
+spirit:canRead a owl:ObjectProperty ;
+    rdfs:label "can read"@en, "読み取り可能"@ja ;
+    rdfs:comment "読み取り可能なリソース"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing .
+
+spirit:produces a owl:ObjectProperty ;
+    rdfs:label "produces"@en, "生成する"@ja ;
+    rdfs:comment "プロセスやアプリケーションが生成するデータ"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing .
+
+spirit:consumes a owl:ObjectProperty ;
+    rdfs:label "consumes"@en, "消費する"@ja ;
+    rdfs:comment "プロセスやアプリケーションが消費するデータ"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing .
+
+spirit:transforms a owl:ObjectProperty ;
+    rdfs:label "transforms"@en, "変換する"@ja ;
+    rdfs:comment "データを変換するプロセス"@ja ;
+    rdfs:domain spirit:Process ;
+    rdfs:range owl:Thing .
+
+spirit:hasDataFlow a owl:ObjectProperty ;
+    rdfs:label "has data flow"@en, "データフローを持つ"@ja ;
+    rdfs:comment "プロセスが持つデータフロー"@ja ;
+    rdfs:domain spirit:Process ;
+    rdfs:range spirit:DataFlow .
+
+spirit:hasInput a owl:ObjectProperty ;
+    rdfs:label "has input"@en, "入力を持つ"@ja ;
+    rdfs:comment "プロセスやデータフローの入力"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing .
+
+spirit:hasOutput a owl:ObjectProperty ;
+    rdfs:label "has output"@en, "出力を持つ"@ja ;
+    rdfs:comment "プロセスやデータフローの出力"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range owl:Thing .
+
+spirit:belongsToParticipant a owl:ObjectProperty ;
+    rdfs:label "belongs to participant"@en, "参加者に属する"@ja ;
+    rdfs:comment "データが属する参加者"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spirit:Participant .
+
+spirit:hasTimestamp a owl:DatatypeProperty ;
+    rdfs:label "has timestamp"@en, "タイムスタンプを持つ"@ja ;
+    rdfs:comment "イベントやデータのタイムスタンプ"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:dateTime .
+
+# ============================================================================
+# プロセス定義
+# ============================================================================
+
+spirit:DataCollectionProcess a owl:Class ;
+    rdfs:label "Data Collection Process"@en, "データ収集プロセス"@ja ;
+    rdfs:comment "実験データを収集するプロセス"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:produces spirit:SessionEvent, spirit:WordResponse, spirit:ConsentData .
+
+spirit:DataStorageProcess a owl:Class ;
+    rdfs:label "Data Storage Process"@en, "データ保存プロセス"@ja ;
+    rdfs:comment "データをSupabaseに保存するプロセス"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:consumes spirit:SessionEvent, spirit:WordResponse, spirit:ConsentData .
+
+spirit:AnalysisProcess a owl:Class ;
+    rdfs:label "Analysis Process"@en, "解析プロセス"@ja ;
+    rdfs:comment "Kawasaki Modelによる解析を実行するプロセス"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:consumes spirit:WordResponse ;
+    spirit:produces spirit:AnalysisResult .
+
+spirit:VisualizationProcess a owl:Class ;
+    rdfs:label "Visualization Process"@en, "可視化プロセス"@ja ;
+    rdfs:comment "データを可視化するプロセス"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:consumes spirit:TimelineData .
+
+spirit:TimelineIntegrationProcess a owl:Class ;
+    rdfs:label "Timeline Integration Process"@en, "時系列統合プロセス"@ja ;
+    rdfs:comment "時系列データを統合するプロセス"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:SessionEvent, spirit:EmotionData, spirit:PhysiologicalData ;
+    spirit:hasOutput spirit:TimelineData .
+
+# ============================================================================
+# インスタンス定義（アプリケーションの責任と権限）
+# ============================================================================
+
+spirit:participantApp a spirit:ParticipantApplication ;
+    rdfs:label "Participant App Instance"@en, "参加者アプリケーションインスタンス"@ja ;
+    spirit:hasResponsibility spirit:DataCollectionProcess, spirit:DataStorageProcess ;
+    spirit:produces spirit:SessionEvent, spirit:WordResponse, spirit:ConsentData .
+
+spirit:researcherApp a spirit:ResearcherApplication ;
+    rdfs:label "Researcher App Instance"@en, "研究者アプリケーションインスタンス"@ja ;
+    spirit:hasResponsibility spirit:VisualizationProcess, spirit:TimelineIntegrationProcess ;
+    spirit:consumes spirit:SessionEvent, spirit:WordResponse, spirit:EmotionData ;
+    spirit:produces spirit:AnalysisResult, spirit:TimelineData .
+
+spirit:analysisPipelineInstance a spirit:AnalysisPipeline ;
+    rdfs:label "Analysis Pipeline Instance"@en, "解析パイプラインインスタンス"@ja ;
+    spirit:hasResponsibility spirit:AnalysisProcess ;
+    spirit:consumes spirit:WordResponse ;
+    spirit:produces spirit:AnalysisResult .
+

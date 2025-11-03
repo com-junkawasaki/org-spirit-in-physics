@@ -1,0 +1,191 @@
+@prefix spirit: <https://spirit-in-physics.gftd.ai/ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+
+# Merkle DAG: ontology.timeline_dataflow
+# Participant → Researcher → 3D-Force-Timeline へのデータフロー詳細定義
+
+# ============================================================================
+# データフロークラス定義
+# ============================================================================
+
+spirit:ParticipantToSupabaseFlow a owl:Class ;
+    rdfs:label "Participant to Supabase Flow"@en, "参加者からSupabaseへのフロー"@ja ;
+    rdfs:comment "参加者アプリからSupabaseへのデータ保存フロー"@ja ;
+    rdfs:subClassOf spirit:DataFlow .
+
+spirit:SupabaseToAnalysisPipelineFlow a owl:Class ;
+    rdfs:label "Supabase to Analysis Pipeline Flow"@en, "Supabaseから解析パイプラインへのフロー"@ja ;
+    rdfs:comment "Supabaseから解析パイプラインへのデータフロー"@ja ;
+    rdfs:subClassOf spirit:DataFlow .
+
+spirit:SupabaseToResearcherTimelineFlow a owl:Class ;
+    rdfs:label "Supabase to Researcher Timeline Flow"@en, "Supabaseから研究者タイムラインへのフロー"@ja ;
+    rdfs:comment "Supabaseから研究者アプリの3D-Force-Timelineへのデータフロー"@ja ;
+    rdfs:subClassOf spirit:DataFlow .
+
+# ============================================================================
+# Participant → Supabase フロー詳細
+# ============================================================================
+
+spirit:ConsentStorageStep a owl:Class ;
+    rdfs:label "Consent Storage Step"@en, "同意保存ステップ"@ja ;
+    rdfs:comment "ステップ1: Consent取得 → participant_consentsテーブル"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:ConsentData ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "participant_consents table"@en ] .
+
+spirit:SessionStorageStep a owl:Class ;
+    rdfs:label "Session Storage Step"@en, "セッション保存ステップ"@ja ;
+    rdfs:comment "ステップ2: Session開始 → participant_experiment_sessionsテーブル"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:ExperimentSession ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "participant_experiment_sessions table"@en ] .
+
+spirit:EventStorageStep a owl:Class ;
+    rdfs:label "Event Storage Step"@en, "イベント保存ステップ"@ja ;
+    rdfs:comment "ステップ3: Event記録 → participant_session_eventsテーブル"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:SessionEvent ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "participant_session_events table"@en ] .
+
+spirit:WordResponseStorageStep a owl:Class ;
+    rdfs:label "Word Response Storage Step"@en, "単語応答保存ステップ"@ja ;
+    rdfs:comment "ステップ4: WordResponse記録 → participant_response_dataテーブル"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:WordResponse ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "participant_response_data table"@en ] .
+
+spirit:VideoStorageStep a owl:Class ;
+    rdfs:label "Video Storage Step"@en, "動画保存ステップ"@ja ;
+    rdfs:comment "ステップ5: Video保存 → Supabase Storage (participant-videos bucket)"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput [ a owl:NamedIndividual ; rdfs:label "Video Blob"@en ] ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "participant-videos bucket"@en ] .
+
+# Participant → Supabase フロー統合
+spirit:participantToSupabaseFlowInstance a spirit:ParticipantToSupabaseFlow ;
+    rdfs:label "Participant to Supabase Flow Instance"@en, "参加者からSupabaseへのフローインスタンス"@ja ;
+    spirit:hasInput spirit:ConsentData, spirit:ExperimentSession, spirit:SessionEvent, spirit:WordResponse ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "Supabase Database"@en ] .
+
+# ============================================================================
+# Supabase → AnalysisPipeline フロー詳細
+# ============================================================================
+
+spirit:AnalysisTrigger a owl:Class ;
+    rdfs:label "Analysis Trigger"@en, "解析トリガー"@ja ;
+    rdfs:comment "解析をトリガーする条件: Session保存完了時、または手動実行"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:ResponseDataRetrievalStep a owl:Class ;
+    rdfs:label "Response Data Retrieval Step"@en, "応答データ取得ステップ"@ja ;
+    rdfs:comment "participant_response_data（participantIdでフィルタ）を取得"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput [ a owl:NamedIndividual ; rdfs:label "participant_response_data table"@en ] ;
+    spirit:hasOutput spirit:WordResponse .
+
+spirit:SpiritProbabilityCalculationStep a owl:Class ;
+    rdfs:label "Spirit Probability Calculation Step"@en, "Spirit確率計算ステップ"@ja ;
+    rdfs:comment "calculateSpiritProbabilities()実行"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:WordResponse ;
+    spirit:hasOutput spirit:AnalysisResult .
+
+spirit:AnalysisResultStorageStep a owl:Class ;
+    rdfs:label "Analysis Result Storage Step"@en, "解析結果保存ステップ"@ja ;
+    rdfs:comment "participant_analysis_resultsテーブルに保存"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:AnalysisResult ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "participant_analysis_results table"@en ] .
+
+# Supabase → AnalysisPipeline フロー統合
+spirit:supabaseToAnalysisPipelineFlowInstance a spirit:SupabaseToAnalysisPipelineFlow ;
+    rdfs:label "Supabase to Analysis Pipeline Flow Instance"@en, "Supabaseから解析パイプラインへのフローインスタンス"@ja ;
+    spirit:hasInput [ a owl:NamedIndividual ; rdfs:label "participant_response_data table"@en ] ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "participant_analysis_results table"@en ] .
+
+# ============================================================================
+# Supabase → Researcher → 3D-Force-Timeline フロー詳細
+# ============================================================================
+
+spirit:TimelineAPIEndpointCall a owl:Class ;
+    rdfs:label "Timeline API Endpoint Call"@en, "タイムラインAPIエンドポイント呼び出し"@ja ;
+    rdfs:comment "ステップ1: /api/participants/[id]/timelineエンドポイント呼び出し"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:Participant ;
+    spirit:hasOutput spirit:TimelineData .
+
+spirit:SessionDataRetrievalStep a owl:Class ;
+    rdfs:label "Session Data Retrieval Step"@en, "セッションデータ取得ステップ"@ja ;
+    rdfs:comment "ステップ2: getSessionData() - participant_session_eventsから取得"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput [ a owl:NamedIndividual ; rdfs:label "participant_session_events table"@en ] ;
+    spirit:hasOutput spirit:SessionEvent .
+
+spirit:EmotionDataRetrievalStep a owl:Class ;
+    rdfs:label "Emotion Data Retrieval Step"@en, "感情データ取得ステップ"@ja ;
+    rdfs:comment "ステップ3: getEmotionData() - participant_hume_*_predictionsから取得"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput [ a owl:NamedIndividual ; rdfs:label "participant_hume_burst_predictions table"@en ],
+                     [ a owl:NamedIndividual ; rdfs:label "participant_hume_face_predictions table"@en ],
+                     [ a owl:NamedIndividual ; rdfs:label "participant_hume_language_predictions table"@en ],
+                     [ a owl:NamedIndividual ; rdfs:label "participant_hume_prosody_predictions table"@en ] ;
+    spirit:hasOutput spirit:EmotionData .
+
+spirit:PhysiologicalDataRetrievalStep a owl:Class ;
+    rdfs:label "Physiological Data Retrieval Step"@en, "生理データ取得ステップ"@ja ;
+    rdfs:comment "ステップ4: getPhysiologicalData() - 将来実装予定"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput [ a owl:NamedIndividual ; rdfs:label "response_skin_potential_timeseries table"@en ] ;
+    spirit:hasOutput spirit:PhysiologicalData .
+
+spirit:TimelineDataIntegrationStep a owl:Class ;
+    rdfs:label "Timeline Data Integration Step"@en, "時系列データ統合ステップ"@ja ;
+    rdfs:comment "ステップ5: integrateTimelineData() - 時系列データ統合"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:SessionEvent, spirit:EmotionData, spirit:PhysiologicalData ;
+    spirit:hasOutput spirit:TimelineData .
+
+spirit:TimelineVisualizationStep a owl:Class ;
+    rdfs:label "Timeline Visualization Step"@en, "タイムライン可視化ステップ"@ja ;
+    rdfs:comment "ステップ6: TimelineVisualizationコンポーネントで3D可視化"@ja ;
+    rdfs:subClassOf spirit:Process ;
+    spirit:hasInput spirit:TimelineData ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "3D Force Timeline Visualization"@en ] .
+
+# Supabase → Researcher → 3D-Force-Timeline フロー統合
+spirit:supabaseToResearcherTimelineFlowInstance a spirit:SupabaseToResearcherTimelineFlow ;
+    rdfs:label "Supabase to Researcher Timeline Flow Instance"@en, "Supabaseから研究者タイムラインへのフローインスタンス"@ja ;
+    spirit:hasInput [ a owl:NamedIndividual ; rdfs:label "participant_session_events table"@en ],
+                     [ a owl:NamedIndividual ; rdfs:label "participant_hume_*_predictions tables"@en ],
+                     [ a owl:NamedIndividual ; rdfs:label "response_skin_potential_timeseries table"@en ] ;
+    spirit:hasOutput [ a owl:NamedIndividual ; rdfs:label "3D Force Timeline Visualization"@en ] .
+
+# ============================================================================
+# 時系列統合プロセスの詳細ルール
+# ============================================================================
+
+spirit:TimeRangeMatchingRule a owl:Class ;
+    rdfs:label "Time Range Matching Rule"@en, "時間範囲マッチングルール"@ja ;
+    rdfs:comment "感情データの時間範囲マッチング: emotion.beginTime <= relativeTimestamp <= emotion.endTime"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:EmotionDataIntegrationRule a owl:Class ;
+    rdfs:label "Emotion Data Integration Rule"@en, "感情データ統合ルール"@ja ;
+    rdfs:comment "感情データ統合: emotionDetails[]に変換"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:PhysiologicalDataIntegrationRule a owl:Class ;
+    rdfs:label "Physiological Data Integration Rule"@en, "生理データ統合ルール"@ja ;
+    rdfs:comment "生理データ統合: physiologicalValues{}に変換"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:TimelineDataPointCreationRule a owl:Class ;
+    rdfs:label "Timeline Data Point Creation Rule"@en, "時系列データポイント作成ルール"@ja ;
+    rdfs:comment "統合データポイント作成: {timestamp, word, eventType, emotions, physiological, reactionValue}"@ja ;
+    rdfs:subClassOf owl:Thing .
+

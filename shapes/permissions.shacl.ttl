@@ -1,0 +1,198 @@
+@prefix spirit: <https://spirit-in-physics.gftd.ai/ontology#> .
+@prefix shacl: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Merkle DAG: shapes.permissions
+# 権限定義（RLSポリシーと連携）
+
+# ============================================================================
+# 権限クラス定義
+# ============================================================================
+
+spirit:ParticipantWritePermission a owl:Class ;
+    rdfs:label "Participant Write Permission"@en, "参加者書き込み権限"@ja ;
+    rdfs:comment "参加者アプリケーションの書き込み権限: 自身のparticipant_idのみ"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:ParticipantReadPermission a owl:Class ;
+    rdfs:label "Participant Read Permission"@en, "参加者読み取り権限"@ja ;
+    rdfs:comment "参加者アプリケーションの読み取り権限: 自身のparticipant_idのみ"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:ResearcherReadPermission a owl:Class ;
+    rdfs:label "Researcher Read Permission"@en, "研究者読み取り権限"@ja ;
+    rdfs:comment "研究者アプリケーションの読み取り権限: 全participant_id"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:ResearcherWritePermission a owl:Class ;
+    rdfs:label "Researcher Write Permission"@en, "研究者書き込み権限"@ja ;
+    rdfs:comment "研究者アプリケーションの書き込み権限: participant_analysis_resultsのみ"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:AnalysisPipelineReadPermission a owl:Class ;
+    rdfs:label "Analysis Pipeline Read Permission"@en, "解析パイプライン読み取り権限"@ja ;
+    rdfs:comment "解析パイプラインの読み取り権限: participant_response_data（全participant）"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:AnalysisPipelineWritePermission a owl:Class ;
+    rdfs:label "Analysis Pipeline Write Permission"@en, "解析パイプライン書き込み権限"@ja ;
+    rdfs:comment "解析パイプラインの書き込み権限: participant_analysis_results（全participant）"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:ServiceRolePermission a owl:Class ;
+    rdfs:label "Service Role Permission"@en, "サービスロール権限"@ja ;
+    rdfs:comment "Service role権限: RLSをバイパスして全データにアクセス可能"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+# ============================================================================
+# ParticipantApplication権限形状
+# ============================================================================
+
+spirit:ParticipantApplicationPermissionShape a shacl:NodeShape ;
+    shacl:targetClass spirit:ParticipantApplication ;
+    shacl:name "Participant Application Permission Shape"@en, "参加者アプリケーション権限形状"@ja ;
+    shacl:description "参加者アプリケーションの権限を定義"@ja ;
+    shacl:property [
+        shacl:path spirit:canWrite ;
+        shacl:class [ a owl:Class ; 
+                     rdfs:label "Own Participant Data"@en, "自身の参加者データ"@ja ;
+                     rdfs:comment "自身のparticipant_idのみ書き込み可能"@ja ] ;
+        shacl:minCount 1 ;
+        shacl:message "ParticipantApplication must have write permission for own data only"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:canRead ;
+        shacl:class [ a owl:Class ; 
+                     rdfs:label "Own Participant Data"@en, "自身の参加者データ"@ja ;
+                     rdfs:comment "自身のparticipant_idのみ読み取り可能"@ja ] ;
+        shacl:minCount 1 ;
+        shacl:message "ParticipantApplication must have read permission for own data only"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:hasPermission ;
+        shacl:class spirit:ParticipantWritePermission, spirit:ParticipantReadPermission ;
+        shacl:minCount 2 ;
+        shacl:message "ParticipantApplication must have both read and write permissions"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:hasPermission ;
+        shacl:hasValue [ a owl:NamedIndividual ; 
+                        rdfs:label "RLS Policy: Users can insert their own *"@en ;
+                        rdf:type owl:NamedIndividual ] ;
+        shacl:minCount 1 ;
+        shacl:message "ParticipantApplication must comply with RLS policy: Users can insert their own *"@en ;
+    ] .
+
+# ============================================================================
+# ResearcherApplication権限形状
+# ============================================================================
+
+spirit:ResearcherApplicationPermissionShape a shacl:NodeShape ;
+    shacl:targetClass spirit:ResearcherApplication ;
+    shacl:name "Researcher Application Permission Shape"@en, "研究者アプリケーション権限形状"@ja ;
+    shacl:description "研究者アプリケーションの権限を定義"@ja ;
+    shacl:property [
+        shacl:path spirit:canRead ;
+        shacl:class [ a owl:Class ; 
+                     rdfs:label "All Participant Data"@en, "全参加者データ"@ja ;
+                     rdfs:comment "全participant_idのデータを読み取り可能"@ja ] ;
+        shacl:minCount 1 ;
+        shacl:message "ResearcherApplication must have read permission for all participant data"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:canWrite ;
+        shacl:class [ a owl:Class ; 
+                     rdfs:label "Analysis Results Only"@en, "解析結果のみ"@ja ;
+                     rdfs:comment "participant_analysis_resultsテーブルのみ書き込み可能"@ja ] ;
+        shacl:minCount 0 ;
+        shacl:maxCount 1 ;
+        shacl:message "ResearcherApplication may have write permission for analysis results only"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:hasPermission ;
+        shacl:class spirit:ResearcherReadPermission, spirit:ResearcherWritePermission, spirit:ServiceRolePermission ;
+        shacl:minCount 1 ;
+        shacl:message "ResearcherApplication must have at least one permission type"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:hasPermission ;
+        shacl:hasValue [ a owl:NamedIndividual ; 
+                        rdfs:label "Service Role Permission"@en ] ;
+        shacl:minCount 1 ;
+        shacl:message "ResearcherApplication must have service role permission"@en ;
+    ] .
+
+# ============================================================================
+# AnalysisPipeline権限形状
+# ============================================================================
+
+spirit:AnalysisPipelinePermissionShape a shacl:NodeShape ;
+    shacl:targetClass spirit:AnalysisPipeline ;
+    shacl:name "Analysis Pipeline Permission Shape"@en, "解析パイプライン権限形状"@ja ;
+    shacl:description "解析パイプラインの権限を定義"@ja ;
+    shacl:property [
+        shacl:path spirit:canRead ;
+        shacl:class [ a owl:Class ; 
+                     rdfs:label "Participant Response Data"@en, "参加者応答データ"@ja ;
+                     rdfs:comment "participant_response_dataテーブル（全participant）を読み取り可能"@ja ] ;
+        shacl:minCount 1 ;
+        shacl:message "AnalysisPipeline must have read permission for participant_response_data"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:canWrite ;
+        shacl:class [ a owl:Class ; 
+                     rdfs:label "Analysis Results"@en, "解析結果"@ja ;
+                     rdfs:comment "participant_analysis_resultsテーブル（全participant）に書き込み可能"@ja ] ;
+        shacl:minCount 1 ;
+        shacl:message "AnalysisPipeline must have write permission for participant_analysis_results"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:hasPermission ;
+        shacl:class spirit:AnalysisPipelineReadPermission, spirit:AnalysisPipelineWritePermission, spirit:ServiceRolePermission ;
+        shacl:minCount 2 ;
+        shacl:message "AnalysisPipeline must have both read and write permissions"@en ;
+    ] ;
+    shacl:property [
+        shacl:path spirit:hasPermission ;
+        shacl:hasValue [ a owl:NamedIndividual ; 
+                        rdfs:label "Service Role Permission"@en ;
+                        rdf:type owl:NamedIndividual ] ;
+        shacl:minCount 1 ;
+        shacl:message "AnalysisPipeline must have service role permission"@en ;
+    ] .
+
+# ============================================================================
+# RLSポリシーとの対応関係
+# ============================================================================
+
+spirit:RLSPolicyMapping a owl:Class ;
+    rdfs:label "RLS Policy Mapping"@en, "RLSポリシーマッピング"@ja ;
+    rdfs:comment "SHACL権限定義とSupabase RLSポリシーの対応関係"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:participantRLSPolicy a owl:NamedIndividual ;
+    rdfs:label "Participant RLS Policy"@en, "参加者RLSポリシー"@ja ;
+    rdfs:comment "RLSポリシー: Users can insert their own *"@ja ;
+    spirit:appliesTo spirit:ParticipantApplication ;
+    spirit:enforces spirit:ParticipantWritePermission, spirit:ParticipantReadPermission .
+
+spirit:researcherRLSPolicy a owl:NamedIndividual ;
+    rdfs:label "Researcher RLS Policy"@en, "研究者RLSポリシー"@ja ;
+    rdfs:comment "RLSポリシー: Service role can bypass RLS"@ja ;
+    spirit:appliesTo spirit:ResearcherApplication, spirit:AnalysisPipeline ;
+    spirit:enforces spirit:ServiceRolePermission .
+
+# RLSポリシー適用プロパティ
+spirit:appliesTo a owl:ObjectProperty ;
+    rdfs:label "applies to"@en, "適用対象"@ja ;
+    rdfs:domain spirit:RLSPolicyMapping ;
+    rdfs:range owl:Thing .
+
+spirit:enforces a owl:ObjectProperty ;
+    rdfs:label "enforces"@en, "強制する"@ja ;
+    rdfs:domain spirit:RLSPolicyMapping ;
+    rdfs:range owl:Thing .
+
