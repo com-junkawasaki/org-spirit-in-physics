@@ -1,8 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    webpack: (config, { isServer }) => {
-      // Node.js ポリフィルの追加（Inngestで必要）
-      if (!isServer) {
+  // Configure `pageExtensions` to include MDX files
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  webpack: (config, { isServer }) => {
+    // Node.js ポリフィルの追加（Inngestで必要）
+    if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         "async_hooks": false,
