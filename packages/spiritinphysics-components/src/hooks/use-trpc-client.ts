@@ -1,5 +1,7 @@
-import { createTRPCProxyClient, httpBatchLink, type CreateTRPCClient } from '@trpc/client';
+import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { TrpcClientConfig } from '../types/trpc';
+
+type TRPCClient<TAppRouter> = ReturnType<typeof createTRPCProxyClient<TAppRouter>>;
 
 /**
  * tRPCクライアント作成ヘルパー
@@ -7,7 +9,7 @@ import type { TrpcClientConfig } from '../types/trpc';
  */
 export function createTrpcClient<TAppRouter>(
   config: TrpcClientConfig<TAppRouter> = {}
-): CreateTRPCClient<TAppRouter> {
+): TRPCClient<TAppRouter> {
   const { url = '/api/trpc', transformer } = config;
   
   return createTRPCProxyClient<TAppRouter>({

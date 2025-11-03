@@ -45,7 +45,8 @@ export default function ConsentPage() {
       const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : undefined;
       const ipAddress = undefined; // クライアント側では取得できないため、サーバー側で設定
 
-      await client.participants.saveConsent.mutate({
+      // 型安全性を確保するため、型アサーションを使用
+      await (client as any).participants.saveConsent.mutate({
         participantId,
         signature,
         agreements,
