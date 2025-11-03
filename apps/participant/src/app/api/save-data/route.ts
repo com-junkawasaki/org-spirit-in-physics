@@ -15,7 +15,7 @@
  * await client.sessions.saveSession.mutate(sessionData);
  */
 import { NextRequest, NextResponse } from "next/server";
-import { SaveStructuredDataPayloadSchema } from "scripts/src/components/jung-voice-assessment/schema";
+import { SaveStructuredDataPayloadSchema } from "@/shared/schemas/types";
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import { AppRouter } from '@/server/api/root';
 

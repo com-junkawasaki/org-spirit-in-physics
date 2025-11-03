@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from 'scripts/src/components/ui/button';
+import { Button } from '@spiritinphysics/components';
 
 export default function HomePage() {
   return (
