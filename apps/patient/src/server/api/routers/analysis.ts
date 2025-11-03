@@ -12,7 +12,7 @@ export const analysisRouter = router({
 
       // 分析パイプラインを実行
       try {
-        const { analyzeParticipantResponses } = await import('../../../../scripts/src/lib/workflows/analysis-pipeline.js');
+        const { analyzeParticipantResponses } = await import('../../../../scripts/src/lib/workflows/analysis-pipeline');
         await analyzeParticipantResponses(participantId);
         return {
           success: true,
@@ -30,7 +30,7 @@ export const analysisRouter = router({
    */
   analyzeAll: publicProcedure.mutation(async ({ ctx }) => {
     try {
-      const { analyzeAllParticipants } = await import('../../../../scripts/src/lib/workflows/analysis-pipeline.js');
+      const { analyzeAllParticipants } = await import('../../../../scripts/src/lib/workflows/analysis-pipeline');
       await analyzeAllParticipants();
       return {
         success: true,

@@ -196,7 +196,6 @@ function processHumePredictions(predictions: any): Array<{
 export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): Promise<void> {
   try {
     // Supabaseに直接保存（ファイルシステム依存を削除）
-    const { supabaseManager } = await import('./database/supabase-manager.js');
     // EmotionAnalysisResultをEmotionAnalysis形式に変換
     await supabaseManager.saveEmotionAnalysis({
       id: `${result.participantId}_${result.videoFile}_${Date.now()}`,
@@ -220,7 +219,6 @@ export async function loadEmotionAnalysisResults(participantId: string): Promise
   try {
     // storageAdapter経由でNeo4jから感情分析データを取得
     // Supabaseから直接読み込み（storageAdapterは非推奨）
-    const { supabaseManager } = await import('./database/supabase-manager.js');
     const emotionAnalysis = await supabaseManager.getEmotionAnalysis(participantId);
     return emotionAnalysis.map(sa => ({
       participantId: sa.participantId,
@@ -309,7 +307,6 @@ export async function getEmotionStatisticsFromNeo4j(): Promise<{
 }> {
     try {
       // Supabaseマネージャーを使用
-      const { supabaseManager } = await import('./database/supabase-manager.ts');
       return await supabaseManager.getEmotionStatistics();
   } catch (error) {
     console.error('Error getting emotion statistics from Supabase:', error);

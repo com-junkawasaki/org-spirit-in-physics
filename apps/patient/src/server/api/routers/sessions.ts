@@ -149,7 +149,7 @@ export const sessionsRouter = router({
 
       // 分析パイプラインを実行（非同期、エラーはログのみ）
       try {
-        const { analyzeParticipantResponses } = await import('../../../../scripts/src/lib/workflows/analysis-pipeline.js');
+        const { analyzeParticipantResponses } = await import('../../../../scripts/src/lib/workflows/analysis-pipeline');
         analyzeParticipantResponses(participantId).catch((error) => {
           console.error('Analysis pipeline error (non-blocking):', error);
         });

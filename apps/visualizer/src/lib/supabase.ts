@@ -131,6 +131,7 @@ class SupabaseClientWrapper {
 
   /**
    * Merkle DAG: 参加者一覧の取得（統計情報付き）
+   * participant_summaryビューが存在しない場合は、participantsテーブルから直接取得して統計を計算
    */
   async getParticipants(): Promise<any[]> {
     try {
@@ -141,6 +142,11 @@ class SupabaseClientWrapper {
         .order('last_activity', { ascending: false });
 
       if (error) {
+        // PGRST205エラー（テーブル/ビューが見つからない）の場合はフォールバック
+        if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
+          console.warn('participant_summary view not found, falling back to direct table queries');
+          return await this.getParticipantsFallback();
+        }
         throw error;
       }
 
@@ -153,6 +159,102 @@ class SupabaseClientWrapper {
       }));
     } catch (error) {
       console.error('Error in getParticipants:', error);
+      // エラーが発生した場合もフォールバックを試行
+      try {
+        return await this.getParticipantsFallback();
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        return [];
+      }
+    }
+  }
+
+  /**
+   * Merkle DAG: 参加者一覧の取得（フォールバック処理）
+   * participant_summaryビューが存在しない場合、participantsテーブルから直接取得して統計を計算
+   */
+  private async getParticipantsFallback(): Promise<any[]> {
+    try {
+      // participantsテーブルから全参加者を取得
+      const { data: participants, error: participantsError } = await this.client
+        .from('participants')
+        .select('id, created_at')
+        .order('created_at', { ascending: false });
+
+      if (participantsError || !participants) {
+        console.error('Failed to fetch participants:', participantsError);
+        return [];
+      }
+
+      // 各参加者の統計情報を並列で取得
+      const participantsWithStats = await Promise.all(
+        participants.map(async (participant: any) => {
+          const participantId = participant.id;
+
+          // セッション数を取得
+          const { count: sessionCount } = await this.client
+            .from('participant_experiment_sessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('participant_id', participantId);
+
+          // レスポンス数を取得
+          const { count: responseCount } = await this.client
+            .from('participant_response_data')
+            .select('*', { count: 'exact', head: true })
+            .eq('participant_id', participantId);
+
+          // 平均spirit_probabilityを取得
+          const { data: analysisResults } = await this.client
+            .from('participant_analysis_results')
+            .select('spirit_probability, created_at')
+            .eq('participant_id', participantId);
+
+          const averageSpiritProbability =
+            analysisResults && analysisResults.length > 0
+              ? analysisResults.reduce((sum: number, r: any) => sum + (Number(r.spirit_probability) || 0), 0) /
+                analysisResults.length
+              : 0;
+
+          // 最後の活動日時を取得（セッションまたは分析結果の最新日時）
+          const { data: lastSessionData } = await this.client
+            .from('participant_experiment_sessions')
+            .select('start_time')
+            .eq('participant_id', participantId)
+            .order('start_time', { ascending: false })
+            .limit(1);
+
+          const lastSession = lastSessionData && lastSessionData.length > 0 ? lastSessionData[0] : null;
+
+          const lastActivity =
+            lastSession?.start_time ||
+            (analysisResults && analysisResults.length > 0
+              ? analysisResults.reduce((latest: string | null, r: any) => {
+                  if (!latest || (r.created_at && r.created_at > latest)) {
+                    return r.created_at;
+                  }
+                  return latest;
+                }, null as string | null)
+              : null) ||
+            participant.created_at;
+
+          return {
+            participant_id: participantId,
+            session_count: sessionCount || 0,
+            total_responses: responseCount || 0,
+            average_spirit_probability: averageSpiritProbability,
+            last_activity: lastActivity,
+          };
+        })
+      );
+
+      // last_activityでソート
+      return participantsWithStats.sort((a, b) => {
+        const aTime = a.last_activity ? new Date(a.last_activity).getTime() : 0;
+        const bTime = b.last_activity ? new Date(b.last_activity).getTime() : 0;
+        return bTime - aTime;
+      });
+    } catch (error) {
+      console.error('Error in getParticipantsFallback:', error);
       return [];
     }
   }

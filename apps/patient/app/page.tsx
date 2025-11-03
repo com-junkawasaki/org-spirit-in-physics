@@ -13,9 +13,6 @@ export default function HomePage() {
           </span>
         </h1>
         <div className="flex flex-col space-y-4 items-center">
-          <Link href="/admin" passHref>
-            <Button variant="outline" className="w-64 h-16 text-lg font-semibold">管理者画面</Button>
-          </Link>
           <Link href="/steps/1" passHref>
             <Button className="w-64 h-16 text-lg font-semibold">被験者画面</Button>
           </Link>

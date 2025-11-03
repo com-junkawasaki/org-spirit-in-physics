@@ -212,7 +212,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
         try {
             // tRPC Vanilla Clientを使用（Zustandストアから呼び出すため）
             const { createTRPCProxyClient, httpBatchLink } = await import('@trpc/client');
-            const { appRouter } = await import('../../../../src/server/api/root.js');
+            const { appRouter } = await import('../../../../src/server/api/root');
             type AppRouterType = typeof appRouter;
             
             const client = createTRPCProxyClient<AppRouterType>({
@@ -263,7 +263,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
             try {
                 // tRPC Vanilla Clientを使用（Zustandストアから呼び出すため）
                 const { createTRPCProxyClient, httpBatchLink } = await import('@trpc/client');
-                const { appRouter } = await import('../../../../src/server/api/root.js');
+                const { appRouter } = await import('../../../../src/server/api/root');
                 type AppRouterType = typeof appRouter;
                 
                 const client = createTRPCProxyClient<AppRouterType>({
