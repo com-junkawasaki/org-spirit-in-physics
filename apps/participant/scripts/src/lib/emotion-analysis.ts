@@ -1,7 +1,7 @@
 import { HumeClient } from 'hume';
 import { writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { supabaseManager } from './database/supabase-manager';
+import { supabaseManager } from '@spiritinphysics/database';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;

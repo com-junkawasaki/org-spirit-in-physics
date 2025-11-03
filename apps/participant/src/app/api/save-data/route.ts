@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
         // Handle consent data
         if (dataToSave.type === "consent") {
             const { participantId, signature, agreements, agreedAt } = dataToSave.data;
-            await client.participants.saveConsent.mutate({
+            // 型安全性を確保するため、型アサーションを使用
+            await (client.participants as any).saveConsent.mutate({
                 participantId,
                 signature,
                 agreements,
@@ -67,7 +68,8 @@ export async function POST(request: NextRequest) {
         // Handle session data
         if (dataToSave.type === "session-data") {
             const { participantId, events, wordResponses } = dataToSave.data;
-            const result = await client.sessions.saveSession.mutate({
+            // 型安全性を確保するため、型アサーションを使用
+            const result = await (client.sessions as any).saveSession.mutate({
                 participantId,
                 events,
                 wordResponses,

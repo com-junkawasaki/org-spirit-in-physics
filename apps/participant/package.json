@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@spiritinphysics/components": "workspace:*",
+    "@spiritinphysics/database": "workspace:*",
+    "@spiritinphysics/supabase": "workspace:*",
     "@spiritinphysics/trpc-routers": "workspace:*",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-dialog": "^1.1.15",

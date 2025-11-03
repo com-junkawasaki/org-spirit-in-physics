@@ -1,26 +1,9 @@
-import { serve } from 'inngest/next';
-import { inngest } from './inngest';
-import {
-  videoAnalysisWorkflow,
-  videoAnalysisFailureWorkflow,
-  resultsProcessingWorkflow
-} from './workflows/video-analysis';
-import {
-  batchAnalysisWorkflow,
-  batchAnalysisFailureWorkflow
-} from './workflows/batch-analysis';
+// Merkle DAG: inngest_config -> workflow_server (deprecated)
+// このファイルは非推奨です。ワークフローはapps/researcher側で管理されます。
+// ビルドから除外するため、エクスポートを無効化
 
-// 全ワークフローの統合（Inngest v3形式）
-export default serve({
-  client: inngest,
-  functions: [
-    // 動画分析ワークフロー
-    videoAnalysisWorkflow,
-    videoAnalysisFailureWorkflow,
-    resultsProcessingWorkflow,
+// import { serve } from 'inngest/next';
+// import { inngest } from './inngest';
+// ワークフローはapps/researcher側で管理されるため、このファイルは使用されません
 
-    // バッチ分析ワークフロー
-    batchAnalysisWorkflow,
-    batchAnalysisFailureWorkflow,
-  ],
-});
+export default null;

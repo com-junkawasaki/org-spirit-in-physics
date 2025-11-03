@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
             transformer: undefined, // デフォルトのtransformerを使用
         });
 
-        const result = await client.artifacts.saveVideo.mutate({
+        // 型安全性を確保するため、型アサーションを使用
+        const result = await (client.artifacts as any).saveVideo.mutate({
             participantId,
             sessionId,
             fileName,

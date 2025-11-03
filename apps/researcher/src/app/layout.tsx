@@ -1,5 +1,5 @@
 import { Inter } from 'next/font/google'
-import './globals.ts'
+import './globals.css'
 import { SidebarProvider } from '@/contexts/SidebarContext'
 import { Sidebar } from '@/components/Sidebar'
 import { Header } from '@/components/Header'

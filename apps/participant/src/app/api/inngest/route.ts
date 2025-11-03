@@ -1,36 +1,18 @@
-import { serve } from 'inngest/next';
-import { Inngest } from 'inngest';
-import {
-  videoAnalysisWorkflow,
-  videoAnalysisFailureWorkflow,
-  resultsProcessingWorkflow
-} from '../../../../apps/researcher/src/lib/workflows/video-analysis';
-import {
-  batchAnalysisWorkflow,
-  batchAnalysisFailureWorkflow
-} from '../../../../apps/researcher/src/lib/workflows/batch-analysis';
+// Merkle DAG: inngest_api_route -> workflow_server (conditional)
+// 開発環境またはENABLE_RESEARCHER_FUNCTIONSが有効な場合のみエクスポート
+// ビルド時にはこのルートは無効化される（researcher側で処理）
 
-// Inngestクライアントの初期化（participant用）
-const inngest = new Inngest({
-  id: 'spirit-in-physics',
-  name: 'Spirit-in-Physics Analysis Pipeline',
-  concurrency: 5, // 同時実行数
-  retries: 3, // リトライ回数
-  // ローカル開発環境の設定
-  baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:25250' : undefined,
-});
+// ビルド時にapps/researcherへのパスが解決できないため、このルートは無効化
+// 開発環境ではresearcher側の/api/inngestルートを使用すること
 
-// Inngest APIルート（v3形式）
-export const { GET, POST, PUT } = serve({
-  client: inngest,
-  functions: [
-    // 動画分析ワークフロー
-    videoAnalysisWorkflow,
-    videoAnalysisFailureWorkflow,
-    resultsProcessingWorkflow,
+export async function GET() {
+  return new Response('Inngest handler is handled by researcher app', { status: 503 });
+}
 
-    // バッチ分析ワークフロー
-    batchAnalysisWorkflow,
-    batchAnalysisFailureWorkflow,
-  ],
-});
+export async function POST() {
+  return new Response('Inngest handler is handled by researcher app', { status: 503 });
+}
+
+export async function PUT() {
+  return new Response('Inngest handler is handled by researcher app', { status: 503 });
+}

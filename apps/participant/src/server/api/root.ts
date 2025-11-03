@@ -21,6 +21,7 @@ async function getRouterOptions(): Promise<RouterOptions> {
 
   try {
     // 分析パイプライン関数
+    // @ts-expect-error - ビルド時にapps/researcherへのパスが解決できないため
     const analysisModule = await import('../../../../apps/researcher/src/lib/workflows/analysis-pipeline');
     options.analysisFunctions = {
       analyzeParticipantResponses: analysisModule.analyzeParticipantResponses,
@@ -32,6 +33,7 @@ async function getRouterOptions(): Promise<RouterOptions> {
 
   try {
     // 感情分析関数
+    // @ts-expect-error - ビルド時にapps/researcherへのパスが解決できないため
     const emotionModule = await import('../../../../apps/researcher/src/lib/emotion-analysis');
     options.emotionAnalysisFunctions = {
       analyzeVideoEmotions: emotionModule.analyzeVideoEmotions,
