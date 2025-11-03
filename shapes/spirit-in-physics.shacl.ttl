@@ -21,19 +21,19 @@ spirit:ParticipantApplicationShape a sh:NodeShape ;
         sh:path spirit:hasResponsibility ;
         sh:class spirit:DataCollectionProcess, spirit:DataStorageProcess ;
         sh:minCount 1 ;
-        shacl:message "ParticipantApplication must have at least one responsibility"@en ;
+        sh:message "ParticipantApplication must have at least one responsibility"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasPermission ;
         sh:class spirit:ParticipantWritePermission ;
         sh:minCount 1 ;
-        shacl:message "ParticipantApplication must have write permission"@en ;
+        sh:message "ParticipantApplication must have write permission"@en ;
     ] ;
     sh:property [
         sh:path spirit:produces ;
         sh:class spirit:SessionEvent, spirit:WordResponse, spirit:ConsentData ;
         sh:minCount 1 ;
-        shacl:message "ParticipantApplication must produce at least one data type"@en ;
+        sh:message "ParticipantApplication must produce at least one data type"@en ;
     ] .
 
 # ============================================================================
@@ -48,25 +48,25 @@ spirit:ResearcherApplicationShape a shacl:NodeShape ;
         sh:path spirit:hasResponsibility ;
         sh:class spirit:VisualizationProcess, spirit:AnalysisProcess, spirit:TimelineIntegrationProcess ;
         sh:minCount 1 ;
-        shacl:message "ResearcherApplication must have at least one responsibility"@en ;
+        sh:message "ResearcherApplication must have at least one responsibility"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasPermission ;
         sh:class spirit:ResearcherReadPermission, spirit:ResearcherWritePermission ;
         sh:minCount 1 ;
-        shacl:message "ResearcherApplication must have read and/or write permission"@en ;
+        sh:message "ResearcherApplication must have read and/or write permission"@en ;
     ] ;
     sh:property [
         sh:path spirit:consumes ;
         sh:class spirit:SessionEvent, spirit:WordResponse, spirit:EmotionData ;
         sh:minCount 1 ;
-        shacl:message "ResearcherApplication must consume at least one data type"@en ;
+        sh:message "ResearcherApplication must consume at least one data type"@en ;
     ] ;
     sh:property [
         sh:path spirit:produces ;
         sh:class spirit:AnalysisResult, spirit:TimelineData ;
         sh:minCount 1 ;
-        shacl:message "ResearcherApplication must produce at least one data type"@en ;
+        sh:message "ResearcherApplication must produce at least one data type"@en ;
     ] .
 
 # ============================================================================
@@ -82,25 +82,25 @@ spirit:AnalysisPipelineShape a shacl:NodeShape ;
         sh:class spirit:AnalysisProcess ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        shacl:message "AnalysisPipeline must have exactly one AnalysisProcess responsibility"@en ;
+        sh:message "AnalysisPipeline must have exactly one AnalysisProcess responsibility"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasPermission ;
         sh:class spirit:AnalysisPipelineReadPermission, spirit:AnalysisPipelineWritePermission ;
         sh:minCount 2 ;
-        shacl:message "AnalysisPipeline must have both read and write permissions"@en ;
+        sh:message "AnalysisPipeline must have both read and write permissions"@en ;
     ] ;
     sh:property [
         sh:path spirit:consumes ;
         sh:class spirit:WordResponse ;
         sh:minCount 1 ;
-        shacl:message "AnalysisPipeline must consume WordResponse data"@en ;
+        sh:message "AnalysisPipeline must consume WordResponse data"@en ;
     ] ;
     sh:property [
         sh:path spirit:produces ;
         sh:class spirit:AnalysisResult ;
         sh:minCount 1 ;
-        shacl:message "AnalysisPipeline must produce AnalysisResult data"@en ;
+        sh:message "AnalysisPipeline must produce AnalysisResult data"@en ;
     ] .
 
 # ============================================================================
@@ -115,14 +115,14 @@ spirit:TimelineDataFlowShape a shacl:NodeShape ;
         sh:path spirit:hasInput ;
         sh:class spirit:SessionEvent, spirit:EmotionData, spirit:PhysiologicalData ;
         sh:minCount 1 ;
-        shacl:message "TimelineDataFlow must have at least one input"@en ;
+        sh:message "TimelineDataFlow must have at least one input"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasOutput ;
         sh:class spirit:TimelineData ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        shacl:message "TimelineDataFlow must have exactly one TimelineData output"@en ;
+        sh:message "TimelineDataFlow must have exactly one TimelineData output"@en ;
     ] .
 
 # ============================================================================
@@ -138,41 +138,41 @@ spirit:TimelineDataShape a shacl:NodeShape ;
         sh:datatype xsd:dateTime ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        shacl:message "TimelineData must have exactly one timestamp"@en ;
+        sh:message "TimelineData must have exactly one timestamp"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasWord ;
         sh:datatype xsd:string ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        shacl:message "TimelineData must have exactly one word"@en ;
+        sh:message "TimelineData must have exactly one word"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasEventType ;
         sh:datatype xsd:string ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        shacl:message "TimelineData must have exactly one eventType"@en ;
+        sh:message "TimelineData must have exactly one eventType"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasEmotions ;
         sh:class spirit:EmotionDetail ;
         sh:minCount 0 ;
-        shacl:message "TimelineData may have emotion details"@en ;
+        sh:message "TimelineData may have emotion details"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasPhysiological ;
         sh:class spirit:PhysiologicalValues ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
-        shacl:message "TimelineData may have physiological values"@en ;
+        sh:message "TimelineData may have physiological values"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasReactionValue ;
         sh:datatype xsd:double ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
-        shacl:message "TimelineData may have reaction value"@en ;
+        sh:message "TimelineData may have reaction value"@en ;
     ] .
 
 # ============================================================================
@@ -188,7 +188,7 @@ spirit:EmotionDetailShape a shacl:NodeShape ;
         sh:datatype xsd:string ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        shacl:message "EmotionDetail must have exactly one emotion name"@en ;
+        sh:message "EmotionDetail must have exactly one emotion name"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasEmotionScore ;
@@ -197,15 +197,15 @@ spirit:EmotionDetailShape a shacl:NodeShape ;
         sh:maxCount 1 ;
         sh:minInclusive 0.0 ;
         sh:maxInclusive 1.0 ;
-        shacl:message "EmotionDetail must have exactly one emotion score between 0.0 and 1.0"@en ;
+        sh:message "EmotionDetail must have exactly one emotion score between 0.0 and 1.0"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasFileType ;
         sh:datatype xsd:string ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
-        shacl:in ("burst" "face" "language" "prosody") ;
-        shacl:message "EmotionDetail fileType must be one of: burst, face, language, prosody"@en ;
+        sh:in ("burst" "face" "language" "prosody") ;
+        sh:message "EmotionDetail fileType must be one of: burst, face, language, prosody"@en ;
     ] .
 
 # ============================================================================
@@ -221,26 +221,26 @@ spirit:PhysiologicalValuesShape a shacl:NodeShape ;
         sh:datatype xsd:double ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
-        shacl:message "PhysiologicalValues may have average value"@en ;
+        sh:message "PhysiologicalValues may have average value"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasMaxValue ;
         sh:datatype xsd:double ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
-        shacl:message "PhysiologicalValues may have max value"@en ;
+        sh:message "PhysiologicalValues may have max value"@en ;
     ] ;
     sh:property [
         sh:path spirit:hasMinValue ;
         sh:datatype xsd:double ;
         sh:minCount 0 ;
         sh:maxCount 1 ;
-        shacl:message "PhysiologicalValues may have min value"@ja ;
+        sh:message "PhysiologicalValues may have min value"@ja ;
     ] ;
     sh:property [
         sh:path spirit:hasChannelValues ;
         shacl:nodeKind shacl:IRIOrLiteral ;
         sh:minCount 0 ;
-        shacl:message "PhysiologicalValues may have channel values"@en ;
+        sh:message "PhysiologicalValues may have channel values"@en ;
     ] .
 

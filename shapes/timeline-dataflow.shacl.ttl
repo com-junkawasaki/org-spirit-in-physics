@@ -1,4 +1,5 @@
 @prefix spirit: <https://spirit-in-physics.gftd.ai/ontology#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix shacl: <http://www.w3.org/ns/shacl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -12,43 +13,43 @@
 # TimelineIntegrationProcess形状（詳細）
 # ============================================================================
 
-spirit:TimelineIntegrationProcessShape a shacl:NodeShape ;
-    shacl:targetClass spirit:TimelineIntegrationProcess ;
-    shacl:name "Timeline Integration Process Shape"@en, "時系列統合プロセス形状"@ja ;
-    shacl:description "時系列統合プロセスの詳細形状定義"@ja ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:SessionEvent ;
-        shacl:minCount 1 ;
-        shacl:message "TimelineIntegrationProcess must have at least one SessionEvent input"@en ;
+spirit:TimelineIntegrationProcessShape a sh:NodeShape ;
+    sh:targetClass spirit:TimelineIntegrationProcess ;
+    sh:name "Timeline Integration Process Shape"@en, "時系列統合プロセス形状"@ja ;
+    sh:description "時系列統合プロセスの詳細形状定義"@ja ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:SessionEvent ;
+        sh:minCount 1 ;
+        sh:message "TimelineIntegrationProcess must have at least one SessionEvent input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:EmotionData ;
-        shacl:minCount 0 ;
-        shacl:message "TimelineIntegrationProcess may have EmotionData input"@en ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:EmotionData ;
+        sh:minCount 0 ;
+        sh:message "TimelineIntegrationProcess may have EmotionData input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:PhysiologicalData ;
-        shacl:minCount 0 ;
-        shacl:message "TimelineIntegrationProcess may have PhysiologicalData input"@en ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:PhysiologicalData ;
+        sh:minCount 0 ;
+        sh:message "TimelineIntegrationProcess may have PhysiologicalData input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasOutput ;
-        shacl:class spirit:TimelineData ;
-        shacl:minCount 1 ;
-        shacl:maxCount 1 ;
-        shacl:message "TimelineIntegrationProcess must have exactly one TimelineData output"@en ;
+    sh:property [
+        sh:path spirit:hasOutput ;
+        sh:class spirit:TimelineData ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "TimelineIntegrationProcess must have exactly one TimelineData output"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:transforms ;
-        shacl:class spirit:TimeRangeMatchingTransformation, 
+    sh:property [
+        sh:path spirit:transforms ;
+        sh:class spirit:TimeRangeMatchingTransformation, 
                     spirit:EmotionDataIntegrationTransformation,
                     spirit:PhysiologicalDataIntegrationTransformation,
                     spirit:TimelineDataPointCreationTransformation ;
-        shacl:minCount 1 ;
-        shacl:message "TimelineIntegrationProcess must have at least one transformation"@en ;
+        sh:minCount 1 ;
+        sh:message "TimelineIntegrationProcess must have at least one transformation"@en ;
     ] .
 
 # ============================================================================
@@ -56,40 +57,40 @@ spirit:TimelineIntegrationProcessShape a shacl:NodeShape ;
 # ============================================================================
 
 spirit:TimeRangeMatchingTransformationShape a shacl:NodeShape ;
-    shacl:targetClass spirit:TimeRangeMatchingTransformation ;
-    shacl:name "Time Range Matching Transformation Shape"@en, "時間範囲マッチング変換形状"@ja ;
-    shacl:description "時間範囲マッチング変換の形状定義"@ja ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:SessionEvent, spirit:EmotionData ;
-        shacl:minCount 2 ;
-        shacl:message "TimeRangeMatchingTransformation must have SessionEvent and EmotionData inputs"@en ;
+    sh:targetClass spirit:TimeRangeMatchingTransformation ;
+    sh:name "Time Range Matching Transformation Shape"@en, "時間範囲マッチング変換形状"@ja ;
+    sh:description "時間範囲マッチング変換の形状定義"@ja ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:SessionEvent, spirit:EmotionData ;
+        sh:minCount 2 ;
+        sh:message "TimeRangeMatchingTransformation must have SessionEvent and EmotionData inputs"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasOutput ;
-        shacl:nodeKind shacl:IRIOrLiteral ;
-        shacl:minCount 1 ;
-        shacl:message "TimeRangeMatchingTransformation must have output"@en ;
+    sh:property [
+        sh:path spirit:hasOutput ;
+        sh:nodeKind shacl:IRIOrLiteral ;
+        sh:minCount 1 ;
+        sh:message "TimeRangeMatchingTransformation must have output"@en ;
     ] .
 
 # 時間範囲マッチング条件の検証
 spirit:TimeRangeMatchingConditionShape a shacl:NodeShape ;
-    shacl:targetClass spirit:timeRangeMatchingCondition ;
-    shacl:name "Time Range Matching Condition Shape"@en, "時間範囲マッチング条件形状"@ja ;
-    shacl:description "時間範囲マッチング条件: emotion.beginTime <= relativeTimestamp <= emotion.endTime"@ja ;
-    shacl:property [
-        shacl:path ( spirit:hasBeginTime | spirit:hasStartTime ) ;
-        shacl:datatype xsd:double ;
-        shacl:minCount 1 ;
-        shacl:maxCount 1 ;
-        shacl:message "TimeRangeMatchingCondition must have beginTime"@en ;
+    sh:targetClass spirit:timeRangeMatchingCondition ;
+    sh:name "Time Range Matching Condition Shape"@en, "時間範囲マッチング条件形状"@ja ;
+    sh:description "時間範囲マッチング条件: emotion.beginTime <= relativeTimestamp <= emotion.endTime"@ja ;
+    sh:property [
+        sh:path ( spirit:hasBeginTime | spirit:hasStartTime ) ;
+        sh:datatype xsd:double ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "TimeRangeMatchingCondition must have beginTime"@en ;
     ] ;
-    shacl:property [
-        shacl:path ( spirit:hasEndTime | spirit:hasFinishTime ) ;
-        shacl:datatype xsd:double ;
-        shacl:minCount 1 ;
-        shacl:maxCount 1 ;
-        shacl:message "TimeRangeMatchingCondition must have endTime"@en ;
+    sh:property [
+        sh:path ( spirit:hasEndTime | spirit:hasFinishTime ) ;
+        sh:datatype xsd:double ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "TimeRangeMatchingCondition must have endTime"@en ;
     ] .
 
 # ============================================================================
@@ -97,20 +98,20 @@ spirit:TimeRangeMatchingConditionShape a shacl:NodeShape ;
 # ============================================================================
 
 spirit:EmotionDataIntegrationTransformationShape a shacl:NodeShape ;
-    shacl:targetClass spirit:EmotionDataIntegrationTransformation ;
-    shacl:name "Emotion Data Integration Transformation Shape"@en, "感情データ統合変換形状"@ja ;
-    shacl:description "感情データ統合変換の形状定義"@ja ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:EmotionData ;
-        shacl:minCount 1 ;
-        shacl:message "EmotionDataIntegrationTransformation must have EmotionData input"@en ;
+    sh:targetClass spirit:EmotionDataIntegrationTransformation ;
+    sh:name "Emotion Data Integration Transformation Shape"@en, "感情データ統合変換形状"@ja ;
+    sh:description "感情データ統合変換の形状定義"@ja ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:EmotionData ;
+        sh:minCount 1 ;
+        sh:message "EmotionDataIntegrationTransformation must have EmotionData input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasOutput ;
-        shacl:class spirit:EmotionDetail ;
-        shacl:minCount 1 ;
-        shacl:message "EmotionDataIntegrationTransformation must produce EmotionDetail array"@en ;
+    sh:property [
+        sh:path spirit:hasOutput ;
+        sh:class spirit:EmotionDetail ;
+        sh:minCount 1 ;
+        sh:message "EmotionDataIntegrationTransformation must produce EmotionDetail array"@en ;
     ] .
 
 # ============================================================================
@@ -118,20 +119,20 @@ spirit:EmotionDataIntegrationTransformationShape a shacl:NodeShape ;
 # ============================================================================
 
 spirit:PhysiologicalDataIntegrationTransformationShape a shacl:NodeShape ;
-    shacl:targetClass spirit:PhysiologicalDataIntegrationTransformation ;
-    shacl:name "Physiological Data Integration Transformation Shape"@en, "生理データ統合変換形状"@ja ;
-    shacl:description "生理データ統合変換の形状定義"@ja ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:PhysiologicalData ;
-        shacl:minCount 1 ;
-        shacl:message "PhysiologicalDataIntegrationTransformation must have PhysiologicalData input"@en ;
+    sh:targetClass spirit:PhysiologicalDataIntegrationTransformation ;
+    sh:name "Physiological Data Integration Transformation Shape"@en, "生理データ統合変換形状"@ja ;
+    sh:description "生理データ統合変換の形状定義"@ja ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:PhysiologicalData ;
+        sh:minCount 1 ;
+        sh:message "PhysiologicalDataIntegrationTransformation must have PhysiologicalData input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasOutput ;
-        shacl:class spirit:PhysiologicalValues ;
-        shacl:minCount 1 ;
-        shacl:message "PhysiologicalDataIntegrationTransformation must produce PhysiologicalValues object"@en ;
+    sh:property [
+        sh:path spirit:hasOutput ;
+        sh:class spirit:PhysiologicalValues ;
+        sh:minCount 1 ;
+        sh:message "PhysiologicalDataIntegrationTransformation must produce PhysiologicalValues object"@en ;
     ] .
 
 # ============================================================================
@@ -139,33 +140,33 @@ spirit:PhysiologicalDataIntegrationTransformationShape a shacl:NodeShape ;
 # ============================================================================
 
 spirit:TimelineDataPointCreationTransformationShape a shacl:NodeShape ;
-    shacl:targetClass spirit:TimelineDataPointCreationTransformation ;
-    shacl:name "Timeline Data Point Creation Transformation Shape"@en, "時系列データポイント作成変換形状"@ja ;
-    shacl:description "時系列データポイント作成変換の形状定義"@ja ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:SessionEvent ;
-        shacl:minCount 1 ;
-        shacl:message "TimelineDataPointCreationTransformation must have SessionEvent input"@en ;
+    sh:targetClass spirit:TimelineDataPointCreationTransformation ;
+    sh:name "Timeline Data Point Creation Transformation Shape"@en, "時系列データポイント作成変換形状"@ja ;
+    sh:description "時系列データポイント作成変換の形状定義"@ja ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:SessionEvent ;
+        sh:minCount 1 ;
+        sh:message "TimelineDataPointCreationTransformation must have SessionEvent input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:EmotionDetail ;
-        shacl:minCount 0 ;
-        shacl:message "TimelineDataPointCreationTransformation may have EmotionDetail input"@en ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:EmotionDetail ;
+        sh:minCount 0 ;
+        sh:message "TimelineDataPointCreationTransformation may have EmotionDetail input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:class spirit:PhysiologicalValues ;
-        shacl:minCount 0 ;
-        shacl:message "TimelineDataPointCreationTransformation may have PhysiologicalValues input"@en ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:class spirit:PhysiologicalValues ;
+        sh:minCount 0 ;
+        sh:message "TimelineDataPointCreationTransformation may have PhysiologicalValues input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasOutput ;
-        shacl:class spirit:TimelineData ;
-        shacl:minCount 1 ;
-        shacl:maxCount 1 ;
-        shacl:message "TimelineDataPointCreationTransformation must produce exactly one TimelineData"@en ;
+    sh:property [
+        sh:path spirit:hasOutput ;
+        sh:class spirit:TimelineData ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "TimelineDataPointCreationTransformation must produce exactly one TimelineData"@en ;
     ] .
 
 # ============================================================================
@@ -173,13 +174,13 @@ spirit:TimelineDataPointCreationTransformationShape a shacl:NodeShape ;
 # ============================================================================
 
 spirit:SupabaseToResearcherTimelineFlowShape a shacl:NodeShape ;
-    shacl:targetClass spirit:SupabaseToResearcherTimelineFlow ;
-    shacl:name "Supabase to Researcher Timeline Flow Shape"@en, "Supabaseから研究者タイムラインへのフロー形状"@ja ;
-    shacl:description "Supabaseから3D-Force-Timelineへのデータフローの形状定義"@ja ;
-    shacl:property [
-        shacl:path spirit:hasInput ;
-        shacl:nodeKind shacl:IRIOrLiteral ;
-        shacl:in ([ a owl:NamedIndividual ; 
+    sh:targetClass spirit:SupabaseToResearcherTimelineFlow ;
+    sh:name "Supabase to Researcher Timeline Flow Shape"@en, "Supabaseから研究者タイムラインへのフロー形状"@ja ;
+    sh:description "Supabaseから3D-Force-Timelineへのデータフローの形状定義"@ja ;
+    sh:property [
+        sh:path spirit:hasInput ;
+        sh:nodeKind shacl:IRIOrLiteral ;
+        sh:in ([ a owl:NamedIndividual ; 
                     rdfs:label "participant_session_events table"@en ;
                     rdf:type owl:NamedIndividual ]
                   [ a owl:NamedIndividual ; 
@@ -188,17 +189,17 @@ spirit:SupabaseToResearcherTimelineFlowShape a shacl:NodeShape ;
                   [ a owl:NamedIndividual ; 
                     rdfs:label "response_skin_potential_timeseries table"@en ;
                     rdf:type owl:NamedIndividual ]) ;
-        shacl:minCount 1 ;
-        shacl:message "SupabaseToResearcherTimelineFlow must have at least one Supabase table input"@en ;
+        sh:minCount 1 ;
+        sh:message "SupabaseToResearcherTimelineFlow must have at least one Supabase table input"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasOutput ;
-        shacl:hasValue [ a owl:NamedIndividual ; 
+    sh:property [
+        sh:path spirit:hasOutput ;
+        sh:hasValue [ a owl:NamedIndividual ; 
                         rdfs:label "3D Force Timeline Visualization"@en ;
                         rdf:type owl:NamedIndividual ] ;
-        shacl:minCount 1 ;
-        shacl:maxCount 1 ;
-        shacl:message "SupabaseToResearcherTimelineFlow must produce 3D Force Timeline Visualization"@en ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "SupabaseToResearcherTimelineFlow must produce 3D Force Timeline Visualization"@en ;
     ] .
 
 # ============================================================================
@@ -206,40 +207,40 @@ spirit:SupabaseToResearcherTimelineFlowShape a shacl:NodeShape ;
 # ============================================================================
 
 spirit:ProcessExecutionOrderShape a shacl:NodeShape ;
-    shacl:targetClass spirit:Process ;
-    shacl:name "Process Execution Order Shape"@en, "プロセス実行順序形状"@ja ;
-    shacl:description "プロセスの実行順序が正しいことを検証"@ja ;
-    shacl:property [
-        shacl:path spirit:hasPrecedingStep ;
-        shacl:class spirit:Process ;
-        shacl:minCount 0 ;
-        shacl:message "Process may have preceding steps"@en ;
+    sh:targetClass spirit:Process ;
+    sh:name "Process Execution Order Shape"@en, "プロセス実行順序形状"@ja ;
+    sh:description "プロセスの実行順序が正しいことを検証"@ja ;
+    sh:property [
+        sh:path spirit:hasPrecedingStep ;
+        sh:class spirit:Process ;
+        sh:minCount 0 ;
+        sh:message "Process may have preceding steps"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasFollowingStep ;
-        shacl:class spirit:Process ;
-        shacl:minCount 0 ;
-        shacl:message "Process may have following steps"@en ;
+    sh:property [
+        sh:path spirit:hasFollowingStep ;
+        sh:class spirit:Process ;
+        sh:minCount 0 ;
+        sh:message "Process may have following steps"@en ;
     ] .
 
 # TimelineIntegrationProcessの実行順序検証
 spirit:TimelineIntegrationProcessOrderShape a shacl:NodeShape ;
-    shacl:targetClass spirit:TimelineIntegrationProcess ;
-    shacl:name "Timeline Integration Process Order Shape"@en, "時系列統合プロセス順序形状"@ja ;
-    shacl:description "TimelineIntegrationProcessの実行順序を検証"@ja ;
-    shacl:property [
-        shacl:path spirit:hasPrecedingStep ;
-        shacl:class spirit:SessionDataRetrievalStep, 
+    sh:targetClass spirit:TimelineIntegrationProcess ;
+    sh:name "Timeline Integration Process Order Shape"@en, "時系列統合プロセス順序形状"@ja ;
+    sh:description "TimelineIntegrationProcessの実行順序を検証"@ja ;
+    sh:property [
+        sh:path spirit:hasPrecedingStep ;
+        sh:class spirit:SessionDataRetrievalStep, 
                     spirit:EmotionDataRetrievalStep,
                     spirit:PhysiologicalDataRetrievalStep ;
-        shacl:minCount 1 ;
-        shacl:message "TimelineIntegrationProcess must have at least one data retrieval step as preceding step"@en ;
+        sh:minCount 1 ;
+        sh:message "TimelineIntegrationProcess must have at least one data retrieval step as preceding step"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasFollowingStep ;
-        shacl:class spirit:TimelineVisualizationStep ;
-        shacl:minCount 0 ;
-        shacl:maxCount 1 ;
-        shacl:message "TimelineIntegrationProcess may have TimelineVisualizationStep as following step"@en ;
+    sh:property [
+        sh:path spirit:hasFollowingStep ;
+        sh:class spirit:TimelineVisualizationStep ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:message "TimelineIntegrationProcess may have TimelineVisualizationStep as following step"@en ;
     ] .
 

@@ -1,4 +1,5 @@
 @prefix spirit: <https://spirit-in-physics.gftd.ai/ontology#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
 @prefix shacl: <http://www.w3.org/ns/shacl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -51,39 +52,39 @@ spirit:ServiceRolePermission a owl:Class ;
 # ParticipantApplication権限形状
 # ============================================================================
 
-spirit:ParticipantApplicationPermissionShape a shacl:NodeShape ;
-    shacl:targetClass spirit:ParticipantApplication ;
-    shacl:name "Participant Application Permission Shape"@en, "参加者アプリケーション権限形状"@ja ;
-    shacl:description "参加者アプリケーションの権限を定義"@ja ;
-    shacl:property [
-        shacl:path spirit:canWrite ;
-        shacl:class [ a owl:Class ; 
+spirit:ParticipantApplicationPermissionShape a sh:NodeShape ;
+    sh:targetClass spirit:ParticipantApplication ;
+    sh:name "Participant Application Permission Shape"@en, "参加者アプリケーション権限形状"@ja ;
+    sh:description "参加者アプリケーションの権限を定義"@ja ;
+    sh:property [
+        sh:path spirit:canWrite ;
+        sh:class [ a owl:Class ; 
                      rdfs:label "Own Participant Data"@en, "自身の参加者データ"@ja ;
                      rdfs:comment "自身のparticipant_idのみ書き込み可能"@ja ] ;
-        shacl:minCount 1 ;
-        shacl:message "ParticipantApplication must have write permission for own data only"@en ;
+        sh:minCount 1 ;
+        sh:message "ParticipantApplication must have write permission for own data only"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:canRead ;
-        shacl:class [ a owl:Class ; 
+    sh:property [
+        sh:path spirit:canRead ;
+        sh:class [ a owl:Class ; 
                      rdfs:label "Own Participant Data"@en, "自身の参加者データ"@ja ;
                      rdfs:comment "自身のparticipant_idのみ読み取り可能"@ja ] ;
-        shacl:minCount 1 ;
-        shacl:message "ParticipantApplication must have read permission for own data only"@en ;
+        sh:minCount 1 ;
+        sh:message "ParticipantApplication must have read permission for own data only"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasPermission ;
-        shacl:class spirit:ParticipantWritePermission, spirit:ParticipantReadPermission ;
-        shacl:minCount 2 ;
-        shacl:message "ParticipantApplication must have both read and write permissions"@en ;
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:class spirit:ParticipantWritePermission, spirit:ParticipantReadPermission ;
+        sh:minCount 2 ;
+        sh:message "ParticipantApplication must have both read and write permissions"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasPermission ;
-        shacl:hasValue [ a owl:NamedIndividual ; 
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:hasValue [ a owl:NamedIndividual ; 
                         rdfs:label "RLS Policy: Users can insert their own *"@en ;
                         rdf:type owl:NamedIndividual ] ;
-        shacl:minCount 1 ;
-        shacl:message "ParticipantApplication must comply with RLS policy: Users can insert their own *"@en ;
+        sh:minCount 1 ;
+        sh:message "ParticipantApplication must comply with RLS policy: Users can insert their own *"@en ;
     ] .
 
 # ============================================================================
@@ -91,38 +92,38 @@ spirit:ParticipantApplicationPermissionShape a shacl:NodeShape ;
 # ============================================================================
 
 spirit:ResearcherApplicationPermissionShape a shacl:NodeShape ;
-    shacl:targetClass spirit:ResearcherApplication ;
-    shacl:name "Researcher Application Permission Shape"@en, "研究者アプリケーション権限形状"@ja ;
-    shacl:description "研究者アプリケーションの権限を定義"@ja ;
-    shacl:property [
-        shacl:path spirit:canRead ;
-        shacl:class [ a owl:Class ; 
+    sh:targetClass spirit:ResearcherApplication ;
+    sh:name "Researcher Application Permission Shape"@en, "研究者アプリケーション権限形状"@ja ;
+    sh:description "研究者アプリケーションの権限を定義"@ja ;
+    sh:property [
+        sh:path spirit:canRead ;
+        sh:class [ a owl:Class ; 
                      rdfs:label "All Participant Data"@en, "全参加者データ"@ja ;
                      rdfs:comment "全participant_idのデータを読み取り可能"@ja ] ;
-        shacl:minCount 1 ;
-        shacl:message "ResearcherApplication must have read permission for all participant data"@en ;
+        sh:minCount 1 ;
+        sh:message "ResearcherApplication must have read permission for all participant data"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:canWrite ;
-        shacl:class [ a owl:Class ; 
+    sh:property [
+        sh:path spirit:canWrite ;
+        sh:class [ a owl:Class ; 
                      rdfs:label "Analysis Results Only"@en, "解析結果のみ"@ja ;
                      rdfs:comment "participant_analysis_resultsテーブルのみ書き込み可能"@ja ] ;
-        shacl:minCount 0 ;
-        shacl:maxCount 1 ;
-        shacl:message "ResearcherApplication may have write permission for analysis results only"@en ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:message "ResearcherApplication may have write permission for analysis results only"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasPermission ;
-        shacl:class spirit:ResearcherReadPermission, spirit:ResearcherWritePermission, spirit:ServiceRolePermission ;
-        shacl:minCount 1 ;
-        shacl:message "ResearcherApplication must have at least one permission type"@en ;
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:class spirit:ResearcherReadPermission, spirit:ResearcherWritePermission, spirit:ServiceRolePermission ;
+        sh:minCount 1 ;
+        sh:message "ResearcherApplication must have at least one permission type"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasPermission ;
-        shacl:hasValue [ a owl:NamedIndividual ; 
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:hasValue [ a owl:NamedIndividual ; 
                         rdfs:label "Service Role Permission"@en ] ;
-        shacl:minCount 1 ;
-        shacl:message "ResearcherApplication must have service role permission"@en ;
+        sh:minCount 1 ;
+        sh:message "ResearcherApplication must have service role permission"@en ;
     ] .
 
 # ============================================================================
@@ -130,38 +131,38 @@ spirit:ResearcherApplicationPermissionShape a shacl:NodeShape ;
 # ============================================================================
 
 spirit:AnalysisPipelinePermissionShape a shacl:NodeShape ;
-    shacl:targetClass spirit:AnalysisPipeline ;
-    shacl:name "Analysis Pipeline Permission Shape"@en, "解析パイプライン権限形状"@ja ;
-    shacl:description "解析パイプラインの権限を定義"@ja ;
-    shacl:property [
-        shacl:path spirit:canRead ;
-        shacl:class [ a owl:Class ; 
+    sh:targetClass spirit:AnalysisPipeline ;
+    sh:name "Analysis Pipeline Permission Shape"@en, "解析パイプライン権限形状"@ja ;
+    sh:description "解析パイプラインの権限を定義"@ja ;
+    sh:property [
+        sh:path spirit:canRead ;
+        sh:class [ a owl:Class ; 
                      rdfs:label "Participant Response Data"@en, "参加者応答データ"@ja ;
                      rdfs:comment "participant_response_dataテーブル（全participant）を読み取り可能"@ja ] ;
-        shacl:minCount 1 ;
-        shacl:message "AnalysisPipeline must have read permission for participant_response_data"@en ;
+        sh:minCount 1 ;
+        sh:message "AnalysisPipeline must have read permission for participant_response_data"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:canWrite ;
-        shacl:class [ a owl:Class ; 
+    sh:property [
+        sh:path spirit:canWrite ;
+        sh:class [ a owl:Class ; 
                      rdfs:label "Analysis Results"@en, "解析結果"@ja ;
                      rdfs:comment "participant_analysis_resultsテーブル（全participant）に書き込み可能"@ja ] ;
-        shacl:minCount 1 ;
-        shacl:message "AnalysisPipeline must have write permission for participant_analysis_results"@en ;
+        sh:minCount 1 ;
+        sh:message "AnalysisPipeline must have write permission for participant_analysis_results"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasPermission ;
-        shacl:class spirit:AnalysisPipelineReadPermission, spirit:AnalysisPipelineWritePermission, spirit:ServiceRolePermission ;
-        shacl:minCount 2 ;
-        shacl:message "AnalysisPipeline must have both read and write permissions"@en ;
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:class spirit:AnalysisPipelineReadPermission, spirit:AnalysisPipelineWritePermission, spirit:ServiceRolePermission ;
+        sh:minCount 2 ;
+        sh:message "AnalysisPipeline must have both read and write permissions"@en ;
     ] ;
-    shacl:property [
-        shacl:path spirit:hasPermission ;
-        shacl:hasValue [ a owl:NamedIndividual ; 
+    sh:property [
+        sh:path spirit:hasPermission ;
+        sh:hasValue [ a owl:NamedIndividual ; 
                         rdfs:label "Service Role Permission"@en ;
                         rdf:type owl:NamedIndividual ] ;
-        shacl:minCount 1 ;
-        shacl:message "AnalysisPipeline must have service role permission"@en ;
+        sh:minCount 1 ;
+        sh:message "AnalysisPipeline must have service role permission"@en ;
     ] .
 
 # ============================================================================
