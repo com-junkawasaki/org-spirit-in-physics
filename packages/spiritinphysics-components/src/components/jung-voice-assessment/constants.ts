@@ -106,3 +106,47 @@ export const JUNG_TEST_WELCOME_MESSAGE = `
   ユングの言語連想検査へようこそ。この検査は、あなたの「言葉」に対する心理的な連想を探るものです。私が単語を提示しますので、最初に思いついた単語で応答してください。１つの単語に対して、2秒以内を目安に回答してください。回答があった時点で次の単語が提示されます。10秒が過ぎた場合は次の単語が提示されます。セッションは２回行われ、一回のセッションで単語は100個提示されます。
 `;
 
+export const JUNG_TEST_WELCOME_MESSAGE_EN = `
+  Welcome to Jung's Word Association Test. This test explores your psychological associations with words. I will present words to you, and please respond with the first word that comes to mind. Please respond within 2 seconds for each word. Once you respond, the next word will be presented. If 10 seconds pass, the next word will be presented. The test consists of 2 sessions, with 100 words presented in each session.
+`;
+
+/**
+ * 英語名をファイル名に変換する関数
+ * 例: "head" -> "jung_head.mp3", "to sing" -> "jung_to_sing.mp3"
+ */
+export function getEnglishAudioFileName(englishWord: string): string {
+  // スペースと特殊文字をアンダースコアに変換
+  const normalized = englishWord
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_]/g, '');
+  return `jung_${normalized}.mp3`;
+}
+
+/**
+ * キーから英語版音声ファイル名を取得
+ */
+export function getEnglishAudioFileNameByKey(key: string | number): string {
+  const word = JUNG_STIMULUS_WORDS[Number(key) as keyof typeof JUNG_STIMULUS_WORDS];
+  if (!word) {
+    throw new Error(`Word not found for key: ${key}`);
+  }
+  return getEnglishAudioFileName(word.english);
+}
+
+/**
+ * 言語ごとのシステムメッセージファイル名
+ */
+export const SYSTEM_AUDIO_FILES = {
+  ja: {
+    welcome: 'welcome_message.mp3',
+    completion: 'completion_message.mp3',
+    nextWord: 'next_word.mp3',
+  },
+  en: {
+    welcome: 'welcome_message_en.mp3',
+    completion: 'completion_message_en.mp3',
+    nextWord: 'next_word_en.mp3',
+  },
+} as const;
+

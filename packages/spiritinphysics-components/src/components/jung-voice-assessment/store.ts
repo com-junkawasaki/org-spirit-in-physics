@@ -34,6 +34,7 @@ export interface JungVoiceTestProps {
     speechRecognitionLang?: string;
     className?: string;
     onComplete?: () => void;
+    language?: 'ja' | 'en';
 }
 
 export type MediaStatus = 'idle' | 'recording_session' | 'recording_response' | 'processing';
@@ -51,6 +52,7 @@ export interface KawasakiStoreState {
   events: { timestamp: number; type: string; payload?: object }[];
   sessionVideoUrl: string | null;
   participantId: string | null;
+  language: 'ja' | 'en';
   // tRPCクライアント作成関数（外部から注入）
   trpcClientFactory?: <TAppRouter>() => CreateTRPCClient<TAppRouter>;
 }
@@ -71,6 +73,7 @@ export interface KawasakiStoreActions {
   saveSessionVideo: (session: 1 | 2, blob: Blob) => void;
   initializeParticipant: () => void;
   setTrpcClientFactory: <TAppRouter>(factory: () => CreateTRPCClient<TAppRouter>) => void;
+  setLanguage: (language: 'ja' | 'en') => void;
 }
 
 export type KawasakiStore = KawasakiStoreState & KawasakiStoreActions;
@@ -97,6 +100,7 @@ const initialState: KawasakiStoreState = {
   events: [],
   sessionVideoUrl: null,
   participantId: null,
+  language: 'ja',
   trpcClientFactory: undefined,
 };
 
@@ -120,6 +124,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
     setError: (error) => set({ error }),
     setMediaStatus: (status) => set({ mediaStatus: status }),
     setTrpcClientFactory: (factory) => set({ trpcClientFactory: factory }),
+    setLanguage: (language) => set({ language }),
 
     logEvent: (type, payload = {}) => {
         set(state => {

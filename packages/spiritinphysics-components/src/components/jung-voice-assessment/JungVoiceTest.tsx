@@ -5,8 +5,8 @@ import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { useKawasakiStore, JungVoiceTestProps, Word } from './store';
 import AudioVisualizer from './AudioVisualizer';
-import { JUNG_TEST_WELCOME_MESSAGE } from './constants';
-import { getAudioPath } from '../../utils/audio-paths';
+import { JUNG_TEST_WELCOME_MESSAGE, JUNG_TEST_WELCOME_MESSAGE_EN } from './constants';
+import { getWordAudioPath, getSystemAudioPath } from '../../utils/audio-paths';
 
 // --- Memoized, Dumb Sub-components ---
 
@@ -15,8 +15,9 @@ const PreflightScreen = React.memo<{
   stream: MediaStream | null;
   deviceStatus: 'idle' | 'pending' | 'success' | 'error';
   error: string | null;
+  language: 'ja' | 'en';
   onStartSession: () => void;
-}>(({ videoPreviewRef, stream, deviceStatus, error, onStartSession }) => {
+}>(({ videoPreviewRef, stream, deviceStatus, error, language, onStartSession }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
     if (stream && videoPreviewRef.current) {
@@ -42,8 +43,8 @@ const PreflightScreen = React.memo<{
             <CardTitle>ようこそ</CardTitle>
         </CardHeader>
         <CardContent className="text-left">
-          <p className="whitespace-pre-wrap">{JUNG_TEST_WELCOME_MESSAGE}</p>
-          <audio ref={audioRef} src={getAudioPath('welcome_message.mp3')} autoPlay />
+          <p className="whitespace-pre-wrap">{language === 'ja' ? JUNG_TEST_WELCOME_MESSAGE : JUNG_TEST_WELCOME_MESSAGE_EN}</p>
+          <audio ref={audioRef} src={getSystemAudioPath('welcome', language)} autoPlay />
           <Button onClick={playWelcomeAudio} className="mt-4">
             説明をもう一度聞く
           </Button>
@@ -83,6 +84,7 @@ const SessionScreen = React.memo<{
   currentSession: 1 | 2;
   currentWordIndex: number;
   stimulusWords: Word[];
+  language: 'ja' | 'en';
   onResponse: (response: string, audioBlob: Blob) => void;
 }>((
     {
@@ -91,6 +93,7 @@ const SessionScreen = React.memo<{
         currentSession,
         currentWordIndex,
         stimulusWords,
+        language,
         onResponse,
     }
 ) => {
@@ -193,7 +196,7 @@ const SessionScreen = React.memo<{
             };
 
             if (audio) {
-                const audioSrc = getAudioPath(`${currentWord.key}.mp3`);
+                const audioSrc = getWordAudioPath(currentWord.key, language);
                 audio.src = audioSrc;
                 audio.play()
                     .then(() => {
