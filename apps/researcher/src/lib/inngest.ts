@@ -56,6 +56,23 @@ export const events = {
 
   // 通知イベント
   NOTIFICATION_SENT: 'pipeline.notification.sent',
+
+  // 動画分析イベント（participant用）
+  VIDEO_ANALYSIS_REQUESTED: 'video.analysis.requested',
+  VIDEO_ANALYSIS_STARTED: 'video.analysis.started',
+  VIDEO_ANALYSIS_COMPLETED: 'video.analysis.completed',
+  VIDEO_ANALYSIS_FAILED: 'video.analysis.failed',
+
+  // バッチ分析イベント（participant用）
+  BATCH_ANALYSIS_REQUESTED: 'batch.analysis.requested',
+  BATCH_ANALYSIS_STARTED: 'batch.analysis.started',
+  BATCH_ANALYSIS_COMPLETED: 'batch.analysis.completed',
+  BATCH_ANALYSIS_FAILED: 'batch.analysis.failed',
+
+  // 結果処理イベント（participant用）
+  RESULTS_PROCESSING_STARTED: 'results.processing.started',
+  RESULTS_PROCESSING_COMPLETED: 'results.processing.completed',
+  RESULTS_PROCESSING_FAILED: 'results.processing.failed',
 } as const;
 
 // Merkle DAG: event_data_types -> workflow_inputs
@@ -190,3 +207,29 @@ export type KernelFusionWorkflow = (event: KernelFusionEvent) => Promise<void>;
 export type EmbeddingGenerationWorkflow = (event: EmbeddingGenerationEvent) => Promise<void>;
 export type Neo4jPersistenceWorkflow = (event: Neo4jPersistenceEvent) => Promise<void>;
 export type ExportWorkflow = (event: ExportEvent) => Promise<void>;
+
+// 動画分析イベント（participant用）
+export interface VideoAnalysisEvent {
+  participantId: string;
+  videoFile: string;
+  sessionType: string;
+  priority?: 'low' | 'normal' | 'high';
+  retryCount?: number;
+}
+
+export interface BatchAnalysisEvent {
+  participantIds: string[];
+  priority?: 'low' | 'normal' | 'high';
+  batchId: string;
+}
+
+export interface AnalysisResultEvent {
+  participantId: string;
+  videoFile: string;
+  results: any;
+  processingTime: number;
+  metadata: Record<string, any>;
+}
+
+export type VideoAnalysisWorkflow = (event: VideoAnalysisEvent) => Promise<void>;
+export type BatchAnalysisWorkflow = (event: BatchAnalysisEvent) => Promise<void>;

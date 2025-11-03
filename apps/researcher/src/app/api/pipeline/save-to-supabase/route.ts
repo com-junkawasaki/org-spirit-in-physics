@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabase-client';
+import { getSupabaseClient } from '@spiritinphysics/supabase';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 

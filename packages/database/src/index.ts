@@ -2,6 +2,7 @@
 // 全てのデータベースの初期化を統括
 
 import { supabaseManager } from './supabase-manager';
+import { getSupabaseClient } from '@spiritinphysics/supabase';
 
 export class DatabaseInitializer {
   private initialized = false;
@@ -63,3 +64,6 @@ export const databaseInitializer = new DatabaseInitializer();
 export { supabaseManager };
 // 後方互換性のため
 export { supabaseManager as neo4jManager };
+// Supabaseクライアントのエクスポート
+export { getSupabaseClient } from '@spiritinphysics/supabase';
+export type { SupabaseClient } from '@spiritinphysics/supabase';

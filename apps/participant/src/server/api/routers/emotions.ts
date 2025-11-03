@@ -5,7 +5,7 @@ import {
   analyzeAllParticipantVideos,
   loadEmotionAnalysisResults,
   generateEmotionStatistics,
-} from 'scripts/src/lib/emotion-analysis';
+} from '../../../../apps/researcher/src/lib/emotion-analysis';
 
 export const emotionsRouter = router({
   /**

@@ -1,7 +1,7 @@
 // Merkle DAG: Supabaseデータベースマネージャー
 // Supabaseを使用したデータベース操作マネージャー
 
-import { getSupabaseClient, SupabaseClient } from './supabase-client';
+import { getSupabaseClient, SupabaseClient } from '@spiritinphysics/supabase';
 
 // インターフェース定義（Neo4jManagerと互換性を保つ）
 export interface Participant {

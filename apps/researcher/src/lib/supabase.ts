@@ -1,7 +1,7 @@
 // Merkle DAG: Supabaseクライアント
 // Supabaseを使用したデータベース操作クライアント
 
-import { getSupabaseClient, SupabaseClient } from './supabase-client';
+import { getSupabaseClient, SupabaseClient } from '@spiritinphysics/supabase';
 
 class SupabaseClientWrapper {
   private client: SupabaseClient;

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { supabaseManager } from '@/lib/supabase'
-import { getSupabaseClient } from '@/lib/supabase-client'
+import { supabaseManager } from '@spiritinphysics/database'
+import { getSupabaseClient } from '@spiritinphysics/supabase'
 
 export async function GET() {
   try {

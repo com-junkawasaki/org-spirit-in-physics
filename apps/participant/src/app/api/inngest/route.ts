@@ -1,14 +1,24 @@
 import { serve } from 'inngest/next';
-import { inngest } from 'scripts/src/lib/inngest';
+import { Inngest } from 'inngest';
 import {
   videoAnalysisWorkflow,
   videoAnalysisFailureWorkflow,
   resultsProcessingWorkflow
-} from 'scripts/src/lib/workflows/video-analysis';
+} from '../../../../apps/researcher/src/lib/workflows/video-analysis';
 import {
   batchAnalysisWorkflow,
   batchAnalysisFailureWorkflow
-} from 'scripts/src/lib/workflows/batch-analysis';
+} from '../../../../apps/researcher/src/lib/workflows/batch-analysis';
+
+// Inngestクライアントの初期化（participant用）
+const inngest = new Inngest({
+  id: 'spirit-in-physics',
+  name: 'Spirit-in-Physics Analysis Pipeline',
+  concurrency: 5, // 同時実行数
+  retries: 3, // リトライ回数
+  // ローカル開発環境の設定
+  baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:25250' : undefined,
+});
 
 // Inngest APIルート（v3形式）
 export const { GET, POST, PUT } = serve({

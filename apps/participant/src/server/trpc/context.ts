@@ -1,4 +1,4 @@
-import { getSupabaseClient } from 'scripts/src/lib/database/supabase-client';
+import { getSupabaseClient } from '@spiritinphysics/supabase';
 
 /**
  * tRPCコンテキスト

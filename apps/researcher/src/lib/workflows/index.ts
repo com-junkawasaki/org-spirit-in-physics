@@ -25,5 +25,24 @@ export {
 //   neo4jPersistenceFailureWorkflow,
 // } from './neo4j-persistence-workflow';
 
+// 動画分析ワークフロー（participant用）
+export {
+  videoAnalysisWorkflow,
+  videoAnalysisFailureWorkflow,
+  resultsProcessingWorkflow,
+} from './video-analysis';
+
+// バッチ分析ワークフロー（participant用）
+export {
+  batchAnalysisWorkflow,
+  batchAnalysisFailureWorkflow,
+} from './batch-analysis';
+
+// 分析パイプライン（participant用）
+export {
+  analyzeParticipantResponses,
+  analyzeAllParticipants,
+} from './analysis-pipeline';
+
 // Inngestクライアントとイベント定義
 export { inngest, events } from '../inngest';

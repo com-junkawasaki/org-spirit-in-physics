@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase-client'
+import { getSupabaseClient } from '@spiritinphysics/supabase'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
 // Merkle DAG: api.admin.jung.seed

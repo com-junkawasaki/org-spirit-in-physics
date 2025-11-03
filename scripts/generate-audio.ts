@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import OpenAI from 'openai';
-import { JUNG_STIMULUS_WORDS, JUNG_TEST_WELCOME_MESSAGE } from './src/components/jung-voice-assessment/constants';
+import { JUNG_STIMULUS_WORDS, JUNG_TEST_WELCOME_MESSAGE } from '@spiritinphysics/components';
 import 'dotenv/config';
 
 /**
@@ -9,7 +9,7 @@ import 'dotenv/config';
  * @todo 音声生成のモデルやボイスを選択できるように引数で指定可能にする。
  */
 
-const outputDir = path.resolve(__dirname, '../public/audio/jung-voice-assessment');
+const outputDir = path.resolve(__dirname, '../packages/spiritinphysics-components/public/audio/jung-voice-assessment');
 
 /**
  * 指定されたテキストを音声に変換し、ファイルとして保存します。

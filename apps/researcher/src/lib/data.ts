@@ -1,5 +1,5 @@
-import { getSupabaseClient } from './supabase-client'
-import { supabaseManager } from './supabase'
+import { getSupabaseClient } from '@spiritinphysics/supabase'
+import { supabaseManager } from '@spiritinphysics/database'
 
 export interface AnalysisResult {
   id: string

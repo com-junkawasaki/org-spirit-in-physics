@@ -317,6 +317,22 @@ importers:
         specifier: 5.3.3
         version: 5.3.3
 
+  packages/database:
+    dependencies:
+      '@spiritinphysics/supabase':
+        specifier: workspace:*
+        version: link:../supabase
+      '@supabase/supabase-js':
+        specifier: ^2.39.0
+        version: 2.78.0
+    devDependencies:
+      '@types/node':
+        specifier: 24.1.0
+        version: 24.1.0
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+
   packages/spiritinphysics-components:
     dependencies:
       '@radix-ui/react-checkbox':
@@ -389,6 +405,19 @@ importers:
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+
+  packages/supabase:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.39.0
+        version: 2.78.0
+    devDependencies:
+      '@types/node':
+        specifier: 24.1.0
+        version: 24.1.0
       typescript:
         specifier: 5.8.3
         version: 5.8.3

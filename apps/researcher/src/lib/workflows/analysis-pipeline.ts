@@ -2,9 +2,9 @@
 // Analysis Results 計算パイプライン
 // participant_response_data → participant_analysis_results への自動投入
 
-import { supabaseManager } from '../database/supabase-manager';
+import { supabaseManager } from '@spiritinphysics/database';
 import { calculateSpiritProbabilities, ResponseData } from '../analysis/calculate-spirit-probability';
-import { getSupabaseClient } from '../database/supabase-client';
+import { getSupabaseClient } from '@spiritinphysics/supabase';
 
 /**
  * 参加者のレスポンスデータを分析して、分析結果を保存

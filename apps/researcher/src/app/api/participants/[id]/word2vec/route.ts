@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@/lib/supabase-client';
+import { getSupabaseClient } from '@spiritinphysics/supabase';
 
 // Merkle DAG: api.participants.word2vec -> word2vec_data_fetch
 // 参加者のWord2Vecデータ取得API
