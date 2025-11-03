@@ -58,7 +58,7 @@ export const participantsRouter = router({
     }),
 
   /**
-   * 同意情報保存
+   * 同意情報保存（デモグラフィックデータとメタデータを含む）
    */
   saveConsent: publicProcedure
     .input(ConsentSchema)
@@ -74,15 +74,68 @@ export const participantsRouter = router({
         throw new Error(`Participant not found: ${input.participantId}`);
       }
 
-      // 同意情報を保存
+      // デモグラフィックデータがある場合、参加者情報を更新
+      if (input.demographicData) {
+        const updateData: Record<string, unknown> = {};
+        
+        if (input.demographicData.ageGroup) {
+          updateData.age = input.demographicData.ageGroup;
+        }
+        if (input.demographicData.gender) {
+          updateData.gender = input.demographicData.gender;
+        }
+        if (input.demographicData.ethnicity) {
+          updateData.ethnicity = input.demographicData.ethnicity;
+        }
+        if (input.demographicData.income) {
+          updateData.income = input.demographicData.income;
+        }
+        if (input.consentVersion) {
+          updateData.consent_version = input.consentVersion;
+        }
+        if (input.studyId) {
+          updateData.study_id = input.studyId;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          const { error: updateError } = await ctx.supabase
+            .from('participants')
+            .update(updateData)
+            .eq('id', input.participantId);
+
+          if (updateError) {
+            console.warn(`Failed to update participant demographics: ${updateError.message}`);
+          }
+        }
+      }
+
+      // 同意情報を保存（メタデータを含む）
+      const consentData: Record<string, unknown> = {
+        participant_id: input.participantId,
+        signature: input.signature,
+        agreements: input.agreements,
+        agreed_at: input.agreedAt,
+      };
+
+      if (input.consentVersion) {
+        consentData.consent_version = input.consentVersion;
+      }
+      if (input.studyId) {
+        consentData.study_id = input.studyId;
+      }
+      if (input.userAgent) {
+        consentData.user_agent = input.userAgent;
+      }
+      if (input.ipAddress) {
+        consentData.ip_address = input.ipAddress;
+      }
+      if (input.consentText) {
+        consentData.consent_text = input.consentText;
+      }
+
       const { data, error } = await ctx.supabase
         .from('participant_consents')
-        .upsert({
-          participant_id: input.participantId,
-          signature: input.signature,
-          agreements: input.agreements,
-          agreed_at: input.agreedAt,
-        })
+        .upsert(consentData)
         .select()
         .single();
 

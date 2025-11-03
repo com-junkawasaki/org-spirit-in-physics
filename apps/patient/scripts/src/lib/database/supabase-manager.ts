@@ -10,9 +10,13 @@ export interface Participant {
   agreedAt?: Date;
   agreements?: Record<string, any>;
   name?: string;
-  age?: number;
-  gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
+  age?: number | string; // Supports both integer and age group string
+  gender?: 'male' | 'female' | 'other' | 'non-binary' | 'prefer-not-to-say';
   handedness?: string;
+  ethnicity?: string;
+  income?: string;
+  consentVersion?: string;
+  studyId?: string;
   hasSessionData?: boolean;
   hasVideoFiles?: boolean;
   videoFiles?: any[];
@@ -83,20 +87,27 @@ export class SupabaseManager {
   }
 
   /**
-   * Merkle DAG: 参加者データの保存
+   * Merkle DAG: 参加者データの保存（デモグラフィックデータとメタデータを含む）
    */
   async saveParticipant(participant: Participant): Promise<void> {
     try {
       // participantsテーブルに参加者を挿入または更新
+      const participantData: Record<string, unknown> = {
+        id: participant.id,
+      };
+
+      if (participant.name !== undefined) participantData.name = participant.name;
+      if (participant.age !== undefined) participantData.age = participant.age;
+      if (participant.gender !== undefined) participantData.gender = participant.gender;
+      if (participant.handedness !== undefined) participantData.handedness = participant.handedness;
+      if (participant.ethnicity !== undefined) participantData.ethnicity = participant.ethnicity;
+      if (participant.income !== undefined) participantData.income = participant.income;
+      if (participant.consentVersion !== undefined) participantData.consent_version = participant.consentVersion;
+      if (participant.studyId !== undefined) participantData.study_id = participant.studyId;
+
       const { error: participantError } = await this.client
         .from('participants')
-        .upsert({
-          id: participant.id,
-          name: participant.name,
-          age: participant.age,
-          gender: participant.gender,
-          handedness: participant.handedness,
-        }, {
+        .upsert(participantData, {
           onConflict: 'id',
         });
 
@@ -106,14 +117,19 @@ export class SupabaseManager {
 
       // participant_consentsテーブルに同意情報を保存
       if (participant.signature || participant.agreedAt || participant.agreements) {
+        const consentData: Record<string, unknown> = {
+          participant_id: participant.id,
+          signature: participant.signature || '',
+          agreements: participant.agreements || {},
+          agreed_at: participant.agreedAt ? new Date(participant.agreedAt).toISOString() : new Date().toISOString(),
+        };
+
+        if (participant.consentVersion !== undefined) consentData.consent_version = participant.consentVersion;
+        if (participant.studyId !== undefined) consentData.study_id = participant.studyId;
+
         const { error: consentError } = await this.client
           .from('participant_consents')
-          .upsert({
-            participant_id: participant.id,
-            signature: participant.signature || '',
-            agreements: participant.agreements || {},
-            agreed_at: participant.agreedAt ? new Date(participant.agreedAt).toISOString() : new Date().toISOString(),
-          }, {
+          .upsert(consentData, {
             onConflict: 'participant_id',
           });
 

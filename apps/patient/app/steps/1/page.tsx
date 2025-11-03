@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import ConsentForm from 'scripts/src/app/ConsentForm';
+import ConsentForm from '../../app/ConsentForm';
 import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
 import { useRouter } from 'next/navigation';
+import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import { AppRouter } from '../../../src/server/api/root';
+import { DemographicData } from '../../../src/shared/schemas/participant';
 
 export default function ConsentPage() {
   const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
@@ -19,25 +22,40 @@ export default function ConsentPage() {
     }
   }, [initializeParticipant, participantId]);
 
-  const handleConsent = async (participantId: string, signature: string, agreements: any) => {
+  const handleConsent = async (
+    participantId: string, 
+    signature: string, 
+    agreements: any,
+    demographicData?: DemographicData
+  ) => {
     try {
-      const response = await fetch('/api/save-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'consent',
-          data: {
-            participantId,
-            signature,
-            agreements,
-            agreedAt: new Date().toISOString(),
-          }
-        }),
+      // tRPCクライアントを使用して同意データを保存
+      const client = createTRPCProxyClient<AppRouter>({
+        links: [
+          httpBatchLink({
+            url: '/api/trpc',
+          }),
+        ],
+        transformer: undefined,
       });
 
-      if (!response.ok) {
-        throw new Error('データの保存に失敗しました。');
-      }
+      // ユーザーエージェントとIPアドレスを取得（可能な場合）
+      const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : undefined;
+      const ipAddress = undefined; // クライアント側では取得できないため、サーバー側で設定
+
+      await client.participants.saveConsent.mutate({
+        participantId,
+        signature,
+        agreements,
+        agreedAt: new Date().toISOString(),
+        consentVersion: '1.0',
+        studyId: 'SPIRIT-IN-PHYSICS-2025',
+        userAgent,
+        ipAddress,
+        consentText: 'Research Participation Consent for Spirit in Physics (Jung\'s Word Association Embedding Test)',
+        demographicData,
+      });
+
       startPreflight();
       router.push('/steps/2');
     } catch (error) {
