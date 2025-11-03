@@ -48,12 +48,13 @@
   },
   "scripts": {
     "dev": "next dev -p 25250",
-    "build": "next build",
+    "build": "pnpm --filter @spiritinphysics/components copy-public && next build",
     "start": "next start",
     "lint": "next lint",
     "clean": "rm -rf .next .turbo node_modules",
     "generate-audio": "tsx scripts/generate-audio.ts",
-    "migrate-artifacts": "tsx scripts/migrate-artifacts.ts"
+    "migrate-artifacts": "tsx scripts/migrate-artifacts.ts",
+    "copy-components-public": "pnpm --filter @spiritinphysics/components copy-public"
   },
   "license": "MIT",
   "devDependencies": {

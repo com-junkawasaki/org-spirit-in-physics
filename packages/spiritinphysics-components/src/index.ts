@@ -58,4 +58,5 @@ export type { TrpcClientConfig } from './types/trpc';
 
 // Utils
 export { cn } from './utils/cn';
+export { setAudioBasePath, getAudioBasePath, getAudioPath } from './utils/audio-paths';
 

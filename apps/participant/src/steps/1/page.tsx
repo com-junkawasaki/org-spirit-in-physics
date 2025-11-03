@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { ConsentForm, useKawasakiStore, createTrpcClient, type DemographicData } from '@spiritinphysics/components';
+import { ConsentForm, useKawasakiStore, createTrpcClient, setAudioBasePath, type DemographicData } from '@spiritinphysics/components';
 import { useRouter } from 'next/navigation';
 import { AppRouter } from '../../server/api/root';
 
@@ -15,6 +15,9 @@ export default function ConsentPage() {
   const setTrpcClientFactory = useKawasakiStore((state) => state.setTrpcClientFactory);
 
   useEffect(() => {
+    // 音声ファイルのベースパスを設定
+    setAudioBasePath('/audio/jung-voice-assessment');
+    
     // tRPCクライアントファクトリーをストアに設定
     setTrpcClientFactory(() => createTrpcClient<AppRouter>({ url: '/api/trpc' }));
   }, [setTrpcClientFactory]);

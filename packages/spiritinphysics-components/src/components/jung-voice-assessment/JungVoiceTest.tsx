@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { useKawasakiStore, JungVoiceTestProps, Word } from './store';
 import AudioVisualizer from './AudioVisualizer';
 import { JUNG_TEST_WELCOME_MESSAGE } from './constants';
+import { getAudioPath } from '../../utils/audio-paths';
 
 // --- Memoized, Dumb Sub-components ---
 
@@ -42,7 +43,7 @@ const PreflightScreen = React.memo<{
         </CardHeader>
         <CardContent className="text-left">
           <p className="whitespace-pre-wrap">{JUNG_TEST_WELCOME_MESSAGE}</p>
-          <audio ref={audioRef} src="/audio/jung-voice-assessment/welcome_message.mp3" autoPlay />
+          <audio ref={audioRef} src={getAudioPath('welcome_message.mp3')} autoPlay />
           <Button onClick={playWelcomeAudio} className="mt-4">
             説明をもう一度聞く
           </Button>
@@ -192,7 +193,7 @@ const SessionScreen = React.memo<{
             };
 
             if (audio) {
-                const audioSrc = `/audio/jung-voice-assessment/${currentWord.key}.mp3`;
+                const audioSrc = getAudioPath(`${currentWord.key}.mp3`);
                 audio.src = audioSrc;
                 audio.play()
                     .then(() => {

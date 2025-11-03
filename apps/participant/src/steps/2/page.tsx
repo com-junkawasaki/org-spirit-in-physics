@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { JungVoiceTest, useKawasakiStore, createTrpcClient } from '@spiritinphysics/components';
+import { JungVoiceTest, useKawasakiStore, createTrpcClient, setAudioBasePath } from '@spiritinphysics/components';
 import { AppRouter } from '../../server/api/root';
 
 export default function TestPage() {
@@ -10,6 +10,9 @@ export default function TestPage() {
   const setTrpcClientFactory = useKawasakiStore((state) => state.setTrpcClientFactory);
 
   useEffect(() => {
+    // 音声ファイルのベースパスを設定
+    setAudioBasePath('/audio/jung-voice-assessment');
+    
     // tRPCクライアントファクトリーをストアに設定
     setTrpcClientFactory(() => createTrpcClient<AppRouter>({ url: '/api/trpc' }));
   }, [setTrpcClientFactory]);
