@@ -1,0 +1,63 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "hasResponsibility": {"@id": "ex:hasResponsibility", "@type": "@id", "@container": "@set"},
+    "hasPermission": {"@id": "ex:hasPermission", "@type": "@id", "@container": "@set"},
+    "produces": {"@id": "ex:produces", "@type": "@id", "@container": "@set"},
+    "consumes": {"@id": "ex:consumes", "@type": "@id", "@container": "@set"},
+    "providesUIPort": {"@id": "ex:providesUIPort", "@type": "@id"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/performer/system/ParticipantApplication",
+  "type": "https://spirit-in-physics.gftd.ai/ontology#ParticipantApplication",
+  "name": {
+    "en": "Participant Application",
+    "ja": "参加者アプリケーション"
+  },
+  "description": {
+    "en": "System performer for collecting experimental data from participants. Handles consent collection, session management, and word response collection.",
+    "ja": "参加者から実験データを収集するシステム実行主体。同意取得、セッション管理、単語応答収集を担当。"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "hasResponsibility": [
+    "https://spirit-in-physics.gftd.ai/activity/DataCollection",
+    "https://spirit-in-physics.gftd.ai/activity/DataStorage"
+  ],
+  
+  "hasPermission": [
+    "https://spirit-in-physics.gftd.ai/permission/ParticipantWritePermission",
+    "https://spirit-in-physics.gftd.ai/permission/ParticipantReadPermission"
+  ],
+  
+  "produces": [
+    "https://spirit-in-physics.gftd.ai/ontology#SessionEvent",
+    "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+    "https://spirit-in-physics.gftd.ai/ontology#ConsentData"
+  ],
+  
+  "consumes": [],
+  
+  "providesUIPort": "https://spirit-in-physics.gftd.ai/port/ui/ParticipantUI",
+  
+  "implementation": {
+    "path": "apps/participant",
+    "framework": "Next.js",
+    "runtime": "Node.js"
+  }
+}
+

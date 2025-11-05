@@ -1,0 +1,75 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "providedBy": {"@id": "ex:providedBy", "@type": "@id"},
+    "components": {"@id": "ex:components", "@container": "@set"},
+    "routes": {"@id": "ex:routes", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/port/ui/ParticipantUI",
+  "type": "ex:UIPort",
+  "name": {
+    "en": "Participant UI Port",
+    "ja": "参加者UIポート"
+  },
+  "description": {
+    "en": "Human Port (UI Port) for participant application. Provides interface for consent collection, session management, and word response collection.",
+    "ja": "参加者アプリケーションのHuman Port（UIポート）。同意取得、セッション管理、単語応答収集のインターフェースを提供。"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "providedBy": "https://spirit-in-physics.gftd.ai/performer/system/ParticipantApplication",
+  
+  "components": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/component/ConsentForm",
+      "name": {"en": "Consent Form", "ja": "同意フォーム"},
+      "path": "apps/participant/src/steps/1",
+      "description": {"en": "Component for collecting participant consent", "ja": "参加者の同意を収集するコンポーネント"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/component/JungVoiceTest",
+      "name": {"en": "Jung Voice Test", "ja": "ユング音声テスト"},
+      "path": "packages/spiritinphysics-components/src/components/jung-voice-assessment",
+      "description": {"en": "Component for word association test with audio", "ja": "音声付き単語連合テストコンポーネント"}
+    }
+  ],
+  
+  "routes": [
+    {
+      "path": "/",
+      "description": {"en": "Main participant page", "ja": "参加者メインページ"}
+    },
+    {
+      "path": "/steps/1",
+      "description": {"en": "Consent collection step", "ja": "同意取得ステップ"}
+    },
+    {
+      "path": "/steps/2",
+      "description": {"en": "Experiment session step", "ja": "実験セッションステップ"}
+    },
+    {
+      "path": "/complete",
+      "description": {"en": "Completion page", "ja": "完了ページ"}
+    }
+  ],
+  
+  "framework": "Next.js App Router",
+  "uiLibrary": "React",
+  "styling": "Tailwind CSS"
+}
+

@@ -1,0 +1,52 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "performsActivity": {"@id": "ex:performsActivity", "@type": "@id", "@container": "@set"},
+    "usesSystem": {"@id": "ex:usesSystem", "@type": "@id", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/performer/actor/Participant",
+  "type": "https://spirit-in-physics.gftd.ai/ontology#Participant",
+  "name": {
+    "en": "Participant",
+    "ja": "参加者"
+  },
+  "description": {
+    "en": "Actor performer representing an individual participating in the experiment",
+    "ja": "実験に参加する個人を表すアクター実行主体"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "performsActivity": [
+    "https://spirit-in-physics.gftd.ai/activity/DataCollection"
+  ],
+  
+  "usesSystem": [
+    "https://spirit-in-physics.gftd.ai/performer/system/ParticipantApplication"
+  ],
+  
+  "role": {
+    "en": "Data Provider",
+    "ja": "データ提供者"
+  },
+  
+  "permissions": {
+    "read": "own data only",
+    "write": "own data only"
+  }
+}
+

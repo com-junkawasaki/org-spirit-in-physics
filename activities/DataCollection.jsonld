@@ -1,0 +1,81 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "prov": "http://www.w3.org/ns/prov#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "consumer": {"@id": "ex:consumer", "@type": "@id"},
+    "producer": {"@id": "ex:producer", "@type": "@id"},
+    "measure": {"@id": "ex:measure"},
+    "rule": {"@id": "ex:rule"},
+    "condition": {"@id": "ex:condition"},
+    "input": {"@id": "ex:input", "@container": "@set"},
+    "output": {"@id": "ex:output", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/activity/DataCollection",
+  "type": "ex:Activity",
+  "name": {
+    "en": "Data Collection",
+    "ja": "データ収集"
+  },
+  "description": {
+    "en": "Activity for collecting experimental data from participants including consent, session events, and word responses",
+    "ja": "参加者から同意、セッションイベント、単語応答などの実験データを収集する活動"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "producer": "https://spirit-in-physics.gftd.ai/performer/actor/Participant",
+  "consumer": "https://spirit-in-physics.gftd.ai/performer/system/ParticipantApplication",
+  
+  "input": [],
+  
+  "output": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#SessionEvent",
+      "type": "ex:Output",
+      "description": {"en": "Session events such as word display, response window open/close", "ja": "単語表示、応答窓開閉などのセッションイベント"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+      "type": "ex:Output",
+      "description": {"en": "Word association responses from participants", "ja": "参加者からの単語連合応答"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#ConsentData",
+      "type": "ex:Output",
+      "description": {"en": "Participant consent information", "ja": "参加者の同意情報"}
+    }
+  ],
+  
+  "measure": {
+    "id": "https://spirit-in-physics.gftd.ai/measure/data-collection",
+    "type": "ex:Measure",
+    "description": {"en": "Number of collected responses, session completion rate", "ja": "収集された応答数、セッション完了率"}
+  },
+  
+  "rule": {
+    "id": "https://spirit-in-physics.gftd.ai/rule/data-collection",
+    "type": "ex:Rule",
+    "description": {"en": "All word responses must have associated timestamps and stimulus words", "ja": "全ての単語応答にはタイムスタンプと刺激語が関連付けられている必要がある"}
+  },
+  
+  "condition": {
+    "id": "https://spirit-in-physics.gftd.ai/condition/data-collection",
+    "type": "ex:Condition",
+    "description": {"en": "Participant must have provided consent before data collection", "ja": "データ収集前に参加者は同意を提供している必要がある"}
+  }
+}
+

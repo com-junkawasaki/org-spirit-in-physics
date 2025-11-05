@@ -1,0 +1,86 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "consumer": {"@id": "ex:consumer", "@type": "@id"},
+    "producer": {"@id": "ex:producer", "@type": "@id"},
+    "measure": {"@id": "ex:measure"},
+    "rule": {"@id": "ex:rule"},
+    "condition": {"@id": "ex:condition"},
+    "input": {"@id": "ex:input", "@container": "@set"},
+    "output": {"@id": "ex:output", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/activity/DataStorage",
+  "type": "ex:Activity",
+  "name": {
+    "en": "Data Storage",
+    "ja": "データ保存"
+  },
+  "description": {
+    "en": "Activity for storing collected data in Supabase database",
+    "ja": "収集されたデータをSupabaseデータベースに保存する活動"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "producer": "https://spirit-in-physics.gftd.ai/performer/system/ParticipantApplication",
+  "consumer": "https://spirit-in-physics.gftd.ai/resource/SupabaseDatabase",
+  
+  "input": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#SessionEvent",
+      "type": "ex:Input",
+      "description": {"en": "Session events to be stored", "ja": "保存するセッションイベント"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+      "type": "ex:Input",
+      "description": {"en": "Word responses to be stored", "ja": "保存する単語応答"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#ConsentData",
+      "type": "ex:Input",
+      "description": {"en": "Consent data to be stored", "ja": "保存する同意データ"}
+    }
+  ],
+  
+  "output": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/resource/SupabaseDatabase",
+      "type": "ex:Output",
+      "description": {"en": "Stored data in Supabase tables", "ja": "Supabaseテーブルに保存されたデータ"}
+    }
+  ],
+  
+  "measure": {
+    "id": "https://spirit-in-physics.gftd.ai/measure/data-storage",
+    "type": "ex:Measure",
+    "description": {"en": "Storage success rate, data integrity checks", "ja": "保存成功率、データ整合性チェック"}
+  },
+  
+  "rule": {
+    "id": "https://spirit-in-physics.gftd.ai/rule/data-storage",
+    "type": "ex:Rule",
+    "description": {"en": "All data must be validated before storage, RLS policies must be enforced", "ja": "全てのデータは保存前に検証され、RLSポリシーが強制される必要がある"}
+  },
+  
+  "condition": {
+    "id": "https://spirit-in-physics.gftd.ai/condition/data-storage",
+    "type": "ex:Condition",
+    "description": {"en": "Participant can only write their own data", "ja": "参加者は自身のデータのみ書き込むことができる"}
+  }
+}
+

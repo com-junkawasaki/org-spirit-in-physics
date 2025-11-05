@@ -1,0 +1,180 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "tableName": "ex:tableName",
+    "columns": {"@id": "ex:columns", "@container": "@set"},
+    "primaryKey": "ex:primaryKey",
+    "foreignKeys": {"@id": "ex:foreignKeys", "@container": "@set"},
+    "indexes": {"@id": "ex:indexes", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/resource/schema/ResponseData",
+  "type": "ex:ResourceSchema",
+  "name": {
+    "en": "Response Data Schema",
+    "ja": "応答データスキーマ"
+  },
+  "description": {
+    "en": "Database schema for participant_response_data table in Supabase",
+    "ja": "Supabaseのparticipant_response_dataテーブルのデータベーススキーマ"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "tableName": "participant_response_data",
+  "primaryKey": "id",
+  
+  "columns": [
+    {
+      "name": "id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "gen_random_uuid()",
+      "description": {"en": "Primary key", "ja": "主キー"}
+    },
+    {
+      "name": "participant_id",
+      "type": "UUID",
+      "nullable": false,
+      "description": {"en": "Foreign key to participants table", "ja": "participantsテーブルへの外部キー"}
+    },
+    {
+      "name": "experiment_id",
+      "type": "UUID",
+      "nullable": false,
+      "description": {"en": "Experiment identifier", "ja": "実験識別子"}
+    },
+    {
+      "name": "word_stimulus_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "description": {"en": "Foreign key to word_stimuli table", "ja": "word_stimuliテーブルへの外部キー"}
+    },
+    {
+      "name": "stimulus_word",
+      "type": "TEXT",
+      "nullable": false,
+      "description": {"en": "Stimulus word presented to participant", "ja": "参加者に提示された刺激語"}
+    },
+    {
+      "name": "response_word",
+      "type": "TEXT",
+      "nullable": false,
+      "description": {"en": "Word response from participant", "ja": "参加者からの単語応答"}
+    },
+    {
+      "name": "reaction_time_ms",
+      "type": "INTEGER",
+      "nullable": false,
+      "description": {"en": "Reaction time in milliseconds", "ja": "反応時間（ミリ秒）"}
+    },
+    {
+      "name": "session",
+      "type": "session_type",
+      "nullable": false,
+      "description": {"en": "Session type", "ja": "セッションタイプ"},
+      "enumValues": ["session-1", "session-2"]
+    },
+    {
+      "name": "timestamp",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "description": {"en": "Response timestamp", "ja": "応答タイムスタンプ"}
+    },
+    {
+      "name": "audio_file_path",
+      "type": "TEXT",
+      "nullable": true,
+      "description": {"en": "Path to audio file", "ja": "音声ファイルパス"}
+    },
+    {
+      "name": "video_file_path",
+      "type": "TEXT",
+      "nullable": true,
+      "description": {"en": "Path to video file", "ja": "動画ファイルパス"}
+    },
+    {
+      "name": "skin_potential",
+      "type": "DECIMAL(10,4)",
+      "nullable": true,
+      "description": {"en": "Skin potential measurement", "ja": "皮膚電位測定値"}
+    },
+    {
+      "name": "emotion",
+      "type": "TEXT",
+      "nullable": true,
+      "description": {"en": "Detected emotion", "ja": "検出された感情"}
+    },
+    {
+      "name": "emotion_confidence",
+      "type": "DECIMAL(5,4)",
+      "nullable": true,
+      "description": {"en": "Emotion detection confidence", "ja": "感情検出の信頼度"}
+    },
+    {
+      "name": "created_at",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "default": "NOW()",
+      "description": {"en": "Creation timestamp", "ja": "作成タイムスタンプ"}
+    },
+    {
+      "name": "updated_at",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "default": "NOW()",
+      "description": {"en": "Update timestamp", "ja": "更新タイムスタンプ"}
+    }
+  ],
+  
+  "foreignKeys": [
+    {
+      "column": "participant_id",
+      "references": "participants(id)",
+      "onDelete": "CASCADE"
+    },
+    {
+      "column": "word_stimulus_id",
+      "references": "word_stimuli(id)"
+    }
+  ],
+  
+  "indexes": [
+    {
+      "name": "idx_participant_response_data_participant_id",
+      "columns": ["participant_id"],
+      "description": {"en": "Index on participant_id for lookups", "ja": "検索用のparticipant_idインデックス"}
+    },
+    {
+      "name": "idx_participant_response_data_experiment_id",
+      "columns": ["experiment_id"],
+      "description": {"en": "Index on experiment_id for filtering", "ja": "フィルタリング用のexperiment_idインデックス"}
+    },
+    {
+      "name": "idx_participant_response_data_session",
+      "columns": ["session"],
+      "description": {"en": "Index on session for filtering", "ja": "フィルタリング用のsessionインデックス"}
+    },
+    {
+      "name": "idx_participant_response_data_timestamp",
+      "columns": ["timestamp"],
+      "description": {"en": "Index on timestamp for time-series queries", "ja": "時系列クエリ用のtimestampインデックス"}
+    }
+  ],
+  
+  "mapsTo": "https://spirit-in-physics.gftd.ai/ontology#WordResponse"
+}
+

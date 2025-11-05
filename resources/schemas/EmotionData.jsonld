@@ -1,0 +1,64 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "tableName": "ex:tableName",
+    "tables": {"@id": "ex:tables", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/resource/schema/EmotionData",
+  "type": "ex:ResourceSchema",
+  "name": {
+    "en": "Emotion Data Schema",
+    "ja": "感情データスキーマ"
+  },
+  "description": {
+    "en": "Database schemas for Hume AI emotion analysis data tables in Supabase",
+    "ja": "SupabaseのHume AI感情分析データテーブルのデータベーススキーマ"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "tables": [
+    {
+      "name": "participant_hume_burst_predictions",
+      "description": {"en": "Hume AI burst emotion predictions", "ja": "Hume AIバースト感情予測"},
+      "primaryKey": "id"
+    },
+    {
+      "name": "participant_hume_face_predictions",
+      "description": {"en": "Hume AI face emotion predictions", "ja": "Hume AI顔表情感情予測"},
+      "primaryKey": "id"
+    },
+    {
+      "name": "participant_hume_language_predictions",
+      "description": {"en": "Hume AI language emotion predictions", "ja": "Hume AI言語感情予測"},
+      "primaryKey": "id"
+    },
+    {
+      "name": "participant_hume_prosody_predictions",
+      "description": {"en": "Hume AI prosody emotion predictions", "ja": "Hume AI韻律感情予測"},
+      "primaryKey": "id"
+    }
+  ],
+  
+  "mapsTo": "https://spirit-in-physics.gftd.ai/ontology#EmotionData",
+  
+  "source": {
+    "provider": "Hume AI",
+    "api": "Expression Measurement API"
+  }
+}
+

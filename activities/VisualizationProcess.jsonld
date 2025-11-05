@@ -1,0 +1,76 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "consumer": {"@id": "ex:consumer", "@type": "@id"},
+    "producer": {"@id": "ex:producer", "@type": "@id"},
+    "measure": {"@id": "ex:measure"},
+    "rule": {"@id": "ex:rule"},
+    "condition": {"@id": "ex:condition"},
+    "input": {"@id": "ex:input", "@container": "@set"},
+    "output": {"@id": "ex:output", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/activity/VisualizationProcess",
+  "type": "ex:Activity",
+  "name": {
+    "en": "Visualization Process",
+    "ja": "可視化プロセス"
+  },
+  "description": {
+    "en": "Activity for visualizing data in 3D Force Timeline using emotion-kernel tensegrity model",
+    "ja": "感情カーネルテンセグリティモデルを使用して3D Force Timelineでデータを可視化する活動"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "producer": "https://spirit-in-physics.gftd.ai/performer/system/ResearcherApplication",
+  "consumer": "https://spirit-in-physics.gftd.ai/performer/actor/Researcher",
+  
+  "input": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#TimelineData",
+      "type": "ex:Input",
+      "description": {"en": "Integrated time-series data for visualization", "ja": "可視化用の統合時系列データ"}
+    }
+  ],
+  
+  "output": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/output/3DForceTimelineVisualization",
+      "type": "ex:Output",
+      "description": {"en": "3D Force Timeline visualization with emotion-kernel tensegrity model", "ja": "感情カーネルテンセグリティモデルによる3D Force Timeline可視化"}
+    }
+  ],
+  
+  "measure": {
+    "id": "https://spirit-in-physics.gftd.ai/measure/visualization-process",
+    "type": "ex:Measure",
+    "description": {"en": "Rendering performance, visual quality, user interaction responsiveness", "ja": "レンダリングパフォーマンス、視覚品質、ユーザーインタラクション応答性"}
+  },
+  
+  "rule": {
+    "id": "https://spirit-in-physics.gftd.ai/rule/visualization-process",
+    "type": "ex:Rule",
+    "description": {"en": "Visualization must use emotion-kernel distance metric and tensegrity physics for self-supporting structure", "ja": "可視化は感情カーネル距離メトリックとテンセグリティ物理を使用して自己支持構造を形成する必要がある"}
+  },
+  
+  "condition": {
+    "id": "https://spirit-in-physics.gftd.ai/condition/visualization-process",
+    "type": "ex:Condition",
+    "description": {"en": "Timeline data must be properly integrated before visualization", "ja": "可視化前に時系列データが適切に統合されている必要がある"}
+  }
+}
+

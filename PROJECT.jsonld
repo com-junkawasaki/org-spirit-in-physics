@@ -1,0 +1,146 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    "version": "dct:hasVersion",
+    "conformsTo": {"@id": "dct:conformsTo", "@type": "@id"},
+    
+    "goal": "ex:goal",
+    "status": "ex:status",
+    "tags": {"@id": "ex:tags", "@container": "@set"},
+    "narrative": {"@id": "ex:narrative", "@container": "@set"},
+    "processNetwork": "ex:processNetwork",
+    "keyPillars": {"@id": "ex:keyPillars", "@container": "@set"},
+    "implementedFeatures": {"@id": "ex:implementedFeatures", "@container": "@set"},
+    "references": {"@id": "ex:references", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/project",
+  "type": "ex:Project",
+  "name": "Spirit-in-Physics Visualizer — Emotion-Kernel Tensegrity 3D Model",
+  "description": "感情に誘導された距離（メトリック／カーネル）で語集合に幾何（距離空間）を与え、その距離を最もよく保存するように低次元へ埋め込み、さらにテンセグリティ物理で自己支持的な立体構造へ収束させるモデル。科学的手法により霊性を可視化・測定可能にする研究プロジェクト。",
+  "version": "1.24.0",
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  "status": "active",
+  "tags": ["research", "spirituality", "emotion-analysis", "3d-visualization", "tensegrity", "hume-ai", "supabase", "nextjs", "typescript"],
+  
+  "goal": {
+    "id": "https://spirit-in-physics.gftd.ai/goal",
+    "type": "ex:Goal",
+    "description": "我らと我らの子孫が豊かで情緒的な暮らしを送れるいい感じの社会を生成する",
+    "realizedBy": "https://spirit-in-physics.gftd.ai/project"
+  },
+  
+  "narrative": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/narrative/spirit-in-physics",
+      "type": "ex:Narrative",
+      "act": "Spirit in Physics",
+      "summary": "医学博士である河崎純真が、エホバの証人、科学哲学、仏教、アヤワスカ、コンピューターの経験を通して、クリスチャンのアンタッチャブルな「spirit」を可視化・提供可能にし、神と人、霊と人を統合する試み。"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/narrative/kawasaki-model",
+      "type": "ex:Narrative",
+      "act": "川崎モデルの誕生",
+      "summary": "河崎純真はユングの単語連合テストを現代的な技術で再現し、感情分析と生理データを統合した「川崎モデル」を開発。参加者の顔表情、声の調子、皮膚電位をHume AIで解析し、Word2Vecによる意味ベクトルと組み合わせることで、言語と感情の関係性を定量的に表現する画期的な手法を生み出した。"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/narrative/integration",
+      "type": "ex:Narrative",
+      "act": "完全統合システムの完成",
+      "summary": "Spirit in Physicsプロジェクトの完全統合システムを実現。Hume AIデータベース統合API、管理者ダッシュボード、分析パイプライン、参加者アプリの全てが連携し、実験開始から分析結果閲覧までの一気通貫のワークフローを確立。"
+    }
+  ],
+  
+  "processNetwork": {
+    "id": "https://spirit-in-physics.gftd.ai/process-network",
+    "type": "ex:ProcessNetwork",
+    "description": "プロセスネットワークグラフモデル（Merkle DAG）",
+    "keyPillars": [
+      {
+        "id": "https://spirit-in-physics.gftd.ai/pillar/spiritual-integration",
+        "type": "ex:KeyPillar",
+        "name": "霊性の統合 (Spiritual Integration)",
+        "description": "科学と精神世界を統合し、人間性の全体的な理解を深める",
+        "subProcesses": [
+          "川崎モデルの開発",
+          "Hume AI感情分析統合",
+          "Supabase PostgreSQLデータベース統一",
+          "科学的手法による霊性測定"
+        ]
+      },
+      {
+        "id": "https://spirit-in-physics.gftd.ai/pillar/technical-foundation",
+        "type": "ex:KeyPillar",
+        "name": "技術基盤 (Technical Foundation)",
+        "description": "研究の信頼性と拡張性を保証する技術インフラ",
+        "subProcesses": [
+          "Supabase PostgreSQLデータベース統合",
+          "tRPC + Zodアーキテクチャ",
+          "Next.js App Router",
+          "TypeScript型安全性"
+        ]
+      }
+    ]
+  },
+  
+  "implementedFeatures": [
+    "川崎モデルの数式実装",
+    "Hume AI Expression Measurement統合",
+    "Supabase PostgreSQLデータベース統合",
+    "tRPC + Zodアーキテクチャ",
+    "管理者ダッシュボードUI",
+    "Spirit確率分析ダッシュボード",
+    "3D Force Timeline可視化",
+    "時系列統合可視化システム",
+    "参加者データ可視化システム",
+    "感情データ統合処理",
+    "完全統合データセットの確立"
+  ],
+  
+  "references": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/reference/story",
+      "type": "ex:Reference",
+      "name": "story.jsonnet",
+      "description": "プロジェクトのストーリーとプロセスネットワーク（Merkle DAG形式）",
+      "format": "application/jsonnet"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/reference/ontology",
+      "type": "ex:Reference",
+      "name": "ontology/spirit-in-physics.owl.ttl",
+      "description": "メインオントロジー定義（OWL形式）",
+      "format": "text/turtle"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/reference/shapes",
+      "type": "ex:Reference",
+      "name": "shapes/spirit-in-physics.shacl.ttl",
+      "description": "SHACL形状定義",
+      "format": "text/turtle"
+    }
+  ],
+  
+  "conformsTo": [
+    "https://spirit-in-physics.gftd.ai/capabilities/ontology",
+    "https://spirit-in-physics.gftd.ai/capabilities/shape"
+  ]
+}
+

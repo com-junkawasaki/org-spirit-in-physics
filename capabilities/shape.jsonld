@@ -1,0 +1,153 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "sh": "http://www.w3.org/ns/shacl#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "targetClass": {"@id": "sh:targetClass", "@type": "@id"},
+    "property": {"@id": "sh:property", "@container": "@set"},
+    "path": {"@id": "sh:path", "@type": "@id"},
+    "class": {"@id": "sh:class", "@type": "@id"},
+    "datatype": {"@id": "sh:datatype", "@type": "@id"},
+    "minCount": "sh:minCount",
+    "maxCount": "sh:maxCount",
+    "message": "sh:message",
+    "name": "sh:name",
+    "description": "sh:description"
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/capabilities/shape",
+  "type": "sh:NodeShape",
+  "name": {
+    "en": "Spirit in Physics SHACL Shapes",
+    "ja": "Spirit in Physics SHACL形状"
+  },
+  "description": {
+    "en": "SHACL shape definitions for Spirit in Physics system validation",
+    "ja": "Spirit in Physicsシステムの検証用SHACL形状定義"
+  },
+  
+  "references": {
+    "source": "shapes/spirit-in-physics.shacl.ttl",
+    "format": "text/turtle"
+  },
+  
+  "shapes": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/shape/ParticipantApplicationShape",
+      "type": "sh:NodeShape",
+      "targetClass": "https://spirit-in-physics.gftd.ai/ontology#ParticipantApplication",
+      "name": {"en": "Participant Application Shape", "ja": "参加者アプリケーション形状"},
+      "description": {"ja": "参加者アプリケーションの責任と権限を定義"},
+      "property": [
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#hasResponsibility",
+          "class": [
+            "https://spirit-in-physics.gftd.ai/ontology#DataCollectionProcess",
+            "https://spirit-in-physics.gftd.ai/ontology#DataStorageProcess"
+          ],
+          "minCount": 1,
+          "message": {"en": "ParticipantApplication must have at least one responsibility"}
+        },
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#produces",
+          "class": [
+            "https://spirit-in-physics.gftd.ai/ontology#SessionEvent",
+            "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+            "https://spirit-in-physics.gftd.ai/ontology#ConsentData"
+          ],
+          "minCount": 1,
+          "message": {"en": "ParticipantApplication must produce at least one data type"}
+        }
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/shape/ResearcherApplicationShape",
+      "type": "sh:NodeShape",
+      "targetClass": "https://spirit-in-physics.gftd.ai/ontology#ResearcherApplication",
+      "name": {"en": "Researcher Application Shape", "ja": "研究者アプリケーション形状"},
+      "description": {"ja": "研究者アプリケーションの責任と権限を定義"},
+      "property": [
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#hasResponsibility",
+          "class": [
+            "https://spirit-in-physics.gftd.ai/ontology#VisualizationProcess",
+            "https://spirit-in-physics.gftd.ai/ontology#AnalysisProcess",
+            "https://spirit-in-physics.gftd.ai/ontology#TimelineIntegrationProcess"
+          ],
+          "minCount": 1,
+          "message": {"en": "ResearcherApplication must have at least one responsibility"}
+        },
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#consumes",
+          "class": [
+            "https://spirit-in-physics.gftd.ai/ontology#SessionEvent",
+            "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+            "https://spirit-in-physics.gftd.ai/ontology#EmotionData"
+          ],
+          "minCount": 1,
+          "message": {"en": "ResearcherApplication must consume at least one data type"}
+        },
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#produces",
+          "class": [
+            "https://spirit-in-physics.gftd.ai/ontology#AnalysisResult",
+            "https://spirit-in-physics.gftd.ai/ontology#TimelineData"
+          ],
+          "minCount": 1,
+          "message": {"en": "ResearcherApplication must produce at least one data type"}
+        }
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/shape/AnalysisPipelineShape",
+      "type": "sh:NodeShape",
+      "targetClass": "https://spirit-in-physics.gftd.ai/ontology#AnalysisPipeline",
+      "name": {"en": "Analysis Pipeline Shape", "ja": "解析パイプライン形状"},
+      "description": {"ja": "解析パイプラインの責任と権限を定義"},
+      "property": [
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#hasResponsibility",
+          "class": "https://spirit-in-physics.gftd.ai/ontology#AnalysisProcess",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": {"en": "AnalysisPipeline must have exactly one AnalysisProcess responsibility"}
+        },
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#consumes",
+          "class": "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+          "minCount": 1,
+          "message": {"en": "AnalysisPipeline must consume WordResponse data"}
+        },
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#produces",
+          "class": "https://spirit-in-physics.gftd.ai/ontology#AnalysisResult",
+          "minCount": 1,
+          "message": {"en": "AnalysisPipeline must produce AnalysisResult data"}
+        }
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/shape/TimelineDataShape",
+      "type": "sh:NodeShape",
+      "targetClass": "https://spirit-in-physics.gftd.ai/ontology#TimelineData",
+      "name": {"en": "Timeline Data Shape", "ja": "時系列データ形状"},
+      "description": {"ja": "時系列データの構造を定義"},
+      "property": [
+        {
+          "path": "https://spirit-in-physics.gftd.ai/ontology#hasTimestamp",
+          "datatype": "xsd:dateTime",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": {"en": "TimelineData must have exactly one timestamp"}
+        }
+      ]
+    }
+  ]
+}
+

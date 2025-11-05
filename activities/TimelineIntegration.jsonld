@@ -1,0 +1,86 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "consumer": {"@id": "ex:consumer", "@type": "@id"},
+    "producer": {"@id": "ex:producer", "@type": "@id"},
+    "measure": {"@id": "ex:measure"},
+    "rule": {"@id": "ex:rule"},
+    "condition": {"@id": "ex:condition"},
+    "input": {"@id": "ex:input", "@container": "@set"},
+    "output": {"@id": "ex:output", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/activity/TimelineIntegration",
+  "type": "ex:Activity",
+  "name": {
+    "en": "Timeline Integration",
+    "ja": "時系列統合"
+  },
+  "description": {
+    "en": "Activity for integrating time-series data from session events, emotion data, and physiological data",
+    "ja": "セッションイベント、感情データ、生理データから時系列データを統合する活動"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "producer": "https://spirit-in-physics.gftd.ai/performer/system/ResearcherApplication",
+  "consumer": "https://spirit-in-physics.gftd.ai/resource/SupabaseDatabase",
+  
+  "input": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#SessionEvent",
+      "type": "ex:Input",
+      "description": {"en": "Session events with timestamps", "ja": "タイムスタンプ付きセッションイベント"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#EmotionData",
+      "type": "ex:Input",
+      "description": {"en": "Emotion data from Hume AI with time ranges", "ja": "時間範囲付きHume AI感情データ"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#PhysiologicalData",
+      "type": "ex:Input",
+      "description": {"en": "Physiological data such as skin potential", "ja": "皮膚電位などの生理データ"}
+    }
+  ],
+  
+  "output": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#TimelineData",
+      "type": "ex:Output",
+      "description": {"en": "Integrated timeline data with timestamp, word, eventType, emotions, physiological, reactionValue", "ja": "タイムスタンプ、単語、イベントタイプ、感情、生理、反応値を含む統合時系列データ"}
+    }
+  ],
+  
+  "measure": {
+    "id": "https://spirit-in-physics.gftd.ai/measure/timeline-integration",
+    "type": "ex:Measure",
+    "description": {"en": "Integration accuracy, data completeness, time range matching success rate", "ja": "統合精度、データ完全性、時間範囲マッチング成功率"}
+  },
+  
+  "rule": {
+    "id": "https://spirit-in-physics.gftd.ai/rule/timeline-integration",
+    "type": "ex:Rule",
+    "description": {"en": "Time range matching: emotion.beginTime <= relativeTimestamp <= emotion.endTime", "ja": "時間範囲マッチング: emotion.beginTime <= relativeTimestamp <= emotion.endTime"}
+  },
+  
+  "condition": {
+    "id": "https://spirit-in-physics.gftd.ai/condition/timeline-integration",
+    "type": "ex:Condition",
+    "description": {"en": "All input data must have valid timestamps for integration", "ja": "統合には全ての入力データに有効なタイムスタンプが必要"}
+  }
+}
+

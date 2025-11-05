@@ -1,0 +1,191 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "tableName": "ex:tableName",
+    "columns": {"@id": "ex:columns", "@container": "@set"},
+    "primaryKey": "ex:primaryKey",
+    "foreignKeys": {"@id": "ex:foreignKeys", "@container": "@set"},
+    "indexes": {"@id": "ex:indexes", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/resource/schema/AnalysisResult",
+  "type": "ex:ResourceSchema",
+  "name": {
+    "en": "Analysis Result Schema",
+    "ja": "解析結果スキーマ"
+  },
+  "description": {
+    "en": "Database schema for participant_analysis_results table in Supabase storing Kawasaki Model analysis results",
+    "ja": "川崎モデル解析結果を格納するSupabaseのparticipant_analysis_resultsテーブルのデータベーススキーマ"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "tableName": "participant_analysis_results",
+  "primaryKey": "id",
+  
+  "columns": [
+    {
+      "name": "id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "gen_random_uuid()",
+      "description": {"en": "Primary key", "ja": "主キー"}
+    },
+    {
+      "name": "participant_id",
+      "type": "UUID",
+      "nullable": false,
+      "description": {"en": "Foreign key to participants table", "ja": "participantsテーブルへの外部キー"}
+    },
+    {
+      "name": "experiment_id",
+      "type": "UUID",
+      "nullable": false,
+      "description": {"en": "Experiment identifier", "ja": "実験識別子"}
+    },
+    {
+      "name": "word_stimulus_id",
+      "type": "INTEGER",
+      "nullable": false,
+      "description": {"en": "Foreign key to word_stimuli table", "ja": "word_stimuliテーブルへの外部キー"}
+    },
+    {
+      "name": "stimulus_word",
+      "type": "TEXT",
+      "nullable": false,
+      "description": {"en": "Stimulus word", "ja": "刺激語"}
+    },
+    {
+      "name": "response_word",
+      "type": "TEXT",
+      "nullable": false,
+      "description": {"en": "Response word", "ja": "応答語"}
+    },
+    {
+      "name": "reaction_time_ms",
+      "type": "INTEGER",
+      "nullable": true,
+      "description": {"en": "Reaction time in milliseconds", "ja": "反応時間（ミリ秒）"}
+    },
+    {
+      "name": "spirit_probability",
+      "type": "DECIMAL(5,4)",
+      "nullable": false,
+      "description": {"en": "Spirit probability calculated by Kawasaki Model", "ja": "川崎モデルにより計算されたSpirit確率"}
+    },
+    {
+      "name": "word2vec_component",
+      "type": "DECIMAL(5,4)",
+      "nullable": true,
+      "description": {"en": "Word2Vec component of spirit probability", "ja": "Spirit確率のWord2Vec成分"}
+    },
+    {
+      "name": "reaction_time_component",
+      "type": "DECIMAL(5,4)",
+      "nullable": true,
+      "description": {"en": "Reaction time component of spirit probability", "ja": "Spirit確率の反応時間成分"}
+    },
+    {
+      "name": "skin_potential_component",
+      "type": "DECIMAL(5,4)",
+      "nullable": true,
+      "description": {"en": "Skin potential component of spirit probability", "ja": "Spirit確率の皮膚電位成分"}
+    },
+    {
+      "name": "emotion_component",
+      "type": "DECIMAL(5,4)",
+      "nullable": true,
+      "description": {"en": "Emotion component of spirit probability", "ja": "Spirit確率の感情成分"}
+    },
+    {
+      "name": "emotion_data",
+      "type": "JSONB",
+      "nullable": true,
+      "default": "{}",
+      "description": {"en": "Emotion data from Hume AI", "ja": "Hume AIからの感情データ"}
+    },
+    {
+      "name": "physiological_data",
+      "type": "JSONB",
+      "nullable": true,
+      "default": "{}",
+      "description": {"en": "Physiological data", "ja": "生理データ"}
+    },
+    {
+      "name": "created_at",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "default": "NOW()",
+      "description": {"en": "Creation timestamp", "ja": "作成タイムスタンプ"}
+    },
+    {
+      "name": "updated_at",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "default": "NOW()",
+      "description": {"en": "Update timestamp", "ja": "更新タイムスタンプ"}
+    }
+  ],
+  
+  "foreignKeys": [
+    {
+      "column": "participant_id",
+      "references": "participants(id)",
+      "onDelete": "CASCADE"
+    },
+    {
+      "column": "word_stimulus_id",
+      "references": "word_stimuli(id)"
+    }
+  ],
+  
+  "indexes": [
+    {
+      "name": "idx_participant_analysis_results_participant_id",
+      "columns": ["participant_id"],
+      "description": {"en": "Index on participant_id for lookups", "ja": "検索用のparticipant_idインデックス"}
+    },
+    {
+      "name": "idx_participant_analysis_results_experiment_id",
+      "columns": ["experiment_id"],
+      "description": {"en": "Index on experiment_id for filtering", "ja": "フィルタリング用のexperiment_idインデックス"}
+    },
+    {
+      "name": "idx_participant_analysis_results_word_stimulus_id",
+      "columns": ["word_stimulus_id"],
+      "description": {"en": "Index on word_stimulus_id for lookups", "ja": "検索用のword_stimulus_idインデックス"}
+    },
+    {
+      "name": "idx_participant_analysis_results_spirit_probability",
+      "columns": ["spirit_probability"],
+      "description": {"en": "Index on spirit_probability for sorting and filtering", "ja": "ソート・フィルタリング用のspirit_probabilityインデックス"}
+    },
+    {
+      "name": "idx_participant_analysis_results_created_at",
+      "columns": ["created_at"],
+      "description": {"en": "Index on created_at for time-series queries", "ja": "時系列クエリ用のcreated_atインデックス"}
+    }
+  ],
+  
+  "mapsTo": "https://spirit-in-physics.gftd.ai/ontology#AnalysisResult",
+  
+  "model": {
+    "name": "Kawasaki Model",
+    "description": {"en": "Spirit probability calculation model integrating Word2Vec, emotion, and reaction time", "ja": "Word2Vec、感情、反応時間を統合したSpirit確率計算モデル"}
+  }
+}
+

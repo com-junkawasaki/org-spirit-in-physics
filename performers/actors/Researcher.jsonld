@@ -1,0 +1,53 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "performsActivity": {"@id": "ex:performsActivity", "@type": "@id", "@container": "@set"},
+    "usesSystem": {"@id": "ex:usesSystem", "@type": "@id", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/performer/actor/Researcher",
+  "type": "ex:Researcher",
+  "name": {
+    "en": "Researcher",
+    "ja": "研究者"
+  },
+  "description": {
+    "en": "Actor performer representing a researcher who analyzes and visualizes experimental data",
+    "ja": "実験データを分析・可視化する研究者を表すアクター実行主体"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "performsActivity": [
+    "https://spirit-in-physics.gftd.ai/activity/VisualizationProcess",
+    "https://spirit-in-physics.gftd.ai/activity/TimelineIntegration"
+  ],
+  
+  "usesSystem": [
+    "https://spirit-in-physics.gftd.ai/performer/system/ResearcherApplication"
+  ],
+  
+  "role": {
+    "en": "Data Analyst",
+    "ja": "データ分析者"
+  },
+  
+  "permissions": {
+    "read": "all participant data",
+    "write": "analysis results only"
+  }
+}
+

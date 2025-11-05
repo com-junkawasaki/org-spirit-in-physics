@@ -1,0 +1,60 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "hasResponsibility": {"@id": "ex:hasResponsibility", "@type": "@id", "@container": "@set"},
+    "hasPermission": {"@id": "ex:hasPermission", "@type": "@id", "@container": "@set"},
+    "produces": {"@id": "ex:produces", "@type": "@id", "@container": "@set"},
+    "consumes": {"@id": "ex:consumes", "@type": "@id", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/performer/system/AnalysisPipeline",
+  "type": "https://spirit-in-physics.gftd.ai/ontology#AnalysisPipeline",
+  "name": {
+    "en": "Analysis Pipeline",
+    "ja": "解析パイプライン"
+  },
+  "description": {
+    "en": "System performer for calculating spirit probability from participant response data using Kawasaki Model",
+    "ja": "川崎モデルを使用して参加者応答データからSpirit確率を計算するシステム実行主体"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "hasResponsibility": [
+    "https://spirit-in-physics.gftd.ai/activity/AnalysisProcess"
+  ],
+  
+  "hasPermission": [
+    "https://spirit-in-physics.gftd.ai/permission/AnalysisPipelineReadPermission",
+    "https://spirit-in-physics.gftd.ai/permission/AnalysisPipelineWritePermission",
+    "https://spirit-in-physics.gftd.ai/permission/ServiceRolePermission"
+  ],
+  
+  "produces": [
+    "https://spirit-in-physics.gftd.ai/ontology#AnalysisResult"
+  ],
+  
+  "consumes": [
+    "https://spirit-in-physics.gftd.ai/ontology#WordResponse"
+  ],
+  
+  "implementation": {
+    "path": "packages/trpc-routers/src/routers/analysis.ts",
+    "framework": "tRPC",
+    "model": "Kawasaki Model"
+  }
+}
+

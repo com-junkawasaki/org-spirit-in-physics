@@ -1,0 +1,105 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "realizedBy": {"@id": "ex:realizedBy", "@type": "@id"},
+    "desiredEffect": {"@id": "ex:desiredEffect"},
+    "keyPillars": {"@id": "ex:keyPillars", "@container": "@set"},
+    "subProcesses": {"@id": "ex:subProcesses", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/goal",
+  "type": "ex:Goal",
+  "name": "いい感じの社会の生成",
+  "description": "我らと我らの子孫が豊かで情緒的な暮らしを送れるいい感じの社会を生成する",
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "realizedBy": "https://spirit-in-physics.gftd.ai/project",
+  
+  "desiredEffect": {
+    "id": "https://spirit-in-physics.gftd.ai/desired-effect",
+    "type": "ex:DesiredEffect",
+    "description": "人々が満たされた人生を送れる社会を築く。科学的手法により霊性を可視化・測定可能にし、神と人、霊と人を統合する。"
+  },
+  
+  "keyPillars": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/pillar/richness",
+      "type": "ex:KeyPillar",
+      "name": "豊かさ (Richness)",
+      "description": "物質的、精神的な豊かさ",
+      "subProcesses": [
+        "持続可能な経済",
+        "文化の発展",
+        "個人の成長"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/pillar/emotional-lives",
+      "type": "ex:KeyPillar",
+      "name": "情緒的な暮らし (Emotional Lives)",
+      "description": "深いつながりと心の幸福を育む",
+      "subProcesses": [
+        "コミュニティ形成",
+        "メンタルヘルスケア",
+        "芸術と表現"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/pillar/legacy",
+      "type": "ex:KeyPillar",
+      "name": "子孫への継承 (Legacy for Descendants)",
+      "description": "社会が未来の世代のために持続可能であることを保証する",
+      "subProcesses": [
+        "教育システム",
+        "環境保護",
+        "世代間プログラム"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/pillar/spiritual-integration",
+      "type": "ex:KeyPillar",
+      "name": "霊性の統合 (Spiritual Integration)",
+      "description": "科学と精神世界を統合し、人間性の全体的な理解を深める",
+      "subProcesses": [
+        "川崎モデルの開発",
+        "Hume AI感情分析統合",
+        "Supabase PostgreSQLデータベース統一",
+        "科学的手法による霊性測定",
+        "Spirit確率計算",
+        "3D Force Timeline可視化",
+        "時系列統合可視化"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/pillar/technical-foundation",
+      "type": "ex:KeyPillar",
+      "name": "技術基盤 (Technical Foundation)",
+      "description": "研究の信頼性と拡張性を保証する技術インフラ",
+      "subProcesses": [
+        "Supabase PostgreSQLデータベース統合",
+        "tRPC + Zodアーキテクチャ",
+        "Next.js App Router",
+        "TypeScript型安全性",
+        "プロセスネットワーク最適化",
+        "SOLID原則完全実装"
+      ]
+    }
+  ]
+}
+

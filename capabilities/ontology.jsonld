@@ -1,0 +1,229 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dct": "http://purl.org/dc/terms/",
+    
+    "label": "rdfs:label",
+    "comment": "rdfs:comment",
+    "subClassOf": {"@id": "rdfs:subClassOf", "@type": "@id"},
+    "domain": {"@id": "rdfs:domain", "@type": "@id"},
+    "range": {"@id": "rdfs:range", "@type": "@id"},
+    "description": "dct:description"
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/capabilities/ontology",
+  "type": "owl:Ontology",
+  "label": {
+    "en": "Spirit in Physics Ontology",
+    "ja": "Spirit in Physics オントロジー"
+  },
+  "comment": {
+    "en": "Main ontology for Spirit in Physics system - defines applications, data entities, processes, and permissions",
+    "ja": "Spirit in Physicsシステムのメインオントロジー - アプリケーション、データエンティティ、プロセス、権限を定義"
+  },
+  
+  "references": {
+    "source": "ontology/spirit-in-physics.owl.ttl",
+    "format": "text/turtle"
+  },
+  
+  "classes": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#ParticipantApplication",
+      "type": "owl:Class",
+      "label": {"en": "Participant Application", "ja": "参加者アプリケーション"},
+      "comment": {"en": "Application for collecting experimental data from participants", "ja": "実験データ収集を担当する参加者向けアプリケーション"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "アプリケーション: 実験データ収集、同意取得、セッション管理を担当"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#ResearcherApplication",
+      "type": "owl:Class",
+      "label": {"en": "Researcher Application", "ja": "研究者アプリケーション"},
+      "comment": {"en": "Application for data visualization and analysis for researchers", "ja": "データ可視化と解析を担当する研究者向けアプリケーション"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "アプリケーション: データ取得、可視化、解析実行を担当"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#AnalysisPipeline",
+      "type": "owl:Class",
+      "label": {"en": "Analysis Pipeline", "ja": "解析パイプライン"},
+      "comment": {"en": "Analysis pipeline that calculates spirit_probability from participant_response_data", "ja": "participant_response_dataからspirit_probabilityを計算する解析パイプライン"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "解析パイプライン: Kawasaki ModelによるSpirit確率計算"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#Process",
+      "type": "owl:Class",
+      "label": {"en": "Process", "ja": "プロセス"},
+      "comment": {"en": "Process within the system", "ja": "システム内のプロセスを表現するクラス"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#Participant",
+      "type": "owl:Class",
+      "label": {"en": "Participant", "ja": "参加者"},
+      "comment": {"en": "Individual participating in the experiment", "ja": "実験に参加する個人"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#ExperimentSession",
+      "type": "owl:Class",
+      "label": {"en": "Experiment Session", "ja": "実験セッション"},
+      "comment": {"en": "One session of an experiment", "ja": "実験の1回のセッション"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#SessionEvent",
+      "type": "owl:Class",
+      "label": {"en": "Session Event", "ja": "セッションイベント"},
+      "comment": {"en": "Event occurring during a session (word display, response window open/close, etc.)", "ja": "セッション中に発生するイベント（単語表示、応答窓開閉など）"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+      "type": "owl:Class",
+      "label": {"en": "Word Response", "ja": "単語応答"},
+      "comment": {"en": "Word responded by participant to a presented word", "ja": "参加者が提示された単語に対して応答した単語"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#EmotionData",
+      "type": "owl:Class",
+      "label": {"en": "Emotion Data", "ja": "感情データ"},
+      "comment": {"en": "Emotion analysis data obtained from Hume AI", "ja": "Hume AIから取得した感情分析データ"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#PhysiologicalData",
+      "type": "owl:Class",
+      "label": {"en": "Physiological Data", "ja": "生理データ"},
+      "comment": {"en": "Physiological data such as skin potential", "ja": "皮膚電位などの生理学的データ"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#AnalysisResult",
+      "type": "owl:Class",
+      "label": {"en": "Analysis Result", "ja": "解析結果"},
+      "comment": {"en": "Analysis results from Kawasaki Model (spirit_probability, etc.)", "ja": "Kawasaki Modelによる解析結果（spirit_probability等）"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#TimelineData",
+      "type": "owl:Class",
+      "label": {"en": "Timeline Data", "ja": "時系列データ"},
+      "comment": {"en": "Time-series integrated data for visualization", "ja": "時系列に統合された可視化用データ"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#ConsentData",
+      "type": "owl:Class",
+      "label": {"en": "Consent Data", "ja": "同意データ"},
+      "comment": {"en": "Research consent information from participants", "ja": "参加者の研究同意情報"},
+      "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#DataCollectionProcess",
+      "type": "owl:Class",
+      "label": {"en": "Data Collection Process", "ja": "データ収集プロセス"},
+      "comment": {"en": "Process for collecting experimental data", "ja": "実験データを収集するプロセス"},
+      "subClassOf": "https://spirit-in-physics.gftd.ai/ontology#Process"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#DataStorageProcess",
+      "type": "owl:Class",
+      "label": {"en": "Data Storage Process", "ja": "データ保存プロセス"},
+      "comment": {"en": "Process for storing data in Supabase", "ja": "データをSupabaseに保存するプロセス"},
+      "subClassOf": "https://spirit-in-physics.gftd.ai/ontology#Process"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#AnalysisProcess",
+      "type": "owl:Class",
+      "label": {"en": "Analysis Process", "ja": "解析プロセス"},
+      "comment": {"en": "Process for executing analysis using Kawasaki Model", "ja": "Kawasaki Modelによる解析を実行するプロセス"},
+      "subClassOf": "https://spirit-in-physics.gftd.ai/ontology#Process"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#VisualizationProcess",
+      "type": "owl:Class",
+      "label": {"en": "Visualization Process", "ja": "可視化プロセス"},
+      "comment": {"en": "Process for visualizing data", "ja": "データを可視化するプロセス"},
+      "subClassOf": "https://spirit-in-physics.gftd.ai/ontology#Process"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#TimelineIntegrationProcess",
+      "type": "owl:Class",
+      "label": {"en": "Timeline Integration Process", "ja": "時系列統合プロセス"},
+      "comment": {"en": "Process for integrating time-series data", "ja": "時系列データを統合するプロセス"},
+      "subClassOf": "https://spirit-in-physics.gftd.ai/ontology#Process"
+    }
+  ],
+  
+  "properties": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#hasResponsibility",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "has responsibility", "ja": "責任を持つ"},
+      "comment": {"en": "Responsibilities held by applications or processes", "ja": "アプリケーションやプロセスが持つ責任"},
+      "domain": "owl:Thing",
+      "range": "https://spirit-in-physics.gftd.ai/ontology#Process"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#hasPermission",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "has permission", "ja": "権限を持つ"},
+      "comment": {"en": "Permissions held by applications", "ja": "アプリケーションが持つ権限"},
+      "domain": "owl:Thing",
+      "range": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#produces",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "produces", "ja": "生成する"},
+      "comment": {"en": "Data produced by processes or applications", "ja": "プロセスやアプリケーションが生成するデータ"},
+      "domain": "owl:Thing",
+      "range": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#consumes",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "consumes", "ja": "消費する"},
+      "comment": {"en": "Data consumed by processes or applications", "ja": "プロセスやアプリケーションが消費するデータ"},
+      "domain": "owl:Thing",
+      "range": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#hasInput",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "has input", "ja": "入力を持つ"},
+      "comment": {"en": "Inputs of processes or data flows", "ja": "プロセスやデータフローの入力"},
+      "domain": "owl:Thing",
+      "range": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#hasOutput",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "has output", "ja": "出力を持つ"},
+      "comment": {"en": "Outputs of processes or data flows", "ja": "プロセスやデータフローの出力"},
+      "domain": "owl:Thing",
+      "range": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#hasTimestamp",
+      "type": "owl:DatatypeProperty",
+      "label": {"en": "has timestamp", "ja": "タイムスタンプを持つ"},
+      "comment": {"en": "Timestamp of events or data", "ja": "イベントやデータのタイムスタンプ"},
+      "domain": "owl:Thing",
+      "range": "xsd:dateTime"
+    }
+  ]
+}
+

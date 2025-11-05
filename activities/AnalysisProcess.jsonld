@@ -1,0 +1,76 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "consumer": {"@id": "ex:consumer", "@type": "@id"},
+    "producer": {"@id": "ex:producer", "@type": "@id"},
+    "measure": {"@id": "ex:measure"},
+    "rule": {"@id": "ex:rule"},
+    "condition": {"@id": "ex:condition"},
+    "input": {"@id": "ex:input", "@container": "@set"},
+    "output": {"@id": "ex:output", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/activity/AnalysisProcess",
+  "type": "ex:Activity",
+  "name": {
+    "en": "Analysis Process",
+    "ja": "解析プロセス"
+  },
+  "description": {
+    "en": "Activity for executing analysis using Kawasaki Model to calculate spirit probability",
+    "ja": "川崎モデルを使用してSpirit確率を計算する解析を実行する活動"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "producer": "https://spirit-in-physics.gftd.ai/performer/system/AnalysisPipeline",
+  "consumer": "https://spirit-in-physics.gftd.ai/resource/SupabaseDatabase",
+  
+  "input": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+      "type": "ex:Input",
+      "description": {"en": "Word response data from participants", "ja": "参加者からの単語応答データ"}
+    }
+  ],
+  
+  "output": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#AnalysisResult",
+      "type": "ex:Output",
+      "description": {"en": "Analysis results including spirit_probability, word2vec_component, emotion_component, reaction_time_component", "ja": "spirit_probability、word2vec_component、emotion_component、reaction_time_componentを含む解析結果"}
+    }
+  ],
+  
+  "measure": {
+    "id": "https://spirit-in-physics.gftd.ai/measure/analysis-process",
+    "type": "ex:Measure",
+    "description": {"en": "Analysis accuracy, processing time, spirit probability distribution", "ja": "解析精度、処理時間、Spirit確率分布"}
+  },
+  
+  "rule": {
+    "id": "https://spirit-in-physics.gftd.ai/rule/analysis-process",
+    "type": "ex:Rule",
+    "description": {"en": "Spirit probability must be calculated using Kawasaki Model formula: SP = f(Word2Vec, Emotion, ReactionTime)", "ja": "Spirit確率は川崎モデル式を使用して計算される必要がある: SP = f(Word2Vec, Emotion, ReactionTime)"}
+  },
+  
+  "condition": {
+    "id": "https://spirit-in-physics.gftd.ai/condition/analysis-process",
+    "type": "ex:Condition",
+    "description": {"en": "All required input data must be available and valid", "ja": "全ての必要な入力データが利用可能で有効である必要がある"}
+  }
+}
+

@@ -1,0 +1,99 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "providedBy": {"@id": "ex:providedBy", "@type": "@id"},
+    "components": {"@id": "ex:components", "@container": "@set"},
+    "routes": {"@id": "ex:routes", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/port/ui/ResearcherUI",
+  "type": "ex:UIPort",
+  "name": {
+    "en": "Researcher UI Port",
+    "ja": "研究者UIポート"
+  },
+  "description": {
+    "en": "Human Port (UI Port) for researcher application. Provides interface for data visualization, timeline integration, and analysis result presentation.",
+    "ja": "研究者アプリケーションのHuman Port（UIポート）。データ可視化、時系列統合、解析結果提示のインターフェースを提供。"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "providedBy": "https://spirit-in-physics.gftd.ai/performer/system/ResearcherApplication",
+  
+  "components": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/component/TimelineVisualization",
+      "name": {"en": "Timeline Visualization", "ja": "タイムライン可視化"},
+      "path": "apps/researcher/src/components/TimelineVisualization.tsx",
+      "description": {"en": "Component for visualizing time-series data", "ja": "時系列データを可視化するコンポーネント"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/component/Force3DWordGraph",
+      "name": {"en": "3D Force Word Graph", "ja": "3D Force単語グラフ"},
+      "path": "apps/researcher/src/components/Force3DWordGraphTypeGPU.tsx",
+      "description": {"en": "Component for 3D force timeline visualization with emotion-kernel tensegrity model", "ja": "感情カーネルテンセグリティモデルによる3D Force Timeline可視化コンポーネント"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/component/DashboardOverview",
+      "name": {"en": "Dashboard Overview", "ja": "ダッシュボード概要"},
+      "path": "apps/researcher/src/components/DashboardOverview.tsx",
+      "description": {"en": "Component for system dashboard overview", "ja": "システムダッシュボード概要コンポーネント"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/component/ParticipantOverview",
+      "name": {"en": "Participant Overview", "ja": "参加者概要"},
+      "path": "apps/researcher/src/components/ParticipantOverview.tsx",
+      "description": {"en": "Component for participant data overview", "ja": "参加者データ概要コンポーネント"}
+    }
+  ],
+  
+  "routes": [
+    {
+      "path": "/",
+      "description": {"en": "Main researcher dashboard", "ja": "研究者メインダッシュボード"}
+    },
+    {
+      "path": "/dashboard",
+      "description": {"en": "System dashboard", "ja": "システムダッシュボード"}
+    },
+    {
+      "path": "/participants",
+      "description": {"en": "Participant list", "ja": "参加者一覧"}
+    },
+    {
+      "path": "/participants/[id]",
+      "description": {"en": "Participant details", "ja": "参加者詳細"}
+    },
+    {
+      "path": "/participants/[id]/timeline",
+      "description": {"en": "Participant timeline visualization", "ja": "参加者タイムライン可視化"}
+    },
+    {
+      "path": "/3d-force-timeline",
+      "description": {"en": "3D Force Timeline visualization", "ja": "3D Force Timeline可視化"}
+    }
+  ],
+  
+  "framework": "Next.js App Router",
+  "uiLibrary": "React",
+  "styling": "Tailwind CSS",
+  "visualization": {
+    "libraries": ["D3.js", "Chart.js", "Three.js"],
+    "type": "3D Force Timeline with Emotion-Kernel Tensegrity"
+  }
+}
+

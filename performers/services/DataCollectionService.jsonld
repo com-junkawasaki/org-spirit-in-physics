@@ -1,0 +1,46 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "implementsActivity": {"@id": "ex:implementsActivity", "@type": "@id", "@container": "@set"},
+    "providesServicePort": {"@id": "ex:providesServicePort", "@type": "@id"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/performer/service/DataCollectionService",
+  "type": "ex:Service",
+  "name": {
+    "en": "Data Collection Service",
+    "ja": "データ収集サービス"
+  },
+  "description": {
+    "en": "Service performer for collecting experimental data. Provides API endpoints for consent, session events, and word responses.",
+    "ja": "実験データを収集するサービス実行主体。同意、セッションイベント、単語応答のAPIエンドポイントを提供。"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "implementsActivity": [
+    "https://spirit-in-physics.gftd.ai/activity/DataCollection"
+  ],
+  
+  "providesServicePort": "https://spirit-in-physics.gftd.ai/port/services/tRPC",
+  
+  "implementation": {
+    "path": "packages/trpc-routers/src/routers/sessions.ts",
+    "protocol": "tRPC",
+    "framework": "Next.js"
+  }
+}
+

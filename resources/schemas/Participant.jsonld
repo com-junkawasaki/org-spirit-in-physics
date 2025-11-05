@@ -1,0 +1,93 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "tableName": "ex:tableName",
+    "columns": {"@id": "ex:columns", "@container": "@set"},
+    "primaryKey": "ex:primaryKey",
+    "foreignKeys": {"@id": "ex:foreignKeys", "@container": "@set"},
+    "indexes": {"@id": "ex:indexes", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/resource/schema/Participant",
+  "type": "ex:ResourceSchema",
+  "name": {
+    "en": "Participant Schema",
+    "ja": "参加者スキーマ"
+  },
+  "description": {
+    "en": "Database schema for participants table in Supabase",
+    "ja": "Supabaseのparticipantsテーブルのデータベーススキーマ"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "tableName": "participants",
+  "primaryKey": "id",
+  
+  "columns": [
+    {
+      "name": "id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "gen_random_uuid()",
+      "description": {"en": "Primary key", "ja": "主キー"}
+    },
+    {
+      "name": "age",
+      "type": "INTEGER",
+      "nullable": true,
+      "description": {"en": "Participant age", "ja": "参加者の年齢"}
+    },
+    {
+      "name": "gender",
+      "type": "gender_type",
+      "nullable": true,
+      "description": {"en": "Participant gender", "ja": "参加者の性別"},
+      "enumValues": ["male", "female", "other", "prefer-not-to-say"]
+    },
+    {
+      "name": "handedness",
+      "type": "TEXT",
+      "nullable": true,
+      "description": {"en": "Participant handedness", "ja": "参加者の利き手"}
+    },
+    {
+      "name": "created_at",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "default": "NOW()",
+      "description": {"en": "Creation timestamp", "ja": "作成タイムスタンプ"}
+    },
+    {
+      "name": "updated_at",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "default": "NOW()",
+      "description": {"en": "Update timestamp", "ja": "更新タイムスタンプ"}
+    }
+  ],
+  
+  "indexes": [
+    {
+      "name": "idx_participants_created_at",
+      "columns": ["created_at"],
+      "description": {"en": "Index on created_at for sorting", "ja": "ソート用のcreated_atインデックス"}
+    }
+  ],
+  
+  "mapsTo": "https://spirit-in-physics.gftd.ai/ontology#Participant"
+}
+

@@ -1,0 +1,125 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "tableName": "ex:tableName",
+    "columns": {"@id": "ex:columns", "@container": "@set"},
+    "primaryKey": "ex:primaryKey",
+    "foreignKeys": {"@id": "ex:foreignKeys", "@container": "@set"},
+    "indexes": {"@id": "ex:indexes", "@container": "@set"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/resource/schema/ExperimentSession",
+  "type": "ex:ResourceSchema",
+  "name": {
+    "en": "Experiment Session Schema",
+    "ja": "実験セッションスキーマ"
+  },
+  "description": {
+    "en": "Database schema for participant_experiment_sessions table in Supabase",
+    "ja": "Supabaseのparticipant_experiment_sessionsテーブルのデータベーススキーマ"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "tableName": "participant_experiment_sessions",
+  "primaryKey": "id",
+  
+  "columns": [
+    {
+      "name": "id",
+      "type": "UUID",
+      "nullable": false,
+      "default": "gen_random_uuid()",
+      "description": {"en": "Primary key", "ja": "主キー"}
+    },
+    {
+      "name": "participant_id",
+      "type": "UUID",
+      "nullable": false,
+      "description": {"en": "Foreign key to participants table", "ja": "participantsテーブルへの外部キー"}
+    },
+    {
+      "name": "session_id",
+      "type": "UUID",
+      "nullable": false,
+      "description": {"en": "Session identifier", "ja": "セッション識別子"}
+    },
+    {
+      "name": "session_type",
+      "type": "session_type",
+      "nullable": false,
+      "description": {"en": "Session type (session-1 or session-2)", "ja": "セッションタイプ（session-1またはsession-2）"},
+      "enumValues": ["session-1", "session-2"]
+    },
+    {
+      "name": "start_time",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "description": {"en": "Session start time", "ja": "セッション開始時刻"}
+    },
+    {
+      "name": "end_time",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": true,
+      "description": {"en": "Session end time", "ja": "セッション終了時刻"}
+    },
+    {
+      "name": "created_at",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "default": "NOW()",
+      "description": {"en": "Creation timestamp", "ja": "作成タイムスタンプ"}
+    },
+    {
+      "name": "updated_at",
+      "type": "TIMESTAMP WITH TIME ZONE",
+      "nullable": false,
+      "default": "NOW()",
+      "description": {"en": "Update timestamp", "ja": "更新タイムスタンプ"}
+    }
+  ],
+  
+  "foreignKeys": [
+    {
+      "column": "participant_id",
+      "references": "participants(id)",
+      "onDelete": "CASCADE"
+    }
+  ],
+  
+  "indexes": [
+    {
+      "name": "idx_participant_experiment_sessions_participant_id",
+      "columns": ["participant_id"],
+      "description": {"en": "Index on participant_id for lookups", "ja": "検索用のparticipant_idインデックス"}
+    },
+    {
+      "name": "idx_participant_experiment_sessions_session_type",
+      "columns": ["session_type"],
+      "description": {"en": "Index on session_type for filtering", "ja": "フィルタリング用のsession_typeインデックス"}
+    }
+  ],
+  
+  "uniqueConstraints": [
+    {
+      "columns": ["participant_id", "session_id"],
+      "description": {"en": "Unique constraint on participant_id and session_id", "ja": "participant_idとsession_idの一意制約"}
+    }
+  ],
+  
+  "mapsTo": "https://spirit-in-physics.gftd.ai/ontology#ExperimentSession"
+}
+

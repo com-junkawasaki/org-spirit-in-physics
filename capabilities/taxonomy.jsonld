@@ -1,0 +1,122 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dct": "http://purl.org/dc/terms/",
+    
+    "prefLabel": "skos:prefLabel",
+    "altLabel": "skos:altLabel",
+    "definition": "skos:definition",
+    "broader": {"@id": "skos:broader", "@type": "@id"},
+    "narrower": {"@id": "skos:narrower", "@type": "@id"},
+    "related": {"@id": "skos:related", "@type": "@id"},
+    "description": "dct:description"
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/capabilities/taxonomy",
+  "type": "skos:ConceptScheme",
+  "prefLabel": {
+    "en": "Spirit in Physics Capability Taxonomy",
+    "ja": "Spirit in Physics 能力分類体系"
+  },
+  "description": {
+    "en": "SKOS taxonomy of capabilities for Spirit in Physics system",
+    "ja": "Spirit in Physicsシステムの能力分類体系（SKOS形式）"
+  },
+  
+  "concepts": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/data-collection",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Data Collection", "ja": "データ収集"},
+      "definition": {"en": "Capability to collect experimental data from participants", "ja": "参加者から実験データを収集する能力"},
+      "narrower": [
+        "https://spirit-in-physics.gftd.ai/capability/consent-collection",
+        "https://spirit-in-physics.gftd.ai/capability/session-management",
+        "https://spirit-in-physics.gftd.ai/capability/word-response-collection"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/consent-collection",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Consent Collection", "ja": "同意取得"},
+      "definition": {"en": "Capability to collect and manage participant consent", "ja": "参加者の同意を収集・管理する能力"},
+      "broader": "https://spirit-in-physics.gftd.ai/capability/data-collection"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/session-management",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Session Management", "ja": "セッション管理"},
+      "definition": {"en": "Capability to manage experiment sessions", "ja": "実験セッションを管理する能力"},
+      "broader": "https://spirit-in-physics.gftd.ai/capability/data-collection"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/word-response-collection",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Word Response Collection", "ja": "単語応答収集"},
+      "definition": {"en": "Capability to collect word association responses", "ja": "単語連合応答を収集する能力"},
+      "broader": "https://spirit-in-physics.gftd.ai/capability/data-collection"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/data-storage",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Data Storage", "ja": "データ保存"},
+      "definition": {"en": "Capability to store data in Supabase database", "ja": "Supabaseデータベースにデータを保存する能力"},
+      "narrower": [
+        "https://spirit-in-physics.gftd.ai/capability/session-event-storage",
+        "https://spirit-in-physics.gftd.ai/capability/response-data-storage",
+        "https://spirit-in-physics.gftd.ai/capability/video-storage"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/emotion-analysis",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Emotion Analysis", "ja": "感情分析"},
+      "definition": {"en": "Capability to analyze emotions using Hume AI", "ja": "Hume AIを使用して感情を分析する能力"},
+      "narrower": [
+        "https://spirit-in-physics.gftd.ai/capability/burst-analysis",
+        "https://spirit-in-physics.gftd.ai/capability/face-analysis",
+        "https://spirit-in-physics.gftd.ai/capability/language-analysis",
+        "https://spirit-in-physics.gftd.ai/capability/prosody-analysis"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/spirit-probability-calculation",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Spirit Probability Calculation", "ja": "Spirit確率計算"},
+      "definition": {"en": "Capability to calculate spirit probability using Kawasaki Model", "ja": "川崎モデルを使用してSpirit確率を計算する能力"},
+      "related": [
+        "https://spirit-in-physics.gftd.ai/capability/word2vec-analysis",
+        "https://spirit-in-physics.gftd.ai/capability/emotion-analysis",
+        "https://spirit-in-physics.gftd.ai/capability/reaction-time-analysis"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/timeline-integration",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Timeline Integration", "ja": "時系列統合"},
+      "definition": {"en": "Capability to integrate time-series data from multiple sources", "ja": "複数のソースから時系列データを統合する能力"},
+      "narrower": [
+        "https://spirit-in-physics.gftd.ai/capability/session-event-integration",
+        "https://spirit-in-physics.gftd.ai/capability/emotion-data-integration",
+        "https://spirit-in-physics.gftd.ai/capability/physiological-data-integration"
+      ]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/capability/visualization",
+      "type": "skos:Concept",
+      "prefLabel": {"en": "Visualization", "ja": "可視化"},
+      "definition": {"en": "Capability to visualize data in 3D Force Timeline", "ja": "3D Force Timelineでデータを可視化する能力"},
+      "narrower": [
+        "https://spirit-in-physics.gftd.ai/capability/3d-force-timeline",
+        "https://spirit-in-physics.gftd.ai/capability/emotion-distance-visualization",
+        "https://spirit-in-physics.gftd.ai/capability/tensegrity-physics"
+      ]
+    }
+  ]
+}
+

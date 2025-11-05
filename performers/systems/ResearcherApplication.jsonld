@@ -1,0 +1,67 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/ts#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "hasResponsibility": {"@id": "ex:hasResponsibility", "@type": "@id", "@container": "@set"},
+    "hasPermission": {"@id": "ex:hasPermission", "@type": "@id", "@container": "@set"},
+    "produces": {"@id": "ex:produces", "@type": "@id", "@container": "@set"},
+    "consumes": {"@id": "ex:consumes", "@type": "@id", "@container": "@set"},
+    "providesUIPort": {"@id": "ex:providesUIPort", "@type": "@id"}
+  },
+  
+  "id": "https://spirit-in-physics.gftd.ai/performer/system/ResearcherApplication",
+  "type": "https://spirit-in-physics.gftd.ai/ontology#ResearcherApplication",
+  "name": {
+    "en": "Researcher Application",
+    "ja": "研究者アプリケーション"
+  },
+  "description": {
+    "en": "System performer for data visualization and analysis for researchers. Handles timeline integration, visualization, and analysis result presentation.",
+    "ja": "研究者向けのデータ可視化と解析を行うシステム実行主体。時系列統合、可視化、解析結果提示を担当。"
+  },
+  "createdAt": "2024-10-02T00:00:00+09:00",
+  "updatedAt": "2025-01-04T00:00:00+09:00",
+  
+  "hasResponsibility": [
+    "https://spirit-in-physics.gftd.ai/activity/VisualizationProcess",
+    "https://spirit-in-physics.gftd.ai/activity/TimelineIntegration"
+  ],
+  
+  "hasPermission": [
+    "https://spirit-in-physics.gftd.ai/permission/ResearcherReadPermission",
+    "https://spirit-in-physics.gftd.ai/permission/ResearcherWritePermission",
+    "https://spirit-in-physics.gftd.ai/permission/ServiceRolePermission"
+  ],
+  
+  "produces": [
+    "https://spirit-in-physics.gftd.ai/ontology#AnalysisResult",
+    "https://spirit-in-physics.gftd.ai/ontology#TimelineData"
+  ],
+  
+  "consumes": [
+    "https://spirit-in-physics.gftd.ai/ontology#SessionEvent",
+    "https://spirit-in-physics.gftd.ai/ontology#WordResponse",
+    "https://spirit-in-physics.gftd.ai/ontology#EmotionData"
+  ],
+  
+  "providesUIPort": "https://spirit-in-physics.gftd.ai/port/ui/ResearcherUI",
+  
+  "implementation": {
+    "path": "apps/researcher",
+    "framework": "Next.js",
+    "runtime": "Node.js"
+  }
+}
+
