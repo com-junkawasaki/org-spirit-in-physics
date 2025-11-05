@@ -1,7 +1,7 @@
-//! Apollo Client Configuration
+//! Apollo Client Configuration for Participant App
 //! 
-//! Merkle DAG: graphql.client
-//! OWL: spirit:GraphQL Service Port client
+//! Merkle DAG: graphql.client.participant
+//! OWL: spirit:GraphQL Service Port client (Participant)
 
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';

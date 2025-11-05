@@ -1,0 +1,79 @@
+//! Analysis Result GraphQL type
+//! 
+//! Merkle DAG: graphql.schema.analysis
+//! OWL: spirit:AnalysisResult
+
+use async_graphql::*;
+use serde_json::Value as JsonValue;
+
+#[derive(SimpleObject, Clone, Debug)]
+pub struct AnalysisResult {
+    pub id: String,
+    pub participant_id: String,
+    pub experiment_id: String,
+    pub word_stimulus_id: i32,
+    pub stimulus_word: String,
+    pub response_word: String,
+    pub reaction_time_ms: Option<i32>,
+    pub spirit_probability: f64,
+    pub word2vec_component: Option<f64>,
+    pub reaction_time_component: Option<f64>,
+    pub skin_potential_component: Option<f64>,
+    pub emotion_component: Option<f64>,
+    pub emotion_data: Option<JsonValue>,
+    pub physiological_data: Option<JsonValue>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+impl From<serde_json::Value> for AnalysisResult {
+    fn from(value: serde_json::Value) -> Self {
+        AnalysisResult {
+            id: value["id"]
+                .as_str()
+                .or_else(|| value["id"].as_u64().map(|v| v.to_string().as_str()))
+                .unwrap_or("")
+                .to_string(),
+            participant_id: value["participant_id"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            experiment_id: value["experiment_id"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            word_stimulus_id: value["word_stimulus_id"]
+                .as_i64()
+                .unwrap_or(0) as i32,
+            stimulus_word: value["stimulus_word"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            response_word: value["response_word"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            reaction_time_ms: value["reaction_time_ms"]
+                .as_i64()
+                .map(|v| v as i32),
+            spirit_probability: value["spirit_probability"]
+                .as_f64()
+                .unwrap_or(0.0),
+            word2vec_component: value["word2vec_component"].as_f64(),
+            reaction_time_component: value["reaction_time_component"].as_f64(),
+            skin_potential_component: value["skin_potential_component"].as_f64(),
+            emotion_component: value["emotion_component"].as_f64(),
+            emotion_data: value["emotion_data"].clone(),
+            physiological_data: value["physiological_data"].clone(),
+            created_at: value["created_at"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            updated_at: value["updated_at"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+        }
+    }
+}
+

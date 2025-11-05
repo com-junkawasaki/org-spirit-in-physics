@@ -47,7 +47,10 @@
     "@trpc/client": "10.45.2",
     "@trpc/next": "10.45.2",
     "@trpc/react-query": "10.45.2",
-    "@tanstack/react-query": "4.36.1"
+    "@tanstack/react-query": "4.36.1",
+    "@apollo/client": "^4.0.9",
+    "graphql": "^16.12.0",
+    "graphql-tag": "^2.12.6"
   },
   "scripts": {
     "dev": "next dev -p 25250",

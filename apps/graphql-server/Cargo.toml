@@ -1,0 +1,52 @@
+[package]
+name = "spirit-graphql-server"
+version = "0.1.0"
+edition = "2021"
+authors = ["Spirit in Physics Team"]
+description = "GraphQL Server for Spirit in Physics - Rust implementation"
+license = "MIT"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# GraphQL
+async-graphql = { version = "6.0", features = ["chrono", "uuid"] }
+async-graphql-axum = { version = "6.0" }
+
+# HTTP server
+axum = { version = "0.7", features = ["json", "macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+
+# HTTP client for Supabase REST API
+reqwest = { version = "0.12", features = ["json"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# UUID support
+uuid = { version = "1.10", features = ["v4", "serde"] }
+
+# DateTime support
+chrono = { version = "0.4", features = ["serde"] }
+
+# Environment variables
+dotenv = "0.15"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[[bin]]
+name = "graphql-server"
+path = "src/main.rs"
+

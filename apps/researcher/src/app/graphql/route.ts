@@ -1,7 +1,11 @@
-//! GraphQL HTTP Route Handler
+//! GraphQL HTTP Route Handler (DEPRECATED)
 //! 
 //! Merkle DAG: graphql.route
 //! OWL: spirit:GraphQL Service Port HTTP handler
+//! 
+//! DEPRECATED: This Next.js GraphQL handler is deprecated.
+//! Please use the Rust GraphQL server at http://localhost:3003/graphql
+//! or set NEXT_PUBLIC_RUST_GRAPHQL_URL environment variable.
 //! 
 //! Next.js App Router route handler for GraphQL API
 
