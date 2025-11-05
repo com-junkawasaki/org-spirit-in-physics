@@ -293,35 +293,6 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
 }
 
 /**
- * Supabaseから感情分析の統計情報を取得（Neo4jから移行）
- * @deprecated この関数はgetEmotionStatisticsFromSupabaseに置き換えられました
- */
-export async function getEmotionStatisticsFromNeo4j(): Promise<{
-  totalAnalyses: number;
-  averageEmotions: Record<string, number>;
-  dominantEmotions: Array<{ emotion: string; count: number }>;
-  processingStats: {
-    averageTime: number;
-    totalTime: number;
-  };
-}> {
-    try {
-      // Supabaseマネージャーを使用
-      return await supabaseManager.getEmotionStatistics();
-  } catch (error) {
-    console.error('Error getting emotion statistics from Supabase:', error);
-  }
-
-  // Fallback to empty stats
-  return {
-    totalAnalyses: 0,
-    averageEmotions: {},
-    dominantEmotions: [],
-    processingStats: { averageTime: 0, totalTime: 0 }
-  };
-}
-
-/**
  * 感情分析の統計情報を生成（従来の関数）
  */
 export function generateEmotionStatistics(results: EmotionAnalysisResult[]): {
