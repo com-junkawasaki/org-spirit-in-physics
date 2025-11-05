@@ -6,8 +6,23 @@
 import { gql } from '@apollo/client';
 
 export const GET_SESSIONS = gql`
-  query GetSessions($participantId: ID) {
+  query GetSessions($participantId: String) {
     sessions(participantId: $participantId) {
+      id
+      participantId
+      sessionId
+      sessionType
+      startTime
+      endTime
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_SESSIONS_BY_PARTICIPANT = gql`
+  query GetSessionsByParticipant($participantId: String!) {
+    sessionsByParticipant(participantId: $participantId) {
       id
       participantId
       sessionId

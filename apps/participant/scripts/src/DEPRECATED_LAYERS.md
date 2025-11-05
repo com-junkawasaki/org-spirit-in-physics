@@ -1,6 +1,6 @@
 # 非推奨レイヤー
 
-このプロジェクトは **tRPC + Zod のみ**のシンプルな設計に移行しました。
+このプロジェクトは **GraphQL + Apollo Client** のシンプルな設計に移行しました。
 
 以下のレイヤーは非推奨となり、段階的に削除予定です：
 
@@ -18,13 +18,15 @@
 
 ```
 src/
-├── server/
-│   ├── trpc/          # tRPC設定
-│   └── api/
-│       └── routers/   # tRPCルーター
+├── lib/
+│   └── graphql/          # GraphQL client configuration
+│       ├── client.ts      # Apollo Client setup
+│       ├── queries/       # GraphQL queries
+│       ├── mutations/     # GraphQL mutations
+│       └── hooks.ts       # React hooks for GraphQL
 ├── shared/
-│   └── schemas/       # Zodスキーマ
-└── app/               # Next.js App Router
+│   └── schemas/          # Zod schemas
+└── app/                 # Next.js App Router
 ```
 
 ## 移行ガイド
@@ -38,7 +40,7 @@ import { storageAdapter } from 'scripts/src/50_adapters';
 await storageAdapter.saveStructuredData(payload);
 ```
 
-### 現在（tRPC）
+### 以前（tRPC）
 ```typescript
 import { createTRPCProxyClient } from '@trpc/client';
 import { AppRouter } from '@/server/api/root';
@@ -46,9 +48,21 @@ const client = createTRPCProxyClient<AppRouter>({...});
 await client.sessions.saveSession.mutate(sessionData);
 ```
 
+### 現在（GraphQL）
+```typescript
+import { useSaveSession } from '@/lib/graphql/hooks';
+// Or using Apollo Client directly
+import { apolloClient } from '@/lib/graphql/client';
+import { SAVE_SESSION } from '@/lib/graphql/mutations/sessions';
+await apolloClient.mutate({
+  mutation: SAVE_SESSION,
+  variables: { input: sessionData }
+});
+```
+
 ## 注意事項
 
 - 一部のXStateマシンはUI側で使用されているため、保持します
 - Inngestワークフローはバックグラウンド処理として維持します
+- GraphQLサーバーはRustで実装されています（`apps/graphql-server`）
 - 段階的に移行し、動作確認しながら削除します
-

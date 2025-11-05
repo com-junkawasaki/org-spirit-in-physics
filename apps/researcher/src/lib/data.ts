@@ -183,41 +183,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
  */
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-    // Use GraphQL query instead of direct Supabase call
-    const graphqlUrl = process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL || 'http://localhost:3003/graphql';
+    // Use Apollo Client for GraphQL queries
+    const { apolloClient } = await import('@/lib/graphql/client');
+    const { GET_PARTICIPANTS } = await import('@/lib/graphql/queries/participants');
     
-    const response = await fetch(graphqlUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: `
-          query {
-            participants {
-              id
-              age
-              gender
-              handedness
-              createdAt
-              updatedAt
-            }
-          }
-        `,
-      }),
+    const result = await apolloClient.query({
+      query: GET_PARTICIPANTS,
+      fetchPolicy: 'network-only', // Always fetch fresh data for server-side
     });
 
-    if (!response.ok) {
-      throw new Error(`GraphQL request failed: ${response.statusText}`);
+    if (result.error || (result.data as any)?.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(result.error || (result.data as any)?.errors)}`);
     }
 
-    const result = await response.json();
-    
-    if (result.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-    }
-
-    const graphqlParticipants = result.data?.participants || [];
+    const graphqlParticipants = (result.data as any)?.participants || [];
     
     // For each participant, get detailed data
     const participantsWithData = await Promise.all(
@@ -266,68 +245,37 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
  */
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    // Use GraphQL query instead of direct Supabase call
-    const graphqlUrl = process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL || 'http://localhost:3003/graphql';
+    // Use Apollo Client for GraphQL queries
+    const { apolloClient } = await import('@/lib/graphql/client');
+    const { GET_PARTICIPANT } = await import('@/lib/graphql/queries/participants');
+    const { GET_SESSIONS_BY_PARTICIPANT } = await import('@/lib/graphql/queries/sessions');
     
     // Fetch participant and sessions in parallel
-    const [participantResponse, sessionsResponse] = await Promise.all([
-      fetch(graphqlUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: `
-            query GetParticipant($id: String!) {
-              participant(id: $id) {
-                id
-                age
-                gender
-                handedness
-                createdAt
-                updatedAt
-              }
-            }
-          `,
-          variables: { id: participantId },
-        }),
+    const [participantResult, sessionsResult] = await Promise.all([
+      apolloClient.query({
+        query: GET_PARTICIPANT,
+        variables: { id: participantId },
+        fetchPolicy: 'network-only',
       }),
-      fetch(graphqlUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: `
-            query GetSessions($participantId: String) {
-              sessions(participantId: $participantId) {
-                id
-                participantId
-                sessionId
-                sessionType
-                startTime
-                endTime
-                createdAt
-                updatedAt
-              }
-            }
-          `,
-          variables: { participantId },
-        }),
+      apolloClient.query({
+        query: GET_SESSIONS_BY_PARTICIPANT,
+        variables: { participantId },
+        fetchPolicy: 'network-only',
       }),
     ]);
 
-    if (!participantResponse.ok || !sessionsResponse.ok) {
-      throw new Error('GraphQL request failed');
+    if (participantResult.error || sessionsResult.error || 
+        (participantResult.data as any)?.errors || (sessionsResult.data as any)?.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(
+        participantResult.error || sessionsResult.error || 
+        (participantResult.data as any)?.errors || (sessionsResult.data as any)?.errors
+      )}`);
     }
 
-    const participantResult = await participantResponse.json();
-    const sessionsResult = await sessionsResponse.json();
-    
-    if (participantResult.errors || sessionsResult.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(participantResult.errors || sessionsResult.errors)}`);
-    }
-
-    const participant = participantResult.data?.participant;
+    const participant = (participantResult.data as any)?.participant;
     if (!participant) return null;
 
-    const dbSessions = sessionsResult.data?.sessions || [];
+    const dbSessions = (sessionsResult.data as any)?.sessionsByParticipant || [];
 
     // レスポンスを取得
     const responses = await supabaseManager.getParticipantResponses(participantId)

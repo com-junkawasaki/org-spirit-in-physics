@@ -6,7 +6,7 @@
 import { gql } from '@apollo/client';
 
 export const GET_ANALYSIS_RESULTS = gql`
-  query GetAnalysisResults($participantId: ID, $experimentId: ID) {
+  query GetAnalysisResults($participantId: String, $experimentId: String) {
     analysisResults(participantId: $participantId, experimentId: $experimentId) {
       id
       participantId

@@ -56,8 +56,8 @@ impl MutationRoot {
     async fn analyze_participant(
         &self,
         _ctx: &Context<'_>,
-        participant_id: String,
-        experiment_id: Option<String>,
+        #[graphql(name = "participantId")] participant_id: String,
+        #[graphql(name = "experimentId")] experiment_id: Option<String>,
     ) -> Result<ActivityExecutionResponse> {
         let analyzer_url = env::var("ANALYZER_URL")
             .unwrap_or_else(|_| "http://localhost:3002".to_string());

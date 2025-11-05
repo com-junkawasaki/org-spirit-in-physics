@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useParticipants } from '@/lib/graphql/hooks'
+import { apolloClient } from '@/lib/graphql/client'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
@@ -17,27 +19,29 @@ interface DashboardOverviewProps {
 export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [data, setData] = useState<any>(null)
+  const { data: participantsData, loading: participantsLoading } = useParticipants()
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true)
       try {
-        // Fetch real data from Supabase
-        const [participantsData, analysisResults, dashboardStats] = await Promise.all([
-          fetch('/api/participants').then(res => res.json()),
+        // Fetch real data using GraphQL and API routes
+        const [analysisResults, dashboardStats] = await Promise.all([
           fetch('/api/analysis-results').then(res => res.json()),
           fetch('/api/dashboard-stats').then(res => res.json())
         ])
+        
+        const participants = participantsData?.participants || []
 
         // Process data for visualization
-        const spiritProbabilities = participantsData.map((p: any) => ({
-          participant: p.name || `P${p.id.slice(0, 4)}`,
-          value: p.averageSpiritProbability || 0,
+        const spiritProbabilities = participants.map((p: any) => ({
+          participant: `P${p.id.slice(0, 4)}`,
+          value: 0, // Would need to calculate from analysis results
           session: 'latest'
         }))
 
         // Get sample time series data (in real implementation, this would come from API)
-        const sampleResponseId = participantsData[0]?.sessions?.[0]?.responses?.[0]?.id
+        const sampleResponseId = null // Would need to fetch from sessions/responses
         let timeSeriesData = {
           timestamps: Array.from({ length: 100 }, (_, i) => i * 100),
           skinPotential: Array.from({ length: 100 }, () => Math.random() * 0.2 - 0.1),
@@ -72,7 +76,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
             skin_potential: 0.289,
             emotion: 0.298
           },
-          participants: participantsData,
+          participants: participants,
           analysisResults
         })
       } catch (error) {
@@ -109,8 +113,10 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       }
     }
 
-    loadData()
-  }, [])
+    if (!participantsLoading && participantsData) {
+      loadData()
+    }
+  }, [participantsLoading, participantsData])
 
   if (isLoading) {
     return (

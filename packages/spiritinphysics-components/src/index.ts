@@ -24,7 +24,6 @@ export {
 } from './components/ui/select';
 
 // Hooks
-export { createTrpcClient } from './hooks/use-trpc-client';
 export { createGraphQLClientFactory, type GraphQLClientFactory } from './hooks/use-graphql-client';
 
 // Schemas
@@ -61,8 +60,6 @@ export {
   SYSTEM_AUDIO_FILES,
 } from './components/jung-voice-assessment/constants';
 
-// Types
-export type { TrpcClientConfig } from './types/trpc';
 
 // Utils
 export { cn } from './utils/cn';

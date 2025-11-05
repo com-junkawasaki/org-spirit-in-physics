@@ -34,7 +34,7 @@ impl QueryRoot {
     async fn sessions(
         &self,
         ctx: &Context<'_>,
-        participant_id: Option<String>,
+        #[graphql(name = "participantId")] participant_id: Option<String>,
     ) -> Result<Vec<Session>> {
         let supabase = ctx.data::<SupabaseClient>()?;
         let data = supabase.get_sessions(participant_id.as_deref()).await
@@ -47,8 +47,8 @@ impl QueryRoot {
     async fn analysis_results(
         &self,
         ctx: &Context<'_>,
-        participant_id: Option<String>,
-        experiment_id: Option<String>,
+        #[graphql(name = "participantId")] participant_id: Option<String>,
+        #[graphql(name = "experimentId")] experiment_id: Option<String>,
     ) -> Result<Vec<AnalysisResult>> {
         let supabase = ctx.data::<SupabaseClient>()?;
         let data = supabase.get_analysis_results(
@@ -61,7 +61,11 @@ impl QueryRoot {
     }
 
     /// Get consent for a participant
-    async fn consent(&self, ctx: &Context<'_>, participant_id: String) -> Result<Option<Consent>> {
+    async fn consent(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "participantId")] participant_id: String,
+    ) -> Result<Option<Consent>> {
         let supabase = ctx.data::<SupabaseClient>()?;
         let data = supabase.get_consent(&participant_id).await
             .map_err(|e| Error::new(format!("Failed to fetch consent: {}", e)))?;
@@ -73,7 +77,7 @@ impl QueryRoot {
     async fn sessions_by_participant(
         &self,
         ctx: &Context<'_>,
-        participant_id: String,
+        #[graphql(name = "participantId")] participant_id: String,
     ) -> Result<Vec<Session>> {
         let supabase = ctx.data::<SupabaseClient>()?;
         let data = supabase.get_sessions_by_participant(&participant_id).await
@@ -86,8 +90,8 @@ impl QueryRoot {
     async fn session_events(
         &self,
         ctx: &Context<'_>,
-        participant_id: String,
-        session_id: String,
+        #[graphql(name = "participantId")] participant_id: String,
+        #[graphql(name = "sessionId")] session_id: String,
     ) -> Result<Vec<SessionEvent>> {
         let supabase = ctx.data::<SupabaseClient>()?;
         let data = supabase.get_session_events(&participant_id, &session_id).await
@@ -100,7 +104,7 @@ impl QueryRoot {
     async fn emotion_results(
         &self,
         ctx: &Context<'_>,
-        participant_id: String,
+        #[graphql(name = "participantId")] participant_id: String,
     ) -> Result<Vec<JsonValue>> {
         let supabase = ctx.data::<SupabaseClient>()?;
         let data = supabase.get_emotion_results(&participant_id).await

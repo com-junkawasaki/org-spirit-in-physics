@@ -9,19 +9,21 @@ use serde_json::Value as JsonValue;
 #[derive(SimpleObject, Clone, Debug)]
 pub struct SaveSessionResponse {
     pub success: bool,
+    #[graphql(name = "sessionId")]
     pub session_id: String,
     pub message: String,
 }
 
 #[derive(InputObject)]
 pub struct SaveSessionInput {
+    #[graphql(name = "participantId")]
     pub participant_id: String,
     pub events: Vec<SessionEventInput>,
+    #[graphql(name = "wordResponses")]
     pub word_responses: Vec<WordResponseInput>,
 }
 
 #[derive(InputObject)]
-#[graphql(rename_fields = "camelCase")]
 pub struct SessionEventInput {
     pub r#type: String,
     pub timestamp: i64,
@@ -29,7 +31,6 @@ pub struct SessionEventInput {
 }
 
 #[derive(InputObject)]
-#[graphql(rename_fields = "camelCase")]
 pub struct WordResponseInput {
     #[graphql(name = "stimulusWord")]
     pub stimulus_word: JsonValue, // String or { word: String, key: String }

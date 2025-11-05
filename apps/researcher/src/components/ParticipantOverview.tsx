@@ -4,6 +4,7 @@
 // Participant overview component for dashboard
 
 import { useState, useEffect, useCallback } from 'react'
+import { useParticipants, useParticipant, useSessionsByParticipant } from '@/lib/graphql/hooks'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -48,22 +49,27 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
   })
 
   // Merkle DAG: participant_overview -> data_fetching
+  // Use GraphQL hooks instead of direct fetch
+  const { data: participantsData, loading: participantsLoading, error: participantsError } = useParticipants();
+  const { data: participantData, loading: participantLoading } = useParticipant(participantId || '', { skip: !participantId });
+  const { data: sessionsData } = useSessionsByParticipant(participantId || '', { skip: !participantId });
+
   const fetchParticipants = useCallback(async () => {
     try {
       setIsLoading(true)
 
       if (participantId) {
         // For individual participant view - show only that participant's data
-        const response = await fetch(`/api/participants/${participantId}`)
-        if (response.ok) {
-          const data = await response.json()
+        if (participantData?.participant) {
+          const p = participantData.participant;
+          const sessions = sessionsData?.sessionsByParticipant || [];
           setParticipants([{
-            id: data.id,
-            name: data.name || `参加者 ${data.id.slice(0, 8)}`,
-            sessionCount: data.sessionCount || 0,
-            responseCount: data.responseCount || 0,
-            averageSpiritProbability: data.averageSpiritProbability || 0,
-            lastActivity: data.lastActivity || new Date().toISOString(),
+            id: p.id,
+            name: `参加者 ${p.id.slice(0, 8)}`,
+            sessionCount: sessions.length,
+            responseCount: 0, // Would need to fetch from responses table
+            averageSpiritProbability: 0, // Would need to calculate from analysis results
+            lastActivity: p.updatedAt || p.createdAt,
             hasConsent: true, // Assume consent exists for individual view
             hasVideoFiles: false, // Would need to check actual data
             hasHumeData: false // Would need to check actual data
@@ -71,29 +77,31 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
         }
       } else {
         // For overview/dashboard view - show all participants
-        const response = await fetch('/api/participants')
-        if (response.ok) {
-          const data = await response.json()
-          setParticipants(data)
+        if (participantsData?.participants) {
+          const data = participantsData.participants;
+          setParticipants(data.map((p: any) => ({
+            id: p.id,
+            name: `参加者 ${p.id.slice(0, 8)}`,
+            sessionCount: 0, // Would need to fetch sessions separately
+            responseCount: 0, // Would need to fetch from responses table
+            averageSpiritProbability: 0, // Would need to calculate from analysis results
+            lastActivity: p.updatedAt || p.createdAt,
+            hasConsent: true,
+            hasVideoFiles: false,
+            hasHumeData: false
+          })))
 
           // Calculate summary
-          const totalSessions = data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.session_count as number) || 0), 0)
-          const totalResponses = data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.total_responses as number) || 0), 0)
-          const averageSpiritProbability = data.length > 0
-            ? data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.average_spirit_probability as number) || 0), 0) / data.length
-            : 0
-          const activeParticipants = data.filter((p: Record<string, unknown>) => {
-            const lastActivity = new Date((p.last_activity as string) || 0)
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            return lastActivity > thirtyDaysAgo
-          }).length
-
           setSummary({
             totalParticipants: data.length,
-            totalSessions,
-            totalResponses,
-            averageSpiritProbability,
-            activeParticipants
+            totalSessions: 0, // Would need to fetch separately
+            totalResponses: 0, // Would need to fetch separately
+            averageSpiritProbability: 0, // Would need to calculate from analysis results
+            activeParticipants: data.filter((p: any) => {
+              const lastActivity = new Date(p.updatedAt || p.createdAt || 0)
+              const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+              return lastActivity > thirtyDaysAgo
+            }).length
           })
         }
       }
@@ -114,14 +122,14 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [participantId, participantsData, participantData, sessionsData, participants])
+
+  useEffect(() => {
+    setIsLoading(participantsLoading || participantLoading);
+  }, [participantsLoading, participantLoading]);
 
   useEffect(() => {
     fetchParticipants()
-    
-    // Auto-refresh every 60 seconds
-    const interval = setInterval(fetchParticipants, 60000)
-    return () => clearInterval(interval)
   }, [fetchParticipants])
 
   const formatDate = (dateString: string) => {

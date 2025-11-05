@@ -6,7 +6,7 @@
 import { gql } from '@apollo/client';
 
 export const ANALYZE_PARTICIPANT = gql`
-  mutation AnalyzeParticipant($participantId: ID!, $experimentId: ID) {
+  mutation AnalyzeParticipant($participantId: String!, $experimentId: String) {
     analyzeParticipant(participantId: $participantId, experimentId: $experimentId) {
       success
       result
