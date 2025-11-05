@@ -215,6 +215,61 @@ const MutationType = new GraphQLObjectType({
         }
       },
     },
+    analyzeParticipant: {
+      type: ActivityExecutionResponseType,
+      args: {
+        participantId: { type: new GraphQLNonNull(GraphQLString) },
+        experimentId: { type: GraphQLString },
+      },
+      resolve: async (parent, args, context: GraphQLContext) => {
+        const analyzerUrl = process.env.ANALYZER_URL || 'http://localhost:3002';
+
+        try {
+          const response = await fetch(`${analyzerUrl}/analyze`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: args.participantId,
+              experiment_id: args.experimentId || null,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Analyzer server error: ${response.status} - ${errorText}`);
+          }
+
+          const result = await response.json();
+          return {
+            success: result.success,
+            result: {
+              activityId: 'https://spirit-in-physics.gftd.ai/activity/AnalysisProcess',
+              success: result.success,
+              outputs: result.success ? [{
+                id: 'analysis-results',
+                type: 'https://spirit-in-physics.gftd.ai/ontology#AnalysisResult',
+                data: {
+                  participant_id: result.participant_id,
+                  results_count: result.results_count,
+                },
+              }] : [],
+              error: result.error,
+              executionTimeMs: 0,
+              timestamp: new Date().toISOString(),
+            },
+            error: result.error,
+          };
+        } catch (error) {
+          return {
+            success: false,
+            result: null,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          };
+        }
+      },
+    },
   }),
 });
 

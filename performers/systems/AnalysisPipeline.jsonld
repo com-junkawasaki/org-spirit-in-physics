@@ -52,9 +52,25 @@
   ],
   
   "implementation": {
-    "path": "packages/trpc-routers/src/routers/analysis.ts",
-    "framework": "tRPC",
-    "model": "Kawasaki Model"
+    "primary": {
+      "path": "apps/analyzer",
+      "framework": "Rust + Axum",
+      "model": "Kawasaki Model",
+      "language": "Rust",
+      "port": 3002,
+      "endpoints": [
+        "POST /analyze",
+        "POST /batch-analyze",
+        "GET /status/:id",
+        "GET /health"
+      ]
+    },
+    "legacy": {
+      "path": "packages/trpc-routers/src/routers/analysis.ts",
+      "framework": "tRPC",
+      "model": "Kawasaki Model",
+      "status": "deprecated"
+    }
   }
 }
 

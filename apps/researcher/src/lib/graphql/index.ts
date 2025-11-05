@@ -9,4 +9,5 @@ export * from './queries/participants';
 export * from './queries/sessions';
 export * from './queries/analysis';
 export * from './mutations/activities';
+export * from './mutations/analyzer';
 

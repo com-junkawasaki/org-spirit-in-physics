@@ -1,0 +1,55 @@
+[package]
+name = "spirit-analyzer"
+version = "0.1.0"
+edition = "2021"
+authors = ["Spirit in Physics Team"]
+description = "Analysis Pipeline System Performer for Spirit in Physics - Kawasaki Model implementation"
+license = "MIT"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# HTTP client for Supabase REST API
+reqwest = { version = "0.12", features = ["json"] }
+
+# HTTP server
+axum = { version = "0.7", features = ["json", "macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# UUID support
+uuid = { version = "1.10", features = ["v4", "serde"] }
+
+# DateTime support
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async trait support
+async-trait = "0.1"
+
+# Environment variables
+dotenv = "0.15"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[lib]
+name = "spirit_analyzer"
+path = "src/lib.rs"
+
+[[bin]]
+name = "analyzer-server"
+path = "src/main.rs"
+

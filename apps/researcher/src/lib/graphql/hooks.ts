@@ -10,6 +10,7 @@ import { GET_PARTICIPANTS, GET_PARTICIPANT } from './queries/participants';
 import { GET_SESSIONS } from './queries/sessions';
 import { GET_ANALYSIS_RESULTS } from './queries/analysis';
 import { EXECUTE_ACTIVITY } from './mutations/activities';
+import { ANALYZE_PARTICIPANT } from './mutations/analyzer';
 import type {
   GetParticipantsQuery,
   GetParticipantQuery,
@@ -85,5 +86,9 @@ export function useExecuteActivity(
     EXECUTE_ACTIVITY,
     options
   );
+}
+
+export function useAnalyzeParticipant() {
+  return useMutation(ANALYZE_PARTICIPANT);
 }
 

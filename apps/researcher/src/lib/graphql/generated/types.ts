@@ -47,7 +47,14 @@ export type AnalysisResult = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  analyzeParticipant: ActivityExecutionResponse;
   executeActivity: ActivityExecutionResponse;
+};
+
+
+export type MutationAnalyzeParticipantArgs = {
+  experimentId?: InputMaybe<Scalars['ID']['input']>;
+  participantId: Scalars['ID']['input'];
 };
 
 
@@ -109,6 +116,14 @@ export type ExecuteActivityMutationVariables = Exact<{
 
 
 export type ExecuteActivityMutation = { __typename?: 'Mutation', executeActivity: { __typename?: 'ActivityExecutionResponse', success: boolean, result?: any | null, error?: string | null } };
+
+export type AnalyzeParticipantMutationVariables = Exact<{
+  participantId: Scalars['ID']['input'];
+  experimentId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type AnalyzeParticipantMutation = { __typename?: 'Mutation', analyzeParticipant: { __typename?: 'ActivityExecutionResponse', success: boolean, result?: any | null, error?: string | null } };
 
 export type GetAnalysisResultsQueryVariables = Exact<{
   participantId?: InputMaybe<Scalars['ID']['input']>;
@@ -174,6 +189,42 @@ export function useExecuteActivityMutation(baseOptions?: Apollo.MutationHookOpti
 export type ExecuteActivityMutationHookResult = ReturnType<typeof useExecuteActivityMutation>;
 export type ExecuteActivityMutationResult = Apollo.MutationResult<ExecuteActivityMutation>;
 export type ExecuteActivityMutationOptions = Apollo.BaseMutationOptions<ExecuteActivityMutation, ExecuteActivityMutationVariables>;
+export const AnalyzeParticipantDocument = gql`
+    mutation AnalyzeParticipant($participantId: ID!, $experimentId: ID) {
+  analyzeParticipant(participantId: $participantId, experimentId: $experimentId) {
+    success
+    result
+    error
+  }
+}
+    `;
+export type AnalyzeParticipantMutationFn = Apollo.MutationFunction<AnalyzeParticipantMutation, AnalyzeParticipantMutationVariables>;
+
+/**
+ * __useAnalyzeParticipantMutation__
+ *
+ * To run a mutation, you first call `useAnalyzeParticipantMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAnalyzeParticipantMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [analyzeParticipantMutation, { data, loading, error }] = useAnalyzeParticipantMutation({
+ *   variables: {
+ *      participantId: // value for 'participantId'
+ *      experimentId: // value for 'experimentId'
+ *   },
+ * });
+ */
+export function useAnalyzeParticipantMutation(baseOptions?: Apollo.MutationHookOptions<AnalyzeParticipantMutation, AnalyzeParticipantMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AnalyzeParticipantMutation, AnalyzeParticipantMutationVariables>(AnalyzeParticipantDocument, options);
+      }
+export type AnalyzeParticipantMutationHookResult = ReturnType<typeof useAnalyzeParticipantMutation>;
+export type AnalyzeParticipantMutationResult = Apollo.MutationResult<AnalyzeParticipantMutation>;
+export type AnalyzeParticipantMutationOptions = Apollo.BaseMutationOptions<AnalyzeParticipantMutation, AnalyzeParticipantMutationVariables>;
 export const GetAnalysisResultsDocument = gql`
     query GetAnalysisResults($participantId: ID, $experimentId: ID) {
   analysisResults(participantId: $participantId, experimentId: $experimentId) {
