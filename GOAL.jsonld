@@ -93,7 +93,8 @@
       "description": "研究の信頼性と拡張性を保証する技術インフラ",
       "subProcesses": [
         "Supabase PostgreSQLデータベース統合",
-        "tRPC + Zodアーキテクチャ",
+        "GraphQL + Apollo Clientアーキテクチャ",
+        "Rust GraphQL Server (async-graphql)",
         "Next.js App Router",
         "TypeScript型安全性",
         "プロセスネットワーク最適化",

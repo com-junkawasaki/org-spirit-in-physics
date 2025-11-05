@@ -35,11 +35,12 @@
     "https://spirit-in-physics.gftd.ai/activity/AnalysisProcess"
   ],
   
-  "providesServicePort": "https://spirit-in-physics.gftd.ai/port/services/tRPC",
+  "providesServicePort": "https://spirit-in-physics.gftd.ai/port/services/GraphQL",
   
   "implementation": {
-    "path": "packages/trpc-routers/src/routers/analysis.ts",
-    "protocol": "tRPC",
+    "path": "apps/graphql-server/src/resolvers/mutation.rs",
+    "protocol": "GraphQL",
+    "framework": "async-graphql",
     "model": "Kawasaki Model"
   }
 }

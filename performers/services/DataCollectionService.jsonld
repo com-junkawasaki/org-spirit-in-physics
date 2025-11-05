@@ -35,12 +35,12 @@
     "https://spirit-in-physics.gftd.ai/activity/DataCollection"
   ],
   
-  "providesServicePort": "https://spirit-in-physics.gftd.ai/port/services/tRPC",
+  "providesServicePort": "https://spirit-in-physics.gftd.ai/port/services/GraphQL",
   
   "implementation": {
-    "path": "packages/trpc-routers/src/routers/sessions.ts",
-    "protocol": "tRPC",
-    "framework": "Next.js"
+    "path": "apps/graphql-server/src/resolvers/mutation.rs",
+    "protocol": "GraphQL",
+    "framework": "async-graphql"
   }
 }
 

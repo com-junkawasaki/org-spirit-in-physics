@@ -66,8 +66,8 @@
       ]
     },
     "legacy": {
-      "path": "packages/trpc-routers/src/routers/analysis.ts",
-      "framework": "tRPC",
+      "path": "apps/graphql-server/src/resolvers/mutation.rs",
+      "framework": "GraphQL (async-graphql)",
       "model": "Kawasaki Model",
       "status": "deprecated"
     }
