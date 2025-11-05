@@ -105,11 +105,11 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
           const convertedData = result.data.timelineData.map((item: any) => ({
             timestamp: item.t || item.timestamp,
             word: item.w || item.word,
-            reactionTime: 0, // デフォルト値
-            hasResponse: true, // デフォルト値
+            reactionTime: item.rt || item.reactionTime || 0, // reactionTimeをrtから取得
+            hasResponse: (item.rt || item.reactionTime || 0) > 0, // reactionTimeがある場合は応答ありとみなす
             emotions: item.em || item.emotions || [],
             physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
-            reactionValue: item.rv || item.reactionValue || 0,
+            reactionValue: item.rv || item.reactionValue || 0, // spirit_probabilityが設定されている
             eventType: item.e || item.eventType,
             metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
           }))

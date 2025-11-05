@@ -48,17 +48,131 @@ export async function GET(
       physiologicalData = []
     }
 
+    let analysisResults: any[] = []
+    try {
+      analysisResults = await getAnalysisResults(client, participantId)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error'
+      errors.push(`analysis_results: ${msg}`)
+      analysisResults = []
+    }
+
+    // AnalysisResultをstimulus_wordでインデックス化（複数結果がある場合は最新を使用）
+    const analysisMap = new Map<string, any>()
+    analysisResults.forEach((result: any) => {
+      const word = result.stimulus_word
+      if (word) {
+        const existing = analysisMap.get(word)
+        if (!existing || (result.created_at && existing.created_at && result.created_at > existing.created_at)) {
+          analysisMap.set(word, result)
+        } else if (!existing) {
+          analysisMap.set(word, result)
+        }
+      }
+    })
+
     // データ構造最適化：必要最小限の情報のみ保持
-    const timelineData = sessionData.wordEvents.map((event: any) => ({
-      t: event.timestamp, // timestampを短縮
-      w: event.payload?.word || 'Unknown', // wordを短縮
-      e: event.type, // eventTypeを短縮
-      // emotionsとphysiologicalは空配列で軽量化
-      em: [], // emotionsを短縮
-      ph: { avg: 0, max: 0, min: 0, ch: {} }, // physiologicalを短縮
-      rv: 0, // reactionValueを短縮
-      m: { ec: 0, pc: 0 } // metadataを短縮
-    }));
+    // AnalysisResultと統合してreactionValueを設定
+    const timelineData = sessionData.wordEvents.map((event: any) => {
+      const word = event.payload?.word || 'Unknown'
+      const analysisResult = analysisMap.get(word)
+      
+      // emotion_dataとphysiological_dataを変換
+      let emotions: any[] = []
+      let physiological = { avg: 0, max: 0, min: 0, ch: {} }
+      let reactionValue = 0
+      let reactionTime = 0
+      
+      if (analysisResult) {
+        // spirit_probabilityをreactionValueとして使用
+        reactionValue = Number(analysisResult.spirit_probability) || 0
+        
+        // reaction_time_msを取得
+        reactionTime = Number(analysisResult.reaction_time_ms) || 0
+        
+        // emotion_dataをEmotionData[]形式に変換
+        if (analysisResult.emotion_data && typeof analysisResult.emotion_data === 'object') {
+          const emotionObj = analysisResult.emotion_data
+          emotions = Object.entries(emotionObj).map(([name, score]) => ({
+            name,
+            score: Number(score) || 0,
+            fileType: 'analysis' // AnalysisResult由来であることを示す
+          }))
+        }
+        
+        // physiological_dataを変換
+        if (analysisResult.physiological_data && typeof analysisResult.physiological_data === 'object') {
+          const physioObj = analysisResult.physiological_data
+          if (typeof physioObj === 'object' && physioObj !== null) {
+            const values = Object.values(physioObj).filter((v): v is number => typeof v === 'number')
+            if (values.length > 0) {
+              physiological.avg = values.reduce((sum, v) => sum + v, 0) / values.length
+              physiological.max = Math.max(...values)
+              physiological.min = Math.min(...values)
+            }
+          }
+        }
+      }
+      
+      // AnalysisResultがない場合は、既存のemotionDataとphysiologicalDataを使用
+      if (emotions.length === 0 && emotionData.length > 0) {
+        const sessionStartTime = sessionData.startTime || 0
+        const relativeTimestamp = (event.timestamp - sessionStartTime) / 1000
+        const relatedEmotions = emotionData.filter((emotion: any) => {
+          const beginTime = emotion.beginTime || 0
+          const endTime = emotion.endTime || 0
+          return beginTime <= relativeTimestamp && endTime >= relativeTimestamp
+        })
+        
+        relatedEmotions.forEach((emotion: any) => {
+          const emotionList = emotion.emotions || []
+          emotionList.forEach((e: any) => {
+            emotions.push({
+              name: e.name || 'unknown',
+              score: e.score || 0,
+              fileType: emotion.fileType || 'unknown'
+            })
+          })
+        })
+      }
+      
+      if (physiological.avg === 0 && physiologicalData.length > 0) {
+        const relatedPhysiological = physiologicalData.filter((physio: any) => {
+          const physioTimestamp = physio.timeSec * 1000
+          return Math.abs(physioTimestamp - event.timestamp) <= 5000
+        })
+        
+        if (relatedPhysiological.length > 0) {
+          const allValues = relatedPhysiological.flatMap((p: any) => Object.values(p.channels || {})).filter((v): v is number => typeof v === 'number')
+          if (allValues.length > 0) {
+            physiological.avg = allValues.reduce((sum, v) => sum + v, 0) / allValues.length
+            physiological.max = Math.max(...allValues)
+            physiological.min = Math.min(...allValues)
+          }
+        }
+      }
+      
+      // reactionValueが0の場合は、感情データから計算
+      if (reactionValue === 0 && emotions.length > 0) {
+        const emotionTotal = emotions.reduce((sum, e) => sum + (e.score || 0), 0)
+        reactionValue = Math.min(1, emotionTotal / emotions.length + physiological.avg * 0.1)
+      }
+      
+      return {
+        t: event.timestamp, // timestampを短縮
+        w: word, // wordを短縮
+        e: event.type, // eventTypeを短縮
+        rt: reactionTime, // reactionTimeを短縮
+        em: emotions, // emotionsを短縮
+        ph: physiological, // physiologicalを短縮
+        rv: reactionValue, // reactionValueを短縮（spirit_probability）
+        m: { 
+          ec: emotions.length, 
+          pc: physiological.avg !== 0 ? 1 : 0,
+          hasAnalysis: !!analysisResult
+        } // metadataを短縮
+      }
+    });
 
     // ストリーミングレスポンスで大きなデータを効率的に送信
     const responseData = {
@@ -70,8 +184,9 @@ export async function GET(
           sessionEvents: sessionData.wordEvents.length,
           emotionEntries: emotionData.length,
           physiologicalEntries: physiologicalData.length,
+          analysisResults: analysisResults.length,
           totalDataPoints: timelineData.length,
-          dataSource: 'integrated_realtime',
+          dataSource: 'integrated_realtime_with_analysis',
           errors
         }
       }
@@ -254,6 +369,32 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
 
   } catch (error) {
     console.error('Supabase emotion data query error:', error);
+    return [];
+  }
+}
+
+// Merkle DAG: participants.timeline.get_analysis_results_from_supabase
+// Supabaseから分析結果取得関数
+async function getAnalysisResults(client: any, participantId: string): Promise<any[]> {
+  try {
+    console.log('Getting analysis results from Supabase for participant:', participantId);
+    
+    const { data: results, error } = await client
+      .from('participant_analysis_results')
+      .select('*')
+      .eq('participant_id', participantId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.warn('Error fetching analysis results:', error);
+      return [];
+    }
+    
+    console.log('Analysis results count:', results?.length || 0);
+    return results || [];
+    
+  } catch (error) {
+    console.error('Supabase analysis results query error:', error);
     return [];
   }
 }
