@@ -1,7 +1,7 @@
-// LLM-BOUNDARY: 80_app - scripts/src/lib/...（Serverロジック）
+// Import error handler and log management
 // Merkle DAG: import.error_handler
+// OWL: spirit:ParticipantApplication.uses import error handler
 // インポート処理のエラーハンドリングとログ管理
-// 依存関係: インポートAPI, Neo4j, ログシステム
 
 import { promises as fs } from 'fs';
 import path from 'path';

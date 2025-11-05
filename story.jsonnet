@@ -208,7 +208,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[41]
         act: 'GraphQL + Apollo Clientアーキテクチャへの完全移行',
-        summary: 'tRPC + ZodからGraphQL + Apollo Clientへの完全移行を実現。Rust GraphQL Server (async-graphql)による中央集約型APIサーバーを構築し、エンドツーエンド型安全性を確保。GraphQL Code Generatorによる型安全なクライアントコード生成を実現。participantアプリとresearcherアプリの全てのAPI呼び出しをGraphQLに統一。Supabase PostgreSQLデータベースへの完全統合を実現し、セッションイベントを個別レコード（participant_session_eventsテーブル）として管理。Analysis Results計算パイプラインを自動化し、participant_response_dataからparticipant_analysis_resultsへの自動投入を実現。Video AnalysisをSupabase Storage統合し、データフロー全体（保存→解析→可視化）を最適化。シンプルで保守性の高いアーキテクチャにより、開発効率と型安全性を大幅に向上。',
+        summary: 'GraphQL + Apollo Clientアーキテクチャへの完全移行を実現。Rust GraphQL Server (async-graphql)による中央集約型APIサーバーを構築し、エンドツーエンド型安全性を確保。GraphQL Code Generatorによる型安全なクライアントコード生成を実現。participantアプリとresearcherアプリの全てのAPI呼び出しをGraphQLに統一。Supabase PostgreSQLデータベースへの完全統合を実現し、セッションイベントを個別レコード（participant_session_eventsテーブル）として管理。Analysis Results計算パイプラインを自動化し、participant_response_dataからparticipant_analysis_resultsへの自動投入を実現。Video AnalysisをSupabase Storage統合し、データフロー全体（保存→解析→可視化）を最適化。シンプルで保守性の高いアーキテクチャにより、開発効率と型安全性を大幅に向上。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[39]

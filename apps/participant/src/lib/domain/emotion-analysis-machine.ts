@@ -1,4 +1,6 @@
-// LLM-BOUNDARY: 40_domain - xstate machines（UI非依存）
+// XState machine for Emotion Analysis
+// Merkle DAG: domain.emotion_analysis_machine
+// OWL: spirit:ParticipantApplication.uses XState machine
 
 import { createMachine, assign, ActorRefFrom } from 'xstate';
 import { EmotionAnalysisResult } from '@/shared/schemas/emotion-schema';
@@ -157,22 +159,22 @@ export const emotionAnalysisMachine = createMachine({
 }, {
   actions: {
     notifyAnalysisCompleted: () => {
-      // イベントバスに通知
+      // 分析完了の通知（必要に応じて実装）
     },
     notifyAnalysisFailed: () => {
-      // イベントバスに通知
+      // 分析失敗の通知（必要に応じて実装）
     },
     notifyResultsLoaded: () => {
-      // イベントバスに通知
+      // 結果読み込みの通知（必要に応じて実装）
     },
     notifyLoadFailed: () => {
-      // イベントバスに通知
+      // 読み込み失敗の通知（必要に応じて実装）
     },
     notifyBatchCompleted: () => {
-      // イベントバスに通知
+      // バッチ完了の通知（必要に応じて実装）
     },
     notifyBatchFailed: () => {
-      // イベントバスに通知
+      // バッチ失敗の通知（必要に応じて実装）
     }
   }
 });

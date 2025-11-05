@@ -1,4 +1,6 @@
-// LLM-BOUNDARY: 40_domain - xstate machines（UI非依存）
+// XState machine for Jung Voice Test
+// Merkle DAG: domain.jung_test_machine
+// OWL: spirit:ParticipantApplication.uses XState machine
 
 import { createMachine, assign, ActorRefFrom } from 'xstate';
 import {
@@ -313,37 +315,37 @@ export const jungTestMachine = createMachine({
 }, {
   actions: {
     notifyParticipantInitialized: () => {
-      // イベントバスに通知（50_adaptersで実装）
+      // 参加者初期化の通知（必要に応じて実装）
     },
     notifyPreflightStarted: () => {
-      // イベントバスに通知
+      // プレフライト開始の通知（必要に応じて実装）
     },
     notifySessionStarted: () => {
-      // イベントバスに通知
+      // セッション開始の通知（必要に応じて実装）
     },
     notifyWordResponseRecorded: () => {
-      // イベントバスに通知
+      // 単語応答記録の通知（必要に応じて実装）
     },
     notifySessionCompleted: () => {
-      // イベントバスに通知
+      // セッション完了の通知（必要に応じて実装）
     },
     notifyTestCompleted: () => {
-      // イベントバスに通知
+      // テスト完了の通知（必要に応じて実装）
     },
     notifyDeviceStatusChanged: () => {
-      // イベントバスに通知
+      // デバイス状態変更の通知（必要に応じて実装）
     },
     notifyMediaStatusChanged: () => {
-      // イベントバスに通知
+      // メディア状態変更の通知（必要に応じて実装）
     },
     notifyStreamSet: () => {
-      // イベントバスに通知
+      // ストリーム設定の通知（必要に応じて実装）
     },
     notifyErrorOccurred: () => {
-      // イベントバスに通知
+      // エラー発生の通知（必要に応じて実装）
     },
     notifyTestReset: () => {
-      // イベントバスに通知
+      // テストリセットの通知（必要に応じて実装）
     },
     completeSession: () => {
       // セッション完了時の追加処理
