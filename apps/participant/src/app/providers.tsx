@@ -9,7 +9,7 @@ import { apolloClient } from '@/lib/graphql/client';
  * Merkle DAG: participant.providers
  * OWL: spirit:ParticipantApplication.initializes GraphQL client
  * 
- * tRPC and React Query have been removed. Only GraphQL (Apollo Client) is used now.
+ * GraphQL (Apollo Client) を使用しています。
  */
 export function Providers({ children }: { children: React.ReactNode }) {
   return (

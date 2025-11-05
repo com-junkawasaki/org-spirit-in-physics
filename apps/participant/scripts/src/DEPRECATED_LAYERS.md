@@ -40,14 +40,6 @@ import { storageAdapter } from 'scripts/src/50_adapters';
 await storageAdapter.saveStructuredData(payload);
 ```
 
-### 以前（tRPC）
-```typescript
-import { createTRPCProxyClient } from '@trpc/client';
-import { AppRouter } from '@/server/api/root';
-const client = createTRPCProxyClient<AppRouter>({...});
-await client.sessions.saveSession.mutate(sessionData);
-```
-
 ### 現在（GraphQL）
 ```typescript
 import { useSaveSession } from '@/lib/graphql/hooks';

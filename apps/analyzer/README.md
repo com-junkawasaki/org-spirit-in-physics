@@ -48,8 +48,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 ## Integration
 
-- **GraphQL**: Can be called via `executeActivity` mutation
-- **tRPC**: Can be integrated with existing tRPC routers
+- **GraphQL**: Can be called via `executeActivity` mutation in the Rust GraphQL server
 - **Direct HTTP**: REST API endpoints available
 
 ## Kawasaki Model

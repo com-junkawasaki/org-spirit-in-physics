@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
         const dataToSave = validationResult.data;
 
-        // Use GraphQL mutation instead of tRPC
+        // Use GraphQL mutation
         const graphqlUrl = process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL || 'http://localhost:3003/graphql';
 
         // Handle consent data

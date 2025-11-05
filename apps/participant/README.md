@@ -69,7 +69,7 @@ src/
 
 ### Migration Note
 
-The project previously used tRPC + Zod, but has been migrated to GraphQL + Apollo Client for better scalability and type safety. See migration notes in commit history for details.
+The project uses GraphQL + Apollo Client for scalable and type-safe API communication. The GraphQL server is implemented in Rust using async-graphql.
 
 ## 🚀 Vercel Deployment
 
