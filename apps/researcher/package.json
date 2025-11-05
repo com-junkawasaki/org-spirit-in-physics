@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next .turbo node_modules"
+    "clean": "rm -rf .next .turbo node_modules",
+    "graphql-codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
+    "@apollo/client": "^4.0.9",
     "@pothos/core": "^4.10.0",
     "@pothos/plugin-validation": "^4.2.0",
     "@pothos/plugin-zod": "^4.3.0",
@@ -54,6 +56,11 @@
     "zod": "^4.0.10"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^6.0.1",
+    "@graphql-codegen/typescript": "^5.0.2",
+    "@graphql-codegen/typescript-graphql-files-modules": "^3.0.1",
+    "@graphql-codegen/typescript-operations": "^5.0.2",
+    "@graphql-codegen/typescript-react-apollo": "^4.3.3",
     "@tailwindcss/typography": "^0.5.16",
     "@types/d3": "^7.4.3",
     "@types/node": "20.11.20",
