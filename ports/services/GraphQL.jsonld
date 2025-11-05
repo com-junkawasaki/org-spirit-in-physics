@@ -31,7 +31,7 @@
   "createdAt": "2024-10-02T00:00:00+09:00",
   "updatedAt": "2025-01-04T00:00:00+09:00",
   
-  "status": "planned",
+  "status": "implemented",
   
   "protocol": "GraphQL",
   "federation": {
@@ -41,14 +41,48 @@
   
   "endpoints": [
     {
-      "path": "/api/graphql",
-      "description": {"en": "GraphQL endpoint (future)", "ja": "GraphQLエンドポイント（将来）"}
+      "path": "/graphql",
+      "description": {"en": "GraphQL endpoint at app/graphql/route.ts", "ja": "app/graphql/route.tsのGraphQLエンドポイント"}
     }
   ],
   
   "implementation": {
-    "status": "not implemented",
-    "note": {"en": "Currently using tRPC. GraphQL is planned for future federation", "ja": "現在はtRPCを使用。GraphQLは将来のフェデレーション用に計画"}
-  }
+    "status": "implemented",
+    "path": "apps/researcher/src/app/graphql",
+    "schema": "apps/researcher/src/app/graphql/schema-simple.ts",
+    "route": "apps/researcher/src/app/graphql/route.ts",
+    "framework": "graphql-js",
+    "note": {"en": "GraphQL API implemented using graphql-js. Integrates with Rust activities server via HTTP.", "ja": "graphql-jsを使用してGraphQL APIを実装。HTTP経由でRust activitiesサーバーと統合。"}
+  },
+  
+  "queries": [
+    {
+      "name": "participants",
+      "description": {"en": "Get list of participants", "ja": "参加者一覧を取得"}
+    },
+    {
+      "name": "participant",
+      "description": {"en": "Get participant by ID", "ja": "IDで参加者を取得"}
+    },
+    {
+      "name": "sessions",
+      "description": {"en": "Get sessions (optionally filtered by participantId)", "ja": "セッションを取得（participantIdでフィルタリング可能）"}
+    },
+    {
+      "name": "analysisResults",
+      "description": {"en": "Get analysis results (optionally filtered by participantId or experimentId)", "ja": "解析結果を取得（participantIdまたはexperimentIdでフィルタリング可能）"}
+    }
+  ],
+  
+  "mutations": [
+    {
+      "name": "executeActivity",
+      "description": {"en": "Execute a Rust activity via HTTP API", "ja": "HTTP API経由でRust activityを実行"},
+      "args": {
+        "activityId": {"type": "String!", "description": {"en": "Activity ID (JSON-LD @id)", "ja": "Activity ID（JSON-LD @id）"}},
+        "inputs": {"type": "JSON!", "description": {"en": "Activity inputs", "ja": "Activity入力"}}
+      }
+    }
+  ]
 }
 
