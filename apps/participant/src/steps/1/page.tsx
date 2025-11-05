@@ -1,26 +1,27 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { ConsentForm, useKawasakiStore, createTrpcClient, setAudioBasePath, type DemographicData } from '@spiritinphysics/components';
+import { ConsentForm, useKawasakiStore, setAudioBasePath, type DemographicData } from '@spiritinphysics/components';
 import { useRouter } from 'next/navigation';
-import { AppRouter } from '../../server/api/root';
+import { useSaveConsent } from '@/lib/graphql/hooks';
+import { apolloClient } from '@/lib/graphql/client';
 
 export default function ConsentPage() {
   const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
   const startPreflight = useKawasakiStore((state) => state.startPreflight);
   const participantId = useKawasakiStore((state) => state.participantId);
+  const setGraphQLClientFactory = useKawasakiStore((state) => state.setGraphQLClientFactory);
 
   const router = useRouter();
-
-  const setTrpcClientFactory = useKawasakiStore((state) => state.setTrpcClientFactory);
+  const [saveConsent] = useSaveConsent();
 
   useEffect(() => {
     // 音声ファイルのベースパスを設定
     setAudioBasePath('/audio/jung-voice-assessment');
     
-    // tRPCクライアントファクトリーをストアに設定
-    setTrpcClientFactory(() => createTrpcClient<AppRouter>({ url: '/api/trpc' }));
-  }, [setTrpcClientFactory]);
+    // GraphQLクライアントファクトリーをストアに設定
+    setGraphQLClientFactory(() => apolloClient);
+  }, [setGraphQLClientFactory]);
 
   useEffect(() => {
     // コンポーネントがマウントされたときに参加者IDを初期化
@@ -36,27 +37,30 @@ export default function ConsentPage() {
     demographicData?: DemographicData
   ) => {
     try {
-      // tRPCクライアントを使用して同意データを保存
-      const client = createTrpcClient<AppRouter>({
-        url: '/api/trpc',
-      });
-
-      // ユーザーエージェントとIPアドレスを取得（可能な場合）
+      // GraphQL mutationを使用して同意データを保存
       const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : undefined;
       const ipAddress = undefined; // クライアント側では取得できないため、サーバー側で設定
 
-      // 型安全性を確保するため、型アサーションを使用
-      await (client as any).participants.saveConsent.mutate({
-        participantId,
-        signature,
-        agreements,
-        agreedAt: new Date().toISOString(),
-        consentVersion: '1.0',
-        studyId: 'SPIRIT-IN-PHYSICS-2025',
-        userAgent,
-        ipAddress,
-        consentText: 'Research Participation Consent for Spirit in Physics (Jung\'s Word Association Embedding Test)',
-        demographicData,
+      await saveConsent({
+        variables: {
+          input: {
+            participantId,
+            signature,
+            agreements,
+            agreedAt: new Date().toISOString(),
+            consentVersion: '1.0',
+            studyId: 'SPIRIT-IN-PHYSICS-2025',
+            userAgent,
+            ipAddress,
+            consentText: 'Research Participation Consent for Spirit in Physics (Jung\'s Word Association Embedding Test)',
+            demographicData: demographicData ? {
+              ageGroup: demographicData.ageGroup,
+              gender: demographicData.gender,
+              ethnicity: demographicData.ethnicity,
+              income: demographicData.income,
+            } : undefined,
+          },
+        },
       });
 
       startPreflight();

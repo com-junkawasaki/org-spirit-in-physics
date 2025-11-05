@@ -1,42 +1,20 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
-import { httpBatchLink } from '@trpc/client';
 import { ApolloProvider } from '@apollo/client/react';
 import { apolloClient } from '@/lib/graphql/client';
 
 /**
- * tRPC + React Query + GraphQL プロバイダー
+ * GraphQL プロバイダー
+ * 
+ * Merkle DAG: participant.providers
+ * OWL: spirit:ParticipantApplication.initializes GraphQL client
+ * 
+ * tRPC and React Query have been removed. Only GraphQL (Apollo Client) is used now.
  */
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 1000,
-      },
-    },
-  }));
-
-  const [trpcClient] = useState(() =>
-    trpc.createClient({
-      links: [
-        httpBatchLink({
-          url: '/api/trpc',
-        }),
-      ],
-      transformer: undefined, // デフォルトのtransformerを使用
-    })
-  );
-
   return (
     <ApolloProvider client={apolloClient}>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          {children}
-        </QueryClientProvider>
-      </trpc.Provider>
+      {children}
     </ApolloProvider>
   );
 }

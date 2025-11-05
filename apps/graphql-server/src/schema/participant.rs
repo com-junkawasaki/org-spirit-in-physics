@@ -11,7 +11,9 @@ pub struct Participant {
     pub age: Option<i32>,
     pub gender: Option<String>,
     pub handedness: Option<String>,
+    #[graphql(name = "createdAt")]
     pub created_at: String,
+    #[graphql(name = "updatedAt")]
     pub updated_at: String,
 }
 

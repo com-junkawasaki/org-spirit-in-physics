@@ -8,12 +8,19 @@ use async_graphql::*;
 #[derive(SimpleObject, Clone, Debug)]
 pub struct Session {
     pub id: String,
+    #[graphql(name = "participantId")]
     pub participant_id: String,
+    #[graphql(name = "sessionId")]
     pub session_id: String,
+    #[graphql(name = "sessionType")]
     pub session_type: String,
+    #[graphql(name = "startTime")]
     pub start_time: String,
+    #[graphql(name = "endTime")]
     pub end_time: Option<String>,
+    #[graphql(name = "createdAt")]
     pub created_at: String,
+    #[graphql(name = "updatedAt")]
     pub updated_at: String,
 }
 

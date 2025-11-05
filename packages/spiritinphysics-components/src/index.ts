@@ -25,6 +25,7 @@ export {
 
 // Hooks
 export { createTrpcClient } from './hooks/use-trpc-client';
+export { createGraphQLClientFactory, type GraphQLClientFactory } from './hooks/use-graphql-client';
 
 // Schemas
 export {

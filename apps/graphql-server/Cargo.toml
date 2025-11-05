@@ -18,13 +18,14 @@ serde_json = "1.0"
 async-graphql = { version = "6.0", features = ["chrono", "uuid"] }
 async-graphql-axum = { version = "6.0" }
 
-# HTTP server
-axum = { version = "0.7", features = ["json", "macros"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["cors"] }
+# HTTP server (version must match async-graphql-axum 6.0's dependency - axum 0.6)
+axum = "=0.6.20"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors"] }
 
 # HTTP client for Supabase REST API
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+base64 = "0.22"
 
 # Error handling
 anyhow = "1.0"

@@ -1,26 +1,18 @@
 /**
- * @deprecated This API route is deprecated. Use tRPC instead:
+ * @deprecated This API route is deprecated. Use GraphQL mutation directly from the client.
  * 
- * import { createTRPCProxyClient } from '@trpc/client';
- * import { AppRouter } from '@/server/api/root';
+ * This route is kept for backward compatibility but now uses GraphQL internally.
  * 
- * const client = createTRPCProxyClient<AppRouter>({
- *   links: [httpBatchLink({ url: '/api/trpc' })],
- * });
- * 
- * // Convert Blob to base64 first
- * const reader = new FileReader();
- * reader.readAsDataURL(blob);
- * reader.onloadend = async () => {
- *   const base64 = reader.result.split(',')[1];
- *   await client.artifacts.saveVideo.mutate({
- *     participantId, sessionId, fileName, fileData: base64
- *   });
- * };
+ * mutation SaveVideo($input: SaveVideoInput!) {
+ *   saveVideo(input: $input) {
+ *     success
+ *     fileUrl
+ *     fileName
+ *     message
+ *   }
+ * }
  */
 import { NextRequest, NextResponse } from "next/server";
-import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
-import { AppRouter } from '@/server/api/root';
 
 export async function POST(request: NextRequest) {
     try {
@@ -42,28 +34,49 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
         const base64Data = buffer.toString('base64');
 
-        // tRPCクライアントを使用
-        const client = createTRPCProxyClient<AppRouter>({
-            links: [
-                httpBatchLink({
-                    url: '/api/trpc',
-                }),
-            ],
-            transformer: undefined, // デフォルトのtransformerを使用
+        // Use GraphQL mutation instead of tRPC
+        const graphqlUrl = process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL || 'http://localhost:3003/graphql';
+
+        const videoMutation = `
+            mutation SaveVideo($input: SaveVideoInput!) {
+                saveVideo(input: $input) {
+                    success
+                    fileUrl
+                    fileName
+                    message
+                }
+            }
+        `;
+
+        const response = await fetch(graphqlUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: videoMutation,
+                variables: {
+                    input: {
+                        participantId,
+                        sessionId,
+                        fileName,
+                        fileData: base64Data,
+                    },
+                },
+            }),
         });
 
-        // 型安全性を確保するため、型アサーションを使用
-        const result = await (client.artifacts as any).saveVideo.mutate({
-            participantId,
-            sessionId,
-            fileName,
-            fileData: base64Data,
-        });
+        if (!response.ok) {
+            throw new Error(`GraphQL request failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        if (result.errors) {
+            throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+        }
 
         return NextResponse.json({
             success: true,
-            message: "Artifact saved successfully via tRPC",
-            url: result.fileUrl,
+            message: "Artifact saved successfully via GraphQL",
+            url: result.data.saveVideo.fileUrl,
             metadata: {
                 participantId,
                 sessionId,

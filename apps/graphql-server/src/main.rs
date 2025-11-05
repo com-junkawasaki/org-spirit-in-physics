@@ -7,14 +7,12 @@ use async_graphql::*;
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     extract::Extension,
-    http::Method,
     response::IntoResponse,
-    routing::get,
+    routing::{get, post},
     Router,
 };
-use tower::ServiceBuilder;
-use tower_http::cors::{CorsLayer, Any};
 use std::sync::Arc;
+use std::net::SocketAddr;
 use dotenv::dotenv;
 
 mod schema;
@@ -57,35 +55,25 @@ async fn main() -> anyhow::Result<()> {
         .data(supabase.clone())
         .finish();
 
-    // Build router
+    // Build router with schema extension
+    // Note: CORS will be handled at the reverse proxy level in production
     let app = Router::new()
-        .route("/graphql", get(graphql_playground).post(graphql_handler))
+        .route("/graphql", post(graphql_handler).get(graphql_playground))
         .route("/health", get(|| async { "OK" }))
-        .layer(Extension(schema))
-        .layer(
-            ServiceBuilder::new()
-                .layer(
-                    CorsLayer::new()
-                        .allow_origin(Any)
-                        .allow_methods([Method::GET, Method::POST])
-                        .allow_headers(Any),
-                )
-                .into_inner(),
-        );
+        .layer(Extension(schema));
 
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "3003".to_string())
         .parse::<u16>()
         .unwrap_or(3003);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to bind port {}: {}", port, e))?;
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    
+    tracing::info!("GraphQL server listening on http://{}/graphql", addr);
+    tracing::info!("GraphQL Playground available at http://{}/graphql", addr);
 
-    tracing::info!("GraphQL server listening on http://0.0.0.0:{}/graphql", port);
-    tracing::info!("GraphQL Playground available at http://0.0.0.0:{}/graphql", port);
-
-    axum::serve(listener, app)
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
         .await
         .map_err(|e| anyhow::anyhow!("Server failed: {}", e))?;
 

@@ -17,7 +17,7 @@ impl From<serde_json::Value> for ActivityExecutionResponse {
     fn from(value: serde_json::Value) -> Self {
         ActivityExecutionResponse {
             success: value["success"].as_bool().unwrap_or(false),
-            result: value["result"].clone(),
+            result: value.get("result").cloned(),
             error: value["error"].as_str().map(|s| s.to_string()),
         }
     }

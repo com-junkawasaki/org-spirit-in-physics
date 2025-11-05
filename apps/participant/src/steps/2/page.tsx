@@ -2,20 +2,20 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { JungVoiceTest, useKawasakiStore, createTrpcClient, setAudioBasePath } from '@spiritinphysics/components';
-import { AppRouter } from '../../server/api/root';
+import { JungVoiceTest, useKawasakiStore, setAudioBasePath } from '@spiritinphysics/components';
+import { apolloClient } from '@/lib/graphql/client';
 
 export default function TestPage() {
   const router = useRouter();
-  const setTrpcClientFactory = useKawasakiStore((state) => state.setTrpcClientFactory);
+  const setGraphQLClientFactory = useKawasakiStore((state) => state.setGraphQLClientFactory);
 
   useEffect(() => {
     // 音声ファイルのベースパスを設定
     setAudioBasePath('/audio/jung-voice-assessment');
     
-    // tRPCクライアントファクトリーをストアに設定
-    setTrpcClientFactory(() => createTrpcClient<AppRouter>({ url: '/api/trpc' }));
-  }, [setTrpcClientFactory]);
+    // GraphQLクライアントファクトリーをストアに設定
+    setGraphQLClientFactory(() => apolloClient);
+  }, [setGraphQLClientFactory]);
 
   const handleTestComplete = () => {
     console.log('Test completed, navigating to completion page.');

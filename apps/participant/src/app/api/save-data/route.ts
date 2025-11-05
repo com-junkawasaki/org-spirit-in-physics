@@ -1,23 +1,20 @@
 /**
- * @deprecated This API route is deprecated. Use tRPC instead:
+ * @deprecated This API route is deprecated. Use GraphQL mutation directly from the client.
  * 
- * import { createTRPCProxyClient } from '@trpc/client';
- * import { AppRouter } from '@/server/api/root';
- * 
- * const client = createTRPCProxyClient<AppRouter>({
- *   links: [httpBatchLink({ url: '/api/trpc' })],
- * });
+ * This route is kept for backward compatibility but now uses GraphQL internally.
  * 
  * // For consent:
- * await client.participants.saveConsent.mutate(consentData);
+ * mutation SaveConsent($input: ConsentInput!) {
+ *   saveConsent(input: $input) { id participantId signature }
+ * }
  * 
  * // For session data:
- * await client.sessions.saveSession.mutate(sessionData);
+ * mutation SaveSession($input: SaveSessionInput!) {
+ *   saveSession(input: $input) { success sessionId message }
+ * }
  */
 import { NextRequest, NextResponse } from "next/server";
 import { SaveStructuredDataPayloadSchema } from "@/shared/schemas/types";
-import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
-import { AppRouter } from '@/server/api/root';
 
 export async function POST(request: NextRequest) {
     try {
@@ -38,47 +35,118 @@ export async function POST(request: NextRequest) {
 
         const dataToSave = validationResult.data;
 
-        // tRPCクライアントを使用して処理
-        const client = createTRPCProxyClient<AppRouter>({
-            links: [
-                httpBatchLink({
-                    url: '/api/trpc',
-                }),
-            ],
-            transformer: undefined, // デフォルトのtransformerを使用
-        });
+        // Use GraphQL mutation instead of tRPC
+        const graphqlUrl = process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL || 'http://localhost:3003/graphql';
 
         // Handle consent data
         if (dataToSave.type === "consent") {
-            const { participantId, signature, agreements, agreedAt } = dataToSave.data;
-            // 型安全性を確保するため、型アサーションを使用
-            await (client.participants as any).saveConsent.mutate({
-                participantId,
-                signature,
-                agreements,
-                agreedAt,
+            const { participantId, signature, agreements, agreedAt, demographicData } = dataToSave.data;
+            
+            const consentMutation = `
+                mutation SaveConsent($input: ConsentInput!) {
+                    saveConsent(input: $input) {
+                        id
+                        participantId
+                        signature
+                    }
+                }
+            `;
+
+            const response = await fetch(graphqlUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: consentMutation,
+                    variables: {
+                        input: {
+                            participantId,
+                            signature,
+                            agreements,
+                            agreedAt,
+                            demographicData: demographicData ? {
+                                ageGroup: demographicData.ageGroup,
+                                gender: demographicData.gender,
+                                ethnicity: demographicData.ethnicity,
+                                income: demographicData.income,
+                            } : undefined,
+                        },
+                    },
+                }),
             });
+
+            if (!response.ok) {
+                throw new Error(`GraphQL request failed: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.errors) {
+                throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+            }
 
             return NextResponse.json({
                 success: true,
-                message: "Consent data saved successfully via tRPC",
+                message: "Consent data saved successfully via GraphQL",
             });
         }
 
         // Handle session data
         if (dataToSave.type === "session-data") {
             const { participantId, events, wordResponses } = dataToSave.data;
-            // 型安全性を確保するため、型アサーションを使用
-            const result = await (client.sessions as any).saveSession.mutate({
-                participantId,
-                events,
-                wordResponses,
+            
+            const sessionMutation = `
+                mutation SaveSession($input: SaveSessionInput!) {
+                    saveSession(input: $input) {
+                        success
+                        sessionId
+                        message
+                    }
+                }
+            `;
+
+            const response = await fetch(graphqlUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: sessionMutation,
+                    variables: {
+                        input: {
+                            participantId,
+                            events: events.map((e: any) => ({
+                                type: e.type,
+                                timestamp: typeof e.timestamp === 'number' 
+                                    ? e.timestamp 
+                                    : typeof e.timestamp === 'string'
+                                        ? new Date(e.timestamp).getTime()
+                                        : Date.now(),
+                                payload: e.payload || null,
+                            })),
+                            wordResponses: wordResponses.map((wr: any) => ({
+                                stimulusWord: typeof wr.stimulusWord === 'object' 
+                                    ? wr.stimulusWord 
+                                    : { word: wr.stimulusWord, key: '' },
+                                responseWord: wr.responseWord,
+                                reactionTimeMs: wr.reactionTimeMs,
+                                isDelayed: wr.isDelayed,
+                                timestamp: wr.timestamp || new Date().toISOString(),
+                            })),
+                        },
+                    },
+                }),
             });
+
+            if (!response.ok) {
+                throw new Error(`GraphQL request failed: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.errors) {
+                throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+            }
 
             return NextResponse.json({
                 success: true,
-                message: "Session data saved successfully via tRPC",
-                data: result,
+                message: "Session data saved successfully via GraphQL",
+                data: result.data.saveSession,
             });
         }
 

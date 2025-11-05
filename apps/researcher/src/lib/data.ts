@@ -175,14 +175,54 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   }
 }
 
+/**
+ * Get all participants using GraphQL
+ * 
+ * Merkle DAG: data.get_all_participants_graphql
+ * OWL: spirit:DataCollection via GraphQL
+ */
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-    const participants = await supabaseManager.getParticipants()
+    // Use GraphQL query instead of direct Supabase call
+    const graphqlUrl = process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL || 'http://localhost:3003/graphql';
+    
+    const response = await fetch(graphqlUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `
+          query {
+            participants {
+              id
+              age
+              gender
+              handedness
+              createdAt
+              updatedAt
+            }
+          }
+        `,
+      }),
+    });
 
+    if (!response.ok) {
+      throw new Error(`GraphQL request failed: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    
+    if (result.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+    }
+
+    const graphqlParticipants = result.data?.participants || [];
+    
     // For each participant, get detailed data
     const participantsWithData = await Promise.all(
-      participants.map(async (participant) => {
-        const participantId = participant.participant_id
+      graphqlParticipants.map(async (participant: any) => {
+        const participantId = participant.id
         const participantData = await getParticipantData(participantId)
         return participantData || {
           id: participantId,
@@ -199,22 +239,95 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
     return participantsWithData.filter(Boolean) as ParticipantData[]
   } catch (error) {
     console.error('Failed to fetch all participants:', error)
-    return []
+    // Fallback to Supabase if GraphQL fails
+    try {
+      const participants = await supabaseManager.getParticipants()
+      return participants.map((p: any) => ({
+        id: p.participant_id,
+        name: `Participant ${p.participant_id.slice(0, 8)}`,
+        sessions: [],
+        analysisRuns: [],
+        sessionCount: p.session_count || 0,
+        responseCount: p.total_responses || 0,
+        averageSpiritProbability: p.average_spirit_probability || 0,
+      }))
+    } catch (fallbackError) {
+      console.error('Fallback to Supabase also failed:', fallbackError)
+      return []
+    }
   }
 }
 
+/**
+ * Get participant data using GraphQL
+ * 
+ * Merkle DAG: data.get_participant_data_graphql
+ * OWL: spirit:DataCollection via GraphQL
+ */
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    // 参加者詳細を取得
-    const participant = await supabaseManager.getParticipantDetails(participantId)
-    if (!participant) return null
+    // Use GraphQL query instead of direct Supabase call
+    const graphqlUrl = process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL || 'http://localhost:3003/graphql';
+    
+    // Fetch participant and sessions in parallel
+    const [participantResponse, sessionsResponse] = await Promise.all([
+      fetch(graphqlUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `
+            query GetParticipant($id: String!) {
+              participant(id: $id) {
+                id
+                age
+                gender
+                handedness
+                createdAt
+                updatedAt
+              }
+            }
+          `,
+          variables: { id: participantId },
+        }),
+      }),
+      fetch(graphqlUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `
+            query GetSessions($participantId: String) {
+              sessions(participantId: $participantId) {
+                id
+                participantId
+                sessionId
+                sessionType
+                startTime
+                endTime
+                createdAt
+                updatedAt
+              }
+            }
+          `,
+          variables: { participantId },
+        }),
+      }),
+    ]);
 
-    // セッションを取得（participant_experiment_sessionsテーブルから）
-    const { data: dbSessions } = await getSupabaseClient()
-      .from('participant_experiment_sessions')
-      .select('*')
-      .eq('participant_id', participantId)
-      .order('start_time', { ascending: false })
+    if (!participantResponse.ok || !sessionsResponse.ok) {
+      throw new Error('GraphQL request failed');
+    }
+
+    const participantResult = await participantResponse.json();
+    const sessionsResult = await sessionsResponse.json();
+    
+    if (participantResult.errors || sessionsResult.errors) {
+      throw new Error(`GraphQL errors: ${JSON.stringify(participantResult.errors || sessionsResult.errors)}`);
+    }
+
+    const participant = participantResult.data?.participant;
+    if (!participant) return null;
+
+    const dbSessions = sessionsResult.data?.sessions || [];
 
     // レスポンスを取得
     const responses = await supabaseManager.getParticipantResponses(participantId)

@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
 import { JUNG_STIMULUS_WORDS } from './constants';
-import type { createTRPCProxyClient } from '@trpc/client';
-import type { AnyRouter } from '@trpc/server';
+import type { ApolloClient, NormalizedCacheObject } from '@apollo/client';
+import { gql } from '@apollo/client';
 
-type TRPCClient<TAppRouter extends AnyRouter> = ReturnType<typeof createTRPCProxyClient<TAppRouter>>;
+type GraphQLClient = ApolloClient<NormalizedCacheObject>;
 
 // --- Type Definitions ---
 
@@ -56,8 +56,8 @@ export interface KawasakiStoreState {
   sessionVideoUrl: string | null;
   participantId: string | null;
   language: 'ja' | 'en';
-  // tRPCクライアント作成関数（外部から注入）
-  trpcClientFactory?: <TAppRouter extends AnyRouter>() => TRPCClient<TAppRouter>;
+  // GraphQLクライアント作成関数（外部から注入）
+  graphqlClientFactory?: () => GraphQLClient;
 }
 
 export interface KawasakiStoreActions {
@@ -75,7 +75,7 @@ export interface KawasakiStoreActions {
   startPreflight: () => void;
   saveSessionVideo: (session: 1 | 2, blob: Blob) => void;
   initializeParticipant: () => void;
-  setTrpcClientFactory: <TAppRouter extends AnyRouter>(factory: () => TRPCClient<TAppRouter>) => void;
+  setGraphQLClientFactory: (factory: () => GraphQLClient) => void;
   setLanguage: (language: 'ja' | 'en') => void;
 }
 
@@ -111,7 +111,7 @@ const initialState: KawasakiStoreState = {
   sessionVideoUrl: null,
   participantId: null,
   language: 'ja',
-  trpcClientFactory: undefined,
+  graphqlClientFactory: undefined,
 };
 
 export const useKawasakiStore = create<KawasakiStore>()(
@@ -133,7 +133,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
     setStream: (stream) => set({ stream }),
     setError: (error) => set({ error }),
     setMediaStatus: (status) => set({ mediaStatus: status }),
-    setTrpcClientFactory: (factory) => set({ trpcClientFactory: factory }),
+    setGraphQLClientFactory: (factory) => set({ graphqlClientFactory: factory }),
     setLanguage: (language) => set({ language }),
 
     logEvent: (type, payload = {}) => {
@@ -212,10 +212,10 @@ export const useKawasakiStore = create<KawasakiStore>()(
     },
 
     saveSessionData: async () => {
-        const { participantId, events, wordResponses, trpcClientFactory } = get();
+        const { participantId, events, wordResponses, graphqlClientFactory } = get();
         
-        if (!trpcClientFactory) {
-            console.warn('tRPC client factory not set. Session data will not be saved.');
+        if (!graphqlClientFactory) {
+            console.warn('GraphQL client factory not set. Session data will not be saved.');
             return;
         }
         
@@ -234,13 +234,43 @@ export const useKawasakiStore = create<KawasakiStore>()(
             })),
         };
 
-        console.log('Attempting to save session data via tRPC:', sessionData);
+        console.log('Attempting to save session data via GraphQL:', sessionData);
         
         try {
-            const client = trpcClientFactory();
+            const client = graphqlClientFactory();
             
-            // 型安全にアクセスするため、anyを使用（アプリ側で型を保証）
-            const result = await (client as any).sessions.saveSession.mutate(sessionData);
+            const SAVE_SESSION = gql`
+                mutation SaveSession($input: SaveSessionInput!) {
+                    saveSession(input: $input) {
+                        success
+                        sessionId
+                        message
+                    }
+                }
+            `;
+
+            const result = await client.mutate({
+                mutation: SAVE_SESSION,
+                variables: {
+                    input: {
+                        participantId: sessionData.participantId,
+                        events: sessionData.events.map(e => ({
+                            type: e.type,
+                            timestamp: typeof e.timestamp === 'number' ? e.timestamp : Date.now(),
+                            payload: e.payload || null,
+                        })),
+                        wordResponses: sessionData.wordResponses.map(wr => ({
+                            stimulusWord: typeof wr.stimulusWord === 'object' 
+                                ? wr.stimulusWord 
+                                : { word: wr.stimulusWord, key: '' },
+                            responseWord: wr.responseWord,
+                            reactionTimeMs: wr.reactionTimeMs,
+                            isDelayed: wr.isDelayed,
+                            timestamp: new Date().toISOString(),
+                        })),
+                    },
+                },
+            });
             
             console.log('Session data saved successfully:', result);
             get().logEvent('session_data_saved');
@@ -256,14 +286,14 @@ export const useKawasakiStore = create<KawasakiStore>()(
     },
 
     saveSessionVideo: async (session, blob) => {
-        const { participantId, logEvent, setError, trpcClientFactory } = get();
+        const { participantId, logEvent, setError, graphqlClientFactory } = get();
         if (!participantId) {
             setError('Participant ID is not set, cannot save video.');
             return;
         }
 
-        if (!trpcClientFactory) {
-            console.warn('tRPC client factory not set. Video will not be saved.');
+        if (!graphqlClientFactory) {
+            console.warn('GraphQL client factory not set. Video will not be saved.');
             return;
         }
 
@@ -281,19 +311,35 @@ export const useKawasakiStore = create<KawasakiStore>()(
             console.log(`Attempting to save session video for session ${session}`);
 
             try {
-                const client = trpcClientFactory();
+                const client = graphqlClientFactory();
                 
-                // 型安全にアクセスするため、anyを使用（アプリ側で型を保証）
-                const result = await (client as any).artifacts.saveVideo.mutate({
-                    participantId,
-                    sessionId,
-                    fileName,
-                    fileData: base64Content,
+                const SAVE_VIDEO = gql`
+                    mutation SaveVideo($input: SaveVideoInput!) {
+                        saveVideo(input: $input) {
+                            success
+                            fileUrl
+                            fileName
+                            message
+                        }
+                    }
+                `;
+
+                const result = await client.mutate({
+                    mutation: SAVE_VIDEO,
+                    variables: {
+                        input: {
+                            participantId,
+                            sessionId,
+                            fileName,
+                            fileData: base64Content,
+                        },
+                    },
                 });
 
+                const fileUrl = result.data?.saveVideo?.fileUrl;
                 console.log(`Session video saved successfully:`, result);
-                set({ sessionVideoUrl: result.fileUrl });
-                logEvent(`session_${session}_video_saved`, { url: result.fileUrl });
+                set({ sessionVideoUrl: fileUrl });
+                logEvent(`session_${session}_video_saved`, { url: fileUrl });
             } catch (error) {
                 console.error('Error saving session video:', error);
                 setError('動画の保存に失敗しました。');

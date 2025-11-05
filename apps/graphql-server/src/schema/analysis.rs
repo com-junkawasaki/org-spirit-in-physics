@@ -31,9 +31,9 @@ impl From<serde_json::Value> for AnalysisResult {
         AnalysisResult {
             id: value["id"]
                 .as_str()
-                .or_else(|| value["id"].as_u64().map(|v| v.to_string().as_str()))
-                .unwrap_or("")
-                .to_string(),
+                .map(|s| s.to_string())
+                .or_else(|| value["id"].as_u64().map(|v| v.to_string()))
+                .unwrap_or_else(|| "".to_string()),
             participant_id: value["participant_id"]
                 .as_str()
                 .unwrap_or("")
@@ -63,8 +63,8 @@ impl From<serde_json::Value> for AnalysisResult {
             reaction_time_component: value["reaction_time_component"].as_f64(),
             skin_potential_component: value["skin_potential_component"].as_f64(),
             emotion_component: value["emotion_component"].as_f64(),
-            emotion_data: value["emotion_data"].clone(),
-            physiological_data: value["physiological_data"].clone(),
+            emotion_data: value.get("emotion_data").cloned(),
+            physiological_data: value.get("physiological_data").cloned(),
             created_at: value["created_at"]
                 .as_str()
                 .unwrap_or("")
