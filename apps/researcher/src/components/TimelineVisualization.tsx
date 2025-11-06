@@ -10,7 +10,8 @@ import type {
   TimelineVisualizationProps,
   ForcePreset,
   WordNode,
-  WordLink
+  WordLink,
+  DebugInfo
 } from './timeline/types'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
@@ -59,7 +60,8 @@ export default function TimelineVisualization({
     filters,
     setFilters,
     getPhysStat,
-    refetchData
+    refetchData,
+    debugInfo
   } = useTimelineData({ participantId })
 
   // 3D Force プリセット
@@ -121,21 +123,42 @@ export default function TimelineVisualization({
   // エラー状態
   if (error) {
     return (
-      <div className="text-center text-red-600 p-4">
-        <p>エラー: {error}</p>
-        <button 
-          type="button"
-          onClick={refetchData}
-          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          再試行
-        </button>
+      <div className="space-y-4">
+        <div className="text-center text-red-600 p-4">
+          <p>エラー: {error}</p>
+          <button 
+            type="button"
+            onClick={refetchData}
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            再試行
+          </button>
+        </div>
+        {/* Debug Area */}
+        <DebugArea debugInfo={debugInfo} />
       </div>
     )
   }
 
+  // データが空の場合のメッセージ
+  const hasData = data.length > 0
+  const isEmptyState = !loading && !error && !hasData
+
   return (
     <div className="space-y-4">
+      {isEmptyState && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800 font-medium mb-2">データがありません</p>
+          <p className="text-yellow-700 text-sm mb-4">時系列データを読み込めませんでした。APIがデータを返していない可能性があります。</p>
+          <button 
+            type="button"
+            onClick={refetchData}
+            className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+          >
+            再読み込み
+          </button>
+        </div>
+      )}
       {/* フィルターコントロール */}
       {!hideFilters && (
       <div className="bg-gray-50 p-4 rounded-lg">
@@ -362,7 +385,7 @@ export default function TimelineVisualization({
 
                   // 集約（ノード指標）。全語を初期化し、セッション実データで加算
                   const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number; sumPhysAbs: number }> = {}
-                  jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+                  jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0, sumPhysAbs: 0 } })
                     const physBySeries: Record<string, number[]> = {}
                     const rtBySeries: Record<string, number[]> = {}
                     for (const d of sessionData) {
@@ -506,6 +529,7 @@ export default function TimelineVisualization({
                       sadness: '#1f2937',
                       anger: '#ef4444',
                       fear: '#a78bfa',
+                      surprise: '#22c55e',
                       disgust: '#10b981',
                       calm: '#93c5fd',
                       focus: '#60a5fa',
@@ -1246,6 +1270,7 @@ export default function TimelineVisualization({
                           sadness: '#1f2937',
                           anger: '#ef4444',
                           fear: '#a78bfa',
+                          surprise: '#22c55e',
                           disgust: '#10b981',
                           calm: '#93c5fd',
                           focus: '#60a5fa',
@@ -1382,6 +1407,165 @@ export default function TimelineVisualization({
           
       {/* KPIカード */}
       <KPICards data={data} />
+      
+      {/* Debug Area */}
+      <DebugArea debugInfo={debugInfo} />
+    </div>
+  )
+}
+
+// Merkle DAG: components.timeline_visualization.debug_area
+// デバッグ情報表示コンポーネント
+function DebugArea({ debugInfo }: { debugInfo: DebugInfo }) {
+  const statusColor = (status: string) => {
+    switch (status) {
+      case 'success': return 'text-green-600 bg-green-50'
+      case 'error': return 'text-red-600 bg-red-50'
+      case 'not_available': return 'text-gray-500 bg-gray-50'
+      case 'pending': return 'text-yellow-600 bg-yellow-50'
+      default: return 'text-gray-600 bg-gray-50'
+    }
+  }
+
+  const statusBadge = (status: string) => {
+    const colors = statusColor(status)
+    return (
+      <span className={`px-2 py-1 rounded text-xs font-medium ${colors}`}>
+        {status === 'success' ? '✓' : status === 'error' ? '✗' : status === 'not_available' ? '—' : '…'} {status}
+      </span>
+    )
+  }
+
+  return (
+    <div className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs font-mono border border-gray-700">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-gray-200">Debug Area</h4>
+        {debugInfo.lastUpdateTime && (
+          <span className="text-gray-400">
+            {new Date(debugInfo.lastUpdateTime).toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* API Status */}
+        <div className="space-y-1">
+          <div className="text-gray-400">API Status</div>
+          <div className="flex items-center gap-2">
+            {statusBadge(debugInfo.apiStatus)}
+          </div>
+          {debugInfo.apiUrl && (
+            <div className="text-gray-500 text-xs mt-1 break-all">{debugInfo.apiUrl}</div>
+          )}
+        </div>
+
+        {/* Data Points */}
+        <div className="space-y-1">
+          <div className="text-gray-400">Data Points</div>
+          <div className="text-gray-200 font-semibold">{debugInfo.dataPointCount}</div>
+          <div className="flex items-center gap-2">
+            {statusBadge(debugInfo.dataConversionStatus)}
+          </div>
+        </div>
+
+        {/* Session Data */}
+        <div className="space-y-1">
+          <div className="text-gray-400">Session Data</div>
+          <div className="flex items-center gap-2">
+            {statusBadge(debugInfo.sessionDataStatus)}
+          </div>
+          {debugInfo.sessionEventsCount !== undefined && (
+            <div className="text-gray-300 text-xs">Events: {debugInfo.sessionEventsCount}</div>
+          )}
+        </div>
+
+        {/* Emotion Data */}
+        <div className="space-y-1">
+          <div className="text-gray-400">Emotion Data</div>
+          <div className="flex items-center gap-2">
+            {statusBadge(debugInfo.emotionDataStatus)}
+          </div>
+          {debugInfo.emotionEntriesCount !== undefined && (
+            <div className="text-gray-300 text-xs">Entries: {debugInfo.emotionEntriesCount}</div>
+          )}
+        </div>
+
+        {/* Physiological Data */}
+        <div className="space-y-1">
+          <div className="text-gray-400">Physiological Data</div>
+          <div className="flex items-center gap-2">
+            {statusBadge(debugInfo.physiologicalDataStatus)}
+          </div>
+          {debugInfo.physiologicalEntriesCount !== undefined && (
+            <div className="text-gray-300 text-xs">Entries: {debugInfo.physiologicalEntriesCount}</div>
+          )}
+        </div>
+
+        {/* API Response */}
+        <div className="space-y-1">
+          <div className="text-gray-400">API Response</div>
+          <div className="flex items-center gap-2">
+            {debugInfo.apiResponseReceived ? (
+              <span className="text-green-400">✓ Received</span>
+            ) : (
+              <span className="text-gray-500">— Not received</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Errors */}
+      {debugInfo.errors.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <div className="text-red-400 font-semibold mb-2">Errors:</div>
+          <div className="space-y-1">
+            {debugInfo.errors.map((err, idx) => (
+              <div key={`error-${idx}-${err.slice(0, 20)}`} className="text-red-300 text-xs break-words">
+                • {err}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Response Metadata */}
+      {debugInfo.responseMetadata && (
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <div className="text-gray-400 font-semibold mb-2">Response Metadata:</div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {debugInfo.responseMetadata.sessionEvents !== undefined && (
+              <div className="text-gray-300">
+                Session Events: <span className="text-gray-100">{debugInfo.responseMetadata.sessionEvents}</span>
+              </div>
+            )}
+            {debugInfo.responseMetadata.emotionEntries !== undefined && (
+              <div className="text-gray-300">
+                Emotion Entries: <span className="text-gray-100">{debugInfo.responseMetadata.emotionEntries}</span>
+              </div>
+            )}
+            {debugInfo.responseMetadata.physiologicalEntries !== undefined && (
+              <div className="text-gray-300">
+                Physiological Entries: <span className="text-gray-100">{debugInfo.responseMetadata.physiologicalEntries}</span>
+              </div>
+            )}
+            {debugInfo.responseMetadata.totalDataPoints !== undefined && (
+              <div className="text-gray-300">
+                Total Data Points: <span className="text-gray-100">{debugInfo.responseMetadata.totalDataPoints}</span>
+              </div>
+            )}
+            {debugInfo.responseMetadata.dataSource && (
+              <div className="text-gray-300">
+                Data Source: <span className="text-gray-100">{debugInfo.responseMetadata.dataSource}</span>
+              </div>
+            )}
+            {debugInfo.responseMetadata.truncated && (
+              <div className="text-yellow-400">
+                ⚠ Truncated (Original: {debugInfo.responseMetadata.originalSize || 'N/A'})
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
