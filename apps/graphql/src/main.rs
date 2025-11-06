@@ -1,6 +1,7 @@
 use async_graphql::{
     Context, EmptyMutation, EmptySubscription, Object, Schema, SimpleObject,
     http::{GraphQLPlaygroundConfig, playground_source},
+    InputObject,
 };
 use async_graphql_warp::graphql;
 use dotenvy::dotenv;
@@ -14,6 +15,7 @@ use std::sync::Arc;
 use tokio_postgres::NoTls;
 use diesel_async::pooled_connection::deadpool::Pool;
 use diesel_async::RunQueryDsl;
+use serde_json::json;
 
 use crate::models::{Participant, NewParticipant, Experiment, NewExperiment, Window, NewWindow, EmotionAggregation, NewEmotionAggregation, PhysiologicalAggregation, NewPhysiologicalAggregation, KernelFusionRun, NewKernelFusionRun, EmbeddingResult, NewEmbeddingResult};
 
@@ -29,6 +31,30 @@ struct Participant {
     handedness: Option<String>,
     created_at: String,
     updated_at: String,
+}
+
+#[derive(InputObject)]
+struct EmotionDistanceInput {
+    participant_id: String,
+    experiment_id: Option<String>,
+    method: Option<String>,
+    embedding_method: Option<String>,
+    dimensions: Option<i32>,
+    k: Option<i32>,
+    gamma: Option<f64>,
+    alpha: Option<f64>,
+    top_k_emotions: Option<Vec<String>>,
+    normalization: Option<String>,
+    non_negative_weights: Option<bool>,
+    time_kernel: Option<serde_json::Value>,
+}
+
+#[derive(InputObject)]
+struct WindowsGenerationInput {
+    participant_id: String,
+    session_uri: Option<String>,
+    physio_uri: Option<String>,
+    hume_csv_uris: Option<serde_json::Value>,
 }
 
 pub struct Query;
@@ -82,6 +108,23 @@ impl Query {
         let mut conn = pool.get().await?;
         let embedding_results = embedding_results::table.load::<EmbeddingResult>(&mut conn).await?;
         Ok(embedding_results)
+    }
+
+    async fn timeseries(&self, ctx: &Context<'_>, response_id: String) -> GQLResult<String> {
+        // Placeholder for the timeseries data logic
+        println!("[graphql] timeseries called for response {}", response_id);
+
+        let mock_response = json!({
+            "timestamps": [1, 2, 3],
+            "skinPotential": [0.1, 0.2, 0.15],
+            "emotions": [
+                {"timestamp": 1, "joy": 0.9, "sadness": 0.1},
+                {"timestamp": 2, "joy": 0.8, "sadness": 0.2},
+                {"timestamp": 3, "joy": 0.85, "sadness": 0.15}
+            ]
+        });
+
+        Ok(mock_response.to_string())
     }
 }
 
@@ -239,6 +282,36 @@ impl Mutation {
             })
         }).await?;
         Ok(new_embedding_result)
+    }
+
+    async fn calculate_emotion_distance(&self, ctx: &Context<'_>, input: EmotionDistanceInput) -> GQLResult<String> {
+        // Placeholder implementation
+        println!("[graphql] calculate_emotion_distance called for participant {}", input.participant_id);
+
+        let mock_response = json!({
+            "status": "completed",
+            "participantId": input.participant_id,
+            "experimentId": input.experiment_id,
+            "method": input.method,
+            "embeddingMethod": input.embedding_method,
+            "message": "This is a mock response from the Rust GraphQL API."
+        });
+
+        Ok(mock_response.to_string())
+    }
+
+    async fn generate_windows(&self, ctx: &Context<'_>, input: WindowsGenerationInput) -> GQLResult<String> {
+        // Placeholder for the windows generation logic
+        println!("[graphql] generate_windows called for participant {}", input.participant_id);
+
+        let mock_response = json!({
+            "status": "completed",
+            "participantId": input.participant_id,
+            "windowsCount": 10, // Mock count
+            "message": "This is a mock response from the Rust GraphQL API for windows generation."
+        });
+
+        Ok(mock_response.to_string())
     }
 }
 
