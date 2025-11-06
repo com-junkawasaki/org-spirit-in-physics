@@ -214,3 +214,29 @@ pub async fn emotion_analysis_activity(
 
     Ok(())
 }
+
+pub async fn jung_test_activity(participant_id: String, number_of_words: i32) -> Result<(), String> {
+    println!("Starting Jung Test for participant {} with {} words.", participant_id, number_of_words);
+    // Here you would implement the logic from jung-test-machine.ts
+    // - Shuffle words
+    // - Present words one by one (this would need client interaction, so the activity might just set up the test)
+    // - The client would then call `recordWordResponse` for each word.
+    Ok(())
+}
+
+pub async fn emotion_analysis_activity_from_url(participant_id: String, video_url: String) -> Result<(), String> {
+    println!("Starting emotion analysis for participant {} from URL {}.", participant_id, video_url);
+    
+    let hume_client = crate::hume_client::HumeClient::new();
+    match hume_client.analyze_emotions_from_url(&video_url).await {
+        Ok(results) => {
+            println!("Analysis complete: {:?}", results);
+            // Here you would save the results to the database
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Hume API error: {}", e);
+            Err(format!("Failed to analyze emotions: {}", e))
+        }
+    }
+}

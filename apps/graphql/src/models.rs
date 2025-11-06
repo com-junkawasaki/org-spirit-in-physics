@@ -139,3 +139,22 @@ pub struct NewEmbeddingResult {
     pub points: serde_json::Value,
 }
 
+#[derive(SimpleObject, Debug, Clone, Serialize, Deserialize, InputObject)]
+#[graphql(input_name = "WordResponseInput")]
+pub struct WordResponse {
+    pub stimulus_word: String,
+    pub response_word: String,
+    pub reaction_time_ms: i32,
+    pub is_delayed: Option<bool>,
+}
+
+#[derive(Insertable, Debug, Serialize, Deserialize)]
+#[diesel(table_name = word_responses)]
+pub struct NewWordResponse {
+    pub window_id: Uuid,
+    pub stimulus_word: String,
+    pub response_word: String,
+    pub reaction_time_ms: i32,
+    pub is_delayed: Option<bool>,
+}
+

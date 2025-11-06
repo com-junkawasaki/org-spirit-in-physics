@@ -19,9 +19,14 @@ use serde_json::json;
 
 use crate::models::{Participant, NewParticipant, Experiment, NewExperiment, Window, NewWindow, EmotionAggregation, NewEmotionAggregation, PhysiologicalAggregation, NewPhysiologicalAggregation, KernelFusionRun, NewKernelFusionRun, EmbeddingResult, NewEmbeddingResult};
 
+mod constants;
 mod db;
+mod hume_client;
+mod models;
+mod activities;
 
 use db::{DbPool, establish_connection};
+use activities::{jung_test_activity, emotion_analysis_activity_from_url};
 
 #[derive(SimpleObject)]
 struct Participant {
@@ -312,6 +317,51 @@ impl Mutation {
         });
 
         Ok(mock_response.to_string())
+    }
+
+    async fn start_session(&self, ctx: &Context<'_>, participant_id: String, number_of_words: i32) -> GQLResult<String> {
+        // This would trigger the session start logic
+        Ok(format!("Session started for participant {} with {} words.", participant_id, number_of_words))
+    }
+
+    async fn record_word_response(&self, ctx: &Context<'_>, window_id: uuid::Uuid, response: models::WordResponse) -> GQLResult<models::WordResponse> {
+        let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
+        let mut conn = pool.get().await?;
+
+        let new_response = models::NewWordResponse {
+            window_id,
+            stimulus_word: response.stimulus_word.clone(),
+            response_word: response.response_word.clone(),
+            reaction_time_ms: response.reaction_time_ms,
+            is_delayed: response.is_delayed,
+        };
+
+        let res = conn.build_transaction().run(|mut conn| {
+            Box::pin(async move {
+                let res = diesel::insert_into(word_responses::table)
+                    .values(&new_response)
+                    .returning(models::WordResponse::as_returning())
+                    .get_result(&mut conn)
+                    .await?;
+                Ok(res)
+            })
+        }).await?;
+
+        Ok(res)
+    }
+
+    async fn start_jung_test(&self, ctx: &Context<'_>, participant_id: String, number_of_words: i32) -> GQLResult<String> {
+        match jung_test_activity(participant_id, number_of_words).await {
+            Ok(_) => Ok("Jung test started successfully.".to_string()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    async fn analyze_emotions_from_url(&self, ctx: &Context<'_>, participant_id: String, video_url: String) -> GQLResult<String> {
+        match emotion_analysis_activity_from_url(participant_id, video_url).await {
+            Ok(_) => Ok("Emotion analysis started successfully.".to_string()),
+            Err(e) => Err(e.into()),
+        }
     }
 }
 
