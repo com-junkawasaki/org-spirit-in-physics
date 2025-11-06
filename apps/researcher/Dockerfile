@@ -21,6 +21,9 @@ COPY . .
 # Set the final working directory to the specific app's folder
 WORKDIR /app/apps/researcher
 
+# Copy tsconfig.base.json to the app directory to ensure extends path resolution
+COPY tsconfig.base.json /app/tsconfig.base.json
+
 # Copy environment file into the app's folder
 COPY ./env.docker ./.env.local
 
