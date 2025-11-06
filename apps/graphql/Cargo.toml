@@ -13,5 +13,5 @@ diesel_migrations = "2.1"
 dotenvy = "0.15"
 r2d2 = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.0", features = ["serde", "v4", "diesel"] }
+uuid = { version = "1.0", features = ["serde", "v4"] }
 warp = "0.3"

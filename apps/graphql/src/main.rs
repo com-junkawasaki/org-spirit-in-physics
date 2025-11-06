@@ -1,10 +1,12 @@
 use async_graphql::{
     Context, EmptyMutation, EmptySubscription, Object, Schema, SimpleObject,
+    http::{GraphQLPlaygroundConfig, playground_source},
 };
+use async_graphql_warp::graphql;
 use dotenvy::dotenv;
 use std::sync::Arc;
-use tokio;
-use warp::Filter;
+use std::convert::Infallible;
+use warp::{Filter, Reply};
 
 mod db;
 
@@ -30,7 +32,7 @@ impl Query {
 
     async fn participants(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Participant>> {
         let pool = ctx.data::<Arc<DbPool>>()?;
-        let mut conn = pool.get().map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        let _conn = pool.get().map_err(|e| async_graphql::Error::new(e.to_string()))?;
         
         // For now, return empty vector until we set up diesel schema properly
         // This will be implemented after diesel schema generation
@@ -49,19 +51,17 @@ async fn main() {
         .data(pool.clone())
         .finish();
 
-    let graphql_post = async_graphql_warp::graphql(schema.clone())
+    let graphql_post = graphql(schema)
         .and_then(|(schema, request): (GraphQLSchema, async_graphql::Request)| async move {
-            async_graphql_warp::Response::from(schema.execute(request).await)
+            Ok::<_, Infallible>(warp::reply::json(&schema.execute(request).await))
         });
 
-    let graphql_playground = async_graphql_warp::graphql_playground(
-        async_graphql_warp::GraphQLPlaygroundConfig::new("/"),
-    );
+    let graphql_playground = warp::path::end().map(|| {
+        warp::reply::html(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
+    });
 
-    let routes = warp::path::end()
-        .and(graphql_playground)
-        .or(warp::path("graphql")
-            .and(graphql_post));
+    let routes = graphql_playground
+        .or(warp::path("graphql").and(graphql_post));
 
     println!("GraphQL server running on http://localhost:8080");
     println!("GraphiQL playground available at http://localhost:8080");

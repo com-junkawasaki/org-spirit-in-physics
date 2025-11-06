@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.75-slim as builder
+FROM rust:latest as builder
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ COPY diesel.toml ./
 RUN cargo build --release
 
 # Runtime stage
-FROM debian:bookworm-slim
+FROM rust:latest
 
 WORKDIR /app
 
@@ -39,8 +39,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy diesel CLI from builder
-COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/bin/diesel
+# Install diesel CLI
+RUN cargo install diesel_cli --no-default-features --features postgres
 
 # Copy the binary from builder
 COPY --from=builder /app/target/release/graphql /app/graphql
