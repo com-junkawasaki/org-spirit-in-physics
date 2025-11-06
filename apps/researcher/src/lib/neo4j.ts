@@ -55,7 +55,16 @@ class Neo4jClient {
       const records = result.records?.map(record => {
         const obj: any = {}
         record.keys.forEach(key => {
-          obj[key] = record.get(key)
+          const value = record.get(key)
+          // BigIntをNumber型に変換
+          if (typeof value === 'bigint') {
+            obj[key] = Number(value)
+          } else if (value !== null && typeof value === 'object' && value.constructor === Object) {
+            // ネストされたオブジェクトの場合も再帰的にBigIntを変換
+            obj[key] = JSON.parse(JSON.stringify(value, (k, v) => typeof v === 'bigint' ? Number(v) : v))
+          } else {
+            obj[key] = value
+          }
         })
         return obj
       }) || []
