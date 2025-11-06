@@ -8,11 +8,32 @@ import { setContext } from '@apollo/client/link/context';
 
 // Use Rust GraphQL server by default
 // Can be overridden with NEXT_PUBLIC_RUST_GRAPHQL_URL environment variable
-// In Docker, use service name; on client side, use localhost with port; on server side, use service name
-const graphqlUrl = process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL || 
-  (typeof window !== 'undefined' 
-    ? `${window.location.protocol}//${window.location.hostname}:25263/graphql` 
-    : process.env.RUST_GRAPHQL_URL || 'http://graphql:3003/graphql');
+// In Docker, use service name; on client side, use relative path or absolute URL; on server side, use service name
+function getGraphQLUrl(): string {
+  // Environment variable takes precedence
+  if (process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL) {
+    return process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL;
+  }
+  
+  // Client-side (browser)
+  if (typeof window !== 'undefined') {
+    // For orb.local domains, always use localhost
+    if (window.location.hostname.includes('orb.local')) {
+      return 'http://localhost:25263/graphql';
+    }
+    // For localhost, use localhost with port
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:25263/graphql';
+    }
+    // For other domains, use same protocol and hostname with port
+    return `${window.location.protocol}//${window.location.hostname}:25263/graphql`;
+  }
+  
+  // Server-side: use Docker service name
+  return process.env.RUST_GRAPHQL_URL || 'http://graphql:3003/graphql';
+}
+
+const graphqlUrl = getGraphQLUrl();
 
 const httpLink = createHttpLink({
   uri: graphqlUrl,
