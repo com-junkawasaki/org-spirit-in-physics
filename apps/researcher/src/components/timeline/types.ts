@@ -86,8 +86,6 @@ export interface TimelineVisualizationProps {
   forceMode?: VisualizationMode
   // フィルターUIを非表示にする
   hideFilters?: boolean
-  // デモ用可視化データセットをAPIから取得
-  useDemo?: boolean
 }
 
 export interface KPICalculations {

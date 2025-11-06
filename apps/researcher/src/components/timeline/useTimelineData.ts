@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as d3 from 'd3'
-import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 import type {
   TimelineDataPoint,
   TimelineVisualizationProps,
-  EmotionData,
   FilterSettings,
   TimeRange,
   DebugInfo
@@ -13,7 +11,7 @@ import type {
 // Merkle DAG: timeline.hooks.data
 // 時系列データの取得と状態管理フック
 
-export function useTimelineData({ participantId, useDemo = false }: Pick<TimelineVisualizationProps, 'participantId' | 'useDemo'>) {
+export function useTimelineData({ participantId }: Pick<TimelineVisualizationProps, 'participantId'>) {
   const [mounted, setMounted] = useState(false)
   const [data, setData] = useState<TimelineDataPoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -46,46 +44,6 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
     showWordLabels: true
   })
 
-  // --- Demo timeline generator -------------------------------------------------
-  const generateDemoTimeline = useCallback((): TimelineDataPoint[] => {
-    // 100語のサンプルを時系列化
-    const words = JUNG_STIMULUS_WORDS.slice(0, 100)
-    const EMOTIONS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
-    const start = Date.now() - 1000 * 60 // 少し過去から開始
-
-    const rand = (min: number, max: number) => Math.random() * (max - min) + min
-    const pick = <T,>(arr: readonly T[], k: number) => Array.from({ length: k }, () => arr[Math.floor(Math.random() * arr.length)])
-
-    const points: TimelineDataPoint[] = words.map((w, idx) => {
-      const timestamp = start + idx * Math.round(rand(700, 1600))
-      const reactionTime = Math.round(rand(350, 2400))
-      const hasResponse = Math.random() < 0.9
-      const emoCount = Math.max(1, Math.floor(rand(1, 4)))
-      const emos = pick(EMOTIONS, emoCount).map((name) => ({ name, score: Math.round(rand(0.15, 0.9) * 100) / 100, fileType: 'demo' }))
-      const physAvg = Math.round(rand(-0.12, 0.18) * 1000) / 1000
-      const physMax = physAvg + Math.abs(Math.round(rand(0.0, 0.08) * 1000) / 1000)
-      const physMin = physAvg - Math.abs(Math.round(rand(0.0, 0.08) * 1000) / 1000)
-      // 反応値: 感情平均と生理の正規化、反応時間のペナルティを合成
-      const emoMean = emos.length ? emos.reduce((s, e) => s + e.score, 0) / emos.length : 0
-      const rtNorm = (reactionTime - 350) / (2400 - 350)
-      const physNorm = (Math.abs(physAvg) / 0.2)
-      const reactionValue = Math.max(0, Math.min(1, 0.55 * emoMean + 0.35 * Math.min(1, physNorm) + 0.25 * (1 - rtNorm)))
-
-      return {
-        timestamp,
-        word: w.japanese,
-        reactionTime,
-        hasResponse,
-        emotions: emos as unknown as EmotionData[],
-        physiological: { average: physAvg, max: physMax, min: physMin },
-        reactionValue,
-        eventType: 'word_displayed',
-        metadata: { emotionCount: emos.length, physiologicalCount: 1 }
-      }
-    })
-    return points
-  }, [])
-
   const getPhysStat = (p: TimelineDataPoint['physiological'], key: 'average' | 'max' | 'min'): number => {
     if (Array.isArray(p)) return 0
     if (p && typeof p === 'object') {
@@ -107,7 +65,6 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
       }))
       
       console.log('[TimelineData] Starting data fetch for participant:', participantId)
-      // API優先、失敗時・useDemo時はローカル生成でフォールバック
       const apiUrl = `/api/participants/${participantId}/timeline`
       console.log('[TimelineData] API URL:', apiUrl)
       
@@ -181,7 +138,18 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
               }))
               ok = true
             } else {
-              throw new Error('Data conversion resulted in empty array')
+              const emptyError = 'Data conversion resulted in empty array'
+              console.error('[TimelineData]', emptyError)
+              setError(`データ変換に失敗しました: 変換後のデータが空です`)
+              setData([])
+              setDebugInfo(prev => ({
+                ...prev,
+                apiStatus: 'error',
+                errors: [...prev.errors, emptyError],
+                dataConversionStatus: 'error',
+                dataPointCount: 0
+              }))
+              throw new Error(emptyError)
             }
             
             // エラー情報の処理
@@ -203,50 +171,52 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
         } else {
           const errorMsg = result?.error || 'API response not successful or no data'
           console.warn('[TimelineData]', errorMsg)
+          setError(`データ取得に失敗しました: ${errorMsg}`)
+          setData([])
           setDebugInfo(prev => ({
             ...prev,
             apiStatus: 'error',
             errors: [...prev.errors, errorMsg],
-            dataConversionStatus: 'error'
+            dataConversionStatus: 'error',
+            dataPointCount: 0
           }))
         }
       } catch (fetchError) {
         const errorMsg = fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'
         console.error('[TimelineData] API fetch error:', fetchError)
+        setData([])
+        setError(`データ取得に失敗しました: ${errorMsg}`)
         setDebugInfo(prev => ({
           ...prev,
           apiStatus: 'error',
           errors: [...prev.errors, `API Error: ${errorMsg}`],
-          apiResponseReceived: false
+          apiResponseReceived: false,
+          dataPointCount: 0,
+          dataConversionStatus: 'error'
         }))
-        // noop -> フォールバックへ
       }
 
-      if (!ok || useDemo) {
-        console.log('[TimelineData] Using demo data (ok:', ok, ', useDemo:', useDemo, ')')
-        const demo = generateDemoTimeline()
-        setData(demo)
-        setError(null)
+      // APIが成功しなかった場合の最終チェック（エラーが設定されていない場合）
+      if (!ok && !error) {
+        setData([])
+        setError('データが取得できませんでした。APIがエラーを返すか、データが空です。')
         setDebugInfo(prev => ({
           ...prev,
-          dataPointCount: demo.length,
-          dataConversionStatus: 'success',
-          apiStatus: useDemo ? prev.apiStatus : 'error',
-          sessionDataStatus: 'not_available',
-          emotionDataStatus: 'not_available',
-          physiologicalDataStatus: 'not_available',
-          lastUpdateTime: Date.now()
+          dataPointCount: 0,
+          dataConversionStatus: 'error'
         }))
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error'
       console.error('[TimelineData] Fatal error:', err)
-      setError(errorMsg)
+      setError(`致命的なエラーが発生しました: ${errorMsg}`)
+      setData([])
       setDebugInfo(prev => ({
         ...prev,
         apiStatus: 'error',
         errors: [...prev.errors, `Fatal Error: ${errorMsg}`],
-        dataConversionStatus: 'error'
+        dataConversionStatus: 'error',
+        dataPointCount: 0
       }))
     } finally {
       setLoading(false)
@@ -255,7 +225,7 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
         apiStatus: prev.apiStatus === 'loading' ? 'idle' : prev.apiStatus
       }))
     }
-  }, [participantId, useDemo, generateDemoTimeline])
+  }, [participantId])
 
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = useCallback(async () => {
