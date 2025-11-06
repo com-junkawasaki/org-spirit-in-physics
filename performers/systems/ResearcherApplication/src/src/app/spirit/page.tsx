@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@spiritinphysics/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@spiritinphysics/components'
 import { getAllParticipants } from '@/lib/data'
 
 // Merkle DAG: spirit.integrated -> unified_spirit_analysis_page

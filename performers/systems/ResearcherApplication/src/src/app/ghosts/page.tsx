@@ -1,7 +1,16 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@spiritinphysics/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@spiritinphysics/components/ui/tabs'
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Button
+} from '@spiritinphysics/components'
 import Link from 'next/link'
-import { Button } from '@spiritinphysics/components/ui/button'
 
 // Merkle DAG: ghosts.analysis -> ghost_patterns_page
 // spirit から分析分類されたパターンのビュー

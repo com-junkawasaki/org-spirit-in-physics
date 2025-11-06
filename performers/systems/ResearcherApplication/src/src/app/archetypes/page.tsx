@@ -1,6 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@spiritinphysics/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@spiritinphysics/components'
 import Link from 'next/link'
-import { Button } from '@spiritinphysics/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 
 // Merkle DAG: archetypes.analysis -> jung_archetypes_page
