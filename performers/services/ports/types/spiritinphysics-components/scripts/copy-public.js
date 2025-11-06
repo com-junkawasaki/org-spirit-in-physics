@@ -9,8 +9,8 @@ const fs = require('fs');
 const path = require('path');
 
 const packagePublicDir = path.join(__dirname, '../public');
-// 引数でターゲットディレクトリを指定、デフォルトはapps/participant/public
-const targetPublicDir = process.argv[2] || path.join(__dirname, '../../../../apps/participant/public');
+// 引数でターゲットディレクトリを指定、デフォルトはperformers/systems/ParticipantApplication/src/public
+const targetPublicDir = process.argv[2] || path.join(__dirname, '../../../../../performers/systems/ParticipantApplication/src/public');
 
 if (!fs.existsSync(packagePublicDir)) {
   console.log('Package public directory does not exist, skipping copy.');
