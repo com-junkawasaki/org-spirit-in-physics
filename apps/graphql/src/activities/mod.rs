@@ -112,6 +112,7 @@ pub struct ComponentAverages {
     pub emotion: f64,
 }
 
+#[derive(Default)]
 pub struct Query;
 
 #[Object]

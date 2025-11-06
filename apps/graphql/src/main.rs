@@ -595,6 +595,7 @@ pub struct Query(
         Ok(serde_json::to_string(&mock_correlation)?)
     }
 
+#[derive(async_graphql::MergedObject, Default)]
 pub struct Mutation;
 
 #[Object]
