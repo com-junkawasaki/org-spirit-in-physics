@@ -62,6 +62,22 @@ struct WindowsGenerationInput {
     hume_csv_uris: Option<serde_json::Value>,
 }
 
+#[derive(SimpleObject)]
+struct PipelineStepStatus {
+    file_import: String,
+    windows_generation: String,
+    kernel_fusion: String,
+}
+
+#[derive(SimpleObject)]
+struct PipelineStatus {
+    participant_id: String,
+    status: String,
+    steps: PipelineStepStatus,
+    progress: i32,
+    timestamp: String,
+}
+
 pub struct Query;
 
 #[Object]
@@ -130,6 +146,58 @@ impl Query {
         });
 
         Ok(mock_response.to_string())
+    }
+
+    #[graphql(description="Get the status of a pipeline for a participant.")]
+    async fn pipeline_status(&self, participant_id: String) -> Result<PipelineStatus, async_graphql::Error> {
+        // Mock implementation
+        Ok(PipelineStatus {
+            participant_id,
+            status: "running".to_string(),
+            steps: PipelineStepStatus {
+                file_import: "completed".to_string(),
+                windows_generation: "running".to_string(),
+                kernel_fusion: "pending".to_string(),
+            },
+            progress: 25,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        })
+    }
+
+    #[graphql(description="Get a single participant by ID.")]
+    async fn participant(&self, ctx: &Context<'_>, participant_id: String) -> Result<String, async_graphql::Error> {
+        // This should query the database for a single participant
+        // For now, returning a mock JSON string
+        let mock_participant = serde_json::json!({
+            "id": participant_id,
+            "name": format!("Participant {}", participant_id),
+            "sessionCount": 2,
+            "responseCount": 200,
+            "averageSpiritProbability": 0.78,
+            "lastActivity": "2025-11-06T10:00:00Z"
+        });
+        Ok(serde_json::to_string(&mock_participant)?)
+    }
+
+    #[graphql(description="Get timeline data for a participant.")]
+    async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String) -> Result<String, async_graphql::Error> {
+        // Mock implementation
+        let mock_timeline = serde_json::json!([
+            { "type": "SessionStart", "timestamp": "2025-11-01T10:00:00Z", "details": "Session 1" },
+            { "type": "Response", "timestamp": "2025-11-01T10:05:00Z", "details": "Word: 'Sky', Response: 'Blue'" },
+            { "type": "SessionEnd", "timestamp": "2025-11-01T10:30:00Z", "details": "Session 1" }
+        ]);
+        Ok(serde_json::to_string(&mock_timeline)?)
+    }
+
+    #[graphql(description="Get correlation data for a participant.")]
+    async fn participant_correlation(&self, ctx: &Context<'_>, participant_id: String) -> Result<String, async_graphql::Error> {
+        // Mock implementation
+        let mock_correlation = serde_json::json!({
+            "nodes": [ { "id": "joy" }, { "id": "reaction_time" } ],
+            "links": [ { "source": "joy", "target": "reaction_time", "value": 0.6 } ]
+        });
+        Ok(serde_json::to_string(&mock_correlation)?)
     }
 }
 
@@ -362,6 +430,38 @@ impl Mutation {
             Ok(_) => Ok("Emotion analysis started successfully.".to_string()),
             Err(e) => Err(e.into()),
         }
+    }
+
+    #[graphql(description = "Seed Jung stimulus words into the database.")]
+    async fn seed_jung_stimulus_words(&self, ctx: &Context<'_>) -> Result<i64, async_graphql::Error> {
+        use crate::schema::word_stimuli;
+        use crate::models::NewWordStimulus;
+        use diesel::prelude::*;
+        use diesel::upsert::excluded;
+
+        let mut conn = ctx.data::<DbPool>()?.get()?;
+        
+        let words_to_insert: Vec<NewWordStimulus> = JUNG_STIMULUS_WORDS.iter().map(|(key, word)| {
+            NewWordStimulus {
+                id: &format!("jung_{}", key),
+                word: word.japanese,
+                language: "ja",
+                pronunciation: word.pronunciation,
+            }
+        }).collect();
+
+        let result = diesel::insert_into(word_stimuli::table)
+            .values(&words_to_insert)
+            .on_conflict(word_stimuli::id)
+            .do_update()
+            .set((
+                word_stimuli::word.eq(excluded(word_stimuli::word)),
+                word_stimuli::pronunciation.eq(excluded(word_stimuli::pronunciation)),
+                word_stimuli::updated_at.eq(diesel::dsl::now),
+            ))
+            .execute(&mut conn)?;
+
+        Ok(result as i64)
     }
 }
 

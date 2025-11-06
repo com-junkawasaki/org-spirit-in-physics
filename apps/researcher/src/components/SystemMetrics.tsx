@@ -1,10 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useQuery, gql } from '@apollo/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Activity, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
+
+const SYSTEM_METRICS_QUERY = gql`
+  query SystemMetrics {
+    participants
+    dashboardStats
+    # importStatus # This query needs to be created
+  }
+`;
 
 interface SystemMetricsData {
   totalParticipants: number
@@ -18,54 +26,11 @@ interface SystemMetricsData {
 }
 
 export function SystemMetrics() {
-  const [metrics, setMetrics] = useState<SystemMetricsData>({
-    totalParticipants: 0,
-    totalSessions: 0,
-    totalResponses: 0,
-    averageSpiritProbability: 0,
-    activeJobs: 0,
-    completedJobs: 0,
-    failedJobs: 0
-  })
-  const [isLoading, setIsLoading] = useState(true)
+  const { data, loading, error, refetch } = useQuery(SYSTEM_METRICS_QUERY, {
+    pollInterval: 60000,
+  });
 
-  const fetchMetrics = async () => {
-    setIsLoading(true)
-    try {
-      const [participantsResponse, dashboardStatsResponse, importStatusResponse] = await Promise.all([
-        fetch('/api/participants'),
-        fetch('/api/dashboard-stats'),
-        fetch('/api/imports/status')
-      ])
-
-      const participants = participantsResponse.ok ? await participantsResponse.json() : []
-      const dashboardStats = dashboardStatsResponse.ok ? await dashboardStatsResponse.json() : {}
-      const importStatus = importStatusResponse.ok ? await importStatusResponse.json() : {}
-
-      setMetrics({
-        totalParticipants: participants.length,
-        totalSessions: participants.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.session_count as number) || 0), 0),
-        totalResponses: participants.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.total_responses as number) || 0), 0),
-        averageSpiritProbability: dashboardStats.averageSpiritProbability || 0,
-        activeJobs: importStatus.activeJobs || 0,
-        completedJobs: importStatus.completedJobs || 0,
-        failedJobs: importStatus.failedJobs || 0,
-        lastAnalysisDate: dashboardStats.lastAnalysisDate
-      })
-    } catch (error) {
-      console.error('Failed to fetch dashboard metrics:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-  
-  useEffect(() => {
-    fetchMetrics()
-    const interval = setInterval(fetchMetrics, 60000)
-    return () => clearInterval(interval)
-  }, [])
-
-  if (isLoading) {
+  if (loading && !data) {
     return (
         <Card className="p-6">
             <CardHeader>
@@ -83,6 +48,25 @@ export function SystemMetrics() {
     )
   }
 
+  if (error) {
+    return <div>Error loading metrics.</div>
+  }
+
+  const participants = data ? JSON.parse(data.participants) : [];
+  const dashboardStats = data ? JSON.parse(data.dashboardStats) : {};
+  // const importStatus = data ? JSON.parse(data.importStatus) : {}; // Placeholder
+
+  const metrics: SystemMetricsData = {
+    totalParticipants: participants.length,
+    totalSessions: participants.reduce((sum: number, p: any) => sum + (p.session_count || 0), 0),
+    totalResponses: participants.reduce((sum: number, p: any) => sum + (p.total_responses || 0), 0),
+    averageSpiritProbability: dashboardStats.averageSpiritProbability || 0,
+    activeJobs: 0, // Mock data, replace with importStatus.activeJobs
+    completedJobs: 0, // Mock data, replace with importStatus.completedJobs
+    failedJobs: 0, // Mock data, replace with importStatus.failedJobs
+    lastAnalysisDate: dashboardStats.lastAnalysisDate
+  }
+
   return (
     <Card className="p-6">
         <CardHeader className="flex flex-row items-center justify-between">
@@ -93,10 +77,10 @@ export function SystemMetrics() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchMetrics}
-              disabled={isLoading}
+              onClick={() => refetch()}
+              disabled={loading}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               更新
             </Button>
         </CardHeader>

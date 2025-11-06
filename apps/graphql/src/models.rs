@@ -158,3 +158,23 @@ pub struct NewWordResponse {
     pub is_delayed: Option<bool>,
 }
 
+#[derive(Queryable, SimpleObject, Debug, Clone)]
+#[graphql(name = "WordStimulus")]
+pub struct WordStimulus {
+    pub id: String,
+    pub word: String,
+    pub language: String,
+    pub pronunciation: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = word_stimuli)]
+pub struct NewWordStimulus<'a> {
+    pub id: &'a str,
+    pub word: &'a str,
+    pub language: &'a str,
+    pub pronunciation: &'a str,
+}
+

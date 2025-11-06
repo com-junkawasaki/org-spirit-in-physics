@@ -1,24 +1,27 @@
 'use client'
 
-// Merkle DAG: participant_overview -> participants_summary_dashboard
-// Participant overview component for dashboard
-
-import { useState, useEffect, useCallback } from 'react'
+import { useQuery, gql } from '@apollo/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { 
   Users, 
   Calendar, 
   Activity, 
   TrendingUp, 
   Clock,
-  ArrowRight,
-  RefreshCw
 } from 'lucide-react'
-import Link from 'next/link'
 
-// Merkle DAG: participant_overview -> participant_data_interface
+const PARTICIPANTS_QUERY = gql`
+  query GetParticipants {
+    participants
+  }
+`;
+
+const PARTICIPANT_QUERY = gql`
+  query GetParticipant($participantId: String!) {
+    participant(participantId: $participantId)
+  }
+`;
+
 interface ParticipantSummary {
   id: string
   name: string
@@ -36,112 +39,20 @@ interface ParticipantOverviewProps {
 }
 
 export function ParticipantOverview({ participantId }: ParticipantOverviewProps) {
-  // Merkle DAG: participant_overview -> state_management
-  const [participants, setParticipants] = useState<ParticipantSummary[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [summary, setSummary] = useState({
-    totalParticipants: 0,
-    totalSessions: 0,
-    totalResponses: 0,
-    averageSpiritProbability: 0,
-    activeParticipants: 0
-  })
+  const query = participantId ? PARTICIPANT_QUERY : PARTICIPANTS_QUERY;
+  const variables = participantId ? { participantId } : {};
+  const { data, loading, error } = useQuery(query, {
+    variables,
+    pollInterval: 60000,
+  });
 
-  // Merkle DAG: participant_overview -> data_fetching
-  const fetchParticipants = useCallback(async () => {
-    try {
-      setIsLoading(true)
-
-      if (participantId) {
-        // For individual participant view - show only that participant's data
-        const response = await fetch(`/api/participants/${participantId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setParticipants([{
-            id: data.id,
-            name: data.name || `参加者 ${data.id.slice(0, 8)}`,
-            sessionCount: data.sessionCount || 0,
-            responseCount: data.responseCount || 0,
-            averageSpiritProbability: data.averageSpiritProbability || 0,
-            lastActivity: data.lastActivity || new Date().toISOString(),
-            hasConsent: true, // Assume consent exists for individual view
-            hasVideoFiles: false, // Would need to check actual data
-            hasHumeData: false // Would need to check actual data
-          }])
-        }
-      } else {
-        // For overview/dashboard view - show all participants
-        const response = await fetch('/api/participants')
-        if (response.ok) {
-          const data = await response.json()
-          setParticipants(data)
-
-          // Calculate summary
-          const totalSessions = data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.session_count as number) || 0), 0)
-          const totalResponses = data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.total_responses as number) || 0), 0)
-          const averageSpiritProbability = data.length > 0
-            ? data.reduce((sum: number, p: Record<string, unknown>) => sum + ((p.average_spirit_probability as number) || 0), 0) / data.length
-            : 0
-          const activeParticipants = data.filter((p: Record<string, unknown>) => {
-            const lastActivity = new Date((p.last_activity as string) || 0)
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            return lastActivity > thirtyDaysAgo
-          }).length
-
-          setSummary({
-            totalParticipants: data.length,
-            totalSessions,
-            totalResponses,
-            averageSpiritProbability,
-            activeParticipants
-          })
-        }
-      }
-
-      // For individual participant view, calculate summary from single participant data
-      if (participantId && participants.length > 0) {
-        const currentParticipant = participants[0]
-        setSummary({
-          totalParticipants: 1,
-          totalSessions: currentParticipant.sessionCount,
-          totalResponses: currentParticipant.responseCount,
-          averageSpiritProbability: currentParticipant.averageSpiritProbability,
-          activeParticipants: 1 // Individual participant is always "active" in their own view
-        })
-      }
-    } catch (error) {
-      console.error('Failed to fetch participants:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchParticipants()
-    
-    // Auto-refresh every 60 seconds
-    const interval = setInterval(fetchParticipants, 60000)
-    return () => clearInterval(interval)
-  }, [fetchParticipants])
-
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    } catch {
-      return 'N/A'
-    }
-  }
-
-  if (isLoading) {
+  if (loading && !data) {
+    // Loading skeleton UI
     return (
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          {Array.from({ length: 5 }, (_, i) => (
-            <Card key={`loading-card-${i + 1}`}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Card key={`loading-card-${i}`}>
               <CardContent className="p-6">
                 <div className="animate-pulse">
                   <div className="h-4 bg-muted rounded mb-2"></div>
@@ -151,21 +62,41 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
             </Card>
           ))}
         </div>
-        <Card>
-          <CardHeader>
-            <div className="h-6 bg-muted rounded w-1/4"></div>
-          </CardHeader>
-          <CardContent>
-            <div className="animate-pulse space-y-4">
-              {Array.from({ length: 3 }, (_, i) => (
-                <div key={`loading-row-${i + 1}`} className="h-16 bg-muted rounded"></div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
-    )
+    );
   }
+
+  if (error) {
+    return <div>Error loading participant data.</div>;
+  }
+  
+  const participantsData = participantId 
+    ? (data && data.participant ? [JSON.parse(data.participant)] : [])
+    : (data && data.participants ? JSON.parse(data.participants) : []);
+
+  const participants: ParticipantSummary[] = participantsData.map((p: any) => ({
+    id: p.id,
+    name: p.name || `参加者 ${p.id.slice(0, 8)}`,
+    sessionCount: p.sessionCount || p.session_count || 0,
+    responseCount: p.responseCount || p.total_responses || 0,
+    averageSpiritProbability: p.averageSpiritProbability || p.average_spirit_probability || 0,
+    lastActivity: p.lastActivity || p.last_activity || new Date().toISOString(),
+    hasConsent: true,
+    hasVideoFiles: false,
+    hasHumeData: false,
+  }));
+
+  const summary = participants.length > 0
+    ? {
+        totalParticipants: participants.length,
+        totalSessions: participants.reduce((sum, p) => sum + p.sessionCount, 0),
+        totalResponses: participants.reduce((sum, p) => sum + p.responseCount, 0),
+        averageSpiritProbability: participants.reduce((sum, p) => sum + p.averageSpiritProbability, 0) / participants.length,
+        activeParticipants: participants.filter(p => new Date(p.lastActivity) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length
+      }
+    : {
+        totalParticipants: 0, totalSessions: 0, totalResponses: 0, averageSpiritProbability: 0, activeParticipants: 0
+      };
 
   return (
     <div className="space-y-6">
@@ -233,39 +164,6 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
           </CardContent>
         </Card>
       </div>
-
-      {/* Individual Participant Details - Only show current participant info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>参加者詳細情報</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <Calendar className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-blue-700">{summary.totalSessions}</div>
-              <div className="text-sm text-muted-foreground">セッション数</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <Activity className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-green-700">{summary.totalResponses}</div>
-              <div className="text-sm text-muted-foreground">応答数</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-purple-700">
-                {(summary.averageSpiritProbability * 100).toFixed(1)}%
-              </div>
-              <div className="text-sm text-muted-foreground">平均Spirit確率</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <Clock className="h-6 w-6 text-orange-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-orange-700">{summary.activeParticipants}</div>
-              <div className="text-sm text-muted-foreground">アクティブ日数</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

@@ -1,118 +1,38 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useQuery, gql } from '@apollo/client'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
-import { RefreshCw, Download, ZoomIn } from 'lucide-react'
+import { RefreshCw, Download } from 'lucide-react'
 
-// Dynamically import Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false }) as any
+
+const DASHBOARD_OVERVIEW_QUERY = gql`
+  query DashboardOverview {
+    participants
+    dashboardStats
+    analysisResults
+  }
+`;
+
+// This is a placeholder, will be replaced when dynamic routes are migrated
+const GET_TIMESERIES_QUERY = gql`
+  query GetTimeseries($responseId: String!) {
+    timeseries(responseId: $responseId)
+  }
+`;
+
 
 interface DashboardOverviewProps {
   className?: string
 }
 
 export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [data, setData] = useState<any>(null)
+  const { loading, error, data, refetch } = useQuery(DASHBOARD_OVERVIEW_QUERY);
 
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      try {
-        // Fetch real data from Neo4j
-        const [participantsData, analysisResults, dashboardStats] = await Promise.all([
-          fetch('/api/participants').then(res => res.json()),
-          fetch('/api/analysis-results').then(res => res.json()),
-          fetch('/api/dashboard-stats').then(res => res.json())
-        ])
-
-        // Process data for visualization
-        const spiritProbabilities = participantsData.map((p: any) => ({
-          participant: p.name || `P${p.id.slice(0, 4)}`,
-          value: p.averageSpiritProbability || 0,
-          session: 'latest'
-        }))
-
-        // Get sample time series data (in real implementation, this would come from API)
-        const sampleResponseId = participantsData[0]?.sessions?.[0]?.responses?.[0]?.id
-        let timeSeriesData = {
-          timestamps: Array.from({ length: 100 }, (_, i) => i * 100),
-          skinPotential: Array.from({ length: 100 }, () => Math.random() * 0.2 - 0.1),
-          emotions: Array.from({ length: 100 }, () => ({
-            joy: Math.random() * 0.8,
-            sadness: Math.random() * 0.6,
-            anger: Math.random() * 0.4,
-            fear: Math.random() * 0.3,
-            surprise: Math.random() * 0.5
-          }))
-        }
-
-        // Try to get real time series data
-        if (sampleResponseId) {
-          try {
-            const timeSeriesResponse = await fetch(`/api/responses/${sampleResponseId}/timeseries`)
-            if (timeSeriesResponse.ok) {
-              const realTimeSeries = await timeSeriesResponse.json()
-              timeSeriesData = realTimeSeries
-            }
-          } catch (error) {
-            console.warn('Failed to fetch real time series data:', error)
-          }
-        }
-
-        setData({
-          spiritProbabilities,
-          timeSeries: timeSeriesData,
-          componentBreakdown: dashboardStats.componentAverages || {
-            word2vec: 0.234,
-            reaction_time: 0.345,
-            skin_potential: 0.289,
-            emotion: 0.298
-          },
-          participants: participantsData,
-          analysisResults
-        })
-      } catch (error) {
-        console.error('Failed to load dashboard data:', error)
-        // Fallback to mock data
-        setData({
-          spiritProbabilities: [
-            { participant: 'P001', value: 0.724, session: 'session-1' },
-            { participant: 'P002', value: 0.689, session: 'session-1' },
-            { participant: 'P003', value: 0.756, session: 'session-1' },
-            { participant: 'P004', value: 0.698, session: 'session-1' },
-            { participant: 'P005', value: 0.712, session: 'session-1' },
-          ],
-          timeSeries: {
-            timestamps: Array.from({ length: 100 }, (_, i) => i * 100),
-            skinPotential: Array.from({ length: 100 }, () => Math.random() * 0.2 - 0.1),
-            emotions: Array.from({ length: 100 }, () => ({
-              joy: Math.random() * 0.8,
-              sadness: Math.random() * 0.6,
-              anger: Math.random() * 0.4,
-              fear: Math.random() * 0.3,
-              surprise: Math.random() * 0.5
-            }))
-          },
-          componentBreakdown: {
-            word2vec: 0.234,
-            reaction_time: 0.345,
-            skin_potential: 0.289,
-            emotion: 0.298
-          }
-        })
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadData()
-  }, [])
-
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="h-64 bg-muted rounded-lg animate-pulse" />
@@ -121,13 +41,49 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
     )
   }
 
+  if (error) {
+      console.error('Failed to load dashboard data:', error)
+      return <div>Error loading data. Please try refreshing.</div>
+  }
+  
+  const participantsData = data ? JSON.parse(data.participants) : [];
+  const dashboardStats = data ? JSON.parse(data.dashboardStats) : {};
+  // const analysisResults = data ? JSON.parse(data.analysisResults) : []; // This seems unused in the original component logic
+
+  const spiritProbabilities = participantsData.map((p: any) => ({
+    participant: p.name || `P${p.id.slice(0, 4)}`,
+    value: p.averageSpiritProbability || 0,
+    session: 'latest'
+  }))
+
+  // Using mock data for timeseries until the dynamic route is migrated
+  const timeSeriesData = {
+    timestamps: Array.from({ length: 100 }, (_, i) => i * 100),
+    skinPotential: Array.from({ length: 100 }, () => Math.random() * 0.2 - 0.1),
+    emotions: Array.from({ length: 100 }, () => ({
+      joy: Math.random() * 0.8,
+      sadness: Math.random() * 0.6,
+      anger: Math.random() * 0.4,
+      fear: Math.random() * 0.3,
+      surprise: Math.random() * 0.5
+    }))
+  };
+
+  const componentBreakdown = dashboardStats.componentAverages || {
+    word2vec: 0.234,
+    reaction_time: 0.345,
+    skin_potential: 0.289,
+    emotion: 0.298
+  };
+
+
   const spiritProbabilityChart = {
     data: [{
       type: 'bar' as const,
-      x: data.spiritProbabilities.map(d => d.participant),
-      y: data.spiritProbabilities.map(d => d.value),
+      x: spiritProbabilities.map(d => d.participant),
+      y: spiritProbabilities.map(d => d.value),
       marker: {
-        color: data.spiritProbabilities.map(d => d.value > 0.7 ? '#10B981' : d.value > 0.6 ? '#F59E0B' : '#EF4444')
+        color: spiritProbabilities.map(d => d.value > 0.7 ? '#10B981' : d.value > 0.6 ? '#F59E0B' : '#EF4444')
       },
       name: 'Spirit Probability'
     }],
@@ -145,10 +101,10 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       type: 'pie' as const,
       labels: ['Word2Vec', 'Reaction Time', 'Skin Potential', 'Emotion'],
       values: [
-        data.componentBreakdown.word2vec,
-        data.componentBreakdown.reaction_time,
-        data.componentBreakdown.skin_potential,
-        data.componentBreakdown.emotion
+        componentBreakdown.word2vec,
+        componentBreakdown.reaction_time,
+        componentBreakdown.skin_potential,
+        componentBreakdown.emotion
       ],
       marker: {
         colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444']
@@ -166,24 +122,24 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       {
         type: 'scatter' as const,
         mode: 'lines' as const,
-        x: data.timeSeries.timestamps,
-        y: data.timeSeries.emotions.map(e => e.joy),
+        x: timeSeriesData.timestamps,
+        y: timeSeriesData.emotions.map(e => e.joy),
         name: 'Joy',
         line: { color: '#FFD700' }
       },
       {
         type: 'scatter' as const,
         mode: 'lines' as const,
-        x: data.timeSeries.timestamps,
-        y: data.timeSeries.emotions.map(e => e.sadness),
+        x: timeSeriesData.timestamps,
+        y: timeSeriesData.emotions.map(e => e.sadness),
         name: 'Sadness',
         line: { color: '#4169E1' }
       },
       {
         type: 'scatter' as const,
         mode: 'lines' as const,
-        x: data.timeSeries.timestamps,
-        y: data.timeSeries.emotions.map(e => e.anger),
+        x: timeSeriesData.timestamps,
+        y: timeSeriesData.emotions.map(e => e.anger),
         name: 'Anger',
         line: { color: '#DC143C' }
       }
@@ -201,8 +157,8 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
     data: [{
       type: 'scatter' as const,
       mode: 'lines' as const,
-      x: data.timeSeries.timestamps,
-      y: data.timeSeries.skinPotential,
+      x: timeSeriesData.timestamps,
+      y: timeSeriesData.skinPotential,
       line: { color: '#10B981', width: 2 },
       name: 'Skin Potential'
     }],
@@ -221,7 +177,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Detailed Analysis</h2>
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
@@ -314,7 +270,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
               <CardContent>
                 <div className="text-center py-8">
                   <div className="text-4xl font-bold text-blue-500">
-                    {data.componentBreakdown.word2vec.toFixed(3)}
+                    {componentBreakdown.word2vec.toFixed(3)}
                   </div>
                   <p className="text-muted-foreground mt-2">
                     Semantic similarity contribution
@@ -330,7 +286,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
               <CardContent>
                 <div className="text-center py-8">
                   <div className="text-4xl font-bold text-green-500">
-                    {data.componentBreakdown.reaction_time.toFixed(3)}
+                    {componentBreakdown.reaction_time.toFixed(3)}
                   </div>
                   <p className="text-muted-foreground mt-2">
                     Response speed contribution
@@ -346,7 +302,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
               <CardContent>
                 <div className="text-center py-8">
                   <div className="text-4xl font-bold text-orange-500">
-                    {data.componentBreakdown.skin_potential.toFixed(3)}
+                    {componentBreakdown.skin_potential.toFixed(3)}
                   </div>
                   <p className="text-muted-foreground mt-2">
                     Physiological response contribution
@@ -362,7 +318,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
               <CardContent>
                 <div className="text-center py-8">
                   <div className="text-4xl font-bold text-purple-500">
-                    {data.componentBreakdown.emotion.toFixed(3)}
+                    {componentBreakdown.emotion.toFixed(3)}
                   </div>
                   <p className="text-muted-foreground mt-2">
                     Emotional state contribution
