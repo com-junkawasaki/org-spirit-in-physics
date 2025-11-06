@@ -77,9 +77,17 @@ pnpm graphql-codegen
 
 生成された型は `src/lib/graphql/generated/` に出力されます。
 
+## GraphQLサーバー
+
+このプロジェクトのGraphQLサーバーは**Rust実装のみ**です。
+
+- **サーバー実装**: `performers/services/graphql/GraphQLService/` (async-graphql使用)
+- **エンドポイント**: `http://localhost:3003/graphql` (デフォルト)
+- **環境変数**: `NEXT_PUBLIC_RUST_GRAPHQL_URL`でオーバーライド可能
+
 ## 設定
 
-- **スキーマ**: `src/app/graphql/schema.graphql`
+- **スキーマ**: Rust GraphQLサーバーから自動取得（`codegen.ts`で設定）
 - **クエリ/ミューテーション**: `src/lib/graphql/queries/`, `src/lib/graphql/mutations/`
-- **Codegen設定**: `codegen.ts`
+- **Codegen設定**: `codegen.ts` - Rust GraphQLサーバーのスキーマから型を生成
 

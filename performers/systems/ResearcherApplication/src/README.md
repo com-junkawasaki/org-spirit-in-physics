@@ -48,7 +48,18 @@ Add to your environment variables:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_RUST_GRAPHQL_URL=http://localhost:25263/graphql
 ```
+
+## GraphQL Architecture
+
+このプロジェクトは**Rust実装のGraphQLサーバーのみ**を使用します。
+
+- **GraphQLサーバー**: `performers/services/graphql/GraphQLService/` (Rust, async-graphql)
+- **GraphQLクライアント**: `src/lib/graphql/` (TypeScript, Apollo Client)
+- **型生成**: GraphQL Code GeneratorがRustサーバーのスキーマからTypeScript型を自動生成
+
+TypeScript側はクライアント実装のみで、サーバー実装はありません。
 
 ## Benefits
 

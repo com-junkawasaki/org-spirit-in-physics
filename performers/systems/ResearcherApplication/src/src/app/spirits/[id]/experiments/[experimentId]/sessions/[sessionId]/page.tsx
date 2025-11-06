@@ -1,15 +1,44 @@
 'use client'
 
+//! Session Detail Page
+//! 
+//! Merkle DAG: spirits.experiments.sessions.detail -> session_analysis_page
+//! OWL: spirit:Session detail analysis view
+//! 
+//! セッション詳細分析ページ。選択されたセッションのWord2Vecデータを表示。
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import dynamic from 'next/dynamic'
+import Link from 'next/link'
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle,
+  Badge,
+  Button,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@spiritinphysics/components'
+import { 
+  Brain, 
+  Activity, 
+  Clock, 
+  BarChart3, 
+  RefreshCw, 
+  Download,
+  ArrowLeft,
+  Eye,
+  Target,
+  Sparkles,
+  Layers
+} from 'lucide-react'
+import { useSessionsByParticipant } from '@/lib/graphql/hooks'
 
-// 3D可視化コンポーネントを一時的に無効化
-// const Word2Vec3DVisualization = dynamic(() => import('@/components/Word2Vec3DVisualization').then(mod => ({ default: mod.Word2Vec3DVisualization })), {
-//   ssr: false,
-//   loading: () => <div className="flex items-center justify-center h-[600px]">3D可視化を読み込み中...</div>
-// })
-
+// Merkle DAG: session.detail.word2vec_visualization
 // シンプルな2D可視化コンポーネント
 const Word2VecVisualization = ({ wordData }: { wordData: any[] }) => {
   return (
@@ -37,37 +66,6 @@ const Word2VecVisualization = ({ wordData }: { wordData: any[] }) => {
     </div>
   )
 }
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle,
-  Badge,
-  Button,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger
-} from '@spiritinphysics/components'
-import { 
-  Brain, 
-  Activity, 
-  Clock, 
-  BarChart3, 
-  RefreshCw, 
-  Download,
-  ArrowLeft,
-  Eye,
-  Target,
-  Sparkles,
-  Layers
-} from 'lucide-react'
-import Link from 'next/link'
-
-// Merkle DAG: participants.detail -> participant_analysis_page
-// 参加者詳細分析ページ
-// 依存関係: Word2Vec3DVisualization, api/participants/[id]/word2vec
 
 interface WordData {
   word: string
@@ -86,9 +84,14 @@ interface ParticipantStats {
   averageReactionTime: number
 }
 
-export default function ParticipantDetailPage() {
+export default function SessionDetailPage() {
   const params = useParams()
   const participantId = params.id as string
+  const experimentId = params.experimentId as string
+  const sessionId = params.sessionId as string
+  
+  const { data: sessionData } = useSessionsByParticipant(participantId)
+  const currentSession = sessionData?.sessionsByParticipant?.find(s => s.id === sessionId)
   
   const [wordData, setWordData] = useState<WordData[]>([])
   const [stats, setStats] = useState<ParticipantStats | null>(null)
@@ -96,14 +99,15 @@ export default function ParticipantDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
-  // Merkle DAG: participants.detail.fetch_data
-  // Word2Vecデータの取得
+  // Merkle DAG: session.detail.fetch_word2vec_data
+  // Word2Vecデータの取得（セッションIDでフィルタリング）
   const fetchWord2VecData = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
       
-      const response = await fetch(`/api/spirits/${participantId}/word2vec`)
+      // セッションIDをクエリパラメータとして渡す
+      const response = await fetch(`/api/spirits/${participantId}/word2vec?sessionId=${sessionId}`)
       const data = await response.json()
       
       if (data.success) {
@@ -118,17 +122,21 @@ export default function ParticipantDetailPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [participantId])
+  }, [participantId, sessionId])
 
   useEffect(() => {
-    fetchWord2VecData()
-  }, [fetchWord2VecData])
+    if (sessionId) {
+      fetchWord2VecData()
+    }
+  }, [fetchWord2VecData, sessionId])
 
-  // Merkle DAG: participants.detail.export_data
+  // Merkle DAG: session.detail.export_data
   // データエクスポート機能
   const exportData = () => {
     const exportData = {
       participantId,
+      experimentId,
+      sessionId,
       exportDate: new Date().toISOString(),
       statistics: stats,
       wordData: wordData.map(d => ({
@@ -143,7 +151,7 @@ export default function ParticipantDetailPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `participant_${participantId}_word2vec_data.json`
+    a.download = `session_${sessionId}_word2vec_data.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -187,27 +195,22 @@ export default function ParticipantDetailPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <Link href="/spirits">
+            <Link href={`/spirits/${participantId}/experiments/${experimentId}/sessions`}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                一覧に戻る
+                セッション一覧に戻る
               </Button>
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                参加者詳細分析
+                セッション詳細分析
               </h1>
               <p className="text-muted-foreground">
-                参加者ID: {participantId}
+                セッション: {currentSession?.sessionType || sessionId.slice(0, 8)}...
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Link href={`/spirits/${participantId}/experiments`}>
-              <Button variant="default" size="sm">
-                実験一覧を見る
-              </Button>
-            </Link>
             <Button onClick={fetchWord2VecData} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               更新
@@ -218,6 +221,34 @@ export default function ParticipantDetailPage() {
             </Button>
           </div>
         </div>
+
+        {/* セッション情報 */}
+        {currentSession && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">セッションタイプ</p>
+                  <p className="font-medium">{currentSession.sessionType}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">開始時刻</p>
+                  <p className="font-medium">
+                    {new Date(currentSession.startTime).toLocaleString('ja-JP')}
+                  </p>
+                </div>
+                {currentSession.endTime && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">終了時刻</p>
+                    <p className="font-medium">
+                      {new Date(currentSession.endTime).toLocaleString('ja-JP')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 統計カード */}
         {stats && (
@@ -470,3 +501,4 @@ export default function ParticipantDetailPage() {
     </div>
   )
 }
+

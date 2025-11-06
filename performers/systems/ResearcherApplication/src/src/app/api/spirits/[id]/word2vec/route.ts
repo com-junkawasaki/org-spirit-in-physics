@@ -11,18 +11,30 @@ export async function GET(
 ) {
   try {
     const { id: participantId } = params;
-    console.log(`API: Fetching Word2Vec data for participant ${participantId}`);
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('sessionId');
+    
+    console.log(`API: Fetching Word2Vec data for participant ${participantId}${sessionId ? `, session ${sessionId}` : ''}`);
 
     const client = getSupabaseClient();
 
     // Merkle DAG: api.participants.word2vec.query_responses
     // 参加者の応答データを取得（Supabaseテーブルから）
-    const { data: responses, error } = await client
+    // セッションIDが指定されている場合は、experiment_idでフィルタリング
+    let query = client
       .from('participant_response_data')
       .select('id, stimulus_word, response_word, reaction_time_ms, timestamp, experiment_id')
       .eq('participant_id', participantId)
       .not('stimulus_word', 'is', null)
       .not('response_word', 'is', null)
+    
+    if (sessionId) {
+      // sessionIdはparticipant_experiment_sessions.id (UUID) を指す
+      // participant_response_data.experiment_idがこれと一致するレコードのみ取得
+      query = query.eq('experiment_id', sessionId);
+    }
+    
+    const { data: responses, error } = await query
       .order('timestamp', { ascending: true });
 
     if (error) {
