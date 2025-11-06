@@ -1,6 +1,8 @@
 import { fileURLToPath } from 'url'
+import { resolve, dirname } from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -36,6 +38,11 @@ const nextConfig = {
         net: false,
         tls: false,
         crypto: false,
+      },
+      // Merkle DAG: Workspace package resolution
+      alias: {
+        ...config.resolve?.alias,
+        '@spirit-in-physics/visualizer': resolve(__dirname, '../../visualizer/src'),
       },
     }
 

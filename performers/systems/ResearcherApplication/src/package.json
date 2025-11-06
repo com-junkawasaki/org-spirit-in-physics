@@ -29,6 +29,7 @@
     "@spiritinphysics/components": "workspace:*",
     "@spiritinphysics/database": "workspace:*",
     "@spiritinphysics/supabase": "workspace:*",
+    "@spirit-in-physics/visualizer": "workspace:*",
     "@supabase/supabase-js": "^2.39.0",
     "@types/three": "^0.180.0",
     "@vercel/blob": "^0.23.4",

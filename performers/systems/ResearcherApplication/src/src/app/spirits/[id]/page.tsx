@@ -1,43 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
-
-// 3D可視化コンポーネントを一時的に無効化
-// const Word2Vec3DVisualization = dynamic(() => import('@/components/Word2Vec3DVisualization').then(mod => ({ default: mod.Word2Vec3DVisualization })), {
-//   ssr: false,
-//   loading: () => <div className="flex items-center justify-center h-[600px]">3D可視化を読み込み中...</div>
-// })
-
-// シンプルな2D可視化コンポーネント
-const Word2VecVisualization = ({ wordData }: { wordData: any[] }) => {
-  return (
-    <div className="h-[600px] overflow-auto">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-        {wordData.map((data, index) => (
-          <div key={data.responseId} className="bg-white rounded-lg shadow-md p-4 border">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-lg">{data.word}</h3>
-              <div 
-                className="w-4 h-4 rounded-full"
-                style={{
-                  backgroundColor: `hsl(${(1 - data.spiritProbability) * 240}, 70%, 50%)`
-                }}
-              />
-            </div>
-            <div className="space-y-1 text-sm text-gray-600">
-              <div>Spirit確率: {(data.spiritProbability * 100).toFixed(1)}%</div>
-              <div>反応時間: {data.reactionTime}ms</div>
-              <div>時刻: {new Date(data.timestamp).toLocaleString('ja-JP')}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-import { 
+import type { WordNode, WordLink } from '@spirit-in-physics/visualizer/types'
+import {  
   Card, 
   CardContent, 
   CardDescription, 
@@ -67,7 +34,23 @@ import Link from 'next/link'
 
 // Merkle DAG: participants.detail -> participant_analysis_page
 // 参加者詳細分析ページ
-// 依存関係: Word2Vec3DVisualization, api/participants/[id]/word2vec
+// 依存関係: @visualizer/Force3DWordGraphTypeGPU, api/participants/[id]/word2vec
+
+// 3D可視化コンポーネントを動的インポート（SSR無効化）
+const Force3DWordGraphTypeGPU = dynamic(
+  () => import('@spirit-in-physics/visualizer').then(mod => ({ default: mod.Force3DWordGraphTypeGPU })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-[600px]">
+        <div className="text-center">
+          <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">3D可視化を読み込み中...</p>
+        </div>
+      </div>
+    )
+  }
+)
 
 interface WordData {
   word: string
@@ -84,6 +67,126 @@ interface ParticipantStats {
   uniqueWords: number
   averageSpiritProbability: number
   averageReactionTime: number
+}
+
+// Merkle DAG: participants.detail.word2vec_to_graph
+// WordData配列からWordNode[]とWordLink[]を生成する変換関数
+// embeddingベクトルのコサイン類似度でリンクを生成
+function generateGraphFromWordData(wordData: WordData[]): { nodes: WordNode[]; links: WordLink[] } {
+  if (wordData.length === 0) {
+    return { nodes: [], links: [] }
+  }
+
+  // 単語ごとに集約（同じ単語が複数回出現する場合、平均値を計算）
+  const wordMap = new Map<string, { 
+    word: string
+    embeddings: number[][]
+    spiritProbabilities: number[]
+    reactionTimes: number[]
+  }>()
+
+  for (const data of wordData) {
+    if (!wordMap.has(data.word)) {
+      wordMap.set(data.word, {
+        word: data.word,
+        embeddings: [],
+        spiritProbabilities: [],
+        reactionTimes: []
+      })
+    }
+    const entry = wordMap.get(data.word)!
+    entry.embeddings.push(data.embedding)
+    entry.spiritProbabilities.push(data.spiritProbability)
+    entry.reactionTimes.push(data.reactionTime)
+  }
+
+  // ノード生成
+  const nodes: WordNode[] = Array.from(wordMap.entries()).map(([word, entry], index) => {
+    const avgSpiritProb = entry.spiritProbabilities.reduce((a, b) => a + b, 0) / entry.spiritProbabilities.length
+    const avgReactionTime = entry.reactionTimes.reduce((a, b) => a + b, 0) / entry.reactionTimes.length
+    
+    // スケールはspiritProbabilityから算出（0.5-6.0の範囲で正規化）
+    const scale = Math.max(0.5, 0.5 + 5.5 * avgSpiritProb)
+    
+    // 色はspiritProbabilityに基づいて設定（HSL色空間）
+    const hue = (1 - avgSpiritProb) * 240
+    const color = `hsl(${hue}, 70%, 50%)`
+
+    return {
+      id: String(index),
+      label: word,
+      scale,
+      nodeType: 'word',
+      color
+    }
+  })
+
+  // リンク生成（embeddingベクトルのコサイン類似度を使用）
+  const links: WordLink[] = []
+  const nodeArray = Array.from(nodes)
+  const wordToIndex = new Map<string, number>()
+  nodeArray.forEach((node, idx) => wordToIndex.set(node.label, idx))
+
+  // 各単語の平均embeddingを計算
+  const wordEmbeddings = new Map<string, number[]>()
+  for (const [word, entry] of wordMap.entries()) {
+    if (entry.embeddings.length === 0) continue
+    
+    // 平均embeddingを計算
+    const dim = entry.embeddings[0].length
+    const avgEmbedding = new Array(dim).fill(0)
+    for (const emb of entry.embeddings) {
+      for (let i = 0; i < dim; i++) {
+        avgEmbedding[i] += emb[i]
+      }
+    }
+    for (let i = 0; i < dim; i++) {
+      avgEmbedding[i] /= entry.embeddings.length
+    }
+    wordEmbeddings.set(word, avgEmbedding)
+  }
+
+  // コサイン類似度を計算してリンクを生成
+  const similarityThreshold = 0.1
+  const springK = 2.0
+  const restLength = 90
+
+  for (let i = 0; i < nodeArray.length; i++) {
+    for (let j = i + 1; j < nodeArray.length; j++) {
+      const wordI = nodeArray[i].label
+      const wordJ = nodeArray[j].label
+      
+      const embI = wordEmbeddings.get(wordI)
+      const embJ = wordEmbeddings.get(wordJ)
+      
+      if (!embI || !embJ) continue
+
+      // コサイン類似度を計算
+      const dot = embI.reduce((sum, v, idx) => sum + v * (embJ[idx] || 0), 0)
+      const normI = Math.hypot(...embI)
+      const normJ = Math.hypot(...embJ)
+      const similarity = (normI * normJ > 0) ? dot / (normI * normJ) : 0
+
+      // 類似度を0-1の範囲に正規化（-1〜1を0〜1に）
+      const weight = Math.max(0, Math.min(1, (similarity + 1) / 2))
+
+      if (weight >= similarityThreshold) {
+        const L0 = Math.max(10, restLength * (1 + 0.8 * (1 - weight)))
+        const k = springK * (0.2 + 0.6 * weight)
+        
+        links.push({
+          source: i,
+          target: j,
+          weight,
+          mode: 'tension',
+          L0,
+          k
+        })
+      }
+    }
+  }
+
+  return { nodes, links }
 }
 
 export default function ParticipantDetailPage() {
@@ -123,6 +226,12 @@ export default function ParticipantDetailPage() {
   useEffect(() => {
     fetchWord2VecData()
   }, [fetchWord2VecData])
+
+  // Merkle DAG: participants.detail.generate_graph
+  // WordDataからグラフ構造を生成（useMemoで最適化）
+  const graphData = useMemo(() => {
+    return generateGraphFromWordData(wordData)
+  }, [wordData])
 
   // Merkle DAG: participants.detail.export_data
   // データエクスポート機能
@@ -312,14 +421,24 @@ export default function ParticipantDetailPage() {
             <CardHeader>
               <CardTitle>Word2Vec 3D可視化</CardTitle>
               <CardDescription>
-                Word2Vec埋め込みベクトルを3D空間で可視化。色はSpirit確率、サイズは反応時間を表します。
+                Word2Vec埋め込みベクトルを3D空間で可視化。色はSpirit確率、サイズはSpirit確率を表します。ノード間のリンクはembeddingベクトルのコサイン類似度に基づいています。
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[600px] w-full">
-                <Word2VecVisualization 
-                  wordData={wordData}
-                />
+                {graphData.nodes.length > 0 ? (
+                  <Force3DWordGraphTypeGPU
+                    nodes={graphData.nodes}
+                    links={graphData.links}
+                    width={1000}
+                    height={600}
+                    background="#ffffff"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">データがありません</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

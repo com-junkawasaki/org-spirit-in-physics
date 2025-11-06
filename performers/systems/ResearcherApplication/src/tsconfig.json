@@ -21,7 +21,9 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@spirit-in-physics/visualizer": ["../../visualizer/src"],
+      "@spirit-in-physics/visualizer/*": ["../../visualizer/src/*"]
     },
     "plugins": [
       {
