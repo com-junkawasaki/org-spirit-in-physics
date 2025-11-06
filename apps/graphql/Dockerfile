@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Install diesel CLI
+RUN cargo install diesel_cli --no-default-features --features postgres
+
 # Copy Cargo files
 COPY Cargo.toml ./
 # Create a dummy Cargo.lock if it doesn't exist (for first build)
@@ -27,19 +30,33 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies and tools
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
     libpq5 \
+    postgresql-client \
+    wget \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy diesel CLI from builder
+COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/bin/diesel
 
 # Copy the binary from builder
 COPY --from=builder /app/target/release/graphql /app/graphql
 
+# Copy source directory structure for schema generation
+COPY src ./src
+COPY diesel.toml ./
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Expose port
 EXPOSE 8080
 
-# Run the application
+# Use entrypoint script
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["./graphql"]
 
