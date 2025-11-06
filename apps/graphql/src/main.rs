@@ -1,5 +1,5 @@
 use async_graphql::{
-    EmptySubscription, Schema,
+    EmptySubscription, EmptyMutation, Schema,
     http::{GraphQLPlaygroundConfig, playground_source},
 };
 use async_graphql_warp::graphql;
@@ -10,15 +10,12 @@ use warp::{Filter, Reply};
 
 use diesel_async::{AsyncPgConnection, pooled_connection::deadpool::Pool};
 
-use crate::activities::{Query, Mutation};
-
 mod constants;
 mod db;
 mod hume_client;
 mod models;
-mod activities;
 
-pub type GraphQLSchema = Schema<Query, Mutation, EmptySubscription>;
+pub type GraphQLSchema = Schema<EmptyMutation, EmptyMutation, EmptySubscription>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_pool = db::establish_connection().await?;
     let pool_arc = Arc::new(db_pool);
 
-    let schema = Schema::build(Query, Mutation, EmptySubscription)
+    let schema = Schema::build(EmptyMutation::default(), EmptyMutation::default(), EmptySubscription)
         .data(pool_arc)
         .finish();
 

@@ -85,6 +85,8 @@ services:
       - "8080:8080"
     volumes:
       - ./apps/graphql/src:/app/src:cached
+      - ./apps/graphql/migrations:/app/migrations:cached
+      - ./apps/graphql/diesel.toml:/app/diesel.toml
     env_file:
       - ./apps/graphql/env.docker
     environment:

@@ -120,7 +120,7 @@ export interface EmbeddingGenerationEvent {
   n: number;
 }
 
-export interface Neo4jPersistenceEvent {
+export interface GraphQLPersistenceEvent {
   participantId: string;
   windows: Array<{
     word: string;
@@ -137,8 +137,8 @@ export interface Neo4jPersistenceEvent {
     eigenValues: number[];
   };
   metadata: {
-    nodes: number;
-    relationships: number;
+    records: number;
+    tables: string[];
   };
 }
 
@@ -169,5 +169,5 @@ export type WindowsGenerationWorkflow = (event: WindowsGenerationEvent) => Promi
 export type DistanceCalculationWorkflow = (event: DistanceCalculationEvent) => Promise<void>;
 export type KernelFusionWorkflow = (event: KernelFusionEvent) => Promise<void>;
 export type EmbeddingGenerationWorkflow = (event: EmbeddingGenerationEvent) => Promise<void>;
-export type Neo4jPersistenceWorkflow = (event: Neo4jPersistenceEvent) => Promise<void>;
+export type GraphQLPersistenceWorkflow = (event: GraphQLPersistenceEvent) => Promise<void>;
 export type ExportWorkflow = (event: ExportEvent) => Promise<void>;

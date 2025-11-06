@@ -33,7 +33,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[4]
     act: '耐久性のある研究基盤',
-    summary: 'Neo4jを基盤とした堅牢なグラフデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。',
+    summary: 'GraphQL APIとPostgreSQLを基盤とした堅牢なリレーショナルデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[5]
@@ -43,7 +43,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[6]
     act: '初の実験データ解析',
-    summary: '11名の参加者の実験データをNeo4jに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
+    summary: '11名の参加者の実験データをGraphQL APIとPostgreSQLに格納し、川崎モデルによる解析を実行。Word2Vec、反応時間、生理データ、感情データの統合分析により、平均Spirit確率0.9999を達成。インタラクティブな可視化ダッシュボードで分析結果を提示する完全な解析パイプラインが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[7]
@@ -58,7 +58,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[9]
     act: '技術基盤の完全安定化',
-    summary: 'Neo4jローカル開発環境の完全修復を達成し、Hume AI SDKの最新バージョンとの統合を完了。感情分析パイプラインの堅牢なアーキテクチャを確立し、実データ解析に向けた準備を整えた。これにより、研究の信頼性と拡張性を保証する技術インフラが完成した。',
+    summary: 'GraphQL APIとPostgreSQLの完全統合を達成し、Hume AI SDKの最新バージョンとの統合を完了。感情分析パイプラインの堅牢なアーキテクチャを確立し、実データ解析に向けた準備を整えた。これにより、研究の信頼性と拡張性を保証する技術インフラが完成した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[10]
@@ -68,7 +68,7 @@
       {
         // Merkle DAG: 物語.ナラティブ[11]
     act: '生体データ統合の実現',
-    summary: 'Mod-002生体データ測定器から取得した1378個の皮膚電位時系列データをNeo4jデータベースに完全統合。平均-0.092μV、範囲[-0.048, 0.110]μVの生体信号を川崎モデルのΔSP成分として活用可能にし、実験参加者の生理的反応を定量的に測定する基盤を確立。科学的手法による霊性測定の生理的側面を統合した。',
+    summary: 'Mod-002生体データ測定器から取得した1378個の皮膚電位時系列データをGraphQL APIとPostgreSQLデータベースに完全統合。平均-0.092μV、範囲[-0.048, 0.110]μVの生体信号を川崎モデルのΔSP成分として活用可能にし、実験参加者の生理的反応を定量的に測定する基盤を確立。科学的手法による霊性測定の生理的側面を統合した。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[12]
@@ -77,13 +77,13 @@
       },
       {
         // Merkle DAG: 物語.ナラティブ[13]
-    act: 'Neo4jグラフデータベース統一',
-    summary: '全てのデータをNeo4jグラフデータベースに統一。ノード・リレーションシップ・プロパティを活用した柔軟なデータ構造により、Participant・Session・Response・VideoFile・EmotionAnalysisノードを統合管理。パフォーマンスとメンテナンス性の向上を実現し、堅牢なデータ保護とトランザクション管理を確保。',
+    act: 'GraphQL APIとPostgreSQLデータベース統一',
+    summary: '全てのデータをGraphQL APIとPostgreSQLリレーショナルデータベースに統一。構造化されたテーブル設計により、Participant・Session・Response・VideoFile・EmotionAnalysisデータを統合管理。パフォーマンスとメンテナンス性の向上を実現し、堅牢なデータ保護とトランザクション管理を確保。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[14]
     act: 'データベースアーキテクチャの完全統一',
-    summary: 'Neo4jManagerクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をNeo4jグラフベースに移行。柔軟なノード・リレーションシップ構造により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
+    summary: 'GraphQLClientクラスによる統一されたデータアクセス層を実装し、全てのCRUD操作をGraphQL APIベースに移行。型安全なクエリ構造により、開発効率とランタイムの安定性を向上。感情分析・実験データ・参加者情報の一元管理を実現し、研究データの完全性と再現性を保証する技術基盤を確立。',
       },
       {
         // Merkle DAG: 物語.ナラティブ[15]
@@ -93,7 +93,7 @@
   {
     // Merkle DAG: 物語.ナラティブ[16]
     act: 'Hume AIデータベース統合APIの実現',
-    summary: 'Hume AI実験データをNeo4jデータベースに直接インポート可能なREST APIエンドポイントを開発。EmotionAnalysisノードを設計し、柔軟な感情データ格納を実現。解析パイプラインをデータベースベースに移行し、CSVファイル処理からNeo4j直接クエリへ移行。分析パイプラインの実行効率とデータ完全性を大幅に向上させ、Hume AI感情分析の完全自動化基盤を確立。',
+    summary: 'Hume AI実験データをGraphQL APIとPostgreSQLデータベースに直接インポート可能なREST APIエンドポイントを開発。EmotionAnalysisテーブルを設計し、構造化された感情データ格納を実現。解析パイプラインをデータベースベースに移行し、CSVファイル処理からGraphQLクエリへ移行。分析パイプラインの実行効率とデータ完全性を大幅に向上させ、Hume AI感情分析の完全自動化基盤を確立。',
   },
   {
     // Merkle DAG: 物語.ナラティブ[17]
@@ -323,13 +323,13 @@
           name: '技術基盤 (Technical Foundation)',
           description: '研究の信頼性と拡張性を保証する技術インフラ',
           sub_processes: [
-            'Neo4jグラフデータベース統合',
-            'Neo4jグラフによる柔軟なデータモデリング',
-            'Neo4jノードによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseData定義',
-            'Cypherクエリ言語による高度なデータ操作',
+            'GraphQL APIとPostgreSQLデータベース統合',
+            'リレーショナルデータベースによる構造化データモデリング',
+            'PostgreSQLテーブルによるParticipant・Consent・ExperimentSession・WordStimulus・ResponseData定義',
+            'GraphQLクエリ言語による高度なデータ操作',
             'Gitのようなバージョン管理によるデータ変更履歴追跡',
-            'Neo4jリレーションシップによる複雑な関係性表現',
-            'Neo4jによるデータ保護',
+            'SQLリレーションシップによる複雑な関係性表現',
+            'PostgreSQLによるデータ保護',
             '非同期ジョブ管理と依存関係解決',
             '中間結果のキャッシュシステム',
             '自動リトライとエラーハンドリング',
@@ -339,10 +339,10 @@
             'importerとanalyzerをpipelineに統合',
             'プロセスネットワークグラフモデル実装',
             'Merkle DAGによる状態管理',
-            'Neo4jActivitiesによるServerlessワークフローワークフロー統合',
-            'Neo4jベースのHume AI感情データ格納',
-            'Cypherによる感情パターン分析クエリ',
-            'グラフ構造による相関分析最適化',
+            'GraphQLActivitiesによるServerlessワークフローワークフロー統合',
+            'PostgreSQLベースのHume AI感情データ格納',
+            'SQLによる感情パターン分析クエリ',
+            'リレーショナル構造による相関分析最適化',
             'Serverlessワークフロー接続監視システムの完全実装',
             'Docker環境でのコンテナ間通信設定最適化',
             'gRPCプロトコル対応接続確認ロジック',
@@ -351,7 +351,7 @@
             'Experiment階層アーキテクチャ実装',
             'Participant → Experiment → Session階層設計',
             'ExperimentSession・Responseにexperiment_id導入',
-            'Neo4j Experimentノード・HAS_EXPERIMENTリレーション追加',
+            'PostgreSQL Experimentテーブル・外部キー制約追加',
             '複合キー制約・インデックス最適化',
             'セッションインポートAPI Experiment自動作成',
             'Participant → Experiment → Sessionリレーション構築',
@@ -424,7 +424,7 @@
             '感情スコア可視化',
             '川崎モデルコンポーネント内訳表示',
             '研究者向け効率的データ分析支援',
-            'Neo4jローカル環境完全修復',
+            'GraphQL APIとPostgreSQL完全統合',
             'Hume AI SDK最新版完全統合',
             'AsyncHumeClient 非同期API実装',
             'FaceConfig & ProsodyConfig設定',
@@ -468,9 +468,9 @@
             '多言語統合意味表現',
             'ユング刺激語詳細メタデータ活用',
             '意味的類似性精度向上',
-            'Neo4jマルチモデルデータベース統一',
+            'GraphQL APIとPostgreSQLデータベース統一',
             'PostgreSQL正規化スキーマ実装',
-            'Neo4jManager統一データアクセス層',
+            'GraphQLClient統一データアクセス層',
             '静的型付きスキーマ移行',
             'Row Level Securityデータ保護',
             '堅牢なトランザクション管理',
@@ -492,7 +492,7 @@
             '解析パイプラインのデータベースベース移行',
             'REST API Humeデータインポートエンドポイント',
             'HumeDataImporterクラス実装',
-            'CSVからNeo4j直接クエリ移行',
+            'CSVからGraphQLクエリ移行',
             '分析パイプライン実行効率向上',
             'データ完全性と再現性保証',
             'SessionDataProcessor時系列分析クラス',
@@ -507,7 +507,7 @@
             '時系列イベント可視化データ生成',
             '統合時系列可視化システム設計',
             '多角的データ統合分析基盤',
-            'AnalyzerデータNeo4j完全統合',
+            'AnalyzerデータGraphQL完全統合',
             '11名参加者同意情報インポート',
             '21件実験セッション統合',
             '11件応答データ格納',
@@ -518,29 +518,29 @@
             '100件単語刺激データ格納',
             '川崎モデル分析基盤確立',
             '科学的手法による霊性測定データ完全性保証',
-            'Neo4jグラフデータベース統合',
-            'グラフベースParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataモデル',
-            'Cypherスキーマ定義と関係性モデリング',
-            'Cypherクエリ言語による高度なデータ操作',
+            'GraphQL APIとPostgreSQLデータベース統合',
+            'リレーショナルParticipant・Consent・ExperimentSession・WordStimulus・ResponseDataモデル',
+            'GraphQLスキーマ定義と関係性モデリング',
+            'GraphQLクエリ言語による高度なデータ操作',
             'Gitバージョン管理によるデータ変更履歴追跡',
-            'Neo4jリレーションシップによる複雑な関係性表現',
-            'Neo4jDataAccessクラスによるCRUD操作',
-            'Neo4jグラフデータベース統合',
-            'Neo4jActivitiesによるServerlessワークフローワークフロー統合',
-            'Neo4jベースのHume AI感情データ格納',
-            'Cypherによる感情パターン分析クエリ',
-            'グラフ構造による相関分析最適化',
-            'RDFグラフモデルによるデータ構造最適化',
-            '科学データにおける複雑な関係性の自然表現',
-            'Analyzer/Visualizer Neo4j完全統合',
-            'DataLoader/DataStorer Cypherクエリ実装',
-            'TypeScript Neo4jクライアント開発',
-            'React API routes グラフデータ統合',
-            'クロスコンポーネントグラフデータ連携',
-            'グラフデータベース統合システム確立',
+            'PostgreSQLリレーションシップによる複雑な関係性表現',
+            'GraphQLDataAccessクラスによるCRUD操作',
+            'GraphQL APIとPostgreSQLデータベース統合',
+            'GraphQLActivitiesによるServerlessワークフローワークフロー統合',
+            'PostgreSQLベースのHume AI感情データ格納',
+            'SQLによる感情パターン分析クエリ',
+            'リレーショナル構造による相関分析最適化',
+            'SQLモデルによるデータ構造最適化',
+            '科学データにおける複雑な関係性の構造化表現',
+            'Analyzer/Visualizer GraphQL完全統合',
+            'DataLoader/DataStorer GraphQLクエリ実装',
+            'TypeScript GraphQLクライアント開発',
+            'React API routes リレーショナルデータ統合',
+            'クロスコンポーネントリレーショナルデータ連携',
+            'リレーショナルデータベース統合システム確立',
             'システム接続状況監視ダッシュボード実装',
             'SystemStatusCardリアルタイム監視コンポーネント',
-            'Neo4j・Serverlessワークフロー・Hume AI接続状況確認API',
+            'PostgreSQL・Serverlessワークフロー・Hume AI接続状況確認API',
             '自動更新機能（30秒間隔）による継続監視',
             '詳細接続情報表示（応答時間・エラー・設定）',
             '管理者向けシステム健全性監視基盤',
@@ -561,7 +561,7 @@
             'Experiment階層アーキテクチャ実装',
             'Participant → Experiment → Session階層設計',
             'ExperimentSession・Responseにexperiment_id導入',
-            'Neo4j Experimentノード・HAS_EXPERIMENTリレーション追加',
+            'PostgreSQL Experimentテーブル・外部キー制約追加',
             '複合キー制約・インデックス最適化',
             'セッションインポートAPI Experiment自動作成',
             'Participant → Experiment → Sessionリレーション構築',
