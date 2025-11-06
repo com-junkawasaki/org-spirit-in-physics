@@ -61,9 +61,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Generate UUID for experiment_id if not provided
+      const experimentId = result.experiment_id || '00000000-0000-0000-0000-000000000000';
+      
       validatedResults.push({
         participant_id: participantIdToUse,
-        experiment_id: result.experiment_id || 'default-session',
+        experiment_id: experimentId,
         word_stimulus_id: result.word_stimulus_id || 1,
         stimulus_word: result.stimulus_word,
         response_word: result.response_word,

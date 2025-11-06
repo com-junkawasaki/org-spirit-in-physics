@@ -1,78 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseClient } from '@spiritinphysics/supabase';
 
 // Merkle DAG: api.participants.word2vec -> word2vec_data_fetch
 // 参加者のWord2Vecデータ取得API
-// 依存関係: neo4j, participants/[id]
+// 依存関係: GraphQL analysis_results query
+
+// GraphQL URL取得関数（サーバーサイド用）
+function getGraphQLUrl(): string {
+  // Environment variable takes precedence
+  if (process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL) {
+    return process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL;
+  }
+  
+  // Server-side: use Docker service name or localhost
+  return process.env.RUST_GRAPHQL_URL || 'http://graphql:3003/graphql';
+}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const { id: participantId } = params;
+    // Next.js 14/15 compatibility: params might be a Promise or direct object
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const { id: participantId } = resolvedParams;
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     
-    console.log(`API: Fetching Word2Vec data for participant ${participantId}${sessionId ? `, session ${sessionId}` : ''}`);
+    console.log(`API: Fetching Word2Vec data via GraphQL for participant ${participantId}${sessionId ? `, session ${sessionId}` : ''}`);
 
-    const client = getSupabaseClient();
+    const graphqlUrl = getGraphQLUrl();
+    console.log(`API: Using GraphQL URL: ${graphqlUrl}`);
 
-    // Merkle DAG: api.participants.word2vec.query_responses
-    // 参加者の応答データを取得（Supabaseテーブルから）
-    // セッションIDが指定されている場合は、experiment_idでフィルタリング
-    let query = client
-      .from('participant_response_data')
-      .select('id, stimulus_word, response_word, reaction_time_ms, timestamp, experiment_id')
-      .eq('participant_id', participantId)
-      .not('stimulus_word', 'is', null)
-      .not('response_word', 'is', null)
-    
+    // GraphQLクエリを構築
+    const query = `
+      query GetAnalysisResults($participantId: String, $experimentId: String) {
+        analysisResults(participantId: $participantId, experimentId: $experimentId) {
+          id
+          participantId
+          experimentId
+          wordStimulusId
+          stimulusWord
+          responseWord
+          reactionTimeMs
+          spiritProbability
+          word2VecComponent
+          reactionTimeComponent
+          skinPotentialComponent
+          emotionComponent
+          emotionData
+          physiologicalData
+          createdAt
+          updatedAt
+        }
+      }
+    `;
+
+    const variables: { participantId: string; experimentId?: string } = {
+      participantId,
+    };
+
     if (sessionId) {
-      // sessionIdはparticipant_experiment_sessions.id (UUID) を指す
-      // participant_response_data.experiment_idがこれと一致するレコードのみ取得
-      query = query.eq('experiment_id', sessionId);
+      variables.experimentId = sessionId;
     }
+
+    // GraphQLクエリを実行
+    const response = await fetch(graphqlUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL request failed: ${response.statusText}`);
+    }
+
+    const result = await response.json();
     
-    const { data: responses, error } = await query
-      .order('timestamp', { ascending: true });
-
-    if (error) {
-      throw error;
+    if (result.errors) {
+      console.error('API: GraphQL errors:', result.errors);
+      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
     }
 
-    // 分析結果からspirit_probabilityを取得
-    const { data: analysisResults } = await client
-      .from('participant_analysis_results')
-      .select('response_id, spirit_probability')
-      .eq('participant_id', participantId);
+    const analysisResults = result.data?.analysisResults || [];
+    console.log(`API: Found ${analysisResults.length} analysis results for participant ${participantId}`);
 
-    const spiritMap = new Map(analysisResults?.map((r: any) => [r.response_id, r.spirit_probability]) || []);
-    console.log(`API: Found ${responses.length} responses for participant ${participantId}`);
-
-    if (responses.length === 0) {
+    if (analysisResults.length === 0) {
       return NextResponse.json({
         success: true,
         participantId,
         wordData: [],
-        message: 'No response data found for this participant'
+        message: 'No analysis results found for this participant'
       });
     }
 
     // Merkle DAG: api.participants.word2vec.generate_embeddings
     // 簡易Word2Vec埋め込み生成（実際の実装では事前学習済みモデルを使用）
-    const wordData = (responses || []).map((response: any, index: number) => {
+    const wordData = analysisResults.map((result: any, index: number) => {
       // 簡易埋め込み生成（実際の実装ではWord2Vecモデルを使用）
-      const embedding = generateSimpleEmbedding(response.stimulus_word, response.response_word, index);
+      const embedding = generateSimpleEmbedding(result.stimulusWord, result.responseWord, index);
       
       return {
-        word: response.stimulus_word,
+        word: result.stimulusWord,
         embedding,
-        spiritProbability: spiritMap.get(response.id) || 0.5,
-        reactionTime: response.reaction_time_ms || 0,
-        timestamp: response.timestamp,
+        spiritProbability: result.spiritProbability || 0.5,
+        reactionTime: result.reactionTimeMs || 0,
+        timestamp: result.createdAt || result.updatedAt || new Date().toISOString(),
         participantId,
-        responseId: response.id
+        responseId: result.id
       };
     });
 
@@ -92,11 +131,12 @@ export async function GET(
 
   } catch (error) {
     console.error('API: Failed to fetch Word2Vec data:', error);
+    const resolvedParams = params instanceof Promise ? await params : params;
     return NextResponse.json(
       { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
-        participantId: params.id
+        participantId: resolvedParams.id
       },
       { status: 500 }
     );

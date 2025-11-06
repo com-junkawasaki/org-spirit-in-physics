@@ -163,6 +163,9 @@ export default function ParticipantDetailPage() {
   const [wordData, setWordData] = useState<WordData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  
+  console.log('ParticipantDetailPage rendered:', { participantId, isLoading, error, wordDataLength: wordData.length })
 
   // Merkle DAG: participants.detail.fetch_data
   // Word2Vecデータの取得
@@ -171,16 +174,33 @@ export default function ParticipantDetailPage() {
       setIsLoading(true)
       setError(null)
       
+      console.log('Fetching Word2Vec data for participant:', participantId)
       const response = await fetch(`/api/spirits/${participantId}/word2vec`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const data = await response.json()
+      console.log('Word2Vec API response:', JSON.stringify(data, null, 2))
       
       if (data.success) {
-        setWordData(data.wordData)
+        const wordDataArray = data.wordData || []
+        setWordData(wordDataArray)
+        setMessage(data.message || null)
+        console.log('Word2Vec data set:', wordDataArray.length, 'items')
+        if (wordDataArray.length === 0) {
+          console.warn('No Word2Vec data found for participant:', participantId)
+        }
       } else {
-        setError(data.error || 'データの取得に失敗しました')
+        const errorMsg = data.error || 'データの取得に失敗しました'
+        console.error('Word2Vec API error:', errorMsg)
+        setError(errorMsg)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '不明なエラーが発生しました')
+      const errorMsg = err instanceof Error ? err.message : '不明なエラーが発生しました'
+      console.error('Word2Vec fetch error:', err)
+      setError(errorMsg)
     } finally {
       setIsLoading(false)
     }
@@ -217,18 +237,18 @@ export default function ParticipantDetailPage() {
         main.style.padding = '0'
         main.style.margin = '0'
         main.style.zIndex = '9999'
+        main.style.overflow = 'auto'
       }
     }
 
-    // 即座に実行
-    hideSidebarAndHeader()
-    
-    // 少し遅延させて再実行（DOMが完全に読み込まれるまで待つ）
-    const timeoutId = setTimeout(hideSidebarAndHeader, 100)
+    // DOMが完全に読み込まれるまで待つ
+    const timeoutId1 = setTimeout(hideSidebarAndHeader, 100)
+    const timeoutId2 = setTimeout(hideSidebarAndHeader, 500)
 
     // クリーンアップ関数
     return () => {
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId1)
+      clearTimeout(timeoutId2)
       const sidebar = document.querySelector('aside')
       const header = document.querySelector('header')
       const banner = document.querySelector('[role="banner"]')
@@ -251,6 +271,7 @@ export default function ParticipantDetailPage() {
         main.style.padding = ''
         main.style.margin = ''
         main.style.zIndex = ''
+        main.style.overflow = ''
       }
     }
   }, [])
@@ -263,7 +284,7 @@ export default function ParticipantDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center w-full h-screen" style={{ minHeight: '100vh' }}>
         <div className="text-center">
           <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Word2Vecデータを読み込み中...</p>
@@ -274,7 +295,7 @@ export default function ParticipantDetailPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center w-full h-screen" style={{ minHeight: '100vh' }}>
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
         </div>
@@ -283,7 +304,7 @@ export default function ParticipantDetailPage() {
   }
 
   return (
-    <div className="w-full h-screen">
+    <div className="w-full h-screen" style={{ minHeight: '100vh', position: 'relative' }}>
       {graphData.nodes.length > 0 ? (
         <Force3DWordGraphTypeGPU
           nodes={graphData.nodes}
@@ -293,10 +314,19 @@ export default function ParticipantDetailPage() {
           background="#ffffff"
         />
       ) : (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">データがありません</p>
+        <div className="flex items-center justify-center w-full h-full" style={{ minHeight: '100vh' }}>
+          <div className="text-center max-w-md px-4">
+            <div className="mb-4">
+              <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">データがありません</h2>
+            {message && (
+              <p className="text-gray-600 mb-4">{message}</p>
+            )}
+            <p className="text-sm text-gray-500 mt-4">参加者ID: {participantId}</p>
+            <p className="text-xs text-gray-400 mt-2">この参加者の分析結果がまだ存在しないか、データがインポートされていません。</p>
           </div>
         </div>
       )}
