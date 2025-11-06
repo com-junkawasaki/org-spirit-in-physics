@@ -11,6 +11,8 @@ export interface WordNode {
   nodeType?: 'word' | 'anchor'
   initial?: [number, number, number]
   color?: string
+  // 感情スコア（0..1）。存在する場合は色合成に使用
+  emotion?: Partial<Record<'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'disgust' | 'calm' | 'focus' | 'excitement' | 'confusion', number>>
 }
 
 export interface WordLink {

@@ -44,27 +44,8 @@ declare global {
 // 依存: React, TypeGPU (WebGPU)
 // BPMN: Force3DWordGraphTypeGPU
 
-export interface WordNode {
-  id: string
-  label: string
-  scale: number // 単語スケール（ノード半径・重み）
-  axis?: [number, number, number] // 視覚方向
-  fixed?: boolean
-  initial?: [number, number, number]
-  color?: string
-  // 感情スコア（0..1）。存在する場合は色合成に使用
-  emotion?: Partial<Record<'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'disgust' | 'calm' | 'focus' | 'excitement' | 'confusion', number>>
-}
-
-export interface WordLink {
-  source: number // インデックス（ノード配列参照）
-  target: number
-  weight: number // 辺スケール（太さ）
-  // テンセグリティ拡張: 片側拘束の種別とパラメータ
-  mode?: 'tension' | 'compression' // 省略時は従来の両側バネとして扱う
-  L0?: number // 目標長さ（与えられない場合は weight から推定）
-  k?: number  // 個別バネ定数（省略可）
-}
+// Types are exported from ../types to avoid duplication
+import type { WordNode, WordLink } from '../types'
 
 interface Force3DWordGraphTypeGPUProps {
   nodes: WordNode[]
