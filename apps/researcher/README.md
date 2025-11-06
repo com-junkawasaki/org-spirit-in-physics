@@ -7,15 +7,11 @@ This researcher app has been fully migrated from Neo4j to **GraphQL API with Pos
 ## Key Changes
 
 ### Client Library (`src/lib/graphql-client.ts`)
-- **Before**: Neo4j client with Cypher queries
-- **After**: GraphQL client with type-safe queries
 
 ### API Routes (`src/app/api/`)
-- **Before**: Neo4j Cypher queries in API routes
 - **After**: GraphQL API calls via HTTP
 
 ### Data Functions (`src/lib/data.ts`)
-- **Before**: Neo4j client integration with Cypher queries
 - **After**: GraphQL client integration with PostgreSQL backend
 
 ## GraphQL Client Features

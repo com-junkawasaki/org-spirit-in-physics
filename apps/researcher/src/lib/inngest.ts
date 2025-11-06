@@ -42,12 +42,6 @@ export const events = {
   EMBEDDING_GENERATION_COMPLETED: 'pipeline.embedding_generation.completed',
   EMBEDDING_GENERATION_FAILED: 'pipeline.embedding_generation.failed',
 
-  // Neo4j保存イベント
-  NEO4J_PERSISTENCE_REQUESTED: 'pipeline.neo4j_persistence.requested',
-  NEO4J_PERSISTENCE_STARTED: 'pipeline.neo4j_persistence.started',
-  NEO4J_PERSISTENCE_COMPLETED: 'pipeline.neo4j_persistence.completed',
-  NEO4J_PERSISTENCE_FAILED: 'pipeline.neo4j_persistence.failed',
-
   // エクスポートイベント
   EXPORT_REQUESTED: 'pipeline.export.requested',
   EXPORT_STARTED: 'pipeline.export.started',
