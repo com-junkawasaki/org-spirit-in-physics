@@ -2,7 +2,9 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: './src/app/graphql/schema.graphql',
+  schema: process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL 
+    ? `${process.env.NEXT_PUBLIC_RUST_GRAPHQL_URL}/graphql`
+    : 'http://localhost:3003/graphql',
   documents: './src/lib/graphql/**/*.{ts,tsx}',
   generates: {
     './src/lib/graphql/generated/types.ts': {
@@ -14,8 +16,8 @@ const config: CodegenConfig = {
         withHooks: true,
         withComponent: false,
         withHOC: false,
-        apolloClientVersion: 3,
-        reactApolloVersion: 3,
+        apolloClientVersion: 4,
+        reactApolloVersion: 4,
       },
     },
   },

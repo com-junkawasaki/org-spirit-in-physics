@@ -14,8 +14,8 @@ const config: CodegenConfig = {
         'typescript-react-apollo',
       ],
       config: {
-        apolloClientVersion: 3,
-        reactApolloVersion: 3,
+        apolloClientVersion: 4,
+        reactApolloVersion: 4,
         withHooks: true,
         withComponent: false,
         withHOC: false,

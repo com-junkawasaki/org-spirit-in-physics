@@ -30,9 +30,9 @@ export type AnalysisResult = {
   createdAt: Scalars['String']['output'];
   emotionComponent?: Maybe<Scalars['Float']['output']>;
   emotionData?: Maybe<Scalars['JSON']['output']>;
-  experimentId: Scalars['ID']['output'];
-  id: Scalars['ID']['output'];
-  participantId: Scalars['ID']['output'];
+  experimentId: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  participantId: Scalars['String']['output'];
   physiologicalData?: Maybe<Scalars['JSON']['output']>;
   reactionTimeComponent?: Maybe<Scalars['Float']['output']>;
   reactionTimeMs?: Maybe<Scalars['Int']['output']>;
@@ -41,26 +41,113 @@ export type AnalysisResult = {
   spiritProbability: Scalars['Float']['output'];
   stimulusWord: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
-  word2vecComponent?: Maybe<Scalars['Float']['output']>;
+  word2VecComponent?: Maybe<Scalars['Float']['output']>;
   wordStimulusId: Scalars['Int']['output'];
 };
 
-export type Mutation = {
-  __typename?: 'Mutation';
+export type AnalyzeVideoInput = {
+  participantId: Scalars['String']['input'];
+  sessionType: Scalars['String']['input'];
+  videoFile: Scalars['String']['input'];
+};
+
+export type Consent = {
+  __typename?: 'Consent';
+  agreedAt: Scalars['String']['output'];
+  agreements: Scalars['JSON']['output'];
+  consentText?: Maybe<Scalars['String']['output']>;
+  consentVersion?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  ipAddress?: Maybe<Scalars['String']['output']>;
+  participantId: Scalars['String']['output'];
+  signature: Scalars['String']['output'];
+  studyId?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['String']['output'];
+  userAgent?: Maybe<Scalars['String']['output']>;
+};
+
+export type ConsentInput = {
+  agreedAt: Scalars['String']['input'];
+  agreements: Scalars['JSON']['input'];
+  consentText?: InputMaybe<Scalars['String']['input']>;
+  consentVersion?: InputMaybe<Scalars['String']['input']>;
+  demographicData?: InputMaybe<DemographicDataInput>;
+  ipAddress?: InputMaybe<Scalars['String']['input']>;
+  participantId: Scalars['String']['input'];
+  signature: Scalars['String']['input'];
+  studyId?: InputMaybe<Scalars['String']['input']>;
+  userAgent?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateParticipantInput = {
+  age?: InputMaybe<Scalars['Int']['input']>;
+  gender?: InputMaybe<Scalars['String']['input']>;
+  handedness?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type DemographicDataInput = {
+  ageGroup?: InputMaybe<Scalars['Int']['input']>;
+  ethnicity?: InputMaybe<Scalars['String']['input']>;
+  gender?: InputMaybe<Scalars['String']['input']>;
+  income?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationRoot = {
+  __typename?: 'MutationRoot';
+  /** Analyze all participants */
+  analyzeAllParticipants: ActivityExecutionResponse;
+  /** Analyze participant data via Rust analyzer server */
   analyzeParticipant: ActivityExecutionResponse;
+  /** Analyze video emotions */
+  analyzeVideoEmotions: ActivityExecutionResponse;
+  /** Create a new participant */
+  createParticipant: Participant;
+  /** Execute an activity via Rust activities server */
   executeActivity: ActivityExecutionResponse;
+  /** Save consent information */
+  saveConsent: Consent;
+  /** Save session data with events and word responses */
+  saveSession: SaveSessionResponse;
+  /** Save video file to Supabase Storage */
+  saveVideo: SaveVideoResponse;
 };
 
 
-export type MutationAnalyzeParticipantArgs = {
-  experimentId?: InputMaybe<Scalars['ID']['input']>;
-  participantId: Scalars['ID']['input'];
+export type MutationRootAnalyzeParticipantArgs = {
+  experimentId?: InputMaybe<Scalars['String']['input']>;
+  participantId: Scalars['String']['input'];
 };
 
 
-export type MutationExecuteActivityArgs = {
+export type MutationRootAnalyzeVideoEmotionsArgs = {
+  input: AnalyzeVideoInput;
+};
+
+
+export type MutationRootCreateParticipantArgs = {
+  input: CreateParticipantInput;
+};
+
+
+export type MutationRootExecuteActivityArgs = {
   activityId: Scalars['String']['input'];
   inputs: Scalars['JSON']['input'];
+};
+
+
+export type MutationRootSaveConsentArgs = {
+  input: ConsentInput;
+};
+
+
+export type MutationRootSaveSessionArgs = {
+  input: SaveSessionInput;
+};
+
+
+export type MutationRootSaveVideoArgs = {
+  input: SaveVideoInput;
 };
 
 export type Participant = {
@@ -69,44 +156,128 @@ export type Participant = {
   createdAt: Scalars['String']['output'];
   gender?: Maybe<Scalars['String']['output']>;
   handedness?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
+  id: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
 };
 
-export type Query = {
-  __typename?: 'Query';
+export type QueryRoot = {
+  __typename?: 'QueryRoot';
+  /** Get analysis results */
   analysisResults: Array<AnalysisResult>;
-  participant?: Maybe<Participant>;
+  /** Get consent for a participant */
+  consent?: Maybe<Consent>;
+  /** Get emotion results for a participant */
+  emotionResults: Array<Scalars['JSON']['output']>;
+  /** Get emotion statistics */
+  emotionStatistics: Scalars['JSON']['output'];
+  /** Get participant by ID */
+  participant: Participant;
+  /** Get all participants */
   participants: Array<Participant>;
+  /** Get session events */
+  sessionEvents: Array<SessionEvent>;
+  /** Get sessions */
   sessions: Array<Session>;
+  /** Get sessions by participant ID */
+  sessionsByParticipant: Array<Session>;
 };
 
 
-export type QueryAnalysisResultsArgs = {
-  experimentId?: InputMaybe<Scalars['ID']['input']>;
-  participantId?: InputMaybe<Scalars['ID']['input']>;
+export type QueryRootAnalysisResultsArgs = {
+  experimentId?: InputMaybe<Scalars['String']['input']>;
+  participantId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
-export type QueryParticipantArgs = {
-  id: Scalars['ID']['input'];
+export type QueryRootConsentArgs = {
+  participantId: Scalars['String']['input'];
 };
 
 
-export type QuerySessionsArgs = {
-  participantId?: InputMaybe<Scalars['ID']['input']>;
+export type QueryRootEmotionResultsArgs = {
+  participantId: Scalars['String']['input'];
+};
+
+
+export type QueryRootParticipantArgs = {
+  id: Scalars['String']['input'];
+};
+
+
+export type QueryRootSessionEventsArgs = {
+  participantId: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
+};
+
+
+export type QueryRootSessionsArgs = {
+  participantId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryRootSessionsByParticipantArgs = {
+  participantId: Scalars['String']['input'];
+};
+
+export type SaveSessionInput = {
+  events: Array<SessionEventInput>;
+  participantId: Scalars['String']['input'];
+  wordResponses: Array<WordResponseInput>;
+};
+
+export type SaveSessionResponse = {
+  __typename?: 'SaveSessionResponse';
+  message: Scalars['String']['output'];
+  sessionId: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+};
+
+export type SaveVideoInput = {
+  fileData: Scalars['String']['input'];
+  fileName: Scalars['String']['input'];
+  participantId: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
+};
+
+export type SaveVideoResponse = {
+  __typename?: 'SaveVideoResponse';
+  fileName: Scalars['String']['output'];
+  fileUrl: Scalars['String']['output'];
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
 };
 
 export type Session = {
   __typename?: 'Session';
   createdAt: Scalars['String']['output'];
   endTime?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  participantId: Scalars['ID']['output'];
-  sessionId: Scalars['ID']['output'];
+  id: Scalars['String']['output'];
+  participantId: Scalars['String']['output'];
+  sessionId: Scalars['String']['output'];
   sessionType: Scalars['String']['output'];
   startTime: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
+};
+
+export type SessionEvent = {
+  __typename?: 'SessionEvent';
+  payload: Scalars['JSON']['output'];
+  timestamp: Scalars['Int']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type SessionEventInput = {
+  payload?: InputMaybe<Scalars['JSON']['input']>;
+  timestamp: Scalars['Int']['input'];
+  type: Scalars['String']['input'];
+};
+
+export type WordResponseInput = {
+  isDelayed?: InputMaybe<Scalars['Boolean']['input']>;
+  reactionTimeMs: Scalars['Int']['input'];
+  responseWord: Scalars['String']['input'];
+  stimulusWord: Scalars['JSON']['input'];
+  timestamp?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type ExecuteActivityMutationVariables = Exact<{
@@ -115,42 +286,76 @@ export type ExecuteActivityMutationVariables = Exact<{
 }>;
 
 
-export type ExecuteActivityMutation = { __typename?: 'Mutation', executeActivity: { __typename?: 'ActivityExecutionResponse', success: boolean, result?: any | null, error?: string | null } };
+export type ExecuteActivityMutation = { __typename?: 'MutationRoot', executeActivity: { __typename?: 'ActivityExecutionResponse', success: boolean, result?: any | null, error?: string | null } };
 
 export type AnalyzeParticipantMutationVariables = Exact<{
-  participantId: Scalars['ID']['input'];
-  experimentId?: InputMaybe<Scalars['ID']['input']>;
+  participantId: Scalars['String']['input'];
+  experimentId?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type AnalyzeParticipantMutation = { __typename?: 'Mutation', analyzeParticipant: { __typename?: 'ActivityExecutionResponse', success: boolean, result?: any | null, error?: string | null } };
+export type AnalyzeParticipantMutation = { __typename?: 'MutationRoot', analyzeParticipant: { __typename?: 'ActivityExecutionResponse', success: boolean, result?: any | null, error?: string | null } };
 
 export type GetAnalysisResultsQueryVariables = Exact<{
-  participantId?: InputMaybe<Scalars['ID']['input']>;
-  experimentId?: InputMaybe<Scalars['ID']['input']>;
+  participantId?: InputMaybe<Scalars['String']['input']>;
+  experimentId?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type GetAnalysisResultsQuery = { __typename?: 'Query', analysisResults: Array<{ __typename?: 'AnalysisResult', id: string, participantId: string, experimentId: string, wordStimulusId: number, stimulusWord: string, responseWord: string, reactionTimeMs?: number | null, spiritProbability: number, word2vecComponent?: number | null, reactionTimeComponent?: number | null, skinPotentialComponent?: number | null, emotionComponent?: number | null, emotionData?: any | null, physiologicalData?: any | null, createdAt: string, updatedAt: string }> };
+export type GetAnalysisResultsQuery = { __typename?: 'QueryRoot', analysisResults: Array<{ __typename?: 'AnalysisResult', id: string, participantId: string, experimentId: string, wordStimulusId: number, stimulusWord: string, responseWord: string, reactionTimeMs?: number | null, spiritProbability: number, word2VecComponent?: number | null, reactionTimeComponent?: number | null, skinPotentialComponent?: number | null, emotionComponent?: number | null, emotionData?: any | null, physiologicalData?: any | null, createdAt: string, updatedAt: string }> };
+
+export type GetConsentQueryVariables = Exact<{
+  participantId: Scalars['String']['input'];
+}>;
+
+
+export type GetConsentQuery = { __typename?: 'QueryRoot', consent?: { __typename?: 'Consent', id: string, participantId: string, signature: string, agreements: any, agreedAt: string, consentVersion?: string | null, studyId?: string | null, userAgent?: string | null, ipAddress?: string | null, consentText?: string | null, createdAt: string, updatedAt: string } | null };
+
+export type GetEmotionResultsQueryVariables = Exact<{
+  participantId: Scalars['String']['input'];
+}>;
+
+
+export type GetEmotionResultsQuery = { __typename?: 'QueryRoot', emotionResults: Array<any> };
+
+export type GetEmotionStatisticsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetEmotionStatisticsQuery = { __typename?: 'QueryRoot', emotionStatistics: any };
 
 export type GetParticipantsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetParticipantsQuery = { __typename?: 'Query', participants: Array<{ __typename?: 'Participant', id: string, age?: number | null, gender?: string | null, handedness?: string | null, createdAt: string, updatedAt: string }> };
+export type GetParticipantsQuery = { __typename?: 'QueryRoot', participants: Array<{ __typename?: 'Participant', id: string, age?: number | null, gender?: string | null, handedness?: string | null, createdAt: string, updatedAt: string }> };
 
 export type GetParticipantQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
+  id: Scalars['String']['input'];
 }>;
 
 
-export type GetParticipantQuery = { __typename?: 'Query', participant?: { __typename?: 'Participant', id: string, age?: number | null, gender?: string | null, handedness?: string | null, createdAt: string, updatedAt: string } | null };
+export type GetParticipantQuery = { __typename?: 'QueryRoot', participant: { __typename?: 'Participant', id: string, age?: number | null, gender?: string | null, handedness?: string | null, createdAt: string, updatedAt: string } };
+
+export type GetSessionEventsQueryVariables = Exact<{
+  participantId: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
+}>;
+
+
+export type GetSessionEventsQuery = { __typename?: 'QueryRoot', sessionEvents: Array<{ __typename?: 'SessionEvent', type: string, timestamp: number, payload: any }> };
 
 export type GetSessionsQueryVariables = Exact<{
-  participantId?: InputMaybe<Scalars['ID']['input']>;
+  participantId?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type GetSessionsQuery = { __typename?: 'Query', sessions: Array<{ __typename?: 'Session', id: string, participantId: string, sessionId: string, sessionType: string, startTime: string, endTime?: string | null, createdAt: string, updatedAt: string }> };
+export type GetSessionsQuery = { __typename?: 'QueryRoot', sessions: Array<{ __typename?: 'Session', id: string, participantId: string, sessionId: string, sessionType: string, startTime: string, endTime?: string | null, createdAt: string, updatedAt: string }> };
+
+export type GetSessionsByParticipantQueryVariables = Exact<{
+  participantId: Scalars['String']['input'];
+}>;
+
+
+export type GetSessionsByParticipantQuery = { __typename?: 'QueryRoot', sessionsByParticipant: Array<{ __typename?: 'Session', id: string, participantId: string, sessionId: string, sessionType: string, startTime: string, endTime?: string | null, createdAt: string, updatedAt: string }> };
 
 
 export const ExecuteActivityDocument = gql`
@@ -190,7 +395,7 @@ export type ExecuteActivityMutationHookResult = ReturnType<typeof useExecuteActi
 export type ExecuteActivityMutationResult = Apollo.MutationResult<ExecuteActivityMutation>;
 export type ExecuteActivityMutationOptions = Apollo.BaseMutationOptions<ExecuteActivityMutation, ExecuteActivityMutationVariables>;
 export const AnalyzeParticipantDocument = gql`
-    mutation AnalyzeParticipant($participantId: ID!, $experimentId: ID) {
+    mutation AnalyzeParticipant($participantId: String!, $experimentId: String) {
   analyzeParticipant(participantId: $participantId, experimentId: $experimentId) {
     success
     result
@@ -226,7 +431,7 @@ export type AnalyzeParticipantMutationHookResult = ReturnType<typeof useAnalyzeP
 export type AnalyzeParticipantMutationResult = Apollo.MutationResult<AnalyzeParticipantMutation>;
 export type AnalyzeParticipantMutationOptions = Apollo.BaseMutationOptions<AnalyzeParticipantMutation, AnalyzeParticipantMutationVariables>;
 export const GetAnalysisResultsDocument = gql`
-    query GetAnalysisResults($participantId: ID, $experimentId: ID) {
+    query GetAnalysisResults($participantId: String, $experimentId: String) {
   analysisResults(participantId: $participantId, experimentId: $experimentId) {
     id
     participantId
@@ -236,7 +441,7 @@ export const GetAnalysisResultsDocument = gql`
     responseWord
     reactionTimeMs
     spiritProbability
-    word2vecComponent
+    word2VecComponent
     reactionTimeComponent
     skinPotentialComponent
     emotionComponent
@@ -281,6 +486,132 @@ export type GetAnalysisResultsQueryHookResult = ReturnType<typeof useGetAnalysis
 export type GetAnalysisResultsLazyQueryHookResult = ReturnType<typeof useGetAnalysisResultsLazyQuery>;
 export type GetAnalysisResultsSuspenseQueryHookResult = ReturnType<typeof useGetAnalysisResultsSuspenseQuery>;
 export type GetAnalysisResultsQueryResult = Apollo.QueryResult<GetAnalysisResultsQuery, GetAnalysisResultsQueryVariables>;
+export const GetConsentDocument = gql`
+    query GetConsent($participantId: String!) {
+  consent(participantId: $participantId) {
+    id
+    participantId
+    signature
+    agreements
+    agreedAt
+    consentVersion
+    studyId
+    userAgent
+    ipAddress
+    consentText
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetConsentQuery__
+ *
+ * To run a query within a React component, call `useGetConsentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetConsentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetConsentQuery({
+ *   variables: {
+ *      participantId: // value for 'participantId'
+ *   },
+ * });
+ */
+export function useGetConsentQuery(baseOptions: Apollo.QueryHookOptions<GetConsentQuery, GetConsentQueryVariables> & ({ variables: GetConsentQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetConsentQuery, GetConsentQueryVariables>(GetConsentDocument, options);
+      }
+export function useGetConsentLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetConsentQuery, GetConsentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetConsentQuery, GetConsentQueryVariables>(GetConsentDocument, options);
+        }
+export function useGetConsentSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetConsentQuery, GetConsentQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetConsentQuery, GetConsentQueryVariables>(GetConsentDocument, options);
+        }
+export type GetConsentQueryHookResult = ReturnType<typeof useGetConsentQuery>;
+export type GetConsentLazyQueryHookResult = ReturnType<typeof useGetConsentLazyQuery>;
+export type GetConsentSuspenseQueryHookResult = ReturnType<typeof useGetConsentSuspenseQuery>;
+export type GetConsentQueryResult = Apollo.QueryResult<GetConsentQuery, GetConsentQueryVariables>;
+export const GetEmotionResultsDocument = gql`
+    query GetEmotionResults($participantId: String!) {
+  emotionResults(participantId: $participantId)
+}
+    `;
+
+/**
+ * __useGetEmotionResultsQuery__
+ *
+ * To run a query within a React component, call `useGetEmotionResultsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetEmotionResultsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetEmotionResultsQuery({
+ *   variables: {
+ *      participantId: // value for 'participantId'
+ *   },
+ * });
+ */
+export function useGetEmotionResultsQuery(baseOptions: Apollo.QueryHookOptions<GetEmotionResultsQuery, GetEmotionResultsQueryVariables> & ({ variables: GetEmotionResultsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetEmotionResultsQuery, GetEmotionResultsQueryVariables>(GetEmotionResultsDocument, options);
+      }
+export function useGetEmotionResultsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetEmotionResultsQuery, GetEmotionResultsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetEmotionResultsQuery, GetEmotionResultsQueryVariables>(GetEmotionResultsDocument, options);
+        }
+export function useGetEmotionResultsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetEmotionResultsQuery, GetEmotionResultsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetEmotionResultsQuery, GetEmotionResultsQueryVariables>(GetEmotionResultsDocument, options);
+        }
+export type GetEmotionResultsQueryHookResult = ReturnType<typeof useGetEmotionResultsQuery>;
+export type GetEmotionResultsLazyQueryHookResult = ReturnType<typeof useGetEmotionResultsLazyQuery>;
+export type GetEmotionResultsSuspenseQueryHookResult = ReturnType<typeof useGetEmotionResultsSuspenseQuery>;
+export type GetEmotionResultsQueryResult = Apollo.QueryResult<GetEmotionResultsQuery, GetEmotionResultsQueryVariables>;
+export const GetEmotionStatisticsDocument = gql`
+    query GetEmotionStatistics {
+  emotionStatistics
+}
+    `;
+
+/**
+ * __useGetEmotionStatisticsQuery__
+ *
+ * To run a query within a React component, call `useGetEmotionStatisticsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetEmotionStatisticsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetEmotionStatisticsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetEmotionStatisticsQuery(baseOptions?: Apollo.QueryHookOptions<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>(GetEmotionStatisticsDocument, options);
+      }
+export function useGetEmotionStatisticsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>(GetEmotionStatisticsDocument, options);
+        }
+export function useGetEmotionStatisticsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>(GetEmotionStatisticsDocument, options);
+        }
+export type GetEmotionStatisticsQueryHookResult = ReturnType<typeof useGetEmotionStatisticsQuery>;
+export type GetEmotionStatisticsLazyQueryHookResult = ReturnType<typeof useGetEmotionStatisticsLazyQuery>;
+export type GetEmotionStatisticsSuspenseQueryHookResult = ReturnType<typeof useGetEmotionStatisticsSuspenseQuery>;
+export type GetEmotionStatisticsQueryResult = Apollo.QueryResult<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>;
 export const GetParticipantsDocument = gql`
     query GetParticipants {
   participants {
@@ -326,7 +657,7 @@ export type GetParticipantsLazyQueryHookResult = ReturnType<typeof useGetPartici
 export type GetParticipantsSuspenseQueryHookResult = ReturnType<typeof useGetParticipantsSuspenseQuery>;
 export type GetParticipantsQueryResult = Apollo.QueryResult<GetParticipantsQuery, GetParticipantsQueryVariables>;
 export const GetParticipantDocument = gql`
-    query GetParticipant($id: ID!) {
+    query GetParticipant($id: String!) {
   participant(id: $id) {
     id
     age
@@ -370,8 +701,51 @@ export type GetParticipantQueryHookResult = ReturnType<typeof useGetParticipantQ
 export type GetParticipantLazyQueryHookResult = ReturnType<typeof useGetParticipantLazyQuery>;
 export type GetParticipantSuspenseQueryHookResult = ReturnType<typeof useGetParticipantSuspenseQuery>;
 export type GetParticipantQueryResult = Apollo.QueryResult<GetParticipantQuery, GetParticipantQueryVariables>;
+export const GetSessionEventsDocument = gql`
+    query GetSessionEvents($participantId: String!, $sessionId: String!) {
+  sessionEvents(participantId: $participantId, sessionId: $sessionId) {
+    type
+    timestamp
+    payload
+  }
+}
+    `;
+
+/**
+ * __useGetSessionEventsQuery__
+ *
+ * To run a query within a React component, call `useGetSessionEventsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSessionEventsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSessionEventsQuery({
+ *   variables: {
+ *      participantId: // value for 'participantId'
+ *      sessionId: // value for 'sessionId'
+ *   },
+ * });
+ */
+export function useGetSessionEventsQuery(baseOptions: Apollo.QueryHookOptions<GetSessionEventsQuery, GetSessionEventsQueryVariables> & ({ variables: GetSessionEventsQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSessionEventsQuery, GetSessionEventsQueryVariables>(GetSessionEventsDocument, options);
+      }
+export function useGetSessionEventsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSessionEventsQuery, GetSessionEventsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSessionEventsQuery, GetSessionEventsQueryVariables>(GetSessionEventsDocument, options);
+        }
+export function useGetSessionEventsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSessionEventsQuery, GetSessionEventsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSessionEventsQuery, GetSessionEventsQueryVariables>(GetSessionEventsDocument, options);
+        }
+export type GetSessionEventsQueryHookResult = ReturnType<typeof useGetSessionEventsQuery>;
+export type GetSessionEventsLazyQueryHookResult = ReturnType<typeof useGetSessionEventsLazyQuery>;
+export type GetSessionEventsSuspenseQueryHookResult = ReturnType<typeof useGetSessionEventsSuspenseQuery>;
+export type GetSessionEventsQueryResult = Apollo.QueryResult<GetSessionEventsQuery, GetSessionEventsQueryVariables>;
 export const GetSessionsDocument = gql`
-    query GetSessions($participantId: ID) {
+    query GetSessions($participantId: String) {
   sessions(participantId: $participantId) {
     id
     participantId
@@ -417,3 +791,50 @@ export type GetSessionsQueryHookResult = ReturnType<typeof useGetSessionsQuery>;
 export type GetSessionsLazyQueryHookResult = ReturnType<typeof useGetSessionsLazyQuery>;
 export type GetSessionsSuspenseQueryHookResult = ReturnType<typeof useGetSessionsSuspenseQuery>;
 export type GetSessionsQueryResult = Apollo.QueryResult<GetSessionsQuery, GetSessionsQueryVariables>;
+export const GetSessionsByParticipantDocument = gql`
+    query GetSessionsByParticipant($participantId: String!) {
+  sessionsByParticipant(participantId: $participantId) {
+    id
+    participantId
+    sessionId
+    sessionType
+    startTime
+    endTime
+    createdAt
+    updatedAt
+  }
+}
+    `;
+
+/**
+ * __useGetSessionsByParticipantQuery__
+ *
+ * To run a query within a React component, call `useGetSessionsByParticipantQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetSessionsByParticipantQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetSessionsByParticipantQuery({
+ *   variables: {
+ *      participantId: // value for 'participantId'
+ *   },
+ * });
+ */
+export function useGetSessionsByParticipantQuery(baseOptions: Apollo.QueryHookOptions<GetSessionsByParticipantQuery, GetSessionsByParticipantQueryVariables> & ({ variables: GetSessionsByParticipantQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetSessionsByParticipantQuery, GetSessionsByParticipantQueryVariables>(GetSessionsByParticipantDocument, options);
+      }
+export function useGetSessionsByParticipantLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetSessionsByParticipantQuery, GetSessionsByParticipantQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetSessionsByParticipantQuery, GetSessionsByParticipantQueryVariables>(GetSessionsByParticipantDocument, options);
+        }
+export function useGetSessionsByParticipantSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetSessionsByParticipantQuery, GetSessionsByParticipantQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetSessionsByParticipantQuery, GetSessionsByParticipantQueryVariables>(GetSessionsByParticipantDocument, options);
+        }
+export type GetSessionsByParticipantQueryHookResult = ReturnType<typeof useGetSessionsByParticipantQuery>;
+export type GetSessionsByParticipantLazyQueryHookResult = ReturnType<typeof useGetSessionsByParticipantLazyQuery>;
+export type GetSessionsByParticipantSuspenseQueryHookResult = ReturnType<typeof useGetSessionsByParticipantSuspenseQuery>;
+export type GetSessionsByParticipantQueryResult = Apollo.QueryResult<GetSessionsByParticipantQuery, GetSessionsByParticipantQueryVariables>;

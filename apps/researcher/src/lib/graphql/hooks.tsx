@@ -7,8 +7,7 @@
 //! 
 //! Note: This file provides convenience hooks. Generated hooks are available from generated/types.ts
 
-import { useQuery, useMutation } from '@apollo/client';
-import type { QueryHookOptions, MutationHookOptions } from '@apollo/client';
+import * as Apollo from '@apollo/client';
 import { GET_PARTICIPANTS, GET_PARTICIPANT } from './queries/participants';
 import { GET_SESSIONS, GET_SESSIONS_BY_PARTICIPANT } from './queries/sessions';
 import { GET_ANALYSIS_RESULTS } from './queries/analysis';
@@ -41,16 +40,16 @@ export type {
 
 // Query hooks with generated types
 export function useParticipants(
-  options?: QueryHookOptions<GetParticipantsQuery>
+  options?: Apollo.QueryHookOptions<GetParticipantsQuery>
 ) {
-  return useQuery<GetParticipantsQuery>(GET_PARTICIPANTS, options);
+  return Apollo.useQuery<GetParticipantsQuery>(GET_PARTICIPANTS, options);
 }
 
 export function useParticipant(
   id: string,
-  options?: QueryHookOptions<GetParticipantQuery, { id: string }>
+  options?: Apollo.QueryHookOptions<GetParticipantQuery, { id: string }>
 ) {
-  return useQuery<GetParticipantQuery, { id: string }>(GET_PARTICIPANT, {
+  return Apollo.useQuery<GetParticipantQuery, { id: string }>(GET_PARTICIPANT, {
     ...options,
     variables: { id },
     skip: !id,
@@ -59,9 +58,9 @@ export function useParticipant(
 
 export function useSessionsByParticipant(
   participantId: string,
-  options?: QueryHookOptions<any, { participantId: string }>
+  options?: Apollo.QueryHookOptions<GetSessionsQuery, { participantId: string }>
 ) {
-  return useQuery<any, { participantId: string }>(GET_SESSIONS_BY_PARTICIPANT, {
+  return Apollo.useQuery<GetSessionsQuery, { participantId: string }>(GET_SESSIONS_BY_PARTICIPANT, {
     ...options,
     variables: { participantId },
     skip: !participantId,
@@ -70,9 +69,9 @@ export function useSessionsByParticipant(
 
 export function useSessions(
   participantId?: string,
-  options?: QueryHookOptions<GetSessionsQuery, { participantId?: string }>
+  options?: Apollo.QueryHookOptions<GetSessionsQuery, { participantId?: string }>
 ) {
-  return useQuery<GetSessionsQuery, { participantId?: string }>(GET_SESSIONS, {
+  return Apollo.useQuery<GetSessionsQuery, { participantId?: string }>(GET_SESSIONS, {
     ...options,
     variables: { participantId: participantId || undefined },
   });
@@ -81,12 +80,12 @@ export function useSessions(
 export function useAnalysisResults(
   participantId?: string,
   experimentId?: string,
-  options?: QueryHookOptions<
+  options?: Apollo.QueryHookOptions<
     GetAnalysisResultsQuery,
     { participantId?: string; experimentId?: string }
   >
 ) {
-  return useQuery<
+  return Apollo.useQuery<
     GetAnalysisResultsQuery,
     { participantId?: string; experimentId?: string }
   >(GET_ANALYSIS_RESULTS, {
@@ -97,24 +96,24 @@ export function useAnalysisResults(
 
 // Mutation hooks with generated types
 export function useExecuteActivity(
-  options?: MutationHookOptions<ExecuteActivityMutation, ExecuteActivityMutationVariables>
+  options?: Apollo.MutationHookOptions<ExecuteActivityMutation, ExecuteActivityMutationVariables>
 ) {
-  return useMutation<ExecuteActivityMutation, ExecuteActivityMutationVariables>(
+  return Apollo.useMutation<ExecuteActivityMutation, ExecuteActivityMutationVariables>(
     EXECUTE_ACTIVITY,
     options
   );
 }
 
 export function useAnalyzeParticipant() {
-  return useMutation(ANALYZE_PARTICIPANT);
+  return Apollo.useMutation(ANALYZE_PARTICIPANT);
 }
 
 // Consent hooks
 export function useConsent(
   participantId: string,
-  options?: QueryHookOptions<any, { participantId: string }>
+  options?: Apollo.QueryHookOptions<any, { participantId: string }>
 ) {
-  return useQuery<any, { participantId: string }>(GET_CONSENT, {
+  return Apollo.useQuery<any, { participantId: string }>(GET_CONSENT, {
     ...options,
     variables: { participantId },
     skip: !participantId,
@@ -125,9 +124,9 @@ export function useConsent(
 export function useSessionEvents(
   participantId: string,
   sessionId: string,
-  options?: QueryHookOptions<any, { participantId: string; sessionId: string }>
+  options?: Apollo.QueryHookOptions<any, { participantId: string; sessionId: string }>
 ) {
-  return useQuery<any, { participantId: string; sessionId: string }>(GET_SESSION_EVENTS, {
+  return Apollo.useQuery<any, { participantId: string; sessionId: string }>(GET_SESSION_EVENTS, {
     ...options,
     variables: { participantId, sessionId },
     skip: !participantId || !sessionId,
@@ -137,9 +136,9 @@ export function useSessionEvents(
 // Emotion hooks
 export function useEmotionResults(
   participantId: string,
-  options?: QueryHookOptions<any, { participantId: string }>
+  options?: Apollo.QueryHookOptions<any, { participantId: string }>
 ) {
-  return useQuery<any, { participantId: string }>(GET_EMOTION_RESULTS, {
+  return Apollo.useQuery<any, { participantId: string }>(GET_EMOTION_RESULTS, {
     ...options,
     variables: { participantId },
     skip: !participantId,
@@ -147,8 +146,8 @@ export function useEmotionResults(
 }
 
 export function useEmotionStatistics(
-  options?: QueryHookOptions<any>
+  options?: Apollo.QueryHookOptions<any>
 ) {
-  return useQuery<any>(GET_EMOTION_STATISTICS, options);
+  return Apollo.useQuery<any>(GET_EMOTION_STATISTICS, options);
 }
 

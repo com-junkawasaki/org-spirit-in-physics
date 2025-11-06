@@ -16,7 +16,7 @@ export const GET_ANALYSIS_RESULTS = gql`
       responseWord
       reactionTimeMs
       spiritProbability
-      word2vecComponent
+      word2VecComponent
       reactionTimeComponent
       skinPotentialComponent
       emotionComponent

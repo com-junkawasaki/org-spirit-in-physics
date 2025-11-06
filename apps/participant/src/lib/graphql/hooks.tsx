@@ -5,7 +5,7 @@
 //! Merkle DAG: graphql.hooks.participant
 //! OWL: spirit:GraphQL Service Port React hooks
 
-import { useQuery, useMutation, QueryHookOptions, MutationHookOptions } from '@apollo/client';
+import * as Apollo from '@apollo/client';
 import { GET_PARTICIPANTS, GET_PARTICIPANT } from './queries/participants';
 import { GET_CONSENT } from './queries/consent';
 import { GET_SESSIONS, GET_SESSIONS_BY_PARTICIPANT, GET_SESSION_EVENTS } from './queries/sessions';
@@ -20,15 +20,15 @@ import { ANALYZE_VIDEO_EMOTIONS } from './mutations/emotions';
 // For now, using any - will be replaced with generated types
 
 // Query hooks
-export function useParticipants(options?: QueryHookOptions<any>) {
-  return useQuery<any>(GET_PARTICIPANTS, options);
+export function useParticipants(options?: Apollo.QueryHookOptions<any>) {
+  return Apollo.useQuery<any>(GET_PARTICIPANTS, options);
 }
 
 export function useParticipant(
   id: string,
-  options?: QueryHookOptions<any, { id: string }>
+  options?: Apollo.QueryHookOptions<any, { id: string }>
 ) {
-  return useQuery<any, { id: string }>(GET_PARTICIPANT, {
+  return Apollo.useQuery<any, { id: string }>(GET_PARTICIPANT, {
     ...options,
     variables: { id },
     skip: !id,
@@ -37,9 +37,9 @@ export function useParticipant(
 
 export function useConsent(
   participantId: string,
-  options?: QueryHookOptions<any, { participantId: string }>
+  options?: Apollo.QueryHookOptions<any, { participantId: string }>
 ) {
-  return useQuery<any, { participantId: string }>(GET_CONSENT, {
+  return Apollo.useQuery<any, { participantId: string }>(GET_CONSENT, {
     ...options,
     variables: { participantId },
     skip: !participantId,
@@ -48,9 +48,9 @@ export function useConsent(
 
 export function useSessions(
   participantId?: string,
-  options?: QueryHookOptions<any, { participantId?: string }>
+  options?: Apollo.QueryHookOptions<any, { participantId?: string }>
 ) {
-  return useQuery<any, { participantId?: string }>(GET_SESSIONS, {
+  return Apollo.useQuery<any, { participantId?: string }>(GET_SESSIONS, {
     ...options,
     variables: { participantId: participantId || undefined },
   });
@@ -58,9 +58,9 @@ export function useSessions(
 
 export function useSessionsByParticipant(
   participantId: string,
-  options?: QueryHookOptions<any, { participantId: string }>
+  options?: Apollo.QueryHookOptions<any, { participantId: string }>
 ) {
-  return useQuery<any, { participantId: string }>(GET_SESSIONS_BY_PARTICIPANT, {
+  return Apollo.useQuery<any, { participantId: string }>(GET_SESSIONS_BY_PARTICIPANT, {
     ...options,
     variables: { participantId },
     skip: !participantId,
@@ -70,9 +70,9 @@ export function useSessionsByParticipant(
 export function useSessionEvents(
   participantId: string,
   sessionId: string,
-  options?: QueryHookOptions<any, { participantId: string; sessionId: string }>
+  options?: Apollo.QueryHookOptions<any, { participantId: string; sessionId: string }>
 ) {
-  return useQuery<any, { participantId: string; sessionId: string }>(GET_SESSION_EVENTS, {
+  return Apollo.useQuery<any, { participantId: string; sessionId: string }>(GET_SESSION_EVENTS, {
     ...options,
     variables: { participantId, sessionId },
     skip: !participantId || !sessionId,
@@ -81,59 +81,59 @@ export function useSessionEvents(
 
 export function useEmotionResults(
   participantId: string,
-  options?: QueryHookOptions<any, { participantId: string }>
+  options?: Apollo.QueryHookOptions<any, { participantId: string }>
 ) {
-  return useQuery<any, { participantId: string }>(GET_EMOTION_RESULTS, {
+  return Apollo.useQuery<any, { participantId: string }>(GET_EMOTION_RESULTS, {
     ...options,
     variables: { participantId },
     skip: !participantId,
   });
 }
 
-export function useEmotionStatistics(options?: QueryHookOptions<any>) {
-  return useQuery<any>(GET_EMOTION_STATISTICS, options);
+export function useEmotionStatistics(options?: Apollo.QueryHookOptions<any>) {
+  return Apollo.useQuery<any>(GET_EMOTION_STATISTICS, options);
 }
 
 // Mutation hooks
 export function useCreateParticipant(
-  options?: MutationHookOptions<any, any>
+  options?: Apollo.MutationHookOptions<any, any>
 ) {
-  return useMutation<any, any>(CREATE_PARTICIPANT, options);
+  return Apollo.useMutation<any, any>(CREATE_PARTICIPANT, options);
 }
 
 export function useSaveConsent(
-  options?: MutationHookOptions<any, any>
+  options?: Apollo.MutationHookOptions<any, any>
 ) {
-  return useMutation<any, any>(SAVE_CONSENT, options);
+  return Apollo.useMutation<any, any>(SAVE_CONSENT, options);
 }
 
 export function useSaveSession(
-  options?: MutationHookOptions<any, any>
+  options?: Apollo.MutationHookOptions<any, any>
 ) {
-  return useMutation<any, any>(SAVE_SESSION, options);
+  return Apollo.useMutation<any, any>(SAVE_SESSION, options);
 }
 
 export function useSaveVideo(
-  options?: MutationHookOptions<any, any>
+  options?: Apollo.MutationHookOptions<any, any>
 ) {
-  return useMutation<any, any>(SAVE_VIDEO, options);
+  return Apollo.useMutation<any, any>(SAVE_VIDEO, options);
 }
 
 export function useAnalyzeParticipant(
-  options?: MutationHookOptions<any, any>
+  options?: Apollo.MutationHookOptions<any, any>
 ) {
-  return useMutation<any, any>(ANALYZE_PARTICIPANT, options);
+  return Apollo.useMutation<any, any>(ANALYZE_PARTICIPANT, options);
 }
 
 export function useAnalyzeAllParticipants(
-  options?: MutationHookOptions<any, any>
+  options?: Apollo.MutationHookOptions<any, any>
 ) {
-  return useMutation<any, any>(ANALYZE_ALL_PARTICIPANTS, options);
+  return Apollo.useMutation<any, any>(ANALYZE_ALL_PARTICIPANTS, options);
 }
 
 export function useAnalyzeVideoEmotions(
-  options?: MutationHookOptions<any, any>
+  options?: Apollo.MutationHookOptions<any, any>
 ) {
-  return useMutation<any, any>(ANALYZE_VIDEO_EMOTIONS, options);
+  return Apollo.useMutation<any, any>(ANALYZE_VIDEO_EMOTIONS, options);
 }
 
