@@ -6,11 +6,11 @@ services:
       dockerfile: ./performers/systems/ParticipantApplication/src/Dockerfile
     container_name: spirit-participant
     ports:
-      - "25250:3000"
+      - "25250:25250"
     volumes:
       - ./performers/systems/ParticipantApplication/src:/app/performers/systems/ParticipantApplication/src
       - ./performers/services/ports/types:/app/performers/services/ports/types
-      - /app/node_modules
+      - /app/performers/systems/ParticipantApplication/src/node_modules
     env_file:
       - ./performers/systems/ParticipantApplication/src/env.docker
     networks:
@@ -28,7 +28,7 @@ services:
     volumes:
       - ./performers/systems/ResearcherApplication/src:/app/performers/systems/ResearcherApplication/src
       - ./performers/services/ports/types:/app/performers/services/ports/types
-      - /app/node_modules
+      - /app/performers/systems/ResearcherApplication/src/node_modules
       - ./dataset:/app/performers/systems/ResearcherApplication/src/dataset:cached
     command: pnpm run dev
     env_file:
