@@ -48,15 +48,16 @@ services:
   # Visualizer app (Next.js)
   visualizer:
     build:
-      context: ./apps/researcher
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/researcher/Dockerfile
     container_name: spirit-visualizer
     ports:
       - "25260:3000"
     volumes:
-      - ./apps/researcher:/app
+      - .:/app:cached
       - /app/node_modules
       - ./dataset:/app/dataset:cached
+    working_dir: /app/apps/researcher
     command: pnpm run dev
     env_file:
       - ./apps/researcher/env.docker
