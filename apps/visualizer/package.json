@@ -29,9 +29,9 @@
   },
   "scripts": {
     "type-check": "tsc --noEmit",
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "dev": "./node_modules/.bin/next dev",
+    "build": "./node_modules/.bin/next build",
+    "start": "./node_modules/.bin/next start"
   },
   "dependencies": {
     "@apollo/client": "^3.10.4",
