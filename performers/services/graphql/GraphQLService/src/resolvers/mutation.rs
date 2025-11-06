@@ -13,6 +13,7 @@ use crate::storage::SupabaseClient;
 use reqwest::Client;
 use serde_json::{json, Value as JsonValue};
 use std::env;
+use std::sync::Arc;
 use spirit_activities::{
     Activity, ActivityContext, ActivityData, ActivityExecutionResult,
     DataCollectionActivity, DataStorageActivity, AnalysisProcessActivity,
@@ -213,7 +214,7 @@ impl MutationRoot {
         ctx: &Context<'_>,
         input: CreateParticipantInput,
     ) -> Result<Participant> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         let data = supabase.create_participant(input.age, input.gender.as_deref(), input.handedness.as_deref()).await
             .map_err(|e| Error::new(format!("Failed to create participant: {}", e)))?;
         
@@ -226,7 +227,7 @@ impl MutationRoot {
         ctx: &Context<'_>,
         input: ConsentInput,
     ) -> Result<Consent> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         let demographic_data = input.demographic_data.as_ref().map(|d| {
             serde_json::json!({
                 "ageGroup": d.age_group,
@@ -259,7 +260,7 @@ impl MutationRoot {
         ctx: &Context<'_>,
         input: SaveSessionInput,
     ) -> Result<SaveSessionResponse> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         
         // Convert events to JSON
         let events: Vec<JsonValue> = input.events.iter().map(|e| {
@@ -306,7 +307,7 @@ impl MutationRoot {
         ctx: &Context<'_>,
         input: SaveVideoInput,
     ) -> Result<SaveVideoResponse> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         let file_url = supabase.save_video(
             &input.participant_id,
             &input.session_id,
@@ -358,7 +359,7 @@ impl MutationRoot {
         ctx: &Context<'_>,
         input: CreateProjectInput,
     ) -> Result<Project> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         let data = supabase.create_project(
             &input.name,
             input.description.as_deref(),
@@ -378,7 +379,7 @@ impl MutationRoot {
         id: String,
         input: UpdateProjectInput,
     ) -> Result<Project> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         let data = supabase.update_project(
             &id,
             input.name.as_deref(),
@@ -397,7 +398,7 @@ impl MutationRoot {
         ctx: &Context<'_>,
         id: String,
     ) -> Result<bool> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         supabase.delete_project(&id).await
             .map_err(|e| Error::new(format!("Failed to delete project: {}", e)))?;
         
@@ -411,7 +412,7 @@ impl MutationRoot {
         #[graphql(name = "projectId")] project_id: String,
         #[graphql(name = "participantId")] participant_id: String,
     ) -> Result<bool> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         supabase.add_participant_to_project(&project_id, &participant_id).await
             .map_err(|e| Error::new(format!("Failed to add participant to project: {}", e)))?;
         
@@ -425,7 +426,7 @@ impl MutationRoot {
         #[graphql(name = "projectId")] project_id: String,
         #[graphql(name = "participantId")] participant_id: String,
     ) -> Result<bool> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         supabase.remove_participant_from_project(&project_id, &participant_id).await
             .map_err(|e| Error::new(format!("Failed to remove participant from project: {}", e)))?;
         
@@ -439,7 +440,7 @@ impl MutationRoot {
         #[graphql(name = "projectId")] project_id: String,
         input: ExperimentConfigInput,
     ) -> Result<ExperimentConfig> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         let config_data = json!({
             "session_types": input.session_types,
             "word_list": input.word_list,
@@ -460,7 +461,7 @@ impl MutationRoot {
         #[graphql(name = "projectId")] project_id: String,
         #[graphql(name = "workflowData")] workflow_data: JsonValue,
     ) -> Result<ProjectWorkflow> {
-        let supabase = ctx.data::<SupabaseClient>()?;
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
         let data = supabase.save_project_workflow(&project_id, &workflow_data).await
             .map_err(|e| Error::new(format!("Failed to save project workflow: {}", e)))?;
         
