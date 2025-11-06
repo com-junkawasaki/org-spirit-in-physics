@@ -1,0 +1,83 @@
+# Node modules
+node_modules
+**/node_modules
+
+# pnpm store
+.pnpm-store
+**/.pnpm-store
+
+# Build artifacts
+.next
+.turbo
+dist
+build
+target
+
+# Dataset files (large video/data files)
+**/public/dataset/**
+**/*.webm
+**/*.mp4
+**/*.mov
+**/*.avi
+
+# Audio files (large files)
+**/*.mp3
+!packages/spiritinphysics-components/public/**/*.mp3
+
+# Large data files
+**/*.csv
+**/*.json
+!package.json
+!pnpm-lock.yaml
+!**/package.json
+!**/tsconfig.json
+!**/next.config.*
+!**/tailwind.config.*
+!**/postcss.config.*
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files
+test-results
+coverage
+**/test-results/**
+
+# Documentation
+docs/audio/**
+
+# Environment files (will be copied explicitly)
+.env
+.env.local
+.env.*.local
+!apps/*/env.docker
+
+# Temporary files
+*.tmp
+*.cache
+*.tsbuildinfo
+
+# Large documentation files
+**/*.docx
+**/*.doc
+
+# Virtual environments
+venv/
+__pycache__/
+*.pyc
+

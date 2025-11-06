@@ -4,23 +4,29 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy workspace root files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy workspace packages
+COPY packages/ ./packages/
+
+# Copy researcher app files
+COPY apps/researcher/package.json ./apps/researcher/
 
 # Install pnpm
 RUN npm install -g pnpm
 
-# Install dependencies
+# Install dependencies (workspace-aware)
 RUN pnpm install --no-frozen-lockfile
 
+# Copy researcher app source code
+COPY apps/researcher/ ./apps/researcher/
+
 # Copy environment file
-COPY env.docker .env.local
+COPY apps/researcher/env.docker ./apps/researcher/.env.local
 
-# Copy source code
-COPY . .
-
-# Build the application
-# RUN pnpm build
+# Change to researcher directory
+WORKDIR /app/apps/researcher
 
 # Set hostname and port to bind to all interfaces
 ENV HOSTNAME=0.0.0.0
