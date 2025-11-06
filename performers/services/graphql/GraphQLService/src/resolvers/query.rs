@@ -4,7 +4,7 @@
 //! OWL: spirit:GraphQL Query resolvers
 
 use async_graphql::*;
-use crate::schema::{Participant, Session, AnalysisResult, Consent, SessionEvent};
+use crate::schema::{Participant, Session, AnalysisResult, Consent, SessionEvent, Project, ProjectStats, ProjectParticipant, ExperimentConfig, ProjectWorkflow};
 use crate::storage::SupabaseClient;
 use serde_json::Value as JsonValue;
 
@@ -120,6 +120,106 @@ impl QueryRoot {
             .map_err(|e| Error::new(format!("Failed to fetch emotion statistics: {}", e)))?;
         
         Ok(data)
+    }
+
+    /// Get all projects
+    async fn projects(
+        &self,
+        ctx: &Context<'_>,
+        status: Option<String>,
+        #[graphql(name = "createdBy")] created_by: Option<String>,
+        search: Option<String>,
+    ) -> Result<Vec<Project>> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.get_projects(
+            status.as_deref(),
+            created_by.as_deref(),
+            search.as_deref(),
+        ).await
+            .map_err(|e| Error::new(format!("Failed to fetch projects: {}", e)))?;
+        
+        Ok(data.into_iter().map(Project::from).collect())
+    }
+
+    /// Get project by ID
+    async fn project(&self, ctx: &Context<'_>, id: String) -> Result<Project> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.get_project(&id).await
+            .map_err(|e| Error::new(format!("Failed to fetch project: {}", e)))?;
+        
+        Ok(Project::from(data))
+    }
+
+    /// Get project stats
+    async fn project_stats(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "projectId")] project_id: String,
+    ) -> Result<Option<ProjectStats>> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.get_project_stats(&project_id).await
+            .map_err(|e| Error::new(format!("Failed to fetch project stats: {}", e)))?;
+        
+        Ok(data.map(ProjectStats::from))
+    }
+
+    /// Get project participants
+    async fn project_participants(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "projectId")] project_id: String,
+    ) -> Result<Vec<ProjectParticipant>> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.get_project_participants(&project_id).await
+            .map_err(|e| Error::new(format!("Failed to fetch project participants: {}", e)))?;
+        
+        Ok(data.into_iter().map(|pp| {
+            let participant = pp.get("participant").cloned().map(|p| {
+                crate::schema::project::ParticipantRef {
+                    id: p["id"].as_str().unwrap_or("").to_string(),
+                    name: p["name"].as_str().map(|s| s.to_string()),
+                    created_at: p["created_at"].as_str().unwrap_or("").to_string(),
+                }
+            });
+            
+            ProjectParticipant {
+                project_id: pp["project_id"].as_str().unwrap_or("").to_string(),
+                participant_id: pp["participant_id"].as_str().unwrap_or("").to_string(),
+                joined_at: pp["joined_at"].as_str().unwrap_or("").to_string(),
+                participant,
+            }
+        }).collect())
+    }
+
+    /// Get experiment config
+    async fn experiment_config(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "projectId")] project_id: String,
+    ) -> Result<Option<ExperimentConfig>> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.get_experiment_config(&project_id).await
+            .map_err(|e| Error::new(format!("Failed to fetch experiment config: {}", e)))?;
+        
+        Ok(data.map(ExperimentConfig::from))
+    }
+
+    /// Get project workflow
+    async fn project_workflow(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "projectId")] project_id: String,
+    ) -> Result<Option<ProjectWorkflow>> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.get_project_workflow(&project_id).await
+            .map_err(|e| Error::new(format!("Failed to fetch project workflow: {}", e)))?;
+        
+        Ok(data.map(|w| ProjectWorkflow {
+            project_id: w["project_id"].as_str().unwrap_or("").to_string(),
+            workflow_data: w["workflow_data"].clone(),
+            created_at: w["created_at"].as_str().unwrap_or("").to_string(),
+            updated_at: w["updated_at"].as_str().unwrap_or("").to_string(),
+        }))
     }
 }
 

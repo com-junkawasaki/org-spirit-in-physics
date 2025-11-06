@@ -628,5 +628,362 @@ impl SupabaseClient {
             "dominantEmotions": dominant_emotions,
         }))
     }
+
+    /// Get all projects
+    pub async fn get_projects(
+        &self,
+        status: Option<&str>,
+        created_by: Option<&str>,
+        search: Option<&str>,
+    ) -> Result<Vec<Value>> {
+        let mut url = format!("{}/rest/v1/projects?order=created_at.desc", self.url);
+        
+        let mut params = Vec::new();
+        if let Some(s) = status {
+            params.push(format!("status=eq.{}", s));
+        }
+        if let Some(cb) = created_by {
+            params.push(format!("created_by=eq.{}", cb));
+        }
+        
+        if !params.is_empty() {
+            url = format!("{}/rest/v1/projects?{}&order=created_at.desc", 
+                self.url, params.join("&"));
+        }
+
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch projects: {}", response.status()));
+        }
+
+        let mut data: Vec<Value> = response.json().await?;
+        
+        // Filter by search if provided (client-side filter for text search)
+        if let Some(search_term) = search {
+            data.retain(|p| {
+                let name = p.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                let description = p.get("description").and_then(|v| v.as_str()).unwrap_or("");
+                name.to_lowercase().contains(&search_term.to_lowercase()) ||
+                description.to_lowercase().contains(&search_term.to_lowercase())
+            });
+        }
+
+        Ok(data)
+    }
+
+    /// Get project by ID
+    pub async fn get_project(&self, project_id: &str) -> Result<Value> {
+        let url = format!("{}/rest/v1/projects?id=eq.{}", self.url, project_id);
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch project: {}", response.status()));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        data.into_iter().next()
+            .ok_or_else(|| anyhow!("Project {} not found", project_id))
+    }
+
+    /// Create project
+    pub async fn create_project(
+        &self,
+        name: &str,
+        description: Option<&str>,
+        purpose: Option<&str>,
+        status: &str,
+        created_by: &str,
+    ) -> Result<Value> {
+        let mut project_data = serde_json::json!({
+            "name": name,
+            "status": status,
+            "created_by": created_by,
+        });
+
+        if let Some(d) = description {
+            project_data["description"] = d.into();
+        }
+        if let Some(p) = purpose {
+            project_data["purpose"] = p.into();
+        }
+
+        let url = format!("{}/rest/v1/projects", self.url);
+        let response = self.client
+            .post(&url)
+            .headers(self.headers())
+            .json(&project_data)
+            .send()
+            .await?;
+
+        let status_code = response.status();
+        if !status_code.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("Failed to create project: {} - {}", status_code, error_text));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        data.into_iter().next()
+            .ok_or_else(|| anyhow!("Failed to create project: empty response"))
+    }
+
+    /// Update project
+    pub async fn update_project(
+        &self,
+        project_id: &str,
+        name: Option<&str>,
+        description: Option<&str>,
+        purpose: Option<&str>,
+        status: Option<&str>,
+    ) -> Result<Value> {
+        let mut update_data = serde_json::json!({});
+        
+        if let Some(n) = name {
+            update_data["name"] = n.into();
+        }
+        if let Some(d) = description {
+            update_data["description"] = d.into();
+        }
+        if let Some(p) = purpose {
+            update_data["purpose"] = p.into();
+        }
+        if let Some(s) = status {
+            update_data["status"] = s.into();
+        }
+
+        let url = format!("{}/rest/v1/projects?id=eq.{}", self.url, project_id);
+        let response = self.client
+            .patch(&url)
+            .headers(self.headers())
+            .json(&update_data)
+            .send()
+            .await?;
+
+        let status_code = response.status();
+        if !status_code.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("Failed to update project: {} - {}", status_code, error_text));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        data.into_iter().next()
+            .ok_or_else(|| anyhow!("Project not found"))
+    }
+
+    /// Delete project
+    pub async fn delete_project(&self, project_id: &str) -> Result<()> {
+        let url = format!("{}/rest/v1/projects?id=eq.{}", self.url, project_id);
+        let response = self.client
+            .delete(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to delete project: {}", response.status()));
+        }
+
+        Ok(())
+    }
+
+    /// Get project stats
+    pub async fn get_project_stats(&self, project_id: &str) -> Result<Option<Value>> {
+        let url = format!("{}/rest/v1/project_stats?project_id=eq.{}", self.url, project_id);
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch project stats: {}", response.status()));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        Ok(data.into_iter().next())
+    }
+
+    /// Get project participants
+    pub async fn get_project_participants(&self, project_id: &str) -> Result<Vec<Value>> {
+        let url = format!(
+            "{}/rest/v1/project_participants?project_id=eq.{}&select=*,participant:participants(id,name,created_at)&order=joined_at.desc",
+            self.url, project_id
+        );
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch project participants: {}", response.status()));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        Ok(data)
+    }
+
+    /// Add participant to project
+    pub async fn add_participant_to_project(
+        &self,
+        project_id: &str,
+        participant_id: &str,
+    ) -> Result<()> {
+        let url = format!("{}/rest/v1/project_participants", self.url);
+        let data = serde_json::json!({
+            "project_id": project_id,
+            "participant_id": participant_id,
+        });
+
+        let response = self.client
+            .post(&url)
+            .headers(self.headers())
+            .json(&data)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("Failed to add participant to project: {} - {}", response.status(), error_text));
+        }
+
+        Ok(())
+    }
+
+    /// Remove participant from project
+    pub async fn remove_participant_from_project(
+        &self,
+        project_id: &str,
+        participant_id: &str,
+    ) -> Result<()> {
+        let url = format!(
+            "{}/rest/v1/project_participants?project_id=eq.{}&participant_id=eq.{}",
+            self.url, project_id, participant_id
+        );
+        let response = self.client
+            .delete(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to remove participant from project: {}", response.status()));
+        }
+
+        Ok(())
+    }
+
+    /// Get experiment config
+    pub async fn get_experiment_config(&self, project_id: &str) -> Result<Option<Value>> {
+        let url = format!("{}/rest/v1/experiment_configs?project_id=eq.{}", self.url, project_id);
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch experiment config: {}", response.status()));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        Ok(data.into_iter().next())
+    }
+
+    /// Save experiment config
+    pub async fn save_experiment_config(
+        &self,
+        project_id: &str,
+        config: &Value,
+    ) -> Result<Value> {
+        let mut config_data = serde_json::json!({
+            "project_id": project_id,
+            "session_types": config["session_types"],
+            "word_list": config["word_list"],
+            "session_parameters": config["session_parameters"],
+            "analysis_parameters": config["analysis_parameters"],
+        });
+
+        let url = format!("{}/rest/v1/experiment_configs", self.url);
+        let response = self.client
+            .post(&url)
+            .headers({
+                let mut headers = self.headers();
+                headers.insert("Prefer", "resolution=merge-duplicates".parse().unwrap());
+                headers
+            })
+            .json(&config_data)
+            .send()
+            .await?;
+
+        let status_code = response.status();
+        if !status_code.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("Failed to save experiment config: {} - {}", status_code, error_text));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        data.into_iter().next()
+            .ok_or_else(|| anyhow!("Failed to save experiment config: empty response"))
+    }
+
+    /// Get project workflow
+    pub async fn get_project_workflow(&self, project_id: &str) -> Result<Option<Value>> {
+        let url = format!("{}/rest/v1/project_workflows?project_id=eq.{}", self.url, project_id);
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch project workflow: {}", response.status()));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        Ok(data.into_iter().next())
+    }
+
+    /// Save project workflow
+    pub async fn save_project_workflow(
+        &self,
+        project_id: &str,
+        workflow_data: &Value,
+    ) -> Result<Value> {
+        let workflow_json = serde_json::json!({
+            "project_id": project_id,
+            "workflow_data": workflow_data,
+        });
+
+        let url = format!("{}/rest/v1/project_workflows", self.url);
+        let response = self.client
+            .post(&url)
+            .headers({
+                let mut headers = self.headers();
+                headers.insert("Prefer", "resolution=merge-duplicates".parse().unwrap());
+                headers
+            })
+            .json(&workflow_json)
+            .send()
+            .await?;
+
+        let status_code = response.status();
+        if !status_code.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("Failed to save project workflow: {} - {}", status_code, error_text));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        data.into_iter().next()
+            .ok_or_else(|| anyhow!("Failed to save project workflow: empty response"))
+    }
 }
 

@@ -7,6 +7,7 @@ use async_graphql::*;
 use crate::schema::{
     ActivityExecutionResponse, Participant, Consent, SaveSessionResponse, SaveVideoResponse,
     CreateParticipantInput, ConsentInput, SaveSessionInput, SaveVideoInput, AnalyzeVideoInput,
+    Project, ExperimentConfig, ProjectWorkflow, CreateProjectInput, UpdateProjectInput, ExperimentConfigInput,
 };
 use crate::storage::SupabaseClient;
 use reqwest::Client;
@@ -257,6 +258,126 @@ impl MutationRoot {
             success: false,
             result: None,
             error: Some(format!("Video emotion analysis not yet implemented for participant {}", input.participant_id)),
+        })
+    }
+
+    /// Create a new project
+    async fn create_project(
+        &self,
+        ctx: &Context<'_>,
+        input: CreateProjectInput,
+    ) -> Result<Project> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.create_project(
+            &input.name,
+            input.description.as_deref(),
+            input.purpose.as_deref(),
+            input.status.as_deref().unwrap_or("planning"),
+            input.created_by.as_deref().unwrap_or("system"),
+        ).await
+            .map_err(|e| Error::new(format!("Failed to create project: {}", e)))?;
+        
+        Ok(Project::from(data))
+    }
+
+    /// Update project
+    async fn update_project(
+        &self,
+        ctx: &Context<'_>,
+        id: String,
+        input: UpdateProjectInput,
+    ) -> Result<Project> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.update_project(
+            &id,
+            input.name.as_deref(),
+            input.description.as_deref(),
+            input.purpose.as_deref(),
+            input.status.as_deref(),
+        ).await
+            .map_err(|e| Error::new(format!("Failed to update project: {}", e)))?;
+        
+        Ok(Project::from(data))
+    }
+
+    /// Delete project
+    async fn delete_project(
+        &self,
+        ctx: &Context<'_>,
+        id: String,
+    ) -> Result<bool> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        supabase.delete_project(&id).await
+            .map_err(|e| Error::new(format!("Failed to delete project: {}", e)))?;
+        
+        Ok(true)
+    }
+
+    /// Add participant to project
+    async fn add_participant_to_project(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "projectId")] project_id: String,
+        #[graphql(name = "participantId")] participant_id: String,
+    ) -> Result<bool> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        supabase.add_participant_to_project(&project_id, &participant_id).await
+            .map_err(|e| Error::new(format!("Failed to add participant to project: {}", e)))?;
+        
+        Ok(true)
+    }
+
+    /// Remove participant from project
+    async fn remove_participant_from_project(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "projectId")] project_id: String,
+        #[graphql(name = "participantId")] participant_id: String,
+    ) -> Result<bool> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        supabase.remove_participant_from_project(&project_id, &participant_id).await
+            .map_err(|e| Error::new(format!("Failed to remove participant from project: {}", e)))?;
+        
+        Ok(true)
+    }
+
+    /// Save experiment config
+    async fn save_experiment_config(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "projectId")] project_id: String,
+        input: ExperimentConfigInput,
+    ) -> Result<ExperimentConfig> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let config_data = json!({
+            "session_types": input.session_types,
+            "word_list": input.word_list,
+            "session_parameters": input.session_parameters,
+            "analysis_parameters": input.analysis_parameters,
+        });
+        
+        let data = supabase.save_experiment_config(&project_id, &config_data).await
+            .map_err(|e| Error::new(format!("Failed to save experiment config: {}", e)))?;
+        
+        Ok(ExperimentConfig::from(data))
+    }
+
+    /// Save project workflow
+    async fn save_project_workflow(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "projectId")] project_id: String,
+        #[graphql(name = "workflowData")] workflow_data: JsonValue,
+    ) -> Result<ProjectWorkflow> {
+        let supabase = ctx.data::<SupabaseClient>()?;
+        let data = supabase.save_project_workflow(&project_id, &workflow_data).await
+            .map_err(|e| Error::new(format!("Failed to save project workflow: {}", e)))?;
+        
+        Ok(ProjectWorkflow {
+            project_id: data["project_id"].as_str().unwrap_or("").to_string(),
+            workflow_data: data["workflow_data"].clone(),
+            created_at: data["created_at"].as_str().unwrap_or("").to_string(),
+            updated_at: data["updated_at"].as_str().unwrap_or("").to_string(),
         })
     }
 }
