@@ -4,7 +4,7 @@
 //! OWL: spirit:GraphQL Query resolvers
 
 use async_graphql::*;
-use crate::schema::{Participant, Session, AnalysisResult, Consent, SessionEvent, Project, ProjectStats, ProjectParticipant, ExperimentConfig, ProjectWorkflow};
+use crate::schema::{Participant, Session, AnalysisResult, Consent, SessionEvent, Project, ProjectStats, ProjectParticipant, ExperimentConfig, ProjectWorkflow, Complex, GhostPattern, WordDistance, ComplexAnalysis};
 use crate::storage::SupabaseClient;
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -221,6 +221,91 @@ impl QueryRoot {
             created_at: w["created_at"].as_str().unwrap_or("").to_string(),
             updated_at: w["updated_at"].as_str().unwrap_or("").to_string(),
         }))
+    }
+
+    /// Get participant complexes
+    async fn participant_complexes(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "participantId")] participant_id: String,
+    ) -> Result<Vec<Complex>> {
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
+        let data = supabase.get_participant_complexes(&participant_id).await
+            .map_err(|e| Error::new(format!("Failed to fetch complexes: {}", e)))?;
+        
+        Ok(data.into_iter().map(Complex::from).collect())
+    }
+
+    /// Get ghost patterns
+    async fn ghost_patterns(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "participantId")] participant_id: Option<String>,
+        #[graphql(name = "patternType")] pattern_type: Option<String>,
+    ) -> Result<Vec<GhostPattern>> {
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
+        let data = supabase.get_ghost_patterns(
+            participant_id.as_deref(),
+            pattern_type.as_deref(),
+        ).await
+            .map_err(|e| Error::new(format!("Failed to fetch ghost patterns: {}", e)))?;
+        
+        Ok(data.into_iter().map(GhostPattern::from).collect())
+    }
+
+    /// Get word distances
+    async fn word_distances(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "participantId")] participant_id: String,
+        #[graphql(name = "sessionId")] session_id: Option<String>,
+    ) -> Result<Vec<WordDistance>> {
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
+        let data = supabase.get_word_distances(
+            &participant_id,
+            session_id.as_deref(),
+        ).await
+            .map_err(|e| Error::new(format!("Failed to fetch word distances: {}", e)))?;
+        
+        Ok(data.into_iter().map(WordDistance::from).collect())
+    }
+
+    /// Get complex analysis (combined complexes, ghost patterns, and word distances)
+    async fn complex_analysis(
+        &self,
+        ctx: &Context<'_>,
+        #[graphql(name = "participantId")] participant_id: String,
+        #[graphql(name = "sessionId")] session_id: Option<String>,
+    ) -> Result<ComplexAnalysis> {
+        let supabase = ctx.data::<Arc<SupabaseClient>>()?;
+        
+        // Get complexes
+        let complexes_data = supabase.get_participant_complexes(&participant_id).await
+            .map_err(|e| Error::new(format!("Failed to fetch complexes: {}", e)))?;
+        let complexes: Vec<Complex> = complexes_data.into_iter().map(Complex::from).collect();
+        
+        // Get ghost patterns
+        let patterns_data = supabase.get_ghost_patterns(Some(&participant_id), None).await
+            .map_err(|e| Error::new(format!("Failed to fetch ghost patterns: {}", e)))?;
+        let ghost_patterns: Vec<GhostPattern> = patterns_data.into_iter().map(GhostPattern::from).collect();
+        
+        // Get word distances
+        let distances_data = supabase.get_word_distances(&participant_id, session_id.as_deref()).await
+            .map_err(|e| Error::new(format!("Failed to fetch word distances: {}", e)))?;
+        let word_distances: Vec<WordDistance> = distances_data.into_iter().map(WordDistance::from).collect();
+        
+        // Calculate average complex value
+        let complex_value = if !complexes.is_empty() {
+            complexes.iter().map(|c| c.complex_value).sum::<f64>() / complexes.len() as f64
+        } else {
+            0.0
+        };
+        
+        Ok(ComplexAnalysis {
+            complex_value,
+            ghost_patterns,
+            word_distances,
+        })
     }
 }
 

@@ -91,6 +91,25 @@ spirit:ConsentData a owl:Class ;
     rdfs:subClassOf owl:Thing .
 
 # ============================================================================
+# Complex Analysis データエンティティ定義
+# ============================================================================
+
+spirit:Complex a owl:Class ;
+    rdfs:label "Complex"@en, "複合体"@ja ;
+    rdfs:comment "ユング心理学の複合体概念。complex = spiritとして扱う"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:GhostPattern a owl:Class ;
+    rdfs:label "Ghost Pattern"@en, "ゴーストパターン"@ja ;
+    rdfs:comment "遺伝的・文化的・元型的パターン（gene/meme/archetype）"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:WordDistance a owl:Class ;
+    rdfs:label "Word Distance"@en, "単語間距離"@ja ;
+    rdfs:comment "単語ペア間の距離データ"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+# ============================================================================
 # プロパティ定義
 # ============================================================================
 
@@ -171,6 +190,48 @@ spirit:hasTimestamp a owl:DatatypeProperty ;
     rdfs:comment "イベントやデータのタイムスタンプ"@ja ;
     rdfs:domain owl:Thing ;
     rdfs:range xsd:dateTime .
+
+spirit:hasComplex a owl:ObjectProperty ;
+    rdfs:label "has complex"@en, "複合体を持つ"@ja ;
+    rdfs:comment "解析結果が持つ複合体（complex = spirit）"@ja ;
+    rdfs:domain spirit:AnalysisResult ;
+    rdfs:range spirit:Complex .
+
+spirit:hasGhostPattern a owl:ObjectProperty ;
+    rdfs:label "has ghost pattern"@en, "ゴーストパターンを持つ"@ja ;
+    rdfs:comment "複合体が持つゴーストパターン（gene/meme/archetype）"@ja ;
+    rdfs:domain spirit:Complex ;
+    rdfs:range spirit:GhostPattern .
+
+spirit:hasWordDistance a owl:ObjectProperty ;
+    rdfs:label "has word distance"@en, "単語間距離を持つ"@ja ;
+    rdfs:comment "単語ペアが持つ距離データ"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spirit:WordDistance .
+
+spirit:hasPatternType a owl:DatatypeProperty ;
+    rdfs:label "has pattern type"@en, "パターンタイプを持つ"@ja ;
+    rdfs:comment "ゴーストパターンのタイプ（gene/meme/archetype）"@ja ;
+    rdfs:domain spirit:GhostPattern ;
+    rdfs:range xsd:string .
+
+spirit:hasPatternName a owl:DatatypeProperty ;
+    rdfs:label "has pattern name"@en, "パターン名を持つ"@ja ;
+    rdfs:comment "ゴーストパターンの名前（Mother, Shadow, Anima等）"@ja ;
+    rdfs:domain spirit:GhostPattern ;
+    rdfs:range xsd:string .
+
+spirit:hasDistanceValue a owl:DatatypeProperty ;
+    rdfs:label "has distance value"@en, "距離値を持つ"@ja ;
+    rdfs:comment "単語間距離の値"@ja ;
+    rdfs:domain spirit:WordDistance ;
+    rdfs:range xsd:decimal .
+
+spirit:hasDistanceType a owl:DatatypeProperty ;
+    rdfs:label "has distance type"@en, "距離タイプを持つ"@ja ;
+    rdfs:comment "距離計算のタイプ（word2vec/integrated/emotional）"@ja ;
+    rdfs:domain spirit:WordDistance ;
+    rdfs:range xsd:string .
 
 # ============================================================================
 # プロセス定義

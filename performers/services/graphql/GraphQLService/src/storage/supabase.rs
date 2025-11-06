@@ -986,5 +986,85 @@ impl SupabaseClient {
         data.into_iter().next()
             .ok_or_else(|| anyhow!("Failed to save project workflow: empty response"))
     }
+
+    /// Get participant complexes
+    pub async fn get_participant_complexes(&self, participant_id: &str) -> Result<Vec<Value>> {
+        let url = format!("{}/rest/v1/participant_complexes?participant_id=eq.{}&order=created_at.desc", self.url, participant_id);
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch complexes: {}", response.status()));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        Ok(data)
+    }
+
+    /// Get ghost patterns
+    pub async fn get_ghost_patterns(
+        &self,
+        participant_id: Option<&str>,
+        pattern_type: Option<&str>,
+    ) -> Result<Vec<Value>> {
+        let mut url = format!("{}/rest/v1/ghost_patterns?order=confidence.desc", self.url);
+        
+        let mut filters = Vec::new();
+        if let Some(pid) = participant_id {
+            filters.push(format!("participant_id=eq.{}", pid));
+        }
+        if let Some(pt) = pattern_type {
+            filters.push(format!("pattern_type=eq.{}", pt));
+        }
+
+        if !filters.is_empty() {
+            url = format!("{}/rest/v1/ghost_patterns?{}&order=confidence.desc", 
+                self.url, 
+                filters.join("&")
+            );
+        }
+
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch ghost patterns: {}", response.status()));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        Ok(data)
+    }
+
+    /// Get word distances
+    pub async fn get_word_distances(
+        &self,
+        participant_id: &str,
+        session_id: Option<&str>,
+    ) -> Result<Vec<Value>> {
+        let mut url = format!("{}/rest/v1/word_distances?participant_id=eq.{}&order=distance_value.asc", self.url, participant_id);
+        
+        if let Some(sid) = session_id {
+            url = format!("{}/rest/v1/word_distances?participant_id=eq.{}&session_id=eq.{}&order=distance_value.asc", self.url, participant_id, sid);
+        }
+
+        let response = self.client
+            .get(&url)
+            .headers(self.headers())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!("Failed to fetch word distances: {}", response.status()));
+        }
+
+        let data: Vec<Value> = response.json().await?;
+        Ok(data)
+    }
 }
 

@@ -1,0 +1,155 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/ontology#",
+    "id": "@id",
+    "type": "@type",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "name": "dct:title",
+    "description": "dct:description",
+    "keywords": {"@id": "skos:altLabel", "@container": "@set"}
+  },
+  "id": "https://spirit-in-physics.gftd.ai/resources/ghost-patterns",
+  "type": "GhostPatternDefinitions",
+  "name": "Ghost Pattern Definitions",
+  "description": "ユング心理学の複合体（Complex）から抽出されるゴーストパターン（gene/meme/archetype）の定義",
+  "createdAt": "2025-11-03T00:00:00+09:00",
+  
+  "archetypes": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/mother",
+      "name": "Mother",
+      "description": "母性の元型 - 保護、慈愛、育成の象徴",
+      "keywords": ["母親", "母", "保護", "慈愛", "育成", "母性", "母なるもの", "mother", "care", "nurture", "protection"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/shadow",
+      "name": "Shadow",
+      "description": "影の元型 - 否定的・抑圧された側面",
+      "keywords": ["影", "闇", "否定的", "抑圧", "暗い", "悪", "恐怖", "shadow", "dark", "negative", "repressed", "evil"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/anima",
+      "name": "Anima",
+      "description": "アニマ - 男性の内的女性的側面",
+      "keywords": ["アニマ", "女性的", "感情", "無意識", "anima", "feminine", "emotion", "feeling"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/animus",
+      "name": "Animus",
+      "description": "アニムス - 女性の内的男性的側面",
+      "keywords": ["アニムス", "男性的", "理性", "論理", "animus", "masculine", "logic", "reason"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/self",
+      "name": "Self",
+      "description": "自己 - 完全性と統合の元型",
+      "keywords": ["自己", "統合", "完全", "全体性", "self", "wholeness", "integration", "unity"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/persona",
+      "name": "Persona",
+      "description": "ペルソナ - 社会的に演じる仮面",
+      "keywords": ["ペルソナ", "仮面", "社会的", "役割", "persona", "mask", "social", "role"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/wiseman",
+      "name": "Wise Man",
+      "description": "賢者 - 知恵と指導の元型",
+      "keywords": ["賢者", "知恵", "指導", "教師", "wise", "wisdom", "teacher", "guide", "mentor"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/trickster",
+      "name": "Trickster",
+      "description": "トリックスター - 混沌と変化の元型",
+      "keywords": ["トリックスター", "混沌", "変化", "いたずら", "trickster", "chaos", "change", "mischief"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/hero",
+      "name": "Hero",
+      "description": "英雄 - 冒険と勝利の元型",
+      "keywords": ["英雄", "冒険", "勝利", "勇者", "hero", "adventure", "victory", "bravery"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/archetype/great-mother",
+      "name": "Great Mother",
+      "description": "大母 - 創造と破壊の両面を持つ母性",
+      "keywords": ["大母", "創造", "破壊", "生成", "great mother", "creation", "destruction", "generation"]
+    }
+  ],
+  
+  "geneticPatterns": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/genetic/family",
+      "name": "Family",
+      "description": "家族関係パターン - 遺伝的に継承される家族構造",
+      "keywords": ["家族", "親", "兄弟", "血縁", "family", "parent", "sibling", "kinship"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/genetic/survival",
+      "name": "Survival",
+      "description": "生存パターン - 基本的な生存本能",
+      "keywords": ["生存", "生命", "安全", "危険", "survival", "life", "safety", "danger"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/genetic/reproduction",
+      "name": "Reproduction",
+      "description": "生殖パターン - 子孫を残す本能",
+      "keywords": ["生殖", "子孫", "出産", "reproduction", "offspring", "birth", "fertility"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/genetic/territory",
+      "name": "Territory",
+      "description": "縄張りパターン - 領域と所有の感覚",
+      "keywords": ["縄張り", "領域", "所有", "territory", "domain", "ownership", "space"]
+    }
+  ],
+  
+  "memeticPatterns": [
+    {
+      "id": "https://spirit-in-physics.gftd.ai/memetic/religion",
+      "name": "Religion",
+      "description": "宗教的文化パターン - 宗教的信念と慣習",
+      "keywords": ["宗教", "神", "信仰", "儀式", "religion", "god", "faith", "ritual", "prayer"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/memetic/culture",
+      "name": "Culture",
+      "description": "文化的アイデンティティパターン",
+      "keywords": ["文化", "伝統", "習慣", "culture", "tradition", "custom", "heritage"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/memetic/social-role",
+      "name": "Social Role",
+      "description": "社会的役割パターン - 社会で期待される行動",
+      "keywords": ["役割", "社会", "期待", "責任", "role", "society", "expectation", "responsibility"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/memetic/language",
+      "name": "Language",
+      "description": "言語パターン - 言語的思考と表現",
+      "keywords": ["言語", "言葉", "会話", "表現", "language", "word", "conversation", "expression"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/memetic/gender",
+      "name": "Gender",
+      "description": "性別的文化パターン",
+      "keywords": ["性別", "性差", "gender", "sex", "masculinity", "femininity"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/memetic/nation",
+      "name": "Nation",
+      "description": "国家・民族的文化パターン",
+      "keywords": ["国家", "民族", "愛国", "nation", "ethnicity", "patriotism"]
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/memetic/authority",
+      "name": "Authority",
+      "description": "権威・権力パターン",
+      "keywords": ["権威", "権力", "支配", "authority", "power", "dominance", "control"]
+    }
+  ]
+}
+

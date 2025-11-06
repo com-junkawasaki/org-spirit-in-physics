@@ -50,7 +50,9 @@ import {
   Download,
   ArrowLeft,
   Eye,
-  Target
+  Target,
+  Sparkles,
+  Layers
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -271,7 +273,7 @@ export default function ParticipantDetailPage() {
 
       {/* メインコンテンツ */}
       <Tabs defaultValue="3d-visualization" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="3d-visualization" className="flex items-center space-x-2">
             <Eye className="h-4 w-4" />
             <span>3D可視化</span>
@@ -279,6 +281,10 @@ export default function ParticipantDetailPage() {
           <TabsTrigger value="statistics" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span>統計分析</span>
+          </TabsTrigger>
+          <TabsTrigger value="complex" className="flex items-center space-x-2">
+            <Sparkles className="h-4 w-4" />
+            <span>Complex分析</span>
           </TabsTrigger>
           <TabsTrigger value="raw-data" className="flex items-center space-x-2">
             <Brain className="h-4 w-4" />
@@ -368,6 +374,66 @@ export default function ParticipantDetailPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Complex分析タブ */}
+        <TabsContent value="complex" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Complex分析 (complex = spirit)
+              </CardTitle>
+              <CardDescription>
+                ユング心理学の複合体（Complex）分析とGhost Pattern（gene/meme/archetype）分類
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Complex = Spirit</strong>の前提に基づき、単語連想データから複合体パターンを分析します。
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Link href={`/participants/${participantId}/complex`}>
+                    <Card className="cursor-pointer hover:bg-muted transition-colors">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Layers className="h-4 w-4" />
+                          Complex詳細
+                        </CardTitle>
+                        <CardDescription>
+                          Complex値とGhost Patternの詳細表示
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                  <Link href={`/participants/${participantId}/distance`}>
+                    <Card className="cursor-pointer hover:bg-muted transition-colors">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4" />
+                          単語間距離分析
+                        </CardTitle>
+                        <CardDescription>
+                          被験者・セッションごとの単語間距離マトリクス
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                </div>
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium mb-2">分析内容</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Complex projection: spirit_probabilityをベクトル空間へ投影</li>
+                    <li>Ghost Pattern分類: gene（遺伝的）/ meme（文化的）/ archetype（元型）</li>
+                    <li>単語間距離: Word2Vec、統合ベクトル、感情ベクトルの距離計算</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* 生データタブ */}
