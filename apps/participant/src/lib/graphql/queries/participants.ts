@@ -19,7 +19,7 @@ export const GET_PARTICIPANTS = gql`
 `;
 
 export const GET_PARTICIPANT = gql`
-  query GetParticipant($id: ID!) {
+  query GetParticipant($id: String!) {
     participant(id: $id) {
       id
       age

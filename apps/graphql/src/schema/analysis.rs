@@ -9,20 +9,35 @@ use serde_json::Value as JsonValue;
 #[derive(SimpleObject, Clone, Debug)]
 pub struct AnalysisResult {
     pub id: String,
+    #[graphql(name = "participantId")]
     pub participant_id: String,
+    #[graphql(name = "experimentId")]
     pub experiment_id: String,
+    #[graphql(name = "wordStimulusId")]
     pub word_stimulus_id: i32,
+    #[graphql(name = "stimulusWord")]
     pub stimulus_word: String,
+    #[graphql(name = "responseWord")]
     pub response_word: String,
+    #[graphql(name = "reactionTimeMs")]
     pub reaction_time_ms: Option<i32>,
+    #[graphql(name = "spiritProbability")]
     pub spirit_probability: f64,
+    #[graphql(name = "word2VecComponent")]
     pub word2vec_component: Option<f64>,
+    #[graphql(name = "reactionTimeComponent")]
     pub reaction_time_component: Option<f64>,
+    #[graphql(name = "skinPotentialComponent")]
     pub skin_potential_component: Option<f64>,
+    #[graphql(name = "emotionComponent")]
     pub emotion_component: Option<f64>,
+    #[graphql(name = "emotionData")]
     pub emotion_data: Option<JsonValue>,
+    #[graphql(name = "physiologicalData")]
     pub physiological_data: Option<JsonValue>,
+    #[graphql(name = "createdAt")]
     pub created_at: String,
+    #[graphql(name = "updatedAt")]
     pub updated_at: String,
 }
 

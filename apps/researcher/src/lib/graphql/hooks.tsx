@@ -23,6 +23,14 @@ import type {
   GetAnalysisResultsQuery,
   ExecuteActivityMutation,
   ExecuteActivityMutationVariables,
+  GetConsentQuery,
+  GetConsentQueryVariables,
+  GetSessionEventsQuery,
+  GetSessionEventsQueryVariables,
+  GetEmotionResultsQuery,
+  GetEmotionResultsQueryVariables,
+  GetEmotionStatisticsQuery,
+  GetEmotionStatisticsQueryVariables,
 } from './generated/types';
 
 // Re-export generated types for convenience
@@ -111,9 +119,9 @@ export function useAnalyzeParticipant() {
 // Consent hooks
 export function useConsent(
   participantId: string,
-  options?: Apollo.QueryHookOptions<any, { participantId: string }>
+  options?: Apollo.QueryHookOptions<GetConsentQuery, GetConsentQueryVariables>
 ) {
-  return Apollo.useQuery<any, { participantId: string }>(GET_CONSENT, {
+  return Apollo.useQuery<GetConsentQuery, GetConsentQueryVariables>(GET_CONSENT, {
     ...options,
     variables: { participantId },
     skip: !participantId,
@@ -124,9 +132,9 @@ export function useConsent(
 export function useSessionEvents(
   participantId: string,
   sessionId: string,
-  options?: Apollo.QueryHookOptions<any, { participantId: string; sessionId: string }>
+  options?: Apollo.QueryHookOptions<GetSessionEventsQuery, GetSessionEventsQueryVariables>
 ) {
-  return Apollo.useQuery<any, { participantId: string; sessionId: string }>(GET_SESSION_EVENTS, {
+  return Apollo.useQuery<GetSessionEventsQuery, GetSessionEventsQueryVariables>(GET_SESSION_EVENTS, {
     ...options,
     variables: { participantId, sessionId },
     skip: !participantId || !sessionId,
@@ -136,9 +144,9 @@ export function useSessionEvents(
 // Emotion hooks
 export function useEmotionResults(
   participantId: string,
-  options?: Apollo.QueryHookOptions<any, { participantId: string }>
+  options?: Apollo.QueryHookOptions<GetEmotionResultsQuery, GetEmotionResultsQueryVariables>
 ) {
-  return Apollo.useQuery<any, { participantId: string }>(GET_EMOTION_RESULTS, {
+  return Apollo.useQuery<GetEmotionResultsQuery, GetEmotionResultsQueryVariables>(GET_EMOTION_RESULTS, {
     ...options,
     variables: { participantId },
     skip: !participantId,
@@ -146,8 +154,8 @@ export function useEmotionResults(
 }
 
 export function useEmotionStatistics(
-  options?: Apollo.QueryHookOptions<any>
+  options?: Apollo.QueryHookOptions<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>
 ) {
-  return Apollo.useQuery<any>(GET_EMOTION_STATISTICS, options);
+  return Apollo.useQuery<GetEmotionStatisticsQuery, GetEmotionStatisticsQueryVariables>(GET_EMOTION_STATISTICS, options);
 }
 

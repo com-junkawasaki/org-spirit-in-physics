@@ -13,14 +13,7 @@ export const GET_EMOTION_RESULTS = gql`
 
 export const GET_EMOTION_STATISTICS = gql`
   query GetEmotionStatistics {
-    emotionStatistics {
-      totalAnalyses
-      dominantEmotions {
-        emotion
-        count
-        averageScore
-      }
-    }
+    emotionStatistics
   }
 `;
 
