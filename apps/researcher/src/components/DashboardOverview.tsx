@@ -19,7 +19,10 @@ interface DashboardOverviewProps {
 export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [data, setData] = useState<any>(null)
-  const { data: participantsData, loading: participantsLoading } = useParticipants()
+  // Temporarily disable GraphQL hook due to Apollo Client import issues
+  // const { data: participantsData, loading: participantsLoading } = useParticipants()
+  const participantsData = { participants: [] }
+  const participantsLoading = false
 
   useEffect(() => {
     const loadData = async () => {

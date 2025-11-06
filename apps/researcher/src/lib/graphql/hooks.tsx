@@ -1,3 +1,5 @@
+'use client';
+
 //! GraphQL React Hooks (Type-Safe)
 //! 
 //! Merkle DAG: graphql.hooks
@@ -5,7 +7,8 @@
 //! 
 //! Note: This file provides convenience hooks. Generated hooks are available from generated/types.ts
 
-import { useQuery, useMutation, QueryHookOptions, MutationHookOptions } from '@apollo/client';
+import { useQuery, useMutation } from '@apollo/client';
+import type { QueryHookOptions, MutationHookOptions } from '@apollo/client';
 import { GET_PARTICIPANTS, GET_PARTICIPANT } from './queries/participants';
 import { GET_SESSIONS, GET_SESSIONS_BY_PARTICIPANT } from './queries/sessions';
 import { GET_ANALYSIS_RESULTS } from './queries/analysis';
