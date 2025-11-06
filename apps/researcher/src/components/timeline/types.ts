@@ -153,5 +153,31 @@ export interface Force3DGraphData {
   links: WordLink[]
 }
 
+export interface DebugInfo {
+  apiStatus: 'loading' | 'success' | 'error' | 'idle'
+  apiResponseReceived: boolean
+  dataPointCount: number
+  dataConversionStatus: 'pending' | 'success' | 'error'
+  errors: string[]
+  sessionDataStatus: 'pending' | 'success' | 'error' | 'not_available'
+  emotionDataStatus: 'pending' | 'success' | 'error' | 'not_available'
+  physiologicalDataStatus: 'pending' | 'success' | 'error' | 'not_available'
+  sessionEventsCount?: number
+  emotionEntriesCount?: number
+  physiologicalEntriesCount?: number
+  lastUpdateTime?: number
+  apiUrl?: string
+  responseMetadata?: {
+    sessionEvents?: number
+    emotionEntries?: number
+    physiologicalEntries?: number
+    totalDataPoints?: number
+    dataSource?: string
+    errors?: string[]
+    truncated?: boolean
+    originalSize?: number
+  }
+}
+
 // Merkle DAG: timeline.types -> definitions_complete
 // 時系列可視化コンポーネントの型定義完了

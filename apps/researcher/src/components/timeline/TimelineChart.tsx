@@ -30,10 +30,25 @@ export default function TimelineChart({
   const overviewSvgRef = useRef<SVGSVGElement>(null)
 
   const renderOverviewChart = useCallback(() => {
-    if (!overviewSvgRef.current || data.length === 0) return
+    if (!overviewSvgRef.current) return
 
     const svg = d3.select(overviewSvgRef.current)
     svg.selectAll('*').remove()
+    svg.attr('width', width).attr('height', 80)
+
+    // データが空の場合はメッセージを表示
+    if (data.length === 0) {
+      const g = svg.append('g')
+        .attr('transform', `translate(${width / 2}, 40)`)
+      
+      g.append('text')
+        .attr('text-anchor', 'middle')
+        .style('font-size', '12px')
+        .style('fill', '#9ca3af')
+        .text('データなし')
+      
+      return
+    }
 
     const margin = { top: 10, right: 20, bottom: 30, left: 20 }
     const overviewWidth = width - margin.left - margin.right
@@ -99,10 +114,35 @@ export default function TimelineChart({
   }, [data, width, timeRange])
 
   const renderTimeline = useCallback(() => {
-    if (!svgRef.current || data.length === 0) return
+    if (!svgRef.current) return
 
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
+
+    // データが空の場合はメッセージを表示
+    if (data.length === 0) {
+      svg.attr('width', width).attr('height', height)
+      const g = svg.append('g')
+        .attr('transform', `translate(${width / 2}, ${height / 2})`)
+      
+      g.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '-10px')
+        .style('font-size', '16px')
+        .style('fill', '#6b7280')
+        .style('font-weight', '500')
+        .text('データがありません')
+      
+      g.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '15px')
+        .style('font-size', '14px')
+        .style('fill', '#9ca3af')
+        .text('時系列データを読み込んでください')
+      
+      return
+    }
+
 
     const margin = { top: 20, right: 20, bottom: 60, left: 60 }
     const innerWidth = width - margin.left - margin.right
