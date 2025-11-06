@@ -19,11 +19,5 @@ export {
   kernelFusionFailureWorkflow,
 } from './kernel-fusion-workflow';
 
-// Neo4j保存ワークフロー
-export {
-  neo4jPersistenceWorkflow,
-  neo4jPersistenceFailureWorkflow,
-} from './neo4j-persistence-workflow';
-
 // Inngestクライアントとイベント定義
 export { inngest, events } from '../inngest';
