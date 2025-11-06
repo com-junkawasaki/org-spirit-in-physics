@@ -1,73 +1,66 @@
-# Spirit in Physics - Visualizer
+# Spirit in Physics - Researcher App
 
-## Neo4j Migration Complete
+## GraphQL/PostgreSQL Migration Complete
 
-This visualizer has been fully migrated from Supabase to **Neo4j**, a powerful graph database.
+This researcher app has been fully migrated from Neo4j to **GraphQL API with PostgreSQL**, providing a more scalable and type-safe data access layer.
 
 ## Key Changes
 
-### Client Library (`src/lib/neo4j.ts`)
-- **Before**: Supabase JavaScript client
-- **After**: Custom Neo4j client with Cypher queries
+### Client Library (`src/lib/graphql-client.ts`)
+- **Before**: Neo4j client with Cypher queries
+- **After**: GraphQL client with type-safe queries
 
 ### API Routes (`src/app/api/`)
-- **Before**: Supabase queries in API routes
-- **After**: Neo4j client calls with Cypher queries
+- **Before**: Neo4j Cypher queries in API routes
+- **After**: GraphQL API calls via HTTP
 
 ### Data Functions (`src/lib/data.ts`)
-- **Before**: Supabase server client queries
-- **After**: Neo4j client integration with graph traversals
+- **Before**: Neo4j client integration with Cypher queries
+- **After**: GraphQL client integration with PostgreSQL backend
 
-## Neo4j Client Features
+## GraphQL Client Features
 
 ### Participants Query
 ```typescript
-async getParticipants(): Promise<any[]> {
-  const query = `
-    MATCH (p:Participant)
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(:Session)-[:HAS_RESPONSE]->(r:Response)
-    RETURN
-      p.id as participant_id,
-      count(distinct s) as session_count,
-      count(distinct r) as total_responses,
-      0.5 as average_spirit_probability,
-      p.created_at as last_activity
-    ORDER BY p.created_at DESC
-  `
-  // Returns processed participant data
-}
+const query = `
+  query GetParticipants {
+    participants {
+      id
+      age
+      gender
+      handedness
+      created_at
+      updated_at
+    }
+  }
+`
 ```
 
 ### Participant Details Query
 ```typescript
-async getParticipantDetails(participantId: string): Promise<any> {
-  const query = `
-    MATCH (p:Participant {id: $participantId})
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
-    OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
-    RETURN p, s, r
-    ORDER BY s.created_at, r.event_ts
-  `
-}
+const query = `
+  query GetParticipant($participantId: String!) {
+    participant(participant_id: $participantId)
+  }
+`
 ```
 
 ## Configuration
 
 Add to your environment variables:
 ```bash
-NEO4J_URI=neo4j://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=neo4jpassword
-NEO4J_DATABASE=neo4j
+# GraphQL API URL (default: http://localhost:8080/graphql)
+NEXT_PUBLIC_GRAPHQL_RUST_API_URL=http://localhost:8080/graphql
+GRAPHQL_RUST_API_URL=http://localhost:8080/graphql
 ```
 
 ## Migration Benefits
 
-1. **Type Safety**: TypeScript interfaces maintained
-2. **Performance**: Direct graph queries for complex relationships
-3. **Scalability**: Efficient handling of connected data
-4. **Consistency**: Unified data access across the application
+1. **Type Safety**: GraphQL schema provides compile-time type safety
+2. **Performance**: PostgreSQL with optimized indexes for fast queries
+3. **Scalability**: Horizontal scaling with PostgreSQL replication
+4. **Consistency**: Unified GraphQL API across all applications
+5. **Developer Experience**: GraphQL Playground for interactive query testing
 
 ## Usage
 

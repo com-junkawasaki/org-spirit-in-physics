@@ -4,7 +4,7 @@ import { join } from 'path';
 import { createHash } from 'crypto';
 import { listCsvFilesDeep, isCsvModalityPath, countLinesStream, withConcurrency } from '@/lib/fs-stream-utils';
 import { loadManifest, saveManifest, isUnchanged, upsertManifest } from '@/lib/import-manifest';
-import { createNeo4jClient } from '../neo4j'; // 新しいGraphQLクライアントを使用
+import { createGraphQLClient } from '../graphql-client';
 
 // Merkle DAG: file_import_workflow -> data_ingestion_pipeline
 // ファイルインポートワークフロー（ローカル実行用）
@@ -212,7 +212,7 @@ export const fileImportWorkflow = inngest.createFunction(
   async ({ event, step }) => {
     const { participantId, dataRootPath, tenantId, userId, contentHash, retryCount = 0 } = event.data as FileImportEvent;
     
-    const client = createNeo4jClient();
+    const client = createGraphQLClient();
 
     try {
       // ステップ1: ファイル存在確認と検証

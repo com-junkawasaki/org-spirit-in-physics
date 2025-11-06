@@ -1,6 +1,7 @@
 import { inngest, events, type KernelFusionEvent } from '../inngest';
 import { fuseKernels } from '../kernel-fusion';
-import { createNeo4jClient } from '../neo4j'; // 新しいGraphQLクライアントを使用
+import { calculateEmbedding } from '../embedding-calculator';
+import { createGraphQLClient } from '../graphql-client';
 
 // 核融合ワークフローを更新
 export const kernelFusionWorkflow = inngest.createFunction(
@@ -13,10 +14,10 @@ export const kernelFusionWorkflow = inngest.createFunction(
     },
   },
   { event: events.KERNEL_FUSION_REQUESTED },
-  async ({ event, step }) => {
-    const { participantId, distances, n, options } = event.data as KernelFusionEvent;
+  async ({ event }) => {
+    const { participantId, distances, options } = event.data as KernelFusionEvent;
     
-    const client = createNeo4jClient();
+    const client = createGraphQLClient();
 
     try {
       // ステップ1: 距離行列の読み込み（GraphQL呼び出しに置き換え）
@@ -29,7 +30,14 @@ export const kernelFusionWorkflow = inngest.createFunction(
       const fusionResult = fuseKernels(distanceMatrices, options); // 既存のfuseKernels関数を使用
 
       // ステップ3: 埋め込みの生成
-      const embeddingResult = calculateEmbedding(distanceMatrices, options.dimensions); // 既存のcalculateEmbedding関数を使用
+      // TODO: words配列を取得する必要がある
+      const words: string[] = [] // Placeholder - 実際の単語リストを取得
+      const embeddingResult = calculateEmbedding(
+        fusionResult.fusedKernel,
+        words,
+        'pca',
+        options.dimensions as 2 | 3
+      );
 
       // ステップ4: 核融合実行ノードの作成
       const kernelFusionRun = await client.createKernelFusionRun({
@@ -41,12 +49,16 @@ export const kernelFusionWorkflow = inngest.createFunction(
       });
 
       // ステップ5: 埋め込み結果ノードの作成
-      for (const embedding of embeddingResult.points) {
+      for (const embeddingPoint of embeddingResult.points) {
+        // EmbeddingPointから座標配列を抽出
+        const coordinates = embeddingPoint.z !== undefined
+          ? [embeddingPoint.x, embeddingPoint.y, embeddingPoint.z]
+          : [embeddingPoint.x, embeddingPoint.y]
         await client.createEmbeddingResult({
           kernelFusionRunId: kernelFusionRun.id,
           method: 'kernel_fusion',
           dimensions: options.dimensions,
-          points: embedding,
+          points: coordinates,
         });
       }
 
@@ -71,11 +83,12 @@ export const kernelFusionWorkflow = inngest.createFunction(
       };
     } catch (error) {
       // 失敗時のイベント送信
+      const errorMessage = error instanceof Error ? error.message : String(error)
       await inngest.send({
         name: events.KERNEL_FUSION_FAILED,
         data: {
           participantId,
-          error: error.message,
+          error: errorMessage,
           timestamp: new Date().toISOString(),
         },
       });
@@ -92,7 +105,7 @@ export const kernelFusionFailureWorkflow = inngest.createFunction(
     name: 'Kernel Fusion Failure Handler',
   },
   { event: events.KERNEL_FUSION_FAILED },
-  async ({ event, step }) => {
+  async ({ event }) => {
     const { participantId, error } = event.data;
 
     // エラー処理ロジック

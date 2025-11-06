@@ -1,5 +1,5 @@
 import { inngest, events, type WindowsGenerationEvent } from '../inngest';
-import { createNeo4jClient } from '../neo4j'; // 新しいGraphQLクライアントを使用
+import { createGraphQLClient } from '../graphql-client';
 
 // ウィンドウ生成ワークフローを更新
 export const windowsGenerationWorkflow = inngest.createFunction(
@@ -15,7 +15,7 @@ export const windowsGenerationWorkflow = inngest.createFunction(
   async ({ event, step }) => {
     const { participantId, sessionUri, physioUri, humeCsvUris, stats } = event.data as WindowsGenerationEvent;
     
-    const client = createNeo4jClient();
+    const client = createGraphQLClient();
 
     try {
       // ステップ1: セッションデータの読み込み（GraphQL呼び出しに置き換え）

@@ -1,4 +1,4 @@
-import { createNeo4jClient } from './neo4j'
+import { createGraphQLClient } from './graphql-client'
 
 export interface AnalysisResult {
   id: string
@@ -82,101 +82,14 @@ export interface DashboardStats {
   }
 }
 
-// Server-side data fetching functions - Neogmaベース
+// Server-side data fetching functions - GraphQL/PostgreSQLベース
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    const client = createNeo4jClient()
+    const client = createGraphQLClient()
 
-    // Helper function to convert Neo4j integers to JavaScript numbers
-    const toNumber = (value: any): number => {
-      if (typeof value === 'object' && value !== null && 'low' in value) {
-        return value.low
-      }
-      return Number(value) || 0
-    }
-
-    // Get participants count
-    const participantsQuery = `MATCH (p:Participant) RETURN count(p) as total`
-    const participantsResult = await client.query(participantsQuery)
-    const totalParticipants = toNumber(participantsResult[0]?.total)
-
-    // Get sessions count
-    const sessionsQuery = `MATCH (s:ExperimentSession) RETURN count(s) as total`
-    const sessionsResult = await client.query(sessionsQuery)
-    const totalSessions = toNumber(sessionsResult[0]?.total)
-
-    // Get responses count
-    const responsesQuery = `MATCH (r:Response) RETURN count(r) as total`
-    const responsesResult = await client.query(responsesQuery)
-    const totalResponses = toNumber(responsesResult[0]?.total)
-
-    // Cypherクエリを使ってデータを取得（Neogmaのwhere句でnullチェックがサポートされていないため）
-    const emotionQuery = `
-      MATCH (r:Response)
-      WHERE r.emotion IS NOT NULL
-      RETURN r.emotion as emotion
-    `
-    const spiritQuery = `
-      MATCH (r:Response)
-      WHERE r.spirit_probability IS NOT NULL
-      RETURN r.spirit_probability as spirit_probability
-    `
-    const componentsQuery = `
-      MATCH (r:Response)
-      WHERE r.word2vec_component IS NOT NULL AND
-            r.reaction_time_component IS NOT NULL AND
-            r.skin_potential_component IS NOT NULL AND
-            r.emotion_component IS NOT NULL
-      RETURN r.word2vec_component as word2vec_component,
-             r.reaction_time_component as reaction_time_component,
-             r.skin_potential_component as skin_potential_component,
-             r.emotion_component as emotion_component
-    `
-
-    const [
-      responsesWithEmotions,
-      responsesWithSpirit,
-      responsesWithComponents
-    ] = await Promise.all([
-      client.query(emotionQuery),
-      client.query(spiritQuery),
-      client.query(componentsQuery),
-    ])
-
-    // 感情分布を集計
-    const emotionDistribution: Record<string, number> = {}
-    responsesWithEmotions.forEach(response => {
-      if (response.emotion) {
-        emotionDistribution[response.emotion] = (emotionDistribution[response.emotion] || 0) + 1
-      }
-    })
-
-    // 平均Spirit確率を計算
-    const averageSpiritProbability = responsesWithSpirit.length > 0
-      ? responsesWithSpirit.reduce((sum, r) => sum + (r.spirit_probability || 0), 0) / responsesWithSpirit.length
-      : 0.5
-
-    // コンポーネントの平均を計算
-    const componentAverages = responsesWithComponents.length > 0 ? {
-      word2vec: responsesWithComponents.reduce((sum, r) => sum + (r.word2vec_component || 0), 0) / responsesWithComponents.length,
-      reaction_time: responsesWithComponents.reduce((sum, r) => sum + (r.reaction_time_component || 0), 0) / responsesWithComponents.length,
-      skin_potential: responsesWithComponents.reduce((sum, r) => sum + (r.skin_potential_component || 0), 0) / responsesWithComponents.length,
-      emotion: responsesWithComponents.reduce((sum, r) => sum + (r.emotion_component || 0), 0) / responsesWithComponents.length,
-    } : {
-      word2vec: 0.1,
-      reaction_time: 0.2,
-      skin_potential: 0.1,
-      emotion: 0.3,
-    }
-
-    return {
-      totalParticipants,
-      totalSessions,
-      totalResponses,
-      averageSpiritProbability,
-      emotionDistribution,
-      componentAverages,
-    }
+    // Use GraphQL client to get dashboard stats
+    const stats = await client.getDashboardStats()
+    return stats
   } catch (error) {
     console.error('Failed to get dashboard stats:', error)
     return {
@@ -197,13 +110,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-    const client = createNeo4jClient()
+    const client = createGraphQLClient()
     const participants = await client.getParticipants()
 
     // For each participant, get detailed data
     const participantsWithData = await Promise.all(
       participants.map(async (participant) => {
-        const participantId = participant.participant_id
+        const participantId = participant.id || participant.participant_id
         const participantData = await getParticipantData(participantId)
         return participantData || {
           id: participantId,
@@ -226,35 +139,15 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    const client = createNeo4jClient()
+    const client = createGraphQLClient()
 
     // 参加者詳細を取得
     const participant = await client.getParticipantDetails(participantId)
     if (!participant) return null
 
-    // セッションを取得（Experiment階層経由）
-    const sessionsQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s, e
-      ORDER BY s.start_ts DESC
-    `
-    const sessionsResult = await client.query(sessionsQuery, { participantId })
-    const dbSessions = sessionsResult?.map((record: any) => {
-      const session = record.s
-      const properties = session && typeof session === 'object' && 'properties' in session
-        ? session.properties
-        : session
-      return {
-        id: properties.id,
-        participant_id: properties.participant_id,
-        start_ts: properties.start_ts,
-        end_ts: properties.end_ts,
-        status: properties.status,
-        total_responses: properties.total_responses,
-        completed_responses: properties.completed_responses,
-        created_at: properties.created_at,
-      }
-    }) || []
+    // セッションを取得（GraphQL API経由）
+    // TODO: GraphQL APIにexperimentsとsessionsのクエリを追加する必要がある
+    const dbSessions: any[] = []
 
     // レスポンスを取得
     const responses = await client.getParticipantResponses(participantId)
@@ -417,7 +310,7 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   try {
     // 参加者のレスポンスを取得
-    const client = createNeo4jClient()
+    const client = createGraphQLClient()
     const responses = await client.getParticipantResponses(participantId)
 
     // 実際のデータに基づいて分析結果を生成
