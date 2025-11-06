@@ -1,8 +1,14 @@
 // LLM-BOUNDARY: 80_app - app/(segments)/...（RSC & Client）
 
 import { NextRequest, NextResponse } from "next/server";
-import { storageAdapter } from "scripts/src/50_adapters";
-import { ExperimentSupervisor } from "scripts/src/70_supervisors";
+import { getClient } from "@/lib/client";
+import { gql } from "@apollo/client";
+
+const UPLOAD_ARTIFACT_MUTATION = gql`
+  mutation UploadArtifact($participantId: String!, $fileType: String!, $fileName: String!, $fileContent: String!) {
+    uploadArtifact(participantId: $participantId, fileType: $fileType, fileName: $fileName, fileContent: $fileContent)
+  }
+`;
 
 export async function POST(request: NextRequest) {
     try {
@@ -13,34 +19,24 @@ export async function POST(request: NextRequest) {
         const participantId = formData.get("participantId") as string | null;
 
         if (!file || !sessionId || !fileName || !participantId) {
-            return new NextResponse(
-                "Missing required form data: file, sessionId, fileName, or participantId",
-                { status: 400 },
-            );
+            return new NextResponse("Missing required form data", { status: 400 });
         }
 
-        // ファイルタイプを判定
-        const fileType = fileName.includes("video")
-            ? "video"
-            : fileName.includes("audio")
-            ? "audio"
-            : fileName.includes("consent")
-            ? "consent"
-            : "session_data";
-
-        // StorageAdapterを使用してアーティファクトを保存
+        const fileType = fileName.includes("video") ? "video" : "session_data";
+        
         const buffer = Buffer.from(await file.arrayBuffer());
-        const result = await storageAdapter.saveArtifact(participantId, fileType, fileName, buffer);
+        const fileContent = buffer.toString('base64');
 
-        // ビデオ保存の場合はスーパーバイザーに通知
-        if (fileType === "video") {
-            await ExperimentSupervisor.saveSessionData(participantId);
-        }
+        const client = getClient();
+        const { data } = await client.mutate({
+            mutation: UPLOAD_ARTIFACT_MUTATION,
+            variables: { participantId, fileType, fileName, fileContent },
+        });
 
         return NextResponse.json({
             success: true,
             message: "Artifact saved successfully",
-            result,
+            result: JSON.parse(data.uploadArtifact),
         });
     } catch (error) {
         console.error("Error saving artifact:", error);

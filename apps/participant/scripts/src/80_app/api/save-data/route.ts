@@ -1,39 +1,33 @@
 // LLM-BOUNDARY: 80_app - app/(segments)/...（RSC & Client）
 
 import { NextRequest, NextResponse } from "next/server";
+import { getClient } from "@/lib/client";
+import { gql } from "@apollo/client";
 import { SaveStructuredDataPayloadSchema } from "scripts/src/00_schema";
-import { storageAdapter } from "scripts/src/50_adapters";
-import { ExperimentSupervisor } from "scripts/src/70_supervisors";
+
+const SAVE_STRUCTURED_DATA_MUTATION = gql`
+  mutation SaveStructuredData($data: JSON!) {
+    saveStructuredData(data: $data)
+  }
+`;
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-
-        // Validate the payload
         const validationResult = SaveStructuredDataPayloadSchema.safeParse(body);
         if (!validationResult.success) {
-            console.error(
-                "Payload validation failed:",
-                validationResult.error.format(),
-            );
             return new NextResponse(
-                JSON.stringify({
-                    error: "Invalid payload",
-                    details: validationResult.error.format(),
-                }),
+                JSON.stringify({ error: "Invalid payload", details: validationResult.error.format() }),
                 { status: 400 },
             );
         }
 
         const dataToSave = validationResult.data;
-
-        // StorageAdapterを使用してデータを保存
-        await storageAdapter.saveStructuredData(dataToSave);
-
-        // スーパーバイザーに通知してキャッシュを更新
-        if (dataToSave.type === "session-data" && dataToSave.data.participantId) {
-            await ExperimentSupervisor.saveSessionData(dataToSave.data.participantId);
-        }
+        const client = getClient();
+        await client.mutate({
+            mutation: SAVE_STRUCTURED_DATA_MUTATION,
+            variables: { data: dataToSave },
+        });
 
         return NextResponse.json({
             success: true,

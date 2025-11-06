@@ -1,194 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storageAdapter } from "scripts/src/50_adapters";
-import { emotionAnalysisAdapter } from "scripts/src/50_adapters";
-import { parseWordResponsesFromEvents, getParticipantStatistics, initializeNeo4jDatabase, loadAllSessionData } from "scripts/src/lib/data-loader";
+import { getClient } from "@/lib/client";
+import { gql } from "@apollo/client";
+
+const PARTICIPANTS_QUERY = gql`
+    query Participants {
+        participants
+    }
+`;
+const SESSIONS_QUERY = gql`
+    query Sessions($participantId: String) {
+        sessions(participantId: $participantId)
+    }
+`;
+const ANALYTICS_QUERY = gql`
+    query Analytics {
+        analytics
+    }
+`;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type');
   const participantId = searchParams.get('participantId');
+  const client = getClient();
 
   try {
+    let query;
+    let variables = {};
+    let dataKey = '';
+
     switch (type) {
       case 'participants':
-        // Neo4jデータベースの初期化
-        await initializeNeo4jDatabase();
-        const participants = await storageAdapter.loadAllParticipants();
-        const participantsForStats = participants.map(p => ({
-          ...p,
-          agreedAt: new Date(p.agreedAt),
-          gender: undefined // 型を合わせるためにundefinedに設定
-        }));
-        const participantStats = getParticipantStatistics(participantsForStats);
-
-        // Transform to match expected format
-        const formattedParticipants = participants.map(p => ({
-          id: p.id,
-          age: null, // Age not available in current data
-          gender: null, // Gender not available in current data
-          handedness: null, // Handedness not available in current data
-          createdAt: p.agreedAt,
-          sessionCount: p.hasSessionData ? 1 : 0, // Simplified
-          lastActivity: p.agreedAt,
-          status: p.hasSessionData ? 'completed' : 'in_progress',
-          hasVideoFiles: p.hasVideoFiles,
-          videoFiles: p.videoFiles
-        }));
-
-        return NextResponse.json({
-          success: true,
-          data: formattedParticipants,
-          total: formattedParticipants.length,
-          stats: participantStats
-        });
-
-      case 'participant':
-        if (!participantId) {
-          return NextResponse.json({
-            error: "Participant ID is required"
-          }, { status: 400 });
-        }
-
-        const participants_list = await storageAdapter.loadAllParticipants();
-        const participant = participants_list.find(p => p.id === participantId);
-        if (!participant) {
-          return NextResponse.json({
-            error: "Participant not found"
-          }, { status: 404 });
-        }
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            id: participant.id,
-            signature: participant.signature,
-            agreedAt: participant.agreedAt,
-            hasSessionData: participant.hasSessionData,
-            hasVideoFiles: participant.hasVideoFiles,
-            videoFiles: participant.videoFiles
-          }
-        });
-
+        query = PARTICIPANTS_QUERY;
+        dataKey = 'participants';
+        break;
       case 'sessions':
-        const allSessionData = await loadAllSessionData();
-        const sessions = participantId
-          ? allSessionData.filter(s => s.participantId === participantId)
-          : allSessionData;
-
-        // Transform session data to match expected format
-        const formattedSessions = sessions.map(({ participantId, sessionData }) => {
-          const wordResponses = parseWordResponsesFromEvents(sessionData.events);
-
-          // Extract session start/end times from events
-          const sessionStartedEvent = sessionData.events.find(e => e.type === 'session_started');
-          const sessionStartTime = sessionStartedEvent
-            ? new Date(sessionStartedEvent.timestamp).toISOString()
-            : new Date().toISOString();
-
-          const sessionEndedEvent = sessionData.events
-            .filter(e => e.type === 'response_window_closed')
-            .pop();
-          const sessionEndTime = sessionEndedEvent
-            ? new Date(sessionEndedEvent.timestamp).toISOString()
-            : sessionStartTime;
-
-          return {
-            participantId,
-            sessionId: `session-${sessionStartedEvent?.payload?.session || 1}`,
-            sessionType: `session-${sessionStartedEvent?.payload?.session || 1}`,
-            startTime: sessionStartTime,
-            endTime: sessionEndTime,
-            wordResponses,
-            averageReactionTime: wordResponses.length > 0
-              ? wordResponses.reduce((acc, r) => acc + r.reactionTimeMs, 0) / wordResponses.length
-              : 0,
-            emotionData: [] // Emotion data not available in current structure
-          };
-        });
-
-        return NextResponse.json({
-          success: true,
-          data: formattedSessions,
-          total: formattedSessions.length
-        });
-
+        query = SESSIONS_QUERY;
+        variables = { participantId };
+        dataKey = 'sessions';
+        break;
       case 'analytics':
-        // Neo4jデータベースの初期化
-        await initializeNeo4jDatabase();
-        const participants_for_analytics = await storageAdapter.loadAllParticipants();
-        const participantsForStats2 = participants_for_analytics.map(p => ({
-          ...p,
-          agreedAt: new Date(p.agreedAt),
-          gender: undefined // 型を合わせるためにundefinedに設定
-        }));
-        const stats = getParticipantStatistics(participantsForStats2);
-        const allSessions = await loadAllSessionData();
-
-        // Calculate reaction time statistics
-        let totalReactionTime = 0;
-        let totalResponses = 0;
-
-        allSessions.forEach(({ sessionData }) => {
-          const wordResponses = parseWordResponsesFromEvents(sessionData.events);
-          wordResponses.forEach(response => {
-            totalReactionTime += response.reactionTimeMs;
-            totalResponses += 1;
-          });
-        });
-
-        const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
-
-        // Neo4jから感情統計を取得
-        const emotionStats = await emotionAnalysisAdapter.getEmotionStatistics();
-        const emotionDistribution: Record<string, number> = {};
-        emotionStats.dominantEmotions.forEach(item => {
-          emotionDistribution[item.emotion] = item.count;
-        });
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            totalParticipants: stats.totalParticipants,
-            completedSessions: stats.participantsWithSessionData,
-            completionRate: stats.completionRate,
-            averageSessionDuration: 2700, // Estimated 45 minutes in seconds
-            averageReactionTime,
-            emotionDistribution,
-            totalSessions: allSessions.length,
-            participantsWithVideo: stats.participantsWithVideo
-          }
-        });
-
-      case 'reaction-times':
-        const allSessionData_rt = await loadAllSessionData();
-        const reactionTimeData = allSessionData_rt.flatMap(({ participantId, sessionData }) => {
-          const wordResponses = parseWordResponsesFromEvents(sessionData.events);
-
-          return wordResponses.map(response => ({
-            participantId,
-            sessionType: 'session-1', // Simplified
-            stimulusWord: response.stimulusWord,
-            responseWord: response.responseWord,
-            reactionTimeMs: response.reactionTimeMs,
-            isDelayed: response.isDelayed,
-            timestamp: new Date(response.timestamp).toISOString()
-          }));
-        });
-
-        return NextResponse.json({
-          success: true,
-          data: reactionTimeData
-        });
-
+        query = ANALYTICS_QUERY;
+        dataKey = 'analytics';
+        break;
       default:
-        return NextResponse.json({
-          error: "Invalid type parameter. Use: participants, participant, sessions, analytics, reaction-times"
-        }, { status: 400 });
+        return NextResponse.json({ error: "Invalid type parameter." }, { status: 400 });
     }
+
+    const { data } = await client.query({ query, variables });
+    const result = JSON.parse(data[dataKey]);
+
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Error fetching experimental data:", error);
-    return NextResponse.json({
-      error: "Internal server error"
-    }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
