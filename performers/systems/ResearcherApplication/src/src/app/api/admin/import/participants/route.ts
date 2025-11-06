@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseClient } from '@spiritinphysics/supabase';
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
+import { randomUUID } from 'crypto';
 
 // Merkle DAG: batch_import_api -> data_persistence
 // バッチ参加者データインポートAPIエンドポイント
@@ -37,8 +38,16 @@ function resolveDataRootPath(): string {
     return '/app/public/dataset';
   }
   // ローカル環境では相対パスを使用
-  // プロジェクトルートから計算
   const projectRoot = process.cwd();
+  // 既に ResearcherApplication/src 内にいる場合の考慮
+  if (projectRoot.includes('ResearcherApplication/src')) {
+    // 既に src 内にいる場合は、そのまま public/dataset を使用
+    const datasetPath = join(projectRoot, 'public', 'dataset');
+    if (existsSync(datasetPath)) {
+      return datasetPath;
+    }
+  }
+  // プロジェクトルートからの相対パス
   return join(projectRoot, 'performers/systems/ResearcherApplication/src/public/dataset');
 }
 
@@ -99,8 +108,8 @@ async function loadAndSaveConsentData(
       );
 
     if (consentError) {
-      console.error(`Error saving consent for ${participantId}:`, consentError);
-      throw consentError;
+      console.error(`Error saving consent for ${participantId}:`, JSON.stringify(consentError, null, 2));
+      throw new Error(`Failed to save consent: ${JSON.stringify(consentError)}`);
     }
   }
 }
@@ -134,7 +143,18 @@ async function loadAndSaveSessionData(
     );
 
   // セッションノードの作成（participant_experiment_sessions）
-  const sessionId = `${participantId}-session-1`;
+  // session_idはUUID型なので、既存セッションを確認するか、UUIDを生成
+  // まず既存のセッションを確認
+  const { data: existingSessions } = await client
+    .from('participant_experiment_sessions')
+    .select('id, session_id')
+    .eq('participant_id', participantId)
+    .eq('session_type', 'session-1')
+    .limit(1);
+  
+  const existingSession = existingSessions && existingSessions.length > 0 ? existingSessions[0] : null;
+
+  const sessionId = existingSession?.session_id || randomUUID();
   const sessionStartedEvent = session.events?.find(
     (e: any) => e.type === 'session_started' || e.event_type === 'session_started'
   );
@@ -146,7 +166,7 @@ async function loadAndSaveSessionData(
     )
     .pop();
 
-  const { error: sessionError } = await client
+  const { data: savedSession, error: sessionError } = await client
     .from('participant_experiment_sessions')
     .upsert(
       {
@@ -163,12 +183,14 @@ async function loadAndSaveSessionData(
       {
         onConflict: 'participant_id,session_id',
       }
-    );
+    )
+    .select()
+    .single();
 
-  if (sessionError) {
-    console.error('Error saving session:', sessionError);
-    throw sessionError;
-  }
+    if (sessionError) {
+      console.error('Error saving session:', JSON.stringify(sessionError, null, 2));
+      throw new Error(`Failed to save session: ${JSON.stringify(sessionError)}`);
+    }
 
   // word_displayed イベントを抽出してparticipant_response_dataに保存
   const wordDisplayedEvents =
@@ -178,10 +200,16 @@ async function loadAndSaveSessionData(
     ) || [];
 
   // レスポンスデータの保存
+  // savedSession.id（participant_experiment_sessionsの主キーUUID）をexperiment_idとして使用
+  const sessionUuid = savedSession?.id;
+  if (!sessionUuid) {
+    throw new Error('Failed to get session UUID after upsert');
+  }
+
   if (wordDisplayedEvents.length > 0) {
     const responseData = wordDisplayedEvents.map((event: any, index: number) => ({
       participant_id: participantId,
-      experiment_id: sessionId, // experiment_idはsession_idを使用
+      experiment_id: sessionUuid, // experiment_idはparticipant_experiment_sessions.id（UUID）を使用
       word_stimulus_id: index,
       stimulus_word: event.payload?.word || event.word || 'unknown',
       response_word: event.payload?.word || event.word || 'unknown', // 簡易実装
@@ -195,8 +223,8 @@ async function loadAndSaveSessionData(
       .insert(responseData);
 
     if (responseError) {
-      console.error('Error saving response data:', responseError);
-      throw responseError;
+      console.error('Error saving response data:', JSON.stringify(responseError, null, 2));
+      throw new Error(`Failed to save response data: ${JSON.stringify(responseError)}`);
     }
   }
 
@@ -229,13 +257,12 @@ async function loadAndSaveEmotionData(
 
   const emotionRecords: any[] = [];
 
-  // セッションIDを取得
-  const sessionId = `${participantId}-session-1`;
+  // セッションIDを取得（participant_experiment_sessionsテーブルから）
   const { data: sessions } = await client
     .from('participant_experiment_sessions')
     .select('id')
     .eq('participant_id', participantId)
-    .eq('session_id', sessionId)
+    .eq('session_type', 'session-1')
     .limit(1);
 
   if (!sessions || sessions.length === 0) {
@@ -342,8 +369,8 @@ async function loadAndSaveEmotionData(
         );
 
       if (error) {
-        console.error('Error saving burst predictions:', error);
-        throw error;
+        console.error('Error saving burst predictions:', JSON.stringify(error, null, 2));
+        throw new Error(`Failed to save burst predictions: ${JSON.stringify(error)}`);
       }
     }
 
@@ -360,8 +387,8 @@ async function loadAndSaveEmotionData(
         );
 
       if (error) {
-        console.error('Error saving language predictions:', error);
-        throw error;
+        console.error('Error saving language predictions:', JSON.stringify(error, null, 2));
+        throw new Error(`Failed to save language predictions: ${JSON.stringify(error)}`);
       }
     }
 
@@ -378,8 +405,8 @@ async function loadAndSaveEmotionData(
         );
 
       if (error) {
-        console.error('Error saving prosody predictions:', error);
-        throw error;
+        console.error('Error saving prosody predictions:', JSON.stringify(error, null, 2));
+        throw new Error(`Failed to save prosody predictions: ${JSON.stringify(error)}`);
       }
     }
   }
@@ -485,10 +512,15 @@ async function importParticipantData(
     };
   } catch (error) {
     console.error(`Error importing participant ${participantId}:`, error);
+    const errorMessage = error instanceof Error 
+      ? `${error.name}: ${error.message}` 
+      : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error(`Error stack for ${participantId}:`, errorStack);
     return {
       participantId,
       success: false,
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: errorMessage,
       error: error instanceof Error ? error.name : 'UnknownError',
     };
   }

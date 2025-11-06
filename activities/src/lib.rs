@@ -1,6 +1,6 @@
 //! Spirit in Physics Activities Library
 //! 
-//! Merkle DAG: activities_rust.lib
+//! Merkle DAG: activities.lib
 //! OWL: spirit:Process
 //! 
 //! This library provides activity implementations for the Spirit in Physics workflow engine.
@@ -15,4 +15,3 @@ pub use activities::*;
 pub use execution::*;
 pub use models::*;
 pub use error::*;
-

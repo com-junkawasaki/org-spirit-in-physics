@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
+import { Users, Activity, Brain, ArrowRight, Upload } from 'lucide-react'
 import { getAllParticipants } from '@/lib/data'
 import { getSpiritProbabilityColor } from '@/components/SpiritProbabilityBadge'
 
@@ -183,7 +183,12 @@ export default async function ParticipantsPage() {
               Spirit in Physics実験に参加した被験者の検査結果一覧です。各被験者の詳細な分析結果を確認できます。
             </p>
           </div>
-          {/* 分析レポートページは削除済み */}
+          <Link href="/admin/import">
+            <Button>
+              <Upload className="h-4 w-4 mr-2" />
+              データをインポート
+            </Button>
+          </Link>
         </div>
       </div>
 
