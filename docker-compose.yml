@@ -52,18 +52,18 @@ services:
   # Visualizer app (Next.js)
   visualizer:
     build:
-      context: ./apps/visualizer
+      context: ./apps/researcher
       dockerfile: Dockerfile
     container_name: spirit-visualizer
     ports:
       - "25260:3000"
     volumes:
-      - ./apps/visualizer:/app
+      - ./apps/researcher:/app
       - /app/node_modules
       - ./dataset:/app/dataset:cached
     command: pnpm run dev
     env_file:
-      - ./apps/visualizer/env.docker
+      - ./apps/researcher/env.docker
     environment:
       - NODE_ENV=development
       - INNGEST_EVENT_KEY=local_dev_key
@@ -125,19 +125,19 @@ services:
     restart: "no"
 
   # BPMN Runner (optional orchestrator for imports)
-  bpmn-runner:
-        build:
-          context: ./apps/pipeline/services/bpmn_runner
-          dockerfile: Dockerfile
-        container_name: spirit-bpmn-runner
-        environment:
-          - API_BASE=http://visualizer:3000
-          - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
-        depends_on:
-          - visualizer
-        networks:
-          - spirit-network
-        restart: "no"
+  # bpmn-runner:
+  #       build:
+  #         context: ./apps/pipeline/services/bpmn_runner
+  #         dockerfile: Dockerfile
+  #       container_name: spirit-bpmn-runner
+  #       environment:
+  #         - API_BASE=http://visualizer:3000
+  #         - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
+  #       depends_on:
+  #         - visualizer
+  #       networks:
+  #         - spirit-network
+  #       restart: "no"
 
   # One-shot importer for cloud (Aura)
   patient-cloud-importer:

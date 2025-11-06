@@ -1,11 +1,13 @@
 'use client'
 
-import { SignUp } from '@clerk/nextjs'
+// import { SignUp } from '@clerk/nextjs'
 
 export default function Page() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <SignUp routing="hash" />
+      {/* Clerk 認証を一時的に無効化 */}
+      <p>Sign up functionality is temporarily disabled</p>
+      {/* <SignUp routing="hash" /> */}
     </div>
   )
 }
