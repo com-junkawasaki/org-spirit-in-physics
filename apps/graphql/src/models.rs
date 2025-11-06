@@ -29,7 +29,7 @@ pub struct ParticipantConsent {
     pub id: Uuid,
     pub participant_id: Uuid,
     pub signature: String,
-    pub agreements: JsonValue,
+    pub agreements: String, // JSON as string
     pub agreed_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -40,7 +40,7 @@ pub struct ParticipantConsent {
 pub struct NewParticipantConsent {
     pub participant_id: Uuid,
     pub signature: String,
-    pub agreements: JsonValue,
+    pub agreements: String, // JSON as string
     pub agreed_at: DateTime<Utc>,
 }
 
@@ -118,8 +118,8 @@ pub struct ParticipantAnalysisResult {
     pub reaction_time_component: Option<f64>,
     pub skin_potential_component: Option<f64>,
     pub emotion_component: Option<f64>,
-    pub emotion_data: JsonValue,
-    pub physiological_data: JsonValue,
+    pub emotion_data: String, // JSON as string
+    pub physiological_data: String, // JSON as string
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -138,8 +138,8 @@ pub struct NewParticipantAnalysisResult {
     pub reaction_time_component: Option<f64>,
     pub skin_potential_component: Option<f64>,
     pub emotion_component: Option<f64>,
-    pub emotion_data: JsonValue,
-    pub physiological_data: JsonValue,
+    pub emotion_data: String, // JSON as string
+    pub physiological_data: String, // JSON as string
 }
 
 #[derive(Queryable, SimpleObject, Debug, Clone, Serialize, Deserialize)]

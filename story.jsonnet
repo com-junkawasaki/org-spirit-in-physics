@@ -193,7 +193,6 @@
   {
     // Merkle DAG: 物語.ナラティブ[36]
     act: 'Experiment階層アーキテクチャの実現',
-    summary: 'Participant → Experiment → Session階層を実装し、1回の実験に複数セッションを格納可能なデータ構造を確立。NeogmaモデルにExperimentPropertiesとExperimentRelatedNodesを追加し、ExperimentSessionとResponseにexperiment_idを導入。Neo4jスキーマにExperimentノードとHAS_EXPERIMENTリレーションを追加し、複合キー制約とインデックスを最適化。セッションインポートAPIでExperimentノードを自動作成し、Participant → Experiment → Sessionのリレーションを構築。分析APIをExperiment階層経由に更新し、セッション比較とWord2Vec APIが正常に動作。科学的手法による霊性測定システムのデータ構造をより柔軟で拡張可能にし、複数セッション実験の管理基盤を確立。',
   },
       {
         // Merkle DAG: 物語.ナラティブ[37]
@@ -351,7 +350,6 @@
             'システム監視ダッシュボードの信頼性向上',
             'Experiment階層アーキテクチャ実装',
             'Participant → Experiment → Session階層設計',
-            'Neogma ExperimentProperties・ExperimentRelatedNodes追加',
             'ExperimentSession・Responseにexperiment_id導入',
             'Neo4j Experimentノード・HAS_EXPERIMENTリレーション追加',
             '複合キー制約・インデックス最適化',
@@ -562,7 +560,6 @@
             'リアルタイムシステム健全性確認基盤確立',
             'Experiment階層アーキテクチャ実装',
             'Participant → Experiment → Session階層設計',
-            'Neogma ExperimentProperties・ExperimentRelatedNodes追加',
             'ExperimentSession・Responseにexperiment_id導入',
             'Neo4j Experimentノード・HAS_EXPERIMENTリレーション追加',
             '複合キー制約・インデックス最適化',

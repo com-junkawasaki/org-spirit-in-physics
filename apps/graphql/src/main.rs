@@ -194,10 +194,11 @@ struct ComponentAverages {
     emotion: f64,
 }
 
-pub struct Query;
+#[derive(async_graphql::MergedObject, Default)]
+pub struct Query(
+    crate::activities::Query,
+);
 
-#[Object]
-impl Query {
     async fn participants(&self, ctx: &Context<'_>) -> GQLResult<Vec<Participant>> {
         let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
         let mut conn = pool.get().await?;
@@ -593,7 +594,6 @@ impl Query {
         });
         Ok(serde_json::to_string(&mock_correlation)?)
     }
-}
 
 pub struct Mutation;
 

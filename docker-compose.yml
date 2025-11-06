@@ -48,27 +48,32 @@ services:
   # Visualizer app (Next.js)
   visualizer:
     build:
-      context: .
-      dockerfile: ./apps/researcher/Dockerfile
+      context: ./apps/visualizer
+      dockerfile: Dockerfile
     container_name: spirit-visualizer
     ports:
       - "25260:3000"
     volumes:
-      - .:/app:cached
+      - ./apps/visualizer:/app:cached
       - /app/node_modules
-      - ./dataset:/app/dataset:cached
-    working_dir: /app/apps/researcher
+    working_dir: /app
     env_file:
-      - ./apps/researcher/env.docker
+      - ./apps/visualizer/env.docker
     environment:
       - NODE_ENV=development
-      - INNGEST_EVENT_KEY=local_dev_key
-      - INNGEST_SIGNING_KEY=local_dev_signing_key
     depends_on:
       postgres:
         condition: service_healthy
+      graphql:
+        condition: service_started
     networks:
       - spirit-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # GraphQL API (Rust)
   graphql:
@@ -90,7 +95,7 @@ services:
     networks:
       - spirit-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/graphql"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080"]
       interval: 15s
       timeout: 5s
       retries: 5
