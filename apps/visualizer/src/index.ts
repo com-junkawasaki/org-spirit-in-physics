@@ -2,6 +2,7 @@
 // @visualizer パッケージのエントリーポイント
 
 export { default as TimelineVisualization } from './components/TimelineVisualization'
+export { default as EmotionDistanceVisualization } from './components/EmotionDistanceVisualization'
 export { useTimelineData } from './hooks/useTimelineData'
 export * from './types'
 export { JUNG_STIMULUS_WORDS, type JungWord } from './constants/jung'

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { useTimelineData } from '../hooks/useTimelineData'
 import TimelineChart from './timeline/TimelineChart'
 import KPICards from './timeline/KPICards'
@@ -85,7 +86,7 @@ export default function TimelineVisualization({
   const lastInitialsRef = useRef<Map<string, [number, number, number]>>(new Map())
 
   // 表示モードの状態
-  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words'>('timeline')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words' | 'split'>('timeline')
   // 単語選択（上位100をUIに表示）
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   // 感情フィルターと力学モード、データセグメント
