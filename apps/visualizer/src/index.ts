@@ -1,7 +1,7 @@
 // Merkle DAG: visualizer.package.exports
 // @visualizer パッケージのエントリーポイント
 
-export { default as TimelineVisualization } from './components/TimelineVisualization'
+export { TimelineVisualization } from './components/TimelineVisualization'
 export { default as EmotionDistanceVisualization } from './components/EmotionDistanceVisualization'
 export { useTimelineData } from './hooks/useTimelineData'
 export * from './types'
