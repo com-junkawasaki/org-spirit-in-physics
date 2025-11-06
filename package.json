@@ -1,0 +1,18 @@
+{
+  "name": "spirit-in-physics",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Spirit in Physics monorepo",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter @spirit-in-physics/visualizer dev"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
+

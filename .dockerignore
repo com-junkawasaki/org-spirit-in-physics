@@ -1,0 +1,109 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+.pnpm-store/
+
+# Testing
+coverage/
+.nyc_output
+test-results/
+playwright-report/
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Archive
+archive/
+_archive/
+.archive/
+
+# Large dataset files (videos, large binaries)
+**/public/dataset/**/*.webm
+**/public/dataset/**/*.mp4
+**/public/dataset/**/*.mp3
+**/public/dataset/**/*.avi
+**/public/dataset/**/*.mov
+**/dataset/**/*.webm
+**/dataset/**/*.mp4
+**/dataset/**/*.mp3
+**/dataset/**/*.avi
+**/dataset/**/*.mov
+
+# Cache directories
+.cache/
+.parcel-cache/
+.turbo/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Package manager lock files (keep pnpm-lock.yaml, ignore others)
+package-lock.json
+yarn.lock
+
+# Clerk configuration (can include secrets)
+.clerk/
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Large CSV files (if not needed in build)
+**/*.csv
+

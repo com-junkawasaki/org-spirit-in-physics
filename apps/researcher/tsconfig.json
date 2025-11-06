@@ -8,9 +8,19 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@visualizer/*": ["../visualizer/src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ],
+      "@visualizer/*": [
+        "../visualizer/src/*"
+      ]
+    },
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "incremental": true
   },
   "include": [
     "next-env.d.ts",
@@ -22,6 +32,8 @@
     "node_modules"
   ],
   "references": [
-    { "path": "../visualizer" }
+    {
+      "path": "../visualizer"
+    }
   ]
 }

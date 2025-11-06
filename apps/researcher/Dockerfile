@@ -7,25 +7,22 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy dependency definition files from the monorepo root
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Install all dependencies. In a monorepo, it's often necessary to install
-# dependencies from the root to correctly link workspace packages.
-RUN pnpm install --no-frozen-lockfile
+# Copy workspace configuration first
+COPY pnpm-workspace.yaml ./
 
 # Copy the entire monorepo source code into the image.
 # This ensures that all workspace packages and shared files are available.
 COPY . .
 
+# Install dependencies from the workspace root
+# pnpm will resolve workspace dependencies automatically
+RUN pnpm install --no-frozen-lockfile
+
 # Set the final working directory to the specific app's folder
 WORKDIR /app/apps/researcher
 
-# Copy tsconfig.base.json to the app directory to ensure extends path resolution
-COPY tsconfig.base.json /app/tsconfig.base.json
-
-# Copy environment file into the app's folder
-COPY ./env.docker ./.env.local
+# Note: env.docker is already copied by COPY . . above
+# If needed, it can be accessed at /app/apps/researcher/env.docker
 
 # Set hostname and port to bind to all interfaces
 ENV HOSTNAME=0.0.0.0
@@ -35,4 +32,5 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start the application
-CMD ["pnpm", "dev"]
+# Run from the app directory to ensure correct path resolution for tsconfig.json
+CMD ["sh", "-c", "cd /app/apps/researcher && pnpm dev"]
