@@ -32,7 +32,7 @@ export async function GET(
 
     let emotionData: any[] = []
     try {
-      emotionData = await getEmotionData(client, participantId)
+      emotionData = await getEmotionData(client, participantId, sessionData.startTs)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`emotion_data: ${msg}`)
@@ -41,7 +41,7 @@ export async function GET(
 
     let physiologicalData: any[] = []
     try {
-      physiologicalData = await getPhysiologicalData(client, participantId)
+      physiologicalData = await getPhysiologicalData(client, participantId, sessionData.startTs)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`physiological_data: ${msg}`)
@@ -180,14 +180,14 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
 
 // Merkle DAG: participants.timeline.get_emotion_data_from_neo4j
 // Neo4jから感情データ取得関数
-async function getEmotionData(client: any, participantId: string): Promise<any[]> {
+async function getEmotionData(client: any, participantId: string, sessionStartTs?: number): Promise<any[]> {
   try {
     console.log('Getting emotion data from Neo4j for participant:', participantId);
     
     const emotionQuery = `
       MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
       MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
-      RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
+      RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source, s.start_ts as sessionStartTs
       ORDER BY ed.timestamp
     `;
     
@@ -195,16 +195,31 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
     const emotionResults = await client.query(emotionQuery, { participantId });
     console.log('Emotion query results count:', emotionResults.length);
     
-    const mappedResults = emotionResults.map((result: any) => ({
-      fileType: result.source || 'unknown',
-      beginTime: result.timestamp,
-      endTime: result.timestamp + 1000, // 1秒間隔で仮定
-      emotions: [{ 
-        name: result.name, 
-        score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
-      }],
-      sessionId: 'unknown'
-    }));
+    // セッション開始時刻を取得（クエリ結果から、または引数から）
+    const sessionStartMs = emotionResults.length > 0 
+      ? (emotionResults[0].sessionStartTs || sessionStartTs || 0)
+      : (sessionStartTs || 0);
+    
+    // timestampはミリ秒単位で保存されている（セッション開始時刻を基準）
+    // timeline APIが期待する形式に変換（セッション開始からの相対時間を秒単位で）
+    const mappedResults = emotionResults.map((result: any) => {
+      const timestampMs = result.timestamp || 0;
+      // セッション開始時刻からの相対時間（秒）を計算
+      const beginTimeSec = sessionStartMs > 0 ? (timestampMs - sessionStartMs) / 1000 : timestampMs / 1000;
+      const endTimeSec = beginTimeSec + 1.0; // 1秒間隔で仮定
+      
+      return {
+        fileType: result.source || 'unknown',
+        beginTime: Math.max(0, beginTimeSec), // 秒単位（セッション開始からの相対時間）
+        endTime: Math.max(0, endTimeSec), // 秒単位
+        timestamp: timestampMs, // ミリ秒単位（デバッグ用に保持）
+        emotions: [{ 
+          name: result.name, 
+          score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
+        }],
+        sessionId: 'unknown'
+      };
+    });
 
     console.log('Mapped emotion results:', mappedResults.slice(0, 3));
     return mappedResults;
@@ -217,7 +232,7 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
 
 // Merkle DAG: participants.timeline.get_physiological_data_from_neo4j
 // Neo4jから生理データ取得関数
-async function getPhysiologicalData(client: any, participantId: string): Promise<any[]> {
+async function getPhysiologicalData(client: any, participantId: string, sessionStartTs?: number): Promise<any[]> {
   try {
     console.log('Getting physiological data from Neo4j for participant:', participantId);
     
@@ -239,6 +254,7 @@ async function getPhysiologicalData(client: any, participantId: string): Promise
       if (!channelData[channel]) {
         channelData[channel] = [];
       }
+      // timestampはミリ秒単位で保存されている
       channelData[channel].push({
         timestamp: result.timestamp,
         value: result.value,
@@ -246,14 +262,21 @@ async function getPhysiologicalData(client: any, participantId: string): Promise
       });
     });
     
-    // 時系列データポイントに変換
+    // 時系列データポイントに変換（timestampはミリ秒単位）
     const timePoints: Record<number, any> = {};
     Object.entries(channelData).forEach(([channel, data]) => {
       data.forEach(point => {
-        const timeKey = Math.floor(point.timestamp / 1000) * 1000; // 1秒単位でグループ化
+        const timestampMs = point.timestamp || 0;
+        // セッション開始時刻を基準にした相対時間（秒）を計算
+        const sessionStartMs = sessionStartTs || 0;
+        const relativeTimeSec = sessionStartMs > 0 ? (timestampMs - sessionStartMs) / 1000 : timestampMs / 1000;
+        
+        // 1秒単位でグループ化
+        const timeKey = Math.floor(relativeTimeSec);
         if (!timePoints[timeKey]) {
           timePoints[timeKey] = {
-            timeSec: point.timestamp / 1000,
+            timeSec: relativeTimeSec, // 相対時間（秒）
+            timestampMs, // 絶対時間（ミリ秒）- デバッグ用
             channels: {}
           };
         }
@@ -297,19 +320,23 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       // 対応する感情データを検索（時間範囲でマッチング）
       const relatedEmotions = emotionData.filter(emotion => {
         // セッション開始時刻を基準に相対時間でマッチング
-        const sessionStartTime = sessionData.startTime || 0;
-        const relativeTimestamp = (timestamp - sessionStartTime) / 1000; // 相対時間（秒）
-        const beginTime = emotion.beginTime || 0; // 秒単位
-        const endTime = emotion.endTime || 0; // 秒単位
+        const sessionStartTime = sessionData.startTime || sessionData.startTs || 0;
+        const relativeTimestampSec = (timestamp - sessionStartTime) / 1000; // 相対時間（秒）
+        const beginTime = emotion.beginTime || 0; // 秒単位（セッション開始からの相対時間）
+        const endTime = emotion.endTime || beginTime + 1.0; // 秒単位
         
-        // 感情データの時間範囲でマッチング
-        return beginTime <= relativeTimestamp && endTime >= relativeTimestamp;
+        // 感情データの時間範囲でマッチング（±0.5秒のマージン）
+        return relativeTimestampSec >= (beginTime - 0.5) && relativeTimestampSec <= (endTime + 0.5);
       });
       
       // 対応する生理データを検索（時間範囲でマッチング）
       const relatedPhysiological = physiologicalData.filter(physio => {
-        const physioTimestamp = physio.timeSec * 1000; // 秒をミリ秒に変換
-        return Math.abs(physioTimestamp - timestamp) <= 5000; // 5秒以内
+        // physio.timeSecはセッション開始からの相対時間（秒）
+        // timestampはイベントの絶対時間（ミリ秒）
+        const sessionStartTime = sessionData.startTime || sessionData.startTs || 0;
+        const relativeEventTimeSec = (timestamp - sessionStartTime) / 1000;
+        const timeDiff = Math.abs(physio.timeSec - relativeEventTimeSec);
+        return timeDiff <= 5.0; // 5秒以内
       });
       
       // 感情データの統合（詳細な感情情報を保持）

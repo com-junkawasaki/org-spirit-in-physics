@@ -18,8 +18,12 @@ export async function POST(request: NextRequest) {
     }
 
     const client = createNeo4jClient();
-    const dataRootPath = '/app/public/dataset';
-    const basePath = `${dataRootPath}/participants/${participantId}`;
+    // ローカル開発環境とDocker環境の両方に対応
+    const dataRootPath = process.env.DATASET_ROOT_PATH || 
+      (process.cwd().includes('/apps/researcher') 
+        ? join(process.cwd(), 'public', 'dataset')
+        : '/app/public/dataset');
+    const basePath = join(dataRootPath, 'participants', participantId);
 
     // セッションデータの読み込みと保存
     const sessionData = await loadAndSaveSessionData(client, basePath, participantId);
@@ -60,6 +64,12 @@ async function loadAndSaveSessionData(client: any, basePath: string, participant
   const sessionContent = readFileSync(sessionPath, 'utf-8');
   const session = JSON.parse(sessionContent);
   
+  // セッション開始時刻を最初のイベントから取得
+  const firstEvent = session.events && session.events.length > 0 ? session.events[0] : null;
+  const startTs = firstEvent?.timestamp || 0;
+  
+  console.log(`[save-to-neo4j] Session start timestamp: ${startTs} for participant ${participantId}`);
+  
   // 参加者ノードの作成
   await client.query(
     'MERGE (p:Participant {id: $participantId}) SET p.name = $name, p.createdAt = datetime()',
@@ -78,13 +88,14 @@ async function loadAndSaveSessionData(client: any, basePath: string, participant
     { participantId, experimentId: 'default-experiment' }
   );
 
-  // セッションノードの作成
+  // セッションノードの作成（start_tsを追加）
   await client.query(
-    'MATCH (e:Experiment {id: $experimentId}) MERGE (s:ExperimentSession {id: $sessionId}) SET s.session_data = $sessionData, s.createdAt = datetime() MERGE (e)-[:HAS_SESSION]->(s)',
+    'MATCH (e:Experiment {id: $experimentId}) MERGE (s:ExperimentSession {id: $sessionId}) SET s.session_data = $sessionData, s.start_ts = $startTs, s.createdAt = datetime() MERGE (e)-[:HAS_SESSION]->(s)',
     { 
       experimentId: 'default-experiment',
       sessionId: `${participantId}-session-1`,
-      sessionData: JSON.stringify(session)
+      sessionData: JSON.stringify(session),
+      startTs
     }
   );
 
@@ -118,12 +129,30 @@ async function loadAndSaveEmotionData(client: any, basePath: string, participant
   const humeArtifactsDir = files.find((file: string) => humeArtifactsPattern.test(file));
   
   if (!humeArtifactsDir) {
+    console.log(`[save-to-neo4j] No Hume artifacts directory found for participant ${participantId}`);
     return [];
+  }
+
+  // セッション開始時刻を取得（session_data.jsonから）
+  const sessionPath = join(basePath, 'session_data.json');
+  let sessionStartTs = 0;
+  if (existsSync(sessionPath)) {
+    try {
+      const sessionContent = readFileSync(sessionPath, 'utf-8');
+      const session = JSON.parse(sessionContent);
+      const firstEvent = session.events && session.events.length > 0 ? session.events[0] : null;
+      sessionStartTs = firstEvent?.timestamp || 0;
+      console.log(`[save-to-neo4j] Session start timestamp: ${sessionStartTs} for participant ${participantId}`);
+    } catch (error) {
+      console.warn(`[save-to-neo4j] Failed to read session_data.json for start timestamp:`, error);
+    }
   }
 
   const humeDataPath = join(basePath, humeArtifactsDir);
   const humeFiles = fs.readdirSync(humeDataPath, { recursive: true });
   const csvFiles = humeFiles.filter((file: string) => file.endsWith('.csv'));
+  
+  console.log(`[save-to-neo4j] Found ${csvFiles.length} CSV files in Hume artifacts directory`);
   
   const emotionRecords: any[] = [];
   
@@ -147,12 +176,23 @@ async function loadAndSaveEmotionData(client: any, basePath: string, participant
 
       // 感情スコアを抽出
       records.forEach((record: Record<string, string>) => {
+        const beginTimeSec = parseFloat(record.BeginTime || '0');
+        // BeginTimeは動画ファイル開始からの相対時間（秒）なので、
+        // セッション開始時刻に加算してミリ秒に変換
+        // ただし、BeginTimeが0の場合はセッション開始時刻をそのまま使用
+        const timestampMs = sessionStartTs > 0 
+          ? sessionStartTs + Math.round(beginTimeSec * 1000)
+          : Math.round(beginTimeSec * 1000);
+        
         Object.entries(record).forEach(([key, value]) => {
-          if (key !== 'Id' && key !== 'BeginTime' && key !== 'EndTime' && !isNaN(parseFloat(value))) {
+          // 感情名（大文字で始まる感情名）とスコアのみを抽出
+          if (key !== 'Id' && key !== 'BeginTime' && key !== 'EndTime' && 
+              key.length > 0 && key[0] === key[0].toUpperCase() && 
+              !isNaN(parseFloat(value)) && parseFloat(value) > 0) {
             emotionRecords.push({
-              name: key,
+              name: key.trim(),
               score: parseFloat(value),
-              timestamp: parseFloat(record.BeginTime || '0'),
+              timestamp: timestampMs, // ミリ秒単位（セッション開始時刻を基準）
               source: file.includes('burst') ? 'burst' : 
                      file.includes('face') ? 'face' : 
                      file.includes('language') ? 'language' : 
@@ -162,9 +202,11 @@ async function loadAndSaveEmotionData(client: any, basePath: string, participant
         });
       });
     } catch (error) {
-      console.warn(`Failed to read Hume CSV: ${filePath}`, error);
+      console.warn(`[save-to-neo4j] Failed to read Hume CSV: ${filePath}`, error);
     }
   });
+
+  console.log(`[save-to-neo4j] Extracted ${emotionRecords.length} emotion records for participant ${participantId}`);
 
   // 感情データをNeo4jに保存
   for (const emotion of emotionRecords) {
@@ -191,6 +233,7 @@ async function loadAndSavePhysiologicalData(client: any, basePath: string, parti
   // CSVファイルを検索
   const csvFile = files.find((file: string) => file.endsWith('.CSV'));
   if (!csvFile) {
+    console.log(`[save-to-neo4j] No CSV file found for participant ${participantId}`);
     return [];
   }
 
@@ -202,28 +245,75 @@ async function loadAndSavePhysiologicalData(client: any, basePath: string, parti
     return [];
   }
 
-  const header = lines[0].split(',');
-  const samples = lines.slice(1).map(line => {
+  // "Measurement Record"行を探して、その後の行からデータを読み取る
+  let dataStartIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].toLowerCase().includes('measurement record')) {
+      dataStartIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (dataStartIndex === -1 || dataStartIndex >= lines.length) {
+    console.warn(`[save-to-neo4j] Could not find "Measurement Record" line in CSV for participant ${participantId}`);
+    return [];
+  }
+
+  const headerLine = lines[dataStartIndex];
+  const header = headerLine.split(',').map(col => col.trim());
+  
+  if (!header.includes('Time_Sec')) {
+    console.warn(`[save-to-neo4j] CSV header does not contain Time_Sec for participant ${participantId}`);
+    return [];
+  }
+
+  const dataLines = lines.slice(dataStartIndex + 1);
+  const samples = dataLines.map(line => {
     const values = line.split(',');
     const sample: Record<string, string> = {};
     header.forEach((col, index) => {
-      sample[col.trim()] = values[index]?.trim() || '';
+      sample[col] = values[index]?.trim() || '';
     });
     return sample;
-  });
+  }).filter(sample => sample.Time_Sec !== undefined && sample.Time_Sec !== '');
 
-  // 生理データをチャンネル別に整理
+  // チャンネル列を抽出（Ch1, Ch2, etc）
   const channels = header.filter(col => 
-    col.includes('ch') || col.includes('channel') || col.includes('Ch')
+    /^Ch\d+$/i.test(col) || col.toLowerCase().includes('channel')
   );
 
-  const physiologicalSamples = samples.map((sample: Record<string, string>) => ({
-    timestamp: parseFloat(sample.timestamp || sample.time || '0'),
-    channels: channels.reduce((acc: Record<string, number>, channel: string) => {
-      acc[channel] = parseFloat(sample[channel] || '0');
-      return acc;
-    }, {}),
-  }));
+  // セッション開始時刻を取得（session_data.jsonから）
+  const sessionPath = join(basePath, 'session_data.json');
+  let sessionStartTs = 0;
+  if (existsSync(sessionPath)) {
+    try {
+      const sessionContent = readFileSync(sessionPath, 'utf-8');
+      const session = JSON.parse(sessionContent);
+      const firstEvent = session.events && session.events.length > 0 ? session.events[0] : null;
+      sessionStartTs = firstEvent?.timestamp || 0;
+    } catch (error) {
+      console.warn(`[save-to-neo4j] Failed to read session_data.json for start timestamp:`, error);
+    }
+  }
+
+  const physiologicalSamples = samples.map((sample: Record<string, string>) => {
+    const timeSec = parseFloat(sample.Time_Sec || '0');
+    // Time_Secはセッション開始からの相対時間（秒）なので、sessionStartTsに加算してミリ秒に変換
+    const timestampMs = sessionStartTs > 0 ? sessionStartTs + Math.round(timeSec * 1000) : Math.round(timeSec * 1000);
+    
+    return {
+      timestamp: timestampMs,
+      channels: channels.reduce((acc: Record<string, number>, channel: string) => {
+        const value = parseFloat(sample[channel] || '0');
+        if (!isNaN(value)) {
+          acc[channel] = value;
+        }
+        return acc;
+      }, {}),
+    };
+  }).filter(sample => Object.keys(sample.channels).length > 0);
+
+  console.log(`[save-to-neo4j] Extracted ${physiologicalSamples.length} physiological samples for participant ${participantId}`);
 
   // 生理データをNeo4jに保存
   for (const sample of physiologicalSamples) {
