@@ -12,22 +12,32 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy Cargo files for dependency caching
-COPY Cargo.toml Cargo.lock ./
+# Copy activities Cargo files first for dependency caching
+COPY activities/Cargo.toml activities/Cargo.lock ./activities/
 
-# Create a dummy source file to build dependencies
-RUN mkdir src && \
-    echo "fn main() {}" > src/main.rs
+# Copy GraphQL Service Cargo files
+COPY performers/services/graphql/GraphQLService/Cargo.toml performers/services/graphql/GraphQLService/Cargo.lock ./performers/services/graphql/GraphQLService/
+
+# Create dummy source files to build dependencies
+RUN mkdir -p activities/src && \
+    echo "fn main() {}" > activities/src/lib.rs && \
+    mkdir -p performers/services/graphql/GraphQLService/src && \
+    echo "fn main() {}" > performers/services/graphql/GraphQLService/src/main.rs
 
 # Build dependencies (this layer will be cached if Cargo files don't change)
-RUN cargo build --release && \
+RUN cd performers/services/graphql/GraphQLService && \
+    cargo build --release && \
     rm src/main.rs
 
-# Copy actual source code
-COPY src ./src
+# Copy activities source code
+COPY activities/src ./activities/src
+
+# Copy GraphQL Service source code
+COPY performers/services/graphql/GraphQLService/src ./performers/services/graphql/GraphQLService/src
 
 # Build the application
-RUN touch src/main.rs && \
+RUN cd performers/services/graphql/GraphQLService && \
+    touch src/main.rs && \
     cargo build --release --bin graphql-server
 
 # Runtime stage
@@ -44,7 +54,7 @@ RUN apt-get update && apt-get install -y \
 RUN useradd -m -u 1000 appuser
 
 # Copy the binary from builder stage
-COPY --from=builder /app/target/release/graphql-server /usr/local/bin/graphql-server
+COPY --from=builder /app/performers/services/graphql/GraphQLService/target/release/graphql-server /usr/local/bin/graphql-server
 
 # Set user
 USER appuser

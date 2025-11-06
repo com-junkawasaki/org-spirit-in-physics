@@ -13,44 +13,135 @@ use crate::storage::SupabaseClient;
 use reqwest::Client;
 use serde_json::{json, Value as JsonValue};
 use std::env;
+use spirit_activities::{
+    Activity, ActivityContext, ActivityData, ActivityExecutionResult,
+    DataCollectionActivity, DataStorageActivity, AnalysisProcessActivity,
+    TimelineIntegrationActivity, VisualizationProcessActivity, DataImportActivity,
+};
 
 pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
-    /// Execute an activity via Rust activities server
+    /// Execute an activity using activities library directly
     async fn execute_activity(
         &self,
         _ctx: &Context<'_>,
         activity_id: String,
         inputs: JsonValue,
     ) -> Result<ActivityExecutionResponse> {
-        let rust_activities_url = env::var("RUST_ACTIVITIES_URL")
-            .unwrap_or_else(|_| "http://localhost:3001".to_string());
+        // Convert JSON inputs to ActivityData
+        let input_data: Vec<ActivityData> = if let Some(inputs_array) = inputs.as_array() {
+            inputs_array.iter()
+                .filter_map(|v| {
+                    if let Some(obj) = v.as_object() {
+                        Some(ActivityData {
+                            id: obj.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                            r#type: obj.get("type").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                            data: obj.get("data").cloned().unwrap_or(json!({})),
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
 
-        let client = Client::new();
-        let response = client
-            .post(&format!("{}/execute", rust_activities_url))
-            .json(&json!({
-                "activity_id": activity_id,
-                "inputs": inputs,
-            }))
-            .send()
-            .await
-            .map_err(|e| Error::new(format!("Failed to call activities server: {}", e)))?;
+        // Create activity instance based on activity_id
+        let activity_result: spirit_activities::ActivityResult<ActivityExecutionResult> = match activity_id.as_str() {
+            "https://spirit-in-physics.gftd.ai/activity/DataCollection" => {
+                let activity = DataCollectionActivity::new();
+                let mut context = ActivityContext::with_inputs(input_data);
+                activity.validate_inputs(&context.inputs)?;
+                activity.check_conditions(&context)?;
+                activity.apply_rules(&mut context)?;
+                activity.execute(&mut context).await
+            }
+            "https://spirit-in-physics.gftd.ai/activity/DataStorage" => {
+                let supabase_url = env::var("SUPABASE_URL")
+                    .or_else(|_| env::var("NEXT_PUBLIC_SUPABASE_URL"))
+                    .unwrap_or_else(|_| "http://localhost:54321".to_string());
+                let supabase_key = env::var("SUPABASE_SERVICE_ROLE_KEY")
+                    .or_else(|_| env::var("SUPABASE_ANON_KEY"))
+                    .unwrap_or_default();
+                
+                let activity = DataStorageActivity::new(supabase_url, supabase_key);
+                let mut context = ActivityContext::with_inputs(input_data);
+                activity.validate_inputs(&context.inputs)?;
+                activity.check_conditions(&context)?;
+                activity.apply_rules(&mut context)?;
+                activity.execute(&mut context).await
+            }
+            "https://spirit-in-physics.gftd.ai/activity/AnalysisProcess" => {
+                let activity = AnalysisProcessActivity::new();
+                let mut context = ActivityContext::with_inputs(input_data);
+                activity.validate_inputs(&context.inputs)?;
+                activity.check_conditions(&context)?;
+                activity.apply_rules(&mut context)?;
+                activity.execute(&mut context).await
+            }
+            "https://spirit-in-physics.gftd.ai/activity/DataImport" => {
+                let activity = DataImportActivity::new();
+                let mut context = ActivityContext::with_inputs(input_data);
+                activity.validate_inputs(&context.inputs)?;
+                activity.check_conditions(&context)?;
+                activity.apply_rules(&mut context)?;
+                activity.execute(&mut context).await
+            }
+            "https://spirit-in-physics.gftd.ai/activity/TimelineIntegration" => {
+                let activity = TimelineIntegrationActivity::new();
+                let mut context = ActivityContext::with_inputs(input_data);
+                activity.validate_inputs(&context.inputs)?;
+                activity.check_conditions(&context)?;
+                activity.apply_rules(&mut context)?;
+                activity.execute(&mut context).await
+            }
+            "https://spirit-in-physics.gftd.ai/activity/VisualizationProcess" => {
+                let activity = VisualizationProcessActivity::new();
+                let mut context = ActivityContext::with_inputs(input_data);
+                activity.validate_inputs(&context.inputs)?;
+                activity.check_conditions(&context)?;
+                activity.apply_rules(&mut context)?;
+                activity.execute(&mut context).await
+            }
+            _ => {
+                return Ok(ActivityExecutionResponse {
+                    success: false,
+                    result: None,
+                    error: Some(format!("Unknown activity ID: {}", activity_id)),
+                });
+            }
+        };
 
-        if !response.status().is_success() {
-            return Ok(ActivityExecutionResponse {
-                success: false,
-                result: None,
-                error: Some(format!("Activities server error: {}", response.status())),
-            });
+        match activity_result {
+            Ok(result) => {
+                Ok(ActivityExecutionResponse {
+                    success: result.success,
+                    result: Some(json!({
+                        "activityId": result.activity_id,
+                        "success": result.success,
+                        "outputs": result.outputs.iter().map(|o| json!({
+                            "id": o.id,
+                            "type": o.r#type,
+                            "data": o.data,
+                        })).collect::<Vec<_>>(),
+                        "error": result.error,
+                        "executionTimeMs": result.execution_time_ms,
+                        "timestamp": result.timestamp.to_rfc3339(),
+                    })),
+                    error: result.error,
+                })
+            }
+            Err(e) => {
+                Ok(ActivityExecutionResponse {
+                    success: false,
+                    result: None,
+                    error: Some(format!("Activity execution failed: {}", e)),
+                })
+            }
         }
-
-        let result: JsonValue = response.json().await
-            .map_err(|e| Error::new(format!("Failed to parse response: {}", e)))?;
-
-        Ok(ActivityExecutionResponse::from(result))
     }
 
     /// Analyze participant data via Rust analyzer server

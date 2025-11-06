@@ -41,6 +41,9 @@ uuid = { version = "1.10", features = ["v4", "serde"] }
 # DateTime support
 chrono = { version = "0.4", features = ["serde"] }
 
+# Activities library
+spirit-activities = { path = "../../../../activities" }
+
 # Environment variables
 dotenv = "0.15"
 

@@ -47,11 +47,16 @@ services:
   # GraphQL Server (Rust)
   graphql:
     build:
-      context: ./performers/services/graphql/GraphQLService
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./performers/services/graphql/GraphQLService/Dockerfile
     container_name: spirit-graphql
     ports:
       - "25263:3003"
+    volumes:
+      - ./performers/services/graphql/GraphQLService:/app/performers/services/graphql/GraphQLService
+      - ./activities:/app/activities
+      - /app/performers/services/graphql/GraphQLService/target  # Build cache
+      - /app/activities/target  # Activities build cache
     env_file:
       - ./performers/services/graphql/GraphQLService/env.docker
     networks:

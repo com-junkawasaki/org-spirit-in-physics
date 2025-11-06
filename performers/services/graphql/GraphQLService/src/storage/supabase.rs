@@ -850,9 +850,10 @@ impl SupabaseClient {
             .send()
             .await?;
 
-        if !response.status().is_success() {
+        let status = response.status();
+        if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            return Err(anyhow!("Failed to add participant to project: {} - {}", response.status(), error_text));
+            return Err(anyhow!("Failed to add participant to project: {} - {}", status, error_text));
         }
 
         Ok(())
