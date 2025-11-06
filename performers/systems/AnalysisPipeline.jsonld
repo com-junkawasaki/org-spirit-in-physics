@@ -53,7 +53,7 @@
   
   "implementation": {
     "primary": {
-      "path": "apps/analyzer",
+      "path": "performers/services/AnalysisService/src",
       "framework": "Rust + Axum",
       "model": "Kawasaki Model",
       "language": "Rust",
@@ -66,7 +66,7 @@
       ]
     },
     "legacy": {
-      "path": "apps/graphql-server/src/resolvers/mutation.rs",
+      "path": "performers/services/graphql/GraphQLService",
       "framework": "GraphQL (async-graphql)",
       "model": "Kawasaki Model",
       "status": "deprecated"

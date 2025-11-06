@@ -38,7 +38,7 @@
   "providesServicePort": "https://spirit-in-physics.gftd.ai/port/services/GraphQL",
   
   "implementation": {
-    "path": "apps/graphql-server/src/resolvers/mutation.rs",
+    "path": "performers/services/graphql/GraphQLService",
     "protocol": "GraphQL",
     "framework": "async-graphql"
   }

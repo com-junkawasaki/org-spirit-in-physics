@@ -31,12 +31,12 @@ const nextConfig = {
       config.externals = config.externals || [];
       // Neo4jはwebpackバンドルに含めるため、外部設定は不要
       
-      // apps/researcher へのパスを外部として扱う（ビルド時に解決しない）
+      // performers/systems/ResearcherApplication/src へのパスを外部として扱う（ビルド時に解決しない）
       const originalExternal = config.externals;
       config.externals = [
         ...(Array.isArray(originalExternal) ? originalExternal : [originalExternal]),
         ({ request }, callback) => {
-          if (request && request.includes('apps/researcher')) {
+          if (request && request.includes('performers/systems/ResearcherApplication/src')) {
             return callback(null, `commonjs ${request}`);
           }
           if (typeof originalExternal === 'function') {

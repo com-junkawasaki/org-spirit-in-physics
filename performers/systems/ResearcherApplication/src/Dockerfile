@@ -8,10 +8,10 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy workspace packages
-COPY packages/ ./packages/
+COPY performers/services/ports/types/ ./performers/services/ports/types/
 
 # Copy researcher app files
-COPY apps/researcher/package.json ./apps/researcher/
+COPY performers/systems/ResearcherApplication/src/package.json ./performers/systems/ResearcherApplication/src/
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -20,13 +20,13 @@ RUN npm install -g pnpm
 RUN pnpm install --no-frozen-lockfile
 
 # Copy researcher app source code
-COPY apps/researcher/ ./apps/researcher/
+COPY performers/systems/ResearcherApplication/src/ ./performers/systems/ResearcherApplication/src/
 
 # Copy environment file
-COPY apps/researcher/env.docker ./apps/researcher/.env.local
+COPY performers/systems/ResearcherApplication/src/env.docker ./performers/systems/ResearcherApplication/src/.env.local
 
 # Change to researcher directory
-WORKDIR /app/apps/researcher
+WORKDIR /app/performers/systems/ResearcherApplication/src
 
 # Set hostname and port to bind to all interfaces
 ENV HOSTNAME=0.0.0.0

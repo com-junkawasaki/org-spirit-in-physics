@@ -1,4 +1,4 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - "performers/systems/*/src"
+  - "performers/services/ports/types/*"
 

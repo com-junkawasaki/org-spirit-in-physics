@@ -28,7 +28,7 @@ This process is for experimental research on spirituality, based on Jung's word 
 ### Installation & Development
 
 ```bash
-cd apps/participant
+cd performers/systems/ParticipantApplication/src
 pnpm install
 pnpm dev
 ```
@@ -158,7 +158,7 @@ await apolloClient.mutate({
 
 ### GraphQL Schema
 
-The GraphQL schema is defined in the Rust GraphQL server (`apps/graphql-server`). Key operations:
+The GraphQL schema is defined in the Rust GraphQL server (`performers/services/graphql/GraphQLService`). Key operations:
 
 #### Queries
 - `participants`: Get all participants

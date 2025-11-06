@@ -2,7 +2,7 @@
 // 開発環境またはENABLE_RESEARCHER_FUNCTIONSが有効な場合のみエクスポート
 // ビルド時にはこのルートは無効化される（researcher側で処理）
 
-// ビルド時にapps/researcherへのパスが解決できないため、このルートは無効化
+// ビルド時にperformers/systems/ResearcherApplication/srcへのパスが解決できないため、このルートは無効化
 // 開発環境ではresearcher側の/api/inngestルートを使用すること
 
 export async function GET() {

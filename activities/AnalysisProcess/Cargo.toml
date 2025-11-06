@@ -1,0 +1,18 @@
+[package]
+name = "spirit-activity-analysis-process"
+version = "0.1.0"
+edition = "2021"
+authors = ["Spirit in Physics Team"]
+description = "Analysis Process Activity implementation"
+license = "MIT"
+
+[dependencies]
+spirit-activities-shared = { path = "../shared" }
+async-trait = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+
+[lib]
+name = "spirit_activity_analysis_process"
+path = "src/analysis_process.rs"

@@ -48,9 +48,9 @@
   
   "implementation": {
     "status": "implemented",
-    "path": "apps/researcher/src/app/graphql",
-    "schema": "apps/researcher/src/app/graphql/schema-simple.ts",
-    "route": "apps/researcher/src/app/graphql/route.ts",
+    "path": "performers/systems/ResearcherApplication/src/src/app/graphql",
+    "schema": "performers/systems/ResearcherApplication/src/src/app/graphql/schema-simple.ts",
+    "route": "performers/systems/ResearcherApplication/src/src/app/graphql/route.ts",
     "framework": "graphql-js",
     "note": {"en": "GraphQL API implemented using graphql-js. Integrates with Rust activities server via HTTP.", "ja": "graphql-jsを使用してGraphQL APIを実装。HTTP経由でRust activitiesサーバーと統合。"}
   },

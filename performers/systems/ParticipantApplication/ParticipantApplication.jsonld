@@ -55,7 +55,7 @@
   "providesUIPort": "https://spirit-in-physics.gftd.ai/port/ui/ParticipantUI",
   
   "implementation": {
-    "path": "apps/participant",
+    "path": "performers/systems/ParticipantApplication/src",
     "framework": "Next.js",
     "runtime": "Node.js"
   }

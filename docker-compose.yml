@@ -3,16 +3,16 @@ services:
   participant:
     build:
       context: .
-      dockerfile: ./apps/participant/Dockerfile
+      dockerfile: ./performers/systems/ParticipantApplication/src/Dockerfile
     container_name: spirit-participant
     ports:
       - "25250:3000"
     volumes:
-      - ./apps/participant:/app/apps/participant
-      - ./packages:/app/packages
+      - ./performers/systems/ParticipantApplication/src:/app/performers/systems/ParticipantApplication/src
+      - ./performers/services/ports/types:/app/performers/services/ports/types
       - /app/node_modules
     env_file:
-      - ./apps/participant/env.docker
+      - ./performers/systems/ParticipantApplication/src/env.docker
     networks:
       - spirit-network
 
@@ -21,18 +21,18 @@ services:
   researcher:
     build:
       context: .
-      dockerfile: ./apps/researcher/Dockerfile
+      dockerfile: ./performers/systems/ResearcherApplication/src/Dockerfile
     container_name: spirit-researcher
     ports:
       - "25260:3000"
     volumes:
-      - ./apps/researcher:/app/apps/researcher
-      - ./packages:/app/packages
+      - ./performers/systems/ResearcherApplication/src:/app/performers/systems/ResearcherApplication/src
+      - ./performers/services/ports/types:/app/performers/services/ports/types
       - /app/node_modules
-      - ./dataset:/app/apps/researcher/dataset:cached
+      - ./dataset:/app/performers/systems/ResearcherApplication/src/dataset:cached
     command: pnpm run dev
     env_file:
-      - ./apps/researcher/env.docker
+      - ./performers/systems/ResearcherApplication/src/env.docker
     environment:
       - NODE_ENV=development
       - INNGEST_EVENT_KEY=local_dev_key
@@ -43,13 +43,13 @@ services:
   # GraphQL Server (Rust)
   graphql:
     build:
-      context: ./apps/graphql
+      context: ./performers/services/graphql/GraphQLService
       dockerfile: Dockerfile
     container_name: spirit-graphql
     ports:
       - "25263:3003"
     env_file:
-      - ./apps/graphql/env.docker
+      - ./performers/services/graphql/GraphQLService/env.docker
     networks:
       - spirit-network
     restart: unless-stopped

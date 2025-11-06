@@ -59,7 +59,7 @@
   "providesUIPort": "https://spirit-in-physics.gftd.ai/port/ui/ResearcherUI",
   
   "implementation": {
-    "path": "apps/researcher",
+    "path": "performers/systems/ResearcherApplication/src",
     "framework": "Next.js",
     "runtime": "Node.js"
   }
