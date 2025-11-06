@@ -17,7 +17,20 @@ use diesel_async::pooled_connection::deadpool::Pool;
 use diesel_async::RunQueryDsl;
 use serde_json::json;
 
-use crate::models::{Participant, NewParticipant, Experiment, NewExperiment, Window, NewWindow, EmotionAggregation, NewEmotionAggregation, PhysiologicalAggregation, NewPhysiologicalAggregation, KernelFusionRun, NewKernelFusionRun, EmbeddingResult, NewEmbeddingResult};
+use crate::models::{
+    Participant, NewParticipant, Experiment, NewExperiment, Window, NewWindow,
+    EmotionAggregation, NewEmotionAggregation, PhysiologicalAggregation, NewPhysiologicalAggregation,
+    KernelFusionRun, NewKernelFusionRun, EmbeddingResult, NewEmbeddingResult,
+    ParticipantConsent, NewParticipantConsent,
+    ParticipantExperimentSession, NewParticipantExperimentSession,
+    ParticipantResponseData, NewParticipantResponseData,
+    ParticipantAnalysisResult, NewParticipantAnalysisResult,
+    WordStimulus, NewWordStimulus,
+};
+use crate::schema::{
+    participants, participant_consents, participant_experiment_sessions,
+    participant_response_data, participant_analysis_results, word_stimuli,
+};
 
 mod constants;
 mod db;
@@ -62,6 +75,19 @@ struct WindowsGenerationInput {
     hume_csv_uris: Option<serde_json::Value>,
 }
 
+#[derive(InputObject)]
+struct CalculateEmotionDistanceInput {
+    participant_id: String,
+    experiment_id: Option<String>,
+    method: Option<String>, // "cosine", "euclidean", etc.
+    embedding_method: Option<String>, // "pca", "tsne", "umap", etc.
+    dimensions: Option<i32>,
+    k: Option<i32>,
+    gamma: Option<f64>,
+    alpha: Option<f64>,
+    top_k_emotions: Option<Vec<String>>,
+}
+
 #[derive(SimpleObject)]
 struct PipelineStepStatus {
     file_import: String,
@@ -78,6 +104,96 @@ struct PipelineStatus {
     timestamp: String,
 }
 
+// GraphQL types for Visualizer app
+#[derive(SimpleObject)]
+struct EmotionData {
+    name: String,
+    score: f64,
+    file_type: String,
+}
+
+#[derive(SimpleObject)]
+struct TimelineDataPoint {
+    timestamp: i64,
+    word: String,
+    reaction_time: i32,
+    has_response: bool,
+    emotions: Vec<EmotionData>,
+    physiological: serde_json::Value,
+    reaction_value: f64,
+    event_type: Option<String>,
+    metadata: Option<serde_json::Value>,
+}
+
+#[derive(SimpleObject)]
+struct TimelineMetadata {
+    session_events: Option<i32>,
+    emotion_entries: Option<i32>,
+    physiological_entries: Option<i32>,
+    total_data_points: Option<i32>,
+    data_source: Option<String>,
+    errors: Option<Vec<String>>,
+    truncated: Option<bool>,
+    original_size: Option<i32>,
+}
+
+#[derive(SimpleObject)]
+struct TimelineResponse {
+    timeline_data: Vec<TimelineDataPoint>,
+    metadata: TimelineMetadata,
+}
+
+#[derive(SimpleObject)]
+struct WordEmbedding {
+    word: String,
+    embedding: Vec<f64>,
+}
+
+#[derive(SimpleObject)]
+struct Word2VecResponse {
+    word_data: Vec<WordEmbedding>,
+}
+
+#[derive(SimpleObject)]
+struct EmotionDistancePoint {
+    x: f64,
+    y: f64,
+    z: Option<f64>,
+    word: String,
+    index: i32,
+}
+
+#[derive(SimpleObject)]
+struct EmotionDistanceLink {
+    source: i32,
+    target: i32,
+    value: f64,
+}
+
+#[derive(SimpleObject)]
+struct EmotionDistanceVisualization {
+    points: Vec<EmotionDistancePoint>,
+    links: Vec<EmotionDistanceLink>,
+}
+
+#[derive(SimpleObject)]
+struct DashboardStats {
+    total_participants: i32,
+    total_sessions: i32,
+    total_responses: i32,
+    average_spirit_probability: f64,
+    emotion_distribution: serde_json::Value,
+    component_averages: ComponentAverages,
+}
+
+#[derive(SimpleObject)]
+struct ComponentAverages {
+    word2vec: f64,
+    reaction_time: f64,
+    skin_potential: f64,
+    emotion: f64,
+}
+
 pub struct Query;
 
 #[Object]
@@ -85,8 +201,22 @@ impl Query {
     async fn participants(&self, ctx: &Context<'_>) -> GQLResult<Vec<Participant>> {
         let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
         let mut conn = pool.get().await?;
-        let participants = participants::table.load::<Participant>(&mut conn).await?;
-        Ok(participants)
+        let db_participants = participants::table.load::<crate::models::Participant>(&mut conn).await?;
+        
+        // Convert database models to GraphQL types
+        let gql_participants: Vec<Participant> = db_participants
+            .into_iter()
+            .map(|p| Participant {
+                id: p.id.to_string(),
+                age: p.age,
+                gender: p.gender,
+                handedness: p.handedness,
+                created_at: p.created_at.to_rfc3339(),
+                updated_at: p.updated_at.to_rfc3339(),
+            })
+            .collect();
+        
+        Ok(gql_participants)
     }
 
     async fn experiments(&self, ctx: &Context<'_>) -> GQLResult<Vec<Experiment>> {
@@ -165,29 +295,293 @@ impl Query {
     }
 
     #[graphql(description="Get a single participant by ID.")]
-    async fn participant(&self, ctx: &Context<'_>, participant_id: String) -> Result<String, async_graphql::Error> {
-        // This should query the database for a single participant
-        // For now, returning a mock JSON string
-        let mock_participant = serde_json::json!({
-            "id": participant_id,
-            "name": format!("Participant {}", participant_id),
-            "sessionCount": 2,
-            "responseCount": 200,
-            "averageSpiritProbability": 0.78,
-            "lastActivity": "2025-11-06T10:00:00Z"
-        });
-        Ok(serde_json::to_string(&mock_participant)?)
+    async fn participant(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<Participant> {
+        use diesel::prelude::*;
+        use uuid::Uuid;
+        
+        let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
+        let mut conn = pool.get().await?;
+        
+        // Parse participant_id as UUID
+        let participant_uuid = Uuid::parse_str(&participant_id)
+            .map_err(|e| async_graphql::Error::new(format!("Invalid participant_id: {}", e)))?;
+        
+        // Get participant from database
+        let db_participant = participants::table
+            .filter(participants::id.eq(participant_uuid))
+            .first::<crate::models::Participant>(&mut conn)
+            .await
+            .map_err(|e| async_graphql::Error::new(format!("Participant not found: {}", e)))?;
+        
+        // Convert to GraphQL type
+        Ok(Participant {
+            id: db_participant.id.to_string(),
+            age: db_participant.age,
+            gender: db_participant.gender,
+            handedness: db_participant.handedness,
+            created_at: db_participant.created_at.to_rfc3339(),
+            updated_at: db_participant.updated_at.to_rfc3339(),
+        })
     }
 
     #[graphql(description="Get timeline data for a participant.")]
-    async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String) -> Result<String, async_graphql::Error> {
-        // Mock implementation
-        let mock_timeline = serde_json::json!([
-            { "type": "SessionStart", "timestamp": "2025-11-01T10:00:00Z", "details": "Session 1" },
-            { "type": "Response", "timestamp": "2025-11-01T10:05:00Z", "details": "Word: 'Sky', Response: 'Blue'" },
-            { "type": "SessionEnd", "timestamp": "2025-11-01T10:30:00Z", "details": "Session 1" }
-        ]);
-        Ok(serde_json::to_string(&mock_timeline)?)
+    async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<TimelineResponse> {
+        use diesel::prelude::*;
+        use uuid::Uuid;
+        
+        let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
+        let mut conn = pool.get().await?;
+        
+        // Parse participant_id as UUID
+        let participant_uuid = Uuid::parse_str(&participant_id)
+            .map_err(|e| async_graphql::Error::new(format!("Invalid participant_id: {}", e)))?;
+        
+        // Get sessions for this participant
+        let sessions = participant_experiment_sessions::table
+            .filter(participant_experiment_sessions::participant_id.eq(participant_uuid))
+            .load::<ParticipantExperimentSession>(&mut conn)
+            .await?;
+        
+        // Get response data for this participant
+        let responses = participant_response_data::table
+            .filter(participant_response_data::participant_id.eq(participant_uuid))
+            .order(participant_response_data::timestamp.asc())
+            .load::<ParticipantResponseData>(&mut conn)
+            .await?;
+        
+        // Convert to timeline data points
+        let mut timeline_data = Vec::new();
+        let mut session_events_count = 0;
+        let mut emotion_entries_count = 0;
+        let mut physiological_entries_count = 0;
+        
+        // Add session start events
+        for session in &sessions {
+            session_events_count += 1;
+            timeline_data.push(TimelineDataPoint {
+                timestamp: session.start_time.timestamp_millis(),
+                word: "SESSION_START".to_string(),
+                reaction_time: 0,
+                has_response: false,
+                emotions: vec![],
+                physiological: serde_json::json!({}),
+                reaction_value: 0.0,
+                event_type: Some("SessionStart".to_string()),
+                metadata: Some(serde_json::json!({
+                    "session_id": session.session_id.to_string(),
+                    "session_type": session.session_type
+                })),
+            });
+        }
+        
+        // Add response data points
+        for response in &responses {
+            let mut emotions = Vec::new();
+            if let Some(emotion) = &response.emotion {
+                emotion_entries_count += 1;
+                emotions.push(EmotionData {
+                    name: emotion.clone(),
+                    score: response.emotion_confidence.unwrap_or(0.0) as f64,
+                    file_type: "hume_ai".to_string(),
+                });
+            }
+            
+            if response.skin_potential.is_some() {
+                physiological_entries_count += 1;
+            }
+            
+            timeline_data.push(TimelineDataPoint {
+                timestamp: response.timestamp.timestamp_millis(),
+                word: response.stimulus_word.clone(),
+                reaction_time: response.reaction_time_ms,
+                has_response: true,
+                emotions,
+                physiological: serde_json::json!({
+                    "average": response.skin_potential.unwrap_or(0.0),
+                    "max": response.skin_potential.unwrap_or(0.0),
+                    "min": response.skin_potential.unwrap_or(0.0)
+                }),
+                reaction_value: response.emotion_confidence.unwrap_or(0.0) as f64,
+                event_type: Some("word_displayed".to_string()),
+                metadata: Some(serde_json::json!({
+                    "response_word": response.response_word,
+                    "emotion_count": if response.emotion.is_some() { 1 } else { 0 },
+                    "physiological_count": if response.skin_potential.is_some() { 1 } else { 0 }
+                })),
+            });
+        }
+        
+        // Sort by timestamp
+        timeline_data.sort_by_key(|d| d.timestamp);
+        
+        // Add session end events
+        for session in &sessions {
+            if let Some(end_time) = session.end_time {
+                session_events_count += 1;
+                timeline_data.push(TimelineDataPoint {
+                    timestamp: end_time.timestamp_millis(),
+                    word: "SESSION_END".to_string(),
+                    reaction_time: 0,
+                    has_response: false,
+                    emotions: vec![],
+                    physiological: serde_json::json!({}),
+                    reaction_value: 0.0,
+                    event_type: Some("SessionEnd".to_string()),
+                    metadata: Some(serde_json::json!({
+                        "session_id": session.session_id.to_string()
+                    })),
+                });
+            }
+        }
+        
+        Ok(TimelineResponse {
+            timeline_data,
+            metadata: TimelineMetadata {
+                session_events: Some(session_events_count),
+                emotion_entries: Some(emotion_entries_count),
+                physiological_entries: Some(physiological_entries_count),
+                total_data_points: Some(timeline_data.len() as i32),
+                data_source: Some("postgresql".to_string()),
+                errors: None,
+                truncated: None,
+                original_size: None,
+            },
+        })
+    }
+    
+    #[graphql(description="Get Word2Vec embeddings for a participant.")]
+    async fn participant_word2vec(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<Word2VecResponse> {
+        use diesel::prelude::*;
+        use uuid::Uuid;
+        
+        let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
+        let mut conn = pool.get().await?;
+        
+        // Parse participant_id as UUID
+        let participant_uuid = Uuid::parse_str(&participant_id)
+            .map_err(|e| async_graphql::Error::new(format!("Invalid participant_id: {}", e)))?;
+        
+        // Get analysis results which contain word2vec_component
+        let analysis_results = participant_analysis_results::table
+            .filter(participant_analysis_results::participant_id.eq(participant_uuid))
+            .load::<ParticipantAnalysisResult>(&mut conn)
+            .await?;
+        
+        // Group by word and calculate average embedding
+        // For now, we'll use a simple approach: create embeddings from word2vec_component
+        // In a real implementation, you'd have a separate embeddings table
+        let mut word_embeddings_map: std::collections::HashMap<String, (Vec<f64>, i32)> = std::collections::HashMap::new();
+        
+        for result in &analysis_results {
+            let word = result.stimulus_word.clone();
+            if let Some(component) = result.word2vec_component {
+                // Create a simple 1D embedding from the component
+                // In production, you'd fetch actual Word2Vec vectors
+                let embedding = vec![component as f64];
+                let entry = word_embeddings_map.entry(word).or_insert_with(|| (vec![0.0], 0));
+                if entry.0.len() == 1 {
+                    entry.0[0] += embedding[0];
+                } else {
+                    entry.0 = embedding;
+                }
+                entry.1 += 1;
+            }
+        }
+        
+        let word_data: Vec<WordEmbedding> = word_embeddings_map
+            .into_iter()
+            .map(|(word, (sum, count))| {
+                let avg_embedding = sum.iter().map(|&v| v / count as f64).collect();
+                WordEmbedding {
+                    word,
+                    embedding: avg_embedding,
+                }
+            })
+            .collect();
+        
+        Ok(Word2VecResponse { word_data })
+    }
+    
+    #[graphql(description="Get dashboard statistics.")]
+    async fn dashboard_stats(&self, ctx: &Context<'_>) -> GQLResult<DashboardStats> {
+        use diesel::prelude::*;
+        use diesel::dsl::*;
+        
+        let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
+        let mut conn = pool.get().await?;
+        
+        // Count participants
+        let total_participants: i64 = participants::table
+            .count()
+            .get_result(&mut conn)
+            .await?;
+        
+        // Count sessions
+        let total_sessions: i64 = participant_experiment_sessions::table
+            .count()
+            .get_result(&mut conn)
+            .await?;
+        
+        // Count responses
+        let total_responses: i64 = participant_response_data::table
+            .count()
+            .get_result(&mut conn)
+            .await?;
+        
+        // Calculate average spirit probability
+        let avg_spirit: Option<f64> = participant_analysis_results::table
+            .select(avg(participant_analysis_results::spirit_probability))
+            .first(&mut conn)
+            .await?;
+        
+        // Get emotion distribution
+        let emotion_distribution: Vec<(Option<String>, i64)> = participant_response_data::table
+            .select((participant_response_data::emotion, count_star()))
+            .group_by(participant_response_data::emotion)
+            .load(&mut conn)
+            .await?;
+        
+        let mut emotion_dist_map = serde_json::Map::new();
+        for (emotion, count) in emotion_distribution {
+            if let Some(emotion) = emotion {
+                emotion_dist_map.insert(emotion, serde_json::Value::Number(count.into()));
+            }
+        }
+        
+        // Calculate component averages
+        let word2vec_avg: Option<f64> = participant_analysis_results::table
+            .select(avg(participant_analysis_results::word2vec_component))
+            .first(&mut conn)
+            .await?;
+        
+        let reaction_time_avg: Option<f64> = participant_analysis_results::table
+            .select(avg(participant_analysis_results::reaction_time_component))
+            .first(&mut conn)
+            .await?;
+        
+        let skin_potential_avg: Option<f64> = participant_analysis_results::table
+            .select(avg(participant_analysis_results::skin_potential_component))
+            .first(&mut conn)
+            .await?;
+        
+        let emotion_avg: Option<f64> = participant_analysis_results::table
+            .select(avg(participant_analysis_results::emotion_component))
+            .first(&mut conn)
+            .await?;
+        
+        Ok(DashboardStats {
+            total_participants: total_participants as i32,
+            total_sessions: total_sessions as i32,
+            total_responses: total_responses as i32,
+            average_spirit_probability: avg_spirit.unwrap_or(0.0),
+            emotion_distribution: serde_json::Value::Object(emotion_dist_map),
+            component_averages: ComponentAverages {
+                word2vec: word2vec_avg.unwrap_or(0.0),
+                reaction_time: reaction_time_avg.unwrap_or(0.0),
+                skin_potential: skin_potential_avg.unwrap_or(0.0),
+                emotion: emotion_avg.unwrap_or(0.0),
+            },
+        })
     }
 
     #[graphql(description="Get correlation data for a participant.")]
@@ -462,6 +856,137 @@ impl Mutation {
             .execute(&mut conn)?;
 
         Ok(result as i64)
+    }
+
+    #[graphql(description = "Calculate emotion distance and generate visualization.")]
+    async fn calculate_emotion_distance(&self, ctx: &Context<'_>, input: CalculateEmotionDistanceInput) -> GQLResult<EmotionDistanceVisualization> {
+        use diesel::prelude::*;
+        use uuid::Uuid;
+
+        let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
+        let mut conn = pool.get().await?;
+
+        // Parse participant_id as UUID
+        let participant_uuid = Uuid::parse_str(&input.participant_id)
+            .map_err(|e| async_graphql::Error::new(format!("Invalid participant_id: {}", e)))?;
+
+        // Get emotion data for the participant
+        let emotion_data: Vec<(Option<String>, Option<f64>, i32)> = participant_response_data::table
+            .filter(participant_response_data::participant_id.eq(participant_uuid))
+            .filter(participant_response_data::emotion.is_not_null())
+            .filter(participant_response_data::emotion_confidence.is_not_null())
+            .select((
+                participant_response_data::emotion,
+                participant_response_data::emotion_confidence,
+                participant_response_data::word_stimulus_id,
+            ))
+            .load(&mut conn)
+            .await?;
+
+        if emotion_data.is_empty() {
+            return Err(async_graphql::Error::new("No emotion data found for participant"));
+        }
+
+        // Group emotions by type and calculate average confidence
+        let mut emotion_map: std::collections::HashMap<String, (f64, i32)> = std::collections::HashMap::new();
+
+        for (emotion, confidence, _) in emotion_data {
+            if let (Some(emotion_name), Some(conf)) = (emotion, confidence) {
+                let entry = emotion_map.entry(emotion_name).or_insert((0.0, 0));
+                entry.0 += conf;
+                entry.1 += 1;
+            }
+        }
+
+        // Calculate average confidence for each emotion
+        let mut emotion_vectors: Vec<(String, f64)> = emotion_map
+            .into_iter()
+            .map(|(emotion, (sum, count))| (emotion, sum / count as f64))
+            .collect();
+
+        // Filter top K emotions if specified
+        if let Some(top_k) = &input.top_k_emotions {
+            if !top_k.is_empty() {
+                emotion_vectors.retain(|(emotion, _)| top_k.contains(emotion));
+            }
+        }
+
+        // Sort by confidence for consistent ordering
+        emotion_vectors.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        // Limit to top emotions for better visualization
+        let max_emotions = input.k.unwrap_or(10) as usize;
+        emotion_vectors.truncate(max_emotions);
+
+        if emotion_vectors.len() < 2 {
+            return Err(async_graphql::Error::new("Need at least 2 emotions for distance calculation"));
+        }
+
+        // Create simple 2D embedding (circular layout for demonstration)
+        // In production, you'd use PCA, t-SNE, or other dimensionality reduction
+        let num_emotions = emotion_vectors.len();
+        let mut points = Vec::new();
+        let mut links = Vec::new();
+
+        // Calculate center and radius for circular layout
+        let center_x = 0.0;
+        let center_y = 0.0;
+        let radius = 100.0;
+
+        for (i, (emotion, confidence)) in emotion_vectors.iter().enumerate() {
+            // Circular positioning
+            let angle = (i as f64 * 2.0 * std::f64::consts::PI) / num_emotions as f64;
+            let x = center_x + radius * angle.cos();
+            let y = center_y + radius * angle.sin();
+
+            points.push(EmotionDistancePoint {
+                x,
+                y,
+                z: None, // 2D for now
+                word: emotion.clone(),
+                index: i as i32,
+            });
+        }
+
+        // Calculate distances between all emotion pairs
+        let distance_method = input.method.as_deref().unwrap_or("euclidean");
+
+        for i in 0..num_emotions {
+            for j in (i + 1)..num_emotions {
+                let point_i = &points[i];
+                let point_j = &points[j];
+
+                let distance = match distance_method {
+                    "euclidean" => {
+                        let dx = point_i.x - point_j.x;
+                        let dy = point_i.y - point_j.y;
+                        (dx * dx + dy * dy).sqrt()
+                    },
+                    "cosine" => {
+                        // For cosine distance, we'd need actual vectors
+                        // For now, use normalized euclidean distance as approximation
+                        let dx = point_i.x - point_j.x;
+                        let dy = point_i.y - point_j.y;
+                        let dist = (dx * dx + dy * dy).sqrt();
+                        // Normalize by maximum possible distance
+                        dist / (2.0 * radius)
+                    },
+                    _ => {
+                        let dx = point_i.x - point_j.x;
+                        let dy = point_i.y - point_j.y;
+                        (dx * dx + dy * dy).sqrt()
+                    }
+                };
+
+                links.push(EmotionDistanceLink {
+                    source: i as i32,
+                    target: j as i32,
+                    value: (1.0 - distance / (2.0 * radius)).max(0.0), // Normalize to 0-1
+                });
+            }
+        }
+
+        Ok(EmotionDistanceVisualization { points, links })
     }
 }
 

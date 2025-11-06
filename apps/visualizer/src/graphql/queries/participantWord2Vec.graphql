@@ -1,0 +1,8 @@
+query ParticipantWord2Vec($participantId: String!) {
+  participantWord2Vec(participantId: $participantId) {
+    wordData {
+      word
+      embedding
+    }
+  }
+}

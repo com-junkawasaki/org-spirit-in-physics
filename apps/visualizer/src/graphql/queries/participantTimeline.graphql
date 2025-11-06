@@ -1,0 +1,29 @@
+query ParticipantTimeline($participantId: String!) {
+  participantTimeline(participantId: $participantId) {
+    timelineData {
+      timestamp
+      word
+      reactionTime
+      hasResponse
+      emotions {
+        name
+        score
+        fileType
+      }
+      physiological
+      reactionValue
+      eventType
+      metadata
+    }
+    metadata {
+      sessionEvents
+      emotionEntries
+      physiologicalEntries
+      totalDataPoints
+      dataSource
+      errors
+      truncated
+      originalSize
+    }
+  }
+}

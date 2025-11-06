@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useQuery } from '@apollo/client'
+import { gql } from '@apollo/client'
+import { apolloClient } from '@/lib/apollo-client'
 import * as d3 from 'd3'
 import type {
   TimelineDataPoint,
@@ -8,13 +11,45 @@ import type {
   DebugInfo
 } from '../types'
 
+// GraphQL queries
+const PARTICIPANT_TIMELINE_QUERY = gql`
+  query ParticipantTimeline($participantId: String!) {
+    participantTimeline(participantId: $participantId) {
+      timelineData {
+        timestamp
+        word
+        reactionTime
+        hasResponse
+        emotions {
+          name
+          score
+          fileType
+        }
+        physiological
+        reactionValue
+        eventType
+        metadata
+      }
+      metadata {
+        sessionEvents
+        emotionEntries
+        physiologicalEntries
+        totalDataPoints
+        dataSource
+        errors
+        truncated
+        originalSize
+      }
+    }
+  }
+`;
+
 // Merkle DAG: timeline.hooks.data
 // 時系列データの取得と状態管理フック
 
 export function useTimelineData({ participantId }: Pick<TimelineVisualizationProps, 'participantId'>) {
   const [mounted, setMounted] = useState(false)
   const [data, setData] = useState<TimelineDataPoint[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDataPoint, setSelectedDataPoint] = useState<TimelineDataPoint | null>(null)
   const [timeRange, setTimeRange] = useState<TimeRange | null>(null)
@@ -44,6 +79,13 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
     showWordLabels: true
   })
 
+  // Use Apollo Client query
+  const { loading, data: queryData, error: queryError, refetch } = useQuery(PARTICIPANT_TIMELINE_QUERY, {
+    variables: { participantId },
+    client: apolloClient,
+    skip: !participantId || !mounted,
+  })
+
   const getPhysStat = (p: TimelineDataPoint['physiological'], key: 'average' | 'max' | 'min'): number => {
     if (Array.isArray(p)) return 0
     if (p && typeof p === 'object') {
@@ -55,200 +97,156 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
 
   useEffect(() => { setMounted(true) }, [])
 
-  const fetchTimelineData = useCallback(async () => {
-    try {
-      setLoading(true)
-      setDebugInfo(prev => ({
-        ...prev,
-        apiStatus: 'loading',
-        errors: []
-      }))
-      
-      console.log('[TimelineData] Starting data fetch for participant:', participantId)
-      const apiUrl = `/api/participants/${participantId}/timeline`
-      console.log('[TimelineData] API URL:', apiUrl)
-      
-      let ok = false
-      let conversionError: Error | null = null
-      
-      try {
-        const response = await fetch(apiUrl)
-        console.log('[TimelineData] API response status:', response.status)
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-        
-        const result = await response.json()
-        console.log('[TimelineData] API result:', {
-          success: result?.success,
-          hasData: !!result?.data,
-          timelineDataLength: result?.data?.timelineData?.length,
-          metadata: result?.data?.metadata
-        })
-        
-        setDebugInfo(prev => ({
-          ...prev,
-          apiResponseReceived: true,
-          apiStatus: result?.success ? 'success' : 'error',
-          responseMetadata: result?.data?.metadata,
-          apiUrl
-        }))
-        
-        if (result?.success && Array.isArray(result.data?.timelineData)) {
-          console.log('[TimelineData] Converting data, count:', result.data.timelineData.length)
-          
-          try {
-            // 短縮フィールドをTimelineDataPoint形式に変換
-            const convertedData = result.data.timelineData.map((item: any, index: number) => {
-              try {
-                return {
-                  timestamp: item.t || item.timestamp,
-                  word: item.w || item.word,
-                  reactionTime: item.rt || item.reactionTime || 0,
-                  hasResponse: item.hasResponse !== undefined ? item.hasResponse : true,
-                  emotions: Array.isArray(item.em) ? item.em : (Array.isArray(item.emotions) ? item.emotions : []),
-                  physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
-                  reactionValue: item.rv || item.reactionValue || 0,
-                  eventType: item.e || item.eventType || 'word_displayed',
-                  metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
-                }
-              } catch (itemError) {
-                console.warn(`[TimelineData] Error converting item at index ${index}:`, itemError, item)
-                return null
-              }
-            }).filter((item: TimelineDataPoint | null): item is TimelineDataPoint => item !== null)
-            
-            console.log('[TimelineData] Converted data count:', convertedData.length)
-            console.log('[TimelineData] Converted data sample:', convertedData[0])
-            
-            if (convertedData.length > 0) {
-              setData(convertedData)
-              setDebugInfo(prev => ({
-                ...prev,
-                dataPointCount: convertedData.length,
-                dataConversionStatus: 'success',
-                sessionDataStatus: result.data.metadata?.sessionEvents > 0 ? 'success' : 'not_available',
-                emotionDataStatus: result.data.metadata?.emotionEntries > 0 ? 'success' : 'not_available',
-                physiologicalDataStatus: result.data.metadata?.physiologicalEntries > 0 ? 'success' : 'not_available',
-                sessionEventsCount: result.data.metadata?.sessionEvents,
-                emotionEntriesCount: result.data.metadata?.emotionEntries,
-                physiologicalEntriesCount: result.data.metadata?.physiologicalEntries,
-                lastUpdateTime: Date.now()
-              }))
-              ok = true
-            } else {
-              const emptyError = 'Data conversion resulted in empty array'
-              console.error('[TimelineData]', emptyError)
-              setError(`データ変換に失敗しました: 変換後のデータが空です`)
-              setData([])
-              setDebugInfo(prev => ({
-                ...prev,
-                apiStatus: 'error',
-                errors: [...prev.errors, emptyError],
-                dataConversionStatus: 'error',
-                dataPointCount: 0
-              }))
-              throw new Error(emptyError)
-            }
-            
-            // エラー情報の処理
-            if (Array.isArray(result.data.metadata?.errors) && result.data.metadata.errors.length > 0) {
-              const errorMessages = result.data.metadata.errors.join('; ')
-              setError(`警告: 一部データ取得に失敗しました: ${errorMessages}`)
-              setDebugInfo(prev => ({
-                ...prev,
-                errors: [...prev.errors, ...result.data.metadata.errors]
-              }))
-            } else {
-              setError(null)
-            }
-          } catch (convertErr) {
-            conversionError = convertErr instanceof Error ? convertErr : new Error('Data conversion failed')
-            console.error('[TimelineData] Data conversion error:', convertErr)
-            throw conversionError
-          }
-        } else {
-          const errorMsg = result?.error || 'API response not successful or no data'
-          console.warn('[TimelineData]', errorMsg)
-          setError(`データ取得に失敗しました: ${errorMsg}`)
-          setData([])
-          setDebugInfo(prev => ({
-            ...prev,
-            apiStatus: 'error',
-            errors: [...prev.errors, errorMsg],
-            dataConversionStatus: 'error',
-            dataPointCount: 0
-          }))
-        }
-      } catch (fetchError) {
-        const errorMsg = fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'
-        console.error('[TimelineData] API fetch error:', fetchError)
-        setData([])
-        setError(`データ取得に失敗しました: ${errorMsg}`)
-        setDebugInfo(prev => ({
-          ...prev,
-          apiStatus: 'error',
-          errors: [...prev.errors, `API Error: ${errorMsg}`],
-          apiResponseReceived: false,
-          dataPointCount: 0,
-          dataConversionStatus: 'error'
-        }))
-      }
-
-      // APIが成功しなかった場合の最終チェック（エラーが設定されていない場合）
-      if (!ok && !error) {
-        setData([])
-        setError('データが取得できませんでした。APIがエラーを返すか、データが空です。')
-        setDebugInfo(prev => ({
-          ...prev,
-          dataPointCount: 0,
-          dataConversionStatus: 'error'
-        }))
-      }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-      console.error('[TimelineData] Fatal error:', err)
-      setError(`致命的なエラーが発生しました: ${errorMsg}`)
+  // Handle GraphQL query results
+  useEffect(() => {
+    if (queryError) {
+      const errorMsg = queryError.message || 'GraphQL query error'
+      console.error('[TimelineData] GraphQL error:', queryError)
+      setError(`データ取得に失敗しました: ${errorMsg}`)
       setData([])
       setDebugInfo(prev => ({
         ...prev,
         apiStatus: 'error',
-        errors: [...prev.errors, `Fatal Error: ${errorMsg}`],
-        dataConversionStatus: 'error',
-        dataPointCount: 0
+        errors: [errorMsg],
+        apiResponseReceived: true,
+        dataPointCount: 0,
+        dataConversionStatus: 'error'
       }))
-    } finally {
-      setLoading(false)
+      return
+    }
+
+    if (queryData?.participantTimeline) {
+      const timelineResponse = queryData.participantTimeline
+      console.log('[TimelineData] GraphQL result:', {
+        timelineDataLength: timelineResponse.timelineData?.length,
+        metadata: timelineResponse.metadata
+      })
+
       setDebugInfo(prev => ({
         ...prev,
-        apiStatus: prev.apiStatus === 'loading' ? 'idle' : prev.apiStatus
+        apiResponseReceived: true,
+        apiStatus: 'success',
+        responseMetadata: timelineResponse.metadata,
+      }))
+
+      if (timelineResponse.timelineData && timelineResponse.timelineData.length > 0) {
+        console.log('[TimelineData] Converting data, count:', timelineResponse.timelineData.length)
+
+        // GraphQL response is already in the correct format
+        const convertedData: TimelineDataPoint[] = timelineResponse.timelineData.map((item: any, index: number) => {
+          try {
+            return {
+              timestamp: item.timestamp,
+              word: item.word,
+              reactionTime: item.reactionTime,
+              hasResponse: item.hasResponse,
+              emotions: item.emotions || [],
+              physiological: item.physiological || { average: 0, max: 0, min: 0 },
+              reactionValue: item.reactionValue,
+              eventType: item.eventType,
+              metadata: item.metadata || { emotionCount: 0, physiologicalCount: 0 }
+            }
+          } catch (itemError) {
+            console.warn(`[TimelineData] Error converting item at index ${index}:`, itemError, item)
+            return null
+          }
+        }).filter((item: TimelineDataPoint | null): item is TimelineDataPoint => item !== null)
+
+        console.log('[TimelineData] Converted data count:', convertedData.length)
+        console.log('[TimelineData] Converted data sample:', convertedData[0])
+
+        if (convertedData.length > 0) {
+          setData(convertedData)
+          setDebugInfo(prev => ({
+            ...prev,
+            dataPointCount: convertedData.length,
+            dataConversionStatus: 'success',
+            sessionDataStatus: timelineResponse.metadata?.sessionEvents > 0 ? 'success' : 'not_available',
+            emotionDataStatus: timelineResponse.metadata?.emotionEntries > 0 ? 'success' : 'not_available',
+            physiologicalDataStatus: timelineResponse.metadata?.physiologicalEntries > 0 ? 'success' : 'not_available',
+            sessionEventsCount: timelineResponse.metadata?.sessionEvents,
+            emotionEntriesCount: timelineResponse.metadata?.emotionEntries,
+            physiologicalEntriesCount: timelineResponse.metadata?.physiologicalEntries,
+            lastUpdateTime: Date.now()
+          }))
+          setError(null)
+        } else {
+          const emptyError = 'Data conversion resulted in empty array'
+          console.error('[TimelineData]', emptyError)
+          setError(`データ変換に失敗しました: 変換後のデータが空です`)
+          setData([])
+          setDebugInfo(prev => ({
+            ...prev,
+            apiStatus: 'error',
+            errors: [...prev.errors, emptyError],
+            dataConversionStatus: 'error',
+            dataPointCount: 0
+          }))
+        }
+
+        // Handle metadata errors
+        if (timelineResponse.metadata?.errors && timelineResponse.metadata.errors.length > 0) {
+          const errorMessages = timelineResponse.metadata.errors.join('; ')
+          setError(`警告: 一部データ取得に失敗しました: ${errorMessages}`)
+          setDebugInfo(prev => ({
+            ...prev,
+            errors: [...prev.errors, ...timelineResponse.metadata.errors]
+          }))
+        }
+      } else {
+        setError('データが取得できませんでした。APIがエラーを返すか、データが空です。')
+        setData([])
+        setDebugInfo(prev => ({
+          ...prev,
+          apiStatus: 'error',
+          errors: ['No timeline data returned'],
+          dataPointCount: 0,
+          dataConversionStatus: 'error'
+        }))
+      }
+    } else if (!loading && participantId && mounted) {
+      // No data and not loading - this might be an error case
+      setError('データが取得できませんでした。')
+      setData([])
+      setDebugInfo(prev => ({
+        ...prev,
+        apiStatus: 'error',
+        errors: ['No data returned from GraphQL query'],
+        dataPointCount: 0,
+        dataConversionStatus: 'error'
       }))
     }
-  }, [participantId])
+  }, [queryData, queryError, loading, participantId, mounted])
 
-  // Word2Vec 埋め込み（平均）を単語ごとに取得
-  const fetchWordEmbeddings = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/participants/${participantId}/word2vec`)
-      const json = await res.json()
-      if (!json?.success) return
-      const byWord: Record<string, { sum: number[]; count: number }> = {}
-      ;(json.wordData as Array<{ word: string; embedding: number[] }>).forEach((item) => {
-        if (!byWord[item.word]) byWord[item.word] = { sum: new Array(item.embedding.length).fill(0), count: 0 }
-        const acc = byWord[item.word]
-        for (let i = 0; i < item.embedding.length; i++) acc.sum[i] += item.embedding[i]
-        acc.count += 1
-      })
-      const averaged: Record<string, number[]> = {}
-      Object.entries(byWord).forEach(([w, { sum, count }]) => {
-        averaged[w] = sum.map((v) => v / Math.max(1, count))
-      })
-      setEmbeddingsByWord(averaged)
-    } catch {
-      // 失敗時は無視（ベクトル項なしでも描画可能）
+  // GraphQL query for Word2Vec embeddings
+  const PARTICIPANT_WORD2VEC_QUERY = gql`
+    query ParticipantWord2Vec($participantId: String!) {
+      participantWord2Vec(participantId: $participantId) {
+        wordData {
+          word
+          embedding
+        }
+      }
     }
-  }, [participantId])
+  `;
+
+  const { data: word2VecData } = useQuery(PARTICIPANT_WORD2VEC_QUERY, {
+    variables: { participantId },
+    client: apolloClient,
+    skip: !participantId || !mounted,
+  });
+
+  // Handle Word2Vec data
+  useEffect(() => {
+    if (word2VecData?.participantWord2Vec?.wordData) {
+      const wordData = word2VecData.participantWord2Vec.wordData;
+      const embeddingsByWord: Record<string, number[]> = {};
+      wordData.forEach((item: { word: string; embedding: number[] }) => {
+        embeddingsByWord[item.word] = item.embedding;
+      });
+      setEmbeddingsByWord(embeddingsByWord);
+    }
+  }, [word2VecData]);
 
   // 時間範囲を初期化
   const initializeTimeRange = useCallback(() => {
@@ -292,7 +290,7 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
     filters,
     setFilters,
     getPhysStat,
-    refetchData: fetchTimelineData,
+    refetchData: refetch,
     debugInfo
   }
 }

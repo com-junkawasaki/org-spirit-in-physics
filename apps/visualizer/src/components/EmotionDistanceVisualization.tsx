@@ -6,6 +6,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import { useMutation } from '@apollo/client';
+import { apolloClient } from '@/lib/apollo-client';
+import { gql } from '@apollo/client';
 
 // 3D可視化コンポーネントの動的インポート
 const Force3DWordGraphTypeGPU = dynamic(
@@ -84,6 +87,30 @@ export default function EmotionDistanceVisualization({
   const [dimensionsLocal, setDimensionsLocal] = useState<Required<EmotionDistanceVisualizationProps>['dimensions']>(dimensions);
   const [kLocal, setKLocal] = useState<number>(k);
 
+  // GraphQL mutation for emotion distance calculation
+  const CALCULATE_EMOTION_DISTANCE = gql`
+    mutation CalculateEmotionDistance($input: CalculateEmotionDistanceInput!) {
+      calculateEmotionDistance(input: $input) {
+        points {
+          x
+          y
+          z
+          word
+          index
+        }
+        links {
+          source
+          target
+          value
+        }
+      }
+    }
+  `;
+
+  const [calculateEmotionDistance, { loading: mutationLoading, error: mutationError }] = useMutation(CALCULATE_EMOTION_DISTANCE, {
+    client: apolloClient,
+  });
+
   // Merkle DAG: components.emotion_distance_visualization.data_fetching
   // データの取得
   const fetchEmotionDistanceData = useCallback(async () => {
@@ -91,42 +118,38 @@ export default function EmotionDistanceVisualization({
     setError(null);
 
     try {
-      const response = await fetch('/api/analysis/emotion-distance', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const result = await calculateEmotionDistance({
+        variables: {
+          input: {
+            participantId,
+            experimentId,
+            method: methodLocal,
+            embeddingMethod: embeddingLocal,
+            dimensions: dimensionsLocal,
+            k: kLocal,
+            gamma,
+            alpha,
+            topKEmotions,
+          },
         },
-        body: JSON.stringify({
-          participantId,
-          experimentId,
-          method: methodLocal,
-          embeddingMethod: embeddingLocal,
-          dimensions: dimensionsLocal,
-          k: kLocal,
-          gamma,
-          alpha,
-          topKEmotions
-        }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (result.errors) {
+        throw new Error(result.errors[0].message);
       }
 
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(result.error);
+      if (result.data?.calculateEmotionDistance) {
+        setData(result.data.calculateEmotionDistance);
+      } else {
+        throw new Error('No data returned from emotion distance calculation');
       }
-
-      setData(result.visualization);
     } catch (err) {
       console.error('Error fetching emotion distance data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
-  }, [participantId, experimentId, methodLocal, embeddingLocal, dimensionsLocal, kLocal, gamma, alpha, topKEmotions]);
+  }, [participantId, experimentId, methodLocal, embeddingLocal, dimensionsLocal, kLocal, gamma, alpha, topKEmotions, calculateEmotionDistance]);
 
   // Merkle DAG: components.emotion_distance_visualization.effect_hooks
   // エフェクトフック

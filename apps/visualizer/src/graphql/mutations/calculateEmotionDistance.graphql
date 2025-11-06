@@ -1,0 +1,16 @@
+mutation CalculateEmotionDistance($input: CalculateEmotionDistanceInput!) {
+  calculateEmotionDistance(input: $input) {
+    points {
+      x
+      y
+      z
+      word
+      index
+    }
+    links {
+      source
+      target
+      value
+    }
+  }
+}

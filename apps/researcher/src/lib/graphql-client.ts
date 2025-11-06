@@ -1,48 +1,29 @@
 /**
  * GraphQL Client for PostgreSQL-backed GraphQL API
- * 
+ *
  * Merkle DAG: graphql_client -> data_access_layer
- * Replaces Neo4j client with GraphQL API calls
+ * Replaces Neo4j client with Apollo Client for GraphQL API calls
  */
+
+import { ApolloClient, InMemoryCache, HttpLink, gql } from '@apollo/client'
 
 const GRAPHQL_API_URL = process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || process.env.GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql'
 
-interface GraphQLResponse<T> {
-  data?: T
-  errors?: Array<{
-    message: string
-    locations?: Array<{ line: number; column: number }>
-    path?: Array<string | number>
-  }>
-}
+let apolloClient: ApolloClient<any> | null = null
 
-async function graphqlRequest<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
-  const response = await fetch(GRAPHQL_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`GraphQL request failed: ${response.statusText}`)
+function getApolloClient(): ApolloClient<any> {
+  if (!apolloClient || typeof window === 'undefined') {
+    apolloClient = new ApolloClient({
+      link: new HttpLink({
+        uri: GRAPHQL_API_URL,
+        fetchOptions: {
+          mode: 'cors',
+        },
+      }),
+      cache: new InMemoryCache(),
+    })
   }
-
-  const result: GraphQLResponse<T> = await response.json()
-
-  if (result.errors && result.errors.length > 0) {
-    throw new Error(`GraphQL errors: ${result.errors.map(e => e.message).join(', ')}`)
-  }
-
-  if (!result.data) {
-    throw new Error('No data returned from GraphQL query')
-  }
-
-  return result.data
+  return apolloClient
 }
 
 export interface GraphQLClient {
@@ -126,9 +107,11 @@ export interface GraphQLClient {
 }
 
 export function createGraphQLClient(): GraphQLClient {
+  const client = getApolloClient()
+
   return {
     async getParticipants() {
-      const query = `
+      const query = gql`
         query GetParticipants {
           participants {
             id
@@ -140,19 +123,26 @@ export function createGraphQLClient(): GraphQLClient {
           }
         }
       `
-      const result = await graphqlRequest<{ participants: any[] }>(query)
-      return result.participants || []
+      const result = await client.query({ query })
+      return result.data?.participants || []
     },
 
     async getParticipantDetails(participantId: string) {
-      const query = `
+      const query = gql`
         query GetParticipant($participantId: String!) {
-          participant(participant_id: $participantId)
+          participant(participant_id: $participantId) {
+            id
+            age
+            gender
+            handedness
+            created_at
+            updated_at
+          }
         }
       `
       try {
-        const result = await graphqlRequest<{ participant: string }>(query, { participantId })
-        return result.participant ? JSON.parse(result.participant) : null
+        const result = await client.query({ query, variables: { participantId } })
+        return result.data?.participant || null
       } catch {
         return null
       }
@@ -165,20 +155,52 @@ export function createGraphQLClient(): GraphQLClient {
     },
 
     async getDashboardStats() {
-      // This will need to be implemented in GraphQL API
-      // For now, return default values
-      return {
-        totalParticipants: 0,
-        totalSessions: 0,
-        totalResponses: 0,
-        averageSpiritProbability: 0,
-        emotionDistribution: {},
-        componentAverages: {
-          word2vec: 0,
-          reaction_time: 0,
-          skin_potential: 0,
-          emotion: 0,
-        },
+      const query = gql`
+        query GetDashboardStats {
+          dashboardStats {
+            total_participants
+            total_sessions
+            total_responses
+            average_spirit_probability
+            emotion_distribution
+            component_averages {
+              word2vec
+              reaction_time
+              skin_potential
+              emotion
+            }
+          }
+        }
+      `
+      try {
+        const result = await client.query({ query })
+        return result.data?.dashboardStats || {
+          totalParticipants: 0,
+          totalSessions: 0,
+          totalResponses: 0,
+          averageSpiritProbability: 0,
+          emotionDistribution: {},
+          componentAverages: {
+            word2vec: 0,
+            reaction_time: 0,
+            skin_potential: 0,
+            emotion: 0,
+          },
+        }
+      } catch {
+        return {
+          totalParticipants: 0,
+          totalSessions: 0,
+          totalResponses: 0,
+          averageSpiritProbability: 0,
+          emotionDistribution: {},
+          componentAverages: {
+            word2vec: 0,
+            reaction_time: 0,
+            skin_potential: 0,
+            emotion: 0,
+          },
+        }
       }
     },
 

@@ -2,7 +2,9 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde_json::Value as JsonValue;
 
+// Existing models
 #[derive(Queryable, Serialize, Deserialize)]
 pub struct Participant {
     pub id: Uuid,
@@ -21,6 +23,141 @@ pub struct NewParticipant {
     pub handedness: Option<String>,
 }
 
+// New models for Supabase schema
+#[derive(Queryable, Serialize, Deserialize)]
+pub struct ParticipantConsent {
+    pub id: Uuid,
+    pub participant_id: Uuid,
+    pub signature: String,
+    pub agreements: JsonValue,
+    pub agreed_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Serialize, Deserialize)]
+#[diesel(table_name = participant_consents)]
+pub struct NewParticipantConsent {
+    pub participant_id: Uuid,
+    pub signature: String,
+    pub agreements: JsonValue,
+    pub agreed_at: DateTime<Utc>,
+}
+
+#[derive(Queryable, Serialize, Deserialize)]
+pub struct ParticipantExperimentSession {
+    pub id: Uuid,
+    pub participant_id: Uuid,
+    pub session_id: Uuid,
+    pub session_type: String, // session_type enum
+    pub start_time: DateTime<Utc>,
+    pub end_time: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Serialize, Deserialize)]
+#[diesel(table_name = participant_experiment_sessions)]
+pub struct NewParticipantExperimentSession {
+    pub participant_id: Uuid,
+    pub session_id: Uuid,
+    pub session_type: String,
+    pub start_time: DateTime<Utc>,
+    pub end_time: Option<DateTime<Utc>>,
+}
+
+#[derive(Queryable, Serialize, Deserialize)]
+pub struct ParticipantResponseData {
+    pub id: Uuid,
+    pub participant_id: Uuid,
+    pub experiment_id: Uuid,
+    pub word_stimulus_id: i32,
+    pub stimulus_word: String,
+    pub response_word: String,
+    pub reaction_time_ms: i32,
+    pub session: String, // session_type enum
+    pub timestamp: DateTime<Utc>,
+    pub audio_file_path: Option<String>,
+    pub video_file_path: Option<String>,
+    pub skin_potential: Option<f64>,
+    pub emotion: Option<String>,
+    pub emotion_confidence: Option<f64>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Serialize, Deserialize)]
+#[diesel(table_name = participant_response_data)]
+pub struct NewParticipantResponseData {
+    pub participant_id: Uuid,
+    pub experiment_id: Uuid,
+    pub word_stimulus_id: i32,
+    pub stimulus_word: String,
+    pub response_word: String,
+    pub reaction_time_ms: i32,
+    pub session: String,
+    pub timestamp: DateTime<Utc>,
+    pub audio_file_path: Option<String>,
+    pub video_file_path: Option<String>,
+    pub skin_potential: Option<f64>,
+    pub emotion: Option<String>,
+    pub emotion_confidence: Option<f64>,
+}
+
+#[derive(Queryable, Serialize, Deserialize)]
+pub struct ParticipantAnalysisResult {
+    pub id: Uuid,
+    pub participant_id: Uuid,
+    pub experiment_id: Uuid,
+    pub word_stimulus_id: i32,
+    pub stimulus_word: String,
+    pub response_word: String,
+    pub reaction_time_ms: Option<i32>,
+    pub spirit_probability: f64,
+    pub word2vec_component: Option<f64>,
+    pub reaction_time_component: Option<f64>,
+    pub skin_potential_component: Option<f64>,
+    pub emotion_component: Option<f64>,
+    pub emotion_data: JsonValue,
+    pub physiological_data: JsonValue,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Serialize, Deserialize)]
+#[diesel(table_name = participant_analysis_results)]
+pub struct NewParticipantAnalysisResult {
+    pub participant_id: Uuid,
+    pub experiment_id: Uuid,
+    pub word_stimulus_id: i32,
+    pub stimulus_word: String,
+    pub response_word: String,
+    pub reaction_time_ms: Option<i32>,
+    pub spirit_probability: f64,
+    pub word2vec_component: Option<f64>,
+    pub reaction_time_component: Option<f64>,
+    pub skin_potential_component: Option<f64>,
+    pub emotion_component: Option<f64>,
+    pub emotion_data: JsonValue,
+    pub physiological_data: JsonValue,
+}
+
+#[derive(Queryable, SimpleObject, Debug, Clone, Serialize, Deserialize)]
+#[graphql(name = "WordStimulus")]
+pub struct WordStimulus {
+    pub id: i32,
+    pub word: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = word_stimuli)]
+pub struct NewWordStimulus {
+    pub id: i32,
+    pub word: String,
+}
+
+// Keep existing models for backward compatibility
 #[derive(Queryable, Serialize, Deserialize)]
 pub struct Experiment {
     pub id: Uuid,
@@ -81,7 +218,7 @@ pub struct NewEmotionAggregation {
 pub struct PhysiologicalAggregation {
     pub id: Uuid,
     pub window_id: Uuid,
-    pub channels: serde_json::Value,
+    pub channels: JsonValue,
     pub avg: Option<f64>,
     pub quality: Option<f64>,
     pub created_at: DateTime<Utc>,
@@ -92,7 +229,7 @@ pub struct PhysiologicalAggregation {
 #[diesel(table_name = physiological_aggregations)]
 pub struct NewPhysiologicalAggregation {
     pub window_id: Uuid,
-    pub channels: serde_json::Value,
+    pub channels: JsonValue,
     pub avg: Option<f64>,
     pub quality: Option<f64>,
 }
@@ -101,7 +238,7 @@ pub struct NewPhysiologicalAggregation {
 pub struct KernelFusionRun {
     pub id: Uuid,
     pub participant_id: Uuid,
-    pub weights: serde_json::Value,
+    pub weights: JsonValue,
     pub normalization: Option<String>,
     pub dimensions: i32,
     pub timestamp: DateTime<Utc>,
@@ -113,7 +250,7 @@ pub struct KernelFusionRun {
 #[diesel(table_name = kernel_fusion_runs)]
 pub struct NewKernelFusionRun {
     pub participant_id: Uuid,
-    pub weights: serde_json::Value,
+    pub weights: JsonValue,
     pub normalization: Option<String>,
     pub dimensions: i32,
     pub timestamp: DateTime<Utc>,
@@ -125,7 +262,7 @@ pub struct EmbeddingResult {
     pub kernel_fusion_run_id: Uuid,
     pub method: String,
     pub dimensions: i32,
-    pub points: serde_json::Value,
+    pub points: JsonValue,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -136,7 +273,7 @@ pub struct NewEmbeddingResult {
     pub kernel_fusion_run_id: Uuid,
     pub method: String,
     pub dimensions: i32,
-    pub points: serde_json::Value,
+    pub points: JsonValue,
 }
 
 #[derive(SimpleObject, Debug, Clone, Serialize, Deserialize, InputObject)]
@@ -157,24 +294,3 @@ pub struct NewWordResponse {
     pub reaction_time_ms: i32,
     pub is_delayed: Option<bool>,
 }
-
-#[derive(Queryable, SimpleObject, Debug, Clone)]
-#[graphql(name = "WordStimulus")]
-pub struct WordStimulus {
-    pub id: String,
-    pub word: String,
-    pub language: String,
-    pub pronunciation: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Insertable, Debug)]
-#[diesel(table_name = word_stimuli)]
-pub struct NewWordStimulus<'a> {
-    pub id: &'a str,
-    pub word: &'a str,
-    pub language: &'a str,
-    pub pronunciation: &'a str,
-}
-
