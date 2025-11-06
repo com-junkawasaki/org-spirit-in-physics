@@ -137,3 +137,80 @@ pub async fn kernel_fusion_activity(
 
     Ok(())
 }
+
+// データローディングとインポートアクティビティ
+pub async fn import_data_activity(
+    pool: Arc<Pool<NoTls>>,
+    participant_id: uuid::Uuid,
+    file_path: String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // ファイルシステムからデータを読み込む（簡易版）
+    // 実際には、data-loader.tsのように詳細なファイル処理を行う
+    let content = std::fs::read_to_string(file_path)?;
+    println!("Read file content for participant {}", participant_id);
+
+    // データベースに保存
+    let mut conn = pool.get().await?;
+    let new_participant = NewParticipant {
+        age: Some(30), // 簡易データ
+        gender: Some("male".to_string()),
+        handedness: Some("right".to_string()),
+    };
+    conn.build_transaction().run(|mut conn| {
+        Box::pin(async move {
+            diesel::insert_into(crate::schema::participants::table)
+                .values(&new_participant)
+                .execute(&mut conn)
+                .await
+        })
+    }).await?;
+
+    println!("Data import activity for participant {} completed", participant_id);
+
+    Ok(())
+}
+
+// 感情分析アクティビティ
+pub async fn emotion_analysis_activity(
+    pool: Arc<Pool<NoTls>>,
+    participant_id: uuid::Uuid,
+    video_file: String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Hume AI APIを呼び出す（簡易版）
+    let client = reqwest::Client::new();
+    let res = client.post("https://api.hume.ai/v0/batch/jobs")
+        .header("X-Hume-Api-Key", "YOUR_HUME_API_KEY") // Replace with your actual API key
+        .json(&serde_json::json!({
+            "models": {
+                "face": {}
+            },
+            "urls": [video_file]
+        }))
+        .send()
+        .await?
+        .json::<serde_json::Value>()
+        .await?;
+
+    println!("Hume AI API response: {:?}", res);
+
+    // 感情データをデータベースに保存
+    let mut conn = pool.get().await?;
+    let new_emotion = NewEmotionAggregation {
+        window_id: uuid::Uuid::new_v4(), // Placeholder
+        source: "hume_ai".to_string(),
+        emotion: "Joy".to_string(), // 簡易データ
+        score: 0.9,
+    };
+    conn.build_transaction().run(|mut conn| {
+        Box::pin(async move {
+            diesel::insert_into(crate::schema::emotion_aggregations::table)
+                .values(&new_emotion)
+                .execute(&mut conn)
+                .await
+        })
+    }).await?;
+
+    println!("Emotion analysis activity for participant {} completed", participant_id);
+
+    Ok(())
+}

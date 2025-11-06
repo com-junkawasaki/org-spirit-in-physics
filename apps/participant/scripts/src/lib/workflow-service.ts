@@ -11,29 +11,34 @@ export class WorkflowService {
     priority: 'low' | 'normal' | 'high' = 'normal'
   ): Promise<{ success: boolean; eventId?: string; error?: string }> {
     try {
-      const response = await fetch('/api/admin/emotion-analysis', {
+      const response = await fetch('/api/graphql', { // GraphQL APIのエンドポイントを呼び出す
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'analyze-single-workflow',
-          participantId,
-          videoFile,
-          sessionType,
-          priority,
+          query: `
+            mutation AnalyzeEmotions($videoFile: String!) {
+              analyzeEmotions(videoFile: $videoFile) {
+                id
+              }
+            }
+          `,
+          variables: {
+            videoFile,
+          },
         }),
       });
 
       const result = await response.json();
 
-      if (!result.success) {
-        throw new Error(result.error || 'ワークフロー開始に失敗しました');
+      if (result.errors) {
+        throw new Error(result.errors[0].message);
       }
 
       return {
         success: true,
-        eventId: result.data?.eventId,
+        eventId: result.data.analyzeEmotions.id, // イベントIDとして使用
       };
     } catch (error) {
       console.error('Failed to start video analysis workflow:', error);

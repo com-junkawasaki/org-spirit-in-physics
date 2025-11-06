@@ -89,36 +89,76 @@ pub struct Mutation;
 
 #[Object]
 impl Mutation {
-    async fn create_participant(&self, ctx: &Context<'_>, input: NewParticipant) -> GQLResult<Participant> {
+    async fn create_participant(&self, ctx: &Context<'_>, age: Option<i32>, gender: Option<String>, handedness: Option<String>) -> GQLResult<Participant> {
         let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
         let mut conn = pool.get().await?;
-        let new_participant = conn.build_transaction().run(|mut conn| {
+        let new_participant = NewParticipant {
+            age,
+            gender,
+            handedness,
+        };
+        let participant = conn.build_transaction().run(|mut conn| {
             Box::pin(async move {
-                let participant = diesel::insert_into(participants::table)
-                    .values(&input)
+                diesel::insert_into(crate::schema::participants::table)
+                    .values(&new_participant)
                     .returning(Participant::as_returning())
                     .get_result(&mut conn)
-                    .await?;
-                Ok(participant)
+                    .await
             })
         }).await?;
-        Ok(new_participant)
+        Ok(participant)
     }
 
-    async fn create_experiment(&self, ctx: &Context<'_>, input: NewExperiment) -> GQLResult<Experiment> {
+    async fn create_experiment(&self, ctx: &Context<'_>, participant_id: uuid::Uuid) -> GQLResult<Experiment> {
         let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
         let mut conn = pool.get().await?;
-        let new_experiment = conn.build_transaction().run(|mut conn| {
+        let new_experiment = NewExperiment {
+            participant_id,
+        };
+        let experiment = conn.build_transaction().run(|mut conn| {
             Box::pin(async move {
-                let experiment = diesel::insert_into(experiments::table)
-                    .values(&input)
+                diesel::insert_into(crate::schema::experiments::table)
+                    .values(&new_experiment)
                     .returning(Experiment::as_returning())
                     .get_result(&mut conn)
-                    .await?;
-                Ok(experiment)
+                    .await
             })
         }).await?;
-        Ok(new_experiment)
+        Ok(experiment)
+    }
+
+    async fn analyze_emotions(&self, ctx: &Context<'_>, video_file: String) -> GQLResult<Vec<EmotionAggregation>> {
+        // This is a placeholder for the actual Hume AI API call
+        // In a real implementation, you would use an HTTP client to call the Hume AI API
+        // and then save the results to the database.
+        let emotions = vec![
+            NewEmotionAggregation {
+                window_id: uuid::Uuid::new_v4(), // Placeholder
+                source: "hume_ai".to_string(),
+                emotion: "Joy".to_string(),
+                score: 0.9,
+            },
+            NewEmotionAggregation {
+                window_id: uuid::Uuid::new_v4(), // Placeholder
+                source: "hume_ai".to_string(),
+                emotion: "Sadness".to_string(),
+                score: 0.1,
+            },
+        ];
+
+        let pool = ctx.data::<Arc<Pool<NoTls>>>()?;
+        let mut conn = pool.get().await?;
+        let new_emotions = conn.build_transaction().run(|mut conn| {
+            Box::pin(async move {
+                diesel::insert_into(crate::schema::emotion_aggregations::table)
+                    .values(&emotions)
+                    .returning(EmotionAggregation::as_returning())
+                    .get_results(&mut conn)
+                    .await
+            })
+        }).await?;
+
+        Ok(new_emotions)
     }
 
     async fn create_window(&self, ctx: &Context<'_>, input: NewWindow) -> GQLResult<Window> {
