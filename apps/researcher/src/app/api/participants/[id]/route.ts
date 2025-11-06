@@ -1,30 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getParticipantData } from '@/lib/data'
+import { getClient } from '@/lib/client';
+import { gql } from '@apollo/client';
+
+const GET_PARTICIPANT_QUERY = gql`
+  query GetParticipant($id: ID!) {
+    participant(id: $id)
+  }
+`;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params
-    console.log('API: Fetching participant:', id)
+    const participantId = params.id;
+    console.log(`API: Fetching participant ${participantId} from GraphQL...`)
+    const client = getClient();
 
-    const participant = await getParticipantData(id)
+    const { data } = await client.query({
+        query: GET_PARTICIPANT_QUERY,
+        variables: { id: participantId },
+    });
+    
+    const participant = JSON.parse(data.participant);
 
-    if (!participant) {
-      console.log('API: Participant not found:', id)
-      return NextResponse.json(
-        { error: 'Participant not found' },
-        { status: 404 }
-      )
-    }
-
-    console.log('API: Found participant:', participant.name || 'No name')
     return NextResponse.json(participant)
   } catch (error) {
-    console.error('API: Failed to fetch participant:', error)
+    console.error(`API: Failed to fetch participant ${params.id}:`, error)
     return NextResponse.json(
-      { error: 'Failed to fetch participant', details: error.message },
+      { error: 'Failed to fetch participant', details: (error as Error).message },
       { status: 500 }
     )
   }

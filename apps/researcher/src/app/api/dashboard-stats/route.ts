@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDashboardStats } from '@/lib/data'
+import { getClient } from '@/lib/client';
+import { gql } from '@apollo/client';
+
+const DASHBOARD_STATS_QUERY = gql`
+  query DashboardStats {
+    dashboardStats
+  }
+`;
 
 export async function GET(request: NextRequest) {
   try {
-    const stats = await getDashboardStats()
+    const client = getClient();
+    const { data } = await client.query({ query: DASHBOARD_STATS_QUERY });
+    const stats = JSON.parse(data.dashboardStats);
 
-    // Return stats as-is since they're already processed in the data layer
     return NextResponse.json(stats)
   } catch (error) {
     console.error('Failed to fetch dashboard stats:', error)

@@ -1,23 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { inngest } from '@/lib/inngest';
+import { getClient } from '@/lib/client';
+import { gql } from '@apollo/client';
 import { z } from 'zod';
 
 // Merkle DAG: pipeline_api_route -> workflow_orchestration
 // パイプライン分析APIエンドポイント
 
 // リクエストボディのスキーマ定義
+const START_FILE_IMPORT_MUTATION = gql`
+  mutation StartFileImportWorkflow($participantId: String!, $dataRootPath: String, $priority: String) {
+    startFileImportWorkflow(participantId: $participantId, dataRootPath: $dataRootPath, priority: $priority)
+  }
+`;
+
 const ImportAndAnalyzeSchema = z.object({
   participantId: z.string().min(1),
   dataRootPath: z.string().optional(),
-  dimensions: z.number().min(2).max(3).default(3),
-  k: z.number().min(1).max(50).default(5),
-  normalization: z.enum(['trace', 'fro']).default('trace'),
-  nonNegativeWeights: z.boolean().default(true),
-  timeKernel: z.object({
-    timestamps: z.array(z.number()),
-    tau: z.number().positive(),
-    weight: z.number().min(0).max(1),
-  }).optional(),
   priority: z.enum(['low', 'normal', 'high']).default('normal'),
 });
 
@@ -31,43 +29,20 @@ export async function POST(request: NextRequest) {
     const {
       participantId,
       dataRootPath = '/app/public/dataset',
-      dimensions,
-      k,
-      normalization,
-      nonNegativeWeights,
-      timeKernel,
       priority,
     } = validatedData;
 
     // Merkle DAG: workflow_trigger -> pipeline_initiation
     // ファイルインポートワークフローの開始（ローカル開発では直接実行）
-    let importResult;
-    try {
-      importResult = await inngest.send({
-        name: 'pipeline.file_import.requested',
-        data: {
-          participantId,
-          dataRootPath,
-          tenantId: 'default', // デフォルトテナント
-          userId: 'system', // システムユーザー
-          priority,
-        },
-      });
-    } catch (error) {
-      console.log('Inngest send failed, running workflow directly:', error);
-      // ローカル開発では直接ワークフローを実行
-      const { executeFileImportWorkflow } = await import('@/lib/workflows/file-import-workflow');
-      const result = await executeFileImportWorkflow({
+    const client = getClient();
+    const { data } = await client.mutate({
+      mutation: START_FILE_IMPORT_MUTATION,
+      variables: {
         participantId,
         dataRootPath,
-        tenantId: 'default',
-        userId: 'system',
         priority,
-      });
-      console.log('File import workflow completed:', result);
-      // フォールバック用のimportResultを作成
-      importResult = { ids: ['local-execution-' + Date.now()] };
-    }
+      }
+    });
 
     // Merkle DAG: response_generation -> api_response
     // レスポンスの生成
@@ -76,25 +51,7 @@ export async function POST(request: NextRequest) {
       message: 'パイプライン分析を開始しました',
       data: {
         participantId,
-        importEventId: importResult.ids[0],
-        pipeline: {
-          steps: [
-            'file_import',
-            'windows_generation',
-            'distance_calculation',
-            'kernel_fusion',
-            'embedding_generation',
-            'neo4j_persistence',
-            'export',
-          ],
-          parameters: {
-            dimensions,
-            k,
-            normalization,
-            nonNegativeWeights,
-            timeKernel: timeKernel || null,
-          },
-        },
+        importEventId: data.startFileImportWorkflow,
         status: 'started',
         timestamp: new Date().toISOString(),
       },

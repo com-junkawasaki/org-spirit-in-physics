@@ -2,10 +2,9 @@
 // 感情距離計算API
 // 依存: Neo4j, 感情データ, 時系列データ
 
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { getClient } from '@/lib/client';
+import { NextRequest, NextResponse } from 'next/server';
 import { gql } from '@apollo/client';
+import { getClient } from '@/lib/client'; // Apollo Clientのインスタンスを取得
 
 const CALCULATE_EMOTION_DISTANCE_MUTATION = gql`
   mutation CalculateEmotionDistance($input: EmotionDistanceInput!) {
