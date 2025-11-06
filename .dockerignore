@@ -12,6 +12,7 @@ node_modules
 dist
 build
 target
+**/target
 
 # Dataset files (large video/data files)
 **/public/dataset/**

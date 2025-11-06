@@ -40,6 +40,20 @@ services:
     networks:
       - spirit-network
 
+  # GraphQL Server (Rust)
+  graphql:
+    build:
+      context: ./apps/graphql
+      dockerfile: Dockerfile
+    container_name: spirit-graphql
+    ports:
+      - "25263:3003"
+    env_file:
+      - ./apps/graphql/env.docker
+    networks:
+      - spirit-network
+    restart: unless-stopped
+
   # BPMN Runner (optional orchestrator for imports)
   # Commented out: directory not found
   # bpmn-runner:

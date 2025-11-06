@@ -81,6 +81,38 @@ export const ConsentDataSchema = z.object({
     recording: z.literal(true),
   }),
   agreedAt: z.string().datetime(),
+  demographicData: z.object({
+    ageGroup: z.enum([
+      'prefer-not-to-say',
+      '18-24',
+      '25-34',
+      '35-44',
+      '45-54',
+      '55-64',
+      '65+',
+    ]).optional(),
+    gender: z.enum(['male', 'female', 'non-binary', 'prefer-not-to-say']).optional(),
+    ethnicity: z.enum([
+      'prefer-not-to-say',
+      'asian',
+      'black',
+      'hispanic',
+      'native',
+      'pacific',
+      'white',
+      'multiple',
+      'other',
+    ]).optional(),
+    income: z.enum([
+      'prefer-not-to-say',
+      'under-25k',
+      '25k-50k',
+      '50k-75k',
+      '75k-100k',
+      '100k-150k',
+      'over-150k',
+    ]).optional(),
+  }).optional(),
 });
 export type ConsentData = z.infer<typeof ConsentDataSchema>;
 

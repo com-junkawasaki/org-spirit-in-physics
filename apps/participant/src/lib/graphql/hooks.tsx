@@ -1,3 +1,5 @@
+'use client';
+
 //! GraphQL React Hooks (Type-Safe)
 //! 
 //! Merkle DAG: graphql.hooks.participant
