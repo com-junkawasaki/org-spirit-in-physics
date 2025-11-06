@@ -48,16 +48,57 @@ export async function GET(
       physiologicalData = []
     }
 
-    // データ構造最適化：必要最小限の情報のみ保持
-    const timelineData = sessionData.wordEvents.map((event: any) => ({
-      t: event.timestamp, // timestampを短縮
-      w: event.payload?.word || 'Unknown', // wordを短縮
-      e: event.type, // eventTypeを短縮
-      // emotionsとphysiologicalは空配列で軽量化
-      em: [], // emotionsを短縮
-      ph: { avg: 0, max: 0, min: 0, ch: {} }, // physiologicalを短縮
-      rv: 0, // reactionValueを短縮
-      m: { ec: 0, pc: 0 } // metadataを短縮
+    // Merkle DAG: participants.timeline.integrate_data
+    // 感情データと生理データを統合
+    let integratedTimelineData: any[];
+    try {
+      integratedTimelineData = integrateTimelineData(sessionData, emotionData, physiologicalData);
+      // 統合が失敗した場合は空配列が返されるため、セッションイベントのみの基本データを使用
+      if (integratedTimelineData.length === 0 && sessionData.wordEvents.length > 0) {
+        console.warn('Integration returned empty array, using basic session events');
+        integratedTimelineData = sessionData.wordEvents.map((event: any) => ({
+          timestamp: event.timestamp,
+          word: event.payload?.word || 'Unknown',
+          eventType: event.type,
+          emotions: [],
+          physiological: { average: 0, max: 0, min: 0, channels: {} },
+          reactionValue: 0,
+          metadata: { emotionCount: 0, physiologicalCount: 0 }
+        }));
+      }
+    } catch (integrationError) {
+      console.error('Timeline integration error:', integrationError);
+      errors.push(`integration: ${integrationError instanceof Error ? integrationError.message : 'Unknown error'}`);
+      // フォールバック: セッションイベントのみの基本データ
+      integratedTimelineData = sessionData.wordEvents.map((event: any) => ({
+        timestamp: event.timestamp,
+        word: event.payload?.word || 'Unknown',
+        eventType: event.type,
+        emotions: [],
+        physiological: { average: 0, max: 0, min: 0, channels: {} },
+        reactionValue: 0,
+        metadata: { emotionCount: 0, physiologicalCount: 0 }
+      }));
+    }
+    
+    // データ構造最適化：必要最小限の情報のみ保持（短縮形式に変換）
+    const timelineData = integratedTimelineData.map((item: any) => ({
+      t: item.timestamp, // timestampを短縮
+      w: item.word, // wordを短縮
+      e: item.eventType, // eventTypeを短縮
+      rt: item.reactionTime || null, // 反応時間を追加
+      em: item.emotions || [], // 統合された感情データ
+      ph: {
+        avg: item.physiological?.average || 0,
+        max: item.physiological?.max || 0,
+        min: item.physiological?.min || 0,
+        ch: item.physiological?.channels || {}
+      }, // physiologicalを短縮
+      rv: item.reactionValue || 0, // reactionValueを短縮
+      m: {
+        ec: item.metadata?.emotionCount || 0,
+        pc: item.metadata?.physiologicalCount || 0
+      } // metadataを短縮
     }));
 
     // ストリーミングレスポンスで大きなデータを効率的に送信
@@ -189,8 +230,8 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
     
     const mappedResults = emotionResults.map((result: any) => ({
       fileType: result.source || 'unknown',
-      beginTime: result.timestamp,
-      endTime: result.timestamp + 1000, // 1秒間隔で仮定
+      beginTime: result.timestamp, // 秒単位（CSVのBeginTimeから）
+      endTime: result.timestamp + 1.0, // 1秒間隔で仮定（秒単位）
       emotions: [{ 
         name: result.name, 
         score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
@@ -283,25 +324,51 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
     
     // セッションイベントを基準として時系列データを構築
     sessionData.wordEvents.forEach((event: any) => {
+      // word_displayedイベントのみを処理
+      if (event.type !== 'word_displayed') {
+        return;
+      }
+
       const timestamp = event.timestamp;
       const word = event.payload?.word || 'Unknown';
       
-      // 対応する感情データを検索（時間範囲でマッチング）
+      // 反応時間の計算
+      // 次の単語イベントまでの時間ウィンドウを定義
+      const currentEventIndex = sessionData.wordEvents.indexOf(event);
+      const nextEvent = sessionData.wordEvents.find((e: any, idx: number) => 
+        idx > currentEventIndex && e.type === 'word_displayed'
+      );
+      const windowEnd = nextEvent ? nextEvent.timestamp : timestamp + 10000; // 最大10秒
+      const windowStart = timestamp;
+
+      // speech_detectedイベントを検索
+      const speechEvent = sessionData.events?.find((e: any) => 
+        e.type === 'speech_detected' && 
+        e.timestamp > timestamp && 
+        e.timestamp <= windowEnd
+      );
+
+      const reactionTime = speechEvent ? speechEvent.timestamp - timestamp : null;
+      
+      // ウィンドウ内の感情データを全て検索
+      const sessionStartTime = sessionData.startTime || 0;
+      const windowStartSec = (windowStart - sessionStartTime) / 1000;
+      const windowEndSec = (windowEnd - sessionStartTime) / 1000;
+
       const relatedEmotions = emotionData.filter(emotion => {
-        // セッション開始時刻を基準に相対時間でマッチング
-        const sessionStartTime = sessionData.startTime || 0;
-        const relativeTimestamp = (timestamp - sessionStartTime) / 1000; // 相対時間（秒）
-        const beginTime = emotion.beginTime || 0; // 秒単位
-        const endTime = emotion.endTime || 0; // 秒単位
+        const beginTime = emotion.beginTime || 0;
+        const endTime = emotion.endTime || beginTime + 1.0;
         
-        // 感情データの時間範囲でマッチング
-        return beginTime <= relativeTimestamp && endTime >= relativeTimestamp;
+        // ウィンドウと感情データの時間範囲が重複しているか確認
+        return !(endTime < windowStartSec - 1.0 || beginTime > windowEndSec + 1.0);
       });
       
       // 対応する生理データを検索（時間範囲でマッチング）
       const relatedPhysiological = physiologicalData.filter(physio => {
-        const physioTimestamp = physio.timeSec * 1000; // 秒をミリ秒に変換
-        return Math.abs(physioTimestamp - timestamp) <= 5000; // 5秒以内
+        // 生理データのタイムスタンプは秒単位（timeSec）なので、ミリ秒に変換
+        const physioTimestampMs = physio.timeSec * 1000; // 秒をミリ秒に変換
+        // セッションイベントのタイムスタンプ（ミリ秒）との差分が3秒以内であればマッチ
+        return Math.abs(physioTimestampMs - timestamp) <= 3000; // 3秒以内
       });
       
       // 感情データの統合（詳細な感情情報を保持）
@@ -384,6 +451,7 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         timestamp,
         word,
         eventType: event.type,
+        reactionTime, // 反応時間を追加
         emotions: emotionDetails, // 詳細な感情データ
         physiological: physiologicalValues,
         reactionValue: emotionValues.total + physiologicalValues.average,

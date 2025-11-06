@@ -105,8 +105,8 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
           const convertedData = result.data.timelineData.map((item: any) => ({
             timestamp: item.t || item.timestamp,
             word: item.w || item.word,
-            reactionTime: 0, // デフォルト値
-            hasResponse: true, // デフォルト値
+            reactionTime: item.rt != null ? item.rt : (item.reactionTime != null ? item.reactionTime : null), // APIから取得
+            hasResponse: item.rt != null && item.rt > 0, // 反応時間が存在するか
             emotions: item.em || item.emotions || [],
             physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
             reactionValue: item.rv || item.reactionValue || 0,

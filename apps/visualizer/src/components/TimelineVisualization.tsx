@@ -115,43 +115,43 @@ export default function TimelineVisualization({
     <div className="space-y-4">
       {/* フィルターコントロール */}
       {!hideFilters && (
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="font-semibold mb-3">フィルター設定</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={filters.emotions}
-              onChange={(e) => setFilters(prev => ({ ...prev, emotions: e.target.checked }))}
-            />
-            <span className="text-sm">感情データ</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={filters.physiological}
-              onChange={(e) => setFilters(prev => ({ ...prev, physiological: e.target.checked }))}
-            />
-            <span className="text-sm">生理データ</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={filters.reactionValues}
-              onChange={(e) => setFilters(prev => ({ ...prev, reactionValues: e.target.checked }))}
-            />
-            <span className="text-sm">反応値</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={filters.wordDisplay}
-              onChange={(e) => setFilters(prev => ({ ...prev, wordDisplay: e.target.checked }))}
-            />
-            <span className="text-sm">単語表示</span>
-          </label>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h3 className="font-semibold mb-3">フィルター設定</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.emotions}
+                onChange={(e) => setFilters(prev => ({ ...prev, emotions: e.target.checked }))}
+              />
+              <span className="text-sm">感情データ</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.physiological}
+                onChange={(e) => setFilters(prev => ({ ...prev, physiological: e.target.checked }))}
+              />
+              <span className="text-sm">生理データ</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.reactionValues}
+                onChange={(e) => setFilters(prev => ({ ...prev, reactionValues: e.target.checked }))}
+              />
+              <span className="text-sm">反応値</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={filters.wordDisplay}
+                onChange={(e) => setFilters(prev => ({ ...prev, wordDisplay: e.target.checked }))}
+              />
+              <span className="text-sm">単語表示</span>
+            </label>
+          </div>
         </div>
-      </div>
       )}
 
       {/* 表示モード切り替えタブ */}
@@ -179,13 +179,6 @@ export default function TimelineVisualization({
               </button>
             ))}
           </nav>
-        </div>
-
-        {/* タブコンテンツ（ダミーの欠落を修正）*/}
-        <div className="p-4">
-          {activeTab === 'timeline' && (
-            <div />
-          )}
         </div>
 
         {/* タブコンテンツ */}
@@ -281,7 +274,7 @@ export default function TimelineVisualization({
               {mounted && (() => {
                 try {
                   // 実際のデータから3Dグラフを生成
-                  const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
+                  const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[]; normalizedEmotionVec: Record<string, number[]>; EMOTION_KEYS: readonly string[] } => {
                   const jungWords = JUNG_STIMULUS_WORDS // 全てのデータを表示
 
                   // 集約（ノード指標）。全語を初期化し、セッション実データで加算
@@ -431,7 +424,7 @@ export default function TimelineVisualization({
 
                       // スケール調整と正規化
                       const scale = shellRadius * 0.6
-                      return embed3.map(({ node, vec }) => {
+                      return embed3.map(({ node, vec }, idx) => {
                         const norm = Math.hypot(vec[0], vec[1], vec[2])
                         if (norm > 0) node.initial = [vec[0] / norm * scale, vec[1] / norm * scale, vec[2] / norm * scale]
                         return {
@@ -439,7 +432,7 @@ export default function TimelineVisualization({
                           scale: 8,
                           fixed: true,
                           nodeType: 'anchor',
-                          color: emotionColors[EMOTION_KEYS[embed3.indexOf({ node, vec })] || '#999999',
+                          color: emotionColors[EMOTION_KEYS[idx]] || '#999999',
                         }
                       })
                     }
@@ -447,8 +440,8 @@ export default function TimelineVisualization({
                     // 感情の色に基づく配置（感情空間の中心に配置）
                     const anchorNodes = emotionPCA()
 
-                  // アンカー追加と接続
-                  const baseOffset = anchorNodes.length
+                    // アンカー追加と接続
+                    const baseOffset = anchorNodes.length
                     const allNodes = [...anchorNodes, ...nodes]
 
                     // 感情結合に基づくリンク生成（感情アンカー → 単語ノード）
@@ -508,11 +501,11 @@ export default function TimelineVisualization({
                     }
 
                     const links = [...emotionLinks, ...wordLinks]
-                    return { nodes: allNodes, links }
+                    return { nodes: allNodes, links, normalizedEmotionVec, EMOTION_KEYS }
                   }
 
                   const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
-                  const { nodes, links } = generateForce3DGraph()
+                  const { nodes, links, normalizedEmotionVec, EMOTION_KEYS } = generateForce3DGraph()
 
                   // 感情空間に基づく背景色の計算
                   const calculateBackgroundColor = () => {
@@ -640,7 +633,7 @@ export default function TimelineVisualization({
                 <div className="overflow-auto max-h-96">
                   {mounted && (() => {
                     try {
-                      const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
+                      const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[]; normalizedEmotionVec: Record<string, number[]>; EMOTION_KEYS: readonly string[] } => {
                       const jungWords = JUNG_STIMULUS_WORDS // 全てのデータを表示
 
                       // 集約（ノード指標）。全語を初期化し、セッション実データで加算
@@ -868,11 +861,11 @@ export default function TimelineVisualization({
                         }
 
                         const links = [...emotionLinks, ...wordLinks]
-                        return { nodes: allNodes, links }
+                        return { nodes: allNodes, links, normalizedEmotionVec, EMOTION_KEYS }
                       }
 
                       const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
-                      const { nodes, links } = generateForce3DGraph()
+                      const { nodes, links, normalizedEmotionVec, EMOTION_KEYS } = generateForce3DGraph()
 
                       // 感情空間に基づく背景色の計算（分割表示用）
                       const calculateBackgroundColorSplit = () => {
