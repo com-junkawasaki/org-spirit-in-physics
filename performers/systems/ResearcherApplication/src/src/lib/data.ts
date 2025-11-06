@@ -192,11 +192,23 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
       fetchPolicy: 'network-only', // Always fetch fresh data for server-side
     });
 
-    if (result.error || (result.data as any)?.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(result.error || (result.data as any)?.errors)}`);
+    // Check for errors more carefully
+    if (result.error) {
+      console.warn('GraphQL query error, falling back to Supabase:', result.error);
+      throw result.error;
+    }
+
+    if ((result.data as any)?.errors) {
+      console.warn('GraphQL data errors, falling back to Supabase:', (result.data as any)?.errors);
+      throw new Error(`GraphQL errors: ${JSON.stringify((result.data as any)?.errors)}`);
     }
 
     const graphqlParticipants = (result.data as any)?.participants || [];
+    
+    if (graphqlParticipants.length === 0) {
+      console.warn('No participants from GraphQL, falling back to Supabase');
+      throw new Error('No participants returned from GraphQL');
+    }
     
     // For each participant, get detailed data
     const participantsWithData = await Promise.all(
@@ -217,19 +229,70 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 
     return participantsWithData.filter(Boolean) as ParticipantData[]
   } catch (error) {
-    console.error('Failed to fetch all participants:', error)
+    console.error('Failed to fetch all participants via GraphQL:', error)
     // Fallback to Supabase if GraphQL fails
     try {
-      const participants = await supabaseManager.getParticipants()
-      return participants.map((p: any) => ({
-        id: p.participant_id,
-        name: `Participant ${p.participant_id.slice(0, 8)}`,
-        sessions: [],
-        analysisRuns: [],
-        sessionCount: p.session_count || 0,
-        responseCount: p.total_responses || 0,
-        averageSpiritProbability: p.average_spirit_probability || 0,
-      }))
+      console.log('Attempting Supabase fallback...')
+      const client = getSupabaseClient()
+      
+      // Get participants with aggregated statistics
+      const { data: participants, error } = await client
+        .from('participants')
+        .select('id, name, created_at')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error('Supabase query error:', error)
+        throw error
+      }
+      
+      if (!participants || participants.length === 0) {
+        console.log('No participants found in Supabase')
+        return []
+      }
+      
+      console.log(`Retrieved ${participants.length} participants from Supabase`)
+      
+      // Get aggregated statistics for each participant
+      const participantsWithStats = await Promise.all(
+        participants.map(async (p: any) => {
+          const participantId = p.id
+          
+          // Get session count
+          const { count: sessionCount } = await client
+            .from('participant_experiment_sessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('participant_id', participantId)
+          
+          // Get response count
+          const { count: responseCount } = await client
+            .from('participant_response_data')
+            .select('*', { count: 'exact', head: true })
+            .eq('participant_id', participantId)
+          
+          // Get average spirit probability
+          const { data: analysisResults } = await client
+            .from('participant_analysis_results')
+            .select('spirit_probability')
+            .eq('participant_id', participantId)
+          
+          const averageSpiritProbability = analysisResults && analysisResults.length > 0
+            ? analysisResults.reduce((sum: number, r: any) => sum + (r.spirit_probability || 0), 0) / analysisResults.length
+            : 0
+          
+          return {
+            id: participantId,
+            name: p.name || `Participant ${participantId.slice(0, 8)}`,
+            sessions: [],
+            analysisRuns: [],
+            sessionCount: sessionCount || 0,
+            responseCount: responseCount || 0,
+            averageSpiritProbability: averageSpiritProbability,
+          }
+        })
+      )
+      
+      return participantsWithStats
     } catch (fallbackError) {
       console.error('Fallback to Supabase also failed:', fallbackError)
       return []
