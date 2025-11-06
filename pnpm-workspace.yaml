@@ -1,4 +1,5 @@
 packages:
   - "performers/systems/*/src"
+  - "performers/systems/visualizer"
   - "performers/services/ports/types/*"
 

@@ -1,0 +1,35 @@
+/* Merkle DAG: visualization_layout.css -> hide_sidebar_and_header */
+/* このページではサイドバーとヘッダーを非表示にして、visualize componentのみを表示 */
+
+.visualization-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: white;
+  overflow: hidden;
+}
+
+/* 親レイアウトのサイドバーとヘッダーを非表示 */
+body aside,
+body header,
+body [role="aside"],
+body [role="banner"],
+body > div > div > aside,
+body > div > div > header {
+  display: none !important;
+}
+
+/* 親レイアウトのmain要素も全画面に */
+body > div > div > main {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+

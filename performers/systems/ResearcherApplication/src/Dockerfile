@@ -10,6 +10,11 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Copy workspace packages
 COPY performers/services/ports/types/ ./performers/services/ports/types/
 
+# Copy visualizer package (workspace dependency)
+# Note: visualizer is in performers/systems/visualizer but workspace only includes performers/systems/*/src
+# So we need to copy it explicitly
+COPY performers/systems/visualizer/ ./performers/systems/visualizer/
+
 # Copy researcher app files
 COPY performers/systems/ResearcherApplication/src/package.json ./performers/systems/ResearcherApplication/src/
 
