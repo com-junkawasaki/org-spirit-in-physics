@@ -164,6 +164,29 @@
       "label": {"en": "Timeline Integration Process", "ja": "時系列統合プロセス"},
       "comment": {"en": "Process for integrating time-series data", "ja": "時系列データを統合するプロセス"},
       "subClassOf": "https://spirit-in-physics.gftd.ai/ontology#Process"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#Mind",
+      "type": "owl:Class",
+      "label": {"en": "Mind", "ja": "マインド"},
+      "comment": {"en": "Information space closed within an individual organism (closed system)", "ja": "個々の生体内に閉じた情報空間（閉鎖系）"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "個々の生体内に閉じた情報空間を扱う。マインドは個人の内部に限定された認知・思考・記憶の領域であり、閉鎖系として機能する。"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#Spirit",
+      "type": "owl:Class",
+      "label": {"en": "Spirit", "ja": "スピリット"},
+      "comment": {"en": "Information space open to society, external environment, and others (open system)", "ja": "社会や外部環境、他者に開かれた情報空間（開放系）"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "社会や外部環境、他者に開かれた開放系の情報空間を扱う。スピリットは個人を超えた集合的・社会的・環境的つながりを包含する開かれた情報空間である。"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#InformationSpace",
+      "type": "owl:Class",
+      "label": {"en": "Information Space", "ja": "情報空間"},
+      "comment": {"en": "Space where information processing and meaning emerge", "ja": "情報処理と意味が生まれる空間"},
+      "subClassOf": "owl:Thing"
     }
   ],
   
@@ -223,6 +246,30 @@
       "comment": {"en": "Timestamp of events or data", "ja": "イベントやデータのタイムスタンプ"},
       "domain": "owl:Thing",
       "range": "xsd:dateTime"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#isOpenSystem",
+      "type": "owl:DatatypeProperty",
+      "label": {"en": "is open system", "ja": "開放系である"},
+      "comment": {"en": "Indicates that the information space is an open system that exchanges information with external environment, society, and others", "ja": "情報空間が外部環境、社会、他者と情報交換を行う開放系であることを示す"},
+      "domain": "https://spirit-in-physics.gftd.ai/ontology#InformationSpace",
+      "range": "xsd:boolean"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#isClosedSystem",
+      "type": "owl:DatatypeProperty",
+      "label": {"en": "is closed system", "ja": "閉鎖系である"},
+      "comment": {"en": "Indicates that the information space is a closed system contained within an individual organism", "ja": "情報空間が個々の生体内に閉じた閉鎖系であることを示す"},
+      "domain": "https://spirit-in-physics.gftd.ai/ontology#InformationSpace",
+      "range": "xsd:boolean"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#hasInformationSpace",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "has information space", "ja": "情報空間を持つ"},
+      "comment": {"en": "Relates to an information space (Mind or Spirit)", "ja": "情報空間（マインドまたはスピリット）との関係"},
+      "domain": "owl:Thing",
+      "range": "https://spirit-in-physics.gftd.ai/ontology#InformationSpace"
     }
   ]
 }

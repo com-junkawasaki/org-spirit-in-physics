@@ -37,10 +37,19 @@ const Word2VecVisualization = ({ wordData }: { wordData: any[] }) => {
     </div>
   )
 }
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle,
+  Badge,
+  Button,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@spiritinphysics/components'
 import { 
   Brain, 
   Activity, 

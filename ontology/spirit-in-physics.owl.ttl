@@ -91,6 +91,29 @@ spirit:ConsentData a owl:Class ;
     rdfs:subClassOf owl:Thing .
 
 # ============================================================================
+# 概念定義: Mind と Spirit の区別
+# ============================================================================
+
+spirit:InformationSpace a owl:Class ;
+    rdfs:label "Information Space"@en, "情報空間"@ja ;
+    rdfs:comment "情報処理と意味が生まれる空間"@ja ;
+    rdfs:subClassOf owl:Thing .
+
+spirit:Mind a owl:Class ;
+    rdfs:label "Mind"@en, "マインド"@ja ;
+    rdfs:comment "個々の生体内に閉じた情報空間（閉鎖系）"@ja ;
+    rdfs:subClassOf spirit:InformationSpace ;
+    spirit:isClosedSystem true ;
+    dc:description "個々の生体内に閉じた情報空間を扱う。マインドは個人の内部に限定された認知・思考・記憶の領域であり、閉鎖系として機能する。"@ja .
+
+spirit:Spirit a owl:Class ;
+    rdfs:label "Spirit"@en, "スピリット"@ja ;
+    rdfs:comment "社会や外部環境、他者に開かれた情報空間（開放系）"@ja ;
+    rdfs:subClassOf spirit:InformationSpace ;
+    spirit:isOpenSystem true ;
+    dc:description "社会や外部環境、他者に開かれた開放系の情報空間を扱う。スピリットは個人を超えた集合的・社会的・環境的つながりを包含する開かれた情報空間である。"@ja .
+
+# ============================================================================
 # Complex Analysis データエンティティ定義
 # ============================================================================
 
@@ -232,6 +255,24 @@ spirit:hasDistanceType a owl:DatatypeProperty ;
     rdfs:comment "距離計算のタイプ（word2vec/integrated/emotional）"@ja ;
     rdfs:domain spirit:WordDistance ;
     rdfs:range xsd:string .
+
+spirit:isOpenSystem a owl:DatatypeProperty ;
+    rdfs:label "is open system"@en, "開放系である"@ja ;
+    rdfs:comment "情報空間が外部環境、社会、他者と情報交換を行う開放系であることを示す"@ja ;
+    rdfs:domain spirit:InformationSpace ;
+    rdfs:range xsd:boolean .
+
+spirit:isClosedSystem a owl:DatatypeProperty ;
+    rdfs:label "is closed system"@en, "閉鎖系である"@ja ;
+    rdfs:comment "情報空間が個々の生体内に閉じた閉鎖系であることを示す"@ja ;
+    rdfs:domain spirit:InformationSpace ;
+    rdfs:range xsd:boolean .
+
+spirit:hasInformationSpace a owl:ObjectProperty ;
+    rdfs:label "has information space"@en, "情報空間を持つ"@ja ;
+    rdfs:comment "情報空間（マインドまたはスピリット）との関係"@ja ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spirit:InformationSpace .
 
 # ============================================================================
 # プロセス定義

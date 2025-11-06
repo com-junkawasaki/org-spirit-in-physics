@@ -49,6 +49,12 @@
   
   "narrative": [
     {
+      "id": "https://spirit-in-physics.gftd.ai/narrative/research-premise",
+      "type": "ex:Narrative",
+      "act": "研究前提: なぜ Spirit なのか？",
+      "summary": "本研究では「Spirit」という用語を選択する理由は、マインド（Mind）との根本的な概念的違いにある。マインドは個々の生体内に閉じた情報空間（閉鎖系）を扱うのに対し、Spiritは社会や外部環境、他者に開かれた開放系の情報空間を扱う。この区別により、個人の内部に限定された認知プロセス（マインド）と、個人を超えた集合的・社会的・環境的つながりを含む情報空間（スピリット）を明確に区別できる。"
+    },
+    {
       "id": "https://spirit-in-physics.gftd.ai/narrative/spirit-in-physics",
       "type": "ex:Narrative",
       "act": "Spirit in Physics",
