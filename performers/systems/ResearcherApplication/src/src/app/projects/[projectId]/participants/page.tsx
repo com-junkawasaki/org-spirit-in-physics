@@ -69,7 +69,7 @@ export default function ProjectParticipantsPage({
                 <tr key={pp.participantId}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Link
-                      href={`/participants/${pp.participantId}`}
+                      href={`/spirits/${pp.participantId}`}
                       className="text-blue-600 hover:underline"
                     >
                       {pp.participant?.name ||

@@ -114,6 +114,34 @@ spirit:Spirit a owl:Class ;
     dc:description "社会や外部環境、他者に開かれた開放系の情報空間を扱う。スピリットは個人を超えた集合的・社会的・環境的つながりを包含する開かれた情報空間である。"@ja .
 
 # ============================================================================
+# Gene/Meme/Ghost/Archetype 定義
+# ============================================================================
+
+spirit:Gene a owl:Class ;
+    rdfs:label "Gene"@en, "遺伝子"@ja ;
+    rdfs:comment "スピリットの遺伝子 - スピリット（開放系）における情報パターンの基本単位"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    dc:description "スピリットの遺伝子として機能する情報パターンの基本単位。開放系であるスピリットにおいて、情報伝達とパターン継承を担う。gene = gene of spirit"@ja .
+
+spirit:Meme a owl:Class ;
+    rdfs:label "Meme"@en, "ミーム"@ja ;
+    rdfs:comment "ゴーストの遺伝子 - ゴーストパターンにおける情報パターンの基本単位"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    dc:description "ゴーストの遺伝子として機能する情報パターンの基本単位。スピリットから分析分類されたゴーストパターンにおいて、文化的・社会的な情報伝達とパターン継承を担う。meme = gene of ghost"@ja .
+
+spirit:Ghost a owl:Class ;
+    rdfs:label "Ghost"@en, "ゴースト"@ja ;
+    rdfs:comment "スピリットから分析分類されたパターン - 集合的スピリットデータから導出されたパターンを表現"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    dc:description "スピリットから分析分類されたパターン。すべてのユーザーの実験データを情報空間に統合したスピリットから抽出される、遺伝的・文化的・元型的パターン（gene/meme/archetype）を含む。"@ja .
+
+spirit:Archetype a owl:Class ;
+    rdfs:label "Archetype"@en, "アーキタイプ"@ja ;
+    rdfs:comment "ユングの原型パターン化されたスピリット - スピリットから原型としてパターン化された普遍的なパターン"@ja ;
+    rdfs:subClassOf owl:Thing ;
+    dc:description "ユングの原型理論に基づく、スピリットからパターン化された普遍的原型。個人を超えた集合的無意識に共通する元型的パターンを表現する。"@ja .
+
+# ============================================================================
 # Complex Analysis データエンティティ定義
 # ============================================================================
 
@@ -273,6 +301,30 @@ spirit:hasInformationSpace a owl:ObjectProperty ;
     rdfs:comment "情報空間（マインドまたはスピリット）との関係"@ja ;
     rdfs:domain owl:Thing ;
     rdfs:range spirit:InformationSpace .
+
+spirit:hasGene a owl:ObjectProperty ;
+    rdfs:label "has gene"@en, "遺伝子を持つ"@ja ;
+    rdfs:comment "スピリットとその遺伝子の関係 - gene = gene of spirit"@ja ;
+    rdfs:domain spirit:Spirit ;
+    rdfs:range spirit:Gene .
+
+spirit:hasMeme a owl:ObjectProperty ;
+    rdfs:label "has meme"@en, "ミームを持つ"@ja ;
+    rdfs:comment "ゴーストとそのミームの関係 - meme = gene of ghost"@ja ;
+    rdfs:domain spirit:Ghost ;
+    rdfs:range spirit:Meme .
+
+spirit:derivedFromSpirit a owl:ObjectProperty ;
+    rdfs:label "derived from spirit"@en, "スピリットから派生"@ja ;
+    rdfs:comment "ゴーストがスピリットから分析分類されたことを示す"@ja ;
+    rdfs:domain spirit:Ghost ;
+    rdfs:range spirit:Spirit .
+
+spirit:patternedAsArchetype a owl:ObjectProperty ;
+    rdfs:label "patterned as archetype"@en, "アーキタイプとしてパターン化"@ja ;
+    rdfs:comment "スピリットがアーキタイプとしてパターン化されたことを示す"@ja ;
+    rdfs:domain spirit:Spirit ;
+    rdfs:range spirit:Archetype .
 
 # ============================================================================
 # プロセス定義

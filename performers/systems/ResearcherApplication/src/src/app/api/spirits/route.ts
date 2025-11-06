@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseManager } from '@/lib/supabase'
 
 /**
- * GET /api/participants
+ * GET /api/spirits
  * 
  * Merkle DAG: participants_api -> graphql -> participants_query
  * OWL: spirit:DataCollection via GraphQL

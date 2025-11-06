@@ -38,7 +38,7 @@ export default function ForceTimelinePage() {
         header={{
           title: '3D Force Timeline',
           description: '感情類似度をフォースに統合した時系列×3D可視化の専用ページ',
-          backHref: '/participants',
+          backHref: '/spirits',
           backLabel: '参加者一覧へ'
         }}
       >

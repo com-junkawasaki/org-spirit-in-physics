@@ -20,16 +20,37 @@ const menuItems: MenuItem[] = [
         description: 'システム概要と統計'
     },
     {
-        id: 'participants',
-        label: '被験者一覧',
-        href: '/participants',
+        id: 'spirit',
+        label: '統合 Spirit',
+        href: '/spirit',
+        icon: '🌐',
+        description: '統合された spirit データ'
+    },
+    {
+        id: 'spirits',
+        label: 'Spirits',
+        href: '/spirits',
         icon: '👥',
-        description: '参加者データ管理'
+        description: '個別の spirit データ管理'
+    },
+    {
+        id: 'ghosts',
+        label: 'Ghosts',
+        href: '/ghosts',
+        icon: '👻',
+        description: 'Ghost パターンの分析'
+    },
+    {
+        id: 'archetypes',
+        label: 'Archetypes',
+        href: '/archetypes',
+        icon: '🔮',
+        description: 'ユングのアーキタイプ分析'
     },
     {
         id: 'timeline',
         label: '時系列可視化',
-        href: '/participants/2a0d7a69-f953-4c29-87a5-8a8e4e8bd413/timeline',
+        href: '/spirits/2a0d7a69-f953-4c29-87a5-8a8e4e8bd413/timeline',
         icon: '📈',
         description: '時系列統合可視化'
     },

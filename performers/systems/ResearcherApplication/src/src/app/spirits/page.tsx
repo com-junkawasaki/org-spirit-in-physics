@@ -100,7 +100,7 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
                 {formatDate(participant.lastActivity)}
               </TableCell>
               <TableCell>
-                <Link href={`/participants/${participant.id}`}>
+                <Link href={`/spirits/${participant.id}`}>
                   <Button variant="outline" size="sm">
                     詳細
                     <ArrowRight className="h-4 w-4 ml-1" />

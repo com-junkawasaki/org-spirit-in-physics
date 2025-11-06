@@ -143,7 +143,7 @@ export default function ComplexDetailPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <Link href={`/participants/${participantId}`}>
+            <Link href={`/spirits/${participantId}`}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 詳細に戻る

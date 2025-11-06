@@ -18,7 +18,7 @@ export default function ProjectLayout({
 
   const navItems = [
     { href: `/projects/${projectId}`, label: 'ダッシュボード' },
-    { href: `/projects/${projectId}/participants`, label: '参加者' },
+    { href: `/projects/${projectId}/participants`, label: 'Spirits' },
     { href: `/projects/${projectId}/config`, label: '設定' },
     { href: `/projects/${projectId}/workflow`, label: 'ワークフロー' },
     { href: `/projects/${projectId}/analysis`, label: '分析' },

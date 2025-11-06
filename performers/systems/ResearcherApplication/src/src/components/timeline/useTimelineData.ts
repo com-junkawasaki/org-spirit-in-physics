@@ -91,7 +91,7 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
       setLoading(true)
       console.log('TimelineVisualization: Starting data fetch for participant:', participantId)
       // API優先、失敗時・useDemo時はローカル生成でフォールバック
-      const apiUrl = `/api/participants/${participantId}/timeline`
+      const apiUrl = `/api/spirits/${participantId}/timeline`
       console.log('TimelineVisualization: API URL:', apiUrl)
       let ok = false
       try {
@@ -144,7 +144,7 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = useCallback(async () => {
     try {
-      const res = await fetch(`/api/participants/${participantId}/word2vec`)
+      const res = await fetch(`/api/spirits/${participantId}/word2vec`)
       const json = await res.json()
       if (!json?.success) return
       const byWord: Record<string, { sum: number[]; count: number }> = {}

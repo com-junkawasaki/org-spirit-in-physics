@@ -187,6 +187,38 @@
       "label": {"en": "Information Space", "ja": "情報空間"},
       "comment": {"en": "Space where information processing and meaning emerge", "ja": "情報処理と意味が生まれる空間"},
       "subClassOf": "owl:Thing"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#Gene",
+      "type": "owl:Class",
+      "label": {"en": "Gene", "ja": "遺伝子"},
+      "comment": {"en": "Gene of Spirit - fundamental unit of information pattern in Spirit (open system)", "ja": "スピリットの遺伝子 - スピリット（開放系）における情報パターンの基本単位"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "スピリットの遺伝子として機能する情報パターンの基本単位。開放系であるスピリットにおいて、情報伝達とパターン継承を担う。gene = gene of spirit"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#Meme",
+      "type": "owl:Class",
+      "label": {"en": "Meme", "ja": "ミーム"},
+      "comment": {"en": "Gene of Ghost - fundamental unit of information pattern in Ghost patterns", "ja": "ゴーストの遺伝子 - ゴーストパターンにおける情報パターンの基本単位"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "ゴーストの遺伝子として機能する情報パターンの基本単位。スピリットから分析分類されたゴーストパターンにおいて、文化的・社会的な情報伝達とパターン継承を担う。meme = gene of ghost"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#Ghost",
+      "type": "owl:Class",
+      "label": {"en": "Ghost", "ja": "ゴースト"},
+      "comment": {"en": "Pattern classified and analyzed from Spirit - represents patterns derived from collective spirit data", "ja": "スピリットから分析分類されたパターン - 集合的スピリットデータから導出されたパターンを表現"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "スピリットから分析分類されたパターン。すべてのユーザーの実験データを情報空間に統合したスピリットから抽出される、遺伝的・文化的・元型的パターン（gene/meme/archetype）を含む。"}
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#Archetype",
+      "type": "owl:Class",
+      "label": {"en": "Archetype", "ja": "アーキタイプ"},
+      "comment": {"en": "Jungian archetypal pattern of Spirit - universal patterns archetypally patterned from Spirit", "ja": "ユングの原型パターン化されたスピリット - スピリットから原型としてパターン化された普遍的なパターン"},
+      "subClassOf": "owl:Thing",
+      "description": {"ja": "ユングの原型理論に基づく、スピリットからパターン化された普遍的原型。個人を超えた集合的無意識に共通する元型的パターンを表現する。"}
     }
   ],
   
@@ -270,6 +302,38 @@
       "comment": {"en": "Relates to an information space (Mind or Spirit)", "ja": "情報空間（マインドまたはスピリット）との関係"},
       "domain": "owl:Thing",
       "range": "https://spirit-in-physics.gftd.ai/ontology#InformationSpace"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#hasGene",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "has gene", "ja": "遺伝子を持つ"},
+      "comment": {"en": "Relates Spirit to its Gene - gene = gene of spirit", "ja": "スピリットとその遺伝子の関係 - gene = gene of spirit"},
+      "domain": "https://spirit-in-physics.gftd.ai/ontology#Spirit",
+      "range": "https://spirit-in-physics.gftd.ai/ontology#Gene"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#hasMeme",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "has meme", "ja": "ミームを持つ"},
+      "comment": {"en": "Relates Ghost to its Meme - meme = gene of ghost", "ja": "ゴーストとそのミームの関係 - meme = gene of ghost"},
+      "domain": "https://spirit-in-physics.gftd.ai/ontology#Ghost",
+      "range": "https://spirit-in-physics.gftd.ai/ontology#Meme"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#derivedFromSpirit",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "derived from spirit", "ja": "スピリットから派生"},
+      "comment": {"en": "Indicates that Ghost is analyzed and classified from Spirit", "ja": "ゴーストがスピリットから分析分類されたことを示す"},
+      "domain": "https://spirit-in-physics.gftd.ai/ontology#Ghost",
+      "range": "https://spirit-in-physics.gftd.ai/ontology#Spirit"
+    },
+    {
+      "id": "https://spirit-in-physics.gftd.ai/ontology#patternedAsArchetype",
+      "type": "owl:ObjectProperty",
+      "label": {"en": "patterned as archetype", "ja": "アーキタイプとしてパターン化"},
+      "comment": {"en": "Indicates that Spirit is patterned as Archetype", "ja": "スピリットがアーキタイプとしてパターン化されたことを示す"},
+      "domain": "https://spirit-in-physics.gftd.ai/ontology#Spirit",
+      "range": "https://spirit-in-physics.gftd.ai/ontology#Archetype"
     }
   ]
 }

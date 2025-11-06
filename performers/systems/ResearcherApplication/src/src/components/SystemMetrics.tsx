@@ -33,7 +33,7 @@ export function SystemMetrics() {
     setIsLoading(true)
     try {
       const [participantsResponse, dashboardStatsResponse, importStatusResponse] = await Promise.all([
-        fetch('/api/participants'),
+        fetch('/api/spirits'),
         fetch('/api/dashboard-stats'),
         fetch('/api/imports/status')
       ])

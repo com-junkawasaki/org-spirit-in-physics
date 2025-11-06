@@ -54,7 +54,7 @@ export default function DashboardPage() {
           title: '参加者管理',
           description: '参加者データの閲覧・管理',
           icon: <Users className="h-6 w-6" />,
-          href: '/participants',
+          href: '/spirits',
           color: 'bg-indigo-500'
         },
         {

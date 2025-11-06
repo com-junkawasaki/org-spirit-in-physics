@@ -103,7 +103,7 @@ export default function ParticipantDetailPage() {
       setIsLoading(true)
       setError(null)
       
-      const response = await fetch(`/api/participants/${participantId}/word2vec`)
+      const response = await fetch(`/api/spirits/${participantId}/word2vec`)
       const data = await response.json()
       
       if (data.success) {
@@ -187,7 +187,7 @@ export default function ParticipantDetailPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <Link href="/participants">
+            <Link href="/spirits">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 一覧に戻る
@@ -405,7 +405,7 @@ export default function ParticipantDetailPage() {
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Link href={`/participants/${participantId}/complex`}>
+                  <Link href={`/spirits/${participantId}/complex`}>
                     <Card className="cursor-pointer hover:bg-muted transition-colors">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -418,7 +418,7 @@ export default function ParticipantDetailPage() {
                       </CardHeader>
                     </Card>
                   </Link>
-                  <Link href={`/participants/${participantId}/distance`}>
+                  <Link href={`/spirits/${participantId}/distance`}>
                     <Card className="cursor-pointer hover:bg-muted transition-colors">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">

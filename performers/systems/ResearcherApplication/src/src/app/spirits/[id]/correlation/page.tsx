@@ -84,7 +84,7 @@ export default function ParticipantCorrelationPage() {
     const fetchCorrelationData = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch(`/api/participants/${participantId}/correlation`)
+        const response = await fetch(`/api/spirits/${participantId}/correlation`)
         if (!response.ok) {
           throw new Error('Failed to fetch correlation data')
         }

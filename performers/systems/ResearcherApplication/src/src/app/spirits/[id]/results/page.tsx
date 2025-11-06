@@ -112,7 +112,7 @@ function ResultsContent() {
             try {
               setTriggering(true)
               setTriggerMessage(null)
-              const res = await fetch(`/api/participants/${id}/analyze`, { method: 'POST' })
+              const res = await fetch(`/api/spirits/${id}/analyze`, { method: 'POST' })
             if (res.ok) {
                 setTriggerMessage('解析ジョブを起動しました。数分後に更新してください。')
               } else {
@@ -197,7 +197,7 @@ function ResultsContent() {
                 try {
                   setTriggering(true)
                   setTriggerMessage(null)
-                  const res = await fetch(`/api/participants/${id}/analyze`, { method: 'POST' })
+                  const res = await fetch(`/api/spirits/${id}/analyze`, { method: 'POST' })
                   if (res.ok) {
                     setTriggerMessage('解析ジョブを起動しました。数分後にこのページを更新してください。')
                   } else {
@@ -227,7 +227,7 @@ export default function ParticipantResultsPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex gap-4 mb-4">
-          <Link href="/participants">
+          <Link href="/spirits">
             <Button variant="ghost">
               <ArrowLeft className="h-4 w-4 mr-2" />
               被験者一覧に戻る

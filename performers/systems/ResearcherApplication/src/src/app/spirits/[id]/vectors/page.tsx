@@ -270,7 +270,7 @@ export default function ParticipantVectorsPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex gap-4 mb-4">
-          <Link href="/participants">
+          <Link href="/spirits">
             <Button variant="ghost">
               <ArrowLeft className="h-4 w-4 mr-2" />
               被験者一覧に戻る
