@@ -1,5 +1,5 @@
 services:
-  # PostgreSQL (Legacy - for GraphQL service direct connection)
+  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: spirit-postgres
@@ -11,45 +11,6 @@ services:
       - POSTGRES_DB=postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  # Supabase Platform
-  # Note: Supabase is typically managed via `supabase start` CLI command
-  # This service definition provides basic PostgreSQL for Supabase.
-  # For full Supabase stack (API, Auth, Realtime, Storage, Studio, etc.),
-  # use `supabase start` which generates its own docker-compose configuration.
-  # 
-  # Usage:
-  #   - Full stack: `cd performers/systems/supabase && supabase start`
-  #   - Database only: `docker-compose up supabase`
-  #
-  # Config: performers/systems/supabase/config.toml
-  # Migrations: performers/systems/supabase/migrations/
-  # Migrations are applied via `supabase db reset` or `supabase migration up`
-  supabase:
-    image: supabase/postgres:17.1.0.117
-    container_name: spirit-supabase-db
-    ports:
-      - "54322:5432"
-    environment:
-      - POSTGRES_HOST=/var/run/postgresql
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - JWT_SECRET=your-super-secret-jwt-token-with-at-least-32-characters-long
-      - JWT_EXP=3600
-    volumes:
-      - supabase_db_data:/var/lib/postgresql/data
-      # Note: Migrations are managed via Supabase CLI, not docker-entrypoint-initdb.d
-      # Run `supabase db reset` or `supabase migration up` to apply migrations
     networks:
       - spirit-network
     healthcheck:
@@ -72,13 +33,9 @@ services:
       - ./performers/services/graphql/migrations:/app/migrations:cached
       - ./performers/services/graphql/diesel.toml:/app/diesel.toml
     environment:
-      # Use Supabase database when available, fallback to legacy postgres
-      - DATABASE_URL=postgresql://postgres:postgres@supabase:5432/postgres
-      - DATABASE_URL_LEGACY=postgresql://postgres:postgres@postgres:5432/postgres
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
       - RUST_LOG=info,sqlx=warn,hyper=info,diesel=debug
     depends_on:
-      supabase:
-        condition: service_healthy
       postgres:
         condition: service_healthy
     networks:
@@ -92,7 +49,6 @@ services:
 
 volumes:
   postgres_data:
-  supabase_db_data:
 
 networks:
   spirit-network:
