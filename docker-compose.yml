@@ -20,61 +20,6 @@ services:
       retries: 5
       start_period: 10s
 
-  # Patient app (Next.js)
-  patient:
-    build:
-      context: ./apps/patient
-      dockerfile: Dockerfile
-    container_name: spirit-patient
-    ports:
-      - "25250:25250"
-    volumes:
-      - ./apps/visualizer/public/dataset:/app/dataset:cached
-    env_file:
-      - ./apps/patient/env.docker
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:25250" ]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
-
-  # Visualizer app (Next.js)
-  visualizer:
-    build:
-      context: ./apps/visualizer
-      dockerfile: Dockerfile
-    container_name: spirit-visualizer
-    ports:
-      - "25260:3000"
-    volumes:
-      - ./apps/visualizer:/app:cached
-      - /app/node_modules
-    working_dir: /app
-    env_file:
-      - ./apps/visualizer/env.docker
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      postgres:
-        condition: service_healthy
-      graphql:
-        condition: service_started
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000" ]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
   # GraphQL API (Rust)
   graphql:
     build:
@@ -87,10 +32,9 @@ services:
       - ./apps/graphql/src:/app/src:cached
       - ./apps/graphql/migrations:/app/migrations:cached
       - ./apps/graphql/diesel.toml:/app/diesel.toml
-    env_file:
-      - ./apps/graphql/env.docker
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - RUST_LOG=info,sqlx=warn,hyper=info,diesel=debug
     depends_on:
       postgres:
         condition: service_healthy
