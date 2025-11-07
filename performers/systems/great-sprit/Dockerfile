@@ -1,5 +1,6 @@
 # Multi-stage build for Rust application
-FROM rust:1.83-slim as builder
+# Note: Using nightly Rust for Bevy 0.13 compatibility (edition2024 support)
+FROM rustlang/rust:nightly-slim as builder
 
 WORKDIR /app
 

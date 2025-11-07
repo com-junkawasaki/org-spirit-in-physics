@@ -9,6 +9,10 @@ mod gpu;
 mod kg;
 mod graphql;
 mod visualization;
+mod emotion;
+mod capture;
+mod identity;
+mod pipeline;
 
 use config::Config;
 
