@@ -1,9 +1,0 @@
-{
-  "files": [],
-  "references": [
-    { "path": "apps/graphql" },
-    { "path": "apps/participant" },
-    { "path": "apps/researcher" },
-    { "path": "apps/visualizer" }
-  ]
-}
