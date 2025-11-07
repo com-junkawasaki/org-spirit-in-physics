@@ -1,0 +1,68 @@
+[package]
+name = "great-sprit"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jumma Kawasaki"]
+description = "Great Spirit GPU Physics System - Real-time spirit position calculation with GPU acceleration"
+license = "MIT"
+
+[dependencies]
+# GPU computing
+wgpu = "0.20"
+bytemuck = { version = "1.14", features = ["derive"] }
+
+# Visualization (Bevy)
+bevy = { version = "0.13", default-features = false, features = [
+    "default",
+    "bevy_asset",
+    "bevy_core",
+    "bevy_core_pipeline",
+    "bevy_ecs",
+    "bevy_render",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_transform",
+    "bevy_window",
+    "bevy_winit",
+    "bevy_gizmos",
+    "bevy_pbr",
+] }
+
+# GraphQL API
+async-graphql = "7.0"
+async-graphql-warp = "7.0"
+tokio = { version = "1.0", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Vector math
+nalgebra = "0.33"
+
+# TerminusDB client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Configuration
+config = "0.14"
+toml = "0.8"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Async utilities
+futures = "0.3"
+
+[dev-dependencies]
+criterion = "0.5"
+tokio-test = "0.4"
+
+[[bin]]
+name = "great-sprit"
+path = "src/main.rs"
+

@@ -1,0 +1,24 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config (may contain secrets)
+config.toml
+.env
+.env.local
+
+# Build artifacts
+*.pdb
+
