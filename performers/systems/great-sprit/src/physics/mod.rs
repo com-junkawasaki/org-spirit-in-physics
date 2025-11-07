@@ -7,10 +7,12 @@ pub mod potential;
 pub mod resonance;
 pub mod integration;
 pub mod observation;
+pub mod shacl_force;
 
 pub use dynamics::Dynamics;
 pub use potential::Potential;
 pub use resonance::Resonance;
 pub use integration::Integration;
 pub use observation::Observation;
+pub use shacl_force::ShaclForceIntegrator;
 
