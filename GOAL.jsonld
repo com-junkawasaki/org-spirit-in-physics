@@ -1,0 +1,155 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dct": "http://purl.org/dc/terms/",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "title": "dct:title",
+    "goal": "cpm:goal",
+    "coreDefinitions": "cpm:coreDefinitions",
+    "version": "dct:hasVersion",
+    "author": "dct:creator",
+    "lastUpdated": "dct:modified",
+    "wasDerivedFrom": "prov:wasDerivedFrom",
+    "equivalentClass": "owl:equivalentClass",
+    "subClassOf": "rdfs:subClassOf"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/goal",
+  "@type": ["cpm:Goal", "prov:Entity"],
+  
+  "name": "Spirit in Physics Project Goal",
+  "title": "霊性の物理的・情報的・進化的理解",
+  "description": "我らと我らの子孫が豊かで情緒的な暮らしを送れるいい感じの社会を生成することを目指し、霊性（spirit）を物理法則、情報理論、進化論の観点から統合的に理解する。",
+  
+  "goal": "我らと我らの子孫が豊かで情緒的な暮らしを送れるいい感じの社会を生成する",
+  
+  "coreDefinitions": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-physics",
+      "@type": ["cpm:CoreDefinition", "owl:Class"],
+      "name": "Spirit is Physics",
+      "description": "霊性は物理法則に従う実在である。spiritは物理的実体として測定可能であり、物理法則（力学、熱力学、情報理論等）に従って振る舞う。川崎モデルによる感情・生理データの統合分析は、spiritを物理量として定量化する試みである。",
+      "equivalentClass": {
+        "@id": "https://spirit-in-physics.gftd.ai/class/Spirit",
+        "@type": "owl:Class",
+        "subClassOf": [
+          {
+            "@id": "https://spirit-in-physics.gftd.ai/class/PhysicalEntity",
+            "name": "Physical Entity",
+            "description": "物理法則に従う実体"
+          }
+        ]
+      },
+      "wasDerivedFrom": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/narrative/kawasaki-model",
+          "@type": "cpm:Narrative",
+          "name": "川崎モデル",
+          "description": "感情分析と生理データを統合した定量化手法"
+        }
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-information",
+      "@type": ["cpm:CoreDefinition", "owl:Class"],
+      "name": "Spirit is Information",
+      "description": "霊性は情報として表現・測定可能である。spiritは情報エントロピー、意味ベクトル、確率分布として表現され、Word2Vecによる意味的類似性、感情ベクトル、生理データの時系列パターンとして測定可能である。情報理論の観点から、spiritはシャノン情報量、相互情報量、条件付きエントロピーとして定式化できる。",
+      "equivalentClass": {
+        "@id": "https://spirit-in-physics.gftd.ai/class/Spirit",
+        "@type": "owl:Class",
+        "subClassOf": [
+          {
+            "@id": "https://spirit-in-physics.gftd.ai/class/InformationEntity",
+            "name": "Information Entity",
+            "description": "情報として表現可能な実体"
+          }
+        ]
+      },
+      "wasDerivedFrom": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/narrative/word2vec-analysis",
+          "@type": "cpm:Narrative",
+          "name": "Word2Vec意味分析",
+          "description": "言語と感情の関係性を定量的に表現する手法"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/narrative/emotion-vector",
+          "@type": "cpm:Narrative",
+          "name": "感情ベクトル",
+          "description": "Hume AIによる感情データのベクトル表現"
+        }
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-gene-plus-meme",
+      "@type": ["cpm:CoreDefinition", "owl:Class"],
+      "name": "Spirit is Gene + Meme",
+      "description": "霊性は遺伝子（生物学的継承）とミーム（文化的継承）の統合である。spiritは遺伝子によって生物学的に継承される基盤（生理的反応、感情の生得的傾向等）と、ミームによって文化的に継承される要素（言語、価値観、行動パターン等）の相互作用として現れる。遺伝子とミームの共進化により、spiritは個体レベルと集団レベルの両方で進化する。",
+      "equivalentClass": {
+        "@id": "https://spirit-in-physics.gftd.ai/class/Spirit",
+        "@type": "owl:Class",
+        "subClassOf": [
+          {
+            "@id": "https://spirit-in-physics.gftd.ai/class/EvolutionaryEntity",
+            "name": "Evolutionary Entity",
+            "description": "進化的プロセスによって形成される実体"
+          }
+        ]
+      },
+      "wasDerivedFrom": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/narrative/genetic-inheritance",
+          "@type": "cpm:Narrative",
+          "name": "遺伝的継承",
+          "description": "生理データ、感情の生得的傾向等の生物学的基盤"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/narrative/memetic-inheritance",
+          "@type": "cpm:Narrative",
+          "name": "文化的継承",
+          "description": "言語、価値観、行動パターン等の文化的要素"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/narrative/coevolution",
+          "@type": "cpm:Narrative",
+          "name": "共進化",
+          "description": "遺伝子とミームの相互作用による進化"
+        }
+      ]
+    }
+  ],
+  
+  "metadata": {
+    "@id": "https://spirit-in-physics.gftd.ai/goal/metadata",
+    "@type": "cpm:Metadata",
+    "version": "1.0.0",
+    "author": {
+      "@id": "https://spirit-in-physics.gftd.ai/author",
+      "@type": "cpm:Person",
+      "name": "Jumma Kawasaki"
+    },
+    "lastUpdated": "2025-01-27T12:00:00Z"
+  },
+  
+  "wasDerivedFrom": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/project",
+      "@type": "prov:Entity",
+      "name": "PROJECT.jsonld",
+      "description": "プロジェクト定義ファイル"
+    }
+  ]
+}
+
