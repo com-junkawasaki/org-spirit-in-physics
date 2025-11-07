@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use async_graphql::{SimpleObject, InputObject};
+use async_graphql::SimpleObject;
 
 use crate::db::schema::*;
 
@@ -17,11 +17,6 @@ pub struct Participant {
     pub handedness: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
-    pub name: Option<String>,
-    pub ethnicity: Option<String>,
-    pub income: Option<String>,
-    pub consent_version: Option<String>,
-    pub study_id: Option<String>,
 }
 
 // GraphQL type that uses String for dates
@@ -33,6 +28,14 @@ pub struct ParticipantGQL {
     pub handedness: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_count: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub response_count: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub emotion_data_count: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub physiological_data_count: Option<i64>,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]
@@ -42,9 +45,4 @@ pub struct NewParticipant {
     // Note: gender field uses GenderType enum, skipping for now
     // pub gender: Option<String>,
     pub handedness: Option<String>,
-    pub name: Option<String>,
-    pub ethnicity: Option<String>,
-    pub income: Option<String>,
-    pub consent_version: Option<String>,
-    pub study_id: Option<String>,
 }

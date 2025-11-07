@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GraphQL Playground - Great Spirit</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #61dafb;
+            margin-bottom: 20px;
+        }
+        .query-editor {
+            width: 100%;
+            min-height: 300px;
+            background: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .button {
+            background: #61dafb;
+            color: #1e1e1e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        .button:hover {
+            background: #4fa8c5;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .result.success {
+            border-color: #4caf50;
+        }
+        .result.error {
+            border-color: #f44336;
+            color: #ff6b6b;
+        }
+        .example-queries {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2d2d2d;
+            border-radius: 4px;
+        }
+        .example-queries h3 {
+            color: #61dafb;
+            margin-top: 0;
+        }
+        .example-query {
+            margin: 10px 0;
+            padding: 10px;
+            background: #1e1e1e;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+        }
+        .example-query:hover {
+            background: #2d2d2d;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2d2d2d;
+            border-radius: 4px;
+            border-left: 4px solid #61dafb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Great Spirit GraphQL Playground</h1>
+        
+        <div class="info">
+            <strong>Endpoint:</strong> <code>http://localhost:8082/graphql</code><br>
+            <strong>Method:</strong> POST<br>
+            <strong>Content-Type:</strong> application/json
+        </div>
+
+        <h2>Query Editor</h2>
+        <textarea id="queryEditor" class="query-editor" placeholder="Enter your GraphQL query here...">{
+  health
+  gpuInfo
+  metrics {
+    numSamples
+    stepTimeMs
+  }
+}</textarea>
+        
+        <button class="button" onclick="executeQuery()">Execute Query</button>
+        <button class="button" onclick="clearResult()">Clear Result</button>
+
+        <div id="result" class="result" style="display: none;"></div>
+
+        <div class="example-queries">
+            <h3>Example Queries</h3>
+            <div class="example-query" onclick="loadExample('health')">
+                <strong>Health Check:</strong><br>
+                { health }
+            </div>
+            <div class="example-query" onclick="loadExample('gpu')">
+                <strong>GPU Info:</strong><br>
+                { gpuInfo }
+            </div>
+            <div class="example-query" onclick="loadExample('metrics')">
+                <strong>System Metrics:</strong><br>
+                { metrics { numSamples stepTimeMs } }
+            </div>
+            <div class="example-query" onclick="loadExample('emotion')">
+                <strong>Emotion Aggregation:</strong><br>
+                { personEmotionAggregation(personUri: "https://example.org/person/1") { averageValence averageArousal averageEngagement } }
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const endpoint = '/graphql';
+
+        function loadExample(type) {
+            const examples = {
+                health: '{ health }',
+                gpu: '{ gpuInfo }',
+                metrics: '{ metrics { numSamples stepTimeMs } }',
+                emotion: `{
+  personEmotionAggregation(personUri: "https://example.org/person/1") {
+    averageValence
+    averageArousal
+    averageEngagement
+    sampleCount
+  }
+}`
+            };
+            document.getElementById('queryEditor').value = examples[type] || '';
+        }
+
+        async function executeQuery() {
+            const query = document.getElementById('queryEditor').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!query) {
+                resultDiv.textContent = 'Error: Query is empty';
+                resultDiv.className = 'result error';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            resultDiv.textContent = 'Executing...';
+            resultDiv.className = 'result';
+            resultDiv.style.display = 'block';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.errors) {
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result error';
+                } else {
+                    resultDiv.textContent = JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result success';
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        function clearResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+
+        // Allow Ctrl+Enter to execute query
+        document.getElementById('queryEditor').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                executeQuery();
+            }
+        });
+    </script>
+</body>
+</html>
+

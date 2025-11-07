@@ -40,7 +40,15 @@ pub async fn start_server(
         .allow_headers(vec!["content-type"])
         .allow_methods(vec!["GET", "POST", "OPTIONS"]);
     
+    // Add GraphQL Playground route (GET /graphql)
+    let playground = warp::path("graphql")
+        .and(warp::get())
+        .map(|| {
+            warp::reply::html(include_str!("../../resources/graphql-playground.html"))
+        });
+    
     let routes = graphql_filter
+        .or(playground)
         .with(cors)
         .recover(|err: warp::Rejection| async move {
             Ok::<_, std::convert::Infallible>(warp::reply::with_status(

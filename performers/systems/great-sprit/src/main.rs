@@ -16,9 +16,8 @@ mod pipeline;
 
 use config::Config;
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    // Set panic hook to capture panics
+fn main() {
+    // Set panic hook BEFORE tokio runtime
     std::panic::set_hook(Box::new(|panic_info| {
         eprintln!("PANIC: {:?}", panic_info);
         if let Some(location) = panic_info.location() {
@@ -31,17 +30,33 @@ async fn main() -> Result<()> {
         }
     }));
     
+    use std::io::Write;
+    eprintln!("=== BEFORE TOKIO RUNTIME ===");
+    std::io::stderr().lock().flush().ok();
+    
+    // Create tokio runtime explicitly
+    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+    eprintln!("=== TOKIO RUNTIME CREATED ===");
+    std::io::stderr().lock().flush().ok();
+    
+    if let Err(e) = rt.block_on(async_main()) {
+        eprintln!("Application error: {:?}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn async_main() -> Result<()> {
     // Force unbuffered output
     use std::io::Write;
-    std::io::stderr().flush().ok();
-    std::io::stdout().flush().ok();
+    std::io::stderr().lock().flush().ok();
+    std::io::stdout().lock().flush().ok();
     
-    eprintln!("=== MAIN FUNCTION STARTED ===");
-    std::io::stderr().flush().ok();
+    eprintln!("=== ASYNC MAIN FUNCTION STARTED ===");
+    std::io::stderr().lock().flush().ok();
     
     // Initialize tracing with better output
     eprintln!("Initializing tracing...");
-    std::io::stderr().flush().ok();
+    std::io::stderr().lock().flush().ok();
     
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
@@ -49,12 +64,12 @@ async fn main() -> Result<()> {
         .init();
     
     eprintln!("Tracing initialized");
-    std::io::stderr().flush().ok();
+    std::io::stderr().lock().flush().ok();
 
     println!("Starting Great Spirit GPU Physics System");
-    std::io::stdout().flush().ok();
+    std::io::stdout().lock().flush().ok();
     eprintln!("Starting Great Spirit GPU Physics System");
-    std::io::stderr().flush().ok();
+    std::io::stderr().lock().flush().ok();
     info!("Starting Great Spirit GPU Physics System");
 
     // Load configuration

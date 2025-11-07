@@ -11,18 +11,20 @@ query GetParticipants {
   }
 }
 
-# GetParticipant query is not yet implemented in the GraphQL schema
-# Uncomment when participant query is added to the schema
-# query GetParticipant($participantId: String!) {
-#   participant(participantId: $participantId) {
-#     id
-#     age
-#     gender
-#     handedness
-#     createdAt
-#     updatedAt
-#   }
-# }
+query GetParticipant($participantId: String!) {
+  participant(participantId: $participantId) {
+    id
+    age
+    gender
+    handedness
+    createdAt
+    updatedAt
+    sessionCount
+    responseCount
+    emotionDataCount
+    physiologicalDataCount
+  }
+}
 
 query ParticipantTimeline($participantId: String!) {
   participantTimeline(participantId: $participantId) {
