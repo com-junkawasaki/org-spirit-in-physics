@@ -7,14 +7,18 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package files first for better caching
-COPY package.json pnpm-lock.yaml ./
+# Copy all files
+COPY . .
+
+# Configure pnpm store
+RUN pnpm config set store-dir /app/.pnpm-store
 
 # Install dependencies
 RUN pnpm install --no-frozen-lockfile
 
-# Copy source code
-COPY . .
+# Set pnpm store environment variable for runtime
+ENV PNPM_HOME=/usr/local/bin
+ENV PNPM_STORE_PATH=/app/.pnpm-store
 
 # Set hostname and port to bind to all interfaces
 ENV HOSTNAME=0.0.0.0

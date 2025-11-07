@@ -4,6 +4,8 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use async_graphql::{SimpleObject, InputObject};
 
+use crate::db::schema::*;
+
 // Only keep the basic Participant model for now
 #[derive(Queryable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = participants)]
