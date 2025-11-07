@@ -4,7 +4,7 @@
 
 ## 概要
 
-開放系ダイナミクス、共振駆動、相殺メカニズムを統合し、wgpuでGPU並列処理を実現。大規模（N×P=10,000,000以上）に対応し、RDF/OWL知識グラフ（TerminusDB）と統合する。
+開放系ダイナミクス、共振駆動、相殺メカニズムを統合し、wgpuでGPU並列処理を実現。大規模（N×P=10,000,000以上）に対応し、RDF/OWL知識グラフ（TerminusDB）と統合する。RDFグラフとSHACL Shapeをベクトル場として可視化し、物理ダイナミクスに統合する。
 
 ## 技術スタック
 
@@ -32,10 +32,16 @@ R(t) ≈ Σ_k Γ_k · (B_k * w)(t)
 ### 式(D): セミインプリシットVerlet
 
 ```
-a[t] = -∇U(s[t]) - C·ṡ[t] + α(ψ̄[t] - s[t]) + β·R[t]
+a[t] = -∇U(s[t]) - C·ṡ[t] + α(ψ̄[t] - s[t]) + β·R[t] + γ·F_shacl(s[t])
 ṡ[t+1] = ṡ[t] + a[t]·Δt
 s[t+1] = s[t] + ṡ[t+1]·Δt
 ```
+
+### RDF/SHACL統合
+
+- **RDFベクトル場**: RDFトリプル（subject-predicate-object）をベクトルとして可視化
+- **SHACL制約力**: SHACL Shapeの制約を力ベクトルとして表現し、物理ダイナミクスに統合
+- **修正された物理式**: `ẍ = -∇U(s) - C·ṡ + α(ψ̄_𝒩(t) - s) + β·R(t) + γ·F_shacl(s)`
 
 ## パフォーマンス目標
 
@@ -54,14 +60,39 @@ s[t+1] = s[t] + ṡ[t+1]·Δt
 │   ├── main.rs                    # GraphQLサーバーエントリーポイント
 │   ├── lib.rs
 │   ├── physics/                   # 物理ダイナミクス
+│   │   ├── dynamics.rs            # 式(A): 加速度計算
+│   │   ├── potential.rs           # 内的ポテンシャル
+│   │   ├── resonance.rs           # 式(B): 共振駆動
+│   │   ├── integration.rs         # 式(D): Verlet積分
+│   │   ├── observation.rs        # 式(E): 観測同化
+│   │   └── shacl_force.rs         # SHACL制約力統合
 │   ├── gpu/                       # GPU実装
+│   │   ├── device.rs              # GPUデバイス初期化
+│   │   ├── buffers.rs             # バッファ管理
+│   │   ├── compute_pipeline.rs    # コンピュートパイプライン
+│   │   ├── kernel.rs              # GPUカーネル実行
+│   │   └── optimization.rs        # 大規模最適化
 │   ├── kg/                        # 知識グラフ統合
+│   │   ├── terminus.rs            # TerminusDBクライアント
+│   │   ├── embedding.rs           # KG埋め込み
+│   │   ├── distance.rs            # グラフ距離計算
+│   │   └── centroid.rs           # 近傍重心計算
 │   ├── graphql/                   # GraphQL API
-│   ├── visualization/             # 可視化
+│   │   ├── schema.rs              # スキーマ定義
+│   │   ├── query.rs               # クエリリゾルバー
+│   │   └── mutation.rs            # ミューテーションリゾルバー
+│   ├── visualization/             # 可視化（Bevy）
+│   │   ├── renderer.rs            # レンダラー
+│   │   ├── camera.rs              # カメラ制御
+│   │   ├── vector_field.rs        # ベクトル場可視化
+│   │   ├── potential_surface.rs   # ポテンシャル面
+│   │   ├── resonance_bands.rs     # 共振帯域色表示
+│   │   ├── rdf_field.rs           # RDFベクトル場可視化
+│   │   └── shacl_field.rs         # SHACL制約力ベクトル可視化
 │   └── config.rs                  # 設定管理
 └── resources/
     └── shaders/
-        └── spirit_step.wgsl
+        └── spirit_step.wgsl        # GPUシェーダー（BPF→共振→ODE融合）
 ```
 
 ## ビルドと実行

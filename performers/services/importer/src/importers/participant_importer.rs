@@ -46,12 +46,13 @@ pub fn import_consent(
     let agreed_at = consent.agreed_at_datetime()
         .context("Failed to parse agreed_at datetime")?;
 
-    let agreements_json: JsonValue = json!({
+    // Convert agreements to JSON string (agreements column is Text, not Jsonb)
+    let agreements_json_str = serde_json::to_string(&json!({
         "understand": consent.agreements.understand,
         "voluntary": consent.agreements.voluntary,
         "withdraw": consent.agreements.withdraw,
         "recording": consent.agreements.recording,
-    });
+    })).context("Failed to serialize agreements")?;
 
     let consent_id = Uuid::new_v4();
 
@@ -60,7 +61,7 @@ pub fn import_consent(
             participant_consents::id.eq(consent_id),
             participant_consents::participant_id.eq(participant_id),
             participant_consents::signature.eq(&consent.signature),
-            participant_consents::agreements.eq(agreements_json),
+            participant_consents::agreements.eq(agreements_json_str),
             participant_consents::agreed_at.eq(agreed_at),
         ))
         .execute(conn)

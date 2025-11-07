@@ -38,7 +38,7 @@
   
   "name": "Great Spirit GPU Physics System",
   "title": "Great Spirit - Real-time Spirit Position Calculation with GPU Acceleration",
-  "description": "物理法則に基づく「スピリット位置」のリアルタイム計算システム。開放系ダイナミクス、共振駆動、相殺メカニズムを統合し、wgpuでGPU並列処理を実現。大規模（N×P=10,000,000以上）に対応し、RDF/OWL知識グラフ（TerminusDB）と統合する。",
+  "description": "物理法則に基づく「スピリット位置」のリアルタイム計算システム。開放系ダイナミクス、共振駆動、相殺メカニズムを統合し、wgpuでGPU並列処理を実現。大規模（N×P=10,000,000以上）に対応し、RDF/OWL知識グラフ（TerminusDB）と統合する。RDFグラフとSHACL Shapeをベクトル場として可視化し、物理ダイナミクスに統合する。",
   
   "goal": "リアルタイム（数ms/tick）×大規模（10^5〜10^6）×数式駆動によるスピリット位置の物理的計算",
   
@@ -61,12 +61,18 @@
       "act": "GPU並列処理",
       "summary": "wgpuによる1ディスパッチ融合（BPF→共振→ODE）で、10万〜100万サンプルを0.5〜8ms/stepで処理する。"
     },
-    {
-      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/narrative/3",
-      "@type": "cpm:Narrative",
-      "act": "RDF/OWL統合",
-      "summary": "TerminusDBからKG埋め込みを読み込み、あなた中心変換 ψ(v) = φ(v) - φ(u*) により近傍重心を計算し、物理ダイナミクスに統合する。"
-    }
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/narrative/3",
+        "@type": "cpm:Narrative",
+        "act": "RDF/OWL統合",
+        "summary": "TerminusDBからKG埋め込みを読み込み、あなた中心変換 ψ(v) = φ(v) - φ(u*) により近傍重心を計算し、物理ダイナミクスに統合する。"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/narrative/4",
+        "@type": "cpm:Narrative",
+        "act": "RDF/SHACLベクトル場可視化",
+        "summary": "RDFトリプル（subject-predicate-object）をベクトル場として可視化し、SHACL Shapeの制約を力ベクトルとして表現する。これらを物理ダイナミクスに統合し、修正された式 ẍ = -∇U(s) - C·ṡ + α(ψ̄_𝒩(t) - s) + β·R(t) + γ·F_shacl(s) により、制約に従った動的挙動を実現する。"
+      }
   ],
   
   "processNetwork": {
@@ -99,8 +105,17 @@
         "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/pillar/visualization",
         "@type": "cpm:KeyPillar",
         "name": "可視化",
-        "description": "3D表現とベクトル場可視化",
-        "subProcesses": ["3D座標変換", "ベクトル場レンダリング", "ポテンシャル面", "共振帯域色表示", "相殺可視化"]
+        "description": "3D表現とベクトル場可視化（Bevy）",
+        "subProcesses": [
+          "3D座標変換",
+          "ベクトル場レンダリング",
+          "ポテンシャル面",
+          "共振帯域色表示",
+          "相殺可視化",
+          "RDFグラフベクトル場可視化",
+          "SHACL Shape制約力ベクトル可視化",
+          "物理ダイナミクス統合可視化"
+        ]
       }
     ]
   },
@@ -116,7 +131,20 @@
     },
     "merkleRoot": "great-sprit-v0.1.0",
     "lastUpdated": "2025-01-27T00:00:00Z",
-    "implementedFeatures": []
+    "implementedFeatures": [
+      "物理ダイナミクス実装（式A, B, D, E）",
+      "wgpu GPU並列処理",
+      "BPF→共振→ODE 1ディスパッチ融合",
+      "TerminusDB統合（RDF/OWL）",
+      "KG埋め込みとあなた中心変換",
+      "グラフ距離計算と近傍重心計算",
+      "GraphQL API（async-graphql）",
+      "Bevy可視化フレームワーク",
+      "RDFグラフベクトル場可視化",
+      "SHACL Shape制約力ベクトル可視化",
+      "SHACL制約力の物理ダイナミクス統合",
+      "大規模最適化（プロファイリング、リングバッファ）"
+    ]
   },
   
   "wasGeneratedBy": {

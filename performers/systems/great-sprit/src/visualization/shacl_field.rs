@@ -129,31 +129,46 @@ impl ShaclVectorFieldRenderer {
     }
 
     /// Render SHACL forces as force vectors in Bevy
-    pub fn render(&self, commands: &mut Commands, meshes: &mut ResMut<Assets<Mesh>>) {
+    pub fn render(&self, commands: &mut Commands, meshes: &mut ResMut<Assets<Mesh>>, materials: &mut ResMut<Assets<StandardMaterial>>) {
         for force in &self.forces {
             // Render force vector as arrow from target position
-            let force_end = force.target_pos + force.force_direction;
             let direction = force.force_direction;
-            let length = direction.norm();
+            let length = direction.norm().max(0.1); // Minimum length
 
-            // Create arrow mesh
-            let arrow_transform = Transform::from_translation(force.target_pos.into())
-                .looking_to(direction.into(), Vec3::Y)
-                .with_scale(Vec3::new(length, 0.1, 0.1));
-
+            // Create arrow mesh (cylinder)
+            let arrow_mesh = meshes.add(Cylinder::new(0.05, length));
+            
             // Color based on constraint type
-            let color = Self::constraint_color(&force.constraint_type);
+            let color_rgb = Self::constraint_color(&force.constraint_type);
+            let arrow_material = materials.add(StandardMaterial {
+                base_color: Color::srgb(color_rgb[0], color_rgb[1], color_rgb[2]),
+                ..default()
+            });
 
             commands.spawn((
-                Mesh3d(meshes.add(arrow_transform)),
-                Color::from(color),
+                Mesh3d(arrow_mesh),
+                MaterialMeshBundle {
+                    material: arrow_material,
+                    transform: Transform::from_translation(force.target_pos.into())
+                        .looking_to(direction.into(), Vec3::Y),
+                    ..default()
+                },
             ));
 
             // Render constraint center as sphere
+            let sphere_mesh = meshes.add(Sphere::new(0.1));
+            let sphere_material = materials.add(StandardMaterial {
+                base_color: Color::srgb(1.0, 0.5, 0.5), // Red for constraint centers
+                ..default()
+            });
+
             commands.spawn((
-                Mesh3d(meshes.add(Sphere::new(0.1))),
-                Transform::from_translation(force.constraint_center.into()),
-                Color::srgb(1.0, 0.5, 0.5), // Red for constraint centers
+                Mesh3d(sphere_mesh),
+                MaterialMeshBundle {
+                    material: sphere_material,
+                    transform: Transform::from_translation(force.constraint_center.into()),
+                    ..default()
+                },
             ));
         }
     }

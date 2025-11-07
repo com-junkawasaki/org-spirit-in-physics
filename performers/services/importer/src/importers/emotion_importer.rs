@@ -4,7 +4,7 @@ use anyhow::{Result, Context};
 use serde_json::{json, Value as JsonValue};
 use std::collections::HashMap;
 
-use crate::db::{DbConnection, schema::{emotion_data, response_emotion_timeseries}};
+use crate::db::{DbConnection, schema::emotion_data};
 
 /// Import emotion data for a response from HumeAI CSV records
 pub fn import_emotion_data_from_records(
@@ -17,7 +17,6 @@ pub fn import_emotion_data_from_records(
     use crate::parsers::{parse_time_from_record, parse_time_range_from_record};
 
     let mut emotion_records = Vec::new();
-    let mut timeseries_records = Vec::new();
 
     for record in records {
         // Parse time
@@ -75,14 +74,9 @@ pub fn import_emotion_data_from_records(
             ));
         }
 
-        // Insert into response_emotion_timeseries table
-        let emotion_json: JsonValue = json!(emotion_map);
-        timeseries_records.push((
-            response_emotion_timeseries::response_id.eq(response_id),
-            response_emotion_timeseries::timestamp_offset_ms.eq(offset_ms),
-            response_emotion_timeseries::source.eq(Some(source.to_string())),
-            response_emotion_timeseries::emotion_data.eq(emotion_json),
-        ));
+        // Note: response_emotion_timeseries table does not exist in the database
+        // Timeseries data is stored in emotion_data table with timestamps
+        // timeseries_records.push(...); // Skipped - table does not exist
     }
 
     // Batch insert emotion_data
@@ -93,13 +87,8 @@ pub fn import_emotion_data_from_records(
             .context("Failed to insert emotion data")?;
     }
 
-    // Batch insert timeseries
-    for record in timeseries_records {
-        diesel::insert_into(response_emotion_timeseries::table)
-            .values(record)
-            .execute(conn)
-            .context("Failed to insert emotion timeseries")?;
-    }
+    // Note: response_emotion_timeseries table does not exist
+    // Skipping timeseries insert
 
     Ok(())
 }

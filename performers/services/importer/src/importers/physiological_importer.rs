@@ -5,7 +5,7 @@ use uuid::Uuid;
 use anyhow::{Result, Context};
 use rust_decimal::Decimal;
 
-use crate::db::{DbConnection, schema::response_skin_potential_timeseries};
+use crate::db::{DbConnection, schema::physiological_data};
 use crate::models::PhysiologicalRecord;
 
 /// Import physiological data for a response
@@ -25,12 +25,20 @@ pub fn import_physiological_data(
         let skin_potential_decimal = Decimal::from_f64_retain(skin_potential)
             .unwrap_or(Decimal::ZERO);
 
-        // Use raw SQL to insert Decimal value as Numeric
-        diesel::insert_into(response_skin_potential_timeseries::table)
+        // Insert into physiological_data table instead of response_skin_potential_timeseries
+        let timestamp = chrono::DateTime::from_timestamp_millis(record_timestamp_ms)
+            .ok_or_else(|| anyhow::anyhow!("Invalid timestamp"))?
+            .with_timezone(&chrono::Utc);
+        
+        let physiological_id = Uuid::new_v4();
+        diesel::insert_into(physiological_data::table)
             .values((
-                response_skin_potential_timeseries::response_id.eq(response_id),
-                response_skin_potential_timeseries::timestamp_offset_ms.eq(offset_ms),
-                response_skin_potential_timeseries::value.eq(sql::<Numeric>(&format!("{}", skin_potential_decimal))),
+                physiological_data::id.eq(physiological_id),
+                physiological_data::participant_response_data_id.eq(response_id),
+                physiological_data::average.eq(Some(skin_potential)),
+                physiological_data::max_value.eq(Some(skin_potential)),
+                physiological_data::min_value.eq(Some(skin_potential)),
+                physiological_data::timestamp.eq(timestamp),
             ))
             .execute(conn)
             .context("Failed to insert physiological data")?;
