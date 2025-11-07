@@ -1,10 +1,12 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 echo "Waiting for GraphQL API to be ready..."
 # Try to connect to GraphQL API (works both in Docker network and host network)
 GRAPHQL_URL="${NEXT_PUBLIC_GRAPHQL_RUST_API_URL:-http://graphql:8080/graphql}"
-until wget -q --spider "$GRAPHQL_URL" 2>/dev/null || curl -f "$GRAPHQL_URL" >/dev/null 2>&1; do
+until curl -f -s -X POST "$GRAPHQL_URL" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ __typename }"}' >/dev/null 2>&1; do
   echo "GraphQL API is unavailable - sleeping"
   sleep 2
 done

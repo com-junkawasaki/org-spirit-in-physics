@@ -19,9 +19,9 @@ RUN pnpm install --no-frozen-lockfile
 # Copy source code
 COPY . .
 
-# Copy entrypoint script
+# Copy entrypoint script and make it executable
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh && ls -la /entrypoint.sh
 
 # Set hostname and port to bind to all interfaces
 ENV HOSTNAME=0.0.0.0

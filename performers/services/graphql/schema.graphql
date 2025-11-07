@@ -1,0 +1,29 @@
+type Mutation {
+	ping: String!
+}
+
+type ParticipantGQL {
+	id: String!
+	age: Int
+	gender: String
+	handedness: String
+	createdAt: String!
+	updatedAt: String!
+}
+
+type Query {
+	participants: [ParticipantGQL!]!
+}
+
+"""
+Directs the executor to include this field or fragment only when the `if` argument is true.
+"""
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""
+Directs the executor to skip this field or fragment when the `if` argument is true.
+"""
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+schema {
+	query: Query
+	mutation: Mutation
+}
