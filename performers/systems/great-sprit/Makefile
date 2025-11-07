@@ -32,9 +32,11 @@ init-db:
 # Start with test data initialization
 start: build up
 	@echo "Waiting for services to start..."
-	@sleep 5
-	@make init-db
-	@echo "Services started with test data!"
+	@sleep 10
+	@echo "Initializing TerminusDB with test data..."
+	@make init-db || echo "Warning: Database initialization may have failed, but services are running"
+	@echo "Services started! GraphQL API: http://localhost:8080"
+	@echo "TerminusDB: http://localhost:6363"
 
 # Restart services
 restart: down up

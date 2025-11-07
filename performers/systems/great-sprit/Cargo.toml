@@ -12,25 +12,13 @@ wgpu = "0.20"
 bytemuck = { version = "1.14", features = ["derive"] }
 
 # Visualization (Bevy)
-bevy = { version = "0.13", default-features = false, features = [
+bevy = { version = "0.13", features = [
     "default",
-    "bevy_asset",
-    "bevy_core",
-    "bevy_core_pipeline",
-    "bevy_ecs",
-    "bevy_render",
-    "bevy_sprite",
-    "bevy_text",
-    "bevy_transform",
-    "bevy_window",
-    "bevy_winit",
-    "bevy_gizmos",
-    "bevy_pbr",
 ] }
 
 # GraphQL API
-async-graphql = "7.0"
-async-graphql-warp = "7.0"
+async-graphql = "6.0"
+async-graphql-warp = "6.0"
 tokio = { version = "1.0", features = ["full"] }
 
 # Serialization

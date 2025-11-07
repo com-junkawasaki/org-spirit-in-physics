@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Great Spirit GPU Physics System
   great-sprit:
@@ -66,10 +64,11 @@ services:
       - spirit-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6363/api/status"]
+      test: ["CMD-SHELL", "curl -f http://localhost:6363/api/status || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
 volumes:
   terminusdb-data:
