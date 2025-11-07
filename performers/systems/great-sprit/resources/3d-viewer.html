@@ -182,20 +182,19 @@
         </div>
     </div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-        }
-    }
-    </script>
+    <!-- Load Three.js UMD version for better browser compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { GridHelper } from 'three/addons/helpers/GridHelper.js';
-        import { AxesHelper } from 'three/addons/helpers/AxesHelper.js';
+    <script>
+        // Error handling for Three.js loading
+        if (typeof THREE === 'undefined') {
+            document.body.innerHTML = '<div style="padding: 50px; text-align: center; color: #ff6b6b;"><h1>Error: Three.js failed to load</h1><p>Please check your internet connection and try again.</p></div>';
+            throw new Error('Three.js library failed to load');
+        }
+
+        // Use global THREE object
+        const { OrbitControls } = THREE;
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -216,7 +215,7 @@
         document.getElementById('canvas-container').appendChild(renderer.domElement);
         
         // Controls
-        const controls = new OrbitControls(camera, renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.minDistance = 2;
@@ -248,6 +247,21 @@
             updateStatus('データ読み込み中...', false);
             
             try {
+                // Check server connection first
+                const healthCheck = await fetch('/graphql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: '{ health }' })
+                }).catch(err => {
+                    console.error('Server connection error:', err);
+                    updateStatus('サーバーに接続できません', false);
+                    throw new Error('Server connection failed: ' + err.message);
+                });
+                
+                if (!healthCheck.ok) {
+                    throw new Error('Server returned status: ' + healthCheck.status);
+                }
+                
                 const viewMode = document.getElementById('viewMode').value;
                 
                 if (viewMode === 'rdf') {
@@ -263,6 +277,14 @@
             } catch (error) {
                 console.error('Error loading data:', error);
                 updateStatus('エラー: ' + error.message, false);
+                
+                // Show error message in UI
+                const resultDiv = document.getElementById('result');
+                if (resultDiv) {
+                    resultDiv.textContent = 'Error: ' + error.message + '\n\nPlease check:\n1. Server is running on port 8082\n2. Browser console for details';
+                    resultDiv.className = 'result error';
+                    resultDiv.style.display = 'block';
+                }
             }
         }
         
@@ -739,13 +761,31 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
         
-        // Initialize
-        window.loadData = loadData;
-        window.resetCamera = resetCamera;
+        // Initialize with error handling
+        try {
+            window.loadData = loadData;
+            window.resetCamera = resetCamera;
+            
+            updateStatus('準備完了', true);
+            createDemoData();
+            animate();
+        } catch (error) {
+            console.error('Initialization error:', error);
+            updateStatus('初期化エラー: ' + error.message, false);
+            document.body.innerHTML = '<div style="padding: 50px; text-align: center; color: #ff6b6b;"><h1>Initialization Error</h1><p>' + error.message + '</p><p>Please check the browser console for details.</p></div>';
+        }
         
-        updateStatus('準備完了', true);
-        createDemoData();
-        animate();
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            updateStatus('エラー: ' + (event.error?.message || event.message), false);
+        });
+        
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            updateStatus('エラー: ' + (event.reason?.message || String(event.reason)), false);
+        });
     </script>
 </body>
 </html>

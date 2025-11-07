@@ -54,9 +54,11 @@ pub async fn start_server(
             warp::reply::html(include_str!("../../resources/3d-viewer.html"))
         });
     
-    let routes = graphql_filter
-        .or(playground)
+    // Route order: specific paths first, then GraphQL filter
+    // This ensures /3d and /graphql (GET) are matched before GraphQL POST requests
+    let routes = playground
         .or(viewer_3d)
+        .or(graphql_filter)
         .with(cors)
         .recover(|err: warp::Rejection| async move {
             Ok::<_, std::convert::Infallible>(warp::reply::with_status(

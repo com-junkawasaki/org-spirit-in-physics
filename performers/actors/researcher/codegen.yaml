@@ -1,8 +1,8 @@
 schema:
-  # Use introspection endpoint (requires server to be running)
-  - ${NEXT_PUBLIC_GRAPHQL_RUST_API_URL:-http://graphql:8080/graphql}
-  # Fallback to SDL file if introspection is not available
+  # Use SDL file first (more reliable)
   - schema.graphql
+  # Fallback to introspection endpoint if SDL file is not available
+  - ${NEXT_PUBLIC_GRAPHQL_RUST_API_URL:-http://graphql:8080/graphql}
 
 documents:
   - 'src/**/*.{ts,tsx}'

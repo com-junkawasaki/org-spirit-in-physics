@@ -1,38 +1,39 @@
 # GraphQL Mutations for Researcher Actor
 
-mutation CalculateEmotionDistance($input: CalculateEmotionDistanceInput!) {
-  calculateEmotionDistance(input: $input) {
-    nodes {
-      id
-      label
-      x
-      y
-      z
-      color
-      size
-      metadata {
-        word
-        reactionTime
-        emotionScore
-        observationRatio
-      }
-    }
-    edges {
-      source
-      target
-      weight
-      distance
-      color
-      width
-    }
-    metadata {
-      totalNodes
-      totalEdges
-      method
-      dimensions
-      averageDistance
-      clusteringCoefficient
-    }
-  }
-}
+# Temporarily disabled - will be enabled when GraphQL API implements this mutation
+# mutation CalculateEmotionDistance($input: CalculateEmotionDistanceInput!) {
+#   calculateEmotionDistance(input: $input) {
+#     nodes {
+#       id
+#       label
+#       x
+#       y
+#       z
+#       color
+#       size
+#       metadata {
+#         word
+#         reactionTime
+#         emotionScore
+#         observationRatio
+#       }
+#     }
+#     edges {
+#       source
+#       target
+#       weight
+#       distance
+#       color
+#       width
+#     }
+#     metadata {
+#       totalNodes
+#       totalEdges
+#       method
+#       dimensions
+#       averageDistance
+#       clusteringCoefficient
+#     }
+#   }
+# }
 

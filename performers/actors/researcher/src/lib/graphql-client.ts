@@ -204,11 +204,90 @@ export function createGraphQLClient(): GraphQLClient {
     },
 
     async getParticipantDetails(participantId: string) {
+      const isServer = typeof window === 'undefined'
+      const url = isServer 
+        ? (process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql')
+        : (process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql')
+      
+      // For server-side, use direct fetch to avoid Apollo Client issues
+      if (isServer) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              query: `query GetParticipant($participantId: String!) {
+                participant(participantId: $participantId) {
+                  id
+                  age
+                  gender
+                  handedness
+                  createdAt
+                  updatedAt
+                  sessionCount
+                  responseCount
+                  emotionDataCount
+                  physiologicalDataCount
+                }
+              }`,
+              variables: { participantId }
+            }),
+          })
+          if (!response.ok) {
+            console.error('Direct fetch failed:', response.status, response.statusText)
+            return null
+          }
+          const data = await response.json()
+          if (data.errors) {
+            console.error('GraphQL errors:', data.errors)
+            return null
+          }
+          return data.data?.participant || null
+        } catch (fetchError: any) {
+          console.error('Direct fetch error:', fetchError.message)
+          return null
+        }
+      }
+      
+      // For client-side, use Apollo Client
       try {
-        const result = await client.query({ query: GetParticipantDocument, variables: { participantId } })
+        const result = await client.query({ 
+          query: GetParticipantDocument, 
+          variables: { participantId },
+          fetchPolicy: 'network-only',
+        })
         return result.data?.participant || null
-      } catch {
-        return null
+      } catch (error: any) {
+        console.error('GraphQL getParticipantDetails error:', error.message, error.networkError)
+        // Fallback to direct fetch
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              query: `query GetParticipant($participantId: String!) {
+                participant(participantId: $participantId) {
+                  id
+                  age
+                  gender
+                  handedness
+                  createdAt
+                  updatedAt
+                  sessionCount
+                  responseCount
+                  emotionDataCount
+                  physiologicalDataCount
+                }
+              }`,
+              variables: { participantId }
+            }),
+          })
+          const data = await response.json()
+          return data.data?.participant || null
+        } catch (fetchError: any) {
+          console.error('Direct fetch fallback error:', fetchError.message)
+          return null
+        }
       }
     },
 

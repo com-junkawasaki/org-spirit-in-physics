@@ -9,10 +9,15 @@ type ParticipantGQL {
 	handedness: String
 	createdAt: String!
 	updatedAt: String!
+	sessionCount: Int
+	responseCount: Int
+	emotionDataCount: Int
+	physiologicalDataCount: Int
 }
 
 type Query {
 	participants: [ParticipantGQL!]!
+	participant(participantId: String!): ParticipantGQL!
 }
 
 """
