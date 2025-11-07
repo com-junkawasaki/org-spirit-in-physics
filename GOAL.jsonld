@@ -29,7 +29,7 @@
   "@id": "https://spirit-in-physics.gftd.ai/goal",
   "@type": ["cpm:Goal", "prov:Entity"],
   
-  "name": "Spirit in Physics Project Goal",
+  "name": "Spirit is Physics Project Goal",
   "title": "霊性の物理的・情報的・進化的理解",
   "description": "我らと我らの子孫が豊かで情緒的な暮らしを送れるいい感じの社会を生成することを目指し、霊性（spirit）を物理法則、情報理論、進化論の観点から統合的に理解する。",
   

@@ -36,7 +36,7 @@
   "@id": "https://spirit-in-physics.gftd.ai/project",
   "@type": ["cpm:Project", "prov:Entity"],
   
-  "name": "Spirit in Physics",
+  "name": "Spirit is Physics",
   "title": "いい感じの社会の物語",
   "description": "医学博士である河崎純真が、エホバの証人、科学哲学、仏教、アヤワスカ、コンピューターの経験を通して、クリスチャンのアンタッチャブルな「spirit」を可視化・提供可能にし、神と人、霊と人を統合する試み。ユングの単語連合テストを現代的な技術で再現し、感情分析と生理データを統合した「川崎モデル」を開発。参加者の顔表情、声の調子、皮膚電位をHume AIで解析し、Word2Vecによる意味ベクトルと組み合わせることで、言語と感情の関係性を定量的に表現する画期的な手法を生み出す。",
   
