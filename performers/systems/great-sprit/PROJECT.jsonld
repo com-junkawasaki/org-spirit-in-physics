@@ -61,18 +61,18 @@
       "act": "GPU並列処理",
       "summary": "wgpuによる1ディスパッチ融合（BPF→共振→ODE）で、10万〜100万サンプルを0.5〜8ms/stepで処理する。"
     },
-      {
-        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/narrative/3",
-        "@type": "cpm:Narrative",
-        "act": "RDF/OWL統合",
-        "summary": "TerminusDBからKG埋め込みを読み込み、あなた中心変換 ψ(v) = φ(v) - φ(u*) により近傍重心を計算し、物理ダイナミクスに統合する。"
-      },
-      {
-        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/narrative/4",
-        "@type": "cpm:Narrative",
-        "act": "RDF/SHACLベクトル場可視化",
-        "summary": "RDFトリプル（subject-predicate-object）をベクトル場として可視化し、SHACL Shapeの制約を力ベクトルとして表現する。これらを物理ダイナミクスに統合し、修正された式 ẍ = -∇U(s) - C·ṡ + α(ψ̄_𝒩(t) - s) + β·R(t) + γ·F_shacl(s) により、制約に従った動的挙動を実現する。"
-      }
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/narrative/3",
+      "@type": "cpm:Narrative",
+      "act": "RDF/OWL統合",
+      "summary": "TerminusDBからKG埋め込みを読み込み、あなた中心変換 ψ(v) = φ(v) - φ(u*) により近傍重心を計算し、物理ダイナミクスに統合する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/narrative/4",
+      "@type": "cpm:Narrative",
+      "act": "RDF/SHACLベクトル場可視化",
+      "summary": "RDFトリプル（subject-predicate-object）をベクトル場として可視化し、SHACL Shapeの制約を力ベクトルとして表現する。これらを物理ダイナミクスに統合し、修正された式 ẍ = -∇U(s) - C·ṡ + α(ψ̄_𝒩(t) - s) + β·R(t) + γ·F_shacl(s) により、制約に従った動的挙動を実現する。"
+    }
   ],
   
   "processNetwork": {

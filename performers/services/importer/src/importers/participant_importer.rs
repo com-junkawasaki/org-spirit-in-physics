@@ -15,12 +15,35 @@ pub fn get_or_create_participant(
         .with_context(|| format!("Invalid participant ID format: {}", participant_id))?;
 
     // Try to find existing participant
-    let existing: Option<Uuid> = participants::table
-        .select(participants::id)
-        .filter(participants::id.eq(uuid_id))
-        .first::<Uuid>(conn)
-        .optional()
-        .context("Failed to query participants")?;
+    // Use raw SQL with explicit schema name
+    use diesel::sql_query;
+    use diesel::sql_types::Uuid as SqlUuid;
+    use diesel::QueryableByName;
+    
+    #[derive(QueryableByName)]
+    struct ParticipantId {
+        #[diesel(sql_type = SqlUuid, column_name = "id")]
+        id: Uuid,
+    }
+    
+    // First, test if we can query the table with explicit schema
+    let test_query = sql_query("SELECT id FROM public.participants WHERE id = $1");
+    let test_result: Result<Vec<ParticipantId>, _> = test_query
+        .bind::<SqlUuid, _>(uuid_id)
+        .load(conn);
+    
+    let existing: Option<Uuid> = match test_result {
+        Ok(rows) => rows.first().map(|r| r.id),
+        Err(_) => {
+            // If query fails, try Diesel query builder
+            participants::table
+                .select(participants::id)
+                .filter(participants::id.eq(uuid_id))
+                .first::<Uuid>(conn)
+                .optional()
+                .context("Failed to query participants")?
+        }
+    };
 
     if let Some(id) = existing {
         return Ok(id);

@@ -95,12 +95,73 @@ s[t+1] = s[t] + ṡ[t+1]·Δt
         └── spirit_step.wgsl        # GPUシェーダー（BPF→共振→ODE融合）
 ```
 
+## 主な機能
+
+### 物理ダイナミクス
+- 開放系ダイナミクス（式A）
+- 共振駆動（式B）
+- セミインプリシットVerlet積分（式D）
+- 観測同化（式E）
+
+### GPU並列処理
+- wgpuによる大規模並列計算
+- BPF→共振→ODEを1ディスパッチで融合
+- 10万〜100万サンプルを0.5〜8ms/stepで処理
+
+### 知識グラフ統合
+- TerminusDBによるRDF/OWL統合
+- KG埋め込みとあなた中心変換
+- グラフ距離計算と近傍重心計算
+
+### 可視化
+- **RDFベクトル場**: RDFトリプルをベクトルとして可視化
+- **SHACL制約力**: SHACL Shapeの制約を力ベクトルとして可視化
+- **物理統合**: SHACL制約力を物理ダイナミクスに統合
+- Bevyによる3Dインタラクティブ可視化
+
 ## ビルドと実行
 
 ```bash
+# ビルド
 cargo build --release
+
+# 実行（GraphQLサーバー）
 cargo run
+
+# テスト
+cargo test
+
+# パフォーマンステスト（要GPU）
+cargo test -- --ignored test_large_scale_performance
 ```
+
+## 設定
+
+環境変数または`config.toml`で設定可能：
+
+- `SERVER_PORT`: GraphQLサーバーポート（デフォルト: 8080）
+- `TERMINUS_URL`: TerminusDB URL（デフォルト: http://localhost:6363）
+- `TERMINUS_DB`: TerminusDBデータベース名（デフォルト: spirit_kg）
+- `NUM_AGENTS`: エージェント数 N（デフォルト: 1000）
+- `PARTICLES_PER_AGENT`: エージェントあたりの粒子数 P（デフォルト: 10000）
+- `TIME_STEP`: 時間ステップ Δt（デフォルト: 0.01）
+- `NUM_BANDS`: 共振帯域数 K（デフォルト: 8）
+- `WORKGROUP_SIZE`: GPU workgroupサイズ（デフォルト: 256）
+
+## アーキテクチャ
+
+### データフロー
+
+1. **入力**: 世界の情報入力 w(t) → バンドパスフィルタ → 共振駆動 R(t)
+2. **知識グラフ**: TerminusDB → KG埋め込み φ(v) → あなた中心変換 ψ(v) → 近傍重心 ψ̄_𝒩(t)
+3. **物理計算**: ポテンシャル勾配 -∇U(s) + 近傍引力 + 共振駆動 + SHACL制約力 → 加速度 → Verlet積分
+4. **可視化**: 状態ベクトル → Bevyレンダリング（RDF/SHACLベクトル場含む）
+
+### 統合ポイント
+
+- **RDF統合**: RDFトリプルをベクトル場として可視化し、グラフ構造を空間的に表現
+- **SHACL統合**: SHACL制約を力ベクトルとして可視化し、物理ダイナミクスに統合
+- **修正された物理式**: `ẍ = -∇U(s) - C·ṡ + α(ψ̄_𝒩(t) - s) + β·R(t) + γ·F_shacl(s)`
 
 ## ライセンス
 

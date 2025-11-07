@@ -73,7 +73,7 @@ pub fn import_word_response(
                 response.response_word.as_deref().unwrap_or("")
             ),
             participant_response_data::reaction_time_ms.eq(reaction_time_ms),
-            participant_response_data::session.eq(sql::<SessionType>(&format!("'{}'::session_type", session_type_str))),
+            participant_response_data::session.eq(Some(session_type_str.to_string())),
             participant_response_data::timestamp.eq(timestamp),
         ))
         .execute(conn)
