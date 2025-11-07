@@ -15,16 +15,14 @@ pub struct StateVec {
     pub velocity: [f32; 3],
 }
 
-impl From<Vector3<f32>> for [f32; 3] {
-    fn from(v: Vector3<f32>) -> Self {
-        [v.x, v.y, v.z]
-    }
+// Helper functions to convert between Vector3 and [f32; 3]
+// Note: Cannot implement From trait due to orphan rule
+pub fn vector3_to_array(v: Vector3<f32>) -> [f32; 3] {
+    [v.x, v.y, v.z]
 }
 
-impl From<[f32; 3]> for Vector3<f32> {
-    fn from(arr: [f32; 3]) -> Self {
-        Vector3::new(arr[0], arr[1], arr[2])
-    }
+pub fn array_to_vector3(arr: [f32; 3]) -> Vector3<f32> {
+    Vector3::new(arr[0], arr[1], arr[2])
 }
 
 /// GPU buffers

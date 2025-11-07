@@ -35,8 +35,8 @@ impl GpuDevice {
             .request_device(
                 &DeviceDescriptor {
                     label: Some("Great Spirit GPU Device"),
-                    features: Features::empty(),
-                    limits: Limits::default(),
+                    required_features: Features::empty(),
+                    required_limits: Limits::default(),
                 },
                 None,
             )

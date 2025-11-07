@@ -154,7 +154,8 @@ impl ComputePipeline {
             label: Some("Spirit Step Compute Pipeline"),
             layout: Some(&pipeline_layout),
             module: &shader,
-            entry_point: Some("main"),
+            entry_point: "main",
+            compilation_options: Default::default(),
         });
 
         Ok(Self {
@@ -169,6 +170,7 @@ impl ComputePipeline {
         let num_workgroups = (num_samples as u32 + self.workgroup_size - 1) / self.workgroup_size;
         
         let mut compute_pass = encoder.begin_compute_pass(&ComputePassDescriptor {
+            timestamp_writes: None,
             label: Some("Spirit Step Compute Pass"),
         });
         

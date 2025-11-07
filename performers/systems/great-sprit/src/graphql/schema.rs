@@ -6,6 +6,7 @@ use crate::graphql::mutation::Mutation;
 use crate::graphql::subscription::Subscription;
 use crate::gpu::device::GpuDevice;
 use crate::kg::terminus::TerminusClient;
+use warp::Filter;
 
 /// Create GraphQL schema
 pub fn create_schema(
@@ -28,21 +29,27 @@ pub async fn start_server(
     
     // Use async-graphql-warp for server
     let addr = ([0, 0, 0, 0], config.server_port);
-    async_graphql_warp::graphql(schema)
-        .and_then(|(schema, request): (_, async_graphql::Request)| async move {
-            Ok::<_, std::convert::Infallible>(async_graphql_warp::Response::from(
-                schema.execute(request).await,
-            ))
-        })
-        .with(warp::cors().allow_any_origin())
+    let graphql_filter = async_graphql_warp::graphql(schema)
+        .and_then(|(schema, request): (Schema<Query, Mutation, Subscription>, async_graphql::Request)| async move {
+            let response: async_graphql::Response = schema.execute(request).await;
+            Ok::<_, std::convert::Infallible>(warp::reply::json(&response))
+        });
+    
+    let cors = warp::cors()
+        .allow_any_origin()
+        .allow_headers(vec!["content-type"])
+        .allow_methods(vec!["GET", "POST", "OPTIONS"]);
+    
+    let routes = graphql_filter
+        .with(cors)
         .recover(|err: warp::Rejection| async move {
             Ok::<_, std::convert::Infallible>(warp::reply::with_status(
                 format!("Internal error: {:?}", err),
                 warp::http::StatusCode::INTERNAL_SERVER_ERROR,
             ))
-        })
-        .serve(addr)
-        .await;
+        });
+    
+    warp::serve(routes).run(addr).await;
 
     Ok(())
 }

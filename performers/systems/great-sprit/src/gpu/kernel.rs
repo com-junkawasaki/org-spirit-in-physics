@@ -21,12 +21,12 @@ impl Kernel {
         let device = GpuDevice::init().await?;
         let num_samples = config.total_samples();
         let buffers = Buffers::new(
-            &device,
+            &device.device,
             num_samples,
             config.num_bands,
             1, // Default: 1 potential well
         )?;
-        let pipeline = ComputePipeline::new(&device, &buffers, config.workgroup_size)?;
+        let pipeline = ComputePipeline::new(&device.device, &buffers, config.workgroup_size)?;
 
         Ok(Self {
             device,
