@@ -137,6 +137,22 @@
         "https://spirit-in-physics.gftd.ai/service/graphql",
         "https://spirit-in-physics.gftd.ai/actor/researcher"
       ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/type-generation",
+      "@type": ["cpm:Capability", "dodaf:Capability"],
+      "name": "TypeGenerationCapability",
+      "description": "型生成能力。Rust code-first GraphQL (async-graphql)からSDLを自動生成し、GraphQL CodegenによりTypeScript型定義とTyped Document Nodeを自動生成する。.graphqlファイルによるGraphQLドキュメント定義をサポートし、エンドツーエンドの型安全性を実現する。",
+      "enables": [
+        "https://spirit-in-physics.gftd.ai/activity/type-generation",
+        "https://spirit-in-physics.gftd.ai/activity/schema-generation"
+      ],
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/service/graphql",
+        "https://spirit-in-physics.gftd.ai/actor/researcher",
+        "https://spirit-in-physics.gftd.ai/actor/visualizer",
+        "https://spirit-in-physics.gftd.ai/actor/participant"
+      ]
     }
   ]
 }

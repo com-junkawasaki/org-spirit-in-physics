@@ -38,6 +38,13 @@
       "name": "AnalysisPort",
       "description": "分析能力を提供するポート。Word2Vec、生理データ分析、相関分析を提供する。",
       "provides": "https://spirit-in-physics.gftd.ai/capability/analysis"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/service/graphql/port/schema-generation",
+      "@type": "cpm:Port",
+      "name": "SchemaGenerationPort",
+      "description": "スキーマ生成能力を提供するポート。Rust code-first GraphQL (async-graphql)からSDLファイルを自動生成し、/graphql/sdlエンドポイントとschema.graphqlファイルを提供する。",
+      "provides": "https://spirit-in-physics.gftd.ai/capability/type-generation"
     }
   ]
 }

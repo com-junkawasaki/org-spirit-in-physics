@@ -124,6 +124,30 @@ services:
       retries: 3
       start_period: 60s
 
+  # Importer Service (Rust)
+  importer:
+    build:
+      context: ./performers/services/importer
+      dockerfile: Dockerfile
+    container_name: spirit-importer
+    volumes:
+      - ./performers/services/importer/src:/app/src:cached
+      - ./performers/services/importer/Cargo.toml:/app/Cargo.toml:cached
+      - ./performers/actors/researcher/public/dataset:/app/dataset:ro
+      - ./performers/services/importer/target:/app/target:cached
+    environment:
+      # Connect to Supabase database (started via `supabase start`)
+      # Supabase DB port: 54322 (config: performers/systems/supabase/config.toml)
+      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
+      - RUST_LOG=info,diesel=debug
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - spirit-network
+    # Run as a one-off command, not as a service
+    profiles:
+      - importer
+
 networks:
   spirit-network:
     driver: bridge

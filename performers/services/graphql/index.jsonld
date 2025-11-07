@@ -25,7 +25,7 @@
       "@type": ["cpm:Service", "dodaf:Performer", "prov:SoftwareAgent"],
       
       "name": "GraphQLService",
-      "description": "Rust GraphQL API（apps/graphql）。GraphQL APIのintrospectionを提供し、データ管理、感情分析、分析能力を提供する。",
+      "description": "Rust GraphQL API（async-graphql）。GraphQL APIのintrospectionとSDL生成を提供し、データ管理、感情分析、分析能力を提供する。code-firstアプローチにより、RustコードからSDLを自動生成し、TypeScript型定義を自動生成するパイプラインを実装。",
       
       "wasAttributedTo": [
         "https://spirit-in-physics.gftd.ai/capability/data-management",
@@ -37,7 +37,14 @@
         "@id": "https://spirit-in-physics.gftd.ai/service/graphql/introspection",
         "@type": "cpm:Introspection",
         "endpoint": "http://localhost:8080/graphql",
-        "playground": "http://localhost:8080/playground"
+        "playground": "http://localhost:8080/playground",
+        "sdlEndpoint": "http://localhost:8080/graphql/sdl",
+        "sdlFile": "schema.graphql",
+        "codegen": {
+          "enabled": true,
+          "targets": ["typescript", "typed-document-node"],
+          "config": "codegen.yaml"
+        }
       },
       
       "provides": [

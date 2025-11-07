@@ -185,7 +185,13 @@
           "GraphQLクエリ言語による高度なデータ操作",
           "非同期ジョブ管理と依存関係解決",
           "プロセスネットワークグラフモデル実装",
-          "Merkle DAGによる状態管理"
+          "Merkle DAGによる状態管理",
+          "Rust code-first GraphQL (async-graphql)によるSDL自動生成",
+          "GraphQL CodegenによるTypeScript型定義自動生成",
+          ".graphqlファイルによるGraphQLドキュメント定義",
+          "Typed Document Nodeによる型安全なGraphQL操作",
+          "Docker Composeによる自動型生成パイプライン",
+          "エンドツーエンド型安全性の実現"
         ]
       }
     ]
@@ -194,14 +200,14 @@
   "metadata": {
     "@id": "https://spirit-in-physics.gftd.ai/metadata",
     "@type": "cpm:Metadata",
-    "version": "1.26.0",
+    "version": "1.27.0",
     "author": {
       "@id": "https://spirit-in-physics.gftd.ai/author",
       "@type": "cpm:Person",
       "name": "Jumma Kawasaki"
     },
-    "merkleRoot": "Supabaseプラットフォーム統合版",
-    "lastUpdated": "2025-01-27T12:00:00Z",
+    "merkleRoot": "GraphQL Codegen統合版",
+    "lastUpdated": "2025-11-07T10:14:23Z",
     "implementedFeatures": [
       "川崎モデルの数式実装",
       "Hume AI Expression Measurement統合",
@@ -221,7 +227,14 @@
       "包括的分析レポート生成",
       "完全統合システムワークフロー",
       "高精度Spirit確率測定システム",
-      "科学的手法による霊性測定基盤"
+      "科学的手法による霊性測定基盤",
+      "Rust code-first GraphQL (async-graphql)によるSDL自動生成",
+      "GraphQL CodegenによるTypeScript型定義自動生成",
+      ".graphqlファイルによるGraphQLドキュメント定義",
+      "Typed Document Nodeによる型安全なGraphQL操作",
+      "Docker Composeによる自動型生成パイプライン",
+      "GraphQLスキーマ拡張（participantTimeline, participantWord2Vec, calculateEmotionDistance）",
+      "エンドツーエンド型安全性の実現"
     ]
   },
   

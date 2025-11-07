@@ -147,6 +147,37 @@
         "https://spirit-in-physics.gftd.ai/service/graphql",
         "https://spirit-in-physics.gftd.ai/actor/researcher"
       ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/schema-generation",
+      "@type": ["cpm:Activity", "prov:Activity", "dodaf:Activity"],
+      "name": "SchemaGenerationActivity",
+      "description": "スキーマ生成活動。Rust code-first GraphQL (async-graphql)からSDLファイルを自動生成し、/graphql/sdlエンドポイントとschema.graphqlファイルを提供する。",
+      "wasAssociatedWith": [
+        "https://spirit-in-physics.gftd.ai/capability/type-generation"
+      ],
+      "wasInformedBy": [],
+      "used": [
+        "https://spirit-in-physics.gftd.ai/service/graphql"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/type-generation",
+      "@type": ["cpm:Activity", "prov:Activity", "dodaf:Activity"],
+      "name": "TypeGenerationActivity",
+      "description": "型生成活動。GraphQL Codegenにより、.graphqlファイルとGraphQLスキーマからTypeScript型定義とTyped Document Nodeを自動生成する。Docker Composeによる自動化パイプラインを実装。",
+      "wasAssociatedWith": [
+        "https://spirit-in-physics.gftd.ai/capability/type-generation"
+      ],
+      "wasInformedBy": [
+        "https://spirit-in-physics.gftd.ai/activity/schema-generation"
+      ],
+      "used": [
+        "https://spirit-in-physics.gftd.ai/service/graphql",
+        "https://spirit-in-physics.gftd.ai/actor/researcher",
+        "https://spirit-in-physics.gftd.ai/actor/visualizer",
+        "https://spirit-in-physics.gftd.ai/actor/participant"
+      ]
     }
   ]
 }
