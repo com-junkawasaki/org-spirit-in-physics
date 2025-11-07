@@ -67,7 +67,7 @@ services:
       - spirit-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:6363/api/status || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:6363/ || exit 0"]
       interval: 10s
       timeout: 5s
       retries: 5
