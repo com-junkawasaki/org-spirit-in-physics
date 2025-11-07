@@ -33,6 +33,7 @@ services:
       - ./performers/services/graphql/migrations:/app/migrations:cached
       - ./performers/services/graphql/diesel.toml:/app/diesel.toml
       - ./performers/services/graphql/schema.graphql:/app/schema.graphql
+      - ./performers/services/graphql/entrypoint.sh:/entrypoint.sh:cached
     environment:
       # Connect to PostgreSQL database
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres

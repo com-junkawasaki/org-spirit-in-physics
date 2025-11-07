@@ -21,11 +21,27 @@ else
     echo "Warning: generate-schema binary not found. SDL will be available at /graphql/sdl endpoint after server starts."
 fi
 
-echo "Waiting for Supabase PostgreSQL to be ready..."
+echo "Waiting for PostgreSQL to be ready..."
 TIMEOUT=60
 ELAPSED=0
-until pg_isready -h host.docker.internal -p 54322 -U postgres -d postgres || [ $ELAPSED -ge $TIMEOUT ]; do
-  echo "Supabase PostgreSQL is unavailable - sleeping (${ELAPSED}s/${TIMEOUT}s)"
+
+# Extract host and port from DATABASE_URL if set, otherwise use defaults
+DB_HOST="${DB_HOST:-postgres}"
+DB_PORT="${DB_PORT:-5432}"
+DB_USER="${DB_USER:-postgres}"
+DB_NAME="${DB_NAME:-postgres}"
+
+# Set DATABASE_URL if not already set (use Docker Compose service name)
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/postgres}"
+
+# Extract connection details from DATABASE_URL for pg_isready
+DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:]*\):\([^/]*\)\/.*/\1/p')
+DB_PORT=$(echo "$DATABASE_URL" | sed -n 's/.*@[^:]*:\([^/]*\)\/.*/\1/p')
+DB_USER=$(echo "$DATABASE_URL" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
+DB_NAME=$(echo "$DATABASE_URL" | sed -n 's/.*\/\([^?]*\).*/\1/p')
+
+until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" || [ $ELAPSED -ge $TIMEOUT ]; do
+  echo "PostgreSQL at $DB_HOST:$DB_PORT is unavailable - sleeping (${ELAPSED}s/${TIMEOUT}s)"
   sleep 2
   ELAPSED=$((ELAPSED + 2))
 done
@@ -34,14 +50,11 @@ if [ $ELAPSED -ge $TIMEOUT ]; then
   echo "Warning: PostgreSQL connection timeout. Starting GraphQL server anyway (SDL endpoint will work)."
   echo "Database-dependent features will not work until PostgreSQL is available."
 else
-  echo "Supabase PostgreSQL is ready!"
+  echo "PostgreSQL at $DB_HOST:$DB_PORT is ready!"
 fi
 
-# Set DATABASE_URL if not already set
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@host.docker.internal:54322/postgres}"
-
 # Only run database setup if PostgreSQL is available
-if pg_isready -h host.docker.internal -p 54322 -U postgres -d postgres 2>/dev/null; then
+if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" 2>/dev/null; then
   echo "Running diesel setup..."
   diesel setup --database-url "$DATABASE_URL" || echo "diesel setup completed (migrations directory may already exist)"
 

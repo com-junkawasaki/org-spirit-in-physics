@@ -1,5 +1,11 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "session_type"))]
+    pub struct SessionType;
+}
+
 diesel::table! {
     emotion_data (id) {
         id -> Uuid,
@@ -43,10 +49,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::SessionType;
+
     participant_experiment_sessions (id) {
         id -> Uuid,
         participant_id -> Uuid,
-        session_type -> Text,
+        session_type -> SessionType,
         start_time -> Nullable<Timestamptz>,
         end_time -> Nullable<Timestamptz>,
         created_at -> Nullable<Timestamptz>,
@@ -72,6 +81,18 @@ diesel::table! {
         emotion_confidence -> Nullable<Float8>,
         created_at -> Nullable<Timestamptz>,
         updated_at -> Nullable<Timestamptz>,
+    }
+}
+
+diesel::table! {
+    participant_session_events (id) {
+        id -> Uuid,
+        participant_id -> Uuid,
+        session_id -> Uuid,
+        event_type -> Text,
+        timestamp -> Timestamptz,
+        payload -> Nullable<Jsonb>,
+        created_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -128,8 +149,10 @@ diesel::joinable!(participant_consents -> participants (participant_id));
 diesel::joinable!(participant_experiment_sessions -> participants (participant_id));
 diesel::joinable!(participant_response_data -> participants (participant_id));
 diesel::joinable!(participant_response_data -> word_stimuli (word_stimulus_id));
+diesel::joinable!(participant_session_events -> participant_experiment_sessions (session_id));
+diesel::joinable!(participant_session_events -> participants (participant_id));
 diesel::joinable!(physiological_data -> participant_response_data (participant_response_data_id));
 diesel::joinable!(visualization_results -> participants (participant_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    emotion_data,participant_analysis_results,participant_consents,participant_experiment_sessions,participant_response_data,participants,physiological_data,visualization_results,word_stimuli,);
+    emotion_data,participant_analysis_results,participant_consents,participant_experiment_sessions,participant_response_data,participant_session_events,participants,physiological_data,visualization_results,word_stimuli,);

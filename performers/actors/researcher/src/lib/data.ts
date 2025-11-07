@@ -113,19 +113,43 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
     const client = createGraphQLClient()
     const participants = await client.getParticipants()
 
+    if (!participants || participants.length === 0) {
+      console.warn('No participants returned from GraphQL API')
+      return []
+    }
+
     // For each participant, get detailed data
     const participantsWithData = await Promise.all(
       participants.map(async (participant) => {
         const participantId = participant.id || participant.participant_id
-        const participantData = await getParticipantData(participantId)
-        return participantData || {
-          id: participantId,
-          name: `Participant ${participantId.slice(0, 8)}`,
-          sessions: [],
-          analysisRuns: [],
-          sessionCount: 0,
-          responseCount: 0,
-          averageSpiritProbability: 0,
+        if (!participantId) {
+          console.warn('Participant missing ID:', participant)
+          return null
+        }
+        
+        try {
+          const participantData = await getParticipantData(participantId)
+          return participantData || {
+            id: participantId,
+            name: `Participant ${participantId.slice(0, 8)}`,
+            sessions: [],
+            analysisRuns: [],
+            sessionCount: 0,
+            responseCount: 0,
+            averageSpiritProbability: 0,
+          }
+        } catch (error) {
+          console.error(`Failed to get data for participant ${participantId}:`, error)
+          // Return minimal participant data even if details fail
+          return {
+            id: participantId,
+            name: `Participant ${participantId.slice(0, 8)}`,
+            sessions: [],
+            analysisRuns: [],
+            sessionCount: 0,
+            responseCount: 0,
+            averageSpiritProbability: 0,
+          }
         }
       })
     )
