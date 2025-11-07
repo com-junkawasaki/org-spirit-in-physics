@@ -2,15 +2,10 @@ use async_graphql::{EmptySubscription, Schema};
 use dotenvy::dotenv;
 use std::sync::Arc;
 
-mod constants;
-mod db;
-mod hume_client;
-mod models;
-mod activities;
-
-// Use create_routes from lib.rs
+// Use functions from lib.rs
 use graphql::create_routes;
-use activities::{Query, Mutation};
+use graphql::activities::{Query, Mutation};
+use graphql::db;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

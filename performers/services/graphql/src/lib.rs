@@ -42,11 +42,12 @@ pub fn create_routes(schema: GraphQLSchema) -> impl Filter<Extract = impl Reply,
         });
 
     // SDL endpoint for schema introspection
+    let schema_clone = schema.clone();
     let graphql_sdl = warp::path("graphql")
         .and(warp::path("sdl"))
         .and(warp::get())
         .map(move || {
-            let sdl = schema.sdl();
+            let sdl = schema_clone.sdl();
             warp::http::Response::builder()
                 .header("content-type", "text/plain; charset=utf-8")
                 .body(sdl)
