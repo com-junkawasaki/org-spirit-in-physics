@@ -7,6 +7,7 @@ use crate::graphql::subscription::Subscription;
 use crate::gpu::device::GpuDevice;
 use crate::kg::terminus::TerminusClient;
 use warp::Filter;
+use std::path::PathBuf;
 
 /// Create GraphQL schema
 pub fn create_schema(
@@ -47,17 +48,66 @@ pub async fn start_server(
             warp::reply::html(include_str!("../../resources/graphql-playground.html"))
         });
     
-    // Add 3D Viewer route (GET /3d)
+    // Add 3D Viewer route (GET /3d) - Three.js version
     let viewer_3d = warp::path("3d")
         .and(warp::get())
         .map(|| {
             warp::reply::html(include_str!("../../resources/3d-viewer.html"))
         });
     
+    // Add Bevy Viewer route (GET /bevy)
+    let viewer_bevy = warp::path("bevy")
+        .and(warp::get())
+        .map(|| {
+            warp::reply::html(include_str!("../../resources/bevy-viewer.html"))
+        });
+    
+    // Serve WebAssembly files (GET /wasm/*)
+    let wasm_files = warp::path("wasm")
+        .and(warp::path::tail())
+        .and(warp::get())
+        .and_then(|tail: warp::path::Tail| async move {
+            let file_path = format!("resources/wasm/{}", tail.as_str());
+            let path = PathBuf::from(&file_path);
+            
+            // Security: prevent directory traversal
+            if path.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+                return Err(warp::reject::not_found());
+            }
+            
+            // Determine MIME type
+            let mime = if path.extension().and_then(|s| s.to_str()) == Some("wasm") {
+                "application/wasm"
+            } else if path.extension().and_then(|s| s.to_str()) == Some("js") {
+                "application/javascript"
+            } else if path.extension().and_then(|s| s.to_str()) == Some("ts") {
+                "application/typescript"
+            } else {
+                "application/octet-stream"
+            };
+            
+            match tokio::fs::read(&path).await {
+                Ok(content) => {
+                    Ok(warp::reply::with_header(
+                        warp::reply::with_header(
+                            warp::reply::Response::new(content.into()),
+                            "content-type",
+                            mime,
+                        ),
+                        "cache-control",
+                        "public, max-age=3600",
+                    ))
+                }
+                Err(_) => Err(warp::reject::not_found()),
+            }
+        });
+    
     // Route order: specific paths first, then GraphQL filter
-    // This ensures /3d and /graphql (GET) are matched before GraphQL POST requests
+    // This ensures /bevy, /3d, /wasm/* and /graphql (GET) are matched before GraphQL POST requests
     let routes = playground
+        .or(viewer_bevy)
         .or(viewer_3d)
+        .or(wasm_files)
         .or(graphql_filter)
         .with(cors)
         .recover(|err: warp::Rejection| async move {

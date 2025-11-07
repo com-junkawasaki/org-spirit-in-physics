@@ -35,7 +35,16 @@
           "@id": "https://spirit-in-physics.gftd.ai/service/visualizer/component/timeline",
           "@type": "cpm:Component",
           "name": "TimelineVisualization",
-          "description": "時系列可視化コンポーネント。セッションデータ、生理データ、Hume AI感情データを統合した時系列チャートを提供する。"
+          "description": "時系列可視化コンポーネント。セッションデータ、生理データ、Hume AI感情データを統合した時系列チャートを提供する。",
+          "prov:used": [
+            "https://spirit-in-physics.gftd.ai/activity/participantTimeline",
+            "https://spirit-in-physics.gftd.ai/api/participants/timeline"
+          ],
+          "prov:wasGeneratedBy": [
+            "https://spirit-in-physics.gftd.ai/resource/participant_response_data",
+            "https://spirit-in-physics.gftd.ai/resource/emotion_data",
+            "https://spirit-in-physics.gftd.ai/resource/physiological_data"
+          ]
         },
         {
           "@id": "https://spirit-in-physics.gftd.ai/service/visualizer/component/emotion-distance",

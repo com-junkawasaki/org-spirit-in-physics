@@ -316,18 +316,25 @@ impl Query {
         }
     }
 
-    // Temporarily disabled due to compilation errors - will be fixed in a separate task
-    /*
+    // Merkle DAG: activities.participant_timeline
+    // GraphQL query to fetch participant timeline data including emotion and physiological data
+    // RDF: https://spirit-in-physics.gftd.ai/activity/participantTimeline
     #[graphql(name = "participantTimeline")]
     async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantTimelineResponse> {
+        use diesel::dsl::count;
+        use tracing::{info, warn};
+        
         let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()?;
         let mut conn = pool.get().await?;
         
         let participant_uuid = Uuid::parse_str(&participant_id)
             .map_err(|e| async_graphql::Error::new(format!("Invalid participant ID: {}", e)))?;
         
+        info!("Fetching timeline data for participant: {}", participant_id);
+        
         // Fetch participant response data
-        let responses: Vec<(uuid::Uuid, String, Option<String>, i32, chrono::DateTime<chrono::Utc>, Option<rust_decimal::Decimal>, Option<String>, Option<rust_decimal::Decimal>)> = 
+        type ResponseRow = (uuid::Uuid, String, Option<String>, Option<i32>, chrono::DateTime<chrono::Utc>);
+        let responses: Vec<ResponseRow> = 
             participant_response_data::table
                 .filter(participant_response_data::participant_id.eq(participant_uuid))
                 .select((
@@ -336,58 +343,150 @@ impl Query {
                     participant_response_data::response_word,
                     participant_response_data::reaction_time_ms,
                     participant_response_data::timestamp,
-                    participant_response_data::skin_potential,
-                    participant_response_data::emotion,
-                    participant_response_data::emotion_confidence,
                 ))
                 .order(participant_response_data::timestamp.asc())
                 .load(&mut conn)
-                .await?;
+                .await
+                .map_err(|e| async_graphql::Error::new(format!("Failed to fetch response data: {}", e)))?;
+        
+        info!("Found {} response records", responses.len());
+        
+        if responses.is_empty() {
+            return Ok(ParticipantTimelineResponse {
+                timeline_data: vec![],
+                metadata: TimelineMetadata {
+                    session_events: None,
+                    emotion_entries: Some(0),
+                    physiological_entries: Some(0),
+                    total_data_points: Some(0),
+                    data_source: Some("database".to_string()),
+                    errors: None,
+                    truncated: None,
+                    original_size: Some(0),
+                },
+            });
+        }
+        
+        // Collect response IDs for fetching related data
+        let response_ids: Vec<uuid::Uuid> = responses.iter().map(|(id, _, _, _, _)| *id).collect();
+        
+        // Fetch emotion data for all responses
+        type EmotionRow = (uuid::Uuid, String, f64, Option<String>);
+        let emotion_rows: Vec<EmotionRow> = emotion_data::table
+            .filter(emotion_data::participant_response_data_id.eq_any(&response_ids))
+            .select((
+                emotion_data::participant_response_data_id,
+                emotion_data::emotion_name,
+                emotion_data::score,
+                emotion_data::file_type,
+            ))
+            .load(&mut conn)
+            .await
+            .map_err(|e| async_graphql::Error::new(format!("Failed to fetch emotion data: {}", e)))?;
+        
+        info!("Found {} emotion records", emotion_rows.len());
+        
+        // Group emotion data by response ID
+        use std::collections::HashMap;
+        let mut emotions_by_response: HashMap<uuid::Uuid, Vec<EmotionData>> = HashMap::new();
+        for (response_id, emotion_name, score, file_type) in emotion_rows {
+            emotions_by_response
+                .entry(response_id)
+                .or_insert_with(Vec::new)
+                .push(EmotionData {
+                    name: emotion_name,
+                    score,
+                    file_type: file_type.unwrap_or_else(|| "unknown".to_string()),
+                });
+        }
+        
+        // Fetch physiological data for all responses
+        type PhysiologicalRow = (uuid::Uuid, Option<f64>, Option<f64>, Option<f64>);
+        let physiological_rows: Vec<PhysiologicalRow> = physiological_data::table
+            .filter(physiological_data::participant_response_data_id.eq_any(&response_ids))
+            .select((
+                physiological_data::participant_response_data_id,
+                physiological_data::average,
+                physiological_data::max_value,
+                physiological_data::min_value,
+            ))
+            .load(&mut conn)
+            .await
+            .map_err(|e| async_graphql::Error::new(format!("Failed to fetch physiological data: {}", e)))?;
+        
+        info!("Found {} physiological records", physiological_rows.len());
+        
+        // Group physiological data by response ID (take first match for each response)
+        let mut physiological_by_response: HashMap<uuid::Uuid, PhysiologicalData> = HashMap::new();
+        for (response_id, average, max_value, min_value) in physiological_rows {
+            if !physiological_by_response.contains_key(&response_id) {
+                physiological_by_response.insert(response_id, PhysiologicalData {
+                    average,
+                    max: max_value,
+                    min: min_value,
+                });
+            }
+        }
+        
+        // Count session events
+        let session_events_count: i64 = participant_session_events::table
+            .inner_join(participant_experiment_sessions::table.on(
+                participant_session_events::session_id.eq(participant_experiment_sessions::id)
+            ))
+            .filter(participant_experiment_sessions::participant_id.eq(participant_uuid))
+            .select(count(participant_session_events::id))
+            .first(&mut conn)
+            .await
+            .unwrap_or(0);
         
         // Convert to TimelineDataPoint
-        let timeline_data: Vec<TimelineDataPoint> = responses.into_iter().enumerate().map(|(idx, (id, stimulus_word, response_word, reaction_time_ms, timestamp, skin_potential, emotion, emotion_confidence))| {
+        let timeline_data: Vec<TimelineDataPoint> = responses.into_iter().map(|(id, stimulus_word, response_word, reaction_time_ms, timestamp)| {
             let timestamp_float = timestamp.timestamp_millis() as f64;
             
-            // Parse emotion data (simplified - in production, query emotion_data table)
-            let emotions = if let Some(emotion_name) = emotion {
-                vec![EmotionData {
-                    name: emotion_name,
-                    score: emotion_confidence.and_then(|c| c.to_f64()).unwrap_or(0.0),
-                    file_type: "hume_json".to_string(),
-                }]
-            } else {
-                vec![]
-            };
+            // Get emotion data for this response
+            let emotions = emotions_by_response
+                .get(&id)
+                .cloned()
+                .unwrap_or_else(Vec::new);
             
-            // Parse physiological data
-            let physiological = PhysiologicalData {
-                average: skin_potential.and_then(|s| s.to_f64()),
-                max: skin_potential.and_then(|s| s.to_f64()),
-                min: skin_potential.and_then(|s| s.to_f64()),
-            };
+            // Get physiological data for this response
+            let physiological = physiological_by_response
+                .get(&id)
+                .cloned()
+                .unwrap_or_else(|| PhysiologicalData {
+                    average: None,
+                    max: None,
+                    min: None,
+                });
             
             TimelineDataPoint {
                 timestamp: timestamp_float,
                 word: stimulus_word.clone(),
-                reaction_time: reaction_time_ms as i32,
+                reaction_time: reaction_time_ms.unwrap_or(0),
                 has_response: response_word.is_some(),
                 emotions,
                 physiological,
                 reaction_value: if response_word.is_some() { 1.0 } else { 0.0 },
                 event_type: Some("word_response".to_string()),
                 metadata: Some(TimelineDataPointMetadata {
-                    emotion_count: if emotion.is_some() { Some(1) } else { Some(0) },
-                    physiological_count: if skin_potential.is_some() { Some(1) } else { Some(0) },
+                    emotion_count: Some(emotions.len() as i32),
+                    physiological_count: if physiological.average.is_some() { Some(1) } else { Some(0) },
                 }),
             }
         }).collect();
         
+        let total_emotion_entries: i32 = timeline_data.iter().map(|d| d.emotions.len() as i32).sum();
+        let total_physiological_entries: i32 = timeline_data.iter().filter(|d| d.physiological.average.is_some()).count() as i32;
+        
+        info!("Timeline data conversion complete: {} points, {} emotion entries, {} physiological entries", 
+              timeline_data.len(), total_emotion_entries, total_physiological_entries);
+        
         Ok(ParticipantTimelineResponse {
             timeline_data,
             metadata: TimelineMetadata {
-                session_events: None,
-                emotion_entries: Some(timeline_data.iter().map(|d| d.emotions.len() as i32).sum()),
-                physiological_entries: Some(timeline_data.iter().filter(|d| d.physiological.average.is_some()).count() as i32),
+                session_events: Some(session_events_count as i32),
+                emotion_entries: Some(total_emotion_entries),
+                physiological_entries: Some(total_physiological_entries),
                 total_data_points: Some(timeline_data.len() as i32),
                 data_source: Some("database".to_string()),
                 errors: None,
@@ -396,7 +495,6 @@ impl Query {
             },
         })
     }
-    */
 
     // Temporarily disabled - will be fixed in a separate task
     /*

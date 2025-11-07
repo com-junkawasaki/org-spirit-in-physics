@@ -13,6 +13,7 @@ bytemuck = { version = "1.14", features = ["derive"] }
 
 # Visualization (Bevy)
 # Note: Using default features (libasound2-dev installed in Dockerfile for audio support)
+# For WebAssembly: use bevy with wasm feature
 bevy = { version = "0.13", default-features = true }
 
 # GraphQL API
@@ -65,13 +66,19 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 # Date/time handling
 chrono = { version = "0.4", features = ["serde"] }
 
-# WASM support (optional, for browser deployment)
-# wasm-bindgen = "0.2"
-# web-sys = "0.3"
+# WASM support (for browser deployment)
+wasm-bindgen = "0.2"
+web-sys = "0.3"
+console_error_panic_hook = "0.1"
 
 [dev-dependencies]
 criterion = "0.5"
 tokio-test = "0.4"
+
+[lib]
+name = "great_sprit"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "great-sprit"

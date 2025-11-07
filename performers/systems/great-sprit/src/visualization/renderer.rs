@@ -25,7 +25,24 @@ impl VisualizationRenderer {
     pub fn create_app() -> App {
         let mut app = App::new();
         
-        app.add_plugins(DefaultPlugins)
+        // Configure plugins based on target platform
+        #[cfg(target_arch = "wasm32")]
+        {
+            // WebAssembly: Use WebGL2 renderer
+            app.add_plugins(DefaultPlugins.set(WindowPlugin {
+                primary_window: None, // Will be set by caller
+                ..default()
+            }));
+        }
+        
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            // Native: Use default plugins
+            app.add_plugins(DefaultPlugins);
+        }
+        
+        app.init_resource::<RdfData>()
+            .init_resource::<EmotionData>()
             .add_systems(Startup, setup_visualization)
             .add_systems(Update, (
                 update_rdf_vectors,
@@ -77,16 +94,33 @@ fn setup_visualization(
     });
 }
 
+/// Resource to store RDF data from GraphQL
+#[derive(Resource, Default)]
+pub struct RdfData {
+    pub triples: Vec<(String, String, String)>, // (subject, predicate, object)
+    pub updated: bool,
+}
+
+/// Resource to store emotion data from GraphQL
+#[derive(Resource, Default)]
+pub struct EmotionData {
+    pub observations: Vec<(String, f32, f32, f32)>, // (person_uri, valence, arousal, engagement)
+    pub updated: bool,
+}
+
 /// Update RDF vector visualization
 fn update_rdf_vectors(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     rdf_renderer: ResMut<RdfVectorFieldRenderer>,
+    rdf_data: Res<RdfData>,
 ) {
-    // RDF vectors are updated asynchronously, render them here
-    // TODO: Integrate with actual RDF data loading
-    // rdf_renderer.render(&mut commands, &mut meshes, &mut materials);
+    if rdf_data.updated {
+        // TODO: Render RDF vectors from data
+        // For now, this is a placeholder
+        // rdf_renderer.render(&mut commands, &mut meshes, &mut materials);
+    }
 }
 
 /// Update SHACL force visualization
@@ -95,10 +129,13 @@ fn update_shacl_forces(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     shacl_renderer: ResMut<ShaclVectorFieldRenderer>,
+    emotion_data: Res<EmotionData>,
 ) {
-    // SHACL forces are updated asynchronously, render them here
-    // TODO: Integrate with actual SHACL data loading
-    // shacl_renderer.render(&mut commands, &mut meshes, &mut materials);
+    if emotion_data.updated {
+        // TODO: Render emotion network from data
+        // For now, this is a placeholder
+        // shacl_renderer.render(&mut commands, &mut meshes, &mut materials);
+    }
 }
 
 /// Update visualization system

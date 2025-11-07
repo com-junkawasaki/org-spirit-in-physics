@@ -18,6 +18,52 @@ type ParticipantGQL {
 type Query {
 	participants: [ParticipantGQL!]!
 	participant(participantId: String!): ParticipantGQL!
+	participantTimeline(participantId: String!): ParticipantTimelineResponse!
+}
+
+type ParticipantTimelineResponse {
+	timelineData: [TimelineDataPoint!]!
+	metadata: TimelineMetadata!
+}
+
+type TimelineDataPoint {
+	timestamp: Float!
+	word: String!
+	reactionTime: Int!
+	hasResponse: Boolean!
+	emotions: [EmotionData!]!
+	physiological: PhysiologicalData!
+	reactionValue: Float!
+	eventType: String
+	metadata: TimelineDataPointMetadata
+}
+
+type EmotionData {
+	name: String!
+	score: Float!
+	fileType: String!
+}
+
+type PhysiologicalData {
+	average: Float
+	max: Float
+	min: Float
+}
+
+type TimelineDataPointMetadata {
+	emotionCount: Int
+	physiologicalCount: Int
+}
+
+type TimelineMetadata {
+	sessionEvents: Int
+	emotionEntries: Int
+	physiologicalEntries: Int
+	totalDataPoints: Int
+	dataSource: String
+	errors: [String!]
+	truncated: Boolean
+	originalSize: Int
 }
 
 """

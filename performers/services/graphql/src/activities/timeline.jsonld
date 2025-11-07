@@ -1,0 +1,97 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "wasAttributedTo": "prov:wasAttributedTo",
+    "provides": "cpm:provides",
+    "used": "prov:used",
+    "generated": "prov:generated"
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/participantTimeline",
+      "@type": ["cpm:Activity", "prov:Activity"],
+      
+      "name": "Participant Timeline Query",
+      "description": "GraphQL query to fetch participant timeline data including emotion and physiological data. Integrates data from participant_response_data, emotion_data, and physiological_data tables.",
+      
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/service/graphql"
+      ],
+      
+      "used": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/resource/participant_response_data",
+          "@type": "cpm:Resource",
+          "name": "Participant Response Data",
+          "description": "Database table containing participant word response data"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/resource/emotion_data",
+          "@type": "cpm:Resource",
+          "name": "Emotion Data",
+          "description": "Database table containing emotion detection data from HumeAI"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/resource/physiological_data",
+          "@type": "cpm:Resource",
+          "name": "Physiological Data",
+          "description": "Database table containing physiological measurement data"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/resource/participant_session_events",
+          "@type": "cpm:Resource",
+          "name": "Participant Session Events",
+          "description": "Database table containing session event data"
+        }
+      ],
+      
+      "generated": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/resource/timeline_data",
+          "@type": "cpm:Resource",
+          "name": "Timeline Data",
+          "description": "Integrated timeline data combining responses, emotions, and physiological measurements"
+        }
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/api/participants/timeline",
+      "@type": ["cpm:Port", "prov:Activity"],
+      
+      "name": "Timeline API Route",
+      "description": "Next.js API route that calls GraphQL participantTimeline query and transforms response for TimelineVisualization component",
+      
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/actor/researcher"
+      ],
+      
+      "used": [
+        "https://spirit-in-physics.gftd.ai/activity/participantTimeline"
+      ],
+      
+      "generated": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/resource/timeline_api_response",
+          "@type": "cpm:Resource",
+          "name": "Timeline API Response",
+          "description": "API response formatted for TimelineVisualization component consumption"
+        }
+      ]
+    }
+  ]
+}
+

@@ -1,5 +1,6 @@
 import { DashboardLayout } from '@/components/layout/PageLayout';
 import { createGraphQLClient } from '@/lib/graphql-client';
+import TimelineVisualizationWrapper from './TimelineVisualizationWrapper';
 
 interface ParticipantDetailPageProps {
   params: {
@@ -84,7 +85,7 @@ async function ParticipantDetailContent({ participantId }: { participantId: stri
 
       <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-bold mb-4">Timeline Visualization</h2>
-        <p className="text-gray-500">Timeline visualization component is temporarily disabled.</p>
+        <TimelineVisualizationWrapper participantId={participantId} />
       </div>
     </div>
   );
