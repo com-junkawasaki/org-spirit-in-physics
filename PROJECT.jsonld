@@ -138,8 +138,8 @@
         "name": "技術基盤 (Technical Foundation)",
         "description": "研究の信頼性と拡張性を保証する技術インフラ",
         "subProcesses": [
-          "GraphQL APIとPostgreSQLデータベース統合",
-          "Supabaseプラットフォーム統合（PostgreSQL、REST API、認証、リアルタイム、ストレージ）",
+          "GraphQL APIとSupabaseプラットフォーム統合",
+          "Supabaseプラットフォーム（PostgreSQL 17、REST API、認証、リアルタイム、ストレージ、Studio）",
           "リレーショナルデータベースによる構造化データモデリング",
           "GraphQLクエリ言語による高度なデータ操作",
           "非同期ジョブ管理と依存関係解決",
@@ -164,8 +164,8 @@
     "implementedFeatures": [
       "川崎モデルの数式実装",
       "Hume AI Expression Measurement統合",
-      "GraphQL APIとPostgreSQL完全統合",
-      "Supabaseプラットフォーム統合（PostgreSQL 17、REST API、認証、リアルタイム、ストレージ、Studio）",
+      "GraphQL APIとSupabaseプラットフォーム完全統合",
+      "Supabaseプラットフォーム（PostgreSQL 17、REST API、認証、リアルタイム、ストレージ、Studio）",
       "耐久性のあるジョブベース処理システム",
       "管理者ダッシュボードUI",
       "Spirit確率分析ダッシュボード",

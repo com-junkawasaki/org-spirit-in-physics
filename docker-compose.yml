@@ -1,26 +1,8 @@
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:16-alpine
-    container_name: spirit-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   # GraphQL API (Rust)
+  # Note: Supabase database must be started separately via `supabase start` command
+  # Run: cd performers/systems/supabase && supabase start
+  # Supabase database will be available at localhost:54322
   graphql:
     build:
       context: ./performers/services/graphql
@@ -33,11 +15,12 @@ services:
       - ./performers/services/graphql/migrations:/app/migrations:cached
       - ./performers/services/graphql/diesel.toml:/app/diesel.toml
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      # Connect to Supabase database (started via `supabase start`)
+      # Supabase DB port: 54322 (config: performers/systems/supabase/config.toml)
+      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
       - RUST_LOG=info,sqlx=warn,hyper=info,diesel=debug
-    depends_on:
-      postgres:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - spirit-network
     healthcheck:
@@ -46,9 +29,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-
-volumes:
-  postgres_data:
 
 networks:
   spirit-network:

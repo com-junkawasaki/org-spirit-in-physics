@@ -55,7 +55,6 @@
       ],
       "wasAttributedTo": [
         "https://spirit-in-physics.gftd.ai/service/graphql",
-        "https://spirit-in-physics.gftd.ai/system/database",
         "https://spirit-in-physics.gftd.ai/system/supabase"
       ]
     },
