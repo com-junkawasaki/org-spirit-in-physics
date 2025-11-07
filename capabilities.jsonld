@@ -48,14 +48,54 @@
       "@id": "https://spirit-in-physics.gftd.ai/capability/data-management",
       "@type": ["cpm:Capability", "dodaf:Capability"],
       "name": "DataManagementCapability",
-      "description": "データ管理能力。GraphQL APIとPostgreSQL統合による構造化データモデリング、CRUD操作、トランザクション管理、データ保護。",
+      "description": "データ管理能力。GraphQL APIとPostgreSQL統合による構造化データモデリング、CRUD操作、トランザクション管理、データ保護。SupabaseプラットフォームによるREST API、リアルタイム更新、ストレージ機能も提供。",
       "enables": [
         "https://spirit-in-physics.gftd.ai/activity/data-import",
         "https://spirit-in-physics.gftd.ai/activity/participant-registration"
       ],
       "wasAttributedTo": [
         "https://spirit-in-physics.gftd.ai/service/graphql",
-        "https://spirit-in-physics.gftd.ai/system/database"
+        "https://spirit-in-physics.gftd.ai/system/database",
+        "https://spirit-in-physics.gftd.ai/system/supabase"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/authentication",
+      "@type": ["cpm:Capability", "dodaf:Capability"],
+      "name": "AuthenticationCapability",
+      "description": "認証・認可能力。Supabase Authによるユーザー認証、セッション管理、JWT トークン発行、OAuth プロバイダー統合、メール認証、匿名サインイン。",
+      "enables": [
+        "https://spirit-in-physics.gftd.ai/activity/user-authentication",
+        "https://spirit-in-physics.gftd.ai/activity/session-management"
+      ],
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/system/supabase"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/realtime",
+      "@type": ["cpm:Capability", "dodaf:Capability"],
+      "name": "RealtimeCapability",
+      "description": "リアルタイム能力。Supabase Realtimeによるデータベース変更のリアルタイム購読、WebSocket接続、チャンネル管理、プレゼンス機能。",
+      "enables": [
+        "https://spirit-in-physics.gftd.ai/activity/realtime-updates",
+        "https://spirit-in-physics.gftd.ai/activity/live-dashboard"
+      ],
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/system/supabase"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/storage",
+      "@type": ["cpm:Capability", "dodaf:Capability"],
+      "name": "StorageCapability",
+      "description": "ストレージ能力。Supabase Storageによるファイルアップロード・ダウンロード、バケット管理、アクセス制御、画像変換API。",
+      "enables": [
+        "https://spirit-in-physics.gftd.ai/activity/file-upload",
+        "https://spirit-in-physics.gftd.ai/activity/media-management"
+      ],
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/system/supabase"
       ]
     },
     {

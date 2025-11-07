@@ -1,0 +1,64 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "wasAttributedTo": "prov:wasAttributedTo",
+    "providesCapability": "cpm:providesCapability",
+    "usesSystem": "cpm:usesSystem"
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/supabase",
+      "@type": ["cpm:System", "dodaf:Performer", "prov:SoftwareAgent"],
+      
+      "name": "SupabasePlatform",
+      "description": "Supabase プラットフォームシステム。PostgreSQL データベース、REST API、認証、リアルタイム、ストレージ、Edge Functions を統合した BaaS プラットフォーム。GraphQL API と統合し、構造化データモデリング、CRUD操作、トランザクション管理、データ保護、認証・認可、リアルタイム更新、ファイルストレージを提供する。",
+      
+      "providesCapability": [
+        "https://spirit-in-physics.gftd.ai/capability/data-management",
+        "https://spirit-in-physics.gftd.ai/capability/authentication",
+        "https://spirit-in-physics.gftd.ai/capability/realtime",
+        "https://spirit-in-physics.gftd.ai/capability/storage"
+      ],
+      
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/capability/data-management",
+        "https://spirit-in-physics.gftd.ai/capability/authentication"
+      ],
+      
+      "configuration": {
+        "@id": "https://spirit-in-physics.gftd.ai/system/supabase/config",
+        "@type": "cpm:Configuration",
+        "projectId": "lawyer",
+        "apiPort": 54321,
+        "dbPort": 54322,
+        "studioPort": 54323,
+        "inbucketPort": 54324,
+        "postgresVersion": "17",
+        "features": {
+          "api": true,
+          "auth": true,
+          "realtime": true,
+          "storage": true,
+          "studio": true,
+          "edgeRuntime": true,
+          "analytics": true
+        }
+      }
+    }
+  ]
+}
+
