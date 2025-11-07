@@ -4,6 +4,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Use BuildKit for better caching
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: great-sprit
     ports:
       - "8080:8080"
@@ -77,4 +80,3 @@ volumes:
 networks:
   spirit-network:
     driver: bridge
-

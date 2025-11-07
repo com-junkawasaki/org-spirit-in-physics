@@ -166,6 +166,25 @@ docker-compose down
 docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up
 ```
 
+### ビルドキャッシュ管理
+
+```bash
+# ビルドキャッシュをクリーンアップ（ディスク容量不足時）
+make clean-cache
+
+# ディスク使用量確認
+make disk-usage
+
+# 通常のビルド（BuildKit使用でキャッシュ最適化）
+make build
+```
+
+**ビルドキャッシュの最適化**:
+- Docker BuildKitを使用してレイヤーキャッシュを最適化
+- Cargoの依存関係を別レイヤーでキャッシュ
+- 中間ファイルを削除してディスク使用量を削減
+- `CARGO_INCREMENTAL=0`でビルド時のディスク使用量を削減
+
 ## 設定
 
 環境変数または`config.toml`で設定可能：

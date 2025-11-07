@@ -1,0 +1,238 @@
+# Emotion Analysis Multi-Modal RDF Ontology
+# Great Spirit GPU Physics System
+# 
+# @context: https://spirit-in-physics.gftd.ai/ontology#
+# 
+# This ontology defines RDF classes and properties for emotion analysis
+# based on multi-modal input (screen capture, camera, audio)
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix ex: <https://spirit-in-physics.gftd.ai/ontology#> .
+
+# ============================================================================
+# Classes
+# ============================================================================
+
+# Person: 人物エンティティ（顔特徴ベクトル、Cookie識別子を含む）
+ex:Person
+    a owl:Class ;
+    rdfs:label "Person" ;
+    rdfs:comment "人物エンティティ。顔特徴ベクトルとCookie識別子により識別される。" ;
+    rdfs:subClassOf foaf:Person .
+
+# EmotionObservation: 感情観測（Hume AI相当の次元を含む）
+ex:EmotionObservation
+    a owl:Class ;
+    rdfs:label "Emotion Observation" ;
+    rdfs:comment "感情観測。Hume AI相当の次元（valence, arousal, engagement等）を含む。" .
+
+# MediaCapture: メディアキャプチャ（画像/音声、タイムスタンプ、ソース）
+ex:MediaCapture
+    a owl:Class ;
+    rdfs:label "Media Capture" ;
+    rdfs:comment "メディアキャプチャ。画像/音声データ、タイムスタンプ、ソース情報を含む。" ;
+    rdfs:subClassOf prov:Entity .
+
+# FaceDetection: 顔検出結果（バウンディングボックス、信頼度）
+ex:FaceDetection
+    a owl:Class ;
+    rdfs:label "Face Detection" ;
+    rdfs:comment "顔検出結果。バウンディングボックス、信頼度、検出日時を含む。" ;
+    rdfs:subClassOf prov:Entity .
+
+# EmotionAnalysis: 感情分析結果（複数次元スコア）
+ex:EmotionAnalysis
+    a owl:Class ;
+    rdfs:label "Emotion Analysis" ;
+    rdfs:comment "感情分析結果。複数の感情次元スコアを含む。" ;
+    rdfs:subClassOf prov:Entity .
+
+# ============================================================================
+# Object Properties
+# ============================================================================
+
+# observedBy: 観測対象（Person）
+ex:observedBy
+    a owl:ObjectProperty ;
+    rdfs:label "observed by" ;
+    rdfs:comment "感情観測の対象となる人物。" ;
+    rdfs:domain ex:EmotionObservation ;
+    rdfs:range ex:Person .
+
+# detectedIn: 検出元（MediaCapture）
+ex:detectedIn
+    a owl:ObjectProperty ;
+    rdfs:label "detected in" ;
+    rdfs:comment "顔検出が行われたメディアキャプチャ。" ;
+    rdfs:domain ex:FaceDetection ;
+    rdfs:range ex:MediaCapture .
+
+# analyzedFrom: 分析元（MediaCapture）
+ex:analyzedFrom
+    a owl:ObjectProperty ;
+    rdfs:label "analyzed from" ;
+    rdfs:comment "感情分析が行われたメディアキャプチャ。" ;
+    rdfs:domain ex:EmotionAnalysis ;
+    rdfs:range ex:MediaCapture .
+
+# analyzedFor: 分析対象（Person）
+ex:analyzedFor
+    a owl:ObjectProperty ;
+    rdfs:label "analyzed for" ;
+    rdfs:comment "感情分析の対象となる人物。" ;
+    rdfs:domain ex:EmotionAnalysis ;
+    rdfs:range ex:Person .
+
+# hasFaceDetection: 顔検出結果を持つ
+ex:hasFaceDetection
+    a owl:ObjectProperty ;
+    rdfs:label "has face detection" ;
+    rdfs:comment "メディアキャプチャが持つ顔検出結果。" ;
+    rdfs:domain ex:MediaCapture ;
+    rdfs:range ex:FaceDetection .
+
+# hasEmotionAnalysis: 感情分析結果を持つ
+ex:hasEmotionAnalysis
+    a owl:ObjectProperty ;
+    rdfs:label "has emotion analysis" ;
+    rdfs:comment "メディアキャプチャが持つ感情分析結果。" ;
+    rdfs:domain ex:MediaCapture ;
+    rdfs:range ex:EmotionAnalysis .
+
+# ============================================================================
+# Data Properties
+# ============================================================================
+
+# faceFeatureVector: 顔特徴ベクトル（JSON配列）
+ex:faceFeatureVector
+    a owl:DatatypeProperty ;
+    rdfs:label "face feature vector" ;
+    rdfs:comment "顔特徴ベクトル（JSON配列形式）。" ;
+    rdfs:domain ex:Person ;
+    rdfs:range xsd:string .
+
+# cookieIdentifier: Cookie識別子
+ex:cookieIdentifier
+    a owl:DatatypeProperty ;
+    rdfs:label "cookie identifier" ;
+    rdfs:comment "Cookieベースのセッション識別子。" ;
+    rdfs:domain ex:Person ;
+    rdfs:range xsd:string .
+
+# valence: 感情価（-1.0〜1.0）
+ex:valence
+    a owl:DatatypeProperty ;
+    rdfs:label "valence" ;
+    rdfs:comment "感情価（-1.0: ネガティブ 〜 1.0: ポジティブ）。" ;
+    rdfs:domain ex:EmotionObservation ;
+    rdfs:range xsd:float .
+
+# arousal: 覚醒度（0.0〜1.0）
+ex:arousal
+    a owl:DatatypeProperty ;
+    rdfs:label "arousal" ;
+    rdfs:comment "覚醒度（0.0: 低 〜 1.0: 高）。" ;
+    rdfs:domain ex:EmotionObservation ;
+    rdfs:range xsd:float .
+
+# engagement: 関与度（0.0〜1.0）
+ex:engagement
+    a owl:DatatypeProperty ;
+    rdfs:label "engagement" ;
+    rdfs:comment "関与度（0.0: 低 〜 1.0: 高）。" ;
+    rdfs:domain ex:EmotionObservation ;
+    rdfs:range xsd:float .
+
+# observedAt: 観測日時
+ex:observedAt
+    a owl:DatatypeProperty ;
+    rdfs:label "observed at" ;
+    rdfs:comment "感情観測が行われた日時。" ;
+    rdfs:domain ex:EmotionObservation ;
+    rdfs:range xsd:dateTime .
+
+# captureType: キャプチャタイプ（screen/camera/audio）
+ex:captureType
+    a owl:DatatypeProperty ;
+    rdfs:label "capture type" ;
+    rdfs:comment "キャプチャタイプ（screen/camera/audio）。" ;
+    rdfs:domain ex:MediaCapture ;
+    rdfs:range xsd:string .
+
+# mediaData: メディアデータ（Base64エンコード）
+ex:mediaData
+    a owl:DatatypeProperty ;
+    rdfs:label "media data" ;
+    rdfs:comment "メディアデータ（Base64エンコード）。" ;
+    rdfs:domain ex:MediaCapture ;
+    rdfs:range xsd:base64Binary .
+
+# capturedAt: キャプチャ日時
+ex:capturedAt
+    a owl:DatatypeProperty ;
+    rdfs:label "captured at" ;
+    rdfs:comment "メディアキャプチャが行われた日時。" ;
+    rdfs:domain ex:MediaCapture ;
+    rdfs:range xsd:dateTime .
+
+# source: ソース（screen/camera/microphone/file）
+ex:source
+    a owl:DatatypeProperty ;
+    rdfs:label "source" ;
+    rdfs:comment "メディアキャプチャのソース（screen/camera/microphone/file）。" ;
+    rdfs:domain ex:MediaCapture ;
+    rdfs:range xsd:string .
+
+# boundingBox: バウンディングボックス（JSON: {x, y, width, height}）
+ex:boundingBox
+    a owl:DatatypeProperty ;
+    rdfs:label "bounding box" ;
+    rdfs:comment "顔検出のバウンディングボックス（JSON形式: {x, y, width, height}）。" ;
+    rdfs:domain ex:FaceDetection ;
+    rdfs:range xsd:string .
+
+# confidence: 信頼度（0.0〜1.0）
+ex:confidence
+    a owl:DatatypeProperty ;
+    rdfs:label "confidence" ;
+    rdfs:comment "顔検出の信頼度（0.0〜1.0）。" ;
+    rdfs:domain ex:FaceDetection ;
+    rdfs:range xsd:float .
+
+# detectedAt: 検出日時
+ex:detectedAt
+    a owl:DatatypeProperty ;
+    rdfs:label "detected at" ;
+    rdfs:comment "顔検出が行われた日時。" ;
+    rdfs:domain ex:FaceDetection ;
+    rdfs:range xsd:dateTime .
+
+# emotionDimensions: 感情次元スコア（JSON: {valence, arousal, engagement, ...}）
+ex:emotionDimensions
+    a owl:DatatypeProperty ;
+    rdfs:label "emotion dimensions" ;
+    rdfs:comment "感情次元スコア（JSON形式: {valence, arousal, engagement, ...}）。" ;
+    rdfs:domain ex:EmotionAnalysis ;
+    rdfs:range xsd:string .
+
+# analyzedAt: 分析日時
+ex:analyzedAt
+    a owl:DatatypeProperty ;
+    rdfs:label "analyzed at" ;
+    rdfs:comment "感情分析が行われた日時。" ;
+    rdfs:domain ex:EmotionAnalysis ;
+    rdfs:range xsd:dateTime .
+
+# createdAt: 作成日時
+ex:createdAt
+    a owl:DatatypeProperty ;
+    rdfs:label "created at" ;
+    rdfs:comment "エンティティの作成日時。" ;
+    rdfs:domain ex:Person ;
+    rdfs:range xsd:dateTime .
+

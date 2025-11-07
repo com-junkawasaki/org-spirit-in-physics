@@ -9,6 +9,10 @@ pub mod gpu;
 pub mod kg;
 pub mod graphql;
 pub mod visualization;
+pub mod emotion;
+pub mod capture;
+pub mod identity;
+pub mod pipeline;
 
 pub use config::Config;
 

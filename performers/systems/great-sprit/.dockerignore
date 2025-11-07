@@ -1,5 +1,4 @@
 target/
-Cargo.lock
 .git/
 .gitignore
 *.rs.bk
@@ -7,4 +6,6 @@ Cargo.lock
 .env
 .env.local
 config.toml
+# Keep Cargo.lock for reproducible builds
+# Cargo.lock
 

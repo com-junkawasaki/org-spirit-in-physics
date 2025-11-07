@@ -1,0 +1,195 @@
+# Emotion Analysis SHACL Shapes
+# Great Spirit GPU Physics System
+#
+# @context: https://spirit-in-physics.gftd.ai/ontology#
+#
+# SHACL Shape definitions for emotion analysis RDF data validation
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <https://spirit-in-physics.gftd.ai/ontology#> .
+
+# ============================================================================
+# Person Shape
+# ============================================================================
+
+ex:PersonShape
+    a sh:NodeShape ;
+    sh:targetClass ex:Person ;
+    sh:property [
+        sh:path foaf:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:faceFeatureVector ;
+        sh:datatype xsd:string ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:cookieIdentifier ;
+        sh:datatype xsd:string ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:createdAt ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] .
+
+# ============================================================================
+# EmotionObservation Shape
+# ============================================================================
+
+ex:EmotionObservationShape
+    a sh:NodeShape ;
+    sh:targetClass ex:EmotionObservation ;
+    sh:property [
+        sh:path ex:valence ;
+        sh:datatype xsd:float ;
+        sh:minInclusive -1.0 ;
+        sh:maxInclusive 1.0 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:arousal ;
+        sh:datatype xsd:float ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:engagement ;
+        sh:datatype xsd:float ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:observedAt ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:observedBy ;
+        sh:nodeKind sh:IRI ;
+        sh:class ex:Person ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] .
+
+# ============================================================================
+# MediaCapture Shape
+# ============================================================================
+
+ex:MediaCaptureShape
+    a sh:NodeShape ;
+    sh:targetClass ex:MediaCapture ;
+    sh:property [
+        sh:path ex:captureType ;
+        sh:datatype xsd:string ;
+        sh:in ("screen" "camera" "audio") ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:mediaData ;
+        sh:datatype xsd:base64Binary ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:capturedAt ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:source ;
+        sh:datatype xsd:string ;
+        sh:in ("screen" "camera" "microphone" "file") ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] .
+
+# ============================================================================
+# FaceDetection Shape
+# ============================================================================
+
+ex:FaceDetectionShape
+    a sh:NodeShape ;
+    sh:targetClass ex:FaceDetection ;
+    sh:property [
+        sh:path ex:boundingBox ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^\\{\\s*\"x\"\\s*:\\s*[0-9]+\\s*,\\s*\"y\"\\s*:\\s*[0-9]+\\s*,\\s*\"width\"\\s*:\\s*[0-9]+\\s*,\\s*\"height\"\\s*:\\s*[0-9]+\\s*\\}$" ;
+    ] ;
+    sh:property [
+        sh:path ex:confidence ;
+        sh:datatype xsd:float ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:detectedAt ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:detectedIn ;
+        sh:nodeKind sh:IRI ;
+        sh:class ex:MediaCapture ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] .
+
+# ============================================================================
+# EmotionAnalysis Shape
+# ============================================================================
+
+ex:EmotionAnalysisShape
+    a sh:NodeShape ;
+    sh:targetClass ex:EmotionAnalysis ;
+    sh:property [
+        sh:path ex:emotionDimensions ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^\\{\\s*\"valence\"\\s*:\\s*-?[0-9]+\\.[0-9]+\\s*,\\s*\"arousal\"\\s*:\\s*[0-9]+\\.[0-9]+\\s*(,\\s*\"[^\"]+\"\\s*:\\s*[0-9]+\\.[0-9]+\\s*)*\\}$" ;
+    ] ;
+    sh:property [
+        sh:path ex:analyzedAt ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:analyzedFrom ;
+        sh:nodeKind sh:IRI ;
+        sh:class ex:MediaCapture ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:analyzedFor ;
+        sh:nodeKind sh:IRI ;
+        sh:class ex:Person ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] .
+
