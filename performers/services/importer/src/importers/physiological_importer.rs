@@ -16,9 +16,9 @@ pub fn import_physiological_data(
     session_start_timestamp_ms: i64,
 ) -> Result<()> {
     for record in records {
-        // Calculate timestamp offset from session start (in milliseconds)
-        let record_timestamp_ms = record.time_ms();
-        let offset_ms = (record_timestamp_ms - session_start_timestamp_ms) as i32;
+        // Convert relative time (in seconds) to absolute timestamp (in milliseconds)
+        // Physiological CSV timestamps are relative to session start, so add session_start_timestamp_ms
+        let record_timestamp_ms = session_start_timestamp_ms + record.time_ms();
 
         // Use skin potential (average of Ch1 and Ch2)
         let skin_potential = record.skin_potential();
@@ -48,16 +48,21 @@ pub fn import_physiological_data(
 }
 
 /// Map physiological records to a response based on timestamp
+/// Note: Physiological CSV timestamps are relative to session start (in seconds)
+/// This function converts them to absolute timestamps (in milliseconds) for comparison
 pub fn find_physiological_records_for_response(
     records: &[PhysiologicalRecord],
     response_timestamp_ms: i64,
+    session_start_timestamp_ms: i64,
     window_before_ms: i64,
     window_after_ms: i64,
 ) -> Vec<PhysiologicalRecord> {
     records
         .iter()
         .filter(|record| {
-            let record_timestamp_ms = record.time_ms();
+            // Convert relative time (in seconds) to absolute timestamp (in milliseconds)
+            // Physiological CSV timestamps are relative to session start, so add session_start_timestamp_ms
+            let record_timestamp_ms = session_start_timestamp_ms + record.time_ms();
             record_timestamp_ms >= (response_timestamp_ms - window_before_ms)
                 && record_timestamp_ms <= (response_timestamp_ms + window_after_ms)
         })

@@ -124,6 +124,7 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
                 let relevant_records = find_physiological_records_for_response(
                     &phys_data.records,
                     response.word_displayed_timestamp,
+                    boundary.start_timestamp,
                     window_before_ms,
                     window_after_ms,
                 );
@@ -151,6 +152,7 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
                     let relevant_records = find_emotion_records_for_response(
                         face_records,
                         response.word_displayed_timestamp,
+                        boundary.start_timestamp,
                         window_before_ms,
                         window_after_ms,
                     );
@@ -170,6 +172,7 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
                     let relevant_records = find_emotion_records_for_response(
                         prosody_records,
                         response.word_displayed_timestamp,
+                        boundary.start_timestamp,
                         window_before_ms,
                         window_after_ms,
                     );
@@ -189,6 +192,7 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
                     let relevant_records = find_emotion_records_for_response(
                         language_records,
                         response.word_displayed_timestamp,
+                        boundary.start_timestamp,
                         window_before_ms,
                         window_after_ms,
                     );
@@ -208,6 +212,7 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
                     let relevant_records = find_emotion_records_for_response(
                         burst_records,
                         response.word_displayed_timestamp,
+                        boundary.start_timestamp,
                         window_before_ms,
                         window_after_ms,
                     );

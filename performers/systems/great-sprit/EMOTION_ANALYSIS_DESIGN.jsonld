@@ -1,0 +1,628 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "qudt": "http://qudt.org/schema/qudt/",
+    "unit": "http://qudt.org/vocab/unit/",
+    "dct": "http://purl.org/dc/terms/",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "schema": "https://schema.org/",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "title": "dct:title",
+    "goal": "cpm:goal",
+    "protagonist": "cpm:protagonist",
+    "narrative": "cpm:narrative",
+    "processNetwork": "cpm:processNetwork",
+    "keyPillars": "cpm:keyPillars",
+    "subProcesses": "cpm:subProcesses",
+    "version": "dct:hasVersion",
+    "author": "dct:creator",
+    "merkleRoot": "cpm:merkleRoot",
+    "lastUpdated": "dct:modified",
+    "implementedFeatures": "cpm:implementedFeatures",
+    "wasGeneratedBy": "prov:wasGeneratedBy",
+    "wasInfluencedBy": "prov:wasInfluencedBy",
+    "wasDerivedFrom": "prov:wasDerivedFrom",
+    
+    "modules": "cpm:modules",
+    "module": "cpm:module",
+    "dependencies": "cpm:dependencies",
+    "dependency": "cpm:dependency",
+    "dataFlow": "cpm:dataFlow",
+    "step": "cpm:step",
+    "input": "cpm:input",
+    "output": "cpm:output",
+    "rdfClasses": "cpm:rdfClasses",
+    "rdfClass": "cpm:rdfClass",
+    "properties": "cpm:properties",
+    "property": "cpm:property",
+    "technology": "cpm:technology",
+    "filePath": "cpm:filePath"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis-design",
+  "@type": ["cpm:Design", "cpm:Feature", "prov:Plan"],
+  
+  "name": "Emotion Analysis Multi-Modal RDF Integration Design",
+  "title": "感情分析マルチモーダルRDF統合設計",
+  "description": "画面キャプチャ・カメラ画像・音声からHume AI相当の感情分析をRust/WASMで同時実行し、表示された人物のRDFエンティティを中心にデータを収集・蓄積・分析・可視化する設計",
+  
+  "goal": "マルチモーダル（画像・音声）から同時に感情分析を実行し、人物中心のRDF知識グラフとして蓄積・分析・可視化する",
+  
+  "narrative": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/narrative/0",
+      "@type": "cpm:Narrative",
+      "act": "マルチモーダル入力収集",
+      "summary": "スクリーンショットAPI、カメラストリーム（WebRTC/MediaStream）、音声ストリーム（Web Audio API）から同時にデータを取得する。ファイルアップロードもサポートし、画像・動画・音声ファイルを処理する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/narrative/1",
+      "@type": "cpm:Narrative",
+      "act": "前処理・正規化",
+      "summary": "画像は正規化・リサイズ・チャンネル変換を行い、音声は特徴抽出（MFCC、メルスペクトログラム等）を実行する。GPU並列処理（wgpu）を活用して高速化する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/narrative/2",
+      "@type": "cpm:Narrative",
+      "act": "顔検出・人物識別",
+      "summary": "ONNXモデルまたはCandleベースの顔検出により、画像から顔領域を検出する。Cookieベースのセッション管理と顔特徴ベクトルマッチングにより、既存のRDF Personエンティティと自動紐付けする。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/narrative/3",
+      "@type": "cpm:Narrative",
+      "act": "感情分析実行",
+      "summary": "Candle（Rust ML）またはONNX Runtime Web（WASM）を使用して、画像・音声から同時に感情次元を推定する。Hume AI相当の次元（valence, arousal, engagement等）を出力する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/narrative/4",
+      "@type": "cpm:Narrative",
+      "act": "RDF生成・保存",
+      "summary": "Personエンティティを中心に、EmotionObservation、MediaCapture、FaceDetection、EmotionAnalysisのRDFトリプルを生成し、TerminusDBに保存する。SHACL Shape制約によりデータ整合性を保証する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/narrative/5",
+      "@type": "cpm:Narrative",
+      "act": "時系列集計・分析",
+      "summary": "保存された感情データを時系列で集計し、統計分析（平均、分散、トレンド等）を実行する。パターン認識により感情変化の特徴を抽出する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/narrative/6",
+      "@type": "cpm:Narrative",
+      "act": "可視化",
+      "summary": "感情タイムライン、感情次元ヒートマップ、人物中心のRDFグラフを可視化する。Bevyフレームワークを使用して3Dインタラクティブな可視化を実現する。"
+    }
+  ],
+  
+  "processNetwork": {
+    "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/process-network",
+    "@type": "cpm:ProcessNetwork",
+    "goal": "マルチモーダル感情分析→RDF蓄積→分析→可視化のパイプライン",
+    "keyPillars": [
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/pillar/emotion-analysis",
+        "@type": "cpm:KeyPillar",
+        "name": "感情分析エンジン",
+        "description": "Candle/ONNXによるマルチモーダル感情分析",
+        "subProcesses": [
+          "画像前処理・正規化",
+          "音声特徴抽出（MFCC、メルスペクトログラム）",
+          "顔検出（ONNXモデル）",
+          "感情次元推定（valence, arousal, engagement等）",
+          "WASM対応推論エンジン"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/pillar/identity",
+        "@type": "cpm:KeyPillar",
+        "name": "人物識別",
+        "description": "顔認識・Cookie管理・Person解決",
+        "subProcesses": [
+          "顔特徴ベクトル抽出",
+          "Cookieベースセッション管理",
+          "RDF Personエンティティマッチング",
+          "新規Personエンティティ生成"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/pillar/capture",
+        "@type": "cpm:KeyPillar",
+        "name": "マルチモーダル入力",
+        "description": "スクリーンショット・カメラ・音声ストリーム取得",
+        "subProcesses": [
+          "スクリーンショットAPI（WASM/ネイティブ）",
+          "カメラストリーム処理（WebRTC/MediaStream）",
+          "音声ストリーム処理（Web Audio API）",
+          "ファイルアップロード処理"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/pillar/rdf-storage",
+        "@type": "cpm:KeyPillar",
+        "name": "RDF蓄積",
+        "description": "TerminusDBへのRDF書き込み・SHACL検証",
+        "subProcesses": [
+          "RDFトリプル生成（Person中心）",
+          "SHACL Shape検証",
+          "TerminusDB書き込み",
+          "時系列インデックス作成"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/pillar/aggregation",
+        "@type": "cpm:KeyPillar",
+        "name": "集計・分析",
+        "description": "時系列統計・パターン認識",
+        "subProcesses": [
+          "時系列集計（時間窓、移動平均）",
+          "統計分析（平均、分散、相関）",
+          "パターン認識（感情変化トレンド）",
+          "異常検出"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/pillar/visualization",
+        "@type": "cpm:KeyPillar",
+        "name": "可視化",
+        "description": "感情データの可視化（Bevy）",
+        "subProcesses": [
+          "感情タイムライン可視化",
+          "感情次元ヒートマップ",
+          "人物中心RDFグラフ可視化",
+          "インタラクティブ3D表示"
+        ]
+      }
+    ]
+  },
+  
+  "modules": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/module/emotion",
+      "@type": "cpm:Module",
+      "name": "感情分析モジュール",
+      "filePath": "src/emotion/",
+      "description": "感情分析エンジン・顔検出・音声処理・画像処理",
+      "files": [
+        {
+          "name": "mod.rs",
+          "description": "モジュール統合"
+        },
+        {
+          "name": "analyzer.rs",
+          "description": "感情分析エンジン（Candle/ONNX）"
+        },
+        {
+          "name": "face_detector.rs",
+          "description": "顔検出（ONNXモデル）"
+        },
+        {
+          "name": "audio_processor.rs",
+          "description": "音声前処理・特徴抽出"
+        },
+        {
+          "name": "image_processor.rs",
+          "description": "画像前処理・正規化"
+        },
+        {
+          "name": "hume_dimensions.rs",
+          "description": "Hume AI相当の感情次元定義"
+        }
+      ],
+      "dependencies": ["candle-core", "candle-nn", "onnxruntime", "image", "cpal"]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/module/capture",
+      "@type": "cpm:Module",
+      "name": "キャプチャモジュール",
+      "filePath": "src/capture/",
+      "description": "スクリーンショット・カメラ・音声ストリーム取得",
+      "files": [
+        {
+          "name": "mod.rs",
+          "description": "モジュール統合"
+        },
+        {
+          "name": "screen_capture.rs",
+          "description": "スクリーンショット取得（WASM/ネイティブ）"
+        },
+        {
+          "name": "camera_stream.rs",
+          "description": "カメラストリーム処理（WebRTC/MediaStream）"
+        },
+        {
+          "name": "audio_stream.rs",
+          "description": "音声ストリーム処理（Web Audio API）"
+        },
+        {
+          "name": "file_upload.rs",
+          "description": "ファイルアップロード処理"
+        }
+      ],
+      "dependencies": ["wasm-bindgen", "web-sys", "image", "cpal", "hound"]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/module/identity",
+      "@type": "cpm:Module",
+      "name": "人物識別モジュール",
+      "filePath": "src/identity/",
+      "description": "顔認識・Cookie管理・Person解決",
+      "files": [
+        {
+          "name": "mod.rs",
+          "description": "モジュール統合"
+        },
+        {
+          "name": "face_recognition.rs",
+          "description": "顔認識・マッチング"
+        },
+        {
+          "name": "cookie_manager.rs",
+          "description": "Cookieベースのセッション管理"
+        },
+        {
+          "name": "person_resolver.rs",
+          "description": "RDF Personエンティティ解決"
+        }
+      ],
+      "dependencies": ["candle-core", "uuid", "serde", "serde_json"]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/module/pipeline",
+      "@type": "cpm:Module",
+      "name": "データパイプラインモジュール",
+      "filePath": "src/pipeline/",
+      "description": "データ収集・処理・分析・保存の統合パイプライン",
+      "files": [
+        {
+          "name": "mod.rs",
+          "description": "モジュール統合"
+        },
+        {
+          "name": "collector.rs",
+          "description": "データ収集（マルチモーダル統合）"
+        },
+        {
+          "name": "processor.rs",
+          "description": "前処理・正規化"
+        },
+        {
+          "name": "analyzer.rs",
+          "description": "感情分析実行"
+        },
+        {
+          "name": "storage.rs",
+          "description": "TerminusDBへのRDF書き込み"
+        },
+        {
+          "name": "aggregator.rs",
+          "description": "時系列集計・統計分析"
+        }
+      ],
+      "dependencies": ["tokio", "futures", "chrono"]
+    }
+  ],
+  
+  "rdfClasses": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/ontology#Person",
+      "@type": "owl:Class",
+      "name": "Person",
+      "description": "人物エンティティ（顔特徴ベクトル、Cookie識別子を含む）",
+      "properties": [
+        {
+          "name": "foaf:name",
+          "type": "xsd:string",
+          "description": "人物名"
+        },
+        {
+          "name": "ex:faceFeatureVector",
+          "type": "xsd:string",
+          "description": "顔特徴ベクトル（JSON配列）"
+        },
+        {
+          "name": "ex:cookieIdentifier",
+          "type": "xsd:string",
+          "description": "Cookie識別子"
+        },
+        {
+          "name": "ex:createdAt",
+          "type": "xsd:dateTime",
+          "description": "作成日時"
+        }
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/ontology#EmotionObservation",
+      "@type": "owl:Class",
+      "name": "EmotionObservation",
+      "description": "感情観測（Hume AI相当の次元を含む）",
+      "properties": [
+        {
+          "name": "ex:valence",
+          "type": "xsd:float",
+          "description": "感情価（-1.0〜1.0）"
+        },
+        {
+          "name": "ex:arousal",
+          "type": "xsd:float",
+          "description": "覚醒度（0.0〜1.0）"
+        },
+        {
+          "name": "ex:engagement",
+          "type": "xsd:float",
+          "description": "関与度（0.0〜1.0）"
+        },
+        {
+          "name": "ex:observedAt",
+          "type": "xsd:dateTime",
+          "description": "観測日時"
+        },
+        {
+          "name": "ex:observedBy",
+          "type": "@id",
+          "description": "観測対象（Person）"
+        }
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/ontology#MediaCapture",
+      "@type": "owl:Class",
+      "name": "MediaCapture",
+      "description": "メディアキャプチャ（画像/音声、タイムスタンプ、ソース）",
+      "properties": [
+        {
+          "name": "ex:captureType",
+          "type": "xsd:string",
+          "description": "キャプチャタイプ（screen/camera/audio）"
+        },
+        {
+          "name": "ex:mediaData",
+          "type": "xsd:base64Binary",
+          "description": "メディアデータ（Base64エンコード）"
+        },
+        {
+          "name": "ex:capturedAt",
+          "type": "xsd:dateTime",
+          "description": "キャプチャ日時"
+        },
+        {
+          "name": "ex:source",
+          "type": "xsd:string",
+          "description": "ソース（screen/camera/microphone/file）"
+        }
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/ontology#FaceDetection",
+      "@type": "owl:Class",
+      "name": "FaceDetection",
+      "description": "顔検出結果（バウンディングボックス、信頼度）",
+      "properties": [
+        {
+          "name": "ex:boundingBox",
+          "type": "xsd:string",
+          "description": "バウンディングボックス（JSON: {x, y, width, height}）"
+        },
+        {
+          "name": "ex:confidence",
+          "type": "xsd:float",
+          "description": "信頼度（0.0〜1.0）"
+        },
+        {
+          "name": "ex:detectedAt",
+          "type": "xsd:dateTime",
+          "description": "検出日時"
+        },
+        {
+          "name": "ex:detectedIn",
+          "type": "@id",
+          "description": "検出元（MediaCapture）"
+        }
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/ontology#EmotionAnalysis",
+      "@type": "owl:Class",
+      "name": "EmotionAnalysis",
+      "description": "感情分析結果（複数次元スコア）",
+      "properties": [
+        {
+          "name": "ex:emotionDimensions",
+          "type": "xsd:string",
+          "description": "感情次元スコア（JSON: {valence, arousal, engagement, ...}）"
+        },
+        {
+          "name": "ex:analyzedAt",
+          "type": "xsd:dateTime",
+          "description": "分析日時"
+        },
+        {
+          "name": "ex:analyzedFrom",
+          "type": "@id",
+          "description": "分析元（MediaCapture）"
+        },
+        {
+          "name": "ex:analyzedFor",
+          "type": "@id",
+          "description": "分析対象（Person）"
+        }
+      ]
+    }
+  ],
+  
+  "dataFlow": {
+    "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/data-flow",
+    "@type": "cpm:DataFlow",
+    "steps": [
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/1",
+        "step": 1,
+        "name": "入力収集",
+        "input": ["スクリーンショット", "カメラストリーム", "音声ストリーム", "ファイルアップロード"],
+        "output": ["生画像データ", "生音声データ"],
+        "module": "src/capture/"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/2",
+        "step": 2,
+        "name": "前処理",
+        "input": ["生画像データ", "生音声データ"],
+        "output": ["正規化画像", "音声特徴ベクトル"],
+        "module": "src/emotion/image_processor.rs, src/emotion/audio_processor.rs"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/3",
+        "step": 3,
+        "name": "顔検出",
+        "input": ["正規化画像"],
+        "output": ["顔領域", "顔特徴ベクトル"],
+        "module": "src/emotion/face_detector.rs"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/4",
+        "step": 4,
+        "name": "人物識別",
+        "input": ["顔特徴ベクトル", "Cookie識別子"],
+        "output": ["PersonエンティティURI"],
+        "module": "src/identity/"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/5",
+        "step": 5,
+        "name": "感情分析",
+        "input": ["正規化画像", "音声特徴ベクトル"],
+        "output": ["感情次元スコア（valence, arousal, engagement等）"],
+        "module": "src/emotion/analyzer.rs"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/6",
+        "step": 6,
+        "name": "RDF生成",
+        "input": ["PersonエンティティURI", "感情次元スコア", "メディアデータ", "顔検出結果"],
+        "output": ["RDFトリプル"],
+        "module": "src/pipeline/storage.rs"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/7",
+        "step": 7,
+        "name": "RDF保存",
+        "input": ["RDFトリプル"],
+        "output": ["TerminusDB保存完了"],
+        "module": "src/pipeline/storage.rs"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/8",
+        "step": 8,
+        "name": "時系列集計",
+        "input": ["保存済み感情データ"],
+        "output": ["集計統計", "パターン認識結果"],
+        "module": "src/pipeline/aggregator.rs"
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/flow/9",
+        "step": 9,
+        "name": "可視化",
+        "input": ["集計統計", "RDFグラフ"],
+        "output": ["感情タイムライン", "ヒートマップ", "グラフ可視化"],
+        "module": "src/visualization/"
+      }
+    ]
+  },
+  
+  "technology": [
+    {
+      "name": "Candle",
+      "version": "0.4",
+      "description": "Rust MLライブラリ（Hugging Face製、WASM対応）",
+      "purpose": "感情分析モデル推論"
+    },
+    {
+      "name": "ONNX Runtime",
+      "version": "latest",
+      "description": "ONNXモデル推論エンジン（WASM対応）",
+      "purpose": "顔検出・感情分析モデル推論"
+    },
+    {
+      "name": "image-rs",
+      "version": "0.25",
+      "description": "Rust画像処理ライブラリ",
+      "purpose": "画像前処理・正規化"
+    },
+    {
+      "name": "cpal",
+      "version": "0.15",
+      "description": "Rust音声処理ライブラリ",
+      "purpose": "音声ストリーム処理"
+    },
+    {
+      "name": "wasm-bindgen",
+      "version": "0.2",
+      "description": "Rust-WASMバインディング",
+      "purpose": "ブラウザAPI連携"
+    },
+    {
+      "name": "TerminusDB",
+      "description": "RDF/OWLグラフデータベース",
+      "purpose": "RDFデータ永続化"
+    },
+    {
+      "name": "Bevy",
+      "version": "0.13",
+      "description": "Rustゲームエンジン・可視化フレームワーク",
+      "purpose": "3D可視化"
+    }
+  ],
+  
+  "metadata": {
+    "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/metadata",
+    "@type": "cpm:Metadata",
+    "version": "0.1.0",
+    "author": {
+      "@id": "https://spirit-in-physics.gftd.ai/author",
+      "@type": "cpm:Person",
+      "name": "Jumma Kawasaki"
+    },
+    "merkleRoot": "emotion-analysis-design-v0.1.0",
+    "lastUpdated": "2025-01-27T00:00:00Z",
+    "implementedFeatures": []
+  },
+  
+  "wasGeneratedBy": {
+    "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/emotion-analysis/generation",
+    "@type": "prov:Activity",
+    "name": "Emotion Analysis Design Generation"
+  },
+  
+  "wasInfluencedBy": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "@type": "cpm:System",
+      "name": "Great Spirit GPU Physics System"
+    },
+    {
+      "@id": "https://hume.ai",
+      "@type": "schema:SoftwareApplication",
+      "name": "Hume AI"
+    }
+  ],
+  
+  "wasDerivedFrom": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/PROJECT.jsonld",
+      "@type": "cpm:Project",
+      "name": "Great Spirit Project"
+    }
+  ]
+}
+

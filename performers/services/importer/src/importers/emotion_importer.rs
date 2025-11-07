@@ -28,10 +28,10 @@ pub fn import_emotion_data_from_records(
             continue; // Skip records without time
         };
 
-        // Convert to milliseconds and calculate offset
-        let begin_time_ms = (begin_time_sec * 1000.0) as i64;
-        let _end_time_ms = (end_time_sec * 1000.0) as i64;
-        let offset_ms = (begin_time_ms - session_start_timestamp_ms) as i32;
+        // Convert relative time (in seconds) to absolute timestamp (in milliseconds)
+        // HumeAI CSV timestamps are relative to session start, so add session_start_timestamp_ms
+        let begin_time_ms = session_start_timestamp_ms + (begin_time_sec * 1000.0) as i64;
+        let _end_time_ms = session_start_timestamp_ms + (end_time_sec * 1000.0) as i64;
 
         // Extract emotion scores
         let mut emotion_map = HashMap::new();
@@ -94,9 +94,12 @@ pub fn import_emotion_data_from_records(
 }
 
 /// Map emotion records to a response based on timestamp
+/// Note: HumeAI CSV timestamps are relative to session start (in seconds)
+/// This function converts them to absolute timestamps (in milliseconds) for comparison
 pub fn find_emotion_records_for_response(
     records: &[HashMap<String, String>],
     response_timestamp_ms: i64,
+    session_start_timestamp_ms: i64,
     window_before_ms: i64,
     window_after_ms: i64,
 ) -> Vec<HashMap<String, String>> {
@@ -105,13 +108,18 @@ pub fn find_emotion_records_for_response(
     records
         .iter()
         .filter(|record| {
-            let record_time_ms = if let Some((begin, _)) = parse_time_range_from_record(record) {
-                (begin * 1000.0) as i64
+            // Parse relative time (in seconds) from record
+            let record_time_sec = if let Some((begin, _)) = parse_time_range_from_record(record) {
+                begin
             } else if let Some(time) = parse_time_from_record(record) {
-                (time * 1000.0) as i64
+                time
             } else {
                 return false;
             };
+
+            // Convert to absolute timestamp (in milliseconds)
+            // HumeAI CSV timestamps are relative to session start, so add session_start_timestamp_ms
+            let record_time_ms = session_start_timestamp_ms + (record_time_sec * 1000.0) as i64;
 
             record_time_ms >= (response_timestamp_ms - window_before_ms)
                 && record_time_ms <= (response_timestamp_ms + window_after_ms)
