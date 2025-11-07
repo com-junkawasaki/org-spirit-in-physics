@@ -65,8 +65,7 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
         None
     };
 
-    // Parse HumeAI artifacts
-    let hume_artifacts = find_hume_artifacts(dataset_path)?;
+    // HumeAI artifacts will be loaded per session in the loop below
 
     // Process each session
     for boundary in &boundaries {
@@ -141,7 +140,8 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
             info!("Imported physiological data for session {}", boundary.session_number);
         }
 
-        // Import emotion data from HumeAI artifacts
+        // Import emotion data from HumeAI artifacts for this session
+        let hume_artifacts = find_hume_artifacts_by_session(dataset_path, boundary.session_number)?;
         if let Some(ref artifacts) = hume_artifacts {
             for (response, response_id) in word_responses.iter().zip(response_ids.iter()) {
                 let window_before_ms = 5000;
@@ -299,8 +299,9 @@ struct HumeArtifacts {
     burst: Option<Vec<std::collections::HashMap<String, String>>>,
 }
 
-/// Find and parse HumeAI artifacts
-fn find_hume_artifacts(dataset_path: &Path) -> Result<Option<HumeArtifacts>> {
+/// Find and parse HumeAI artifacts for a specific session
+/// session_number is 1-indexed (1, 2, ...), so we look for registry_file-{session_number - 1}-*
+fn find_hume_artifacts_by_session(dataset_path: &Path, session_number: u32) -> Result<Option<HumeArtifacts>> {
     // Look for HumeAI_artifacts_* directories
     let entries = std::fs::read_dir(dataset_path)
         .context("Failed to read dataset directory")?;
@@ -324,12 +325,19 @@ fn find_hume_artifacts(dataset_path: &Path) -> Result<Option<HumeArtifacts>> {
 
     let artifacts_dir = match artifacts_dir {
         Some(dir) => dir,
-        None => return Ok(None),
+        None => {
+            warn!("No HumeAI_artifacts_* directory found for session {}", session_number);
+            return Ok(None);
+        }
     };
 
-    info!("Found HumeAI artifacts directory: {:?}", artifacts_dir);
+    // Calculate registry_file index (session_number is 1-indexed, registry_file is 0-indexed)
+    let registry_index = session_number.saturating_sub(1);
+    let registry_prefix = format!("registry_file-{}-", registry_index);
 
-    // Look for registry_file-* directories
+    info!("Looking for registry_file directory for session {} (prefix: {})", session_number, registry_prefix);
+
+    // Look for registry_file-{index}-* directories
     let registry_entries = std::fs::read_dir(&artifacts_dir)
         .context("Failed to read artifacts directory")?;
 
@@ -342,46 +350,57 @@ fn find_hume_artifacts(dataset_path: &Path) -> Result<Option<HumeArtifacts>> {
         let entry = entry.context("Failed to read artifacts directory entry")?;
         let registry_path = entry.path();
         
-        if registry_path.is_dir() && registry_path.file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("")
-            .starts_with("registry_file-") {
+        if registry_path.is_dir() {
+            let dir_name = registry_path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
             
-            // Look for csv subdirectory
-            let csv_dir = registry_path.join("csv");
-            if csv_dir.exists() {
-                // Find the subdirectory inside csv
-                let csv_entries = std::fs::read_dir(&csv_dir)
-                    .context("Failed to read csv directory")?;
+            // Match registry_file-{index}-* pattern
+            if dir_name.starts_with(&registry_prefix) {
+                info!("Found matching registry_file directory: {:?} for session {}", registry_path, session_number);
                 
-                for csv_entry in csv_entries {
-                    let csv_entry = csv_entry.context("Failed to read csv directory entry")?;
-                    let csv_subdir = csv_entry.path();
+                // Look for csv subdirectory
+                let csv_dir = registry_path.join("csv");
+                if csv_dir.exists() {
+                    // Find the subdirectory inside csv
+                    let csv_entries = std::fs::read_dir(&csv_dir)
+                        .context("Failed to read csv directory")?;
                     
-                    if csv_subdir.is_dir() {
-                        // Look for CSV files
-                        let face_csv = csv_subdir.join("face.csv");
-                        let prosody_csv = csv_subdir.join("prosody.csv");
-                        let language_csv = csv_subdir.join("language.csv");
-                        let burst_csv = csv_subdir.join("burst.csv");
+                    for csv_entry in csv_entries {
+                        let csv_entry = csv_entry.context("Failed to read csv directory entry")?;
+                        let csv_subdir = csv_entry.path();
+                        
+                        if csv_subdir.is_dir() {
+                            // Look for CSV files
+                            let face_csv = csv_subdir.join("face.csv");
+                            let prosody_csv = csv_subdir.join("prosody.csv");
+                            let language_csv = csv_subdir.join("language.csv");
+                            let burst_csv = csv_subdir.join("burst.csv");
 
-                        if face_csv.exists() && face_records.is_none() {
-                            face_records = Some(parse_hume_csv(&face_csv)
-                                .context("Failed to parse face.csv")?);
-                        }
-                        if prosody_csv.exists() && prosody_records.is_none() {
-                            prosody_records = Some(parse_hume_csv(&prosody_csv)
-                                .context("Failed to parse prosody.csv")?);
-                        }
-                        if language_csv.exists() && language_records.is_none() {
-                            language_records = Some(parse_hume_csv(&language_csv)
-                                .context("Failed to parse language.csv")?);
-                        }
-                        if burst_csv.exists() && burst_records.is_none() {
-                            burst_records = Some(parse_hume_csv(&burst_csv)
-                                .context("Failed to parse burst.csv")?);
+                            if face_csv.exists() && face_records.is_none() {
+                                info!("Parsing face.csv for session {}", session_number);
+                                face_records = Some(parse_hume_csv(&face_csv)
+                                    .context("Failed to parse face.csv")?);
+                            }
+                            if prosody_csv.exists() && prosody_records.is_none() {
+                                info!("Parsing prosody.csv for session {}", session_number);
+                                prosody_records = Some(parse_hume_csv(&prosody_csv)
+                                    .context("Failed to parse prosody.csv")?);
+                            }
+                            if language_csv.exists() && language_records.is_none() {
+                                info!("Parsing language.csv for session {}", session_number);
+                                language_records = Some(parse_hume_csv(&language_csv)
+                                    .context("Failed to parse language.csv")?);
+                            }
+                            if burst_csv.exists() && burst_records.is_none() {
+                                info!("Parsing burst.csv for session {}", session_number);
+                                burst_records = Some(parse_hume_csv(&burst_csv)
+                                    .context("Failed to parse burst.csv")?);
+                            }
                         }
                     }
+                } else {
+                    warn!("CSV directory not found in {:?} for session {}", registry_path, session_number);
                 }
             }
         }
@@ -389,8 +408,16 @@ fn find_hume_artifacts(dataset_path: &Path) -> Result<Option<HumeArtifacts>> {
 
     if face_records.is_none() && prosody_records.is_none() 
         && language_records.is_none() && burst_records.is_none() {
+        warn!("No HumeAI CSV files found for session {} (registry_file-{}-*)", session_number, registry_index);
         return Ok(None);
     }
+
+    info!("Loaded HumeAI artifacts for session {}: face={}, prosody={}, language={}, burst={}", 
+          session_number,
+          face_records.as_ref().map(|r| r.len()).unwrap_or(0),
+          prosody_records.as_ref().map(|r| r.len()).unwrap_or(0),
+          language_records.as_ref().map(|r| r.len()).unwrap_or(0),
+          burst_records.as_ref().map(|r| r.len()).unwrap_or(0));
 
     Ok(Some(HumeArtifacts {
         face: face_records,

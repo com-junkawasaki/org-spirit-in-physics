@@ -49,8 +49,13 @@ pub async fn start_server(
             ))
         });
     
+    eprintln!("Starting GraphQL server on {:?}", addr);
+    println!("Starting GraphQL server on {:?}", addr);
+    tracing::info!("Starting GraphQL server on {:?}", addr);
+    
     warp::serve(routes).run(addr).await;
 
+    eprintln!("GraphQL server stopped");
     Ok(())
 }
 
