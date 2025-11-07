@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     curl \
     libasound2-dev \
+    libudev-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy manifests
