@@ -12,9 +12,8 @@ wgpu = "0.20"
 bytemuck = { version = "1.14", features = ["derive"] }
 
 # Visualization (Bevy)
-bevy = { version = "0.13", features = [
-    "default",
-] }
+# Note: Using default features (libasound2-dev installed in Dockerfile for audio support)
+bevy = { version = "0.13", default-features = true }
 
 # GraphQL API
 async-graphql = "6.0"

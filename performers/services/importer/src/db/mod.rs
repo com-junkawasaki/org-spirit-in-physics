@@ -25,27 +25,12 @@ pub fn establish_connection() -> anyhow::Result<DbPool> {
     let mut test_conn = pool.get()
         .map_err(|e| anyhow::anyhow!("Failed to get test connection: {}", e))?;
     
-    // Check if participants table exists
+    // Check current database and schema, and test participants table access
     use diesel::sql_query;
     use diesel::QueryableByName;
     use diesel::sql_types::Text;
+    use diesel::RunQueryDsl;
     
-    #[derive(QueryableByName)]
-    struct TableCheck {
-        #[diesel(sql_type = Text, column_name = "tablename")]
-        tablename: String,
-    }
-    
-    // Check current database and schema
-    #[derive(QueryableByName)]
-    struct DbInfo {
-        #[diesel(sql_type = Text, column_name = "current_database")]
-        current_database: String,
-        #[diesel(sql_type = Text, column_name = "current_schema")]
-        current_schema: String,
-    }
-    
-    // Check current database and schema
     #[derive(QueryableByName)]
     struct DbInfo {
         #[diesel(sql_type = Text, column_name = "current_database")]
