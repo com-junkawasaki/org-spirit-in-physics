@@ -47,8 +47,16 @@ pub async fn start_server(
             warp::reply::html(include_str!("../../resources/graphql-playground.html"))
         });
     
+    // Add 3D Viewer route (GET /3d)
+    let viewer_3d = warp::path("3d")
+        .and(warp::get())
+        .map(|| {
+            warp::reply::html(include_str!("../../resources/3d-viewer.html"))
+        });
+    
     let routes = graphql_filter
         .or(playground)
+        .or(viewer_3d)
         .with(cors)
         .recover(|err: warp::Rejection| async move {
             Ok::<_, std::convert::Infallible>(warp::reply::with_status(

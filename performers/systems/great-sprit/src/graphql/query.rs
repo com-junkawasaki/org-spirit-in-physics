@@ -66,6 +66,106 @@ impl Query {
             sample_count: result.sample_count,
         })
     }
+
+    /// Get RDF triples for visualization
+    async fn rdf_triples(
+        &self,
+        ctx: &Context<'_>,
+        subject_uri: Option<String>,
+        limit: Option<usize>,
+    ) -> Result<Vec<RdfTriple>> {
+        let kg_client = ctx.data::<TerminusClient>()?;
+        
+        let query = if let Some(subj) = subject_uri {
+            format!(
+                r#"
+                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                SELECT ?s ?p ?o WHERE {{
+                    <{}> ?p ?o .
+                    BIND(<{}> AS ?s)
+                }}
+                LIMIT {}
+                "#,
+                subj,
+                subj,
+                limit.unwrap_or(1000)
+            )
+        } else {
+            format!(
+                r#"
+                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                SELECT ?s ?p ?o WHERE {{
+                    ?s ?p ?o .
+                }}
+                LIMIT {}
+                "#,
+                limit.unwrap_or(1000)
+            )
+        };
+
+        let result = kg_client.query_sparql(&query).await?;
+        
+        // Parse SPARQL JSON result format
+        let triples = parse_sparql_results(&result)?;
+        
+        Ok(triples)
+    }
+
+    /// Get emotion observations for visualization
+    async fn emotion_observations(
+        &self,
+        ctx: &Context<'_>,
+        person_uri: Option<String>,
+        limit: Option<usize>,
+    ) -> Result<Vec<EmotionObservation>> {
+        let kg_client = ctx.data::<TerminusClient>()?;
+        
+        let query = if let Some(person) = person_uri {
+            format!(
+                r#"
+                PREFIX ex: <https://example.org/ontology#>
+                PREFIX prov: <http://www.w3.org/ns/prov#>
+                SELECT ?observation ?person ?valence ?arousal ?engagement ?timestamp WHERE {{
+                    ?observation ex:person <{}> ;
+                                ex:valence ?valence ;
+                                ex:arousal ?arousal ;
+                                ex:engagement ?engagement ;
+                                prov:generatedAtTime ?timestamp .
+                    BIND(<{}> AS ?person)
+                }}
+                ORDER BY DESC(?timestamp)
+                LIMIT {}
+                "#,
+                person,
+                person,
+                limit.unwrap_or(100)
+            )
+        } else {
+            format!(
+                r#"
+                PREFIX ex: <https://example.org/ontology#>
+                PREFIX prov: <http://www.w3.org/ns/prov#>
+                SELECT ?observation ?person ?valence ?arousal ?engagement ?timestamp WHERE {{
+                    ?observation ex:person ?person ;
+                                ex:valence ?valence ;
+                                ex:arousal ?arousal ;
+                                ex:engagement ?engagement ;
+                                prov:generatedAtTime ?timestamp .
+                }}
+                ORDER BY DESC(?timestamp)
+                LIMIT {}
+                "#,
+                limit.unwrap_or(100)
+            )
+        };
+
+        let result = kg_client.query_sparql(&query).await?;
+        
+        // Parse SPARQL results
+        let observations = parse_emotion_observations(&result)?;
+        
+        Ok(observations)
+    }
 }
 
 /// System metrics
@@ -87,5 +187,110 @@ pub struct EmotionAggregation {
     pub time_range_start: String,
     pub time_range_end: String,
     pub sample_count: usize,
+}
+
+/// RDF triple for visualization
+#[derive(SimpleObject)]
+pub struct RdfTriple {
+    pub subject: String,
+    pub predicate: String,
+    pub object: String,
+}
+
+/// Emotion observation for visualization
+#[derive(SimpleObject)]
+pub struct EmotionObservation {
+    pub observation_uri: String,
+    pub person_uri: String,
+    pub valence: f32,
+    pub arousal: f32,
+    pub engagement: f32,
+    pub timestamp: String,
+}
+
+/// Parse SPARQL JSON results into RDF triples
+fn parse_sparql_results(json: &serde_json::Value) -> Result<Vec<RdfTriple>> {
+    let mut triples = Vec::new();
+    
+    // TerminusDB SPARQL result format: {"bindings": [{"s": {"value": "..."}, "p": {...}, "o": {...}}]}
+    if let Some(bindings) = json.get("bindings").and_then(|b| b.as_array()) {
+        for binding in bindings {
+            if let (Some(s), Some(p), Some(o)) = (
+                binding.get("s").and_then(|v| v.get("value")).and_then(|v| v.as_str()),
+                binding.get("p").and_then(|v| v.get("value")).and_then(|v| v.as_str()),
+                binding.get("o").and_then(|v| v.get("value")).and_then(|v| v.as_str()),
+            ) {
+                triples.push(RdfTriple {
+                    subject: s.to_string(),
+                    predicate: p.to_string(),
+                    object: o.to_string(),
+                });
+            }
+        }
+    }
+    
+    Ok(triples)
+}
+
+/// Parse SPARQL JSON results into emotion observations
+fn parse_emotion_observations(json: &serde_json::Value) -> Result<Vec<EmotionObservation>> {
+    let mut observations = Vec::new();
+    
+    if let Some(bindings) = json.get("bindings").and_then(|b| b.as_array()) {
+        for binding in bindings {
+            let observation_uri = binding
+                .get("observation")
+                .and_then(|v| v.get("value"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            
+            let person_uri = binding
+                .get("person")
+                .and_then(|v| v.get("value"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            
+            let valence = binding
+                .get("valence")
+                .and_then(|v| v.get("value"))
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse::<f32>().ok())
+                .unwrap_or(0.0);
+            
+            let arousal = binding
+                .get("arousal")
+                .and_then(|v| v.get("value"))
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse::<f32>().ok())
+                .unwrap_or(0.0);
+            
+            let engagement = binding
+                .get("engagement")
+                .and_then(|v| v.get("value"))
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse::<f32>().ok())
+                .unwrap_or(0.0);
+            
+            let timestamp = binding
+                .get("timestamp")
+                .and_then(|v| v.get("value"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            
+            observations.push(EmotionObservation {
+                observation_uri,
+                person_uri,
+                valence,
+                arousal,
+                engagement,
+                timestamp,
+            });
+        }
+    }
+    
+    Ok(observations)
 }
 
