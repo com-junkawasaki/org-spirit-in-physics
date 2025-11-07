@@ -1,28 +1,14 @@
 'use client'
 
-import { useQuery, gql } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
 import { RefreshCw, Download } from 'lucide-react'
+import { DashboardOverviewDocument, GetTimeseriesDocument } from '@/generated/graphql'
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false }) as any
-
-const DASHBOARD_OVERVIEW_QUERY = gql`
-  query DashboardOverview {
-    participants
-    dashboardStats
-    analysisResults
-  }
-`;
-
-// This is a placeholder, will be replaced when dynamic routes are migrated
-const GET_TIMESERIES_QUERY = gql`
-  query GetTimeseries($responseId: String!) {
-    timeseries(responseId: $responseId)
-  }
-`;
 
 
 interface DashboardOverviewProps {
@@ -30,7 +16,7 @@ interface DashboardOverviewProps {
 }
 
 export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
-  const { loading, error, data, refetch } = useQuery(DASHBOARD_OVERVIEW_QUERY);
+  const { loading, error, data, refetch } = useQuery(DashboardOverviewDocument);
 
   if (loading) {
     return (

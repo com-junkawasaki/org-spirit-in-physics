@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery, gql } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Users, 
@@ -9,18 +9,7 @@ import {
   TrendingUp, 
   Clock,
 } from 'lucide-react'
-
-const PARTICIPANTS_QUERY = gql`
-  query GetParticipants {
-    participants
-  }
-`;
-
-const PARTICIPANT_QUERY = gql`
-  query GetParticipant($participantId: String!) {
-    participant(participantId: $participantId)
-  }
-`;
+import { GetParticipantsDocument, GetParticipantDocument } from '@/generated/graphql'
 
 interface ParticipantSummary {
   id: string
@@ -39,7 +28,7 @@ interface ParticipantOverviewProps {
 }
 
 export function ParticipantOverview({ participantId }: ParticipantOverviewProps) {
-  const query = participantId ? PARTICIPANT_QUERY : PARTICIPANTS_QUERY;
+  const query = participantId ? GetParticipantDocument : GetParticipantsDocument;
   const variables = participantId ? { participantId } : {};
   const { data, loading, error } = useQuery(query, {
     variables,

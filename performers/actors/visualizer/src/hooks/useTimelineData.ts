@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useQuery } from '@apollo/client'
-import { gql } from '@apollo/client'
 import { apolloClient } from '@/lib/apollo-client'
 import * as d3 from 'd3'
 import type {
@@ -10,39 +9,7 @@ import type {
   TimeRange,
   DebugInfo
 } from '../types'
-
-// GraphQL queries
-const PARTICIPANT_TIMELINE_QUERY = gql`
-  query ParticipantTimeline($participantId: String!) {
-    participantTimeline(participantId: $participantId) {
-      timelineData {
-        timestamp
-        word
-        reactionTime
-        hasResponse
-        emotions {
-          name
-          score
-          fileType
-        }
-        physiological
-        reactionValue
-        eventType
-        metadata
-      }
-      metadata {
-        sessionEvents
-        emotionEntries
-        physiologicalEntries
-        totalDataPoints
-        dataSource
-        errors
-        truncated
-        originalSize
-      }
-    }
-  }
-`;
+import { ParticipantTimelineDocument, ParticipantWord2VecDocument } from '@/generated/graphql'
 
 // Merkle DAG: timeline.hooks.data
 // 時系列データの取得と状態管理フック
@@ -80,7 +47,7 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
   })
 
   // Use Apollo Client query
-  const { loading, data: queryData, error: queryError, refetch } = useQuery(PARTICIPANT_TIMELINE_QUERY, {
+  const { loading, data: queryData, error: queryError, refetch } = useQuery(ParticipantTimelineDocument, {
     variables: { participantId },
     client: apolloClient,
     skip: !participantId || !mounted,
@@ -219,18 +186,7 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
   }, [queryData, queryError, loading, participantId, mounted])
 
   // GraphQL query for Word2Vec embeddings
-  const PARTICIPANT_WORD2VEC_QUERY = gql`
-    query ParticipantWord2Vec($participantId: String!) {
-      participantWord2Vec(participantId: $participantId) {
-        wordData {
-          word
-          embedding
-        }
-      }
-    }
-  `;
-
-  const { data: word2VecData } = useQuery(PARTICIPANT_WORD2VEC_QUERY, {
+  const { data: word2VecData } = useQuery(ParticipantWord2VecDocument, {
     variables: { participantId },
     client: apolloClient,
     skip: !participantId || !mounted,
@@ -261,14 +217,8 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
     setTimeRange(initialRange)
   }, [data])
 
-  useEffect(() => {
-    console.log('TimelineVisualization: useEffect triggered, mounted:', mounted)
-    if (mounted) {
-      console.log('TimelineVisualization: Calling fetchTimelineData')
-      fetchTimelineData()
-      fetchWordEmbeddings()
-    }
-  }, [fetchTimelineData, fetchWordEmbeddings, mounted])
+  // Data fetching is handled by useQuery hooks above
+  // No need for manual fetch functions
 
   // 時間範囲初期化
   useEffect(() => {

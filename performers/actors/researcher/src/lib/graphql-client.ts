@@ -5,7 +5,8 @@
  * Replaces Neo4j client with Apollo Client for GraphQL API calls
  */
 
-import { ApolloClient, InMemoryCache, HttpLink, gql } from '@apollo/client'
+import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
+import { GetParticipantsDocument, GetParticipantDocument, GetDashboardStatsDocument } from '@/generated/graphql'
 
 const GRAPHQL_API_URL = process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || process.env.GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql'
 
@@ -111,37 +112,13 @@ export function createGraphQLClient(): GraphQLClient {
 
   return {
     async getParticipants() {
-      const query = gql`
-        query GetParticipants {
-          participants {
-            id
-            age
-            gender
-            handedness
-            created_at
-            updated_at
-          }
-        }
-      `
-      const result = await client.query({ query })
+      const result = await client.query({ query: GetParticipantsDocument })
       return result.data?.participants || []
     },
 
     async getParticipantDetails(participantId: string) {
-      const query = gql`
-        query GetParticipant($participantId: String!) {
-          participant(participant_id: $participantId) {
-            id
-            age
-            gender
-            handedness
-            created_at
-            updated_at
-          }
-        }
-      `
       try {
-        const result = await client.query({ query, variables: { participantId } })
+        const result = await client.query({ query: GetParticipantDocument, variables: { participantId } })
         return result.data?.participant || null
       } catch {
         return null
@@ -155,25 +132,8 @@ export function createGraphQLClient(): GraphQLClient {
     },
 
     async getDashboardStats() {
-      const query = gql`
-        query GetDashboardStats {
-          dashboardStats {
-            total_participants
-            total_sessions
-            total_responses
-            average_spirit_probability
-            emotion_distribution
-            component_averages {
-              word2vec
-              reaction_time
-              skin_potential
-              emotion
-            }
-          }
-        }
-      `
       try {
-        const result = await client.query({ query })
+        const result = await client.query({ query: GetDashboardStatsDocument })
         return result.data?.dashboardStats || {
           totalParticipants: 0,
           totalSessions: 0,

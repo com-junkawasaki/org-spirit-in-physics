@@ -1,18 +1,11 @@
 'use client'
 
-import { useQuery, gql } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Activity, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
-
-const SYSTEM_METRICS_QUERY = gql`
-  query SystemMetrics {
-    participants
-    dashboardStats
-    # importStatus # This query needs to be created
-  }
-`;
+import { SystemMetricsDocument } from '@/generated/graphql'
 
 interface SystemMetricsData {
   totalParticipants: number
@@ -26,7 +19,7 @@ interface SystemMetricsData {
 }
 
 export function SystemMetrics() {
-  const { data, loading, error, refetch } = useQuery(SYSTEM_METRICS_QUERY, {
+  const { data, loading, error, refetch } = useQuery(SystemMetricsDocument, {
     pollInterval: 60000,
   });
 

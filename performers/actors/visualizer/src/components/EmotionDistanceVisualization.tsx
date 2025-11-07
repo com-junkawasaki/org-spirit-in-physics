@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useMutation } from '@apollo/client';
 import { apolloClient } from '@/lib/apollo-client';
-import { gql } from '@apollo/client';
+import { CalculateEmotionDistanceDocument } from '@/generated/graphql';
 
 // 3D可視化コンポーネントの動的インポート
 const Force3DWordGraphTypeGPU = dynamic(
@@ -88,26 +88,7 @@ export default function EmotionDistanceVisualization({
   const [kLocal, setKLocal] = useState<number>(k);
 
   // GraphQL mutation for emotion distance calculation
-  const CALCULATE_EMOTION_DISTANCE = gql`
-    mutation CalculateEmotionDistance($input: CalculateEmotionDistanceInput!) {
-      calculateEmotionDistance(input: $input) {
-        points {
-          x
-          y
-          z
-          word
-          index
-        }
-        links {
-          source
-          target
-          value
-        }
-      }
-    }
-  `;
-
-  const [calculateEmotionDistance, { loading: mutationLoading, error: mutationError }] = useMutation(CALCULATE_EMOTION_DISTANCE, {
+  const [calculateEmotionDistance, { loading: mutationLoading, error: mutationError }] = useMutation(CalculateEmotionDistanceDocument, {
     client: apolloClient,
   });
 

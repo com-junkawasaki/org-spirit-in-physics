@@ -1,21 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { useMutation, gql } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
-
-const CALCULATE_EMOTION_DISTANCE_MUTATION = gql`
-  mutation CalculateEmotionDistance($input: EmotionDistanceInput!) {
-    calculateEmotionDistance(input: $input)
-  }
-`;
+import { CalculateEmotionDistanceDocument } from '@/generated/graphql'
 
 export default function AnalysisReport() {
   const [participantId, setParticipantId] = useState('')
-  const [calculateEmotionDistance, { data, loading, error }] = useMutation(CALCULATE_EMOTION_DISTANCE_MUTATION)
+  const [calculateEmotionDistance, { data, loading, error }] = useMutation(CalculateEmotionDistanceDocument)
 
   const handleAnalysis = async () => {
     try {

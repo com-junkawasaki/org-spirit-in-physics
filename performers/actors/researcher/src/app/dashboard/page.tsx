@@ -2,22 +2,16 @@
 // Main dashboard page for system overview and management
 
 import { getClient } from '@/lib/client';
-import { gql } from '@apollo/client';
 import DashboardOverview from '@/components/DashboardOverview'
 import QuickActions from '@/components/QuickActions'
 import SystemHealth from '@/components/SystemHealthIndicator'
 import ImportStatus from '@/components/ImportStatusOverview'
 import PerformanceChart from '@/components/PerformanceChart'
 import AnalysisReport from '@/components/AnalysisReport.client'
-
-const DASHBOARD_STATS_QUERY = gql`
-  query DashboardStats {
-    dashboardStats
-  }
-`;
+import { DashboardStatsDocument } from '@/generated/graphql'
 
 export default async function DashboardPage() {
-  const { data } = await getClient().query({ query: DASHBOARD_STATS_QUERY });
+  const { data } = await getClient().query({ query: DashboardStatsDocument });
   const stats = JSON.parse(data.dashboardStats);
 
   return (
