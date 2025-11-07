@@ -78,10 +78,16 @@ impl Collector {
         }
 
         // Capture frame and audio
-        let image_data = self.camera_stream.as_ref()
-            .and_then(|s| futures::executor::block_on(s.capture_frame()).ok());
-        let audio_data = self.audio_stream.as_ref()
-            .and_then(|s| futures::executor::block_on(s.capture_samples(1000)).ok());
+        let image_data = if let Some(stream) = self.camera_stream.as_ref() {
+            stream.capture_frame().await.ok()
+        } else {
+            None
+        };
+        let audio_data = if let Some(stream) = self.audio_stream.as_ref() {
+            stream.capture_samples(1000).await.ok()
+        } else {
+            None
+        };
 
         Ok(CollectedData {
             image_data,

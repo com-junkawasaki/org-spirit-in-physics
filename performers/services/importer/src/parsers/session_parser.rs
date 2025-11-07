@@ -77,34 +77,51 @@ pub struct WordResponseSequence {
 }
 
 pub fn extract_word_responses(events: &[Event]) -> Vec<WordResponseSequence> {
+    use tracing::debug;
+    
     let mut responses = Vec::new();
     // Use a HashMap to track responses by (word, key) pair
     // This allows us to update responses as we encounter more events
     let mut response_map: std::collections::HashMap<(String, String), usize> = std::collections::HashMap::new();
     let mut pending_word: Option<(String, String, i64)> = None; // (word, key, timestamp)
 
+    debug!("extract_word_responses: processing {} events", events.len());
+    let mut word_displayed_count = 0;
+    let mut speech_detected_count = 0;
+    let mut response_window_closed_count = 0;
+
     for event in events {
         match event.event_type.as_str() {
             "word_displayed" => {
-                if let crate::models::EventPayload::WordDisplayed { word, key } = &event.payload {
-                    // Create a new response entry for this word
-                    let response = WordResponseSequence {
-                        stimulus_word: word.clone(),
-                        response_word: None,
-                        word_key: key.clone(),
-                        word_displayed_timestamp: event.timestamp,
-                        speech_detected_timestamp: None,
-                        response_window_closed_timestamp: None,
-                        reaction_time_ms: None,
-                    };
-                    let index = responses.len();
-                    response_map.insert((word.clone(), key.clone()), index);
-                    responses.push(response);
-                    pending_word = Some((word.clone(), key.clone(), event.timestamp));
+                word_displayed_count += 1;
+                debug!("word_displayed event: payload={:?}", event.payload);
+                match &event.payload {
+                    crate::models::EventPayload::WordDisplayed { word, key } => {
+                        debug!("word_displayed: word={}, key={}, timestamp={}", word, key, event.timestamp);
+                        // Create a new response entry for this word
+                        let response = WordResponseSequence {
+                            stimulus_word: word.clone(),
+                            response_word: None,
+                            word_key: key.clone(),
+                            word_displayed_timestamp: event.timestamp,
+                            speech_detected_timestamp: None,
+                            response_window_closed_timestamp: None,
+                            reaction_time_ms: None,
+                        };
+                        let index = responses.len();
+                        response_map.insert((word.clone(), key.clone()), index);
+                        responses.push(response);
+                        pending_word = Some((word.clone(), key.clone(), event.timestamp));
+                    }
+                    _ => {
+                        debug!("word_displayed event payload did not match WordDisplayed variant");
+                    }
                 }
             }
             "speech_detected" => {
+                speech_detected_count += 1;
                 if let crate::models::EventPayload::SpeechDetected { word: detected_word, key } = &event.payload {
+                    debug!("speech_detected: word={}, key={}, timestamp={}", detected_word, key, event.timestamp);
                     // Find or create response for this word
                     let key = key.clone();
                     let word = detected_word.clone();
@@ -140,14 +157,17 @@ pub fn extract_word_responses(events: &[Event]) -> Vec<WordResponseSequence> {
                 }
             }
             "response_window_closed" => {
+                response_window_closed_count += 1;
                 if let crate::models::EventPayload::ResponseWindowClosed { word } = &event.payload {
+                    debug!("response_window_closed: word={}, timestamp={}", word, event.timestamp);
                     // Find response for this word by matching the most recent pending word or by searching
                     let word = word.clone();
                     
-                    // Try to find matching response
+                    // Try to find matching response using pending_word (most recent word_displayed)
                     let mut found = false;
-                    if let Some((pending_word_str, pending_key, displayed_ts)) = &pending_word {
+                    if let Some((pending_word_str, pending_key, _displayed_ts)) = &pending_word {
                         if pending_word_str == &word {
+                            // Try to find response with matching word and key
                             if let Some(&index) = response_map.get(&(word.clone(), pending_key.clone())) {
                                 if let Some(response) = responses.get_mut(index) {
                                     response.response_window_closed_timestamp = Some(event.timestamp);
@@ -160,7 +180,7 @@ pub fn extract_word_responses(events: &[Event]) -> Vec<WordResponseSequence> {
                         }
                     }
                     
-                    // If not found, search backwards for the most recent matching response
+                    // If not found, search backwards for the most recent matching response without window_closed
                     if !found {
                         for response in responses.iter_mut().rev() {
                             if response.stimulus_word == word && response.response_window_closed_timestamp.is_none() {
@@ -174,28 +194,23 @@ pub fn extract_word_responses(events: &[Event]) -> Vec<WordResponseSequence> {
                         }
                     }
                     
-                    // If still not found, create a new response (shouldn't happen normally)
-                    if !found {
-                        let response = WordResponseSequence {
-                            stimulus_word: word.clone(),
-                            response_word: None,
-                            word_key: String::new(), // Unknown key
-                            word_displayed_timestamp: event.timestamp, // Use window closed time as fallback
-                            speech_detected_timestamp: None,
-                            response_window_closed_timestamp: Some(event.timestamp),
-                            reaction_time_ms: None,
-                        };
-                        responses.push(response);
-                    }
+                    // If still not found, it means word_displayed was not processed yet (shouldn't happen normally)
+                    // But we don't create a response here because word_displayed should come first
                 }
             }
             _ => {}
         }
     }
 
+    debug!("extract_word_responses: word_displayed={}, speech_detected={}, response_window_closed={}, responses_before_filter={}", 
+           word_displayed_count, speech_detected_count, response_window_closed_count, responses.len());
+    
     // Filter out responses that don't have at least word_displayed timestamp
-    responses.into_iter()
+    let filtered_responses: Vec<_> = responses.into_iter()
         .filter(|r| r.word_displayed_timestamp > 0)
-        .collect()
+        .collect();
+    
+    debug!("extract_word_responses: filtered_responses={}", filtered_responses.len());
+    filtered_responses
 }
 

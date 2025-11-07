@@ -18,6 +18,7 @@ bevy = { version = "0.13", default-features = true }
 # GraphQL API
 async-graphql = "6.0"
 async-graphql-warp = "6.0"
+warp = "0.3"
 tokio = { version = "1.0", features = ["full"] }
 
 # Serialization

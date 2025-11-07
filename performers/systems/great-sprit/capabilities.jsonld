@@ -1,0 +1,143 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "goal": "cpm:goal",
+    "capability": "dodaf:Capability",
+    "realizedBy": "dodaf:realizedBy",
+    "performedBy": "dodaf:performedBy",
+    "requires": "dodaf:requires",
+    "produces": "dodaf:produces",
+    "version": "dct:hasVersion",
+    "lastUpdated": "dct:modified"
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/multi-modal-emotion-analysis",
+      "@type": "dodaf:Capability",
+      "name": "Multi-Modal Emotion Analysis Capability",
+      "description": "マルチモーダル（画像・音声）から同時に感情分析を実行する能力。Hume AI相当の感情次元（valence, arousal, engagement等）を推定する。",
+      "goal": "画面キャプチャ・カメラ画像・音声から感情分析を実行し、人物中心のRDF知識グラフとして蓄積・分析・可視化する",
+      "realizedBy": [
+        "https://spirit-in-physics.gftd.ai/activity/collect-multi-modal-data",
+        "https://spirit-in-physics.gftd.ai/activity/process-media-data",
+        "https://spirit-in-physics.gftd.ai/activity/analyze-emotion"
+      ],
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/image-data",
+        "https://spirit-in-physics.gftd.ai/resource/audio-data",
+        "https://spirit-in-physics.gftd.ai/resource/emotion-model"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/emotion-dimensions",
+        "https://spirit-in-physics.gftd.ai/resource/emotion-analysis-result"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/person-identity-resolution",
+      "@type": "dodaf:Capability",
+      "name": "Person Identity Resolution Capability",
+      "description": "顔認識・Cookie管理により、既存のRDF Personエンティティと自動紐付けする能力。新規Personエンティティの生成も行う。",
+      "goal": "マルチモーダル入力から人物を識別し、RDF Personエンティティとして管理する",
+      "realizedBy": [
+        "https://spirit-in-physics.gftd.ai/activity/detect-faces",
+        "https://spirit-in-physics.gftd.ai/activity/recognize-person"
+      ],
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/face-image",
+        "https://spirit-in-physics.gftd.ai/resource/cookie-identifier",
+        "https://spirit-in-physics.gftd.ai/resource/person-knowledge-graph"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/person-uri",
+        "https://spirit-in-physics.gftd.ai/resource/face-feature-vector"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/rdf-emotion-data-storage",
+      "@type": "dodaf:Capability",
+      "name": "RDF Emotion Data Storage Capability",
+      "description": "Personエンティティを中心に、EmotionObservation、MediaCapture、FaceDetection、EmotionAnalysisのRDFトリプルを生成し、TerminusDBに保存する能力。SHACL Shape制約によりデータ整合性を保証する。",
+      "goal": "感情分析結果をRDF知識グラフとして永続化し、SHACL制約により整合性を保証する",
+      "realizedBy": [
+        "https://spirit-in-physics.gftd.ai/activity/store-rdf-data"
+      ],
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/emotion-analysis-result",
+        "https://spirit-in-physics.gftd.ai/resource/person-uri",
+        "https://spirit-in-physics.gftd.ai/resource/media-capture-data",
+        "https://spirit-in-physics.gftd.ai/resource/shacl-shapes"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/rdf-triples",
+        "https://spirit-in-physics.gftd.ai/resource/stored-emotion-data"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/emotion-data-aggregation",
+      "@type": "dodaf:Capability",
+      "name": "Emotion Data Aggregation Capability",
+      "description": "保存された感情データを時系列で集計し、統計分析（平均、分散、トレンド等）を実行する能力。パターン認識により感情変化の特徴を抽出する。",
+      "goal": "時系列感情データから統計情報とパターンを抽出し、分析可能な形式で提供する",
+      "realizedBy": [
+        "https://spirit-in-physics.gftd.ai/activity/aggregate-emotion-data"
+      ],
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/stored-emotion-data",
+        "https://spirit-in-physics.gftd.ai/resource/person-uri",
+        "https://spirit-in-physics.gftd.ai/resource/time-range"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/aggregation-statistics",
+        "https://spirit-in-physics.gftd.ai/resource/emotion-patterns"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/capability/emotion-visualization",
+      "@type": "dodaf:Capability",
+      "name": "Emotion Visualization Capability",
+      "description": "感情タイムライン、感情次元ヒートマップ、人物中心のRDFグラフを可視化する能力。Bevyフレームワークを使用して3Dインタラクティブな可視化を実現する。",
+      "goal": "感情データを視覚的に表現し、ユーザーが直感的に理解できる形式で提供する",
+      "realizedBy": [
+        "https://spirit-in-physics.gftd.ai/activity/visualize-emotion-data"
+      ],
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/aggregation-statistics",
+        "https://spirit-in-physics.gftd.ai/resource/rdf-graph",
+        "https://spirit-in-physics.gftd.ai/resource/visualization-config"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/emotion-timeline",
+        "https://spirit-in-physics.gftd.ai/resource/emotion-heatmap",
+        "https://spirit-in-physics.gftd.ai/resource/person-network-graph"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    }
+  ]
+}
+

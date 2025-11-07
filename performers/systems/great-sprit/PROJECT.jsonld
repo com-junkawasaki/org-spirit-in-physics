@@ -114,7 +114,71 @@
           "相殺可視化",
           "RDFグラフベクトル場可視化",
           "SHACL Shape制約力ベクトル可視化",
-          "物理ダイナミクス統合可視化"
+          "物理ダイナミクス統合可視化",
+          "感情タイムライン可視化",
+          "感情次元ヒートマップ",
+          "人物中心RDFグラフ可視化"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/pillar/emotion-analysis",
+        "@type": "cpm:KeyPillar",
+        "name": "感情分析エンジン",
+        "description": "Candle/ONNXによるマルチモーダル感情分析",
+        "subProcesses": [
+          "画像前処理・正規化",
+          "音声特徴抽出（MFCC、メルスペクトログラム）",
+          "顔検出（ONNXモデル）",
+          "感情次元推定（valence, arousal, engagement等）",
+          "WASM対応推論エンジン"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/pillar/identity",
+        "@type": "cpm:KeyPillar",
+        "name": "人物識別",
+        "description": "顔認識・Cookie管理・Person解決",
+        "subProcesses": [
+          "顔特徴ベクトル抽出",
+          "Cookieベースセッション管理",
+          "RDF Personエンティティマッチング",
+          "新規Personエンティティ生成"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/pillar/capture",
+        "@type": "cpm:KeyPillar",
+        "name": "マルチモーダル入力",
+        "description": "スクリーンショット・カメラ・音声ストリーム取得",
+        "subProcesses": [
+          "スクリーンショットAPI（WASM/ネイティブ）",
+          "カメラストリーム処理（WebRTC/MediaStream）",
+          "音声ストリーム処理（Web Audio API）",
+          "ファイルアップロード処理"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/pillar/rdf-storage",
+        "@type": "cpm:KeyPillar",
+        "name": "RDF蓄積",
+        "description": "TerminusDBへのRDF書き込み・SHACL検証",
+        "subProcesses": [
+          "RDFトリプル生成（Person中心）",
+          "SHACL Shape検証",
+          "TerminusDB書き込み",
+          "時系列インデックス作成"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/system/great-sprit/pillar/aggregation",
+        "@type": "cpm:KeyPillar",
+        "name": "集計・分析",
+        "description": "時系列統計・パターン認識",
+        "subProcesses": [
+          "時系列集計（時間窓、移動平均）",
+          "統計分析（平均、分散、相関）",
+          "パターン認識（感情変化トレンド）",
+          "異常検出"
         ]
       }
     ]
@@ -143,7 +207,13 @@
       "RDFグラフベクトル場可視化",
       "SHACL Shape制約力ベクトル可視化",
       "SHACL制約力の物理ダイナミクス統合",
-      "大規模最適化（プロファイリング、リングバッファ）"
+      "大規模最適化（プロファイリング、リングバッファ）",
+      "感情分析モジュール（マルチモーダル）",
+      "人物識別モジュール（顔認識・Cookie管理）",
+      "マルチモーダル入力収集（スクリーン・カメラ・音声）",
+      "RDF感情データ蓄積（Person中心）",
+      "時系列感情集計・分析",
+      "感情可視化（タイムライン・ヒートマップ・グラフ）"
     ]
   },
   

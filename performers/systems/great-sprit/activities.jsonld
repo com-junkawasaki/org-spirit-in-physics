@@ -1,0 +1,235 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "activity": "dodaf:Activity",
+    "realizes": "dodaf:realizes",
+    "performedBy": "dodaf:performedBy",
+    "requires": "dodaf:requires",
+    "produces": "dodaf:produces",
+    "precedes": "dodaf:precedes",
+    "follows": "dodaf:follows",
+    "version": "dct:hasVersion",
+    "lastUpdated": "dct:modified",
+    "module": "cpm:module"
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/collect-multi-modal-data",
+      "@type": ["dodaf:Activity", "prov:Activity"],
+      "name": "Collect Multi-Modal Data Activity",
+      "description": "スクリーンショットAPI、カメラストリーム（WebRTC/MediaStream）、音声ストリーム（Web Audio API）から同時にデータを取得する。ファイルアップロードもサポートし、画像・動画・音声ファイルを処理する。",
+      "realizes": "https://spirit-in-physics.gftd.ai/capability/multi-modal-emotion-analysis",
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "module": "src/capture/",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/screen-capture-api",
+        "https://spirit-in-physics.gftd.ai/resource/camera-stream",
+        "https://spirit-in-physics.gftd.ai/resource/audio-stream",
+        "https://spirit-in-physics.gftd.ai/resource/uploaded-file"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/collected-image-data",
+        "https://spirit-in-physics.gftd.ai/resource/collected-audio-data"
+      ],
+      "precedes": [
+        "https://spirit-in-physics.gftd.ai/activity/process-media-data"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/process-media-data",
+      "@type": ["dodaf:Activity", "prov:Activity"],
+      "name": "Process Media Data Activity",
+      "description": "画像は正規化・リサイズ・チャンネル変換を行い、音声は特徴抽出（MFCC、メルスペクトログラム等）を実行する。GPU並列処理（wgpu）を活用して高速化する。",
+      "realizes": "https://spirit-in-physics.gftd.ai/capability/multi-modal-emotion-analysis",
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "module": "src/emotion/image_processor.rs, src/emotion/audio_processor.rs",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/collected-image-data",
+        "https://spirit-in-physics.gftd.ai/resource/collected-audio-data"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/processed-image",
+        "https://spirit-in-physics.gftd.ai/resource/processed-audio-features"
+      ],
+      "follows": [
+        "https://spirit-in-physics.gftd.ai/activity/collect-multi-modal-data"
+      ],
+      "precedes": [
+        "https://spirit-in-physics.gftd.ai/activity/detect-faces",
+        "https://spirit-in-physics.gftd.ai/activity/analyze-emotion"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/detect-faces",
+      "@type": ["dodaf:Activity", "prov:Activity"],
+      "name": "Detect Faces Activity",
+      "description": "ONNXモデルまたはCandleベースの顔検出により、画像から顔領域を検出する。バウンディングボックスと信頼度を出力する。",
+      "realizes": "https://spirit-in-physics.gftd.ai/capability/person-identity-resolution",
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "module": "src/emotion/face_detector.rs",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/processed-image",
+        "https://spirit-in-physics.gftd.ai/resource/face-detection-model"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/face-detections",
+        "https://spirit-in-physics.gftd.ai/resource/face-regions"
+      ],
+      "follows": [
+        "https://spirit-in-physics.gftd.ai/activity/process-media-data"
+      ],
+      "precedes": [
+        "https://spirit-in-physics.gftd.ai/activity/recognize-person"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/recognize-person",
+      "@type": ["dodaf:Activity", "prov:Activity"],
+      "name": "Recognize Person Activity",
+      "description": "Cookieベースのセッション管理と顔特徴ベクトルマッチングにより、既存のRDF Personエンティティと自動紐付けする。見つからない場合は新規Personエンティティを生成する。",
+      "realizes": "https://spirit-in-physics.gftd.ai/capability/person-identity-resolution",
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "module": "src/identity/",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/face-feature-vector",
+        "https://spirit-in-physics.gftd.ai/resource/cookie-identifier",
+        "https://spirit-in-physics.gftd.ai/resource/person-knowledge-graph"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/person-uri"
+      ],
+      "follows": [
+        "https://spirit-in-physics.gftd.ai/activity/detect-faces"
+      ],
+      "precedes": [
+        "https://spirit-in-physics.gftd.ai/activity/store-rdf-data"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/analyze-emotion",
+      "@type": ["dodaf:Activity", "prov:Activity"],
+      "name": "Analyze Emotion Activity",
+      "description": "Candle（Rust ML）またはONNX Runtime Web（WASM）を使用して、画像・音声から同時に感情次元を推定する。Hume AI相当の次元（valence, arousal, engagement等）を出力する。",
+      "realizes": "https://spirit-in-physics.gftd.ai/capability/multi-modal-emotion-analysis",
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "module": "src/emotion/analyzer.rs",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/processed-image",
+        "https://spirit-in-physics.gftd.ai/resource/processed-audio-features",
+        "https://spirit-in-physics.gftd.ai/resource/emotion-model"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/emotion-dimensions",
+        "https://spirit-in-physics.gftd.ai/resource/emotion-analysis-result"
+      ],
+      "follows": [
+        "https://spirit-in-physics.gftd.ai/activity/process-media-data"
+      ],
+      "precedes": [
+        "https://spirit-in-physics.gftd.ai/activity/store-rdf-data"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/store-rdf-data",
+      "@type": ["dodaf:Activity", "prov:Activity"],
+      "name": "Store RDF Data Activity",
+      "description": "Personエンティティを中心に、EmotionObservation、MediaCapture、FaceDetection、EmotionAnalysisのRDFトリプルを生成し、TerminusDBに保存する。SHACL Shape制約によりデータ整合性を保証する。",
+      "realizes": "https://spirit-in-physics.gftd.ai/capability/rdf-emotion-data-storage",
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "module": "src/pipeline/storage.rs",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/emotion-analysis-result",
+        "https://spirit-in-physics.gftd.ai/resource/person-uri",
+        "https://spirit-in-physics.gftd.ai/resource/media-capture-data",
+        "https://spirit-in-physics.gftd.ai/resource/shacl-shapes",
+        "https://spirit-in-physics.gftd.ai/resource/terminusdb-connection"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/rdf-triples",
+        "https://spirit-in-physics.gftd.ai/resource/stored-emotion-data"
+      ],
+      "follows": [
+        "https://spirit-in-physics.gftd.ai/activity/analyze-emotion",
+        "https://spirit-in-physics.gftd.ai/activity/recognize-person"
+      ],
+      "precedes": [
+        "https://spirit-in-physics.gftd.ai/activity/aggregate-emotion-data"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/aggregate-emotion-data",
+      "@type": ["dodaf:Activity", "prov:Activity"],
+      "name": "Aggregate Emotion Data Activity",
+      "description": "保存された感情データを時系列で集計し、統計分析（平均、分散、トレンド等）を実行する。パターン認識により感情変化の特徴を抽出する。",
+      "realizes": "https://spirit-in-physics.gftd.ai/capability/emotion-data-aggregation",
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "module": "src/pipeline/aggregator.rs",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/stored-emotion-data",
+        "https://spirit-in-physics.gftd.ai/resource/person-uri",
+        "https://spirit-in-physics.gftd.ai/resource/time-range"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/aggregation-statistics",
+        "https://spirit-in-physics.gftd.ai/resource/emotion-patterns"
+      ],
+      "follows": [
+        "https://spirit-in-physics.gftd.ai/activity/store-rdf-data"
+      ],
+      "precedes": [
+        "https://spirit-in-physics.gftd.ai/activity/visualize-emotion-data"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/activity/visualize-emotion-data",
+      "@type": ["dodaf:Activity", "prov:Activity"],
+      "name": "Visualize Emotion Data Activity",
+      "description": "感情タイムライン、感情次元ヒートマップ、人物中心のRDFグラフを可視化する。Bevyフレームワークを使用して3Dインタラクティブな可視化を実現する。",
+      "realizes": "https://spirit-in-physics.gftd.ai/capability/emotion-visualization",
+      "performedBy": "https://spirit-in-physics.gftd.ai/system/great-sprit",
+      "module": "src/visualization/emotion_timeline.rs, src/visualization/emotion_heatmap.rs, src/visualization/person_network.rs",
+      "requires": [
+        "https://spirit-in-physics.gftd.ai/resource/aggregation-statistics",
+        "https://spirit-in-physics.gftd.ai/resource/rdf-graph",
+        "https://spirit-in-physics.gftd.ai/resource/visualization-config"
+      ],
+      "produces": [
+        "https://spirit-in-physics.gftd.ai/resource/emotion-timeline",
+        "https://spirit-in-physics.gftd.ai/resource/emotion-heatmap",
+        "https://spirit-in-physics.gftd.ai/resource/person-network-graph"
+      ],
+      "follows": [
+        "https://spirit-in-physics.gftd.ai/activity/aggregate-emotion-data"
+      ],
+      "version": "0.1.0",
+      "lastUpdated": "2025-01-27T00:00:00Z"
+    }
+  ]
+}
+

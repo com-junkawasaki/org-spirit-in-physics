@@ -4,7 +4,7 @@
 
 use async_graphql::*;
 use futures::Stream;
-use crate::pipeline::collector::Collector;
+use crate::graphql::mutation::EmotionDimensionsOutput;
 
 /// Subscription root
 #[derive(Default)]
@@ -30,13 +30,5 @@ pub struct EmotionStreamEvent {
     pub person_uri: String,
     pub emotion_dimensions: EmotionDimensionsOutput,
     pub timestamp: String,
-}
-
-/// Emotion dimensions output
-#[derive(SimpleObject)]
-pub struct EmotionDimensionsOutput {
-    pub valence: f32,
-    pub arousal: f32,
-    pub engagement: f32,
 }
 
