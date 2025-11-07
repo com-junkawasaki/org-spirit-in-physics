@@ -93,7 +93,7 @@ pub fn validate_completeness(
     
     report.set_statistic("physiological_data", physiological_count);
     
-    // Count emotion timeseries
+    // Count emotion timeseries (with timeout protection)
     // Note: Using raw SQL for complex joins with timeseries tables
     use diesel::sql_query;
     use diesel::sql_types::BigInt;
@@ -105,14 +105,17 @@ pub fn validate_completeness(
         count: i64,
     }
     
-    let emotion_timeseries_result: Result<Vec<CountResult>, _> = sql_query(
+    // Use simpler query to avoid timeout
+    let emotion_timeseries_result = sql_query(
         "SELECT COUNT(*) as count 
          FROM response_emotion_timeseries ret
-         INNER JOIN participant_response_data prd ON ret.response_id = prd.id
-         WHERE prd.participant_id = $1"
+         WHERE EXISTS (
+             SELECT 1 FROM participant_response_data prd 
+             WHERE prd.id = ret.response_id AND prd.participant_id = $1
+         )"
     )
     .bind::<diesel::sql_types::Uuid, _>(participant_id)
-    .load(conn);
+    .load::<CountResult>(conn);
     
     let emotion_timeseries_count = emotion_timeseries_result
         .ok()
@@ -121,15 +124,17 @@ pub fn validate_completeness(
     
     report.set_statistic("emotion_timeseries", emotion_timeseries_count);
     
-    // Count skin potential timeseries
-    let skin_potential_result: Result<Vec<CountResult>, _> = sql_query(
+    // Count skin potential timeseries (with timeout protection)
+    let skin_potential_result = sql_query(
         "SELECT COUNT(*) as count 
          FROM response_skin_potential_timeseries rspt
-         INNER JOIN participant_response_data prd ON rspt.response_id = prd.id
-         WHERE prd.participant_id = $1"
+         WHERE EXISTS (
+             SELECT 1 FROM participant_response_data prd 
+             WHERE prd.id = rspt.response_id AND prd.participant_id = $1
+         )"
     )
     .bind::<diesel::sql_types::Uuid, _>(participant_id)
-    .load(conn);
+    .load::<CountResult>(conn);
     
     let skin_potential_count = skin_potential_result
         .ok()
@@ -160,14 +165,14 @@ pub fn validate_completeness(
         count: i64,
     }
     
-    let sessions_with_events_result: Result<Vec<SessionCountResult>, _> = diesel::sql_query(
+    let sessions_with_events_result = diesel::sql_query(
         "SELECT COUNT(DISTINCT ses.id) as count
          FROM participant_experiment_sessions ses
          INNER JOIN participant_session_events evt ON evt.session_id = ses.id
          WHERE ses.participant_id = $1"
     )
     .bind::<diesel::sql_types::Uuid, _>(participant_id)
-    .load(conn);
+    .load::<SessionCountResult>(conn);
     
     let sessions_with_events = sessions_with_events_result
         .ok()

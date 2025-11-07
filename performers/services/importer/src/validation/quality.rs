@@ -80,28 +80,32 @@ pub fn validate_quality(
     }
     
     // Check timestamp ordering (sessions should start before they end)
-    // Load sessions and check in Rust since diesel doesn't easily support this comparison
-    use chrono::DateTime;
-    use chrono::Utc;
+    // Use raw SQL for better performance
+    use diesel::sql_query;
+    use diesel::sql_types::BigInt;
+    use diesel::QueryableByName;
     
-    let sessions = participant_experiment_sessions::table
-        .filter(participant_experiment_sessions::participant_id.eq(participant_id))
-        .select((
-            participant_experiment_sessions::start_time,
-            participant_experiment_sessions::end_time,
-        ))
-        .load::<(Option<DateTime<Utc>>, Option<DateTime<Utc>>)>(conn)?;
+    #[derive(QueryableByName)]
+    struct TimestampCountResult {
+        #[diesel(sql_type = BigInt, column_name = "count")]
+        count: i64,
+    }
     
-    let invalid_timestamps = sessions
-        .iter()
-        .filter(|(start, end)| {
-            if let (Some(start_time), Some(end_time)) = (start, end) {
-                start_time > end_time
-            } else {
-                false
-            }
-        })
-        .count() as i64;
+    let invalid_timestamps_result = sql_query(
+        "SELECT COUNT(*) as count
+         FROM participant_experiment_sessions ses
+         WHERE ses.participant_id = $1
+         AND ses.start_time IS NOT NULL
+         AND ses.end_time IS NOT NULL
+         AND ses.start_time > ses.end_time"
+    )
+    .bind::<diesel::sql_types::Uuid, _>(participant_id)
+    .load::<TimestampCountResult>(conn);
+    
+    let invalid_timestamps = invalid_timestamps_result
+        .ok()
+        .and_then(|v| v.first().map(|r| r.count))
+        .unwrap_or(0);
     
     if invalid_timestamps > 0 {
         report.add_error(

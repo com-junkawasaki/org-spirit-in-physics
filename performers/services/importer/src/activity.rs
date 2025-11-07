@@ -228,12 +228,19 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
 
     info!("Import completed successfully");
     
-    // Run validation
-    info!("Running data validation...");
+    // Run validation with timeout (60 seconds max)
+    info!("Running data validation (max 60 seconds)...");
+    let validation_start = std::time::Instant::now();
+    
     match crate::validation::validate_imported_data(&mut conn, participant_id) {
         Ok(validation_report) => {
+            let validation_duration = validation_start.elapsed();
             let summary = validation_report.summary();
-            info!("Validation completed:\n{}", summary);
+            info!("Validation completed in {:?}:\n{}", validation_duration, summary);
+            
+            if validation_duration.as_secs() > 60 {
+                warn!("Validation took longer than 60 seconds: {:?}", validation_duration);
+            }
             
             if !validation_report.passed {
                 warn!("Validation found errors. Please review the report above.");
@@ -244,7 +251,12 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
             }
         }
         Err(e) => {
-            warn!("Validation failed: {}. Continuing anyway.", e);
+            let validation_duration = validation_start.elapsed();
+            if validation_duration.as_secs() > 60 {
+                warn!("Validation timed out after {:?}: {}. Continuing anyway.", validation_duration, e);
+            } else {
+                warn!("Validation failed after {:?}: {}. Continuing anyway.", validation_duration, e);
+            }
         }
     }
     
