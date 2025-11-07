@@ -9,7 +9,7 @@ export default function HomePage() {
       <div className="text-center">
         <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-8">
           <span className="bg-clip-text text-transparent bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-            Spirit is Physics
+            Spirit in Physics
           </span>
         </h1>
         <div className="flex flex-col space-y-4 items-center">

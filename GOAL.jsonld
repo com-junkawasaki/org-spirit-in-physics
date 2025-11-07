@@ -29,7 +29,7 @@
   "@id": "https://spirit-in-physics.gftd.ai/goal",
   "@type": ["cpm:Goal", "prov:Entity"],
   
-  "name": "Spirit is Physics Project Goal",
+  "name": "Spirit in Physics Project Goal",
   "title": "霊性の物理的・情報的・進化的理解",
   "description": "我らと我らの子孫が豊かで情緒的な暮らしを送れるいい感じの社会を生成することを目指し、霊性（spirit）を物理法則、情報理論、進化論の観点から統合的に理解する。",
   
@@ -39,7 +39,7 @@
     {
       "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-physics",
       "@type": ["cpm:CoreDefinition", "owl:Class"],
-      "name": "Spirit is Physics",
+      "name": "Spirit in Physics",
       "description": "霊性は物理法則に従う実在である。spiritは物理的実体として測定可能であり、物理法則（力学、熱力学、情報理論等）に従って振る舞う。川崎モデルによる感情・生理データの統合分析は、spiritを物理量として定量化する試みである。",
       "equivalentClass": {
         "@id": "https://spirit-in-physics.gftd.ai/class/Spirit",
@@ -64,7 +64,7 @@
     {
       "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-information",
       "@type": ["cpm:CoreDefinition", "owl:Class"],
-      "name": "Spirit is Information",
+      "name": "Spirit in Information",
       "description": "霊性は情報として表現・測定可能である。spiritは情報エントロピー、意味ベクトル、確率分布として表現され、Word2Vecによる意味的類似性、感情ベクトル、生理データの時系列パターンとして測定可能である。情報理論の観点から、spiritはシャノン情報量、相互情報量、条件付きエントロピーとして定式化できる。",
       "equivalentClass": {
         "@id": "https://spirit-in-physics.gftd.ai/class/Spirit",
@@ -95,7 +95,7 @@
     {
       "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-gene-plus-meme",
       "@type": ["cpm:CoreDefinition", "owl:Class"],
-      "name": "Spirit is Gene + Meme",
+      "name": "Spirit in Gene + Meme",
       "description": "霊性は遺伝子（生物学的継承）とミーム（文化的継承）の統合である。spiritは遺伝子によって生物学的に継承される基盤（生理的反応、感情の生得的傾向等）と、ミームによって文化的に継承される要素（言語、価値観、行動パターン等）の相互作用として現れる。遺伝子とミームの共進化により、spiritは個体レベルと集団レベルの両方で進化する。",
       "equivalentClass": {
         "@id": "https://spirit-in-physics.gftd.ai/class/Spirit",

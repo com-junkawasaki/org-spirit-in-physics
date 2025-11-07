@@ -1,4 +1,4 @@
--- Merkle DAG: Spirit is Physics データベーススキーマ
+-- Merkle DAG: Spirit in Physics データベーススキーマ
 -- Supabase PostgreSQL用マイグレーション
 
 -- 参加者テーブル

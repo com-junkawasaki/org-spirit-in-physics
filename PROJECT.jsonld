@@ -36,7 +36,7 @@
   "@id": "https://spirit-in-physics.gftd.ai/project",
   "@type": ["cpm:Project", "prov:Entity"],
   
-  "name": "Spirit is Physics",
+  "name": "Spirit in Physics",
   "title": "いい感じの社会の物語",
   "description": "医学博士である河崎純真が、エホバの証人、科学哲学、仏教、アヤワスカ、コンピューターの経験を通して、クリスチャンのアンタッチャブルな「spirit」を可視化・提供可能にし、神と人、霊と人を統合する試み。ユングの単語連合テストを現代的な技術で再現し、感情分析と生理データを統合した「川崎モデル」を開発。参加者の顔表情、声の調子、皮膚電位をHume AIで解析し、Word2Vecによる意味ベクトルと組み合わせることで、言語と感情の関係性を定量的に表現する画期的な手法を生み出す。",
   
@@ -45,7 +45,7 @@
     "@id": "https://spirit-in-physics.gftd.ai/goal",
     "@type": "cpm:Goal",
     "name": "Spirit Core Definitions",
-    "description": "プロジェクトの核となる3つの定義: spirit is physics, spirit is information, spirit is gene + meme"
+    "description": "プロジェクトの核となる3つの定義: Spirit in physics, Spirit in information, Spirit in gene + meme"
   },
   
   "protagonist": {
@@ -73,7 +73,7 @@
     {
       "@id": "https://spirit-in-physics.gftd.ai/narrative/2",
       "@type": "cpm:Narrative",
-      "act": "Spirit is Physics",
+      "act": "Spirit in Physics",
       "summary": "医学博士である河崎純真が、エホバの証人、科学哲学、仏教、アヤワスカ、コンピューターの経験を通して、クリスチャンのアンタッチャブルな「spirit」を可視化・提供可能にし、神と人、霊と人を統合する試み。これは @spirit-in-physics/ プロジェクトで探求される。"
     },
     {
@@ -97,19 +97,19 @@
     {
       "@id": "https://spirit-in-physics.gftd.ai/narrative/6",
       "@type": "cpm:Narrative",
-      "act": "Spirit is Physics",
+      "act": "Spirit in Physics",
       "summary": "霊性は物理法則に従う実在である。spiritは物理的実体として測定可能であり、物理法則（力学、熱力学、情報理論等）に従って振る舞う。川崎モデルによる感情・生理データの統合分析は、spiritを物理量として定量化する試みである。"
     },
     {
       "@id": "https://spirit-in-physics.gftd.ai/narrative/7",
       "@type": "cpm:Narrative",
-      "act": "Spirit is Information",
+      "act": "Spirit in Information",
       "summary": "霊性は情報として表現・測定可能である。spiritは情報エントロピー、意味ベクトル、確率分布として表現され、Word2Vecによる意味的類似性、感情ベクトル、生理データの時系列パターンとして測定可能である。情報理論の観点から、spiritはシャノン情報量、相互情報量、条件付きエントロピーとして定式化できる。"
     },
     {
       "@id": "https://spirit-in-physics.gftd.ai/narrative/8",
       "@type": "cpm:Narrative",
-      "act": "Spirit is Gene + Meme",
+      "act": "Spirit in Gene + Meme",
       "summary": "霊性は遺伝子（生物学的継承）とミーム（文化的継承）の統合である。spiritは遺伝子によって生物学的に継承される基盤（生理的反応、感情の生得的傾向等）と、ミームによって文化的に継承される要素（言語、価値観、行動パターン等）の相互作用として現れる。遺伝子とミームの共進化により、spiritは個体レベルと集団レベルの両方で進化する。"
     }
   ],
@@ -144,7 +144,7 @@
         "@id": "https://spirit-in-physics.gftd.ai/pillar/spiritual-integration",
         "@type": "cpm:KeyPillar",
         "name": "霊性の統合 (Spiritual Integration)",
-        "description": "科学と精神世界を統合し、人間性の全体的な理解を深める。核となる3つの定義: spirit is physics（霊性は物理法則に従う実在）、spirit is information（霊性は情報として表現・測定可能）、spirit is gene + meme（霊性は遺伝子とミームの統合）に基づく。",
+        "description": "科学と精神世界を統合し、人間性の全体的な理解を深める。核となる3つの定義: Spirit in physics（霊性は物理法則に従う実在）、Spirit in information（霊性は情報として表現・測定可能）、Spirit in gene + meme（霊性は遺伝子とミームの統合）に基づく。",
         "subProcesses": [
           "川崎モデルの開発",
           "Hume AI感情分析統合",
@@ -154,22 +154,22 @@
           "プロセスネットワーク最適化",
           "SOLID原則完全実装",
           "Hexagonal Architecture + CQRSパターン",
-          "Spirit is Physics: 物理法則に従う実在としての霊性の定量化",
-          "Spirit is Information: 情報理論による霊性の表現と測定",
-          "Spirit is Gene + Meme: 遺伝子とミームの共進化による霊性の理解"
+          "Spirit in Physics: 物理法則に従う実在としての霊性の定量化",
+          "Spirit in Information: 情報理論による霊性の表現と測定",
+          "Spirit in Gene + Meme: 遺伝子とミームの共進化による霊性の理解"
         ],
         "coreDefinitions": [
           {
             "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-physics",
-            "name": "Spirit is Physics"
+            "name": "Spirit in Physics"
           },
           {
             "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-information",
-            "name": "Spirit is Information"
+            "name": "Spirit in Information"
           },
           {
             "@id": "https://spirit-in-physics.gftd.ai/definition/spirit-is-gene-plus-meme",
-            "name": "Spirit is Gene + Meme"
+            "name": "Spirit in Gene + Meme"
           }
         ]
       },

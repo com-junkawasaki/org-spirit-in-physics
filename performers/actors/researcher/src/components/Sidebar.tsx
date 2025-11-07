@@ -59,7 +59,7 @@ export function Sidebar() {
                 {sidebarOpen && (
                     <div className="flex items-center space-x-2">
                         <h1 className="text-lg md:text-xl font-bold text-primary">
-                            Spirit is Physics
+                            Spirit in Physics
                         </h1>
                     </div>
                 )}
@@ -112,7 +112,7 @@ export function Sidebar() {
                             </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            © 2024 Spirit is Physics Research
+                            © 2024 Spirit in Physics Research
                         </div>
                     </div>
                 ) : (

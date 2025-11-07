@@ -6,7 +6,7 @@
  */
 
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
-import { GetParticipantsDocument, GetParticipantDocument, GetDashboardStatsDocument } from '@/generated/graphql'
+import { GetParticipantsDocument } from '@/generated/graphql'
 
 let apolloClient: ApolloClient<any> | null = null
 let serverApolloClient: ApolloClient<any> | null = null

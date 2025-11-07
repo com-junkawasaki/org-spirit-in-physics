@@ -180,7 +180,7 @@ export default async function ParticipantsPage() {
               被験者一覧
             </h1>
             <p className="text-muted-foreground">
-              Spirit is Physics実験に参加した被験者の検査結果一覧です。各被験者の詳細な分析結果を確認できます。
+              Spirit in Physics実験に参加した被験者の検査結果一覧です。各被験者の詳細な分析結果を確認できます。
             </p>
           </div>
           {/* 分析レポートページは削除済み */}
