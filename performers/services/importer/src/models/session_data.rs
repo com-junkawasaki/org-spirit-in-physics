@@ -3,9 +3,10 @@ use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionData {
+    #[serde(rename = "participantId")]
     pub participant_id: String,
     pub events: Vec<Event>,
-    #[serde(default)]
+    #[serde(rename = "wordResponses", default)]
     pub word_responses: Vec<WordResponse>,
 }
 

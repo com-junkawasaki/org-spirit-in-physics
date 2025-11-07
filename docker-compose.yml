@@ -1,8 +1,26 @@
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: spirit-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./performers/services/graphql/migrations:/docker-entrypoint-initdb.d/migrations:ro
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # GraphQL API (Rust)
-  # Note: Supabase database must be started separately via `supabase start` command
-  # Run: cd performers/systems/supabase && supabase start
-  # Supabase database will be available at localhost:54322
   graphql:
     build:
       context: ./performers/services/graphql
@@ -16,12 +34,12 @@ services:
       - ./performers/services/graphql/diesel.toml:/app/diesel.toml
       - ./performers/services/graphql/schema.graphql:/app/schema.graphql
     environment:
-      # Connect to Supabase database (started via `supabase start`)
-      # Supabase DB port: 54322 (config: performers/systems/supabase/config.toml)
-      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
+      # Connect to PostgreSQL database
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
       - RUST_LOG=info,sqlx=warn,hyper=info,diesel=debug
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - spirit-network
     healthcheck:
@@ -136,12 +154,9 @@ services:
       - ./performers/actors/researcher/public/dataset:/app/dataset:ro
       - ./performers/services/importer/target:/app/target:cached
     environment:
-      # Connect to Supabase database (started via `supabase start`)
-      # Supabase DB port: 54322 (config: performers/systems/supabase/config.toml)
-      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:54322/postgres
+      # Connect to PostgreSQL database
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
       - RUST_LOG=info,diesel=debug
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - spirit-network
     # Run as a one-off command, not as a service
@@ -151,3 +166,6 @@ services:
 networks:
   spirit-network:
     driver: bridge
+
+volumes:
+  postgres_data:

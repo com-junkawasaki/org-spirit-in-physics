@@ -39,7 +39,6 @@ pub fn import_session(
         .values((
             participant_experiment_sessions::id.eq(session_id),
             participant_experiment_sessions::participant_id.eq(participant_id),
-            participant_experiment_sessions::session_id.eq(session_id), // Using same UUID for session_id
             participant_experiment_sessions::session_type.eq(sql::<SessionType>(&format!("'{}'::session_type", session_type_str))),
             participant_experiment_sessions::start_time.eq(start_time),
             participant_experiment_sessions::end_time.eq(end_time),

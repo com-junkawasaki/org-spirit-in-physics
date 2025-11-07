@@ -1,6 +1,5 @@
 type Mutation {
 	ping: String!
-	calculateEmotionDistance(input: CalculateEmotionDistanceInput!): VisualizationData!
 }
 
 type ParticipantGQL {
@@ -14,119 +13,6 @@ type ParticipantGQL {
 
 type Query {
 	participants: [ParticipantGQL!]!
-	participantTimeline(participantId: String!): ParticipantTimelineResponse!
-	participantWord2Vec(participantId: String!): ParticipantWord2VecResponse!
-}
-
-# Timeline Visualization Types
-type ParticipantTimelineResponse {
-	timelineData: [TimelineDataPoint!]!
-	metadata: TimelineMetadata!
-}
-
-type TimelineDataPoint {
-	timestamp: Float!
-	word: String!
-	reactionTime: Int!
-	hasResponse: Boolean!
-	emotions: [EmotionData!]!
-	physiological: PhysiologicalData!
-	reactionValue: Float!
-	eventType: String
-	metadata: TimelineDataPointMetadata
-}
-
-type EmotionData {
-	name: String!
-	score: Float!
-	fileType: String!
-}
-
-type PhysiologicalData {
-	average: Float
-	max: Float
-	min: Float
-}
-
-type TimelineDataPointMetadata {
-	emotionCount: Int
-	physiologicalCount: Int
-}
-
-type TimelineMetadata {
-	sessionEvents: Int
-	emotionEntries: Int
-	physiologicalEntries: Int
-	totalDataPoints: Int
-	dataSource: String
-	errors: [String!]
-	truncated: Boolean
-	originalSize: Int
-}
-
-# Emotion Distance Visualization Types
-input CalculateEmotionDistanceInput {
-	participantId: String!
-	experimentId: String
-	method: String!
-	embeddingMethod: String!
-	dimensions: Int!
-	k: Int
-	gamma: Float
-	alpha: Float
-	topKEmotions: [String!]
-}
-
-type VisualizationData {
-	nodes: [VisualizationNode!]!
-	edges: [VisualizationEdge!]!
-	metadata: VisualizationMetadata!
-}
-
-type VisualizationNode {
-	id: String!
-	label: String!
-	x: Float!
-	y: Float!
-	z: Float
-	color: String!
-	size: Float!
-	metadata: NodeMetadata!
-}
-
-type NodeMetadata {
-	word: String!
-	reactionTime: Int
-	emotionScore: Float
-	observationRatio: Float!
-}
-
-type VisualizationEdge {
-	source: String!
-	target: String!
-	weight: Float!
-	distance: Float!
-	color: String!
-	width: Float!
-}
-
-type VisualizationMetadata {
-	totalNodes: Int!
-	totalEdges: Int!
-	method: String!
-	dimensions: Int!
-	averageDistance: Float!
-	clusteringCoefficient: Float!
-}
-
-# Word2Vec Types
-type ParticipantWord2VecResponse {
-	wordData: [Word2VecData!]!
-}
-
-type Word2VecData {
-	word: String!
-	embedding: [Float!]!
 }
 
 """

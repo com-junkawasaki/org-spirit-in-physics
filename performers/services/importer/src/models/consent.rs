@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConsentData {
+    #[serde(rename = "participantId")]
     pub participant_id: String,
     pub signature: String,
     pub agreements: Agreements,

@@ -6,7 +6,8 @@ use crate::models::{PhysiologicalData, PhysiologicalRecord};
 /// Parse physiological CSV file (Mod-002 format)
 pub fn parse_physiological_csv<P: AsRef<Path>>(path: P) -> Result<PhysiologicalData> {
     let mut reader = ReaderBuilder::new()
-        .has_headers(true)
+        .has_headers(false) // We'll handle headers manually
+        .flexible(true) // Allow variable number of fields
         .from_path(path.as_ref())
         .with_context(|| format!("Failed to open CSV file: {:?}", path.as_ref()))?;
 
@@ -14,8 +15,25 @@ pub fn parse_physiological_csv<P: AsRef<Path>>(path: P) -> Result<PhysiologicalD
     
     // Skip header rows until we find "Measurement Record"
     let mut found_measurement_record = false;
+    let mut found_data_header = false;
+    
     for result in reader.records() {
-        let record = result.with_context(|| "Failed to read CSV record")?;
+        let record = match result {
+            Ok(r) => r,
+            Err(e) => {
+                // Skip malformed records (like empty lines or unequal lengths)
+                let error_msg = format!("{}", e);
+                if error_msg.contains("found record with") && error_msg.contains("fields") {
+                    continue;
+                }
+                return Err(anyhow::anyhow!("Failed to read CSV record: {}", e)).with_context(|| "CSV parsing error");
+            }
+        };
+        
+        // Skip empty records
+        if record.len() == 0 {
+            continue;
+        }
         
         // Check if this is the measurement record header
         if record.get(0).map(|s| s == "Measurement Record").unwrap_or(false) {
@@ -29,10 +47,20 @@ pub fn parse_physiological_csv<P: AsRef<Path>>(path: P) -> Result<PhysiologicalD
         
         // Skip the header row (Time_Sec,Ch1,Ch2,...)
         if record.get(0).map(|s| s == "Time_Sec").unwrap_or(false) {
+            found_data_header = true;
             continue;
         }
         
-        // Parse data row
+        if !found_data_header {
+            continue;
+        }
+        
+        // Parse data row - need at least 2 fields (Time_Sec and at least one channel)
+        if record.len() < 2 {
+            continue;
+        }
+        
+        // Parse time
         if let Some(time_str) = record.get(0) {
             if let Ok(time_sec) = time_str.parse::<f64>() {
                 let ch1 = record.get(1).and_then(|s| s.parse::<f64>().ok()).unwrap_or(0.0);
