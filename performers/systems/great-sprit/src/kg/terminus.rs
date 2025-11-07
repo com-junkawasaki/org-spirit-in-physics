@@ -4,6 +4,7 @@ use anyhow::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tracing::{info, warn, error};
 use crate::config::Config;
 
 /// TerminusDB client
@@ -24,14 +25,43 @@ struct TerminusResponse {
 impl TerminusClient {
     /// Initialize TerminusDB client
     pub async fn new(config: &Config) -> Result<Self> {
+        info!("Initializing TerminusDB client...");
+        eprintln!("[TerminusDB] Initializing client...");
+        eprintln!("[TerminusDB] URL: {}", config.terminus_url);
+        eprintln!("[TerminusDB] Database: {}", config.terminus_db);
+        
         let client = Arc::new(Client::new());
         
-        Ok(Self {
+        let client_instance = Self {
             client,
             base_url: config.terminus_url.clone(),
             db_name: config.terminus_db.clone(),
             api_key: config.terminus_api_key.clone(),
-        })
+        };
+        
+        // Test connection
+        info!("Testing TerminusDB connection...");
+        eprintln!("[TerminusDB] Testing connection...");
+        
+        let test_url = format!("{}/api/status", client_instance.base_url);
+        match client_instance.client.get(&test_url).send().await {
+            Ok(response) => {
+                if response.status().is_success() {
+                    info!("TerminusDB connection successful");
+                    eprintln!("[TerminusDB] Connection successful");
+                } else {
+                    warn!("TerminusDB returned status: {}", response.status());
+                    eprintln!("[TerminusDB] WARNING: Status {}", response.status());
+                }
+            }
+            Err(e) => {
+                warn!("TerminusDB connection test failed: {:?}", e);
+                eprintln!("[TerminusDB] WARNING: Connection test failed: {:?}", e);
+                eprintln!("[TerminusDB] Continuing anyway (may be normal if DB is starting up)...");
+            }
+        }
+        
+        Ok(client_instance)
     }
 
     /// Query SPARQL

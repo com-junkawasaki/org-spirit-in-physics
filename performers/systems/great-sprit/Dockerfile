@@ -61,6 +61,6 @@ COPY --from=builder /app/target/release/great-sprit /app/great-sprit
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["./great-sprit"]
+# Run the application with explicit output
+CMD ["sh", "-c", "exec ./great-sprit 2>&1"]
 

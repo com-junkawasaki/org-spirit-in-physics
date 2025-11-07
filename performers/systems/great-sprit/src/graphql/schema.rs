@@ -49,13 +49,20 @@ pub async fn start_server(
             ))
         });
     
+    use std::io::Write;
     eprintln!("Starting GraphQL server on {:?}", addr);
+    std::io::stderr().flush().ok();
     println!("Starting GraphQL server on {:?}", addr);
+    std::io::stdout().flush().ok();
     tracing::info!("Starting GraphQL server on {:?}", addr);
+    
+    eprintln!("GraphQL server is running and ready to accept connections");
+    std::io::stderr().flush().ok();
     
     warp::serve(routes).run(addr).await;
 
     eprintln!("GraphQL server stopped");
+    std::io::stderr().flush().ok();
     Ok(())
 }
 

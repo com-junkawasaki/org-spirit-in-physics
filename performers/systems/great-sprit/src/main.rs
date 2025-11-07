@@ -18,13 +18,43 @@ use config::Config;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Initialize tracing
+    // Set panic hook to capture panics
+    std::panic::set_hook(Box::new(|panic_info| {
+        eprintln!("PANIC: {:?}", panic_info);
+        if let Some(location) = panic_info.location() {
+            eprintln!("Location: {}:{}:{}", location.file(), location.line(), location.column());
+        }
+        if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            eprintln!("Message: {}", s);
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            eprintln!("Message: {}", s);
+        }
+    }));
+    
+    // Force unbuffered output
+    use std::io::Write;
+    std::io::stderr().flush().ok();
+    std::io::stdout().flush().ok();
+    
+    eprintln!("=== MAIN FUNCTION STARTED ===");
+    std::io::stderr().flush().ok();
+    
+    // Initialize tracing with better output
+    eprintln!("Initializing tracing...");
+    std::io::stderr().flush().ok();
+    
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_writer(std::io::stderr)
         .init();
+    
+    eprintln!("Tracing initialized");
+    std::io::stderr().flush().ok();
 
     println!("Starting Great Spirit GPU Physics System");
-    eprintln!("Starting Great Spirit GPU Physics System (stderr)");
+    std::io::stdout().flush().ok();
+    eprintln!("Starting Great Spirit GPU Physics System");
+    std::io::stderr().flush().ok();
     info!("Starting Great Spirit GPU Physics System");
 
     // Load configuration
