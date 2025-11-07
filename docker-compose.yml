@@ -14,6 +14,7 @@ services:
       - ./performers/services/graphql/src:/app/src:cached
       - ./performers/services/graphql/migrations:/app/migrations:cached
       - ./performers/services/graphql/diesel.toml:/app/diesel.toml
+      - ./performers/services/graphql/schema.graphql:/app/schema.graphql
     environment:
       # Connect to Supabase database (started via `supabase start`)
       # Supabase DB port: 54322 (config: performers/systems/supabase/config.toml)

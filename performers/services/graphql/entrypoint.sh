@@ -24,11 +24,19 @@ echo "Schema generated successfully!"
 
 # Generate GraphQL SDL file
 echo "Generating GraphQL SDL..."
-/app/graphql --generate-schema || cargo run --bin generate-schema || {
-    echo "Warning: Failed to generate GraphQL SDL. Continuing anyway..."
-    # Try to generate SDL using schema introspection endpoint after server starts
-    echo "SDL will be available at /graphql/sdl endpoint"
-}
+if [ -f /app/generate-schema ]; then
+    # Change to the directory where schema.graphql should be written (mounted volume)
+    cd /app
+    /app/generate-schema || {
+        echo "Warning: Failed to generate GraphQL SDL. Continuing anyway..."
+        echo "SDL will be available at /graphql/sdl endpoint"
+    }
+    if [ -f /app/schema.graphql ]; then
+        echo "GraphQL SDL file generated successfully at /app/schema.graphql"
+    fi
+else
+    echo "Warning: generate-schema binary not found. SDL will be available at /graphql/sdl endpoint"
+fi
 
 # Run the application
 exec "$@"

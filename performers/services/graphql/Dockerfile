@@ -42,8 +42,9 @@ RUN apt-get update && apt-get install -y \
 # Install diesel CLI
 RUN cargo install diesel_cli --no-default-features --features postgres
 
-# Copy the binary from builder
+# Copy the binaries from builder
 COPY --from=builder /app/target/release/graphql /app/graphql
+COPY --from=builder /app/target/release/generate-schema /app/generate-schema
 
 # Copy source directory structure for schema generation
 COPY src ./src
