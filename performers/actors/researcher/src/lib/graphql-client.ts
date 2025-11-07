@@ -8,23 +8,60 @@
 import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client'
 import { GetParticipantsDocument, GetParticipantDocument, GetDashboardStatsDocument } from '@/generated/graphql'
 
-const GRAPHQL_API_URL = process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || process.env.GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql'
-
 let apolloClient: ApolloClient<any> | null = null
+let serverApolloClient: ApolloClient<any> | null = null
 
 function getApolloClient(): ApolloClient<any> {
-  if (!apolloClient || typeof window === 'undefined') {
-    apolloClient = new ApolloClient({
-      link: new HttpLink({
-        uri: GRAPHQL_API_URL,
-        fetchOptions: {
-          mode: 'cors',
+  // For server-side rendering, use internal Docker network URL
+  // For client-side, use NEXT_PUBLIC_GRAPHQL_RUST_API_URL
+  const isServer = typeof window === 'undefined'
+  
+  if (isServer) {
+    // Server-side: create a new client each time or reuse server instance
+    if (!serverApolloClient) {
+      const serverUrl = process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql'
+      serverApolloClient = new ApolloClient({
+        link: new HttpLink({
+          uri: serverUrl,
+          fetch: (uri, options) => {
+            // Use Node.js fetch for server-side
+            return fetch(uri, {
+              ...options,
+              // Ensure proper headers for GraphQL
+              headers: {
+                'Content-Type': 'application/json',
+                ...(options?.headers || {}),
+              },
+            })
+          },
+        }),
+        cache: new InMemoryCache(),
+        ssrMode: true,
+        defaultOptions: {
+          query: {
+            fetchPolicy: 'network-only', // Always fetch fresh data on server
+          },
         },
-      }),
-      cache: new InMemoryCache(),
-    })
+      })
+    }
+    return serverApolloClient
+  } else {
+    // Client-side: reuse client instance
+    if (!apolloClient) {
+      const clientUrl = process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql'
+      apolloClient = new ApolloClient({
+        link: new HttpLink({
+          uri: clientUrl,
+          fetchOptions: {
+            mode: 'cors',
+          },
+        }),
+        cache: new InMemoryCache(),
+        ssrMode: false,
+      })
+    }
+    return apolloClient
   }
-  return apolloClient
 }
 
 export interface GraphQLClient {
@@ -112,8 +149,58 @@ export function createGraphQLClient(): GraphQLClient {
 
   return {
     async getParticipants() {
-      const result = await client.query({ query: GetParticipantsDocument })
-      return result.data?.participants || []
+      const isServer = typeof window === 'undefined'
+      const url = isServer 
+        ? (process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql')
+        : (process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql')
+      
+      // For server-side, use direct fetch to avoid Apollo Client issues
+      if (isServer) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: '{ participants { id age handedness createdAt } }' }),
+          })
+          if (!response.ok) {
+            console.error('Direct fetch failed:', response.status, response.statusText)
+            return []
+          }
+          const data = await response.json()
+          if (data.errors) {
+            console.error('GraphQL errors:', data.errors)
+            return []
+          }
+          return data.data?.participants || []
+        } catch (fetchError: any) {
+          console.error('Direct fetch error:', fetchError.message)
+          return []
+        }
+      }
+      
+      // For client-side, use Apollo Client
+      try {
+        const result = await client.query({ 
+          query: GetParticipantsDocument,
+          fetchPolicy: 'network-only',
+        })
+        return result.data?.participants || []
+      } catch (error: any) {
+        console.error('GraphQL getParticipants error:', error.message, error.networkError)
+        // Fallback to direct fetch
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: '{ participants { id age handedness createdAt } }' }),
+          })
+          const data = await response.json()
+          return data.data?.participants || []
+        } catch (fetchError: any) {
+          console.error('Direct fetch fallback error:', fetchError.message)
+          return []
+        }
+      }
     },
 
     async getParticipantDetails(participantId: string) {

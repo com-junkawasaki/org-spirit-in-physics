@@ -67,6 +67,7 @@ services:
       - ./performers/actors/researcher/src/generated:/app/src/generated:cached
     environment:
       - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
+      - GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
       - NODE_ENV=development
     env_file:
       - ./performers/actors/researcher/env.docker
