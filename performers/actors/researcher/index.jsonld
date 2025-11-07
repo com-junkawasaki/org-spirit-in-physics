@@ -19,46 +19,50 @@
     "uiPort": "cpm:uiPort"
   },
   
-  "@id": "https://spirit-in-physics.gftd.ai/actor/researcher",
-  "@type": ["cpm:Actor", "dodaf:Performer", "prov:Agent"],
-  
-  "name": "ResearcherActor",
-  "description": "研究者向けアプリケーション（apps/researcher）。実験管理、データ分析、可視化のUI Portを提供する。",
-  
-  "wasAttributedTo": [
-    "https://spirit-in-physics.gftd.ai/capability/experiment-management",
-    "https://spirit-in-physics.gftd.ai/capability/analysis",
-    "https://spirit-in-physics.gftd.ai/capability/visualization"
-  ],
-  
-  "provides": [
+  "@graph": [
     {
-      "@id": "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/dashboard",
-      "@type": "cpm:UIPort",
-      "name": "Dashboard UI Port",
-      "description": "システムメトリクス表示、クイックアクション機能、詳細タブ（概要・参加者・インポート・分析）による包括的な管理インターフェース",
-      "path": "/dashboard"
-    },
-    {
-      "@id": "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/participants",
-      "@type": "cpm:UIPort",
-      "name": "Participants UI Port",
-      "description": "参加者一覧テーブルページと詳細ページ。セッション数・応答数・平均Spirit確率・最終活動日時を表示",
-      "path": "/participants"
-    },
-    {
-      "@id": "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/visualization",
-      "@type": "cpm:UIPort",
-      "name": "Visualization UI Port",
-      "description": "3D可視化、時系列可視化、インタラクティブダッシュボード",
-      "path": "/participants/[id]"
+      "@id": "https://spirit-in-physics.gftd.ai/actor/researcher",
+      "@type": ["cpm:Actor", "dodaf:Performer", "prov:Agent"],
+      
+      "name": "ResearcherActor",
+      "description": "研究者向けアプリケーション（apps/researcher）。実験管理、データ分析、可視化のUI Portを提供する。",
+      
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/capability/experiment-management",
+        "https://spirit-in-physics.gftd.ai/capability/analysis",
+        "https://spirit-in-physics.gftd.ai/capability/visualization"
+      ],
+      
+      "provides": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/dashboard",
+          "@type": "cpm:UIPort",
+          "name": "Dashboard UI Port",
+          "description": "システムメトリクス表示、クイックアクション機能、詳細タブ（概要・参加者・インポート・分析）による包括的な管理インターフェース",
+          "path": "/dashboard"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/participants",
+          "@type": "cpm:UIPort",
+          "name": "Participants UI Port",
+          "description": "参加者一覧テーブルページと詳細ページ。セッション数・応答数・平均Spirit確率・最終活動日時を表示",
+          "path": "/participants"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/visualization",
+          "@type": "cpm:UIPort",
+          "name": "Visualization UI Port",
+          "description": "3D可視化、時系列可視化、インタラクティブダッシュボード",
+          "path": "/participants/[id]"
+        }
+      ],
+      
+      "uiPort": [
+        "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/dashboard",
+        "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/participants",
+        "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/visualization"
+      ]
     }
-  ],
-  
-  "uiPort": [
-    "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/dashboard",
-    "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/participants",
-    "https://spirit-in-physics.gftd.ai/actor/researcher/ui-port/visualization"
   ]
 }
 

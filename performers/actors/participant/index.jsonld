@@ -19,46 +19,50 @@
     "uiPort": "cpm:uiPort"
   },
   
-  "@id": "https://spirit-in-physics.gftd.ai/actor/participant",
-  "@type": ["cpm:Actor", "dodaf:Performer", "prov:Agent"],
-  
-  "name": "ParticipantActor",
-  "description": "参加者向けアプリケーション（apps/participant）。参加者登録、同意取得、実験参加のUI Portを提供する。",
-  
-  "wasAttributedTo": [
-    "https://spirit-in-physics.gftd.ai/activity/participant-registration",
-    "https://spirit-in-physics.gftd.ai/activity/consent-management",
-    "https://spirit-in-physics.gftd.ai/activity/experiment-session"
-  ],
-  
-  "provides": [
+  "@graph": [
     {
-      "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/home",
-      "@type": "cpm:UIPort",
-      "name": "Home UI Port",
-      "description": "ホームページ。研究計画書と同意説明文書の提示",
-      "path": "/"
-    },
-    {
-      "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/consent",
-      "@type": "cpm:UIPort",
-      "name": "Consent UI Port",
-      "description": "同意書フォーム。研究計画書の確認と同意取得",
-      "path": "/ConsentForm"
-    },
-    {
-      "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/experiment",
-      "@type": "cpm:UIPort",
-      "name": "Experiment UI Port",
-      "description": "実験セッション実行。ユングの単語連合テストの実施",
-      "path": "/steps"
+      "@id": "https://spirit-in-physics.gftd.ai/actor/participant",
+      "@type": ["cpm:Actor", "dodaf:Performer", "prov:Agent"],
+      
+      "name": "ParticipantActor",
+      "description": "参加者向けアプリケーション（apps/participant）。参加者登録、同意取得、実験参加のUI Portを提供する。",
+      
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/activity/participant-registration",
+        "https://spirit-in-physics.gftd.ai/activity/consent-management",
+        "https://spirit-in-physics.gftd.ai/activity/experiment-session"
+      ],
+      
+      "provides": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/home",
+          "@type": "cpm:UIPort",
+          "name": "Home UI Port",
+          "description": "ホームページ。研究計画書と同意説明文書の提示",
+          "path": "/"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/consent",
+          "@type": "cpm:UIPort",
+          "name": "Consent UI Port",
+          "description": "同意書フォーム。研究計画書の確認と同意取得",
+          "path": "/ConsentForm"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/experiment",
+          "@type": "cpm:UIPort",
+          "name": "Experiment UI Port",
+          "description": "実験セッション実行。ユングの単語連合テストの実施",
+          "path": "/steps"
+        }
+      ],
+      
+      "uiPort": [
+        "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/home",
+        "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/consent",
+        "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/experiment"
+      ]
     }
-  ],
-  
-  "uiPort": [
-    "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/home",
-    "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/consent",
-    "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/experiment"
   ]
 }
 

@@ -18,24 +18,28 @@
     "hasMember": "cpm:hasMember"
   },
   
-  "@id": "https://spirit-in-physics.gftd.ai/organization/research-org",
-  "@type": ["cpm:Organization", "dodaf:Performer", "prov:Organization"],
-  
-  "name": "ResearchOrganization",
-  "description": "研究組織。ResearcherActorとParticipantActorを統括し、実験管理能力を提供する。",
-  
-  "wasAttributedTo": [
-    "https://spirit-in-physics.gftd.ai/capability/experiment-management"
-  ],
-  
-  "hasMember": [
+  "@graph": [
     {
-      "@id": "https://spirit-in-physics.gftd.ai/actor/researcher",
-      "@type": "cpm:Actor"
-    },
-    {
-      "@id": "https://spirit-in-physics.gftd.ai/actor/participant",
-      "@type": "cpm:Actor"
+      "@id": "https://spirit-in-physics.gftd.ai/organization/research-org",
+      "@type": ["cpm:Organization", "dodaf:Performer", "prov:Organization"],
+      
+      "name": "ResearchOrganization",
+      "description": "研究組織。ResearcherActorとParticipantActorを統括し、実験管理能力を提供する。",
+      
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/capability/experiment-management"
+      ],
+      
+      "hasMember": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/actor/researcher",
+          "@type": "cpm:Actor"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/actor/participant",
+          "@type": "cpm:Actor"
+        }
+      ]
     }
   ]
 }

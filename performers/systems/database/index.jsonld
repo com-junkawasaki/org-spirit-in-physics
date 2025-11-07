@@ -17,14 +17,18 @@
     "wasAttributedTo": "prov:wasAttributedTo"
   },
   
-  "@id": "https://spirit-in-physics.gftd.ai/system/database",
-  "@type": ["cpm:System", "dodaf:Performer", "prov:SoftwareAgent"],
-  
-  "name": "PostgreSQLDatabase",
-  "description": "PostgreSQLデータベースシステム。GraphQL APIと統合し、構造化データモデリング、CRUD操作、トランザクション管理、データ保護を提供する。",
-  
-  "wasAttributedTo": [
-    "https://spirit-in-physics.gftd.ai/capability/data-management"
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/database",
+      "@type": ["cpm:System", "dodaf:Performer", "prov:SoftwareAgent"],
+      
+      "name": "PostgreSQLDatabase",
+      "description": "PostgreSQLデータベースシステム。GraphQL APIと統合し、構造化データモデリング、CRUD操作、トランザクション管理、データ保護を提供する。",
+      
+      "wasAttributedTo": [
+        "https://spirit-in-physics.gftd.ai/capability/data-management"
+      ]
+    }
   ]
 }
 
