@@ -9,7 +9,7 @@ services:
         BUILDKIT_INLINE_CACHE: 1
     container_name: great-sprit
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       # Server configuration
       NODE_ENV: development
@@ -42,13 +42,14 @@ services:
       - spirit-network
     restart: unless-stopped
     # GPU access (if available)
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # Note: Commented out for environments without NVIDIA GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
   # TerminusDB for RDF/OWL knowledge graph
   terminusdb:

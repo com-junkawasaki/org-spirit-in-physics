@@ -89,7 +89,7 @@ impl Mutation {
         let person_resolver = PersonResolver::new(kg_client);
         
         let person_uri = person_resolver
-            .resolve_person(cookie_value.as_deref(), face_feature_vector.as_deref().map(|v| v.as_ref()))
+            .resolve_person(cookie_value.as_deref(), face_feature_vector.as_deref().map(|v| v.as_slice()))
             .await?;
 
         Ok(person_uri)
