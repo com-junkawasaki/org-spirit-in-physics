@@ -31,6 +31,99 @@ services:
       retries: 5
       start_period: 30s
 
+  # Researcher Actor (Next.js)
+  researcher:
+    build:
+      context: ./performers/actors/researcher
+      dockerfile: Dockerfile
+    container_name: spirit-researcher
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./performers/actors/researcher/src:/app/src:cached
+      - ./performers/actors/researcher/public:/app/public:cached
+      - ./performers/actors/researcher/package.json:/app/package.json:cached
+      - ./performers/actors/researcher/codegen.yaml:/app/codegen.yaml:cached
+      - ./performers/services/graphql/schema.graphql:/app/schema.graphql:cached
+      - ./performers/actors/researcher/src/generated:/app/src/generated:cached
+    environment:
+      - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
+      - NODE_ENV=development
+    env_file:
+      - ./performers/actors/researcher/env.docker
+    depends_on:
+      - graphql
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Visualizer Actor (Next.js)
+  visualizer:
+    build:
+      context: ./performers/actors/visualizer
+      dockerfile: Dockerfile
+    container_name: spirit-visualizer
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./performers/actors/visualizer/src:/app/src:cached
+      - ./performers/actors/visualizer/public:/app/public:cached
+      - ./performers/actors/visualizer/package.json:/app/package.json:cached
+      - ./performers/actors/visualizer/codegen.yaml:/app/codegen.yaml:cached
+      - ./performers/services/graphql/schema.graphql:/app/schema.graphql:cached
+      - ./performers/actors/visualizer/src/generated:/app/src/generated:cached
+    environment:
+      - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
+      - NODE_ENV=development
+    env_file:
+      - ./performers/actors/visualizer/env.docker
+    depends_on:
+      - graphql
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Participant Actor (Next.js)
+  participant:
+    build:
+      context: ./performers/actors/participant
+      dockerfile: Dockerfile
+    container_name: spirit-participant
+    ports:
+      - "25250:25250"
+    volumes:
+      - ./performers/actors/participant/src:/app/src:cached
+      - ./performers/actors/participant/public:/app/public:cached
+      - ./performers/actors/participant/package.json:/app/package.json:cached
+      - ./performers/actors/participant/codegen.yaml:/app/codegen.yaml:cached
+      - ./performers/services/graphql/schema.graphql:/app/schema.graphql:cached
+      - ./performers/actors/participant/src/generated:/app/src/generated:cached
+    environment:
+      - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
+      - NODE_ENV=development
+    env_file:
+      - ./performers/actors/participant/env.docker
+    depends_on:
+      - graphql
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:25250"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
 networks:
   spirit-network:
     driver: bridge
