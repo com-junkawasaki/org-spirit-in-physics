@@ -1,0 +1,11 @@
+query GetParticipants {
+  participants {
+    id
+    age
+    gender
+    handedness
+    createdAt
+    updatedAt
+  }
+}
+
