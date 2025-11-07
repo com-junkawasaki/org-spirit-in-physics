@@ -7,10 +7,16 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy manifests
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml ./
+# Create dummy source to cache dependencies
+RUN mkdir -p src && echo "fn main() {}" > src/main.rs
+
+# Build dependencies (cached layer)
+RUN cargo build --release && rm -rf src
 
 # Copy source code
 COPY src ./src

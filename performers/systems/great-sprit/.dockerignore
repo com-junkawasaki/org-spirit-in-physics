@@ -1,0 +1,10 @@
+target/
+Cargo.lock
+.git/
+.gitignore
+*.rs.bk
+.DS_Store
+.env
+.env.local
+config.toml
+

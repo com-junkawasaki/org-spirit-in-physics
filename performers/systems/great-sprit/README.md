@@ -121,6 +121,8 @@ s[t+1] = s[t] + ṡ[t+1]·Δt
 
 ## ビルドと実行
 
+### ローカル実行
+
 ```bash
 # ビルド
 cargo build --release
@@ -133,6 +135,35 @@ cargo test
 
 # パフォーマンステスト（要GPU）
 cargo test -- --ignored test_large_scale_performance
+```
+
+### Docker Compose実行（テストデータ付き）
+
+```bash
+# ビルドと起動（テストデータ自動初期化）
+make start
+
+# または手動で
+docker-compose build
+docker-compose up -d
+docker-compose exec terminusdb bash /app/test-data/terminusdb/init.sh
+
+# ログ確認
+make logs
+# または
+docker-compose logs -f great-sprit
+
+# 停止
+make down
+# または
+docker-compose down
+```
+
+### 開発モード（ホットリロード）
+
+```bash
+# 開発モードで起動（ソースコード変更を自動反映）
+docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up
 ```
 
 ## 設定

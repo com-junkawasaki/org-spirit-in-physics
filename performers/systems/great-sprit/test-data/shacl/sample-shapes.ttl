@@ -1,0 +1,51 @@
+# Sample SHACL Shapes for Testing
+# Great Spirit GPU Physics System
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://spirit-in-physics.gftd.ai/ontology#> .
+
+# Spirit Shape
+ex:SpiritShape
+    a sh:NodeShape ;
+    sh:targetClass ex:Spirit ;
+    sh:property [
+        sh:path ex:valence ;
+        sh:datatype xsd:float ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+    ] ;
+    sh:property [
+        sh:path ex:arousal ;
+        sh:datatype xsd:float ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+    ] ;
+    sh:property [
+        sh:path ex:socialOrientation ;
+        sh:datatype xsd:float ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+    ] ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] .
+
+# Concept Shape
+ex:ConceptShape
+    a sh:NodeShape ;
+    sh:targetClass ex:Concept ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:embedding ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] .
+

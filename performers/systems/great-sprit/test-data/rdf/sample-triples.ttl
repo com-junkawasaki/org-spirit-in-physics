@@ -1,0 +1,38 @@
+# Sample RDF Triples for Testing
+# Great Spirit GPU Physics System
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex: <https://spirit-in-physics.gftd.ai/ontology#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+# Spirit entities
+ex:spirit1 rdf:type ex:Spirit ;
+    rdfs:label "Test Spirit 1" ;
+    ex:valence 0.5 ;
+    ex:arousal 0.3 ;
+    ex:socialOrientation 0.7 .
+
+ex:spirit2 rdf:type ex:Spirit ;
+    rdfs:label "Test Spirit 2" ;
+    ex:valence 0.8 ;
+    ex:arousal 0.6 ;
+    ex:socialOrientation 0.4 .
+
+# Relationships
+ex:spirit1 ex:relatedTo ex:spirit2 .
+ex:spirit2 ex:relatedTo ex:spirit1 .
+
+# Concepts
+ex:concept1 rdf:type ex:Concept ;
+    rdfs:label "Joy" ;
+    ex:embedding "[0.1, 0.2, 0.3, ...]" .
+
+ex:concept2 rdf:type ex:Concept ;
+    rdfs:label "Peace" ;
+    ex:embedding "[0.4, 0.5, 0.6, ...]" .
+
+# Spirit-Concept relationships
+ex:spirit1 ex:experiences ex:concept1 .
+ex:spirit2 ex:experiences ex:concept2 .
+

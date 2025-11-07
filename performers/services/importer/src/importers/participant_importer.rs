@@ -3,7 +3,7 @@ use uuid::Uuid;
 use anyhow::{Result, Context};
 use serde_json::{json, Value as JsonValue};
 
-use crate::db::{DbConnection, schema::participants};
+use crate::db::DbConnection;
 use crate::models::ConsentData;
 
 /// Get or create participant by ID
@@ -14,11 +14,11 @@ pub fn get_or_create_participant(
     let uuid_id = Uuid::parse_str(participant_id)
         .with_context(|| format!("Invalid participant ID format: {}", participant_id))?;
 
-    // Try to find existing participant
-    // Use raw SQL with explicit schema name
+    // Try to find existing participant using raw SQL with explicit schema
     use diesel::sql_query;
     use diesel::sql_types::Uuid as SqlUuid;
     use diesel::QueryableByName;
+    use diesel::RunQueryDsl;
     
     #[derive(QueryableByName)]
     struct ParticipantId {
@@ -26,32 +26,20 @@ pub fn get_or_create_participant(
         id: Uuid,
     }
     
-    // First, test if we can query the table with explicit schema
-    let test_query = sql_query("SELECT id FROM public.participants WHERE id = $1");
-    let test_result: Result<Vec<ParticipantId>, _> = test_query
+    // Use raw SQL with explicit schema name to avoid schema resolution issues
+    let existing: Option<Uuid> = sql_query("SELECT id FROM public.participants WHERE id = $1")
         .bind::<SqlUuid, _>(uuid_id)
-        .load(conn);
-    
-    let existing: Option<Uuid> = match test_result {
-        Ok(rows) => rows.first().map(|r| r.id),
-        Err(_) => {
-            // If query fails, try Diesel query builder
-            participants::table
-                .select(participants::id)
-                .filter(participants::id.eq(uuid_id))
-                .first::<Uuid>(conn)
-                .optional()
-                .context("Failed to query participants")?
-        }
-    };
+        .load::<ParticipantId>(conn)
+        .ok()
+        .and_then(|rows| rows.first().map(|r| r.id));
 
     if let Some(id) = existing {
         return Ok(id);
     }
 
-    // Create new participant
-    diesel::insert_into(participants::table)
-        .values(participants::id.eq(uuid_id))
+    // Create new participant using raw SQL
+    sql_query("INSERT INTO public.participants (id) VALUES ($1)")
+        .bind::<SqlUuid, _>(uuid_id)
         .execute(conn)
         .context("Failed to insert participant")?;
 

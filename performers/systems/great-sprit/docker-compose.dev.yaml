@@ -1,0 +1,24 @@
+# Development docker-compose with hot reload support
+# Use: docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up
+
+version: '3.8'
+
+services:
+  great-sprit:
+    # Override for development with hot reload
+    volumes:
+      # Mount source for hot reload (read-write)
+      - ./src:/app/src
+      - ./resources:/app/resources
+      # Mount test data
+      - ./test-data:/app/test-data:ro
+    # Use cargo watch for hot reload (if installed)
+    command: >
+      sh -c "
+        if command -v cargo-watch > /dev/null; then
+          cargo watch -x 'run --bin great-sprit'
+        else
+          ./great-sprit
+        fi
+      "
+

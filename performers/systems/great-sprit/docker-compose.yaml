@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # Great Spirit GPU Physics System
+  great-sprit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: great-sprit
+    ports:
+      - "8080:8080"
+    environment:
+      # Server configuration
+      NODE_ENV: development
+      SERVER_PORT: 8080
+      
+      # TerminusDB configuration
+      TERMINUS_URL: http://terminusdb:6363
+      TERMINUS_DB: spirit_kg
+      TERMINUS_API_KEY: root
+      
+      # Physics simulation parameters
+      NUM_AGENTS: 100
+      PARTICLES_PER_AGENT: 1000
+      TIME_STEP: 0.01
+      NUM_BANDS: 8
+      WORKGROUP_SIZE: 256
+      
+      # Logging
+      RUST_LOG: info,great_sprit=debug
+    volumes:
+      # Mount source for hot reload (development)
+      - ./src:/app/src:ro
+      - ./resources:/app/resources:ro
+      # Mount test data
+      - ./test-data:/app/test-data:ro
+    depends_on:
+      terminusdb:
+        condition: service_healthy
+    networks:
+      - spirit-network
+    restart: unless-stopped
+    # GPU access (if available)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # TerminusDB for RDF/OWL knowledge graph
+  terminusdb:
+    image: terminusdb/terminusdb-server:latest
+    container_name: terminusdb
+    ports:
+      - "6363:6363"
+    environment:
+      TERMINUSDB_SERVER_JWT_SECRET: terminusdb-secret-jwt-key-change-in-production
+      TERMINUSDB_SERVER_PASS: root
+      TERMINUSDB_SERVER_USER: admin
+    volumes:
+      - terminusdb-data:/app/terminusdb
+      - ./test-data/terminusdb:/app/test-data:ro
+    networks:
+      - spirit-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6363/api/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  terminusdb-data:
+    driver: local
+
+networks:
+  spirit-network:
+    driver: bridge
+
