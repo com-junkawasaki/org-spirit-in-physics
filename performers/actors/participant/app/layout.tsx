@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Spirit in Physics",
+  title: "Spirit is Physics",
   description: "Extended evaluation of human illusion by Jungian psychology and computational models.",
 };
 

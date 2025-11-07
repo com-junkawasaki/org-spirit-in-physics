@@ -11,8 +11,8 @@ const inter = Inter({ subsets: ['latin'] })
 
 // Merkle DAG: metadata -> seo_and_app_info
 export const metadata = {
-  title: 'Spirit in Physics',
-  description: 'Spirit in Physics Research Platform',
+  title: 'Spirit is Physics',
+  description: 'Spirit is Physics Research Platform',
 }
 
 // Merkle DAG: root_layout -> main_application_shell

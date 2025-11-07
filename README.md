@@ -1,4 +1,4 @@
-# Spirit in Physics
+# Spirit is Physics
 
 ## Spirit Core Definitions
 

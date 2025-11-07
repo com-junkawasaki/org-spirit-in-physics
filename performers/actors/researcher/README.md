@@ -1,4 +1,4 @@
-# Spirit in Physics - Researcher App
+# Spirit is Physics - Researcher App
 
 ## GraphQL/PostgreSQL Migration Complete
 
@@ -77,7 +77,7 @@ pnpm dev
 - エッジ: 完全グラフ（全組合せ）、`weight = normalize(raw_i * raw_j)`
 - レンダリング: `@react-three/fiber` + `three`。カメラ・回転は `OrbitControls`
 
-参考モデル（Spirit in Physics 理論）: [投稿ページ](https://www.junkawasaki.com/posts/spirit-in-physics)
+参考モデル（Spirit is Physics 理論）: [投稿ページ](https://www.junkawasaki.com/posts/spirit-in-physics)
 
 ## API Endpoints
 
