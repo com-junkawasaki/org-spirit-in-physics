@@ -15,8 +15,6 @@ pub fn import_physiological_data(
     records: &[PhysiologicalRecord],
     session_start_timestamp_ms: i64,
 ) -> Result<()> {
-    let mut timeseries_records = Vec::new();
-
     for record in records {
         // Calculate timestamp offset from session start (in milliseconds)
         let record_timestamp_ms = record.time_ms();
@@ -27,17 +25,13 @@ pub fn import_physiological_data(
         let skin_potential_decimal = Decimal::from_f64_retain(skin_potential)
             .unwrap_or(Decimal::ZERO);
 
-        timeseries_records.push((
-            response_skin_potential_timeseries::response_id.eq(response_id),
-            response_skin_potential_timeseries::timestamp_offset_ms.eq(offset_ms),
-            response_skin_potential_timeseries::value.eq(skin_potential_decimal),
-        ));
-    }
-
-    // Batch insert (one by one for now, can be optimized later)
-    for record in timeseries_records {
+        // Use raw SQL to insert Decimal value as Numeric
         diesel::insert_into(response_skin_potential_timeseries::table)
-            .values(record)
+            .values((
+                response_skin_potential_timeseries::response_id.eq(response_id),
+                response_skin_potential_timeseries::timestamp_offset_ms.eq(offset_ms),
+                response_skin_potential_timeseries::value.eq(sql::<Numeric>(&format!("{}", skin_potential_decimal))),
+            ))
             .execute(conn)
             .context("Failed to insert physiological data")?;
     }

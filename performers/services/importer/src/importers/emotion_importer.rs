@@ -31,7 +31,7 @@ pub fn import_emotion_data_from_records(
 
         // Convert to milliseconds and calculate offset
         let begin_time_ms = (begin_time_sec * 1000.0) as i64;
-        let end_time_ms = (end_time_sec * 1000.0) as i64;
+        let _end_time_ms = (end_time_sec * 1000.0) as i64;
         let offset_ms = (begin_time_ms - session_start_timestamp_ms) as i32;
 
         // Extract emotion scores
@@ -58,7 +58,8 @@ pub fn import_emotion_data_from_records(
         }
 
         // Insert into emotion_data table (one record per emotion)
-        for (emotion_name, score) in &emotion_map {
+        let emotion_map_clone = emotion_map.clone();
+        for (emotion_name, score) in &emotion_map_clone {
             let emotion_id = Uuid::new_v4();
             let timestamp = chrono::DateTime::from_timestamp_millis(begin_time_ms)
                 .ok_or_else(|| anyhow::anyhow!("Invalid timestamp"))?
@@ -67,9 +68,9 @@ pub fn import_emotion_data_from_records(
             emotion_records.push((
                 emotion_data::id.eq(emotion_id),
                 emotion_data::participant_response_data_id.eq(response_id),
-                emotion_data::emotion_name.eq(emotion_name),
+                emotion_data::emotion_name.eq(emotion_name.clone()),
                 emotion_data::score.eq(*score as f64),
-                emotion_data::file_type.eq(Some(source)),
+                emotion_data::file_type.eq(Some(source.to_string())),
                 emotion_data::timestamp.eq(timestamp),
             ));
         }
@@ -79,7 +80,7 @@ pub fn import_emotion_data_from_records(
         timeseries_records.push((
             response_emotion_timeseries::response_id.eq(response_id),
             response_emotion_timeseries::timestamp_offset_ms.eq(offset_ms),
-            response_emotion_timeseries::source.eq(Some(source)),
+            response_emotion_timeseries::source.eq(Some(source.to_string())),
             response_emotion_timeseries::emotion_data.eq(emotion_json),
         ));
     }

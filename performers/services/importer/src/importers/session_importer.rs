@@ -1,5 +1,4 @@
 use diesel::prelude::*;
-use diesel::sql_types::Text;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use anyhow::{Result, Context};
