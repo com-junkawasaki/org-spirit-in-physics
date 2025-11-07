@@ -1,0 +1,12 @@
+{
+  "participantId": "550e8400-e29b-41d4-a716-446655440000",
+  "signature": "Test User",
+  "agreedAt": "2025-08-01T01:04:15.696Z",
+  "agreements": {
+    "understand": true,
+    "voluntary": true,
+    "withdraw": true,
+    "recording": true
+  }
+}
+

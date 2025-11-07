@@ -3,6 +3,7 @@ pub mod db;
 pub mod models;
 pub mod parsers;
 pub mod importers;
+pub mod validation;
 
 pub use activity::import_participant_dataset;
 

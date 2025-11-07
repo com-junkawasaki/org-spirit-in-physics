@@ -227,6 +227,27 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
     }
 
     info!("Import completed successfully");
+    
+    // Run validation
+    info!("Running data validation...");
+    match crate::validation::validate_imported_data(&mut conn, participant_id) {
+        Ok(validation_report) => {
+            let summary = validation_report.summary();
+            info!("Validation completed:\n{}", summary);
+            
+            if !validation_report.passed {
+                warn!("Validation found errors. Please review the report above.");
+            } else if !validation_report.warnings.is_empty() {
+                warn!("Validation completed with warnings. Please review the report above.");
+            } else {
+                info!("All validation checks passed!");
+            }
+        }
+        Err(e) => {
+            warn!("Validation failed: {}. Continuing anyway.", e);
+        }
+    }
+    
     Ok(())
 }
 

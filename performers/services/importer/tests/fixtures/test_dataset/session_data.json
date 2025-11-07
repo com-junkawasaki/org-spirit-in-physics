@@ -1,0 +1,43 @@
+{
+  "participantId": "550e8400-e29b-41d4-a716-446655440000",
+  "events": [
+    {
+      "timestamp": 1754010116036,
+      "type": "session_started",
+      "payload": {
+        "session": 1,
+        "numberOfWords": 2
+      }
+    },
+    {
+      "timestamp": 1754010117000,
+      "type": "word_displayed",
+      "payload": {
+        "word": "spirit",
+        "key": "s"
+      }
+    },
+    {
+      "timestamp": 1754010118500,
+      "type": "speech_detected",
+      "payload": {
+        "word": "spirit",
+        "key": "s"
+      }
+    },
+    {
+      "timestamp": 1754010120000,
+      "type": "response_window_closed",
+      "payload": {
+        "word": "spirit"
+      }
+    },
+    {
+      "timestamp": 1754010121000,
+      "type": "session_ended",
+      "payload": {}
+    }
+  ],
+  "wordResponses": []
+}
+
