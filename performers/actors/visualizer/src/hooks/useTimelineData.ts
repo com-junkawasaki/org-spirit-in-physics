@@ -3,12 +3,12 @@ import { useQuery } from '@apollo/client'
 import { apolloClient } from '@/lib/apollo-client'
 import * as d3 from 'd3'
 import type {
-  TimelineDataPoint,
   TimelineVisualizationProps,
   FilterSettings,
   TimeRange,
   DebugInfo
 } from '../types'
+import type { TimelineDataPoint } from '@/generated/graphql'
 import { ParticipantTimelineDocument, ParticipantWord2VecDocument } from '@/generated/graphql'
 
 // Merkle DAG: timeline.hooks.data
@@ -54,12 +54,9 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
   })
 
   const getPhysStat = (p: TimelineDataPoint['physiological'], key: 'average' | 'max' | 'min'): number => {
-    if (Array.isArray(p)) return 0
-    if (p && typeof p === 'object') {
-      const v = (p as Record<string, unknown>)[key]
-      return typeof v === 'number' && Number.isFinite(v) ? v : 0
-    }
-    return 0
+    if (!p) return 0
+    const v = p[key]
+    return typeof v === 'number' && Number.isFinite(v) ? v : 0
   }
 
   useEffect(() => { setMounted(true) }, [])
@@ -100,19 +97,10 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
         console.log('[TimelineData] Converting data, count:', timelineResponse.timelineData.length)
 
         // GraphQL response is already in the correct format
-        const convertedData: TimelineDataPoint[] = timelineResponse.timelineData.map((item: any, index: number) => {
+        const convertedData: TimelineDataPoint[] = timelineResponse.timelineData.map((item, index: number) => {
           try {
-            return {
-              timestamp: item.timestamp,
-              word: item.word,
-              reactionTime: item.reactionTime,
-              hasResponse: item.hasResponse,
-              emotions: item.emotions || [],
-              physiological: item.physiological || { average: 0, max: 0, min: 0 },
-              reactionValue: item.reactionValue,
-              eventType: item.eventType,
-              metadata: item.metadata || { emotionCount: 0, physiologicalCount: 0 }
-            }
+            // GraphQL生成型をそのまま使用
+            return item as TimelineDataPoint
           } catch (itemError) {
             console.warn(`[TimelineData] Error converting item at index ${index}:`, itemError, item)
             return null

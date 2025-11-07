@@ -10,10 +10,17 @@ query ParticipantTimeline($participantId: String!) {
         score
         fileType
       }
-      physiological
+      physiological {
+        average
+        max
+        min
+      }
       reactionValue
       eventType
-      metadata
+      metadata {
+        emotionCount
+        physiologicalCount
+      }
     }
     metadata {
       sessionEvents

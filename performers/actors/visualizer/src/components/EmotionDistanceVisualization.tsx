@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useMutation } from '@apollo/client';
 import { apolloClient } from '@/lib/apollo-client';
-import { CalculateEmotionDistanceDocument } from '@/generated/graphql';
+import { CalculateEmotionDistanceDocument, type VisualizationData } from '@/generated/graphql';
 
 // 3D可視化コンポーネントの動的インポート
 const Force3DWordGraphTypeGPU = dynamic(
@@ -28,40 +28,6 @@ interface EmotionDistanceVisualizationProps {
   gamma?: number;
   alpha?: number;
   topKEmotions?: string[];
-}
-
-interface VisualizationData {
-  nodes: Array<{
-    id: string;
-    label: string;
-    x: number;
-    y: number;
-    z?: number;
-    color: string;
-    size: number;
-    metadata: {
-      word: string;
-      reactionTime?: number;
-      emotionScore?: number;
-      observationRatio: number;
-    };
-  }>;
-  edges: Array<{
-    source: string;
-    target: string;
-    weight: number;
-    distance: number;
-    color: string;
-    width: number;
-  }>;
-  metadata: {
-    totalNodes: number;
-    totalEdges: number;
-    method: string;
-    dimensions: 2 | 3;
-    averageDistance: number;
-    clusteringCoefficient: number;
-  };
 }
 
 export default function EmotionDistanceVisualization({
@@ -152,16 +118,16 @@ export default function EmotionDistanceVisualization({
       label: node.label,
       x: node.x,
       y: node.y,
-      z: node.z || 0,
+      z: node.z ?? 0,
       color: node.color,
       scale: node.size,
       fixed: false,
-      initial: [node.x, node.y, node.z || 0] as [number, number, number]
+      initial: [node.x, node.y, node.z ?? 0] as [number, number, number]
     }));
 
     const links = vizData.edges.map(edge => ({
-      source: parseInt(edge.source.replace('node_', '')),
-      target: parseInt(edge.target.replace('node_', '')),
+      source: parseInt(edge.source.replace('node_', ''), 10),
+      target: parseInt(edge.target.replace('node_', ''), 10),
       weight: edge.weight,
       mode: 'tension' as const, // デフォルトモード
       L0: 0,

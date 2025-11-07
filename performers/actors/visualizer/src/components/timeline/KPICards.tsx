@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react'
 import * as d3 from 'd3'
-import type { TimelineDataPoint, KPICalculations } from '../../types'
+import type { KPICalculations } from '../../types'
+import type { TimelineDataPoint } from '@/generated/graphql'
 
 // Merkle DAG: timeline.components.kpi_cards
 // KPIカードコンポーネント

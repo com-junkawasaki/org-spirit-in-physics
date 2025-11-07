@@ -1,16 +1,35 @@
 mutation CalculateEmotionDistance($input: CalculateEmotionDistanceInput!) {
   calculateEmotionDistance(input: $input) {
-    points {
+    nodes {
+      id
+      label
       x
       y
       z
-      word
-      index
+      color
+      size
+      metadata {
+        word
+        reactionTime
+        emotionScore
+        observationRatio
+      }
     }
-    links {
+    edges {
       source
       target
-      value
+      weight
+      distance
+      color
+      width
+    }
+    metadata {
+      totalNodes
+      totalEdges
+      method
+      dimensions
+      averageDistance
+      clusteringCoefficient
     }
   }
 }

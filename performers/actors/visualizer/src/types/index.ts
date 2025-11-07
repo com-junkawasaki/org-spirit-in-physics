@@ -1,7 +1,26 @@
 // Merkle DAG: timeline.types
 // 時系列可視化コンポーネントの型定義
+// GraphQLで定義されている型は @/generated/graphql からインポートして使用
 
-// TypeGPU 用型
+// GraphQL生成型を再エクスポート
+export type {
+  TimelineDataPoint,
+  EmotionData,
+  PhysiologicalData,
+  TimelineDataPointMetadata,
+  TimelineMetadata,
+  VisualizationData,
+  VisualizationNode,
+  VisualizationEdge,
+  VisualizationMetadata,
+  NodeMetadata,
+  ParticipantTimelineResponse,
+  ParticipantTimelineQuery,
+  CalculateEmotionDistanceMutation,
+  CalculateEmotionDistanceInput
+} from '@/generated/graphql'
+
+// TypeGPU 用型（GraphQL生成型から変換）
 export interface WordNode {
   id: string
   label: string
@@ -38,24 +57,6 @@ export interface WordDetailStats {
   }
   first: WordDetailStats['overall']
   second: WordDetailStats['overall']
-}
-
-export interface EmotionData {
-  name: string
-  score: number
-  fileType: string
-}
-
-export interface TimelineDataPoint {
-  timestamp: number
-  word: string
-  reactionTime: number
-  hasResponse: boolean
-  emotions: EmotionData[]
-  physiological: { average?: number; max?: number; min?: number } | unknown[]
-  reactionValue: number
-  eventType?: string
-  metadata?: { emotionCount?: number; physiologicalCount?: number }
 }
 
 export interface FilterSettings {
@@ -127,7 +128,7 @@ export interface DumbbellDataPoint {
 
 export interface SmallMultiplesDataPoint {
   word: string
-  data: TimelineDataPoint[]
+  data: Array<import('@/generated/graphql').TimelineDataPoint>
   stats: {
     avgReactionTime: number
     avgReactionValue: number

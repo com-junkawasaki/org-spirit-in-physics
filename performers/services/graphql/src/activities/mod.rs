@@ -14,74 +14,147 @@ use crate::db::schema::*;
 // GraphQL Types - Participant moved to models.rs as ParticipantGQL
 
 #[derive(SimpleObject)]
+#[graphql(name = "TimelineDataPoint")]
+pub struct TimelineDataPoint {
+    pub timestamp: f64,
+    pub word: String,
+    #[graphql(name = "reactionTime")]
+    pub reaction_time: i32,
+    #[graphql(name = "hasResponse")]
+    pub has_response: bool,
+    pub emotions: Vec<EmotionData>,
+    pub physiological: PhysiologicalData,
+    #[graphql(name = "reactionValue")]
+    pub reaction_value: f64,
+    #[graphql(name = "eventType")]
+    pub event_type: Option<String>,
+    pub metadata: Option<TimelineDataPointMetadata>,
+}
+
+#[derive(SimpleObject)]
+#[graphql(name = "EmotionData")]
 pub struct EmotionData {
     pub name: String,
     pub score: f64,
+    #[graphql(name = "fileType")]
     pub file_type: String,
 }
 
 #[derive(SimpleObject)]
-pub struct TimelineDataPoint {
-    pub timestamp: i64,
-    pub word: String,
-    pub reaction_time: i32,
-    pub has_response: bool,
-    pub emotions: Vec<EmotionData>,
-    pub physiological: serde_json::Value,
-    pub reaction_value: f64,
-    pub event_type: Option<String>,
-    pub metadata: Option<serde_json::Value>,
+#[graphql(name = "PhysiologicalData")]
+pub struct PhysiologicalData {
+    pub average: Option<f64>,
+    pub max: Option<f64>,
+    pub min: Option<f64>,
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "TimelineDataPointMetadata")]
+pub struct TimelineDataPointMetadata {
+    #[graphql(name = "emotionCount")]
+    pub emotion_count: Option<i32>,
+    #[graphql(name = "physiologicalCount")]
+    pub physiological_count: Option<i32>,
+}
+
+#[derive(SimpleObject)]
+#[graphql(name = "TimelineMetadata")]
 pub struct TimelineMetadata {
+    #[graphql(name = "sessionEvents")]
     pub session_events: Option<i32>,
+    #[graphql(name = "emotionEntries")]
     pub emotion_entries: Option<i32>,
+    #[graphql(name = "physiologicalEntries")]
     pub physiological_entries: Option<i32>,
+    #[graphql(name = "totalDataPoints")]
     pub total_data_points: Option<i32>,
+    #[graphql(name = "dataSource")]
     pub data_source: Option<String>,
     pub errors: Option<Vec<String>>,
     pub truncated: Option<bool>,
+    #[graphql(name = "originalSize")]
     pub original_size: Option<i32>,
 }
 
 #[derive(SimpleObject)]
-pub struct TimelineResponse {
+#[graphql(name = "ParticipantTimelineResponse")]
+pub struct ParticipantTimelineResponse {
+    #[graphql(name = "timelineData")]
     pub timeline_data: Vec<TimelineDataPoint>,
     pub metadata: TimelineMetadata,
 }
 
 #[derive(SimpleObject)]
-pub struct WordEmbedding {
+#[graphql(name = "Word2VecData")]
+pub struct Word2VecData {
     pub word: String,
     pub embedding: Vec<f64>,
 }
 
 #[derive(SimpleObject)]
-pub struct Word2VecResponse {
-    pub word_data: Vec<WordEmbedding>,
+#[graphql(name = "ParticipantWord2VecResponse")]
+pub struct ParticipantWord2VecResponse {
+    #[graphql(name = "wordData")]
+    pub word_data: Vec<Word2VecData>,
 }
 
 #[derive(SimpleObject)]
-pub struct EmotionDistancePoint {
+#[graphql(name = "NodeMetadata")]
+pub struct NodeMetadata {
+    pub word: String,
+    #[graphql(name = "reactionTime")]
+    pub reaction_time: Option<i32>,
+    #[graphql(name = "emotionScore")]
+    pub emotion_score: Option<f64>,
+    #[graphql(name = "observationRatio")]
+    pub observation_ratio: f64,
+}
+
+#[derive(SimpleObject)]
+#[graphql(name = "VisualizationNode")]
+pub struct VisualizationNode {
+    pub id: String,
+    pub label: String,
     pub x: f64,
     pub y: f64,
     pub z: Option<f64>,
-    pub word: String,
-    pub index: i32,
+    pub color: String,
+    pub size: f64,
+    pub metadata: NodeMetadata,
 }
 
 #[derive(SimpleObject)]
-pub struct EmotionDistanceLink {
-    pub source: i32,
-    pub target: i32,
-    pub value: f64,
+#[graphql(name = "VisualizationEdge")]
+pub struct VisualizationEdge {
+    pub source: String,
+    pub target: String,
+    pub weight: f64,
+    pub distance: f64,
+    pub color: String,
+    pub width: f64,
 }
 
 #[derive(SimpleObject)]
-pub struct EmotionDistanceVisualization {
-    pub points: Vec<EmotionDistancePoint>,
-    pub links: Vec<EmotionDistanceLink>,
+#[graphql(name = "VisualizationMetadata")]
+pub struct VisualizationMetadata {
+    #[graphql(name = "totalNodes")]
+    pub total_nodes: i32,
+    #[graphql(name = "totalEdges")]
+    pub total_edges: i32,
+    pub method: String,
+    pub dimensions: i32,
+    #[graphql(name = "averageDistance")]
+    pub average_distance: f64,
+    #[graphql(name = "clusteringCoefficient")]
+    pub clustering_coefficient: f64,
+}
+
+#[derive(SimpleObject)]
+#[graphql(name = "VisualizationData")]
+pub struct VisualizationData {
+    pub nodes: Vec<VisualizationNode>,
+    pub edges: Vec<VisualizationEdge>,
+    pub metadata: VisualizationMetadata,
 }
 
 #[derive(SimpleObject)]
@@ -103,16 +176,21 @@ pub struct ComponentAverages {
 }
 
 #[derive(InputObject)]
+#[graphql(name = "CalculateEmotionDistanceInput")]
 pub struct CalculateEmotionDistanceInput {
+    #[graphql(name = "participantId")]
     pub participant_id: String,
-    pub experiment_id: String,
+    #[graphql(name = "experimentId")]
+    pub experiment_id: Option<String>,
     pub method: String,
+    #[graphql(name = "embeddingMethod")]
     pub embedding_method: String,
     pub dimensions: i32,
-    pub k: i32,
-    pub gamma: f64,
-    pub alpha: f64,
-    pub top_k_emotions: i32,
+    pub k: Option<i32>,
+    pub gamma: Option<f64>,
+    pub alpha: Option<f64>,
+    #[graphql(name = "topKEmotions")]
+    pub top_k_emotions: Option<Vec<String>>,
 }
 
 #[derive(Default)]
