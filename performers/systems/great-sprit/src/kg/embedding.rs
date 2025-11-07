@@ -10,7 +10,7 @@ pub type EmbeddingVector = DVector<f32>;
 /// Embedding manager
 pub struct Embedding {
     client: TerminusClient,
-    dimension: usize,
+    pub dimension: usize,
 }
 
 impl Embedding {

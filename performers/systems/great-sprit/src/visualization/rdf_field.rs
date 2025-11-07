@@ -20,6 +20,7 @@ pub struct RdfVector {
 }
 
 /// RDF vector field renderer
+#[derive(Resource)]
 pub struct RdfVectorFieldRenderer {
     /// RDF vectors
     vectors: Vec<RdfVector>,
@@ -120,19 +121,21 @@ impl RdfVectorFieldRenderer {
             // TODO: Create proper arrow mesh with head
             let arrow_mesh = meshes.add(Cylinder::new(0.05, length));
             let arrow_material = materials.add(StandardMaterial {
-                base_color: Color::srgb(0.5, 0.7, 1.0),
+                base_color: Color::rgb(0.5, 0.7, 1.0),
                 ..default()
             });
 
-            commands.spawn((
-                Mesh3d(arrow_mesh),
-                MaterialMeshBundle {
-                    material: arrow_material,
-                    transform: Transform::from_translation(midpoint.into())
-                        .looking_to(direction.into(), Vec3::Y),
-                    ..default()
-                },
-            ));
+            // Convert Vector3 to Vec3
+            let midpoint_vec3 = Vec3::new(midpoint.x, midpoint.y, midpoint.z);
+            let direction_vec3 = Vec3::new(direction.x, direction.y, direction.z);
+            
+            commands.spawn(MaterialMeshBundle {
+                mesh: arrow_mesh,
+                material: arrow_material,
+                transform: Transform::from_translation(midpoint_vec3)
+                    .looking_to(direction_vec3, Vec3::Y),
+                ..default()
+            });
         }
     }
 

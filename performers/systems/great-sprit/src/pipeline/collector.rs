@@ -83,8 +83,13 @@ impl Collector {
         } else {
             None
         };
+        // Note: Audio stream returns f32 samples, but CollectedData expects Vec<u8>
+        // For now, convert f32 samples to bytes (simple conversion)
         let audio_data = if let Some(stream) = self.audio_stream.as_ref() {
-            stream.capture_samples(1000).await.ok()
+            stream.capture_samples(1000).await.ok().map(|samples| {
+                // Convert f32 samples to bytes (simple approach)
+                samples.iter().flat_map(|&s| s.to_le_bytes()).collect()
+            })
         } else {
             None
         };

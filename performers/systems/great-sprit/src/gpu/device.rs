@@ -51,8 +51,8 @@ impl GpuDevice {
     }
 
     /// Get device limits
-    pub fn limits(&self) -> &Limits {
-        &self.adapter.limits()
+    pub fn limits(&self) -> Limits {
+        self.adapter.limits()
     }
 }
 

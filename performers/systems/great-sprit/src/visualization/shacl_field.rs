@@ -22,6 +22,7 @@ pub struct ShaclForce {
 }
 
 /// SHACL vector field renderer
+#[derive(Resource)]
 pub struct ShaclVectorFieldRenderer {
     /// SHACL forces
     forces: Vec<ShaclForce>,
@@ -141,35 +142,38 @@ impl ShaclVectorFieldRenderer {
             // Color based on constraint type
             let color_rgb = Self::constraint_color(&force.constraint_type);
             let arrow_material = materials.add(StandardMaterial {
-                base_color: Color::srgb(color_rgb[0], color_rgb[1], color_rgb[2]),
+                base_color: Color::rgb(color_rgb[0], color_rgb[1], color_rgb[2]),
                 ..default()
             });
 
-            commands.spawn((
-                Mesh3d(arrow_mesh),
-                MaterialMeshBundle {
-                    material: arrow_material,
-                    transform: Transform::from_translation(force.target_pos.into())
-                        .looking_to(direction.into(), Vec3::Y),
-                    ..default()
-                },
-            ));
+            // Convert Vector3 to Vec3
+            let target_pos_vec3 = Vec3::new(force.target_pos.x, force.target_pos.y, force.target_pos.z);
+            let direction_vec3 = Vec3::new(direction.x, direction.y, direction.z);
+            
+            commands.spawn(MaterialMeshBundle {
+                mesh: arrow_mesh,
+                material: arrow_material,
+                transform: Transform::from_translation(target_pos_vec3)
+                    .looking_to(direction_vec3, Vec3::Y),
+                ..default()
+            });
 
             // Render constraint center as sphere
             let sphere_mesh = meshes.add(Sphere::new(0.1));
             let sphere_material = materials.add(StandardMaterial {
-                base_color: Color::srgb(1.0, 0.5, 0.5), // Red for constraint centers
+                base_color: Color::rgb(1.0, 0.5, 0.5), // Red for constraint centers
                 ..default()
             });
 
-            commands.spawn((
-                Mesh3d(sphere_mesh),
-                MaterialMeshBundle {
-                    material: sphere_material,
-                    transform: Transform::from_translation(force.constraint_center.into()),
-                    ..default()
-                },
-            ));
+            // Convert Vector3 to Vec3
+            let center_vec3 = Vec3::new(force.constraint_center.x, force.constraint_center.y, force.constraint_center.z);
+            
+            commands.spawn(MaterialMeshBundle {
+                mesh: sphere_mesh,
+                material: sphere_material,
+                transform: Transform::from_translation(center_vec3),
+                ..default()
+            });
         }
     }
 

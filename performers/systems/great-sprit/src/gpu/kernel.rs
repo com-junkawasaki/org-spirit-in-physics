@@ -26,7 +26,7 @@ impl Kernel {
             config.num_bands,
             1, // Default: 1 potential well
         )?;
-        let pipeline = ComputePipeline::new(&device.device, &buffers, config.workgroup_size)?;
+        let pipeline = ComputePipeline::new(&device, &buffers, config.workgroup_size)?;
 
         Ok(Self {
             device,

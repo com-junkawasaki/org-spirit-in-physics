@@ -46,8 +46,10 @@ pub fn import_emotion_data_from_records(
             }
 
             if let Ok(score) = value.parse::<f64>() {
-                if score > 0.0 {
-                    emotion_map.insert(key.clone(), score);
+                // Ensure score is within valid range [0, 1] for database constraint
+                let clamped_score = score.max(0.0).min(1.0);
+                if clamped_score > 0.0 {
+                    emotion_map.insert(key.clone(), clamped_score);
                 }
             }
         }

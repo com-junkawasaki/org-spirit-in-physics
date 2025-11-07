@@ -5,6 +5,7 @@
 use anyhow::Result;
 use wgpu::*;
 use std::time::{Duration, Instant};
+use std::sync::Arc;
 
 /// Performance profiler
 pub struct Profiler {
@@ -87,31 +88,35 @@ impl<T: Clone + Default> RingBuffer<T> {
 
 /// GPU timing utilities
 pub struct GpuTimer {
-    device: Device,
-    queue: Queue,
+    // Note: Device and Queue are not Clone, so we store references
+    // In practice, these should be obtained from GpuDevice
+    _device: std::marker::PhantomData<*const Device>,
+    _queue: std::marker::PhantomData<*const Queue>,
 }
 
 impl GpuTimer {
-    pub fn new(device: &Device, queue: &Queue) -> Result<Self> {
+    pub fn new(_device: &Device, _queue: &Queue) -> Result<Self> {
         // Note: QuerySet support may vary by backend
         // For now, use CPU timing as fallback
+        // Device and Queue are not Clone, so we use PhantomData
         Ok(Self {
-            device: device.clone(),
-            queue: queue.clone(),
+            _device: std::marker::PhantomData,
+            _queue: std::marker::PhantomData,
         })
     }
 
     /// Time a compute pass (CPU-based)
-    pub fn time_compute_pass<F>(&self, f: F) -> Duration
+    /// Note: This method requires device and queue references, which should be passed separately
+    pub fn time_compute_pass<F>(&self, device: &Device, queue: &Queue, f: F) -> Duration
     where
         F: FnOnce(&mut CommandEncoder),
     {
         let start = Instant::now();
-        let mut encoder = self.device.create_command_encoder(&CommandEncoderDescriptor {
+        let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
             label: Some("Timed Compute Pass"),
         });
         f(&mut encoder);
-        self.queue.submit(std::iter::once(encoder.finish()));
+        queue.submit(std::iter::once(encoder.finish()));
         start.elapsed()
     }
 }

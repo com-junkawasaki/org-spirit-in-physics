@@ -3,11 +3,13 @@
 use anyhow::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use crate::config::Config;
 
 /// TerminusDB client
+#[derive(Clone)]
 pub struct TerminusClient {
-    client: Client,
+    client: Arc<Client>,
     base_url: String,
     db_name: String,
     api_key: Option<String>,
@@ -22,7 +24,7 @@ struct TerminusResponse {
 impl TerminusClient {
     /// Initialize TerminusDB client
     pub async fn new(config: &Config) -> Result<Self> {
-        let client = Client::new();
+        let client = Arc::new(Client::new());
         
         Ok(Self {
             client,

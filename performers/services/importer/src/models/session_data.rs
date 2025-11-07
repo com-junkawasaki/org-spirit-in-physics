@@ -21,29 +21,30 @@ pub struct Event {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum EventPayload {
-    ParticipantInitialized {
-        participant_id: String,
-    },
-    RecordingStarted {
-        session: Option<u32>,
-    },
-    SessionStarted {
-        session: u32,
-        number_of_words: Option<u32>,
-    },
+    // More specific variants first (with multiple required fields)
     WordDisplayed {
+        word: String,
+        key: String,
+    },
+    SpeechDetected {
         word: String,
         key: String,
     },
     ResponseWindowOpened {
         word: String,
     },
-    SpeechDetected {
-        word: String,
-        key: String,
-    },
     ResponseWindowClosed {
         word: String,
+    },
+    SessionStarted {
+        session: u32,
+        number_of_words: Option<u32>,
+    },
+    ParticipantInitialized {
+        participant_id: String,
+    },
+    RecordingStarted {
+        session: Option<u32>,
     },
     SessionDataSaved,
     PreflightStarted,
