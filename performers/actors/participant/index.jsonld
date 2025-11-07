@@ -1,0 +1,64 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "wasAttributedTo": "prov:wasAttributedTo",
+    "provides": "cpm:provides",
+    "uiPort": "cpm:uiPort"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/actor/participant",
+  "@type": ["cpm:Actor", "dodaf:Performer", "prov:Agent"],
+  
+  "name": "ParticipantActor",
+  "description": "参加者向けアプリケーション（apps/participant）。参加者登録、同意取得、実験参加のUI Portを提供する。",
+  
+  "wasAttributedTo": [
+    "https://spirit-in-physics.gftd.ai/activity/participant-registration",
+    "https://spirit-in-physics.gftd.ai/activity/consent-management",
+    "https://spirit-in-physics.gftd.ai/activity/experiment-session"
+  ],
+  
+  "provides": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/home",
+      "@type": "cpm:UIPort",
+      "name": "Home UI Port",
+      "description": "ホームページ。研究計画書と同意説明文書の提示",
+      "path": "/"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/consent",
+      "@type": "cpm:UIPort",
+      "name": "Consent UI Port",
+      "description": "同意書フォーム。研究計画書の確認と同意取得",
+      "path": "/ConsentForm"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/experiment",
+      "@type": "cpm:UIPort",
+      "name": "Experiment UI Port",
+      "description": "実験セッション実行。ユングの単語連合テストの実施",
+      "path": "/steps"
+    }
+  ],
+  
+  "uiPort": [
+    "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/home",
+    "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/consent",
+    "https://spirit-in-physics.gftd.ai/actor/participant/ui-port/experiment"
+  ]
+}
+

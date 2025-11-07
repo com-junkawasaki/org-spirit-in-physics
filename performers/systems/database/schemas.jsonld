@@ -1,0 +1,61 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "hasTable": "cpm:hasTable"
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/database/schema/main",
+      "@type": "cpm:DatabaseSchema",
+      "name": "MainDatabaseSchema",
+      "description": "メインデータベーススキーマ。参加者、実験セッション、応答データ、感情分析データなどを格納する。",
+      "hasTable": [
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/system/database/table/participants",
+          "@type": "cpm:Table",
+          "name": "participants",
+          "description": "参加者テーブル。実験参加者の基本情報（id、age、gender、handedness）を格納する。"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/system/database/table/participant_consents",
+          "@type": "cpm:Table",
+          "name": "participant_consents",
+          "description": "参加者同意テーブル。同意書の署名と合意内容を格納する。"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/system/database/table/participant_experiment_sessions",
+          "@type": "cpm:Table",
+          "name": "participant_experiment_sessions",
+          "description": "実験セッションテーブル。セッションの開始・終了時刻とセッションタイプを格納する。"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/system/database/table/word_stimuli",
+          "@type": "cpm:Table",
+          "name": "word_stimuli",
+          "description": "単語刺激テーブル。ユングの単語連合テストで使用する刺激語を格納する。"
+        },
+        {
+          "@id": "https://spirit-in-physics.gftd.ai/system/database/table/participant_response_data",
+          "@type": "cpm:Table",
+          "name": "participant_response_data",
+          "description": "参加者応答データテーブル。単語連合テストの応答データ（応答語、反応時間など）を格納する。"
+        }
+      ]
+    }
+  ]
+}
+

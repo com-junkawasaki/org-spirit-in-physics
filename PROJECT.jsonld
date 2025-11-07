@@ -1,0 +1,212 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "qudt": "http://qudt.org/schema/qudt/",
+    "unit": "http://qudt.org/vocab/unit/",
+    "dct": "http://purl.org/dc/terms/",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "title": "dct:title",
+    "goal": "cpm:goal",
+    "protagonist": "cpm:protagonist",
+    "narrative": "cpm:narrative",
+    "processNetwork": "cpm:processNetwork",
+    "keyPillars": "cpm:keyPillars",
+    "version": "dct:hasVersion",
+    "author": "dct:creator",
+    "merkleRoot": "cpm:merkleRoot",
+    "lastUpdated": "dct:modified",
+    "implementedFeatures": "cpm:implementedFeatures",
+    "wasGeneratedBy": "prov:wasGeneratedBy",
+    "wasInfluencedBy": "prov:wasInfluencedBy",
+    "wasDerivedFrom": "prov:wasDerivedFrom"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/project",
+  "@type": ["cpm:Project", "prov:Entity"],
+  
+  "name": "Spirit in Physics",
+  "title": "いい感じの社会の物語",
+  "description": "医学博士である河崎純真が、エホバの証人、科学哲学、仏教、アヤワスカ、コンピューターの経験を通して、クリスチャンのアンタッチャブルな「spirit」を可視化・提供可能にし、神と人、霊と人を統合する試み。ユングの単語連合テストを現代的な技術で再現し、感情分析と生理データを統合した「川崎モデル」を開発。参加者の顔表情、声の調子、皮膚電位をHume AIで解析し、Word2Vecによる意味ベクトルと組み合わせることで、言語と感情の関係性を定量的に表現する画期的な手法を生み出す。",
+  
+  "goal": "我らと我らの子孫が豊かで情緒的な暮らしを送れるいい感じの社会を生成する",
+  
+  "protagonist": {
+    "@id": "https://spirit-in-physics.gftd.ai/protagonist",
+    "@type": "cpm:Person",
+    "name": "河崎純真",
+    "epithet": "社会起業家",
+    "lifespan": "享年100歳",
+    "legacy": "人々が満たされた人生を送れる社会を築いた"
+  },
+  
+  "narrative": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/narrative/0",
+      "@type": "cpm:Narrative",
+      "act": "ビジョナリーの生涯",
+      "summary": "著名な社会起業家である河崎純真は、「いい感じの社会」を創り出し、多くの人々が満たされた人生を送れるようにした。100歳で亡くなるまで、多くの趣味と友人を持ち健康的に過ごし、たくさんの大事な人々に看取られてこの世を去った。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/narrative/1",
+      "@type": "cpm:Narrative",
+      "act": "中心的な使命",
+      "summary": "メインストーリーは「我らと我らの子孫が豊かで情緒的な暮らしを送れるいい感じの社会を生成する」ことである。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/narrative/2",
+      "@type": "cpm:Narrative",
+      "act": "Spirit in Physics",
+      "summary": "医学博士である河崎純真が、エホバの証人、科学哲学、仏教、アヤワスカ、コンピューターの経験を通して、クリスチャンのアンタッチャブルな「spirit」を可視化・提供可能にし、神と人、霊と人を統合する試み。これは @spirit-in-physics/ プロジェクトで探求される。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/narrative/3",
+      "@type": "cpm:Narrative",
+      "act": "川崎モデルの誕生",
+      "summary": "河崎純真はユングの単語連合テストを現代的な技術で再現し、感情分析と生理データを統合した「川崎モデル」を開発。参加者の顔表情、声の調子、皮膚電位をHume AIで解析し、Word2Vecによる意味ベクトルと組み合わせることで、言語と感情の関係性を定量的に表現する画期的な手法を生み出した。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/narrative/4",
+      "@type": "cpm:Narrative",
+      "act": "耐久性のある研究基盤",
+      "summary": "GraphQL APIとPostgreSQLを基盤とした堅牢なリレーショナルデータベースアーキテクチャを構築し、ジョブベースの非同期処理システムを実装。感情分析のような長時間処理でも安定して実行でき、研究データの完全性と再現性を保証するシステムが完成した。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/narrative/5",
+      "@type": "cpm:Narrative",
+      "act": "科学と霊性の統合",
+      "summary": "川崎モデルにより、参加者の「spirit」はもはや曖昧な概念ではなく、確率値とベクトルとして可視化・測定可能になった。これにより、科学的手法で霊性を探求し、人間性の全体像を理解する新たな道が開かれた。"
+    }
+  ],
+  
+  "processNetwork": {
+    "@id": "https://spirit-in-physics.gftd.ai/process-network",
+    "@type": "cpm:ProcessNetwork",
+    "goal": "我らと我らの子孫のために、いい感じの社会を生成する",
+    "keyPillars": [
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/pillar/richness",
+        "@type": "cpm:KeyPillar",
+        "name": "豊かさ (Richness)",
+        "description": "物質的、精神的な豊かさ",
+        "subProcesses": ["持続可能な経済", "文化の発展", "個人の成長"]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/pillar/emotional-lives",
+        "@type": "cpm:KeyPillar",
+        "name": "情緒的な暮らし (Emotional Lives)",
+        "description": "深いつながりと心の幸福を育む",
+        "subProcesses": ["コミュニティ形成", "メンタルヘルスケア", "芸術と表現"]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/pillar/legacy",
+        "@type": "cpm:KeyPillar",
+        "name": "子孫への継承 (Legacy for Descendants)",
+        "description": "社会が未来の世代のために持続可能であることを保証する",
+        "subProcesses": ["教育システム", "環境保護", "世代間プログラム"]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/pillar/spiritual-integration",
+        "@type": "cpm:KeyPillar",
+        "name": "霊性の統合 (Spiritual Integration)",
+        "description": "科学と精神世界を統合し、人間性の全体的な理解を深める",
+        "subProcesses": [
+          "川崎モデルの開発",
+          "Hume AI感情分析統合",
+          "GraphQL APIとPostgreSQLデータベース統合",
+          "耐久性のあるジョブ処理システム",
+          "科学的手法による霊性測定",
+          "プロセスネットワーク最適化",
+          "SOLID原則完全実装",
+          "Hexagonal Architecture + CQRSパターン"
+        ]
+      },
+      {
+        "@id": "https://spirit-in-physics.gftd.ai/pillar/technical-foundation",
+        "@type": "cpm:KeyPillar",
+        "name": "技術基盤 (Technical Foundation)",
+        "description": "研究の信頼性と拡張性を保証する技術インフラ",
+        "subProcesses": [
+          "GraphQL APIとPostgreSQLデータベース統合",
+          "リレーショナルデータベースによる構造化データモデリング",
+          "GraphQLクエリ言語による高度なデータ操作",
+          "非同期ジョブ管理と依存関係解決",
+          "プロセスネットワークグラフモデル実装",
+          "Merkle DAGによる状態管理"
+        ]
+      }
+    ]
+  },
+  
+  "metadata": {
+    "@id": "https://spirit-in-physics.gftd.ai/metadata",
+    "@type": "cpm:Metadata",
+    "version": "1.26.0",
+    "author": {
+      "@id": "https://spirit-in-physics.gftd.ai/author",
+      "@type": "cpm:Person",
+      "name": "Jumma Kawasaki"
+    },
+    "merkleRoot": "認証機能簡素化クリーンアップ版",
+    "lastUpdated": "2025-01-27T00:00:00Z",
+    "implementedFeatures": [
+      "川崎モデルの数式実装",
+      "Hume AI Expression Measurement統合",
+      "GraphQL APIとPostgreSQL完全統合",
+      "耐久性のあるジョブベース処理システム",
+      "管理者ダッシュボードUI",
+      "Spirit確率分析ダッシュボード",
+      "リアルタイムシステム監視",
+      "参加者管理インターフェース",
+      "実験管理ワークフロー",
+      "分析結果可視化",
+      "感情・生理・言語データの統合分析",
+      "インタラクティブ可視化ダッシュボード",
+      "Unified Pipeline Workflow",
+      "Word2Vec日本語対応",
+      "包括的分析レポート生成",
+      "完全統合システムワークフロー",
+      "高精度Spirit確率測定システム",
+      "科学的手法による霊性測定基盤"
+    ]
+  },
+  
+  "wasGeneratedBy": {
+    "@id": "https://spirit-in-physics.gftd.ai/story-generation",
+    "@type": "prov:Activity",
+    "name": "Story Generation",
+    "description": "story.jsonnetから生成されたプロジェクト物語"
+  },
+  
+  "wasInfluencedBy": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/pillar/spiritual-integration",
+      "@type": "cpm:KeyPillar"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/pillar/technical-foundation",
+      "@type": "cpm:KeyPillar"
+    }
+  ],
+  
+  "wasDerivedFrom": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/story.jsonnet",
+      "@type": "prov:Entity",
+      "name": "story.jsonnet",
+      "description": "プロジェクトの物語とプロセスネットワークを定義するJsonnetファイル"
+    }
+  ]
+}
+

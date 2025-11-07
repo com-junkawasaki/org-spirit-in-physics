@@ -1,0 +1,52 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "wasAttributedTo": "prov:wasAttributedTo",
+    "provides": "cpm:provides"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/service/visualizer",
+  "@type": ["cpm:Service", "dodaf:Performer", "prov:SoftwareAgent"],
+  
+  "name": "VisualizerService",
+  "description": "可視化サービス（apps/visualizer）。3D可視化（感情距離フォース、テンセグリティ物理）、時系列可視化（セッションデータ、生理データ、感情データ統合）の機能を提供する。",
+  
+  "wasAttributedTo": [
+    "https://spirit-in-physics.gftd.ai/capability/visualization"
+  ],
+  
+  "provides": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/service/visualizer/component/timeline",
+      "@type": "cpm:Component",
+      "name": "TimelineVisualization",
+      "description": "時系列可視化コンポーネント。セッションデータ、生理データ、Hume AI感情データを統合した時系列チャートを提供する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/service/visualizer/component/emotion-distance",
+      "@type": "cpm:Component",
+      "name": "EmotionDistanceVisualization",
+      "description": "感情距離可視化コンポーネント。感情類似度をフォースに合成した3D可視化を提供する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/service/visualizer/component/force-3d",
+      "@type": "cpm:Component",
+      "name": "Force3DWordGraphTypeGPU",
+      "description": "3Dフォースグラフ可視化コンポーネント。テンセグリティ物理による自己支持的立体構造を提供する。"
+    }
+  ]
+}
+

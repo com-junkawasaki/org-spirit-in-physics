@@ -1,0 +1,32 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "protocol": "cpm:protocol",
+    "endpoint": "cpm:endpoint"
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/database/port/postgresql",
+      "@type": "cpm:Port",
+      "name": "PostgreSQLPort",
+      "description": "PostgreSQLデータベースへの接続ポート。GraphQL APIからDiesel ORMを通じてアクセスされる。",
+      "protocol": "postgresql",
+      "endpoint": "postgresql://postgres:postgres@postgres:5432/postgres"
+    }
+  ]
+}
+

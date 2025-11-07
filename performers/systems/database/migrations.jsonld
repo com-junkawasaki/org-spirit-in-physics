@@ -1,0 +1,49 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dct": "http://purl.org/dc/terms/",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment",
+    "version": "dct:hasVersion",
+    "wasGeneratedBy": "prov:wasGeneratedBy"
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/database/migration/diesel-initial-setup",
+      "@type": "cpm:Migration",
+      "name": "DieselInitialSetup",
+      "description": "Diesel ORMの初期セットアップマイグレーション",
+      "version": "00000000000000",
+      "path": "apps/graphql/migrations/00000000000000_diesel_initial_setup",
+      "wasGeneratedBy": {
+        "@id": "https://spirit-in-physics.gftd.ai/activity/database-setup",
+        "@type": "prov:Activity"
+      }
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/database/migration/supabase-schema",
+      "@type": "cpm:Migration",
+      "name": "SupabaseSchema",
+      "description": "Supabaseスキーママイグレーション。participants、participant_consents、participant_experiment_sessions、word_stimuli、participant_response_dataなどのテーブルを作成する。",
+      "version": "0001",
+      "path": "apps/graphql/migrations/0001_supabase_schema",
+      "wasGeneratedBy": {
+        "@id": "https://spirit-in-physics.gftd.ai/activity/database-setup",
+        "@type": "prov:Activity"
+      }
+    }
+  ]
+}
+

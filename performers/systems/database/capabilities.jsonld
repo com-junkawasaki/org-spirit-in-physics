@@ -1,0 +1,40 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    "cpm": "https://example.org/cpm#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "dodaf": "http://dodaf.mil/dm2#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "rdfs:label",
+    "description": "rdfs:comment"
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/database/capability/relational-modeling",
+      "@type": "cpm:Capability",
+      "name": "RelationalModelingCapability",
+      "description": "リレーショナルデータモデリング能力。Participant、Experiment、Session、Response、WordStimulus、EmotionAggregation、PhysiologicalAggregation、KernelFusionRun、EmbeddingResultなどのテーブル構造を提供する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/database/capability/transaction-management",
+      "@type": "cpm:Capability",
+      "name": "TransactionManagementCapability",
+      "description": "トランザクション管理能力。ACID特性を保証し、データの一貫性と完全性を維持する。"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/system/database/capability/data-protection",
+      "@type": "cpm:Capability",
+      "name": "DataProtectionCapability",
+      "description": "データ保護能力。Row Level Security（RLS）ポリシーによるデータアクセス制御を提供する。"
+    }
+  ]
+}
+
