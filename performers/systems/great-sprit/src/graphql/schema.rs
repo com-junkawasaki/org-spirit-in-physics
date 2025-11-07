@@ -1,8 +1,9 @@
 //! GraphQL schema definition
 
-use async_graphql::{Schema, EmptySubscription};
+use async_graphql::Schema;
 use crate::graphql::query::Query;
 use crate::graphql::mutation::Mutation;
+use crate::graphql::subscription::Subscription;
 use crate::gpu::device::GpuDevice;
 use crate::kg::terminus::TerminusClient;
 
@@ -10,8 +11,8 @@ use crate::kg::terminus::TerminusClient;
 pub fn create_schema(
     gpu_device: GpuDevice,
     kg_client: TerminusClient,
-) -> Schema<Query, Mutation, EmptySubscription> {
-    Schema::build(Query::default(), Mutation::default(), EmptySubscription)
+) -> Schema<Query, Mutation, Subscription> {
+    Schema::build(Query::default(), Mutation::default(), Subscription::default())
         .data(gpu_device)
         .data(kg_client)
         .finish()
