@@ -1,10 +1,12 @@
 use diesel::prelude::*;
+use diesel::sql_types::Text;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use anyhow::{Result, Context};
 use serde_json::{json, Value as JsonValue};
 
 use crate::db::{DbConnection, schema::{participant_experiment_sessions, participant_session_events}};
+use crate::db::schema::sql_types::SessionType;
 use crate::parsers::SessionBoundary;
 use crate::models::Event;
 
@@ -27,17 +29,19 @@ pub fn import_session(
 
     // Map session number to SessionType
     // Assuming session 1 = "practice", session 2 = "experiment" (adjust as needed)
-    let session_type_str = match boundary.session_number {
+    let session_type_str: &str = match boundary.session_number {
         1 => "practice",
         _ => "experiment",
     };
     
+    // Use diesel::dsl::sql to cast string to SessionType
+    use diesel::dsl::sql;
     diesel::insert_into(participant_experiment_sessions::table)
         .values((
             participant_experiment_sessions::id.eq(session_id),
             participant_experiment_sessions::participant_id.eq(participant_id),
             participant_experiment_sessions::session_id.eq(session_id), // Using same UUID for session_id
-            participant_experiment_sessions::session_type.eq(session_type_str),
+            participant_experiment_sessions::session_type.eq(sql::<SessionType>(&format!("'{}'::session_type", session_type_str))),
             participant_experiment_sessions::start_time.eq(start_time),
             participant_experiment_sessions::end_time.eq(end_time),
         ))

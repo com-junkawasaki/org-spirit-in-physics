@@ -1,4 +1,6 @@
 use diesel::prelude::*;
+use diesel::dsl::sql;
+use diesel::sql_types::Numeric;
 use uuid::Uuid;
 use anyhow::{Result, Context};
 use rust_decimal::Decimal;
@@ -22,11 +24,13 @@ pub fn import_physiological_data(
 
         // Use skin potential (average of Ch1 and Ch2)
         let skin_potential = record.skin_potential();
+        let skin_potential_decimal = Decimal::from_f64_retain(skin_potential)
+            .unwrap_or(Decimal::ZERO);
 
         timeseries_records.push((
             response_skin_potential_timeseries::response_id.eq(response_id),
             response_skin_potential_timeseries::timestamp_offset_ms.eq(offset_ms),
-            response_skin_potential_timeseries::value.eq(skin_potential),
+            response_skin_potential_timeseries::value.eq(skin_potential_decimal),
         ));
     }
 

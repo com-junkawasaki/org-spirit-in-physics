@@ -4,7 +4,6 @@ use chrono::{DateTime, Utc};
 use anyhow::{Result, Context};
 
 use crate::db::{DbConnection, schema::{participant_response_data, word_stimuli}};
-use crate::db::schema::sql_types::SessionType;
 use crate::parsers::WordResponseSequence;
 
 /// Get or create word stimulus and return its ID
@@ -54,11 +53,15 @@ pub fn import_word_response(
     let reaction_time_ms = response.reaction_time_ms.unwrap_or(0);
 
     // Map session type string to SessionType enum
-    let session_type_str = match session_type {
+    let session_type_str: &str = match session_type {
         "practice" => "practice",
         _ => "experiment",
     };
 
+    // Use diesel::dsl::sql to cast string to SessionType
+    use diesel::dsl::sql;
+    use crate::db::schema::sql_types::SessionType;
+    
     diesel::insert_into(participant_response_data::table)
         .values((
             participant_response_data::id.eq(response_id),
@@ -70,7 +73,7 @@ pub fn import_word_response(
                 response.response_word.as_deref().unwrap_or("")
             ),
             participant_response_data::reaction_time_ms.eq(reaction_time_ms),
-            participant_response_data::session.eq(session_type_str as SessionType),
+            participant_response_data::session.eq(sql::<SessionType>(&format!("'{}'::session_type", session_type_str))),
             participant_response_data::timestamp.eq(timestamp),
         ))
         .execute(conn)

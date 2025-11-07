@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use rust_decimal::Decimal;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PhysiologicalData {
@@ -36,23 +35,13 @@ impl PhysiologicalRecord {
 
     /// Get skin potential value (typically Ch1 or Ch2)
     /// Returns the average of Ch1 and Ch2 as skin potential
-    pub fn skin_potential(&self) -> Decimal {
-        Decimal::from_f64_retain((self.ch1 + self.ch2) / 2.0)
-            .unwrap_or(Decimal::ZERO)
+    pub fn skin_potential(&self) -> f64 {
+        (self.ch1 + self.ch2) / 2.0
     }
 
     /// Get all channel values as a vector
-    pub fn channels(&self) -> Vec<Decimal> {
-        vec![
-            Decimal::from_f64_retain(self.ch1).unwrap_or(Decimal::ZERO),
-            Decimal::from_f64_retain(self.ch2).unwrap_or(Decimal::ZERO),
-            Decimal::from_f64_retain(self.ch3).unwrap_or(Decimal::ZERO),
-            Decimal::from_f64_retain(self.ch4).unwrap_or(Decimal::ZERO),
-            Decimal::from_f64_retain(self.ch5).unwrap_or(Decimal::ZERO),
-            Decimal::from_f64_retain(self.ch6).unwrap_or(Decimal::ZERO),
-            Decimal::from_f64_retain(self.ch7).unwrap_or(Decimal::ZERO),
-            Decimal::from_f64_retain(self.ch8).unwrap_or(Decimal::ZERO),
-        ]
+    pub fn channels(&self) -> Vec<f64> {
+        vec![self.ch1, self.ch2, self.ch3, self.ch4, self.ch5, self.ch6, self.ch7, self.ch8]
     }
 }
 

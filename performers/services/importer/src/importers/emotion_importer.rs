@@ -1,5 +1,4 @@
 use diesel::prelude::*;
-use diesel::pg::types::Jsonb;
 use uuid::Uuid;
 use anyhow::{Result, Context};
 use serde_json::{json, Value as JsonValue};
@@ -81,7 +80,7 @@ pub fn import_emotion_data_from_records(
             response_emotion_timeseries::response_id.eq(response_id),
             response_emotion_timeseries::timestamp_offset_ms.eq(offset_ms),
             response_emotion_timeseries::source.eq(Some(source)),
-            response_emotion_timeseries::emotion_data.eq(Jsonb(emotion_json)),
+            response_emotion_timeseries::emotion_data.eq(emotion_json),
         ));
     }
 

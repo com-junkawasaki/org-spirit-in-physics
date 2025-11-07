@@ -6,6 +6,7 @@ schema:
 
 documents:
   - 'src/**/*.{ts,tsx}'
+  - 'src/**/*.graphql'
 
 generates:
   src/generated/graphql.ts:
