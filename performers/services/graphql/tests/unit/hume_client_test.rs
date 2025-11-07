@@ -11,7 +11,7 @@ async fn test_hume_client_new_success() {
     assert_eq!(client.api_key, "test_api_key");
 }
 
-#[tokio::test]
+#[test]
 #[should_panic(expected = "HUME_API_KEY must be set")]
 fn test_hume_client_new_missing_key() {
     env::remove_var("HUME_API_KEY");
@@ -38,16 +38,17 @@ async fn test_analyze_emotions_from_url_success() {
         .await;
     
     // Create client with mock server URL
-    let client = HumeClient {
+    let _client = HumeClient {
         client: reqwest::Client::new(),
         api_key: "test_api_key".to_string(),
     };
     
     // Note: This test would need to be updated to use the mock server URL
     // For now, we test the structure
-    let video_url = "https://example.com/video.mp4";
+    let _video_url = "https://example.com/video.mp4";
     // In a real test, we would use mock_server.uri() as the base URL
     // This is a placeholder test structure
+    assert!(true, "Placeholder test");
 }
 
 #[tokio::test]

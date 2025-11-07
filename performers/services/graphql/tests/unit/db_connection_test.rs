@@ -27,8 +27,16 @@ async fn test_establish_connection_missing_env() {
 async fn test_establish_connection_invalid_url() {
     env::set_var("DATABASE_URL", "invalid://url");
     
+    // Note: deadpool creates the pool lazily, so we need to actually try to get a connection
     let result = establish_connection().await;
-    assert!(result.is_err(), "Should fail with invalid database URL");
+    if let Ok(pool) = result {
+        // Try to get a connection to trigger the actual error
+        let conn_result = pool.get().await;
+        assert!(conn_result.is_err(), "Should fail with invalid database URL");
+    } else {
+        // Pool creation itself failed, which is also acceptable
+        assert!(true, "Pool creation failed as expected");
+    }
 }
 
 #[tokio::test]

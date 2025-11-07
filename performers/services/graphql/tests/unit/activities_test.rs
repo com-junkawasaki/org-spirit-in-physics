@@ -2,8 +2,6 @@ use graphql::activities::*;
 use async_graphql::{Context, Schema, EmptyMutation, EmptySubscription};
 use std::sync::Arc;
 use diesel_async::{AsyncPgConnection, pooled_connection::deadpool::Pool};
-use testcontainers::{clients, images::postgres::Postgres};
-use testcontainers::Container;
 
 #[tokio::test]
 async fn test_query_participants_empty() {
@@ -34,7 +32,7 @@ async fn test_query_participants_database_error() {
     assert!(true, "Placeholder test");
 }
 
-#[tokio::test]
+#[test]
 fn test_emotion_data_structure() {
     let emotion = EmotionData {
         name: "joy".to_string(),
@@ -47,7 +45,7 @@ fn test_emotion_data_structure() {
     assert_eq!(emotion.file_type, "video");
 }
 
-#[tokio::test]
+#[test]
 fn test_timeline_data_point_structure() {
     let data_point = TimelineDataPoint {
         timestamp: 1234567890,
@@ -67,7 +65,7 @@ fn test_timeline_data_point_structure() {
     assert!(data_point.has_response);
 }
 
-#[tokio::test]
+#[test]
 fn test_timeline_response_structure() {
     let response = TimelineResponse {
         timeline_data: vec![],
@@ -87,7 +85,7 @@ fn test_timeline_response_structure() {
     assert_eq!(response.metadata.session_events, Some(10));
 }
 
-#[tokio::test]
+#[test]
 fn test_word_embedding_structure() {
     let embedding = WordEmbedding {
         word: "test".to_string(),
@@ -98,7 +96,7 @@ fn test_word_embedding_structure() {
     assert_eq!(embedding.embedding.len(), 3);
 }
 
-#[tokio::test]
+#[test]
 fn test_dashboard_stats_structure() {
     let stats = DashboardStats {
         total_participants: 10,

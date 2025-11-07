@@ -10,8 +10,8 @@ pub struct HumeEmotionResponse {
 }
 
 pub struct HumeClient {
-    client: Client,
-    api_key: String,
+    pub client: Client, // Made public for testing
+    pub api_key: String, // Made public for testing
 }
 
 impl HumeClient {
