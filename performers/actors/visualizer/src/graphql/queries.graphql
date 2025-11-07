@@ -1,0 +1,48 @@
+# GraphQL Queries for Visualizer Actor
+
+query ParticipantTimeline($participantId: String!) {
+  participantTimeline(participantId: $participantId) {
+    timelineData {
+      timestamp
+      word
+      reactionTime
+      hasResponse
+      emotions {
+        name
+        score
+        fileType
+      }
+      physiological {
+        average
+        max
+        min
+      }
+      reactionValue
+      eventType
+      metadata {
+        emotionCount
+        physiologicalCount
+      }
+    }
+    metadata {
+      sessionEvents
+      emotionEntries
+      physiologicalEntries
+      totalDataPoints
+      dataSource
+      errors
+      truncated
+      originalSize
+    }
+  }
+}
+
+query ParticipantWord2Vec($participantId: String!) {
+  participantWord2Vec(participantId: $participantId) {
+    wordData {
+      word
+      embedding
+    }
+  }
+}
+

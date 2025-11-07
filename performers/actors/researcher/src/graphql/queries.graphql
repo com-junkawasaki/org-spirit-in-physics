@@ -1,0 +1,70 @@
+# GraphQL Queries for Researcher Actor
+
+query GetParticipants {
+  participants {
+    id
+    age
+    gender
+    handedness
+    createdAt
+    updatedAt
+  }
+}
+
+query GetParticipant($participantId: String!) {
+  participant(participantId: $participantId) {
+    id
+    age
+    gender
+    handedness
+    createdAt
+    updatedAt
+  }
+}
+
+query ParticipantTimeline($participantId: String!) {
+  participantTimeline(participantId: $participantId) {
+    timelineData {
+      timestamp
+      word
+      reactionTime
+      hasResponse
+      emotions {
+        name
+        score
+        fileType
+      }
+      physiological {
+        average
+        max
+        min
+      }
+      reactionValue
+      eventType
+      metadata {
+        emotionCount
+        physiologicalCount
+      }
+    }
+    metadata {
+      sessionEvents
+      emotionEntries
+      physiologicalEntries
+      totalDataPoints
+      dataSource
+      errors
+      truncated
+      originalSize
+    }
+  }
+}
+
+query ParticipantWord2Vec($participantId: String!) {
+  participantWord2Vec(participantId: $participantId) {
+    wordData {
+      word
+      embedding
+    }
+  }
+}
+

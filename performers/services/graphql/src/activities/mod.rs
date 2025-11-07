@@ -240,25 +240,92 @@ impl Query {
     //     })
     // }
 
-    // async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<TimelineResponse> {
-    //     Ok(TimelineResponse {
-    //         timeline_data: vec![],
-    //         metadata: TimelineMetadata {
-    //             session_events: None,
-    //             emotion_entries: None,
-    //             physiological_entries: None,
-    //             total_data_points: None,
-    //             data_source: None,
-    //             errors: None,
-    //             truncated: None,
-    //             original_size: None,
-    //         },
-    //     })
-    // }
+    #[graphql(name = "participantTimeline")]
+    async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantTimelineResponse> {
+        let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()?;
+        let mut conn = pool.get().await?;
+        
+        let participant_uuid = Uuid::parse_str(&participant_id)
+            .map_err(|e| async_graphql::Error::new(format!("Invalid participant ID: {}", e)))?;
+        
+        // Fetch participant response data
+        let responses: Vec<(uuid::Uuid, String, Option<String>, i32, chrono::DateTime<chrono::Utc>, Option<rust_decimal::Decimal>, Option<String>, Option<rust_decimal::Decimal>)> = 
+            participant_response_data::table
+                .filter(participant_response_data::participant_id.eq(participant_uuid))
+                .select((
+                    participant_response_data::id,
+                    participant_response_data::stimulus_word,
+                    participant_response_data::response_word,
+                    participant_response_data::reaction_time_ms,
+                    participant_response_data::timestamp,
+                    participant_response_data::skin_potential,
+                    participant_response_data::emotion,
+                    participant_response_data::emotion_confidence,
+                ))
+                .order(participant_response_data::timestamp.asc())
+                .load(&mut conn)
+                .await?;
+        
+        // Convert to TimelineDataPoint
+        let timeline_data: Vec<TimelineDataPoint> = responses.into_iter().enumerate().map(|(idx, (id, stimulus_word, response_word, reaction_time_ms, timestamp, skin_potential, emotion, emotion_confidence))| {
+            let timestamp_float = timestamp.timestamp_millis() as f64;
+            
+            // Parse emotion data (simplified - in production, query emotion_data table)
+            let emotions = if let Some(emotion_name) = emotion {
+                vec![EmotionData {
+                    name: emotion_name,
+                    score: emotion_confidence.and_then(|c| c.to_f64()).unwrap_or(0.0),
+                    file_type: "hume_json".to_string(),
+                }]
+            } else {
+                vec![]
+            };
+            
+            // Parse physiological data
+            let physiological = PhysiologicalData {
+                average: skin_potential.and_then(|s| s.to_f64()),
+                max: skin_potential.and_then(|s| s.to_f64()),
+                min: skin_potential.and_then(|s| s.to_f64()),
+            };
+            
+            TimelineDataPoint {
+                timestamp: timestamp_float,
+                word: stimulus_word.clone(),
+                reaction_time: reaction_time_ms as i32,
+                has_response: response_word.is_some(),
+                emotions,
+                physiological,
+                reaction_value: if response_word.is_some() { 1.0 } else { 0.0 },
+                event_type: Some("word_response".to_string()),
+                metadata: Some(TimelineDataPointMetadata {
+                    emotion_count: if emotion.is_some() { Some(1) } else { Some(0) },
+                    physiological_count: if skin_potential.is_some() { Some(1) } else { Some(0) },
+                }),
+            }
+        }).collect();
+        
+        Ok(ParticipantTimelineResponse {
+            timeline_data,
+            metadata: TimelineMetadata {
+                session_events: None,
+                emotion_entries: Some(timeline_data.iter().map(|d| d.emotions.len() as i32).sum()),
+                physiological_entries: Some(timeline_data.iter().filter(|d| d.physiological.average.is_some()).count() as i32),
+                total_data_points: Some(timeline_data.len() as i32),
+                data_source: Some("database".to_string()),
+                errors: None,
+                truncated: None,
+                original_size: Some(timeline_data.len() as i32),
+            },
+        })
+    }
 
-    // async fn participant_word2vec(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<Word2VecResponse> {
-    //     Ok(Word2VecResponse { word_data: vec![] })
-    // }
+    #[graphql(name = "participantWord2Vec")]
+    async fn participant_word2vec(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantWord2VecResponse> {
+        // Placeholder implementation - would need word2vec embeddings from database or external service
+        Ok(ParticipantWord2VecResponse { 
+            word_data: vec![] 
+        })
+    }
 
     // async fn dashboard_stats(&self, ctx: &Context<'_>) -> GQLResult<DashboardStats> {
     //     Ok(DashboardStats {
@@ -287,32 +354,49 @@ impl Mutation {
         Ok("pong".to_string())
     }
 
-    // Temporarily disabled for compilation
-    // async fn calculate_emotion_distance(&self, ctx: &Context<'_>, input: CalculateEmotionDistanceInput) -> GQLResult<EmotionDistanceVisualization> {
-    //     // Simple mock implementation for emotion distance calculation
-    //     let points = vec![
-    //         EmotionDistancePoint {
-    //             x: 1.0,
-    //             y: 2.0,
-    //             z: Some(3.0),
-    //             word: "test".to_string(),
-    //             index: 0,
-    //         }
-    //     ];
-
-    //     let links = vec![
-    //         EmotionDistanceLink {
-    //             source: 0,
-    //             target: 1,
-    //             value: 0.5,
-    //         }
-    //     ];
-
-    //     Ok(EmotionDistanceVisualization {
-    //         points,
-    //         links,
-    //     })
-    // }
+    #[graphql(name = "calculateEmotionDistance")]
+    async fn calculate_emotion_distance(&self, ctx: &Context<'_>, input: CalculateEmotionDistanceInput) -> GQLResult<VisualizationData> {
+        // Placeholder implementation - would need actual emotion distance calculation logic
+        // This would typically:
+        // 1. Fetch participant response data
+        // 2. Calculate emotion distances using the specified method
+        // 3. Apply embedding method (PCA, UMAP, force-directed)
+        // 4. Return VisualizationData
+        
+        // Mock implementation for now
+        let nodes = vec![
+            VisualizationNode {
+                id: "node_0".to_string(),
+                label: "word1".to_string(),
+                x: 0.0,
+                y: 0.0,
+                z: Some(0.0),
+                color: "#FF0000".to_string(),
+                size: 10.0,
+                metadata: NodeMetadata {
+                    word: "word1".to_string(),
+                    reaction_time: Some(100),
+                    emotion_score: Some(0.5),
+                    observation_ratio: 1.0,
+                },
+            }
+        ];
+        
+        let edges = vec![];
+        
+        Ok(VisualizationData {
+            nodes,
+            edges,
+            metadata: VisualizationMetadata {
+                total_nodes: nodes.len() as i32,
+                total_edges: edges.len() as i32,
+                method: input.method.clone(),
+                dimensions: input.dimensions,
+                average_distance: 0.0,
+                clustering_coefficient: 0.0,
+            },
+        })
+    }
 }
 
 // ファイルインポートアクティビティ
