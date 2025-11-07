@@ -46,10 +46,16 @@
     "start": "next start",
     "lint": "next lint",
     "generate-audio": "tsx scripts/generate-audio.ts",
-    "migrate-artifacts": "tsx scripts/migrate-artifacts.ts"
+    "migrate-artifacts": "tsx scripts/migrate-artifacts.ts",
+    "codegen": "graphql-codegen --config codegen.yaml",
+    "codegen:watch": "graphql-codegen --config codegen.yaml --watch"
   },
   "license": "MIT",
   "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.2",
+    "@graphql-codegen/typescript": "^4.1.0",
+    "@graphql-codegen/typescript-operations": "^4.2.0",
+    "@graphql-codegen/typed-document-node": "^4.1.0",
     "@playwright/test": "^1.54.1",
     "@tailwindcss/typography": "^0.5.16",
     "@types/dom-speech-recognition": "^0.0.6",

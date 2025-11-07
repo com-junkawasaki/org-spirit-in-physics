@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "codegen": "graphql-codegen --config codegen.yaml",
+    "codegen:watch": "graphql-codegen --config codegen.yaml --watch"
   },
   "dependencies": {
     "@apollo/client": "^4.0.9",
@@ -44,6 +46,10 @@
     "zod": "^4.0.10"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.2",
+    "@graphql-codegen/typescript": "^4.1.0",
+    "@graphql-codegen/typescript-operations": "^4.2.0",
+    "@graphql-codegen/typed-document-node": "^4.1.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/d3": "^7.4.3",
     "@types/node": "20.11.20",

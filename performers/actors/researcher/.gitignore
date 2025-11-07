@@ -81,3 +81,6 @@ _archive/
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Generated GraphQL types
+src/generated/

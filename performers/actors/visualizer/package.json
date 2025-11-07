@@ -31,7 +31,9 @@
     "type-check": "tsc --noEmit",
     "dev": "node node_modules/.pnpm/next@*/node_modules/next/dist/bin/next dev",
     "build": "node node_modules/.pnpm/next@*/node_modules/next/dist/bin/next build",
-    "start": "node node_modules/.pnpm/next@*/node_modules/next/dist/bin/next start"
+    "start": "node node_modules/.pnpm/next@*/node_modules/next/dist/bin/next start",
+    "codegen": "graphql-codegen --config codegen.yaml",
+    "codegen:watch": "graphql-codegen --config codegen.yaml --watch"
   },
   "dependencies": {
     "@apollo/client": "^3.10.4",
@@ -46,6 +48,10 @@
     "typegpu": "^0.7.1"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.2",
+    "@graphql-codegen/typescript": "^4.1.0",
+    "@graphql-codegen/typescript-operations": "^4.2.0",
+    "@graphql-codegen/typed-document-node": "^4.1.0",
     "@types/d3": "^7.4.3",
     "@types/node": "^20.10.0",
     "@types/react": "18.2.57",

@@ -57,3 +57,6 @@ Dockerfile
 .vercel
 
 .artifacts_cache
+
+# Generated GraphQL types
+src/generated/

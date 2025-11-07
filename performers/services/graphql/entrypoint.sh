@@ -22,6 +22,14 @@ diesel print-schema --database-url "$DATABASE_URL" > src/db/schema.rs || {
 
 echo "Schema generated successfully!"
 
+# Generate GraphQL SDL file
+echo "Generating GraphQL SDL..."
+/app/graphql --generate-schema || cargo run --bin generate-schema || {
+    echo "Warning: Failed to generate GraphQL SDL. Continuing anyway..."
+    # Try to generate SDL using schema introspection endpoint after server starts
+    echo "SDL will be available at /graphql/sdl endpoint"
+}
+
 # Run the application
 exec "$@"
 
