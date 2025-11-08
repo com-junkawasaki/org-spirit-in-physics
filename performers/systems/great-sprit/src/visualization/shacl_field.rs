@@ -4,6 +4,7 @@
 
 use bevy::prelude::*;
 use nalgebra::Vector3;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::kg::terminus::TerminusClient;
 
 /// SHACL constraint as force vector
@@ -36,6 +37,7 @@ impl ShaclVectorFieldRenderer {
     }
 
     /// Load SHACL shapes from TerminusDB and convert to force vectors
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn load_from_terminus(
         &mut self,
         client: &TerminusClient,

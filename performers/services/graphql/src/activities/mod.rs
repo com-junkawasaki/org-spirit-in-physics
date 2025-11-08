@@ -5,7 +5,6 @@ use diesel_async::RunQueryDsl;
 use std::sync::Arc;
 use diesel_async::{AsyncPgConnection, pooled_connection::deadpool::Pool};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 use serde_json;
 
 use crate::models::*;
@@ -31,7 +30,7 @@ pub struct TimelineDataPoint {
     pub metadata: Option<TimelineDataPointMetadata>,
 }
 
-#[derive(SimpleObject)]
+#[derive(SimpleObject, Clone)]
 #[graphql(name = "EmotionData")]
 pub struct EmotionData {
     pub name: String,
@@ -40,7 +39,7 @@ pub struct EmotionData {
     pub file_type: String,
 }
 
-#[derive(SimpleObject)]
+#[derive(SimpleObject, Clone)]
 #[graphql(name = "PhysiologicalData")]
 pub struct PhysiologicalData {
     pub average: Option<f64>,
@@ -322,15 +321,12 @@ impl Query {
     #[graphql(name = "participantTimeline")]
     async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantTimelineResponse> {
         use diesel::dsl::count;
-        use tracing::{info, warn};
         
         let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()?;
         let mut conn = pool.get().await?;
         
         let participant_uuid = Uuid::parse_str(&participant_id)
             .map_err(|e| async_graphql::Error::new(format!("Invalid participant ID: {}", e)))?;
-        
-        info!("Fetching timeline data for participant: {}", participant_id);
         
         // Fetch participant response data
         type ResponseRow = (uuid::Uuid, String, Option<String>, Option<i32>, chrono::DateTime<chrono::Utc>);
@@ -348,8 +344,6 @@ impl Query {
                 .load(&mut conn)
                 .await
                 .map_err(|e| async_graphql::Error::new(format!("Failed to fetch response data: {}", e)))?;
-        
-        info!("Found {} response records", responses.len());
         
         if responses.is_empty() {
             return Ok(ParticipantTimelineResponse {
@@ -381,10 +375,8 @@ impl Query {
                 emotion_data::file_type,
             ))
             .load(&mut conn)
-            .await
-            .map_err(|e| async_graphql::Error::new(format!("Failed to fetch emotion data: {}", e)))?;
-        
-        info!("Found {} emotion records", emotion_rows.len());
+                .await
+                .map_err(|e| async_graphql::Error::new(format!("Failed to fetch emotion data: {}", e)))?;
         
         // Group emotion data by response ID
         use std::collections::HashMap;
@@ -411,10 +403,8 @@ impl Query {
                 physiological_data::min_value,
             ))
             .load(&mut conn)
-            .await
-            .map_err(|e| async_graphql::Error::new(format!("Failed to fetch physiological data: {}", e)))?;
-        
-        info!("Found {} physiological records", physiological_rows.len());
+                .await
+                .map_err(|e| async_graphql::Error::new(format!("Failed to fetch physiological data: {}", e)))?;
         
         // Group physiological data by response ID (take first match for each response)
         let mut physiological_by_response: HashMap<uuid::Uuid, PhysiologicalData> = HashMap::new();
@@ -459,6 +449,10 @@ impl Query {
                     min: None,
                 });
             
+            // Calculate metadata before moving emotions and physiological
+            let emotion_count = emotions.len() as i32;
+            let physiological_count = if physiological.average.is_some() { Some(1) } else { Some(0) };
+            
             TimelineDataPoint {
                 timestamp: timestamp_float,
                 word: stimulus_word.clone(),
@@ -469,17 +463,16 @@ impl Query {
                 reaction_value: if response_word.is_some() { 1.0 } else { 0.0 },
                 event_type: Some("word_response".to_string()),
                 metadata: Some(TimelineDataPointMetadata {
-                    emotion_count: Some(emotions.len() as i32),
-                    physiological_count: if physiological.average.is_some() { Some(1) } else { Some(0) },
+                    emotion_count: Some(emotion_count),
+                    physiological_count,
                 }),
             }
         }).collect();
         
+        // Calculate totals before moving timeline_data
+        let total_data_points = timeline_data.len() as i32;
         let total_emotion_entries: i32 = timeline_data.iter().map(|d| d.emotions.len() as i32).sum();
         let total_physiological_entries: i32 = timeline_data.iter().filter(|d| d.physiological.average.is_some()).count() as i32;
-        
-        info!("Timeline data conversion complete: {} points, {} emotion entries, {} physiological entries", 
-              timeline_data.len(), total_emotion_entries, total_physiological_entries);
         
         Ok(ParticipantTimelineResponse {
             timeline_data,
@@ -487,11 +480,11 @@ impl Query {
                 session_events: Some(session_events_count as i32),
                 emotion_entries: Some(total_emotion_entries),
                 physiological_entries: Some(total_physiological_entries),
-                total_data_points: Some(timeline_data.len() as i32),
+                total_data_points: Some(total_data_points),
                 data_source: Some("database".to_string()),
                 errors: None,
                 truncated: None,
-                original_size: Some(timeline_data.len() as i32),
+                original_size: Some(total_data_points),
             },
         })
     }

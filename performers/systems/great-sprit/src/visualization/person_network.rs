@@ -3,6 +3,7 @@
 //! 人物中心のRDFグラフ可視化モジュール。
 
 use bevy::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::kg::terminus::TerminusClient;
 
 /// Person network renderer
@@ -11,7 +12,8 @@ use crate::kg::terminus::TerminusClient;
 pub struct PersonNetworkRenderer {
     /// Person URI
     person_uri: String,
-    /// KG client
+    /// KG client (server-side only)
+    #[cfg(not(target_arch = "wasm32"))]
     kg_client: Option<TerminusClient>,
 }
 
@@ -20,11 +22,13 @@ impl PersonNetworkRenderer {
     pub fn new(person_uri: String) -> Self {
         Self {
             person_uri,
+            #[cfg(not(target_arch = "wasm32"))]
             kg_client: None,
         }
     }
 
     /// Set KG client
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn set_kg_client(&mut self, client: TerminusClient) {
         self.kg_client = Some(client);
     }
@@ -32,6 +36,7 @@ impl PersonNetworkRenderer {
     /// Load person network from KG
     ///
     /// 知識グラフから人物ネットワークを読み込む。
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn load_network(&self) -> anyhow::Result<PersonNetwork> {
         // TODO: Query TerminusDB for person-centered RDF graph
         Ok(PersonNetwork {

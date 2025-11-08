@@ -13,6 +13,8 @@ fi
 
 # Build for WebAssembly
 echo "Building for wasm32-unknown-unknown..."
+# Set RUSTFLAGS for getrandom WASM backend
+export RUSTFLAGS='--cfg getrandom_backend="js"'
 cargo build --release --target wasm32-unknown-unknown --lib
 
 # Install wasm-bindgen-cli if not available

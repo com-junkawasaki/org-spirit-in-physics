@@ -3,6 +3,7 @@
 //! 時系列感情可視化モジュール。
 
 use bevy::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::emotion::hume_dimensions::EmotionDimensions;
 
 /// Emotion timeline renderer
@@ -10,7 +11,10 @@ use crate::emotion::hume_dimensions::EmotionDimensions;
 /// 時系列感情を可視化する。
 pub struct EmotionTimelineRenderer {
     /// Timeline data points
+    #[cfg(not(target_arch = "wasm32"))]
     data_points: Vec<(f64, EmotionDimensions)>, // (timestamp, emotion)
+    #[cfg(target_arch = "wasm32")]
+    data_points: Vec<(f64, (f32, f32, f32))>, // (timestamp, (valence, arousal, engagement))
 }
 
 impl EmotionTimelineRenderer {
@@ -22,8 +26,15 @@ impl EmotionTimelineRenderer {
     }
 
     /// Add data point
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn add_data_point(&mut self, timestamp: f64, emotion: EmotionDimensions) {
         self.data_points.push((timestamp, emotion));
+    }
+    
+    /// Add data point (WASM version)
+    #[cfg(target_arch = "wasm32")]
+    pub fn add_data_point(&mut self, timestamp: f64, valence: f32, arousal: f32, engagement: f32) {
+        self.data_points.push((timestamp, (valence, arousal, engagement)));
     }
 
     /// Render timeline (placeholder)

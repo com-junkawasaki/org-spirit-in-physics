@@ -3,6 +3,7 @@
 //! 感情次元ヒートマップ可視化モジュール。
 
 use bevy::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::emotion::hume_dimensions::EmotionDimensions;
 
 /// Emotion heatmap renderer
@@ -25,7 +26,15 @@ impl EmotionHeatmapRenderer {
     }
 
     /// Update heatmap from emotion dimensions
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn update_from_emotions(&mut self, emotions: &[EmotionDimensions]) {
+        // TODO: Convert emotions to 2D heatmap grid
+        self.heatmap_data = Vec::new();
+    }
+    
+    /// Update heatmap from emotion values (WASM version)
+    #[cfg(target_arch = "wasm32")]
+    pub fn update_from_emotions(&mut self, emotions: &[(f32, f32, f32)]) {
         // TODO: Convert emotions to 2D heatmap grid
         self.heatmap_data = Vec::new();
     }

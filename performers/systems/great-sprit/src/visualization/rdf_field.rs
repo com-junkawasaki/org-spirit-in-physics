@@ -4,6 +4,7 @@
 
 use bevy::prelude::*;
 use nalgebra::Vector3;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::kg::terminus::TerminusClient;
 
 /// RDF triple as vector
@@ -34,6 +35,7 @@ impl RdfVectorFieldRenderer {
     }
 
     /// Load RDF triples from TerminusDB and convert to vectors
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn load_from_terminus(
         &mut self,
         client: &TerminusClient,

@@ -3,17 +3,30 @@
 //! 物理法則に基づく「スピリット位置」のリアルタイム計算システム。
 //! 開放系ダイナミクス、共振駆動、相殺メカニズムを統合し、wgpuでGPU並列処理を実現。
 
+// Server-side modules (not available in WASM)
+#[cfg(not(target_arch = "wasm32"))]
 pub mod config;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod physics;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod gpu;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod kg;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod graphql;
-pub mod visualization;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod emotion;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod capture;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod identity;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod pipeline;
 
+// Visualization module (available in both native and WASM)
+pub mod visualization;
+
+#[cfg(not(target_arch = "wasm32"))]
 pub use config::Config;
 
 #[cfg(target_arch = "wasm32")]
@@ -34,7 +47,6 @@ pub fn start_bevy_app(canvas_id: &str) -> Result<(), JsValue> {
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
             canvas: Some(canvas_id.into()),
-            fit_canvas_to_parent: true,
             ..default()
         }),
         ..default()

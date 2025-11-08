@@ -3,6 +3,7 @@
 //! RDF、SHACL Shape、物理ダイナミクスを統合した可視化
 
 use bevy::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::gpu::buffers::Buffers;
 use crate::visualization::rdf_field::RdfVectorFieldRenderer;
 use crate::visualization::shacl_field::ShaclVectorFieldRenderer;
