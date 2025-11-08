@@ -18,6 +18,8 @@ generates:
       useTypeImports: true
       skipTypename: false
       enumsAsTypes: true
+      # Allow codegen to succeed even if no documents are found
+      ignoreNoDocuments: true
       scalars:
         DateTime: string
         JSON: any

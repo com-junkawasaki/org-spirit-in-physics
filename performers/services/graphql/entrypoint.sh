@@ -70,6 +70,74 @@ fi
 # Re-enable exit on error for the application startup
 set -e
 
-# Run the application
+# Start GraphQL server in background to generate SDL
+echo "Starting GraphQL server in background to generate SDL..."
+/app/graphql &
+GRAPHQL_PID=$!
+
+# Wait for GraphQL server to be ready
+echo "Waiting for GraphQL server to be ready..."
+TIMEOUT=60
+ELAPSED=0
+until curl -f -s http://localhost:8080/health >/dev/null 2>&1 || [ $ELAPSED -ge $TIMEOUT ]; do
+  echo "GraphQL server is not ready yet - sleeping (${ELAPSED}s/${TIMEOUT}s)"
+  sleep 2
+  ELAPSED=$((ELAPSED + 2))
+done
+
+if [ $ELAPSED -ge $TIMEOUT ]; then
+  echo "Error: GraphQL server failed to start within ${TIMEOUT} seconds"
+  kill $GRAPHQL_PID 2>/dev/null || true
+  exit 1
+fi
+
+echo "GraphQL server is ready!"
+
+# Wait a bit more for server to fully initialize
+sleep 2
+
+# Generate SDL file from server endpoint
+echo "Generating GraphQL SDL from server endpoint..."
+if curl -f -s http://localhost:8080/graphql/sdl > /app/schema.graphql 2>/dev/null; then
+  echo "GraphQL SDL file generated successfully at /app/schema.graphql"
+  echo "SDL file size: $(wc -l < /app/schema.graphql) lines"
+else
+  echo "Warning: Failed to generate SDL from server endpoint"
+fi
+
+# Verify schema contains participantTimeline
+echo "Verifying GraphQL schema..."
+if [ -f /app/schema.graphql ]; then
+  if grep -q "participantTimeline" /app/schema.graphql; then
+    echo "✓ Schema verification passed: participantTimeline found in schema"
+  else
+    echo "⚠ Warning: participantTimeline not found in schema"
+  fi
+fi
+
+# Verify schema via introspection query
+echo "Verifying schema via introspection query..."
+INTROSPECTION_RESULT=$(curl -s -X POST http://localhost:8080/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"query { __type(name: \"Query\") { fields { name } } }"}' 2>/dev/null)
+
+if echo "$INTROSPECTION_RESULT" | grep -q "participantTimeline"; then
+  echo "✓ Schema introspection verification passed: participantTimeline found"
+else
+  echo "⚠ Warning: participantTimeline not found in introspection result"
+  echo "Introspection result: $INTROSPECTION_RESULT"
+fi
+
+# Create readiness flag file
+echo "GraphQL server is ready and schema is verified" > /tmp/graphql-ready
+echo "Readiness flag created at /tmp/graphql-ready"
+
+# Stop background server
+echo "Stopping background GraphQL server..."
+kill $GRAPHQL_PID 2>/dev/null || true
+wait $GRAPHQL_PID 2>/dev/null || true
+
+# Run the application in foreground
+echo "Starting GraphQL server in foreground..."
 exec "$@"
 

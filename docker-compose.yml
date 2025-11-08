@@ -72,7 +72,8 @@ services:
     env_file:
       - ./performers/actors/researcher/env.docker
     depends_on:
-      - graphql
+      graphql:
+        condition: service_healthy
     networks:
       - spirit-network
     healthcheck:
@@ -103,7 +104,8 @@ services:
     env_file:
       - ./performers/actors/visualizer/env.docker
     depends_on:
-      - graphql
+      graphql:
+        condition: service_healthy
     networks:
       - spirit-network
     healthcheck:
@@ -134,7 +136,8 @@ services:
     env_file:
       - ./performers/actors/participant/env.docker
     depends_on:
-      - graphql
+      graphql:
+        condition: service_healthy
     networks:
       - spirit-network
     healthcheck:
