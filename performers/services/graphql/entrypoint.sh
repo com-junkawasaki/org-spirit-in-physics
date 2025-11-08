@@ -132,12 +132,8 @@ fi
 echo "GraphQL server is ready and schema is verified" > /tmp/graphql-ready
 echo "Readiness flag created at /tmp/graphql-ready"
 
-# Stop background server
-echo "Stopping background GraphQL server..."
-kill $GRAPHQL_PID 2>/dev/null || true
-wait $GRAPHQL_PID 2>/dev/null || true
-
-# Run the application in foreground
-echo "Starting GraphQL server in foreground..."
-exec "$@"
+# Keep the background server running and wait for it
+# This avoids stopping and restarting, which causes health check failures
+echo "GraphQL server is running and ready. Keeping it running..."
+wait $GRAPHQL_PID
 
