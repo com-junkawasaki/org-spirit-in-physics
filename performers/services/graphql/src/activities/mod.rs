@@ -322,13 +322,35 @@ impl Query {
     async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantTimelineResponse> {
         use diesel::dsl::count;
         
-        let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()?;
-        let mut conn = pool.get().await?;
+        eprintln!("[GraphQL] participant_timeline: Starting query for participant_id={}", participant_id);
         
+        // Get database connection pool
+        let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_timeline: Failed to get database pool: {:?}", e);
+                async_graphql::Error::new(format!("Database connection pool error: {:?}", e))
+            })?;
+        
+        eprintln!("[GraphQL] participant_timeline: Got database pool, acquiring connection...");
+        let mut conn = pool.get().await
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_timeline: Failed to acquire database connection: {:?}", e);
+                async_graphql::Error::new(format!("Failed to acquire database connection: {}", e))
+            })?;
+        
+        eprintln!("[GraphQL] participant_timeline: Database connection acquired");
+        
+        // Parse participant ID
         let participant_uuid = Uuid::parse_str(&participant_id)
-            .map_err(|e| async_graphql::Error::new(format!("Invalid participant ID: {}", e)))?;
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_timeline: Invalid UUID format: participant_id={}, error={:?}", participant_id, e);
+                async_graphql::Error::new(format!("Invalid participant ID format '{}': {}", participant_id, e))
+            })?;
+        
+        eprintln!("[GraphQL] participant_timeline: Parsed UUID: {:?}", participant_uuid);
         
         // Fetch participant response data
+        eprintln!("[GraphQL] participant_timeline: Fetching response data from database...");
         type ResponseRow = (uuid::Uuid, String, Option<String>, Option<i32>, chrono::DateTime<chrono::Utc>);
         let responses: Vec<ResponseRow> = 
             participant_response_data::table
@@ -343,9 +365,15 @@ impl Query {
                 .order(participant_response_data::timestamp.asc())
                 .load(&mut conn)
                 .await
-                .map_err(|e| async_graphql::Error::new(format!("Failed to fetch response data: {}", e)))?;
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_timeline: Database query error when fetching responses: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to fetch response data for participant {}: {}", participant_id, e))
+                })?;
+        
+        eprintln!("[GraphQL] participant_timeline: Fetched {} response records", responses.len());
         
         if responses.is_empty() {
+            eprintln!("[GraphQL] participant_timeline: No response data found for participant {}", participant_id);
             return Ok(ParticipantTimelineResponse {
                 timeline_data: vec![],
                 metadata: TimelineMetadata {
@@ -363,8 +391,10 @@ impl Query {
         
         // Collect response IDs for fetching related data
         let response_ids: Vec<uuid::Uuid> = responses.iter().map(|(id, _, _, _, _)| *id).collect();
+        eprintln!("[GraphQL] participant_timeline: Collected {} response IDs for related data queries", response_ids.len());
         
         // Fetch emotion data for all responses
+        eprintln!("[GraphQL] participant_timeline: Fetching emotion data...");
         type EmotionRow = (uuid::Uuid, String, f64, Option<String>);
         let emotion_rows: Vec<EmotionRow> = emotion_data::table
             .filter(emotion_data::participant_response_data_id.eq_any(&response_ids))
@@ -375,8 +405,13 @@ impl Query {
                 emotion_data::file_type,
             ))
             .load(&mut conn)
-                .await
-                .map_err(|e| async_graphql::Error::new(format!("Failed to fetch emotion data: {}", e)))?;
+            .await
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_timeline: Database query error when fetching emotion data: {:?}", e);
+                async_graphql::Error::new(format!("Failed to fetch emotion data for participant {}: {}", participant_id, e))
+            })?;
+        
+        eprintln!("[GraphQL] participant_timeline: Fetched {} emotion records", emotion_rows.len());
         
         // Group emotion data by response ID
         use std::collections::HashMap;
@@ -393,6 +428,7 @@ impl Query {
         }
         
         // Fetch physiological data for all responses
+        eprintln!("[GraphQL] participant_timeline: Fetching physiological data...");
         type PhysiologicalRow = (uuid::Uuid, Option<f64>, Option<f64>, Option<f64>);
         let physiological_rows: Vec<PhysiologicalRow> = physiological_data::table
             .filter(physiological_data::participant_response_data_id.eq_any(&response_ids))
@@ -403,8 +439,13 @@ impl Query {
                 physiological_data::min_value,
             ))
             .load(&mut conn)
-                .await
-                .map_err(|e| async_graphql::Error::new(format!("Failed to fetch physiological data: {}", e)))?;
+            .await
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_timeline: Database query error when fetching physiological data: {:?}", e);
+                async_graphql::Error::new(format!("Failed to fetch physiological data for participant {}: {}", participant_id, e))
+            })?;
+        
+        eprintln!("[GraphQL] participant_timeline: Fetched {} physiological records", physiological_rows.len());
         
         // Group physiological data by response ID (take first match for each response)
         let mut physiological_by_response: HashMap<uuid::Uuid, PhysiologicalData> = HashMap::new();
@@ -419,6 +460,7 @@ impl Query {
         }
         
         // Count session events
+        eprintln!("[GraphQL] participant_timeline: Counting session events...");
         let session_events_count: i64 = participant_session_events::table
             .inner_join(participant_experiment_sessions::table.on(
                 participant_session_events::session_id.eq(participant_experiment_sessions::id)
@@ -427,9 +469,15 @@ impl Query {
             .select(count(participant_session_events::id))
             .first(&mut conn)
             .await
-            .unwrap_or(0);
+            .unwrap_or_else(|e| {
+                eprintln!("[GraphQL] participant_timeline: Warning - Failed to count session events: {:?}, using 0", e);
+                0
+            });
+        
+        eprintln!("[GraphQL] participant_timeline: Found {} session events", session_events_count);
         
         // Convert to TimelineDataPoint
+        eprintln!("[GraphQL] participant_timeline: Converting responses to timeline data points...");
         let timeline_data: Vec<TimelineDataPoint> = responses.into_iter().map(|(id, stimulus_word, response_word, reaction_time_ms, timestamp)| {
             let timestamp_float = timestamp.timestamp_millis() as f64;
             
@@ -473,6 +521,9 @@ impl Query {
         let total_data_points = timeline_data.len() as i32;
         let total_emotion_entries: i32 = timeline_data.iter().map(|d| d.emotions.len() as i32).sum();
         let total_physiological_entries: i32 = timeline_data.iter().filter(|d| d.physiological.average.is_some()).count() as i32;
+        
+        eprintln!("[GraphQL] participant_timeline: Completed successfully - {} data points, {} emotion entries, {} physiological entries", 
+                  total_data_points, total_emotion_entries, total_physiological_entries);
         
         Ok(ParticipantTimelineResponse {
             timeline_data,

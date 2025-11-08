@@ -29,7 +29,14 @@ pub fn create_routes(schema: GraphQLSchema) -> impl Filter<Extract = impl Reply,
                 GraphQLSchema,
                 async_graphql::Request,
             )| async move {
-                Ok::<_, Infallible>(warp::reply::json(&schema.execute(request).await))
+                eprintln!("[GraphQL Server] Received query: {}", request.query);
+                eprintln!("[GraphQL Server] Query variables: {:?}", request.variables);
+                let result = schema.execute(request).await;
+                eprintln!("[GraphQL Server] Query result has errors: {}", result.errors.len() > 0);
+                if !result.errors.is_empty() {
+                    eprintln!("[GraphQL Server] Query errors: {:?}", result.errors);
+                }
+                Ok::<_, Infallible>(warp::reply::json(&result))
             },
         ));
 
@@ -53,9 +60,20 @@ pub fn create_routes(schema: GraphQLSchema) -> impl Filter<Extract = impl Reply,
                 .body(sdl)
         });
 
+    // Health check endpoint
+    let health = warp::path("health")
+        .and(warp::get())
+        .map(|| {
+            warp::http::Response::builder()
+                .status(200)
+                .header("content-type", "application/json")
+                .body(r#"{"status":"ok"}"#)
+        });
+
     graphql_post
         .or(graphql_playground)
         .or(graphql_sdl)
+        .or(health)
         .with(
             warp::cors()
                 .allow_any_origin()

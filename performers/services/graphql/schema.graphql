@@ -1,3 +1,9 @@
+type EmotionData {
+	name: String!
+	score: Float!
+	fileType: String!
+}
+
 type Mutation {
 	ping: String!
 }
@@ -15,15 +21,21 @@ type ParticipantGQL {
 	physiologicalDataCount: Int
 }
 
+type ParticipantTimelineResponse {
+	timelineData: [TimelineDataPoint!]!
+	metadata: TimelineMetadata!
+}
+
+type PhysiologicalData {
+	average: Float
+	max: Float
+	min: Float
+}
+
 type Query {
 	participants: [ParticipantGQL!]!
 	participant(participantId: String!): ParticipantGQL!
 	participantTimeline(participantId: String!): ParticipantTimelineResponse!
-}
-
-type ParticipantTimelineResponse {
-	timelineData: [TimelineDataPoint!]!
-	metadata: TimelineMetadata!
 }
 
 type TimelineDataPoint {
@@ -36,18 +48,6 @@ type TimelineDataPoint {
 	reactionValue: Float!
 	eventType: String
 	metadata: TimelineDataPointMetadata
-}
-
-type EmotionData {
-	name: String!
-	score: Float!
-	fileType: String!
-}
-
-type PhysiologicalData {
-	average: Float
-	max: Float
-	min: Float
 }
 
 type TimelineDataPointMetadata {
