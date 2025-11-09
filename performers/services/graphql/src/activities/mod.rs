@@ -6,13 +6,14 @@ use std::sync::Arc;
 use diesel_async::{AsyncPgConnection, pooled_connection::deadpool::Pool};
 use uuid::Uuid;
 use serde_json;
+use serde::{Deserialize, Serialize};
 
 use crate::models::*;
 use crate::db::schema::*;
 
 // GraphQL Types - Participant moved to models.rs as ParticipantGQL
 
-#[derive(SimpleObject)]
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
 #[graphql(name = "TimelineDataPoint")]
 pub struct TimelineDataPoint {
     pub timestamp: f64,
@@ -30,7 +31,7 @@ pub struct TimelineDataPoint {
     pub metadata: Option<TimelineDataPointMetadata>,
 }
 
-#[derive(SimpleObject, Clone)]
+#[derive(SimpleObject, Clone, Serialize, Deserialize, Debug)]
 #[graphql(name = "EmotionData")]
 pub struct EmotionData {
     pub name: String,
@@ -39,7 +40,7 @@ pub struct EmotionData {
     pub file_type: String,
 }
 
-#[derive(SimpleObject, Clone)]
+#[derive(SimpleObject, Clone, Serialize, Deserialize, Debug)]
 #[graphql(name = "PhysiologicalData")]
 pub struct PhysiologicalData {
     pub average: Option<f64>,
@@ -47,7 +48,7 @@ pub struct PhysiologicalData {
     pub min: Option<f64>,
 }
 
-#[derive(SimpleObject)]
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
 #[graphql(name = "TimelineDataPointMetadata")]
 pub struct TimelineDataPointMetadata {
     #[graphql(name = "emotionCount")]
@@ -56,7 +57,7 @@ pub struct TimelineDataPointMetadata {
     pub physiological_count: Option<i32>,
 }
 
-#[derive(SimpleObject)]
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
 #[graphql(name = "TimelineMetadata")]
 pub struct TimelineMetadata {
     #[graphql(name = "sessionEvents")]
@@ -352,22 +353,32 @@ impl Query {
         // Check cache first
         eprintln!("[GraphQL] participant_timeline: Checking cache...");
         use diesel::OptionalExtension;
-        let cached_result: Option<(serde_json::Value, serde_json::Value)> = 
+        // Query cache separately to avoid JSONB tuple type issues
+        let cached_timeline: Option<serde_json::Value> = 
             participant_timeline_cache::table
                 .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
-                .select((
-                    participant_timeline_cache::timeline_data,
-                    participant_timeline_cache::metadata,
-                ))
+                .select(participant_timeline_cache::timeline_data)
                 .first(&mut conn)
                 .await
                 .optional()
                 .map_err(|e| {
-                    eprintln!("[GraphQL] participant_timeline: Error checking cache: {:?}", e);
+                    eprintln!("[GraphQL] participant_timeline: Error checking cache timeline: {:?}", e);
                     async_graphql::Error::new(format!("Failed to check cache: {}", e))
                 })?;
         
-        if let Some((timeline_json, metadata_json)) = cached_result {
+        let cached_metadata: Option<serde_json::Value> = 
+            participant_timeline_cache::table
+                .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
+                .select(participant_timeline_cache::metadata)
+                .first(&mut conn)
+                .await
+                .optional()
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_timeline: Error checking cache metadata: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to check cache: {}", e))
+                })?;
+        
+        if let (Some(timeline_json), Some(metadata_json)) = (cached_timeline, cached_metadata) {
             eprintln!("[GraphQL] participant_timeline: Cache hit! Returning cached data");
             let timeline_data: Vec<TimelineDataPoint> = serde_json::from_value(timeline_json)
                 .map_err(|e| {

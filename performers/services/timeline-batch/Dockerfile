@@ -14,7 +14,7 @@ COPY diesel.toml ./
 
 # Copy source code
 COPY src ./src
-COPY migrations ./migrations
+# Note: migrations are shared with graphql service, so we reference them from there
 
 # Build the application
 RUN cargo build --release
