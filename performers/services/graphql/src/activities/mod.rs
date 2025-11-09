@@ -469,7 +469,7 @@ impl Query {
         
         if let (Some(timeline_json), Some(metadata_json)) = (cached_timeline, cached_metadata) {
             eprintln!("[GraphQL] participant_timeline: Cache hit! Returning cached data");
-            let mut timeline_data: Vec<TimelineDataPoint> = serde_json::from_value(timeline_json)
+            let timeline_data: Vec<TimelineDataPoint> = serde_json::from_value(timeline_json)
                 .map_err(|e| {
                     eprintln!("[GraphQL] participant_timeline: Error deserializing cached timeline data: {:?}", e);
                     async_graphql::Error::new(format!("Failed to deserialize cached timeline data: {}", e))
@@ -482,15 +482,18 @@ impl Query {
             
             // Apply sampling if needed
             let original_size = timeline_data.len() as i32;
-            if sample_size > 0 && timeline_data.len() > sample_size as usize {
+            let final_timeline_data = if sample_size > 0 && timeline_data.len() > sample_size as usize {
                 eprintln!("[GraphQL] participant_timeline: Sampling cached data from {} to {} points", timeline_data.len(), sample_size);
-                timeline_data = Self::sample_timeline_data(timeline_data, sample_size);
+                let sampled = sample_timeline_data(timeline_data, sample_size);
                 metadata.truncated = Some(true);
                 metadata.original_size = Some(original_size);
-            }
+                sampled
+            } else {
+                timeline_data
+            };
             
             return Ok(ParticipantTimelineResponse {
-                timeline_data,
+                timeline_data: final_timeline_data,
                 metadata,
             });
         }
@@ -667,23 +670,24 @@ impl Query {
         
         // Apply sampling if needed
         let original_size = timeline_data.len() as i32;
-        let mut truncated = false;
-        if sample_size > 0 && timeline_data.len() > sample_size as usize {
+        let (final_timeline_data, truncated) = if sample_size > 0 && timeline_data.len() > sample_size as usize {
             eprintln!("[GraphQL] participant_timeline: Sampling real-time data from {} to {} points", timeline_data.len(), sample_size);
-            timeline_data = Self::sample_timeline_data(timeline_data, sample_size);
-            truncated = true;
-        }
+            let sampled = sample_timeline_data(timeline_data, sample_size);
+            (sampled, true)
+        } else {
+            (timeline_data, false)
+        };
         
-        // Calculate totals before moving timeline_data
-        let total_data_points = timeline_data.len() as i32;
-        let total_emotion_entries: i32 = timeline_data.iter().map(|d| d.emotions.len() as i32).sum();
-        let total_physiological_entries: i32 = timeline_data.iter().filter(|d| d.physiological.average.is_some()).count() as i32;
+        // Calculate totals before moving final_timeline_data
+        let total_data_points = final_timeline_data.len() as i32;
+        let total_emotion_entries: i32 = final_timeline_data.iter().map(|d| d.emotions.len() as i32).sum();
+        let total_physiological_entries: i32 = final_timeline_data.iter().filter(|d| d.physiological.average.is_some()).count() as i32;
         
         eprintln!("[GraphQL] participant_timeline: Completed successfully - {} data points, {} emotion entries, {} physiological entries", 
                   total_data_points, total_emotion_entries, total_physiological_entries);
         
         Ok(ParticipantTimelineResponse {
-            timeline_data,
+            timeline_data: final_timeline_data,
             metadata: TimelineMetadata {
                 session_events: Some(session_events_count as i32),
                 emotion_entries: Some(total_emotion_entries),
@@ -696,127 +700,129 @@ impl Query {
             },
         })
     }
-    
-    // Sample timeline data using intelligent sampling strategy
-    // 1. Equal interval sampling
-    // 2. Keep important events (large emotion changes, abnormal reaction times)
-    // 3. Ensure even distribution across Jung stimulus words
-    fn sample_timeline_data(mut data: Vec<TimelineDataPoint>, sample_size: i32) -> Vec<TimelineDataPoint> {
-        use std::collections::{HashMap, HashSet};
-        
-        if data.len() <= sample_size as usize {
-            return data;
-        }
-        
-        let sample_size = sample_size as usize;
-        let mut sampled: Vec<TimelineDataPoint> = Vec::with_capacity(sample_size);
-        let mut selected_indices: HashSet<usize> = HashSet::new();
-        
-        // Step 1: Identify important events (keep top 10% of events with largest emotion variance or abnormal reaction times)
-        let important_count = (sample_size / 10).max(50); // At least 50 important events
-        
-        // Calculate emotion variance for each data point
-        let mut emotion_variances: Vec<(usize, f64)> = data.iter().enumerate().map(|(idx, point)| {
-            let emotion_scores: Vec<f64> = point.emotions.iter().map(|e| e.score).collect();
-            let variance = if emotion_scores.len() > 1 {
-                let mean = emotion_scores.iter().sum::<f64>() / emotion_scores.len() as f64;
-                let variance = emotion_scores.iter().map(|&s| (s - mean).powi(2)).sum::<f64>() / emotion_scores.len() as f64;
-                variance
-            } else {
-                0.0
-            };
-            (idx, variance)
-        }).collect();
-        
-        // Sort by variance (descending) and select top important events
-        emotion_variances.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-        for (idx, _) in emotion_variances.iter().take(important_count) {
-            selected_indices.insert(*idx);
-        }
-        
-        // Also select events with abnormal reaction times (very fast or very slow)
-        let reaction_times: Vec<(usize, i32)> = data.iter().enumerate()
-            .map(|(idx, point)| (idx, point.reaction_time))
-            .collect();
-        let rt_mean = reaction_times.iter().map(|(_, rt)| *rt as f64).sum::<f64>() / reaction_times.len() as f64;
-        let rt_std = (reaction_times.iter().map(|(_, rt)| ((*rt as f64) - rt_mean).powi(2)).sum::<f64>() / reaction_times.len() as f64).sqrt();
-        
-        for (idx, rt) in reaction_times {
-            if !selected_indices.contains(&idx) {
-                let rt_f64 = rt as f64;
-                // Select if reaction time is more than 2 standard deviations from mean
-                if (rt_f64 - rt_mean).abs() > 2.0 * rt_std {
-                    selected_indices.insert(idx);
-                    if selected_indices.len() >= sample_size {
-                        break;
-                    }
-                }
-            }
-        }
-        
-        // Step 2: Ensure even distribution across Jung stimulus words (100 words)
-        let mut word_counts: HashMap<String, usize> = HashMap::new();
-        let target_per_word = (sample_size / 100).max(1); // At least 1 per word
-        
-        // Count occurrences of each word in selected indices
-        for &idx in &selected_indices {
-            let word = &data[idx].word;
-            *word_counts.entry(word.clone()).or_insert(0) += 1;
-        }
-        
-        // Add more samples for words that are underrepresented
-        for (word, &count) in &word_counts {
-            if count < target_per_word {
-                let needed = target_per_word - count;
-                let word_indices: Vec<usize> = data.iter().enumerate()
-                    .filter(|(idx, point)| point.word == *word && !selected_indices.contains(idx))
-                    .map(|(idx, _)| idx)
-                    .collect();
-                
-                for idx in word_indices.iter().take(needed) {
-                    selected_indices.insert(*idx);
-                    if selected_indices.len() >= sample_size {
-                        break;
-                    }
-                }
-            }
-        }
-        
-        // Step 3: Fill remaining slots with equal interval sampling
-        let remaining = sample_size.saturating_sub(selected_indices.len());
-        if remaining > 0 {
-            let step = data.len() / remaining;
-            for i in 0..remaining {
-                let idx = i * step;
-                if !selected_indices.contains(&idx) && idx < data.len() {
-                    selected_indices.insert(idx);
-                }
-            }
-        }
-        
-        // Step 4: Collect sampled data points in chronological order
-        let mut selected_indices_vec: Vec<usize> = selected_indices.into_iter().collect();
-        selected_indices_vec.sort();
-        
-        // Limit to sample_size
-        if selected_indices_vec.len() > sample_size {
-            // Take evenly spaced indices from the sorted list
-            let step = selected_indices_vec.len() / sample_size;
-            selected_indices_vec = selected_indices_vec.into_iter()
-                .enumerate()
-                .filter(|(i, _)| i % step == 0)
-                .map(|(_, idx)| idx)
-                .take(sample_size)
-                .collect();
-        }
-        
-        for idx in selected_indices_vec {
-            sampled.push(data[idx].clone());
-        }
-        
-        sampled
-    }
+}
 
+// Sample timeline data using intelligent sampling strategy
+// 1. Equal interval sampling
+// 2. Keep important events (large emotion changes, abnormal reaction times)
+// 3. Ensure even distribution across Jung stimulus words
+fn sample_timeline_data(data: Vec<TimelineDataPoint>, sample_size: i32) -> Vec<TimelineDataPoint> {
+    use std::collections::{HashMap, HashSet};
+    
+    if data.len() <= sample_size as usize {
+        return data;
+    }
+    
+    let sample_size = sample_size as usize;
+    let mut sampled: Vec<TimelineDataPoint> = Vec::with_capacity(sample_size);
+    let mut selected_indices: HashSet<usize> = HashSet::new();
+    
+    // Step 1: Identify important events (keep top 10% of events with largest emotion variance or abnormal reaction times)
+    let important_count = (sample_size / 10).max(50); // At least 50 important events
+    
+    // Calculate emotion variance for each data point
+    let mut emotion_variances: Vec<(usize, f64)> = data.iter().enumerate().map(|(idx, point)| {
+        let emotion_scores: Vec<f64> = point.emotions.iter().map(|e| e.score).collect();
+        let variance = if emotion_scores.len() > 1 {
+            let mean = emotion_scores.iter().sum::<f64>() / emotion_scores.len() as f64;
+            let variance = emotion_scores.iter().map(|&s| (s - mean).powi(2)).sum::<f64>() / emotion_scores.len() as f64;
+            variance
+        } else {
+            0.0
+        };
+        (idx, variance)
+    }).collect();
+    
+    // Sort by variance (descending) and select top important events
+    emotion_variances.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    for (idx, _) in emotion_variances.iter().take(important_count) {
+        selected_indices.insert(*idx);
+    }
+    
+    // Also select events with abnormal reaction times (very fast or very slow)
+    let reaction_times: Vec<(usize, i32)> = data.iter().enumerate()
+        .map(|(idx, point)| (idx, point.reaction_time))
+        .collect();
+    let rt_mean = reaction_times.iter().map(|(_, rt)| *rt as f64).sum::<f64>() / reaction_times.len() as f64;
+    let rt_std = (reaction_times.iter().map(|(_, rt)| ((*rt as f64) - rt_mean).powi(2)).sum::<f64>() / reaction_times.len() as f64).sqrt();
+    
+    for (idx, rt) in reaction_times {
+        if !selected_indices.contains(&idx) {
+            let rt_f64 = rt as f64;
+            // Select if reaction time is more than 2 standard deviations from mean
+            if (rt_f64 - rt_mean).abs() > 2.0 * rt_std {
+                selected_indices.insert(idx);
+                if selected_indices.len() >= sample_size {
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Step 2: Ensure even distribution across Jung stimulus words (100 words)
+    let mut word_counts: HashMap<String, usize> = HashMap::new();
+    let target_per_word = (sample_size / 100).max(1); // At least 1 per word
+    
+    // Count occurrences of each word in selected indices
+    for &idx in &selected_indices {
+        let word = &data[idx].word;
+        *word_counts.entry(word.clone()).or_insert(0) += 1;
+    }
+    
+    // Add more samples for words that are underrepresented
+    for (word, &count) in &word_counts {
+        if count < target_per_word {
+            let needed = target_per_word - count;
+            let word_indices: Vec<usize> = data.iter().enumerate()
+                .filter(|(idx, point)| point.word == *word && !selected_indices.contains(idx))
+                .map(|(idx, _)| idx)
+                .collect();
+            
+            for idx in word_indices.iter().take(needed) {
+                selected_indices.insert(*idx);
+                if selected_indices.len() >= sample_size {
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Step 3: Fill remaining slots with equal interval sampling
+    let remaining = sample_size.saturating_sub(selected_indices.len());
+    if remaining > 0 {
+        let step = data.len() / remaining;
+        for i in 0..remaining {
+            let idx = i * step;
+            if !selected_indices.contains(&idx) && idx < data.len() {
+                selected_indices.insert(idx);
+            }
+        }
+    }
+    
+    // Step 4: Collect sampled data points in chronological order
+    let mut selected_indices_vec: Vec<usize> = selected_indices.into_iter().collect();
+    selected_indices_vec.sort();
+    
+    // Limit to sample_size
+    if selected_indices_vec.len() > sample_size {
+        // Take evenly spaced indices from the sorted list
+        let step = selected_indices_vec.len() / sample_size;
+        selected_indices_vec = selected_indices_vec.into_iter()
+            .enumerate()
+            .filter(|(i, _)| i % step == 0)
+            .map(|(_, idx)| idx)
+            .take(sample_size)
+            .collect();
+    }
+    
+    for idx in selected_indices_vec {
+        sampled.push(data[idx].clone());
+    }
+    
+    sampled
+}
+
+impl Query {
     async fn participant_responses(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<Vec<ParticipantResponse>> {
         let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()?;
         let mut conn = pool.get().await?;

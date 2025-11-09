@@ -154,10 +154,11 @@ export async function GET(
     console.log('[Timeline API] Sending GraphQL request:', {
       url: graphqlUrl,
       participantId,
+      sampleSize,
       queryLength: graphqlQuery.length,
       query: graphqlQuery.substring(0, 200) + '...', // Log first 200 chars of query
       fullQuery: graphqlQuery, // Log full query for debugging
-        variables: { participantId },
+      variables: { participantId, sampleSize },
     })
 
     // Create AbortController for timeout

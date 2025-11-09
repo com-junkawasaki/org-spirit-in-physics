@@ -19,6 +19,7 @@ type ParticipantGQL {
 	responseCount: Int
 	emotionDataCount: Int
 	physiologicalDataCount: Int
+	averageSpiritProbability: Float
 }
 
 type ParticipantTimelineResponse {
