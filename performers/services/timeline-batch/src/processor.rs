@@ -894,12 +894,6 @@ async fn generate_force_graph_data(
         word_stats_map.insert(word, (rt_stats, em_stats, ph_stats));
     }
     
-    // Create a map from word to ID
-    let mut word_to_id_map: HashMap<String, i32> = HashMap::new();
-    for (id, word) in &word_stimuli {
-        word_to_id_map.insert(word.clone(), *id);
-    }
-    
     // Generate nodes (100 Jung stimulus words)
     let mut nodes: Vec<serde_json::Value> = Vec::new();
     for (word_id, word_japanese) in &word_stimuli {

@@ -2,9 +2,17 @@
  * Merkle DAG: api.admin.batch.generate_display_data
  * API endpoint to trigger display data generation for a participant
  * RDF: https://spirit-in-physics.gftd.ai/api/admin/batch/generate-display-data
+ * 
+ * Note: This triggers the same batch processing as /api/admin/batch/execute,
+ * which now includes display data generation (word-second aggregates, word aggregates,
+ * sampled timeline, and force graph data).
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,47 +26,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get GraphQL API URL
-    const graphqlUrl = process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql'
-    const graphqlBaseUrl = graphqlUrl.endsWith('/graphql') 
-      ? graphqlUrl.slice(0, -7)
-      : graphqlUrl.replace(/\/graphql\/?$/, '')
-
-    // Call timeline batch service to generate display data
-    // This will trigger the batch processing which includes display data generation
-    const batchServiceUrl = process.env.TIMELINE_BATCH_SERVICE_URL || 'http://timeline-batch:8082'
-    
-    // For now, we'll trigger the regular batch processing which includes display data generation
-    // In the future, we could have a dedicated endpoint for display data only
-    const response = await fetch(`${batchServiceUrl}/batch/execute`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        participantId,
-        incremental: false // Always full regeneration for display data
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('[Generate Display Data API] Batch service error:', errorText)
+    // Validate participantId format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(participantId)) {
       return NextResponse.json(
-        { error: 'Failed to start display data generation', details: errorText },
-        { status: 500 }
+        { error: 'Invalid participantId format' },
+        { status: 400 }
       )
     }
 
-    const data = await response.json()
-    
+    // Execute Docker command directly (using docker CLI)
+    // Note: This requires Docker socket to be mounted
+    // Display data generation is included in the batch processing
+    const networkName = process.env.DOCKER_NETWORK || 'spirit-in-physics_spirit-network'
+    const command = `docker run --rm --network ${networkName} --env DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres spirit-in-physics-timeline-batch /app/timeline-batch ${participantId}`.trim()
+
+    console.log(`[Generate Display Data API] Executing batch processing (includes display data generation) for participant: ${participantId}`)
+    console.log(`[Generate Display Data API] Command: ${command}`)
+
+    // Execute in background (don't wait for completion)
+    execAsync(command).catch((error) => {
+      console.error(`[Generate Display Data API] Batch execution error:`, error)
+    })
+
+    // Return immediately with job ID
     return NextResponse.json({
       success: true,
-      jobId: data.jobId,
-      message: 'Display data generation started',
+      participantId,
+      message: 'Display data generation started (includes word-second aggregates, word aggregates, sampled timeline, and force graph data)',
+      jobId: `display-data-${participantId}-${Date.now()}`,
     })
   } catch (error: any) {
     console.error('[Generate Display Data API] Error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { 
+        error: 'Failed to start display data generation', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      },
       { status: 500 }
     )
   }

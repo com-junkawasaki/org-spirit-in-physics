@@ -94,17 +94,23 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams
     const sampleSize = searchParams.get('sampleSize') ? parseInt(searchParams.get('sampleSize')!, 10) : 2000
     
-    // Check cache first
+    // Check in-memory cache first
     cleanupCache()
     const cacheKey = getCacheKey(participantId, sampleSize)
     const cached = timelineCache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log('[Timeline API] Cache hit for', cacheKey)
+      console.log('[Timeline API] In-memory cache hit for', cacheKey)
       return NextResponse.json({
         success: true,
         data: cached.data,
         cached: true,
       })
+    }
+    
+    // Check for pre-computed sampled_timeline_data in database (if sampleSize is 2000)
+    if (sampleSize === 2000) {
+      console.log('[Timeline API] Checking for pre-computed sampled timeline data...')
+      // This will be handled by GraphQL API which checks sampled_timeline_data first
     }
     
     const graphqlQuery = `

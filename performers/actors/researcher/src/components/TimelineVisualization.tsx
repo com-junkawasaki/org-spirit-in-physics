@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useTimelineData } from './timeline/useTimelineData'
 import TimelineChart from './timeline/TimelineChart'
 import KPICards from './timeline/KPICards'
 import Force3DControls from './timeline/Force3DControls'
+import { createGraphQLClient } from '@/lib/graphql-client'
 import type {
   TimelineVisualizationProps,
   ForcePreset,
@@ -63,6 +64,56 @@ export default function TimelineVisualization({
     refetchData,
     debugInfo
   } = useTimelineData({ participantId })
+
+  // Force graph data state
+  const [forceGraphData, setForceGraphData] = useState<{ nodes: any[]; links: any[] } | null>(null)
+  const [forceGraphLoading, setForceGraphLoading] = useState(false)
+  const [forceGraphError, setForceGraphError] = useState<string | null>(null)
+
+  // Fetch force graph data when component mounts
+  useEffect(() => {
+    if (!mounted || !participantId) return
+    
+    const fetchForceGraphData = async () => {
+      setForceGraphLoading(true)
+      setForceGraphError(null)
+      try {
+        const client = createGraphQLClient()
+        const result = await client.getParticipantForceGraphData(participantId)
+        if (result?.data) {
+          // Convert GraphQL response to component format
+          const nodes = result.data.nodes.map((node: any) => ({
+            id: node.id,
+            label: node.label,
+            scale: 1.0, // Will be calculated based on stats
+            nodeType: 'word' as const,
+            reactionTime: node.reactionTime,
+            emotions: node.emotions,
+            physiological: node.physiological,
+          }))
+          const links = result.data.links.map((link: any) => ({
+            source: parseInt(link.source),
+            target: parseInt(link.target),
+            weight: link.weight,
+            mode: 'tension' as const,
+            L0: 0,
+            k: 0,
+            correlationType: link.correlationType,
+          }))
+          setForceGraphData({ nodes, links })
+        } else {
+          setForceGraphError('Force graph data not available')
+        }
+      } catch (err) {
+        console.error('Error fetching force graph data:', err)
+        setForceGraphError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setForceGraphLoading(false)
+      }
+    }
+    
+    fetchForceGraphData()
+  }, [mounted, participantId])
 
   // 3D Force プリセット
   const forcePresets: readonly ForcePreset[] = [
@@ -372,7 +423,73 @@ export default function TimelineVisualization({
                   {/* 3D Force グラフ本体 */}
                   {mounted && (() => {
                 try {
-                  // 実際のデータから3Dグラフを生成
+                  // Pre-computed force graph data を使用（利用可能な場合）
+                  if (forceGraphData && !forceGraphLoading && !forceGraphError) {
+                    // Pre-computed data を使用
+                    const nodes: WordNode[] = forceGraphData.nodes.map((node: any) => {
+                      // Calculate scale based on reaction time stats
+                      const rtAvg = node.reactionTime?.avg || 0
+                      const rtCount = node.reactionTime?.count || 0
+                      const scale = Math.max(0.5, Math.min(10, 0.5 + (rtAvg / 1000) * 2 + Math.log1p(rtCount) * 0.5))
+                      
+                      return {
+                        id: node.id,
+                        label: node.label,
+                        scale,
+                        nodeType: 'word' as const,
+                        initial: undefined,
+                        fixed: false,
+                      }
+                    })
+                    
+                    const links: WordLink[] = forceGraphData.links.map((link: any) => ({
+                      source: link.source,
+                      target: link.target,
+                      weight: link.weight,
+                      mode: 'tension' as const,
+                      L0: Math.max(20, restLength * (1 - 0.6 * link.weight)),
+                      k: springK * (0.3 + 0.7 * link.weight),
+                      color: `rgba(30, 64, 175, ${Math.max(0.12, Math.min(0.95, 0.12 + 0.88 * link.weight)).toFixed(3)})`,
+                    }))
+                    
+                    const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
+                    
+                    // 選択語を中心へ（固定）し目立たせる
+                    if (selectedWord) {
+                      const idx = nodes.findIndex(n => n.label === selectedWord)
+                      if (idx >= 0) {
+                        nodes[idx].fixed = true
+                        nodes[idx].initial = [0, 0, 0]
+                        nodes[idx].scale = Math.max(nodes[idx].scale, 6)
+                      }
+                    }
+                    
+                    return (
+                      <div className="border rounded overflow-hidden">
+                        <Force3D
+                          nodes={nodes}
+                          links={links}
+                          width={width}
+                          height={height}
+                          background="#ffffff"
+                          physics={{
+                            springK,
+                            repulsionK,
+                            damping,
+                            restLength,
+                            maxSpeed: 200,
+                            shellRadius,
+                            shellK,
+                            minSep,
+                            sepK,
+                            radialOutK,
+                          }}
+                        />
+                      </div>
+                    )
+                  }
+                  
+                  // Fallback: 実際のデータから3Dグラフを生成
                   const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
                   const jungWords = JUNG_STIMULUS_WORDS // 全てのデータを表示
 
