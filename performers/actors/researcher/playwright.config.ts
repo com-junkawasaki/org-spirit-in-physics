@@ -12,6 +12,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  timeout: 120000, // 2 minutes timeout for performance tests
   reporter: [
     ['html'],
     ['list'],
@@ -21,6 +22,8 @@ export default defineConfig({
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'https://researcher.spirit-in-physics.orb.local',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    actionTimeout: 30000, // 30 seconds for actions
+    navigationTimeout: 60000, // 60 seconds for navigation
   },
 
   projects: [

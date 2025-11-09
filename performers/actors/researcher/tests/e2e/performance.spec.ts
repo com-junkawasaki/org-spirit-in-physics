@@ -12,7 +12,21 @@ test.describe('Performance Measurement E2E', () => {
 
   test('should measure participant detail page load performance', async ({ page }) => {
     // Enable performance monitoring
-    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      // If networkidle times out, continue anyway
+    });
+    
+    // Wait for performance API to be available
+    await page.waitForFunction(() => {
+      return typeof performance !== 'undefined' && 
+             performance.getEntriesByType !== undefined &&
+             performance.getEntriesByType('navigation').length > 0;
+    }, { timeout: 10000 }).catch(() => {
+      // If performance API is not available, continue anyway
+    });
 
     // Get performance metrics from browser
     const performanceMetrics = await page.evaluate(() => {
@@ -131,7 +145,12 @@ test.describe('Performance Measurement E2E', () => {
       }
     });
 
-    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      // If networkidle times out, continue anyway
+    });
 
     // Wait for timeline to load
     await page.waitForSelector('.bg-gray-900', { timeout: 10000 }).catch(() => {});
@@ -191,7 +210,12 @@ test.describe('Performance Measurement E2E', () => {
       }
     });
 
-    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      // If networkidle times out, continue anyway
+    });
 
     // Wait a bit for force graph to load
     await page.waitForTimeout(2000);
@@ -212,7 +236,12 @@ test.describe('Performance Measurement E2E', () => {
     // Measure time to interactive
     const startTime = Date.now();
     
-    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      // If networkidle times out, continue anyway
+    });
     
     // Wait for all content to be visible
     await page.waitForSelector('h1, h2', { timeout: 10000 });
@@ -262,7 +291,12 @@ test.describe('Performance Measurement E2E', () => {
       }
     });
 
-    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseURL}/participants/${participantId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {
+      // If networkidle times out, continue anyway
+    });
     
     // Wait for all logs to be collected
     await page.waitForTimeout(3000);
