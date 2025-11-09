@@ -15,8 +15,9 @@ fi
 
 echo "Waiting for GraphQL API to be ready..."
 # Try to connect to GraphQL API (works both in Docker network and host network)
-GRAPHQL_URL="${NEXT_PUBLIC_GRAPHQL_RUST_API_URL:-http://graphql:8080/graphql}"
-GRAPHQL_BASE_URL=$(echo "$GRAPHQL_URL" | sed 's|/graphql$||')
+# For container-to-container communication, always use graphql:8080
+GRAPHQL_URL="http://graphql:8080/graphql"
+GRAPHQL_BASE_URL="http://graphql:8080"
 
 TIMEOUT=120
 ELAPSED=0

@@ -65,15 +65,31 @@ services:
       - ./performers/actors/researcher/codegen.yaml:/app/codegen.yaml:cached
       - ./performers/services/graphql/schema.graphql:/app/schema.graphql:cached
       - ./performers/actors/researcher/src/generated:/app/src/generated:cached
+      - ./performers/actors/researcher/entrypoint.sh:/entrypoint.sh:cached
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - .:/workspace:cached
     environment:
-      - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
-      - GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
       - NODE_ENV=development
+      # Improve file watching reliability on macOS bind mounts
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # App URLs (loaded from host env / .envrc)
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      # GraphQL API URL
+      # Client-side: use localhost for browser access
+      - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=${NEXT_PUBLIC_GRAPHQL_RUST_API_URL:-http://localhost:8081/graphql}
+      # Server-side: use container name for server-to-server communication
+      - GRAPHQL_RUST_API_URL=${GRAPHQL_RUST_API_URL:-http://graphql:8080/graphql}
+      # Clerk Authentication (hardcoded for development)
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_ZW5vdWdoLWNoaXBtdW5rLTkyLmNsZXJrLmFjY291bnRzLmRldiQ
+      - CLERK_SECRET_KEY=sk_test_FmPI35dNxAij0tuaX7rV5PDIDVmVvx8J11nyVyxEGu
+      # Database
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      # Project root
       - PROJECT_ROOT=/workspace
-      # E2E Test environment variables
-      - PLAYWRIGHT_BASE_URL=https://researcher.spirit-in-physics.orb.local
+      # E2E Test environment variables (hardcoded)
+      - PLAYWRIGHT_BASE_URL=http://localhost:3000
       - TEST_PARTICIPANT_ID=144b325f-5966-4d59-a629-f2ca421388cc
     env_file:
       - ./performers/actors/researcher/env.docker

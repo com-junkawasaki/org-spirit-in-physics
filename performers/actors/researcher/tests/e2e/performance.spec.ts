@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Performance Measurement E2E', () => {
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'https://researcher.spirit-in-physics.orb.local';
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
   const participantId = process.env.TEST_PARTICIPANT_ID || '144b325f-5966-4d59-a629-f2ca421388cc';
 
   test('should measure participant detail page load performance', async ({ page }) => {
