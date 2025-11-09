@@ -85,6 +85,27 @@ pub struct ParticipantTimelineResponse {
 }
 
 #[derive(SimpleObject)]
+#[graphql(name = "ParticipantResponse")]
+pub struct ParticipantResponse {
+    pub id: String,
+    #[graphql(name = "stimulusWord")]
+    pub stimulus_word: String,
+    #[graphql(name = "responseWord")]
+    pub response_word: Option<String>,
+    #[graphql(name = "reactionTimeMs")]
+    pub reaction_time_ms: Option<i32>,
+    #[graphql(name = "spiritProbability")]
+    pub spirit_probability: Option<f64>,
+    pub emotion: Option<String>,
+    #[graphql(name = "emotionConfidence")]
+    pub emotion_confidence: Option<f64>,
+    #[graphql(name = "eventTs")]
+    pub event_ts: String,
+    #[graphql(name = "sessionId")]
+    pub session_id: Option<String>,
+}
+
+#[derive(SimpleObject)]
 #[graphql(name = "Word2VecData")]
 pub struct Word2VecData {
     pub word: String,
@@ -214,21 +235,76 @@ impl Query {
                 .load(&mut conn)
                 .await?;
 
-                let gql_participants: Vec<ParticipantGQL> = db_participants
-                    .into_iter()
-                    .map(|(id, age, handedness, created_at, updated_at)| ParticipantGQL {
+        use diesel::dsl::count;
+        
+        // Process each participant to get statistics
+        let mut gql_participants = Vec::new();
+        for (id, age, handedness, created_at, updated_at) in db_participants {
+            let participant_uuid = id;
+            
+            // Count sessions
+            let session_count: i64 = participant_experiment_sessions::table
+                .filter(participant_experiment_sessions::participant_id.eq(participant_uuid))
+                .select(count(participant_experiment_sessions::id))
+                .first(&mut conn)
+                .await
+                .unwrap_or(0);
+            
+            // Count responses
+            let response_count: i64 = participant_response_data::table
+                .filter(participant_response_data::participant_id.eq(participant_uuid))
+                .select(count(participant_response_data::id))
+                .first(&mut conn)
+                .await
+                .unwrap_or(0);
+            
+            // Count emotion data (via responses)
+            let emotion_data_count: i64 = emotion_data::table
+                .inner_join(participant_response_data::table.on(
+                    emotion_data::participant_response_data_id.eq(participant_response_data::id)
+                ))
+                .filter(participant_response_data::participant_id.eq(participant_uuid))
+                .select(count(emotion_data::id))
+                .first(&mut conn)
+                .await
+                .unwrap_or(0);
+            
+            // Count physiological data (via responses)
+            let physiological_data_count: i64 = physiological_data::table
+                .inner_join(participant_response_data::table.on(
+                    physiological_data::participant_response_data_id.eq(participant_response_data::id)
+                ))
+                .filter(participant_response_data::participant_id.eq(participant_uuid))
+                .select(count(physiological_data::id))
+                .first(&mut conn)
+                .await
+                .unwrap_or(0);
+            
+            // Calculate average spirit probability from analysis results
+            use diesel::dsl::avg;
+            let avg_spirit_prob: Option<f64> = participant_analysis_results::table
+                .filter(participant_analysis_results::participant_id.eq(participant_uuid))
+                .filter(participant_analysis_results::p_value.is_not_null())
+                .select(avg(participant_analysis_results::p_value))
+                .first(&mut conn)
+                .await
+                .ok()
+                .flatten();
+            
+            gql_participants.push(ParticipantGQL {
                         id: id.to_string(),
                         age,
                         gender: None, // GenderType enum conversion skipped for now
                         handedness,
                         created_at: created_at.map(|d| d.to_rfc3339()).unwrap_or_default(),
                         updated_at: updated_at.map(|d| d.to_rfc3339()).unwrap_or_default(),
-                        session_count: None, // Statistics not included in list query for performance
-                        response_count: None,
-                        emotion_data_count: None,
-                        physiological_data_count: None,
-                    })
-                    .collect();
+                session_count: Some(session_count),
+                response_count: Some(response_count),
+                emotion_data_count: Some(emotion_data_count),
+                physiological_data_count: Some(physiological_data_count),
+                average_spirit_probability: avg_spirit_prob,
+            });
+        }
 
         Ok(gql_participants)
     }
@@ -299,6 +375,17 @@ impl Query {
                     .await
                     .unwrap_or(0);
                 
+                // Calculate average spirit probability from analysis results
+                use diesel::dsl::avg;
+                let avg_spirit_prob: Option<f64> = participant_analysis_results::table
+                    .filter(participant_analysis_results::participant_id.eq(participant_uuid))
+                    .filter(participant_analysis_results::p_value.is_not_null())
+                    .select(avg(participant_analysis_results::p_value))
+                    .first(&mut conn)
+                    .await
+                    .ok()
+                    .flatten();
+                
                 Ok(ParticipantGQL {
                     id: id.to_string(),
                     age,
@@ -310,6 +397,7 @@ impl Query {
                     response_count: Some(response_count),
                     emotion_data_count: Some(emotion_data_count),
                     physiological_data_count: Some(physiological_data_count),
+                    average_spirit_probability: avg_spirit_prob,
                 })
             }
             None => Err(async_graphql::Error::new(format!("Participant not found: {}", participant_id)))
@@ -455,7 +543,7 @@ impl Query {
                 emotion_data::file_type,
             ))
             .load(&mut conn)
-            .await
+                .await
             .map_err(|e| {
                 eprintln!("[GraphQL] participant_timeline: Database query error when fetching emotion data: {:?}", e);
                 async_graphql::Error::new(format!("Failed to fetch emotion data for participant {}: {}", participant_id, e))
@@ -489,7 +577,7 @@ impl Query {
                 physiological_data::min_value,
             ))
             .load(&mut conn)
-            .await
+                .await
             .map_err(|e| {
                 eprintln!("[GraphQL] participant_timeline: Database query error when fetching physiological data: {:?}", e);
                 async_graphql::Error::new(format!("Failed to fetch physiological data for participant {}: {}", participant_id, e))
@@ -588,6 +676,70 @@ impl Query {
                 original_size: Some(total_data_points),
             },
         })
+    }
+
+    async fn participant_responses(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<Vec<ParticipantResponse>> {
+        let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()?;
+        let mut conn = pool.get().await?;
+        
+        let participant_uuid = Uuid::parse_str(&participant_id)
+            .map_err(|e| async_graphql::Error::new(format!("Invalid participant ID: {}", e)))?;
+        
+        // Fetch response data
+        let responses: Vec<(uuid::Uuid, String, Option<String>, Option<i32>, chrono::DateTime<chrono::Utc>, Option<String>)> = 
+            participant_response_data::table
+                .filter(participant_response_data::participant_id.eq(participant_uuid))
+                .select((
+                    participant_response_data::id,
+                    participant_response_data::stimulus_word,
+                    participant_response_data::response_word,
+                    participant_response_data::reaction_time_ms,
+                    participant_response_data::timestamp,
+                    participant_response_data::session,
+                ))
+                .order(participant_response_data::timestamp.asc())
+                .load(&mut conn)
+                .await?;
+        
+        // Fetch analysis results to get spirit_probability
+        let analysis_results: Vec<(uuid::Uuid, Option<f64>)> = 
+            participant_analysis_results::table
+                .filter(participant_analysis_results::participant_id.eq(participant_uuid))
+                .select((
+                    participant_analysis_results::id,
+                    participant_analysis_results::p_value,
+                ))
+                .load(&mut conn)
+                .await?;
+        
+        // Create a map of response_id -> spirit_probability from analysis results
+        // Note: analysis_results.id is not the same as response_data.id, so we need to match by stimulus/response words
+        // For now, we'll use the average p_value for all responses
+        let avg_spirit_prob = analysis_results.iter()
+            .filter_map(|(_, p_val)| *p_val)
+            .collect::<Vec<f64>>();
+        let avg_prob = if avg_spirit_prob.is_empty() {
+            None
+        } else {
+            Some(avg_spirit_prob.iter().sum::<f64>() / avg_spirit_prob.len() as f64)
+        };
+        
+        // Convert to ParticipantResponse
+        let participant_responses: Vec<ParticipantResponse> = responses.into_iter().map(|(id, stimulus_word, response_word, reaction_time_ms, timestamp, session)| {
+            ParticipantResponse {
+                id: id.to_string(),
+                stimulus_word,
+                response_word,
+                reaction_time_ms,
+                spirit_probability: avg_prob, // Use average for now - could be improved with proper matching
+                emotion: None, // Would need to join with emotion_data table
+                emotion_confidence: None,
+                event_ts: timestamp.to_rfc3339(),
+                session_id: session,
+            }
+        }).collect();
+        
+        Ok(participant_responses)
     }
 
     // Temporarily disabled - will be fixed in a separate task

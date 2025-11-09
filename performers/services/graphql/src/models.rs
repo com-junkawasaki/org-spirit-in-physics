@@ -36,6 +36,9 @@ pub struct ParticipantGQL {
     pub emotion_data_count: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub physiological_data_count: Option<i64>,
+    #[graphql(name = "averageSpiritProbability")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub average_spirit_probability: Option<f64>,
 }
 
 #[derive(Insertable, Serialize, Deserialize)]

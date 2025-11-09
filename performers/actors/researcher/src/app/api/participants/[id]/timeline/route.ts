@@ -29,7 +29,7 @@ export async function GET(
   }
 
   // Validate environment variables
-  const graphqlUrl = process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql'
+    const graphqlUrl = process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql'
   // Extract base URL safely (remove trailing /graphql if present)
   const graphqlBaseUrl = graphqlUrl.endsWith('/graphql') 
     ? graphqlUrl.slice(0, -7) // Remove '/graphql' (7 characters)
@@ -58,42 +58,42 @@ export async function GET(
 
   try {
     const graphqlQuery = `
-      query ParticipantTimeline($participantId: String!) {
-        participantTimeline(participantId: $participantId) {
-          timelineData {
-            timestamp
-            word
-            reactionTime
-            hasResponse
-            emotions {
-              name
-              score
-              fileType
-            }
-            physiological {
-              average
-              max
-              min
-            }
-            reactionValue
-            eventType
-            metadata {
-              emotionCount
-              physiologicalCount
+          query ParticipantTimeline($participantId: String!) {
+            participantTimeline(participantId: $participantId) {
+              timelineData {
+                timestamp
+                word
+                reactionTime
+                hasResponse
+                emotions {
+                  name
+                  score
+                  fileType
+                }
+                physiological {
+                  average
+                  max
+                  min
+                }
+                reactionValue
+                eventType
+                metadata {
+                  emotionCount
+                  physiologicalCount
+                }
+              }
+              metadata {
+                sessionEvents
+                emotionEntries
+                physiologicalEntries
+                totalDataPoints
+                dataSource
+                errors
+                truncated
+                originalSize
+              }
             }
           }
-          metadata {
-            sessionEvents
-            emotionEntries
-            physiologicalEntries
-            totalDataPoints
-            dataSource
-            errors
-            truncated
-            originalSize
-          }
-        }
-      }
     `
 
     const requestBody = {
@@ -107,7 +107,7 @@ export async function GET(
       queryLength: graphqlQuery.length,
       query: graphqlQuery.substring(0, 200) + '...', // Log first 200 chars of query
       fullQuery: graphqlQuery, // Log full query for debugging
-      variables: { participantId },
+        variables: { participantId },
     })
 
     // Create AbortController for timeout

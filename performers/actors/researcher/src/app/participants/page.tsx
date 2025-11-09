@@ -163,10 +163,26 @@ function LoadingSkeleton() {
 }
 
 async function ParticipantsTableWrapper() {
-  const participants = (await getAllParticipants()) as unknown as Participant[]
-  if (!participants || participants.length === 0) {
+  const participantsData = await getAllParticipants()
+  if (!participantsData || participantsData.length === 0) {
     return <LoadingSkeleton />
   }
+  // Convert ParticipantData to Participant interface
+  const participants: Participant[] = participantsData.map(p => ({
+    id: p.id,
+    name: p.name || `Participant ${p.id.slice(0, 8)}`,
+    sessionCount: p.sessionCount,
+    responseCount: p.responseCount,
+    averageSpiritProbability: p.averageSpiritProbability,
+    lastActivity: p.lastActivity ?? null,
+    sessions: p.sessions.map(s => ({
+      id: s.id,
+      sessionType: s.session_type,
+      startTime: s.start_time || undefined,
+      endTime: s.end_time || null,
+      responseCount: s.responseCount,
+    })),
+  }))
   return <ParticipantsTable participants={participants} />
 }
 

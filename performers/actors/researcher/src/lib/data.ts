@@ -23,6 +23,7 @@ export interface ParticipantData {
   sessionCount: number
   responseCount: number
   averageSpiritProbability: number
+  lastActivity?: number | null
 }
 
 export interface ExperimentSession {
@@ -119,7 +120,7 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
     }
 
     // Convert GraphQL participants to ParticipantData format
-    // For now, return basic data without detailed lookups to avoid errors
+    // GraphQL API now includes sessionCount and responseCount
     const participantsWithData: ParticipantData[] = participants.map((participant) => {
       const participantId = participant.id || participant.participant_id
       if (!participantId) {
@@ -127,16 +128,19 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
         return null
       }
       
-      // Return basic participant data
-      // TODO: Add session and response counts from database queries
+      // Parse updated_at timestamp for lastActivity
+      const updatedAt = participant.updatedAt || participant.updated_at
+      const lastActivity = updatedAt ? new Date(updatedAt).getTime() : null
+      
       return {
         id: participantId,
         name: `Participant ${participantId.slice(0, 8)}`,
         sessions: [],
         analysisRuns: [],
-        sessionCount: 0, // TODO: Query from database
-        responseCount: 0, // TODO: Query from database
-        averageSpiritProbability: 0, // TODO: Calculate from responses
+        sessionCount: participant.sessionCount ?? participant.session_count ?? 0,
+        responseCount: participant.responseCount ?? participant.response_count ?? 0,
+        averageSpiritProbability: participant.averageSpiritProbability ?? participant.average_spirit_probability ?? 0,
+        lastActivity,
       }
     }).filter(Boolean) as ParticipantData[]
 
@@ -164,19 +168,19 @@ export async function getParticipantData(participantId: string): Promise<Partici
 
     // Group responses by session
     const sessionMap: Record<string, ResponseData[]> = {}
-    responses.forEach(response => {
-      const sessionId = response.session_id || 'unknown'
+    responses.forEach((response: any) => {
+      const sessionId = response.sessionId || response.session_id || 'unknown'
       if (!sessionMap[sessionId]) {
         sessionMap[sessionId] = []
       }
       sessionMap[sessionId].push({
         id: response.id,
-        stimulus_word: response.stimulus_word,
-        response_word: response.response_word,
-        reaction_time_ms: response.reaction_time_ms || 0,
+        stimulus_word: response.stimulusWord || response.stimulus_word,
+        response_word: response.responseWord || response.response_word,
+        reaction_time_ms: response.reactionTimeMs || response.reaction_time_ms || 0,
         skin_potential: 0, // Placeholder - 生理データ統合時に実装
         emotion: response.emotion || '',
-        emotion_confidence: response.emotion_confidence || 0,
+        emotion_confidence: response.emotionConfidence || response.emotion_confidence || 0,
         skinPotentialTimeseries: [], // Placeholder - 時系列データ統合時に実装
         emotionTimeseries: [] // Placeholder - 時系列データ統合時に実装
       })
@@ -220,26 +224,26 @@ export async function getParticipantData(participantId: string): Promise<Partici
       status: 'completed',
       created_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
-      results: responses.map(response => ({
+      results: responses.map((response: any) => ({
         id: response.id,
-        stimulus_word: response.stimulus_word,
-        response_word: response.response_word,
-        p_value: response.spirit_probability || 0.5,
+        stimulus_word: response.stimulusWord || response.stimulus_word,
+        response_word: response.responseWord || response.response_word,
+        p_value: response.spiritProbability || response.spirit_probability || 0.5,
         word2vec_component: 0, // TODO: 実際のWord2Vecコンポーネントを実装
-        reaction_time_component: response.reaction_time_ms ? 10 / (1 + response.reaction_time_ms / 1000) : 0,
+        reaction_time_component: (response.reactionTimeMs || response.reaction_time_ms) ? 10 / (1 + (response.reactionTimeMs || response.reaction_time_ms) / 1000) : 0,
         skin_potential_component: 0, // TODO: 生理データコンポーネントを実装
-        emotion_component: response.emotion_confidence || 0,
-        emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence || 0 } : {},
+        emotion_component: response.emotionConfidence || response.emotion_confidence || 0,
+        emotion_data: response.emotion ? { [response.emotion]: response.emotionConfidence || response.emotion_confidence || 0 } : {},
         physiological_data: {}, // TODO: 生理データを統合
-        created_at: response.event_ts || new Date().toISOString(),
-        reaction_time_ms: response.reaction_time_ms,
+        created_at: response.eventTs || response.event_ts || new Date().toISOString(),
+        reaction_time_ms: response.reactionTimeMs || response.reaction_time_ms,
       }))
     }]
 
     const sessionCount = sessions.length
     const responseCount = responses.length
     const averageSpiritProbability = responses.length > 0
-      ? responses.reduce((sum, response) => sum + (response.spirit_probability || 0), 0) / responses.length
+      ? responses.reduce((sum: number, response: any) => sum + (response.spiritProbability || response.spirit_probability || 0), 0) / responses.length
       : 0
 
     return {

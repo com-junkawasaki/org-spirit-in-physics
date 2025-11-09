@@ -160,7 +160,7 @@ export function createGraphQLClient(): GraphQLClient {
           const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: '{ participants { id age handedness createdAt } }' }),
+            body: JSON.stringify({ query: '{ participants { id age handedness createdAt sessionCount responseCount } }' }),
           })
           if (!response.ok) {
             console.error('Direct fetch failed:', response.status, response.statusText)
@@ -192,7 +192,7 @@ export function createGraphQLClient(): GraphQLClient {
           const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: '{ participants { id age handedness createdAt } }' }),
+            body: JSON.stringify({ query: '{ participants { id age handedness createdAt sessionCount responseCount } }' }),
           })
           const data = await response.json()
           return data.data?.participants || []
@@ -292,9 +292,78 @@ export function createGraphQLClient(): GraphQLClient {
     },
 
     async getParticipantResponses(participantId: string) {
-      // This will need to be implemented in GraphQL API
-      // For now, return empty array
-      return []
+      const isServer = typeof window === 'undefined'
+      const url = isServer 
+        ? (process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql')
+        : (process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql')
+      
+      // For server-side, use direct fetch
+      if (isServer) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              query: `query GetParticipantResponses($participantId: String!) {
+                participantResponses(participantId: $participantId) {
+                  id
+                  stimulusWord
+                  responseWord
+                  reactionTimeMs
+                  spiritProbability
+                  emotion
+                  emotionConfidence
+                  eventTs
+                  sessionId
+                }
+              }`,
+              variables: { participantId }
+            }),
+          })
+          if (!response.ok) {
+            console.error('Direct fetch failed:', response.status, response.statusText)
+            return []
+          }
+          const data = await response.json()
+          if (data.errors) {
+            console.error('GraphQL errors:', data.errors)
+            return []
+          }
+          return data.data?.participantResponses || []
+        } catch (fetchError: any) {
+          console.error('Direct fetch error:', fetchError.message)
+          return []
+        }
+      }
+      
+      // For client-side, use Apollo Client or direct fetch
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            query: `query GetParticipantResponses($participantId: String!) {
+              participantResponses(participantId: $participantId) {
+                id
+                stimulusWord
+                responseWord
+                reactionTimeMs
+                spiritProbability
+                emotion
+                emotionConfidence
+                eventTs
+                sessionId
+              }
+            }`,
+            variables: { participantId }
+          }),
+        })
+        const data = await response.json()
+        return data.data?.participantResponses || []
+      } catch (fetchError: any) {
+        console.error('Fetch error:', fetchError.message)
+        return []
+      }
     },
 
     async getDashboardStats() {
