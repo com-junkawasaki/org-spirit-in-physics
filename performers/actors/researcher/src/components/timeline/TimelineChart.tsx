@@ -61,14 +61,49 @@ export default function TimelineChart({
 
     // 時間範囲（x は単調増加前提のため昇順に整列）
     const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp)
-    const timeExtent = d3.extent(sorted, d => new Date(d.timestamp)) as [Date, Date]
+    const validTimestamps = sorted.filter(d => !isNaN(d.timestamp) && d.timestamp > 0)
+    const validReactionValues = data.filter(d => !isNaN(d.reactionValue) && isFinite(d.reactionValue))
+
+    if (validTimestamps.length === 0 || validReactionValues.length === 0) {
+      // データなしメッセージを表示
+      const g = svg.append('g')
+        .attr('transform', `translate(${width / 2}, 40)`)
+      
+      g.append('text')
+        .attr('text-anchor', 'middle')
+        .style('font-size', '12px')
+        .style('fill', '#9ca3af')
+        .text('データなし')
+      
+      return
+    }
+
+    const timeExtent = d3.extent(validTimestamps, d => new Date(d.timestamp)) as [Date, Date]
+    if (!timeExtent[0] || !timeExtent[1] || isNaN(timeExtent[0].getTime()) || isNaN(timeExtent[1].getTime())) {
+      const g = svg.append('g')
+        .attr('transform', `translate(${width / 2}, 40)`)
+      
+      g.append('text')
+        .attr('text-anchor', 'middle')
+        .style('font-size', '12px')
+        .style('fill', '#9ca3af')
+        .text('無効な時間データ')
+      
+      return
+    }
+
     const xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, overviewWidth])
 
-    // 反応値のスケール
+    const reactionValueExtent = d3.extent(validReactionValues, d => d.reactionValue) as [number, number]
+    if (!reactionValueExtent[0] || !reactionValueExtent[1] || isNaN(reactionValueExtent[0]) || isNaN(reactionValueExtent[1])) {
+      reactionValueExtent[0] = 0
+      reactionValueExtent[1] = 1
+    }
+
     const yScale = d3.scaleLinear()
-      .domain(d3.extent(data, d => d.reactionValue) as [number, number])
+      .domain(reactionValueExtent)
       .range([overviewHeight, 0])
 
     // メインライン
@@ -154,17 +189,63 @@ export default function TimelineChart({
       : data
     const filteredDataSorted = [...filteredData].sort((a, b) => a.timestamp - b.timestamp)
 
+    // 有効なデータのみをフィルタリング
+    const validTimestamps = filteredDataSorted.filter(d => !isNaN(d.timestamp) && d.timestamp > 0)
+    const validReactionValues = filteredData.filter(d => !isNaN(d.reactionValue) && isFinite(d.reactionValue))
+
+    if (validTimestamps.length === 0 || validReactionValues.length === 0) {
+      // データなしメッセージを表示
+      const g = svg.append('g')
+        .attr('transform', `translate(${width / 2}, ${height / 2})`)
+      
+      g.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '-10px')
+        .style('font-size', '16px')
+        .style('fill', '#6b7280')
+        .style('font-weight', '500')
+        .text('データがありません')
+      
+      g.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '15px')
+        .style('font-size', '14px')
+        .style('fill', '#9ca3af')
+        .text('時系列データを読み込んでください')
+      
+      return
+    }
+
     // スケール設定
     const timeExtent = timeRange
       ? [new Date(timeRange.start), new Date(timeRange.end)] as [Date, Date]
-      : d3.extent(filteredDataSorted, d => new Date(d.timestamp)) as [Date, Date]
+      : d3.extent(validTimestamps, d => new Date(d.timestamp)) as [Date, Date]
+
+    if (!timeExtent[0] || !timeExtent[1] || isNaN(timeExtent[0].getTime()) || isNaN(timeExtent[1].getTime())) {
+      // 無効な時間データ
+      const g = svg.append('g')
+        .attr('transform', `translate(${width / 2}, ${height / 2})`)
+      
+      g.append('text')
+        .attr('text-anchor', 'middle')
+        .style('font-size', '16px')
+        .style('fill', '#6b7280')
+        .text('無効な時間データ')
+      
+      return
+    }
 
     const xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, innerWidth])
 
+    const reactionValueMax = d3.max(validReactionValues, d => d.reactionValue)
+    const reactionValueDomain: [number, number] = reactionValueMax && !isNaN(reactionValueMax) && isFinite(reactionValueMax)
+      ? [0, reactionValueMax]
+      : [0, 100]
+
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(filteredData, d => d.reactionValue) || 100])
+      .domain(reactionValueDomain)
       .range([innerHeight, 0])
 
     // メイングループ
@@ -196,12 +277,25 @@ export default function TimelineChart({
     const axisHeight = innerHeight / yAxisCount;
 
     // 各軸のスケール設定
+    const reactionValueExtent = d3.extent(validReactionValues, d => d.reactionValue) as [number, number]
+    const reactionValueScaleDomain: [number, number] = 
+      (!reactionValueExtent[0] || !reactionValueExtent[1] || isNaN(reactionValueExtent[0]) || isNaN(reactionValueExtent[1]))
+        ? [0, 1]
+        : reactionValueExtent
+
     const reactionValueScale = d3.scaleLinear()
-      .domain(d3.extent(data, d => d.reactionValue) as [number, number])
+      .domain(reactionValueScaleDomain)
       .range([axisHeight * 0.5, axisHeight * 0.1]);
 
+    const validReactionTimes = data.filter(d => !isNaN(d.reactionTime) && isFinite(d.reactionTime))
+    const reactionTimeExtent = d3.extent(validReactionTimes, d => d.reactionTime) as [number, number]
+    const reactionTimeScaleDomain: [number, number] = 
+      (!reactionTimeExtent[0] || !reactionTimeExtent[1] || isNaN(reactionTimeExtent[0]) || isNaN(reactionTimeExtent[1]))
+        ? [0, 1000]
+        : reactionTimeExtent
+
     const reactionTimeScale = d3.scaleLinear()
-      .domain(d3.extent(data, d => d.reactionTime) as [number, number])
+      .domain(reactionTimeScaleDomain)
       .range([axisHeight * 1.5, axisHeight * 1.1]);
 
     const physiologicalScale = d3.scaleLinear()

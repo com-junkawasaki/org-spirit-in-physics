@@ -107,14 +107,32 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
             // 短縮フィールドをTimelineDataPoint形式に変換
             const convertedData = result.data.timelineData.map((item: any, index: number) => {
               try {
+                // timestampを数値に変換（無効な場合はスキップ）
+                const timestamp = typeof item.t === 'number' ? item.t : 
+                                 typeof item.timestamp === 'number' ? item.timestamp :
+                                 typeof item.t === 'string' ? parseFloat(item.t) :
+                                 typeof item.timestamp === 'string' ? parseFloat(item.timestamp) : NaN;
+                
+                if (isNaN(timestamp) || timestamp <= 0) {
+                  console.warn(`[TimelineData] Invalid timestamp at index ${index}:`, item);
+                  return null;
+                }
+                
+                // reactionValueを数値に変換（NaNの場合は0）
+                const reactionValue = typeof item.rv === 'number' ? (isNaN(item.rv) ? 0 : item.rv) :
+                                     typeof item.reactionValue === 'number' ? (isNaN(item.reactionValue) ? 0 : item.reactionValue) :
+                                     typeof item.rv === 'string' ? parseFloat(item.rv) || 0 :
+                                     typeof item.reactionValue === 'string' ? parseFloat(item.reactionValue) || 0 : 0;
+                
                 return {
-                  timestamp: item.t || item.timestamp,
-                  word: item.w || item.word,
-                  reactionTime: item.rt || item.reactionTime || 0,
+                  timestamp,
+                  word: item.w || item.word || '',
+                  reactionTime: typeof item.rt === 'number' ? (isNaN(item.rt) ? 0 : item.rt) : 
+                               typeof item.reactionTime === 'number' ? (isNaN(item.reactionTime) ? 0 : item.reactionTime) : 0,
                   hasResponse: item.hasResponse !== undefined ? item.hasResponse : true,
                   emotions: Array.isArray(item.em) ? item.em : (Array.isArray(item.emotions) ? item.emotions : []),
                   physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
-                  reactionValue: item.rv || item.reactionValue || 0,
+                  reactionValue,
                   eventType: item.e || item.eventType || 'word_displayed',
                   metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
                 }
@@ -126,7 +144,7 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
             
             const conversionMs = Math.round(performance.now() - conversionStart)
             const totalMs = Math.round(performance.now() - totalStart)
-            const responseSizeKb = Math.round(JSON.stringify(result.data).length / 1024)
+            const responseSizeKb = Math.round(JSON.stringify(result.data.timelineData).length / 1024)
             
             console.log('[TimelineData] Converted data count:', convertedData.length)
             console.log('[TimelineData] Converted data sample:', convertedData[0])
