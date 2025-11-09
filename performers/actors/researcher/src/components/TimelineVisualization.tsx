@@ -75,12 +75,14 @@ export default function TimelineVisualization({
     if (!mounted || !participantId) return
     
     const fetchForceGraphData = async () => {
+      const forceGraphStart = performance.now()
       setForceGraphLoading(true)
       setForceGraphError(null)
       try {
         const client = createGraphQLClient()
         const result = await client.getParticipantForceGraphData(participantId)
         if (result?.data) {
+          const conversionStart = performance.now()
           // Convert GraphQL response to component format
           const nodes = result.data.nodes.map((node: any) => ({
             id: node.id,
@@ -100,11 +102,18 @@ export default function TimelineVisualization({
             k: 0,
             correlationType: link.correlationType,
           }))
+          const conversionMs = Math.round(performance.now() - conversionStart)
+          const totalMs = Math.round(performance.now() - forceGraphStart)
+          console.log('[Performance] ForceGraph: conversionMs=' + conversionMs + ', totalMs=' + totalMs + ', nodes=' + nodes.length + ', links=' + links.length)
           setForceGraphData({ nodes, links })
         } else {
+          const totalMs = Math.round(performance.now() - forceGraphStart)
+          console.log('[Performance] ForceGraph: totalMs=' + totalMs + ', result=not_available')
           setForceGraphError('Force graph data not available')
         }
       } catch (err) {
+        const totalMs = Math.round(performance.now() - forceGraphStart)
+        console.log('[Performance] ForceGraph: totalMs=' + totalMs + ', result=error')
         console.error('Error fetching force graph data:', err)
         setForceGraphError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
@@ -1693,6 +1702,35 @@ function DebugArea({ debugInfo }: { debugInfo: DebugInfo }) {
             {debugInfo.responseMetadata.truncated && (
               <div className="text-yellow-400">
                 ⚠ Truncated (Original: {debugInfo.responseMetadata.originalSize || 'N/A'})
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Performance Metrics */}
+      {debugInfo.performance && (
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <div className="text-blue-400 font-semibold mb-2">Performance Metrics:</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            {debugInfo.performance.apiRequestMs !== undefined && (
+              <div className="text-gray-300">
+                API Request: <span className="text-blue-300 font-semibold">{debugInfo.performance.apiRequestMs}ms</span>
+              </div>
+            )}
+            {debugInfo.performance.dataConversionMs !== undefined && (
+              <div className="text-gray-300">
+                Data Conversion: <span className="text-blue-300 font-semibold">{debugInfo.performance.dataConversionMs}ms</span>
+              </div>
+            )}
+            {debugInfo.performance.totalMs !== undefined && (
+              <div className="text-gray-300">
+                Total Time: <span className="text-blue-300 font-semibold">{debugInfo.performance.totalMs}ms</span>
+              </div>
+            )}
+            {debugInfo.performance.responseSizeKb !== undefined && (
+              <div className="text-gray-300">
+                Response Size: <span className="text-blue-300 font-semibold">{debugInfo.performance.responseSizeKb}KB</span>
               </div>
             )}
           </div>

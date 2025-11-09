@@ -262,7 +262,15 @@ pub async fn process_participant_timeline(
 
     // Generate display data: word-second aggregates, word aggregates, sampled timeline, force graph
     info!("Generating display data for participant {}", participant_id);
-    generate_display_data(&mut conn, participant_id, &responses_clone, &emotions_by_response, &physiological_by_response).await?;
+    match generate_display_data(&mut conn, participant_id, &responses_clone, &emotions_by_response, &physiological_by_response).await {
+        Ok(()) => {
+            info!("Display data generation completed successfully");
+        }
+        Err(e) => {
+            eprintln!("Error generating display data: {:?}", e);
+            return Err(e);
+        }
+    }
 
     // Update progress: 100% - Complete
     update_job_progress(&mut conn, &job_id, 100, None).await?;
@@ -547,13 +555,10 @@ async fn generate_word_second_aggregates(
     let mut grouped: HashMap<(String, DateTime<Utc>), Vec<(uuid::Uuid, Option<i32>, Vec<EmotionData>, PhysiologicalData)>> = HashMap::new();
     
     for (id, word, _, reaction_time, timestamp) in responses {
-        // Round timestamp to nearest second
-        let second_timestamp = timestamp.date_naive().and_hms_opt(
-            timestamp.hour(),
-            timestamp.minute(),
-            timestamp.second()
-        ).unwrap();
-        let second_timestamp = Utc.from_utc_datetime(&second_timestamp);
+        // Round timestamp to nearest second (truncate nanoseconds)
+        let ts_seconds = timestamp.timestamp();
+        let second_timestamp = DateTime::<Utc>::from_timestamp(ts_seconds, 0)
+            .unwrap_or(*timestamp);
         
         let emotions = emotions_by_response.get(id).cloned().unwrap_or_default();
         let physiological = physiological_by_response.get(id).cloned().unwrap_or_else(|| PhysiologicalData {

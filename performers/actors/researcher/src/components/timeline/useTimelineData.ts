@@ -56,6 +56,7 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
   useEffect(() => { setMounted(true) }, [])
 
   const fetchTimelineData = useCallback(async () => {
+    const totalStart = performance.now()
     try {
       setLoading(true)
       setDebugInfo(prev => ({
@@ -73,7 +74,9 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
       let conversionError: Error | null = null
       
       try {
+        const apiRequestStart = performance.now()
         const response = await fetch(apiUrl)
+        const apiRequestMs = Math.round(performance.now() - apiRequestStart)
         console.log('[TimelineData] API response status:', response.status)
         
         if (!response.ok) {
@@ -100,6 +103,7 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
           console.log('[TimelineData] Converting data, count:', result.data.timelineData.length)
           
           try {
+            const conversionStart = performance.now()
             // 短縮フィールドをTimelineDataPoint形式に変換
             const convertedData = result.data.timelineData.map((item: any, index: number) => {
               try {
@@ -120,8 +124,13 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
               }
             }).filter((item: TimelineDataPoint | null): item is TimelineDataPoint => item !== null)
             
+            const conversionMs = Math.round(performance.now() - conversionStart)
+            const totalMs = Math.round(performance.now() - totalStart)
+            const responseSizeKb = Math.round(JSON.stringify(result.data).length / 1024)
+            
             console.log('[TimelineData] Converted data count:', convertedData.length)
             console.log('[TimelineData] Converted data sample:', convertedData[0])
+            console.log('[Performance] TimelineData: apiRequestMs=' + apiRequestMs + ', conversionMs=' + conversionMs + ', totalMs=' + totalMs + ', responseSizeKb=' + responseSizeKb)
             
             if (convertedData.length > 0) {
               setData(convertedData)
@@ -135,7 +144,13 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
                 sessionEventsCount: result.data.metadata?.sessionEvents,
                 emotionEntriesCount: result.data.metadata?.emotionEntries,
                 physiologicalEntriesCount: result.data.metadata?.physiologicalEntries,
-                lastUpdateTime: Date.now()
+                lastUpdateTime: Date.now(),
+                performance: {
+                  apiRequestMs,
+                  dataConversionMs: conversionMs,
+                  totalMs,
+                  responseSizeKb
+                }
               }))
               ok = true
             } else {

@@ -175,6 +175,12 @@ export interface DebugInfo {
     truncated?: boolean
     originalSize?: number
   }
+  performance?: {
+    apiRequestMs?: number
+    dataConversionMs?: number
+    totalMs?: number
+    responseSizeKb?: number
+  }
 }
 
 // Merkle DAG: timeline.types -> definitions_complete

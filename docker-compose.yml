@@ -72,6 +72,9 @@ services:
       - GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
       - NODE_ENV=development
       - PROJECT_ROOT=/workspace
+      # E2E Test environment variables
+      - PLAYWRIGHT_BASE_URL=https://researcher.spirit-in-physics.orb.local
+      - TEST_PARTICIPANT_ID=144b325f-5966-4d59-a629-f2ca421388cc
     env_file:
       - ./performers/actors/researcher/env.docker
     depends_on:

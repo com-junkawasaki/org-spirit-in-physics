@@ -3,6 +3,7 @@ use async_graphql::{Context, Object, Result as GQLResult, SimpleObject, InputObj
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use std::sync::Arc;
+use std::time::Instant;
 use diesel_async::{AsyncPgConnection, pooled_connection::deadpool::Pool};
 use uuid::Uuid;
 use serde_json;
@@ -468,10 +469,12 @@ impl Query {
     async fn participant_timeline(&self, ctx: &Context<'_>, participant_id: String, sample_size: Option<i32>) -> GQLResult<ParticipantTimelineResponse> {
         use diesel::dsl::count;
         
+        let total_start = Instant::now();
         let sample_size = sample_size.unwrap_or(2000); // Default to 2000 if not specified
         eprintln!("[GraphQL] participant_timeline: Starting query for participant_id={}, sample_size={}", participant_id, sample_size);
         
         // Get database connection pool
+        let pool_start = Instant::now();
         let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()
             .map_err(|e| {
                 eprintln!("[GraphQL] participant_timeline: Failed to get database pool: {:?}", e);
@@ -484,6 +487,7 @@ impl Query {
                 eprintln!("[GraphQL] participant_timeline: Failed to acquire database connection: {:?}", e);
                 async_graphql::Error::new(format!("Failed to acquire database connection: {}", e))
             })?;
+        let pool_ms = pool_start.elapsed().as_millis() as u64;
         
         eprintln!("[GraphQL] participant_timeline: Database connection acquired");
         
@@ -499,6 +503,8 @@ impl Query {
         // Check cache first - prioritize sampled_timeline_data if available
         eprintln!("[GraphQL] participant_timeline: Checking cache...");
         use diesel::OptionalExtension;
+        
+        let cache_check_start = Instant::now();
         
         // First check for sampled_timeline_data (pre-computed for display)
         let cached_sampled: Option<serde_json::Value> = 
@@ -529,11 +535,15 @@ impl Query {
         if let Some(sampled_json) = cached_sampled {
             if sample_size == 2000 {
                 eprintln!("[GraphQL] participant_timeline: Using pre-computed sampled timeline data");
+                let cache_check_ms = cache_check_start.elapsed().as_millis() as u64;
+                
+                let deserialize_start = Instant::now();
                 let sampled_data: Vec<TimelineDataPoint> = serde_json::from_value(sampled_json)
                     .map_err(|e| {
                         eprintln!("[GraphQL] participant_timeline: Error deserializing sampled timeline data: {:?}", e);
                         async_graphql::Error::new(format!("Failed to deserialize sampled timeline data: {}", e))
                     })?;
+                let deserialize_ms = deserialize_start.elapsed().as_millis() as u64;
                 
                 let metadata: TimelineMetadata = if let Some(metadata_json) = cached_metadata {
                     serde_json::from_value(metadata_json)
@@ -553,6 +563,10 @@ impl Query {
                         original_size: None,
                     }
                 };
+                
+                let total_ms = total_start.elapsed().as_millis() as u64;
+                eprintln!("[Performance] participant_timeline: pool_ms={}, cache_check_ms={}, deserialize_ms={}, total_ms={}, data_points={}", 
+                    pool_ms, cache_check_ms, deserialize_ms, total_ms, sampled_data.len());
                 
                 return Ok(ParticipantTimelineResponse {
                     timeline_data: sampled_data,
@@ -574,8 +588,12 @@ impl Query {
                     async_graphql::Error::new(format!("Failed to check cache: {}", e))
                 })?;
         
+        let cache_check_ms = cache_check_start.elapsed().as_millis() as u64;
+        
         if let (Some(timeline_json), Some(metadata_json)) = (cached_timeline, cached_metadata) {
             eprintln!("[GraphQL] participant_timeline: Cache hit! Returning cached data");
+            
+            let deserialize_start = Instant::now();
             let timeline_data: Vec<TimelineDataPoint> = serde_json::from_value(timeline_json)
                 .map_err(|e| {
                     eprintln!("[GraphQL] participant_timeline: Error deserializing cached timeline data: {:?}", e);
@@ -586,8 +604,10 @@ impl Query {
                     eprintln!("[GraphQL] participant_timeline: Error deserializing cached metadata: {:?}", e);
                     async_graphql::Error::new(format!("Failed to deserialize cached metadata: {}", e))
                 })?;
+            let deserialize_ms = deserialize_start.elapsed().as_millis() as u64;
             
             // Apply sampling if needed
+            let sampling_start = Instant::now();
             let original_size = timeline_data.len() as i32;
             let final_timeline_data = if sample_size > 0 && timeline_data.len() > sample_size as usize {
                 eprintln!("[GraphQL] participant_timeline: Sampling cached data from {} to {} points", timeline_data.len(), sample_size);
@@ -598,6 +618,11 @@ impl Query {
             } else {
                 timeline_data
             };
+            let sampling_ms = sampling_start.elapsed().as_millis() as u64;
+            
+            let total_ms = total_start.elapsed().as_millis() as u64;
+            eprintln!("[Performance] participant_timeline: pool_ms={}, cache_check_ms={}, deserialize_ms={}, sampling_ms={}, total_ms={}, data_points={}", 
+                pool_ms, cache_check_ms, deserialize_ms, sampling_ms, total_ms, final_timeline_data.len());
             
             return Ok(ParticipantTimelineResponse {
                 timeline_data: final_timeline_data,
@@ -608,6 +633,7 @@ impl Query {
         eprintln!("[GraphQL] participant_timeline: Cache miss, computing timeline data in real-time...");
         
         // Fetch participant response data
+        let db_query_start = Instant::now();
         eprintln!("[GraphQL] participant_timeline: Fetching response data from database...");
         type ResponseRow = (uuid::Uuid, String, Option<String>, Option<i32>, chrono::DateTime<chrono::Utc>);
         let responses: Vec<ResponseRow> = 
@@ -632,6 +658,9 @@ impl Query {
         
         if responses.is_empty() {
             eprintln!("[GraphQL] participant_timeline: No response data found for participant {}", participant_id);
+            let total_ms = total_start.elapsed().as_millis() as u64;
+            eprintln!("[Performance] participant_timeline: pool_ms={}, cache_check_ms={}, db_query_ms=0, total_ms={}, data_points=0", 
+                pool_ms, cache_check_ms, total_ms);
             return Ok(ParticipantTimelineResponse {
                 timeline_data: vec![],
                 metadata: TimelineMetadata {
@@ -732,9 +761,12 @@ impl Query {
                 0
             });
         
+        let db_query_ms = db_query_start.elapsed().as_millis() as u64;
+        
         eprintln!("[GraphQL] participant_timeline: Found {} session events", session_events_count);
         
         // Convert to TimelineDataPoint
+        let processing_start = Instant::now();
         eprintln!("[GraphQL] participant_timeline: Converting responses to timeline data points...");
         let timeline_data: Vec<TimelineDataPoint> = responses.into_iter().map(|(id, stimulus_word, response_word, reaction_time_ms, timestamp)| {
             let timestamp_float = timestamp.timestamp_millis() as f64;
@@ -774,8 +806,10 @@ impl Query {
                 }),
             }
         }).collect();
+        let processing_ms = processing_start.elapsed().as_millis() as u64;
         
         // Apply sampling if needed
+        let sampling_start = Instant::now();
         let original_size = timeline_data.len() as i32;
         let (final_timeline_data, truncated) = if sample_size > 0 && timeline_data.len() > sample_size as usize {
             eprintln!("[GraphQL] participant_timeline: Sampling real-time data from {} to {} points", timeline_data.len(), sample_size);
@@ -784,6 +818,7 @@ impl Query {
         } else {
             (timeline_data, false)
         };
+        let sampling_ms = sampling_start.elapsed().as_millis() as u64;
         
         // Calculate totals before moving final_timeline_data
         let total_data_points = final_timeline_data.len() as i32;
@@ -792,6 +827,10 @@ impl Query {
         
         eprintln!("[GraphQL] participant_timeline: Completed successfully - {} data points, {} emotion entries, {} physiological entries", 
                   total_data_points, total_emotion_entries, total_physiological_entries);
+        
+        let total_ms = total_start.elapsed().as_millis() as u64;
+        eprintln!("[Performance] participant_timeline: pool_ms={}, cache_check_ms={}, db_query_ms={}, processing_ms={}, sampling_ms={}, total_ms={}, data_points={}", 
+            pool_ms, cache_check_ms, db_query_ms, processing_ms, sampling_ms, total_ms, total_data_points);
         
         Ok(ParticipantTimelineResponse {
             timeline_data: final_timeline_data,
@@ -813,9 +852,11 @@ impl Query {
     // RDF: https://spirit-in-physics.gftd.ai/activity/participantForceGraphData
     #[graphql(name = "participantForceGraphData")]
     async fn participant_force_graph_data(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantForceGraphResponse> {
+        let total_start = Instant::now();
         eprintln!("[GraphQL] participant_force_graph_data: Starting query for participant_id={}", participant_id);
         
         // Get database connection pool
+        let pool_start = Instant::now();
         let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()
             .map_err(|e| {
                 eprintln!("[GraphQL] participant_force_graph_data: Failed to get database pool: {:?}", e);
@@ -827,6 +868,7 @@ impl Query {
                 eprintln!("[GraphQL] participant_force_graph_data: Failed to acquire database connection: {:?}", e);
                 async_graphql::Error::new(format!("Failed to acquire database connection: {}", e))
             })?;
+        let pool_ms = pool_start.elapsed().as_millis() as u64;
         
         // Parse participant ID
         let participant_uuid = Uuid::parse_str(&participant_id)
@@ -836,6 +878,7 @@ impl Query {
             })?;
         
         // Load force graph data from cache
+        let db_query_start = Instant::now();
         use diesel::OptionalExtension;
         let force_graph_json: Option<serde_json::Value> = 
             participant_timeline_cache::table
@@ -860,11 +903,13 @@ impl Query {
                     eprintln!("[GraphQL] participant_force_graph_data: Error loading force graph metadata: {:?}", e);
                     async_graphql::Error::new(format!("Failed to load force graph metadata: {}", e))
                 })?;
+        let db_query_ms = db_query_start.elapsed().as_millis() as u64;
         
         if let (Some(graph_json), Some(metadata_json)) = (force_graph_json, force_graph_metadata_json) {
             eprintln!("[GraphQL] participant_force_graph_data: Found pre-computed force graph data");
             
             // Deserialize JSON to our GraphQL types
+            let deserialize_start = Instant::now();
             let graph_value: serde_json::Value = serde_json::from_value(graph_json)
                 .map_err(|e| {
                     eprintln!("[GraphQL] participant_force_graph_data: Error deserializing force graph data: {:?}", e);
@@ -876,8 +921,10 @@ impl Query {
                     eprintln!("[GraphQL] participant_force_graph_data: Error deserializing force graph metadata: {:?}", e);
                     async_graphql::Error::new(format!("Failed to deserialize force graph metadata: {}", e))
                 })?;
+            let deserialize_ms = deserialize_start.elapsed().as_millis() as u64;
             
             // Convert JSON to GraphQL types
+            let conversion_start = Instant::now();
             let nodes_json = graph_value.get("nodes")
                 .and_then(|v| v.as_array())
                 .ok_or_else(|| async_graphql::Error::new("Invalid force graph data: missing nodes"))?;
@@ -990,6 +1037,11 @@ impl Query {
                 .unwrap_or("")
                 .to_string();
             
+            let conversion_ms = conversion_start.elapsed().as_millis() as u64;
+            let total_ms = total_start.elapsed().as_millis() as u64;
+            eprintln!("[Performance] participant_force_graph_data: pool_ms={}, db_query_ms={}, deserialize_ms={}, conversion_ms={}, total_ms={}, nodes={}, links={}", 
+                pool_ms, db_query_ms, deserialize_ms, conversion_ms, total_ms, nodes.len(), links.len());
+            
             Ok(ParticipantForceGraphResponse {
                 data: ForceGraphData { nodes, links },
                 metadata: ForceGraphMetadata {
@@ -999,6 +1051,9 @@ impl Query {
                 },
             })
         } else {
+            let total_ms = total_start.elapsed().as_millis() as u64;
+            eprintln!("[Performance] participant_force_graph_data: pool_ms={}, db_query_ms={}, total_ms={}, result=not_found", 
+                pool_ms, db_query_ms, total_ms);
             eprintln!("[GraphQL] participant_force_graph_data: No pre-computed force graph data found");
             Err(async_graphql::Error::new("Force graph data not yet generated. Please run display data generation first."))
         }

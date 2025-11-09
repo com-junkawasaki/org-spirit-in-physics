@@ -52,6 +52,7 @@ export async function GET(
   request: NextRequest,
   { params }: RouteParams
 ) {
+  const totalStart = Date.now()
   const participantId = params.id
 
   if (!participantId) {
@@ -99,6 +100,9 @@ export async function GET(
     const cacheKey = getCacheKey(participantId, sampleSize)
     const cached = timelineCache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      const totalMs = Date.now() - totalStart
+      const responseSize = JSON.stringify(cached.data).length
+      console.log('[Performance] Timeline API: cache_hit=true, total_ms=' + totalMs + ', response_size_kb=' + Math.round(responseSize / 1024))
       console.log('[Timeline API] In-memory cache hit for', cacheKey)
       return NextResponse.json({
         success: true,
@@ -173,6 +177,7 @@ export async function GET(
     const timeoutId = setTimeout(() => controller.abort(), 120000) // 120 second timeout (2 minutes)
 
     let response: Response
+    const graphqlStart = Date.now()
     try {
       response = await fetch(graphqlUrl, {
         method: 'POST',
@@ -277,6 +282,8 @@ export async function GET(
       )
     }
 
+    const graphqlMs = Date.now() - graphqlStart
+    
     const timelineResponse = result.data?.participantTimeline
 
     if (!timelineResponse) {
@@ -284,6 +291,8 @@ export async function GET(
         hasData: !!result.data,
         dataKeys: result.data ? Object.keys(result.data) : [],
       })
+      const totalMs = Date.now() - totalStart
+      console.log('[Performance] Timeline API: graphql_ms=' + graphqlMs + ', total_ms=' + totalMs + ', result=error')
       return NextResponse.json(
         { 
           success: false, 
@@ -297,6 +306,7 @@ export async function GET(
 
     // Transform GraphQL response to format expected by TimelineVisualization
     // The component accepts both short form (t, w, rt, em, ph, rv, e, m) and long form
+    const transformStart = Date.now()
     const timelineData = timelineResponse.timelineData.map((point: any) => ({
       // Short form (for compactness)
       t: point.timestamp,
@@ -327,6 +337,8 @@ export async function GET(
       metadata: point.metadata,
     }))
 
+    const transformMs = Date.now() - transformStart
+    
     console.log('[Timeline API] Successfully processed timeline data:', {
       dataPointsCount: timelineData.length,
       metadata: timelineResponse.metadata,
@@ -345,6 +357,10 @@ export async function GET(
       })
       console.log('[Timeline API] Cached response for', cacheKey)
     }
+
+    const totalMs = Date.now() - totalStart
+    const responseSize = JSON.stringify(responseData).length
+    console.log('[Performance] Timeline API: graphql_ms=' + graphqlMs + ', transform_ms=' + transformMs + ', response_size_kb=' + Math.round(responseSize / 1024) + ', total_ms=' + totalMs + ', data_points=' + timelineData.length)
 
     return NextResponse.json({
       success: true,
