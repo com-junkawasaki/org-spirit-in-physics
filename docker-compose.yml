@@ -65,10 +65,13 @@ services:
       - ./performers/actors/researcher/codegen.yaml:/app/codegen.yaml:cached
       - ./performers/services/graphql/schema.graphql:/app/schema.graphql:cached
       - ./performers/actors/researcher/src/generated:/app/src/generated:cached
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - .:/workspace:cached
     environment:
       - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
       - GRAPHQL_RUST_API_URL=http://graphql:8080/graphql
       - NODE_ENV=development
+      - PROJECT_ROOT=/workspace
     env_file:
       - ./performers/actors/researcher/env.docker
     depends_on:

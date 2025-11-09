@@ -25,6 +25,13 @@ const menuItems: MenuItem[] = [
         href: '/participants',
         icon: '👥',
         description: '参加者データ管理'
+    },
+    {
+        id: 'admin-import',
+        label: 'インポート管理',
+        href: '/admin/import',
+        icon: '📥',
+        description: 'データインポートとバッチ処理'
     }
 ]
 

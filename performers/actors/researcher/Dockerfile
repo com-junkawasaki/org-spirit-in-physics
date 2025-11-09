@@ -7,8 +7,8 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Install wget and curl for health checks
-RUN apk add --no-cache wget curl
+# Install wget, curl, and docker CLI for admin API
+RUN apk add --no-cache wget curl docker-cli
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* ./
