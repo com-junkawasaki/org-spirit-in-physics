@@ -428,18 +428,33 @@ export default function TimelineVisualization({
                     const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
                     const wordEmotionSum: Record<string, number[]> = {}
 
+                    // Optimize emotion data aggregation: limit to top N emotions per response or average
+                    const MAX_EMOTIONS_PER_RESPONSE = 10 // Limit to top 10 emotions per response for performance
+                    
                     for (const dpt of sessionData) {
                       const w = dpt.word
                       if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
                       if (Array.isArray(dpt.emotions)) {
-                        for (const e of dpt.emotions) {
+                        // Sort emotions by score (descending) and take top N
+                        const sortedEmotions = [...dpt.emotions]
+                          .filter(e => {
+                            const key = (e.name || 'unknown').toLowerCase()
+                            const idx = emotionIndex[key]
+                            if (idx === undefined) return false
+                            // モダリティフィルタ
+                            const ft = String((e as any).fileType || '')
+                            const ftLow = ft.toLowerCase()
+                            const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+                            return !mod || selectedModalities.has(mod)
+                          })
+                          .sort((a, b) => (b.score || 0) - (a.score || 0))
+                          .slice(0, MAX_EMOTIONS_PER_RESPONSE)
+                        
+                        // Aggregate top emotions
+                        for (const e of sortedEmotions) {
                           const key = (e.name || 'unknown').toLowerCase()
                           const idx = emotionIndex[key]
-                          // モダリティフィルタ
-                          const ft = String((e as any).fileType || '')
-                          const ftLow = ft.toLowerCase()
-                          const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
-                          if (idx !== undefined && (!mod || selectedModalities.has(mod))) {
+                          if (idx !== undefined) {
                             wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
                           }
                         }

@@ -113,6 +113,8 @@ export default function Force3DWordGraphTypeGPU({
   
   // ズームレベル表示用のstate
   const [zoomLevel, setZoomLevel] = useState(600)
+  // WebGPU初期化エラー状態
+  const [webGpuError, setWebGpuError] = useState<string | null>(null)
   
   // カメラ制御用の状態
   const cameraRef = useRef({
@@ -274,18 +276,32 @@ export default function Force3DWordGraphTypeGPU({
     const initWebGPU = async () => {
       try {
         if (!navigator.gpu) {
-          console.error('WebGPU not supported')
+          const errorMsg = 'WebGPU is not supported in this browser. Please use a modern browser with WebGPU support (Chrome 113+, Edge 113+, or Safari 18.1+).'
+          console.error('[Force3D]', errorMsg)
+          setWebGpuError(errorMsg)
           return
         }
 
         const adapter = await navigator.gpu.requestAdapter()
         if (!adapter) {
-          console.error('WebGPU adapter not available')
+          const errorMsg = 'WebGPU adapter is not available. This may be due to hardware limitations or browser settings.'
+          console.error('[Force3D]', errorMsg)
+          setWebGpuError(errorMsg)
           return
         }
         
-        const device = await adapter.requestDevice()
+        let device: GPUDevice
+        try {
+          device = await adapter.requestDevice()
+        } catch (deviceError) {
+          const errorMsg = `Failed to request WebGPU device: ${deviceError instanceof Error ? deviceError.message : 'Unknown error'}`
+          console.error('[Force3D]', errorMsg)
+          setWebGpuError(errorMsg)
+          return
+        }
+        
         deviceRef.current = device
+        setWebGpuError(null) // Clear any previous errors
 
         // 初期位置設定
         const N = nodesRef.current.length
@@ -909,6 +925,34 @@ export default function Force3DWordGraphTypeGPU({
     nodesRef.current = nodes
     linksRef.current = links
   }, [nodes, links])
+
+  // Show error message if WebGPU initialization failed
+  if (webGpuError) {
+    return (
+      <div style={{ width, height, background, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '2px solid rgba(239, 68, 68, 0.5)',
+          borderRadius: '8px',
+          padding: '24px',
+          maxWidth: '600px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#dc2626', marginBottom: '12px' }}>
+            WebGPU初期化エラー
+          </div>
+          <div style={{ fontSize: '14px', color: '#7f1d1d', marginBottom: '16px' }}>
+            {webGpuError}
+          </div>
+          <div style={{ fontSize: '12px', color: '#991b1b' }}>
+            3D可視化を表示するには、WebGPUをサポートするブラウザが必要です。
+            <br />
+            Chrome 113+, Edge 113+, または Safari 18.1+ をご使用ください。
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ width, height, background, position: 'relative' }}>

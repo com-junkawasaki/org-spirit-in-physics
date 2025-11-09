@@ -139,7 +139,7 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
         analysisRuns: [],
         sessionCount: participant.sessionCount ?? participant.session_count ?? 0,
         responseCount: participant.responseCount ?? participant.response_count ?? 0,
-        averageSpiritProbability: participant.averageSpiritProbability ?? participant.average_spirit_probability ?? 0,
+        averageSpiritProbability: 0, // TODO: Calculate from analysis results if needed
         lastActivity,
       }
     }).filter(Boolean) as ParticipantData[]

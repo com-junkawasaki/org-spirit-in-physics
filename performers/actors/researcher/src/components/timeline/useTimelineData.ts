@@ -65,7 +65,8 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
       }))
       
       console.log('[TimelineData] Starting data fetch for participant:', participantId)
-      const apiUrl = `/api/participants/${participantId}/timeline`
+      // Use sampleSize=2000 for initial display to optimize performance
+      const apiUrl = `/api/participants/${participantId}/timeline?sampleSize=2000`
       console.log('[TimelineData] API URL:', apiUrl)
       
       let ok = false

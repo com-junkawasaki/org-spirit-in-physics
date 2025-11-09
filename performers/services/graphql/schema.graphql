@@ -35,7 +35,7 @@ type PhysiologicalData {
 type Query {
 	participants: [ParticipantGQL!]!
 	participant(participantId: String!): ParticipantGQL!
-	participantTimeline(participantId: String!): ParticipantTimelineResponse!
+	participantTimeline(participantId: String!, sampleSize: Int): ParticipantTimelineResponse!
 }
 
 type TimelineDataPoint {

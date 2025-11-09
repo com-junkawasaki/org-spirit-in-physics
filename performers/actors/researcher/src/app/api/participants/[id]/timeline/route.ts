@@ -15,6 +15,39 @@ interface RouteParams {
   }
 }
 
+// Simple in-memory cache for sampled timeline data (max 2MB per entry)
+// Key: participantId_sampleSize, Value: { data, timestamp }
+const timelineCache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+const MAX_CACHE_SIZE = 50 // Maximum number of cached entries
+
+function getCacheKey(participantId: string, sampleSize: number): string {
+  return `${participantId}_${sampleSize}`
+}
+
+function cleanupCache() {
+  const now = Date.now()
+  const entries = Array.from(timelineCache.entries())
+  
+  // Remove expired entries
+  for (const [key, value] of entries) {
+    if (now - value.timestamp > CACHE_TTL) {
+      timelineCache.delete(key)
+    }
+  }
+  
+  // If still too many entries, remove oldest
+  if (timelineCache.size > MAX_CACHE_SIZE) {
+    const sorted = entries
+      .filter(([_, value]) => now - value.timestamp <= CACHE_TTL)
+      .sort((a, b) => a[1].timestamp - b[1].timestamp)
+    
+    for (let i = 0; i < sorted.length - MAX_CACHE_SIZE; i++) {
+      timelineCache.delete(sorted[i][0])
+    }
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: RouteParams
@@ -57,9 +90,26 @@ export async function GET(
   }
 
   try {
+    // Get sampleSize from query parameter (default: 2000 for initial display)
+    const searchParams = request.nextUrl.searchParams
+    const sampleSize = searchParams.get('sampleSize') ? parseInt(searchParams.get('sampleSize')!, 10) : 2000
+    
+    // Check cache first
+    cleanupCache()
+    const cacheKey = getCacheKey(participantId, sampleSize)
+    const cached = timelineCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log('[Timeline API] Cache hit for', cacheKey)
+      return NextResponse.json({
+        success: true,
+        data: cached.data,
+        cached: true,
+      })
+    }
+    
     const graphqlQuery = `
-          query ParticipantTimeline($participantId: String!) {
-            participantTimeline(participantId: $participantId) {
+          query ParticipantTimeline($participantId: String!, $sampleSize: Int) {
+            participantTimeline(participantId: $participantId, sampleSize: $sampleSize) {
               timelineData {
                 timestamp
                 word
@@ -98,7 +148,7 @@ export async function GET(
 
     const requestBody = {
       query: graphqlQuery,
-      variables: { participantId },
+      variables: { participantId, sampleSize },
     }
 
     console.log('[Timeline API] Sending GraphQL request:', {
@@ -275,12 +325,24 @@ export async function GET(
       metadata: timelineResponse.metadata,
     })
 
+    const responseData = {
+      timelineData,
+      metadata: timelineResponse.metadata,
+    }
+    
+    // Cache the response (only for sampled data to stay under 2MB limit)
+    if (sampleSize > 0 && timelineData.length <= sampleSize) {
+      timelineCache.set(cacheKey, {
+        data: responseData,
+        timestamp: Date.now(),
+      })
+      console.log('[Timeline API] Cached response for', cacheKey)
+    }
+
     return NextResponse.json({
       success: true,
-      data: {
-        timelineData,
-        metadata: timelineResponse.metadata,
-      },
+      data: responseData,
+      cached: false,
     })
   } catch (error: any) {
     console.error('[Timeline API] Unexpected error:', {
