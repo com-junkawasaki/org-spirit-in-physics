@@ -49,3 +49,113 @@ pub struct NewParticipant {
     // pub gender: Option<String>,
     pub handedness: Option<String>,
 }
+
+// Statistics structures for aggregates
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Stats {
+    pub avg: f64,
+    pub std_dev: f64,
+    pub max: f64,
+    pub min: f64,
+    pub count: i32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StatsWithMedian {
+    pub avg: f64,
+    pub std_dev: f64,
+    pub max: f64,
+    pub min: f64,
+    pub count: i32,
+    pub median: f64,
+}
+
+// Word-second aggregates
+#[derive(Queryable, Insertable, Serialize, Deserialize, Clone, Debug)]
+#[diesel(table_name = participant_word_second_aggregates)]
+pub struct WordSecondAggregate {
+    pub id: Uuid,
+    pub participant_id: Uuid,
+    pub stimulus_word: String,
+    pub second_timestamp: DateTime<Utc>,
+    pub reaction_time_stats: serde_json::Value,
+    pub emotion_stats: serde_json::Value,
+    pub physiological_stats: serde_json::Value,
+    pub response_count: i32,
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Insertable, Serialize, Deserialize)]
+#[diesel(table_name = participant_word_second_aggregates)]
+pub struct NewWordSecondAggregate {
+    pub participant_id: Uuid,
+    pub stimulus_word: String,
+    pub second_timestamp: DateTime<Utc>,
+    pub reaction_time_stats: serde_json::Value,
+    pub emotion_stats: serde_json::Value,
+    pub physiological_stats: serde_json::Value,
+    pub response_count: i32,
+}
+
+// Word aggregates
+#[derive(Queryable, Insertable, Serialize, Deserialize, Clone, Debug)]
+#[diesel(table_name = participant_word_aggregates)]
+pub struct WordAggregate {
+    pub participant_id: Uuid,
+    pub stimulus_word: String,
+    pub reaction_time_stats: serde_json::Value,
+    pub emotion_stats: serde_json::Value,
+    pub physiological_stats: serde_json::Value,
+    pub total_responses: i32,
+    pub total_seconds: i32,
+    pub first_occurrence: Option<DateTime<Utc>>,
+    pub last_occurrence: Option<DateTime<Utc>>,
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Insertable, Serialize, Deserialize)]
+#[diesel(table_name = participant_word_aggregates)]
+pub struct NewWordAggregate {
+    pub participant_id: Uuid,
+    pub stimulus_word: String,
+    pub reaction_time_stats: serde_json::Value,
+    pub emotion_stats: serde_json::Value,
+    pub physiological_stats: serde_json::Value,
+    pub total_responses: i32,
+    pub total_seconds: i32,
+    pub first_occurrence: Option<DateTime<Utc>>,
+    pub last_occurrence: Option<DateTime<Utc>>,
+}
+
+// Force graph data structures
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ForceGraphNode {
+    pub id: String,
+    pub label: String,
+    pub reaction_time: Stats,
+    pub emotions: std::collections::HashMap<String, Stats>,
+    pub physiological: Stats,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ForceGraphLink {
+    pub source: String,
+    pub target: String,
+    pub weight: f64,
+    pub correlation_type: String, // "emotion" | "physiological" | "reactionTime"
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ForceGraphData {
+    pub nodes: Vec<ForceGraphNode>,
+    pub links: Vec<ForceGraphLink>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ForceGraphMetadata {
+    pub node_count: i32,
+    pub link_count: i32,
+    pub generated_at: DateTime<Utc>,
+}

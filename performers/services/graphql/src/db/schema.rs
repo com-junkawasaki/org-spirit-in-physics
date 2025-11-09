@@ -121,6 +121,40 @@ diesel::table! {
         computed_at -> Timestamptz,
         created_at -> Nullable<Timestamptz>,
         updated_at -> Nullable<Timestamptz>,
+        sampled_timeline_data -> Nullable<Jsonb>,
+        force_graph_data -> Nullable<Jsonb>,
+        force_graph_metadata -> Nullable<Jsonb>,
+    }
+}
+
+diesel::table! {
+    participant_word_aggregates (participant_id, stimulus_word) {
+        participant_id -> Uuid,
+        stimulus_word -> Text,
+        reaction_time_stats -> Jsonb,
+        emotion_stats -> Jsonb,
+        physiological_stats -> Jsonb,
+        total_responses -> Int4,
+        total_seconds -> Int4,
+        first_occurrence -> Nullable<Timestamptz>,
+        last_occurrence -> Nullable<Timestamptz>,
+        created_at -> Nullable<Timestamptz>,
+        updated_at -> Nullable<Timestamptz>,
+    }
+}
+
+diesel::table! {
+    participant_word_second_aggregates (id) {
+        id -> Uuid,
+        participant_id -> Uuid,
+        stimulus_word -> Text,
+        second_timestamp -> Timestamptz,
+        reaction_time_stats -> Jsonb,
+        emotion_stats -> Jsonb,
+        physiological_stats -> Jsonb,
+        response_count -> Int4,
+        created_at -> Nullable<Timestamptz>,
+        updated_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -181,8 +215,10 @@ diesel::joinable!(participant_session_events -> participant_experiment_sessions 
 diesel::joinable!(participant_session_events -> participants (participant_id));
 diesel::joinable!(participant_timeline_batch_jobs -> participants (participant_id));
 diesel::joinable!(participant_timeline_cache -> participants (participant_id));
+diesel::joinable!(participant_word_aggregates -> participants (participant_id));
+diesel::joinable!(participant_word_second_aggregates -> participants (participant_id));
 diesel::joinable!(physiological_data -> participant_response_data (participant_response_data_id));
 diesel::joinable!(visualization_results -> participants (participant_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    emotion_data,participant_analysis_results,participant_consents,participant_experiment_sessions,participant_response_data,participant_session_events,participant_timeline_batch_jobs,participant_timeline_cache,participants,physiological_data,visualization_results,word_stimuli,);
+    emotion_data,participant_analysis_results,participant_consents,participant_experiment_sessions,participant_response_data,participant_session_events,participant_timeline_batch_jobs,participant_timeline_cache,participant_word_aggregates,participant_word_second_aggregates,participants,physiological_data,visualization_results,word_stimuli,);

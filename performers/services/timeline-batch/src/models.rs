@@ -76,3 +76,29 @@ pub struct NewBatchJob {
     pub metadata: Option<serde_json::Value>,
 }
 
+#[derive(Insertable, Serialize, Deserialize)]
+#[diesel(table_name = crate::db::schema::participant_word_second_aggregates)]
+pub struct NewWordSecondAggregate {
+    pub participant_id: Uuid,
+    pub stimulus_word: String,
+    pub second_timestamp: DateTime<Utc>,
+    pub reaction_time_stats: serde_json::Value,
+    pub emotion_stats: serde_json::Value,
+    pub physiological_stats: serde_json::Value,
+    pub response_count: i32,
+}
+
+#[derive(Insertable, Serialize, Deserialize)]
+#[diesel(table_name = crate::db::schema::participant_word_aggregates)]
+pub struct NewWordAggregate {
+    pub participant_id: Uuid,
+    pub stimulus_word: String,
+    pub reaction_time_stats: serde_json::Value,
+    pub emotion_stats: serde_json::Value,
+    pub physiological_stats: serde_json::Value,
+    pub total_responses: i32,
+    pub total_seconds: i32,
+    pub first_occurrence: Option<DateTime<Utc>>,
+    pub last_occurrence: Option<DateTime<Utc>>,
+}
+

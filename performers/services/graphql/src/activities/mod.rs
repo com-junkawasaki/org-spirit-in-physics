@@ -119,6 +119,63 @@ pub struct ParticipantWord2VecResponse {
     pub word_data: Vec<Word2VecData>,
 }
 
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
+#[graphql(name = "ForceGraphStats")]
+pub struct ForceGraphStats {
+    pub avg: f64,
+    #[graphql(name = "stdDev")]
+    pub std_dev: f64,
+    pub max: f64,
+    pub min: f64,
+    pub count: i32,
+}
+
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
+#[graphql(name = "ForceGraphNode")]
+pub struct ForceGraphNode {
+    pub id: String,
+    pub label: String,
+    #[graphql(name = "reactionTime")]
+    pub reaction_time: ForceGraphStats,
+    pub emotions: std::collections::HashMap<String, ForceGraphStats>,
+    pub physiological: ForceGraphStats,
+}
+
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
+#[graphql(name = "ForceGraphLink")]
+pub struct ForceGraphLink {
+    pub source: String,
+    pub target: String,
+    pub weight: f64,
+    #[graphql(name = "correlationType")]
+    pub correlation_type: String,
+}
+
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
+#[graphql(name = "ForceGraphData")]
+pub struct ForceGraphData {
+    pub nodes: Vec<ForceGraphNode>,
+    pub links: Vec<ForceGraphLink>,
+}
+
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
+#[graphql(name = "ForceGraphMetadata")]
+pub struct ForceGraphMetadata {
+    #[graphql(name = "nodeCount")]
+    pub node_count: i32,
+    #[graphql(name = "linkCount")]
+    pub link_count: i32,
+    #[graphql(name = "generatedAt")]
+    pub generated_at: String,
+}
+
+#[derive(SimpleObject)]
+#[graphql(name = "ParticipantForceGraphResponse")]
+pub struct ParticipantForceGraphResponse {
+    pub data: ForceGraphData,
+    pub metadata: ForceGraphMetadata,
+}
+
 #[derive(SimpleObject)]
 #[graphql(name = "NodeMetadata")]
 pub struct NodeMetadata {
@@ -439,20 +496,21 @@ impl Query {
         
         eprintln!("[GraphQL] participant_timeline: Parsed UUID: {:?}", participant_uuid);
         
-        // Check cache first
+        // Check cache first - prioritize sampled_timeline_data if available
         eprintln!("[GraphQL] participant_timeline: Checking cache...");
         use diesel::OptionalExtension;
-        // Query cache separately to avoid JSONB tuple type issues
-        let cached_timeline: Option<serde_json::Value> = 
+        
+        // First check for sampled_timeline_data (pre-computed for display)
+        let cached_sampled: Option<serde_json::Value> = 
             participant_timeline_cache::table
                 .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
-                .select(participant_timeline_cache::timeline_data)
+                .select(participant_timeline_cache::sampled_timeline_data)
                 .first(&mut conn)
                 .await
                 .optional()
                 .map_err(|e| {
-                    eprintln!("[GraphQL] participant_timeline: Error checking cache timeline: {:?}", e);
-                    async_graphql::Error::new(format!("Failed to check cache: {}", e))
+                    eprintln!("[GraphQL] participant_timeline: Error checking sampled timeline: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to check sampled timeline: {}", e))
                 })?;
         
         let cached_metadata: Option<serde_json::Value> = 
@@ -464,6 +522,55 @@ impl Query {
                 .optional()
                 .map_err(|e| {
                     eprintln!("[GraphQL] participant_timeline: Error checking cache metadata: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to check cache metadata: {}", e))
+                })?;
+        
+        // If sampled data exists and sample_size matches (2000), use it directly
+        if let Some(sampled_json) = cached_sampled {
+            if sample_size == 2000 {
+                eprintln!("[GraphQL] participant_timeline: Using pre-computed sampled timeline data");
+                let sampled_data: Vec<TimelineDataPoint> = serde_json::from_value(sampled_json)
+                    .map_err(|e| {
+                        eprintln!("[GraphQL] participant_timeline: Error deserializing sampled timeline data: {:?}", e);
+                        async_graphql::Error::new(format!("Failed to deserialize sampled timeline data: {}", e))
+                    })?;
+                
+                let metadata: TimelineMetadata = if let Some(metadata_json) = cached_metadata {
+                    serde_json::from_value(metadata_json)
+                        .map_err(|e| {
+                            eprintln!("[GraphQL] participant_timeline: Error deserializing cached metadata: {:?}", e);
+                            async_graphql::Error::new(format!("Failed to deserialize cached metadata: {}", e))
+                        })?
+                } else {
+                    TimelineMetadata {
+                        session_events: None,
+                        emotion_entries: None,
+                        physiological_entries: None,
+                        total_data_points: Some(sampled_data.len() as i32),
+                        data_source: Some("precomputed_sampled".to_string()),
+                        errors: None,
+                        truncated: Some(true),
+                        original_size: None,
+                    }
+                };
+                
+                return Ok(ParticipantTimelineResponse {
+                    timeline_data: sampled_data,
+                    metadata,
+                });
+            }
+        }
+        
+        // Fallback to full timeline_data cache
+        let cached_timeline: Option<serde_json::Value> = 
+            participant_timeline_cache::table
+                .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
+                .select(participant_timeline_cache::timeline_data)
+                .first(&mut conn)
+                .await
+                .optional()
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_timeline: Error checking cache timeline: {:?}", e);
                     async_graphql::Error::new(format!("Failed to check cache: {}", e))
                 })?;
         
@@ -699,6 +806,202 @@ impl Query {
                 original_size: if truncated { Some(original_size) } else { Some(total_data_points) },
             },
         })
+    }
+
+    // Merkle DAG: activities.participant_force_graph_data
+    // GraphQL query to fetch pre-computed 3D Force graph data
+    // RDF: https://spirit-in-physics.gftd.ai/activity/participantForceGraphData
+    #[graphql(name = "participantForceGraphData")]
+    async fn participant_force_graph_data(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantForceGraphResponse> {
+        eprintln!("[GraphQL] participant_force_graph_data: Starting query for participant_id={}", participant_id);
+        
+        // Get database connection pool
+        let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_force_graph_data: Failed to get database pool: {:?}", e);
+                async_graphql::Error::new(format!("Database connection pool error: {:?}", e))
+            })?;
+        
+        let mut conn = pool.get().await
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_force_graph_data: Failed to acquire database connection: {:?}", e);
+                async_graphql::Error::new(format!("Failed to acquire database connection: {}", e))
+            })?;
+        
+        // Parse participant ID
+        let participant_uuid = Uuid::parse_str(&participant_id)
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_force_graph_data: Invalid UUID format: participant_id={}, error={:?}", participant_id, e);
+                async_graphql::Error::new(format!("Invalid participant ID format '{}': {}", participant_id, e))
+            })?;
+        
+        // Load force graph data from cache
+        use diesel::OptionalExtension;
+        let force_graph_json: Option<serde_json::Value> = 
+            participant_timeline_cache::table
+                .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
+                .select(participant_timeline_cache::force_graph_data)
+                .first(&mut conn)
+                .await
+                .optional()
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_force_graph_data: Error loading force graph data: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to load force graph data: {}", e))
+                })?;
+        
+        let force_graph_metadata_json: Option<serde_json::Value> = 
+            participant_timeline_cache::table
+                .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
+                .select(participant_timeline_cache::force_graph_metadata)
+                .first(&mut conn)
+                .await
+                .optional()
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_force_graph_data: Error loading force graph metadata: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to load force graph metadata: {}", e))
+                })?;
+        
+        if let (Some(graph_json), Some(metadata_json)) = (force_graph_json, force_graph_metadata_json) {
+            eprintln!("[GraphQL] participant_force_graph_data: Found pre-computed force graph data");
+            
+            // Deserialize JSON to our GraphQL types
+            let graph_value: serde_json::Value = serde_json::from_value(graph_json)
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_force_graph_data: Error deserializing force graph data: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to deserialize force graph data: {}", e))
+                })?;
+            
+            let metadata_value: serde_json::Value = serde_json::from_value(metadata_json)
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_force_graph_data: Error deserializing force graph metadata: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to deserialize force graph metadata: {}", e))
+                })?;
+            
+            // Convert JSON to GraphQL types
+            let nodes_json = graph_value.get("nodes")
+                .and_then(|v| v.as_array())
+                .ok_or_else(|| async_graphql::Error::new("Invalid force graph data: missing nodes"))?;
+            
+            let links_json = graph_value.get("links")
+                .and_then(|v| v.as_array())
+                .ok_or_else(|| async_graphql::Error::new("Invalid force graph data: missing links"))?;
+            
+            let mut nodes: Vec<ForceGraphNode> = Vec::new();
+            for node_json in nodes_json {
+                let id = node_json.get("id")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| async_graphql::Error::new("Invalid node: missing id"))?
+                    .to_string();
+                
+                let label = node_json.get("label")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| async_graphql::Error::new("Invalid node: missing label"))?
+                    .to_string();
+                
+                let rt_stats_json = node_json.get("reactionTime")
+                    .ok_or_else(|| async_graphql::Error::new("Invalid node: missing reactionTime"))?;
+                let reaction_time = ForceGraphStats {
+                    avg: rt_stats_json.get("avg").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                    std_dev: rt_stats_json.get("std_dev").or_else(|| rt_stats_json.get("stdDev")).and_then(|v| v.as_f64()).unwrap_or(0.0),
+                    max: rt_stats_json.get("max").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                    min: rt_stats_json.get("min").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                    count: rt_stats_json.get("count").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                };
+                
+                let emotions_json = node_json.get("emotions")
+                    .and_then(|v| v.as_object())
+                    .ok_or_else(|| async_graphql::Error::new("Invalid node: missing emotions"))?;
+                
+                let mut emotions: std::collections::HashMap<String, ForceGraphStats> = std::collections::HashMap::new();
+                for (emotion_name, stats_json) in emotions_json {
+                    if let Some(stats_obj) = stats_json.as_object() {
+                        emotions.insert(emotion_name.clone(), ForceGraphStats {
+                            avg: stats_obj.get("avg").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                            std_dev: stats_obj.get("std_dev").or_else(|| stats_obj.get("stdDev")).and_then(|v| v.as_f64()).unwrap_or(0.0),
+                            max: stats_obj.get("max").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                            min: stats_obj.get("min").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                            count: stats_obj.get("count").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                        });
+                    }
+                }
+                
+                let ph_stats_json = node_json.get("physiological")
+                    .ok_or_else(|| async_graphql::Error::new("Invalid node: missing physiological"))?;
+                let physiological = ForceGraphStats {
+                    avg: ph_stats_json.get("avg").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                    std_dev: ph_stats_json.get("std_dev").or_else(|| ph_stats_json.get("stdDev")).and_then(|v| v.as_f64()).unwrap_or(0.0),
+                    max: ph_stats_json.get("max").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                    min: ph_stats_json.get("min").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                    count: ph_stats_json.get("count").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+                };
+                
+                nodes.push(ForceGraphNode {
+                    id,
+                    label,
+                    reaction_time,
+                    emotions,
+                    physiological,
+                });
+            }
+            
+            let mut links: Vec<ForceGraphLink> = Vec::new();
+            for link_json in links_json {
+                let source = link_json.get("source")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| async_graphql::Error::new("Invalid link: missing source"))?
+                    .to_string();
+                
+                let target = link_json.get("target")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| async_graphql::Error::new("Invalid link: missing target"))?
+                    .to_string();
+                
+                let weight = link_json.get("weight")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.0);
+                
+                let correlation_type = link_json.get("correlationType")
+                    .or_else(|| link_json.get("correlation_type"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("emotion")
+                    .to_string();
+                
+                links.push(ForceGraphLink {
+                    source,
+                    target,
+                    weight,
+                    correlation_type,
+                });
+            }
+            
+            let node_count = metadata_value.get("node_count")
+                .or_else(|| metadata_value.get("nodeCount"))
+                .and_then(|v| v.as_i64())
+                .unwrap_or(nodes.len() as i64) as i32;
+            
+            let link_count = metadata_value.get("link_count")
+                .or_else(|| metadata_value.get("linkCount"))
+                .and_then(|v| v.as_i64())
+                .unwrap_or(links.len() as i64) as i32;
+            
+            let generated_at = metadata_value.get("generated_at")
+                .or_else(|| metadata_value.get("generatedAt"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            
+            Ok(ParticipantForceGraphResponse {
+                data: ForceGraphData { nodes, links },
+                metadata: ForceGraphMetadata {
+                    node_count,
+                    link_count,
+                    generated_at,
+                },
+            })
+        } else {
+            eprintln!("[GraphQL] participant_force_graph_data: No pre-computed force graph data found");
+            Err(async_graphql::Error::new("Force graph data not yet generated. Please run display data generation first."))
+        }
     }
 }
 
