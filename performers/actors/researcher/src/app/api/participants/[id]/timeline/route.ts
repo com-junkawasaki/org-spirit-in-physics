@@ -111,8 +111,9 @@ export async function GET(
     })
 
     // Create AbortController for timeout
+    // Large datasets may take longer to process (e.g., 1113844 emotion records)
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000) // 120 second timeout (2 minutes)
 
     let response: Response
     try {
