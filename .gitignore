@@ -23,6 +23,12 @@ __pycache__/
 *.pyo
 *.pyd
 
+# Rust
+target/
+**/target/
+Cargo.lock
+**/*.rs.bk
+
 # macOS
 .DS_Store
 .DS_Store?

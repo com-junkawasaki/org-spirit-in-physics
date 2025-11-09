@@ -349,6 +349,45 @@ impl Query {
         
         eprintln!("[GraphQL] participant_timeline: Parsed UUID: {:?}", participant_uuid);
         
+        // Check cache first
+        eprintln!("[GraphQL] participant_timeline: Checking cache...");
+        use diesel::OptionalExtension;
+        let cached_result: Option<(serde_json::Value, serde_json::Value)> = 
+            participant_timeline_cache::table
+                .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
+                .select((
+                    participant_timeline_cache::timeline_data,
+                    participant_timeline_cache::metadata,
+                ))
+                .first(&mut conn)
+                .await
+                .optional()
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_timeline: Error checking cache: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to check cache: {}", e))
+                })?;
+        
+        if let Some((timeline_json, metadata_json)) = cached_result {
+            eprintln!("[GraphQL] participant_timeline: Cache hit! Returning cached data");
+            let timeline_data: Vec<TimelineDataPoint> = serde_json::from_value(timeline_json)
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_timeline: Error deserializing cached timeline data: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to deserialize cached timeline data: {}", e))
+                })?;
+            let metadata: TimelineMetadata = serde_json::from_value(metadata_json)
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_timeline: Error deserializing cached metadata: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to deserialize cached metadata: {}", e))
+                })?;
+            
+            return Ok(ParticipantTimelineResponse {
+                timeline_data,
+                metadata,
+            });
+        }
+        
+        eprintln!("[GraphQL] participant_timeline: Cache miss, computing timeline data in real-time...");
+        
         // Fetch participant response data
         eprintln!("[GraphQL] participant_timeline: Fetching response data from database...");
         type ResponseRow = (uuid::Uuid, String, Option<String>, Option<i32>, chrono::DateTime<chrono::Utc>);
@@ -532,7 +571,7 @@ impl Query {
                 emotion_entries: Some(total_emotion_entries),
                 physiological_entries: Some(total_physiological_entries),
                 total_data_points: Some(total_data_points),
-                data_source: Some("database".to_string()),
+                data_source: Some("realtime".to_string()), // Indicate this is computed in real-time, not from cache
                 errors: None,
                 truncated: None,
                 original_size: Some(total_data_points),

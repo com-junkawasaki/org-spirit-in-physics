@@ -168,6 +168,29 @@ services:
     profiles:
       - importer
 
+  # Timeline Batch Service (Rust)
+  timeline-batch:
+    build:
+      context: ./performers/services/timeline-batch
+      dockerfile: Dockerfile
+    container_name: spirit-timeline-batch
+    volumes:
+      - ./performers/services/timeline-batch/src:/app/src:cached
+      - ./performers/services/timeline-batch/Cargo.toml:/app/Cargo.toml:cached
+      - ./performers/services/timeline-batch/target:/app/target:cached
+    environment:
+      # Connect to PostgreSQL database
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - RUST_LOG=info,timeline_batch=debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - spirit-network
+    # Run as a one-off command, not as a service
+    profiles:
+      - batch
+
 networks:
   spirit-network:
     driver: bridge
