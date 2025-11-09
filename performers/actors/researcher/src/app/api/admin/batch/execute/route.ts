@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
 
     // Execute Docker command directly (using docker CLI)
     // Note: This requires Docker socket to be mounted
+    const networkName = process.env.DOCKER_NETWORK || 'spirit-in-physics_spirit-network'
     const incrementalFlag = incremental ? '--incremental' : ''
-    const command = `docker run --rm --network spirit-in-physics_spirit-network --env DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres spirit-in-physics-timeline-batch /app/timeline-batch ${participantId} ${incrementalFlag}`.trim()
+    const command = `docker run --rm --network ${networkName} --env DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres spirit-in-physics-timeline-batch /app/timeline-batch ${participantId} ${incrementalFlag}`.trim()
 
     console.log(`[Batch API] Executing batch processing for participant: ${participantId}`)
     console.log(`[Batch API] Incremental: ${incremental}`)

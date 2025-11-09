@@ -33,8 +33,9 @@ export async function POST(request: NextRequest) {
 
     // Execute Docker command directly (using docker CLI)
     // Note: This requires Docker socket to be mounted
-    // We'll use docker run with the same image and network as docker-compose
-    const command = `docker run --rm --network spirit-in-physics_spirit-network --env DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres --volume /workspace/performers/actors/researcher/public/dataset:/app/dataset:ro spirit-in-physics-importer /app/importer ${datasetPath}`
+    // Network name is typically {project-name}_{network-name}
+    const networkName = process.env.DOCKER_NETWORK || 'spirit-in-physics_spirit-network'
+    const command = `docker run --rm --network ${networkName} --env DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres --volume /workspace/performers/actors/researcher/public/dataset:/app/dataset:ro spirit-in-physics-importer /app/importer ${datasetPath}`
 
     console.log(`[Import API] Executing import for participant: ${participantId}`)
     console.log(`[Import API] Command: ${command}`)
