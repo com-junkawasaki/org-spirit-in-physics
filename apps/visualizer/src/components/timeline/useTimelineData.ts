@@ -109,12 +109,26 @@ export function useTimelineData({ participantId, sessionId, useDemo = false }: P
             word: item.w || item.word,
             reactionTime: 0, // デフォルト値
             hasResponse: true, // デフォルト値
-            emotions: item.em || item.emotions || [],
+            emotions: Array.isArray(item.em) ? item.em : (Array.isArray(item.emotions) ? item.emotions : []),
             physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
             reactionValue: item.rv || item.reactionValue || 0,
             eventType: item.e || item.eventType,
             metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
           }))
+          
+          // 感情データのfileTypeを確認
+          const emotionDataSample = convertedData.find(d => d.emotions && d.emotions.length > 0)
+          if (emotionDataSample) {
+            console.log('TimelineVisualization: Emotion data sample:', {
+              word: emotionDataSample.word,
+              emotionsCount: emotionDataSample.emotions.length,
+              firstEmotion: emotionDataSample.emotions[0],
+              allFileTypes: [...new Set(emotionDataSample.emotions.map((e: any) => e.fileType))]
+            })
+          } else {
+            console.log('TimelineVisualization: No emotion data found in converted data')
+          }
+          
           console.log('TimelineVisualization: Converted data sample:', convertedData[0])
           setData(convertedData)
           ok = true

@@ -263,6 +263,10 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
         ORDER BY COALESCE(b.begin_time, 0)
       `;
       const burstResults = await client.query(burstQuery, queryParams);
+      console.log('Burst emotion results count:', burstResults.length);
+      if (burstResults.length > 0) {
+        console.log('First burst result:', JSON.stringify(burstResults[0], null, 2));
+      }
       allEmotionResults.push(...burstResults);
       
       // FaceEmotionData
@@ -273,6 +277,10 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
         ORDER BY COALESCE(f.time, 0)
       `;
       const faceResults = await client.query(faceQuery, queryParams);
+      console.log('Face emotion results count:', faceResults.length);
+      if (faceResults.length > 0) {
+        console.log('First face result:', JSON.stringify(faceResults[0], null, 2));
+      }
       allEmotionResults.push(...faceResults);
       
       // LanguageEmotionData
@@ -283,6 +291,10 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
         ORDER BY COALESCE(l.begin_time, 0)
       `;
       const languageResults = await client.query(languageQuery, queryParams);
+      console.log('Language emotion results count:', languageResults.length);
+      if (languageResults.length > 0) {
+        console.log('First language result:', JSON.stringify(languageResults[0], null, 2));
+      }
       allEmotionResults.push(...languageResults);
       
       // ProsodyEmotionData
@@ -293,6 +305,10 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
         ORDER BY COALESCE(pr.begin_time, 0)
       `;
       const prosodyResults = await client.query(prosodyQuery, queryParams);
+      console.log('Prosody emotion results count:', prosodyResults.length);
+      if (prosodyResults.length > 0) {
+        console.log('First prosody result:', JSON.stringify(prosodyResults[0], null, 2));
+      }
       allEmotionResults.push(...prosodyResults);
     } else {
       // 全セッションの感情データを取得
@@ -338,6 +354,11 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
     }
     
     console.log('Emotion query results count (new structure):', allEmotionResults.length);
+    console.log('All emotion results sample:', allEmotionResults.slice(0, 2).map(r => ({
+      source: r.source,
+      hasEmotionData: !!r.emotionData,
+      emotionDataKeys: r.emotionData ? Object.keys(r.emotionData) : []
+    })));
     let emotionResults = allEmotionResults;
     
     // 新しい構造でデータが見つからない場合、古い構造を試す
@@ -357,12 +378,14 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
     const mappedResults: any[] = [];
     
     if (emotionResults.length > 0) {
+      console.log('Processing emotion results, count:', emotionResults.length);
       // 新しい構造（BurstEmotionData/FaceEmotionData/LanguageEmotionData/ProsodyEmotionData）
-      emotionResults.forEach((result: any) => {
+      emotionResults.forEach((result: any, index: number) => {
         const emotionData = result.emotionData;
         const source = result.source || 'unknown';
         
         if (!emotionData) {
+          console.log(`Skipping result ${index}: emotionData is null`);
           return; // emotionDataがnullの場合はスキップ
         }
         
@@ -373,11 +396,13 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
             try {
               emotionScoresObj = JSON.parse(emotionData.emotion_scores);
             } catch (e) {
-              console.warn('Failed to parse emotion_scores JSON:', e);
+              console.warn('Failed to parse emotion_scores JSON:', e, 'Raw value:', emotionData.emotion_scores?.substring(0, 100));
             }
           } else {
             emotionScoresObj = emotionData.emotion_scores;
           }
+        } else {
+          console.log(`Result ${index} (${source}): emotion_scores is missing. Available keys:`, Object.keys(emotionData));
         }
         
         if (Object.keys(emotionScoresObj).length > 0) {
@@ -393,8 +418,23 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
             emotions,
             sessionId: emotionData.session_id || sessionId || 'unknown'
           });
+          
+          if (mappedResults.length <= 3) {
+            console.log(`Mapped result ${mappedResults.length - 1}:`, {
+              fileType: source,
+              beginTime: emotionData.begin_time || emotionData.time || 0,
+              emotionsCount: emotions.length,
+              firstEmotion: emotions[0]
+            });
+          }
+        } else {
+          console.log(`Result ${index} (${source}): No emotion scores found after parsing`);
         }
       });
+      
+      console.log('Total mapped results:', mappedResults.length);
+    } else {
+      console.log('No emotion results to process');
     }
     
     // 古い構造（EmotionData）も試す（新しい構造でデータが見つからない場合）

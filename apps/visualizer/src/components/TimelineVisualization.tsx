@@ -93,7 +93,7 @@ export default function TimelineVisualization({
   // 感情フィルターと力学モード、データセグメント
   const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
   const [selectedEmotions, setSelectedEmotions] = useState<Set<typeof EMOTION_KEYS[number]>>(new Set(EMOTION_KEYS))
-  const [physicsMode, setPhysicsMode] = useState<'all' | 'emotion' | 'physio' | 'reactionSpeed'>('emotion')
+  const [physicsMode, setPhysicsMode] = useState<'all' | 'emotion' | 'physio' | 'reactionSpeed'>('all')
   const [segment, setSegment] = useState<'all' | 'first100' | 'next100'>('all')
   // モダリティ（Hume: prosody/burst/face/language）
   const MOD_KEYS = ['prosody','face','language','burst'] as const
