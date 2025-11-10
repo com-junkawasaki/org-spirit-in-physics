@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::{info, warn, error};
+use neo4rs::BoltString;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImportResult {
@@ -102,7 +103,7 @@ async fn process_participant(
     let mut check_params = HashMap::new();
     check_params.insert(
         "participant_id".to_string(),
-        neo4rs::BoltType::String(participant_id.to_string()),
+        neo4rs::BoltType::String(BoltString::from(participant_id.to_string())),
     );
 
     let check_query = r#"
@@ -151,19 +152,19 @@ async fn process_participant(
     let mut create_params = HashMap::new();
     create_params.insert(
         "id".to_string(),
-        neo4rs::BoltType::String(participant_id.to_string()),
+        neo4rs::BoltType::String(BoltString::from(participant_id.to_string())),
     );
     create_params.insert(
         "signature".to_string(),
-        neo4rs::BoltType::String(consent_data.signature),
+        neo4rs::BoltType::String(BoltString::from(consent_data.signature)),
     );
     create_params.insert(
         "agreed_at".to_string(),
-        neo4rs::BoltType::String(consent_data.agreed_at),
+        neo4rs::BoltType::String(BoltString::from(consent_data.agreed_at)),
     );
     create_params.insert(
         "agreements".to_string(),
-        neo4rs::BoltType::String(serde_json::to_string(&consent_data.agreements)?),
+        neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&consent_data.agreements)?)),
     );
     create_params.insert(
         "has_session_data".to_string(),
@@ -179,7 +180,7 @@ async fn process_participant(
     );
     create_params.insert(
         "imported_at".to_string(),
-        neo4rs::BoltType::String(chrono::Utc::now().to_rfc3339()),
+        neo4rs::BoltType::String(BoltString::from(chrono::Utc::now().to_rfc3339())),
     );
 
     let create_query = r#"

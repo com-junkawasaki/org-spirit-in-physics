@@ -4,6 +4,7 @@
 use crate::neo4j::client::Neo4jClient;
 use crate::error::ImportError;
 use serde::{Deserialize, Serialize};
+use neo4rs::BoltString;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
@@ -26,8 +27,8 @@ impl ValidatedSessionId {
     ) -> Result<Self, ImportError> {
         // Verify session exists in Neo4j
         let mut params = std::collections::HashMap::new();
-        params.insert("participant_id".to_string(), neo4rs::BoltType::String(participant_id.to_string()));
-        params.insert("session_id".to_string(), neo4rs::BoltType::String(session_id.clone()));
+        params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
+        params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.clone())));
 
         let query = r#"
             MATCH (p:Participant {id: $participant_id})-[:HAS_SESSION]->(s:Session {id: $session_id})
@@ -52,7 +53,7 @@ impl ValidatedSessionId {
         txn: &mut crate::neo4j::client::Transaction,
     ) -> Result<Self, ImportError> {
         let mut params = std::collections::HashMap::new();
-        params.insert("participant_id".to_string(), neo4rs::BoltType::String(participant_id.to_string()));
+        params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
 
         let query = r#"
             MATCH (p:Participant {id: $participant_id})-[:HAS_SESSION]->(s:Session)

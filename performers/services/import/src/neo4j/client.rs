@@ -1,7 +1,7 @@
 // Merkle DAG: import.service.neo4j.client
 // Neo4j client wrapper using neo4rs
 
-use neo4rs::{Graph, Query, Row};
+use neo4rs::{Graph, Query, Row, BoltString};
 use std::sync::Arc;
 use tracing::error;
 
@@ -40,7 +40,7 @@ impl Neo4jClient {
         query: &str,
         params: std::collections::HashMap<String, neo4rs::BoltType>,
     ) -> Result<Vec<Row>, ImportError> {
-        let query_obj = Query::new(query).params(params);
+        let query_obj = Query::new(query.to_string()).params(params);
         let mut result = self
             .graph
             .execute(query_obj)
@@ -66,7 +66,7 @@ impl Neo4jClient {
             .await
             .map_err(|e| ImportError::Database(format!("Failed to start transaction: {}", e)))?;
 
-        let query_obj = Query::new(query).params(params);
+        let query_obj = Query::new(query.to_string()).params(params);
         let mut result = txn
             .execute(query_obj)
             .await
@@ -109,7 +109,7 @@ impl Transaction {
         query: &str,
         params: std::collections::HashMap<String, neo4rs::BoltType>,
     ) -> Result<Vec<Row>, ImportError> {
-        let query_obj = Query::new(query).params(params);
+        let query_obj = Query::new(query.to_string()).params(params);
         let mut result = self
             .txn
             .execute(query_obj)

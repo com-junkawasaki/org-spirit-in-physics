@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::{info, warn, error};
+use neo4rs::BoltString;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImportResult {
@@ -110,7 +111,7 @@ async fn process_session(
     let mut check_params = HashMap::new();
     check_params.insert(
         "participant_id".to_string(),
-        neo4rs::BoltType::String(participant_id.to_string()),
+        neo4rs::BoltType::String(BoltString::from(participant_id.to_string())),
     );
 
     let check_query = r#"
@@ -119,9 +120,9 @@ async fn process_session(
         LIMIT 1
     "#;
 
-    let check_rows = txn.execute(check_query, check_params).await?;
+    let check_rows = txn.execute(check_query.to_string(), check_params).await?;
     if check_rows.is_empty() {
-        return Err(ImportError::ParticipantNotFound(participant_id.to_string()));
+        return Err(ImportError::ParticipantNotFound(participant_id.to_string())));
     }
 
     // Read session_data.json
@@ -181,7 +182,7 @@ async fn process_session(
     let mut session_check_params = HashMap::new();
     session_check_params.insert(
         "session_id".to_string(),
-        neo4rs::BoltType::String(session_id.clone()),
+        neo4rs::BoltType::String(BoltString::from(session_id.clone())),
     );
 
     let session_check_query = r#"
@@ -190,7 +191,7 @@ async fn process_session(
         LIMIT 1
     "#;
 
-    let session_check_rows = txn.execute(session_check_query, session_check_params).await?;
+    let session_check_rows = txn.execute(session_check_query.to_string(), session_check_params).await?;
     if !session_check_rows.is_empty() {
         warn!("Session {} already exists, skipping import", session_id);
         return Ok(SessionResult {
@@ -205,11 +206,11 @@ async fn process_session(
     let mut create_params = HashMap::new();
     create_params.insert(
         "participant_id".to_string(),
-        neo4rs::BoltType::String(participant_id.to_string()),
+        neo4rs::BoltType::String(BoltString::from(participant_id.to_string())),
     );
     create_params.insert(
         "session_id".to_string(),
-        neo4rs::BoltType::String(session_id.clone()),
+        neo4rs::BoltType::String(BoltString::from(session_id.clone())),
     );
     create_params.insert(
         "session_index".to_string(),
@@ -226,11 +227,11 @@ async fn process_session(
     );
     create_params.insert(
         "events".to_string(),
-        neo4rs::BoltType::String(serde_json::to_string(events)?),
+        neo4rs::BoltType::String(BoltString::from(serde_json::to_string(events)?)),
     );
     create_params.insert(
         "created_at".to_string(),
-        neo4rs::BoltType::String(chrono::Utc::now().to_rfc3339()),
+        neo4rs::BoltType::String(BoltString::from(chrono::Utc::now().to_rfc3339())),
     );
 
     let create_query = r#"
@@ -246,7 +247,7 @@ async fn process_session(
         RETURN s.id as id
     "#;
 
-    txn.execute(create_query, create_params).await?;
+    txn.execute(create_query.to_string(), create_params).await?;
 
     // Calculate statistics
     let word_responses = events
