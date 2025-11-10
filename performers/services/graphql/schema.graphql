@@ -37,7 +37,6 @@ type Query {
 	participants: [ParticipantGQL!]!
 	participant(participantId: String!): ParticipantGQL!
 	participantTimeline(participantId: String!, sampleSize: Int): ParticipantTimelineResponse!
-	participantWord2Vec(participantId: String!): ParticipantWord2VecResponse!
 }
 
 type TimelineDataPoint {
@@ -66,15 +65,6 @@ type TimelineMetadata {
 	errors: [String!]
 	truncated: Boolean
 	originalSize: Int
-}
-
-type Word2VecData {
-	word: String!
-	embedding: [Float!]!
-}
-
-type ParticipantWord2VecResponse {
-	wordData: [Word2VecData!]!
 }
 
 """

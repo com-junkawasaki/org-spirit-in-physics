@@ -129,6 +129,88 @@ export default function Force3DWordGraphTypeGPU({
   const isDraggingRef = useRef(false)
   const lastMouseRef = useRef({ x: 0, y: 0 })
 
+  // Merkle DAG: rendering.frustum_culling
+  // 視界錐台（Frustum）計算とカリング
+  // カメラの視界外のノード・リンクを描画対象から除外してパフォーマンスを向上
+  const calculateFrustumBounds = useCallback(() => {
+    const camera = cameraRef.current
+    const zoom = Math.max(0.05, 600 / Math.max(50, camera.distance))
+    
+    // 画面の境界を3D空間に投影
+    // カメラの視界角を考慮（簡易版：正射投影を仮定）
+    const halfWidth = width / 2 / zoom
+    const halfHeight = height / 2 / zoom
+    const maxDepth = Math.max(100, camera.distance)
+    
+    return {
+      minX: -halfWidth,
+      maxX: halfWidth,
+      minY: -halfHeight,
+      maxY: halfHeight,
+      minZ: -maxDepth,
+      maxZ: maxDepth,
+      zoom
+    }
+  }, [width, height])
+
+  // 3D位置が視界内かどうかを判定
+  const isPointInFrustum = useCallback((x: number, y: number, z: number): boolean => {
+    const camera = cameraRef.current
+    const bounds = calculateFrustumBounds()
+    
+    // ワールド座標をカメラ座標に変換
+    const wx = x - camera.centerX
+    const wy = y - camera.centerY
+    const wz = z - camera.centerZ
+    
+    // Y軸回転
+    const cosY = Math.cos(camera.rotationY)
+    const sinY = Math.sin(camera.rotationY)
+    const rx = wx * cosY - wz * sinY
+    const ry = wy
+    const rz = wx * sinY + wz * cosY
+    
+    // X軸回転
+    const cosX = Math.cos(camera.rotationX)
+    const sinX = Math.sin(camera.rotationX)
+    const cx = rx
+    const cy = ry * cosX - rz * sinX
+    const cz = ry * sinX + rz * cosX
+    
+    // 視界内判定（マージンを追加してノードが画面端で切れないように）
+    const margin = 50 // ノード半径分のマージン
+    return (
+      cx >= bounds.minX - margin &&
+      cx <= bounds.maxX + margin &&
+      cy >= bounds.minY - margin &&
+      cy <= bounds.maxY + margin &&
+      cz >= bounds.minZ &&
+      cz <= bounds.maxZ
+    )
+  }, [calculateFrustumBounds])
+
+  // LOD（Level of Detail）計算：距離に応じた詳細度を返す
+  const calculateLOD = useCallback((depth: number): { 
+    nodeScale: number
+    showLabel: boolean
+    linkOpacity: number
+  } => {
+    const camera = cameraRef.current
+    const maxDepth = Math.max(100, camera.distance)
+    const normalizedDepth = Math.min(1, Math.abs(depth) / maxDepth)
+    
+    // 距離に応じたスケール（近い=1.0, 遠い=0.3）
+    const nodeScale = 0.3 + 0.7 * (1 - normalizedDepth)
+    
+    // ラベル表示判定（近い=表示, 遠い=非表示）
+    const showLabel = normalizedDepth < 0.7
+    
+    // リンクの透明度（近い=1.0, 遠い=0.1）
+    const linkOpacity = 0.1 + 0.9 * (1 - normalizedDepth)
+    
+    return { nodeScale, showLabel, linkOpacity }
+  }, [])
+
   // 感情カラー合成（線形混色）
   const mixEmotionColor = useCallback((node: WordNode, alpha: number): string => {
     const emo = node.emotion
@@ -405,7 +487,24 @@ export default function Force3DWordGraphTypeGPU({
             
             var force = vec3<f32>(0.0);
             
-            // Repulsion forces
+            // Merkle DAG: physics.spatial_partitioning
+            // Phase 3.1: 空間グリッド分割によるO(N²)→O(N)最適化
+            // グリッドサイズ: shellRadius / 10
+            // 近傍検索: 3×3×3グリッドセル（27セル）
+            let gridSize = params.shellRadius / 10.0;
+            let gridSizeInv = 1.0 / max(gridSize, 1.0);
+            
+            // 現在のノードのグリッド座標を計算
+            let gridX = i32(floor(node.position.x * gridSizeInv));
+            let gridY = i32(floor(node.position.y * gridSizeInv));
+            let gridZ = i32(floor(node.position.z * gridSizeInv));
+            
+            // 近傍グリッドセル（3×3×3）をチェック
+            // 注意: 現在の実装では全ノードをチェック（将来の最適化でグリッドインデックスを使用）
+            // TODO: グリッドインデックスバッファを作成し、各セルに含まれるノードインデックスを保持
+            
+            // Repulsion forces (spatial partitioning optimized)
+            // 現在は全ノードをチェック（将来の最適化で近傍セルのみをチェック）
             for (var j = 0u; j < arrayLength(&nodes); j++) {
               if (i == j) { continue; }
               
@@ -413,6 +512,19 @@ export default function Force3DWordGraphTypeGPU({
               let dx = node.position - other.position;
               let distSq = dot(dx, dx) + 1e-6;
               let dist = sqrt(distSq);
+              
+              // グリッド距離による早期終了（遠距離ノードをスキップ）
+              let otherGridX = i32(floor(other.position.x * gridSizeInv));
+              let otherGridY = i32(floor(other.position.y * gridSizeInv));
+              let otherGridZ = i32(floor(other.position.z * gridSizeInv));
+              
+              let gridDist = max(
+                abs(otherGridX - gridX),
+                max(abs(otherGridY - gridY), abs(otherGridZ - gridZ))
+              );
+              
+              // 遠距離グリッドセル（3セル以上離れている）はスキップ
+              if (gridDist > 3) { continue; }
               
               var repulsionForce = params.repulsionK / distSq;
               
@@ -603,7 +715,15 @@ export default function Force3DWordGraphTypeGPU({
           
           device.queue.submit([commandEncoder.finish()])
           
-          // 結果を読み取り
+          // Merkle DAG: rendering.webgpu_render_pipeline
+          // WebGPU Render Pipelineを使用してGPUで直接描画（Phase 2.2）
+          // 注意: 現在はCPU読み取り方式を使用。Render Pipeline実装は将来の拡張として準備
+          // TODO: Render Pipeline実装時に以下を有効化
+          // 1. Render Pipelineの作成（頂点シェーダー、フラグメントシェーダー）
+          // 2. Compute Shaderの結果を直接Render Pipelineに渡す
+          // 3. テキスト描画はCanvas 2Dを併用
+          
+          // 結果を読み取り（現在の実装：CPU読み取り方式）
           const readBuffer = device.createBuffer({
             size: nodeBuffer.size,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
@@ -737,12 +857,17 @@ export default function Force3DWordGraphTypeGPU({
               const pos = positionsRef.current
               if (!pos) return
               
-              // ノード描画（距離×接続度でスケーリング/濃淡）
+              // ノード描画（距離×接続度でスケーリング/濃淡 + 視界カリング + LOD）
               for (let i = 0; i < n; i++) {
                 const ix = i * 3
                 const x = pos[ix]
                 const y = pos[ix + 1]
                 const z = pos[ix + 2]
+                
+                // 視界カリング：視界外のノードをスキップ
+                if (!isPointInFrustum(x, y, z)) {
+                  continue
+                }
                 
                 // 3D → 2D 投影（カメラ行列ベース）
                 const camera = cameraRef.current
@@ -766,6 +891,9 @@ export default function Force3DWordGraphTypeGPU({
                 const cy = ry * cosX - rz * sinX
                 const cz = ry * sinX + rz * cosX
                 
+                // LOD計算
+                const lod = calculateLOD(cz)
+                
                 // 正射投影（魚眼感を抑制）
                 const zoom = Math.max(0.05, 600 / Math.max(50, camera.distance))
                 const screenX = width / 2 + cx * zoom
@@ -773,10 +901,10 @@ export default function Force3DWordGraphTypeGPU({
                 
                 const node = nodesRef.current[i]
                 const baseRadius = Math.max(1, Math.min(10, 2 + node.scale)) * zoom
-                // 距離に応じてサイズ・アルファを調整（近い=大/濃、遠い=小/薄）
+                // 距離に応じてサイズ・アルファを調整（近い=大/濃、遠い=小/薄）+ LOD適用
                 const maxDepth = Math.max(100, camera.distance)
                 const depthWeight = 1 - Math.min(1, Math.abs(cz) / maxDepth) // 0..1 (遠い→0, 近い→1)
-                const radius = baseRadius * (0.7 + 0.9 * depthWeight)
+                const radius = baseRadius * (0.7 + 0.9 * depthWeight) * lod.nodeScale
                 const connRaw = Math.max(0, Math.min(1, connectivityRef.current?.[i] ?? 0))
                 const connBoost = Math.pow(connRaw, 0.4) // 低接続をより持ち上げつつ差を保つ（強ブースト）
                 const alphaDepth = 0.55 + 0.45 * depthWeight // 全体の薄さを改善
@@ -792,18 +920,20 @@ export default function Force3DWordGraphTypeGPU({
                 ctx.fillStyle = fillColor
                 ctx.fill()
                 
-                // ラベル
-                ctx.globalAlpha = Math.max(0.06, alpha * 0.9)
-                ctx.fillStyle = '#1f2937'
-                const labelSize = Math.round(10 + 4 * depthWeight)
-                ctx.font = `${labelSize}px sans-serif`
-                ctx.textAlign = 'center'
-                ctx.fillText(node.label, screenX, screenY + 4)
+                // ラベル（LODに応じて表示/非表示）
+                if (lod.showLabel) {
+                  ctx.globalAlpha = Math.max(0.06, alpha * 0.9)
+                  ctx.fillStyle = '#1f2937'
+                  const labelSize = Math.round(10 + 4 * depthWeight) * lod.nodeScale
+                  ctx.font = `${labelSize}px sans-serif`
+                  ctx.textAlign = 'center'
+                  ctx.fillText(node.label, screenX, screenY + 4)
+                }
               }
               // 状態復元
               ctx.globalAlpha = 1
               
-              // エッジ描画（距離×接続度で太さ/濃淡）
+              // エッジ描画（距離×接続度で太さ/濃淡 + 視界カリング + LOD）
               ctx.lineWidth = 1
               for (let k = 0; k < l; k++) {
                 const link = linksRef.current[k]
@@ -816,6 +946,13 @@ export default function Force3DWordGraphTypeGPU({
                 const tx = pos[target * 3]
                 const ty = pos[target * 3 + 1]
                 const tz = pos[target * 3 + 2]
+                
+                // 視界カリング：両端が視界外のリンクをスキップ（簡易版：少なくとも一方が視界内なら描画）
+                const sourceInFrustum = isPointInFrustum(sx, sy, sz)
+                const targetInFrustum = isPointInFrustum(tx, ty, tz)
+                if (!sourceInFrustum && !targetInFrustum) {
+                  continue
+                }
                 
                 // カメラ参照を取得
                 const camera = cameraRef.current
@@ -853,7 +990,11 @@ export default function Force3DWordGraphTypeGPU({
                 const tScreenX = width / 2 + tcx * zoom
                 const tScreenY = height / 2 + tcy * zoom
                 
-                // 深度と接続度に応じて線の太さと透明度を調整
+                // LOD計算（平均深度を使用）
+                const avgDepth = (scz + tcz) / 2
+                const lod = calculateLOD(avgDepth)
+                
+                // 深度と接続度に応じて線の太さと透明度を調整 + LOD適用
                 const maxDepth = Math.max(100, camera.distance)
                 const sw = 1 - Math.min(1, Math.abs(scz) / maxDepth)
                 const tw = 1 - Math.min(1, Math.abs(tcz) / maxDepth)
@@ -865,8 +1006,8 @@ export default function Force3DWordGraphTypeGPU({
                 const alphaDepth = 0.35 + 0.55 * w
                 const minAlphaEdge = 0.06
                 const mixEdge = 0.2 + 0.8 * wc
-                ctx.globalAlpha = Math.max(0.03, Math.min(1, minAlphaEdge + (1 - minAlphaEdge) * alphaDepth * mixEdge))
-                ctx.lineWidth = (0.6 + 1.6 * w) * (0.7 + 1.1 * wc)
+                ctx.globalAlpha = Math.max(0.03, Math.min(1, minAlphaEdge + (1 - minAlphaEdge) * alphaDepth * mixEdge)) * lod.linkOpacity
+                ctx.lineWidth = (0.6 + 1.6 * w) * (0.7 + 1.1 * wc) * lod.nodeScale
 
                 ctx.beginPath()
                 ctx.strokeStyle = link.color || '#1e40af'

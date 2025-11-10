@@ -954,6 +954,7 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_json",
+ "sha2",
  "testcontainers",
  "tokio",
  "tokio-postgres",

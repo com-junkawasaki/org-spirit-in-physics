@@ -156,6 +156,7 @@ export interface GraphQLClient {
     restLength?: number
     springK?: number
     selectedWord?: string
+    initialLoadCount?: number  // Number of nodes to load initially (for progressive loading)
   }): Promise<any | null>
 
   // Word2Vec data
@@ -669,6 +670,7 @@ export function createGraphQLClient(): GraphQLClient {
       restLength?: number
       springK?: number
       selectedWord?: string
+      initialLoadCount?: number  // Number of nodes to load initially (for progressive loading)
     }) {
       const isServer = typeof window === 'undefined'
       const url = isServer 

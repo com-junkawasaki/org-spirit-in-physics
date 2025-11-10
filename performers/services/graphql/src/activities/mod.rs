@@ -214,9 +214,11 @@ pub struct Force3DGraphParams {
     pub spring_k: Option<f64>,
     #[graphql(name = "selectedWord")]
     pub selected_word: Option<String>,
+    #[graphql(name = "initialLoadCount")]
+    pub initial_load_count: Option<i32>,  // Number of nodes to load initially (for progressive loading)
 }
 
-#[derive(SimpleObject, Clone, Debug)]
+#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(name = "Force3DGraphNode")]
 pub struct Force3DGraphNode {
     pub id: String,
@@ -229,7 +231,7 @@ pub struct Force3DGraphNode {
     pub color: Option<String>,
 }
 
-#[derive(SimpleObject, Clone, Debug)]
+#[derive(SimpleObject, Clone, Debug, Serialize, Deserialize)]
 #[graphql(name = "Force3DGraphLink")]
 pub struct Force3DGraphLink {
     pub source: i32,
@@ -242,7 +244,7 @@ pub struct Force3DGraphLink {
     pub color: String,
 }
 
-#[derive(SimpleObject)]
+#[derive(SimpleObject, Serialize, Deserialize, Clone, Debug)]
 #[graphql(name = "Force3DGraphData")]
 pub struct Force3DGraphData {
     pub nodes: Vec<Force3DGraphNode>,
@@ -567,7 +569,8 @@ impl Query {
         let cache_check_start = Instant::now();
         
         // First check for sampled_timeline_data (pre-computed for display)
-        let cached_sampled: Option<serde_json::Value> = 
+        // Nullable<Jsonb>はOption<Option<serde_json::Value>>として読み取る必要がある
+        let cached_sampled: Option<Option<serde_json::Value>> = 
             participant_timeline_cache::table
                 .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
                 .select(participant_timeline_cache::sampled_timeline_data)
@@ -576,8 +579,10 @@ impl Query {
                 .optional()
                 .map_err(|e| {
                     eprintln!("[GraphQL] participant_timeline: Error checking sampled timeline: {:?}", e);
-                    async_graphql::Error::new(format!("Failed to check sampled timeline: {}", e))
+                    async_graphql::Error::new(format!("Failed to check sampled timeline: {:?}", e))
                 })?;
+        
+        let cached_sampled = cached_sampled.flatten();
         
         let cached_metadata: Option<serde_json::Value> = 
             participant_timeline_cache::table
@@ -940,7 +945,8 @@ impl Query {
         // Load force graph data from cache
         let db_query_start = Instant::now();
         use diesel::OptionalExtension;
-        let force_graph_json: Option<serde_json::Value> = 
+        // Nullable<Jsonb>はOption<Option<serde_json::Value>>として読み取る必要がある
+        let force_graph_json: Option<Option<serde_json::Value>> = 
             participant_timeline_cache::table
                 .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
                 .select(participant_timeline_cache::force_graph_data)
@@ -949,10 +955,13 @@ impl Query {
                 .optional()
                 .map_err(|e| {
                     eprintln!("[GraphQL] participant_force_graph_data: Error loading force graph data: {:?}", e);
-                    async_graphql::Error::new(format!("Failed to load force graph data: {}", e))
+                    async_graphql::Error::new(format!("Failed to load force graph data: {:?}", e))
                 })?;
         
-        let force_graph_metadata_json: Option<serde_json::Value> = 
+        let force_graph_json = force_graph_json.flatten();
+        
+        // Nullable<Jsonb>はOption<Option<serde_json::Value>>として読み取る必要がある
+        let force_graph_metadata_json: Option<Option<serde_json::Value>> = 
             participant_timeline_cache::table
                 .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
                 .select(participant_timeline_cache::force_graph_metadata)
@@ -961,8 +970,10 @@ impl Query {
                 .optional()
                 .map_err(|e| {
                     eprintln!("[GraphQL] participant_force_graph_data: Error loading force graph metadata: {:?}", e);
-                    async_graphql::Error::new(format!("Failed to load force graph metadata: {}", e))
+                    async_graphql::Error::new(format!("Failed to load force graph metadata: {:?}", e))
                 })?;
+        
+        let force_graph_metadata_json = force_graph_metadata_json.flatten();
         let db_query_ms = db_query_start.elapsed().as_millis() as u64;
         
         if let (Some(graph_json), Some(metadata_json)) = (force_graph_json, force_graph_metadata_json) {
@@ -1122,7 +1133,6 @@ impl Query {
     // Merkle DAG: activities.participant_force3d_graph
     // GraphQL query to compute 3D Force graph data with parameters
     // RDF: https://spirit-in-physics.gftd.ai/activity/participantForce3DGraph
-    #[graphql(name = "participantForce3DGraph")]
     async fn participant_force3d_graph(
         &self,
         ctx: &Context<'_>,
@@ -1132,39 +1142,167 @@ impl Query {
         let total_start = Instant::now();
         eprintln!("[GraphQL] participant_force3d_graph: Starting query for participant_id={}", participant_id);
 
+        // Convert params to cacheable format and compute hash
+        let graphql_params = params.unwrap_or_default();
+        use crate::db::cache::CacheableParams;
+        let cacheable_params = CacheableParams {
+            selected_emotions: graphql_params.selected_emotions.clone(),
+            selected_modalities: graphql_params.selected_modalities.clone(),
+            physics_mode: graphql_params.physics_mode.clone(),
+            segment: graphql_params.segment.clone(),
+            top_k: graphql_params.top_k,
+            min_w: graphql_params.min_w,
+            weight_gamma: graphql_params.weight_gamma,
+            shell_radius: graphql_params.shell_radius,
+            rest_length: graphql_params.rest_length,
+            spring_k: graphql_params.spring_k,
+            selected_word: graphql_params.selected_word.clone(),
+        };
+        let params_hash = cacheable_params.compute_hash();
+        eprintln!("[GraphQL] participant_force3d_graph: params_hash={}", params_hash);
+
+        // Check cache first
+        let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()
+            .map_err(|e| async_graphql::Error::new(format!("Failed to get database pool: {:?}", e)))?;
+        let mut conn = pool.get().await
+            .map_err(|e| async_graphql::Error::new(format!("Failed to get database connection: {:?}", e)))?;
+
+        use diesel::prelude::*;
+        use diesel::OptionalExtension;
+        use diesel_async::RunQueryDsl;
+        use crate::db::schema::{participant_force3d_graph_cache as cache_table, participant_timeline_cache, participant_response_data};
+        use chrono::Utc;
+        
+        // Note: cache_table is used in this scope
+
+        let cache_check_start = Instant::now();
+        let participant_uuid = Uuid::parse_str(&participant_id)
+            .map_err(|e| async_graphql::Error::new(format!("Invalid participant ID: {:?}", e)))?;
+        
+        let cached_result: Option<(serde_json::Value, chrono::DateTime<chrono::Utc>)> = cache_table::table
+            .filter(cache_table::participant_id.eq(participant_uuid))
+            .filter(cache_table::params_hash.eq(&params_hash))
+            .filter(cache_table::expires_at.gt(Utc::now()))
+            .select((
+                cache_table::graph_data,
+                cache_table::computed_at,
+            ))
+            .first::<(serde_json::Value, chrono::DateTime<chrono::Utc>)>(&mut conn)
+            .await
+            .optional()
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_force3d_graph: Error checking cache: {:?}", e);
+                async_graphql::Error::new(format!("Failed to check cache: {:?}", e))
+            })?;
+
+        if let Some((cached_data, cached_at)) = cached_result {
+            let cache_check_ms = cache_check_start.elapsed().as_millis() as u64;
+            eprintln!("[GraphQL] participant_force3d_graph: Cache hit! cached_at={:?}", cached_at);
+            
+            let deserialize_start = Instant::now();
+            let graph_data: Force3DGraphData = serde_json::from_value(cached_data)
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_force3d_graph: Error deserializing cached data: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to deserialize cached data: {}", e))
+                })?;
+            let deserialize_ms = deserialize_start.elapsed().as_millis() as u64;
+            
+            let total_ms = total_start.elapsed().as_millis() as u64;
+            eprintln!("[Performance] participant_force3d_graph: cache_hit=true, cache_check_ms={}, deserialize_ms={}, total_ms={}, nodes={}, links={}", 
+                cache_check_ms, deserialize_ms, total_ms, graph_data.nodes.len(), graph_data.links.len());
+            
+            return Ok(graph_data);
+        }
+
+        let cache_check_ms = cache_check_start.elapsed().as_millis() as u64;
+        eprintln!("[GraphQL] participant_force3d_graph: Cache miss, computing graph data...");
+
         // Get timeline data first
-        let timeline_response = match self.participant_timeline(ctx, participant_id.clone(), Some(2000)).await {
-            Ok(resp) => resp,
-            Err(e) => {
-                eprintln!("[GraphQL] participant_force3d_graph: Failed to get timeline data: {:?}", e);
-                return Err(e);
+        // Note: Cannot call #[Object] methods directly, so we fetch timeline data from cache or database
+        let timeline_data: Vec<crate::activities::TimelineDataPoint> = {
+            // Try to get cached timeline data
+            let cached_timeline: Option<serde_json::Value> = 
+                participant_timeline_cache::table
+                    .filter(participant_timeline_cache::participant_id.eq(participant_uuid))
+                    .select(participant_timeline_cache::timeline_data)
+                    .first(&mut conn)
+                    .await
+                    .optional()
+                    .map_err(|e| {
+                        eprintln!("[GraphQL] participant_force3d_graph: Error checking timeline cache: {:?}", e);
+                        async_graphql::Error::new(format!("Failed to check timeline cache: {:?}", e))
+                    })?;
+            
+            if let Some(timeline_json) = cached_timeline {
+                serde_json::from_value(timeline_json)
+                    .map_err(|e| {
+                        eprintln!("[GraphQL] participant_force3d_graph: Error deserializing cached timeline: {:?}", e);
+                        async_graphql::Error::new(format!("Failed to deserialize cached timeline: {:?}", e))
+                    })?
+            } else {
+                // Fallback: fetch from database (simplified - just get response data)
+                let responses: Vec<(uuid::Uuid, String, Option<String>, Option<i32>, chrono::DateTime<chrono::Utc>)> = 
+                    participant_response_data::table
+                        .filter(participant_response_data::participant_id.eq(participant_uuid))
+                        .select((
+                            participant_response_data::id,
+                            participant_response_data::stimulus_word,
+                            participant_response_data::response_word,
+                            participant_response_data::reaction_time_ms,
+                            participant_response_data::timestamp,
+                        ))
+                        .order(participant_response_data::timestamp.asc())
+                        .load(&mut conn)
+                        .await
+                        .map_err(|e| {
+                            eprintln!("[GraphQL] participant_force3d_graph: Error fetching response data: {:?}", e);
+                            async_graphql::Error::new(format!("Failed to fetch response data: {:?}", e))
+                        })?;
+                
+                // Convert to TimelineDataPoint format (simplified)
+                use crate::activities::{TimelineDataPoint, PhysiologicalData};
+                responses.into_iter().map(|(_id, stimulus_word, response_word, reaction_time_ms, timestamp)| {
+                    TimelineDataPoint {
+                        timestamp: timestamp.timestamp_millis() as f64 / 1000.0,
+                        word: stimulus_word,
+                        reaction_time: reaction_time_ms.unwrap_or(0),
+                        has_response: response_word.is_some(),
+                        emotions: vec![],
+                        physiological: PhysiologicalData {
+                            average: None,
+                            max: None,
+                            min: None,
+                        },
+                        reaction_value: 0.0,
+                        event_type: None,
+                        metadata: None,
+                    }
+                }).collect()
             }
         };
-        let timeline_data = timeline_response.timeline_data.clone();
 
         if timeline_data.is_empty() {
             return Err(async_graphql::Error::new("No timeline data available for this participant"));
         }
 
-        // Parse parameters with defaults
-        let params = params.unwrap_or_default();
-        let selected_emotions: std::collections::HashSet<String> = params.selected_emotions
+        // Parse parameters with defaults (use graphql_params from above)
+        let selected_emotions: std::collections::HashSet<String> = graphql_params.selected_emotions
             .unwrap_or_else(|| vec!["joy".to_string(), "sadness".to_string(), "anger".to_string(), "fear".to_string(), "surprise".to_string(), "disgust".to_string(), "calm".to_string(), "focus".to_string(), "excitement".to_string(), "confusion".to_string()])
             .into_iter()
             .collect();
-        let selected_modalities: std::collections::HashSet<String> = params.selected_modalities
+        let selected_modalities: std::collections::HashSet<String> = graphql_params.selected_modalities
             .unwrap_or_else(|| vec!["prosody".to_string(), "face".to_string(), "language".to_string(), "burst".to_string()])
             .into_iter()
             .collect();
-        let physics_mode = params.physics_mode.unwrap_or_else(|| "emotion".to_string());
-        let segment = params.segment.unwrap_or_else(|| "all".to_string());
-        let top_k = params.top_k.unwrap_or(2);
-        let min_w = params.min_w.unwrap_or(0.25);
-        let weight_gamma = params.weight_gamma.unwrap_or(1.6);
-        let shell_radius = params.shell_radius.unwrap_or(300.0);
-        let rest_length = params.rest_length.unwrap_or(80.0);
-        let spring_k = params.spring_k.unwrap_or(2.0);
-        let selected_word = params.selected_word;
+        let physics_mode = graphql_params.physics_mode.unwrap_or_else(|| "emotion".to_string());
+        let segment = graphql_params.segment.unwrap_or_else(|| "all".to_string());
+        let top_k = graphql_params.top_k.unwrap_or(2);
+        let min_w = graphql_params.min_w.unwrap_or(0.25);
+        let weight_gamma = graphql_params.weight_gamma.unwrap_or(1.6);
+        let shell_radius = graphql_params.shell_radius.unwrap_or(300.0);
+        let rest_length = graphql_params.rest_length.unwrap_or(80.0);
+        let spring_k = graphql_params.spring_k.unwrap_or(2.0);
+        let selected_word = graphql_params.selected_word;
 
         // Jung stimulus words (100 words) - using word_stimuli table IDs
         // For now, we'll use a simplified approach and get words from timeline data
@@ -1422,6 +1560,9 @@ impl Query {
             ("excitement", "#22d3ee"), ("confusion", "#64748b"),
         ].iter().cloned().collect();
 
+        // First pass: collect initial positions for all nodes
+        let mut initial_positions: Vec<Option<Vec<f64>>> = vec![None; nodes.len()];
+        
         for (wi, node) in nodes.iter().enumerate() {
             let word_index = base_offset + wi;
             let label = &node.label;
@@ -1492,11 +1633,11 @@ impl Query {
                     // Use hash-based jitter instead of random
                     let jitter = 1.0 + ((label.len() as f64 * 0.1) % 0.1) - 0.05;
                     let init = [(vx / len) * r * jitter, (vy / len) * r * jitter, (vz / len) * r * jitter];
-                    nodes[wi].initial = Some(vec![init[0], init[1], init[2]]);
+                    initial_positions[wi] = Some(vec![init[0], init[1], init[2]]);
                 }
             }
-
-            // Generate links
+            
+            // Generate links for this word node
             for (ai, w) in &chosen {
                 let a = &anchor_nodes[*ai];
                 let key = anchor_to_key.get(a.label.as_str()).copied();
@@ -1526,6 +1667,13 @@ impl Query {
                 });
             }
         }
+        
+        // Second pass: apply initial positions to nodes
+        for (wi, initial_pos) in initial_positions.into_iter().enumerate() {
+            if let Some(pos) = initial_pos {
+                nodes[wi].initial = Some(pos);
+            }
+        }
 
         // Handle selected word
         if let Some(sw) = selected_word {
@@ -1537,18 +1685,194 @@ impl Query {
             }
         }
 
-        // Combine anchor nodes and word nodes
-        let mut all_nodes = anchor_nodes;
-        all_nodes.extend(nodes);
+        // Calculate node importance scores for progressive loading
+        // Importance is based on: connection degree, scale, emotion intensity, reaction time stats
+        let mut node_importance: Vec<(usize, f64)> = Vec::new();
+        
+        // Calculate connection degrees for word nodes
+        let mut word_degrees: Vec<f64> = vec![0.0; nodes.len()];
+        for link in &links {
+            let source_idx = link.source as usize;
+            let target_idx = link.target as usize;
+            let anchor_count = anchor_nodes.len();
+            
+            // Check if source is a word node (index >= anchor_count)
+            if source_idx >= anchor_count {
+                let word_idx = source_idx - anchor_count;
+                if word_idx < nodes.len() {
+                    word_degrees[word_idx] += link.weight;
+                }
+            }
+            
+            // Check if target is a word node
+            if target_idx >= anchor_count {
+                let word_idx = target_idx - anchor_count;
+                if word_idx < nodes.len() {
+                    word_degrees[word_idx] += link.weight;
+                }
+            }
+        }
+        
+        // Calculate importance scores
+        let max_degree = word_degrees.iter().fold(0.0f64, |acc, &d| acc.max(d));
+        let max_scale = nodes.iter().map(|n| n.scale).fold(0.0f64, |acc, s| acc.max(s));
+        
+        for (idx, node) in nodes.iter().enumerate() {
+            let degree_score = if max_degree > 0.0 {
+                word_degrees[idx] / max_degree
+            } else {
+                0.0
+            };
+            
+            let scale_score = if max_scale > 0.0 {
+                node.scale / max_scale
+            } else {
+                0.0
+            };
+            
+            // Emotion intensity score (if available)
+            let emotion_score = if let Some(acc) = accum.get(&node.label) {
+                let avg_rv = if acc.0 > 0 { acc.1 / acc.0 as f64 } else { 0.0 };
+                avg_rv.min(1.0)
+            } else {
+                0.0
+            };
+            
+            // Combined importance score (weighted average)
+            let importance = 0.4 * degree_score + 0.3 * scale_score + 0.3 * emotion_score;
+            node_importance.push((idx, importance));
+        }
+        
+        // Sort by importance (descending)
+        node_importance.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        
+        // Progressive loading: if initial_load_count is specified, only return top N nodes
+        let initial_load_count = graphql_params.initial_load_count.unwrap_or(0);
+        let nodes_len = nodes.len();
+        let mut final_nodes = nodes.clone();
+        let mut final_links = links.clone();
+        
+        if initial_load_count > 0 && initial_load_count < nodes_len as i32 {
+            // Get top N important nodes
+            let top_indices: std::collections::HashSet<usize> = node_importance
+                .iter()
+                .take(initial_load_count as usize)
+                .map(|(idx, _)| *idx)
+                .collect();
+            
+            // Filter nodes and links
+            let anchor_count = anchor_nodes.len();
+            let mut filtered_nodes: Vec<Force3DGraphNode> = Vec::new();
+            let mut node_index_map: HashMap<usize, usize> = HashMap::new();
+            
+            // Add anchor nodes first (always included)
+            for (idx, node) in anchor_nodes.iter().enumerate() {
+                filtered_nodes.push(node.clone());
+                node_index_map.insert(idx, idx);
+            }
+            
+            // Add important word nodes
+            let mut new_word_idx = anchor_count;
+            for (old_idx, node) in nodes.iter().enumerate() {
+                if top_indices.contains(&old_idx) {
+                    filtered_nodes.push(node.clone());
+                    node_index_map.insert(anchor_count + old_idx, new_word_idx);
+                    new_word_idx += 1;
+                }
+            }
+            
+            // Filter links to only include connections between included nodes
+            final_links = links.iter()
+                .filter(|link| {
+                    let source_included = node_index_map.contains_key(&(link.source as usize));
+                    let target_included = node_index_map.contains_key(&(link.target as usize));
+                    source_included && target_included
+                })
+                .map(|link| {
+                    let new_source = *node_index_map.get(&(link.source as usize)).unwrap() as i32;
+                    let new_target = *node_index_map.get(&(link.target as usize)).unwrap() as i32;
+                    Force3DGraphLink {
+                        source: new_source,
+                        target: new_target,
+                        weight: link.weight,
+                        mode: link.mode.clone(),
+                        l0: link.l0,
+                        k: link.k,
+                        color: link.color.clone(),
+                    }
+                })
+                .collect();
+            
+            final_nodes = filtered_nodes;
+            eprintln!("[GraphQL] participant_force3d_graph: Progressive loading: showing {} of {} nodes", 
+                final_nodes.len() - anchor_count, nodes.len());
+        } else {
+            // Combine anchor nodes and word nodes (all nodes)
+            let mut all_nodes = anchor_nodes;
+            all_nodes.extend(final_nodes);
+            final_nodes = all_nodes;
+        }
+
+        let result = Force3DGraphData {
+            nodes: final_nodes,
+            links: final_links,
+        };
+
+        // Save to cache
+        let save_cache_start = Instant::now();
+        let graph_data_json = serde_json::to_value(&result)
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_force3d_graph: Error serializing graph data for cache: {:?}", e);
+                async_graphql::Error::new(format!("Failed to serialize graph data: {}", e))
+            })?;
+        
+        let params_json = serde_json::to_value(&cacheable_params)
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_force3d_graph: Error serializing params for cache: {:?}", e);
+                async_graphql::Error::new(format!("Failed to serialize params: {}", e))
+            })?;
+
+        // Use ON CONFLICT to update existing cache entry (cache_table already imported above)
+        let expires_at = Utc::now() + chrono::Duration::hours(1);
+        
+        let insert_result = diesel::insert_into(cache_table::table)
+            .values((
+                cache_table::participant_id.eq(participant_uuid),
+                cache_table::params_hash.eq(&params_hash),
+                cache_table::graph_data.eq(&graph_data_json),
+                cache_table::params.eq(&params_json),
+                cache_table::expires_at.eq(expires_at),
+            ))
+            .on_conflict((
+                cache_table::participant_id,
+                cache_table::params_hash,
+            ))
+            .do_update()
+            .set((
+                cache_table::graph_data.eq(&graph_data_json),
+                cache_table::params.eq(&params_json),
+                cache_table::expires_at.eq(expires_at),
+                cache_table::computed_at.eq(Utc::now()),
+            ))
+            .execute(&mut *conn)
+            .await
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_force3d_graph: Warning: Failed to save cache: {:?}", e);
+                // Don't fail the request if cache save fails, just log the error
+                e
+            })
+            .ok(); // Convert Result to Option to ignore errors
+        
+        if insert_result.is_some() {
+            let save_cache_ms = save_cache_start.elapsed().as_millis() as u64;
+            eprintln!("[GraphQL] participant_force3d_graph: Cache saved successfully, save_cache_ms={}", save_cache_ms);
+        }
 
         let total_ms = total_start.elapsed().as_millis() as u64;
-        eprintln!("[Performance] participant_force3d_graph: total_ms={}, nodes={}, links={}", 
-            total_ms, all_nodes.len(), links.len());
+        eprintln!("[Performance] participant_force3d_graph: cache_hit=false, cache_check_ms={}, total_ms={}, nodes={}, links={}", 
+            cache_check_ms, total_ms, result.nodes.len(), result.links.len());
 
-        Ok(Force3DGraphData {
-            nodes: all_nodes,
-            links,
-        })
+        Ok(result)
     }
 }
 
@@ -1740,7 +2064,6 @@ impl Query {
     // Merkle DAG: activities.participant_word2vec
     // GraphQL query to fetch word2vec embeddings for a participant
     // RDF: https://spirit-in-physics.gftd.ai/activity/participantWord2Vec
-    #[graphql(name = "participantWord2Vec")]
     async fn participant_word2vec(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantWord2VecResponse> {
         let total_start = Instant::now();
         eprintln!("[GraphQL] participant_word2vec: Starting query for participant_id={}", participant_id);
@@ -1770,12 +2093,13 @@ impl Query {
         // Fetch participant response data grouped by stimulus_word
         let db_query_start = Instant::now();
         eprintln!("[GraphQL] participant_word2vec: Fetching response data from database...");
-        type ResponseRow = (String,);
-        let all_words: Vec<ResponseRow> = 
+        // 単一カラムを読み取る場合はStringとして読み取る
+        let all_words: Vec<String> = 
             participant_response_data::table
                 .filter(participant_response_data::participant_id.eq(participant_uuid))
                 .select(participant_response_data::stimulus_word)
                 .order(participant_response_data::stimulus_word.asc())
+                .distinct()
                 .load(&mut conn)
                 .await
                 .map_err(|e| {
@@ -1786,9 +2110,9 @@ impl Query {
         // Remove duplicates in Rust (since Diesel's distinct() requires different syntax)
         use std::collections::HashSet;
         let mut seen = HashSet::new();
-        let words: Vec<ResponseRow> = all_words
+        let words: Vec<String> = all_words
             .into_iter()
-            .filter(|(word,)| seen.insert(word.clone()))
+            .filter(|word| seen.insert(word.clone()))
             .collect();
         
         let db_query_ms = db_query_start.elapsed().as_millis() as u64;
@@ -1799,7 +2123,7 @@ impl Query {
         // but Word2VecData expects an embedding vector (array). For now, we return empty arrays.
         // In the future, this should fetch embeddings from an external service (e.g., TerminusDB).
         let processing_start = Instant::now();
-        let word_data: Vec<Word2VecData> = words.into_iter().map(|(word,)| {
+        let word_data: Vec<Word2VecData> = words.into_iter().map(|word| {
             Word2VecData {
                 word,
                 embedding: vec![], // Placeholder: empty array until external service integration

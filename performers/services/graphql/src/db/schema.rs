@@ -64,6 +64,20 @@ diesel::table! {
 }
 
 diesel::table! {
+    participant_force3d_graph_cache (id) {
+        id -> Uuid,
+        participant_id -> Uuid,
+        params_hash -> Text,
+        graph_data -> Jsonb,
+        params -> Jsonb,
+        computed_at -> Timestamptz,
+        expires_at -> Timestamptz,
+        created_at -> Nullable<Timestamptz>,
+        updated_at -> Nullable<Timestamptz>,
+    }
+}
+
+diesel::table! {
     participant_response_data (id) {
         id -> Uuid,
         participant_id -> Uuid,
@@ -209,6 +223,7 @@ diesel::joinable!(emotion_data -> participant_response_data (participant_respons
 diesel::joinable!(participant_analysis_results -> participants (participant_id));
 diesel::joinable!(participant_consents -> participants (participant_id));
 diesel::joinable!(participant_experiment_sessions -> participants (participant_id));
+diesel::joinable!(participant_force3d_graph_cache -> participants (participant_id));
 diesel::joinable!(participant_response_data -> participants (participant_id));
 diesel::joinable!(participant_response_data -> word_stimuli (word_stimulus_id));
 diesel::joinable!(participant_session_events -> participant_experiment_sessions (session_id));
@@ -221,4 +236,4 @@ diesel::joinable!(physiological_data -> participant_response_data (participant_r
 diesel::joinable!(visualization_results -> participants (participant_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    emotion_data,participant_analysis_results,participant_consents,participant_experiment_sessions,participant_response_data,participant_session_events,participant_timeline_batch_jobs,participant_timeline_cache,participant_word_aggregates,participant_word_second_aggregates,participants,physiological_data,visualization_results,word_stimuli,);
+    emotion_data,participant_analysis_results,participant_consents,participant_experiment_sessions,participant_force3d_graph_cache,participant_response_data,participant_session_events,participant_timeline_batch_jobs,participant_timeline_cache,participant_word_aggregates,participant_word_second_aggregates,participants,physiological_data,visualization_results,word_stimuli,);

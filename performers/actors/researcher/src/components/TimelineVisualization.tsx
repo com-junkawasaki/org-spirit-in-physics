@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { useTimelineData } from './timeline/useTimelineData'
 import TimelineChart from './timeline/TimelineChart'
@@ -118,50 +118,109 @@ export default function TimelineVisualization({
   const [wordsSortKey, setWordsSortKey] = useState<'count' | 'rv_o' | 'rt_o' | 'ph_o'>('count')
   const [wordsSortDir, setWordsSortDir] = useState<'asc' | 'desc'>('desc')
 
-  // Fetch Force3D graph data from backend when parameters change
+  // Memoize Set to Array conversion to prevent unnecessary re-renders
+  const selectedEmotionsArray = useMemo(() => Array.from(selectedEmotions), [selectedEmotions])
+  const selectedModalitiesArray = useMemo(() => Array.from(selectedModalities), [selectedModalities])
+
+  // Progressive loading state
+  const [progressiveLoadEnabled, setProgressiveLoadEnabled] = useState(true)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
+
+  // Fetch Force3D graph data from backend when parameters change (with debounce)
   useEffect(() => {
     if (!mounted || !participantId || activeTab !== 'force3d') return
     
-    const fetchForce3DGraphData = async () => {
-      const forceGraphStart = performance.now()
-      setForce3DGraphLoading(true)
-      setForce3DGraphError(null)
-      try {
-        const client = createGraphQLClient()
-        const result = await client.getParticipantForce3DGraph(participantId, {
-          selectedEmotions: Array.from(selectedEmotions),
-          selectedModalities: Array.from(selectedModalities),
-          physicsMode,
-          segment,
-          topK,
-          minW,
-          weightGamma,
-          shellRadius,
-          restLength,
-          springK,
-          selectedWord: selectedWord || undefined,
-        })
-        if (result) {
-          const conversionMs = Math.round(performance.now() - forceGraphStart)
-          console.log('[Performance] Force3DGraph: totalMs=' + conversionMs + ', nodes=' + result.nodes.length + ', links=' + result.links.length)
-          setForce3DGraphData({ nodes: result.nodes, links: result.links })
-        } else {
-          const totalMs = Math.round(performance.now() - forceGraphStart)
-          console.log('[Performance] Force3DGraph: totalMs=' + totalMs + ', result=not_available')
-          setForce3DGraphError('Force3D graph data not available')
-        }
-      } catch (err) {
-        const totalMs = Math.round(performance.now() - forceGraphStart)
-        console.log('[Performance] Force3DGraph: totalMs=' + totalMs + ', result=error')
-        console.error('Error fetching Force3D graph data:', err)
-        setForce3DGraphError(err instanceof Error ? err.message : 'Unknown error')
-      } finally {
-        setForce3DGraphLoading(false)
-      }
-    }
+    // Reset progressive loading state when parameters change
+    setInitialLoadComplete(false)
     
-    fetchForce3DGraphData()
-  }, [mounted, participantId, activeTab, selectedEmotions, selectedModalities, physicsMode, segment, topK, minW, weightGamma, shellRadius, restLength, springK, selectedWord])
+    // Debounce timer to prevent excessive API calls
+    const timeoutId = setTimeout(() => {
+      const fetchForce3DGraphData = async (loadCount?: number) => {
+        const forceGraphStart = performance.now()
+        setForce3DGraphLoading(true)
+        setForce3DGraphError(null)
+        try {
+          const client = createGraphQLClient()
+          const result = await client.getParticipantForce3DGraph(participantId, {
+            selectedEmotions: selectedEmotionsArray,
+            selectedModalities: selectedModalitiesArray,
+            physicsMode,
+            segment,
+            topK,
+            minW,
+            weightGamma,
+            shellRadius,
+            restLength,
+            springK,
+            selectedWord: selectedWord || undefined,
+            initialLoadCount: loadCount,  // Progressive loading: initial load with top 50 nodes
+          })
+          if (result) {
+            const conversionMs = Math.round(performance.now() - forceGraphStart)
+            const isProgressive = loadCount !== undefined && loadCount > 0
+            console.log(`[Performance] Force3DGraph: totalMs=${conversionMs}, nodes=${result.nodes.length}, links=${result.links.length}, progressive=${isProgressive}`)
+            setForce3DGraphData({ nodes: result.nodes, links: result.links })
+            
+            // If progressive loading and initial load is complete, load remaining nodes after a delay
+            if (isProgressive && !initialLoadComplete && progressiveLoadEnabled) {
+              setInitialLoadComplete(true)
+              // Load remaining nodes after 1 second
+              setTimeout(() => {
+                fetchForce3DGraphData(undefined)  // Load all nodes
+              }, 1000)
+            }
+          } else {
+            const totalMs = Math.round(performance.now() - forceGraphStart)
+            console.log('[Performance] Force3DGraph: totalMs=' + totalMs + ', result=not_available')
+            setForce3DGraphError('Force3D graph data not available')
+          }
+        } catch (err) {
+          const totalMs = Math.round(performance.now() - forceGraphStart)
+          console.log('[Performance] Force3DGraph: totalMs=' + totalMs + ', result=error')
+          console.error('Error fetching Force3D graph data:', err)
+          setForce3DGraphError(err instanceof Error ? err.message : 'Unknown error')
+        } finally {
+          setForce3DGraphLoading(false)
+        }
+      }
+      
+      // Initial load: use progressive loading if enabled (load top 50 nodes first)
+      if (progressiveLoadEnabled && !initialLoadComplete) {
+        fetchForce3DGraphData(50)
+      } else {
+        fetchForce3DGraphData(undefined)  // Load all nodes
+      }
+    }, 300) // 300ms debounce
+    
+    return () => clearTimeout(timeoutId)
+  }, [mounted, participantId, activeTab, selectedEmotionsArray, selectedModalitiesArray, physicsMode, segment, topK, minW, weightGamma, shellRadius, restLength, springK, selectedWord, progressiveLoadEnabled, initialLoadComplete])
+
+  // Memoize data conversion to prevent unnecessary re-computation
+  const convertedGraphData = useMemo(() => {
+    if (!force3DGraphData) return null
+    
+    const nodes: WordNode[] = force3DGraphData.nodes.map((node: any) => ({
+      id: node.id,
+      label: node.label,
+      scale: node.scale || 1.0,
+      nodeType: (node.nodeType || 'word') as 'word' | 'anchor',
+      initial: node.initial ? (node.initial as [number, number, number]) : undefined,
+      fixed: node.fixed || false,
+      color: node.color,
+    }))
+
+    const links: WordLink[] = force3DGraphData.links.map((link: any) => ({
+      source: typeof link.source === 'number' ? link.source : parseInt(link.source),
+      target: typeof link.target === 'number' ? link.target : parseInt(link.target),
+      weight: link.weight || 0,
+      mode: (link.mode || 'tension') as 'tension' | 'compression',
+      L0: link.L0 || link.l0 || restLength,
+      k: link.k || springK,
+      color: link.color || `rgba(30, 64, 175, 0.5)`,
+    }))
+    
+    return { nodes, links }
+  }, [force3DGraphData, restLength, springK])
 
   // ローディング状態
   if (loading) {
@@ -453,34 +512,21 @@ export default function TimelineVisualization({
                     }
 
                     try {
-                      // Convert backend data to component format
-                      const nodes: WordNode[] = force3DGraphData.nodes.map((node: any) => ({
-                        id: node.id,
-                        label: node.label,
-                        scale: node.scale || 1.0,
-                        nodeType: (node.nodeType || 'word') as 'word' | 'anchor',
-                        initial: node.initial ? (node.initial as [number, number, number]) : undefined,
-                        fixed: node.fixed || false,
-                        color: node.color,
-                      }))
+                      if (!convertedGraphData) {
+                        return (
+                          <div className="border rounded overflow-hidden p-4 text-gray-500">
+                            データがありません
+                          </div>
+                        )
+                      }
 
-                      const links: WordLink[] = force3DGraphData.links.map((link: any) => ({
-                        source: typeof link.source === 'number' ? link.source : parseInt(link.source),
-                        target: typeof link.target === 'number' ? link.target : parseInt(link.target),
-                        weight: link.weight || 0,
-                        mode: (link.mode || 'tension') as 'tension' | 'compression',
-                        L0: link.L0 || link.l0 || restLength,
-                        k: link.k || springK,
-                        color: link.color || `rgba(30, 64, 175, 0.5)`,
-                      }))
-
-                      console.log('3Dグラフデータ:', { nodes: nodes.length, links: links.length })
+                      console.log('3Dグラフデータ:', { nodes: convertedGraphData.nodes.length, links: convertedGraphData.links.length })
 
                       return (
                         <div className="border rounded overflow-hidden">
                           <Force3D
-                            nodes={nodes}
-                            links={links}
+                            nodes={convertedGraphData.nodes}
+                            links={convertedGraphData.links}
                             width={width}
                             height={Math.min(460, Math.max(360, height))}
                             physics={{
@@ -1021,32 +1067,19 @@ export default function TimelineVisualization({
                     }
 
                     try {
-                      // Convert backend data to component format
-                      const nodes: WordNode[] = force3DGraphData.nodes.map((node: any) => ({
-                        id: node.id,
-                        label: node.label,
-                        scale: node.scale || 1.0,
-                        nodeType: (node.nodeType || 'word') as 'word' | 'anchor',
-                        initial: node.initial ? (node.initial as [number, number, number]) : undefined,
-                        fixed: node.fixed || false,
-                        color: node.color,
-                      }))
-
-                      const links: WordLink[] = force3DGraphData.links.map((link: any) => ({
-                        source: typeof link.source === 'number' ? link.source : parseInt(link.source),
-                        target: typeof link.target === 'number' ? link.target : parseInt(link.target),
-                        weight: link.weight || 0,
-                        mode: (link.mode || 'tension') as 'tension' | 'compression',
-                        L0: link.L0 || link.l0 || restLength,
-                        k: link.k || springK,
-                        color: link.color || `rgba(30, 64, 175, 0.5)`,
-                      }))
+                      if (!convertedGraphData) {
+                        return (
+                          <div className="border rounded overflow-hidden p-4 text-gray-500 text-sm">
+                            データがありません
+                          </div>
+                        )
+                      }
 
                       return (
                         <div className="border rounded overflow-hidden">
                           <Force3D
-                            nodes={nodes}
-                            links={links}
+                            nodes={convertedGraphData.nodes}
+                            links={convertedGraphData.links}
                             width={Math.min(width / 2 - 40, 600)}
                             height={Math.min(360, Math.max(280, height - 240))}
                             physics={{
