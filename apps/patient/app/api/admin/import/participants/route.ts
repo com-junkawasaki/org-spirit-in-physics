@@ -33,7 +33,7 @@ async function importParticipantsFromDataset() {
     // Merkle DAG: import.participants.initialize_db
     // Neo4jデータベース初期化（致命的エラーのチェック）
     try {
-      await initializeNeo4jDatabase();
+    await initializeNeo4jDatabase();
     } catch (error) {
       console.error('Fatal error: Failed to initialize Neo4j database:', error);
       return {
@@ -168,7 +168,7 @@ async function createParticipantNode(data: any) {
       hasVideoFiles: false, // 後で更新される
       videoFiles: []
     });
-    return { id: data.id, created: true };
+  return { id: data.id, created: true };
   } catch (error) {
     console.error(`Error creating participant node ${data.id}:`, error);
     throw error;

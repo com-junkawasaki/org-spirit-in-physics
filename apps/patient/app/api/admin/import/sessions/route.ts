@@ -33,7 +33,7 @@ async function importSessionsFromDataset() {
     // Merkle DAG: import.sessions.initialize_db
     // Neo4jデータベース初期化（致命的エラーのチェック）
     try {
-      await initializeNeo4jDatabase();
+    await initializeNeo4jDatabase();
     } catch (error) {
       console.error('Fatal error: Failed to initialize Neo4j database:', error);
       return {
