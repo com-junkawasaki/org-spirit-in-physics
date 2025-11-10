@@ -78,6 +78,7 @@ export async function GET(
     const healthResponse = await fetch(healthUrl, {
       method: 'GET',
       signal: AbortSignal.timeout(5000), // 5 second timeout for health check
+      cache: 'no-store', // Disable cache for health check
     }).catch(() => null)
     
     if (healthResponse?.ok) {
@@ -186,6 +187,7 @@ export async function GET(
         },
         body: JSON.stringify(requestBody),
         signal: controller.signal,
+        cache: 'no-store', // Disable Next.js cache for large responses (>2MB)
       })
       clearTimeout(timeoutId)
     } catch (fetchError: any) {
@@ -349,23 +351,38 @@ export async function GET(
       metadata: timelineResponse.metadata,
     }
     
-    // Cache the response (only for sampled data to stay under 2MB limit)
-    if (sampleSize > 0 && timelineData.length <= sampleSize) {
+    const totalMs = Date.now() - totalStart
+    const responseSize = JSON.stringify(responseData).length
+    const responseSizeMB = responseSize / (1024 * 1024)
+    const MAX_CACHE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB
+    
+    console.log('[Performance] Timeline API: graphql_ms=' + graphqlMs + ', transform_ms=' + transformMs + ', response_size_kb=' + Math.round(responseSize / 1024) + ', total_ms=' + totalMs + ', data_points=' + timelineData.length)
+    
+    // Cache the response (only for small responses under 2MB to avoid Next.js cache limit)
+    if (sampleSize > 0 && timelineData.length <= sampleSize && responseSize < MAX_CACHE_SIZE_BYTES) {
       timelineCache.set(cacheKey, {
         data: responseData,
         timestamp: Date.now(),
       })
-      console.log('[Timeline API] Cached response for', cacheKey)
+      console.log('[Timeline API] Cached response for', cacheKey, `(${responseSizeMB.toFixed(2)} MB)`)
+    } else if (responseSize >= MAX_CACHE_SIZE_BYTES) {
+      console.log('[Timeline API] Response too large to cache:', `${responseSizeMB.toFixed(2)} MB (limit: 2 MB)`)
     }
 
-    const totalMs = Date.now() - totalStart
-    const responseSize = JSON.stringify(responseData).length
-    console.log('[Performance] Timeline API: graphql_ms=' + graphqlMs + ', transform_ms=' + transformMs + ', response_size_kb=' + Math.round(responseSize / 1024) + ', total_ms=' + totalMs + ', data_points=' + timelineData.length)
-
+    // Disable Next.js caching for large responses
+    const headers: HeadersInit = {}
+    if (responseSize >= MAX_CACHE_SIZE_BYTES) {
+      headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      headers['Pragma'] = 'no-cache'
+      headers['Expires'] = '0'
+    }
+    
     return NextResponse.json({
       success: true,
       data: responseData,
       cached: false,
+    }, {
+      headers
     })
   } catch (error: any) {
     console.error('[Timeline API] Unexpected error:', {

@@ -648,9 +648,9 @@ export default function Force3DWordGraphTypeGPU({
           ]
         })
 
-        // メモリ監視を開始（最大500MB、1秒ごとにチェック）
+        // メモリ監視を開始（最大1000MB、1秒ごとにチェック）
         const memoryMonitor = new MemoryMonitor({
-          maxMemoryMB: 500,
+          maxMemoryMB: 1000,
           checkInterval: 1000,
           onExceeded: (info) => {
             const errorMessage = `
@@ -710,7 +710,7 @@ export default function Force3DWordGraphTypeGPU({
           frameCount++
           if (frameCount % 100 === 0) {
             try {
-              checkMemoryUsage(500)
+              checkMemoryUsage(1000)
             } catch (error) {
               console.error('[Force3D] Memory check failed:', error)
               if (animRef.current) {

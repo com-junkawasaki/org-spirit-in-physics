@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import type { TimelineDataPoint, FilterSettings, TimeRange } from './types'
+import { useTooltipStore } from '@/stores/tooltipStore'
 
 // Merkle DAG: timeline.components.timeline_chart
 // 時系列チャートコンポーネント
@@ -12,8 +13,6 @@ interface TimelineChartProps {
   height: number
   timeRange: TimeRange | null
   onDataPointSelect: (point: TimelineDataPoint | null) => void
-  onTooltipShow: (event: MouseEvent, point: TimelineDataPoint) => void
-  onTooltipHide: () => void
 }
 
 export default function TimelineChart({
@@ -22,10 +21,9 @@ export default function TimelineChart({
   width,
   height,
   timeRange,
-  onDataPointSelect,
-  onTooltipShow,
-  onTooltipHide
+  onDataPointSelect
 }: TimelineChartProps) {
+  const { show: showTooltip, hide: hideTooltip } = useTooltipStore()
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
 
@@ -339,11 +337,11 @@ export default function TimelineChart({
         .style('opacity', 0.9)
         .on('mouseover', (event, d) => {
           onDataPointSelect(d)
-          onTooltipShow(event, d)
+          showTooltip(event, d)
         })
         .on('mouseout', () => {
           onDataPointSelect(null)
-          onTooltipHide()
+          hideTooltip()
         });
     }
 
@@ -363,11 +361,11 @@ export default function TimelineChart({
         .style('cursor', 'pointer')
         .on('mouseover', (event, d) => {
           onDataPointSelect(d)
-          onTooltipShow(event, d)
+          showTooltip(event, d)
         })
         .on('mouseout', () => {
           onDataPointSelect(null)
-          onTooltipHide()
+          hideTooltip()
         });
     }
 
@@ -422,11 +420,11 @@ export default function TimelineChart({
         .style('cursor', 'pointer')
         .on('mouseover', (event, d) => {
           onDataPointSelect(d)
-          onTooltipShow(event, d)
+          showTooltip(event, d)
         })
         .on('mouseout', () => {
           onDataPointSelect(null)
-          onTooltipHide()
+          hideTooltip()
         });
     }
 
@@ -464,11 +462,11 @@ export default function TimelineChart({
               .style('cursor', 'pointer')
               .on('mouseover', (event) => {
                 onDataPointSelect(d)
-                onTooltipShow(event, d)
+                showTooltip(event, d)
               })
               .on('mouseout', () => {
                 onDataPointSelect(null)
-                onTooltipHide()
+                hideTooltip()
               })
 
             // 感情名のラベル
@@ -642,12 +640,12 @@ export default function TimelineChart({
         .attr('stroke-width', 1)
         .attr('rx', 4)
     }
-  }, [data, filters, width, height, timeRange, onDataPointSelect, onTooltipShow, onTooltipHide])
+  }, [data, filters, width, height, timeRange, onDataPointSelect, showTooltip, hideTooltip])
 
   useEffect(() => {
     renderTimeline()
     renderOverviewChart()
-  }, [renderTimeline, renderOverviewChart])
+  }, [data, filters, width, height, timeRange, onDataPointSelect, showTooltip, hideTooltip])
 
   return (
     <div className="space-y-4">

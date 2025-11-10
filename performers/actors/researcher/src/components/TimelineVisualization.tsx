@@ -7,6 +7,8 @@ import TimelineChart from './timeline/TimelineChart'
 import KPICards from './timeline/KPICards'
 import Force3DControls from './timeline/Force3DControls'
 import { createGraphQLClient } from '@/lib/graphql-client'
+import { checkMemoryUsage } from '@/utils/memory-monitor'
+import { useTooltipStore } from '@/stores/tooltipStore'
 import type {
   TimelineVisualizationProps,
   ForcePreset,
@@ -93,7 +95,48 @@ export default function TimelineVisualization({
   }, [forcePresets])
   
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const { visible: tooltipVisible, x: tooltipX, y: tooltipY, data: tooltipData } = useTooltipStore()
   const lastInitialsRef = useRef<Map<string, [number, number, number]>>(new Map())
+
+  // Update tooltip display based on store state
+  useEffect(() => {
+    if (!tooltipRef.current) return
+
+    if (tooltipVisible && tooltipData) {
+      const tooltip = tooltipRef.current
+      tooltip.style.display = 'block'
+      tooltip.style.left = `${tooltipX}px`
+      tooltip.style.top = `${tooltipY}px`
+
+      // 感情データの詳細表示
+      const emotionDetails = tooltipData.emotions.length > 0
+        ? tooltipData.emotions.map(emotion =>
+            `<div class="text-xs">
+              <span class="font-medium">${emotion.name || 'unknown'}</span>:
+              <span class="text-blue-600">${(emotion.score || 0).toFixed(2)}</span>
+              <span class="text-gray-500">(${emotion.fileType || 'unknown'})</span>
+            </div>`
+          ).join('')
+        : '<div class="text-xs text-gray-500">感情データなし</div>'
+
+      tooltip.innerHTML = `
+        <div class="bg-white border border-gray-300 rounded-lg p-3 shadow-lg text-sm">
+          <div class="font-semibold text-gray-900 mb-2">${tooltipData.word}</div>
+          <div class="text-gray-600 mb-2">時間: ${new Date(tooltipData.timestamp).toLocaleTimeString()}</div>
+          <div class="grid grid-cols-2 gap-2 text-xs mb-2">
+            <div>反応値: <span class="font-medium">${tooltipData.reactionValue.toFixed(2)}</span></div>
+            <div>反応時間: <span class="font-medium">${tooltipData.reactionTime}ms</span></div>
+          </div>
+          <div class="border-t pt-2">
+            <div class="text-xs font-medium text-gray-700 mb-1">感情データ:</div>
+            ${emotionDetails}
+          </div>
+        </div>
+      `
+    } else {
+      tooltipRef.current.style.display = 'none'
+    }
+  }, [tooltipVisible, tooltipX, tooltipY, tooltipData])
 
   // 表示モードの状態
   const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words'>('timeline')
@@ -201,8 +244,7 @@ export default function TimelineVisualization({
     
     // メモリチェック（変換前）
     try {
-      const { checkMemoryUsage } = require('@/utils/memory-monitor')
-      checkMemoryUsage(450) // Force3Dグラフ変換は450MBまで
+      checkMemoryUsage(1000) // Force3Dグラフ変換は1000MBまで
     } catch (error: any) {
       console.error('[TimelineVisualization] Memory check failed before graph conversion:', error)
       throw new Error(`メモリ使用量が上限を超えています。グラフデータのサイズを減らしてください。`)
@@ -212,8 +254,7 @@ export default function TimelineVisualization({
       // 500ノードごとにメモリチェック
       if (index > 0 && index % 500 === 0) {
         try {
-          const { checkMemoryUsage } = require('@/utils/memory-monitor')
-          checkMemoryUsage(450)
+          checkMemoryUsage(1000)
         } catch (error: any) {
           console.error(`[TimelineVisualization] Memory check failed at node ${index}:`, error)
           throw new Error(`グラフデータ変換中にメモリ使用量が上限を超えました（${index}ノード目）`)
@@ -231,15 +272,27 @@ export default function TimelineVisualization({
       }
     })
 
-    const links: WordLink[] = force3DGraphData.links.map((link: any) => ({
-      source: typeof link.source === 'number' ? link.source : parseInt(link.source),
-      target: typeof link.target === 'number' ? link.target : parseInt(link.target),
-      weight: link.weight || 0,
-      mode: (link.mode || 'tension') as 'tension' | 'compression',
-      L0: link.L0 || link.l0 || restLength,
-      k: link.k || springK,
-      color: link.color || `rgba(30, 64, 175, 0.5)`,
-    }))
+    const links: WordLink[] = force3DGraphData.links.map((link: any, index: number) => {
+      // 1000リンクごとにメモリチェック
+      if (index > 0 && index % 1000 === 0) {
+        try {
+          checkMemoryUsage(1000)
+        } catch (error: any) {
+          console.error(`[TimelineVisualization] Memory check failed at link ${index}:`, error)
+          throw new Error(`グラフデータ変換中にメモリ使用量が上限を超えました（${index}リンク目）`)
+        }
+      }
+      
+      return {
+        source: typeof link.source === 'number' ? link.source : parseInt(link.source),
+        target: typeof link.target === 'number' ? link.target : parseInt(link.target),
+        weight: link.weight || 0,
+        mode: (link.mode || 'tension') as 'tension' | 'compression',
+        L0: link.L0 || link.l0 || restLength,
+        k: link.k || springK,
+        color: link.color || `rgba(30, 64, 175, 0.5)`,
+      }
+    })
     
     return { nodes, links }
   }, [force3DGraphData, restLength, springK])
@@ -413,44 +466,6 @@ export default function TimelineVisualization({
                 height={height}
                 timeRange={timeRange}
                 onDataPointSelect={setSelectedDataPoint}
-                onTooltipShow={(event, point) => {
-                  if (!tooltipRef.current) return
-                  const tooltip = tooltipRef.current
-                  tooltip.style.display = 'block'
-                  tooltip.style.left = `${event.pageX + 10}px`
-                  tooltip.style.top = `${event.pageY - 10}px`
-
-                  // 感情データの詳細表示
-                  const emotionDetails = point.emotions.length > 0
-                    ? point.emotions.map(emotion =>
-                        `<div class="text-xs">
-                          <span class="font-medium">${emotion.name || 'unknown'}</span>:
-                          <span class="text-blue-600">${(emotion.score || 0).toFixed(2)}</span>
-                          <span class="text-gray-500">(${emotion.fileType || 'unknown'})</span>
-                        </div>`
-                      ).join('')
-                    : '<div class="text-xs text-gray-500">感情データなし</div>'
-
-                  tooltip.innerHTML = `
-                    <div class="bg-white border border-gray-300 rounded-lg p-3 shadow-lg text-sm">
-                      <div class="font-semibold text-gray-900 mb-2">${point.word}</div>
-                      <div class="text-gray-600 mb-2">時間: ${new Date(point.timestamp).toLocaleTimeString()}</div>
-                      <div class="grid grid-cols-2 gap-2 text-xs mb-2">
-                        <div>反応値: <span class="font-medium">${point.reactionValue.toFixed(2)}</span></div>
-                        <div>反応時間: <span class="font-medium">${point.reactionTime}ms</span></div>
-                      </div>
-                      <div class="border-t pt-2">
-                        <div class="text-xs font-medium text-gray-700 mb-1">感情データ:</div>
-                        ${emotionDetails}
-                      </div>
-                    </div>
-                  `
-                }}
-                onTooltipHide={() => {
-                  if (tooltipRef.current) {
-                    tooltipRef.current.style.display = 'none'
-                  }
-                }}
               />
             </div>
           )}
@@ -1074,8 +1089,6 @@ export default function TimelineVisualization({
                     height={Math.min(height, 400)}
                     timeRange={timeRange}
                     onDataPointSelect={setSelectedDataPoint}
-                    onTooltipShow={() => {}}
-                    onTooltipHide={() => {}}
                   />
                 </div>
               </div>

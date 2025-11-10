@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as d3 from 'd3'
 import { createGraphQLClient } from '@/lib/graphql-client'
+import { checkMemoryUsage } from '@/utils/memory-monitor'
 import type {
   TimelineDataPoint,
   TimelineVisualizationProps,
@@ -108,7 +109,7 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
             
             // メモリチェック（変換前）
             try {
-              checkMemoryUsage(400) // タイムラインデータ変換は400MBまで
+              checkMemoryUsage(1000) // タイムラインデータ変換は1000MBまで
             } catch (error) {
               console.error('[TimelineData] Memory check failed before conversion:', error)
               throw new Error(`メモリ使用量が上限を超えています。データサイズを減らしてください。`)
@@ -119,7 +120,7 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
               // 1000件ごとにメモリチェック
               if (index > 0 && index % 1000 === 0) {
                 try {
-                  checkMemoryUsage(400)
+                  checkMemoryUsage(1000)
                 } catch (error) {
                   console.error(`[TimelineData] Memory check failed at index ${index}:`, error)
                   throw new Error(`データ変換中にメモリ使用量が上限を超えました（${index}件目）`)
