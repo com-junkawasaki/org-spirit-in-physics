@@ -649,6 +649,7 @@ export default function Force3DWordGraphTypeGPU({
 
         // アニメーションループ
         let lastTime = performance.now()
+        let isReadingBuffer = false // バッファ読み取り中のフラグ
         const tick = () => {
           const now = performance.now()
           const delta = Math.min(0.05, (now - lastTime) / 1000)
@@ -658,6 +659,12 @@ export default function Force3DWordGraphTypeGPU({
           const l = linksRef.current.length
 
           if (n === 0) {
+            animRef.current = requestAnimationFrame(tick)
+            return
+          }
+          
+          // バッファ読み取り中の場合はスキップ（前回のフレームを描画）
+          if (isReadingBuffer) {
             animRef.current = requestAnimationFrame(tick)
             return
           }
@@ -733,99 +740,134 @@ export default function Force3DWordGraphTypeGPU({
           copyEncoder.copyBufferToBuffer(nodeBuffer, 0, readBuffer, 0, nodeBuffer.size)
           device.queue.submit([copyEncoder.finish()])
           
+          isReadingBuffer = true
           readBuffer.mapAsync(GPUMapMode.READ).then(() => {
-            const result = new Float32Array(readBuffer.getMappedRange())
-            
-            // 結果を位置・速度配列に反映
-            for (let i = 0; i < n; i++) {
-              const node = nodesRef.current[i]
-              const pos = positionsRef.current
-              const vel = velocitiesRef.current
-              if (!pos || !vel) continue
-              const ix = i * 3
+            try {
+              const result = new Float32Array(readBuffer.getMappedRange())
               
-              if (node?.fixed && node.initial) {
-                pos[ix] = node.initial[0]
-                pos[ix + 1] = node.initial[1]
-                pos[ix + 2] = node.initial[2]
-                vel[ix] = 0
-                vel[ix + 1] = 0
-                vel[ix + 2] = 0
-              } else {
-                pos[ix] = result[i * 8]
-                pos[ix + 1] = result[i * 8 + 1]
-                pos[ix + 2] = result[i * 8 + 2]
-                vel[ix] = result[i * 8 + 3]
-                vel[ix + 1] = result[i * 8 + 4]
-                vel[ix + 2] = result[i * 8 + 5]
+              // 結果を位置・速度配列に反映
+              for (let i = 0; i < n; i++) {
+                const node = nodesRef.current[i]
+                const pos = positionsRef.current
+                const vel = velocitiesRef.current
+                if (!pos || !vel) continue
+                const ix = i * 3
+                
+                if (node?.fixed && node.initial) {
+                  pos[ix] = node.initial[0]
+                  pos[ix + 1] = node.initial[1]
+                  pos[ix + 2] = node.initial[2]
+                  vel[ix] = 0
+                  vel[ix + 1] = 0
+                  vel[ix + 2] = 0
+                } else {
+                  // WebGPUから読み取った位置データを取得
+                  const newX = result[i * 8]
+                  const newY = result[i * 8 + 1]
+                  const newZ = result[i * 8 + 2]
+                  const newVx = result[i * 8 + 3]
+                  const newVy = result[i * 8 + 4]
+                  const newVz = result[i * 8 + 5]
+                  
+                  // NaNチェック：無効な値の場合は前回の値を保持（またはデフォルト値）
+                  if (Number.isFinite(newX) && Number.isFinite(newY) && Number.isFinite(newZ)) {
+                    pos[ix] = newX
+                    pos[ix + 1] = newY
+                    pos[ix + 2] = newZ
+                  } else {
+                    // NaNの場合は前回の値を保持（またはデフォルト値）
+                    if (!Number.isFinite(pos[ix])) pos[ix] = 0
+                    if (!Number.isFinite(pos[ix + 1])) pos[ix + 1] = 0
+                    if (!Number.isFinite(pos[ix + 2])) pos[ix + 2] = 0
+                  }
+                  
+                  if (Number.isFinite(newVx) && Number.isFinite(newVy) && Number.isFinite(newVz)) {
+                    vel[ix] = newVx
+                    vel[ix + 1] = newVy
+                    vel[ix + 2] = newVz
+                  } else {
+                    // NaNの場合は0にリセット
+                    vel[ix] = 0
+                    vel[ix + 1] = 0
+                    vel[ix + 2] = 0
+                  }
+                }
               }
-            }
-            
-            readBuffer.unmap()
+              
+              // Merkle DAG: physics.constraint.min_distance
+              // CPU側での最小距離制約（Shannon: ノード間の識別可能性を維持）
+              // - WebGPUで更新された位置に対してPBD風の衝突解消を行う
+              // - ノードのscaleを半径とみなし、minSep + (ri + rj) を閾値に
+              // - 固定ノードは不動、可動ノードのみに補正を分配
+              // 計算量: O(N^2)。Nは語＋アンカーで中規模に留まる想定
+              const pos = positionsRef.current
+              if (pos) {
+                const baseMin = physicsRef.current.minSep
+                const stiffness = physicsRef.current.constraintStiffness ?? 0.5
+                const iters = Math.max(1, Math.floor(physicsRef.current.constraintIters ?? 2))
+                const scaleFactor = 6 // スケール→衝突半径への写像係数
 
-            // Merkle DAG: physics.constraint.min_distance
-            // CPU側での最小距離制約（Shannon: ノード間の識別可能性を維持）
-            // - WebGPUで更新された位置に対してPBD風の衝突解消を行う
-            // - ノードのscaleを半径とみなし、minSep + (ri + rj) を閾値に
-            // - 固定ノードは不動、可動ノードのみに補正を分配
-            // 計算量: O(N^2)。Nは語＋アンカーで中規模に留まる想定
-            const pos = positionsRef.current
-            if (pos) {
-              const baseMin = physicsRef.current.minSep
-              const stiffness = physicsRef.current.constraintStiffness ?? 0.5
-              const iters = Math.max(1, Math.floor(physicsRef.current.constraintIters ?? 2))
-              const scaleFactor = 6 // スケール→衝突半径への写像係数
+                for (let iter = 0; iter < iters; iter++) {
+                  for (let i = 0; i < n; i++) {
+                    const ni = nodesRef.current[i]
+                    const ix = i * 3
+                    for (let j = i + 1; j < n; j++) {
+                      const nj = nodesRef.current[j]
+                      const jx = j * 3
 
-              for (let iter = 0; iter < iters; iter++) {
-                for (let i = 0; i < n; i++) {
-                  const ni = nodesRef.current[i]
-                  const ix = i * 3
-                  for (let j = i + 1; j < n; j++) {
-                    const nj = nodesRef.current[j]
-                    const jx = j * 3
+                      // 固定ノード同士はスキップ
+                      if ((ni?.fixed) && (nj?.fixed)) continue
 
-                    // 固定ノード同士はスキップ
-                    if ((ni?.fixed) && (nj?.fixed)) continue
+                      const dx = pos[ix] - pos[jx]
+                      const dy = pos[ix + 1] - pos[jx + 1]
+                      const dz = pos[ix + 2] - pos[jx + 2]
+                      const dist = Math.hypot(dx, dy, dz) || 1
 
-                    const dx = pos[ix] - pos[jx]
-                    const dy = pos[ix + 1] - pos[jx + 1]
-                    const dz = pos[ix + 2] - pos[jx + 2]
-                    const dist = Math.hypot(dx, dy, dz) || 1
+                      const ri = (ni?.scale ?? 1) * scaleFactor
+                      const rj = (nj?.scale ?? 1) * scaleFactor
+                      const minD = Math.max(10, baseMin + ri + rj)
 
-                    const ri = (ni?.scale ?? 1) * scaleFactor
-                    const rj = (nj?.scale ?? 1) * scaleFactor
-                    const minD = Math.max(10, baseMin + ri + rj)
+                      if (dist < minD) {
+                        const overlap = minD - dist
+                        const ux = dx / dist
+                        const uy = dy / dist
+                        const uz = dz / dist
+                        const corr = overlap * stiffness
 
-                    if (dist < minD) {
-                      const overlap = minD - dist
-                      const ux = dx / dist
-                      const uy = dy / dist
-                      const uz = dz / dist
-                      const corr = overlap * stiffness
-
-                      // どちらかが固定なら、動ける方だけ動かす
-                      if (ni?.fixed && !nj?.fixed) {
-                        pos[jx] -= ux * corr
-                        pos[jx + 1] -= uy * corr
-                        pos[jx + 2] -= uz * corr
-                      } else if (!ni?.fixed && nj?.fixed) {
-                        pos[ix] += ux * corr
-                        pos[ix + 1] += uy * corr
-                        pos[ix + 2] += uz * corr
-                      } else if (!ni?.fixed && !nj?.fixed) {
-                        const half = corr * 0.5
-                        pos[ix] += ux * half
-                        pos[ix + 1] += uy * half
-                        pos[ix + 2] += uz * half
-                        pos[jx] -= ux * half
-                        pos[jx + 1] -= uy * half
-                        pos[jx + 2] -= uz * half
+                        // どちらかが固定なら、動ける方だけ動かす
+                        if (ni?.fixed && !nj?.fixed) {
+                          pos[jx] -= ux * corr
+                          pos[jx + 1] -= uy * corr
+                          pos[jx + 2] -= uz * corr
+                        } else if (!ni?.fixed && nj?.fixed) {
+                          pos[ix] += ux * corr
+                          pos[ix + 1] += uy * corr
+                          pos[ix + 2] += uz * corr
+                        } else if (!ni?.fixed && !nj?.fixed) {
+                          const half = corr * 0.5
+                          pos[ix] += ux * half
+                          pos[ix + 1] += uy * half
+                          pos[ix + 2] += uz * half
+                          pos[jx] -= ux * half
+                          pos[jx + 1] -= uy * half
+                          pos[jx + 2] -= uz * half
+                        }
                       }
                     }
                   }
                 }
               }
+              
+              readBuffer.unmap()
+              isReadingBuffer = false
+            } catch (error) {
+              console.error('[Force3D] Error reading WebGPU buffer:', error)
+              readBuffer.unmap()
+              isReadingBuffer = false
             }
+          }).catch((error) => {
+            console.error('[Force3D] Error mapping WebGPU buffer:', error)
+            isReadingBuffer = false
           })
 
           // 接続度（degree）を正規化してキャッシュ
@@ -864,6 +906,11 @@ export default function Force3DWordGraphTypeGPU({
                 const y = pos[ix + 1]
                 const z = pos[ix + 2]
                 
+                // NaNチェック：位置データが無効な場合はスキップ
+                if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+                  continue
+                }
+                
                 // 視界カリング：視界外のノードをスキップ
                 if (!isPointInFrustum(x, y, z)) {
                   continue
@@ -891,6 +938,11 @@ export default function Force3DWordGraphTypeGPU({
                 const cy = ry * cosX - rz * sinX
                 const cz = ry * sinX + rz * cosX
                 
+                // NaNチェック：変換後の座標が無効な場合はスキップ
+                if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) {
+                  continue
+                }
+                
                 // LOD計算
                 const lod = calculateLOD(cz)
                 
@@ -898,6 +950,11 @@ export default function Force3DWordGraphTypeGPU({
                 const zoom = Math.max(0.05, 600 / Math.max(50, camera.distance))
                 const screenX = width / 2 + cx * zoom
                 const screenY = height / 2 + cy * zoom
+                
+                // NaNチェック：画面座標が無効な場合はスキップ
+                if (!Number.isFinite(screenX) || !Number.isFinite(screenY)) {
+                  continue
+                }
                 
                 const node = nodesRef.current[i]
                 const baseRadius = Math.max(1, Math.min(10, 2 + node.scale)) * zoom
@@ -940,12 +997,23 @@ export default function Force3DWordGraphTypeGPU({
                 const source = link.source
                 const target = link.target
                 
+                // インデックス範囲チェック
+                if (source < 0 || source >= n || target < 0 || target >= n) {
+                  continue
+                }
+                
                 const sx = pos[source * 3]
                 const sy = pos[source * 3 + 1]
                 const sz = pos[source * 3 + 2]
                 const tx = pos[target * 3]
                 const ty = pos[target * 3 + 1]
                 const tz = pos[target * 3 + 2]
+                
+                // NaNチェック：位置データが無効な場合はスキップ
+                if (!Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(sz) ||
+                    !Number.isFinite(tx) || !Number.isFinite(ty) || !Number.isFinite(tz)) {
+                  continue
+                }
                 
                 // 視界カリング：両端が視界外のリンクをスキップ（簡易版：少なくとも一方が視界内なら描画）
                 const sourceInFrustum = isPointInFrustum(sx, sy, sz)
@@ -989,6 +1057,12 @@ export default function Force3DWordGraphTypeGPU({
                 const tcz = try_ * sinX + trz * cosX
                 const tScreenX = width / 2 + tcx * zoom
                 const tScreenY = height / 2 + tcy * zoom
+                
+                // NaNチェック：画面座標が無効な場合はスキップ
+                if (!Number.isFinite(sScreenX) || !Number.isFinite(sScreenY) ||
+                    !Number.isFinite(tScreenX) || !Number.isFinite(tScreenY)) {
+                  continue
+                }
                 
                 // LOD計算（平均深度を使用）
                 const avgDepth = (scz + tcz) / 2
