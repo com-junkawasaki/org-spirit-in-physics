@@ -28,7 +28,7 @@ export function useTimelineData({ participantId, sessionId, useDemo = false }: P
     reactionTime: true,
     physiologicalThreshold: true,
     emotionChange: true,
-    range: 100,
+    range: 200,
     timeScale: 1.0,
     verticalScale: 1.0,
     showEmotionDetails: true,
