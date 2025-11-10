@@ -15,6 +15,8 @@ import type {
   DebugInfo
 } from './timeline/types'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
+// Force3D component dynamic import (moved outside component)
+const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
 
 // Merkle DAG: components.timeline_visualization
 // 時系列統合可視化コンポーネント
@@ -65,64 +67,10 @@ export default function TimelineVisualization({
     debugInfo
   } = useTimelineData({ participantId })
 
-  // Force graph data state
-  const [forceGraphData, setForceGraphData] = useState<{ nodes: any[]; links: any[] } | null>(null)
-  const [forceGraphLoading, setForceGraphLoading] = useState(false)
-  const [forceGraphError, setForceGraphError] = useState<string | null>(null)
-
-  // Fetch force graph data when component mounts
-  useEffect(() => {
-    if (!mounted || !participantId) return
-    
-    const fetchForceGraphData = async () => {
-      const forceGraphStart = performance.now()
-      setForceGraphLoading(true)
-      setForceGraphError(null)
-      try {
-        const client = createGraphQLClient()
-        const result = await client.getParticipantForceGraphData(participantId)
-        if (result?.data) {
-          const conversionStart = performance.now()
-          // Convert GraphQL response to component format
-          const nodes = result.data.nodes.map((node: any) => ({
-            id: node.id,
-            label: node.label,
-            scale: 1.0, // Will be calculated based on stats
-            nodeType: 'word' as const,
-            reactionTime: node.reactionTime,
-            emotions: node.emotions,
-            physiological: node.physiological,
-          }))
-          const links = result.data.links.map((link: any) => ({
-            source: parseInt(link.source),
-            target: parseInt(link.target),
-            weight: link.weight,
-            mode: 'tension' as const,
-            L0: 0,
-            k: 0,
-            correlationType: link.correlationType,
-          }))
-          const conversionMs = Math.round(performance.now() - conversionStart)
-          const totalMs = Math.round(performance.now() - forceGraphStart)
-          console.log('[Performance] ForceGraph: conversionMs=' + conversionMs + ', totalMs=' + totalMs + ', nodes=' + nodes.length + ', links=' + links.length)
-          setForceGraphData({ nodes, links })
-        } else {
-          const totalMs = Math.round(performance.now() - forceGraphStart)
-          console.log('[Performance] ForceGraph: totalMs=' + totalMs + ', result=not_available')
-          setForceGraphError('Force graph data not available')
-        }
-      } catch (err) {
-        const totalMs = Math.round(performance.now() - forceGraphStart)
-        console.log('[Performance] ForceGraph: totalMs=' + totalMs + ', result=error')
-        console.error('Error fetching force graph data:', err)
-        setForceGraphError(err instanceof Error ? err.message : 'Unknown error')
-      } finally {
-        setForceGraphLoading(false)
-      }
-    }
-    
-    fetchForceGraphData()
-  }, [mounted, participantId])
+  // Force3D graph data state (computed by backend)
+  const [force3DGraphData, setForce3DGraphData] = useState<{ nodes: any[]; links: any[] } | null>(null)
+  const [force3DGraphLoading, setForce3DGraphLoading] = useState(false)
+  const [force3DGraphError, setForce3DGraphError] = useState<string | null>(null)
 
   // 3D Force プリセット
   const forcePresets: readonly ForcePreset[] = [
@@ -169,6 +117,51 @@ export default function TimelineVisualization({
   // 単語テーブルの並び順
   const [wordsSortKey, setWordsSortKey] = useState<'count' | 'rv_o' | 'rt_o' | 'ph_o'>('count')
   const [wordsSortDir, setWordsSortDir] = useState<'asc' | 'desc'>('desc')
+
+  // Fetch Force3D graph data from backend when parameters change
+  useEffect(() => {
+    if (!mounted || !participantId || activeTab !== 'force3d') return
+    
+    const fetchForce3DGraphData = async () => {
+      const forceGraphStart = performance.now()
+      setForce3DGraphLoading(true)
+      setForce3DGraphError(null)
+      try {
+        const client = createGraphQLClient()
+        const result = await client.getParticipantForce3DGraph(participantId, {
+          selectedEmotions: Array.from(selectedEmotions),
+          selectedModalities: Array.from(selectedModalities),
+          physicsMode,
+          segment,
+          topK,
+          minW,
+          weightGamma,
+          shellRadius,
+          restLength,
+          springK,
+          selectedWord: selectedWord || undefined,
+        })
+        if (result) {
+          const conversionMs = Math.round(performance.now() - forceGraphStart)
+          console.log('[Performance] Force3DGraph: totalMs=' + conversionMs + ', nodes=' + result.nodes.length + ', links=' + result.links.length)
+          setForce3DGraphData({ nodes: result.nodes, links: result.links })
+        } else {
+          const totalMs = Math.round(performance.now() - forceGraphStart)
+          console.log('[Performance] Force3DGraph: totalMs=' + totalMs + ', result=not_available')
+          setForce3DGraphError('Force3D graph data not available')
+        }
+      } catch (err) {
+        const totalMs = Math.round(performance.now() - forceGraphStart)
+        console.log('[Performance] Force3DGraph: totalMs=' + totalMs + ', result=error')
+        console.error('Error fetching Force3D graph data:', err)
+        setForce3DGraphError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setForce3DGraphLoading(false)
+      }
+    }
+    
+    fetchForce3DGraphData()
+  }, [mounted, participantId, activeTab, selectedEmotions, selectedModalities, physicsMode, segment, topK, minW, weightGamma, shellRadius, restLength, springK, selectedWord])
 
   // ローディング状態
   if (loading) {
@@ -431,407 +424,91 @@ export default function TimelineVisualization({
 
                   {/* 3D Force グラフ本体 */}
                   {mounted && (() => {
-                try {
-                  // Pre-computed force graph data を使用（利用可能な場合）
-                  if (forceGraphData && !forceGraphLoading && !forceGraphError) {
-                    // Pre-computed data を使用
-                    const nodes: WordNode[] = forceGraphData.nodes.map((node: any) => {
-                      // Calculate scale based on reaction time stats
-                      const rtAvg = node.reactionTime?.avg || 0
-                      const rtCount = node.reactionTime?.count || 0
-                      const scale = Math.max(0.5, Math.min(10, 0.5 + (rtAvg / 1000) * 2 + Math.log1p(rtCount) * 0.5))
-                      
-                      return {
+                    // Loading state
+                    if (force3DGraphLoading) {
+                      return (
+                        <div className="flex items-center justify-center h-96">
+                          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+                          <span className="ml-4 text-gray-700">3Dグラフデータを計算中...</span>
+                        </div>
+                      )
+                    }
+
+                    // Error state
+                    if (force3DGraphError) {
+                      return (
+                        <div className="border rounded overflow-hidden p-4 text-red-600">
+                          エラー: {force3DGraphError}
+                        </div>
+                      )
+                    }
+
+                    // No data state
+                    if (!force3DGraphData) {
+                      return (
+                        <div className="border rounded overflow-hidden p-4 text-gray-500">
+                          データがありません
+                        </div>
+                      )
+                    }
+
+                    try {
+                      // Convert backend data to component format
+                      const nodes: WordNode[] = force3DGraphData.nodes.map((node: any) => ({
                         id: node.id,
                         label: node.label,
-                        scale,
-                        nodeType: 'word' as const,
-                        initial: undefined,
-                        fixed: false,
-                      }
-                    })
-                    
-                    const links: WordLink[] = forceGraphData.links.map((link: any) => ({
-                      source: link.source,
-                      target: link.target,
-                      weight: link.weight,
-                      mode: 'tension' as const,
-                      L0: Math.max(20, restLength * (1 - 0.6 * link.weight)),
-                      k: springK * (0.3 + 0.7 * link.weight),
-                      color: `rgba(30, 64, 175, ${Math.max(0.12, Math.min(0.95, 0.12 + 0.88 * link.weight)).toFixed(3)})`,
-                    }))
-                    
-                    const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
-                    
-                    // 選択語を中心へ（固定）し目立たせる
-                    if (selectedWord) {
-                      const idx = nodes.findIndex(n => n.label === selectedWord)
-                      if (idx >= 0) {
-                        nodes[idx].fixed = true
-                        nodes[idx].initial = [0, 0, 0]
-                        nodes[idx].scale = Math.max(nodes[idx].scale, 6)
-                      }
+                        scale: node.scale || 1.0,
+                        nodeType: (node.nodeType || 'word') as 'word' | 'anchor',
+                        initial: node.initial ? (node.initial as [number, number, number]) : undefined,
+                        fixed: node.fixed || false,
+                        color: node.color,
+                      }))
+
+                      const links: WordLink[] = force3DGraphData.links.map((link: any) => ({
+                        source: typeof link.source === 'number' ? link.source : parseInt(link.source),
+                        target: typeof link.target === 'number' ? link.target : parseInt(link.target),
+                        weight: link.weight || 0,
+                        mode: (link.mode || 'tension') as 'tension' | 'compression',
+                        L0: link.L0 || link.l0 || restLength,
+                        k: link.k || springK,
+                        color: link.color || `rgba(30, 64, 175, 0.5)`,
+                      }))
+
+                      console.log('3Dグラフデータ:', { nodes: nodes.length, links: links.length })
+
+                      return (
+                        <div className="border rounded overflow-hidden">
+                          <Force3D
+                            nodes={nodes}
+                            links={links}
+                            width={width}
+                            height={Math.min(460, Math.max(360, height))}
+                            physics={{
+                              springK,
+                              repulsionK,
+                              damping,
+                              restLength,
+                              maxSpeed: 200,
+                              shellRadius,
+                              shellK,
+                              radialOutK: radialOutK,
+                              constraintIters: constraintIters,
+                              constraintStiffness: constraintStiffness,
+                              minSep,
+                              sepK
+                            }}
+                          />
+                        </div>
+                      )
+                    } catch (error) {
+                      console.error('3Dグラフレンダリングエラー:', error)
+                      return (
+                        <div className="border rounded overflow-hidden p-4 text-red-600">
+                          3Dグラフの表示に失敗しました: {error instanceof Error ? error.message : 'Unknown error'}
+                        </div>
+                      )
                     }
-                    
-                    return (
-                      <div className="border rounded overflow-hidden">
-                        <Force3D
-                          nodes={nodes}
-                          links={links}
-                          width={width}
-                          height={height}
-                          background="#ffffff"
-                          physics={{
-                            springK,
-                            repulsionK,
-                            damping,
-                            restLength,
-                            maxSpeed: 200,
-                            shellRadius,
-                            shellK,
-                            minSep,
-                            sepK,
-                            radialOutK,
-                          }}
-                        />
-                      </div>
-                    )
-                  }
-                  
-                  // Fallback: 実際のデータから3Dグラフを生成
-                  const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
-                  const jungWords = JUNG_STIMULUS_WORDS // 全てのデータを表示
-
-                  // セグメント選択に応じてデータを抽出
-                  const sessionData = (() => {
-                    if (segment === 'first100') return data.slice(0, 100)
-                    if (segment === 'next100') return data.slice(100, 200)
-                    return data
-                  })()
-
-                  // 集約（ノード指標）。全語を初期化し、セッション実データで加算
-                  const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number; sumPhysAbs: number }> = {}
-                  jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0, sumPhysAbs: 0 } })
-                    const physBySeries: Record<string, number[]> = {}
-                    const rtBySeries: Record<string, number[]> = {}
-                    for (const d of sessionData) {
-                      if (!accum[d.word]) continue // セッション語がユング語に無い場合は無視
-                      accum[d.word].count += 1
-                      accum[d.word].sumReactionValue += d.reactionValue
-                      accum[d.word].sumReactionTime += d.reactionTime
-                      const phys = getPhysStat(d.physiological, 'average')
-                      if (Number.isFinite(phys)) {
-                        if (!('sumPhysAbs' in accum[d.word])) (accum[d.word] as any).sumPhysAbs = 0
-                        ;(accum[d.word] as any).sumPhysAbs += Math.abs(phys as number)
-                        if (!physBySeries[d.word]) physBySeries[d.word] = []
-                        physBySeries[d.word].push(phys as number)
-                      }
-                      if (!rtBySeries[d.word]) rtBySeries[d.word] = []
-                      rtBySeries[d.word].push(d.reactionTime)
-                    }
-
-                    // 生スケール: 平均反応値 × log(1+回数)
-                    const nodeEntries = jungWords.map(({ japanese }) => {
-                      const g = accum[japanese]
-                      const avgRV = g.count > 0 ? g.sumReactionValue / g.count : 0
-                      const raw = avgRV * Math.log1p(g.count)
-                      return { japanese, count: g.count, avgReactionValue: avgRV, raw }
-                    })
-
-                    const rawMin = Math.min(...nodeEntries.map(n => n.raw))
-                    const rawMax = Math.max(...nodeEntries.map(n => n.raw))
-                    const denom = rawMax - rawMin || 1
-
-                    const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
-                      id: String(idx),
-                      label: n.japanese,
-                      // 0.5〜6.0程度に正規化（視認性のため）
-                      scale: Math.max(0.5, 0.5 + 5.5 * ((n.raw - rawMin) / denom)),
-                      nodeType: 'word'
-                    }))
-
-                    // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
-                    const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
-                    const wordEmotionSum: Record<string, number[]> = {}
-
-                    // Optimize emotion data aggregation: limit to top N emotions per response or average
-                    const MAX_EMOTIONS_PER_RESPONSE = 10 // Limit to top 10 emotions per response for performance
-                    
-                    for (const dpt of sessionData) {
-                      const w = dpt.word
-                      if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
-                      if (Array.isArray(dpt.emotions)) {
-                        // Sort emotions by score (descending) and take top N
-                        const sortedEmotions = [...dpt.emotions]
-                          .filter(e => {
-                            const key = (e.name || 'unknown').toLowerCase()
-                            const idx = emotionIndex[key]
-                            if (idx === undefined) return false
-                            // モダリティフィルタ
-                            const ft = String((e as any).fileType || '')
-                            const ftLow = ft.toLowerCase()
-                            const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
-                            return !mod || selectedModalities.has(mod)
-                          })
-                          .sort((a, b) => (b.score || 0) - (a.score || 0))
-                          .slice(0, MAX_EMOTIONS_PER_RESPONSE)
-                        
-                        // Aggregate top emotions
-                        for (const e of sortedEmotions) {
-                          const key = (e.name || 'unknown').toLowerCase()
-                          const idx = emotionIndex[key]
-                          if (idx !== undefined) {
-                            wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
-                          }
-                        }
-                      }
-                    }
-
-                    const normalize = (vec: number[]): number[] => {
-                      const norm = Math.hypot(...vec)
-                      if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
-                      return vec.map((x) => x / norm)
-                    }
-
-                    const normalizedEmotionVec: Record<string, number[]> = {}
-                    Object.keys(wordEmotionSum).forEach((w) => {
-                      normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
-                    })
-
-                    // 力学モードの係数を単語別に算出（強度+変動）
-                    const physValues: number[] = []
-                    const physStdValues: number[] = []
-                    const speedValues: number[] = []
-                    const physByWord: Record<string, number> = {}
-                    const physStdByWord: Record<string, number> = {}
-                    const speedByWord: Record<string, number> = {}
-                    for (const { japanese } of jungWords) {
-                      const g = accum[japanese]
-                      const c = g?.count || 0
-                      const physAvg = c > 0 ? ((g as any).sumPhysAbs || 0) / c : 0
-                      const series = physBySeries[japanese] || []
-                      const mean = series.length ? series.reduce((s, x) => s + x, 0) / series.length : 0
-                      const variance = series.length ? series.reduce((s, x) => s + (x - mean) * (x - mean), 0) / series.length : 0
-                      const physStd = Math.sqrt(Math.max(0, variance))
-                      const speed = c > 0 ? (1 / Math.max(1, g.sumReactionTime / c)) : 0
-                      physByWord[japanese] = physAvg
-                      physStdByWord[japanese] = physStd
-                      speedByWord[japanese] = speed
-                      physValues.push(physAvg)
-                      physStdValues.push(physStd)
-                      speedValues.push(speed)
-                    }
-                    const minMax = (arr: number[]) => ({ min: Math.min(...arr, 0), max: Math.max(...arr, 1e-6) })
-                    const pm = minMax(physValues)
-                    const psm = minMax(physStdValues)
-                    const sm = minMax(speedValues)
-                    const norm01 = (x: number, mm: { min: number; max: number }) => (mm.max - mm.min === 0 ? 0 : (x - mm.min) / (mm.max - mm.min))
-
-                    // ノード視覚スケールを強度・変動に応じて補正
-                    for (const node of nodes) {
-                      const w = node.label
-                      const strength = norm01(physByWord[w] || 0, pm)
-                      const change = norm01(physStdByWord[w] || 0, psm)
-                      const m = 0.6 * strength + 0.4 * change
-                      if (physicsMode !== 'emotion') {
-                        node.scale = Math.max(0.5, Math.min(10, node.scale * (0.7 + 1.3 * m)))
-                      }
-                    }
-
-                    // 感情アンカー（2Dマップを球面へ射影）
-                    const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
-                      { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
-                      { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
-                      { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
-                      { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
-                      { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
-                      { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
-                      { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
-                      { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
-                      { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
-                      { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
-                    ]
-
-                    const anchorToKey: Record<string, typeof EMOTION_KEYS[number]> = {
-                      Joy: 'joy',
-                      Sadness: 'sadness',
-                      Anger: 'anger',
-                      Fear: 'fear',
-                      Disgust: 'disgust',
-                      Calmness: 'calm',
-                      Interest: 'focus',
-                      Surprise: 'surprise',
-                      Confusion: 'confusion',
-                      Determination: 'focus',
-                    }
-
-                    const emotionColor: Record<typeof EMOTION_KEYS[number], string> = {
-                      joy: '#f59e0b',
-                      sadness: '#1f2937',
-                      anger: '#ef4444',
-                      fear: '#a78bfa',
-                      surprise: '#22c55e',
-                      disgust: '#10b981',
-                      calm: '#93c5fd',
-                      focus: '#60a5fa',
-                      excitement: '#22d3ee',
-                      confusion: '#64748b',
-                    }
-
-                    const anchorRadius = shellRadius // 球殻上に配置
-                    const toSphere = (x01: number, y01: number): [number, number, number] => {
-                      const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
-                      const v = (y01 - 0.5) * Math.PI // 縦
-                      const cx = Math.cos(v) * Math.cos(u)
-                      const cy = Math.cos(v) * Math.sin(u)
-                      const cz = Math.sin(v)
-                      return [anchorRadius * cx, anchorRadius * cy, anchorRadius * cz]
-                    }
-
-                    const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-                      const [x, y, z] = toSphere(a.x, a.y)
-                      return {
-                        id: `A${idx}`,
-                        label: a.name,
-                        scale: 6,
-                        fixed: true,
-                        nodeType: 'anchor',
-                        initial: [x, y, z],
-                        color: a.color,
-                      }
-                    })
-
-                    // アンカー追加と接続
-                    const baseOffset = nodes.length
-                    const allNodes = [...anchorNodes, ...nodes]
-
-                    // 感情結合に基づくリンク生成（Shannon: Top-Kで疎化し、初期位置をアンカー側へ）
-                    const links: WordLink[] = []
-
-                    // アンカーの位置ベクトルを取得
-                    const anchorPos: Array<[number, number, number]> = anchorNodes.map(a => (a.initial as [number, number, number]))
-
-                    for (let wi = 0; wi < nodes.length; wi++) {
-                      const wordIndex = baseOffset + wi
-                      const label = nodes[wi].label
-                      const ei = normalizedEmotionVec[label] || new Array(10).fill(0)
-
-                      // 各アンカーに対する重み
-                      const weights: Array<{ ai: number; w: number }> = anchorNodes.map((a, ai) => {
-                        const key = anchorToKey[a.label] as typeof EMOTION_KEYS[number] | undefined
-                        // 感情フィルター: 未選択のアンカーは重み0
-                        if (key && !selectedEmotions.has(key)) return { ai, w: 0 }
-                        const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
-                        const sim = kIdx >= 0 ? (ei[kIdx] || 0) : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
-                        const w = Math.pow(Math.max(0, Math.min(1, sim)), weightGamma)
-                        return { ai, w }
-                      })
-
-                      // Top-K選定
-                      weights.sort((a, b) => b.w - a.w)
-                      let chosen = weights.filter(x => x.w >= minW).slice(0, topK)
-                      if (chosen.length === 0 && weights.length > 0) chosen = weights.slice(0, 1)
-
-                      // 力学モード: 単語係数
-                      const factor = physicsMode === 'all'
-                        ? (0.5 * (ei.reduce((s, x) => s + x, 0) / Math.max(1, ei.length)) + 0.3 * norm01(physByWord[label] || 0, pm) + 0.2 * norm01(speedByWord[label] || 0, sm))
-                        : physicsMode === 'emotion'
-                          ? 1
-                          : physicsMode === 'physio'
-                            ? norm01(physByWord[label] || 0, pm)
-                            : norm01(speedByWord[label] || 0, sm)
-
-                      // 初期位置をアンカー側に寄せる
-                      if (chosen.length > 0) {
-                        let vx = 0, vy = 0, vz = 0, sw = 0
-                        for (const c of chosen) {
-                          const p = anchorPos[c.ai]
-                          vx += p[0] * c.w
-                          vy += p[1] * c.w
-                          vz += p[2] * c.w
-                          sw += c.w
-                        }
-                        if (sw > 0) {
-                          vx /= sw; vy /= sw; vz /= sw
-                          const len = Math.hypot(vx, vy, vz) || 1
-                          const r = shellRadius * 0.65
-                          const j = 1 + (Math.random() - 0.5) * 0.1 // わずかな揺らぎ
-                          let init: [number, number, number] = [ (vx/len) * r * j, (vy/len) * r * j, (vz/len) * r * j ]
-                          if (animateTransitions) {
-                            const prev = lastInitialsRef.current.get(label)
-                            if (prev) init = [ prev[0] * 0.8 + init[0] * 0.2, prev[1] * 0.8 + init[1] * 0.2, prev[2] * 0.8 + init[2] * 0.2 ]
-                          }
-                          nodes[wi].initial = init
-                          lastInitialsRef.current.set(label, init)
-                        }
-                      }
-
-                      // リンク生成（感情色を付与）
-                      for (const c of chosen) {
-                        const a = anchorNodes[c.ai]
-                        const key = anchorToKey[a.label]
-                        const base = key ? emotionColor[key] : undefined
-                        const w = Math.max(0, Math.min(1, c.w * Math.max(0.1, factor)))
-                        const L0 = Math.max(20, restLength * (1 - 0.6 * w))
-                        const k = springK * (0.3 + 0.7 * w)
-                        const alpha = Math.max(0.12, Math.min(0.95, 0.12 + 0.88 * w))
-                        const color = base ? `rgba(${parseInt(base.slice(1,3),16)}, ${parseInt(base.slice(3,5),16)}, ${parseInt(base.slice(5,7),16)}, ${alpha.toFixed(3)})` : `rgba(30, 64, 175, ${alpha.toFixed(3)})`
-                        links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k, color })
-                      }
-                    }
-
-                    return { nodes: allNodes, links }
-                  }
-
-                  const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
-                    const { nodes, links } = generateForce3DGraph()
-
-                    // 選択語を中心へ（固定）し目立たせる
-                    if (selectedWord) {
-                      const idx = nodes.findIndex(n => n.label === selectedWord)
-                      if (idx >= 0) {
-                        nodes[idx].fixed = true
-                        nodes[idx].initial = [0, 0, 0]
-                        nodes[idx].scale = Math.max(nodes[idx].scale, 6)
-                        nodes[idx].color = '#111827'
-                      }
-                    }
-
-                  console.log('3Dグラフデータ:', { nodes: nodes.length, links: links.length })
-
-                  return (
-                    <div className="border rounded overflow-hidden">
-                      <Force3D
-                        nodes={nodes}
-                        links={links}
-                        width={width}
-                        height={Math.min(460, Math.max(360, height))}
-                        physics={{
-                          springK,
-                          repulsionK,
-                          damping,
-                          restLength,
-                          maxSpeed: 200,
-                          shellRadius,
-                          shellK,
-                          radialOutK: radialOutK,
-                          constraintIters: constraintIters,
-                          constraintStiffness: constraintStiffness,
-                          minSep,
-                          sepK
-                        }}
-                      />
-                    </div>
-                  )
-                } catch (error) {
-                  console.error('3Dグラフ生成エラー:', error)
-                  return (
-                    <div className="border rounded overflow-hidden p-4 text-red-600">
-                      3Dグラフの生成に失敗しました: {error instanceof Error ? error.message : 'Unknown error'}
-                    </div>
-                  )
-                }
-              })()}
+                  })()}
                 </div>
                 {/* Control Panel - iPad sticky and touch-friendly */}
                 <div className="lg:col-span-1 order-1 lg:order-2 sticky top-4 self-start max-h-[78vh] overflow-auto pr-1">
@@ -1315,204 +992,63 @@ export default function TimelineVisualization({
                 </div>
                 <div className="overflow-auto max-h-96">
                   {mounted && (() => {
+                    // Loading state
+                    if (force3DGraphLoading) {
+                      return (
+                        <div className="flex items-center justify-center h-64">
+                          <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-200 border-t-blue-600"></div>
+                          <span className="ml-2 text-gray-700 text-sm">3Dグラフデータを計算中...</span>
+                        </div>
+                      )
+                    }
+
+                    // Error state
+                    if (force3DGraphError) {
+                      return (
+                        <div className="border rounded overflow-hidden p-4 text-red-600 text-sm">
+                          エラー: {force3DGraphError}
+                        </div>
+                      )
+                    }
+
+                    // No data state
+                    if (!force3DGraphData) {
+                      return (
+                        <div className="border rounded overflow-hidden p-4 text-gray-500 text-sm">
+                          データがありません
+                        </div>
+                      )
+                    }
+
                     try {
-                      const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
-                      const jungWords = JUNG_STIMULUS_WORDS // 全てのデータを表示
+                      // Convert backend data to component format
+                      const nodes: WordNode[] = force3DGraphData.nodes.map((node: any) => ({
+                        id: node.id,
+                        label: node.label,
+                        scale: node.scale || 1.0,
+                        nodeType: (node.nodeType || 'word') as 'word' | 'anchor',
+                        initial: node.initial ? (node.initial as [number, number, number]) : undefined,
+                        fixed: node.fixed || false,
+                        color: node.color,
+                      }))
 
-                      // 集約（ノード指標）。全語を初期化し、セッション実データで加算
-                      const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
-                      jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
-                        for (const d of data) {
-                          if (!accum[d.word]) continue // セッション語がユング語に無い場合は無視
-                          accum[d.word].count += 1
-                          accum[d.word].sumReactionValue += d.reactionValue
-                          accum[d.word].sumReactionTime += d.reactionTime
-                        }
-
-                        // 生スケール: 平均反応値 × log(1+回数)
-                        const nodeEntries = jungWords.map(({ japanese }) => {
-                          const g = accum[japanese]
-                          const avgRV = g.count > 0 ? g.sumReactionValue / g.count : 0
-                          const raw = avgRV * Math.log1p(g.count)
-                          return { japanese, count: g.count, avgReactionValue: avgRV, raw }
-                        })
-
-                        const rawMin = Math.min(...nodeEntries.map(n => n.raw))
-                        const rawMax = Math.max(...nodeEntries.map(n => n.raw))
-                        const denom = rawMax - rawMin || 1
-
-                        const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
-                          id: String(idx),
-                          label: n.japanese,
-                          // 0.5〜6.0程度に正規化（視認性のため）
-                          scale: Math.max(0.5, 0.5 + 5.5 * ((n.raw - rawMin) / denom)),
-                          nodeType: 'word'
-                        }))
-
-                        // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
-                        const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
-                        const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
-                        const wordEmotionSum: Record<string, number[]> = {}
-
-                        for (const dpt of data) {
-                          const w = dpt.word
-                          if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
-                          if (Array.isArray(dpt.emotions)) {
-                            for (const e of dpt.emotions) {
-                              const key = (e.name || 'unknown').toLowerCase()
-                              const idx = emotionIndex[key]
-                              if (idx !== undefined) {
-                                wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
-                              }
-                            }
-                          }
-                        }
-
-                        const normalize = (vec: number[]): number[] => {
-                          const norm = Math.hypot(...vec)
-                          if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
-                          return vec.map((x) => x / norm)
-                        }
-
-                        const normalizedEmotionVec: Record<string, number[]> = {}
-                        Object.keys(wordEmotionSum).forEach((w) => {
-                          normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
-                        })
-
-                        // 感情アンカー（2Dマップを球面へ射影）
-                        const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
-                          { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
-                          { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
-                          { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
-                          { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
-                          { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
-                          { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
-                          { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
-                          { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
-                          { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
-                          { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
-                        ]
-
-                        const anchorToKey: Record<string, typeof EMOTION_KEYS[number]> = {
-                          Joy: 'joy',
-                          Sadness: 'sadness',
-                          Anger: 'anger',
-                          Fear: 'fear',
-                          Disgust: 'disgust',
-                          Calmness: 'calm',
-                          Interest: 'focus',
-                          Surprise: 'surprise',
-                          Confusion: 'confusion',
-                          Determination: 'focus',
-                        }
-
-                        const emotionColor: Record<typeof EMOTION_KEYS[number], string> = {
-                          joy: '#f59e0b',
-                          sadness: '#1f2937',
-                          anger: '#ef4444',
-                          fear: '#a78bfa',
-                          surprise: '#22c55e',
-                          disgust: '#10b981',
-                          calm: '#93c5fd',
-                          focus: '#60a5fa',
-                          excitement: '#22d3ee',
-                          confusion: '#64748b',
-                        }
-
-                        const anchorRadius = shellRadius // 球殻上に配置
-                        const toSphere = (x01: number, y01: number): [number, number, number] => {
-                          const u = (x01 - 0.5) * Math.PI * 1.6 // 横回転
-                          const v = (y01 - 0.5) * Math.PI // 縦
-                          const cx = Math.cos(v) * Math.cos(u)
-                          const cy = Math.cos(v) * Math.sin(u)
-                          const cz = Math.sin(v)
-                          return [anchorRadius * cx, anchorRadius * cy, anchorRadius * cz]
-                        }
-
-                        const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-                          const [x, y, z] = toSphere(a.x, a.y)
-                          return {
-                            id: `A${idx}`,
-                            label: a.name,
-                            scale: 6,
-                            fixed: true,
-                            nodeType: 'anchor',
-                            initial: [x, y, z],
-                            color: a.color,
-                          }
-                        })
-
-                        // アンカー追加と接続
-                        const baseOffset = nodes.length
-                        const allNodes = [...anchorNodes, ...nodes]
-
-                        // 感情結合に基づくリンク生成（Shannon: Top-K疎化 + 初期位置寄せ）
-                        const links: WordLink[] = []
-                        const topK = 2
-                        const minW = 0.25
-                        const weightGamma = 1.6
-
-                        const anchorPos: Array<[number, number, number]> = anchorNodes.map(a => (a.initial as [number, number, number]))
-
-                        for (let wi = 0; wi < nodes.length; wi++) {
-                          const wordIndex = baseOffset + wi
-                          const label = nodes[wi].label
-                          const ei = normalizedEmotionVec[label] || new Array(10).fill(0)
-
-                          const weights: Array<{ ai: number; w: number }> = anchorNodes.map((a, ai) => {
-                            const key = anchorToKey[a.label] as typeof EMOTION_KEYS[number] | undefined
-                            const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
-                            const sim = kIdx >= 0 ? (ei[kIdx] || 0) : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
-                            const w = Math.pow(Math.max(0, Math.min(1, sim)), weightGamma)
-                            return { ai, w }
-                          })
-
-                          weights.sort((a, b) => b.w - a.w)
-                          let chosen = weights.filter(x => x.w >= minW).slice(0, topK)
-                          if (chosen.length === 0 && weights.length > 0) chosen = weights.slice(0, 1)
-
-                          if (chosen.length > 0) {
-                            let vx = 0, vy = 0, vz = 0, sw = 0
-                            for (const c of chosen) {
-                              const p = anchorPos[c.ai]
-                              vx += p[0] * c.w
-                              vy += p[1] * c.w
-                              vz += p[2] * c.w
-                              sw += c.w
-                            }
-                            if (sw > 0) {
-                              vx /= sw; vy /= sw; vz /= sw
-                              const len = Math.hypot(vx, vy, vz) || 1
-                              const r = shellRadius * 0.65
-                              const j = 1 + (Math.random() - 0.5) * 0.1
-                              nodes[wi].initial = [ (vx/len) * r * j, (vy/len) * r * j, (vz/len) * r * j ]
-                            }
-                          }
-
-                          for (const c of chosen) {
-                            const a = anchorNodes[c.ai]
-                            const key = anchorToKey[a.label]
-                            const color = key ? emotionColor[key] : undefined
-                            const w = Math.max(0, Math.min(1, c.w))
-                            const L0 = Math.max(20, restLength * (1 - 0.6 * w))
-                            const k = springK * (0.3 + 0.7 * w)
-                            links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k, color })
-                          }
-                        }
-
-                        return { nodes: allNodes, links }
-                      }
-
-                      const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
-                      const { nodes, links } = generateForce3DGraph()
+                      const links: WordLink[] = force3DGraphData.links.map((link: any) => ({
+                        source: typeof link.source === 'number' ? link.source : parseInt(link.source),
+                        target: typeof link.target === 'number' ? link.target : parseInt(link.target),
+                        weight: link.weight || 0,
+                        mode: (link.mode || 'tension') as 'tension' | 'compression',
+                        L0: link.L0 || link.l0 || restLength,
+                        k: link.k || springK,
+                        color: link.color || `rgba(30, 64, 175, 0.5)`,
+                      }))
 
                       return (
                         <div className="border rounded overflow-hidden">
-                            <Force3D
+                          <Force3D
                             nodes={nodes}
                             links={links}
                             width={Math.min(width / 2 - 40, 600)}
-                              height={Math.min(360, Math.max(280, height - 240))}
+                            height={Math.min(360, Math.max(280, height - 240))}
                             physics={{
                               springK,
                               repulsionK,
@@ -1531,10 +1067,10 @@ export default function TimelineVisualization({
                         </div>
                       )
                     } catch (error) {
-                      console.error('3Dグラフ生成エラー:', error)
+                      console.error('3Dグラフレンダリングエラー:', error)
                       return (
-                        <div className="border rounded overflow-hidden p-4 text-red-600">
-                          3Dグラフの生成に失敗しました: {error instanceof Error ? error.message : 'Unknown error'}
+                        <div className="border rounded overflow-hidden p-4 text-red-600 text-sm">
+                          3Dグラフの表示に失敗しました: {error instanceof Error ? error.message : 'Unknown error'}
                         </div>
                       )
                     }

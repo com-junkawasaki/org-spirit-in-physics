@@ -143,6 +143,21 @@ export interface GraphQLClient {
   // Force graph data
   getParticipantForceGraphData(participantId: string): Promise<any | null>
 
+  // Force3D graph data (computed)
+  getParticipantForce3DGraph(participantId: string, params?: {
+    selectedEmotions?: string[]
+    selectedModalities?: string[]
+    physicsMode?: string
+    segment?: string
+    topK?: number
+    minW?: number
+    weightGamma?: number
+    shellRadius?: number
+    restLength?: number
+    springK?: number
+    selectedWord?: string
+  }): Promise<any | null>
+
   // Word2Vec data
   getParticipantWord2Vec(participantId: string): Promise<any | null>
 
@@ -636,6 +651,121 @@ export function createGraphQLClient(): GraphQLClient {
           return null
         }
         return data.data?.participantForceGraphData || null
+      } catch (fetchError: any) {
+        console.error('Fetch error:', fetchError.message)
+        return null
+      }
+    },
+
+    async getParticipantForce3DGraph(participantId: string, params?: {
+      selectedEmotions?: string[]
+      selectedModalities?: string[]
+      physicsMode?: string
+      segment?: string
+      topK?: number
+      minW?: number
+      weightGamma?: number
+      shellRadius?: number
+      restLength?: number
+      springK?: number
+      selectedWord?: string
+    }) {
+      const isServer = typeof window === 'undefined'
+      const url = isServer 
+        ? (process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql')
+        : (process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql')
+      
+      // For server-side, use direct fetch
+      if (isServer) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              query: `query ParticipantForce3DGraph($participantId: String!, $params: Force3DGraphParams) {
+                participantForce3DGraph(participantId: $participantId, params: $params) {
+                  nodes {
+                    id
+                    label
+                    scale
+                    nodeType
+                    initial
+                    fixed
+                    color
+                  }
+                  links {
+                    source
+                    target
+                    weight
+                    mode
+                    L0
+                    k
+                    color
+                  }
+                }
+              }`,
+              variables: { 
+                participantId,
+                params: params || {}
+              }
+            }),
+          })
+          if (!response.ok) {
+            console.error('Direct fetch failed:', response.status, response.statusText)
+            return null
+          }
+          const data = await response.json()
+          if (data.errors) {
+            console.error('GraphQL errors:', data.errors)
+            return null
+          }
+          return data.data?.participantForce3DGraph || null
+        } catch (fetchError: any) {
+          console.error('Direct fetch error:', fetchError.message)
+          return null
+        }
+      }
+      
+      // For client-side, use direct fetch
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            query: `query ParticipantForce3DGraph($participantId: String!, $params: Force3DGraphParams) {
+              participantForce3DGraph(participantId: $participantId, params: $params) {
+                nodes {
+                  id
+                  label
+                  scale
+                  nodeType
+                  initial
+                  fixed
+                  color
+                }
+                links {
+                  source
+                  target
+                  weight
+                  mode
+                  L0
+                  k
+                  color
+                }
+              }
+            }`,
+            variables: { 
+              participantId,
+              params: params || {}
+            }
+          }),
+        })
+        const data = await response.json()
+        if (data.errors) {
+          console.error('GraphQL errors:', data.errors)
+          return null
+        }
+        return data.data?.participantForce3DGraph || null
       } catch (fetchError: any) {
         console.error('Fetch error:', fetchError.message)
         return null

@@ -189,6 +189,66 @@ pub struct NodeMetadata {
     pub observation_ratio: f64,
 }
 
+// Force3D Graph types for computed visualization
+#[derive(InputObject, Default)]
+#[graphql(name = "Force3DGraphParams")]
+pub struct Force3DGraphParams {
+    #[graphql(name = "selectedEmotions")]
+    pub selected_emotions: Option<Vec<String>>,
+    #[graphql(name = "selectedModalities")]
+    pub selected_modalities: Option<Vec<String>>,
+    #[graphql(name = "physicsMode")]
+    pub physics_mode: Option<String>,
+    pub segment: Option<String>,
+    #[graphql(name = "topK")]
+    pub top_k: Option<i32>,
+    #[graphql(name = "minW")]
+    pub min_w: Option<f64>,
+    #[graphql(name = "weightGamma")]
+    pub weight_gamma: Option<f64>,
+    #[graphql(name = "shellRadius")]
+    pub shell_radius: Option<f64>,
+    #[graphql(name = "restLength")]
+    pub rest_length: Option<f64>,
+    #[graphql(name = "springK")]
+    pub spring_k: Option<f64>,
+    #[graphql(name = "selectedWord")]
+    pub selected_word: Option<String>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "Force3DGraphNode")]
+pub struct Force3DGraphNode {
+    pub id: String,
+    pub label: String,
+    pub scale: f64,
+    #[graphql(name = "nodeType")]
+    pub node_type: String,
+    pub initial: Option<Vec<f64>>,
+    pub fixed: bool,
+    pub color: Option<String>,
+}
+
+#[derive(SimpleObject, Clone, Debug)]
+#[graphql(name = "Force3DGraphLink")]
+pub struct Force3DGraphLink {
+    pub source: i32,
+    pub target: i32,
+    pub weight: f64,
+    pub mode: String,
+    #[graphql(name = "L0")]
+    pub l0: f64,
+    pub k: f64,
+    pub color: String,
+}
+
+#[derive(SimpleObject)]
+#[graphql(name = "Force3DGraphData")]
+pub struct Force3DGraphData {
+    pub nodes: Vec<Force3DGraphNode>,
+    pub links: Vec<Force3DGraphLink>,
+}
+
 #[derive(SimpleObject)]
 #[graphql(name = "VisualizationNode")]
 pub struct VisualizationNode {
@@ -1057,6 +1117,438 @@ impl Query {
             eprintln!("[GraphQL] participant_force_graph_data: No pre-computed force graph data found");
             Err(async_graphql::Error::new("Force graph data not yet generated. Please run display data generation first."))
         }
+    }
+
+    // Merkle DAG: activities.participant_force3d_graph
+    // GraphQL query to compute 3D Force graph data with parameters
+    // RDF: https://spirit-in-physics.gftd.ai/activity/participantForce3DGraph
+    #[graphql(name = "participantForce3DGraph")]
+    async fn participant_force3d_graph(
+        &self,
+        ctx: &Context<'_>,
+        participant_id: String,
+        params: Option<Force3DGraphParams>,
+    ) -> GQLResult<Force3DGraphData> {
+        let total_start = Instant::now();
+        eprintln!("[GraphQL] participant_force3d_graph: Starting query for participant_id={}", participant_id);
+
+        // Get timeline data first
+        let timeline_response = match self.participant_timeline(ctx, participant_id.clone(), Some(2000)).await {
+            Ok(resp) => resp,
+            Err(e) => {
+                eprintln!("[GraphQL] participant_force3d_graph: Failed to get timeline data: {:?}", e);
+                return Err(e);
+            }
+        };
+        let timeline_data = timeline_response.timeline_data.clone();
+
+        if timeline_data.is_empty() {
+            return Err(async_graphql::Error::new("No timeline data available for this participant"));
+        }
+
+        // Parse parameters with defaults
+        let params = params.unwrap_or_default();
+        let selected_emotions: std::collections::HashSet<String> = params.selected_emotions
+            .unwrap_or_else(|| vec!["joy".to_string(), "sadness".to_string(), "anger".to_string(), "fear".to_string(), "surprise".to_string(), "disgust".to_string(), "calm".to_string(), "focus".to_string(), "excitement".to_string(), "confusion".to_string()])
+            .into_iter()
+            .collect();
+        let selected_modalities: std::collections::HashSet<String> = params.selected_modalities
+            .unwrap_or_else(|| vec!["prosody".to_string(), "face".to_string(), "language".to_string(), "burst".to_string()])
+            .into_iter()
+            .collect();
+        let physics_mode = params.physics_mode.unwrap_or_else(|| "emotion".to_string());
+        let segment = params.segment.unwrap_or_else(|| "all".to_string());
+        let top_k = params.top_k.unwrap_or(2);
+        let min_w = params.min_w.unwrap_or(0.25);
+        let weight_gamma = params.weight_gamma.unwrap_or(1.6);
+        let shell_radius = params.shell_radius.unwrap_or(300.0);
+        let rest_length = params.rest_length.unwrap_or(80.0);
+        let spring_k = params.spring_k.unwrap_or(2.0);
+        let selected_word = params.selected_word;
+
+        // Jung stimulus words (100 words) - using word_stimuli table IDs
+        // For now, we'll use a simplified approach and get words from timeline data
+        use std::collections::HashSet;
+        let mut unique_words: HashSet<String> = HashSet::new();
+        for point in &timeline_data {
+            unique_words.insert(point.word.clone());
+        }
+        let mut jung_words: Vec<(i32, String)> = unique_words.into_iter()
+            .enumerate()
+            .map(|(idx, word)| (idx as i32, word))
+            .collect();
+        jung_words.sort_by(|a, b| a.1.cmp(&b.1));
+
+        // Segment data based on segment parameter
+        let session_data: Vec<&TimelineDataPoint> = match segment.as_str() {
+            "first100" => timeline_data.iter().take(100).collect(),
+            "next100" => timeline_data.iter().skip(100).take(100).collect(),
+            _ => timeline_data.iter().collect(),
+        };
+
+        // Emotion keys mapping
+        let emotion_keys = vec!["joy", "sadness", "anger", "fear", "surprise", "disgust", "calm", "focus", "excitement", "confusion"];
+        let emotion_index: std::collections::HashMap<String, usize> = emotion_keys.iter()
+            .enumerate()
+            .map(|(i, k)| (k.to_string(), i))
+            .collect();
+
+        // Aggregate word statistics
+        use std::collections::HashMap;
+        let mut accum: HashMap<String, (i32, f64, i32, f64)> = HashMap::new(); // count, sumReactionValue, sumReactionTime, sumPhysAbs
+        let mut phys_by_series: HashMap<String, Vec<f64>> = HashMap::new();
+        let mut rt_by_series: HashMap<String, Vec<i32>> = HashMap::new();
+
+        for (_, japanese) in &jung_words {
+            accum.insert(japanese.clone(), (0, 0.0, 0, 0.0));
+        }
+
+        for d in &session_data {
+            if let Some(acc) = accum.get_mut(&d.word) {
+                acc.0 += 1;
+                acc.1 += d.reaction_value;
+                acc.2 += d.reaction_time;
+                
+                if let Some(avg) = d.physiological.average {
+                    if avg.is_finite() {
+                        acc.3 += avg.abs();
+                        phys_by_series.entry(d.word.clone()).or_insert_with(Vec::new).push(avg);
+                    }
+                }
+                rt_by_series.entry(d.word.clone()).or_insert_with(Vec::new).push(d.reaction_time);
+            }
+        }
+
+        // Calculate node entries
+        let mut node_entries: Vec<(String, i32, f64, f64)> = Vec::new(); // japanese, count, avgReactionValue, raw
+        for (_, japanese) in &jung_words {
+            let acc = accum.get(japanese).unwrap_or(&(0, 0.0, 0, 0.0));
+            let avg_rv = if acc.0 > 0 { acc.1 / acc.0 as f64 } else { 0.0 };
+            let raw = avg_rv * (1.0 + acc.0 as f64).ln();
+            node_entries.push((japanese.clone(), acc.0, avg_rv, raw));
+        }
+
+        let raw_min = node_entries.iter().map(|(_, _, _, r)| *r).fold(f64::INFINITY, f64::min);
+        let raw_max = node_entries.iter().map(|(_, _, _, r)| *r).fold(f64::NEG_INFINITY, f64::max);
+        let denom = if (raw_max - raw_min).abs() < 1e-10 { 1.0 } else { raw_max - raw_min };
+
+        // Create word nodes
+        let mut nodes: Vec<Force3DGraphNode> = node_entries.iter()
+            .enumerate()
+            .map(|(idx, (japanese, _, _, raw))| {
+                let scale = (0.5 + 5.5 * ((raw - raw_min) / denom)).max(0.5);
+                Force3DGraphNode {
+                    id: idx.to_string(),
+                    label: japanese.clone(),
+                    scale,
+                    node_type: "word".to_string(),
+                    initial: None,
+                    fixed: false,
+                    color: None,
+                }
+            })
+            .collect();
+
+        // Aggregate emotion data
+        let mut word_emotion_sum: HashMap<String, Vec<f64>> = HashMap::new();
+        const MAX_EMOTIONS_PER_RESPONSE: usize = 10;
+
+        for d in &session_data {
+            let w = &d.word;
+            word_emotion_sum.entry(w.clone()).or_insert_with(|| vec![0.0; emotion_keys.len()]);
+            
+            let mut sorted_emotions: Vec<&EmotionData> = d.emotions.iter()
+                .filter(|e| {
+                    let key = e.name.to_lowercase();
+                    if !emotion_index.contains_key(&key) {
+                        return false;
+                    }
+                    let ft = e.file_type.to_lowercase();
+                    let mod_str = if ft.contains("prosody") { "prosody" }
+                        else if ft.contains("burst") { "burst" }
+                        else if ft.contains("face") { "face" }
+                        else if ft.contains("language") { "language" }
+                        else { return true; };
+                    selected_modalities.contains(&mod_str.to_string())
+                })
+                .collect();
+            sorted_emotions.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+            
+            for e in sorted_emotions.iter().take(MAX_EMOTIONS_PER_RESPONSE) {
+                let key = e.name.to_lowercase();
+                if let Some(&idx) = emotion_index.get(&key) {
+                    if let Some(sum_vec) = word_emotion_sum.get_mut(w) {
+                        sum_vec[idx] += e.score;
+                    }
+                }
+            }
+        }
+
+        // Normalize emotion vectors
+        let normalize = |vec: &[f64]| -> Vec<f64> {
+            let norm: f64 = vec.iter().map(|x| x * x).sum::<f64>().sqrt();
+            if norm.abs() < 1e-10 {
+                vec![0.0; vec.len()]
+            } else {
+                vec.iter().map(|x| x / norm).collect()
+            }
+        };
+
+        let mut normalized_emotion_vec: HashMap<String, Vec<f64>> = HashMap::new();
+        for (w, sum_vec) in &word_emotion_sum {
+            normalized_emotion_vec.insert(w.clone(), normalize(sum_vec));
+        }
+
+        // Calculate physics mode factors
+        let mut phys_by_word: HashMap<String, f64> = HashMap::new();
+        let mut phys_std_by_word: HashMap<String, f64> = HashMap::new();
+        let mut speed_by_word: HashMap<String, f64> = HashMap::new();
+
+        for (_, japanese) in &jung_words {
+            let acc = accum.get(japanese).unwrap_or(&(0, 0.0, 0, 0.0));
+            let c = acc.0;
+            let phys_avg = if c > 0 { acc.3 / c as f64 } else { 0.0 };
+            
+            let series = phys_by_series.get(japanese).cloned().unwrap_or_default();
+            let mean = if !series.is_empty() {
+                series.iter().sum::<f64>() / series.len() as f64
+            } else {
+                0.0
+            };
+            let variance = if !series.is_empty() {
+                series.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / series.len() as f64
+            } else {
+                0.0
+            };
+            let phys_std = variance.max(0.0).sqrt();
+            let speed = if c > 0 { 1.0 / (acc.2 as f64 / c as f64).max(1.0) } else { 0.0 };
+            
+            phys_by_word.insert(japanese.clone(), phys_avg);
+            phys_std_by_word.insert(japanese.clone(), phys_std);
+            speed_by_word.insert(japanese.clone(), speed);
+        }
+
+        let phys_values: Vec<f64> = phys_by_word.values().cloned().collect();
+        let phys_std_values: Vec<f64> = phys_std_by_word.values().cloned().collect();
+        let speed_values: Vec<f64> = speed_by_word.values().cloned().collect();
+
+        let min_max = |arr: &[f64]| -> (f64, f64) {
+            let min = arr.iter().cloned().fold(f64::INFINITY, f64::min).max(0.0);
+            let max = arr.iter().cloned().fold(f64::NEG_INFINITY, f64::max).max(1e-6);
+            (min, max)
+        };
+
+        let pm = min_max(&phys_values);
+        let psm = min_max(&phys_std_values);
+        let sm = min_max(&speed_values);
+
+        let norm01 = |x: f64, (min, max): (f64, f64)| -> f64 {
+            if (max - min).abs() < 1e-10 { 0.0 } else { (x - min) / (max - min) }
+        };
+
+        // Adjust node scales based on physics mode
+        for node in &mut nodes {
+            let w = &node.label;
+            let strength = norm01(phys_by_word.get(w).copied().unwrap_or(0.0), pm);
+            let change = norm01(phys_std_by_word.get(w).copied().unwrap_or(0.0), psm);
+            let m = 0.6 * strength + 0.4 * change;
+            
+            if physics_mode != "emotion" {
+                node.scale = (node.scale * (0.7 + 1.3 * m)).max(0.5).min(10.0);
+            }
+        }
+
+        // Create anchor nodes
+        let anchor_2d = vec![
+            ("Joy", 0.15, 0.85, "#f59e0b"),
+            ("Sadness", 0.70, 0.45, "#1f2937"),
+            ("Anger", 0.82, 0.25, "#ef4444"),
+            ("Fear", 0.92, 0.10, "#a78bfa"),
+            ("Disgust", 0.78, 0.52, "#10b981"),
+            ("Calmness", 0.28, 0.70, "#93c5fd"),
+            ("Interest", 0.35, 0.55, "#60a5fa"),
+            ("Surprise", 0.40, 0.20, "#22c55e"),
+            ("Confusion", 0.48, 0.35, "#64748b"),
+            ("Determination", 0.22, 0.85, "#f97316"),
+        ];
+
+        let anchor_to_key: HashMap<&str, &str> = [
+            ("Joy", "joy"), ("Sadness", "sadness"), ("Anger", "anger"), ("Fear", "fear"),
+            ("Disgust", "disgust"), ("Calmness", "calm"), ("Interest", "focus"),
+            ("Surprise", "surprise"), ("Confusion", "confusion"), ("Determination", "focus"),
+        ].iter().cloned().collect();
+
+        let to_sphere = |x01: f64, y01: f64, radius: f64| -> [f64; 3] {
+            let u = (x01 - 0.5) * std::f64::consts::PI * 1.6;
+            let v = (y01 - 0.5) * std::f64::consts::PI;
+            let cx = v.cos() * u.cos();
+            let cy = v.cos() * u.sin();
+            let cz = v.sin();
+            [radius * cx, radius * cy, radius * cz]
+        };
+
+        let mut anchor_nodes: Vec<Force3DGraphNode> = anchor_2d.iter()
+            .enumerate()
+            .map(|(idx, (name, x, y, color))| {
+                let [x, y, z] = to_sphere(*x, *y, shell_radius);
+                Force3DGraphNode {
+                    id: format!("A{}", idx),
+                    label: name.to_string(),
+                    scale: 6.0,
+                    node_type: "anchor".to_string(),
+                    initial: Some(vec![x, y, z]),
+                    fixed: true,
+                    color: Some(color.to_string()),
+                }
+            })
+            .collect();
+
+        let base_offset = nodes.len();
+        let anchor_positions: Vec<[f64; 3]> = anchor_nodes.iter()
+            .map(|a| {
+                if let Some(init) = &a.initial {
+                    [init[0], init[1], init[2]]
+                } else {
+                    [0.0, 0.0, 0.0]
+                }
+            })
+            .collect();
+
+        // Generate links
+        let mut links: Vec<Force3DGraphLink> = Vec::new();
+        let emotion_color: HashMap<&str, &str> = [
+            ("joy", "#f59e0b"), ("sadness", "#1f2937"), ("anger", "#ef4444"), ("fear", "#a78bfa"),
+            ("surprise", "#22c55e"), ("disgust", "#10b981"), ("calm", "#93c5fd"), ("focus", "#60a5fa"),
+            ("excitement", "#22d3ee"), ("confusion", "#64748b"),
+        ].iter().cloned().collect();
+
+        for (wi, node) in nodes.iter().enumerate() {
+            let word_index = base_offset + wi;
+            let label = &node.label;
+            let ei = normalized_emotion_vec.get(label).cloned().unwrap_or_else(|| vec![0.0; emotion_keys.len()]);
+
+            // Calculate weights for each anchor
+            let mut weights: Vec<(usize, f64)> = anchor_nodes.iter()
+                .enumerate()
+                .map(|(ai, a)| {
+                    let key = anchor_to_key.get(a.label.as_str()).copied();
+                    if let Some(k) = key {
+                        if !selected_emotions.contains(&k.to_string()) {
+                            return (ai, 0.0);
+                        }
+                        if let Some(&k_idx) = emotion_index.get(k) {
+                            let sim = ei.get(k_idx).copied().unwrap_or(0.0);
+                            let w = sim.max(0.0).min(1.0).powf(weight_gamma);
+                            return (ai, w);
+                        }
+                    }
+                    let avg = ei.iter().sum::<f64>() / ei.len().max(1) as f64;
+                    let w = avg.max(0.0).min(1.0).powf(weight_gamma);
+                    (ai, w)
+                })
+                .collect();
+
+            weights.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            let mut chosen: Vec<(usize, f64)> = weights.iter()
+                .filter(|(_, w)| *w >= min_w)
+                .take(top_k as usize)
+                .cloned()
+                .collect();
+            if chosen.is_empty() && !weights.is_empty() {
+                chosen = vec![weights[0]];
+            }
+
+            // Calculate physics mode factor
+            let factor = match physics_mode.as_str() {
+                "all" => {
+                    0.5 * (ei.iter().sum::<f64>() / ei.len().max(1) as f64)
+                        + 0.3 * norm01(phys_by_word.get(label).copied().unwrap_or(0.0), pm)
+                        + 0.2 * norm01(speed_by_word.get(label).copied().unwrap_or(0.0), sm)
+                }
+                "physio" => norm01(phys_by_word.get(label).copied().unwrap_or(0.0), pm),
+                "reactionSpeed" => norm01(speed_by_word.get(label).copied().unwrap_or(0.0), sm),
+                _ => 1.0,
+            };
+
+            // Calculate initial position (using simple hash-based jitter instead of random)
+            if !chosen.is_empty() {
+                let mut vx = 0.0;
+                let mut vy = 0.0;
+                let mut vz = 0.0;
+                let mut sw = 0.0;
+                for (ai, w) in &chosen {
+                    let p = anchor_positions[*ai];
+                    vx += p[0] * w;
+                    vy += p[1] * w;
+                    vz += p[2] * w;
+                    sw += w;
+                }
+                if sw > 0.0 {
+                    vx /= sw;
+                    vy /= sw;
+                    vz /= sw;
+                    let len = (vx * vx + vy * vy + vz * vz).sqrt().max(1e-10);
+                    let r = shell_radius * 0.65;
+                    // Use hash-based jitter instead of random
+                    let jitter = 1.0 + ((label.len() as f64 * 0.1) % 0.1) - 0.05;
+                    let init = [(vx / len) * r * jitter, (vy / len) * r * jitter, (vz / len) * r * jitter];
+                    nodes[wi].initial = Some(vec![init[0], init[1], init[2]]);
+                }
+            }
+
+            // Generate links
+            for (ai, w) in &chosen {
+                let a = &anchor_nodes[*ai];
+                let key = anchor_to_key.get(a.label.as_str()).copied();
+                let base_color = key.and_then(|k| emotion_color.get(k).copied());
+                let w_final = (w * factor.max(0.1)).max(0.0).min(1.0);
+                let l0 = (rest_length * (1.0 - 0.6 * w_final)).max(20.0);
+                let k = spring_k * (0.3 + 0.7 * w_final);
+                let alpha = (0.12 + 0.88 * w_final).max(0.12).min(0.95);
+                
+                let color = if let Some(base) = base_color {
+                    let r = u8::from_str_radix(&base[1..3], 16).unwrap_or(0);
+                    let g = u8::from_str_radix(&base[3..5], 16).unwrap_or(0);
+                    let b = u8::from_str_radix(&base[5..7], 16).unwrap_or(0);
+                    format!("rgba({}, {}, {}, {:.3})", r, g, b, alpha)
+                } else {
+                    format!("rgba(30, 64, 175, {:.3})", alpha)
+                };
+
+                links.push(Force3DGraphLink {
+                    source: *ai as i32,
+                    target: word_index as i32,
+                    weight: w_final,
+                    mode: "tension".to_string(),
+                    l0,
+                    k,
+                    color,
+                });
+            }
+        }
+
+        // Handle selected word
+        if let Some(sw) = selected_word {
+            if let Some(idx) = nodes.iter().position(|n| n.label == sw) {
+                nodes[idx].fixed = true;
+                nodes[idx].initial = Some(vec![0.0, 0.0, 0.0]);
+                nodes[idx].scale = nodes[idx].scale.max(6.0);
+                nodes[idx].color = Some("#111827".to_string());
+            }
+        }
+
+        // Combine anchor nodes and word nodes
+        let mut all_nodes = anchor_nodes;
+        all_nodes.extend(nodes);
+
+        let total_ms = total_start.elapsed().as_millis() as u64;
+        eprintln!("[Performance] participant_force3d_graph: total_ms={}, nodes={}, links={}", 
+            total_ms, all_nodes.len(), links.len());
+
+        Ok(Force3DGraphData {
+            nodes: all_nodes,
+            links,
+        })
     }
 }
 
