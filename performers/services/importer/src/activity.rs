@@ -1,8 +1,10 @@
 use std::path::{Path, PathBuf};
 use anyhow::{Result, Context};
 use tracing::{info, warn};
+use diesel::prelude::*;
 
 use crate::db::{establish_connection, get_connection};
+use crate::db::schema::*;
 use crate::parsers::{
     parse_session_data, parse_consent, parse_physiological_csv, parse_hume_csv,
     extract_session_boundaries, extract_word_responses,
@@ -71,9 +73,21 @@ pub fn import_participant_dataset(dataset_path: &Path) -> Result<()> {
     for boundary in &boundaries {
         info!("Processing session {}", boundary.session_number);
 
-        // Create session
+        // Create session or get existing session ID
         let session_id = import_session(&mut conn, participant_id, boundary)
             .context("Failed to import session")?;
+
+        // Check if this is an existing session (by checking if events already exist)
+        let existing_events_count: i64 = participant_session_events::table
+            .filter(participant_session_events::session_id.eq(session_id))
+            .count()
+            .get_result(&mut conn)
+            .unwrap_or(0);
+
+        if existing_events_count > 0 {
+            info!("Session {} already has {} events, skipping import for this session", session_id, existing_events_count);
+            continue;
+        }
 
         // Filter events for this session
         let session_events: Vec<_> = session_data.events
