@@ -3,6 +3,7 @@
 
 pub mod client;
 pub mod transaction;
+pub mod row_utils;
 
 pub use client::Neo4jClient;
 

@@ -2,6 +2,7 @@
 // Session types with type-level validation
 
 use crate::neo4j::client::Neo4jClient;
+use crate::neo4j::row_utils;
 use crate::error::ImportError;
 use serde::{Deserialize, Serialize};
 use neo4rs::BoltString;
@@ -73,15 +74,26 @@ impl ValidatedSessionId {
         }
 
         // neo4rs::Rowから値を取得
-        // neo4rs 0.9.0-rc.8では、RowはBoltTypeの値を含む
-        // 実際の実装では、row.get("sessionId")のような方法を使用する必要がある
-        // しかし、neo4rsのRow APIが明確でないため、クエリを修正して直接値を返すようにする
+        // 最初の行からsessionIdを取得
+        let row = rows.first()
+            .ok_or_else(|| ImportError::SessionNotFound(format!(
+                "No session found for participant {}",
+                participant_id
+            )))?;
         
-        // 暫定的な実装: セッションIDを推測
-        // 実際のセッションIDは、neo4j-manager.tsのsaveSession関数で作成される形式に従う
-        // 形式: {participantId}-{sessionIndex} または {participantId}_{sessionIndex}
-        // セッションインデックスが0の場合、{participantId}-0の形式になる
-        let session_id = format!("{}-0", participant_id);
+        // row_utilsを使用してセッションIDを取得
+        let session_id = match row_utils::get_string(row, "sessionId") {
+            Ok(id) => id,
+            Err(e) => {
+                // フォールバック: セッションIDを推測
+                // 実際のセッションIDは、neo4j-manager.tsのsaveSession関数で作成される形式に従う
+                // 形式: {participantId}-{sessionIndex} または {participantId}_{sessionIndex}
+                // セッションインデックスが0の場合、{participantId}-0の形式になる
+                use tracing::warn;
+                warn!("Failed to extract sessionId from row: {}. Using fallback format.", e);
+                format!("{}-0", participant_id)
+            }
+        };
         
         // ログを追加して、実際のセッションIDを確認
         use tracing::info;
