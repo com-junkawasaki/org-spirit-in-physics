@@ -65,7 +65,7 @@ pub async fn import_participants(
         let participant_path_clone = participant_path.clone();
 
         // Process each participant in a separate transaction
-        match execute_in_transaction(client, move |txn| {
+        match execute_in_transaction(client, |txn| {
             let pid = participant_id_clone.clone();
             let ppath = participant_path_clone.clone();
             Box::pin(async move {

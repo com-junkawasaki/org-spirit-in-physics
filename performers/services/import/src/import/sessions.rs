@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::{info, warn, error};
-use neo4rs::{BoltString, BoltInteger};
+use neo4rs::{BoltString, BoltInteger, BoltNull};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImportResult {
@@ -73,7 +73,7 @@ pub async fn import_sessions(
         let participant_path_clone = participant_path.clone();
 
         // Process each participant in a separate transaction
-        match execute_in_transaction(client, move |txn| {
+        match execute_in_transaction(client, |txn| {
             let pid = participant_id_clone.clone();
             let ppath = participant_path_clone.clone();
             Box::pin(async move {
@@ -224,7 +224,7 @@ async fn process_session(
     create_params.insert(
         "end_ts".to_string(),
         end_time.map(|t| neo4rs::BoltType::Integer(BoltInteger::from(t)))
-            .unwrap_or(neo4rs::BoltType::Null),
+            .unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)),
     );
     create_params.insert(
         "events".to_string(),

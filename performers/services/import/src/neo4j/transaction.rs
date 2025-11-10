@@ -6,10 +6,10 @@ use crate::error::ImportError;
 
 pub async fn execute_in_transaction<F, T>(
     client: &mut Neo4jClient,
-    f: F,
+    mut f: F,
 ) -> Result<T, ImportError>
 where
-    F: FnOnce(&mut crate::neo4j::client::Transaction) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, ImportError>> + Send>>,
+    F: for<'a> FnOnce(&'a mut crate::neo4j::client::Transaction) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, ImportError>> + Send + 'a>>,
 {
     let mut txn = client.start_transaction().await?;
     
