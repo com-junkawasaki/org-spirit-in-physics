@@ -59,10 +59,15 @@ pub async fn import_participants(
             .ok_or_else(|| ImportError::Validation("Invalid participant directory name".to_string()))?
             .to_string();
 
+        let participant_id_clone = participant_id.clone();
+        let participant_path_clone = participant_path.clone();
+
         // Process each participant in a separate transaction
-        match execute_in_transaction(client, |txn| {
+        match execute_in_transaction(client, move |txn| {
+            let pid = participant_id_clone.clone();
+            let ppath = participant_path_clone.clone();
             Box::pin(async move {
-                process_participant(txn, &participant_id, &participant_path).await
+                process_participant(txn, &pid, &ppath).await
             })
         })
         .await
@@ -97,7 +102,7 @@ async fn process_participant(
     let mut check_params = HashMap::new();
     check_params.insert(
         "participant_id".to_string(),
-        neo4rs::types::BoltType::String(participant_id.to_string()),
+        neo4rs::BoltType::String(participant_id.to_string()),
     );
 
     let check_query = r#"
@@ -146,35 +151,35 @@ async fn process_participant(
     let mut create_params = HashMap::new();
     create_params.insert(
         "id".to_string(),
-        neo4rs::types::BoltType::String(participant_id.to_string()),
+        neo4rs::BoltType::String(participant_id.to_string()),
     );
     create_params.insert(
         "signature".to_string(),
-        neo4rs::types::BoltType::String(consent_data.signature),
+        neo4rs::BoltType::String(consent_data.signature),
     );
     create_params.insert(
         "agreed_at".to_string(),
-        neo4rs::types::BoltType::String(consent_data.agreed_at),
+        neo4rs::BoltType::String(consent_data.agreed_at),
     );
     create_params.insert(
         "agreements".to_string(),
-        neo4rs::types::BoltType::String(serde_json::to_string(&consent_data.agreements)?),
+        neo4rs::BoltType::String(serde_json::to_string(&consent_data.agreements)?),
     );
     create_params.insert(
         "has_session_data".to_string(),
-        neo4rs::types::BoltType::Boolean(has_session_data),
+        neo4rs::BoltType::Boolean(has_session_data),
     );
     create_params.insert(
         "has_video_files".to_string(),
-        neo4rs::types::BoltType::Boolean(has_video_files),
+        neo4rs::BoltType::Boolean(has_video_files),
     );
     create_params.insert(
         "has_hume_data".to_string(),
-        neo4rs::types::BoltType::Boolean(has_hume_data),
+        neo4rs::BoltType::Boolean(has_hume_data),
     );
     create_params.insert(
         "imported_at".to_string(),
-        neo4rs::types::BoltType::String(chrono::Utc::now().to_rfc3339()),
+        neo4rs::BoltType::String(chrono::Utc::now().to_rfc3339()),
     );
 
     let create_query = r#"

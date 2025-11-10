@@ -67,10 +67,15 @@ pub async fn import_sessions(
             .ok_or_else(|| ImportError::Validation("Invalid participant directory name".to_string()))?
             .to_string();
 
+        let participant_id_clone = participant_id.clone();
+        let participant_path_clone = participant_path.clone();
+
         // Process each participant in a separate transaction
-        match execute_in_transaction(client, |txn| {
+        match execute_in_transaction(client, move |txn| {
+            let pid = participant_id_clone.clone();
+            let ppath = participant_path_clone.clone();
             Box::pin(async move {
-                process_session(txn, &participant_id, &participant_path).await
+                process_session(txn, &pid, &ppath).await
             })
         })
         .await
@@ -105,7 +110,7 @@ async fn process_session(
     let mut check_params = HashMap::new();
     check_params.insert(
         "participant_id".to_string(),
-        neo4rs::types::BoltType::String(participant_id.to_string()),
+        neo4rs::BoltType::String(participant_id.to_string()),
     );
 
     let check_query = r#"
@@ -176,7 +181,7 @@ async fn process_session(
     let mut session_check_params = HashMap::new();
     session_check_params.insert(
         "session_id".to_string(),
-        neo4rs::types::BoltType::String(session_id.clone()),
+        neo4rs::BoltType::String(session_id.clone()),
     );
 
     let session_check_query = r#"
@@ -200,32 +205,32 @@ async fn process_session(
     let mut create_params = HashMap::new();
     create_params.insert(
         "participant_id".to_string(),
-        neo4rs::types::BoltType::String(participant_id.to_string()),
+        neo4rs::BoltType::String(participant_id.to_string()),
     );
     create_params.insert(
         "session_id".to_string(),
-        neo4rs::types::BoltType::String(session_id.clone()),
+        neo4rs::BoltType::String(session_id.clone()),
     );
     create_params.insert(
         "session_index".to_string(),
-        neo4rs::types::BoltType::Integer(session_index),
+        neo4rs::BoltType::Integer(session_index),
     );
     create_params.insert(
         "start_ts".to_string(),
-        neo4rs::types::BoltType::Integer(start_time),
+        neo4rs::BoltType::Integer(start_time),
     );
     create_params.insert(
         "end_ts".to_string(),
-        end_time.map(neo4rs::types::BoltType::Integer)
-            .unwrap_or(neo4rs::types::BoltType::Null),
+        end_time.map(neo4rs::BoltType::Integer)
+            .unwrap_or(neo4rs::BoltType::Null),
     );
     create_params.insert(
         "events".to_string(),
-        neo4rs::types::BoltType::String(serde_json::to_string(events)?),
+        neo4rs::BoltType::String(serde_json::to_string(events)?),
     );
     create_params.insert(
         "created_at".to_string(),
-        neo4rs::types::BoltType::String(chrono::Utc::now().to_rfc3339()),
+        neo4rs::BoltType::String(chrono::Utc::now().to_rfc3339()),
     );
 
     let create_query = r#"
