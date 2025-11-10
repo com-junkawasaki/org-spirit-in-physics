@@ -152,7 +152,7 @@ export default function TimelineChart({
       .style('opacity', 0.5)
 
     // 複数軸の設定
-    const yAxisCount = 4; // 反応値、反応時間、生理閾値、感情変化
+    const yAxisCount = 7; // 反応値、反応時間、生理閾値、Burst感情、Face感情、Language感情、Prosody感情
     const axisHeight = innerHeight / yAxisCount;
 
     // 各軸のスケール設定
@@ -168,9 +168,35 @@ export default function TimelineChart({
       .domain([0, 100]) // 生理データの閾値
       .range([axisHeight * 2.5, axisHeight * 2.1]);
 
-    const emotionScale = d3.scaleLinear()
-      .domain([0, 1]) // 感情変化スコア
+    // 感情データをfileTypeで分類
+    const burstEmotions = filteredDataSorted.flatMap(d => 
+      d.emotions.filter(e => e.fileType === 'burst').map(e => e.score)
+    );
+    const faceEmotions = filteredDataSorted.flatMap(d => 
+      d.emotions.filter(e => e.fileType === 'face').map(e => e.score)
+    );
+    const languageEmotions = filteredDataSorted.flatMap(d => 
+      d.emotions.filter(e => e.fileType === 'language').map(e => e.score)
+    );
+    const prosodyEmotions = filteredDataSorted.flatMap(d => 
+      d.emotions.filter(e => e.fileType === 'prosody').map(e => e.score)
+    );
+
+    const burstEmotionScale = d3.scaleLinear()
+      .domain([0, burstEmotions.length > 0 ? d3.max(burstEmotions) || 1 : 1])
       .range([axisHeight * 3.5, axisHeight * 3.1]);
+
+    const faceEmotionScale = d3.scaleLinear()
+      .domain([0, faceEmotions.length > 0 ? d3.max(faceEmotions) || 1 : 1])
+      .range([axisHeight * 4.5, axisHeight * 4.1]);
+
+    const languageEmotionScale = d3.scaleLinear()
+      .domain([0, languageEmotions.length > 0 ? d3.max(languageEmotions) || 1 : 1])
+      .range([axisHeight * 5.5, axisHeight * 5.1]);
+
+    const prosodyEmotionScale = d3.scaleLinear()
+      .domain([0, prosodyEmotions.length > 0 ? d3.max(prosodyEmotions) || 1 : 1])
+      .range([axisHeight * 6.5, axisHeight * 6.1]);
 
     // 単語表示（時間軸上）
     if (filters.wordDisplay && filters.showWordLabels) {
@@ -256,39 +282,136 @@ export default function TimelineChart({
         .style('cursor', 'pointer');
     }
 
-    // 感情変化
+    // 感情変化（4種類に分けて表示）
     if (filters.emotionChange) {
-      g.selectAll('.emotion-change-point')
-        .data(filteredDataSorted.filter(d => d.emotions.length > 0))
-        .enter()
-        .append('circle')
-        .attr('class', 'emotion-change-point')
-        .attr('cx', d => xScale(new Date(d.timestamp)))
-        .attr('cy', _d => emotionScale(Math.random())) // デモ用
-        .attr('r', 3)
-        .style('fill', '#9333ea')
-        .style('stroke', '#fff')
-        .style('stroke-width', 1)
-        .style('cursor', 'pointer')
-        .on('mouseover', (event, d) => {
-          onDataPointSelect(d)
-          onTooltipShow(event, d)
-        })
-        .on('mouseout', () => {
-          onDataPointSelect(null)
-          onTooltipHide()
+      // Burst感情
+      filteredDataSorted.forEach(d => {
+        d.emotions.filter(e => e.fileType === 'burst').forEach(emotion => {
+          g.append('circle')
+            .attr('class', 'emotion-burst-point')
+            .attr('cx', xScale(new Date(d.timestamp)))
+            .attr('cy', burstEmotionScale(emotion.score))
+            .attr('r', 3)
+            .style('fill', '#9333ea')
+            .style('stroke', '#fff')
+            .style('stroke-width', 1)
+            .style('cursor', 'pointer')
+            .on('mouseover', (event) => {
+              onDataPointSelect(d)
+              onTooltipShow(event, d)
+            })
+            .on('mouseout', () => {
+              onDataPointSelect(null)
+              onTooltipHide()
+            });
         });
+      });
+
+      // Face感情
+      filteredDataSorted.forEach(d => {
+        d.emotions.filter(e => e.fileType === 'face').forEach(emotion => {
+          g.append('circle')
+            .attr('class', 'emotion-face-point')
+            .attr('cx', xScale(new Date(d.timestamp)))
+            .attr('cy', faceEmotionScale(emotion.score))
+            .attr('r', 3)
+            .style('fill', '#ec4899')
+            .style('stroke', '#fff')
+            .style('stroke-width', 1)
+            .style('cursor', 'pointer')
+            .on('mouseover', (event) => {
+              onDataPointSelect(d)
+              onTooltipShow(event, d)
+            })
+            .on('mouseout', () => {
+              onDataPointSelect(null)
+              onTooltipHide()
+            });
+        });
+      });
+
+      // Language感情
+      filteredDataSorted.forEach(d => {
+        d.emotions.filter(e => e.fileType === 'language').forEach(emotion => {
+          g.append('circle')
+            .attr('class', 'emotion-language-point')
+            .attr('cx', xScale(new Date(d.timestamp)))
+            .attr('cy', languageEmotionScale(emotion.score))
+            .attr('r', 3)
+            .style('fill', '#10b981')
+            .style('stroke', '#fff')
+            .style('stroke-width', 1)
+            .style('cursor', 'pointer')
+            .on('mouseover', (event) => {
+              onDataPointSelect(d)
+              onTooltipShow(event, d)
+            })
+            .on('mouseout', () => {
+              onDataPointSelect(null)
+              onTooltipHide()
+            });
+        });
+      });
+
+      // Prosody感情
+      filteredDataSorted.forEach(d => {
+        d.emotions.filter(e => e.fileType === 'prosody').forEach(emotion => {
+          g.append('circle')
+            .attr('class', 'emotion-prosody-point')
+            .attr('cx', xScale(new Date(d.timestamp)))
+            .attr('cy', prosodyEmotionScale(emotion.score))
+            .attr('r', 3)
+            .style('fill', '#f59e0b')
+            .style('stroke', '#fff')
+            .style('stroke-width', 1)
+            .style('cursor', 'pointer')
+            .on('mouseover', (event) => {
+              onDataPointSelect(d)
+              onTooltipShow(event, d)
+            })
+            .on('mouseout', () => {
+              onDataPointSelect(null)
+              onTooltipHide()
+            });
+        });
+      });
     }
 
-    // 感情データの詳細表示
+    // 感情データの詳細表示（fileTypeに応じて適切なスケールを使用）
     if (filters.showEmotionDetails) {
       filteredDataSorted.forEach(d => {
         if (d.emotions.length > 0) {
           // 感情データポイントを個別に表示
           d.emotions.forEach((emotion) => {
+            // fileTypeに応じて適切なスケールを選択
+            let emotionYScale: d3.ScaleLinear<number, number>;
+            let baseColor: string;
+            
+            switch (emotion.fileType) {
+              case 'burst':
+                emotionYScale = burstEmotionScale;
+                baseColor = '#9333ea';
+                break;
+              case 'face':
+                emotionYScale = faceEmotionScale;
+                baseColor = '#ec4899';
+                break;
+              case 'language':
+                emotionYScale = languageEmotionScale;
+                baseColor = '#10b981';
+                break;
+              case 'prosody':
+                emotionYScale = prosodyEmotionScale;
+                baseColor = '#f59e0b';
+                break;
+              default:
+                emotionYScale = burstEmotionScale;
+                baseColor = '#9333ea';
+            }
+
             const emotionGroup = g.append('g')
               .attr('class', 'emotion-detail-group')
-              .attr('transform', `translate(${xScale(new Date(d.timestamp))}, ${emotionScale(emotion.score)})`)
+              .attr('transform', `translate(${xScale(new Date(d.timestamp))}, ${emotionYScale(emotion.score)})`)
 
             // 感情の色を決定
             const emotionColors: Record<string, string> = {
@@ -304,7 +427,7 @@ export default function TimelineChart({
               'confusion': '#6366f1'
             }
 
-            const color = emotionColors[(emotion.name || 'unknown').toLowerCase()] || '#9333ea'
+            const color = emotionColors[(emotion.name || 'unknown').toLowerCase()] || baseColor
 
             emotionGroup.append('circle')
               .attr('r', 4)
@@ -362,12 +485,76 @@ export default function TimelineChart({
       .style('font-size', '12px')
       .style('fill', '#666')
 
+    // 各Y軸の描画
+    // 反応値軸
     g.append('g')
-      .attr('class', 'y-axis')
-      .call(d3.axisLeft(yScale))
+      .attr('class', 'y-axis-reaction-value')
+      .attr('transform', `translate(0,${axisHeight * 0.3})`)
+      .call(d3.axisLeft(reactionValueScale).ticks(3))
       .selectAll('text')
-      .style('font-size', '12px')
-      .style('fill', '#666')
+      .style('font-size', '10px')
+      .style('fill', '#333')
+      .style('opacity', filters.reactionValues ? 1 : 0.3);
+
+    // 反応時間軸
+    g.append('g')
+      .attr('class', 'y-axis-reaction-time')
+      .attr('transform', `translate(0,${axisHeight * 1.3})`)
+      .call(d3.axisLeft(reactionTimeScale).ticks(3))
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('fill', '#333')
+      .style('opacity', filters.reactionTime ? 1 : 0.3);
+
+    // 生理閾値軸
+    g.append('g')
+      .attr('class', 'y-axis-physiological')
+      .attr('transform', `translate(0,${axisHeight * 2.3})`)
+      .call(d3.axisLeft(physiologicalScale).ticks(3))
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('fill', '#333')
+      .style('opacity', filters.physiologicalThreshold ? 1 : 0.3);
+
+    // Burst感情軸
+    g.append('g')
+      .attr('class', 'y-axis-emotion-burst')
+      .attr('transform', `translate(0,${axisHeight * 3.3})`)
+      .call(d3.axisLeft(burstEmotionScale).ticks(3))
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('fill', '#9333ea')
+      .style('opacity', filters.emotionChange ? 1 : 0.3);
+
+    // Face感情軸
+    g.append('g')
+      .attr('class', 'y-axis-emotion-face')
+      .attr('transform', `translate(0,${axisHeight * 4.3})`)
+      .call(d3.axisLeft(faceEmotionScale).ticks(3))
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('fill', '#ec4899')
+      .style('opacity', filters.emotionChange ? 1 : 0.3);
+
+    // Language感情軸
+    g.append('g')
+      .attr('class', 'y-axis-emotion-language')
+      .attr('transform', `translate(0,${axisHeight * 5.3})`)
+      .call(d3.axisLeft(languageEmotionScale).ticks(3))
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('fill', '#10b981')
+      .style('opacity', filters.emotionChange ? 1 : 0.3);
+
+    // Prosody感情軸
+    g.append('g')
+      .attr('class', 'y-axis-emotion-prosody')
+      .attr('transform', `translate(0,${axisHeight * 6.3})`)
+      .call(d3.axisLeft(prosodyEmotionScale).ticks(3))
+      .selectAll('text')
+      .style('font-size', '10px')
+      .style('fill', '#f59e0b')
+      .style('opacity', filters.emotionChange ? 1 : 0.3);
 
     // 軸ラベル
     g.append('text')
@@ -415,16 +602,53 @@ export default function TimelineChart({
       .text('生理閾値')
       .style('opacity', filters.physiologicalThreshold ? 1 : 0.3);
 
+    // 感情変化のY軸ラベル（4種類）
     g.append('text')
-      .attr('class', 'y-label-emotion')
+      .attr('class', 'y-label-emotion-burst')
       .attr('transform', 'rotate(-90)')
       .attr('y', 0 - margin.left)
       .attr('x', 0 - (axisHeight * 3.5))
       .attr('dy', '1em')
       .style('text-anchor', 'middle')
       .style('font-size', '12px')
-      .style('fill', '#333')
-      .text('感情変化')
+      .style('fill', '#9333ea')
+      .text('Burst感情')
+      .style('opacity', filters.emotionChange ? 1 : 0.3);
+
+    g.append('text')
+      .attr('class', 'y-label-emotion-face')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - margin.left)
+      .attr('x', 0 - (axisHeight * 4.5))
+      .attr('dy', '1em')
+      .style('text-anchor', 'middle')
+      .style('font-size', '12px')
+      .style('fill', '#ec4899')
+      .text('Face感情')
+      .style('opacity', filters.emotionChange ? 1 : 0.3);
+
+    g.append('text')
+      .attr('class', 'y-label-emotion-language')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - margin.left)
+      .attr('x', 0 - (axisHeight * 5.5))
+      .attr('dy', '1em')
+      .style('text-anchor', 'middle')
+      .style('font-size', '12px')
+      .style('fill', '#10b981')
+      .text('Language感情')
+      .style('opacity', filters.emotionChange ? 1 : 0.3);
+
+    g.append('text')
+      .attr('class', 'y-label-emotion-prosody')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - margin.left)
+      .attr('x', 0 - (axisHeight * 6.5))
+      .attr('dy', '1em')
+      .style('text-anchor', 'middle')
+      .style('font-size', '12px')
+      .style('fill', '#f59e0b')
+      .text('Prosody感情')
       .style('opacity', filters.emotionChange ? 1 : 0.3);
 
     // 感情の凡例
