@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as d3 from 'd3'
+import { createGraphQLClient } from '@/lib/graphql-client'
 import type {
   TimelineDataPoint,
   TimelineVisualizationProps,
@@ -264,11 +265,11 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = useCallback(async () => {
     try {
-      const res = await fetch(`/api/participants/${participantId}/word2vec`)
-      const json = await res.json()
-      if (!json?.success) return
+      const client = createGraphQLClient()
+      const result = await client.getParticipantWord2Vec(participantId)
+      if (!result?.wordData) return
       const byWord: Record<string, { sum: number[]; count: number }> = {}
-      ;(json.wordData as Array<{ word: string; embedding: number[] }>).forEach((item) => {
+      ;(result.wordData as Array<{ word: string; embedding: number[] }>).forEach((item) => {
         if (!byWord[item.word]) byWord[item.word] = { sum: new Array(item.embedding.length).fill(0), count: 0 }
         const acc = byWord[item.word]
         for (let i = 0; i < item.embedding.length; i++) acc.sum[i] += item.embedding[i]

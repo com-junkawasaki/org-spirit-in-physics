@@ -143,6 +143,9 @@ export interface GraphQLClient {
   // Force graph data
   getParticipantForceGraphData(participantId: string): Promise<any | null>
 
+  // Word2Vec data
+  getParticipantWord2Vec(participantId: string): Promise<any | null>
+
   // Generic query method (for backward compatibility)
   query(cypherQuery: string, params?: Record<string, unknown>): Promise<any[]>
 }
@@ -633,6 +636,75 @@ export function createGraphQLClient(): GraphQLClient {
           return null
         }
         return data.data?.participantForceGraphData || null
+      } catch (fetchError: any) {
+        console.error('Fetch error:', fetchError.message)
+        return null
+      }
+    },
+
+    async getParticipantWord2Vec(participantId: string) {
+      const isServer = typeof window === 'undefined'
+      const url = isServer
+        ? (process.env.GRAPHQL_RUST_API_URL || 'http://graphql:8080/graphql')
+        : (process.env.NEXT_PUBLIC_GRAPHQL_RUST_API_URL || 'http://localhost:8080/graphql')
+
+      // For server-side, use direct fetch
+      if (isServer) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: `query ParticipantWord2Vec($participantId: String!) {
+                participantWord2Vec(participantId: $participantId) {
+                  wordData {
+                    word
+                    embedding
+                  }
+                }
+              }`,
+              variables: { participantId }
+            }),
+          })
+          if (!response.ok) {
+            console.error('Direct fetch failed:', response.status, response.statusText)
+            return null
+          }
+          const data = await response.json()
+          if (data.errors) {
+            console.error('GraphQL errors:', data.errors)
+            return null
+          }
+          return data.data?.participantWord2Vec || null
+        } catch (fetchError: any) {
+          console.error('Direct fetch error:', fetchError.message)
+          return null
+        }
+      }
+
+      // For client-side, use direct fetch
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `query ParticipantWord2Vec($participantId: String!) {
+              participantWord2Vec(participantId: $participantId) {
+                wordData {
+                  word
+                  embedding
+                }
+              }
+            }`,
+            variables: { participantId }
+          }),
+        })
+        const data = await response.json()
+        if (data.errors) {
+          console.error('GraphQL errors:', data.errors)
+          return null
+        }
+        return data.data?.participantWord2Vec || null
       } catch (fetchError: any) {
         console.error('Fetch error:', fetchError.message)
         return null

@@ -1245,16 +1245,84 @@ impl Query {
         Ok(participant_responses)
     }
 
-    // Temporarily disabled - will be fixed in a separate task
-    /*
+    // Merkle DAG: activities.participant_word2vec
+    // GraphQL query to fetch word2vec embeddings for a participant
+    // RDF: https://spirit-in-physics.gftd.ai/activity/participantWord2Vec
     #[graphql(name = "participantWord2Vec")]
     async fn participant_word2vec(&self, ctx: &Context<'_>, participant_id: String) -> GQLResult<ParticipantWord2VecResponse> {
-        // Placeholder implementation - would need word2vec embeddings from database or external service
+        let total_start = Instant::now();
+        eprintln!("[GraphQL] participant_word2vec: Starting query for participant_id={}", participant_id);
+        
+        // Get database connection pool
+        let pool_start = Instant::now();
+        let pool = ctx.data::<Arc<Pool<AsyncPgConnection>>>()
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_word2vec: Failed to get database pool: {:?}", e);
+                async_graphql::Error::new(format!("Database connection pool error: {:?}", e))
+            })?;
+        
+        let mut conn = pool.get().await
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_word2vec: Failed to acquire database connection: {:?}", e);
+                async_graphql::Error::new(format!("Failed to acquire database connection: {}", e))
+            })?;
+        let pool_ms = pool_start.elapsed().as_millis() as u64;
+        
+        // Parse participant ID
+        let participant_uuid = Uuid::parse_str(&participant_id)
+            .map_err(|e| {
+                eprintln!("[GraphQL] participant_word2vec: Invalid UUID format: participant_id={}, error={:?}", participant_id, e);
+                async_graphql::Error::new(format!("Invalid participant ID format '{}': {}", participant_id, e))
+            })?;
+        
+        // Fetch participant response data grouped by stimulus_word
+        let db_query_start = Instant::now();
+        eprintln!("[GraphQL] participant_word2vec: Fetching response data from database...");
+        type ResponseRow = (String,);
+        let all_words: Vec<ResponseRow> = 
+            participant_response_data::table
+                .filter(participant_response_data::participant_id.eq(participant_uuid))
+                .select(participant_response_data::stimulus_word)
+                .order(participant_response_data::stimulus_word.asc())
+                .load(&mut conn)
+                .await
+                .map_err(|e| {
+                    eprintln!("[GraphQL] participant_word2vec: Database query error when fetching words: {:?}", e);
+                    async_graphql::Error::new(format!("Failed to fetch word data for participant {}: {}", participant_id, e))
+                })?;
+        
+        // Remove duplicates in Rust (since Diesel's distinct() requires different syntax)
+        use std::collections::HashSet;
+        let mut seen = HashSet::new();
+        let words: Vec<ResponseRow> = all_words
+            .into_iter()
+            .filter(|(word,)| seen.insert(word.clone()))
+            .collect();
+        
+        let db_query_ms = db_query_start.elapsed().as_millis() as u64;
+        eprintln!("[GraphQL] participant_word2vec: Fetched {} unique words", words.len());
+        
+        // Convert to Word2VecData format
+        // Note: Currently, word2vec_component is a single Float value in participant_analysis_results,
+        // but Word2VecData expects an embedding vector (array). For now, we return empty arrays.
+        // In the future, this should fetch embeddings from an external service (e.g., TerminusDB).
+        let processing_start = Instant::now();
+        let word_data: Vec<Word2VecData> = words.into_iter().map(|(word,)| {
+            Word2VecData {
+                word,
+                embedding: vec![], // Placeholder: empty array until external service integration
+            }
+        }).collect();
+        let processing_ms = processing_start.elapsed().as_millis() as u64;
+        
+        let total_ms = total_start.elapsed().as_millis() as u64;
+        eprintln!("[Performance] participant_word2vec: pool_ms={}, db_query_ms={}, processing_ms={}, total_ms={}, word_count={}", 
+            pool_ms, db_query_ms, processing_ms, total_ms, word_data.len());
+        
         Ok(ParticipantWord2VecResponse { 
-            word_data: vec![] 
+            word_data 
         })
     }
-    */
 
     // async fn dashboard_stats(&self, ctx: &Context<'_>) -> GQLResult<DashboardStats> {
     //     Ok(DashboardStats {

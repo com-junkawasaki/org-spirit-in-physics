@@ -283,7 +283,7 @@ export async function GET(
     }
 
     const graphqlMs = Date.now() - graphqlStart
-    
+
     const timelineResponse = result.data?.participantTimeline
 
     if (!timelineResponse) {
@@ -338,7 +338,7 @@ export async function GET(
     }))
 
     const transformMs = Date.now() - transformStart
-    
+
     console.log('[Timeline API] Successfully processed timeline data:', {
       dataPointsCount: timelineData.length,
       metadata: timelineResponse.metadata,
