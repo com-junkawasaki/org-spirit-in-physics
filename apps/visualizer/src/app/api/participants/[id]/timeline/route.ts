@@ -166,8 +166,18 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
     // 新しい構造の場合
     let sessionData: any;
     if (sessionResults[0].events) {
+      // eventsがJSON文字列の場合はパース、配列の場合はそのまま使用
+      let events = sessionResults[0].events;
+      if (typeof events === 'string') {
+        try {
+          events = JSON.parse(events);
+        } catch (e) {
+          console.warn('Failed to parse events JSON:', e);
+          events = [];
+        }
+      }
       sessionData = {
-        events: sessionResults[0].events || []
+        events: Array.isArray(events) ? events : []
       };
     } else {
       // 古い構造の場合
@@ -252,9 +262,22 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
         const emotionData = result.emotionData;
         const source = result.source || 'unknown';
         
-        // emotion_scoresから感情データを抽出
+        // emotion_scoresから感情データを抽出（JSON文字列の場合も対応）
+        let emotionScoresObj: any = {};
         if (emotionData.emotion_scores) {
-          const emotions = Object.entries(emotionData.emotion_scores).map(([name, score]) => ({
+          if (typeof emotionData.emotion_scores === 'string') {
+            try {
+              emotionScoresObj = JSON.parse(emotionData.emotion_scores);
+            } catch (e) {
+              console.warn('Failed to parse emotion_scores JSON:', e);
+            }
+          } else {
+            emotionScoresObj = emotionData.emotion_scores;
+          }
+        }
+        
+        if (Object.keys(emotionScoresObj).length > 0) {
+          const emotions = Object.entries(emotionScoresObj).map(([name, score]) => ({
             name,
             score: Math.min(Math.max(Number(score) || 0, 0), 1)
           }));

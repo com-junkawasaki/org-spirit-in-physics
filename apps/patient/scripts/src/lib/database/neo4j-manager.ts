@@ -119,7 +119,7 @@ export class Neo4jManager {
       await this.client.insertSession(session.participantId, sessionIndex, {
         start_ts: new Date(sessionStartedEvent?.timestamp || session.createdAt).getTime(),
         end_ts: sessionEndedEvent?.timestamp ? new Date(sessionEndedEvent.timestamp).getTime() : null,
-        events: session.events,
+        events: JSON.stringify(session.events),
         created_at: session.createdAt
       });
 

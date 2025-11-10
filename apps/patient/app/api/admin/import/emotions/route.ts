@@ -442,7 +442,7 @@ async function storeEmotionEntry(emotionRecord: any) {
       CREATE (e:EmotionAnalysis {
         id: $emotionAnalysisId,
         response_id: $responseId,
-        emotion_data: $emotionData,
+        emotion_data: $emotionDataJson,
         confidence_score: $confidence,
         analysis_timestamp: $timestamp,
         source: 'HumeAI',
@@ -456,13 +456,13 @@ async function storeEmotionEntry(emotionRecord: any) {
     await neo4jClient.query(createEmotionQuery, {
       emotionAnalysisId,
       responseId,
-      emotionData: {
+      emotionDataJson: JSON.stringify({
         text: emotionRecord.text,
         beginTime: emotionRecord.beginTime,
         endTime: emotionRecord.endTime,
         emotions: emotionRecord.emotions,
         position: emotionRecord.position
-      },
+      }),
       confidence: emotionRecord.confidence || 0.5,
       timestamp: new Date().toISOString()
     });
@@ -936,7 +936,7 @@ async function storeProsodyEmotionData(participantId: string, record: Record<str
         end_time: $endTime,
         confidence: $confidence,
         speaker_confidence: $speakerConfidence,
-        emotion_scores: $emotionScores,
+        emotion_scores: $emotionScoresJson,
         created_at: $createdAt
       })
       CREATE (s)-[:HAS_PROSODY_EMOTION_DATA]->(p)
@@ -953,7 +953,7 @@ async function storeProsodyEmotionData(participantId: string, record: Record<str
       endTime: record.EndTime ? parseFloat(record.EndTime) : null,
       confidence: record.Confidence ? parseFloat(record.Confidence) : null,
       speakerConfidence: record.SpeakerConfidence ? parseFloat(record.SpeakerConfidence) : null,
-      emotionScores,
+      emotionScoresJson: JSON.stringify(emotionScores),
       createdAt: new Date().toISOString()
     });
   } catch (error) {
