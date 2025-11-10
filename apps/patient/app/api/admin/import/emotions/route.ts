@@ -72,26 +72,39 @@ async function importEmotionsFromDataset() {
           continue;
         }
 
-        // Merkle DAG: import.emotions.check_existing
-        // 既存感情データのチェック
+        // Merkle DAG: import.emotions.delete_existing
+        // 既存感情データを削除（古いデータを除去）
         const existingEmotions = await checkExistingEmotionData(participantId);
         if (existingEmotions) {
-          results.push({
-            participantId,
-            status: 'skipped',
-            message: 'Emotion data already exists for this participant'
-          });
-          continue;
+          console.log(`Deleting existing emotion data for participant ${participantId}`);
+          await deleteExistingEmotionData(participantId);
         }
 
         // Merkle DAG: import.emotions.read_predictions
         // HumeAI_predictions JSONファイルを動的に検索して読み取り
+        console.log(`Searching for predictions file in: ${humeArtifactsDir}`);
         const predictionsFilePath = await findHumePredictionsFile(humeArtifactsDir);
+        console.log(`Found predictions file: ${predictionsFilePath}`);
+        
         if (!predictionsFilePath) {
           results.push({
             participantId,
             status: 'skipped',
             message: 'HumeAI_predictions JSON file not found'
+          });
+          continue;
+        }
+        
+        // ファイルが存在するか確認
+        try {
+          await fs.access(predictionsFilePath);
+          console.log(`Reading predictions file: ${predictionsFilePath}`);
+        } catch (error) {
+          console.error(`Predictions file not accessible: ${predictionsFilePath}`, error);
+          results.push({
+            participantId,
+            status: 'error',
+            message: `Predictions file not accessible: ${predictionsFilePath}`
           });
           continue;
         }
@@ -174,12 +187,17 @@ async function findHumeArtifactsDirectory(participantPath: string): Promise<stri
 }
 
 // Merkle DAG: import.emotions.check_existing_data
-// 既存感情データチェック関数
+// 既存感情データチェック関数（新しい構造に対応）
 async function checkExistingEmotionData(participantId: string): Promise<boolean> {
   try {
+    // 新しい構造（BurstEmotionData, FaceEmotionData, LanguageEmotionData, ProsodyEmotionData）をチェック
     const query = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(:Session)-[:HAS_RESPONSE]->(:Response)<-[:ANALYZES]-(e:EmotionAnalysis)
-      RETURN count(e) as emotionCount
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      OPTIONAL MATCH (s)-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
+      OPTIONAL MATCH (s)-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
+      OPTIONAL MATCH (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
+      OPTIONAL MATCH (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
+      RETURN count(b) + count(f) + count(l) + count(pr) as emotionCount
     `;
     const result = await neo4jClient.query(query, { participantId });
     const emotionCount = result[0]?.emotionCount || 0;
@@ -190,40 +208,165 @@ async function checkExistingEmotionData(participantId: string): Promise<boolean>
   }
 }
 
+// Merkle DAG: import.emotions.delete_existing_data
+// 既存感情データ削除関数（古いデータを削除）
+async function deleteExistingEmotionData(participantId: string): Promise<void> {
+  try {
+    // 新しい構造の感情データを削除
+    const deleteQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      OPTIONAL MATCH (s)-[r1:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
+      OPTIONAL MATCH (s)-[r2:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
+      OPTIONAL MATCH (s)-[r3:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
+      OPTIONAL MATCH (s)-[r4:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
+      DELETE r1, b, r2, f, r3, l, r4, pr
+      RETURN count(b) + count(f) + count(l) + count(pr) as deletedCount
+    `;
+    const result = await neo4jClient.query(deleteQuery, { participantId });
+    const deletedCount = result[0]?.deletedCount || 0;
+    console.log(`Deleted ${deletedCount} emotion data nodes for participant ${participantId}`);
+  } catch (error) {
+    console.error(`Error deleting existing emotion data ${participantId}:`, error);
+    throw error;
+  }
+}
+
 // Merkle DAG: import.emotions.process_data
 // 感情データ処理関数
 async function processEmotionData(participantId: string, predictionsData: any) {
   let entriesProcessed = 0;
   let totalEmotions = 0;
 
+  console.log(`Processing emotion data for participant ${participantId}, data type: ${typeof predictionsData}, isArray: ${Array.isArray(predictionsData)}`);
+
   // Hume AIの感情データを処理
-  if (predictionsData && Array.isArray(predictionsData)) {
-    for (const entry of predictionsData) {
-      if (entry.emotions && Array.isArray(entry.emotions)) {
-        entriesProcessed++;
-
-        // 各感情エントリを処理
-        const emotionRecord = {
-          participantId,
-          text: entry.text,
-          beginTime: entry.time?.begin,
-          endTime: entry.time?.end,
-          confidence: entry.confidence,
-          emotions: entry.emotions.map((emotion: any) => ({
-            name: emotion.name,
-            score: emotion.score
-          })),
-          position: entry.position
-        };
-
-        totalEmotions += entry.emotions.length;
-
-        // Neo4jに感情データを格納
-        await storeEmotionEntry(emotionRecord);
+  // predictionsDataは配列で、各要素が{results: [...], source: "..."}の構造
+  let entries: any[] = [];
+  
+  if (Array.isArray(predictionsData)) {
+    // 配列の各要素からresultsを抽出
+    for (const item of predictionsData) {
+      if (item.results) {
+        if (Array.isArray(item.results)) {
+          entries.push(...item.results);
+        } else if (typeof item.results === 'object') {
+          // resultsがオブジェクトの場合、predictionsキーを探す
+          if (item.results.predictions && Array.isArray(item.results.predictions)) {
+            // predictions配列の各要素を処理
+            for (const prediction of item.results.predictions) {
+              if (prediction.models && prediction.models.language && prediction.models.language.grouped_predictions) {
+                // ネストされた構造の場合
+                const grouped = prediction.models.language.grouped_predictions;
+                for (const group of grouped) {
+                  if (group.predictions && Array.isArray(group.predictions)) {
+                    entries.push(...group.predictions);
+                  }
+                }
+              } else {
+                entries.push(prediction);
+              }
+            }
+          } else {
+            // その他のキーの値を配列として扱う
+            const resultValues = Object.values(item.results);
+            for (const resultValue of resultValues) {
+              if (Array.isArray(resultValue)) {
+                entries.push(...resultValue);
+              } else if (resultValue && typeof resultValue === 'object') {
+                entries.push(resultValue);
+              }
+            }
+          }
+        }
+      } else if (item.models && item.models.language && item.models.language.grouped_predictions) {
+        // ネストされた構造の場合
+        const grouped = item.models.language.grouped_predictions;
+        for (const group of grouped) {
+          if (group.predictions && Array.isArray(group.predictions)) {
+            entries.push(...group.predictions);
+          }
+        }
+      } else if (item.emotions && Array.isArray(item.emotions)) {
+        // 直接emotionsがある場合
+        entries.push(item);
       }
+    }
+  } else if (predictionsData && typeof predictionsData === 'object') {
+    // オブジェクトの場合
+    if (predictionsData.results) {
+      if (Array.isArray(predictionsData.results)) {
+        entries = predictionsData.results;
+      } else if (typeof predictionsData.results === 'object') {
+        const resultValues = Object.values(predictionsData.results);
+        entries = resultValues.filter((v: any) => v && typeof v === 'object').flat();
+      }
+    } else if (predictionsData.predictions && Array.isArray(predictionsData.predictions)) {
+      entries = predictionsData.predictions;
     }
   }
 
+  console.log(`Found ${entries.length} entries to process`);
+
+  for (const emotionEntry of entries) {
+    if (!emotionEntry) continue;
+    
+    // 感情データの構造を確認
+    let emotions: any[] = [];
+    let text = '';
+    let beginTime: number | null = null;
+    let endTime: number | null = null;
+    let confidence = 0.5;
+    
+    if (emotionEntry.emotions && Array.isArray(emotionEntry.emotions)) {
+      // 直接emotionsがある場合
+      emotions = emotionEntry.emotions;
+      text = emotionEntry.text || '';
+      beginTime = emotionEntry.time?.begin || emotionEntry.begin_time;
+      endTime = emotionEntry.time?.end || emotionEntry.end_time;
+      confidence = emotionEntry.confidence || 0.5;
+    } else if (emotionEntry.models && emotionEntry.models.language && emotionEntry.models.language.grouped_predictions) {
+      // ネストされた構造の場合
+      const grouped = emotionEntry.models.language.grouped_predictions;
+      for (const group of grouped) {
+        if (group.predictions && Array.isArray(group.predictions)) {
+          for (const pred of group.predictions) {
+            if (pred.emotions && Array.isArray(pred.emotions)) {
+              emotions.push(...pred.emotions);
+            }
+            if (pred.text) text = pred.text;
+            if (pred.time?.begin) beginTime = pred.time.begin;
+            if (pred.time?.end) endTime = pred.time.end;
+            if (pred.confidence) confidence = pred.confidence;
+          }
+        }
+      }
+    }
+    
+    if (emotions.length > 0) {
+      entriesProcessed++;
+
+      // 各感情エントリを処理
+      const emotionRecord = {
+        participantId,
+        text,
+        beginTime,
+        endTime,
+        confidence,
+        emotions: emotions.map((emotion: any) => ({
+          name: emotion.name || emotion.emotion || 'unknown',
+          score: emotion.score || emotion.value || 0
+        })),
+        position: emotionEntry.position
+      };
+
+      totalEmotions += emotions.length;
+
+      // Neo4jに感情データを格納
+      await storeEmotionEntry(emotionRecord);
+    }
+  }
+
+  console.log(`Processed ${entriesProcessed} entries with ${totalEmotions} total emotions`);
   return { entriesProcessed, totalEmotions };
 }
 
@@ -479,8 +622,8 @@ async function storeBurstEmotionData(participantId: string, record: Record<strin
         record_id: $recordId,
         begin_time: $beginTime,
         end_time: $endTime,
-        emotion_scores: $emotionScores,
-        vocal_types: $vocalTypes,
+        emotion_scores: $emotionScoresJson,
+        vocal_types: $vocalTypesJson,
         created_at: $createdAt
       })
       CREATE (s)-[:HAS_BURST_EMOTION_DATA]->(b)
@@ -494,8 +637,8 @@ async function storeBurstEmotionData(participantId: string, record: Record<strin
       recordId: record.Id || 'unknown',
       beginTime: record.BeginTime ? parseFloat(record.BeginTime) : null,
       endTime: record.EndTime ? parseFloat(record.EndTime) : null,
-      emotionScores,
-      vocalTypes,
+      emotionScoresJson: JSON.stringify(emotionScores),
+      vocalTypesJson: JSON.stringify(vocalTypes),
       createdAt: new Date().toISOString()
     });
   } catch (error) {
@@ -584,8 +727,8 @@ async function storeFaceEmotionData(participantId: string, record: Record<string
         face_y0: $faceY0,
         face_width: $faceWidth,
         face_height: $faceHeight,
-        emotion_scores: $emotionScores,
-        au_scores: $auScores,
+        emotion_scores: $emotionScoresJson,
+        au_scores: $auScoresJson,
         created_at: $createdAt
       })
       CREATE (s)-[:HAS_FACE_EMOTION_DATA]->(f)
@@ -604,8 +747,8 @@ async function storeFaceEmotionData(participantId: string, record: Record<string
       faceY0: record.FaceY0 ? parseFloat(record.FaceY0) : null,
       faceWidth: record.FaceWidth ? parseFloat(record.FaceWidth) : null,
       faceHeight: record.FaceHeight ? parseFloat(record.FaceHeight) : null,
-      emotionScores,
-      auScores,
+      emotionScoresJson: JSON.stringify(emotionScores),
+      auScoresJson: JSON.stringify(auScores),
       createdAt: new Date().toISOString()
     });
   } catch (error) {
@@ -695,8 +838,8 @@ async function storeLanguageEmotionData(participantId: string, record: Record<st
         end_time: $endTime,
         confidence: $confidence,
         speaker_confidence: $speakerConfidence,
-        emotion_scores: $emotionScores,
-        toxicity_scores: $toxicityScores,
+        emotion_scores: $emotionScoresJson,
+        toxicity_scores: $toxicityScoresJson,
         created_at: $createdAt
       })
       CREATE (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l)
@@ -715,8 +858,8 @@ async function storeLanguageEmotionData(participantId: string, record: Record<st
       endTime: record.EndTime ? parseFloat(record.EndTime) : null,
       confidence: record.Confidence ? parseFloat(record.Confidence) : null,
       speakerConfidence: record.SpeakerConfidence ? parseFloat(record.SpeakerConfidence) : null,
-      emotionScores,
-      toxicityScores,
+      emotionScoresJson: JSON.stringify(emotionScores),
+      toxicityScoresJson: JSON.stringify(toxicityScores),
       createdAt: new Date().toISOString()
     });
   } catch (error) {

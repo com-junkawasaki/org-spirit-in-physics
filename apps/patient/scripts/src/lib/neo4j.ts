@@ -79,11 +79,12 @@ class Neo4jClient {
     }
     const query = `
       MATCH (p:Participant {id: $participantId})
-      CREATE (p)-[:HAS_SESSION]->(s:Session)
+      MERGE (s:Session {id: $sessionId})
       SET s = $props
+      MERGE (p)-[:HAS_SESSION]->(s)
       RETURN s
     `
-    const result = await this.query(query, { participantId, props: properties })
+    const result = await this.query(query, { participantId, sessionId, props: properties })
     return result[0]?.s || null
   }
 

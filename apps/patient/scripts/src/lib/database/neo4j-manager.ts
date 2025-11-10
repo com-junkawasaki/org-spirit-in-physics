@@ -112,12 +112,15 @@ export class Neo4jManager {
       const sessionEndedEvent = session.events.filter((e: any) => e.type === 'response_window_closed').pop();
 
       // セッションインデックスを抽出（session.idから）
-      const sessionIndex = parseInt(session.id.split('_')[1] || '0') || 0;
+      // session.idの形式: ${participantId}-${sessionIndex} または ${participantId}_${sessionIndex}
+      const parts = session.id.split(/[-_]/);
+      const sessionIndex = parts.length > 1 ? parseInt(parts[parts.length - 1] || '0') || 0 : 0;
 
       await this.client.insertSession(session.participantId, sessionIndex, {
         start_ts: new Date(sessionStartedEvent?.timestamp || session.createdAt).getTime(),
         end_ts: sessionEndedEvent?.timestamp ? new Date(sessionEndedEvent.timestamp).getTime() : null,
-        events: session.events
+        events: session.events,
+        created_at: session.createdAt
       });
 
       console.log(`Session ${session.id} saved to Neo4j`);

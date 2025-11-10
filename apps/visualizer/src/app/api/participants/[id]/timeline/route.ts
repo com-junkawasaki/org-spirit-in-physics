@@ -134,22 +134,46 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
   try {
     console.log('Getting session data from Neo4j for participant:', participantId);
     
-    const sessionQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s.session_data as sessionData, s.id as sessionId, s.start_ts as startTs
-      ORDER BY s.start_ts DESC
+    // まず、新しい構造（Participant -> Session）を試す
+    let sessionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      RETURN s.events as events, s.id as sessionId, s.created_at as createdAt
+      ORDER BY s.created_at DESC
       LIMIT 1
     `;
     
-    console.log('Executing session query:', sessionQuery);
-    const sessionResults = await client.query(sessionQuery, { participantId });
-    console.log('Session query results count:', sessionResults.length);
+    console.log('Executing session query (new structure):', sessionQuery);
+    let sessionResults = await client.query(sessionQuery, { participantId });
+    console.log('Session query results count (new structure):', sessionResults.length);
+    
+    // 新しい構造でデータが見つからない場合、古い構造（Participant -> Experiment -> ExperimentSession）を試す
+    if (sessionResults.length === 0) {
+      sessionQuery = `
+        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+        RETURN s.session_data as sessionData, s.id as sessionId, s.start_ts as startTs
+        ORDER BY s.start_ts DESC
+        LIMIT 1
+      `;
+      console.log('Executing session query (old structure):', sessionQuery);
+      sessionResults = await client.query(sessionQuery, { participantId });
+      console.log('Session query results count (old structure):', sessionResults.length);
+    }
     
     if (sessionResults.length === 0) {
       throw new Error(`No session data found for participant: ${participantId}`);
     }
     
-    const sessionData = JSON.parse(sessionResults[0].sessionData || '{}');
+    // 新しい構造の場合
+    let sessionData: any;
+    if (sessionResults[0].events) {
+      sessionData = {
+        events: sessionResults[0].events || []
+      };
+    } else {
+      // 古い構造の場合
+      sessionData = JSON.parse(sessionResults[0].sessionData || '{}');
+    }
+    
     console.log('Parsed session data events count:', sessionData.events?.length || 0);
 
     // 単語表示イベントを基準点として抽出
@@ -169,7 +193,7 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
       events: sessionData.events || [],
       startTime,
       sessionId: sessionResults[0].sessionId,
-      startTs: sessionResults[0].startTs
+      startTs: sessionResults[0].startTs || sessionResults[0].createdAt
     };
 
   } catch (error) {
@@ -184,27 +208,81 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
   try {
     console.log('Getting emotion data from Neo4j for participant:', participantId);
     
-    const emotionQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
-      RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
-      ORDER BY ed.timestamp
+    // 新しい構造（Participant -> Session -> BurstEmotionData/FaceEmotionData/LanguageEmotionData/ProsodyEmotionData）を試す
+    let emotionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      OPTIONAL MATCH (s)-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
+      OPTIONAL MATCH (s)-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
+      OPTIONAL MATCH (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
+      OPTIONAL MATCH (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
+      WITH s,
+        collect(DISTINCT {name: 'burst', data: b}) as burstData,
+        collect(DISTINCT {name: 'face', data: f}) as faceData,
+        collect(DISTINCT {name: 'language', data: l}) as languageData,
+        collect(DISTINCT {name: 'prosody', data: pr}) as prosodyData
+      UNWIND (burstData + faceData + languageData + prosodyData) as emotionEntry
+      WHERE emotionEntry.data IS NOT NULL
+      RETURN emotionEntry.name as source, emotionEntry.data as emotionData
+      ORDER BY COALESCE(emotionEntry.data.begin_time, emotionEntry.data.time, 0)
     `;
     
-    console.log('Executing emotion query:', emotionQuery);
-    const emotionResults = await client.query(emotionQuery, { participantId });
-    console.log('Emotion query results count:', emotionResults.length);
+    console.log('Executing emotion query (new structure):', emotionQuery);
+    let emotionResults = await client.query(emotionQuery, { participantId });
+    console.log('Emotion query results count (new structure):', emotionResults.length);
     
-    const mappedResults = emotionResults.map((result: any) => ({
-      fileType: result.source || 'unknown',
-      beginTime: result.timestamp,
-      endTime: result.timestamp + 1000, // 1秒間隔で仮定
-      emotions: [{ 
-        name: result.name, 
-        score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
-      }],
-      sessionId: 'unknown'
-    }));
+    // 新しい構造でデータが見つからない場合、古い構造を試す
+    if (emotionResults.length === 0) {
+      emotionQuery = `
+        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+        MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
+        RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
+        ORDER BY ed.timestamp
+      `;
+      console.log('Executing emotion query (old structure):', emotionQuery);
+      emotionResults = await client.query(emotionQuery, { participantId });
+      console.log('Emotion query results count (old structure):', emotionResults.length);
+    }
+    
+    // 新しい構造の場合のマッピング
+    const mappedResults: any[] = [];
+    
+    if (emotionResults.length > 0 && emotionResults[0].emotionData) {
+      // 新しい構造（BurstEmotionData/FaceEmotionData/LanguageEmotionData/ProsodyEmotionData）
+      emotionResults.forEach((result: any) => {
+        const emotionData = result.emotionData;
+        const source = result.source || 'unknown';
+        
+        // emotion_scoresから感情データを抽出
+        if (emotionData.emotion_scores) {
+          const emotions = Object.entries(emotionData.emotion_scores).map(([name, score]) => ({
+            name,
+            score: Math.min(Math.max(Number(score) || 0, 0), 1)
+          }));
+          
+          mappedResults.push({
+            fileType: source,
+            beginTime: emotionData.begin_time || emotionData.time || 0,
+            endTime: emotionData.end_time || (emotionData.time ? emotionData.time + 1 : 1),
+            emotions,
+            sessionId: emotionData.session_id || 'unknown'
+          });
+        }
+      });
+    } else {
+      // 古い構造（EmotionData）
+      emotionResults.forEach((result: any) => {
+        mappedResults.push({
+          fileType: result.source || 'unknown',
+          beginTime: result.timestamp,
+          endTime: result.timestamp + 1000, // 1秒間隔で仮定
+          emotions: [{ 
+            name: result.name, 
+            score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
+          }],
+          sessionId: 'unknown'
+        });
+      });
+    }
 
     console.log('Mapped emotion results:', mappedResults.slice(0, 3));
     return mappedResults;
@@ -221,16 +299,30 @@ async function getPhysiologicalData(client: any, participantId: string): Promise
   try {
     console.log('Getting physiological data from Neo4j for participant:', participantId);
     
-    const physiologicalQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+    // 新しい構造（Participant -> Session -> PhysiologicalData）を試す
+    let physiologicalQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
       MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
       RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
       ORDER BY pd.timestamp
     `;
     
-    console.log('Executing physiological query:', physiologicalQuery);
-    const physiologicalResults = await client.query(physiologicalQuery, { participantId });
-    console.log('Physiological query results count:', physiologicalResults.length);
+    console.log('Executing physiological query (new structure):', physiologicalQuery);
+    let physiologicalResults = await client.query(physiologicalQuery, { participantId });
+    console.log('Physiological query results count (new structure):', physiologicalResults.length);
+    
+    // 新しい構造でデータが見つからない場合、古い構造を試す
+    if (physiologicalResults.length === 0) {
+      physiologicalQuery = `
+        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+        MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
+        RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
+        ORDER BY pd.timestamp
+      `;
+      console.log('Executing physiological query (old structure):', physiologicalQuery);
+      physiologicalResults = await client.query(physiologicalQuery, { participantId });
+      console.log('Physiological query results count (old structure):', physiologicalResults.length);
+    }
     
     // チャンネル別にデータをグループ化
     const channelData: Record<string, any[]> = {};
