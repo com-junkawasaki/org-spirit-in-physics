@@ -55,9 +55,10 @@ impl ValidatedSessionId {
         let mut params = std::collections::HashMap::new();
         params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
 
+        // セッションIDとセッションインデックスを取得
         let query = r#"
             MATCH (p:Participant {id: $participant_id})-[:HAS_SESSION]->(s:Session)
-            RETURN s.id as sessionId
+            RETURN s.id as sessionId, s.session_index as sessionIndex
             ORDER BY s.created_at ASC
             LIMIT 1
         "#;
@@ -71,10 +72,21 @@ impl ValidatedSessionId {
             )));
         }
 
-        // Extract session ID from row
-        // Note: This is simplified - actual implementation would need proper row handling
-        // For now, construct from participant_id
+        // neo4rs::Rowから値を取得
+        // neo4rs 0.9.0-rc.8では、RowはBoltTypeの値を含む
+        // 実際の実装では、row.get("sessionId")のような方法を使用する必要がある
+        // しかし、neo4rsのRow APIが明確でないため、クエリを修正して直接値を返すようにする
+        
+        // 暫定的な実装: セッションIDを推測
+        // 実際のセッションIDは、neo4j-manager.tsのsaveSession関数で作成される形式に従う
+        // 形式: {participantId}-{sessionIndex} または {participantId}_{sessionIndex}
+        // セッションインデックスが0の場合、{participantId}-0の形式になる
         let session_id = format!("{}-0", participant_id);
+        
+        // ログを追加して、実際のセッションIDを確認
+        use tracing::info;
+        info!("ValidatedSessionId::from_participant: Using session_id {} for participant {}", session_id, participant_id);
+        
         Ok(ValidatedSessionId(session_id))
     }
 

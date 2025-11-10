@@ -119,6 +119,8 @@ async function importEmotionsFromDataset() {
         // CSVデータ（バースト、韻律、言語）を処理
         const csvDataResult = await processEmotionCSVData(participantId, humeArtifactsDir);
 
+        console.log(`Participant ${participantId} import complete: emotion entries=${emotionResult.entriesProcessed}, CSV files=${csvDataResult.filesProcessed}, burst=${csvDataResult.burstCount}, face=${csvDataResult.faceCount}, language=${csvDataResult.languageCount}, prosody=${csvDataResult.prosodyCount}`);
+
         results.push({
           participantId,
           status: 'success',
@@ -126,7 +128,11 @@ async function importEmotionsFromDataset() {
           statistics: {
             emotionEntries: emotionResult.entriesProcessed,
             csvFilesProcessed: csvDataResult.filesProcessed,
-            totalEmotions: emotionResult.totalEmotions
+            totalEmotions: emotionResult.totalEmotions,
+            burstCount: csvDataResult.burstCount || 0,
+            faceCount: csvDataResult.faceCount || 0,
+            languageCount: csvDataResult.languageCount || 0,
+            prosodyCount: csvDataResult.prosodyCount || 0
           }
         });
 
@@ -476,14 +482,20 @@ async function storeEmotionEntry(emotionRecord: any) {
 // CSVデータ処理関数（複数のregistry_file-*ディレクトリを処理）
 async function processEmotionCSVData(participantId: string, artifactsDir: string) {
   let filesProcessed = 0;
+  let burstCount = 0;
+  let faceCount = 0;
+  let languageCount = 0;
+  let prosodyCount = 0;
 
   try {
     // 全てのregistry_file-* ディレクトリ内のCSVディレクトリを動的に検索
     const csvDirs = await findAllRegistryCSVDirectories(artifactsDir);
     
+    console.log(`Found ${csvDirs.length} CSV directories for participant ${participantId}`);
+    
     if (csvDirs.length === 0) {
       console.warn(`No CSV directories found in ${artifactsDir}`);
-      return { filesProcessed };
+      return { filesProcessed, burstCount, faceCount, languageCount, prosodyCount };
     }
 
     // CSVファイルの処理
@@ -491,55 +503,99 @@ async function processEmotionCSVData(participantId: string, artifactsDir: string
 
     // 各CSVディレクトリに対して処理
     for (const csvDir of csvDirs) {
-    for (const csvFile of csvFiles) {
-      const csvPath = path.join(csvDir, csvFile);
-      try {
-        await fs.access(csvPath);
-        // CSVデータを読み取り処理
-        const csvContent = await fs.readFile(csvPath, 'utf-8');
-        await processCSVFile(participantId, csvFile, csvContent);
-        filesProcessed++;
+      console.log(`Processing CSV directory: ${csvDir} for participant ${participantId}`);
+      for (const csvFile of csvFiles) {
+        const csvPath = path.join(csvDir, csvFile);
+        try {
+          await fs.access(csvPath);
+          // CSVデータを読み取り処理
+          const csvContent = await fs.readFile(csvPath, 'utf-8');
+          const records = parseCSVFile(csvContent);
+          console.log(`Processing ${records.length} records from ${csvFile} (path: ${csvPath}) for participant ${participantId}`);
+          
+          const processedCount = await processCSVFile(participantId, csvFile, csvContent);
+          filesProcessed++;
+          
+          switch (csvFile) {
+            case 'burst.csv':
+              burstCount += processedCount;
+              break;
+            case 'face.csv':
+              faceCount += processedCount;
+              break;
+            case 'language.csv':
+              languageCount += processedCount;
+              break;
+            case 'prosody.csv':
+              prosodyCount += processedCount;
+              break;
+          }
+          
+          console.log(`Successfully processed ${processedCount}/${records.length} records from ${csvFile} for participant ${participantId}`);
         } catch (error) {
           // CSVファイルが存在しない場合はスキップ
           console.warn(`CSV file ${csvFile} not found or error reading in ${csvDir}:`, error);
         }
       }
     }
+    
+    console.log(`Participant ${participantId} emotion CSV import summary: burst=${burstCount}, face=${faceCount}, language=${languageCount}, prosody=${prosodyCount}, total CSV files=${filesProcessed}`);
   } catch (error) {
     console.warn('Error processing CSV data:', error);
   }
 
-  return { filesProcessed };
+  return { filesProcessed, burstCount, faceCount, languageCount, prosodyCount };
 }
 
 // Merkle DAG: import.emotions.process_csv_file
 // 個別CSVファイル処理関数（CSVタイプに応じた専用の保存関数を呼び出す）
-async function processCSVFile(participantId: string, fileName: string, content: string) {
+async function processCSVFile(participantId: string, fileName: string, content: string): Promise<number> {
   try {
     // CSVファイルをパース
     const records = parseCSVFile(content);
     
     const fileType = fileName.replace('.csv', '');
+    let storedCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
     
     // CSVファイルタイプに応じた専用の保存関数を呼び出す
     for (const record of records) {
-      switch (fileType) {
-        case 'burst':
-          await storeBurstEmotionData(participantId, record);
-          break;
-        case 'face':
-          await storeFaceEmotionData(participantId, record);
-          break;
-        case 'language':
-          await storeLanguageEmotionData(participantId, record);
-          break;
-        case 'prosody':
-          await storeProsodyEmotionData(participantId, record);
-          break;
-        default:
-          console.warn(`Unknown CSV file type: ${fileType}`);
+      try {
+        switch (fileType) {
+          case 'burst':
+            await storeBurstEmotionData(participantId, record);
+            storedCount++;
+            break;
+          case 'face':
+            await storeFaceEmotionData(participantId, record);
+            storedCount++;
+            break;
+          case 'language':
+            await storeLanguageEmotionData(participantId, record);
+            storedCount++;
+            break;
+          case 'prosody':
+            await storeProsodyEmotionData(participantId, record);
+            storedCount++;
+            break;
+          default:
+            console.warn(`Unknown CSV file type: ${fileType}`);
+            errorCount++;
+        }
+      } catch (error) {
+        // 重複エラーなどはスキップとして扱う
+        if (error instanceof Error && error.message.includes('already exists')) {
+          skippedCount++;
+        } else {
+          errorCount++;
+          console.warn(`Error storing record from ${fileName} for participant ${participantId}:`, error);
+        }
       }
     }
+    
+    console.log(`Processed ${fileName} for participant ${participantId}: ${storedCount} stored, ${skippedCount} skipped, ${errorCount} errors`);
+    return storedCount;
   } catch (error) {
     console.error(`Error processing CSV file ${fileName} for ${participantId}:`, error);
     throw error;

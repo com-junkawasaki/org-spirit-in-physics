@@ -199,6 +199,12 @@ async fn process_emotions(
     // Process all CSV directories
     let csv_directories = find_all_registry_csv_directories(&hume_artifacts_dir).await?;
     let mut csv_files_processed = 0;
+    let mut burst_count = 0;
+    let mut face_count = 0;
+    let mut language_count = 0;
+    let mut prosody_count = 0;
+
+    info!("Found {} CSV directories for participant {}", csv_directories.len(), participant_id);
 
     for csv_dir in csv_directories {
         let csv_files = vec!["burst.csv", "face.csv", "language.csv", "prosody.csv"];
@@ -206,21 +212,36 @@ async fn process_emotions(
         for csv_file in csv_files {
             let csv_path = csv_dir.join(csv_file);
             if csv_path.exists() {
+                info!("Processing CSV file: {} for participant {}", csv_path.display(), participant_id);
                 match process_csv_file(txn, &validated_session_id, participant_id, &csv_path, csv_file).await {
                     Ok(count) => {
                         csv_files_processed += 1;
                         total_emotions += count;
+                        match csv_file {
+                            "burst.csv" => burst_count += count,
+                            "face.csv" => face_count += count,
+                            "language.csv" => language_count += count,
+                            "prosody.csv" => prosody_count += count,
+                            _ => {}
+                        }
+                        info!("Successfully processed {} records from {} for participant {}", count, csv_file, participant_id);
                     }
                     Err(e) => {
-                        warn!("Error processing CSV file {}: {}", csv_path.display(), e);
+                        warn!("Error processing CSV file {} for participant {}: {}", csv_path.display(), participant_id, e);
                     }
                 }
+            } else {
+                info!("CSV file not found: {} for participant {}", csv_path.display(), participant_id);
             }
         }
     }
 
-    info!("Emotions imported for participant {}: {} entries, {} CSV files", 
-          participant_id, emotion_entries_count, csv_files_processed);
+    info!("Emotions imported for participant {}: {} entries, {} CSV files, {} total emotions", 
+          participant_id, emotion_entries_count, csv_files_processed, total_emotions);
+    
+    // 詳細ログ: 各CSVタイプの処理結果
+    info!("Participant {} emotion import details: burst={}, face={}, language={}, prosody={}",
+          participant_id, burst_count, face_count, language_count, prosody_count);
 
     Ok(EmotionResult {
         participant_id: participant_id.to_string(),
@@ -395,37 +416,69 @@ async fn process_csv_file(
     let content = fs::read_to_string(csv_path).await?;
     let records = parse_csv_file(&content)?;
 
+    info!("Processing {} records from {} (type: {}) for participant {}", 
+          records.len(), csv_path.display(), csv_type, participant_id);
+
     let mut count = 0;
+    let mut skipped = 0;
+    let mut errors = 0;
 
     match csv_type {
         "burst.csv" => {
             for record in records {
-                store_burst_emotion_data(txn, session_id, participant_id, &record).await?;
-                count += 1;
+                match store_burst_emotion_data(txn, session_id, participant_id, &record).await {
+                    Ok(()) => count += 1,
+                    Err(ImportError::Validation(_)) => skipped += 1, // Duplicate
+                    Err(e) => {
+                        errors += 1;
+                        warn!("Error storing burst emotion data for participant {}: {}", participant_id, e);
+                    }
+                }
             }
         }
         "face.csv" => {
             for record in records {
-                store_face_emotion_data(txn, session_id, participant_id, &record).await?;
-                count += 1;
+                match store_face_emotion_data(txn, session_id, participant_id, &record).await {
+                    Ok(()) => count += 1,
+                    Err(ImportError::Validation(_)) => skipped += 1, // Duplicate
+                    Err(e) => {
+                        errors += 1;
+                        warn!("Error storing face emotion data for participant {}: {}", participant_id, e);
+                    }
+                }
             }
         }
         "language.csv" => {
             for record in records {
-                store_language_emotion_data(txn, session_id, participant_id, &record).await?;
-                count += 1;
+                match store_language_emotion_data(txn, session_id, participant_id, &record).await {
+                    Ok(()) => count += 1,
+                    Err(ImportError::Validation(_)) => skipped += 1, // Duplicate
+                    Err(e) => {
+                        errors += 1;
+                        warn!("Error storing language emotion data for participant {}: {}", participant_id, e);
+                    }
+                }
             }
         }
         "prosody.csv" => {
             for record in records {
-                store_prosody_emotion_data(txn, session_id, participant_id, &record).await?;
-                count += 1;
+                match store_prosody_emotion_data(txn, session_id, participant_id, &record).await {
+                    Ok(()) => count += 1,
+                    Err(ImportError::Validation(_)) => skipped += 1, // Duplicate
+                    Err(e) => {
+                        errors += 1;
+                        warn!("Error storing prosody emotion data for participant {}: {}", participant_id, e);
+                    }
+                }
             }
         }
         _ => {
             return Err(ImportError::Validation(format!("Unknown CSV type: {}", csv_type)));
         }
     }
+
+    info!("Processed {} (type: {}): {} stored, {} skipped, {} errors", 
+          csv_path.display(), csv_type, count, skipped, errors);
 
     Ok(count)
 }
