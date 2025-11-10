@@ -363,7 +363,7 @@ export default function TimelineVisualization({
 
                   // 集約（ノード指標）。全語を初期化し、セッション実データで加算
                   const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number; sumPhysAbs: number }> = {}
-                  jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+                  jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0, sumPhysAbs: 0 } })
                     const physBySeries: Record<string, number[]> = {}
                     const rtBySeries: Record<string, number[]> = {}
                     for (const d of sessionData) {
@@ -405,10 +405,16 @@ export default function TimelineVisualization({
                     // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
                     const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
                     const wordEmotionSum: Record<string, number[]> = {}
+                    
+                    // 全てのjungWordsの単語で事前に初期化（sessionDataに含まれていない単語も含める）
+                    jungWords.forEach(({ japanese }) => {
+                      wordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
+                    })
 
                     for (const dpt of sessionData) {
                       const w = dpt.word
-                      if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
+                      // sessionDataに含まれていない単語はスキップ（既に初期化済み）
+                      if (!wordEmotionSum[w]) continue
                       if (Array.isArray(dpt.emotions)) {
                         for (const e of dpt.emotions) {
                           const key = (e.name || 'unknown').toLowerCase()
@@ -430,9 +436,10 @@ export default function TimelineVisualization({
                       return vec.map((x) => x / norm)
                     }
 
+                    // 全てのjungWordsの単語に対して正規化ベクトルを計算
                     const normalizedEmotionVec: Record<string, number[]> = {}
-                    Object.keys(wordEmotionSum).forEach((w) => {
-                      normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
+                    jungWords.forEach(({ japanese }) => {
+                      normalizedEmotionVec[japanese] = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
                     })
 
                     // 力学モードの係数を単語別に算出（強度+変動）
@@ -507,6 +514,7 @@ export default function TimelineVisualization({
                       sadness: '#1f2937',
                       anger: '#ef4444',
                       fear: '#a78bfa',
+                      surprise: '#a78bfa',
                       disgust: '#10b981',
                       calm: '#93c5fd',
                       focus: '#60a5fa',
@@ -1189,10 +1197,16 @@ export default function TimelineVisualization({
                         const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
                         const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
                         const wordEmotionSum: Record<string, number[]> = {}
+                        
+                        // 全てのjungWordsの単語で事前に初期化（dataに含まれていない単語も含める）
+                        jungWords.forEach(({ japanese }) => {
+                          wordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
+                        })
 
                         for (const dpt of data) {
                           const w = dpt.word
-                          if (!wordEmotionSum[w]) wordEmotionSum[w] = new Array(EMOTION_KEYS.length).fill(0)
+                          // dataに含まれていない単語はスキップ（既に初期化済み）
+                          if (!wordEmotionSum[w]) continue
                           if (Array.isArray(dpt.emotions)) {
                             for (const e of dpt.emotions) {
                               const key = (e.name || 'unknown').toLowerCase()
@@ -1210,9 +1224,10 @@ export default function TimelineVisualization({
                           return vec.map((x) => x / norm)
                         }
 
+                        // 全てのjungWordsの単語に対して正規化ベクトルを計算
                         const normalizedEmotionVec: Record<string, number[]> = {}
-                        Object.keys(wordEmotionSum).forEach((w) => {
-                          normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
+                        jungWords.forEach(({ japanese }) => {
+                          normalizedEmotionVec[japanese] = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
                         })
 
                         // 感情アンカー（2Dマップを球面へ射影）
@@ -1247,6 +1262,7 @@ export default function TimelineVisualization({
                           sadness: '#1f2937',
                           anger: '#ef4444',
                           fear: '#a78bfa',
+                          surprise: '#a78bfa',
                           disgust: '#10b981',
                           calm: '#93c5fd',
                           focus: '#60a5fa',

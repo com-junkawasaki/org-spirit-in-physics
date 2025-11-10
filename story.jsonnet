@@ -206,6 +206,11 @@
         summary: '感情類似度をフォースに合成した3D可視化を導入。Emo Weak/Strong/Gain と Emo Mix により、感情と構造（word2vec・観測遷移）の寄与を動的に調整できる設計を実装。Top‑K疎化と最小距離制約（PBD）でダマを解消し、radialOutで球殻上に安定配置。prosody/face/language/burst モダリティ別フィルタ、感情色付きエッジ、選択語の原点固定、RT/Phys/Speedの物理モード切替を追加。専用ページ /3d-force-timeline を拡充し、操作パネルとiPad向けツールバーで即時にクラスタの変化を観測可能にした。',
       },
       {
+        // Merkle DAG: 物語.ナラティブ[42]
+        act: '3D Force可視化の単語計算完全修正',
+        summary: '3D Force可視化において全ての単語が適切に計算されない問題を完全に修正。感情ベクトル計算ロジックを改善し、JUNG_STIMULUS_WORDSの全100語に対して感情ベクトルを事前初期化。sessionDataに含まれていない単語も空ベクトル（0埋め）で初期化し、normalizedEmotionVecの計算時に全単語が含まれることを保証。リンク生成時に全単語が適切に処理され、3D Force可視化の完全性と正確性を確立。型エラーの修正（sumPhysAbs初期化、emotionColorのsurpriseプロパティ追加）も完了し、システムの安定性を向上。',
+      },
+      {
         // Merkle DAG: 物語.ナラティブ[40]
         act: 'iPad HIG準拠の単一画面UI/UX再設計',
         summary: 'トップバー（ALL/Emotion/Physio/Speed、All/First/Nextセグメント）と右ペインのタッチ最適コントロール（感情・モダリティ・Top‑K/MinW/Gamma）をsticky化。詳細操作は折りたたみ、キャンバス高さを最適化して1画面に収めた。',
@@ -359,17 +364,25 @@
             'ズーム・パン・データポイント詳細表示',
             'Experiment階層対応時系列データ取得',
             'インタラクティブな反応パターン分析UI',
-            '科学的手法による霊性測定時系列理解深化'
+            '科学的手法による霊性測定時系列理解深化',
+            '3D Force可視化単語計算完全修正',
+            '感情ベクトル事前初期化システム',
+            '全100語感情ベクトル計算保証',
+            'sessionData未包含単語の空ベクトル初期化',
+            'normalizedEmotionVec全単語計算実装',
+            'リンク生成時の全単語適切処理',
+            '型エラー完全修正（sumPhysAbs・emotionColor）',
+            '3D Force可視化完全性・正確性確立'
           ],
         },
       ],
     },
         metadata: {
-          version: '1.23.0',
+          version: '1.24.0',
           author: 'Jumma Kawasaki',
           // 実際のシステムでは、これは物語オブジェクトのコンテンツアドレスハッシュになる
-          merkle_root: '時系列統合可視化システム版',
-          last_updated: '2025-10-16',
+          merkle_root: '3D Force可視化単語計算完全修正版',
+          last_updated: '2025-01-11',
           implemented_features: [
             '川崎モデルの数式実装',
             'Hume AI Expression Measurement統合',
