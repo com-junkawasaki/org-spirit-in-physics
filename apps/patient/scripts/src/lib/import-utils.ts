@@ -74,7 +74,7 @@ export function validateSessionData(data: any): boolean {
 
 /**
  * Merkle DAG: import.utils.parse_csv_file
- * CSVファイルのパース（簡易実装）
+ * CSVファイルのパース（改善版：引用符や値内のカンマに対応）
  */
 export function parseCSVFile(content: string): Array<Record<string, string>> {
   const lines = content.split('\n').filter(line => line.trim());
@@ -83,17 +83,24 @@ export function parseCSVFile(content: string): Array<Record<string, string>> {
     return [];
   }
 
-  // ヘッダー行を取得
-  const headers = lines[0].split(',').map(h => h.trim());
+  // ヘッダー行をパース
+  const headers = parseCSVLine(lines[0]);
   
   // データ行をパース
   const records: Array<Record<string, string>> = [];
   
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim());
+    const line = lines[i].trim();
+    if (!line) {
+      // 空行をスキップ
+      continue;
+    }
+
+    const values = parseCSVLine(line);
     
     if (values.length !== headers.length) {
       // カラム数が一致しない場合はスキップ
+      console.warn(`CSV line ${i + 1} has ${values.length} columns, expected ${headers.length}`);
       continue;
     }
 
@@ -109,8 +116,44 @@ export function parseCSVFile(content: string): Array<Record<string, string>> {
 }
 
 /**
+ * Merkle DAG: import.utils.parse_csv_line
+ * CSV行をパース（引用符で囲まれた値や値内のカンマに対応）
+ */
+function parseCSVLine(line: string): string[] {
+  const values: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // エスケープされた引用符
+        current += '"';
+        i++; // 次の文字をスキップ
+      } else {
+        // 引用符の開始/終了
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // カンマ（引用符の外）
+      values.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // 最後の値を追加
+  values.push(current.trim());
+  
+  return values;
+}
+
+/**
  * Merkle DAG: import.utils.find_registry_csv_directory
- * registry_file-* ディレクトリ内のCSVディレクトリを検索
+ * registry_file-* ディレクトリ内のCSVディレクトリを検索（最初の1つのみ）
  */
 export async function findRegistryCSVDirectory(artifactsDir: string): Promise<string | null> {
   try {
@@ -149,5 +192,48 @@ export async function findRegistryCSVDirectory(artifactsDir: string): Promise<st
     console.error(`Error finding registry CSV directory in ${artifactsDir}:`, error);
     return null;
   }
+}
+
+/**
+ * Merkle DAG: import.utils.find_all_registry_csv_directories
+ * 全てのregistry_file-* ディレクトリ内のCSVディレクトリを検索して配列で返す
+ * 1回の実験で1回目、2回目が分かれているため、全て処理する必要がある
+ */
+export async function findAllRegistryCSVDirectories(artifactsDir: string): Promise<string[]> {
+  const csvDirectories: string[] = [];
+  
+  try {
+    const entries = await fs.readdir(artifactsDir, { withFileTypes: true });
+    
+    // registry_file-* パターンに一致する全てのディレクトリを検索
+    const registryDirs = entries.filter(entry => 
+      entry.isDirectory() && entry.name.startsWith('registry_file-')
+    );
+
+    for (const registryDir of registryDirs) {
+      const registryPath = path.join(artifactsDir, registryDir.name);
+      const csvPath = path.join(registryPath, 'csv');
+
+      // csvディレクトリが存在するか確認
+      try {
+        const csvStat = await fs.stat(csvPath);
+        if (csvStat.isDirectory()) {
+          // csvディレクトリ内の全てのサブディレクトリを取得
+          const csvEntries = await fs.readdir(csvPath, { withFileTypes: true });
+          const csvSubDirs = csvEntries.filter(entry => entry.isDirectory());
+          
+          for (const csvSubDir of csvSubDirs) {
+            csvDirectories.push(path.join(csvPath, csvSubDir.name));
+          }
+        }
+      } catch (error) {
+        console.warn(`Error accessing CSV directory in ${registryPath}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error(`Error finding all registry CSV directories in ${artifactsDir}:`, error);
+  }
+
+  return csvDirectories;
 }
 

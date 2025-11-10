@@ -9,7 +9,7 @@ import path from 'path';
 import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
 import { neo4jManager } from "scripts/src/lib/database/neo4j-manager";
 import { neo4jClient } from "scripts/src/lib/neo4j";
-import { findHumePredictionsFile, findRegistryCSVDirectory, parseCSVFile } from "scripts/src/lib/import-utils";
+import { findHumePredictionsFile, findAllRegistryCSVDirectories, parseCSVFile } from "scripts/src/lib/import-utils";
 
 // Merkle DAG: import.emotions.process
 // 感情分析データインポート処理関数
@@ -330,33 +330,36 @@ async function storeEmotionEntry(emotionRecord: any) {
 }
 
 // Merkle DAG: import.emotions.process_csv
-// CSVデータ処理関数
+// CSVデータ処理関数（複数のregistry_file-*ディレクトリを処理）
 async function processEmotionCSVData(participantId: string, artifactsDir: string) {
   let filesProcessed = 0;
 
   try {
-    // registry_file-* ディレクトリ内のCSVディレクトリを動的に検索
-    const csvDir = await findRegistryCSVDirectory(artifactsDir);
+    // 全てのregistry_file-* ディレクトリ内のCSVディレクトリを動的に検索
+    const csvDirs = await findAllRegistryCSVDirectories(artifactsDir);
     
-    if (!csvDir) {
-      console.warn(`CSV directory not found in ${artifactsDir}`);
+    if (csvDirs.length === 0) {
+      console.warn(`No CSV directories found in ${artifactsDir}`);
       return { filesProcessed };
     }
 
     // CSVファイルの処理
     const csvFiles = ['burst.csv', 'face.csv', 'language.csv', 'prosody.csv'];
 
-    for (const csvFile of csvFiles) {
-      const csvPath = path.join(csvDir, csvFile);
-      try {
-        await fs.access(csvPath);
-        // CSVデータを読み取り処理
-        const csvContent = await fs.readFile(csvPath, 'utf-8');
-        await processCSVFile(participantId, csvFile, csvContent);
-        filesProcessed++;
-      } catch (error) {
-        // CSVファイルが存在しない場合はスキップ
-        console.warn(`CSV file ${csvFile} not found or error reading:`, error);
+    // 各CSVディレクトリに対して処理
+    for (const csvDir of csvDirs) {
+      for (const csvFile of csvFiles) {
+        const csvPath = path.join(csvDir, csvFile);
+        try {
+          await fs.access(csvPath);
+          // CSVデータを読み取り処理
+          const csvContent = await fs.readFile(csvPath, 'utf-8');
+          await processCSVFile(participantId, csvFile, csvContent);
+          filesProcessed++;
+        } catch (error) {
+          // CSVファイルが存在しない場合はスキップ
+          console.warn(`CSV file ${csvFile} not found or error reading in ${csvDir}:`, error);
+        }
       }
     }
   } catch (error) {
@@ -367,20 +370,32 @@ async function processEmotionCSVData(participantId: string, artifactsDir: string
 }
 
 // Merkle DAG: import.emotions.process_csv_file
-// 個別CSVファイル処理関数
+// 個別CSVファイル処理関数（CSVタイプに応じた専用の保存関数を呼び出す）
 async function processCSVFile(participantId: string, fileName: string, content: string) {
   try {
     // CSVファイルをパース
     const records = parseCSVFile(content);
     
+    const fileType = fileName.replace('.csv', '');
+    
+    // CSVファイルタイプに応じた専用の保存関数を呼び出す
     for (const record of records) {
-      const csvRecord = {
-        participantId,
-        fileType: fileName.replace('.csv', ''),
-        data: record,
-        importedAt: new Date().toISOString()
-      };
-      await storeCSVRecord(csvRecord);
+      switch (fileType) {
+        case 'burst':
+          await storeBurstEmotionData(participantId, record);
+          break;
+        case 'face':
+          await storeFaceEmotionData(participantId, record);
+          break;
+        case 'language':
+          await storeLanguageEmotionData(participantId, record);
+          break;
+        case 'prosody':
+          await storeProsodyEmotionData(participantId, record);
+          break;
+        default:
+          console.warn(`Unknown CSV file type: ${fileType}`);
+      }
     }
   } catch (error) {
     console.error(`Error processing CSV file ${fileName} for ${participantId}:`, error);
@@ -388,36 +403,418 @@ async function processCSVFile(participantId: string, fileName: string, content: 
   }
 }
 
-// Merkle DAG: import.emotions.store_csv
-// CSVレコード格納関数
-async function storeCSVRecord(csvRecord: any) {
+// Merkle DAG: import.emotions.store_burst_emotion_data
+// BurstEmotionDataノードを作成
+async function storeBurstEmotionData(participantId: string, record: Record<string, string>) {
   try {
-    // CSVデータをNeo4jに格納（簡易実装：メタデータとして保存）
-    // より詳細な処理が必要な場合は、CSVファイルの種類に応じて適切なノードを作成
-    const query = `
-      MATCH (p:Participant {id: $participantId})
-      MERGE (p)-[:HAS_CSV_DATA]->(c:CSVData {
-        id: $csvId,
-        file_type: $fileType,
-        participant_id: $participantId
-      })
-      SET c.data = $data,
-          c.imported_at = $importedAt,
-          c.updated_at = $importedAt
-      RETURN c
+    // セッションを取得
+    const sessionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      RETURN s.id as sessionId
+      ORDER BY s.created_at ASC
+      LIMIT 1
     `;
+    const sessionResult = await neo4jClient.query(sessionQuery, { participantId });
     
-    const csvId = `csv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    if (!sessionResult || sessionResult.length === 0) {
+      console.warn(`No session found for participant ${participantId}`);
+      return;
+    }
+
+    const sessionId = sessionResult[0].sessionId;
+    const nodeId = `burst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // 感情スコアと発声タイプを抽出
+    const emotionScores: Record<string, number> = {};
+    const vocalTypes: Record<string, number> = {};
+    
+    const emotionKeys = ['Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger', 'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness', 'Concentration', 'Contemplation', 'Confusion', 'Contempt', 'Contentment', 'Craving', 'Determination', 'Disappointment', 'Disgust', 'Distress', 'Doubt', 'Ecstasy', 'Embarrassment', 'Empathic Pain', 'Entrancement', 'Envy', 'Excitement', 'Fear', 'Guilt', 'Horror', 'Interest', 'Joy', 'Love', 'Nostalgia', 'Pain', 'Pride', 'Realization', 'Relief', 'Romance', 'Sadness', 'Satisfaction', 'Desire', 'Shame', 'Surprise (negative)', 'Surprise (positive)', 'Sympathy', 'Tiredness', 'Triumph'];
+    const vocalKeys = ['Cackle', 'Cheer', 'Chuckle', 'Cry', 'Gasp', 'Giggle', 'Groan', 'Growl', 'Grunt', 'Hiss', 'Hoot', 'Howl', 'Laugh', 'Moan', 'Pant', 'Roar', 'Scream', 'Screech', 'Shout', 'Shriek', 'Sigh', 'Snicker', 'Snort', 'Sob', 'Squeal', 'Wail', 'Wheep', 'Whimper', 'Yawn', 'Yelp', 'Ah', 'Aha', 'Ahh', 'Argh', 'Aww', 'Eek', 'Eww', 'Grr', 'Ha', 'Hah', 'Haha', 'Hehe', 'Hmm', 'Huh', 'Hurray', 'Mhm', 'Mmm', 'Oh', 'Ohh', 'Ooh', 'Ooph', 'Ouch', 'Oww', 'Pff', 'Phew', 'Tsk', 'Ugh', 'Uh', 'Uh-huh', 'Umm', 'Whee', 'Whew', 'Woah', 'Wow', 'Yay', 'Yippee', 'Yuck'];
+
+    for (const key of emotionKeys) {
+      if (record[key] !== undefined && record[key] !== '') {
+        const value = parseFloat(record[key]);
+        if (!isNaN(value)) {
+          emotionScores[key] = value;
+        }
+      }
+    }
+
+    for (const key of vocalKeys) {
+      if (record[key] !== undefined && record[key] !== '') {
+        const value = parseFloat(record[key]);
+        if (!isNaN(value)) {
+          vocalTypes[key] = value;
+        }
+      }
+    }
+
+    // 重複チェック: record_id, begin_time, end_timeで既存データを確認
+    const checkQuery = `
+      MATCH (s:Session {id: $sessionId})-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
+      WHERE b.record_id = $recordId 
+        AND b.begin_time = $beginTime 
+        AND b.end_time = $endTime
+      RETURN b.id as existingId
+      LIMIT 1
+    `;
+    const existing = await neo4jClient.query(checkQuery, {
+      sessionId,
+      recordId: record.Id || 'unknown',
+      beginTime: record.BeginTime ? parseFloat(record.BeginTime) : null,
+      endTime: record.EndTime ? parseFloat(record.EndTime) : null
+    });
+
+    if (existing && existing.length > 0) {
+      // 既に存在する場合はスキップ
+      return;
+    }
+
+    const query = `
+      MATCH (s:Session {id: $sessionId})
+      CREATE (b:BurstEmotionData {
+        id: $nodeId,
+        participant_id: $participantId,
+        session_id: $sessionId,
+        record_id: $recordId,
+        begin_time: $beginTime,
+        end_time: $endTime,
+        emotion_scores: $emotionScores,
+        vocal_types: $vocalTypes,
+        created_at: $createdAt
+      })
+      CREATE (s)-[:HAS_BURST_EMOTION_DATA]->(b)
+      RETURN b
+    `;
+
     await neo4jClient.query(query, {
-      participantId: csvRecord.participantId,
-      csvId,
-      fileType: csvRecord.fileType,
-      data: csvRecord.data,
-      importedAt: csvRecord.importedAt
+      sessionId,
+      nodeId,
+      participantId,
+      recordId: record.Id || 'unknown',
+      beginTime: record.BeginTime ? parseFloat(record.BeginTime) : null,
+      endTime: record.EndTime ? parseFloat(record.EndTime) : null,
+      emotionScores,
+      vocalTypes,
+      createdAt: new Date().toISOString()
     });
   } catch (error) {
-    console.error(`Error storing CSV record for ${csvRecord.participantId}:`, error);
-    // CSVデータの保存エラーは致命的ではないため、ログのみ出力
+    console.error(`Error storing burst emotion data for ${participantId}:`, error);
+    // エラーは致命的ではないため、ログのみ出力
+  }
+}
+
+// Merkle DAG: import.emotions.store_face_emotion_data
+// FaceEmotionDataノードを作成
+async function storeFaceEmotionData(participantId: string, record: Record<string, string>) {
+  try {
+    const sessionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      RETURN s.id as sessionId
+      ORDER BY s.created_at ASC
+      LIMIT 1
+    `;
+    const sessionResult = await neo4jClient.query(sessionQuery, { participantId });
+    
+    if (!sessionResult || sessionResult.length === 0) {
+      console.warn(`No session found for participant ${participantId}`);
+      return;
+    }
+
+    const sessionId = sessionResult[0].sessionId;
+    const nodeId = `face_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // 感情スコアとAUスコアを抽出
+    const emotionScores: Record<string, number> = {};
+    const auScores: Record<string, number> = {};
+    
+    const emotionKeys = ['Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger', 'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness', 'Concentration', 'Contemplation', 'Confusion', 'Contempt', 'Contentment', 'Craving', 'Determination', 'Disappointment', 'Disgust', 'Distress', 'Doubt', 'Ecstasy', 'Embarrassment', 'Empathic Pain', 'Entrancement', 'Envy', 'Excitement', 'Fear', 'Guilt', 'Horror', 'Interest', 'Joy', 'Love', 'Nostalgia', 'Pain', 'Pride', 'Realization', 'Relief', 'Romance', 'Sadness', 'Satisfaction', 'Desire', 'Shame', 'Surprise (negative)', 'Surprise (positive)', 'Sympathy', 'Tiredness', 'Triumph'];
+    const auKeys = ['AU1 Inner Brow Raise', 'AU2 Outer Brow Raise', 'AU4 Brow Lowerer', 'AU5 Upper Lid Raise', 'AU6 Cheek Raise', 'AU7 Lids Tight', 'AU9 Nose Wrinkle', 'AU10 Upper Lip Raiser', 'AU11 Nasolabial Furrow Deepener', 'AU12 Lip Corner Puller', 'AU14 Dimpler', 'AU15 Lip Corner Depressor', 'AU16 Lower Lip Depress', 'AU17 Chin Raiser', 'AU18 Lip Pucker', 'AU19 Tongue Show', 'AU20 Lip Stretch', 'AU22 Lip Funneler', 'AU23 Lip Tightener', 'AU24 Lip Presser', 'AU25 Lips Part', 'AU26 Jaw Drop', 'AU27 Mouth Stretch', 'AU28 Lips Suck', 'AU32 Bite', 'AU34 Puff', 'AU37 Lip Wipe', 'AU38 Nostril Dilate', 'AU43 Eye Closure', 'AU53 Head Up', 'AU54 Head Down'];
+
+    for (const key of emotionKeys) {
+      if (record[key] !== undefined && record[key] !== '') {
+        const value = parseFloat(record[key]);
+        if (!isNaN(value)) {
+          emotionScores[key] = value;
+        }
+      }
+    }
+
+    for (const key of auKeys) {
+      if (record[key] !== undefined && record[key] !== '') {
+        const value = parseFloat(record[key]);
+        if (!isNaN(value)) {
+          auScores[key] = value;
+        }
+      }
+    }
+
+    // 重複チェック: record_id, frame, timeで既存データを確認
+    const checkQuery = `
+      MATCH (s:Session {id: $sessionId})-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
+      WHERE f.record_id = $recordId 
+        AND f.frame = $frame 
+        AND f.time = $time
+      RETURN f.id as existingId
+      LIMIT 1
+    `;
+    const existing = await neo4jClient.query(checkQuery, {
+      sessionId,
+      recordId: record.Id || 'unknown',
+      frame: record.Frame ? parseInt(record.Frame) : null,
+      time: record.Time ? parseFloat(record.Time) : null
+    });
+
+    if (existing && existing.length > 0) {
+      // 既に存在する場合はスキップ
+      return;
+    }
+
+    const query = `
+      MATCH (s:Session {id: $sessionId})
+      CREATE (f:FaceEmotionData {
+        id: $nodeId,
+        participant_id: $participantId,
+        session_id: $sessionId,
+        record_id: $recordId,
+        frame: $frame,
+        time: $time,
+        probability: $probability,
+        face_x0: $faceX0,
+        face_y0: $faceY0,
+        face_width: $faceWidth,
+        face_height: $faceHeight,
+        emotion_scores: $emotionScores,
+        au_scores: $auScores,
+        created_at: $createdAt
+      })
+      CREATE (s)-[:HAS_FACE_EMOTION_DATA]->(f)
+      RETURN f
+    `;
+
+    await neo4jClient.query(query, {
+      sessionId,
+      nodeId,
+      participantId,
+      recordId: record.Id || 'unknown',
+      frame: record.Frame ? parseInt(record.Frame) : null,
+      time: record.Time ? parseFloat(record.Time) : null,
+      probability: record.Probability ? parseFloat(record.Probability) : null,
+      faceX0: record.FaceX0 ? parseFloat(record.FaceX0) : null,
+      faceY0: record.FaceY0 ? parseFloat(record.FaceY0) : null,
+      faceWidth: record.FaceWidth ? parseFloat(record.FaceWidth) : null,
+      faceHeight: record.FaceHeight ? parseFloat(record.FaceHeight) : null,
+      emotionScores,
+      auScores,
+      createdAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(`Error storing face emotion data for ${participantId}:`, error);
+  }
+}
+
+// Merkle DAG: import.emotions.store_language_emotion_data
+// LanguageEmotionDataノードを作成
+async function storeLanguageEmotionData(participantId: string, record: Record<string, string>) {
+  try {
+    const sessionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      RETURN s.id as sessionId
+      ORDER BY s.created_at ASC
+      LIMIT 1
+    `;
+    const sessionResult = await neo4jClient.query(sessionQuery, { participantId });
+    
+    if (!sessionResult || sessionResult.length === 0) {
+      console.warn(`No session found for participant ${participantId}`);
+      return;
+    }
+
+    const sessionId = sessionResult[0].sessionId;
+    const nodeId = `lang_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // 感情スコアとtoxicityスコアを抽出
+    const emotionScores: Record<string, number> = {};
+    const toxicityScores: Record<string, number> = {};
+    
+    const emotionKeys = ['Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger', 'Annoyance', 'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness', 'Concentration', 'Confusion', 'Contemplation', 'Contempt', 'Contentment', 'Craving', 'Determination', 'Disappointment', 'Disapproval', 'Disgust', 'Distress', 'Doubt', 'Ecstasy', 'Embarrassment', 'Empathic Pain', 'Enthusiasm', 'Entrancement', 'Envy', 'Excitement', 'Fear', 'Gratitude', 'Guilt', 'Horror', 'Interest', 'Joy', 'Love', 'Nostalgia', 'Pain', 'Pride', 'Realization', 'Relief', 'Romance', 'Sadness', 'Sarcasm', 'Satisfaction', 'Desire', 'Shame', 'Surprise (negative)', 'Surprise (positive)', 'Sympathy', 'Tiredness', 'Triumph'];
+    const toxicityKeys = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate'];
+
+    for (const key of emotionKeys) {
+      if (record[key] !== undefined && record[key] !== '') {
+        const value = parseFloat(record[key]);
+        if (!isNaN(value)) {
+          emotionScores[key] = value;
+        }
+      }
+    }
+
+    for (const key of toxicityKeys) {
+      if (record[key] !== undefined && record[key] !== '') {
+        const value = parseFloat(record[key]);
+        if (!isNaN(value)) {
+          toxicityScores[key] = value;
+        }
+      }
+    }
+
+    // 重複チェック: record_id, begin_time, end_time, textで既存データを確認
+    const checkQuery = `
+      MATCH (s:Session {id: $sessionId})-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
+      WHERE l.record_id = $recordId 
+        AND l.begin_time = $beginTime 
+        AND l.end_time = $endTime
+        AND l.text = $text
+      RETURN l.id as existingId
+      LIMIT 1
+    `;
+    const existing = await neo4jClient.query(checkQuery, {
+      sessionId,
+      recordId: record.Id || 'unknown',
+      beginTime: record.BeginTime ? parseFloat(record.BeginTime) : null,
+      endTime: record.EndTime ? parseFloat(record.EndTime) : null,
+      text: record.Text || ''
+    });
+
+    if (existing && existing.length > 0) {
+      // 既に存在する場合はスキップ
+      return;
+    }
+
+    const query = `
+      MATCH (s:Session {id: $sessionId})
+      CREATE (l:LanguageEmotionData {
+        id: $nodeId,
+        participant_id: $participantId,
+        session_id: $sessionId,
+        record_id: $recordId,
+        text: $text,
+        begin_position: $beginPosition,
+        end_position: $endPosition,
+        begin_time: $beginTime,
+        end_time: $endTime,
+        confidence: $confidence,
+        speaker_confidence: $speakerConfidence,
+        emotion_scores: $emotionScores,
+        toxicity_scores: $toxicityScores,
+        created_at: $createdAt
+      })
+      CREATE (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l)
+      RETURN l
+    `;
+
+    await neo4jClient.query(query, {
+      sessionId,
+      nodeId,
+      participantId,
+      recordId: record.Id || 'unknown',
+      text: record.Text || '',
+      beginPosition: record.BeginPosition ? parseInt(record.BeginPosition) : null,
+      endPosition: record.EndPosition ? parseInt(record.EndPosition) : null,
+      beginTime: record.BeginTime ? parseFloat(record.BeginTime) : null,
+      endTime: record.EndTime ? parseFloat(record.EndTime) : null,
+      confidence: record.Confidence ? parseFloat(record.Confidence) : null,
+      speakerConfidence: record.SpeakerConfidence ? parseFloat(record.SpeakerConfidence) : null,
+      emotionScores,
+      toxicityScores,
+      createdAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(`Error storing language emotion data for ${participantId}:`, error);
+  }
+}
+
+// Merkle DAG: import.emotions.store_prosody_emotion_data
+// ProsodyEmotionDataノードを作成
+async function storeProsodyEmotionData(participantId: string, record: Record<string, string>) {
+  try {
+    const sessionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      RETURN s.id as sessionId
+      ORDER BY s.created_at ASC
+      LIMIT 1
+    `;
+    const sessionResult = await neo4jClient.query(sessionQuery, { participantId });
+    
+    if (!sessionResult || sessionResult.length === 0) {
+      console.warn(`No session found for participant ${participantId}`);
+      return;
+    }
+
+    const sessionId = sessionResult[0].sessionId;
+    const nodeId = `prosody_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // 感情スコアを抽出
+    const emotionScores: Record<string, number> = {};
+    
+    const emotionKeys = ['Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger', 'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness', 'Concentration', 'Contemplation', 'Confusion', 'Contempt', 'Contentment', 'Craving', 'Determination', 'Disappointment', 'Disgust', 'Distress', 'Doubt', 'Ecstasy', 'Embarrassment', 'Empathic Pain', 'Entrancement', 'Envy', 'Excitement', 'Fear', 'Guilt', 'Horror', 'Interest', 'Joy', 'Love', 'Nostalgia', 'Pain', 'Pride', 'Realization', 'Relief', 'Romance', 'Sadness', 'Satisfaction', 'Desire', 'Shame', 'Surprise (negative)', 'Surprise (positive)', 'Sympathy', 'Tiredness', 'Triumph'];
+
+    for (const key of emotionKeys) {
+      if (record[key] !== undefined && record[key] !== '') {
+        const value = parseFloat(record[key]);
+        if (!isNaN(value)) {
+          emotionScores[key] = value;
+        }
+      }
+    }
+
+    // 重複チェック: record_id, begin_time, end_time, textで既存データを確認
+    const checkQuery = `
+      MATCH (s:Session {id: $sessionId})-[:HAS_PROSODY_EMOTION_DATA]->(p:ProsodyEmotionData)
+      WHERE p.record_id = $recordId 
+        AND p.begin_time = $beginTime 
+        AND p.end_time = $endTime
+        AND p.text = $text
+      RETURN p.id as existingId
+      LIMIT 1
+    `;
+    const existing = await neo4jClient.query(checkQuery, {
+      sessionId,
+      recordId: record.Id || 'unknown',
+      beginTime: record.BeginTime ? parseFloat(record.BeginTime) : null,
+      endTime: record.EndTime ? parseFloat(record.EndTime) : null,
+      text: record.Text || ''
+    });
+
+    if (existing && existing.length > 0) {
+      // 既に存在する場合はスキップ
+      return;
+    }
+
+    const query = `
+      MATCH (s:Session {id: $sessionId})
+      CREATE (p:ProsodyEmotionData {
+        id: $nodeId,
+        participant_id: $participantId,
+        session_id: $sessionId,
+        record_id: $recordId,
+        text: $text,
+        begin_time: $beginTime,
+        end_time: $endTime,
+        confidence: $confidence,
+        speaker_confidence: $speakerConfidence,
+        emotion_scores: $emotionScores,
+        created_at: $createdAt
+      })
+      CREATE (s)-[:HAS_PROSODY_EMOTION_DATA]->(p)
+      RETURN p
+    `;
+
+    await neo4jClient.query(query, {
+      sessionId,
+      nodeId,
+      participantId,
+      recordId: record.Id || 'unknown',
+      text: record.Text || '',
+      beginTime: record.BeginTime ? parseFloat(record.BeginTime) : null,
+      endTime: record.EndTime ? parseFloat(record.EndTime) : null,
+      confidence: record.Confidence ? parseFloat(record.Confidence) : null,
+      speakerConfidence: record.SpeakerConfidence ? parseFloat(record.SpeakerConfidence) : null,
+      emotionScores,
+      createdAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(`Error storing prosody emotion data for ${participantId}:`, error);
   }
 }
 

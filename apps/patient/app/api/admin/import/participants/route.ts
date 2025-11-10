@@ -139,7 +139,11 @@ async function importParticipantsFromDataset() {
 async function checkExistingParticipant(participantId: string): Promise<boolean> {
   try {
     const participant = await neo4jManager.getParticipant(participantId);
-    return participant !== null;
+    const exists = participant !== null;
+    if (exists) {
+      console.log(`Participant ${participantId} already exists, skipping import`);
+    }
+    return exists;
   } catch (error) {
     console.error(`Error checking existing participant ${participantId}:`, error);
     // エラーが発生した場合は存在しないとみなす

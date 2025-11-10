@@ -158,7 +158,11 @@ async function checkExistingSession(participantId: string): Promise<boolean> {
     `;
     const result = await neo4jClient.query(query, { participantId });
     const sessionCount = result[0]?.sessionCount || 0;
-    return sessionCount > 0;
+    const exists = sessionCount > 0;
+    if (exists) {
+      console.log(`Session for participant ${participantId} already exists (count: ${sessionCount}), skipping import`);
+    }
+    return exists;
   } catch (error) {
     console.error(`Error checking existing session ${participantId}:`, error);
     return false;
