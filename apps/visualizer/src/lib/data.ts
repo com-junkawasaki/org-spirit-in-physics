@@ -232,29 +232,39 @@ export async function getParticipantData(participantId: string): Promise<Partici
     const participant = await client.getParticipantDetails(participantId)
     if (!participant) return null
 
-    // セッションを取得（Experiment階層経由）
-    const sessionsQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s, e
-      ORDER BY s.start_ts DESC
+    // セッションを取得（新しい構造: Participant -> Session）
+    let sessionsQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      RETURN s.id as id, s.session_index as sessionIndex, s.created_at as createdAt,
+             s.start_ts as startTs, s.end_ts as endTs, s.participant_id as participant_id
+      ORDER BY s.created_at DESC
     `
-    const sessionsResult = await client.query(sessionsQuery, { participantId })
-    const dbSessions = sessionsResult?.map((record: any) => {
-      const session = record.s
-      const properties = session && typeof session === 'object' && 'properties' in session
-        ? session.properties
-        : session
-      return {
-        id: properties.id,
-        participant_id: properties.participant_id,
-        start_ts: properties.start_ts,
-        end_ts: properties.end_ts,
-        status: properties.status,
-        total_responses: properties.total_responses,
-        completed_responses: properties.completed_responses,
-        created_at: properties.created_at,
-      }
-    }) || []
+    let sessionsResult = await client.query(sessionsQuery, { participantId })
+    
+    // 新しい構造でデータが見つからない場合、古い構造を試す
+    if (sessionsResult.length === 0) {
+      sessionsQuery = `
+        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+        RETURN s.id as id, s.session_index as sessionIndex, s.created_at as createdAt,
+               s.start_ts as startTs, s.end_ts as endTs, s.participant_id as participant_id,
+               s.status as status, s.total_responses as total_responses,
+               s.completed_responses as completed_responses
+        ORDER BY s.start_ts DESC
+      `
+      sessionsResult = await client.query(sessionsQuery, { participantId })
+    }
+    
+    const dbSessions = sessionsResult?.map((record: any) => ({
+      id: record.id,
+      participant_id: record.participant_id,
+      start_ts: record.startTs || record.start_ts,
+      end_ts: record.endTs || record.end_ts,
+      status: record.status || 'completed',
+      total_responses: record.total_responses || 0,
+      completed_responses: record.completed_responses || 0,
+      created_at: record.createdAt || record.created_at,
+      session_index: record.sessionIndex || record.session_index,
+    })) || []
 
     // レスポンスを取得
     const responses = await client.getParticipantResponses(participantId)

@@ -20,7 +20,8 @@ import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 // BPMN: TimelineVisualizationComponent
 
 export default function TimelineVisualization({ 
-  participantId, 
+  participantId,
+  sessionId,
   width = 800, 
   height = 400,
   hideFilters = false,
@@ -60,7 +61,7 @@ export default function TimelineVisualization({
     setFilters,
     getPhysStat,
     refetchData
-  } = useTimelineData({ participantId })
+  } = useTimelineData({ participantId, sessionId })
 
   // 3D Force プリセット
   const forcePresets: readonly ForcePreset[] = [

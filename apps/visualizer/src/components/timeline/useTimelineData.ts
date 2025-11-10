@@ -12,7 +12,7 @@ import type {
 // Merkle DAG: timeline.hooks.data
 // 時系列データの取得と状態管理フック
 
-export function useTimelineData({ participantId, useDemo = false }: Pick<TimelineVisualizationProps, 'participantId' | 'useDemo'>) {
+export function useTimelineData({ participantId, sessionId, useDemo = false }: Pick<TimelineVisualizationProps, 'participantId' | 'sessionId' | 'useDemo'>) {
   const [mounted, setMounted] = useState(false)
   const [data, setData] = useState<TimelineDataPoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,9 +89,11 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
   const fetchTimelineData = useCallback(async () => {
     try {
       setLoading(true)
-      console.log('TimelineVisualization: Starting data fetch for participant:', participantId)
+      console.log('TimelineVisualization: Starting data fetch for participant:', participantId, sessionId ? `session: ${sessionId}` : '')
       // API優先、失敗時・useDemo時はローカル生成でフォールバック
-      const apiUrl = `/api/participants/${participantId}/timeline`
+      const apiUrl = sessionId 
+        ? `/api/participants/${participantId}/timeline?sessionId=${encodeURIComponent(sessionId)}`
+        : `/api/participants/${participantId}/timeline`
       console.log('TimelineVisualization: API URL:', apiUrl)
       let ok = false
       try {
@@ -139,7 +141,7 @@ export function useTimelineData({ participantId, useDemo = false }: Pick<Timelin
     } finally {
       setLoading(false)
     }
-  }, [participantId, useDemo, generateDemoTimeline])
+  }, [participantId, sessionId, useDemo, generateDemoTimeline])
 
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = useCallback(async () => {

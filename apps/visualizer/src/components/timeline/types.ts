@@ -80,6 +80,7 @@ export type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multipl
 
 export interface TimelineVisualizationProps {
   participantId: string
+  sessionId?: string
   width?: number
   height?: number
   // このページでモードを固定したい場合に指定（例: 'force-3d-typegpu'）

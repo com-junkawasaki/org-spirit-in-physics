@@ -126,19 +126,27 @@ export class SessionQueries {
     const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
-    const query = `
-      MATCH (:Participant {id: $participantId})-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s
-      ORDER BY s.start_ts DESC
+    // 新しい構造（Participant -> Session）を試す
+    let query = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+      RETURN s.id as id, s.session_index as sessionIndex, s.created_at as createdAt,
+             s.start_ts as startTs, s.end_ts as endTs
+      ORDER BY s.created_at DESC
     `
-    const result = await client.query(query, { participantId })
-    return result?.map((record: any) => {
-      const session = record.s
-      const properties = session && typeof session === 'object' && 'properties' in session
-        ? session.properties
-        : session
-      return properties
-    }) || []
+    let result = await client.query(query, { participantId })
+    
+    // 新しい構造でデータが見つからない場合、古い構造を試す
+    if (result.length === 0) {
+      query = `
+        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+        RETURN s.id as id, s.session_index as sessionIndex, s.created_at as createdAt,
+               s.start_ts as startTs, s.end_ts as endTs
+        ORDER BY s.start_ts DESC
+      `
+      result = await client.query(query, { participantId })
+    }
+    
+    return result || []
   }
 
   static async updateSessionStatus(sessionId: string, status: string) {
