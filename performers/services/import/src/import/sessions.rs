@@ -38,7 +38,7 @@ pub struct SessionStatistics {
 }
 
 pub async fn import_sessions(
-    client: &Neo4jClient,
+    client: &mut Neo4jClient,
     config: &Config,
 ) -> Result<ImportResult, ImportError> {
     let dataset_path = PathBuf::from(&config.dataset_path);
@@ -94,9 +94,10 @@ pub async fn import_sessions(
         }
     }
 
+    let total_count = participant_dirs.len();
     Ok(ImportResult {
         success: true,
-        total: participant_dirs.len(),
+        total: total_count,
         processed: results.len(),
         results,
     })
@@ -120,9 +121,9 @@ async fn process_session(
         LIMIT 1
     "#;
 
-    let check_rows = txn.execute(check_query.to_string(), check_params).await?;
+    let check_rows: Vec<neo4rs::Row> = txn.execute(check_query.to_string(), check_params).await?;
     if check_rows.is_empty() {
-        return Err(ImportError::ParticipantNotFound(participant_id.to_string())));
+        return Err(ImportError::ParticipantNotFound(participant_id.to_string()));
     }
 
     // Read session_data.json
@@ -191,7 +192,7 @@ async fn process_session(
         LIMIT 1
     "#;
 
-    let session_check_rows = txn.execute(session_check_query.to_string(), session_check_params).await?;
+    let session_check_rows: Vec<neo4rs::Row> = txn.execute(session_check_query.to_string(), session_check_params).await?;
     if !session_check_rows.is_empty() {
         warn!("Session {} already exists, skipping import", session_id);
         return Ok(SessionResult {

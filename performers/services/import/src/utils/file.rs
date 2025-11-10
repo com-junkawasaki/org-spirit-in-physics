@@ -49,10 +49,9 @@ pub async fn find_all_registry_csv_directories(artifacts_dir: &Path) -> Result<V
 }
 
 pub async fn find_hume_artifacts_directory(participant_path: &Path) -> Result<Option<PathBuf>, ImportError> {
-    let entries = fs::read_dir(participant_path).await?;
+    let mut entries = fs::read_dir(participant_path).await?;
 
-    for entry in entries {
-        let entry = entry?;
+    while let Some(entry) = entries.next_entry().await? {
         let file_name = entry.file_name();
         let file_name_str = file_name.to_string_lossy();
 

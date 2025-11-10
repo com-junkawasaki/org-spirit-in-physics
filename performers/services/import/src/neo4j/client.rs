@@ -1,7 +1,8 @@
 // Merkle DAG: import.service.neo4j.client
 // Neo4j client wrapper using neo4rs
 
-use neo4rs::{Graph, Query, Row, BoltString};
+use neo4rs::{Graph, Query, Row, BoltString, BoltBoolean};
+use futures::StreamExt;
 use std::sync::Arc;
 use tracing::error;
 
@@ -9,7 +10,7 @@ use crate::config::Neo4jConfig;
 use crate::error::ImportError;
 
 pub struct Neo4jClient {
-    graph: Arc<Graph>,
+    graph: Graph,
 }
 
 impl Neo4jClient {
@@ -31,12 +32,12 @@ impl Neo4jClient {
             .map_err(|e| ImportError::Database(format!("Failed to connect to Neo4j: {}", e)))?;
 
         Ok(Neo4jClient {
-            graph: Arc::new(graph),
+            graph,
         })
     }
 
     pub async fn execute_query(
-        &self,
+        &mut self,
         query: &str,
         params: std::collections::HashMap<String, neo4rs::BoltType>,
     ) -> Result<Vec<Row>, ImportError> {
@@ -56,7 +57,7 @@ impl Neo4jClient {
     }
 
     pub async fn execute_write(
-        &self,
+        &mut self,
         query: &str,
         params: std::collections::HashMap<String, neo4rs::BoltType>,
     ) -> Result<Vec<Row>, ImportError> {
@@ -84,7 +85,7 @@ impl Neo4jClient {
         Ok(rows)
     }
 
-    pub async fn start_transaction(&self) -> Result<Transaction, ImportError> {
+    pub async fn start_transaction(&mut self) -> Result<Transaction, ImportError> {
         let txn = self
             .graph
             .start_txn()
@@ -94,7 +95,7 @@ impl Neo4jClient {
         Ok(Transaction { txn })
     }
 
-    pub fn graph(&self) -> &Arc<Graph> {
+    pub fn graph(&self) -> &Graph {
         &self.graph
     }
 }
@@ -109,7 +110,7 @@ impl Transaction {
         query: &str,
         params: std::collections::HashMap<String, neo4rs::BoltType>,
     ) -> Result<Vec<Row>, ImportError> {
-        let query_obj = Query::new(query.to_string()).params(params);
+        let query_obj = Query::new(query).params(params);
         let mut result = self
             .txn
             .execute(query_obj)

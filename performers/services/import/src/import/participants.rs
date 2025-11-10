@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::{info, warn, error};
-use neo4rs::BoltString;
+use neo4rs::{BoltString, BoltBoolean};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImportResult {
@@ -30,7 +30,7 @@ pub struct ParticipantResult {
 }
 
 pub async fn import_participants(
-    client: &Neo4jClient,
+    client: &mut Neo4jClient,
     config: &Config,
 ) -> Result<ImportResult, ImportError> {
     let dataset_path = PathBuf::from(&config.dataset_path);
@@ -86,9 +86,10 @@ pub async fn import_participants(
         }
     }
 
+    let total_count = participant_dirs.len();
     Ok(ImportResult {
         success: true,
-        total: participant_dirs.len(),
+        total: total_count,
         processed: results.len(),
         results,
     })
@@ -168,15 +169,15 @@ async fn process_participant(
     );
     create_params.insert(
         "has_session_data".to_string(),
-        neo4rs::BoltType::Boolean(has_session_data),
+        neo4rs::BoltType::Boolean(BoltBoolean::from(has_session_data)),
     );
     create_params.insert(
         "has_video_files".to_string(),
-        neo4rs::BoltType::Boolean(has_video_files),
+        neo4rs::BoltType::Boolean(BoltBoolean::from(has_video_files)),
     );
     create_params.insert(
         "has_hume_data".to_string(),
-        neo4rs::BoltType::Boolean(has_hume_data),
+        neo4rs::BoltType::Boolean(BoltBoolean::from(has_hume_data)),
     );
     create_params.insert(
         "imported_at".to_string(),

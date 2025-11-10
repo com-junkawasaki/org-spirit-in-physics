@@ -5,7 +5,7 @@ use crate::neo4j::client::Neo4jClient;
 use crate::error::ImportError;
 
 pub async fn execute_in_transaction<F, T>(
-    client: &Neo4jClient,
+    client: &mut Neo4jClient,
     f: F,
 ) -> Result<T, ImportError>
 where

@@ -15,7 +15,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tracing::{info, error};
 
 use config::Config;
@@ -24,7 +24,7 @@ use import::{participants, sessions, emotions};
 
 #[derive(Clone)]
 struct AppState {
-    neo4j_client: Arc<Neo4jClient>,
+    neo4j_client: Arc<Mutex<Neo4jClient>>,
     config: Arc<Config>,
 }
 
@@ -42,11 +42,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Configuration loaded");
 
     // Initialize Neo4j client
-    let neo4j_client = Arc::new(Neo4jClient::new(&config.neo4j).await?);
+    let neo4j_client = Neo4jClient::new(&config.neo4j).await?;
     info!("Neo4j client initialized");
 
     let app_state = AppState {
-        neo4j_client,
+        neo4j_client: Arc::new(Mutex::new(neo4j_client)),
         config,
     };
 
@@ -70,7 +70,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn import_participants(
     State(state): State<AppState>,
 ) -> Result<Json<participants::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    match participants::import_participants(&state.neo4j_client, &state.config).await {
+    let mut client = state.neo4j_client.lock().unwrap();
+    match participants::import_participants(&mut *client, &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
             error!("Error importing participants: {}", e);
@@ -85,7 +86,8 @@ async fn import_participants(
 async fn import_sessions(
     State(state): State<AppState>,
 ) -> Result<Json<sessions::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    match sessions::import_sessions(&state.neo4j_client, &state.config).await {
+    let mut client = state.neo4j_client.lock().unwrap();
+    match sessions::import_sessions(&mut *client, &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
             error!("Error importing sessions: {}", e);
@@ -100,7 +102,8 @@ async fn import_sessions(
 async fn import_emotions(
     State(state): State<AppState>,
 ) -> Result<Json<emotions::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    match emotions::import_emotions(&state.neo4j_client, &state.config).await {
+    let mut client = state.neo4j_client.lock().unwrap();
+    match emotions::import_emotions(&mut *client, &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
             error!("Error importing emotions: {}", e);

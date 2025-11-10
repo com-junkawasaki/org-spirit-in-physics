@@ -70,7 +70,7 @@ const AU_KEYS: &[&str] = &[
 ];
 
 pub async fn import_emotions(
-    client: &Neo4jClient,
+    client: &mut Neo4jClient,
     config: &Config,
 ) -> Result<ImportResult, ImportError> {
     let dataset_path = PathBuf::from(&config.dataset_path);
@@ -126,9 +126,10 @@ pub async fn import_emotions(
         }
     }
 
+    let total_count = participant_dirs.len();
     Ok(ImportResult {
         success: true,
-        total: participant_dirs.len(),
+        total: total_count,
         processed: results.len(),
         results,
     })
@@ -152,7 +153,7 @@ async fn process_emotions(
         LIMIT 1
     "#;
 
-    let check_rows = txn.execute(check_query, check_params).await?;
+    let check_rows: Vec<neo4rs::Row> = txn.execute(check_query.to_string(), check_params).await?;
     if check_rows.is_empty() {
         return Err(ImportError::ParticipantNotFound(participant_id.to_string()));
     }
@@ -253,7 +254,7 @@ async fn delete_existing_emotion_data(
         DETACH DELETE b, f, l, pr
     "#;
 
-    txn.execute(query, params).await?;
+    txn.execute(query.to_string(), params).await?;
     Ok(())
 }
 
@@ -380,7 +381,7 @@ async fn store_emotion_entry(
         CREATE (s)-[:HAS_EMOTION_ENTRY]->(e)
     "#;
 
-    txn.execute(query, params).await?;
+    txn.execute(query.to_string(), params).await?;
     Ok(())
 }
 
@@ -441,8 +442,8 @@ async fn store_burst_emotion_data(
 
     // Check for duplicates
     let mut check_params = HashMap::new();
-    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string()));
-    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone()));
+    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
+    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone())));
     check_params.insert("begin_time".to_string(), begin_time.map(neo4rs::BoltType::Float).unwrap_or(neo4rs::BoltType::Null));
     check_params.insert("end_time".to_string(), end_time.map(neo4rs::BoltType::Float).unwrap_or(neo4rs::BoltType::Null));
 
@@ -455,7 +456,7 @@ async fn store_burst_emotion_data(
         LIMIT 1
     "#;
 
-    let existing = txn.execute(check_query, check_params).await?;
+    let existing: Vec<neo4rs::Row> = txn.execute(check_query.to_string(), check_params).await?;
     if !existing.is_empty() {
         return Ok(());
     }
@@ -483,7 +484,7 @@ async fn store_burst_emotion_data(
     let node_id = format!("burst_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
     
     let mut create_params = HashMap::new();
-    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string()));
+    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
     create_params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
     create_params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
     create_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id)));
@@ -508,7 +509,7 @@ async fn store_burst_emotion_data(
         CREATE (s)-[:HAS_BURST_EMOTION_DATA]->(b)
     "#;
 
-    txn.execute(create_query, create_params).await?;
+    txn.execute(create_query.to_string(), create_params).await?;
     Ok(())
 }
 
@@ -524,8 +525,8 @@ async fn store_face_emotion_data(
 
     // Check for duplicates
     let mut check_params = HashMap::new();
-    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string()));
-    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone()));
+    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
+    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone())));
     check_params.insert("frame".to_string(), frame.map(neo4rs::BoltType::Integer).unwrap_or(neo4rs::BoltType::Null));
     check_params.insert("time".to_string(), time.map(neo4rs::BoltType::Float).unwrap_or(neo4rs::BoltType::Null));
 
@@ -538,7 +539,7 @@ async fn store_face_emotion_data(
         LIMIT 1
     "#;
 
-    let existing = txn.execute(check_query, check_params).await?;
+    let existing: Vec<neo4rs::Row> = txn.execute(check_query.to_string(), check_params).await?;
     if !existing.is_empty() {
         return Ok(());
     }
@@ -566,7 +567,7 @@ async fn store_face_emotion_data(
     let node_id = format!("face_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
     
     let mut create_params = HashMap::new();
-    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string()));
+    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
     create_params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
     create_params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
     create_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id)));
@@ -601,7 +602,7 @@ async fn store_face_emotion_data(
         CREATE (s)-[:HAS_FACE_EMOTION_DATA]->(f)
     "#;
 
-    txn.execute(create_query, create_params).await?;
+    txn.execute(create_query.to_string(), create_params).await?;
     Ok(())
 }
 
@@ -618,9 +619,9 @@ async fn store_language_emotion_data(
 
     // Check for duplicates
     let mut check_params = HashMap::new();
-    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string()));
-    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone()));
-    check_params.insert("text".to_string(), text.as_ref().map(|t| neo4rs::BoltType::String(BoltString::from(t.clone())).unwrap_or(neo4rs::BoltType::Null));
+    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
+    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone())));
+    check_params.insert("text".to_string(), text.as_ref().map(|t| neo4rs::BoltType::String(BoltString::from(t.clone()))).unwrap_or(neo4rs::BoltType::Null));
     check_params.insert("begin_time".to_string(), begin_time.map(neo4rs::BoltType::Float).unwrap_or(neo4rs::BoltType::Null));
     check_params.insert("end_time".to_string(), end_time.map(neo4rs::BoltType::Float).unwrap_or(neo4rs::BoltType::Null));
 
@@ -634,7 +635,7 @@ async fn store_language_emotion_data(
         LIMIT 1
     "#;
 
-    let existing = txn.execute(check_query, check_params).await?;
+    let existing: Vec<neo4rs::Row> = txn.execute(check_query.to_string(), check_params).await?;
     if !existing.is_empty() {
         return Ok(());
     }
@@ -661,11 +662,11 @@ async fn store_language_emotion_data(
     let node_id = format!("language_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
     
     let mut create_params = HashMap::new();
-    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string()));
+    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
     create_params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
     create_params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
     create_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id)));
-    create_params.insert("text".to_string(), text.as_ref().map(|t| neo4rs::BoltType::String(BoltString::from(t.clone())).unwrap_or(neo4rs::BoltType::Null));
+    create_params.insert("text".to_string(), text.as_ref().map(|t| neo4rs::BoltType::String(BoltString::from(t.clone()))).unwrap_or(neo4rs::BoltType::Null));
     create_params.insert("begin_time".to_string(), begin_time.map(neo4rs::BoltType::Float).unwrap_or(neo4rs::BoltType::Null));
     create_params.insert("end_time".to_string(), end_time.map(neo4rs::BoltType::Float).unwrap_or(neo4rs::BoltType::Null));
     create_params.insert("emotion_scores".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&emotion_scores)?)));
@@ -688,7 +689,7 @@ async fn store_language_emotion_data(
         CREATE (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l)
     "#;
 
-    txn.execute(create_query, create_params).await?;
+    txn.execute(create_query.to_string(), create_params).await?;
     Ok(())
 }
 
@@ -703,8 +704,8 @@ async fn store_prosody_emotion_data(
 
     // Check for duplicates
     let mut check_params = HashMap::new();
-    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string()));
-    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone()));
+    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
+    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone())));
     check_params.insert("time".to_string(), time.map(neo4rs::BoltType::Float).unwrap_or(neo4rs::BoltType::Null));
 
     let check_query = r#"
@@ -715,7 +716,7 @@ async fn store_prosody_emotion_data(
         LIMIT 1
     "#;
 
-    let existing = txn.execute(check_query, check_params).await?;
+    let existing: Vec<neo4rs::Row> = txn.execute(check_query.to_string(), check_params).await?;
     if !existing.is_empty() {
         return Ok(());
     }
@@ -734,7 +735,7 @@ async fn store_prosody_emotion_data(
     let node_id = format!("prosody_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
     
     let mut create_params = HashMap::new();
-    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string()));
+    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
     create_params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
     create_params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
     create_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id)));
@@ -755,7 +756,7 @@ async fn store_prosody_emotion_data(
         CREATE (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr)
     "#;
 
-    txn.execute(create_query, create_params).await?;
+    txn.execute(create_query.to_string(), create_params).await?;
     Ok(())
 }
 

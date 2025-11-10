@@ -23,7 +23,7 @@ impl ValidatedSessionId {
     pub async fn new(
         session_id: String,
         participant_id: &str,
-        client: &Neo4jClient,
+        client: &mut Neo4jClient,
     ) -> Result<Self, ImportError> {
         // Verify session exists in Neo4j
         let mut params = std::collections::HashMap::new();
