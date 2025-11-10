@@ -149,11 +149,11 @@ async function getSessionData(client: any, participantId: string): Promise<any> 
     // 新しい構造でデータが見つからない場合、古い構造（Participant -> Experiment -> ExperimentSession）を試す
     if (sessionResults.length === 0) {
       sessionQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-        RETURN s.session_data as sessionData, s.id as sessionId, s.start_ts as startTs
-        ORDER BY s.start_ts DESC
-        LIMIT 1
-      `;
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      RETURN s.session_data as sessionData, s.id as sessionId, s.start_ts as startTs
+      ORDER BY s.start_ts DESC
+      LIMIT 1
+    `;
       console.log('Executing session query (old structure):', sessionQuery);
       sessionResults = await client.query(sessionQuery, { participantId });
       console.log('Session query results count (old structure):', sessionResults.length);
@@ -243,11 +243,11 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
     // 新しい構造でデータが見つからない場合、古い構造を試す
     if (emotionResults.length === 0) {
       emotionQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-        MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
-        RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
-        ORDER BY ed.timestamp
-      `;
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
+      RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
+      ORDER BY ed.timestamp
+    `;
       console.log('Executing emotion query (old structure):', emotionQuery);
       emotionResults = await client.query(emotionQuery, { participantId });
       console.log('Emotion query results count (old structure):', emotionResults.length);
@@ -295,14 +295,14 @@ async function getEmotionData(client: any, participantId: string): Promise<any[]
       // 古い構造（EmotionData）
       emotionResults.forEach((result: any) => {
         mappedResults.push({
-          fileType: result.source || 'unknown',
-          beginTime: result.timestamp,
-          endTime: result.timestamp + 1000, // 1秒間隔で仮定
-          emotions: [{ 
-            name: result.name, 
-            score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
-          }],
-          sessionId: 'unknown'
+      fileType: result.source || 'unknown',
+      beginTime: result.timestamp,
+      endTime: result.timestamp + 1000, // 1秒間隔で仮定
+      emotions: [{ 
+        name: result.name, 
+        score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
+      }],
+      sessionId: 'unknown'
         });
       });
     }

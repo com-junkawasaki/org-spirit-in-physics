@@ -74,7 +74,7 @@ impl Neo4jClient {
             .map_err(|e| ImportError::Database(format!("Query execution failed: {}", e)))?;
 
         let mut rows = Vec::new();
-        while let Ok(Some(row)) = result.next().await {
+        while let Ok(Some(row)) = result.next(&mut txn).await {
             rows.push(row);
         }
 
@@ -110,7 +110,7 @@ impl Transaction {
         query: &str,
         params: std::collections::HashMap<String, neo4rs::BoltType>,
     ) -> Result<Vec<Row>, ImportError> {
-        let query_obj = Query::new(query).params(params);
+        let query_obj = Query::new(query.to_string()).params(params);
         let mut result = self
             .txn
             .execute(query_obj)
@@ -118,7 +118,7 @@ impl Transaction {
             .map_err(|e| ImportError::Database(format!("Query execution failed: {}", e)))?;
 
         let mut rows = Vec::new();
-        while let Ok(Some(row)) = result.next().await {
+        while let Ok(Some(row)) = result.next(&mut self.txn).await {
             rows.push(row);
         }
 

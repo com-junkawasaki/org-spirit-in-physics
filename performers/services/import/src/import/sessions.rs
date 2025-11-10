@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::{info, warn, error};
-use neo4rs::BoltString;
+use neo4rs::{BoltString, BoltInteger};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImportResult {
@@ -59,6 +59,7 @@ pub async fn import_sessions(
         }
     }
 
+    let total_count = participant_dirs.len();
     let mut results = Vec::new();
 
     for participant_path in participant_dirs {
@@ -94,7 +95,6 @@ pub async fn import_sessions(
         }
     }
 
-    let total_count = participant_dirs.len();
     Ok(ImportResult {
         success: true,
         total: total_count,
@@ -121,7 +121,7 @@ async fn process_session(
         LIMIT 1
     "#;
 
-    let check_rows: Vec<neo4rs::Row> = txn.execute(check_query.to_string(), check_params).await?;
+    let check_rows: Vec<neo4rs::Row> = txn.execute(check_query, check_params).await?;
     if check_rows.is_empty() {
         return Err(ImportError::ParticipantNotFound(participant_id.to_string()));
     }
@@ -192,7 +192,7 @@ async fn process_session(
         LIMIT 1
     "#;
 
-    let session_check_rows: Vec<neo4rs::Row> = txn.execute(session_check_query.to_string(), session_check_params).await?;
+    let session_check_rows: Vec<neo4rs::Row> = txn.execute(session_check_query, session_check_params).await?;
     if !session_check_rows.is_empty() {
         warn!("Session {} already exists, skipping import", session_id);
         return Ok(SessionResult {
@@ -215,15 +215,15 @@ async fn process_session(
     );
     create_params.insert(
         "session_index".to_string(),
-        neo4rs::BoltType::Integer(session_index),
+        neo4rs::BoltType::Integer(BoltInteger::from(session_index)),
     );
     create_params.insert(
         "start_ts".to_string(),
-        neo4rs::BoltType::Integer(start_time),
+        neo4rs::BoltType::Integer(BoltInteger::from(start_time)),
     );
     create_params.insert(
         "end_ts".to_string(),
-        end_time.map(neo4rs::BoltType::Integer)
+        end_time.map(|t| neo4rs::BoltType::Integer(BoltInteger::from(t)))
             .unwrap_or(neo4rs::BoltType::Null),
     );
     create_params.insert(
@@ -248,7 +248,7 @@ async fn process_session(
         RETURN s.id as id
     "#;
 
-    txn.execute(create_query.to_string(), create_params).await?;
+    txn.execute(create_query, create_params).await?;
 
     // Calculate statistics
     let word_responses = events

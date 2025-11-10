@@ -51,6 +51,7 @@ pub async fn import_participants(
         }
     }
 
+    let total_count = participant_dirs.len();
     let mut results = Vec::new();
 
     for participant_path in participant_dirs {
@@ -86,7 +87,6 @@ pub async fn import_participants(
         }
     }
 
-    let total_count = participant_dirs.len();
     Ok(ImportResult {
         success: true,
         total: total_count,
@@ -169,15 +169,15 @@ async fn process_participant(
     );
     create_params.insert(
         "has_session_data".to_string(),
-        neo4rs::BoltType::Boolean(BoltBoolean::from(has_session_data)),
+        neo4rs::BoltType::Boolean(BoltBoolean { value: has_session_data }),
     );
     create_params.insert(
         "has_video_files".to_string(),
-        neo4rs::BoltType::Boolean(BoltBoolean::from(has_video_files)),
+        neo4rs::BoltType::Boolean(BoltBoolean { value: has_video_files }),
     );
     create_params.insert(
         "has_hume_data".to_string(),
-        neo4rs::BoltType::Boolean(BoltBoolean::from(has_hume_data)),
+        neo4rs::BoltType::Boolean(BoltBoolean { value: has_hume_data }),
     );
     create_params.insert(
         "imported_at".to_string(),

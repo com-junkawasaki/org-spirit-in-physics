@@ -15,7 +15,8 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tracing::{info, error};
 
 use config::Config;
@@ -70,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn import_participants(
     State(state): State<AppState>,
 ) -> Result<Json<participants::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    let mut client = state.neo4j_client.lock().unwrap();
+    let mut client = state.neo4j_client.lock().await;
     match participants::import_participants(&mut *client, &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
@@ -86,7 +87,7 @@ async fn import_participants(
 async fn import_sessions(
     State(state): State<AppState>,
 ) -> Result<Json<sessions::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    let mut client = state.neo4j_client.lock().unwrap();
+    let mut client = state.neo4j_client.lock().await;
     match sessions::import_sessions(&mut *client, &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
@@ -102,7 +103,7 @@ async fn import_sessions(
 async fn import_emotions(
     State(state): State<AppState>,
 ) -> Result<Json<emotions::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    let mut client = state.neo4j_client.lock().unwrap();
+    let mut client = state.neo4j_client.lock().await;
     match emotions::import_emotions(&mut *client, &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {

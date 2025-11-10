@@ -33,7 +33,7 @@ async function importEmotionsFromDataset() {
     // Merkle DAG: import.emotions.initialize_db
     // Neo4jデータベース初期化（致命的エラーのチェック）
     try {
-      await initializeNeo4jDatabase();
+    await initializeNeo4jDatabase();
     } catch (error) {
       console.error('Fatal error: Failed to initialize Neo4j database:', error);
       return {
@@ -94,7 +94,7 @@ async function importEmotionsFromDataset() {
           });
           continue;
         }
-        
+
         // ファイルが存在するか確認
         try {
           await fs.access(predictionsFilePath);
@@ -343,11 +343,11 @@ async function processEmotionData(participantId: string, predictionsData: any) {
     }
     
     if (emotions.length > 0) {
-      entriesProcessed++;
+        entriesProcessed++;
 
-      // 各感情エントリを処理
-      const emotionRecord = {
-        participantId,
+        // 各感情エントリを処理
+        const emotionRecord = {
+          participantId,
         text,
         beginTime,
         endTime,
@@ -355,14 +355,14 @@ async function processEmotionData(participantId: string, predictionsData: any) {
         emotions: emotions.map((emotion: any) => ({
           name: emotion.name || emotion.emotion || 'unknown',
           score: emotion.score || emotion.value || 0
-        })),
+          })),
         position: emotionEntry.position
-      };
+        };
 
       totalEmotions += emotions.length;
 
-      // Neo4jに感情データを格納
-      await storeEmotionEntry(emotionRecord);
+        // Neo4jに感情データを格納
+        await storeEmotionEntry(emotionRecord);
     }
   }
 
@@ -491,14 +491,14 @@ async function processEmotionCSVData(participantId: string, artifactsDir: string
 
     // 各CSVディレクトリに対して処理
     for (const csvDir of csvDirs) {
-      for (const csvFile of csvFiles) {
-        const csvPath = path.join(csvDir, csvFile);
-        try {
-          await fs.access(csvPath);
-          // CSVデータを読み取り処理
-          const csvContent = await fs.readFile(csvPath, 'utf-8');
-          await processCSVFile(participantId, csvFile, csvContent);
-          filesProcessed++;
+    for (const csvFile of csvFiles) {
+      const csvPath = path.join(csvDir, csvFile);
+      try {
+        await fs.access(csvPath);
+        // CSVデータを読み取り処理
+        const csvContent = await fs.readFile(csvPath, 'utf-8');
+        await processCSVFile(participantId, csvFile, csvContent);
+        filesProcessed++;
         } catch (error) {
           // CSVファイルが存在しない場合はスキップ
           console.warn(`CSV file ${csvFile} not found or error reading in ${csvDir}:`, error);
@@ -738,7 +738,7 @@ async function storeFaceEmotionData(participantId: string, record: Record<string
     await neo4jClient.query(query, {
       sessionId,
       nodeId,
-      participantId,
+        participantId,
       recordId: record.Id || 'unknown',
       frame: record.Frame ? parseInt(record.Frame) : null,
       time: record.Time ? parseFloat(record.Time) : null,
