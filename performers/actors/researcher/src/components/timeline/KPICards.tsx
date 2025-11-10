@@ -94,10 +94,36 @@ export default function KPICards({ data }: KPICardsProps) {
               <svg width="100%" height="100%" className="text-blue-500">
                 <title>スパークライン: {card.title}</title>
                 <path
-                  d={d3.line<number>()
-                    .x((_, i) => (i / (card.sparkline.length - 1)) * 100)
-                    .y(d => 100 - (d / Math.max(...card.sparkline)) * 100)
-                    .curve(d3.curveMonotoneX)(card.sparkline) || ''}
+                  d={(() => {
+                    try {
+                      const validData = card.sparkline.filter(d => isFinite(d) && !isNaN(d))
+                      if (validData.length === 0) return ''
+                      
+                      const maxValue = Math.max(...validData)
+                      if (!isFinite(maxValue) || isNaN(maxValue) || maxValue === 0) return ''
+                      
+                      const line = d3.line<number>()
+                        .x((_, i) => {
+                          const x = (i / Math.max(1, validData.length - 1)) * 100
+                          return isFinite(x) && !isNaN(x) ? x : 0
+                        })
+                        .y(d => {
+                          if (!isFinite(d) || isNaN(d)) return 50
+                          const y = 100 - (d / maxValue) * 100
+                          return isFinite(y) && !isNaN(y) ? y : 50
+                        })
+                        .curve(d3.curveMonotoneX)
+                      
+                      const pathString = line(validData)
+                      if (!pathString || pathString.includes('NaN') || pathString.includes('Infinity')) {
+                        return ''
+                      }
+                      return pathString
+                    } catch (error) {
+                      console.error('[KPICards] Error generating path for', card.title, error)
+                      return ''
+                    }
+                  })()}
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"

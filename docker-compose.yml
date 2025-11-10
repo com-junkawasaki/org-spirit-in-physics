@@ -78,7 +78,7 @@ services:
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       # GraphQL API URL
       # Client-side: use localhost for browser access
-      - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=${NEXT_PUBLIC_GRAPHQL_RUST_API_URL:-http://localhost:8081/graphql}
+      - NEXT_PUBLIC_GRAPHQL_RUST_API_URL=${NEXT_PUBLIC_GRAPHQL_RUST_API_URL:-http://localhost:8080/graphql}
       # Server-side: use container name for server-to-server communication
       - GRAPHQL_RUST_API_URL=${GRAPHQL_RUST_API_URL:-http://graphql:8080/graphql}
       # Clerk Authentication (hardcoded for development)

@@ -55,22 +55,39 @@ export default function SmallMultiples({ data }: SmallMultiplesProps) {
                 <title>スパークライン: {item.word}</title>
                 <path
                   d={(() => {
-                    const validData = item.data.filter(d => !isNaN(d.reactionValue) && isFinite(d.reactionValue))
-                    if (validData.length === 0) return ''
-                    
-                    const maxValue = Math.max(...validData.map(x => x.reactionValue))
-                    if (isNaN(maxValue) || maxValue === 0) return ''
-                    
-                    return d3.line<TimelineDataPoint>()
-                      .x((_, i) => {
-                        if (validData.length === 0) return 0
-                        return (i / Math.max(1, validData.length - 1)) * 100
-                      })
-                      .y(d => {
-                        if (isNaN(d.reactionValue) || !isFinite(d.reactionValue)) return 50
-                        return 100 - (d.reactionValue / maxValue) * 100
-                      })
-                      .curve(d3.curveMonotoneX)(validData) || ''
+                    try {
+                      const validData = item.data.filter(d => 
+                        !isNaN(d.reactionValue) && 
+                        isFinite(d.reactionValue) && 
+                        d.reactionValue >= 0
+                      )
+                      if (validData.length === 0) return ''
+                      
+                      const maxValue = Math.max(...validData.map(x => x.reactionValue))
+                      if (!isFinite(maxValue) || isNaN(maxValue) || maxValue === 0) return ''
+                      
+                      const line = d3.line<TimelineDataPoint>()
+                        .x((_, i) => {
+                          if (validData.length === 0) return 0
+                          const x = (i / Math.max(1, validData.length - 1)) * 100
+                          return isFinite(x) && !isNaN(x) ? x : 0
+                        })
+                        .y(d => {
+                          if (!isFinite(d.reactionValue) || isNaN(d.reactionValue)) return 50
+                          const y = 100 - (d.reactionValue / maxValue) * 100
+                          return isFinite(y) && !isNaN(y) ? y : 50
+                        })
+                        .curve(d3.curveMonotoneX)
+                      
+                      const pathString = line(validData)
+                      if (!pathString || pathString.includes('NaN') || pathString.includes('Infinity')) {
+                        return ''
+                      }
+                      return pathString
+                    } catch (error) {
+                      console.error('[SmallMultiples] Error generating path for', item.word, error)
+                      return ''
+                    }
                   })()}
                   fill="none"
                   stroke="currentColor"

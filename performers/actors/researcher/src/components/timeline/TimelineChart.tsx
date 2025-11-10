@@ -108,17 +108,33 @@ export default function TimelineChart({
 
     // メインライン
     const line = d3.line<TimelineDataPoint>()
-      .x(d => xScale(new Date(d.timestamp)))
-      .y(d => yScale(d.reactionValue))
+      .x(d => {
+        const date = new Date(d.timestamp)
+        const x = xScale(date)
+        return isFinite(x) && !isNaN(x) ? x : 0
+      })
+      .y(d => {
+        const y = yScale(d.reactionValue)
+        return isFinite(y) && !isNaN(y) ? y : overviewHeight
+      })
       .curve(d3.curveMonotoneX)
+      .defined(d => {
+        const date = new Date(d.timestamp)
+        const x = xScale(date)
+        const y = yScale(d.reactionValue)
+        return isFinite(x) && !isNaN(x) && isFinite(y) && !isNaN(y)
+      })
 
-    g.append('path')
-      .datum(sorted)
-      .attr('class', 'overview-line')
-      .attr('d', line)
-      .style('fill', 'none')
-      .style('stroke', '#666')
-      .style('stroke-width', 1)
+    const pathString = line(sorted)
+    if (pathString && !pathString.includes('NaN') && !pathString.includes('Infinity')) {
+      g.append('path')
+        .datum(sorted)
+        .attr('class', 'overview-line')
+        .attr('d', pathString)
+        .style('fill', 'none')
+        .style('stroke', '#666')
+        .style('stroke-width', 1)
+    }
 
     // 選択範囲のハイライト
     if (timeRange) {
@@ -472,17 +488,33 @@ export default function TimelineChart({
     // 線の描画（反応値）
     if (filters.reactionValues) {
       const line = d3.line<TimelineDataPoint>()
-        .x(d => xScale(new Date(d.timestamp)))
-        .y(d => yScale(d.reactionValue))
+        .x(d => {
+          const date = new Date(d.timestamp)
+          const x = xScale(date)
+          return isFinite(x) && !isNaN(x) ? x : 0
+        })
+        .y(d => {
+          const y = yScale(d.reactionValue)
+          return isFinite(y) && !isNaN(y) ? y : innerHeight
+        })
         .curve(d3.curveMonotoneX)
+        .defined(d => {
+          const date = new Date(d.timestamp)
+          const x = xScale(date)
+          const y = yScale(d.reactionValue)
+          return isFinite(x) && !isNaN(x) && isFinite(y) && !isNaN(y)
+        })
 
-      g.append('path')
-        .datum(filteredDataSorted)
-        .attr('class', 'reaction-line')
-        .attr('d', line)
-        .style('fill', 'none')
-        .style('stroke', '#3b82f6')
-        .style('stroke-width', 2)
+      const pathString = line(filteredDataSorted)
+      if (pathString && !pathString.includes('NaN') && !pathString.includes('Infinity')) {
+        g.append('path')
+          .datum(filteredDataSorted)
+          .attr('class', 'reaction-line')
+          .attr('d', pathString)
+          .style('fill', 'none')
+          .style('stroke', '#3b82f6')
+          .style('stroke-width', 2)
+      }
     }
 
     // 軸の描画
