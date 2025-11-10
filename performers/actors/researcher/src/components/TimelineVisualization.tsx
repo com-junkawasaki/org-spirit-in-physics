@@ -199,15 +199,37 @@ export default function TimelineVisualization({
   const convertedGraphData = useMemo(() => {
     if (!force3DGraphData) return null
     
-    const nodes: WordNode[] = force3DGraphData.nodes.map((node: any) => ({
-      id: node.id,
-      label: node.label,
-      scale: node.scale || 1.0,
-      nodeType: (node.nodeType || 'word') as 'word' | 'anchor',
-      initial: node.initial ? (node.initial as [number, number, number]) : undefined,
-      fixed: node.fixed || false,
-      color: node.color,
-    }))
+    // メモリチェック（変換前）
+    try {
+      const { checkMemoryUsage } = require('@/utils/memory-monitor')
+      checkMemoryUsage(450) // Force3Dグラフ変換は450MBまで
+    } catch (error: any) {
+      console.error('[TimelineVisualization] Memory check failed before graph conversion:', error)
+      throw new Error(`メモリ使用量が上限を超えています。グラフデータのサイズを減らしてください。`)
+    }
+    
+    const nodes: WordNode[] = force3DGraphData.nodes.map((node: any, index: number) => {
+      // 500ノードごとにメモリチェック
+      if (index > 0 && index % 500 === 0) {
+        try {
+          const { checkMemoryUsage } = require('@/utils/memory-monitor')
+          checkMemoryUsage(450)
+        } catch (error: any) {
+          console.error(`[TimelineVisualization] Memory check failed at node ${index}:`, error)
+          throw new Error(`グラフデータ変換中にメモリ使用量が上限を超えました（${index}ノード目）`)
+        }
+      }
+      
+      return {
+        id: node.id,
+        label: node.label,
+        scale: node.scale || 1.0,
+        nodeType: (node.nodeType || 'word') as 'word' | 'anchor',
+        initial: node.initial ? (node.initial as [number, number, number]) : undefined,
+        fixed: node.fixed || false,
+        color: node.color,
+      }
+    })
 
     const links: WordLink[] = force3DGraphData.links.map((link: any) => ({
       source: typeof link.source === 'number' ? link.source : parseInt(link.source),
@@ -504,13 +526,13 @@ export default function TimelineVisualization({
 
                     // No data state
                     if (!force3DGraphData) {
-                      return (
+                    return (
                         <div className="border rounded overflow-hidden p-4 text-gray-500">
                           データがありません
-                        </div>
-                      )
-                    }
-
+                      </div>
+                    )
+                  }
+                  
                     try {
                       if (!convertedGraphData) {
                         return (
@@ -520,41 +542,90 @@ export default function TimelineVisualization({
                         )
                       }
 
-                      console.log('3Dグラフデータ:', { nodes: convertedGraphData.nodes.length, links: convertedGraphData.links.length })
+                      // データ検証
+                      const validNodes = convertedGraphData.nodes.filter(n => 
+                        n && 
+                        typeof n.id === 'string' && 
+                        typeof n.label === 'string' &&
+                        typeof n.scale === 'number' &&
+                        isFinite(n.scale) &&
+                        !isNaN(n.scale)
+                      )
+                      
+                      const validLinks = convertedGraphData.links.filter(l =>
+                        l &&
+                        typeof l.source === 'number' &&
+                        typeof l.target === 'number' &&
+                        l.source >= 0 &&
+                        l.target >= 0 &&
+                        l.source < validNodes.length &&
+                        l.target < validNodes.length
+                      )
 
-                      return (
-                        <div className="border rounded overflow-hidden">
-                          <Force3D
-                            nodes={convertedGraphData.nodes}
-                            links={convertedGraphData.links}
-                            width={width}
-                            height={Math.min(460, Math.max(360, height))}
-                            physics={{
-                              springK,
-                              repulsionK,
-                              damping,
-                              restLength,
-                              maxSpeed: 200,
-                              shellRadius,
-                              shellK,
-                              radialOutK: radialOutK,
-                              constraintIters: constraintIters,
-                              constraintStiffness: constraintStiffness,
-                              minSep,
-                              sepK
-                            }}
-                          />
-                        </div>
-                      )
-                    } catch (error) {
-                      console.error('3Dグラフレンダリングエラー:', error)
-                      return (
-                        <div className="border rounded overflow-hidden p-4 text-red-600">
-                          3Dグラフの表示に失敗しました: {error instanceof Error ? error.message : 'Unknown error'}
-                        </div>
-                      )
-                    }
-                  })()}
+                      console.log('[Force3D] データ検証:', {
+                        originalNodes: convertedGraphData.nodes.length,
+                        validNodes: validNodes.length,
+                        originalLinks: convertedGraphData.links.length,
+                        validLinks: validLinks.length
+                      })
+
+                      if (validNodes.length === 0) {
+                        return (
+                          <div className="border rounded overflow-hidden p-4 text-yellow-600">
+                            有効なノードデータがありません
+                          </div>
+                        )
+                      }
+
+                  return (
+                    <div className="border rounded overflow-hidden">
+                      <Force3D
+                            nodes={validNodes}
+                            links={validLinks}
+                        width={width}
+                        height={Math.min(460, Math.max(360, height))}
+                        physics={{
+                              springK: isFinite(springK) && !isNaN(springK) ? springK : 2.0,
+                              repulsionK: isFinite(repulsionK) && !isNaN(repulsionK) ? repulsionK : 2000.0,
+                              damping: isFinite(damping) && !isNaN(damping) ? damping : 0.92,
+                              restLength: isFinite(restLength) && !isNaN(restLength) ? restLength : 80,
+                          maxSpeed: 200,
+                              shellRadius: isFinite(shellRadius) && !isNaN(shellRadius) ? shellRadius : 300,
+                              shellK: isFinite(shellK) && !isNaN(shellK) ? shellK : 1.5,
+                              radialOutK: isFinite(radialOutK) && !isNaN(radialOutK) ? radialOutK : 0,
+                              constraintIters: isFinite(constraintIters) && !isNaN(constraintIters) ? constraintIters : 2,
+                              constraintStiffness: isFinite(constraintStiffness) && !isNaN(constraintStiffness) ? constraintStiffness : 0.5,
+                              minSep: isFinite(minSep) && !isNaN(minSep) ? minSep : 40,
+                              sepK: isFinite(sepK) && !isNaN(sepK) ? sepK : 3000
+                        }}
+                      />
+                    </div>
+                  )
+                } catch (error) {
+                      console.error('[Force3D] レンダリングエラー:', error)
+                      console.error('[Force3D] エラー詳細:', {
+                        errorName: error instanceof Error ? error.name : 'Unknown',
+                        errorMessage: error instanceof Error ? error.message : String(error),
+                        errorStack: error instanceof Error ? error.stack : undefined,
+                        convertedGraphData: convertedGraphData ? {
+                          nodesCount: convertedGraphData.nodes.length,
+                          linksCount: convertedGraphData.links.length
+                        } : null
+                      })
+                  return (
+                    <div className="border rounded overflow-hidden p-4 text-red-600">
+                          <div className="font-semibold mb-2">3Dグラフの表示に失敗しました</div>
+                          <div className="text-sm">{error instanceof Error ? error.message : 'Unknown error'}</div>
+                          {error instanceof Error && error.stack && (
+                            <details className="mt-2 text-xs">
+                              <summary className="cursor-pointer">詳細</summary>
+                              <pre className="mt-1 overflow-auto">{error.stack}</pre>
+                            </details>
+                          )}
+                    </div>
+                  )
+                }
+              })()}
                 </div>
                 {/* Control Panel - iPad sticky and touch-friendly */}
                 <div className="lg:col-span-1 order-1 lg:order-2 sticky top-4 self-start max-h-[78vh] overflow-auto pr-1">
@@ -1077,11 +1148,11 @@ export default function TimelineVisualization({
 
                       return (
                         <div className="border rounded overflow-hidden">
-                          <Force3D
+                            <Force3D
                             nodes={convertedGraphData.nodes}
                             links={convertedGraphData.links}
                             width={Math.min(width / 2 - 40, 600)}
-                            height={Math.min(360, Math.max(280, height - 240))}
+                              height={Math.min(360, Math.max(280, height - 240))}
                             physics={{
                               springK,
                               repulsionK,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useCallback, useState } from 'react'
+import { MemoryMonitor, checkMemoryUsage } from '@/utils/memory-monitor'
 
 // WebGPU型定義（簡略版）
 declare global {
@@ -647,9 +648,45 @@ export default function Force3DWordGraphTypeGPU({
           ]
         })
 
+        // メモリ監視を開始（最大500MB、1秒ごとにチェック）
+        const memoryMonitor = new MemoryMonitor({
+          maxMemoryMB: 500,
+          checkInterval: 1000,
+          onExceeded: (info) => {
+            const errorMessage = `
+[Force3D] メモリ使用量が上限を超えました
+
+使用メモリ: ${info.usedMB.toFixed(2)} MB
+メモリ上限: ${info.limitMB.toFixed(2)} MB
+使用率: ${info.usagePercent.toFixed(2)}%
+
+処理を停止しました。
+データサイズを減らすか、ブラウザをリロードしてください。
+            `.trim()
+            
+            console.error(errorMessage, {
+              memoryInfo: info,
+              nodes: nodesRef.current.length,
+              links: linksRef.current.length
+            })
+            
+            // アニメーションを停止
+            if (animRef.current) {
+              cancelAnimationFrame(animRef.current)
+              animRef.current = null
+            }
+            
+            // エラー状態を設定（UIに表示するため）
+            setWebGpuError(`メモリ使用量が上限を超えました (${info.usedMB.toFixed(2)} MB / ${info.limitMB.toFixed(2)} MB)`)
+          }
+        })
+        
+        memoryMonitor.start()
+
         // アニメーションループ
         let lastTime = performance.now()
         let isReadingBuffer = false // バッファ読み取り中のフラグ
+        let frameCount = 0 // フレームカウント（メモリチェック用）
         const tick = () => {
           const now = performance.now()
           const delta = Math.min(0.05, (now - lastTime) / 1000)
@@ -667,6 +704,22 @@ export default function Force3DWordGraphTypeGPU({
           if (isReadingBuffer) {
             animRef.current = requestAnimationFrame(tick)
             return
+          }
+          
+          // 100フレームごとにメモリチェック（軽量チェック）
+          frameCount++
+          if (frameCount % 100 === 0) {
+            try {
+              checkMemoryUsage(500)
+            } catch (error) {
+              console.error('[Force3D] Memory check failed:', error)
+              if (animRef.current) {
+                cancelAnimationFrame(animRef.current)
+                animRef.current = null
+              }
+              memoryMonitor.stop()
+              return
+            }
           }
 
           // ノードデータをWebGPUバッファに書き込み

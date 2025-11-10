@@ -105,8 +105,26 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
           
           try {
             const conversionStart = performance.now()
+            
+            // メモリチェック（変換前）
+            try {
+              checkMemoryUsage(400) // タイムラインデータ変換は400MBまで
+            } catch (error) {
+              console.error('[TimelineData] Memory check failed before conversion:', error)
+              throw new Error(`メモリ使用量が上限を超えています。データサイズを減らしてください。`)
+            }
+            
             // 短縮フィールドをTimelineDataPoint形式に変換
             const convertedData = result.data.timelineData.map((item: any, index: number) => {
+              // 1000件ごとにメモリチェック
+              if (index > 0 && index % 1000 === 0) {
+                try {
+                  checkMemoryUsage(400)
+                } catch (error) {
+                  console.error(`[TimelineData] Memory check failed at index ${index}:`, error)
+                  throw new Error(`データ変換中にメモリ使用量が上限を超えました（${index}件目）`)
+                }
+              }
               try {
                 // timestampを数値に変換（無効な場合はスキップ）
                 const timestamp = typeof item.t === 'number' ? item.t : 
