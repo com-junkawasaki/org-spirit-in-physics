@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
 import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
+import { neo4jManager } from "scripts/src/lib/database/neo4j-manager";
+import { neo4jClient } from "scripts/src/lib/neo4j";
+import { validateConsentData } from "scripts/src/lib/import-utils";
 
 // Merkle DAG: import.participants.process
 // 参加者データインポート処理関数
@@ -28,8 +31,17 @@ async function importParticipantsFromDataset() {
     const participantDirs = entries.filter(entry => entry.isDirectory());
 
     // Merkle DAG: import.participants.initialize_db
-    // Neo4jデータベース初期化
-    await initializeNeo4jDatabase();
+    // Neo4jデータベース初期化（致命的エラーのチェック）
+    try {
+      await initializeNeo4jDatabase();
+    } catch (error) {
+      console.error('Fatal error: Failed to initialize Neo4j database:', error);
+      return {
+        success: false,
+        error: 'Database connection failed. Please check Neo4j configuration.',
+        results: []
+      };
+    }
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
@@ -43,7 +55,7 @@ async function importParticipantsFromDataset() {
 
         // Merkle DAG: import.participants.validate_consent
         // 同意データの検証
-        if (!consentData.participantId || !consentData.agreedAt) {
+        if (!validateConsentData(consentData)) {
           throw new Error('Invalid consent data structure');
         }
 
@@ -95,11 +107,14 @@ async function importParticipantsFromDataset() {
         });
 
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error during import';
+        console.error(`Error importing participant ${participantId}:`, error);
         results.push({
           participantId,
           status: 'error',
-          message: error instanceof Error ? error.message : 'Unknown error during import'
+          message: errorMessage
         });
+        // エラーが発生しても続行（スキップ方式）
       }
     }
 
@@ -122,17 +137,38 @@ async function importParticipantsFromDataset() {
 // Merkle DAG: import.participants.check_existing
 // 既存参加者チェック関数
 async function checkExistingParticipant(participantId: string): Promise<boolean> {
-  // Neo4jクエリで既存参加者をチェック
-  // TODO: Neo4jドライバーを使用した実装
-  return false; // 仮実装
+  try {
+    const participant = await neo4jManager.getParticipant(participantId);
+    return participant !== null;
+  } catch (error) {
+    console.error(`Error checking existing participant ${participantId}:`, error);
+    // エラーが発生した場合は存在しないとみなす
+    return false;
+  }
 }
 
 // Merkle DAG: import.participants.create_node
 // 参加者ノード作成関数
 async function createParticipantNode(data: any) {
-  // Neo4jクエリで参加者ノードを作成
-  // TODO: Neo4jドライバーを使用した実装
-  return { id: data.id, created: true };
+  try {
+    await neo4jManager.saveParticipant({
+      id: data.id,
+      signature: data.signature,
+      agreedAt: data.agreedAt ? new Date(data.agreedAt) : undefined,
+      agreements: data.agreements,
+      name: data.name,
+      age: data.age,
+      gender: data.gender,
+      handedness: data.handedness,
+      hasSessionData: false, // 後で更新される
+      hasVideoFiles: false, // 後で更新される
+      videoFiles: []
+    });
+    return { id: data.id, created: true };
+  } catch (error) {
+    console.error(`Error creating participant node ${data.id}:`, error);
+    throw error;
+  }
 }
 
 // Merkle DAG: import.participants.check_video
@@ -160,8 +196,26 @@ async function checkHumeData(participantPath: string): Promise<boolean> {
 // Merkle DAG: import.participants.update_metadata
 // メタデータ更新関数
 async function updateParticipantMetadata(participantId: string, metadata: any) {
-  // Neo4jクエリでメタデータを更新
-  // TODO: Neo4jドライバーを使用した実装
+  try {
+    const query = `
+      MATCH (p:Participant {id: $participantId})
+      SET p.hasSessionData = $hasSessionData,
+          p.hasVideoFiles = $hasVideoFiles,
+          p.hasHumeData = $hasHumeData,
+          p.importedAt = $importedAt
+      RETURN p
+    `;
+    await neo4jClient.query(query, {
+      participantId,
+      hasSessionData: metadata.hasSessionData || false,
+      hasVideoFiles: metadata.hasVideoFiles || false,
+      hasHumeData: metadata.hasHumeData || false,
+      importedAt: metadata.importedAt || new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(`Error updating participant metadata ${participantId}:`, error);
+    throw error;
+  }
 }
 
 export async function POST(request: NextRequest) {

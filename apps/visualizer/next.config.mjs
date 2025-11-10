@@ -9,7 +9,7 @@ const nextConfig = {
   output: 'standalone',
   // Enable experimental features for better performance
   experimental: {
-    optimizeCss: true,
+    // optimizeCss: true, // Disabled: requires critters module which has issues in Docker
   },
   // Merkle DAG: Turbopack設定（experimental.turboの代替）
   // turbopack: {
