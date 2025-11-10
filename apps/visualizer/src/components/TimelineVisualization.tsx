@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { useTimelineData } from './timeline/useTimelineData'
 import TimelineChart from './timeline/TimelineChart'
@@ -10,7 +10,8 @@ import type {
   TimelineVisualizationProps,
   ForcePreset,
   WordNode,
-  WordLink
+  WordLink,
+  WordDistancePair
 } from './timeline/types'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
@@ -87,7 +88,7 @@ export default function TimelineVisualization({
   const lastInitialsRef = useRef<Map<string, [number, number, number]>>(new Map())
 
   // 表示モードの状態
-  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words'>('timeline')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words' | 'distance'>('timeline')
   // 単語選択（上位100をUIに表示）
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   // 感情フィルターと力学モード、データセグメント
@@ -108,6 +109,8 @@ export default function TimelineVisualization({
   // 単語テーブルの並び順
   const [wordsSortKey, setWordsSortKey] = useState<'count' | 'rv_o' | 'rt_o' | 'ph_o'>('count')
   const [wordsSortDir, setWordsSortDir] = useState<'asc' | 'desc'>('desc')
+  // 距離タブの並び順
+  const [distanceSortDir, setDistanceSortDir] = useState<'asc' | 'desc'>('desc')
 
   // ローディング状態
   if (loading) {
@@ -134,6 +137,199 @@ export default function TimelineVisualization({
       </div>
     )
   }
+
+  // 距離計算用のデータ集約（既存ロジックを再利用）
+  const distanceData = useMemo(() => {
+    if (data.length === 0) return null
+
+    const jungWords = JUNG_STIMULUS_WORDS
+    const sessionData = data
+
+    // 集約（ノード指標）
+    const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number; sumPhysAbs: number }> = {}
+    jungWords.forEach(({ japanese }) => { 
+      accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0, sumPhysAbs: 0 } 
+    })
+    
+    const physBySeries: Record<string, number[]> = {}
+    for (const d of sessionData) {
+      if (!accum[d.word]) continue
+      accum[d.word].count += 1
+      accum[d.word].sumReactionValue += d.reactionValue
+      accum[d.word].sumReactionTime += d.reactionTime
+      const phys = getPhysStat(d.physiological, 'average')
+      if (Number.isFinite(phys)) {
+        if (!('sumPhysAbs' in accum[d.word])) (accum[d.word] as any).sumPhysAbs = 0
+        ;(accum[d.word] as any).sumPhysAbs += Math.abs(phys as number)
+        if (!physBySeries[d.word]) physBySeries[d.word] = []
+        physBySeries[d.word].push(phys as number)
+      }
+    }
+
+    // 感情ベクトルの集約と正規化
+    const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
+    const wordEmotionSum: Record<string, number[]> = {}
+    
+    jungWords.forEach(({ japanese }) => {
+      wordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
+    })
+
+    for (const dpt of sessionData) {
+      const w = dpt.word
+      if (!wordEmotionSum[w]) continue
+      if (Array.isArray(dpt.emotions)) {
+        for (const e of dpt.emotions) {
+          const key = (e.name || 'unknown').toLowerCase()
+          const idx = emotionIndex[key]
+          const ft = String((e as any).fileType || '')
+          const ftLow = ft.toLowerCase()
+          const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+          if (idx !== undefined && (!mod || selectedModalities.has(mod))) {
+            wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+          }
+        }
+      }
+    }
+
+    const normalize = (vec: number[]): number[] => {
+      const norm = Math.hypot(...vec)
+      if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+      return vec.map((x) => x / norm)
+    }
+
+    const normalizedEmotionVec: Record<string, number[]> = {}
+    jungWords.forEach(({ japanese }) => {
+      normalizedEmotionVec[japanese] = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
+    })
+
+    // 各指標の平均値を計算
+    const avgReactionValue: Record<string, number> = {}
+    const avgReactionTime: Record<string, number> = {}
+    const avgPhysiological: Record<string, number> = {}
+    
+    for (const { japanese } of jungWords) {
+      const g = accum[japanese]
+      avgReactionValue[japanese] = g.count > 0 ? g.sumReactionValue / g.count : 0
+      avgReactionTime[japanese] = g.count > 0 ? g.sumReactionTime / g.count : 0
+      avgPhysiological[japanese] = g.count > 0 ? ((g as any).sumPhysAbs || 0) / g.count : 0
+    }
+
+    // 正規化用の範囲を計算
+    const rvValues = Object.values(avgReactionValue)
+    const rtValues = Object.values(avgReactionTime)
+    const phValues = Object.values(avgPhysiological)
+    
+    const rvMin = Math.min(...rvValues)
+    const rvMax = Math.max(...rvValues)
+    const rtMin = Math.min(...rtValues)
+    const rtMax = Math.max(...rtValues)
+    const phMin = Math.min(...phValues)
+    const phMax = Math.max(...phValues)
+
+    const norm01 = (x: number, min: number, max: number) => {
+      if (max - min === 0) return 0
+      return (x - min) / (max - min)
+    }
+
+    return {
+      normalizedEmotionVec,
+      avgReactionValue,
+      avgReactionTime,
+      avgPhysiological,
+      norm01,
+      rvMin, rvMax,
+      rtMin, rtMax,
+      phMin, phMax
+    }
+  }, [data, EMOTION_KEYS, selectedModalities, getPhysStat])
+
+  // コサイン類似度の計算
+  const cosineSimilarity = (vec1: number[], vec2: number[]): number => {
+    if (vec1.length !== vec2.length) return 0
+    let dot = 0
+    let norm1 = 0
+    let norm2 = 0
+    for (let i = 0; i < vec1.length; i++) {
+      dot += vec1[i] * vec2[i]
+      norm1 += vec1[i] * vec1[i]
+      norm2 += vec2[i] * vec2[i]
+    }
+    const denom = Math.sqrt(norm1) * Math.sqrt(norm2)
+    if (denom === 0) return 0
+    return dot / denom
+  }
+
+  // 全単語ペア間の距離を計算
+  const wordDistances = useMemo((): WordDistancePair[] => {
+    if (!distanceData) return []
+
+    const {
+      normalizedEmotionVec,
+      avgReactionValue,
+      avgReactionTime,
+      avgPhysiological,
+      norm01,
+      rvMin, rvMax,
+      rtMin, rtMax,
+      phMin, phMax
+    } = distanceData
+
+    const jungWords = JUNG_STIMULUS_WORDS
+    const pairs: WordDistancePair[] = []
+
+    // 重み設定（感情: 0.4, 反応値: 0.2, 反応時間: 0.2, 生理: 0.2）
+    const wEmotion = 0.4
+    const wReactionValue = 0.2
+    const wReactionTime = 0.2
+    const wPhysiological = 0.2
+
+    for (let i = 0; i < jungWords.length; i++) {
+      for (let j = i + 1; j < jungWords.length; j++) {
+        const word1 = jungWords[i].japanese
+        const word2 = jungWords[j].japanese
+
+        // 感情ベクトル間のコサイン距離
+        const vec1 = normalizedEmotionVec[word1] || new Array(EMOTION_KEYS.length).fill(0)
+        const vec2 = normalizedEmotionVec[word2] || new Array(EMOTION_KEYS.length).fill(0)
+        const cosineSim = cosineSimilarity(vec1, vec2)
+        const emotionDist = 1 - cosineSim
+
+        // 反応値距離（正規化された差の絶対値）
+        const rv1 = norm01(avgReactionValue[word1] || 0, rvMin, rvMax)
+        const rv2 = norm01(avgReactionValue[word2] || 0, rvMin, rvMax)
+        const reactionValueDist = Math.abs(rv1 - rv2)
+
+        // 反応時間距離（正規化された差の絶対値）
+        const rt1 = norm01(avgReactionTime[word1] || 0, rtMin, rtMax)
+        const rt2 = norm01(avgReactionTime[word2] || 0, rtMin, rtMax)
+        const reactionTimeDist = Math.abs(rt1 - rt2)
+
+        // 生理データ距離（正規化された差の絶対値）
+        const ph1 = norm01(avgPhysiological[word1] || 0, phMin, phMax)
+        const ph2 = norm01(avgPhysiological[word2] || 0, phMin, phMax)
+        const physiologicalDist = Math.abs(ph1 - ph2)
+
+        // 総合距離（重み付き和）
+        const totalDist = 
+          wEmotion * emotionDist +
+          wReactionValue * reactionValueDist +
+          wReactionTime * reactionTimeDist +
+          wPhysiological * physiologicalDist
+
+        pairs.push({
+          word1,
+          word2,
+          totalDistance: totalDist,
+          emotionDistance: emotionDist,
+          reactionValueDistance: reactionValueDist,
+          reactionTimeDistance: reactionTimeDist,
+          physiologicalDistance: physiologicalDist
+        })
+      }
+    }
+
+    return pairs
+  }, [distanceData, EMOTION_KEYS])
 
   return (
     <div className="space-y-4">
@@ -189,6 +385,7 @@ export default function TimelineVisualization({
                 { id: 'timeline', label: '時系列統合', icon: '📈' },
                 { id: 'force3d', label: '3D Force', icon: '⚡' },
                 { id: 'words', label: '単語一覧', icon: '📝' },
+                { id: 'distance', label: '単語距離感', icon: '📏' },
               ].map((tab) => (
               <button
                 key={tab.id}
@@ -1101,6 +1298,97 @@ export default function TimelineVisualization({
                             <td className="px-3 py-2 text-right" style={{ background: modBg(Lc, row.l_o) }}>{cell(row.l_o)}</td>
                             <td className="px-3 py-2 text-right" style={{ background: modBg(Lc, row.l_1) }}>{cell(row.l_1)}</td>
                             <td className="px-3 py-2 text-right" style={{ background: modBg(Lc, row.l_2) }}>{cell(row.l_2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )
+                })()}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'distance' && (
+            <div className="bg-white border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium text-sm">単語距離感</h4>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span>全単語ペア間の距離</span>
+                  <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Sort">
+                    <button
+                      type="button"
+                      className={`px-2 py-1 rounded-md border text-xs ${
+                        distanceSortDir === 'desc' 
+                          ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                          : 'bg-white border-gray-200 text-gray-700'
+                      }`}
+                      onClick={() => setDistanceSortDir('desc')}
+                    >
+                      距離大
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-2 py-1 rounded-md border text-xs ${
+                        distanceSortDir === 'asc' 
+                          ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                          : 'bg-white border-gray-200 text-gray-700'
+                      }`}
+                      onClick={() => setDistanceSortDir('asc')}
+                    >
+                      距離小
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="border rounded overflow-auto">
+                {(() => {
+                  const sortedDistances = [...wordDistances].sort((a, b) => {
+                    return distanceSortDir === 'desc' 
+                      ? b.totalDistance - a.totalDistance 
+                      : a.totalDistance - b.totalDistance
+                  })
+
+                  const cell = (v: number, digits = 3) => Number.isFinite(v) ? v.toFixed(digits) : '-'
+                  
+                  // 距離に応じた色分け（距離が大きいほど赤、小さいほど青）
+                  const getDistanceColor = (dist: number, maxDist: number) => {
+                    const ratio = maxDist > 0 ? dist / maxDist : 0
+                    // 青 (59, 130, 246) から 赤 (239, 68, 68) へのグラデーション
+                    const r = Math.round(59 + (239 - 59) * ratio)
+                    const g = Math.round(130 + (68 - 130) * ratio)
+                    const b = Math.round(246 + (68 - 246) * ratio)
+                    const alpha = 0.1 + 0.25 * ratio
+                    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+                  }
+
+                  const maxDist = Math.max(...wordDistances.map(d => d.totalDistance))
+
+                  return (
+                    <table className="min-w-full text-xs whitespace-nowrap">
+                      <thead>
+                        <tr className="bg-gray-50 text-gray-600">
+                          <th className="px-3 py-2 text-left">単語1</th>
+                          <th className="px-3 py-2 text-left">単語2</th>
+                          <th className="px-3 py-2 text-right">総合距離</th>
+                          <th className="px-3 py-2 text-right">感情距離</th>
+                          <th className="px-3 py-2 text-right">反応値距離</th>
+                          <th className="px-3 py-2 text-right">反応時間距離</th>
+                          <th className="px-3 py-2 text-right">生理距離</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedDistances.map((pair, idx) => (
+                          <tr 
+                            key={`${pair.word1}-${pair.word2}`}
+                            style={{ background: getDistanceColor(pair.totalDistance, maxDist) }}
+                          >
+                            <td className="px-3 py-2 text-gray-700">{pair.word1}</td>
+                            <td className="px-3 py-2 text-gray-700">{pair.word2}</td>
+                            <td className="px-3 py-2 text-right font-medium">{cell(pair.totalDistance)}</td>
+                            <td className="px-3 py-2 text-right">{cell(pair.emotionDistance)}</td>
+                            <td className="px-3 py-2 text-right">{cell(pair.reactionValueDistance)}</td>
+                            <td className="px-3 py-2 text-right">{cell(pair.reactionTimeDistance)}</td>
+                            <td className="px-3 py-2 text-right">{cell(pair.physiologicalDistance)}</td>
                           </tr>
                         ))}
                       </tbody>

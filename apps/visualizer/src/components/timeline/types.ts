@@ -154,5 +154,15 @@ export interface Force3DGraphData {
   links: WordLink[]
 }
 
+export interface WordDistancePair {
+  word1: string
+  word2: string
+  totalDistance: number
+  emotionDistance: number
+  reactionValueDistance: number
+  reactionTimeDistance: number
+  physiologicalDistance: number
+}
+
 // Merkle DAG: timeline.types -> definitions_complete
 // 時系列可視化コンポーネントの型定義完了
