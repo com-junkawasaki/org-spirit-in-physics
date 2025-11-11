@@ -31,11 +31,15 @@ export async function GET(
     const client = createNeo4jClient();
     console.log(`[TIMELINE API] Neo4j client created`);
 
-    // 事前計算済みデータを優先的に使用
+    // 事前計算済みデータを優先的に使用（sessionIdが提供されている場合のみ）
     const manager = new TimelineIntegrationPointManager();
-    const checkResult = await manager.checkTimelinePointsExist(participantId, sessionId || '');
+    let checkResult: { exists: boolean; count: number; maxVersion?: number; minTimestamp?: number; maxTimestamp?: number } | null = null;
     
-    if (checkResult.exists && checkResult.count > 0) {
+    if (sessionId) {
+      checkResult = await manager.checkTimelinePointsExist(participantId, sessionId);
+    }
+    
+    if (checkResult && checkResult.exists && checkResult.count > 0) {
       console.log(`[TIMELINE API] Using pre-computed timeline points (${checkResult.count} points)`);
       console.log(`[TIMELINE API] Version: ${checkResult.maxVersion}, Time range: ${checkResult.minTimestamp} - ${checkResult.maxTimestamp}`);
       
@@ -78,11 +82,70 @@ export async function GET(
         console.log(`[TIMELINE API] ✓ Response sent successfully`);
         return response;
       } catch (error) {
-        console.error('[TIMELINE API] Error loading pre-computed data, falling back to real-time integration:', error);
-        // フォールバック: リアルタイム統合処理に進む
+        console.error('[TIMELINE API] Error loading pre-computed data, attempting to regenerate:', error);
+        // フォールバック: 事前計算を実行
       }
     } else {
-      console.log(`[TIMELINE API] No pre-computed data found, using real-time integration`);
+      console.log(`[TIMELINE API] No pre-computed data found, generating timeline points...`);
+    }
+
+    // 事前計算済みデータが存在しない場合、事前計算を実行（sessionIdが提供されている場合のみ）
+    if (sessionId && (!checkResult || !checkResult.exists || checkResult.count === 0)) {
+      try {
+        console.log(`[TIMELINE API] Starting batch integration to generate timeline points...`);
+        const { generateTimelinePoints } = await import('@/lib/timeline-batch-processor');
+        const batchResult = await generateTimelinePoints(participantId, sessionId);
+        
+        if (batchResult.success && batchResult.createdCount > 0) {
+          console.log(`[TIMELINE API] ✓ Batch integration completed: ${batchResult.createdCount} points created in ${batchResult.totalTimeMs}ms`);
+          
+          // 作成されたTimelineIntegrationPointを取得
+          const timelinePoints = await manager.getTimelinePoints(participantId, sessionId || undefined);
+          const timelineData = convertTimelinePointsToApiResponse(timelinePoints);
+          
+          const totalTime = Date.now() - startTime;
+          console.log(`[TIMELINE API] ===== Response from newly generated data =====`);
+          console.log(`[TIMELINE API] Total processing time: ${totalTime}ms (batch: ${batchResult.totalTimeMs}ms)`);
+          console.log(`[TIMELINE API] Timeline data points: ${timelineData.length}`);
+          
+          const responseData = {
+            success: true,
+            data: {
+              participantId,
+              timelineData: timelineData,
+              metadata: {
+                sessionEvents: timelinePoints.length,
+                emotionEntries: timelinePoints.reduce((sum, p) => sum + p.metadata.emotionCount, 0),
+                physiologicalEntries: timelinePoints.reduce((sum, p) => sum + p.metadata.physiologicalCount, 0),
+                totalDataPoints: timelineData.length,
+                processingTimeMs: totalTime,
+                batchProcessingTimeMs: batchResult.totalTimeMs,
+                dataSource: 'newly_generated',
+                version: 1,
+                errors: []
+              }
+            }
+          };
+
+          console.log(`[TIMELINE API] Serializing response to JSON...`);
+          const serializeStartTime = Date.now();
+          const jsonString = JSON.stringify(responseData);
+          const serializeDuration = Date.now() - serializeStartTime;
+          const sizeMB = jsonString.length / (1024 * 1024);
+          console.log(`[TIMELINE API] ✓ JSON serialized in ${serializeDuration}ms (${sizeMB.toFixed(2)}MB)`);
+          
+          console.log(`[TIMELINE API] ===== Sending response =====`);
+          const response = NextResponse.json(responseData);
+          console.log(`[TIMELINE API] ✓ Response sent successfully`);
+          return response;
+        } else {
+          console.error(`[TIMELINE API] Batch integration failed: ${batchResult.error}`);
+          // フォールバック: リアルタイム統合処理に進む
+        }
+      } catch (error) {
+        console.error('[TIMELINE API] Error during batch integration, falling back to real-time integration:', error);
+        // フォールバック: リアルタイム統合処理に進む
+      }
     }
 
     // デモモード機能を除去 - 実データのみを使用
