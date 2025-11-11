@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createNeo4jClient } from '@/lib/neo4j';
 import { Neo4jQueryBuilder } from '@/lib/neo4j-query-builder';
+import { TimelineIntegrationPointManager } from '@/lib/neo4j-timeline-manager';
+import { convertTimelinePointsToApiResponse } from '@/lib/timeline-integration-converter';
+import {
+  getSessionData,
+  getEmotionData,
+  getPhysiologicalData,
+  integrateTimelineData,
+} from '@/lib/timeline-integration-functions';
 
 // Merkle DAG: participants.timeline.endpoint
 // 時系列統合可視化データ取得APIエンドポイント
@@ -16,9 +24,66 @@ export async function GET(
     const { id: participantId } = params;
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    console.log(`API: Fetching timeline data for participant ${participantId}${sessionId ? `, session ${sessionId}` : ''}`);
+    console.log(`[TIMELINE API] ===== Request started =====`);
+    console.log(`[TIMELINE API] Participant: ${participantId}${sessionId ? `, Session: ${sessionId}` : ''}`);
+    console.log(`[TIMELINE API] Timestamp: ${new Date().toISOString()}`);
 
     const client = createNeo4jClient();
+    console.log(`[TIMELINE API] Neo4j client created`);
+
+    // 事前計算済みデータを優先的に使用
+    const manager = new TimelineIntegrationPointManager();
+    const checkResult = await manager.checkTimelinePointsExist(participantId, sessionId || '');
+    
+    if (checkResult.exists && checkResult.count > 0) {
+      console.log(`[TIMELINE API] Using pre-computed timeline points (${checkResult.count} points)`);
+      console.log(`[TIMELINE API] Version: ${checkResult.maxVersion}, Time range: ${checkResult.minTimestamp} - ${checkResult.maxTimestamp}`);
+      
+      try {
+        const timelinePoints = await manager.getTimelinePoints(participantId, sessionId || undefined);
+        const timelineData = convertTimelinePointsToApiResponse(timelinePoints);
+        
+        const totalTime = Date.now() - startTime;
+        console.log(`[TIMELINE API] ===== Response from pre-computed data =====`);
+        console.log(`[TIMELINE API] Total processing time: ${totalTime}ms`);
+        console.log(`[TIMELINE API] Timeline data points: ${timelineData.length}`);
+        
+        const responseData = {
+          success: true,
+          data: {
+            participantId,
+            timelineData: timelineData,
+            metadata: {
+              sessionEvents: timelinePoints.length,
+              emotionEntries: timelinePoints.reduce((sum, p) => sum + p.metadata.emotionCount, 0),
+              physiologicalEntries: timelinePoints.reduce((sum, p) => sum + p.metadata.physiologicalCount, 0),
+              totalDataPoints: timelineData.length,
+              processingTimeMs: totalTime,
+              dataSource: 'pre_computed',
+              version: checkResult.maxVersion,
+              errors: []
+            }
+          }
+        };
+
+        console.log(`[TIMELINE API] Serializing response to JSON...`);
+        const serializeStartTime = Date.now();
+        const jsonString = JSON.stringify(responseData);
+        const serializeDuration = Date.now() - serializeStartTime;
+        const sizeMB = jsonString.length / (1024 * 1024);
+        console.log(`[TIMELINE API] ✓ JSON serialized in ${serializeDuration}ms (${sizeMB.toFixed(2)}MB)`);
+        
+        console.log(`[TIMELINE API] ===== Sending response =====`);
+        const response = NextResponse.json(responseData);
+        console.log(`[TIMELINE API] ✓ Response sent successfully`);
+        return response;
+      } catch (error) {
+        console.error('[TIMELINE API] Error loading pre-computed data, falling back to real-time integration:', error);
+        // フォールバック: リアルタイム統合処理に進む
+      }
+    } else {
+      console.log(`[TIMELINE API] No pre-computed data found, using real-time integration`);
+    }
 
     // デモモード機能を除去 - 実データのみを使用
 
@@ -27,9 +92,11 @@ export async function GET(
 
     let sessionData: any
     try {
+      console.log(`[TIMELINE API] Step 1/4: Fetching session data...`);
       const sessionStartTime = Date.now();
       sessionData = await getSessionData(client, participantId, sessionId || undefined)
-      console.log(`Session data fetch took ${Date.now() - sessionStartTime}ms`);
+      const sessionDuration = Date.now() - sessionStartTime;
+      console.log(`[TIMELINE API] ✓ Session data fetched in ${sessionDuration}ms (${sessionData.wordEvents?.length || 0} word events)`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`session_data: ${msg}`)
@@ -38,9 +105,11 @@ export async function GET(
 
     let emotionData: any[] = []
     try {
+      console.log(`[TIMELINE API] Step 2/4: Fetching emotion data...`);
       const emotionStartTime = Date.now();
       emotionData = await getEmotionData(client, participantId, sessionId || undefined)
-      console.log(`Emotion data fetch took ${Date.now() - emotionStartTime}ms, count: ${emotionData.length}`);
+      const emotionDuration = Date.now() - emotionStartTime;
+      console.log(`[TIMELINE API] ✓ Emotion data fetched in ${emotionDuration}ms (${emotionData.length} entries)`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`emotion_data: ${msg}`)
@@ -49,9 +118,11 @@ export async function GET(
 
     let physiologicalData: any[] = []
     try {
+      console.log(`[TIMELINE API] Step 3/4: Fetching physiological data...`);
       const physioStartTime = Date.now();
       physiologicalData = await getPhysiologicalData(client, participantId, sessionId || undefined)
-      console.log(`Physiological data fetch took ${Date.now() - physioStartTime}ms, count: ${physiologicalData.length}`);
+      const physioDuration = Date.now() - physioStartTime;
+      console.log(`[TIMELINE API] ✓ Physiological data fetched in ${physioDuration}ms (${physiologicalData.length} entries)`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`physiological_data: ${msg}`)
@@ -59,9 +130,14 @@ export async function GET(
     }
 
     // 実データを統合（セッション×感情×生理）し、クライアント期待形式へ変換
+    console.log(`[TIMELINE API] Step 4/4: Integrating timeline data...`);
+    console.log(`[TIMELINE API]   - Session events: ${sessionData.wordEvents?.length || 0}`);
+    console.log(`[TIMELINE API]   - Emotion entries: ${emotionData.length}`);
+    console.log(`[TIMELINE API]   - Physiological entries: ${physiologicalData.length}`);
     const integrationStartTime = Date.now();
     const integrated = integrateTimelineData(sessionData, emotionData, physiologicalData)
-    console.log(`Data integration took ${Date.now() - integrationStartTime}ms, integrated count: ${integrated.length}`);
+    const integrationDuration = Date.now() - integrationStartTime;
+    console.log(`[TIMELINE API] ✓ Integration completed in ${integrationDuration}ms (${integrated.length} timeline points)`);
     
     console.log('=== Timeline Integration Summary ===');
     console.log('Integrated timeline data count:', integrated.length);
@@ -179,7 +255,9 @@ export async function GET(
 
     // ストリーミングレスポンスで大きなデータを効率的に送信
     const totalTime = Date.now() - startTime;
-    console.log(`Total API request time: ${totalTime}ms`);
+    console.log(`[TIMELINE API] ===== Response preparation =====`);
+    console.log(`[TIMELINE API] Total processing time: ${totalTime}ms`);
+    console.log(`[TIMELINE API] Timeline data points: ${timelineData.length}`);
     
     const responseData = {
       success: true,
@@ -200,12 +278,16 @@ export async function GET(
 
     // JSON文字列化の前にサイズチェック
     try {
+      console.log(`[TIMELINE API] Serializing response to JSON...`);
+      const serializeStartTime = Date.now();
       const jsonString = JSON.stringify(responseData);
-      console.log('Response size:', jsonString.length, 'bytes');
+      const serializeDuration = Date.now() - serializeStartTime;
+      const sizeMB = jsonString.length / (1024 * 1024);
+      console.log(`[TIMELINE API] ✓ JSON serialized in ${serializeDuration}ms (${sizeMB.toFixed(2)}MB)`);
       
       // 10MB制限チェック（Next.jsのデフォルト制限）
       if (jsonString.length > 10 * 1024 * 1024) {
-        console.warn('Response size exceeds 10MB limit, returning summary only');
+        console.warn(`[TIMELINE API] ⚠️ Response size exceeds 10MB limit (${sizeMB.toFixed(2)}MB), truncating to 1000 points`);
         return NextResponse.json({
           success: true,
           data: {
@@ -221,7 +303,10 @@ export async function GET(
         });
       }
       
-      return NextResponse.json(responseData);
+      console.log(`[TIMELINE API] ===== Sending response =====`);
+      const response = NextResponse.json(responseData);
+      console.log(`[TIMELINE API] ✓ Response sent successfully`);
+      return response;
     } catch (error) {
       console.error('JSON serialization error:', error);
       return NextResponse.json({
@@ -910,7 +995,7 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
 function integrateTimelineData(sessionData: any, emotionData: any[], physiologicalData: any[]): any[] {
   try {
     const integrationStart = Date.now();
-    console.log('Integrating timeline data:', {
+    console.log('[INTEGRATION] Starting integration:', {
       sessionEvents: sessionData.wordEvents.length,
       emotionDataCount: emotionData.length,
       physiologicalDataCount: physiologicalData.length
@@ -933,9 +1018,13 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
     // word_displayedイベントのみを処理
     const wordDisplayedEvents = sessionData.wordEvents.filter((event: any) => event.type === 'word_displayed');
     const speechDetectedEvents = sessionData.wordEvents.filter((event: any) => event.type === 'speech_detected');
+    const processingStartTime = Date.now();
+    console.log(`[INTEGRATION] Processing ${wordDisplayedEvents.length} word events...`);
     
     // パフォーマンス最適化: 感情データを時間順にソートし、インデックスを作成
+    const indexStartTime = Date.now();
     const sessionStartTime = sessionData.startTime || 0;
+    console.log(`[INTEGRATION] Sorting ${emotionData.length} emotion entries...`);
     const sortedEmotions = [...emotionData].sort((a, b) => (a.beginTime || 0) - (b.beginTime || 0));
     
     // 時間インデックスを作成（秒単位のキーで感情データをグループ化）
@@ -947,10 +1036,17 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       }
       emotionTimeIndex.get(beginTime)!.push(emotion);
     });
-    
-    console.log(`Emotion time index created with ${emotionTimeIndex.size} time buckets`);
+    const indexDuration = Date.now() - indexStartTime;
+    console.log(`[INTEGRATION] ✓ Index created in ${indexDuration}ms (${emotionTimeIndex.size} time buckets)`);
     
     wordDisplayedEvents.forEach((event: any, eventIndex: number) => {
+      // 進捗ログ（25%ごと）
+      if (wordDisplayedEvents.length > 10 && (eventIndex % Math.ceil(wordDisplayedEvents.length / 4) === 0 || eventIndex === wordDisplayedEvents.length - 1)) {
+        const progress = ((eventIndex + 1) / wordDisplayedEvents.length * 100).toFixed(0);
+        const elapsed = Date.now() - processingStartTime;
+        console.log(`[INTEGRATION] Progress: ${progress}% (${eventIndex + 1}/${wordDisplayedEvents.length} events processed in ${elapsed}ms)`);
+      }
+      
       const timestamp = event.timestamp;
       const word = event.payload?.word || 'Unknown';
       
@@ -1153,8 +1249,12 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       });
     });
     
-    console.log(`Integration completed in ${Date.now() - integrationStart}ms, total timeline points: ${timelineData.length}`);
-    return timelineData.sort((a, b) => a.timestamp - b.timestamp);
+    const sortStartTime = Date.now();
+    const sortedData = timelineData.sort((a, b) => a.timestamp - b.timestamp);
+    const sortDuration = Date.now() - sortStartTime;
+    const totalDuration = Date.now() - integrationStart;
+    console.log(`[INTEGRATION] ✓ Integration completed in ${totalDuration}ms (sort: ${sortDuration}ms, ${sortedData.length} timeline points)`);
+    return sortedData;
 
   } catch (error) {
     console.error('Timeline data integration error:', error);

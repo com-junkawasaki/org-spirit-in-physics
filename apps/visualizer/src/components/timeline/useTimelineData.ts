@@ -46,30 +46,61 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
   useEffect(() => { setMounted(true) }, [])
 
   const fetchTimelineData = useCallback(async () => {
+    const abortController = new AbortController()
+    const timeoutId = setTimeout(() => {
+      abortController.abort()
+    }, 120000) // 120秒タイムアウト（大量データ対応）
+
     try {
       setLoading(true)
+      setError(null)
       console.log('TimelineVisualization: Starting data fetch for participant:', participantId, sessionId ? `session: ${sessionId}` : '')
+      
       // 実データのみを使用（APIから取得）
       const apiUrl = sessionId 
         ? `/api/participants/${participantId}/timeline?sessionId=${encodeURIComponent(sessionId)}&_t=${Date.now()}`
         : `/api/participants/${participantId}/timeline?_t=${Date.now()}`
       console.log('TimelineVisualization: API URL:', apiUrl)
       
+      const fetchStartTime = Date.now()
       const response = await fetch(apiUrl, {
         cache: 'no-store',
+        signal: abortController.signal,
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
         }
       })
-      console.log('TimelineVisualization: API response status:', response.status)
+      const fetchDuration = Date.now() - fetchStartTime
+      console.log(`TimelineVisualization: API response received in ${fetchDuration}ms, status:`, response.status)
       
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`)
+      // レスポンスサイズのチェック
+      const contentLength = response.headers.get('content-length')
+      if (contentLength) {
+        const sizeMB = parseInt(contentLength, 10) / (1024 * 1024)
+        console.log(`TimelineVisualization: Response size: ${sizeMB.toFixed(2)}MB`)
+        if (sizeMB > 10) {
+          console.warn(`TimelineVisualization: Large response detected (${sizeMB.toFixed(2)}MB), parsing may take time`)
+        }
       }
       
-      const result = await response.json()
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unable to read error response')
+        throw new Error(`APIリクエストが失敗しました (ステータス: ${response.status}): ${errorText.substring(0, 200)}`)
+      }
+      
+      // JSONパースを個別に処理
+      let result: any
+      const parseStartTime = Date.now()
+      try {
+        result = await response.json()
+        const parseDuration = Date.now() - parseStartTime
+        console.log(`TimelineVisualization: JSON parsed in ${parseDuration}ms`)
+      } catch (parseError) {
+        throw new Error(`レスポンスのJSONパースに失敗しました: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
+      }
+      
       console.log('TimelineVisualization: API result:', result)
       
       // APIレスポンスのメタデータを詳細にログ出力
@@ -256,11 +287,33 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
           setError(null)
         }
       } else {
-        throw new Error('API response not successful or no data')
+        throw new Error('APIレスポンスが成功していないか、データがありません')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      // タイムアウトのクリーンアップ
+      clearTimeout(timeoutId)
+      
+      // エラーの種類に応じて適切なメッセージを設定
+      if (err instanceof Error) {
+        if (err.name === 'AbortError' || err.message.includes('aborted')) {
+          setError('リクエストがタイムアウトしました（120秒）。データ量が多い可能性があります。しばらく待ってから再試行してください。')
+          console.error('TimelineVisualization: Request timeout after 120 seconds')
+        } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          setError('ネットワークエラーが発生しました。インターネット接続を確認してください。')
+          console.error('TimelineVisualization: Network error:', err)
+        } else if (err.message.includes('JSON') || err.message.includes('パース')) {
+          setError(`データの解析に失敗しました: ${err.message}`)
+          console.error('TimelineVisualization: JSON parse error:', err)
+        } else {
+          setError(`データの取得に失敗しました: ${err.message}`)
+          console.error('TimelineVisualization: Error:', err)
+        }
+      } else {
+        setError('不明なエラーが発生しました')
+        console.error('TimelineVisualization: Unknown error:', err)
+      }
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }, [participantId, sessionId])
