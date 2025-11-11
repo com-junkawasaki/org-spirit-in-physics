@@ -142,19 +142,29 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
         # Find related physiological data (within ±5 seconds)
         related_physiological = find_related_physiological(physiological_data, timestamp)
         
-        # Build emotions array
-        emotions_array = []
+        # Build emotions array (deduplicate by name and fileType)
+        emotions_dict = {}  # Key: (name, fileType), Value: max score
         for emotion in related_emotions:
             emotion_scores = emotion.get('emotion_scores', {})
             file_type = emotion.get('file_type', 'unknown')
             
             for name, score in emotion_scores.items():
                 if score > 0:
-                    emotions_array.append({
-                        'name': normalize_emotion_name(name),
-                        'score': float(score),
-                        'fileType': file_type
-                    })
+                    normalized_name = normalize_emotion_name(name)
+                    key = (normalized_name, file_type)
+                    # Keep the maximum score for each emotion name + fileType combination
+                    if key not in emotions_dict or emotions_dict[key] < score:
+                        emotions_dict[key] = float(score)
+        
+        # Convert dict to array
+        emotions_array = [
+            {
+                'name': name,
+                'score': score,
+                'fileType': file_type
+            }
+            for (name, file_type), score in emotions_dict.items()
+        ]
         
         # Build physiological object
         physiological_obj = {
@@ -389,24 +399,31 @@ def calculate_reaction_time(events, timestamp: int, event_index: int):
 
 
 def find_related_emotions(emotion_data, relative_timestamp_sec: float):
-    """Find emotions related to a timestamp"""
-    search_start_sec = max(0, relative_timestamp_sec - 60)
-    search_end_sec = relative_timestamp_sec + 60
+    """Find emotions related to a timestamp (within ±5 seconds for precise matching)"""
+    search_start_sec = max(0, relative_timestamp_sec - 5)
+    search_end_sec = relative_timestamp_sec + 5
     
     related = []
+    zero_time_emotions = []  # Collect emotions with begin_time = 0 separately
+    
     for emotion in emotion_data:
         begin_time = emotion.get('begin_time')
-        if begin_time is None:
-            # Include emotions without time (burst/face data)
-            related.append(emotion)
+        if begin_time is None or begin_time == 0:
+            # Collect zero-time emotions separately (will be added once per session)
+            zero_time_emotions.append(emotion)
             continue
         
         end_time = emotion.get('end_time') or (begin_time + 1.0)
         
-        # Check if emotion time range overlaps with search window
-        if (begin_time <= search_end_sec and end_time >= search_start_sec) or \
-           abs(begin_time - relative_timestamp_sec) <= 60.0:
+        # Check if emotion time range overlaps with search window (±5 seconds)
+        if begin_time <= search_end_sec and end_time >= search_start_sec:
             related.append(emotion)
+    
+    # Add zero-time emotions only if no time-specific emotions were found
+    # This prevents zero-time emotions from being added to every point
+    if len(related) == 0 and len(zero_time_emotions) > 0:
+        # Only add the first zero-time emotion entry to avoid duplication
+        related.extend(zero_time_emotions[:1])
     
     return related
 
