@@ -56,6 +56,7 @@ export async function GET(
       t: pt.timestamp,
       w: pt.word,
       e: pt.eventType,
+      rt: pt.reactionTime ?? null, // 反応時間を追加
       em: Array.isArray(pt.emotions) ? pt.emotions : [],
       ph: {
         average: pt?.physiological?.average ?? 0,
@@ -564,9 +565,24 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
     const timelineData: any[] = [];
     
     // セッションイベントを基準として時系列データを構築
-    sessionData.wordEvents.forEach((event: any) => {
+    // word_displayedイベントのみを処理
+    const wordDisplayedEvents = sessionData.wordEvents.filter((event: any) => event.type === 'word_displayed');
+    const speechDetectedEvents = sessionData.wordEvents.filter((event: any) => event.type === 'speech_detected');
+    
+    wordDisplayedEvents.forEach((event: any) => {
       const timestamp = event.timestamp;
       const word = event.payload?.word || 'Unknown';
+      
+      // 反応時間の計算: word_displayedからspeech_detectedまでの時間差
+      const nextWordIndex = wordDisplayedEvents.indexOf(event) + 1;
+      const nextWordTimestamp = nextWordIndex < wordDisplayedEvents.length 
+        ? wordDisplayedEvents[nextWordIndex].timestamp 
+        : timestamp + 10000; // デフォルト10秒
+      
+      const speechEvent = speechDetectedEvents.find((speechEvent: any) => 
+        speechEvent.timestamp > timestamp && speechEvent.timestamp <= nextWordTimestamp
+      );
+      const reactionTime = speechEvent ? speechEvent.timestamp - timestamp : null;
       
       // 対応する感情データを検索（時間範囲でマッチング）
       const relatedEmotions = emotionData.filter(emotion => {
@@ -591,6 +607,7 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       
       relatedEmotions.forEach(emotion => {
         const emotions = emotion.emotions || [];
+        const fileType = emotion.fileType || 'unknown';
         
         if (emotions.length > 0) {
           // 実際の感情データがある場合
@@ -598,7 +615,7 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
             emotionDetails.push({
               name: e.name || 'unknown',
               score: e.score || 0,
-              fileType: emotion.fileType || 'unknown'
+              fileType: fileType // fileTypeを確実に設定
             });
           });
         } else {
@@ -608,7 +625,7 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
           emotionDetails.push({
             name: randomEmotion,
             score: Math.random() * 0.5 + 0.1, // 0.1-0.6の範囲でランダム値
-            fileType: emotion.fileType || 'unknown'
+            fileType: fileType // fileTypeを確実に設定
           });
         }
       });
@@ -666,7 +683,8 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         timestamp,
         word,
         eventType: event.type,
-        emotions: emotionDetails, // 詳細な感情データ
+        reactionTime: reactionTime, // 反応時間を追加
+        emotions: emotionDetails, // 詳細な感情データ（fileTypeを含む）
         physiological: physiologicalValues,
         reactionValue: emotionValues.total + physiologicalValues.average,
         metadata: {

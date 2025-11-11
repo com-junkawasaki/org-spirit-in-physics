@@ -112,33 +112,8 @@ export default function TimelineVisualization({
   // 距離タブの並び順
   const [distanceSortDir, setDistanceSortDir] = useState<'asc' | 'desc'>('desc')
 
-  // ローディング状態
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">時系列データを読み込み中...</span>
-      </div>
-    )
-  }
-
-  // エラー状態
-  if (error) {
-    return (
-      <div className="text-center text-red-600 p-4">
-        <p>エラー: {error}</p>
-        <button 
-          type="button"
-          onClick={refetchData}
-          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          再試行
-        </button>
-      </div>
-    )
-  }
-
   // 距離計算用のデータ集約（既存ロジックを再利用）
+  // 注意: すべてのフックは早期リターンの前に呼び出す必要がある
   const distanceData = useMemo(() => {
     if (data.length === 0) return null
 
@@ -330,6 +305,32 @@ export default function TimelineVisualization({
 
     return pairs
   }, [distanceData, EMOTION_KEYS])
+
+  // ローディング状態（すべてのフックの後に配置）
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">時系列データを読み込み中...</span>
+      </div>
+    )
+  }
+
+  // エラー状態（すべてのフックの後に配置）
+  if (error) {
+    return (
+      <div className="text-center text-red-600 p-4">
+        <p>エラー: {error}</p>
+        <button 
+          type="button"
+          onClick={refetchData}
+          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          再試行
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -997,14 +998,25 @@ export default function TimelineVisualization({
                       second: split[1]
                     }
                     const getAvg = (arr: typeof occurrences, f: (d: typeof occurrences[number]) => number) => arr.length ? arr.reduce((s, d) => s + f(d), 0) / arr.length : 0
+                    
+                    // 感情データの検索ヘルパー関数（fileTypeを正しく検索）
+                    const findEmotionByFileType = (emotions: any[], fileTypePattern: string): number => {
+                      if (!Array.isArray(emotions) || emotions.length === 0) return 0
+                      const found = emotions.find((e: any) => {
+                        const ft = String(e?.fileType || '').toLowerCase()
+                        return ft.includes(fileTypePattern.toLowerCase())
+                      })
+                      return found?.score || 0
+                    }
+                    
                     const avgObj = (arr: typeof occurrences) => ({
-                      reactionTimeAvg: getAvg(arr, d => d.reactionTime || 0),
+                      reactionTimeAvg: getAvg(arr, d => d.reactionTime ?? 0),
                       physioAvg: getAvg(arr, d => getPhysStat(d.physiological, 'average')),
                       reactionValueAvg: getAvg(arr, d => d.reactionValue || 0),
-                      prosodyAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('prosody'))?.score) || 0),
-                      burstAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('burst'))?.score) || 0),
-                      faceAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('face'))?.score) || 0),
-                      languageAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('language'))?.score) || 0),
+                      prosodyAvg: getAvg(arr, d => findEmotionByFileType(d.emotions || [], 'prosody')),
+                      burstAvg: getAvg(arr, d => findEmotionByFileType(d.emotions || [], 'burst')),
+                      faceAvg: getAvg(arr, d => findEmotionByFileType(d.emotions || [], 'face')),
+                      languageAvg: getAvg(arr, d => findEmotionByFileType(d.emotions || [], 'language')),
                     })
                     const overall = avgObj(sections.overall)
                     const first = avgObj(sections.first)
@@ -1174,20 +1186,31 @@ export default function TimelineVisualization({
                     l_o: number; l_1: number; l_2: number
                   }
 
-                  const words = Array.from(new Set(data.map(d => d.word)))
-                  let stats: Row[] = words.map(w => {
+                  const words = Array.from(new Set(data.map(d => d.word))) as string[]
+                  let stats: Row[] = words.map((w: string) => {
                     const occ = data.filter(d => d.word === w)
                     const first = occ[0] ? [occ[0]] : []
                     const second = occ.slice(1)
                     const getAvg = (arr: typeof occ, f: (d: typeof occ[number]) => number) => arr.length ? arr.reduce((s, d) => s + f(d), 0) / arr.length : 0
+                    
+                    // 感情データの検索ヘルパー関数（fileTypeを正しく検索）
+                    const findEmotionByFileType = (emotions: any[], fileTypePattern: string): number => {
+                      if (!Array.isArray(emotions) || emotions.length === 0) return 0
+                      const found = emotions.find((e: any) => {
+                        const ft = String(e?.fileType || '').toLowerCase()
+                        return ft.includes(fileTypePattern.toLowerCase())
+                      })
+                      return found?.score || 0
+                    }
+                    
                     const avg = (arr: typeof occ) => ({
-                      rt: getAvg(arr, d => d.reactionTime || 0),
+                      rt: getAvg(arr, d => d.reactionTime ?? 0),
                       ph: getAvg(arr, d => getPhysStat(d.physiological, 'average')),
                       rv: getAvg(arr, d => d.reactionValue || 0),
-                      p: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('prosody'))?.score) || 0),
-                      b: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('burst'))?.score) || 0),
-                      f: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('face'))?.score) || 0),
-                      l: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('language'))?.score) || 0),
+                      p: getAvg(arr, d => findEmotionByFileType(d.emotions || [], 'prosody')),
+                      b: getAvg(arr, d => findEmotionByFileType(d.emotions || [], 'burst')),
+                      f: getAvg(arr, d => findEmotionByFileType(d.emotions || [], 'face')),
+                      l: getAvg(arr, d => findEmotionByFileType(d.emotions || [], 'language')),
                     })
                     const o = avg(occ), a = avg(first), s = avg(second)
                     const jungIndex = JUNG_STIMULUS_WORDS.findIndex(j => j.japanese === w)
@@ -1211,7 +1234,13 @@ export default function TimelineVisualization({
                     return (wordsSortDir === 'asc' ? (av - bv) : (bv - av))
                   })
 
-                  const cell = (v: number, d = 2) => Number.isFinite(v) ? v.toFixed(d) : '-'
+                  const cell = (v: number, d = 2) => {
+                    // 数値が有限でない場合のみ「-」を表示（0は有効な値として扱う）
+                    if (!Number.isFinite(v)) {
+                      return '-'
+                    }
+                    return v.toFixed(d)
+                  }
                   const clamp01 = (x: number) => Math.max(0, Math.min(1, x))
                   const hexToRgb = (hex: string): [number, number, number] => [
                     parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)
