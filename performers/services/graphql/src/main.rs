@@ -23,7 +23,6 @@ use tracing::{info, error};
 
 use database::PostgresPool;
 use schema::create_schema;
-use sqlx::PgPool;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

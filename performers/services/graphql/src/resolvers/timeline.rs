@@ -2,7 +2,7 @@
 // Timeline resolvers using SQLx + TimescaleDB
 
 use async_graphql::*;
-use sqlx::{PgPool, Pool, Postgres};
+use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 use crate::types::{TimelinePoint, Session, EmotionData};
 
@@ -75,10 +75,10 @@ impl TimelineQuery {
             .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
             .map(|dt| dt.timestamp_millis());
 
-        // Build query
-        let query = if let Some(interval_str) = interval {
+        // Build query based on whether aggregation is requested
+        let points = if let Some(interval_str) = interval {
             // Use TimescaleDB time_bucket for aggregation
-            format!(
+            let query = format!(
                 r#"
                 SELECT 
                     time_bucket('{}', time) as bucket_time,
@@ -92,6 +92,7 @@ impl TimelineQuery {
                     {}
                 GROUP BY bucket_time, participant_id, session_id
                 ORDER BY bucket_time ASC
+                LIMIT 10000
                 "#,
                 interval_str,
                 if let Some(sid) = session_uuid {
@@ -104,10 +105,38 @@ impl TimelineQuery {
                 } else {
                     String::new()
                 }
-            )
+            );
+
+            let rows = sqlx::query(&query)
+                .bind(participant_uuid)
+                .fetch_all(pool)
+                .await?;
+
+            // Convert aggregated rows to TimelinePoint
+            rows.into_iter().map(|row| {
+                let bucket_time: chrono::DateTime<chrono::Utc> = row.get("bucket_time");
+                let participant_id_val: Uuid = row.get("participant_id");
+                let session_id_val: Uuid = row.get("session_id");
+                let avg_reaction_value: Option<f64> = row.get("avg_reaction_value");
+                let event_count: i64 = row.get("event_count");
+
+                TimelinePoint {
+                    time: bucket_time.to_rfc3339(),
+                    participant_id: ID::from(participant_id_val.to_string()),
+                    session_id: ID::from(session_id_val.to_string()),
+                    word: None,
+                    event_type: Some("aggregated".to_string()),
+                    reaction_value: avg_reaction_value,
+                    reaction_time: None,
+                    has_response: event_count > 0,
+                    emotions: Vec::new(),
+                    physiological: serde_json::json!({}),
+                    metadata: serde_json::json!({ "event_count": event_count }),
+                }
+            }).collect()
         } else {
             // Return raw timeline points
-            format!(
+            let mut query = String::from(
                 r#"
                 SELECT 
                     time,
@@ -123,55 +152,71 @@ impl TimelineQuery {
                     metadata
                 FROM timeline_points
                 WHERE participant_id = $1
-                    {}
-                    {}
-                ORDER BY time ASC
-                LIMIT 10000
-                "#,
-                if let Some(sid) = session_uuid {
-                    format!("AND session_id = '{}'", sid)
+                "#
+            );
+
+            if let Some(sid) = session_uuid {
+                query.push_str(&format!(" AND session_id = '{}'", sid));
+            }
+
+            if let Some(st) = start_ts {
+                if let Some(et) = end_ts {
+                    query.push_str(&format!(" AND time >= to_timestamp({} / 1000.0) AND time <= to_timestamp({} / 1000.0)", st, et));
                 } else {
-                    String::new()
-                },
-                if let Some(st) = start_ts {
-                    if let Some(et) = end_ts {
-                        format!("AND time >= to_timestamp({} / 1000.0) AND time <= to_timestamp({} / 1000.0)", st, et)
-                    } else {
-                        format!("AND time >= to_timestamp({} / 1000.0)", st)
-                    }
-                } else {
-                    String::new()
+                    query.push_str(&format!(" AND time >= to_timestamp({} / 1000.0)", st));
                 }
-            )
+            }
+
+            query.push_str(" ORDER BY time ASC LIMIT 10000");
+
+            let rows = sqlx::query(&query)
+                .bind(participant_uuid)
+                .fetch_all(pool)
+                .await?;
+
+            // Convert rows to TimelinePoint
+            rows.into_iter().map(|row| {
+                let time: chrono::DateTime<chrono::Utc> = row.get("time");
+                let participant_id_val: Uuid = row.get("participant_id");
+                let session_id_val: Uuid = row.get("session_id");
+                let word: Option<String> = row.get("word");
+                let event_type: Option<String> = row.get("event_type");
+                let reaction_value: Option<f64> = row.get("reaction_value");
+                let reaction_time: Option<f64> = row.get("reaction_time");
+                let has_response: bool = row.get("has_response");
+                let emotions_json: serde_json::Value = row.get("emotions");
+                let physiological_json: serde_json::Value = row.get("physiological");
+                let metadata_json: serde_json::Value = row.get("metadata");
+
+                // Parse emotions array
+                let emotions: Vec<EmotionData> = if let Some(emotions_array) = emotions_json.as_array() {
+                    emotions_array.iter().filter_map(|e| {
+                        Some(EmotionData {
+                            name: e.get("name")?.as_str()?.to_string(),
+                            score: e.get("score")?.as_f64()?,
+                            file_type: e.get("fileType")?.as_str()?.to_string(),
+                        })
+                    }).collect()
+                } else {
+                    Vec::new()
+                };
+
+                TimelinePoint {
+                    time: time.to_rfc3339(),
+                    participant_id: ID::from(participant_id_val.to_string()),
+                    session_id: ID::from(session_id_val.to_string()),
+                    word,
+                    event_type,
+                    reaction_value,
+                    reaction_time,
+                    has_response,
+                    emotions,
+                    physiological: physiological_json,
+                    metadata: metadata_json,
+                }
+            }).collect()
         };
-
-        // Execute query (simplified - actual implementation needs proper type mapping)
-        let rows = sqlx::query(&query)
-            .bind(participant_uuid)
-            .fetch_all(pool)
-            .await?;
-
-        // Convert rows to TimelinePoint (simplified - needs proper mapping)
-        let mut points = Vec::new();
-        for row in rows {
-            // Extract data from row (simplified - actual implementation needs proper column access)
-            // This is a placeholder - actual implementation should use sqlx::FromRow
-            points.push(TimelinePoint {
-                time: chrono::Utc::now().to_rfc3339(), // Placeholder
-                participant_id: participant_id.clone(),
-                session_id: session_id.clone().unwrap_or_else(|| ID::from("")),
-                word: None,
-                event_type: None,
-                reaction_value: None,
-                reaction_time: None,
-                has_response: false,
-                emotions: Vec::new(),
-                physiological: serde_json::json!({}),
-                metadata: serde_json::json!({}),
-            });
-        }
 
         Ok(points)
     }
 }
-
