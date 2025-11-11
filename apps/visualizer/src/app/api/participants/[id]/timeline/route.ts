@@ -420,12 +420,33 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
       // 新しい構造（BurstEmotionData/FaceEmotionData/LanguageEmotionData/ProsodyEmotionData）
       emotionResults.forEach((result: any, index: number) => {
         const emotionDataRaw = result.emotionData;
-        // Neo4jクライアントはpropertiesオブジェクト内にプロパティを返す
-        const emotionData = emotionDataRaw?.properties || emotionDataRaw;
+        // Neo4jクライアントはNodeオブジェクトを返す場合がある
+        // Nodeオブジェクトの場合はpropertiesプロパティまたはproperties()メソッドを使用
+        let emotionData: any = null;
+        
+        if (emotionDataRaw) {
+          // Nodeオブジェクトの場合（propertiesプロパティがある）
+          if (emotionDataRaw.properties && typeof emotionDataRaw.properties === 'object') {
+            emotionData = emotionDataRaw.properties;
+          }
+          // 直接プロパティが存在する場合
+          else if (typeof emotionDataRaw === 'object' && !emotionDataRaw.properties && !emotionDataRaw.identity) {
+            emotionData = emotionDataRaw;
+          }
+          // properties()メソッドがある場合（Neogmaなど）
+          else if (typeof emotionDataRaw.properties === 'function') {
+            emotionData = emotionDataRaw.properties();
+          }
+          // その他の場合、直接使用
+          else {
+            emotionData = emotionDataRaw;
+          }
+        }
+        
         const source = result.source || 'unknown';
         
-        if (!emotionData) {
-          console.log(`Skipping result ${index}: emotionData is null`);
+        if (!emotionData || typeof emotionData !== 'object') {
+          console.log(`Skipping result ${index}: emotionData is null or invalid. Raw type:`, typeof emotionDataRaw, 'Keys:', emotionDataRaw ? Object.keys(emotionDataRaw) : []);
           return; // emotionDataがnullの場合はスキップ
         }
         
@@ -510,9 +531,12 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
         } else {
           console.log(`Result ${index} (${source}): No emotion scores found after parsing. emotion_scores keys:`, Object.keys(emotionScoresObj));
           // デバッグ: emotionDataの全キーを確認
-          if (index < 3) {
+          if (index < 5) {
             console.log(`Result ${index} (${source}) emotionData keys:`, Object.keys(emotionData));
-            console.log(`Result ${index} (${source}) emotionData sample:`, JSON.stringify(emotionData).substring(0, 200));
+            console.log(`Result ${index} (${source}) emotionData type:`, typeof emotionData);
+            console.log(`Result ${index} (${source}) emotionDataRaw type:`, typeof emotionDataRaw);
+            console.log(`Result ${index} (${source}) emotionDataRaw keys:`, emotionDataRaw ? Object.keys(emotionDataRaw) : []);
+            console.log(`Result ${index} (${source}) emotionData sample:`, JSON.stringify(emotionData).substring(0, 500));
           }
         }
       });

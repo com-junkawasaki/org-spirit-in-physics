@@ -64,7 +64,15 @@ export default function SessionTimelinePage() {
     async function fetchDebugInfo() {
       try {
         setDebugLoading(true)
-        const response = await fetch(`/api/participants/${participantId}/timeline/debug?sessionId=${encodeURIComponent(sessionId)}`)
+        // キャッシュを無効化して最新データを取得
+        const response = await fetch(`/api/participants/${participantId}/timeline/debug?sessionId=${encodeURIComponent(sessionId)}&_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        })
         if (response.ok) {
           const data = await response.json()
           setDebugInfo(data)
@@ -78,6 +86,9 @@ export default function SessionTimelinePage() {
     
     if (participantId && sessionId) {
       fetchDebugInfo()
+      // 定期的にデータを更新（30秒ごと）
+      const interval = setInterval(fetchDebugInfo, 30000)
+      return () => clearInterval(interval)
     }
   }, [participantId, sessionId])
 

@@ -99,6 +99,15 @@ export async function GET(
       const source = emotionType.toLowerCase().replace('emotiondata', ''); // burst, face, language, prosody
       
       try {
+        // 全件数を取得
+        const countQuery = sessionId
+          ? `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})-[:${relationship}]->(e:${emotionType}) RETURN count(e) as total`
+          : `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)-[:${relationship}]->(e:${emotionType}) RETURN count(e) as total`;
+        
+        const countResults = await client.query(countQuery, { participantId, sessionId: sessionId || undefined });
+        const totalCount = countResults.length > 0 ? (countResults[0].total?.low || countResults[0].total || 0) : 0;
+        
+        // サンプルデータを取得（最大10件）
         const emotionQuery = sessionId
           ? `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})-[:${relationship}]->(e:${emotionType}) RETURN e LIMIT 10`
           : `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)-[:${relationship}]->(e:${emotionType}) RETURN e LIMIT 10`;
@@ -116,8 +125,8 @@ export async function GET(
         }
         
         debugInfo.checks[source] = {
-          exists: emotionResults.length > 0,
-          count: emotionResults.length,
+          exists: totalCount > 0,
+          count: totalCount,
           sample: emotionNode ? {
             id: emotionNode.id,
             hasEmotionScores: !!emotionNode.emotion_scores,

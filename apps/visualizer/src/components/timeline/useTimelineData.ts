@@ -51,11 +51,18 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
       console.log('TimelineVisualization: Starting data fetch for participant:', participantId, sessionId ? `session: ${sessionId}` : '')
       // 実データのみを使用（APIから取得）
       const apiUrl = sessionId 
-        ? `/api/participants/${participantId}/timeline?sessionId=${encodeURIComponent(sessionId)}`
-        : `/api/participants/${participantId}/timeline`
+        ? `/api/participants/${participantId}/timeline?sessionId=${encodeURIComponent(sessionId)}&_t=${Date.now()}`
+        : `/api/participants/${participantId}/timeline?_t=${Date.now()}`
       console.log('TimelineVisualization: API URL:', apiUrl)
       
-      const response = await fetch(apiUrl)
+      const response = await fetch(apiUrl, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
       console.log('TimelineVisualization: API response status:', response.status)
       
       if (!response.ok) {
