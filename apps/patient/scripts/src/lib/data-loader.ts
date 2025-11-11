@@ -1,6 +1,5 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
-import { neo4jClient } from './neo4j';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -16,17 +15,10 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-// Neo4j初期化関数
+// データベース初期化関数（GraphQLサービス経由でPostgreSQLを使用）
 export async function initializeNeo4jDatabase(): Promise<void> {
-  try {
-    // Neo4j接続テスト
-    await neo4jClient.query('RETURN 1');
-
-    console.log('Neo4j database connection established');
-  } catch (error) {
-    console.error('Failed to initialize Neo4j database:', error);
-    throw error;
-  }
+  // この関数は後方互換性のため残していますが、実際の処理はGraphQLサービス経由で行われます
+  console.log('Database initialization handled by GraphQL service (PostgreSQL)');
 }
 
 

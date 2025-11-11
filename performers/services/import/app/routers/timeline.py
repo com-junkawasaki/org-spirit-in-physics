@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Query
 from pydantic import BaseModel
 
 from app.database import get_db_pool
@@ -16,6 +16,24 @@ from app.database import get_db_pool
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+class EmotionDataDebug(BaseModel):
+    burst: dict
+    face: dict
+    language: dict
+    prosody: dict
+    total: int
+
+
+class TimelineDebugResult(BaseModel):
+    participant_id: str
+    session_id: str
+    session_exists: bool
+    emotion_data: EmotionDataDebug
+    timeline_points_count: int
+    timeline_points_with_emotions: int
+    emotion_types_in_timeline: List[str]
 
 
 class TimelineResult(BaseModel):
@@ -138,6 +156,8 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
         # Find related emotions (within ±2 seconds for precise matching)
         relative_timestamp_sec = (timestamp - start_ts) / 1000.0
         related_emotions = find_related_emotions(emotion_data, relative_timestamp_sec)
+        if idx < 5:  # Log first 5 events for debugging
+            logger.debug(f"[process_session_timeline] Event {idx}: word={word}, relative_ts={relative_timestamp_sec:.2f}s, found {len(related_emotions)} related emotions")
         
         # Find related physiological data (within ±5 seconds)
         related_physiological = find_related_physiological(physiological_data, timestamp)
@@ -257,6 +277,7 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         """,
         session_id
     )
+    logger.info(f"[get_emotion_data] Found {len(burst_rows)} burst emotion records for session {session_id}")
     
     for row in burst_rows:
         emotion_scores = json.loads(row['emotion_scores']) if isinstance(row['emotion_scores'], str) else row['emotion_scores']
@@ -277,6 +298,7 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         """,
         session_id
     )
+    logger.info(f"[get_emotion_data] Found {len(face_rows)} face emotion records for session {session_id}")
     
     for row in face_rows:
         emotion_scores = json.loads(row['emotion_scores']) if isinstance(row['emotion_scores'], str) else row['emotion_scores']
@@ -297,6 +319,7 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         """,
         session_id
     )
+    logger.info(f"[get_emotion_data] Found {len(language_rows)} language emotion records for session {session_id}")
     
     for row in language_rows:
         emotion_scores = json.loads(row['emotion_scores']) if isinstance(row['emotion_scores'], str) else row['emotion_scores']
@@ -317,6 +340,7 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         """,
         session_id
     )
+    logger.info(f"[get_emotion_data] Found {len(prosody_rows)} prosody emotion records for session {session_id}")
     
     for row in prosody_rows:
         emotion_scores = json.loads(row['emotion_scores']) if isinstance(row['emotion_scores'], str) else row['emotion_scores']
@@ -327,7 +351,108 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
             'file_type': 'prosody'
         })
     
+    logger.info(f"[get_emotion_data] Total emotion entries: {len(emotion_entries)} for session {session_id}")
     return emotion_entries
+
+
+@router.get("/timeline/debug/{participant_id}")
+async def debug_timeline_data(
+    participant_id: str,
+    session_id: Optional[str] = Query(None, description="Optional session ID to check specific session")
+):
+    """Debug endpoint to check emotion data status"""
+    pool = await get_db_pool()
+    
+    async with pool.acquire() as conn:
+        # Get session
+        if session_id:
+            session_row = await conn.fetchrow(
+                "SELECT id, session_index, start_ts, end_ts FROM sessions WHERE id::text = $1",
+                session_id
+            )
+        else:
+            session_row = await conn.fetchrow(
+                "SELECT id, session_index, start_ts, end_ts FROM sessions WHERE participant_id::text = $1 ORDER BY session_index LIMIT 1",
+                participant_id
+            )
+        
+        if not session_row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Session not found for participant {participant_id}"
+            )
+        
+        target_session_id = str(session_row['id'])
+        
+        # Check emotion data tables
+        emotion_counts = {}
+        for table_name, emotion_type in [
+            ('burst_emotion_data', 'burst'),
+            ('face_emotion_data', 'face'),
+            ('language_emotion_data', 'language'),
+            ('prosody_emotion_data', 'prosody'),
+        ]:
+            table_exists = await conn.fetchval(
+                """
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_name = $1
+                )
+                """,
+                table_name
+            )
+            
+            if not table_exists:
+                emotion_counts[emotion_type] = {'exists': False, 'count': 0}
+                continue
+            
+            count = await conn.fetchval(
+                f"SELECT COUNT(*) FROM {table_name} WHERE session_id::text = $1",
+                target_session_id
+            )
+            emotion_counts[emotion_type] = {'exists': True, 'count': count}
+        
+        # Check timeline_points
+        timeline_stats = await conn.fetchrow(
+            """
+            SELECT 
+                COUNT(*) as total_points,
+                COUNT(CASE WHEN emotions IS NOT NULL AND emotions != '[]'::jsonb THEN 1 END) as points_with_emotions
+            FROM timeline_points
+            WHERE session_id::text = $1
+            """,
+            target_session_id
+        )
+        
+        # Get emotion types in timeline
+        emotion_types = await conn.fetch(
+            """
+            SELECT DISTINCT jsonb_array_elements(emotions)->>'fileType' as file_type
+            FROM timeline_points
+            WHERE session_id::text = $1
+            AND jsonb_array_length(emotions) > 0
+            """,
+            target_session_id
+        )
+        
+        emotion_types_list = [row['file_type'] for row in emotion_types if row['file_type']]
+        
+        return TimelineDebugResult(
+            participant_id=participant_id,
+            session_id=target_session_id,
+            session_exists=True,
+            emotion_data=EmotionDataDebug(
+                burst=emotion_counts['burst'],
+                face=emotion_counts['face'],
+                language=emotion_counts['language'],
+                prosody=emotion_counts['prosody'],
+                total=sum(c['count'] for c in emotion_counts.values())
+            ),
+            timeline_points_count=timeline_stats['total_points'] if timeline_stats else 0,
+            timeline_points_with_emotions=timeline_stats['points_with_emotions'] if timeline_stats else 0,
+            emotion_types_in_timeline=emotion_types_list
+        )
 
 
 async def get_physiological_data(conn, session_id: str, participant_id: str):
@@ -416,13 +541,17 @@ def find_related_emotions(emotion_data, relative_timestamp_sec: float):
     search_end_sec = relative_timestamp_sec + 2
     
     related = []
-    zero_time_emotions = []  # Collect emotions with begin_time = 0 separately
+    zero_time_emotions_by_type = {}  # Group zero-time emotions by file_type
     
     for emotion in emotion_data:
         begin_time = emotion.get('begin_time')
+        file_type = emotion.get('file_type', 'unknown')
+        
         if begin_time is None or begin_time == 0:
-            # Collect zero-time emotions separately (will be added once per session)
-            zero_time_emotions.append(emotion)
+            # Collect zero-time emotions by file_type (will be added once per file_type)
+            if file_type not in zero_time_emotions_by_type:
+                zero_time_emotions_by_type[file_type] = []
+            zero_time_emotions_by_type[file_type].append(emotion)
             continue
         
         end_time = emotion.get('end_time') or (begin_time + 1.0)
@@ -431,11 +560,14 @@ def find_related_emotions(emotion_data, relative_timestamp_sec: float):
         if begin_time <= search_end_sec and end_time >= search_start_sec:
             related.append(emotion)
     
-    # Add zero-time emotions only if no time-specific emotions were found
-    # This prevents zero-time emotions from being added to every point
-    if len(related) == 0 and len(zero_time_emotions) > 0:
-        # Only add the first zero-time emotion entry to avoid duplication
-        related.extend(zero_time_emotions[:1])
+    # Add zero-time emotions by file_type if no time-specific emotions of that type were found
+    # This ensures each file_type (face, burst, etc.) gets at least one entry if available
+    for file_type, zero_emotions in zero_time_emotions_by_type.items():
+        # Check if we already have time-specific emotions of this file_type
+        has_time_specific = any(e.get('file_type') == file_type for e in related)
+        if not has_time_specific and len(zero_emotions) > 0:
+            # Add the first zero-time emotion entry for this file_type
+            related.append(zero_emotions[0])
     
     return related
 

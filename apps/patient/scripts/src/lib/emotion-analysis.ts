@@ -237,7 +237,7 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
 }
 
 /**
- * Neo4jから感情分析の統計情報を取得
+ * GraphQLサービス経由で感情分析の統計情報を取得
  */
 export async function getEmotionStatisticsFromNeo4j(): Promise<{
   totalAnalyses: number;
@@ -248,15 +248,9 @@ export async function getEmotionStatisticsFromNeo4j(): Promise<{
     totalTime: number;
   };
 }> {
-    try {
-      // Neo4jマネージャーを使用
-      const { neo4jManager } = await import('./database/neo4j-manager.ts');
-    return await neo4jManager.getEmotionStatistics();
-  } catch (error) {
-    console.error('Error getting emotion statistics from Neo4j:', error);
-  }
-
-  // Fallback to empty stats
+  // GraphQLサービス経由で実装予定
+  // 現時点では空の統計を返す
+  console.warn('getEmotionStatisticsFromNeo4j: GraphQL経由での実装は未対応');
   return {
     totalAnalyses: 0,
     averageEmotions: {},

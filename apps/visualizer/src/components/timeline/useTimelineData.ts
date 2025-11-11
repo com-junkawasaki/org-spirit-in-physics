@@ -157,7 +157,20 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
           word: item.w || item.word,
           reactionTime: item.rt ?? item.reactionTime ?? null, // 反応時間を正しく取得
           hasResponse: item.rt != null || item.reactionTime != null, // 反応時間が存在する場合はtrue
-          emotions: Array.isArray(item.em) ? item.em : (Array.isArray(item.emotions) ? item.emotions : []),
+          emotions: Array.isArray(item.em) 
+            ? item.em.map((e: any) => ({
+                // 短縮形式（n, s, t）を展開形式（name, score, fileType）に変換
+                name: e.n || e.name || '',
+                score: typeof e.s === 'number' ? e.s : (typeof e.score === 'number' ? e.score : 0),
+                fileType: e.t || e.fileType || e.file_type || ''
+              }))
+            : (Array.isArray(item.emotions) 
+                ? item.emotions.map((e: any) => ({
+                    name: e.name || '',
+                    score: typeof e.score === 'number' ? e.score : 0,
+                    fileType: e.fileType || e.file_type || ''
+                  }))
+                : []),
           physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
           reactionValue: item.rv || item.reactionValue || 0,
           eventType: item.e || item.eventType,
