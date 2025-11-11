@@ -26,7 +26,7 @@ export default function TimelineVisualization({
   width = 800, 
   height = 400,
   hideFilters = false,
-}: Omit<TimelineVisualizationProps, 'forceMode' | 'useDemo'>) {
+}: Omit<TimelineVisualizationProps, 'forceMode'>) {
   // 3D Force パラメータ
   const [springK, setSpringK] = useState(2.0)
   const [repulsionK, setRepulsionK] = useState(2000.0)

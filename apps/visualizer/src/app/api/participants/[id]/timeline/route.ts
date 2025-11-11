@@ -415,10 +415,36 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
         }
         
         if (Object.keys(emotionScoresObj).length > 0) {
-          const emotions = Object.entries(emotionScoresObj).map(([name, score]) => ({
-            name,
-            score: Math.min(Math.max(Number(score) || 0, 0), 1)
-          }));
+          // Hume AIの感情名を小文字に正規化（例: "Joy" -> "joy", "Surprise (positive)" -> "surprise"）
+          const normalizeEmotionName = (name: string): string => {
+            // 括弧内の情報を削除（例: "Surprise (positive)" -> "Surprise"）
+            const cleaned = name.replace(/\s*\([^)]*\)/g, '').trim();
+            // 小文字に変換
+            const lower = cleaned.toLowerCase();
+            // 特殊なマッピング
+            const mapping: Record<string, string> = {
+              'surprise (negative)': 'surprise',
+              'surprise (positive)': 'surprise',
+              'surprise': 'surprise',
+              'joy': 'joy',
+              'sadness': 'sadness',
+              'anger': 'anger',
+              'fear': 'fear',
+              'disgust': 'disgust',
+              'calmness': 'calm',
+              'concentration': 'focus',
+              'excitement': 'excitement',
+              'confusion': 'confusion'
+            };
+            return mapping[lower] || lower;
+          };
+          
+          const emotions = Object.entries(emotionScoresObj)
+            .map(([name, score]) => ({
+              name: normalizeEmotionName(name),
+              score: Math.min(Math.max(Number(score) || 0, 0), 1)
+            }))
+            .filter(e => e.score > 0); // スコアが0の感情は除外
           
           // begin_timeとtimeの両方を確認（Neo4jのInteger型に対応）
           const toNumber = (value: any): number => {
@@ -622,13 +648,15 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       const relatedEmotions = emotionData.filter(emotion => {
         // セッション開始時刻を基準に相対時間でマッチング
         const sessionStartTime = sessionData.startTime || 0;
-        const relativeTimestamp = (timestamp - sessionStartTime) / 1000; // 相対時間（秒）
+        // timestampはミリ秒単位、beginTime/endTimeは秒単位なので変換
+        const relativeTimestampMs = timestamp - sessionStartTime;
+        const relativeTimestampSec = relativeTimestampMs / 1000; // 秒単位に変換
         const beginTime = emotion.beginTime || 0; // 秒単位
-        const endTime = emotion.endTime || (beginTime + 1); // 秒単位（endTimeがない場合はbeginTime+1秒）
+        const endTime = emotion.endTime || (beginTime > 0 ? beginTime + 1 : 1); // 秒単位（endTimeがない場合はbeginTime+1秒）
         
         // 感情データの時間範囲でマッチング（より柔軟なマッチング：±5秒の範囲内）
-        const timeDiff = Math.abs(relativeTimestamp - beginTime);
-        return timeDiff <= 5 || (beginTime <= relativeTimestamp && endTime >= relativeTimestamp);
+        const timeDiff = Math.abs(relativeTimestampSec - beginTime);
+        return timeDiff <= 5 || (beginTime <= relativeTimestampSec && endTime >= relativeTimestampSec);
       });
       
       // 対応する生理データを検索（時間範囲でマッチング）
@@ -662,8 +690,8 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         console.log(`Timeline point ${timelineData.length}: word=${word}, relatedEmotions=${relatedEmotions.length}, emotionDetails=${emotionDetails.length}`, {
           emotionTypes: emotionDetails.map(e => e.fileType),
           emotionNames: emotionDetails.map(e => e.name)
-        });
-      }
+          });
+        }
       
       // 従来の数値データも計算（後方互換性のため）
       const emotionValues = {

@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import * as d3 from 'd3'
-import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 import type {
   TimelineDataPoint,
   TimelineVisualizationProps,
-  EmotionData,
   FilterSettings,
   TimeRange
 } from './types'
@@ -12,7 +10,7 @@ import type {
 // Merkle DAG: timeline.hooks.data
 // 時系列データの取得と状態管理フック
 
-export function useTimelineData({ participantId, sessionId, useDemo = false }: Pick<TimelineVisualizationProps, 'participantId' | 'sessionId' | 'useDemo'>) {
+export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisualizationProps, 'participantId' | 'sessionId'>) {
   const [mounted, setMounted] = useState(false)
   const [data, setData] = useState<TimelineDataPoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,45 +33,6 @@ export function useTimelineData({ participantId, sessionId, useDemo = false }: P
     showWordLabels: true
   })
 
-  // --- Demo timeline generator -------------------------------------------------
-  const generateDemoTimeline = useCallback((): TimelineDataPoint[] => {
-    // 100語のサンプルを時系列化
-    const words = JUNG_STIMULUS_WORDS.slice(0, 100)
-    const EMOTIONS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
-    const start = Date.now() - 1000 * 60 // 少し過去から開始
-
-    const rand = (min: number, max: number) => Math.random() * (max - min) + min
-    const pick = <T,>(arr: readonly T[], k: number) => Array.from({ length: k }, () => arr[Math.floor(Math.random() * arr.length)])
-
-    const points: TimelineDataPoint[] = words.map((w, idx) => {
-      const timestamp = start + idx * Math.round(rand(700, 1600))
-      const reactionTime = Math.round(rand(350, 2400))
-      const hasResponse = Math.random() < 0.9
-      const emoCount = Math.max(1, Math.floor(rand(1, 4)))
-      const emos = pick(EMOTIONS, emoCount).map((name) => ({ name, score: Math.round(rand(0.15, 0.9) * 100) / 100, fileType: 'demo' }))
-      const physAvg = Math.round(rand(-0.12, 0.18) * 1000) / 1000
-      const physMax = physAvg + Math.abs(Math.round(rand(0.0, 0.08) * 1000) / 1000)
-      const physMin = physAvg - Math.abs(Math.round(rand(0.0, 0.08) * 1000) / 1000)
-      // 反応値: 感情平均と生理の正規化、反応時間のペナルティを合成
-      const emoMean = emos.length ? emos.reduce((s, e) => s + e.score, 0) / emos.length : 0
-      const rtNorm = (reactionTime - 350) / (2400 - 350)
-      const physNorm = (Math.abs(physAvg) / 0.2)
-      const reactionValue = Math.max(0, Math.min(1, 0.55 * emoMean + 0.35 * Math.min(1, physNorm) + 0.25 * (1 - rtNorm)))
-
-      return {
-        timestamp,
-        word: w.japanese,
-        reactionTime,
-        hasResponse,
-        emotions: emos as unknown as EmotionData[],
-        physiological: { average: physAvg, max: physMax, min: physMin },
-        reactionValue,
-        eventType: 'word_displayed',
-        metadata: { emotionCount: emos.length, physiologicalCount: 1 }
-      }
-    })
-    return points
-  }, [])
 
   const getPhysStat = (p: TimelineDataPoint['physiological'], key: 'average' | 'max' | 'min'): number => {
     if (Array.isArray(p)) return 0
@@ -90,72 +49,67 @@ export function useTimelineData({ participantId, sessionId, useDemo = false }: P
     try {
       setLoading(true)
       console.log('TimelineVisualization: Starting data fetch for participant:', participantId, sessionId ? `session: ${sessionId}` : '')
-      // API優先、失敗時・useDemo時はローカル生成でフォールバック
+      // 実データのみを使用（APIから取得）
       const apiUrl = sessionId 
         ? `/api/participants/${participantId}/timeline?sessionId=${encodeURIComponent(sessionId)}`
         : `/api/participants/${participantId}/timeline`
       console.log('TimelineVisualization: API URL:', apiUrl)
-      let ok = false
-      try {
-        const response = await fetch(apiUrl)
-        console.log('TimelineVisualization: API response status:', response.status)
-        const result = await response.json()
-        console.log('TimelineVisualization: API result:', result)
-        if (result?.success && Array.isArray(result.data?.timelineData)) {
-          console.log('TimelineVisualization: Converting data, count:', result.data.timelineData.length)
-          // 短縮フィールドをTimelineDataPoint形式に変換
-          const convertedData = result.data.timelineData.map((item: any) => ({
-            timestamp: item.t || item.timestamp,
-            word: item.w || item.word,
-            reactionTime: item.rt ?? item.reactionTime ?? null, // 反応時間を正しく取得
-            hasResponse: item.rt != null || item.reactionTime != null, // 反応時間が存在する場合はtrue
-            emotions: Array.isArray(item.em) ? item.em : (Array.isArray(item.emotions) ? item.emotions : []),
-            physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
-            reactionValue: item.rv || item.reactionValue || 0,
-            eventType: item.e || item.eventType,
-            metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
-          }))
-          
-          // 感情データのfileTypeを確認
-          const emotionDataSample = convertedData.find(d => d.emotions && d.emotions.length > 0)
-          if (emotionDataSample) {
-            console.log('TimelineVisualization: Emotion data sample:', {
-              word: emotionDataSample.word,
-              emotionsCount: emotionDataSample.emotions.length,
-              firstEmotion: emotionDataSample.emotions[0],
-              allFileTypes: [...new Set(emotionDataSample.emotions.map((e: any) => e.fileType))]
-            })
-          } else {
-            console.log('TimelineVisualization: No emotion data found in converted data')
-          }
-          
-          console.log('TimelineVisualization: Converted data sample:', convertedData[0])
-          setData(convertedData)
-          ok = true
-          if (Array.isArray(result.data.metadata?.errors) && result.data.metadata.errors.length > 0) {
-            setError(`警告: 一部データ取得に失敗しました: ${result.data.metadata.errors.join('; ')}`)
-          } else {
-            setError(null)
-          }
-        } else {
-          console.log('TimelineVisualization: API response not successful or no data')
-        }
-      } catch (error) {
-        console.error('TimelineVisualization: API fetch error:', error)
-        // noop -> フォールバックへ
+      
+      const response = await fetch(apiUrl)
+      console.log('TimelineVisualization: API response status:', response.status)
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`)
       }
-
-      if (!ok || useDemo) {
-        const demo = generateDemoTimeline()
-        setData(demo)
-        setError(null)
+      
+      const result = await response.json()
+      console.log('TimelineVisualization: API result:', result)
+      
+      if (result?.success && Array.isArray(result.data?.timelineData)) {
+        console.log('TimelineVisualization: Converting data, count:', result.data.timelineData.length)
+        // 短縮フィールドをTimelineDataPoint形式に変換
+        const convertedData = result.data.timelineData.map((item: any) => ({
+          timestamp: item.t || item.timestamp,
+          word: item.w || item.word,
+          reactionTime: item.rt ?? item.reactionTime ?? null, // 反応時間を正しく取得
+          hasResponse: item.rt != null || item.reactionTime != null, // 反応時間が存在する場合はtrue
+          emotions: Array.isArray(item.em) ? item.em : (Array.isArray(item.emotions) ? item.emotions : []),
+          physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
+          reactionValue: item.rv || item.reactionValue || 0,
+          eventType: item.e || item.eventType,
+          metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
+        }))
+        
+        // 感情データのfileTypeを確認
+        const emotionDataSample = convertedData.find(d => d.emotions && d.emotions.length > 0)
+        if (emotionDataSample) {
+          console.log('TimelineVisualization: Emotion data sample:', {
+            word: emotionDataSample.word,
+            emotionsCount: emotionDataSample.emotions.length,
+            firstEmotion: emotionDataSample.emotions[0],
+            allFileTypes: [...new Set(emotionDataSample.emotions.map((e: any) => e.fileType))]
+          })
+        } else {
+          console.log('TimelineVisualization: No emotion data found in converted data')
+        }
+        
+        console.log('TimelineVisualization: Converted data sample:', convertedData[0])
+        setData(convertedData)
+        
+        if (Array.isArray(result.data.metadata?.errors) && result.data.metadata.errors.length > 0) {
+          setError(`警告: 一部データ取得に失敗しました: ${result.data.metadata.errors.join('; ')}`)
+        } else {
+          setError(null)
+        }
+      } else {
+        throw new Error('API response not successful or no data')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoading(false)
     }
-  }, [participantId, sessionId, useDemo, generateDemoTimeline])
+  }, [participantId, sessionId])
 
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = useCallback(async () => {
