@@ -10,8 +10,9 @@ COPY package.json pnpm-lock.yaml ./
 # Install pnpm
 RUN npm install -g pnpm
 
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
+# Install dependencies and wget for healthcheck
+RUN pnpm install --no-frozen-lockfile && \
+    apk add --no-cache wget
 
 # Copy environment file
 COPY env.docker .env.local

@@ -22,34 +22,6 @@ services:
       retries: 5
       start_period: 10s
 
-  # Neo4j (deprecated - kept for reference, commented out)
-  # neo4j:
-  #   image: neo4j:latest
-  #   container_name: spirit-neo4j
-  #   ports:
-  #     - "7474:7474"  # HTTP
-  #     - "7687:7687"  # Bolt
-  #   environment:
-  #     - NEO4J_AUTH=neo4j/neo4jpassword
-  #     - NEO4J_PLUGINS=["graph-data-science"]
-  #     - NEO4J_server_memory_heap_initial__size=512m
-  #     - NEO4J_server_memory_heap_max__size=1G
-  #     - NEO4J_server_memory_pagecache_size=512m
-  #     - NEO4J_dbms_security_procedures_unrestricted=gds.*
-  #   volumes:
-  #     - neo4j_data:/data
-  #     - neo4j_logs:/logs
-  #   networks:
-  #     - spirit-network
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4jpassword", "MATCH () RETURN count(*) limit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #     start_period: 30s
-
-
   # Patient app (Next.js)
   patient:
     build:
@@ -104,6 +76,12 @@ services:
         condition: service_healthy
     networks:
       - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # Patient app for cloud (Aura) profile
   patient-cloud:
@@ -204,29 +182,6 @@ services:
       - spirit-network
     restart: "no"
 
-  # One-shot importer to push dataset into PostgreSQL via patient API (legacy)
-  patient-importer:
-    image: curlimages/curl:8.9.1
-    container_name: spirit-patient-importer
-    depends_on:
-      postgres:
-        condition: service_healthy
-      patient:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-lc"]
-    command: >-
-      'set -euo pipefail;
-       echo "Triggering participants import";
-       curl -sS -X POST http://patient:25250/api/admin/import/participants || exit 1;
-       echo "Triggering sessions import";
-       curl -sS -X POST http://patient:25250/api/admin/import/sessions || exit 1;
-       echo "Triggering emotions import";
-       curl -sS -X POST http://patient:25250/api/admin/import/emotions || exit 1;
-       echo "Imports completed";'
-    networks:
-      - spirit-network
-    restart: "no"
-
   # BPMN Runner (optional orchestrator for imports)
   # bpmn-runner:
   #       build:
@@ -266,8 +221,6 @@ services:
 
 volumes:
   postgres_data:
-  # neo4j_data:  # Deprecated
-  # neo4j_logs:  # Deprecated
 
 networks:
   spirit-network:
