@@ -67,14 +67,20 @@ export async function GET(
         beginTime: emotionData[0].beginTime,
         endTime: emotionData[0].endTime,
         fileType: emotionData[0].fileType,
-        emotionsCount: emotionData[0].emotions?.length || 0
+        emotionsCount: emotionData[0].emotions?.length || 0,
+        emotions: emotionData[0].emotions?.slice(0, 3) || []
       } : null,
       timeRange: emotionData.length > 0 ? {
         minBeginTime: Math.min(...emotionData.map(e => e.beginTime || 0)),
         maxBeginTime: Math.max(...emotionData.map(e => e.beginTime || 0)),
         minEndTime: Math.min(...emotionData.map(e => e.endTime || 0)),
         maxEndTime: Math.max(...emotionData.map(e => e.endTime || 0))
-      } : null
+      } : null,
+      emotionTypeBreakdown: emotionData.reduce((acc: any, e: any) => {
+        const type = e.fileType || 'unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {})
     });
     
     if (integrated.length > 0) {
@@ -87,10 +93,22 @@ export async function GET(
           word: sampleWithEmotions.word,
           timestamp: sampleWithEmotions.timestamp,
           emotionsCount: sampleWithEmotions.emotions.length,
-          emotionTypes: [...new Set(sampleWithEmotions.emotions.map((e: any) => e.fileType))]
+          emotionTypes: [...new Set(sampleWithEmotions.emotions.map((e: any) => e.fileType))],
+          firstEmotions: sampleWithEmotions.emotions.slice(0, 3)
         });
       } else {
         console.log('⚠️ WARNING: No emotion data found in integrated timeline data');
+        console.log('⚠️ Emotion data details:', {
+          totalEmotionData: emotionData.length,
+          emotionDataWithEmotions: emotionData.filter(e => e.emotions && e.emotions.length > 0).length,
+          sampleEmotionData: emotionData.slice(0, 3).map(e => ({
+            fileType: e.fileType,
+            beginTime: e.beginTime,
+            endTime: e.endTime,
+            emotionsCount: e.emotions?.length || 0,
+            emotions: e.emotions?.slice(0, 2) || []
+          }))
+        });
         // 時間マッチングの問題を診断
         if (sessionData.startTime === 0) {
           console.log('⚠️ Session start time is 0 - this may cause time matching issues');
@@ -103,8 +121,22 @@ export async function GET(
             firstWordTimestamp: firstWordTime,
             firstWordRelativeSec: (firstWordTime - sessionData.startTime) / 1000,
             firstEmotionBeginTimeSec: firstEmotionTime,
-            timeDifferenceSec: timeDiff
+            timeDifferenceSec: timeDiff,
+            sessionStartTime: sessionData.startTime
           });
+          
+          // 最初の10件の感情データと単語イベントの時間を比較
+          console.log('First 5 emotion data times:', emotionData.slice(0, 5).map(e => ({
+            fileType: e.fileType,
+            beginTime: e.beginTime,
+            endTime: e.endTime,
+            emotionsCount: e.emotions?.length || 0
+          })));
+          console.log('First 5 word event times:', sessionData.wordEvents.slice(0, 5).map((e: any) => ({
+            timestamp: e.timestamp,
+            relativeSec: (e.timestamp - sessionData.startTime) / 1000,
+            word: e.payload?.word
+          })));
         }
       }
     }
@@ -187,11 +219,60 @@ export async function GET(
     }
 
   } catch (error) {
-    console.error('Timeline API error:', error);
+    console.error('=== Timeline API Error ===');
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // エラーオブジェクトの詳細を出力
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      if ((error as any).code) {
+        console.error('Error code:', (error as any).code);
+      }
+      if ((error as any).cause) {
+        console.error('Error cause:', (error as any).cause);
+      }
+    }
+    
+    // Neo4j固有のエラー情報を出力
+    if (error && typeof error === 'object') {
+      const errorObj = error as any;
+      if (errorObj.code) {
+        console.error('Neo4j error code:', errorObj.code);
+      }
+      if (errorObj.message) {
+        console.error('Neo4j error message:', errorObj.message);
+      }
+      if (errorObj.stack) {
+        console.error('Full error object:', JSON.stringify(errorObj, Object.getOwnPropertyNames(errorObj), 2));
+      }
+    }
+    
+    // エラーの種類を識別
+    let errorCategory = 'Unknown';
+    if (error instanceof Error) {
+      if (error.message.includes('Neo4j') || error.message.includes('Cypher')) {
+        errorCategory = 'Neo4j Query Error';
+      } else if (error.message.includes('JSON') || error.message.includes('parse')) {
+        errorCategory = 'JSON Parse Error';
+      } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+        errorCategory = 'Timeout Error';
+      } else if (error.message.includes('connection') || error.message.includes('Connection')) {
+        errorCategory = 'Connection Error';
+      }
+    }
+    
+    console.error('Error category:', errorCategory);
+    
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      errorCategory,
+      details: process.env.NODE_ENV === 'development' ? {
+        stack: error instanceof Error ? error.stack : undefined,
+        type: error instanceof Error ? error.constructor.name : typeof error
+      } : undefined
     }, { status: 500 });
   }
 }
@@ -204,20 +285,43 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
     console.log('Getting session data from Neo4j for participant:', participantId, sessionId ? `session: ${sessionId}` : '');
     
     // まず、新しい構造（Participant -> Session）を試す
-    const builder = new Neo4jQueryBuilder();
-    const { query, params } = builder.buildSessionDataQuery(participantId, sessionId);
-    
-    console.log('Executing session query (new structure):', query);
-    let sessionResults = await client.query(query, params);
-    console.log('Session query results count (new structure):', sessionResults.length);
-    
-    // 新しい構造でデータが見つからない場合、古い構造（Participant -> Experiment -> ExperimentSession）を試す
-    if (sessionResults.length === 0) {
-      const oldBuilder = new Neo4jQueryBuilder();
-      const { query: oldQuery, params: oldParams } = oldBuilder.buildOldSessionDataQuery(participantId, sessionId);
-      console.log('Executing session query (old structure):', oldQuery);
-      sessionResults = await client.query(oldQuery, oldParams);
-      console.log('Session query results count (old structure):', sessionResults.length);
+    try {
+      const builder = new Neo4jQueryBuilder();
+      const { query, params } = builder.buildSessionDataQuery(participantId, sessionId);
+      
+      console.log('=== Session Data Query (New Structure) ===');
+      console.log('Query:', query);
+      console.log('Params:', JSON.stringify(params, null, 2));
+      
+      let sessionResults = await client.query(query, params);
+      console.log('Session query results count (new structure):', sessionResults.length);
+      
+      // 新しい構造でデータが見つからない場合、古い構造（Participant -> Experiment -> ExperimentSession）を試す
+      if (sessionResults.length === 0) {
+        try {
+          const oldBuilder = new Neo4jQueryBuilder();
+          const { query: oldQuery, params: oldParams } = oldBuilder.buildOldSessionDataQuery(participantId, sessionId);
+          
+          console.log('=== Session Data Query (Old Structure) ===');
+          console.log('Query:', oldQuery);
+          console.log('Params:', JSON.stringify(oldParams, null, 2));
+          
+          sessionResults = await client.query(oldQuery, oldParams);
+          console.log('Session query results count (old structure):', sessionResults.length);
+        } catch (oldError) {
+          console.error('Error fetching session data (old structure):', oldError);
+          console.error('Error type:', oldError instanceof Error ? oldError.constructor.name : typeof oldError);
+          console.error('Error message:', oldError instanceof Error ? oldError.message : String(oldError));
+          console.error('Error stack:', oldError instanceof Error ? oldError.stack : 'No stack trace');
+          throw oldError;
+        }
+      }
+    } catch (newError) {
+      console.error('Error fetching session data (new structure):', newError);
+      console.error('Error type:', newError instanceof Error ? newError.constructor.name : typeof newError);
+      console.error('Error message:', newError instanceof Error ? newError.message : String(newError));
+      console.error('Error stack:', newError instanceof Error ? newError.stack : 'No stack trace');
+      throw newError;
     }
     
     if (sessionResults.length === 0) {
@@ -324,7 +428,33 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
     };
 
   } catch (error) {
-    console.error('Neo4j session data read error:', error);
+    console.error('=== Neo4j Session Data Query Error ===');
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // エラーオブジェクトの詳細を出力
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      if ((error as any).code) {
+        console.error('Error code:', (error as any).code);
+      }
+      if ((error as any).cause) {
+        console.error('Error cause:', (error as any).cause);
+      }
+    }
+    
+    // Neo4j固有のエラー情報を出力
+    if (error && typeof error === 'object') {
+      const errorObj = error as any;
+      if (errorObj.code) {
+        console.error('Neo4j error code:', errorObj.code);
+      }
+      if (errorObj.message) {
+        console.error('Neo4j error message:', errorObj.message);
+      }
+    }
+    
     throw error;
   }
 }
@@ -342,18 +472,31 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
     
     // 各感情データタイプごとにクエリビルダーを使用してクエリを生成・実行
     for (const emotionType of emotionTypes) {
-      const builder = new Neo4jQueryBuilder();
-      const { query, params } = builder.buildEmotionDataQuery(emotionType, participantId, sessionId);
-      
-      console.log(`Executing ${emotionType} emotion query:`, query);
-      const results = await client.query(query, params);
-      console.log(`${emotionType} emotion results count:`, results.length);
-      
-      if (results.length > 0) {
-        console.log(`First ${emotionType} result:`, JSON.stringify(results[0], null, 2));
+      try {
+        const builder = new Neo4jQueryBuilder();
+        const { query, params } = builder.buildEmotionDataQuery(emotionType, participantId, sessionId);
+        
+        console.log(`=== ${emotionType} Emotion Query ===`);
+        console.log('Query:', query);
+        console.log('Params:', JSON.stringify(params, null, 2));
+        
+        const results = await client.query(query, params);
+        console.log(`${emotionType} emotion results count:`, results.length);
+        
+        if (results.length > 0) {
+          console.log(`First ${emotionType} result:`, JSON.stringify(results[0], null, 2));
+        }
+        
+        allEmotionResults.push(...results);
+      } catch (error) {
+        console.error(`Error fetching ${emotionType} emotion data:`, error);
+        console.error(`Error type:`, error instanceof Error ? error.constructor.name : typeof error);
+        console.error(`Error message:`, error instanceof Error ? error.message : String(error));
+        console.error(`Error stack:`, error instanceof Error ? error.stack : 'No stack trace');
+        
+        // エラーが発生しても他の感情データタイプの取得を続行
+        console.warn(`Skipping ${emotionType} emotion data due to error, continuing with other types...`);
       }
-      
-      allEmotionResults.push(...results);
     }
     
     console.log('Emotion query results count (new structure):', allEmotionResults.length);
@@ -515,7 +658,33 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
     return mappedResults;
 
   } catch (error) {
-    console.error('Neo4j emotion data query error:', error);
+    console.error('=== Neo4j Emotion Data Query Error ===');
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // エラーオブジェクトの詳細を出力
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      if ((error as any).code) {
+        console.error('Error code:', (error as any).code);
+      }
+      if ((error as any).cause) {
+        console.error('Error cause:', (error as any).cause);
+      }
+    }
+    
+    // Neo4j固有のエラー情報を出力
+    if (error && typeof error === 'object') {
+      const errorObj = error as any;
+      if (errorObj.code) {
+        console.error('Neo4j error code:', errorObj.code);
+      }
+      if (errorObj.message) {
+        console.error('Neo4j error message:', errorObj.message);
+      }
+    }
+    
     return [];
   }
 }
@@ -526,21 +695,47 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
   try {
     console.log('Getting physiological data from Neo4j for participant:', participantId, sessionId ? `session: ${sessionId}` : '');
     
+    let physiologicalResults: any[] = [];
+    
     // 新しい構造（Participant -> Session -> PhysiologicalData）を試す
-    const builder = new Neo4jQueryBuilder();
-    const { query, params } = builder.buildPhysiologicalDataQuery(participantId, sessionId);
-    
-    console.log('Executing physiological query (new structure):', query);
-    let physiologicalResults = await client.query(query, params);
-    console.log('Physiological query results count (new structure):', physiologicalResults.length);
-    
-    // 新しい構造でデータが見つからない場合、古い構造を試す
-    if (physiologicalResults.length === 0) {
-      const oldBuilder = new Neo4jQueryBuilder();
-      const { query: oldQuery, params: oldParams } = oldBuilder.buildOldPhysiologicalDataQuery(participantId);
-      console.log('Executing physiological query (old structure):', oldQuery);
-      physiologicalResults = await client.query(oldQuery, oldParams);
-      console.log('Physiological query results count (old structure):', physiologicalResults.length);
+    try {
+      const builder = new Neo4jQueryBuilder();
+      const { query, params } = builder.buildPhysiologicalDataQuery(participantId, sessionId);
+      
+      console.log('=== Physiological Data Query (New Structure) ===');
+      console.log('Query:', query);
+      console.log('Params:', JSON.stringify(params, null, 2));
+      
+      physiologicalResults = await client.query(query, params);
+      console.log('Physiological query results count (new structure):', physiologicalResults.length);
+      
+      // 新しい構造でデータが見つからない場合、古い構造を試す
+      if (physiologicalResults.length === 0) {
+        try {
+          const oldBuilder = new Neo4jQueryBuilder();
+          const { query: oldQuery, params: oldParams } = oldBuilder.buildOldPhysiologicalDataQuery(participantId);
+          
+          console.log('=== Physiological Data Query (Old Structure) ===');
+          console.log('Query:', oldQuery);
+          console.log('Params:', JSON.stringify(oldParams, null, 2));
+          
+          physiologicalResults = await client.query(oldQuery, oldParams);
+          console.log('Physiological query results count (old structure):', physiologicalResults.length);
+        } catch (oldError) {
+          console.error('Error fetching physiological data (old structure):', oldError);
+          console.error('Error type:', oldError instanceof Error ? oldError.constructor.name : typeof oldError);
+          console.error('Error message:', oldError instanceof Error ? oldError.message : String(oldError));
+          console.error('Error stack:', oldError instanceof Error ? oldError.stack : 'No stack trace');
+          // 古い構造のエラーは無視して続行（空配列のまま）
+        }
+      }
+    } catch (newError) {
+      console.error('Error fetching physiological data (new structure):', newError);
+      console.error('Error type:', newError instanceof Error ? newError.constructor.name : typeof newError);
+      console.error('Error message:', newError instanceof Error ? newError.message : String(newError));
+      console.error('Error stack:', newError instanceof Error ? newError.stack : 'No stack trace');
+      // 新しい構造のエラーは無視して続行（空配列のまま）
+      physiologicalResults = [];
     }
     
     // クエリビルダーを使用しているため、プロパティは既に展開されている
@@ -620,7 +815,33 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
     return result;
 
   } catch (error) {
-    console.error('Neo4j physiological data query error:', error);
+    console.error('=== Neo4j Physiological Data Query Error ===');
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // エラーオブジェクトの詳細を出力
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      if ((error as any).code) {
+        console.error('Error code:', (error as any).code);
+      }
+      if ((error as any).cause) {
+        console.error('Error cause:', (error as any).cause);
+      }
+    }
+    
+    // Neo4j固有のエラー情報を出力
+    if (error && typeof error === 'object') {
+      const errorObj = error as any;
+      if (errorObj.code) {
+        console.error('Neo4j error code:', errorObj.code);
+      }
+      if (errorObj.message) {
+        console.error('Neo4j error message:', errorObj.message);
+      }
+    }
+    
     return [];
   }
 }

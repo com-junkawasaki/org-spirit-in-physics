@@ -72,8 +72,51 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
       const result = await response.json()
       console.log('TimelineVisualization: API result:', result)
       
+      // APIレスポンスのメタデータを詳細にログ出力
+      if (result?.data?.metadata) {
+        console.log('=== API Response Metadata ===')
+        console.log('Session events:', result.data.metadata.sessionEvents)
+        console.log('Emotion entries:', result.data.metadata.emotionEntries)
+        console.log('Physiological entries:', result.data.metadata.physiologicalEntries)
+        console.log('Total data points:', result.data.metadata.totalDataPoints)
+        if (result.data.metadata.errors && result.data.metadata.errors.length > 0) {
+          console.warn('API errors:', result.data.metadata.errors)
+        }
+      }
+      
       if (result?.success && Array.isArray(result.data?.timelineData)) {
         console.log('TimelineVisualization: Converting data, count:', result.data.timelineData.length)
+        
+        // 生データのサンプルを確認（最初の5件）
+        console.log('=== Raw API Data Sample (first 5) ===')
+        result.data.timelineData.slice(0, 5).forEach((item: any, idx: number) => {
+          const emRaw = item.em
+          const emArray = Array.isArray(item.em) ? item.em : (Array.isArray(item.emotions) ? item.emotions : [])
+          console.log(`[${idx}] Raw item:`, {
+            timestamp: item.t || item.timestamp,
+            word: item.w || item.word,
+            emRaw: emRaw,
+            emType: typeof emRaw,
+            emIsArray: Array.isArray(emRaw),
+            emLength: Array.isArray(emRaw) ? emRaw.length : 'N/A',
+            emFirstItem: Array.isArray(emRaw) && emRaw.length > 0 ? emRaw[0] : null,
+            emotionsArray: emArray,
+            emotionsLength: emArray.length,
+            metadata: item.m
+          })
+          
+          // emフィールドの詳細を展開
+          if (Array.isArray(emRaw) && emRaw.length > 0) {
+            console.log(`  → em[0] details:`, emRaw[0])
+            console.log(`  → em[0] keys:`, Object.keys(emRaw[0] || {}))
+          } else if (emRaw && typeof emRaw === 'object') {
+            console.log(`  → em (object) details:`, emRaw)
+            console.log(`  → em (object) keys:`, Object.keys(emRaw))
+          } else {
+            console.log(`  → em is empty or invalid:`, emRaw)
+          }
+        })
+        
         // 短縮フィールドをTimelineDataPoint形式に変換
         const convertedData = result.data.timelineData.map((item: any) => ({
           timestamp: item.t || item.timestamp,
@@ -87,17 +130,121 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
           metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
         }))
         
-        // 感情データのfileTypeを確認
-        const emotionDataSample = convertedData.find(d => d.emotions && d.emotions.length > 0)
-        if (emotionDataSample) {
-          console.log('TimelineVisualization: Emotion data sample:', {
+        // 変換後のデータの統計情報
+        console.log('=== Converted Data Statistics ===')
+        const totalPoints = convertedData.length
+        const pointsWithEmotions = convertedData.filter(d => d.emotions && d.emotions.length > 0)
+        const pointsWithPhysiological = convertedData.filter(d => d.physiological && typeof d.physiological === 'object' && (d.physiological.average > 0 || d.physiological.max > 0))
+        const pointsWithReactionTime = convertedData.filter(d => d.reactionTime != null)
+        
+        console.log(`Total data points: ${totalPoints}`)
+        console.log(`Points with emotions: ${pointsWithEmotions.length} (${((pointsWithEmotions.length / totalPoints) * 100).toFixed(1)}%)`)
+        console.log(`Points with physiological: ${pointsWithPhysiological.length} (${((pointsWithPhysiological.length / totalPoints) * 100).toFixed(1)}%)`)
+        console.log(`Points with reaction time: ${pointsWithReactionTime.length} (${((pointsWithReactionTime.length / totalPoints) * 100).toFixed(1)}%)`)
+        
+        // 感情データの詳細分析
+        if (pointsWithEmotions.length > 0) {
+          console.log('=== Emotion Data Analysis ===')
+          const emotionDataSample = pointsWithEmotions[0]
+          console.log('First point with emotions:', {
             word: emotionDataSample.word,
+            timestamp: emotionDataSample.timestamp,
             emotionsCount: emotionDataSample.emotions.length,
-            firstEmotion: emotionDataSample.emotions[0],
-            allFileTypes: [...new Set(emotionDataSample.emotions.map((e: any) => e.fileType))]
+            emotions: emotionDataSample.emotions,
+            allFileTypes: [...new Set(emotionDataSample.emotions.map((e: any) => e.fileType || 'unknown'))]
           })
+          
+          // 感情タイプ別の統計
+          const emotionTypeCounts: Record<string, number> = {}
+          pointsWithEmotions.forEach(point => {
+            point.emotions.forEach((e: any) => {
+              const fileType = e.fileType || 'unknown'
+              emotionTypeCounts[fileType] = (emotionTypeCounts[fileType] || 0) + 1
+            })
+          })
+          console.log('Emotion type distribution:', emotionTypeCounts)
+          
+          // 感情名の分布
+          const emotionNameCounts: Record<string, number> = {}
+          pointsWithEmotions.forEach(point => {
+            point.emotions.forEach((e: any) => {
+              const name = e.name || 'unknown'
+              emotionNameCounts[name] = (emotionNameCounts[name] || 0) + 1
+            })
+          })
+          console.log('Emotion name distribution:', emotionNameCounts)
         } else {
-          console.log('TimelineVisualization: No emotion data found in converted data')
+          console.warn('=== ⚠️ NO EMOTION DATA FOUND ===')
+          console.warn('All converted data points have empty emotions array')
+          
+          // 最初の5件の詳細を確認
+          console.log('First 5 converted data points:', convertedData.slice(0, 5).map((d: any, idx: number) => ({
+            index: idx,
+            word: d.word,
+            timestamp: d.timestamp,
+            emotions: d.emotions,
+            emotionsLength: d.emotions?.length || 0,
+            emotionsType: Array.isArray(d.emotions) ? 'array' : typeof d.emotions,
+            metadata: d.metadata
+          })))
+          
+          // 生データの感情部分を確認（詳細版）
+          console.log('=== Raw Emotion Data from API (first 10) ===')
+          result.data.timelineData.slice(0, 10).forEach((item: any, idx: number) => {
+            const emRaw = item.em
+            console.log(`[${idx}] Word: "${item.w || item.word}"`, {
+              emRaw: emRaw,
+              emType: typeof emRaw,
+              emIsArray: Array.isArray(emRaw),
+              emLength: Array.isArray(emRaw) ? emRaw.length : 'N/A',
+              emValue: emRaw,
+              emotionsRaw: item.emotions,
+              metadata: item.m
+            })
+            
+            // emフィールドが配列で中身がある場合、最初の要素を詳細表示
+            if (Array.isArray(emRaw) && emRaw.length > 0) {
+              console.log(`  → First emotion in em array:`, emRaw[0])
+              console.log(`  → First emotion keys:`, Object.keys(emRaw[0] || {}))
+              console.log(`  → First emotion has fileType:`, 'fileType' in (emRaw[0] || {}))
+              console.log(`  → First emotion has name:`, 'name' in (emRaw[0] || {}))
+              console.log(`  → First emotion has score:`, 'score' in (emRaw[0] || {}))
+            } else if (emRaw && typeof emRaw === 'object' && !Array.isArray(emRaw)) {
+              console.log(`  → em is object (not array):`, emRaw)
+              console.log(`  → em object keys:`, Object.keys(emRaw))
+            } else {
+              console.log(`  → ⚠️ em is empty, null, or invalid type`)
+            }
+          })
+          
+          // 全体の統計
+          const totalEmFields = result.data.timelineData.length
+          const emFieldsWithData = result.data.timelineData.filter((item: any) => {
+            const em = item.em
+            return Array.isArray(em) && em.length > 0
+          }).length
+          console.log(`=== Emotion Data Summary ===`)
+          console.log(`Total data points: ${totalEmFields}`)
+          console.log(`Points with emotion data in em field: ${emFieldsWithData} (${((emFieldsWithData / totalEmFields) * 100).toFixed(1)}%)`)
+          
+          // emフィールドにデータがある最初の5件を詳細表示
+          const itemsWithEmData = result.data.timelineData.filter((item: any) => {
+            const em = item.em
+            return Array.isArray(em) && em.length > 0
+          }).slice(0, 5)
+          
+          if (itemsWithEmData.length > 0) {
+            console.log(`=== Sample Items WITH Emotion Data ===`)
+            itemsWithEmData.forEach((item: any, idx: number) => {
+              console.log(`[${idx}] Word: "${item.w || item.word}"`, {
+                emLength: item.em.length,
+                emData: item.em,
+                firstEmotion: item.em[0]
+              })
+            })
+          } else {
+            console.warn(`⚠️ NO items found with emotion data in em field!`)
+          }
         }
         
         console.log('TimelineVisualization: Converted data sample:', convertedData[0])

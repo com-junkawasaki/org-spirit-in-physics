@@ -254,12 +254,31 @@ class Neo4jClient {
 }
 
 // Neo4j configuration
+// Neogmaはneo4j://形式をサポートしているが、Docker環境ではbolt://形式の方が確実
+// 環境変数でneo4j://が指定されている場合は、bolt://に変換する
+const getNeo4jUri = (): string => {
+  const uri = process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'bolt://localhost:7687';
+  // neo4j://形式をbolt://形式に変換（Docker環境での接続問題を回避）
+  if (uri.startsWith('neo4j://')) {
+    return uri.replace('neo4j://', 'bolt://');
+  }
+  return uri;
+};
+
 const neo4jConfig: Neo4jConfig = {
-  uri: process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'bolt://localhost:7687',
+  uri: getNeo4jUri(),
   user: process.env.NEO4J_USER || 'neo4j',
   password: process.env.NEO4J_PASSWORD || 'password',
   database: process.env.NEO4J_DATABASE || 'neo4j'
 }
+
+// デバッグ用：実際に使用されるURIをログ出力
+console.log('Neo4j configuration:', {
+  uri: neo4jConfig.uri,
+  user: neo4jConfig.user,
+  database: neo4jConfig.database,
+  envUri: process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'not set'
+});
 
 // Create singleton client instance
 let clientInstance: Neo4jClient | null = null
