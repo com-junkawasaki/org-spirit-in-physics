@@ -8,7 +8,7 @@ mod database;
 
 use axum::{
     extract::State,
-    http::StatusCode,
+    http::{HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
     Router, Json,
@@ -17,7 +17,6 @@ use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
 };
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse as AxumGraphQLResponse};
-use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use database::PostgresPool;
@@ -43,35 +42,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create GraphQL schema
     let schema = create_schema(pool.pool().clone()).await?;
 
-    // GraphQL handler
+    // GraphQL handler with CORS headers
     async fn graphql_handler(
         State(schema): State<async_graphql::Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
         req: GraphQLRequest,
     ) -> impl IntoResponse {
         let graphql_res: AxumGraphQLResponse = schema.execute(req.into_inner()).await.into();
-        graphql_res.into_response()
+        let mut res: Response = graphql_res.into_response();
+        res.headers_mut().insert(
+            axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            HeaderValue::from_static("*"),
+        );
+        res.headers_mut().insert(
+            axum::http::header::ACCESS_CONTROL_ALLOW_METHODS,
+            HeaderValue::from_static("GET, POST, OPTIONS"),
+        );
+        res.headers_mut().insert(
+            axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS,
+            HeaderValue::from_static("Content-Type, Authorization"),
+        );
+        res
     }
 
-    // Configure CORS to allow all origins (for development)
-    // In production, you should restrict this to specific origins
-    // CorsLayer::permissive() allows all origins, methods, and headers
-    let cors_layer = CorsLayer::permissive();
+    // CORS preflight handler
+    async fn cors_preflight() -> impl IntoResponse {
+        (
+            StatusCode::NO_CONTENT,
+            [
+                (axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*"),
+                (axum::http::header::ACCESS_CONTROL_ALLOW_METHODS, "GET, POST, OPTIONS"),
+                (axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type, Authorization"),
+            ],
+        )
+    }
 
     let app = Router::new()
-        .route("/graphql", post(graphql_handler))
+        .route("/graphql", post(graphql_handler).options(cors_preflight))
         .route("/graphql/playground", get(graphql_playground))
         .route("/graphql/schema", get(schema_handler))
         .route("/health", get(health_check))
-        .with_state(schema)
-        .layer(cors_layer);
+        .with_state(schema);
 
-    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 8081));
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8081").await?;
     info!("GraphQL service listening on 0.0.0.0:8081");
     info!("GraphQL Playground available at http://localhost:8081/graphql/playground");
 
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
