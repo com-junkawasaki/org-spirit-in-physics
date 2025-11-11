@@ -11,6 +11,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const startTime = Date.now();
   try {
     const { id: participantId } = params;
     const { searchParams } = new URL(request.url);
@@ -26,7 +27,9 @@ export async function GET(
 
     let sessionData: any
     try {
+      const sessionStartTime = Date.now();
       sessionData = await getSessionData(client, participantId, sessionId || undefined)
+      console.log(`Session data fetch took ${Date.now() - sessionStartTime}ms`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`session_data: ${msg}`)
@@ -35,7 +38,9 @@ export async function GET(
 
     let emotionData: any[] = []
     try {
+      const emotionStartTime = Date.now();
       emotionData = await getEmotionData(client, participantId, sessionId || undefined)
+      console.log(`Emotion data fetch took ${Date.now() - emotionStartTime}ms, count: ${emotionData.length}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`emotion_data: ${msg}`)
@@ -44,7 +49,9 @@ export async function GET(
 
     let physiologicalData: any[] = []
     try {
+      const physioStartTime = Date.now();
       physiologicalData = await getPhysiologicalData(client, participantId, sessionId || undefined)
+      console.log(`Physiological data fetch took ${Date.now() - physioStartTime}ms, count: ${physiologicalData.length}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
       errors.push(`physiological_data: ${msg}`)
@@ -52,7 +59,9 @@ export async function GET(
     }
 
     // 実データを統合（セッション×感情×生理）し、クライアント期待形式へ変換
+    const integrationStartTime = Date.now();
     const integrated = integrateTimelineData(sessionData, emotionData, physiologicalData)
+    console.log(`Data integration took ${Date.now() - integrationStartTime}ms, integrated count: ${integrated.length}`);
     
     console.log('=== Timeline Integration Summary ===');
     console.log('Integrated timeline data count:', integrated.length);
@@ -169,6 +178,9 @@ export async function GET(
     })
 
     // ストリーミングレスポンスで大きなデータを効率的に送信
+    const totalTime = Date.now() - startTime;
+    console.log(`Total API request time: ${totalTime}ms`);
+    
     const responseData = {
       success: true,
       data: {
@@ -179,6 +191,7 @@ export async function GET(
           emotionEntries: emotionData.length,
           physiologicalEntries: physiologicalData.length,
           totalDataPoints: timelineData.length,
+          processingTimeMs: totalTime,
           dataSource: 'integrated_realtime',
           errors
         }
@@ -471,43 +484,29 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
     
     // デバッグ: 実際のデータ構造を確認
     if (sessionId) {
-      const debugQuery = `
-        MATCH (p:Participant {id: $participantId})
-        OPTIONAL MATCH (p)-[:HAS_SESSION]->(s1:Session {id: $sessionId})
-        OPTIONAL MATCH (p)-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s2:ExperimentSession {id: $sessionId})
-        WITH COALESCE(s1, s2) as s
-        WHERE s IS NOT NULL
-        OPTIONAL MATCH (s)-[r]->(emotion)
-        RETURN labels(s) as sessionLabels, 
-               id(s) as sessionId,
-               type(r) as relationshipType,
-               labels(emotion) as emotionLabels,
-               count(emotion) as emotionCount
-        LIMIT 10
-      `;
-      const debugResults = await client.query(debugQuery, { participantId, sessionId });
-      console.log('=== Debug: Session and Emotion Structure ===');
-      console.log('Debug results:', JSON.stringify(debugResults, null, 2));
-      
-      // 感情データノードの存在確認
-      const countQuery = `
-        MATCH (p:Participant {id: $participantId})
-        OPTIONAL MATCH (p)-[:HAS_SESSION]->(s1:Session {id: $sessionId})
-        OPTIONAL MATCH (p)-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s2:ExperimentSession {id: $sessionId})
-        WITH COALESCE(s1, s2) as s
-        WHERE s IS NOT NULL
-        OPTIONAL MATCH (s)-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
-        OPTIONAL MATCH (s)-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
-        OPTIONAL MATCH (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
-        OPTIONAL MATCH (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
-        RETURN count(b) as burstCount,
-               count(f) as faceCount,
-               count(l) as languageCount,
-               count(pr) as prosodyCount
-      `;
-      const countResults = await client.query(countQuery, { participantId, sessionId });
-      console.log('=== Emotion Data Counts ===');
-      console.log('Count results:', JSON.stringify(countResults, null, 2));
+      try {
+        // 感情データノードの存在確認（シンプルなクエリに変更）
+        const countQuery = `
+          MATCH (p:Participant {id: $participantId})
+          OPTIONAL MATCH (p)-[:HAS_SESSION]->(s1:Session {id: $sessionId})
+          OPTIONAL MATCH (p)-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s2:ExperimentSession {id: $sessionId})
+          WITH COALESCE(s1, s2) as s
+          WHERE s IS NOT NULL
+          OPTIONAL MATCH (s)-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
+          OPTIONAL MATCH (s)-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
+          OPTIONAL MATCH (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
+          OPTIONAL MATCH (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
+          RETURN count(DISTINCT b) as burstCount,
+                 count(DISTINCT f) as faceCount,
+                 count(DISTINCT l) as languageCount,
+                 count(DISTINCT pr) as prosodyCount
+        `;
+        const countResults = await client.query(countQuery, { participantId, sessionId });
+        console.log('=== Emotion Data Counts ===');
+        console.log('Count results:', JSON.stringify(countResults, null, 2));
+      } catch (debugError) {
+        console.warn('Debug query failed (non-critical):', debugError instanceof Error ? debugError.message : String(debugError));
+      }
     }
     
     // 各感情データタイプを個別に取得して結合
@@ -515,17 +514,31 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
     const emotionTypes: Array<'burst' | 'face' | 'language' | 'prosody'> = ['burst', 'face', 'language', 'prosody'];
     
     // 各感情データタイプごとにクエリビルダーを使用してクエリを生成・実行
+    // 新しい構造を試し、結果が0件の場合は古い構造を試す
     for (const emotionType of emotionTypes) {
       try {
         const builder = new Neo4jQueryBuilder();
-        const { query, params } = builder.buildEmotionDataQuery(emotionType, participantId, sessionId);
+        let { query, params } = builder.buildEmotionDataQuery(emotionType, participantId, sessionId);
         
-        console.log(`=== ${emotionType} Emotion Query ===`);
+        console.log(`=== ${emotionType} Emotion Query (New Structure) ===`);
         console.log('Query:', query);
         console.log('Params:', JSON.stringify(params, null, 2));
         
-        const results = await client.query(query, params);
-        console.log(`${emotionType} emotion results count:`, results.length);
+        let results = await client.query(query, params);
+        console.log(`${emotionType} emotion results count (new structure):`, results.length);
+        
+        // 新しい構造で結果が0件の場合、古い構造を試す
+        if (results.length === 0) {
+          const oldBuilder = new Neo4jQueryBuilder();
+          const oldQueryResult = oldBuilder.buildOldEmotionDataQuery(emotionType, participantId, sessionId);
+          
+          console.log(`=== ${emotionType} Emotion Query (Old Structure) ===`);
+          console.log('Query:', oldQueryResult.query);
+          console.log('Params:', JSON.stringify(oldQueryResult.params, null, 2));
+          
+          results = await client.query(oldQueryResult.query, oldQueryResult.params);
+          console.log(`${emotionType} emotion results count (old structure):`, results.length);
+        }
         
         if (results.length > 0) {
           console.log(`First ${emotionType} result:`, JSON.stringify(results[0], null, 2));
@@ -896,6 +909,7 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
 // 時系列データ統合関数
 function integrateTimelineData(sessionData: any, emotionData: any[], physiologicalData: any[]): any[] {
   try {
+    const integrationStart = Date.now();
     console.log('Integrating timeline data:', {
       sessionEvents: sessionData.wordEvents.length,
       emotionDataCount: emotionData.length,
@@ -920,12 +934,28 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
     const wordDisplayedEvents = sessionData.wordEvents.filter((event: any) => event.type === 'word_displayed');
     const speechDetectedEvents = sessionData.wordEvents.filter((event: any) => event.type === 'speech_detected');
     
-    wordDisplayedEvents.forEach((event: any) => {
+    // パフォーマンス最適化: 感情データを時間順にソートし、インデックスを作成
+    const sessionStartTime = sessionData.startTime || 0;
+    const sortedEmotions = [...emotionData].sort((a, b) => (a.beginTime || 0) - (b.beginTime || 0));
+    
+    // 時間インデックスを作成（秒単位のキーで感情データをグループ化）
+    const emotionTimeIndex: Map<number, any[]> = new Map();
+    sortedEmotions.forEach(emotion => {
+      const beginTime = Math.floor(emotion.beginTime || 0);
+      if (!emotionTimeIndex.has(beginTime)) {
+        emotionTimeIndex.set(beginTime, []);
+      }
+      emotionTimeIndex.get(beginTime)!.push(emotion);
+    });
+    
+    console.log(`Emotion time index created with ${emotionTimeIndex.size} time buckets`);
+    
+    wordDisplayedEvents.forEach((event: any, eventIndex: number) => {
       const timestamp = event.timestamp;
       const word = event.payload?.word || 'Unknown';
       
       // 反応時間の計算: word_displayedからspeech_detectedまでの時間差
-      const nextWordIndex = wordDisplayedEvents.indexOf(event) + 1;
+      const nextWordIndex = eventIndex + 1;
       const nextWordTimestamp = nextWordIndex < wordDisplayedEvents.length 
         ? wordDisplayedEvents[nextWordIndex].timestamp 
         : timestamp + 10000; // デフォルト10秒
@@ -935,53 +965,41 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       );
       const reactionTime = speechEvent ? speechEvent.timestamp - timestamp : null;
       
-      // 対応する感情データを検索（時間範囲でマッチング）
-      const sessionStartTime = sessionData.startTime || 0;
-      
       // セッション開始時刻からの相対時間を計算（ミリ秒単位）
       const relativeTimestampMs = timestamp - sessionStartTime;
       const relativeTimestampSec = relativeTimestampMs / 1000; // 秒単位に変換
       
-      // デバッグログ（最初の10件と、マッチが見つからない場合）
-      const isDebugTarget = timelineData.length < 10 || (timelineData.length % 20 === 0);
+      // デバッグログ（最初の10件のみ）
+      const isDebugTarget = eventIndex < 10;
       if (isDebugTarget) {
-        console.log(`[${timelineData.length}] Matching emotions for word "${word}" at timestamp ${timestamp} (relative: ${relativeTimestampSec.toFixed(2)}s)`);
-        console.log(`  Session start time: ${sessionStartTime}, Available emotion data count: ${emotionData.length}`);
-        if (emotionData.length > 0) {
-          const firstEmotion = emotionData[0];
-          console.log(`  First emotion sample:`, {
-            beginTime: firstEmotion.beginTime,
-            endTime: firstEmotion.endTime,
-            fileType: firstEmotion.fileType,
-            emotionsCount: firstEmotion.emotions?.length || 0
-          });
-          // 時間範囲のサンプルを表示
-          const sampleTimes = emotionData.slice(0, 10).map(e => ({
-            beginTime: e.beginTime,
-            endTime: e.endTime,
-            fileType: e.fileType
-          }));
-          console.log(`  First 10 emotion time ranges:`, sampleTimes);
-        }
+        console.log(`[${eventIndex}] Matching emotions for word "${word}" at timestamp ${timestamp} (relative: ${relativeTimestampSec.toFixed(2)}s)`);
       }
       
-      const relatedEmotions = emotionData.filter(emotion => {
-        const beginTime = emotion.beginTime || 0; // 秒単位
-        const endTime = emotion.endTime || (beginTime > 0 ? beginTime + 1 : 1); // 秒単位
-        
-        // 感情データの時間範囲でマッチング
-        // より柔軟なマッチング：±60秒の範囲内、または時間範囲内
-        const timeDiff = Math.abs(relativeTimestampSec - beginTime);
-        const isInRange = beginTime <= relativeTimestampSec && endTime >= relativeTimestampSec;
-        const matches = timeDiff <= 60 || isInRange;
-        
-        // デバッグログ（マッチした場合、または最初の10件でマッチしなかった場合）
-        if (matches && isDebugTarget) {
-          console.log(`    ✓ Matched: ${emotion.fileType}, beginTime=${beginTime}s, endTime=${endTime}s, timeDiff=${timeDiff.toFixed(2)}s`);
-        }
-        
-        return matches;
-      });
+      // パフォーマンス最適化: 時間インデックスを使用して関連する感情データを検索
+      const relatedEmotions: any[] = [];
+      const searchStartSec = Math.max(0, Math.floor(relativeTimestampSec - 60));
+      const searchEndSec = Math.ceil(relativeTimestampSec + 60);
+      
+      // 時間範囲内のバケットを検索
+      for (let timeSec = searchStartSec; timeSec <= searchEndSec; timeSec++) {
+        const bucketEmotions = emotionTimeIndex.get(timeSec) || [];
+        bucketEmotions.forEach(emotion => {
+          const beginTime = emotion.beginTime || 0;
+          const endTime = emotion.endTime || (beginTime > 0 ? beginTime + 1 : 1);
+          
+          // 感情データの時間範囲でマッチング
+          const timeDiff = Math.abs(relativeTimestampSec - beginTime);
+          const isInRange = beginTime <= relativeTimestampSec && endTime >= relativeTimestampSec;
+          const matches = timeDiff <= 60 || isInRange;
+          
+          if (matches) {
+            relatedEmotions.push(emotion);
+            if (isDebugTarget) {
+              console.log(`    ✓ Matched: ${emotion.fileType}, beginTime=${beginTime}s, endTime=${endTime}s, timeDiff=${timeDiff.toFixed(2)}s`);
+            }
+          }
+        });
+      }
       
       // デバッグログ（マッチが見つからない場合、または最初の10件）
       if (isDebugTarget) {
@@ -1135,6 +1153,7 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       });
     });
     
+    console.log(`Integration completed in ${Date.now() - integrationStart}ms, total timeline points: ${timelineData.length}`);
     return timelineData.sort((a, b) => a.timestamp - b.timestamp);
 
   } catch (error) {
