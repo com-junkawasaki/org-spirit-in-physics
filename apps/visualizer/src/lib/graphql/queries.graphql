@@ -1,0 +1,70 @@
+# GraphQL queries and mutations
+# These will be used by GraphQL Code Generator to generate TypeScript types
+
+query GetParticipants {
+  participants {
+    id
+    age
+    gender
+    handedness
+    createdAt
+    updatedAt
+  }
+}
+
+query GetParticipant($id: ID!) {
+  participant(id: $id) {
+    id
+    age
+    gender
+    handedness
+    createdAt
+    updatedAt
+  }
+}
+
+query GetSessions($participantId: ID!) {
+  sessions(participantId: $participantId) {
+    id
+    participantId
+    sessionIndex
+    startTs
+    endTs
+    events
+    createdAt
+    updatedAt
+  }
+}
+
+query GetTimeline(
+  $participantId: ID!
+  $sessionId: ID
+  $startTime: String
+  $endTime: String
+  $interval: String
+) {
+  timeline(
+    participantId: $participantId
+    sessionId: $sessionId
+    startTime: $startTime
+    endTime: $endTime
+    interval: $interval
+  ) {
+    time
+    participantId
+    sessionId
+    word
+    eventType
+    reactionValue
+    reactionTime
+    hasResponse
+    emotions {
+      name
+      score
+      fileType
+    }
+    physiological
+    metadata
+  }
+}
+

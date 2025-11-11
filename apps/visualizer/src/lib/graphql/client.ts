@@ -1,7 +1,22 @@
 // Merkle DAG: graphql.client
 // GraphQL client for connecting to GraphQL service
+// Uses generated types from GraphQL Code Generator
 
 import { GraphQLClient } from 'graphql-request';
+import {
+  GetParticipantsDocument,
+  GetParticipantDocument,
+  GetSessionsDocument,
+  GetTimelineDocument,
+  type GetParticipantsQueryResult,
+  type GetParticipantQueryResult,
+  type GetSessionsQueryResult,
+  type GetTimelineQueryResult,
+  type GetParticipantsQueryVariables,
+  type GetParticipantQueryVariables,
+  type GetSessionsQueryVariables,
+  type GetTimelineQueryVariables,
+} from '@/generated/graphql';
 
 const GRAPHQL_API_URL = process.env.GRAPHQL_API_URL || process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:8081/graphql';
 
@@ -11,79 +26,25 @@ export const graphqlClient = new GraphQLClient(GRAPHQL_API_URL, {
   },
 });
 
-// GraphQL queries
-export const GET_PARTICIPANTS = `
-  query GetParticipants {
-    participants {
-      id
-      age
-      gender
-      handedness
-      created_at
-      updated_at
-    }
-  }
-`;
+// Re-export generated queries and types for convenience
+export {
+  GetParticipantsDocument,
+  GetParticipantDocument,
+  GetSessionsDocument,
+  GetTimelineDocument,
+  type GetParticipantsQueryResult,
+  type GetParticipantQueryResult,
+  type GetSessionsQueryResult,
+  type GetTimelineQueryResult,
+  type GetParticipantsQueryVariables,
+  type GetParticipantQueryVariables,
+  type GetSessionsQueryVariables,
+  type GetTimelineQueryVariables,
+};
 
-export const GET_PARTICIPANT = `
-  query GetParticipant($id: ID!) {
-    participant(id: $id) {
-      id
-      age
-      gender
-      handedness
-      created_at
-      updated_at
-    }
-  }
-`;
-
-export const GET_SESSIONS = `
-  query GetSessions($participantId: ID!) {
-    sessions(participantId: $participantId) {
-      id
-      participantId
-      sessionIndex
-      startTs
-      endTs
-      events
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
-export const GET_TIMELINE = `
-  query GetTimeline(
-    $participantId: ID!
-    $sessionId: ID
-    $startTime: String
-    $endTime: String
-    $interval: String
-  ) {
-    timeline(
-      participantId: $participantId
-      sessionId: $sessionId
-      startTime: $startTime
-      endTime: $endTime
-      interval: $interval
-    ) {
-      time
-      participantId
-      sessionId
-      word
-      eventType
-      reactionValue
-      reactionTime
-      hasResponse
-      emotions {
-        name
-        score
-        fileType
-      }
-      physiological
-      metadata
-    }
-  }
-`;
+// Legacy exports for backward compatibility (deprecated - use generated types)
+export const GET_PARTICIPANTS = GetParticipantsDocument;
+export const GET_PARTICIPANT = GetParticipantDocument;
+export const GET_SESSIONS = GetSessionsDocument;
+export const GET_TIMELINE = GetTimelineDocument;
 

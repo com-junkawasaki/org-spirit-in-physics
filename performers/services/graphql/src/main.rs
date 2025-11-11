@@ -46,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/graphql", post(graphql_handler))
         .route("/graphql/playground", get(graphql_playground))
+        .route("/graphql/schema", get(schema_handler))
         .route("/health", get(health_check))
         .with_state(schema);
 
@@ -72,6 +73,16 @@ async fn graphql_playground() -> impl IntoResponse {
         .status(StatusCode::OK)
         .header("content-type", "text/html; charset=utf-8")
         .body(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
+        .unwrap()
+}
+
+async fn schema_handler(
+    State(schema): State<async_graphql::Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
+) -> impl IntoResponse {
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(schema.sdl())
         .unwrap()
 }
 

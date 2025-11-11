@@ -3,7 +3,8 @@
 // GraphQL経由でデータを取得
 
 import { NextRequest, NextResponse } from "next/server";
-import { graphqlClient, GET_TIMELINE, GET_SESSIONS } from '@/lib/graphql/client';
+import { graphqlClient, GetTimelineDocument, GetSessionsDocument } from '@/lib/graphql/client';
+import type { GetTimelineQueryResult, GetSessionsQueryResult } from '@/generated/graphql';
 
 export async function GET(
   request: NextRequest,
@@ -24,7 +25,7 @@ export async function GET(
     
     // 1. Sessionデータの存在確認
     try {
-      const sessionsData = await graphqlClient.request(GET_SESSIONS, { participantId });
+            const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId });
       const sessions = sessionsData.sessions || [];
       const targetSession = sessionId 
         ? sessions.find((s: any) => s.id === sessionId)
@@ -48,7 +49,7 @@ export async function GET(
     
     // 2. Timelineデータの存在確認
     try {
-      const timelineData = await graphqlClient.request(GET_TIMELINE, {
+            const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, {
         participantId,
         sessionId: sessionId || undefined
       });
@@ -128,13 +129,15 @@ export async function GET(
     };
     
     const emotionCount = Object.values(reliability.emotions).filter(v => v > 0).length;
-    reliability.emotions.total = emotionCount / 4; // 4種類中何種類存在するか
+            const emotionsTotal = emotionCount / 4; // 4種類中何種類存在するか
+            reliability.emotions = { ...reliability.emotions, total: emotionsTotal };
     
-    reliability.overall = (
-      reliability.session * 0.3 +
-      reliability.emotions.total * 0.5 +
-      reliability.physiological * 0.2
-    );
+            const overall = (
+              reliability.session * 0.3 +
+              emotionsTotal * 0.5 +
+              reliability.physiological * 0.2
+            );
+            reliability.overall = overall;
     
     debugInfo.reliability = reliability;
     

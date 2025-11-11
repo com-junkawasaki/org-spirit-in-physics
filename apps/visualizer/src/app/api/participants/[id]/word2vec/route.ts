@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { graphqlClient, GET_TIMELINE } from '@/lib/graphql/client';
+import { graphqlClient, GetTimelineDocument } from '@/lib/graphql/client';
+import type { GetTimelineQueryResult } from '@/generated/graphql';
 
 // Merkle DAG: api.participants.word2vec -> word2vec_data_fetch
 // 参加者のWord2Vecデータ取得API
@@ -13,10 +14,10 @@ export async function GET(
     const { id: participantId } = params;
     console.log(`API: Fetching Word2Vec data for participant ${participantId}`);
 
-    // GraphQL経由でタイムラインデータを取得
-    const timelineData = await graphqlClient.request(GET_TIMELINE, {
-      participantId
-    });
+          // GraphQL経由でタイムラインデータを取得
+          const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, {
+            participantId
+          });
 
     const timeline = timelineData.timeline || [];
     

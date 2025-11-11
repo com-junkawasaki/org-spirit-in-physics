@@ -23,6 +23,7 @@ export interface ParticipantData {
   sessionCount: number
   responseCount: number
   averageSpiritProbability: number
+  lastActivity?: number | null
 }
 
 export interface ExperimentSession {
@@ -195,24 +196,82 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   }
 }
 
+// Use generated types from GraphQL Code Generator
+import type {
+  Participant as GraphQLParticipant,
+  Session as GraphQLSession,
+  TimelinePoint as GraphQLTimelinePoint,
+  GetParticipantsQueryResult,
+  GetSessionsQueryResult,
+  GetTimelineQueryResult,
+} from '@/generated/graphql';
+
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-    const client = createNeo4jClient()
-    const participants = await client.getParticipants()
+    // Use GraphQL to fetch participants
+    const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
+    
+    const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
+    const participants = participantsData.participants || []
 
-    // For each participant, get detailed data
+    // For each participant, get detailed data including statistics
     const participantsWithData = await Promise.all(
       participants.map(async (participant) => {
-        const participantId = participant.participant_id
-        const participantData = await getParticipantData(participantId)
-        return participantData || {
-          id: participantId,
-          name: `Participant ${participantId.slice(0, 8)}`,
-          sessions: [],
-          analysisRuns: [],
-          sessionCount: 0,
-          responseCount: 0,
-          averageSpiritProbability: 0,
+        const participantId = participant.id
+        
+        try {
+          // Get sessions for this participant
+          const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId })
+          const sessions = sessionsData.sessions || []
+          
+          // Get timeline data to calculate response count and average spirit probability
+          const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
+          const timeline = timelineData.timeline || []
+          
+          // Calculate statistics
+          const responseCount = timeline.filter((p) => p.hasResponse).length
+          const reactionValues = timeline
+            .filter((p) => p.reactionValue != null)
+            .map((p) => p.reactionValue ?? 0)
+          const averageSpiritProbability = reactionValues.length > 0
+            ? reactionValues.reduce((sum, val) => sum + val, 0) / reactionValues.length
+            : 0
+          
+          // Get last activity timestamp
+          const lastActivity = timeline.length > 0
+            ? new Date(timeline[timeline.length - 1].time).getTime()
+            : null
+          
+          return {
+            id: participantId,
+            name: `Participant ${participantId.slice(0, 8)}`,
+            sessions: sessions.map((s) => ({
+              id: s.id,
+              session_id: s.id,
+              session_type: 'experiment',
+              start_time: s.startTs ? new Date(s.startTs).toISOString() : null,
+              end_time: s.endTs ? new Date(s.endTs).toISOString() : null,
+              responses: [],
+              responseCount: timeline.filter((p) => p.sessionId === s.id && p.hasResponse).length,
+            })),
+            analysisRuns: [],
+            sessionCount: sessions.length,
+            responseCount,
+            averageSpiritProbability,
+            lastActivity,
+          } as ParticipantData
+        } catch (error) {
+          console.error(`Failed to fetch data for participant ${participantId}:`, error)
+          return {
+            id: participantId,
+            name: `Participant ${participantId.slice(0, 8)}`,
+            sessions: [],
+            analysisRuns: [],
+            sessionCount: 0,
+            responseCount: 0,
+            averageSpiritProbability: 0,
+            lastActivity: null,
+          } as ParticipantData
         }
       })
     )

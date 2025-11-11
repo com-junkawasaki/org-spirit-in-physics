@@ -3,7 +3,8 @@
 // GraphQL経由でデータを取得
 
 import { NextRequest, NextResponse } from 'next/server'
-import { graphqlClient, GET_SESSIONS } from '@/lib/graphql/client'
+import { graphqlClient, GetSessionsDocument } from '@/lib/graphql/client'
+import type { GetSessionsQueryResult } from '@/generated/graphql'
 
 export async function GET(
   request: NextRequest,
@@ -14,8 +15,8 @@ export async function GET(
 
     console.log(`[SESSIONS API] Fetching sessions for participant: ${participantId}`)
 
-    // Query GraphQL service for sessions
-    const data = await graphqlClient.request(GET_SESSIONS, { participantId })
+          // Query GraphQL service for sessions
+          const data = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId })
 
     console.log(`[SESSIONS API] GraphQL query completed, sessions count: ${data.sessions?.length || 0}`)
 

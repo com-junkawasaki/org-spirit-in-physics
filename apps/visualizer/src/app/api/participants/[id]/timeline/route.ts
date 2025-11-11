@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { graphqlClient, GET_TIMELINE, GET_SESSIONS } from '@/lib/graphql/client';
+import { graphqlClient, GetTimelineDocument, GetSessionsDocument } from '@/lib/graphql/client';
+import type { GetTimelineQueryResult, GetSessionsQueryResult } from '@/generated/graphql';
 
 // Merkle DAG: participants.timeline.endpoint
 // 時系列統合可視化データ取得APIエンドポイント
@@ -28,7 +29,7 @@ export async function GET(
       // sessionId is in format participantId-sessionIndex (e.g., "25111604-c7db-4bfd-8662-e55060e332d6-0")
       // Extract sessionIndex and find the actual UUID from sessions
       try {
-        const sessionsData = await graphqlClient.request(GET_SESSIONS, { participantId });
+              const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId });
         const sessions = sessionsData.sessions || [];
         const sessionIndexMatch = sessionId.match(/-(\d+)$/);
         if (sessionIndexMatch) {
@@ -70,7 +71,7 @@ export async function GET(
     console.log(`[TIMELINE API] Querying GraphQL service...`);
     const queryStartTime = Date.now();
     
-    const data = await graphqlClient.request(GET_TIMELINE, variables);
+          const data = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, variables);
     const queryDuration = Date.now() - queryStartTime;
     
     console.log(`[TIMELINE API] ✓ GraphQL query completed in ${queryDuration}ms`);
