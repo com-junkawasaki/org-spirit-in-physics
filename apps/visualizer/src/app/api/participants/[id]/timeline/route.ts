@@ -145,7 +145,7 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
       // 特定のセッションIDでフィルタリング
       sessionQuery = `
         MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
-        RETURN s.events as events, s.id as sessionId, s.created_at as createdAt, s.session_index as sessionIndex
+        RETURN s.events as events, s.id as sessionId, s.created_at as createdAt, s.session_index as sessionIndex, s.start_ts as startTs, s.end_ts as endTs
         LIMIT 1
       `;
       queryParams.sessionId = sessionId;
@@ -153,7 +153,7 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
       // 最新のセッションを取得
       sessionQuery = `
         MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        RETURN s.events as events, s.id as sessionId, s.created_at as createdAt, s.session_index as sessionIndex
+        RETURN s.events as events, s.id as sessionId, s.created_at as createdAt, s.session_index as sessionIndex, s.start_ts as startTs, s.end_ts as endTs
         ORDER BY s.created_at DESC
         LIMIT 1
       `;
@@ -162,6 +162,35 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
     console.log('Executing session query (new structure):', sessionQuery);
     let sessionResults = await client.query(sessionQuery, queryParams);
     console.log('Session query results count (new structure):', sessionResults.length);
+    
+    // Neo4jクライアントが返すデータ構造を確認
+    if (sessionResults.length > 0) {
+      console.log('Session result structure:', Object.keys(sessionResults[0]));
+      // Neogmaは直接プロパティを返すが、念のため確認
+      if (sessionResults[0].s && sessionResults[0].s.properties) {
+        // propertiesオブジェクト内にプロパティがある場合
+        sessionResults = sessionResults.map((r: any) => ({
+          ...r,
+          events: r.s?.properties?.events || r.events,
+          sessionId: r.s?.properties?.id || r.sessionId,
+          createdAt: r.s?.properties?.created_at || r.createdAt,
+          sessionIndex: r.s?.properties?.session_index || r.sessionIndex,
+          startTs: r.s?.properties?.start_ts || r.startTs,
+          endTs: r.s?.properties?.end_ts || r.endTs
+        }));
+      } else if (sessionResults[0].s) {
+        // sオブジェクトが直接プロパティを持っている場合
+        sessionResults = sessionResults.map((r: any) => ({
+          ...r,
+          events: r.s?.events || r.events,
+          sessionId: r.s?.id || r.sessionId,
+          createdAt: r.s?.created_at || r.createdAt,
+          sessionIndex: r.s?.session_index || r.sessionIndex,
+          startTs: r.s?.start_ts || r.startTs,
+          endTs: r.s?.end_ts || r.endTs
+        }));
+      }
+    }
     
     // 新しい構造でデータが見つからない場合、古い構造（Participant -> Experiment -> ExperimentSession）を試す
     if (sessionResults.length === 0) {
@@ -390,7 +419,9 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
       console.log('Processing emotion results, count:', emotionResults.length);
       // 新しい構造（BurstEmotionData/FaceEmotionData/LanguageEmotionData/ProsodyEmotionData）
       emotionResults.forEach((result: any, index: number) => {
-        const emotionData = result.emotionData;
+        const emotionDataRaw = result.emotionData;
+        // Neo4jクライアントはpropertiesオブジェクト内にプロパティを返す
+        const emotionData = emotionDataRaw?.properties || emotionDataRaw;
         const source = result.source || 'unknown';
         
         if (!emotionData) {
@@ -530,16 +561,16 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
       physiologicalQuery = `
         MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
         MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-        RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
-        ORDER BY pd.timestamp
+        RETURN pd.time_sec as timeSec, pd.timestamp as timestamp, pd.ch1 as ch1, pd.ch2 as ch2, pd.ch3 as ch3, pd.ch4 as ch4, pd.ch5 as ch5, pd.ch6 as ch6, pd.ch7 as ch7, pd.ch8 as ch8
+        ORDER BY pd.time_sec
       `;
       queryParams.sessionId = sessionId;
     } else {
       physiologicalQuery = `
         MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
         MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-        RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
-        ORDER BY pd.timestamp
+        RETURN pd.time_sec as timeSec, pd.timestamp as timestamp, pd.ch1 as ch1, pd.ch2 as ch2, pd.ch3 as ch3, pd.ch4 as ch4, pd.ch5 as ch5, pd.ch6 as ch6, pd.ch7 as ch7, pd.ch8 as ch8
+        ORDER BY pd.time_sec
       `;
     }
     
@@ -560,7 +591,45 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
       console.log('Physiological query results count (old structure):', physiologicalResults.length);
     }
     
-    // チャンネル別にデータをグループ化
+    // 新しい構造の場合（ch1-ch8プロパティ）
+    if (physiologicalResults.length > 0 && physiologicalResults[0].ch1 !== undefined) {
+      // Neo4jクライアントが返すデータ構造を確認
+      const firstResult = physiologicalResults[0];
+      const timeSec = firstResult.timeSec?.low || firstResult.timeSec || 0;
+      const timestamp = firstResult.timestamp?.low || firstResult.timestamp || 0;
+      
+      // 時系列データポイントに変換
+      const timePoints: Record<number, any> = {};
+      physiologicalResults.forEach((result: any) => {
+        const timeSecValue = result.timeSec?.low || result.timeSec || 0;
+        const timestampValue = result.timestamp?.low || result.timestamp || 0;
+        const timeKey = Math.floor(timeSecValue); // 秒単位でグループ化
+        
+        if (!timePoints[timeKey]) {
+          timePoints[timeKey] = {
+            timeSec: timeSecValue,
+            timestamp: timestampValue,
+            channels: {}
+          };
+        }
+        
+        // チャンネルデータを追加
+        if (result.ch1 !== undefined) timePoints[timeKey].channels.Ch1 = result.ch1?.low || result.ch1 || 0;
+        if (result.ch2 !== undefined) timePoints[timeKey].channels.Ch2 = result.ch2?.low || result.ch2 || 0;
+        if (result.ch3 !== undefined) timePoints[timeKey].channels.Ch3 = result.ch3?.low || result.ch3 || 0;
+        if (result.ch4 !== undefined) timePoints[timeKey].channels.Ch4 = result.ch4?.low || result.ch4 || 0;
+        if (result.ch5 !== undefined) timePoints[timeKey].channels.Ch5 = result.ch5?.low || result.ch5 || 0;
+        if (result.ch6 !== undefined) timePoints[timeKey].channels.Ch6 = result.ch6?.low || result.ch6 || 0;
+        if (result.ch7 !== undefined) timePoints[timeKey].channels.Ch7 = result.ch7?.low || result.ch7 || 0;
+        if (result.ch8 !== undefined) timePoints[timeKey].channels.Ch8 = result.ch8?.low || result.ch8 || 0;
+      });
+      
+      const result = Object.values(timePoints).sort((a: any, b: any) => a.timeSec - b.timeSec);
+      console.log('Processed physiological data points (new structure):', result.length);
+      return result;
+    }
+    
+    // 古い構造の場合（channel/valueプロパティ）
     const channelData: Record<string, any[]> = {};
     physiologicalResults.forEach((result: any) => {
       const channel = result.channel;
@@ -590,7 +659,7 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
     });
     
     const result = Object.values(timePoints).sort((a: any, b: any) => a.timeSec - b.timeSec);
-    console.log('Processed physiological data points:', result.length);
+    console.log('Processed physiological data points (old structure):', result.length);
     return result;
 
   } catch (error) {

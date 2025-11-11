@@ -30,7 +30,15 @@ export async function GET(
       
       const sessionResults = await client.query(sessionQuery, { participantId, sessionId: sessionId || undefined });
       const sessionRecord = sessionResults.length > 0 ? sessionResults[0] : null;
-      const sessionNode = sessionRecord?.s || sessionRecord;
+      const sessionNodeRaw = sessionRecord?.s || sessionRecord;
+      // Neo4jクライアントはpropertiesオブジェクト内にプロパティを返す
+      const sessionNode = sessionNodeRaw?.properties || sessionNodeRaw;
+      
+      // 実際のノードのプロパティキーを取得
+      let sessionKeys: string[] = [];
+      if (sessionNode) {
+        sessionKeys = Object.keys(sessionNode);
+      }
       
       debugInfo.checks.session = {
         exists: sessionResults.length > 0,
@@ -41,7 +49,8 @@ export async function GET(
           eventsType: typeof sessionNode.events,
           startTs: sessionNode.start_ts,
           endTs: sessionNode.end_ts,
-          sessionIndex: sessionNode.session_index
+          sessionIndex: sessionNode.session_index,
+          availableKeys: sessionKeys
         } : null
       };
       
@@ -54,18 +63,26 @@ export async function GET(
             try {
               parsedEvents = JSON.parse(events);
             } catch (e) {
-              // パース失敗
+              console.error('Failed to parse events JSON:', e);
+              debugInfo.checks.session.eventsParseError = String(e);
             }
           } else if (Array.isArray(events)) {
             parsedEvents = events;
+          } else {
+            console.warn('Events is not a string or array:', typeof events, events);
+            debugInfo.checks.session.eventsType = typeof events;
           }
+        } else {
+          debugInfo.checks.session.eventsMissing = true;
         }
         debugInfo.checks.session.eventsInfo = {
           total: parsedEvents.length,
-          wordDisplayed: parsedEvents.filter((e: any) => e.type === 'word_displayed').length,
-          speechDetected: parsedEvents.filter((e: any) => e.type === 'speech_detected').length,
+          wordDisplayed: parsedEvents.filter((e: any) => e.type === 'word_displayed' || e.event_type === 'word_displayed').length,
+          speechDetected: parsedEvents.filter((e: any) => e.type === 'speech_detected' || e.event_type === 'speech_detected').length,
           firstEvent: parsedEvents[0] || null,
-          lastEvent: parsedEvents[parsedEvents.length - 1] || null
+          lastEvent: parsedEvents[parsedEvents.length - 1] || null,
+          rawEventsType: typeof events,
+          rawEventsLength: typeof events === 'string' ? events.length : Array.isArray(events) ? events.length : 0
         };
       }
     } catch (error: any) {
@@ -88,7 +105,15 @@ export async function GET(
         
         const emotionResults = await client.query(emotionQuery, { participantId, sessionId: sessionId || undefined });
         const emotionRecord = emotionResults.length > 0 ? emotionResults[0] : null;
-        const emotionNode = emotionRecord?.e || emotionRecord;
+        const emotionNodeRaw = emotionRecord?.e || emotionRecord;
+        // Neo4jクライアントはpropertiesオブジェクト内にプロパティを返す
+        const emotionNode = emotionNodeRaw?.properties || emotionNodeRaw;
+        
+        // 実際のノードのプロパティキーを取得
+        let emotionKeys: string[] = [];
+        if (emotionNode) {
+          emotionKeys = Object.keys(emotionNode);
+        }
         
         debugInfo.checks[source] = {
           exists: emotionResults.length > 0,
@@ -99,7 +124,8 @@ export async function GET(
             emotionScoresType: typeof emotionNode.emotion_scores,
             beginTime: emotionNode.begin_time || emotionNode.time,
             endTime: emotionNode.end_time,
-            sessionId: emotionNode.session_id
+            sessionId: emotionNode.session_id,
+            availableKeys: emotionKeys
           } : null
         };
         
@@ -132,23 +158,56 @@ export async function GET(
       }
     }
     
-    // 3. 生理データの存在確認
+    // 3. 生理データの存在確認（複数の構造を試す）
     try {
-      const physioQuery = sessionId
+      // 新しい構造（Participant -> Session -> PhysiologicalData）
+      let physioQuery = sessionId
         ? `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData) RETURN pd LIMIT 10`
         : `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData) RETURN pd LIMIT 10`;
       
-      const physioResults = await client.query(physioQuery, { participantId, sessionId: sessionId || undefined });
+      let physioResults = await client.query(physioQuery, { participantId, sessionId: sessionId || undefined });
+      
+      // 新しい構造で見つからない場合、古い構造を試す
+      if (physioResults.length === 0) {
+        physioQuery = sessionId
+          ? `MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession {id: $sessionId})-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData) RETURN pd LIMIT 10`
+          : `MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData) RETURN pd LIMIT 10`;
+        physioResults = await client.query(physioQuery, { participantId, sessionId: sessionId || undefined });
+      }
+      
+      // 全件数を取得
+      let countQuery = sessionId
+        ? `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData) RETURN count(pd) as total`
+        : `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData) RETURN count(pd) as total`;
+      let countResults = await client.query(countQuery, { participantId, sessionId: sessionId || undefined });
+      
+      if (countResults.length === 0) {
+        countQuery = sessionId
+          ? `MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession {id: $sessionId})-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData) RETURN count(pd) as total`
+          : `MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData) RETURN count(pd) as total`;
+        countResults = await client.query(countQuery, { participantId, sessionId: sessionId || undefined });
+      }
+      
+      const totalCount = countResults.length > 0 ? (countResults[0].total?.low || countResults[0].total || 0) : 0;
       const physioRecord = physioResults.length > 0 ? physioResults[0] : null;
-      const physioNode = physioRecord?.pd || physioRecord;
+      const physioNodeRaw = physioRecord?.pd || physioRecord;
+      // Neo4jクライアントはpropertiesオブジェクト内にプロパティを返す
+      const physioNode = physioNodeRaw?.properties || physioNodeRaw;
       
       debugInfo.checks.physiological = {
-        exists: physioResults.length > 0,
-        count: physioResults.length,
+        exists: totalCount > 0,
+        count: totalCount,
         sample: physioNode ? {
           id: physioNode.id,
           timestamp: physioNode.timestamp,
-          channels: Object.keys(physioNode.channels || {}).length
+          channel: physioNode.channel,
+          value: physioNode.value,
+          time_sec: physioNode.time_sec,
+          ch1: physioNode.ch1,
+          ch2: physioNode.ch2,
+          ch3: physioNode.ch3,
+          ch4: physioNode.ch4,
+          availableKeys: Object.keys(physioNode)
         } : null
       };
     } catch (error: any) {

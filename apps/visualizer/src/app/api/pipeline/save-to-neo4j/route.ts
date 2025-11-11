@@ -189,7 +189,7 @@ async function loadAndSavePhysiologicalData(client: any, basePath: string, parti
   const files = fs.readdirSync(basePath);
   
   // CSVファイルを検索
-  const csvFile = files.find((file: string) => file.endsWith('.CSV'));
+  const csvFile = files.find((file: string) => file.endsWith('.CSV') || file.endsWith('.csv'));
   if (!csvFile) {
     return [];
   }
@@ -198,49 +198,149 @@ async function loadAndSavePhysiologicalData(client: any, basePath: string, parti
   const content = readFileSync(csvPath, 'utf-8');
   const lines = content.split('\n').filter(line => line.trim());
   
-  if (lines.length < 2) {
-    return [];
-  }
-
-  const header = lines[0].split(',');
-  const samples = lines.slice(1).map(line => {
-    const values = line.split(',');
-    const sample: Record<string, string> = {};
-    header.forEach((col, index) => {
-      sample[col.trim()] = values[index]?.trim() || '';
-    });
-    return sample;
-  });
-
-  // 生理データをチャンネル別に整理
-  const channels = header.filter(col => 
-    col.includes('ch') || col.includes('channel') || col.includes('Ch')
-  );
-
-  const physiologicalSamples = samples.map((sample: Record<string, string>) => ({
-    timestamp: parseFloat(sample.timestamp || sample.time || '0'),
-    channels: channels.reduce((acc: Record<string, number>, channel: string) => {
-      acc[channel] = parseFloat(sample[channel] || '0');
-      return acc;
-    }, {}),
-  }));
-
-  // 生理データをNeo4jに保存
-  for (const sample of physiologicalSamples) {
-    for (const [channel, value] of Object.entries(sample.channels)) {
-      await client.query(
-        'MATCH (s:ExperimentSession {id: $sessionId}) MERGE (p:PhysiologicalData {id: $physioId}) SET p.channel = $channel, p.value = $value, p.timestamp = $timestamp, p.quality = $quality, p.createdAt = datetime() MERGE (s)-[:HAS_PHYSIOLOGICAL_DATA]->(p)',
-        {
-          sessionId: `${participantId}-session-1`,
-          physioId: `${participantId}-physio-${sample.timestamp}-${channel}`,
-          channel,
-          value,
-          timestamp: sample.timestamp,
-          quality: 1.0 // デフォルト品質
-        }
-      );
+  // CSVファイルの構造を確認
+  // ヘッダー行を探す（"Time_Sec"または"Time"を含む行）
+  let headerIndex = -1;
+  let headerLine = '';
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes('Time_Sec') || lines[i].includes('Time,') || lines[i].toLowerCase().includes('time_sec')) {
+      headerIndex = i;
+      headerLine = lines[i];
+      break;
     }
   }
 
-  return physiologicalSamples;
+  if (headerIndex === -1) {
+    console.warn('CSV header not found, skipping physiological data import');
+    return [];
+  }
+
+  // ヘッダーをパース
+  const header = headerLine.split(',').map(col => col.trim());
+  const timeColumnIndex = header.findIndex(col => col.toLowerCase().includes('time'));
+  
+  if (timeColumnIndex === -1) {
+    console.warn('Time column not found in CSV header, skipping physiological data import');
+    return [];
+  }
+
+  // チャンネル列を特定（Ch1, Ch2, Ch3, Ch4, Ch5, Ch6, Ch7, Ch8）
+  const channelColumns = header
+    .map((col, index) => ({ name: col, index }))
+    .filter(({ name }) => /^Ch\d+$/i.test(name))
+    .sort((a, b) => {
+      const aNum = parseInt(a.name.match(/\d+/)?.[0] || '0');
+      const bNum = parseInt(b.name.match(/\d+/)?.[0] || '0');
+      return aNum - bNum;
+    });
+
+  if (channelColumns.length === 0) {
+    console.warn('No channel columns found in CSV header, skipping physiological data import');
+    return [];
+  }
+
+  // データ行をパース（ヘッダー行の後から開始）
+  const dataLines = lines.slice(headerIndex + 1);
+  const samples: Array<{ timeSec: number; channels: Record<string, number> }> = [];
+
+  for (const line of dataLines) {
+    if (!line.trim()) continue;
+    
+    const values = line.split(',').map(v => v.trim());
+    if (values.length < header.length) continue;
+
+    const timeSecStr = values[timeColumnIndex];
+    const timeSec = parseFloat(timeSecStr);
+    
+    if (isNaN(timeSec)) continue;
+
+    const channels: Record<string, number> = {};
+    for (const { name, index } of channelColumns) {
+      const value = parseFloat(values[index] || '0');
+      if (!isNaN(value)) {
+        channels[name] = value;
+      }
+    }
+
+    if (Object.keys(channels).length > 0) {
+      samples.push({ timeSec, channels });
+    }
+  }
+
+  // セッションIDを取得（最新のセッション）
+  const sessionQuery = `
+    MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+    RETURN s.id as sessionId
+    ORDER BY s.created_at DESC
+    LIMIT 1
+  `;
+  const sessionResults = await client.query(sessionQuery, { participantId });
+  
+  if (sessionResults.length === 0) {
+    console.warn(`No session found for participant: ${participantId}, skipping physiological data import`);
+    return [];
+  }
+
+  const sessionId = sessionResults[0].sessionId;
+
+  // セッション開始時刻を取得
+  const sessionStartQuery = `
+    MATCH (s:Session {id: $sessionId})
+    RETURN s.start_ts as startTs
+  `;
+  const startResults = await client.query(sessionStartQuery, { sessionId });
+  const sessionStartTime = startResults[0]?.startTs?.low || startResults[0]?.startTs || Date.now();
+
+  // 生理データをNeo4jに保存（バッチ処理）
+  const batchSize = 1000;
+  let imported = 0;
+
+  for (let i = 0; i < samples.length; i += batchSize) {
+    const batch = samples.slice(i, i + batchSize);
+    
+    // 各サンプルを個別に保存（UNWINDが使えない場合の代替）
+    for (const sample of batch) {
+      const physioId = `${sessionId}_physio_${sample.timeSec}`;
+      const timestamp = sessionStartTime + (sample.timeSec * 1000);
+
+      await client.query(
+        `MATCH (s:Session {id: $sessionId})
+         MERGE (pd:PhysiologicalData {id: $physioId})
+         SET pd.participant_id = $participantId,
+             pd.session_id = $sessionId,
+             pd.time_sec = $timeSec,
+             pd.timestamp = $timestamp,
+             pd.ch1 = $ch1,
+             pd.ch2 = $ch2,
+             pd.ch3 = $ch3,
+             pd.ch4 = $ch4,
+             pd.ch5 = $ch5,
+             pd.ch6 = $ch6,
+             pd.ch7 = $ch7,
+             pd.ch8 = $ch8,
+             pd.created_at = datetime()
+         MERGE (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd)`,
+        {
+          sessionId,
+          participantId,
+          physioId,
+          timeSec: sample.timeSec,
+          timestamp,
+          ch1: sample.channels.Ch1 || 0,
+          ch2: sample.channels.Ch2 || 0,
+          ch3: sample.channels.Ch3 || 0,
+          ch4: sample.channels.Ch4 || 0,
+          ch5: sample.channels.Ch5 || 0,
+          ch6: sample.channels.Ch6 || 0,
+          ch7: sample.channels.Ch7 || 0,
+          ch8: sample.channels.Ch8 || 0
+        }
+      );
+      imported++;
+    }
+
+    console.log(`Imported ${imported}/${samples.length} physiological data samples`);
+  }
+
+  return samples;
 }
