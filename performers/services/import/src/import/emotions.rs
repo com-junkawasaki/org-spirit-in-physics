@@ -517,9 +517,9 @@ async fn store_burst_emotion_data(
             if let Ok(value) = value_str.parse::<f64>() {
                 if value > 0.0 {
                     vocal_types.push(key.to_string());
-                }
             }
         }
+    }
     }
 
     // Calculate time from begin_time (convert seconds to timestamp)

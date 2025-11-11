@@ -20,7 +20,7 @@ use tracing::{info, error};
 
 use config::Config;
 use database::PostgresClient;
-use import::{participants, sessions, emotions};
+use import::{participants, sessions, emotions, timeline};
 
 #[derive(Clone)]
 struct AppState {
@@ -55,6 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/import/participants", post(import_participants))
         .route("/import/sessions", post(import_sessions))
         .route("/import/emotions", post(import_emotions))
+        .route("/import/timeline", post(import_timeline))
         .route("/import/status", get(status))
         .with_state(app_state)
         .layer(tower_http::cors::CorsLayer::permissive());
@@ -104,6 +105,21 @@ async fn import_emotions(
         Ok(result) => Ok(Json(result)),
         Err(e) => {
             error!("Error importing emotions: {}", e);
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            ))
+        }
+    }
+}
+
+async fn import_timeline(
+    State(state): State<AppState>,
+) -> Result<Json<timeline::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
+    match timeline::import_timeline_points(state.db_client.pool(), &state.config).await {
+        Ok(result) => Ok(Json(result)),
+        Err(e) => {
+            error!("Error importing timeline points: {}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({ "error": e.to_string() })),

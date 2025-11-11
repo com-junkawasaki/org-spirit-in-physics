@@ -103,12 +103,12 @@ export async function GET(
       const physiological = point.physiological && typeof point.physiological === 'object'
         ? point.physiological
         : { average: 0, max: 0, min: 0 };
-
+      
       // Ensure metadata is an object
       const metadata = point.metadata && typeof point.metadata === 'object'
         ? point.metadata
         : { emotionCount: 0, physiologicalCount: 0 };
-
+      
       return {
         ts: timestamp,
         w: point.word || null,
@@ -124,7 +124,7 @@ export async function GET(
     console.log(`[TIMELINE API] ===== Response =====`);
     console.log(`[TIMELINE API] Total processing time: ${totalTime}ms`);
     console.log(`[TIMELINE API] Timeline data points: ${timelineData.length}`);
-
+    
     const responseData = {
       success: true,
       data: {
@@ -158,7 +158,7 @@ export async function GET(
         { status: 500 }
       );
     }
-
+    
     // Network errors
     if (error.message?.includes('fetch') || error.message?.includes('network')) {
       return NextResponse.json(
@@ -170,10 +170,10 @@ export async function GET(
         { status: 503 }
       );
     }
-
+    
     return NextResponse.json(
       {
-        success: false,
+      success: false,
         error: `Failed to load timeline data: ${errorMessage}`,
         errors: [errorMessage],
       },

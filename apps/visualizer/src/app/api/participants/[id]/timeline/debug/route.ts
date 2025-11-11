@@ -86,9 +86,9 @@ export async function GET(
             hasReaction: timeline[timeline.length - 1].hasResponse || timeline[timeline.length - 1].has_response || false,
             emotionsCount: Array.isArray(timeline[timeline.length - 1].emotions) ? timeline[timeline.length - 1].emotions.length : 0
           } : null
-        } : null
-      };
-      
+          } : null
+        };
+        
       // 感情データの種類別カウント
       const emotionTypeCounts: Record<string, number> = {};
       timeline.forEach((point: any) => {
