@@ -51,15 +51,35 @@ export default function TimelineChart({
       .domain(timeExtent)
       .range([0, overviewWidth])
 
-    // 反応値のスケール
+    // 反応値のスケール（NaNを防ぐ）
+    const reactionValueExtent = d3.extent(data, d => {
+      const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue) ? d.reactionValue : 0;
+      return val;
+    }) as [number, number];
+    // 最小値と最大値が同じ場合の処理
+    if (reactionValueExtent[0] === reactionValueExtent[1]) {
+      reactionValueExtent[1] = reactionValueExtent[0] + 1;
+    }
     const yScale = d3.scaleLinear()
-      .domain(d3.extent(data, d => d.reactionValue) as [number, number])
+      .domain(reactionValueExtent)
       .range([overviewHeight, 0])
 
-    // メインライン
+    // メインライン（NaNを防ぐ）
     const line = d3.line<TimelineDataPoint>()
-      .x(d => xScale(new Date(d.timestamp)))
-      .y(d => yScale(d.reactionValue))
+      .x(d => {
+        const ts = typeof d.timestamp === 'number' && !isNaN(d.timestamp) ? d.timestamp : Date.now();
+        const date = new Date(ts);
+        return isNaN(date.getTime()) ? 0 : xScale(date);
+      })
+      .y(d => {
+        const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue) ? d.reactionValue : 0;
+        return yScale(val);
+      })
+      .defined(d => {
+        const ts = typeof d.timestamp === 'number' && !isNaN(d.timestamp);
+        const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue);
+        return ts && val;
+      })
       .curve(d3.curveMonotoneX)
 
     g.append('path')
@@ -458,11 +478,23 @@ export default function TimelineChart({
       })
     }
 
-    // 線の描画（反応値）
+    // 線の描画（反応値）（NaNを防ぐ）
     if (filters.reactionValues) {
       const line = d3.line<TimelineDataPoint>()
-        .x(d => xScale(new Date(d.timestamp)))
-        .y(d => yScale(d.reactionValue))
+        .x(d => {
+          const ts = typeof d.timestamp === 'number' && !isNaN(d.timestamp) ? d.timestamp : Date.now();
+          const date = new Date(ts);
+          return isNaN(date.getTime()) ? 0 : xScale(date);
+        })
+        .y(d => {
+          const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue) ? d.reactionValue : 0;
+          return yScale(val);
+        })
+        .defined(d => {
+          const ts = typeof d.timestamp === 'number' && !isNaN(d.timestamp);
+          const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue);
+          return ts && val;
+        })
         .curve(d3.curveMonotoneX)
 
       g.append('path')

@@ -55,8 +55,23 @@ export default function SmallMultiples({ data }: SmallMultiplesProps) {
                 <title>スパークライン: {item.word}</title>
                 <path
                   d={d3.line<TimelineDataPoint>()
-                    .x((_, i) => (i / Math.max(1, item.data.length - 1)) * 100)
-                    .y(d => 100 - (d.reactionValue / Math.max(...item.data.map(x => x.reactionValue))) * 100)
+                    .x((_, i) => {
+                      const val = (i / Math.max(1, item.data.length - 1)) * 100;
+                      return isNaN(val) ? 0 : val;
+                    })
+                    .y(d => {
+                      const maxVal = Math.max(...item.data.map(x => {
+                        const val = typeof x.reactionValue === 'number' && !isNaN(x.reactionValue) ? x.reactionValue : 0;
+                        return val;
+                      }));
+                      const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue) ? d.reactionValue : 0;
+                      const y = maxVal > 0 ? 100 - (val / maxVal) * 100 : 50;
+                      return isNaN(y) ? 50 : y;
+                    })
+                    .defined(d => {
+                      const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue);
+                      return val;
+                    })
                     .curve(d3.curveMonotoneX)(item.data) || ''}
                   fill="none"
                   stroke="currentColor"

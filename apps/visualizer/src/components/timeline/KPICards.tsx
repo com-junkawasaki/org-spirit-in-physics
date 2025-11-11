@@ -95,8 +95,17 @@ export default function KPICards({ data }: KPICardsProps) {
                 <title>スパークライン: {card.title}</title>
                 <path
                   d={d3.line<number>()
-                    .x((_, i) => (i / (card.sparkline.length - 1)) * 100)
-                    .y(d => 100 - (d / Math.max(...card.sparkline)) * 100)
+                    .defined(d => typeof d === 'number' && !isNaN(d))
+                    .x((_, i) => {
+                      const val = (i / Math.max(1, card.sparkline.length - 1)) * 100;
+                      return isNaN(val) ? 0 : val;
+                    })
+                    .y(d => {
+                      const maxVal = Math.max(...card.sparkline.filter(v => typeof v === 'number' && !isNaN(v)));
+                      const val = typeof d === 'number' && !isNaN(d) ? d : 0;
+                      const y = maxVal > 0 ? 100 - (val / maxVal) * 100 : 50;
+                      return isNaN(y) ? 50 : y;
+                    })
                     .curve(d3.curveMonotoneX)(card.sparkline) || ''}
                   fill="none"
                   stroke="currentColor"

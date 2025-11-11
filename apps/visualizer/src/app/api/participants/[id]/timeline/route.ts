@@ -52,24 +52,88 @@ export async function GET(
 
     // 実データを統合（セッション×感情×生理）し、クライアント期待形式へ変換
     const integrated = integrateTimelineData(sessionData, emotionData, physiologicalData)
-    const timelineData = integrated.map((pt: any) => ({
-      t: pt.timestamp,
-      w: pt.word,
-      e: pt.eventType,
-      rt: pt.reactionTime ?? null, // 反応時間を追加
-      em: Array.isArray(pt.emotions) ? pt.emotions : [],
-      ph: {
-        average: pt?.physiological?.average ?? 0,
-        max: pt?.physiological?.max ?? 0,
-        min: pt?.physiological?.min ?? 0,
-        channels: pt?.physiological?.channels ?? {}
-      },
-      rv: pt?.reactionValue ?? 0,
-      m: {
-        ec: pt?.metadata?.emotionCount ?? 0,
-        pc: pt?.metadata?.physiologicalCount ?? 0
+    
+    console.log('=== Timeline Integration Summary ===');
+    console.log('Integrated timeline data count:', integrated.length);
+    console.log('Session data:', {
+      startTime: sessionData.startTime,
+      wordEventsCount: sessionData.wordEvents?.length || 0,
+      firstWordTimestamp: sessionData.wordEvents?.[0]?.timestamp || null
+    });
+    console.log('Emotion data from Neo4j:', {
+      count: emotionData.length,
+      firstSample: emotionData.length > 0 ? {
+        beginTime: emotionData[0].beginTime,
+        endTime: emotionData[0].endTime,
+        fileType: emotionData[0].fileType,
+        emotionsCount: emotionData[0].emotions?.length || 0
+      } : null,
+      timeRange: emotionData.length > 0 ? {
+        minBeginTime: Math.min(...emotionData.map(e => e.beginTime || 0)),
+        maxBeginTime: Math.max(...emotionData.map(e => e.beginTime || 0)),
+        minEndTime: Math.min(...emotionData.map(e => e.endTime || 0)),
+        maxEndTime: Math.max(...emotionData.map(e => e.endTime || 0))
+      } : null
+    });
+    
+    if (integrated.length > 0) {
+      const pointsWithEmotions = integrated.filter((pt: any) => pt.emotions && pt.emotions.length > 0);
+      console.log(`Points with emotions: ${pointsWithEmotions.length}/${integrated.length}`);
+      
+      if (pointsWithEmotions.length > 0) {
+        const sampleWithEmotions = pointsWithEmotions[0];
+        console.log('Sample point with emotions:', {
+          word: sampleWithEmotions.word,
+          timestamp: sampleWithEmotions.timestamp,
+          emotionsCount: sampleWithEmotions.emotions.length,
+          emotionTypes: [...new Set(sampleWithEmotions.emotions.map((e: any) => e.fileType))]
+        });
+      } else {
+        console.log('⚠️ WARNING: No emotion data found in integrated timeline data');
+        // 時間マッチングの問題を診断
+        if (sessionData.startTime === 0) {
+          console.log('⚠️ Session start time is 0 - this may cause time matching issues');
+        }
+        if (emotionData.length > 0 && sessionData.wordEvents?.length > 0) {
+          const firstWordTime = sessionData.wordEvents[0].timestamp;
+          const firstEmotionTime = emotionData[0].beginTime;
+          const timeDiff = Math.abs((firstWordTime - sessionData.startTime) / 1000 - firstEmotionTime);
+          console.log('Time matching diagnostic:', {
+            firstWordTimestamp: firstWordTime,
+            firstWordRelativeSec: (firstWordTime - sessionData.startTime) / 1000,
+            firstEmotionBeginTimeSec: firstEmotionTime,
+            timeDifferenceSec: timeDiff
+          });
+        }
       }
-    }))
+    }
+    
+    const timelineData = integrated.map((pt: any) => {
+      // NaNを防ぐための安全な変換
+      const safeReactionValue = typeof pt.reactionValue === 'number' && !isNaN(pt.reactionValue) ? pt.reactionValue : 0;
+      const safePhysioAverage = typeof pt?.physiological?.average === 'number' && !isNaN(pt.physiological.average) ? pt.physiological.average : 0;
+      const safePhysioMax = typeof pt?.physiological?.max === 'number' && !isNaN(pt.physiological.max) ? pt.physiological.max : 0;
+      const safePhysioMin = typeof pt?.physiological?.min === 'number' && !isNaN(pt.physiological.min) ? pt.physiological.min : 0;
+      
+      return {
+        t: pt.timestamp,
+        w: pt.word,
+        e: pt.eventType,
+        rt: pt.reactionTime ?? null, // 反応時間を追加
+        em: Array.isArray(pt.emotions) ? pt.emotions : [],
+        ph: {
+          average: safePhysioAverage,
+          max: safePhysioMax,
+          min: safePhysioMin,
+          channels: pt?.physiological?.channels ?? {}
+        },
+        rv: safeReactionValue,
+        m: {
+          ec: pt?.metadata?.emotionCount ?? 0,
+          pc: pt?.metadata?.physiologicalCount ?? 0
+        }
+      };
+    })
 
     // ストリーミングレスポンスで大きなデータを効率的に送信
     const responseData = {
@@ -250,8 +314,47 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
       event.type === 'speech_detected'
     );
 
-    // セッション開始時刻を最初のイベントのtimestampから取得
-    const startTime = sessionData.events?.length > 0 ? sessionData.events[0].timestamp : 0;
+    // セッション開始時刻を取得
+    // 1. startTsが設定されている場合はそれを使用（Neo4j Integer型に対応）
+    // 2. なければ最初のイベントのtimestampを使用
+    // 3. それもなければ0を使用
+    let startTime = 0;
+    const startTsRaw = sessionResults[0].startTs;
+    
+    console.log('Raw startTs from Neo4j:', {
+      value: startTsRaw,
+      type: typeof startTsRaw,
+      isObject: typeof startTsRaw === 'object' && startTsRaw !== null,
+      hasLow: typeof startTsRaw === 'object' && startTsRaw !== null && 'low' in startTsRaw,
+      keys: typeof startTsRaw === 'object' && startTsRaw !== null ? Object.keys(startTsRaw) : []
+    });
+    
+    if (startTsRaw) {
+      if (typeof startTsRaw === 'object' && startTsRaw !== null && 'low' in startTsRaw) {
+        startTime = startTsRaw.low;
+        console.log('Using startTs.low:', startTime);
+      } else if (typeof startTsRaw === 'number') {
+        startTime = startTsRaw;
+        console.log('Using startTs as number:', startTime);
+      } else {
+        console.warn('startTs is not a number or Integer object:', startTsRaw);
+      }
+    }
+    
+    // startTsが取得できなかった場合、最初のイベントのtimestampを使用
+    if (startTime === 0 && sessionData.events?.length > 0 && sessionData.events[0].timestamp) {
+      startTime = sessionData.events[0].timestamp;
+      console.log('Using first event timestamp as startTime:', startTime);
+    }
+    
+    if (startTime === 0) {
+      console.warn('⚠️ WARNING: Session start time is 0 - time matching may fail');
+    }
+    
+    console.log('Final session start time:', startTime, 'Word events count:', wordEvents.length);
+    if (wordEvents.length > 0) {
+      console.log('First word event timestamp:', wordEvents[0].timestamp, 'Relative:', (wordEvents[0].timestamp - startTime) / 1000, 'seconds');
+    }
 
     return {
       ...sessionData,
@@ -738,20 +841,67 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       const reactionTime = speechEvent ? speechEvent.timestamp - timestamp : null;
       
       // 対応する感情データを検索（時間範囲でマッチング）
+      const sessionStartTime = sessionData.startTime || 0;
+      
+      // セッション開始時刻からの相対時間を計算（ミリ秒単位）
+      const relativeTimestampMs = timestamp - sessionStartTime;
+      const relativeTimestampSec = relativeTimestampMs / 1000; // 秒単位に変換
+      
+      // デバッグログ（最初の10件と、マッチが見つからない場合）
+      const isDebugTarget = timelineData.length < 10 || (timelineData.length % 20 === 0);
+      if (isDebugTarget) {
+        console.log(`[${timelineData.length}] Matching emotions for word "${word}" at timestamp ${timestamp} (relative: ${relativeTimestampSec.toFixed(2)}s)`);
+        console.log(`  Session start time: ${sessionStartTime}, Available emotion data count: ${emotionData.length}`);
+        if (emotionData.length > 0) {
+          const firstEmotion = emotionData[0];
+          console.log(`  First emotion sample:`, {
+            beginTime: firstEmotion.beginTime,
+            endTime: firstEmotion.endTime,
+            fileType: firstEmotion.fileType,
+            emotionsCount: firstEmotion.emotions?.length || 0
+          });
+          // 時間範囲のサンプルを表示
+          const sampleTimes = emotionData.slice(0, 10).map(e => ({
+            beginTime: e.beginTime,
+            endTime: e.endTime,
+            fileType: e.fileType
+          }));
+          console.log(`  First 10 emotion time ranges:`, sampleTimes);
+        }
+      }
+      
       const relatedEmotions = emotionData.filter(emotion => {
-        // セッション開始時刻を基準に相対時間でマッチング
-        const sessionStartTime = sessionData.startTime || 0;
-        // timestampはミリ秒単位、beginTime/endTimeは秒単位なので変換
-        const relativeTimestampMs = timestamp - sessionStartTime;
-        const relativeTimestampSec = relativeTimestampMs / 1000; // 秒単位に変換
         const beginTime = emotion.beginTime || 0; // 秒単位
-        const endTime = emotion.endTime || (beginTime > 0 ? beginTime + 1 : 1); // 秒単位（endTimeがない場合はbeginTime+1秒）
+        const endTime = emotion.endTime || (beginTime > 0 ? beginTime + 1 : 1); // 秒単位
         
-        // 感情データの時間範囲でマッチング（より柔軟なマッチング：±30秒の範囲内）
+        // 感情データの時間範囲でマッチング
+        // より柔軟なマッチング：±60秒の範囲内、または時間範囲内
         const timeDiff = Math.abs(relativeTimestampSec - beginTime);
         const isInRange = beginTime <= relativeTimestampSec && endTime >= relativeTimestampSec;
-        return timeDiff <= 30 || isInRange;
+        const matches = timeDiff <= 60 || isInRange;
+        
+        // デバッグログ（マッチした場合、または最初の10件でマッチしなかった場合）
+        if (matches && isDebugTarget) {
+          console.log(`    ✓ Matched: ${emotion.fileType}, beginTime=${beginTime}s, endTime=${endTime}s, timeDiff=${timeDiff.toFixed(2)}s`);
+        }
+        
+        return matches;
       });
+      
+      // デバッグログ（マッチが見つからない場合、または最初の10件）
+      if (isDebugTarget) {
+        console.log(`  → Found ${relatedEmotions.length} matching emotions for word "${word}"`);
+        if (relatedEmotions.length === 0 && emotionData.length > 0) {
+          // 最も近い感情データを探す
+          const closestEmotion = emotionData.reduce((closest, current) => {
+            const currentDiff = Math.abs(relativeTimestampSec - (current.beginTime || 0));
+            const closestDiff = Math.abs(relativeTimestampSec - (closest.beginTime || 0));
+            return currentDiff < closestDiff ? current : closest;
+          });
+          const closestDiff = Math.abs(relativeTimestampSec - (closestEmotion.beginTime || 0));
+          console.log(`  ⚠ Closest emotion: ${closestEmotion.fileType}, beginTime=${closestEmotion.beginTime}s, diff=${closestDiff.toFixed(2)}s`);
+        }
+      }
       
       // 対応する生理データを検索（時間範囲でマッチング）
       const relatedPhysiological = physiologicalData.filter(physio => {
@@ -779,13 +929,14 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         // デモ用のランダム値生成を削除（実データのみを使用）
       });
       
-      // デバッグ: 最初の数個のデータポイントで感情データの統合状況を確認
-      if (timelineData.length < 10) {
+      // デバッグ: 感情データの統合状況を確認（最初の10件と、感情データが見つかった場合）
+      const hasEmotions = emotionDetails.length > 0;
+      if (timelineData.length < 10 || (hasEmotions && timelineData.length < 50)) {
         console.log(`Timeline point ${timelineData.length}: word=${word}, timestamp=${timestamp}, relatedEmotions=${relatedEmotions.length}, emotionDetails=${emotionDetails.length}`, {
           emotionTypes: emotionDetails.map(e => e.fileType),
-          emotionNames: emotionDetails.map(e => e.name),
-          emotionScores: emotionDetails.map(e => e.score),
-          relatedEmotionTimes: relatedEmotions.map(e => ({ beginTime: e.beginTime, endTime: e.endTime, fileType: e.fileType, emotionsCount: e.emotions?.length || 0 }))
+          emotionNames: emotionDetails.map(e => e.name).slice(0, 5),
+          emotionScores: emotionDetails.map(e => e.score).slice(0, 5),
+          relatedEmotionTimes: relatedEmotions.slice(0, 3).map(e => ({ beginTime: e.beginTime, endTime: e.endTime, fileType: e.fileType, emotionsCount: e.emotions?.length || 0 }))
         });
       }
       
@@ -834,17 +985,39 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       };
       
       if (relatedPhysiological.length > 0) {
-        const allValues = relatedPhysiological.flatMap(p => Object.values(p.channels)) as number[];
-        physiologicalValues.average = allValues.reduce((sum, val) => sum + val, 0) / allValues.length;
-        physiologicalValues.max = Math.max(...allValues);
-        physiologicalValues.min = Math.min(...allValues);
+        const allValues = relatedPhysiological.flatMap(p => {
+          const channels = p.channels || {};
+          return Object.values(channels).filter((v: any) => typeof v === 'number' && !isNaN(v)) as number[];
+        });
+        
+        if (allValues.length > 0) {
+          physiologicalValues.average = allValues.reduce((sum, val) => sum + val, 0) / allValues.length;
+          physiologicalValues.max = Math.max(...allValues);
+          physiologicalValues.min = Math.min(...allValues);
+        }
         
         // 各チャンネルの平均値を計算
-        ['ch1', 'ch2', 'ch3', 'ch4', 'ch5', 'ch6', 'ch7', 'ch8'].forEach(ch => {
-          const channelValues = relatedPhysiological.map(p => p.channels[ch] || 0);
-          physiologicalValues.channels[ch] = channelValues.reduce((sum, val) => sum + val, 0) / channelValues.length;
+        ['Ch1', 'Ch2', 'Ch3', 'Ch4', 'Ch5', 'Ch6', 'Ch7', 'Ch8'].forEach(ch => {
+          const channelValues = relatedPhysiological
+            .map(p => {
+              const channels = p.channels || {};
+              const val = channels[ch] || 0;
+              return typeof val === 'number' && !isNaN(val) ? val : 0;
+            })
+            .filter(v => v > 0);
+          
+          if (channelValues.length > 0) {
+            physiologicalValues.channels[ch] = channelValues.reduce((sum, val) => sum + val, 0) / channelValues.length;
+          } else {
+            physiologicalValues.channels[ch] = 0;
+          }
         });
       }
+      
+      // NaNを防ぐための安全な計算
+      const safeEmotionTotal = isNaN(emotionValues.total) ? 0 : emotionValues.total;
+      const safePhysioAverage = isNaN(physiologicalValues.average) ? 0 : physiologicalValues.average;
+      const safeReactionValue = safeEmotionTotal + safePhysioAverage;
       
       // 統合データポイントを作成
       timelineData.push({
@@ -853,8 +1026,13 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         eventType: event.type,
         reactionTime: reactionTime, // 反応時間を追加
         emotions: emotionDetails, // 詳細な感情データ（fileTypeを含む）
-        physiological: physiologicalValues,
-        reactionValue: emotionValues.total + physiologicalValues.average,
+        physiological: {
+          average: safePhysioAverage,
+          max: isNaN(physiologicalValues.max) ? 0 : physiologicalValues.max,
+          min: isNaN(physiologicalValues.min) ? 0 : physiologicalValues.min,
+          channels: physiologicalValues.channels || {}
+        },
+        reactionValue: safeReactionValue,
         metadata: {
           emotionCount: relatedEmotions.length,
           physiologicalCount: relatedPhysiological.length
