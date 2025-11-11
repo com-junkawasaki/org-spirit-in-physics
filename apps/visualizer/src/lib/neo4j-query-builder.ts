@@ -284,6 +284,246 @@ export class Neo4jQueryBuilder {
   }
 
   /**
+   * 感情データ取得クエリビルダー
+   * プロパティを明示的に返すことで、Nodeオブジェクトのproperties抽出処理を不要にする
+   */
+  buildEmotionDataQuery(
+    emotionType: 'burst' | 'face' | 'language' | 'prosody',
+    participantId: string,
+    sessionId?: string
+  ): {
+    query: string;
+    params: Record<string, any>;
+  } {
+    const participantIdParam = this.addParam(participantId);
+    const sessionIdParam = sessionId ? this.addParam(sessionId) : null;
+    const sourceParam = this.addParam(emotionType);
+
+    // 感情データタイプに応じたノードラベルとリレーションシップタイプ
+    const emotionTypeConfig: Record<string, { label: string; relType: string; timeField: string; orderBy: string }> = {
+      burst: {
+        label: 'BurstEmotionData',
+        relType: 'HAS_BURST_EMOTION_DATA',
+        timeField: 'begin_time',
+        orderBy: 'COALESCE(b.begin_time, 0)'
+      },
+      face: {
+        label: 'FaceEmotionData',
+        relType: 'HAS_FACE_EMOTION_DATA',
+        timeField: 'time',
+        orderBy: 'COALESCE(f.time, 0)'
+      },
+      language: {
+        label: 'LanguageEmotionData',
+        relType: 'HAS_LANGUAGE_EMOTION_DATA',
+        timeField: 'begin_time',
+        orderBy: 'COALESCE(l.begin_time, 0)'
+      },
+      prosody: {
+        label: 'ProsodyEmotionData',
+        relType: 'HAS_PROSODY_EMOTION_DATA',
+        timeField: 'begin_time',
+        orderBy: 'COALESCE(pr.begin_time, 0)'
+      }
+    };
+
+    const config = emotionTypeConfig[emotionType];
+    const nodeAlias = emotionType === 'burst' ? 'b' : emotionType === 'face' ? 'f' : emotionType === 'language' ? 'l' : 'pr';
+
+    let query = '';
+    if (sessionIdParam) {
+      // 特定のセッションの感情データを取得
+      query = `
+        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_SESSION]->(s:Session {id: ${sessionIdParam}})
+        MATCH (s)-[:${config.relType}]->(${nodeAlias}:${config.label})
+        RETURN ${sourceParam} as source,
+               ${nodeAlias}.emotion_scores as emotion_scores,
+               ${nodeAlias}.begin_time as begin_time,
+               ${nodeAlias}.end_time as end_time,
+               ${nodeAlias}.time as time,
+               ${nodeAlias}.session_id as session_id
+        ORDER BY ${config.orderBy}
+      `;
+    } else {
+      // 全セッションの感情データを取得
+      query = `
+        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_SESSION]->(s:Session)
+        MATCH (s)-[:${config.relType}]->(${nodeAlias}:${config.label})
+        RETURN ${sourceParam} as source,
+               ${nodeAlias}.emotion_scores as emotion_scores,
+               ${nodeAlias}.begin_time as begin_time,
+               ${nodeAlias}.end_time as end_time,
+               ${nodeAlias}.time as time,
+               ${nodeAlias}.session_id as session_id
+        ORDER BY ${config.orderBy}
+      `;
+    }
+
+    return { query, params: this.params };
+  }
+
+  /**
+   * セッションデータ取得クエリビルダー
+   * 新しい構造（Participant -> Session）と古い構造（Participant -> Experiment -> ExperimentSession）の両方に対応
+   */
+  buildSessionDataQuery(
+    participantId: string,
+    sessionId?: string
+  ): {
+    query: string;
+    params: Record<string, any>;
+  } {
+    const participantIdParam = this.addParam(participantId);
+    const sessionIdParam = sessionId ? this.addParam(sessionId) : null;
+
+    let query = '';
+    if (sessionIdParam) {
+      // 特定のセッションIDでフィルタリング（新しい構造）
+      query = `
+        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_SESSION]->(s:Session {id: ${sessionIdParam}})
+        RETURN s.events as events,
+               s.id as sessionId,
+               s.created_at as createdAt,
+               s.session_index as sessionIndex,
+               s.start_ts as startTs,
+               s.end_ts as endTs
+        LIMIT 1
+      `;
+    } else {
+      // 最新のセッションを取得（新しい構造）
+      query = `
+        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_SESSION]->(s:Session)
+        RETURN s.events as events,
+               s.id as sessionId,
+               s.created_at as createdAt,
+               s.session_index as sessionIndex,
+               s.start_ts as startTs,
+               s.end_ts as endTs
+        ORDER BY s.created_at DESC
+        LIMIT 1
+      `;
+    }
+
+    return { query, params: this.params };
+  }
+
+  /**
+   * 古い構造のセッションデータ取得クエリビルダー
+   * Participant -> Experiment -> ExperimentSession
+   */
+  buildOldSessionDataQuery(
+    participantId: string,
+    sessionId?: string
+  ): {
+    query: string;
+    params: Record<string, any>;
+  } {
+    const participantIdParam = this.addParam(participantId);
+    const sessionIdParam = sessionId ? this.addParam(sessionId) : null;
+
+    let query = '';
+    if (sessionIdParam) {
+      query = `
+        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession {id: ${sessionIdParam}})
+        RETURN s.session_data as sessionData,
+               s.id as sessionId,
+               s.start_ts as startTs
+        LIMIT 1
+      `;
+    } else {
+      query = `
+        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+        RETURN s.session_data as sessionData,
+               s.id as sessionId,
+               s.start_ts as startTs
+        ORDER BY s.start_ts DESC
+        LIMIT 1
+      `;
+    }
+
+    return { query, params: this.params };
+  }
+
+  /**
+   * 生理データ取得クエリビルダー
+   * プロパティを明示的に返すことで、Nodeオブジェクトのproperties抽出処理を不要にする
+   */
+  buildPhysiologicalDataQuery(
+    participantId: string,
+    sessionId?: string
+  ): {
+    query: string;
+    params: Record<string, any>;
+  } {
+    const participantIdParam = this.addParam(participantId);
+    const sessionIdParam = sessionId ? this.addParam(sessionId) : null;
+
+    let query = '';
+    if (sessionIdParam) {
+      // 特定のセッションの生理データを取得（新しい構造）
+      query = `
+        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_SESSION]->(s:Session {id: ${sessionIdParam}})
+        MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
+        RETURN pd.time_sec as timeSec,
+               pd.timestamp as timestamp,
+               pd.ch1 as ch1,
+               pd.ch2 as ch2,
+               pd.ch3 as ch3,
+               pd.ch4 as ch4,
+               pd.ch5 as ch5,
+               pd.ch6 as ch6,
+               pd.ch7 as ch7,
+               pd.ch8 as ch8
+        ORDER BY pd.time_sec
+      `;
+    } else {
+      // 全セッションの生理データを取得（新しい構造）
+      query = `
+        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_SESSION]->(s:Session)
+        MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
+        RETURN pd.time_sec as timeSec,
+               pd.timestamp as timestamp,
+               pd.ch1 as ch1,
+               pd.ch2 as ch2,
+               pd.ch3 as ch3,
+               pd.ch4 as ch4,
+               pd.ch5 as ch5,
+               pd.ch6 as ch6,
+               pd.ch7 as ch7,
+               pd.ch8 as ch8
+        ORDER BY pd.time_sec
+      `;
+    }
+
+    return { query, params: this.params };
+  }
+
+  /**
+   * 古い構造の生理データ取得クエリビルダー
+   * Participant -> Experiment -> ExperimentSession -> PhysiologicalData
+   */
+  buildOldPhysiologicalDataQuery(
+    participantId: string
+  ): {
+    query: string;
+    params: Record<string, any>;
+  } {
+    const participantIdParam = this.addParam(participantId);
+
+    const query = `
+      MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+      MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
+      RETURN pd.channel as channel,
+             pd.value as value,
+             pd.timestamp as timestamp,
+             pd.quality as quality
+      ORDER BY pd.timestamp
+    `;
+
+    return { query, params: this.params };
+  }
+
+  /**
    * パラメタをリセット
    */
   reset(): void {

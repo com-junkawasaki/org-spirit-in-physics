@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createNeo4jClient } from '@/lib/neo4j';
+import { Neo4jQueryBuilder } from '@/lib/neo4j-query-builder';
 
 // Merkle DAG: participants.timeline.endpoint
 // 時系列統合可視化データ取得APIエンドポイント
@@ -197,85 +198,25 @@ export async function GET(
 
 // Merkle DAG: participants.timeline.get_session_data_from_neo4j
 // Neo4jからセッションデータ取得関数
+// Cypher Code Builderを使用してプロパティを明示的に返すことで、Nodeオブジェクトのproperties抽出処理を不要にする
 async function getSessionData(client: any, participantId: string, sessionId?: string): Promise<any> {
   try {
     console.log('Getting session data from Neo4j for participant:', participantId, sessionId ? `session: ${sessionId}` : '');
     
     // まず、新しい構造（Participant -> Session）を試す
-    let sessionQuery: string;
-    let queryParams: any = { participantId };
+    const builder = new Neo4jQueryBuilder();
+    const { query, params } = builder.buildSessionDataQuery(participantId, sessionId);
     
-    if (sessionId) {
-      // 特定のセッションIDでフィルタリング
-      sessionQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
-        RETURN s.events as events, s.id as sessionId, s.created_at as createdAt, s.session_index as sessionIndex, s.start_ts as startTs, s.end_ts as endTs
-        LIMIT 1
-      `;
-      queryParams.sessionId = sessionId;
-    } else {
-      // 最新のセッションを取得
-      sessionQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        RETURN s.events as events, s.id as sessionId, s.created_at as createdAt, s.session_index as sessionIndex, s.start_ts as startTs, s.end_ts as endTs
-        ORDER BY s.created_at DESC
-        LIMIT 1
-      `;
-    }
-    
-    console.log('Executing session query (new structure):', sessionQuery);
-    let sessionResults = await client.query(sessionQuery, queryParams);
+    console.log('Executing session query (new structure):', query);
+    let sessionResults = await client.query(query, params);
     console.log('Session query results count (new structure):', sessionResults.length);
-    
-    // Neo4jクライアントが返すデータ構造を確認
-    if (sessionResults.length > 0) {
-      console.log('Session result structure:', Object.keys(sessionResults[0]));
-      // Neogmaは直接プロパティを返すが、念のため確認
-      if (sessionResults[0].s && sessionResults[0].s.properties) {
-        // propertiesオブジェクト内にプロパティがある場合
-        sessionResults = sessionResults.map((r: any) => ({
-          ...r,
-          events: r.s?.properties?.events || r.events,
-          sessionId: r.s?.properties?.id || r.sessionId,
-          createdAt: r.s?.properties?.created_at || r.createdAt,
-          sessionIndex: r.s?.properties?.session_index || r.sessionIndex,
-          startTs: r.s?.properties?.start_ts || r.startTs,
-          endTs: r.s?.properties?.end_ts || r.endTs
-        }));
-      } else if (sessionResults[0].s) {
-        // sオブジェクトが直接プロパティを持っている場合
-        sessionResults = sessionResults.map((r: any) => ({
-          ...r,
-          events: r.s?.events || r.events,
-          sessionId: r.s?.id || r.sessionId,
-          createdAt: r.s?.created_at || r.createdAt,
-          sessionIndex: r.s?.session_index || r.sessionIndex,
-          startTs: r.s?.start_ts || r.startTs,
-          endTs: r.s?.end_ts || r.endTs
-        }));
-      }
-    }
     
     // 新しい構造でデータが見つからない場合、古い構造（Participant -> Experiment -> ExperimentSession）を試す
     if (sessionResults.length === 0) {
-      if (sessionId) {
-        sessionQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession {id: $sessionId})
-        RETURN s.session_data as sessionData, s.id as sessionId, s.start_ts as startTs
-        LIMIT 1
-      `;
-        queryParams = { participantId, sessionId };
-      } else {
-        sessionQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-        RETURN s.session_data as sessionData, s.id as sessionId, s.start_ts as startTs
-        ORDER BY s.start_ts DESC
-        LIMIT 1
-      `;
-        queryParams = { participantId };
-      }
-      console.log('Executing session query (old structure):', sessionQuery);
-      sessionResults = await client.query(sessionQuery, queryParams);
+      const oldBuilder = new Neo4jQueryBuilder();
+      const { query: oldQuery, params: oldParams } = oldBuilder.buildOldSessionDataQuery(participantId, sessionId);
+      console.log('Executing session query (old structure):', oldQuery);
+      sessionResults = await client.query(oldQuery, oldParams);
       console.log('Session query results count (old structure):', sessionResults.length);
     }
     
@@ -283,6 +224,7 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
       throw new Error(`No session data found for participant: ${participantId}`);
     }
     
+    // クエリビルダーを使用しているため、プロパティは既に展開されている
     // 新しい構造の場合
     let sessionData: any;
     if (sessionResults[0].events) {
@@ -297,11 +239,27 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
         }
       }
       sessionData = {
-        events: Array.isArray(events) ? events : []
+        events: Array.isArray(events) ? events : [],
+        id: sessionResults[0].sessionId,
+        created_at: sessionResults[0].createdAt,
+        session_index: sessionResults[0].sessionIndex,
+        start_ts: sessionResults[0].startTs,
+        end_ts: sessionResults[0].endTs
       };
-    } else {
+    } else if (sessionResults[0].sessionData) {
       // 古い構造の場合
-      sessionData = JSON.parse(sessionResults[0].sessionData || '{}');
+      let sessionDataParsed = sessionResults[0].sessionData;
+      if (typeof sessionDataParsed === 'string') {
+        try {
+          sessionDataParsed = JSON.parse(sessionDataParsed);
+        } catch (e) {
+          console.warn('Failed to parse sessionData JSON:', e);
+          sessionDataParsed = {};
+        }
+      }
+      sessionData = sessionDataParsed;
+    } else {
+      throw new Error(`Invalid session data structure for participant: ${participantId}`);
     }
     
     console.log('Parsed session data events count:', sessionData.events?.length || 0);
@@ -373,124 +331,37 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
 
 // Merkle DAG: participants.timeline.get_emotion_data_from_neo4j
 // Neo4jから感情データ取得関数
+// Cypher Code Builderを使用してプロパティを明示的に返すことで、Nodeオブジェクトのproperties抽出処理を不要にする
 async function getEmotionData(client: any, participantId: string, sessionId?: string): Promise<any[]> {
   try {
     console.log('Getting emotion data from Neo4j for participant:', participantId, sessionId ? `session: ${sessionId}` : '');
     
-    // 新しい構造（Participant -> Session -> BurstEmotionData/FaceEmotionData/LanguageEmotionData/ProsodyEmotionData）を試す
-    let emotionQuery: string;
-    let queryParams: any = { participantId };
-    
     // 各感情データタイプを個別に取得して結合
     const allEmotionResults: any[] = [];
+    const emotionTypes: Array<'burst' | 'face' | 'language' | 'prosody'> = ['burst', 'face', 'language', 'prosody'];
     
-    if (sessionId) {
-      // 特定のセッションの感情データを取得
-      queryParams.sessionId = sessionId;
+    // 各感情データタイプごとにクエリビルダーを使用してクエリを生成・実行
+    for (const emotionType of emotionTypes) {
+      const builder = new Neo4jQueryBuilder();
+      const { query, params } = builder.buildEmotionDataQuery(emotionType, participantId, sessionId);
       
-      // BurstEmotionData
-      const burstQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
-        MATCH (s)-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
-        RETURN 'burst' as source, b as emotionData
-        ORDER BY COALESCE(b.begin_time, 0)
-      `;
-      const burstResults = await client.query(burstQuery, queryParams);
-      console.log('Burst emotion results count:', burstResults.length);
-      if (burstResults.length > 0) {
-        console.log('First burst result:', JSON.stringify(burstResults[0], null, 2));
+      console.log(`Executing ${emotionType} emotion query:`, query);
+      const results = await client.query(query, params);
+      console.log(`${emotionType} emotion results count:`, results.length);
+      
+      if (results.length > 0) {
+        console.log(`First ${emotionType} result:`, JSON.stringify(results[0], null, 2));
       }
-      allEmotionResults.push(...burstResults);
       
-      // FaceEmotionData
-      const faceQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
-        MATCH (s)-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
-        RETURN 'face' as source, f as emotionData
-        ORDER BY COALESCE(f.time, 0)
-      `;
-      const faceResults = await client.query(faceQuery, queryParams);
-      console.log('Face emotion results count:', faceResults.length);
-      if (faceResults.length > 0) {
-        console.log('First face result:', JSON.stringify(faceResults[0], null, 2));
-      }
-      allEmotionResults.push(...faceResults);
-      
-      // LanguageEmotionData
-      const languageQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
-        MATCH (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
-        RETURN 'language' as source, l as emotionData
-        ORDER BY COALESCE(l.begin_time, 0)
-      `;
-      const languageResults = await client.query(languageQuery, queryParams);
-      console.log('Language emotion results count:', languageResults.length);
-      if (languageResults.length > 0) {
-        console.log('First language result:', JSON.stringify(languageResults[0], null, 2));
-      }
-      allEmotionResults.push(...languageResults);
-      
-      // ProsodyEmotionData
-      const prosodyQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
-        MATCH (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
-        RETURN 'prosody' as source, pr as emotionData
-        ORDER BY COALESCE(pr.begin_time, 0)
-      `;
-      const prosodyResults = await client.query(prosodyQuery, queryParams);
-      console.log('Prosody emotion results count:', prosodyResults.length);
-      if (prosodyResults.length > 0) {
-        console.log('First prosody result:', JSON.stringify(prosodyResults[0], null, 2));
-      }
-      allEmotionResults.push(...prosodyResults);
-    } else {
-      // 全セッションの感情データを取得
-      // BurstEmotionData
-      const burstQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        MATCH (s)-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
-        RETURN 'burst' as source, b as emotionData
-        ORDER BY COALESCE(b.begin_time, 0)
-      `;
-      const burstResults = await client.query(burstQuery, queryParams);
-      allEmotionResults.push(...burstResults);
-      
-      // FaceEmotionData
-      const faceQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        MATCH (s)-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
-        RETURN 'face' as source, f as emotionData
-        ORDER BY COALESCE(f.time, 0)
-      `;
-      const faceResults = await client.query(faceQuery, queryParams);
-      allEmotionResults.push(...faceResults);
-      
-      // LanguageEmotionData
-      const languageQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        MATCH (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
-        RETURN 'language' as source, l as emotionData
-        ORDER BY COALESCE(l.begin_time, 0)
-      `;
-      const languageResults = await client.query(languageQuery, queryParams);
-      allEmotionResults.push(...languageResults);
-      
-      // ProsodyEmotionData
-      const prosodyQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        MATCH (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
-        RETURN 'prosody' as source, pr as emotionData
-        ORDER BY COALESCE(pr.begin_time, 0)
-      `;
-      const prosodyResults = await client.query(prosodyQuery, queryParams);
-      allEmotionResults.push(...prosodyResults);
+      allEmotionResults.push(...results);
     }
     
     console.log('Emotion query results count (new structure):', allEmotionResults.length);
     console.log('All emotion results sample:', allEmotionResults.slice(0, 2).map(r => ({
       source: r.source,
-      hasEmotionData: !!r.emotionData,
-      emotionDataKeys: r.emotionData ? Object.keys(r.emotionData) : []
+      hasEmotionScores: !!r.emotion_scores,
+      beginTime: r.begin_time || r.time,
+      endTime: r.end_time
     })));
     
     // 4種類の感情データタイプの数を確認
@@ -500,73 +371,41 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
       return acc;
     }, {});
     console.log('Emotion data type counts:', emotionTypeCounts);
-    let emotionResults = allEmotionResults;
-    
-    // 新しい構造でデータが見つからない場合、古い構造を試す
-    if (emotionResults.length === 0) {
-      const oldEmotionQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-        MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
-        RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
-        ORDER BY ed.timestamp
-      `;
-      console.log('Executing emotion query (old structure):', oldEmotionQuery);
-      emotionResults = await client.query(oldEmotionQuery, { participantId });
-      console.log('Emotion query results count (old structure):', emotionResults.length);
-    }
     
     // 新しい構造の場合のマッピング
     const mappedResults: any[] = [];
     
-    if (emotionResults.length > 0) {
-      console.log('Processing emotion results, count:', emotionResults.length);
-      // 新しい構造（BurstEmotionData/FaceEmotionData/LanguageEmotionData/ProsodyEmotionData）
-      emotionResults.forEach((result: any, index: number) => {
-        const emotionDataRaw = result.emotionData;
-        // Neo4jクライアントはNodeオブジェクトを返す場合がある
-        // Nodeオブジェクトの場合はpropertiesプロパティまたはproperties()メソッドを使用
-        let emotionData: any = null;
-        
-        if (emotionDataRaw) {
-          // Nodeオブジェクトの場合（propertiesプロパティがある）
-          if (emotionDataRaw.properties && typeof emotionDataRaw.properties === 'object') {
-            emotionData = emotionDataRaw.properties;
-          }
-          // 直接プロパティが存在する場合
-          else if (typeof emotionDataRaw === 'object' && !emotionDataRaw.properties && !emotionDataRaw.identity) {
-            emotionData = emotionDataRaw;
-          }
-          // properties()メソッドがある場合（Neogmaなど）
-          else if (typeof emotionDataRaw.properties === 'function') {
-            emotionData = emotionDataRaw.properties();
-          }
-          // その他の場合、直接使用
-          else {
-            emotionData = emotionDataRaw;
-          }
-        }
-        
+    if (allEmotionResults.length > 0) {
+      console.log('Processing emotion results, count:', allEmotionResults.length);
+      
+      // クエリビルダーを使用しているため、プロパティは既に展開されている
+      allEmotionResults.forEach((result: any, index: number) => {
         const source = result.source || 'unknown';
         
-        if (!emotionData || typeof emotionData !== 'object') {
-          console.log(`Skipping result ${index}: emotionData is null or invalid. Raw type:`, typeof emotionDataRaw, 'Keys:', emotionDataRaw ? Object.keys(emotionDataRaw) : []);
-          return; // emotionDataがnullの場合はスキップ
+        // デバッグログ（最初の数件のみ）
+        if (index < 3) {
+          console.log(`Processing emotion result ${index} (${source}):`, {
+            keys: Object.keys(result),
+            hasEmotionScores: !!result.emotion_scores,
+            beginTime: result.begin_time || result.time,
+            endTime: result.end_time
+          });
         }
         
         // emotion_scoresから感情データを抽出（JSON文字列の場合も対応）
         let emotionScoresObj: any = {};
-        if (emotionData.emotion_scores) {
-          if (typeof emotionData.emotion_scores === 'string') {
+        if (result.emotion_scores) {
+          if (typeof result.emotion_scores === 'string') {
             try {
-              emotionScoresObj = JSON.parse(emotionData.emotion_scores);
+              emotionScoresObj = JSON.parse(result.emotion_scores);
             } catch (e) {
-              console.warn('Failed to parse emotion_scores JSON:', e, 'Raw value:', emotionData.emotion_scores?.substring(0, 100));
+              console.warn('Failed to parse emotion_scores JSON:', e, 'Raw value:', result.emotion_scores?.substring(0, 100));
             }
           } else {
-            emotionScoresObj = emotionData.emotion_scores;
+            emotionScoresObj = result.emotion_scores;
           }
         } else {
-          console.log(`Result ${index} (${source}): emotion_scores is missing. Available keys:`, Object.keys(emotionData));
+          console.log(`Result ${index} (${source}): emotion_scores is missing. Available keys:`, Object.keys(result));
         }
         
         if (Object.keys(emotionScoresObj).length > 0) {
@@ -610,15 +449,15 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
             return Number(value) || 0;
           };
           
-          const beginTime = toNumber(emotionData.begin_time) || toNumber(emotionData.time) || 0;
-          const endTime = toNumber(emotionData.end_time) || (beginTime > 0 ? beginTime + 1 : 1);
+          const beginTime = toNumber(result.begin_time) || toNumber(result.time) || 0;
+          const endTime = toNumber(result.end_time) || (beginTime > 0 ? beginTime + 1 : 1);
           
           mappedResults.push({
             fileType: source,
             beginTime,
             endTime,
             emotions,
-            sessionId: emotionData.session_id || sessionId || 'unknown'
+            sessionId: result.session_id || sessionId || 'unknown'
           });
           
           if (mappedResults.length <= 10) {
@@ -633,13 +472,10 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
           }
         } else {
           console.log(`Result ${index} (${source}): No emotion scores found after parsing. emotion_scores keys:`, Object.keys(emotionScoresObj));
-          // デバッグ: emotionDataの全キーを確認
+          // デバッグ: resultの全キーを確認
           if (index < 5) {
-            console.log(`Result ${index} (${source}) emotionData keys:`, Object.keys(emotionData));
-            console.log(`Result ${index} (${source}) emotionData type:`, typeof emotionData);
-            console.log(`Result ${index} (${source}) emotionDataRaw type:`, typeof emotionDataRaw);
-            console.log(`Result ${index} (${source}) emotionDataRaw keys:`, emotionDataRaw ? Object.keys(emotionDataRaw) : []);
-            console.log(`Result ${index} (${source}) emotionData sample:`, JSON.stringify(emotionData).substring(0, 500));
+            console.log(`Result ${index} (${source}) result keys:`, Object.keys(result));
+            console.log(`Result ${index} (${source}) result sample:`, JSON.stringify(result).substring(0, 500));
           }
         }
       });
@@ -647,22 +483,32 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
       console.log('Total mapped results:', mappedResults.length);
     } else {
       console.log('No emotion results to process');
-    }
-    
-    // 古い構造（EmotionData）も試す（新しい構造でデータが見つからない場合）
-    if (mappedResults.length === 0 && emotionResults.length > 0 && !emotionResults[0].emotionData) {
-      emotionResults.forEach((result: any) => {
-        mappedResults.push({
-          fileType: result.source || 'unknown',
-          beginTime: result.timestamp,
-          endTime: result.timestamp + 1000, // 1秒間隔で仮定
-          emotions: [{ 
-            name: result.name, 
-            score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
-          }],
-          sessionId: sessionId || 'unknown'
+      
+      // 古い構造（EmotionData）も試す（新しい構造でデータが見つからない場合）
+      const oldEmotionQuery = `
+        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
+        MATCH (s)-[:HAS_EMOTION_DATA]->(ed:EmotionData)
+        RETURN ed.name as name, ed.score as score, ed.timestamp as timestamp, ed.source as source
+        ORDER BY ed.timestamp
+      `;
+      console.log('Executing emotion query (old structure):', oldEmotionQuery);
+      const oldEmotionResults = await client.query(oldEmotionQuery, { participantId });
+      console.log('Emotion query results count (old structure):', oldEmotionResults.length);
+      
+      if (oldEmotionResults.length > 0) {
+        oldEmotionResults.forEach((result: any) => {
+          mappedResults.push({
+            fileType: result.source || 'unknown',
+            beginTime: result.timestamp,
+            endTime: result.timestamp + 1000, // 1秒間隔で仮定
+            emotions: [{ 
+              name: result.name, 
+              score: Math.min(Math.max(result.score || 0, 0), 1) // 0-1の範囲に制限
+            }],
+            sessionId: sessionId || 'unknown'
+          });
         });
-      });
+      }
     }
 
     console.log('Mapped emotion results:', mappedResults.slice(0, 3));
@@ -681,55 +527,39 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
     console.log('Getting physiological data from Neo4j for participant:', participantId, sessionId ? `session: ${sessionId}` : '');
     
     // 新しい構造（Participant -> Session -> PhysiologicalData）を試す
-    let physiologicalQuery: string;
-    let queryParams: any = { participantId };
+    const builder = new Neo4jQueryBuilder();
+    const { query, params } = builder.buildPhysiologicalDataQuery(participantId, sessionId);
     
-    if (sessionId) {
-      physiologicalQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
-        MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-        RETURN pd.time_sec as timeSec, pd.timestamp as timestamp, pd.ch1 as ch1, pd.ch2 as ch2, pd.ch3 as ch3, pd.ch4 as ch4, pd.ch5 as ch5, pd.ch6 as ch6, pd.ch7 as ch7, pd.ch8 as ch8
-        ORDER BY pd.time_sec
-      `;
-      queryParams.sessionId = sessionId;
-    } else {
-      physiologicalQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-        RETURN pd.time_sec as timeSec, pd.timestamp as timestamp, pd.ch1 as ch1, pd.ch2 as ch2, pd.ch3 as ch3, pd.ch4 as ch4, pd.ch5 as ch5, pd.ch6 as ch6, pd.ch7 as ch7, pd.ch8 as ch8
-        ORDER BY pd.time_sec
-      `;
-    }
-    
-    console.log('Executing physiological query (new structure):', physiologicalQuery);
-    let physiologicalResults = await client.query(physiologicalQuery, queryParams);
+    console.log('Executing physiological query (new structure):', query);
+    let physiologicalResults = await client.query(query, params);
     console.log('Physiological query results count (new structure):', physiologicalResults.length);
     
     // 新しい構造でデータが見つからない場合、古い構造を試す
     if (physiologicalResults.length === 0) {
-      physiologicalQuery = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-        MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
-        RETURN pd.channel as channel, pd.value as value, pd.timestamp as timestamp, pd.quality as quality
-        ORDER BY pd.timestamp
-      `;
-      console.log('Executing physiological query (old structure):', physiologicalQuery);
-      physiologicalResults = await client.query(physiologicalQuery, { participantId });
+      const oldBuilder = new Neo4jQueryBuilder();
+      const { query: oldQuery, params: oldParams } = oldBuilder.buildOldPhysiologicalDataQuery(participantId);
+      console.log('Executing physiological query (old structure):', oldQuery);
+      physiologicalResults = await client.query(oldQuery, oldParams);
       console.log('Physiological query results count (old structure):', physiologicalResults.length);
     }
     
+    // クエリビルダーを使用しているため、プロパティは既に展開されている
     // 新しい構造の場合（ch1-ch8プロパティ）
     if (physiologicalResults.length > 0 && physiologicalResults[0].ch1 !== undefined) {
-      // Neo4jクライアントが返すデータ構造を確認
-      const firstResult = physiologicalResults[0];
-      const timeSec = firstResult.timeSec?.low || firstResult.timeSec || 0;
-      const timestamp = firstResult.timestamp?.low || firstResult.timestamp || 0;
+      // Neo4j Integer型に対応するヘルパー関数
+      const toNumber = (value: any): number => {
+        if (value === null || value === undefined) return 0;
+        if (typeof value === 'object' && value !== null && 'low' in value) {
+          return value.low;
+        }
+        return Number(value) || 0;
+      };
       
       // 時系列データポイントに変換
       const timePoints: Record<number, any> = {};
       physiologicalResults.forEach((result: any) => {
-        const timeSecValue = result.timeSec?.low || result.timeSec || 0;
-        const timestampValue = result.timestamp?.low || result.timestamp || 0;
+        const timeSecValue = toNumber(result.timeSec);
+        const timestampValue = toNumber(result.timestamp);
         const timeKey = Math.floor(timeSecValue); // 秒単位でグループ化
         
         if (!timePoints[timeKey]) {
@@ -740,15 +570,15 @@ async function getPhysiologicalData(client: any, participantId: string, sessionI
           };
         }
         
-        // チャンネルデータを追加
-        if (result.ch1 !== undefined) timePoints[timeKey].channels.Ch1 = result.ch1?.low || result.ch1 || 0;
-        if (result.ch2 !== undefined) timePoints[timeKey].channels.Ch2 = result.ch2?.low || result.ch2 || 0;
-        if (result.ch3 !== undefined) timePoints[timeKey].channels.Ch3 = result.ch3?.low || result.ch3 || 0;
-        if (result.ch4 !== undefined) timePoints[timeKey].channels.Ch4 = result.ch4?.low || result.ch4 || 0;
-        if (result.ch5 !== undefined) timePoints[timeKey].channels.Ch5 = result.ch5?.low || result.ch5 || 0;
-        if (result.ch6 !== undefined) timePoints[timeKey].channels.Ch6 = result.ch6?.low || result.ch6 || 0;
-        if (result.ch7 !== undefined) timePoints[timeKey].channels.Ch7 = result.ch7?.low || result.ch7 || 0;
-        if (result.ch8 !== undefined) timePoints[timeKey].channels.Ch8 = result.ch8?.low || result.ch8 || 0;
+        // チャンネルデータを追加（Neo4j Integer型に対応）
+        if (result.ch1 !== undefined) timePoints[timeKey].channels.Ch1 = toNumber(result.ch1);
+        if (result.ch2 !== undefined) timePoints[timeKey].channels.Ch2 = toNumber(result.ch2);
+        if (result.ch3 !== undefined) timePoints[timeKey].channels.Ch3 = toNumber(result.ch3);
+        if (result.ch4 !== undefined) timePoints[timeKey].channels.Ch4 = toNumber(result.ch4);
+        if (result.ch5 !== undefined) timePoints[timeKey].channels.Ch5 = toNumber(result.ch5);
+        if (result.ch6 !== undefined) timePoints[timeKey].channels.Ch6 = toNumber(result.ch6);
+        if (result.ch7 !== undefined) timePoints[timeKey].channels.Ch7 = toNumber(result.ch7);
+        if (result.ch8 !== undefined) timePoints[timeKey].channels.Ch8 = toNumber(result.ch8);
       });
       
       const result = Object.values(timePoints).sort((a: any, b: any) => a.timeSec - b.timeSec);
