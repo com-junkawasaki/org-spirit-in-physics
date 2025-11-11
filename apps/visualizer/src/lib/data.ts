@@ -154,7 +154,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     // 平均Spirit確率を計算
     const averageSpiritProbability = responsesWithSpirit.length > 0
       ? responsesWithSpirit.reduce((sum, r) => sum + (r.spirit_probability || 0), 0) / responsesWithSpirit.length
-      : 0.5
+      : 0
 
     // コンポーネントの平均を計算
     const componentAverages = responsesWithComponents.length > 0 ? {
@@ -163,10 +163,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       skin_potential: responsesWithComponents.reduce((sum, r) => sum + (r.skin_potential_component || 0), 0) / responsesWithComponents.length,
       emotion: responsesWithComponents.reduce((sum, r) => sum + (r.emotion_component || 0), 0) / responsesWithComponents.length,
     } : {
-      word2vec: 0.1,
-      reaction_time: 0.2,
-      skin_potential: 0.1,
-      emotion: 0.3,
+      word2vec: 0,
+      reaction_time: 0,
+      skin_potential: 0,
+      emotion: 0,
     }
 
     return {
@@ -368,13 +368,168 @@ export async function getResponseTimeseries(responseId: string): Promise<{
   skinPotential: SkinPotentialPoint[]
   emotions: EmotionPoint[]
 }> {
-  // Placeholder implementation for TerminusDB
-  // TODO: Implement proper timeseries data retrieval from TerminusDB
-  console.log('Getting timeseries data for response:', responseId)
+  try {
+    const client = createNeo4jClient()
 
-  return {
-    skinPotential: [], // Placeholder
-    emotions: [] // Placeholder
+    // レスポンスに関連するセッションと参加者を取得
+    const responseQuery = `
+      MATCH (r:Response {id: $responseId})
+      OPTIONAL MATCH (s:Session)-[:HAS_RESPONSE]->(r)
+      OPTIONAL MATCH (p:Participant)-[:HAS_SESSION]->(s)
+      RETURN r.event_ts as responseTimestamp, s.id as sessionId, p.id as participantId
+      UNION
+      MATCH (r:Response {id: $responseId})
+      OPTIONAL MATCH (s:ExperimentSession)-[:HAS_RESPONSE]->(r)
+      OPTIONAL MATCH (e:Experiment)-[:HAS_SESSION]->(s)
+      OPTIONAL MATCH (p:Participant)-[:HAS_EXPERIMENT]->(e)
+      RETURN r.event_ts as responseTimestamp, s.id as sessionId, p.id as participantId
+    `
+    const responseResult = await client.query(responseQuery, { responseId })
+
+    if (responseResult.length === 0) {
+      console.warn('Response not found:', responseId)
+      return {
+        skinPotential: [],
+        emotions: []
+      }
+    }
+
+    const sessionId = responseResult[0].sessionId
+    const participantId = responseResult[0].participantId
+    const responseTimestamp = responseResult[0].responseTimestamp || 0
+
+    if (!sessionId || !participantId) {
+      console.warn('Session or participant not found for response:', responseId)
+      return {
+        skinPotential: [],
+        emotions: []
+      }
+    }
+
+    // セッションデータを取得してレスポンスの時間範囲を特定
+    const sessionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
+      RETURN s.start_ts as startTs, s.end_ts as endTs
+      UNION
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession {id: $sessionId})
+      RETURN s.start_ts as startTs, s.end_ts as endTs
+    `
+    const sessionResult = await client.query(sessionQuery, { participantId, sessionId })
+    const sessionStartTs = sessionResult[0]?.startTs || responseTimestamp
+
+    // 感情データを取得（レスポンスの前後30秒）
+    const emotionQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
+      MATCH (s)-[:HAS_EMOTION_ANALYSIS]->(ea:EmotionAnalysis)
+      WHERE ea.begin_time >= ($responseTimestamp - 30000) AND ea.begin_time <= ($responseTimestamp + 30000)
+      RETURN ea.emotion_scores as emotionScores, ea.begin_time as beginTime, 
+             ea.end_time as endTime, ea.file_type as fileType, ea.confidence as confidence
+      ORDER BY ea.begin_time
+      UNION
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession {id: $sessionId})
+      MATCH (s)-[:HAS_EMOTION_ANALYSIS]->(ea:EmotionAnalysis)
+      WHERE ea.begin_time >= ($responseTimestamp - 30000) AND ea.begin_time <= ($responseTimestamp + 30000)
+      RETURN ea.emotion_scores as emotionScores, ea.begin_time as beginTime,
+             ea.end_time as endTime, ea.file_type as fileType, ea.confidence as confidence
+      ORDER BY ea.begin_time
+    `
+    const emotionResults = await client.query(emotionQuery, { 
+      participantId, 
+      sessionId, 
+      responseTimestamp: typeof responseTimestamp === 'object' && 'low' in responseTimestamp 
+        ? responseTimestamp.low 
+        : Number(responseTimestamp) 
+    })
+
+    // 生理データを取得（レスポンスの前後30秒）
+    const physiologicalQuery = `
+      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session {id: $sessionId})
+      MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
+      WHERE pd.timestamp >= ($responseTimestamp - 30000) AND pd.timestamp <= ($responseTimestamp + 30000)
+      RETURN pd.timestamp as timestamp, pd.ch1 as ch1, pd.ch2 as ch2, pd.ch3 as ch3, pd.ch4 as ch4,
+             pd.ch5 as ch5, pd.ch6 as ch6, pd.ch7 as ch7, pd.ch8 as ch8
+      ORDER BY pd.timestamp
+      UNION
+      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession {id: $sessionId})
+      MATCH (s)-[:HAS_PHYSIOLOGICAL_DATA]->(pd:PhysiologicalData)
+      WHERE pd.timestamp >= ($responseTimestamp - 30000) AND pd.timestamp <= ($responseTimestamp + 30000)
+      RETURN pd.timestamp as timestamp, pd.ch1 as ch1, pd.ch2 as ch2, pd.ch3 as ch3, pd.ch4 as ch4,
+             pd.ch5 as ch5, pd.ch6 as ch6, pd.ch7 as ch7, pd.ch8 as ch8
+      ORDER BY pd.timestamp
+    `
+    const physiologicalResults = await client.query(physiologicalQuery, {
+      participantId,
+      sessionId,
+      responseTimestamp: typeof responseTimestamp === 'object' && 'low' in responseTimestamp
+        ? responseTimestamp.low
+        : Number(responseTimestamp)
+    })
+
+    // データを変換
+    const toNumber = (value: any): number => {
+      if (value === null || value === undefined) return 0
+      if (typeof value === 'object' && value !== null && 'low' in value) {
+        return value.low
+      }
+      return Number(value) || 0
+    }
+
+    // 生理データをSkinPotentialPoint形式に変換（Ch1を代表値として使用）
+    const skinPotential: SkinPotentialPoint[] = physiologicalResults.map((result: any) => {
+      const timestamp = toNumber(result.timestamp)
+      const value = toNumber(result.ch1) || 0 // Ch1を代表値として使用
+      return {
+        timestamp_offset_ms: timestamp - (typeof sessionStartTs === 'object' && 'low' in sessionStartTs 
+          ? sessionStartTs.low 
+          : Number(sessionStartTs)),
+        value
+      }
+    })
+
+    // 感情データをEmotionPoint形式に変換
+    const emotions: EmotionPoint[] = []
+    emotionResults.forEach((result: any) => {
+      const beginTime = toNumber(result.beginTime)
+      const endTime = toNumber(result.endTime)
+      const confidence = toNumber(result.confidence) || 1.0
+      
+      let emotionScores: Record<string, number> = {}
+      if (result.emotionScores) {
+        if (typeof result.emotionScores === 'string') {
+          try {
+            emotionScores = JSON.parse(result.emotionScores)
+          } catch (e) {
+            console.warn('Failed to parse emotion scores:', e)
+          }
+        } else {
+          emotionScores = result.emotionScores
+        }
+      }
+
+      Object.entries(emotionScores).forEach(([emotionType, score]) => {
+        if (typeof score === 'number' && score > 0) {
+          emotions.push({
+            timestamp_offset_ms: beginTime - (typeof sessionStartTs === 'object' && 'low' in sessionStartTs
+              ? sessionStartTs.low
+              : Number(sessionStartTs)),
+            emotion_type: emotionType,
+            intensity: score,
+            confidence
+          })
+        }
+      })
+    })
+
+    return {
+      skinPotential,
+      emotions
+    }
+  } catch (error) {
+    console.error('Failed to get response timeseries:', error)
+    return {
+      skinPotential: [],
+      emotions: []
+    }
   }
 }
 

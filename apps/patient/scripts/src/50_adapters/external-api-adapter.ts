@@ -5,28 +5,57 @@ import { HumeEmotionResponse } from 'scripts/src/00_schema';
 import { HumeClient } from 'hume';
 
 class HumeApiAdapter implements HumeApiPort {
-  private hume: HumeClient;
+  private hume: HumeClient | null = null;
 
   constructor() {
-    this.hume = new HumeClient({
-      apiKey: process.env.HUME_API_KEY || '',
-      secretKey: process.env.HUME_API || ''
-    });
+    const apiKey = process.env.HUME_API_KEY;
+    const secretKey = process.env.HUME_API_SECRET || process.env.HUME_API;
+    
+    if (apiKey && secretKey) {
+      try {
+        this.hume = new HumeClient({
+          apiKey,
+          secretKey
+        });
+      } catch (error) {
+        console.error('Failed to initialize Hume client:', error);
+      }
+    } else {
+      console.warn('Hume API credentials not configured. Set HUME_API_KEY and HUME_API_SECRET environment variables.');
+    }
   }
 
   async analyzeEmotions(videoBuffer: Buffer): Promise<HumeEmotionResponse> {
-    // 実際の実装ではHume APIを呼び出す
-    // ここでは簡易的なモック
-    return {
-      predictions: [{
-        emotions: [
-          { name: 'joy', score: 0.8 },
-          { name: 'surprise', score: 0.6 },
-          { name: 'fear', score: 0.2 }
-        ],
-        confidence: 0.85
-      }]
-    };
+    if (!this.hume) {
+      throw new Error('Hume API client not initialized. Please configure HUME_API_KEY and HUME_API_SECRET environment variables.');
+    }
+
+    try {
+      // 実際のHume API呼び出し
+      // 注意: 実際のAPIエンドポイントとメソッドはHume SDKのドキュメントに従って実装してください
+      const response = await this.hume.expressionMeasurement.analyzeVideo({
+        data: videoBuffer
+      });
+
+      // Hume APIのレスポンスをHumeEmotionResponse形式に変換
+      // 注意: 実際のレスポンス構造に合わせて調整してください
+      if (response && response.predictions && Array.isArray(response.predictions)) {
+        return {
+          predictions: response.predictions.map((pred: any) => ({
+            emotions: pred.emotions || [],
+            confidence: pred.confidence || 0
+          }))
+        };
+      }
+
+      // レスポンスが期待される形式でない場合
+      return {
+        predictions: []
+      };
+    } catch (error) {
+      console.error('Error calling Hume API:', error);
+      throw new Error(`Failed to analyze emotions with Hume API: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 

@@ -10,6 +10,7 @@ import { calculateTimeSeriesDistanceMatrix } from '@/lib/soft-dtw-calculator';
 import { calculateEmbedding } from '@/lib/embedding-calculator';
 import { processDistanceMatrix } from '@/lib/distance-matrix-processor';
 import { fuseKernels } from '@/lib/kernel-fusion';
+import { getSessionData, getEmotionData, getPhysiologicalData } from '@/lib/timeline-integration-functions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,22 +38,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Merkle DAG: api.analysis.emotion_distance.data_extraction
-    // データの抽出（ファイルベース）
-    const dataRootPath = '/app/public/dataset';
-    const basePath = `${dataRootPath}/participants/${participantId}`;
+    // データの抽出（Neo4jから）
+    const client = createNeo4jClient();
     
     // セッションデータの読み込み
-    const sessionData = await loadSessionDataFromFile(basePath);
-    const emotionData = await loadEmotionDataFromFile(basePath);
-    const physiologicalData = await loadPhysiologicalDataFromFile(basePath);
+    const sessionDataRaw = await getSessionData(client, participantId);
+    const emotionDataRaw = await getEmotionData(client, participantId);
+    const physiologicalDataRaw = await getPhysiologicalData(client, participantId);
 
-    if (!sessionData || sessionData.length === 0) {
+    if (!sessionDataRaw || !sessionDataRaw.events || sessionDataRaw.events.length === 0) {
       return NextResponse.json({
         error: 'No session data found',
         participantId,
         experimentId
       }, { status: 404 });
     }
+
+    // データ形式を変換
+    const sessionData = sessionDataRaw.events.map((event: any) => ({
+      event_type: event.type || event.event_type,
+      timestamp: event.timestamp || 0,
+      payload: event.payload || {}
+    }));
+
+    const emotionData = emotionDataRaw.map(emotion => ({
+      beginTime: emotion.beginTime || 0,
+      endTime: emotion.endTime || 0,
+      emotions: emotion.emotions || [],
+      confidence: emotion.confidence,
+      file_type: emotion.fileType
+    }));
+
+    const physiologicalData = physiologicalDataRaw.flatMap(physio => {
+      const channels = physio.channels || {};
+      return Object.entries(channels).map(([channel, value]) => ({
+        channel,
+        value: typeof value === 'number' ? value : 0,
+        timestamp: (physio.timeSec || 0) * 1000, // ミリ秒に変換
+        quality: 1.0
+      }));
+    });
 
     // Merkle DAG: api.analysis.emotion_distance.distance_calculation
     // 通常モード or 融合モードを分岐
