@@ -36,17 +36,9 @@ function getGraphQLApiUrl(): string {
   if (typeof window === 'undefined') {
     const serverUrl = process.env.GRAPHQL_API_URL;
     if (serverUrl) {
-      // Check if we're running in Docker by checking for Docker-specific environment variables
-      // or by attempting to resolve the service name
-      const isDocker = process.env.DOCKER_ENV === 'true' || 
-                      process.env.IN_DOCKER === 'true' ||
-                      process.env.HOSTNAME?.includes('spirit-');
-      
-      if (serverUrl.includes('graphql-service') && !isDocker) {
-        // Running locally but env var has Docker service name - replace with localhost
-        return serverUrl.replace('graphql-service', 'localhost');
-      }
-      // In Docker or URL doesn't contain service name - use as-is
+      // If GRAPHQL_API_URL is explicitly set (e.g., in Docker), use it as-is
+      // Docker Compose sets this to http://graphql-service:8081/graphql
+      // which works within the Docker network
       return serverUrl;
     }
     // Fallback for server-side local development
@@ -57,7 +49,7 @@ function getGraphQLApiUrl(): string {
   const clientUrl = process.env.NEXT_PUBLIC_GRAPHQL_API_URL;
   if (clientUrl) {
     // Client-side should always use localhost or public URL (never Docker service names)
-    // Replace Docker service names with localhost for local development
+    // Replace Docker service names with localhost for browser access
     return clientUrl.replace('graphql-service', 'localhost');
   }
   

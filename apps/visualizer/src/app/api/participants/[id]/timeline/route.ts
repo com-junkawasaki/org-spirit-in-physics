@@ -1,10 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from 'next/cache';
 import { graphqlClient, GetTimelineDocument, GetSessionsDocument } from '@/lib/graphql/client';
 import type { GetTimelineQueryResult, GetSessionsQueryResult } from '@/generated/graphql';
 
 // Merkle DAG: participants.timeline.endpoint
 // 時系列統合可視化データ取得APIエンドポイント
 // GraphQL経由でデータを取得
+
+// Cache duration: 5 minutes (300 seconds)
+const CACHE_DURATION = 300;
+
+// Helper function to fetch timeline data (will be cached)
+async function fetchTimelineData(
+  participantId: string,
+  actualSessionId: string | undefined,
+  startTimeParam: string | null,
+  endTimeParam: string | null,
+  interval: string | null
+): Promise<GetTimelineQueryResult> {
+  const variables: any = {
+    participantId,
+    ...(actualSessionId ? { sessionId: actualSessionId } : {}),
+    ...(startTimeParam ? { startTime: startTimeParam } : {}),
+    ...(endTimeParam ? { endTime: endTimeParam } : {}),
+    ...(interval ? { interval } : {}),
+  };
+  
+  return await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, variables);
+}
 
 export async function GET(
   request: NextRequest,
@@ -18,6 +41,9 @@ export async function GET(
     const startTimeParam = searchParams.get('startTime');
     const endTimeParam = searchParams.get('endTime');
     const interval = searchParams.get('interval'); // e.g., "1 hour", "1 day"
+    
+    // Check if cache should be bypassed (for debugging)
+    const bypassCache = searchParams.get('_t') !== null; // _t parameter bypasses cache
 
     console.log(`[TIMELINE API] ===== Request started =====`);
     console.log(`[TIMELINE API] Participant: ${participantId}${sessionId ? `, Session: ${sessionId}` : ''}`);
@@ -59,19 +85,28 @@ export async function GET(
       actualSessionId = undefined;
     }
 
-    // Query GraphQL service for timeline data
-    const variables: any = {
-      participantId,
-      ...(actualSessionId ? { sessionId: actualSessionId } : {}),
-      ...(startTimeParam ? { startTime: startTimeParam } : {}),
-      ...(endTimeParam ? { endTime: endTimeParam } : {}),
-      ...(interval ? { interval } : {}),
-    };
-
-    console.log(`[TIMELINE API] Querying GraphQL service...`);
+    // Query GraphQL service for timeline data (with caching)
+    console.log(`[TIMELINE API] Querying GraphQL service... (cache: ${bypassCache ? 'bypassed' : 'enabled'})`);
     const queryStartTime = Date.now();
     
-          const data = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, variables);
+    let data: GetTimelineQueryResult;
+    if (bypassCache) {
+      // Bypass cache for debugging
+      data = await fetchTimelineData(participantId, actualSessionId, startTimeParam, endTimeParam, interval);
+    } else {
+      // Use cached version
+      const cacheKey = `timeline-${participantId}-${actualSessionId || 'all'}-${startTimeParam || 'none'}-${endTimeParam || 'none'}-${interval || 'none'}`;
+      const cachedFetch = unstable_cache(
+        async () => fetchTimelineData(participantId, actualSessionId, startTimeParam, endTimeParam, interval),
+        [cacheKey],
+        {
+          revalidate: CACHE_DURATION,
+          tags: [`timeline-${participantId}`],
+        }
+      );
+      data = await cachedFetch();
+    }
+    
     const queryDuration = Date.now() - queryStartTime;
     
     console.log(`[TIMELINE API] ✓ GraphQL query completed in ${queryDuration}ms`);
@@ -136,12 +171,23 @@ export async function GET(
           processingTimeMs: totalTime,
           queryTimeMs: queryDuration,
           dataSource: 'graphql',
+          cached: !bypassCache,
+          cacheDuration: CACHE_DURATION,
           errors: [],
         },
       },
     };
 
-    return NextResponse.json(responseData);
+    const response = NextResponse.json(responseData);
+    
+    // Add cache headers for client-side caching
+    if (!bypassCache) {
+      response.headers.set('Cache-Control', `public, s-maxage=${CACHE_DURATION}, stale-while-revalidate=${CACHE_DURATION * 2}`);
+    } else {
+      response.headers.set('Cache-Control', 'no-store');
+    }
+    
+    return response;
   } catch (error: any) {
     console.error('[TIMELINE API] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

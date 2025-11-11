@@ -57,20 +57,23 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
       console.log('TimelineVisualization: Starting data fetch for participant:', participantId, sessionId ? `session: ${sessionId}` : '')
       
       // 実データのみを使用（APIから取得）
-      const apiUrl = sessionId 
-        ? `/api/participants/${participantId}/timeline?sessionId=${encodeURIComponent(sessionId)}&_t=${Date.now()}`
-        : `/api/participants/${participantId}/timeline?_t=${Date.now()}`
-      console.log('TimelineVisualization: API URL:', apiUrl)
+      // Note: _t parameter bypasses cache - only use for forced refresh
+      const forceRefresh = false; // Set to true to bypass cache
+      const baseUrl = sessionId 
+        ? `/api/participants/${participantId}/timeline?sessionId=${encodeURIComponent(sessionId)}`
+        : `/api/participants/${participantId}/timeline`
+      const apiUrl = forceRefresh ? `${baseUrl}&_t=${Date.now()}` : baseUrl
+      console.log('TimelineVisualization: API URL:', apiUrl, forceRefresh ? '(cache bypassed)' : '(cache enabled)')
       
       const fetchStartTime = Date.now()
       const response = await fetch(apiUrl, {
-        cache: 'no-store',
+        cache: forceRefresh ? 'no-store' : 'default',
         signal: abortController.signal,
-        headers: {
+        headers: forceRefresh ? {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
-        }
+        } : {}
       })
       const fetchDuration = Date.now() - fetchStartTime
       console.log(`TimelineVisualization: API response received in ${fetchDuration}ms, status:`, response.status)

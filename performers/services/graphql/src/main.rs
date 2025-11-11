@@ -17,6 +17,7 @@ use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
 };
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse as AxumGraphQLResponse};
+use tower_http::cors::CorsLayer;
 use tracing::info;
 
 use database::PostgresPool;
@@ -42,13 +43,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create GraphQL schema
     let schema = create_schema(pool.pool().clone()).await?;
 
-    // Build router
+    // GraphQL handler
+    async fn graphql_handler(
+        State(schema): State<async_graphql::Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
+        req: GraphQLRequest,
+    ) -> impl IntoResponse {
+        let graphql_res: AxumGraphQLResponse = schema.execute(req.into_inner()).await.into();
+        graphql_res.into_response()
+    }
+
+    // Configure CORS to allow all origins (for development)
+    // In production, you should restrict this to specific origins
+    // CorsLayer::permissive() allows all origins, methods, and headers
+    let cors_layer = CorsLayer::permissive();
+
     let app = Router::new()
         .route("/graphql", post(graphql_handler))
         .route("/graphql/playground", get(graphql_playground))
         .route("/graphql/schema", get(schema_handler))
         .route("/health", get(health_check))
-        .with_state(schema);
+        .with_state(schema)
+        .layer(cors_layer);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 8081));
     info!("GraphQL service listening on 0.0.0.0:8081");
@@ -61,12 +76,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn graphql_handler(
-    State(schema): State<async_graphql::Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
-    req: GraphQLRequest,
-) -> AxumGraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
-}
 
 async fn graphql_playground() -> impl IntoResponse {
     Response::builder()

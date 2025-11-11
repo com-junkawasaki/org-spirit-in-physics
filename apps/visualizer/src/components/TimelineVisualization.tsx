@@ -116,36 +116,139 @@ export default function TimelineVisualization({
   // 距離タブの並び順
   const [distanceSortDir, setDistanceSortDir] = useState<'asc' | 'desc'>('desc')
 
-  // 距離計算用のデータ集約（既存ロジックを再利用）
+  // TimescaleDBマテリアライズドビューから集約データを取得
+  const {
+    wordAggregates,
+    emotionVectors,
+    wordStatistics,
+    loading: aggregatesLoading,
+    error: aggregatesError
+  } = useWordAggregates(participantId, sessionId)
+
+  // 距離計算用のデータ集約（マテリアライズドビューを使用）
   // 注意: すべてのフックは早期リターンの前に呼び出す必要がある
   const distanceData = useMemo(() => {
-    if (data.length === 0) return null
+    // フォールバック: マテリアライズドビューのデータがない場合は従来のロジックを使用
+    if (aggregatesLoading || wordAggregates.length === 0 || emotionVectors.length === 0) {
+      if (data.length === 0) return null
 
-    const jungWords = JUNG_STIMULUS_WORDS
-    const sessionData = data
+      const jungWords = JUNG_STIMULUS_WORDS
+      const sessionData = data
 
-    // 集約（ノード指標）
-    const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number; sumPhysAbs: number }> = {}
-    jungWords.forEach(({ japanese }) => { 
-      accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0, sumPhysAbs: 0 } 
-    })
-    
-    const physBySeries: Record<string, number[]> = {}
-    for (const d of sessionData) {
-      if (!accum[d.word]) continue
-      accum[d.word].count += 1
-      accum[d.word].sumReactionValue += d.reactionValue
-      accum[d.word].sumReactionTime += d.reactionTime
-      const phys = getPhysStat(d.physiological, 'average')
-      if (Number.isFinite(phys)) {
-        if (!('sumPhysAbs' in accum[d.word])) (accum[d.word] as any).sumPhysAbs = 0
-        ;(accum[d.word] as any).sumPhysAbs += Math.abs(phys as number)
-        if (!physBySeries[d.word]) physBySeries[d.word] = []
-        physBySeries[d.word].push(phys as number)
+      // 集約（ノード指標）
+      const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number; sumPhysAbs: number }> = {}
+      jungWords.forEach(({ japanese }) => { 
+        accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0, sumPhysAbs: 0 } 
+      })
+      
+      const physBySeries: Record<string, number[]> = {}
+      for (const d of sessionData) {
+        if (!accum[d.word]) continue
+        accum[d.word].count += 1
+        accum[d.word].sumReactionValue += d.reactionValue
+        accum[d.word].sumReactionTime += d.reactionTime
+        const phys = getPhysStat(d.physiological, 'average')
+        if (Number.isFinite(phys)) {
+          if (!('sumPhysAbs' in accum[d.word])) (accum[d.word] as any).sumPhysAbs = 0
+          ;(accum[d.word] as any).sumPhysAbs += Math.abs(phys as number)
+          if (!physBySeries[d.word]) physBySeries[d.word] = []
+          physBySeries[d.word].push(phys as number)
+        }
+      }
+
+      // 感情ベクトルの集約と正規化
+      const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
+      const wordEmotionSum: Record<string, number[]> = {}
+      
+      jungWords.forEach(({ japanese }) => {
+        wordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
+      })
+
+      for (const dpt of sessionData) {
+        const w = dpt.word
+        if (!wordEmotionSum[w]) continue
+        if (Array.isArray(dpt.emotions)) {
+          for (const e of dpt.emotions) {
+            const key = (e.name || 'unknown').toLowerCase()
+            const idx = emotionIndex[key]
+            const ft = String((e as any).fileType || '')
+            const ftLow = ft.toLowerCase()
+            const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+            if (idx !== undefined && (!mod || selectedModalities.has(mod))) {
+              wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+            }
+          }
+        }
+      }
+
+      const normalize = (vec: number[]): number[] => {
+        const norm = Math.hypot(...vec)
+        if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+        return vec.map((x) => x / norm)
+      }
+
+      const normalizedEmotionVec: Record<string, number[]> = {}
+      jungWords.forEach(({ japanese }) => {
+        normalizedEmotionVec[japanese] = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
+      })
+
+      // 各指標の平均値を計算
+      const avgReactionValue: Record<string, number> = {}
+      const avgReactionTime: Record<string, number> = {}
+      const avgPhysiological: Record<string, number> = {}
+      
+      for (const { japanese } of jungWords) {
+        const g = accum[japanese]
+        avgReactionValue[japanese] = g.count > 0 ? g.sumReactionValue / g.count : 0
+        avgReactionTime[japanese] = g.count > 0 ? g.sumReactionTime / g.count : 0
+        avgPhysiological[japanese] = g.count > 0 ? ((g as any).sumPhysAbs || 0) / g.count : 0
+      }
+
+      // 正規化用の範囲を計算
+      const rvValues = Object.values(avgReactionValue)
+      const rtValues = Object.values(avgReactionTime)
+      const phValues = Object.values(avgPhysiological)
+      
+      const rvMin = Math.min(...rvValues)
+      const rvMax = Math.max(...rvValues)
+      const rtMin = Math.min(...rtValues)
+      const rtMax = Math.max(...rtValues)
+      const phMin = Math.min(...phValues)
+      const phMax = Math.max(...phValues)
+
+      const norm01 = (x: number, min: number, max: number) => {
+        if (max - min === 0) return 0
+        return (x - min) / (max - min)
+      }
+
+      return {
+        normalizedEmotionVec,
+        avgReactionValue,
+        avgReactionTime,
+        avgPhysiological,
+        norm01,
+        rvMin, rvMax,
+        rtMin, rtMax,
+        phMin, phMax
       }
     }
 
-    // 感情ベクトルの集約と正規化
+    // マテリアライズドビューからのデータを使用
+    const jungWords = JUNG_STIMULUS_WORDS
+
+    // 単語別集約データをマップに変換
+    const aggregatesMap = new Map<string, typeof wordAggregates[0]>()
+    wordAggregates.forEach(agg => {
+      if (agg.word) aggregatesMap.set(agg.word, agg)
+    })
+
+    // 感情ベクトルデータをマップに変換
+    const emotionVectorsMap = new Map<string, typeof emotionVectors[0]>()
+    emotionVectors.forEach(vec => {
+      if (vec.word) emotionVectorsMap.set(vec.word, vec)
+    })
+
+    // 感情ベクトルの集約と正規化（マテリアライズドビューから）
     const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
     const wordEmotionSum: Record<string, number[]> = {}
     
@@ -153,22 +256,32 @@ export default function TimelineVisualization({
       wordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
     })
 
-    for (const dpt of sessionData) {
-      const w = dpt.word
-      if (!wordEmotionSum[w]) continue
-      if (Array.isArray(dpt.emotions)) {
-        for (const e of dpt.emotions) {
-          const key = (e.name || 'unknown').toLowerCase()
-          const idx = emotionIndex[key]
-          const ft = String((e as any).fileType || '')
-          const ftLow = ft.toLowerCase()
-          const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
-          if (idx !== undefined && (!mod || selectedModalities.has(mod))) {
-            wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
-          }
+    emotionVectors.forEach(vec => {
+      const w = vec.word
+      if (!wordEmotionSum[w]) return
+      
+      // モダリティフィルタリング（マテリアライズドビューでは全モダリティが集約されているため、ここでは全感情を使用）
+      // useWordAggregatesフックから返されるEmotionVectorData型を使用
+      const emotionValues = [
+        vec.joySum ?? 0,
+        vec.sadnessSum ?? 0,
+        vec.angerSum ?? 0,
+        vec.fearSum ?? 0,
+        vec.surpriseSum ?? 0,
+        vec.disinfectSum ?? 0, // disgustSum (mapped from GraphQL disgustSum field)
+        vec.calmSum ?? 0,
+        vec.focusSum ?? 0,
+        vec.excitementSum ?? 0,
+        vec.confusionSum ?? 0,
+      ]
+      
+      // 感情インデックスにマッピング
+      emotionValues.forEach((val, idx) => {
+        if (idx < EMOTION_KEYS.length) {
+          wordEmotionSum[w][idx] = val
         }
-      }
-    }
+      })
+    })
 
     const normalize = (vec: number[]): number[] => {
       const norm = Math.hypot(...vec)
@@ -181,16 +294,16 @@ export default function TimelineVisualization({
       normalizedEmotionVec[japanese] = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
     })
 
-    // 各指標の平均値を計算
+    // 各指標の平均値を計算（マテリアライズドビューから）
     const avgReactionValue: Record<string, number> = {}
     const avgReactionTime: Record<string, number> = {}
     const avgPhysiological: Record<string, number> = {}
     
     for (const { japanese } of jungWords) {
-      const g = accum[japanese]
-      avgReactionValue[japanese] = g.count > 0 ? g.sumReactionValue / g.count : 0
-      avgReactionTime[japanese] = g.count > 0 ? g.sumReactionTime / g.count : 0
-      avgPhysiological[japanese] = g.count > 0 ? ((g as any).sumPhysAbs || 0) / g.count : 0
+      const agg = aggregatesMap.get(japanese)
+      avgReactionValue[japanese] = agg?.avgReactionValue ?? 0
+      avgReactionTime[japanese] = agg?.avgReactionTime ?? 0
+      avgPhysiological[japanese] = agg?.avgPhysiological ?? 0
     }
 
     // 正規化用の範囲を計算
@@ -220,7 +333,7 @@ export default function TimelineVisualization({
       rtMin, rtMax,
       phMin, phMax
     }
-  }, [data, EMOTION_KEYS, selectedModalities, getPhysStat])
+  }, [wordAggregates, emotionVectors, aggregatesLoading, data, EMOTION_KEYS, selectedModalities, getPhysStat])
 
   // コサイン類似度の計算
   const cosineSimilarity = (vec1: number[], vec2: number[]): number => {
