@@ -360,6 +360,14 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
       hasEmotionData: !!r.emotionData,
       emotionDataKeys: r.emotionData ? Object.keys(r.emotionData) : []
     })));
+    
+    // 4種類の感情データタイプの数を確認
+    const emotionTypeCounts = allEmotionResults.reduce((acc: any, r: any) => {
+      const source = r.source || 'unknown';
+      acc[source] = (acc[source] || 0) + 1;
+      return acc;
+    }, {});
+    console.log('Emotion data type counts:', emotionTypeCounts);
     let emotionResults = allEmotionResults;
     
     // 新しい構造でデータが見つからない場合、古い構造を試す
@@ -412,24 +420,43 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
             score: Math.min(Math.max(Number(score) || 0, 0), 1)
           }));
           
+          // begin_timeとtimeの両方を確認（Neo4jのInteger型に対応）
+          const toNumber = (value: any): number => {
+            if (value === null || value === undefined) return 0;
+            if (typeof value === 'object' && value !== null && 'low' in value) {
+              return value.low;
+            }
+            return Number(value) || 0;
+          };
+          
+          const beginTime = toNumber(emotionData.begin_time) || toNumber(emotionData.time) || 0;
+          const endTime = toNumber(emotionData.end_time) || (beginTime > 0 ? beginTime + 1 : 1);
+          
           mappedResults.push({
             fileType: source,
-            beginTime: emotionData.begin_time || emotionData.time || 0,
-            endTime: emotionData.end_time || (emotionData.time ? emotionData.time + 1 : 1),
+            beginTime,
+            endTime,
             emotions,
             sessionId: emotionData.session_id || sessionId || 'unknown'
           });
           
-          if (mappedResults.length <= 3) {
-            console.log(`Mapped result ${mappedResults.length - 1}:`, {
+          if (mappedResults.length <= 10) {
+            console.log(`Mapped result ${mappedResults.length - 1} (${source}):`, {
               fileType: source,
-              beginTime: emotionData.begin_time || emotionData.time || 0,
+              beginTime,
+              endTime,
               emotionsCount: emotions.length,
-              firstEmotion: emotions[0]
+              firstEmotion: emotions[0],
+              emotionNames: emotions.map(e => e.name).slice(0, 3)
             });
           }
         } else {
-          console.log(`Result ${index} (${source}): No emotion scores found after parsing`);
+          console.log(`Result ${index} (${source}): No emotion scores found after parsing. emotion_scores keys:`, Object.keys(emotionScoresObj));
+          // デバッグ: emotionDataの全キーを確認
+          if (index < 3) {
+            console.log(`Result ${index} (${source}) emotionData keys:`, Object.keys(emotionData));
+            console.log(`Result ${index} (${source}) emotionData sample:`, JSON.stringify(emotionData).substring(0, 200));
+          }
         }
       });
       
@@ -560,6 +587,13 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
     
     if (emotionData.length > 0) {
       console.log('First emotion data:', emotionData[0]);
+      // 4種類の感情データタイプの数を確認
+      const emotionTypes = emotionData.reduce((acc: any, e: any) => {
+        const type = e.fileType || 'unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
+      console.log('Emotion data types count:', emotionTypes);
     }
     
     const timelineData: any[] = [];
@@ -590,10 +624,11 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         const sessionStartTime = sessionData.startTime || 0;
         const relativeTimestamp = (timestamp - sessionStartTime) / 1000; // 相対時間（秒）
         const beginTime = emotion.beginTime || 0; // 秒単位
-        const endTime = emotion.endTime || 0; // 秒単位
+        const endTime = emotion.endTime || (beginTime + 1); // 秒単位（endTimeがない場合はbeginTime+1秒）
         
-        // 感情データの時間範囲でマッチング
-        return beginTime <= relativeTimestamp && endTime >= relativeTimestamp;
+        // 感情データの時間範囲でマッチング（より柔軟なマッチング：±5秒の範囲内）
+        const timeDiff = Math.abs(relativeTimestamp - beginTime);
+        return timeDiff <= 5 || (beginTime <= relativeTimestamp && endTime >= relativeTimestamp);
       });
       
       // 対応する生理データを検索（時間範囲でマッチング）
@@ -618,17 +653,17 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
               fileType: fileType // fileTypeを確実に設定
             });
           });
-        } else {
-          // デモ用：感情データがnullの場合はランダムな値を生成
-          const emotionNames = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'calm', 'focus'];
-          const randomEmotion = emotionNames[Math.floor(Math.random() * emotionNames.length)];
-          emotionDetails.push({
-            name: randomEmotion,
-            score: Math.random() * 0.5 + 0.1, // 0.1-0.6の範囲でランダム値
-            fileType: fileType // fileTypeを確実に設定
-          });
         }
+        // デモ用のランダム値生成を削除（実データのみを使用）
       });
+      
+      // デバッグ: 最初の数個のデータポイントで感情データの統合状況を確認
+      if (timelineData.length < 5) {
+        console.log(`Timeline point ${timelineData.length}: word=${word}, relatedEmotions=${relatedEmotions.length}, emotionDetails=${emotionDetails.length}`, {
+          emotionTypes: emotionDetails.map(e => e.fileType),
+          emotionNames: emotionDetails.map(e => e.name)
+        });
+      }
       
       // 従来の数値データも計算（後方互換性のため）
       const emotionValues = {

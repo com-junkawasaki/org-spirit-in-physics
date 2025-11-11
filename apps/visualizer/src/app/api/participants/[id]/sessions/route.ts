@@ -22,12 +22,38 @@ export async function GET(
 
     const sessionsResult = await client.query(sessionsQuery, { participantId })
     
+    // Helper function to convert Neo4j Integer objects to JavaScript numbers
+    const toNumber = (value: any): number | null => {
+      if (value === null || value === undefined) return null
+      if (typeof value === 'object' && value !== null && 'low' in value) {
+        // Neo4j Integer型の場合
+        return value.low
+      }
+      const num = Number(value)
+      return isNaN(num) ? null : num
+    }
+    
+    // Helper function to convert Neo4j date/timestamp to string or number
+    const toTimestamp = (value: any): number | null => {
+      if (value === null || value === undefined) return null
+      if (typeof value === 'object' && value !== null && 'low' in value) {
+        // Neo4j Integer型の場合
+        return value.low
+      }
+      if (typeof value === 'string') {
+        const date = new Date(value)
+        return isNaN(date.getTime()) ? null : date.getTime()
+      }
+      const num = Number(value)
+      return isNaN(num) ? null : num
+    }
+    
     const sessions = sessionsResult?.map((record: any) => ({
-      id: record.id,
-      sessionIndex: record.sessionIndex,
-      createdAt: record.createdAt,
-      startTs: record.startTs,
-      endTs: record.endTs,
+      id: record.id || '',
+      sessionIndex: toNumber(record.sessionIndex),
+      createdAt: record.createdAt ? (typeof record.createdAt === 'string' ? record.createdAt : new Date(toTimestamp(record.createdAt) || Date.now()).toISOString()) : null,
+      startTs: toTimestamp(record.startTs),
+      endTs: toTimestamp(record.endTs),
     })) || []
 
     return NextResponse.json({ sessions })

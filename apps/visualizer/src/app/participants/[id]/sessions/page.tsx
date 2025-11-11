@@ -48,13 +48,30 @@ export default function SessionsListPage() {
 
   const formatDate = (timestamp?: number | string | null): string => {
     if (!timestamp) return 'N/A'
+    // Neo4j Integer型のオブジェクトが来た場合の処理
+    if (typeof timestamp === 'object' && timestamp !== null && 'low' in timestamp) {
+      const num = (timestamp as any).low
+      const date = new Date(num)
+      return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString('ja-JP')
+    }
     const date = typeof timestamp === 'string' ? new Date(timestamp) : new Date(timestamp)
-    return date.toLocaleString('ja-JP')
+    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString('ja-JP')
   }
 
   const formatDuration = (startTs?: number, endTs?: number | null): string => {
     if (!startTs || !endTs) return 'N/A'
-    const duration = (endTs - startTs) / 1000 // Convert to seconds
+    // Neo4j Integer型のオブジェクトが来た場合の処理（念のため）
+    let start = startTs
+    let end = endTs
+    if (typeof startTs === 'object' && startTs !== null && 'low' in startTs) {
+      start = (startTs as any).low
+    }
+    if (typeof endTs === 'object' && endTs !== null && 'low' in endTs) {
+      end = (endTs as any).low
+    }
+    if (!start || !end) return 'N/A'
+    const duration = (Number(end) - Number(start)) / 1000 // Convert to seconds
+    if (duration < 0) return 'N/A'
     const minutes = Math.floor(duration / 60)
     const seconds = Math.floor(duration % 60)
     return `${minutes}分${seconds}秒`
@@ -98,7 +115,14 @@ export default function SessionsListPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="text-lg">
-                          セッション {session.sessionIndex !== undefined ? `#${session.sessionIndex + 1}` : session.id.slice(0, 8)}
+                          セッション {(() => {
+                            // sessionIndexがオブジェクトの場合の処理（念のため）
+                            let index = session.sessionIndex
+                            if (typeof index === 'object' && index !== null && 'low' in index) {
+                              index = (index as any).low
+                            }
+                            return index !== undefined && index !== null ? `#${Number(index) + 1}` : session.id.slice(0, 8)
+                          })()}
                         </CardTitle>
                         <CardDescription className="mt-1">
                           ID: {session.id}
