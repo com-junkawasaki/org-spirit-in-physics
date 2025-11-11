@@ -1487,7 +1487,12 @@ export default function TimelineVisualization({
           {activeTab === 'distance' && (
             <div className="bg-white border rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="font-medium text-sm">単語距離感</h4>
+                <div>
+                  <h4 className="font-medium text-sm">単語距離感</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    値が大きいほど単語同士は「遠い」（異なる）、小さいほど「近い」（類似）を意味します
+                  </p>
+                </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span>全単語ペア間の距離</span>
                   <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Sort">
@@ -1499,8 +1504,9 @@ export default function TimelineVisualization({
                           : 'bg-white border-gray-200 text-gray-700'
                       }`}
                       onClick={() => setDistanceSortDir('desc')}
+                      title="距離が大きい（遠い）順に並び替え"
                     >
-                      距離大
+                      遠い順
                     </button>
                     <button
                       type="button"
@@ -1510,8 +1516,9 @@ export default function TimelineVisualization({
                           : 'bg-white border-gray-200 text-gray-700'
                       }`}
                       onClick={() => setDistanceSortDir('asc')}
+                      title="距離が小さい（近い）順に並び替え"
                     >
-                      距離小
+                      近い順
                     </button>
                   </div>
                 </div>
@@ -1545,11 +1552,26 @@ export default function TimelineVisualization({
                         <tr className="bg-gray-50 text-gray-600">
                           <th className="px-3 py-2 text-left">単語1</th>
                           <th className="px-3 py-2 text-left">単語2</th>
-                          <th className="px-3 py-2 text-right">総合距離</th>
-                          <th className="px-3 py-2 text-right">感情距離</th>
-                          <th className="px-3 py-2 text-right">反応値距離</th>
-                          <th className="px-3 py-2 text-right">反応時間距離</th>
-                          <th className="px-3 py-2 text-right">生理距離</th>
+                          <th className="px-3 py-2 text-right">
+                            総合距離
+                            <span className="ml-1 text-xs text-gray-400" title="感情40% + 反応値20% + 反応時間20% + 生理20%">ℹ️</span>
+                          </th>
+                          <th className="px-3 py-2 text-right">
+                            感情距離
+                            <span className="ml-1 text-xs text-gray-400" title="コサイン距離（0=近い、1=遠い）">ℹ️</span>
+                          </th>
+                          <th className="px-3 py-2 text-right">
+                            反応値距離
+                            <span className="ml-1 text-xs text-gray-400" title="反応値の差（0=近い、1=遠い）">ℹ️</span>
+                          </th>
+                          <th className="px-3 py-2 text-right">
+                            反応時間距離
+                            <span className="ml-1 text-xs text-gray-400" title="反応時間の差（0=近い、1=遠い）">ℹ️</span>
+                          </th>
+                          <th className="px-3 py-2 text-right">
+                            生理距離
+                            <span className="ml-1 text-xs text-gray-400" title="生理データの差（0=近い、1=遠い）">ℹ️</span>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1649,14 +1671,6 @@ export default function TimelineVisualization({
                         const rawMax = Math.max(...nodeEntries.map(n => n.raw))
                         const denom = rawMax - rawMin || 1
 
-                        const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
-                          id: String(idx),
-                          label: n.japanese,
-                          // 0.5〜6.0程度に正規化（視認性のため）
-                          scale: Math.max(0.5, 0.5 + 5.5 * ((n.raw - rawMin) / denom)),
-                          nodeType: 'word'
-                        }))
-
                         // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
                         const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
                         const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
@@ -1692,6 +1706,28 @@ export default function TimelineVisualization({
                         const normalizedEmotionVec: Record<string, number[]> = {}
                         jungWords.forEach(({ japanese }) => {
                           normalizedEmotionVec[japanese] = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
+                        })
+
+                        // ノード生成（感情データを含める）
+                        const nodes: WordNode[] = nodeEntries.map((n, idx) => {
+                          // 正規化された感情ベクトルを取得
+                          const emotionVec = normalizedEmotionVec[n.japanese] || new Array(EMOTION_KEYS.length).fill(0)
+                          // 感情オブジェクトを作成（0より大きい値のみ含める）
+                          const emotionObj: Partial<Record<'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'disgust' | 'calm' | 'focus' | 'excitement' | 'confusion', number>> = {}
+                          EMOTION_KEYS.forEach((key, i) => {
+                            if (emotionVec[i] > 0) {
+                              emotionObj[key] = emotionVec[i]
+                            }
+                          })
+                          
+                          return {
+                            id: String(idx),
+                            label: n.japanese,
+                            // 0.5〜6.0程度に正規化（視認性のため）
+                            scale: Math.max(0.5, 0.5 + 5.5 * ((n.raw - rawMin) / denom)),
+                            nodeType: 'word',
+                            emotion: emotionObj // 感情データを追加
+                          }
                         })
 
                         // 感情アンカー（2Dマップを球面へ射影）

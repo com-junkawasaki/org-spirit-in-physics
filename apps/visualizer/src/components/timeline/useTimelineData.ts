@@ -153,7 +153,7 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
         
         // 短縮フィールドをTimelineDataPoint形式に変換
         const convertedData = result.data.timelineData.map((item: any) => ({
-          timestamp: item.t || item.timestamp,
+          timestamp: item.ts || item.t || item.timestamp, // APIレスポンスは`ts`フィールドを使用
           word: item.w || item.word,
           reactionTime: item.rt ?? item.reactionTime ?? null, // 反応時間を正しく取得
           hasResponse: item.rt != null || item.reactionTime != null, // 反応時間が存在する場合はtrue
@@ -161,7 +161,7 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
           physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
           reactionValue: item.rv || item.reactionValue || 0,
           eventType: item.e || item.eventType,
-          metadata: item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
+          metadata: item.md || item.m || item.metadata || { emotionCount: 0, physiologicalCount: 0 }
         }))
         
         // 変換後のデータの統計情報
