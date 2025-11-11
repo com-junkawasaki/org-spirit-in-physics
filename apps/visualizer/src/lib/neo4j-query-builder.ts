@@ -174,8 +174,8 @@ export class Neo4jQueryBuilder {
   }
 
   /**
-   * 関係プロパティの更新はモデルAPIを優先
-   * Neogmaモデルとの統合
+   * 関係プロパティの更新
+   * Cypherクエリで直接実行
    */
   buildRelationshipUpdateQuery(
     fromNode: { label: string; id: string },
@@ -333,8 +333,13 @@ export class Neo4jQueryBuilder {
     let query = '';
     if (sessionIdParam) {
       // 特定のセッションの感情データを取得
+      // 新しい構造（Participant -> Session）と古い構造（Participant -> Experiment -> ExperimentSession）の両方に対応
       query = `
-        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_SESSION]->(s:Session {id: ${sessionIdParam}})
+        MATCH (p:Participant {id: ${participantIdParam}})
+        OPTIONAL MATCH (p)-[:HAS_SESSION]->(s1:Session {id: ${sessionIdParam}})
+        OPTIONAL MATCH (p)-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s2:ExperimentSession {id: ${sessionIdParam}})
+        WITH COALESCE(s1, s2) as s
+        WHERE s IS NOT NULL
         MATCH (s)-[:${config.relType}]->(${nodeAlias}:${config.label})
         RETURN ${sourceParam} as source,
                ${nodeAlias}.emotion_scores as emotion_scores,
@@ -346,8 +351,13 @@ export class Neo4jQueryBuilder {
       `;
     } else {
       // 全セッションの感情データを取得
+      // 新しい構造（Participant -> Session）と古い構造（Participant -> Experiment -> ExperimentSession）の両方に対応
       query = `
-        MATCH (p:Participant {id: ${participantIdParam}})-[:HAS_SESSION]->(s:Session)
+        MATCH (p:Participant {id: ${participantIdParam}})
+        OPTIONAL MATCH (p)-[:HAS_SESSION]->(s1:Session)
+        OPTIONAL MATCH (p)-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s2:ExperimentSession)
+        WITH COALESCE(s1, s2) as s
+        WHERE s IS NOT NULL
         MATCH (s)-[:${config.relType}]->(${nodeAlias}:${config.label})
         RETURN ${sourceParam} as source,
                ${nodeAlias}.emotion_scores as emotion_scores,

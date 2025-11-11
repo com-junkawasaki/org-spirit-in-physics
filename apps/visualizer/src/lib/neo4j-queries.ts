@@ -1,8 +1,6 @@
-// Merkle DAG: Neogmaベースのクエリ
-// Neogmaを使用した型安全なObject-Graph Mapping
+// Merkle DAG: Neo4jクエリ
+// neo4j-driverを直接使用したCypherクエリ
 // 高レベルAPIによる効率的なデータ操作
-
-// モデルは実行時にcreateNeogmaModels関数から取得
 
 // 参加者関連クエリ - クライアント経由で実行
 export class ParticipantQueries {
@@ -259,10 +257,10 @@ export class ResponseQueries {
   }
 }
 
-// 感情分析関連クエリ - Neogmaベース
+// 感情分析関連クエリ
 export class EmotionQueries {
   static async getEmotionStatistics() {
-    // Neogmaでnullチェックができないため、Cypherクエリを使用
+    // Cypherクエリを使用
     const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
@@ -298,7 +296,7 @@ export class EmotionQueries {
   }
 
   static async getParticipantEmotionAnalysis(participantId: string) {
-    // Neogmaでnullチェックができないため、Cypherクエリを使用
+    // Cypherクエリを使用
     const { createNeo4jClient } = await import('./neo4j.js')
     const client = createNeo4jClient()
 
@@ -349,11 +347,11 @@ export class EmotionQueries {
   }
 }
 
-// 汎用ユーティリティクエリ - Neogmaベース
+// 汎用ユーティリティクエリ
 export class UtilityQueries {
   static async connectionTest(): Promise<boolean> {
     try {
-      // Neogmaインスタンスが初期化されているか確認
+      // Neo4jクライアントが初期化されているか確認
       const result = await Promise.resolve(1); // 基本的な接続テスト
       return result === 1;
     } catch (error) {
@@ -445,5 +443,5 @@ export class UtilityQueries {
   }
 }
 
-// Merkle DAG: Neogma実装完了
-// Neogmaを使用した型安全なObject-Graph Mappingを実装
+// Merkle DAG: Neo4jクエリ実装完了
+// neo4j-driverを使用した型安全なCypherクエリを実装

@@ -469,6 +469,47 @@ async function getEmotionData(client: any, participantId: string, sessionId?: st
   try {
     console.log('Getting emotion data from Neo4j for participant:', participantId, sessionId ? `session: ${sessionId}` : '');
     
+    // デバッグ: 実際のデータ構造を確認
+    if (sessionId) {
+      const debugQuery = `
+        MATCH (p:Participant {id: $participantId})
+        OPTIONAL MATCH (p)-[:HAS_SESSION]->(s1:Session {id: $sessionId})
+        OPTIONAL MATCH (p)-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s2:ExperimentSession {id: $sessionId})
+        WITH COALESCE(s1, s2) as s
+        WHERE s IS NOT NULL
+        OPTIONAL MATCH (s)-[r]->(emotion)
+        RETURN labels(s) as sessionLabels, 
+               id(s) as sessionId,
+               type(r) as relationshipType,
+               labels(emotion) as emotionLabels,
+               count(emotion) as emotionCount
+        LIMIT 10
+      `;
+      const debugResults = await client.query(debugQuery, { participantId, sessionId });
+      console.log('=== Debug: Session and Emotion Structure ===');
+      console.log('Debug results:', JSON.stringify(debugResults, null, 2));
+      
+      // 感情データノードの存在確認
+      const countQuery = `
+        MATCH (p:Participant {id: $participantId})
+        OPTIONAL MATCH (p)-[:HAS_SESSION]->(s1:Session {id: $sessionId})
+        OPTIONAL MATCH (p)-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s2:ExperimentSession {id: $sessionId})
+        WITH COALESCE(s1, s2) as s
+        WHERE s IS NOT NULL
+        OPTIONAL MATCH (s)-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
+        OPTIONAL MATCH (s)-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
+        OPTIONAL MATCH (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
+        OPTIONAL MATCH (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
+        RETURN count(b) as burstCount,
+               count(f) as faceCount,
+               count(l) as languageCount,
+               count(pr) as prosodyCount
+      `;
+      const countResults = await client.query(countQuery, { participantId, sessionId });
+      console.log('=== Emotion Data Counts ===');
+      console.log('Count results:', JSON.stringify(countResults, null, 2));
+    }
+    
     // 各感情データタイプを個別に取得して結合
     const allEmotionResults: any[] = [];
     const emotionTypes: Array<'burst' | 'face' | 'language' | 'prosody'> = ['burst', 'face', 'language', 'prosody'];

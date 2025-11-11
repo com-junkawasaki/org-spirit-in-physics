@@ -82,7 +82,7 @@ export interface DashboardStats {
   }
 }
 
-// Server-side data fetching functions - Neogmaベース
+// Server-side data fetching functions - Neo4jベース
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
     const client = createNeo4jClient()
@@ -110,7 +110,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const responsesResult = await client.query(responsesQuery)
     const totalResponses = toNumber(responsesResult[0]?.total)
 
-    // Cypherクエリを使ってデータを取得（Neogmaのwhere句でnullチェックがサポートされていないため）
+    // Cypherクエリを使ってデータを取得
     const emotionQuery = `
       MATCH (r:Response)
       WHERE r.emotion IS NOT NULL

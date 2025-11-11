@@ -2,7 +2,7 @@
 // サーバー/クライアント両方で使用可能なNeo4jクライアント
 // neo4j-driverを直接使用
 
-import neo4j, { Driver, Session } from 'neo4j-driver'
+import neo4j, { Driver } from 'neo4j-driver'
 
 interface Neo4jConfig {
   uri: string
