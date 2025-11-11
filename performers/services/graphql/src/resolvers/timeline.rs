@@ -287,10 +287,22 @@ impl TimelineQuery {
             let sum_phys_abs: Option<f64> = row.try_get("sum_phys_abs").ok();
             
             // Parse array columns (PostgreSQL arrays)
-            // PostgreSQL arrays can be NULL or contain NULL values
-            let phys_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("phys_series").ok();
-            let rt_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("rt_series").ok();
-            let rv_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("rv_series").ok();
+            // PostgreSQL arrays: try_get returns Option<T>, so we need to handle Option<Vec<Option<f64>>>
+            let phys_series: Option<Vec<Option<f64>>> = match row.try_get::<Option<Vec<Option<f64>>>, _>("phys_series") {
+                Ok(Some(v)) => Some(v),
+                Ok(None) => None,
+                Err(_) => None,
+            };
+            let rt_series: Option<Vec<Option<f64>>> = match row.try_get::<Option<Vec<Option<f64>>>, _>("rt_series") {
+                Ok(Some(v)) => Some(v),
+                Ok(None) => None,
+                Err(_) => None,
+            };
+            let rv_series: Option<Vec<Option<f64>>> = match row.try_get::<Option<Vec<Option<f64>>>, _>("rv_series") {
+                Ok(Some(v)) => Some(v),
+                Ok(None) => None,
+                Err(_) => None,
+            };
 
             let first_time: chrono::DateTime<chrono::Utc> = row.try_get("first_time").ok()?;
             let last_time: chrono::DateTime<chrono::Utc> = row.try_get("last_time").ok()?;
@@ -480,9 +492,17 @@ impl TimelineQuery {
             let speed_index: Option<f64> = row.try_get("speed_index").ok();
             
             // Parse array columns (PostgreSQL arrays)
-            // PostgreSQL arrays can be NULL or contain NULL values
-            let phys_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("phys_series").ok();
-            let rt_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("rt_series").ok();
+            // PostgreSQL arrays: try_get returns Option<T>, so we need to handle Option<Vec<Option<f64>>>
+            let phys_series: Option<Vec<Option<f64>>> = match row.try_get::<Option<Vec<Option<f64>>>, _>("phys_series") {
+                Ok(Some(v)) => Some(v),
+                Ok(None) => None,
+                Err(_) => None,
+            };
+            let rt_series: Option<Vec<Option<f64>>> = match row.try_get::<Option<Vec<Option<f64>>>, _>("rt_series") {
+                Ok(Some(v)) => Some(v),
+                Ok(None) => None,
+                Err(_) => None,
+            };
 
             Some(WordStatistics {
                 participant_id: ID::from(participant_id_val.to_string()),

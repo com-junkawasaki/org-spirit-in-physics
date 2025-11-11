@@ -99,7 +99,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   try {
     // GraphQL経由でデータを取得
     const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
-    
+
     // 参加者一覧を取得
     const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
     const participants = participantsData.participants || []
@@ -134,8 +134,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
               const emotionName = emotion.name || 'unknown'
               emotionDistribution[emotionName] = (emotionDistribution[emotionName] || 0) + 1
             })
-          }
-        })
+      }
+    })
 
         // 反応値とコンポーネントを収集
         timeline.forEach(point => {
@@ -282,7 +282,7 @@ export async function getParticipantData(participantId: string): Promise<Partici
   try {
     // GraphQL経由でデータを取得
     const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
-    
+
     // 参加者情報を取得（GetParticipantがない場合はGetParticipantsから検索）
     const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
     const participant = participantsData.participants?.find(p => p.id === participantId)
@@ -301,16 +301,16 @@ export async function getParticipantData(participantId: string): Promise<Partici
     timeline.forEach(point => {
       if (point.hasResponse && point.sessionId) {
         const sessionId = point.sessionId
-        if (!sessionMap[sessionId]) {
-          sessionMap[sessionId] = []
-        }
+      if (!sessionMap[sessionId]) {
+        sessionMap[sessionId] = []
+      }
         
         // 感情データから主要な感情を取得
         const primaryEmotion = Array.isArray(point.emotions) && point.emotions.length > 0
           ? point.emotions[0]
           : null
 
-        sessionMap[sessionId].push({
+      sessionMap[sessionId].push({
           id: `${point.sessionId}-${point.time}`,
           stimulus_word: point.word || '',
           response_word: point.word || '', // タイムラインデータからは応答語が取得できないため、刺激語を使用
@@ -320,7 +320,7 @@ export async function getParticipantData(participantId: string): Promise<Partici
           emotion_confidence: primaryEmotion?.score || 0,
           skinPotentialTimeseries: [],
           emotionTimeseries: []
-        })
+      })
       }
     })
 
@@ -409,9 +409,9 @@ export async function getResponseTimeseries(responseId: string): Promise<{
     
     console.warn('getResponseTimeseries: GraphQL経由での実装は未対応。空データを返します。', responseId)
     
-    return {
-      skinPotential: [],
-      emotions: []
+      return {
+        skinPotential: [],
+        emotions: []
     }
   } catch (error) {
     console.error('Failed to get response timeseries:', error)

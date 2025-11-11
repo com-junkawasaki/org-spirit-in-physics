@@ -4,7 +4,7 @@ import { getAllParticipants } from '@/lib/data'
 export async function GET(request: NextRequest) {
   try {
     console.log('API: Fetching participants from GraphQL...')
-    
+
     // GraphQL経由で参加者データを取得
     const participants = await getAllParticipants()
 

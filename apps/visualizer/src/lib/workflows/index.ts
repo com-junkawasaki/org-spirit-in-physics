@@ -19,11 +19,7 @@ export {
   kernelFusionFailureWorkflow,
 } from './kernel-fusion-workflow';
 
-// Neo4j保存ワークフロー
-export {
-  neo4jPersistenceWorkflow,
-  neo4jPersistenceFailureWorkflow,
-} from './neo4j-persistence-workflow';
+// Neo4j保存ワークフロー（削除済み - GraphQL経由に統一）
 
 // Inngestクライアントとイベント定義
 export { inngest, events } from '../inngest';

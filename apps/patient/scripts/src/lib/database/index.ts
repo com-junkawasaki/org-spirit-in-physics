@@ -1,13 +1,12 @@
 // Merkle DAG: データベース初期化マネージャー
-// 全てのデータベースの初期化を統括
-
-import { neo4jManager } from './neo4j-manager';
+// PostgreSQL経由でGraphQLサービスを使用
 
 export class DatabaseInitializer {
   private initialized = false;
 
   /**
    * Merkle DAG: 全データベースの初期化
+   * GraphQLサービス経由でPostgreSQLを使用
    */
   async initializeAll(): Promise<void> {
     if (this.initialized) {
@@ -16,13 +15,11 @@ export class DatabaseInitializer {
     }
 
     try {
-      console.log('Initializing all databases...');
-
-      // Neo4j初期化（メインDB）
-      await neo4jManager.initialize();
-
+      console.log('Initializing databases via GraphQL service...');
+      // GraphQLサービス経由でPostgreSQLを使用
+      // 初期化はGraphQLサービス側で管理される
       this.initialized = true;
-      console.log('All databases initialized successfully');
+      console.log('All databases initialized successfully (via GraphQL service)');
 
     } catch (error) {
       console.error('Failed to initialize databases:', error);
@@ -36,9 +33,8 @@ export class DatabaseInitializer {
   async closeAll(): Promise<void> {
     try {
       console.log('Closing all databases...');
-
-      await neo4jManager.close();
-
+      // GraphQLサービス経由でPostgreSQLを使用
+      // クローズはGraphQLサービス側で管理される
       this.initialized = false;
       console.log('All databases closed successfully');
 
@@ -58,6 +54,3 @@ export class DatabaseInitializer {
 
 // シングルトンインスタンス
 export const databaseInitializer = new DatabaseInitializer();
-
-// Neo4jマネージャーのエクスポート
-export { neo4jManager };

@@ -16,10 +16,11 @@ END $$;
 
 -- 1. 単語別集約ビュー（セッション単位）
 -- 用途: 距離タブのノード指標計算を事前集約
+-- 注意: Continuous Aggregateにはtime_bucketが必要なため、1分単位でバケット化
 CREATE MATERIALIZED VIEW IF NOT EXISTS timeline_word_aggregates_by_session
 WITH (timescaledb.continuous) AS
 SELECT 
-  time_bucket('1 session', time) as bucket,
+  time_bucket('1 minute', time) as bucket,
   participant_id,
   session_id,
   word,
@@ -45,10 +46,11 @@ GROUP BY bucket, participant_id, session_id, word;
 
 -- 2. 感情ベクトル集約ビュー（単語別・セッション別）
 -- 用途: 感情ベクトルの集約と正規化を事前計算
+-- 注意: Continuous Aggregateにはtime_bucketが必要なため、1分単位でバケット化
 CREATE MATERIALIZED VIEW IF NOT EXISTS timeline_emotion_vectors_by_word
 WITH (timescaledb.continuous) AS
 SELECT 
-  time_bucket('1 session', time) as bucket,
+  time_bucket('1 minute', time) as bucket,
   participant_id,
   session_id,
   word,
@@ -88,10 +90,11 @@ GROUP BY bucket, participant_id, session_id, word;
 
 -- 3. 統計値事前計算ビュー（分散・標準偏差含む）
 -- 用途: 統計計算を事前実行してクライアント側の処理を削減
+-- 注意: Continuous Aggregateにはtime_bucketが必要なため、1分単位でバケット化
 CREATE MATERIALIZED VIEW IF NOT EXISTS timeline_word_statistics_by_session
 WITH (timescaledb.continuous) AS
 SELECT 
-  time_bucket('1 session', time) as bucket,
+  time_bucket('1 minute', time) as bucket,
   participant_id,
   session_id,
   word,

@@ -109,7 +109,7 @@ export function useWordAggregates(participantId: string, sessionId?: string) {
         angerSum: vec.angerSum ?? 0,
         fearSum: vec.fearSum ?? 0,
         surpriseSum: vec.surpriseSum ?? 0,
-        disgustSum: vec.disinfectSum ?? 0,
+        disgustSum: (vec as any).disgustSum ?? (vec as any).disinfectSum ?? 0, // Handle both possible field names
         calmSum: vec.calmSum ?? 0,
         focusSum: vec.focusSum ?? 0,
         excitementSum: vec.excitementSum ?? 0,

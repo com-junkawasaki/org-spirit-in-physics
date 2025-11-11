@@ -82,27 +82,27 @@ export async function GET(request: NextRequest) {
         }
       });
       
-      results.checks.burstEmotionData = {
+    results.checks.burstEmotionData = {
         count: emotionTypeCounts.burst,
         sampleIds: sampleIds.burst,
         sampleRecordIds: []
       };
-      results.checks.faceEmotionData = {
+    results.checks.faceEmotionData = {
         count: emotionTypeCounts.face,
         sampleIds: sampleIds.face,
         sampleRecordIds: []
       };
-      results.checks.languageEmotionData = {
+    results.checks.languageEmotionData = {
         count: emotionTypeCounts.language,
         sampleIds: sampleIds.language,
         sampleRecordIds: []
       };
-      results.checks.prosodyEmotionData = {
+    results.checks.prosodyEmotionData = {
         count: emotionTypeCounts.prosody,
         sampleIds: sampleIds.prosody,
         sampleRecordIds: []
-      };
-      
+    };
+
       // 7. サンプルデータの詳細確認
       if (timeline.length > 0 && Array.isArray(timeline[0].emotions) && timeline[0].emotions.length > 0) {
         const firstEmotion = timeline[0].emotions[0];
@@ -114,9 +114,9 @@ export async function GET(request: NextRequest) {
           emotionScores: { [firstEmotion.name || 'unknown']: firstEmotion.score || 0 },
           vocalTypes: []
         };
-      }
-      
-      // 8. 全セッションの感情データ数確認
+    }
+
+    // 8. 全セッションの感情データ数確認
       const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId });
       const sessions = sessionsData.sessions || [];
       results.checks.allSessionsEmotionData = await Promise.all(

@@ -6,7 +6,7 @@ import { graphqlClient, GetTimelineDocument } from '@/lib/graphql/client'
 export async function GET() {
   try {
     console.log('API: Generating analysis report from GraphQL...')
-    
+
     // GraphQL経由で参加者データを取得
     const participants = await getAllParticipants()
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
