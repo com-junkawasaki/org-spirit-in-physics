@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createNeo4jClient } from '@/lib/neo4j';
+import { graphqlClient, GET_TIMELINE } from '@/lib/graphql/client';
 
 // Merkle DAG: api.participants.word2vec -> word2vec_data_fetch
 // 参加者のWord2Vecデータ取得API
-// 依存関係: neo4j, participants/[id]
+// GraphQL経由でデータを取得
 
 export async function GET(
   request: NextRequest,
@@ -13,26 +13,27 @@ export async function GET(
     const { id: participantId } = params;
     console.log(`API: Fetching Word2Vec data for participant ${participantId}`);
 
-    const client = createNeo4jClient();
+    // GraphQL経由でタイムラインデータを取得
+    const timelineData = await graphqlClient.request(GET_TIMELINE, {
+      participantId
+    });
 
-    // Merkle DAG: api.participants.word2vec.query_responses
-    // 参加者の応答データを取得（Experiment階層経由）
-    const responseQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)-[:HAS_RESPONSE]->(r:Response)
-      WHERE r.stimulus_word IS NOT NULL AND r.response_word IS NOT NULL
-      RETURN 
-        r.stimulus_word as stimulus_word,
-        r.response_word as response_word,
-        r.reaction_time_ms as reaction_time_ms,
-        r.spirit_probability as spirit_probability,
-        r.event_ts as timestamp,
-        r.id as response_id,
-        e.id as experiment_id,
-        s.id as session_id
-      ORDER BY r.event_ts
-    `;
+    const timeline = timelineData.timeline || [];
+    
+    // タイムラインデータから単語データを抽出
+    const responses = timeline
+      .filter((point: any) => point.word && (point.hasResponse || point.has_response))
+      .map((point: any) => ({
+        stimulus_word: point.word,
+        response_word: point.word, // 応答語はタイムラインデータに含まれていないため、同じ単語を使用
+        reaction_time_ms: (point.reactionTime || point.reaction_time) ? (point.reactionTime || point.reaction_time) * 1000 : null,
+        spirit_probability: point.reactionValue || point.reaction_value || 0.5,
+        timestamp: point.time,
+        response_id: point.time, // タイムスタンプをIDとして使用
+        experiment_id: point.sessionId || point.session_id,
+        session_id: point.sessionId || point.session_id
+      }));
 
-    const responses = await client.query(responseQuery, { participantId });
     console.log(`API: Found ${responses.length} responses for participant ${participantId}`);
 
     if (responses.length === 0) {

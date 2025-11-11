@@ -19,25 +19,25 @@ export async function GET(
 
     console.log(`[SESSIONS API] GraphQL query completed, sessions count: ${data.sessions?.length || 0}`)
 
-    // Transform GraphQL response to API response format
-    const sessions = (data.sessions || []).map((session: any) => {
-      // Parse created_at timestamp
-      const createdAt = session.created_at 
-        ? new Date(session.created_at).toISOString()
-        : null
+          // Transform GraphQL response to API response format
+          const sessions = (data.sessions || []).map((session: any) => {
+            // Parse createdAt timestamp
+            const createdAt = session.createdAt || session.created_at
+              ? new Date(session.createdAt || session.created_at).toISOString()
+              : null
 
-      // start_ts and end_ts are already in milliseconds (BIGINT)
-      const startTs = session.start_ts ?? null
-      const endTs = session.end_ts ?? null
+            // startTs and endTs are already in milliseconds (BIGINT)
+            const startTs = session.startTs ?? session.start_ts ?? null
+            const endTs = session.endTs ?? session.end_ts ?? null
 
-      return {
-        id: session.id || '',
-        sessionIndex: session.session_index ?? null,
-        createdAt,
-        startTs,
-        endTs,
-      }
-    })
+            return {
+              id: session.id || '',
+              sessionIndex: session.sessionIndex ?? session.session_index ?? null,
+              createdAt,
+              startTs,
+              endTs,
+            }
+          })
 
     // Sort by created_at DESC (most recent first)
     sessions.sort((a: any, b: any) => {

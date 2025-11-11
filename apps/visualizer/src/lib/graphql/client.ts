@@ -40,15 +40,15 @@ export const GET_PARTICIPANT = `
 
 export const GET_SESSIONS = `
   query GetSessions($participantId: ID!) {
-    sessions(participant_id: $participantId) {
+    sessions(participantId: $participantId) {
       id
-      participant_id
-      session_index
-      start_ts
-      end_ts
+      participantId
+      sessionIndex
+      startTs
+      endTs
       events
-      created_at
-      updated_at
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -62,24 +62,24 @@ export const GET_TIMELINE = `
     $interval: String
   ) {
     timeline(
-      participant_id: $participantId
-      session_id: $sessionId
-      start_time: $startTime
-      end_time: $endTime
+      participantId: $participantId
+      sessionId: $sessionId
+      startTime: $startTime
+      endTime: $endTime
       interval: $interval
     ) {
       time
-      participant_id
-      session_id
+      participantId
+      sessionId
       word
-      event_type
-      reaction_value
-      reaction_time
-      has_response
+      eventType
+      reactionValue
+      reactionTime
+      hasResponse
       emotions {
         name
         score
-        file_type
+        fileType
       }
       physiological
       metadata

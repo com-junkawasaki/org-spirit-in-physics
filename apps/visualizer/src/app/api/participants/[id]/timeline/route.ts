@@ -22,13 +22,49 @@ export async function GET(
     console.log(`[TIMELINE API] Participant: ${participantId}${sessionId ? `, Session: ${sessionId}` : ''}`);
     console.log(`[TIMELINE API] Timestamp: ${new Date().toISOString()}`);
 
+    // Convert sessionId from participantId-sessionIndex format to UUID if needed
+    let actualSessionId: string | undefined = sessionId || undefined;
+    if (sessionId && sessionId.includes('-') && sessionId.split('-').length > 5) {
+      // sessionId is in format participantId-sessionIndex (e.g., "25111604-c7db-4bfd-8662-e55060e332d6-0")
+      // Extract sessionIndex and find the actual UUID from sessions
+      try {
+        const sessionsData = await graphqlClient.request(GET_SESSIONS, { participantId });
+        const sessions = sessionsData.sessions || [];
+        const sessionIndexMatch = sessionId.match(/-(\d+)$/);
+        if (sessionIndexMatch) {
+          const sessionIndex = parseInt(sessionIndexMatch[1], 10);
+          const targetSession = sessions.find((s: any) => 
+            (s.sessionIndex ?? s.session_index) === sessionIndex
+          );
+          if (targetSession) {
+            actualSessionId = targetSession.id;
+            console.log(`[TIMELINE API] Converted sessionId from ${sessionId} to UUID: ${actualSessionId}`);
+          } else {
+            console.warn(`[TIMELINE API] Session with index ${sessionIndex} not found, skipping sessionId filter`);
+            // If session not found, don't filter by sessionId - get all timeline data for participant
+            actualSessionId = undefined;
+          }
+        }
+      } catch (error) {
+        console.warn(`[TIMELINE API] Failed to convert sessionId, skipping sessionId filter:`, error);
+        // If conversion fails, don't filter by sessionId - get all timeline data for participant
+        actualSessionId = undefined;
+      }
+    }
+    
+    // Validate UUID format if sessionId is provided
+    if (actualSessionId && actualSessionId.includes('-') && actualSessionId.split('-').length !== 5) {
+      console.warn(`[TIMELINE API] Invalid UUID format: ${actualSessionId}, skipping sessionId filter`);
+      actualSessionId = undefined;
+    }
+
     // Query GraphQL service for timeline data
     const variables: any = {
       participantId,
-      sessionId: sessionId || undefined,
-      startTime: startTimeParam || undefined,
-      endTime: endTimeParam || undefined,
-      interval: interval || undefined,
+      ...(actualSessionId ? { sessionId: actualSessionId } : {}),
+      ...(startTimeParam ? { startTime: startTimeParam } : {}),
+      ...(endTimeParam ? { endTime: endTimeParam } : {}),
+      ...(interval ? { interval } : {}),
     };
 
     console.log(`[TIMELINE API] Querying GraphQL service...`);
@@ -59,7 +95,7 @@ export async function GET(
         ? point.emotions.map((e: any) => ({
             n: e.name || '',
             s: typeof e.score === 'number' ? e.score : 0,
-            t: e.file_type || '',
+            t: e.fileType || e.file_type || '',
           }))
         : [];
 
@@ -76,8 +112,8 @@ export async function GET(
       return {
         ts: timestamp,
         w: point.word || null,
-        rt: point.reaction_time ?? null,
-        rv: point.reaction_value ?? null,
+        rt: point.reactionTime ?? point.reaction_time ?? null,
+        rv: point.reactionValue ?? point.reaction_value ?? null,
         em: emotions,
         ph: physiological,
         md: metadata,
