@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback, useState } from 'react'
+import React, { useRef, useEffect, useCallback, useState } from 'react'
 
 // WebGPU型定義（簡略版）
 declare global {
@@ -93,7 +93,7 @@ interface Force3DWordGraphTypeGPUProps {
   }
 }
 
-export default function Force3DWordGraphTypeGPU({
+function Force3DWordGraphTypeGPU({
   nodes,
   links,
   width = 1000,
@@ -268,11 +268,15 @@ export default function Force3DWordGraphTypeGPU({
 
   // WebGPU 初期化
   useEffect(() => {
-    if (!canvasRef.current) return
+    if (!canvasRef.current) {
+      console.warn('Force3DWordGraphTypeGPU: canvasRef.current is null')
+      return
+    }
 
     // WebGPUデバイスを取得
     const initWebGPU = async () => {
       try {
+        console.log('Force3DWordGraphTypeGPU: Initializing WebGPU, nodes:', nodes.length, 'links:', links.length)
         if (!navigator.gpu) {
           console.error('WebGPU not supported')
           return
@@ -879,7 +883,7 @@ export default function Force3DWordGraphTypeGPU({
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current)
     }
-  }, [width, height, background])
+  }, [width, height, background, nodes, links])
 
   // 物理パラメータの差分反映
   useEffect(() => {
@@ -957,5 +961,52 @@ export default function Force3DWordGraphTypeGPU({
     </div>
   )
 }
+
+// パフォーマンス最適化: React.memoでメモ化
+export default React.memo(Force3DWordGraphTypeGPU, (prevProps, nextProps) => {
+  // ノードとリンクの数が同じで、参照が同じなら再レンダリングをスキップ
+  if (
+    prevProps.nodes.length !== nextProps.nodes.length ||
+    prevProps.links.length !== nextProps.links.length
+  ) {
+    return false // 再レンダリングが必要
+  }
+
+  // ノードとリンクの参照が同じならスキップ
+  if (prevProps.nodes !== nextProps.nodes || prevProps.links !== nextProps.links) {
+    return false // 再レンダリングが必要
+  }
+
+  // 物理パラメータが変更されたかチェック
+  const prevPhysics = prevProps.physics
+  const nextPhysics = nextProps.physics
+  if (prevPhysics && nextPhysics) {
+    if (
+      prevPhysics.springK !== nextPhysics.springK ||
+      prevPhysics.repulsionK !== nextPhysics.repulsionK ||
+      prevPhysics.damping !== nextPhysics.damping ||
+      prevPhysics.restLength !== nextPhysics.restLength ||
+      prevPhysics.maxSpeed !== nextPhysics.maxSpeed ||
+      prevPhysics.shellRadius !== nextPhysics.shellRadius ||
+      prevPhysics.shellK !== nextPhysics.shellK ||
+      prevPhysics.radialOutK !== nextPhysics.radialOutK ||
+      prevPhysics.minSep !== nextPhysics.minSep ||
+      prevPhysics.sepK !== nextPhysics.sepK
+    ) {
+      return false // 再レンダリングが必要
+    }
+  }
+
+  // その他のpropsが変更されたかチェック
+  if (
+    prevProps.width !== nextProps.width ||
+    prevProps.height !== nextProps.height ||
+    prevProps.background !== nextProps.background
+  ) {
+    return false // 再レンダリングが必要
+  }
+
+  return true // 再レンダリング不要
+})
 
 // Merkle DAG: components.force3d_word_graph_typegpu -> implementation_complete

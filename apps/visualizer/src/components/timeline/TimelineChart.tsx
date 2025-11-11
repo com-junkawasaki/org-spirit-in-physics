@@ -5,6 +5,21 @@ import type { TimelineDataPoint, FilterSettings, TimeRange } from './types'
 // Merkle DAG: timeline.components.timeline_chart
 // 時系列チャートコンポーネント
 
+/**
+ * タイムスタンプをDateオブジェクトに変換（ミリ秒単位を前提）
+ */
+function toDate(ts: number): Date {
+  // timestampがミリ秒単位であることを確認（1e12 = 2001-09-09 01:46:40 UTC）
+  // それより小さい場合は秒単位とみなして1000倍
+  const ms = ts > 1e12 ? ts : ts * 1000
+  const date = new Date(ms)
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid timestamp:', ts)
+    return new Date() // フォールバック
+  }
+  return date
+}
+
 interface TimelineChartProps {
   data: TimelineDataPoint[]
   filters: FilterSettings
@@ -46,10 +61,21 @@ export default function TimelineChart({
 
     // 時間範囲（x は単調増加前提のため昇順に整列）
     const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp)
-    const timeExtent = d3.extent(sorted, d => new Date(d.timestamp)) as [Date, Date]
+    const extent = d3.extent(sorted, d => toDate(d.timestamp))
+    if (!extent[0] || !extent[1]) {
+      return // データが無効な場合は何も描画しない
+    }
+    const timeExtent = extent as [Date, Date]
+    
+    // 時間範囲が同じ場合の処理
+    if (timeExtent[0].getTime() === timeExtent[1].getTime()) {
+      timeExtent[1] = new Date(timeExtent[0].getTime() + 60000) // 1分追加
+    }
+    
     const xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, overviewWidth])
+      .nice()
 
     // 反応値のスケール（NaNを防ぐ）
     const reactionValueExtent = d3.extent(data, d => {
@@ -67,18 +93,17 @@ export default function TimelineChart({
     // メインライン（NaNを防ぐ）
     const line = d3.line<TimelineDataPoint>()
       .x(d => {
-        const ts = typeof d.timestamp === 'number' && !isNaN(d.timestamp) ? d.timestamp : Date.now();
-        const date = new Date(ts);
-        return isNaN(date.getTime()) ? 0 : xScale(date);
+        const date = toDate(d.timestamp)
+        return isNaN(date.getTime()) ? 0 : xScale(date)
       })
       .y(d => {
-        const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue) ? d.reactionValue : 0;
-        return yScale(val);
+        const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue) ? d.reactionValue : 0
+        return yScale(val)
       })
       .defined(d => {
-        const ts = typeof d.timestamp === 'number' && !isNaN(d.timestamp);
-        const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue);
-        return ts && val;
+        const date = toDate(d.timestamp)
+        const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue)
+        return !isNaN(date.getTime()) && val
       })
       .curve(d3.curveMonotoneX)
 
@@ -92,11 +117,13 @@ export default function TimelineChart({
 
     // 選択範囲のハイライト
     if (timeRange) {
+      const startDate = toDate(timeRange.start)
+      const endDate = toDate(timeRange.end)
       g.append('rect')
         .attr('class', 'brush-area')
-        .attr('x', xScale(new Date(timeRange.start)))
+        .attr('x', xScale(startDate))
         .attr('y', 0)
-        .attr('width', xScale(new Date(timeRange.end)) - xScale(new Date(timeRange.start)))
+        .attr('width', xScale(endDate) - xScale(startDate))
         .attr('height', overviewHeight)
         .style('fill', '#3b82f6')
         .style('opacity', 0.2)
@@ -134,14 +161,56 @@ export default function TimelineChart({
       : data
     const filteredDataSorted = [...filteredData].sort((a, b) => a.timestamp - b.timestamp)
 
+    // データがない場合の処理
+    if (filteredDataSorted.length === 0) {
+      svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '14px')
+        .style('fill', '#666')
+        .text('データがありません')
+      return
+    }
+
+
     // スケール設定
-    const timeExtent = timeRange
-      ? [new Date(timeRange.start), new Date(timeRange.end)] as [Date, Date]
-      : d3.extent(filteredDataSorted, d => new Date(d.timestamp)) as [Date, Date]
+    let timeExtent: [Date, Date]
+    if (timeRange) {
+      timeExtent = [toDate(timeRange.start), toDate(timeRange.end)]
+    } else {
+      const extent = d3.extent(filteredDataSorted, d => toDate(d.timestamp))
+      if (!extent[0] || !extent[1]) {
+        // データが無効な場合のフォールバック
+        const now = new Date()
+        timeExtent = [new Date(now.getTime() - 60000), now]
+      } else {
+        timeExtent = extent as [Date, Date]
+      }
+    }
+
+    // 時間範囲が同じ場合の処理（最小幅を確保）
+    if (timeExtent[0].getTime() === timeExtent[1].getTime()) {
+      timeExtent[1] = new Date(timeExtent[0].getTime() + 60000) // 1分追加
+    }
+
+    // 時間範囲が無効な場合の処理
+    if (isNaN(timeExtent[0].getTime()) || isNaN(timeExtent[1].getTime())) {
+      console.error('Invalid time extent:', timeExtent)
+      svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '14px')
+        .style('fill', '#dc2626')
+        .text('時間範囲が無効です')
+      return
+    }
 
     const xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, innerWidth])
+      .nice() // 目盛りを自動調整
 
     const yScale = d3.scaleLinear()
       .domain([0, d3.max(filteredData, d => d.reactionValue) || 100])
@@ -225,7 +294,7 @@ export default function TimelineChart({
         .enter()
         .append('text')
         .attr('class', 'word-label')
-        .attr('x', d => xScale(new Date(d.timestamp)))
+        .attr('x', d => xScale(toDate(d.timestamp)))
         .attr('y', innerHeight + 20)
         .attr('text-anchor', 'middle')
         .attr('font-size', '11px')
@@ -250,7 +319,7 @@ export default function TimelineChart({
         .enter()
         .append('circle')
         .attr('class', 'reaction-value-point')
-        .attr('cx', d => xScale(new Date(d.timestamp)))
+        .attr('cx', d => xScale(toDate(d.timestamp)))
         .attr('cy', d => reactionValueScale(d.reactionValue))
         .attr('r', 3)
         .style('fill', '#2563eb')
@@ -274,7 +343,7 @@ export default function TimelineChart({
         .enter()
         .append('circle')
         .attr('class', 'reaction-time-point')
-        .attr('cx', d => xScale(new Date(d.timestamp)))
+        .attr('cx', d => xScale(toDate(d.timestamp)))
         .attr('cy', d => reactionTimeScale(d.reactionTime))
         .attr('r', 3)
         .style('fill', '#dc2626')
@@ -293,8 +362,16 @@ export default function TimelineChart({
         .enter()
         .append('circle')
         .attr('class', 'physiological-point')
-        .attr('cx', d => xScale(new Date(d.timestamp)))
-        .attr('cy', _d => physiologicalScale(Math.random() * 100)) // デモ用
+        .attr('cx', d => xScale(toDate(d.timestamp)))
+        .attr('cy', d => {
+          const p = d.physiological as unknown
+          if (Array.isArray(p)) return physiologicalScale(0)
+          if (p && typeof p === 'object') {
+            const avg = (p as Record<string, unknown>).average
+            return physiologicalScale(typeof avg === 'number' ? avg : 0)
+          }
+          return physiologicalScale(0)
+        })
         .attr('r', 3)
         .style('fill', '#16a34a')
         .style('stroke', '#fff')
@@ -309,7 +386,7 @@ export default function TimelineChart({
         d.emotions.filter(e => e.fileType === 'burst').forEach(emotion => {
           g.append('circle')
             .attr('class', 'emotion-burst-point')
-            .attr('cx', xScale(new Date(d.timestamp)))
+            .attr('cx', xScale(toDate(d.timestamp)))
             .attr('cy', burstEmotionScale(emotion.score))
             .attr('r', 3)
             .style('fill', '#9333ea')
@@ -332,7 +409,7 @@ export default function TimelineChart({
         d.emotions.filter(e => e.fileType === 'face').forEach(emotion => {
           g.append('circle')
             .attr('class', 'emotion-face-point')
-            .attr('cx', xScale(new Date(d.timestamp)))
+            .attr('cx', xScale(toDate(d.timestamp)))
             .attr('cy', faceEmotionScale(emotion.score))
             .attr('r', 3)
             .style('fill', '#ec4899')
@@ -355,7 +432,7 @@ export default function TimelineChart({
         d.emotions.filter(e => e.fileType === 'language').forEach(emotion => {
           g.append('circle')
             .attr('class', 'emotion-language-point')
-            .attr('cx', xScale(new Date(d.timestamp)))
+            .attr('cx', xScale(toDate(d.timestamp)))
             .attr('cy', languageEmotionScale(emotion.score))
             .attr('r', 3)
             .style('fill', '#10b981')
@@ -378,7 +455,7 @@ export default function TimelineChart({
         d.emotions.filter(e => e.fileType === 'prosody').forEach(emotion => {
           g.append('circle')
             .attr('class', 'emotion-prosody-point')
-            .attr('cx', xScale(new Date(d.timestamp)))
+            .attr('cx', xScale(toDate(d.timestamp)))
             .attr('cy', prosodyEmotionScale(emotion.score))
             .attr('r', 3)
             .style('fill', '#f59e0b')
@@ -431,7 +508,7 @@ export default function TimelineChart({
 
             const emotionGroup = g.append('g')
               .attr('class', 'emotion-detail-group')
-              .attr('transform', `translate(${xScale(new Date(d.timestamp))}, ${emotionYScale(emotion.score)})`)
+              .attr('transform', `translate(${xScale(toDate(d.timestamp))}, ${emotionYScale(emotion.score)})`)
 
             // 感情の色を決定
             const emotionColors: Record<string, string> = {
@@ -482,18 +559,17 @@ export default function TimelineChart({
     if (filters.reactionValues) {
       const line = d3.line<TimelineDataPoint>()
         .x(d => {
-          const ts = typeof d.timestamp === 'number' && !isNaN(d.timestamp) ? d.timestamp : Date.now();
-          const date = new Date(ts);
-          return isNaN(date.getTime()) ? 0 : xScale(date);
+          const date = toDate(d.timestamp)
+          return isNaN(date.getTime()) ? 0 : xScale(date)
         })
         .y(d => {
-          const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue) ? d.reactionValue : 0;
-          return yScale(val);
+          const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue) ? d.reactionValue : 0
+          return yScale(val)
         })
         .defined(d => {
-          const ts = typeof d.timestamp === 'number' && !isNaN(d.timestamp);
-          const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue);
-          return ts && val;
+          const date = toDate(d.timestamp)
+          const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue)
+          return !isNaN(date.getTime()) && val
         })
         .curve(d3.curveMonotoneX)
 
@@ -507,15 +583,41 @@ export default function TimelineChart({
     }
 
     // 軸の描画
+    // 時間範囲に応じてフォーマットを変更
+    const timeSpan = timeExtent[1].getTime() - timeExtent[0].getTime()
+    const hours = timeSpan / (1000 * 60 * 60)
+    
+    let timeFormat: (date: Date) => string
+    let tickCount: number
+    
+    if (hours < 1) {
+      // 1時間未満: 分:秒
+      timeFormat = d3.timeFormat('%M:%S') as (date: Date) => string
+      tickCount = Math.min(10, Math.max(5, Math.floor(innerWidth / 80)))
+    } else if (hours < 24) {
+      // 24時間未満: 時:分:秒
+      timeFormat = d3.timeFormat('%H:%M:%S') as (date: Date) => string
+      tickCount = Math.min(12, Math.max(6, Math.floor(innerWidth / 100)))
+    } else {
+      // 24時間以上: 日付 + 時:分
+      timeFormat = d3.timeFormat('%m/%d %H:%M') as (date: Date) => string
+      tickCount = Math.min(15, Math.max(8, Math.floor(innerWidth / 120)))
+    }
+
     g.append('g')
       .attr('class', 'x-axis')
       .attr('transform', `translate(0,${innerHeight})`)
       .call(d3.axisBottom(xScale)
-        .tickFormat(d3.timeFormat('%H:%M:%S'))
+        .tickFormat(timeFormat)
+        .ticks(tickCount)
       )
       .selectAll('text')
-      .style('font-size', '12px')
+      .style('font-size', '11px')
       .style('fill', '#666')
+      .attr('transform', 'rotate(-45)')
+      .style('text-anchor', 'end')
+      .attr('dx', '-0.5em')
+      .attr('dy', '0.5em')
 
     // 各Y軸の描画
     // 反応値軸
@@ -732,7 +834,7 @@ export default function TimelineChart({
         .attr('stroke-width', 1)
         .attr('rx', 4)
     }
-  }, [data, filters, width, height, timeRange, onDataPointSelect, onTooltipShow, onTooltipHide])
+  }, [data, filters, width, height, timeRange, onDataPointSelect, onTooltipShow, onTooltipHide, svgRef])
 
   useEffect(() => {
     renderTimeline()

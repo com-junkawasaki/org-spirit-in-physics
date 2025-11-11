@@ -15,6 +15,9 @@ import type {
 } from './timeline/types'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 
+// 3D Force コンポーネントを動的インポート（SSR無効化）
+const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
+
 // Merkle DAG: components.timeline_visualization
 // 時系列統合可視化コンポーネント
 // 依存関係: React, timeline modules
@@ -306,247 +309,13 @@ export default function TimelineVisualization({
     return pairs
   }, [distanceData, EMOTION_KEYS])
 
-  // ローディング状態（すべてのフックの後に配置）
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">時系列データを読み込み中...</span>
-      </div>
-    )
-  }
+  // 3D Force グラフデータをメモ化（パフォーマンス最適化）
+  const force3DGraphData = useMemo(() => {
+    // activeTabのチェックを外して、常にデータを準備（タブ切り替え時の再計算を防ぐ）
+    if (!mounted || data.length === 0) {
+      return { nodes: [] as WordNode[], links: [] as WordLink[] }
+    }
 
-  // エラー状態（すべてのフックの後に配置）
-  if (error) {
-    return (
-      <div className="text-center text-red-600 p-4">
-        <p>エラー: {error}</p>
-        <button 
-          type="button"
-          onClick={refetchData}
-          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          再試行
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* フィルターコントロール */}
-      {!hideFilters && (
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="font-semibold mb-3">フィルター設定</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={filters.emotions}
-              onChange={(e) => setFilters(prev => ({ ...prev, emotions: e.target.checked }))}
-            />
-            <span className="text-sm">感情データ</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={filters.physiological}
-              onChange={(e) => setFilters(prev => ({ ...prev, physiological: e.target.checked }))}
-            />
-            <span className="text-sm">生理データ</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={filters.reactionValues}
-              onChange={(e) => setFilters(prev => ({ ...prev, reactionValues: e.target.checked }))}
-            />
-            <span className="text-sm">反応値</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={filters.wordDisplay}
-              onChange={(e) => setFilters(prev => ({ ...prev, wordDisplay: e.target.checked }))}
-            />
-            <span className="text-sm">単語表示</span>
-          </label>
-        </div>
-      </div>
-      )}
-
-      {/* 表示モード切り替えタブ */}
-      <div className="bg-white border border-gray-200 rounded-lg">
-        {/* Top Toolbar (iPad friendly) */}
-        <div className="border-b border-gray-200 sticky top-0 z-10 bg-white/90 backdrop-blur px-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 py-3">
-            <div className="flex items-center gap-2">
-              <nav className="inline-flex rounded-md shadow-sm" role="tablist" aria-label="View Tabs">
-              {[
-                { id: 'timeline', label: '時系列統合', icon: '📈' },
-                { id: 'force3d', label: '3D Force', icon: '⚡' },
-                { id: 'words', label: '単語一覧', icon: '📝' },
-                { id: 'distance', label: '単語距離感', icon: '📏' },
-              ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                aria-pressed={activeTab === tab.id}
-                className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${
-                  activeTab === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'
-                }`}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              >
-                <span className="mr-1">{tab.icon}</span>
-                <span className="hidden md:inline">{tab.label}</span>
-              </button>
-            ))}
-              </nav>
-            </div>
-            {/* Segmented controls: mode & segment */}
-            <div className="flex items-center gap-3">
-              <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Mode">
-                {[
-                  { id: 'all', label: 'ALL' },
-                  { id: 'emotion', label: 'Emotion' },
-                  { id: 'physio', label: 'Physio' },
-                  { id: 'reactionSpeed', label: 'Speed' },
-                ].map(o => (
-                  <button
-                    key={o.id}
-                    type="button"
-                    aria-pressed={physicsMode === o.id}
-                    className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${physicsMode === o.id ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white text-gray-700 border-gray-200'}`}
-                    onClick={() => setPhysicsMode(o.id as typeof physicsMode)}
-                  >{o.label}</button>
-                ))}
-              </div>
-              <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Segment">
-                {[
-                  { id: 'all', label: 'All 200' },
-                  { id: 'first100', label: 'First 100' },
-                  { id: 'next100', label: 'Next 100' },
-                ].map(o => (
-                  <button
-                    key={o.id}
-                    type="button"
-                    aria-pressed={segment === o.id}
-                    className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${segment === o.id ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white text-gray-700 border-gray-200'}`}
-                    onClick={() => setSegment(o.id as typeof segment)}
-                  >{o.label}</button>
-                ))}
-              </div>
-              <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => {
-                setSelectedEmotions(new Set(EMOTION_KEYS)); setTopK(2); setMinW(0.25); setWeightGamma(1.6); setAnimateTransitions(true)
-              }}>Reset</button>
-            </div>
-          </div>
-        </div>
-
-        {/* タブコンテンツ */}
-        <div className="p-4">
-          {activeTab === 'timeline' && (
-            <div className="space-y-4">
-              <h3 className="font-semibold mb-3">時系列統合可視化</h3>
-              <TimelineChart
-                data={data}
-                filters={filters}
-                width={width}
-                height={height}
-                timeRange={timeRange}
-                onDataPointSelect={setSelectedDataPoint}
-                onTooltipShow={(event, point) => {
-                  if (!tooltipRef.current) return
-                  const tooltip = tooltipRef.current
-                  tooltip.style.display = 'block'
-                  tooltip.style.left = `${event.pageX + 10}px`
-                  tooltip.style.top = `${event.pageY - 10}px`
-
-                  // 感情データの詳細表示
-                  const emotionDetails = point.emotions.length > 0
-                    ? point.emotions.map(emotion =>
-                        `<div class="text-xs">
-                          <span class="font-medium">${emotion.name || 'unknown'}</span>:
-                          <span class="text-blue-600">${(emotion.score || 0).toFixed(2)}</span>
-                          <span class="text-gray-500">(${emotion.fileType || 'unknown'})</span>
-                        </div>`
-                      ).join('')
-                    : '<div class="text-xs text-gray-500">感情データなし</div>'
-
-                  tooltip.innerHTML = `
-                    <div class="bg-white border border-gray-300 rounded-lg p-3 shadow-lg text-sm">
-                      <div class="font-semibold text-gray-900 mb-2">${point.word}</div>
-                      <div class="text-gray-600 mb-2">時間: ${new Date(point.timestamp).toLocaleTimeString()}</div>
-                      <div class="grid grid-cols-2 gap-2 text-xs mb-2">
-                        <div>反応値: <span class="font-medium">${point.reactionValue.toFixed(2)}</span></div>
-                        <div>反応時間: <span class="font-medium">${point.reactionTime}ms</span></div>
-                      </div>
-                      <div class="border-t pt-2">
-                        <div class="text-xs font-medium text-gray-700 mb-1">感情データ:</div>
-                        ${emotionDetails}
-                      </div>
-                    </div>
-                  `
-                }}
-                onTooltipHide={() => {
-                  if (tooltipRef.current) {
-                    tooltipRef.current.style.display = 'none'
-                  }
-                }}
-              />
-            </div>
-          )}
-
-          {activeTab === 'force3d' && (
-            <div className="space-y-4">
-              <h3 className="font-semibold mb-3">3D Force 可視化</h3>
-
-              {/* 単語選択: 上位100語 */}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                <div className="lg:col-span-3 order-2 lg:order-1">
-                  <div className="flex items-center justify-end mb-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedControls(v => !v)}
-                      className="px-3 py-1.5 text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
-                    >{showAdvancedControls ? 'Hide Advanced' : 'Show Advanced'}</button>
-                  </div>
-                  {showAdvancedControls && (
-                    <Force3DControls
-                      forcePresets={forcePresets}
-                      forcePresetId={forcePresetId}
-                      onPresetChange={applyForcePreset}
-                      springK={springK}
-                      onSpringKChange={setSpringK}
-                      repulsionK={repulsionK}
-                      onRepulsionKChange={setRepulsionK}
-                      restLength={restLength}
-                      onRestLengthChange={setRestLength}
-                      minSep={minSep}
-                      onMinSepChange={setMinSep}
-                      sepK={sepK}
-                      onSepKChange={setSepK}
-                      shellRadius={shellRadius}
-                      onShellRadiusChange={setShellRadius}
-                      shellK={shellK}
-                      onShellKChange={setShellK}
-                      radialOutK={radialOutK}
-                      onRadialOutKChange={setRadialOutK}
-                      damping={damping}
-                      onDampingChange={setDamping}
-                      alpha={alpha}
-                      onAlphaChange={setAlpha}
-                      gamma={gamma}
-                      onGammaChange={setGamma}
-                      lambda={lambda}
-                      onLambdaChange={setLambda}
-                      eta={eta}
-                      onEtaChange={setEta}
-                    />
-                  )}
-
-                  {/* 3D Force グラフ本体 */}
-                  {mounted && (() => {
                 try {
                   // 実際のデータから3Dグラフを生成
                   const generateForce3DGraph = (): { nodes: WordNode[]; links: WordLink[] } => {
@@ -825,7 +594,6 @@ export default function TimelineVisualization({
                     return { nodes: allNodes, links }
                   }
 
-                  const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
                     const { nodes, links } = generateForce3DGraph()
 
                     // 選択語を中心へ（固定）し目立たせる
@@ -839,13 +607,286 @@ export default function TimelineVisualization({
                       }
                     }
 
+      // 開発環境のみログ出力（本番環境では無効化）
+      if (process.env.NODE_ENV === 'development') {
                   console.log('3Dグラフデータ:', { nodes: nodes.length, links: links.length })
+      }
 
+      return { nodes, links }
+    } catch (error) {
+      console.error('3Dグラフ生成エラー:', error)
+      return { nodes: [] as WordNode[], links: [] as WordLink[] }
+    }
+  }, [
+    mounted,
+    activeTab,
+    data,
+    segment,
+    selectedWord,
+    selectedEmotions,
+    physicsMode,
+    selectedModalities,
+    topK,
+    minW,
+    weightGamma,
+    animateTransitions,
+    springK,
+    repulsionK,
+    restLength,
+    shellRadius,
+    getPhysStat,
+  ])
+
+  // ローディング状態（すべてのフックの後に配置）
+  if (loading) {
                   return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">時系列データを読み込み中...</span>
+      </div>
+    )
+  }
+
+  // エラー状態（すべてのフックの後に配置）
+  if (error) {
+    return (
+      <div className="text-center text-red-600 p-4">
+        <p>エラー: {error}</p>
+        <button 
+          type="button"
+          onClick={refetchData}
+          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          再試行
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* フィルターコントロール */}
+      {!hideFilters && (
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="font-semibold mb-3">フィルター設定</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.emotions}
+              onChange={(e) => setFilters(prev => ({ ...prev, emotions: e.target.checked }))}
+            />
+            <span className="text-sm">感情データ</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.physiological}
+              onChange={(e) => setFilters(prev => ({ ...prev, physiological: e.target.checked }))}
+            />
+            <span className="text-sm">生理データ</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.reactionValues}
+              onChange={(e) => setFilters(prev => ({ ...prev, reactionValues: e.target.checked }))}
+            />
+            <span className="text-sm">反応値</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={filters.wordDisplay}
+              onChange={(e) => setFilters(prev => ({ ...prev, wordDisplay: e.target.checked }))}
+            />
+            <span className="text-sm">単語表示</span>
+          </label>
+        </div>
+      </div>
+      )}
+
+      {/* 表示モード切り替えタブ */}
+      <div className="bg-white border border-gray-200 rounded-lg">
+        {/* Top Toolbar (iPad friendly) */}
+        <div className="border-b border-gray-200 sticky top-0 z-10 bg-white/90 backdrop-blur px-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 py-3">
+            <div className="flex items-center gap-2">
+              <nav className="inline-flex rounded-md shadow-sm" role="tablist" aria-label="View Tabs">
+              {[
+                { id: 'timeline', label: '時系列統合', icon: '📈' },
+                { id: 'force3d', label: '3D Force', icon: '⚡' },
+                { id: 'words', label: '単語一覧', icon: '📝' },
+                { id: 'distance', label: '単語距離感', icon: '📏' },
+              ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                aria-pressed={activeTab === tab.id}
+                className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${
+                  activeTab === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'
+                }`}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              >
+                <span className="mr-1">{tab.icon}</span>
+                <span className="hidden md:inline">{tab.label}</span>
+              </button>
+            ))}
+              </nav>
+            </div>
+            {/* Segmented controls: mode & segment */}
+            <div className="flex items-center gap-3">
+              <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Mode">
+                {[
+                  { id: 'all', label: 'ALL' },
+                  { id: 'emotion', label: 'Emotion' },
+                  { id: 'physio', label: 'Physio' },
+                  { id: 'reactionSpeed', label: 'Speed' },
+                ].map(o => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={physicsMode === o.id}
+                    className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${physicsMode === o.id ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white text-gray-700 border-gray-200'}`}
+                    onClick={() => setPhysicsMode(o.id as typeof physicsMode)}
+                  >{o.label}</button>
+                ))}
+              </div>
+              <div className="inline-flex rounded-md shadow-sm" role="group" aria-label="Segment">
+                {[
+                  { id: 'all', label: 'All 200' },
+                  { id: 'first100', label: 'First 100' },
+                  { id: 'next100', label: 'Next 100' },
+                ].map(o => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={segment === o.id}
+                    className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${segment === o.id ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white text-gray-700 border-gray-200'}`}
+                    onClick={() => setSegment(o.id as typeof segment)}
+                  >{o.label}</button>
+                ))}
+              </div>
+              <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => {
+                setSelectedEmotions(new Set(EMOTION_KEYS)); setTopK(2); setMinW(0.25); setWeightGamma(1.6); setAnimateTransitions(true)
+              }}>Reset</button>
+            </div>
+          </div>
+        </div>
+
+        {/* タブコンテンツ */}
+        <div className="p-4">
+          {activeTab === 'timeline' && (
+            <div className="space-y-4">
+              <h3 className="font-semibold mb-3">時系列統合可視化</h3>
+              <TimelineChart
+                data={data}
+                filters={filters}
+                width={width}
+                height={height}
+                timeRange={timeRange}
+                onDataPointSelect={setSelectedDataPoint}
+                onTooltipShow={(event, point) => {
+                  if (!tooltipRef.current) return
+                  const tooltip = tooltipRef.current
+                  tooltip.style.display = 'block'
+                  tooltip.style.left = `${event.pageX + 10}px`
+                  tooltip.style.top = `${event.pageY - 10}px`
+
+                  // 感情データの詳細表示
+                  const emotionDetails = point.emotions.length > 0
+                    ? point.emotions.map(emotion =>
+                        `<div class="text-xs">
+                          <span class="font-medium">${emotion.name || 'unknown'}</span>:
+                          <span class="text-blue-600">${(emotion.score || 0).toFixed(2)}</span>
+                          <span class="text-gray-500">(${emotion.fileType || 'unknown'})</span>
+                        </div>`
+                      ).join('')
+                    : '<div class="text-xs text-gray-500">感情データなし</div>'
+
+                  tooltip.innerHTML = `
+                    <div class="bg-white border border-gray-300 rounded-lg p-3 shadow-lg text-sm">
+                      <div class="font-semibold text-gray-900 mb-2">${point.word}</div>
+                      <div class="text-gray-600 mb-2">時間: ${new Date(point.timestamp).toLocaleTimeString()}</div>
+                      <div class="grid grid-cols-2 gap-2 text-xs mb-2">
+                        <div>反応値: <span class="font-medium">${point.reactionValue.toFixed(2)}</span></div>
+                        <div>反応時間: <span class="font-medium">${point.reactionTime}ms</span></div>
+                      </div>
+                      <div class="border-t pt-2">
+                        <div class="text-xs font-medium text-gray-700 mb-1">感情データ:</div>
+                        ${emotionDetails}
+                      </div>
+                    </div>
+                  `
+                }}
+                onTooltipHide={() => {
+                  if (tooltipRef.current) {
+                    tooltipRef.current.style.display = 'none'
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {activeTab === 'force3d' && (
+            <div className="space-y-4">
+              <h3 className="font-semibold mb-3">3D Force 可視化</h3>
+
+              {/* 単語選択: 上位100語 */}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-3 order-2 lg:order-1">
+                  <div className="flex items-center justify-end mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedControls(v => !v)}
+                      className="px-3 py-1.5 text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
+                    >{showAdvancedControls ? 'Hide Advanced' : 'Show Advanced'}</button>
+                  </div>
+                  {showAdvancedControls && (
+                    <Force3DControls
+                      forcePresets={forcePresets}
+                      forcePresetId={forcePresetId}
+                      onPresetChange={applyForcePreset}
+                      springK={springK}
+                      onSpringKChange={setSpringK}
+                      repulsionK={repulsionK}
+                      onRepulsionKChange={setRepulsionK}
+                      restLength={restLength}
+                      onRestLengthChange={setRestLength}
+                      minSep={minSep}
+                      onMinSepChange={setMinSep}
+                      sepK={sepK}
+                      onSepKChange={setSepK}
+                      shellRadius={shellRadius}
+                      onShellRadiusChange={setShellRadius}
+                      shellK={shellK}
+                      onShellKChange={setShellK}
+                      radialOutK={radialOutK}
+                      onRadialOutKChange={setRadialOutK}
+                      damping={damping}
+                      onDampingChange={setDamping}
+                      alpha={alpha}
+                      onAlphaChange={setAlpha}
+                      gamma={gamma}
+                      onGammaChange={setGamma}
+                      lambda={lambda}
+                      onLambdaChange={setLambda}
+                      eta={eta}
+                      onEtaChange={setEta}
+                    />
+                  )}
+
+                  {/* 3D Force グラフ本体 */}
+                  {mounted && activeTab === 'force3d' && (
+                    force3DGraphData.nodes.length === 0 ? (
+                      <div className="border rounded overflow-hidden p-4 text-gray-500">
+                        データがありません
+                      </div>
+                    ) : (
                     <div className="border rounded overflow-hidden">
                       <Force3D
-                        nodes={nodes}
-                        links={links}
+                          nodes={force3DGraphData.nodes}
+                          links={force3DGraphData.links}
                         width={width}
                         height={Math.min(460, Math.max(360, height))}
                         physics={{
@@ -865,15 +906,7 @@ export default function TimelineVisualization({
                       />
                     </div>
                   )
-                } catch (error) {
-                  console.error('3Dグラフ生成エラー:', error)
-                  return (
-                    <div className="border rounded overflow-hidden p-4 text-red-600">
-                      3Dグラフの生成に失敗しました: {error instanceof Error ? error.message : 'Unknown error'}
-                    </div>
-                  )
-                }
-              })()}
+                  )}
                 </div>
                 {/* Control Panel - iPad sticky and touch-friendly */}
                 <div className="lg:col-span-1 order-1 lg:order-2 sticky top-4 self-start max-h-[78vh] overflow-auto pr-1">

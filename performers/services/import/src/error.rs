@@ -30,8 +30,8 @@ pub enum ImportError {
     Config(String),
 }
 
-impl From<neo4rs::Error> for ImportError {
-    fn from(err: neo4rs::Error) -> Self {
+impl From<sqlx::Error> for ImportError {
+    fn from(err: sqlx::Error) -> Self {
         ImportError::Database(err.to_string())
     }
 }

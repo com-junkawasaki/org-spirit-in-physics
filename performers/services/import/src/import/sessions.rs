@@ -1,17 +1,15 @@
 // Merkle DAG: import.service.import.sessions
-// Session import logic
+// Session import logic using PostgreSQL + SQLx
 
 use crate::config::Config;
 use crate::error::ImportError;
-use crate::neo4j::client::Neo4jClient;
-use crate::neo4j::transaction::execute_in_transaction;
 use crate::types::Session;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use sqlx::{PgPool, Postgres, Transaction};
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::{info, warn, error};
-use neo4rs::{BoltString, BoltInteger, BoltNull};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImportResult {
@@ -38,7 +36,7 @@ pub struct SessionStatistics {
 }
 
 pub async fn import_sessions(
-    client: &mut Neo4jClient,
+    pool: &PgPool,
     config: &Config,
 ) -> Result<ImportResult, ImportError> {
     let dataset_path = PathBuf::from(&config.dataset_path);
@@ -69,21 +67,15 @@ pub async fn import_sessions(
             .ok_or_else(|| ImportError::Validation("Invalid participant directory name".to_string()))?
             .to_string();
 
-        let participant_id_clone = participant_id.clone();
-        let participant_path_clone = participant_path.clone();
-
         // Process each participant in a separate transaction
-        match execute_in_transaction(client, |txn| {
-            let pid = participant_id_clone.clone();
-            let ppath = participant_path_clone.clone();
-            Box::pin(async move {
-                process_session(txn, &pid, &ppath).await
-            })
-        })
-        .await
-        {
-            Ok(result) => results.push(result),
+        let mut txn = pool.begin().await?;
+        match process_session(&mut txn, &participant_id, &participant_path).await {
+            Ok(result) => {
+                txn.commit().await?;
+                results.push(result);
+            }
             Err(e) => {
+                txn.rollback().await?;
                 error!("Error importing session for participant {}: {}", participant_id, e);
                 results.push(SessionResult {
                     participant_id,
@@ -104,25 +96,22 @@ pub async fn import_sessions(
 }
 
 async fn process_session(
-    txn: &mut crate::neo4j::client::Transaction,
+    txn: &mut Transaction<'_, Postgres>,
     participant_id: &str,
     participant_path: &PathBuf,
 ) -> Result<SessionResult, ImportError> {
     // Check if participant exists
-    let mut check_params = HashMap::new();
-    check_params.insert(
-        "participant_id".to_string(),
-        neo4rs::BoltType::String(BoltString::from(participant_id.to_string())),
-    );
+    let participant_uuid = Uuid::parse_str(participant_id)
+        .map_err(|e| ImportError::Validation(format!("Invalid UUID format: {}", e)))?;
 
-    let check_query = r#"
-        MATCH (p:Participant {id: $participant_id})
-        RETURN p.id as id
-        LIMIT 1
-    "#;
+    let existing: Option<(Uuid,)> = sqlx::query_as(
+        "SELECT id FROM participants WHERE id = $1 LIMIT 1"
+    )
+    .bind(participant_uuid)
+    .fetch_optional(&mut **txn)
+    .await?;
 
-    let check_rows: Vec<neo4rs::Row> = txn.execute(check_query, check_params).await?;
-    if check_rows.is_empty() {
+    if existing.is_none() {
         return Err(ImportError::ParticipantNotFound(participant_id.to_string()));
     }
 
@@ -177,24 +166,19 @@ async fn process_session(
         .map(|dt| dt.timestamp_millis());
 
     let session_index = 0;
-    let session_id = format!("{}-{}", participant_id, session_index);
+    let session_uuid = Uuid::new_v4();
 
     // Check if session already exists
-    let mut session_check_params = HashMap::new();
-    session_check_params.insert(
-        "session_id".to_string(),
-        neo4rs::BoltType::String(BoltString::from(session_id.clone())),
-    );
+    let existing_session: Option<(Uuid,)> = sqlx::query_as(
+        "SELECT id FROM sessions WHERE participant_id = $1 AND session_index = $2 LIMIT 1"
+    )
+    .bind(participant_uuid)
+    .bind(session_index)
+    .fetch_optional(&mut **txn)
+    .await?;
 
-    let session_check_query = r#"
-        MATCH (s:Session {id: $session_id})
-        RETURN s.id as id
-        LIMIT 1
-    "#;
-
-    let session_check_rows: Vec<neo4rs::Row> = txn.execute(session_check_query, session_check_params).await?;
-    if !session_check_rows.is_empty() {
-        warn!("Session {} already exists, skipping import", session_id);
+    if existing_session.is_some() {
+        warn!("Session for participant {} with index {} already exists, skipping import", participant_id, session_index);
         return Ok(SessionResult {
             participant_id: participant_id.to_string(),
             status: "skipped".to_string(),
@@ -203,52 +187,21 @@ async fn process_session(
         });
     }
 
-    // Create session node
-    let mut create_params = HashMap::new();
-    create_params.insert(
-        "participant_id".to_string(),
-        neo4rs::BoltType::String(BoltString::from(participant_id.to_string())),
-    );
-    create_params.insert(
-        "session_id".to_string(),
-        neo4rs::BoltType::String(BoltString::from(session_id.clone())),
-    );
-    create_params.insert(
-        "session_index".to_string(),
-        neo4rs::BoltType::Integer(BoltInteger::from(session_index)),
-    );
-    create_params.insert(
-        "start_ts".to_string(),
-        neo4rs::BoltType::Integer(BoltInteger::from(start_time)),
-    );
-    create_params.insert(
-        "end_ts".to_string(),
-        end_time.map(|t| neo4rs::BoltType::Integer(BoltInteger::from(t)))
-            .unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)),
-    );
-    create_params.insert(
-        "events".to_string(),
-        neo4rs::BoltType::String(BoltString::from(serde_json::to_string(events)?)),
-    );
-    create_params.insert(
-        "created_at".to_string(),
-        neo4rs::BoltType::String(BoltString::from(chrono::Utc::now().to_rfc3339())),
-    );
-
-    let create_query = r#"
-        MATCH (p:Participant {id: $participant_id})
-        MERGE (s:Session {id: $session_id})
-        SET s.participant_id = $participant_id,
-            s.session_index = $session_index,
-            s.start_ts = $start_ts,
-            s.end_ts = $end_ts,
-            s.events = $events,
-            s.created_at = $created_at
-        MERGE (p)-[:HAS_SESSION]->(s)
-        RETURN s.id as id
-    "#;
-
-    txn.execute(create_query, create_params).await?;
+    // Create session
+    sqlx::query(
+        r#"
+        INSERT INTO sessions (id, participant_id, session_index, start_ts, end_ts, events, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        "#
+    )
+    .bind(session_uuid)
+    .bind(participant_uuid)
+    .bind(session_index)
+    .bind(start_time)
+    .bind(end_time)
+    .bind(events)
+    .execute(&mut **txn)
+    .await?;
 
     // Calculate statistics
     let word_responses = events
@@ -275,7 +228,7 @@ async fn process_session(
 
     let session_duration = end_time.map(|et| et - start_time).unwrap_or(0);
 
-    info!("Session {} imported successfully", session_id);
+    info!("Session {} imported successfully for participant {}", session_uuid, participant_id);
 
     Ok(SessionResult {
         participant_id: participant_id.to_string(),
@@ -289,4 +242,3 @@ async fn process_session(
         }),
     })
 }
-

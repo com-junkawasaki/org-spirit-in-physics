@@ -1,18 +1,16 @@
 // Merkle DAG: import.service.import.emotions
-// Emotion import logic with type-level session dependency
+// Emotion import logic using PostgreSQL + SQLx
 
 use crate::config::Config;
 use crate::error::ImportError;
-use crate::neo4j::client::Neo4jClient;
-use crate::neo4j::transaction::execute_in_transaction;
-use crate::types::ValidatedSessionId;
 use crate::utils::{find_hume_artifacts_directory, find_hume_predictions_file, find_all_registry_csv_directories, parse_csv_file};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use sqlx::{PgPool, Postgres, Transaction};
 use tokio::fs;
 use tracing::{info, warn, error};
-use neo4rs::{BoltString, BoltInteger, BoltFloat, BoltNull};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImportResult {
@@ -70,7 +68,7 @@ const AU_KEYS: &[&str] = &[
 ];
 
 pub async fn import_emotions(
-    client: &mut Neo4jClient,
+    pool: &PgPool,
     config: &Config,
 ) -> Result<ImportResult, ImportError> {
     let dataset_path = PathBuf::from(&config.dataset_path);
@@ -101,21 +99,15 @@ pub async fn import_emotions(
             .ok_or_else(|| ImportError::Validation("Invalid participant directory name".to_string()))?
             .to_string();
 
-        let participant_id_clone = participant_id.clone();
-        let participant_path_clone = participant_path.clone();
-
         // Process each participant in a separate transaction
-        match execute_in_transaction(client, |txn| {
-            let pid = participant_id_clone.clone();
-            let ppath = participant_path_clone.clone();
-            Box::pin(async move {
-                process_emotions(txn, &pid, &ppath).await
-            })
-        })
-        .await
-        {
-            Ok(result) => results.push(result),
+        let mut txn = pool.begin().await?;
+        match process_emotions(&mut txn, &participant_id, &participant_path).await {
+            Ok(result) => {
+                txn.commit().await?;
+                results.push(result);
+            }
             Err(e) => {
+                txn.rollback().await?;
                 error!("Error importing emotions for participant {}: {}", participant_id, e);
                 results.push(EmotionResult {
                     participant_id,
@@ -136,25 +128,22 @@ pub async fn import_emotions(
 }
 
 async fn process_emotions(
-    txn: &mut crate::neo4j::client::Transaction,
+    txn: &mut Transaction<'_, Postgres>,
     participant_id: &str,
     participant_path: &PathBuf,
 ) -> Result<EmotionResult, ImportError> {
     // Check if participant exists
-    let mut check_params = HashMap::new();
-    check_params.insert(
-        "participant_id".to_string(),
-        neo4rs::BoltType::String(BoltString::from(participant_id.to_string())),
-    );
+    let participant_uuid = Uuid::parse_str(participant_id)
+        .map_err(|e| ImportError::Validation(format!("Invalid UUID format: {}", e)))?;
 
-    let check_query = r#"
-        MATCH (p:Participant {id: $participant_id})
-        RETURN p.id as id
-        LIMIT 1
-    "#;
+    let existing: Option<(Uuid,)> = sqlx::query_as(
+        "SELECT id FROM participants WHERE id = $1 LIMIT 1"
+    )
+    .bind(participant_uuid)
+    .fetch_optional(&mut **txn)
+    .await?;
 
-    let check_rows: Vec<neo4rs::Row> = txn.execute(check_query, check_params).await?;
-    if check_rows.is_empty() {
+    if existing.is_none() {
         return Err(ImportError::ParticipantNotFound(participant_id.to_string()));
     }
 
@@ -171,11 +160,26 @@ async fn process_emotions(
         }
     };
 
-    // Get session ID and validate it (type-level dependency)
-    let validated_session_id = ValidatedSessionId::from_participant(participant_id, txn).await?;
+    // Get session ID (first session for participant)
+    let session: Option<(Uuid,)> = sqlx::query_as(
+        "SELECT id FROM sessions WHERE participant_id = $1 ORDER BY session_index ASC LIMIT 1"
+    )
+    .bind(participant_uuid)
+    .fetch_optional(&mut **txn)
+    .await?;
+
+    let session_uuid = match session {
+        Some((id,)) => id,
+        None => {
+            return Err(ImportError::SessionNotFound(format!(
+                "No session found for participant {}",
+                participant_id
+            )));
+        }
+    };
 
     // Delete existing emotion data
-    delete_existing_emotion_data(txn, participant_id).await?;
+    delete_existing_emotion_data(&mut **txn, participant_uuid, session_uuid).await?;
 
     // Process predictions JSON file
     let predictions_file = find_hume_predictions_file(&hume_artifacts_dir).await?;
@@ -192,7 +196,7 @@ async fn process_emotions(
 
         // Store emotion entries
         for entry in extract_emotion_entries(&predictions_data)? {
-            store_emotion_entry(txn, &validated_session_id, participant_id, &entry).await?;
+            store_emotion_entry(&mut **txn, session_uuid, participant_uuid, &entry).await?;
         }
     }
 
@@ -213,7 +217,7 @@ async fn process_emotions(
             let csv_path = csv_dir.join(csv_file);
             if csv_path.exists() {
                 info!("Processing CSV file: {} for participant {}", csv_path.display(), participant_id);
-                match process_csv_file(txn, &validated_session_id, participant_id, &csv_path, csv_file).await {
+                match process_csv_file(&mut **txn, session_uuid, participant_uuid, &csv_path, csv_file).await {
                     Ok(count) => {
                         csv_files_processed += 1;
                         total_emotions += count;
@@ -239,7 +243,6 @@ async fn process_emotions(
     info!("Emotions imported for participant {}: {} entries, {} CSV files, {} total emotions", 
           participant_id, emotion_entries_count, csv_files_processed, total_emotions);
     
-    // 詳細ログ: 各CSVタイプの処理結果
     info!("Participant {} emotion import details: burst={}, face={}, language={}, prosody={}",
           participant_id, burst_count, face_count, language_count, prosody_count);
 
@@ -255,27 +258,32 @@ async fn process_emotions(
     })
 }
 
-
 async fn delete_existing_emotion_data(
-    txn: &mut crate::neo4j::client::Transaction,
-    participant_id: &str,
+    txn: &mut Transaction<'_, Postgres>,
+    participant_uuid: Uuid,
+    session_uuid: Uuid,
 ) -> Result<(), ImportError> {
-    let mut params = HashMap::new();
-    params.insert(
-        "participant_id".to_string(),
-        neo4rs::BoltType::String(BoltString::from(participant_id.to_string())),
-    );
+    // Delete existing emotion data for this session
+    sqlx::query("DELETE FROM burst_emotion_data WHERE session_id = $1")
+        .bind(session_uuid)
+        .execute(txn)
+        .await?;
 
-    let query = r#"
-        MATCH (p:Participant {id: $participant_id})-[:HAS_SESSION]->(s:Session)
-        OPTIONAL MATCH (s)-[r1:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
-        OPTIONAL MATCH (s)-[r2:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
-        OPTIONAL MATCH (s)-[r3:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
-        OPTIONAL MATCH (s)-[r4:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
-        DETACH DELETE b, f, l, pr
-    "#;
+    sqlx::query("DELETE FROM face_emotion_data WHERE session_id = $1")
+        .bind(session_uuid)
+        .execute(txn)
+        .await?;
 
-    txn.execute(query, params).await?;
+    sqlx::query("DELETE FROM language_emotion_data WHERE session_id = $1")
+        .bind(session_uuid)
+        .execute(txn)
+        .await?;
+
+    sqlx::query("DELETE FROM prosody_emotion_data WHERE session_id = $1")
+        .bind(session_uuid)
+        .execute(txn)
+        .await?;
+
     Ok(())
 }
 
@@ -283,7 +291,6 @@ fn process_emotion_data(predictions_data: &serde_json::Value) -> Result<(usize, 
     let mut entries_processed = 0;
     let mut total_emotions = 0;
 
-    // Handle various structures of predictions data
     let entries = extract_predictions_entries(predictions_data)?;
 
     for entry in entries {
@@ -365,59 +372,59 @@ struct EmotionEntryData {
 }
 
 async fn store_emotion_entry(
-    txn: &mut crate::neo4j::client::Transaction,
-    session_id: &ValidatedSessionId,
-    participant_id: &str,
+    txn: &mut Transaction<'_, Postgres>,
+    session_uuid: Uuid,
+    participant_uuid: Uuid,
     entry: &EmotionEntryData,
 ) -> Result<(), ImportError> {
-    let node_id = format!("emotion_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
-    
-    let mut params = HashMap::new();
-    params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
-    params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
-    params.insert("text".to_string(), entry.text.as_ref().map(|t| neo4rs::BoltType::String(BoltString::from(t.clone()))).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    params.insert("begin_time".to_string(), entry.begin_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    params.insert("end_time".to_string(), entry.end_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    params.insert("confidence".to_string(), neo4rs::BoltType::Float(BoltFloat { value: entry.confidence }));
-    
+    // Convert emotion scores to JSONB
     let emotion_data: serde_json::Value = entry.emotion_scores.iter()
         .map(|(name, score)| (name.clone(), *score))
         .collect();
-    params.insert("emotion_data".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&emotion_data)?)));
 
-    let query = r#"
-        MATCH (s:Session {id: $session_id})
-        CREATE (e:EmotionEntry {
-            id: $node_id,
-            participant_id: $participant_id,
-            session_id: $session_id,
-            text: $text,
-            begin_time: $begin_time,
-            end_time: $end_time,
-            confidence: $confidence,
-            emotion_data: $emotion_data,
-            created_at: datetime()
+    // Calculate time from begin_time (convert seconds to timestamp)
+    let time = entry.begin_time
+        .map(|bt| {
+            // begin_time is in seconds, convert to timestamp
+            chrono::Utc::now() + chrono::Duration::seconds(bt as i64)
         })
-        CREATE (s)-[:HAS_EMOTION_ENTRY]->(e)
-    "#;
+        .unwrap_or_else(|| chrono::Utc::now());
 
-    txn.execute(query, params).await?;
+    // Store in appropriate table based on entry type (simplified - store in burst_emotion_data)
+    sqlx::query(
+        r#"
+        INSERT INTO burst_emotion_data (
+            time, session_id, participant_id, record_id, begin_time, end_time, emotion_scores, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        ON CONFLICT DO NOTHING
+        "#
+    )
+    .bind(time)
+    .bind(session_uuid)
+    .bind(participant_uuid)
+    .bind("emotion_entry")
+    .bind(entry.begin_time)
+    .bind(entry.end_time)
+    .bind(&emotion_data)
+    .execute(txn)
+    .await?;
+
     Ok(())
 }
 
 async fn process_csv_file(
-    txn: &mut crate::neo4j::client::Transaction,
-    session_id: &ValidatedSessionId,
-    participant_id: &str,
+    txn: &mut Transaction<'_, Postgres>,
+    session_uuid: Uuid,
+    participant_uuid: Uuid,
     csv_path: &PathBuf,
     csv_type: &str,
 ) -> Result<usize, ImportError> {
     let content = fs::read_to_string(csv_path).await?;
     let records = parse_csv_file(&content)?;
 
-    info!("Processing {} records from {} (type: {}) for participant {}", 
-          records.len(), csv_path.display(), csv_type, participant_id);
+    info!("Processing {} records from {} (type: {})", 
+          records.len(), csv_path.display(), csv_type);
 
     let mut count = 0;
     let mut skipped = 0;
@@ -426,48 +433,48 @@ async fn process_csv_file(
     match csv_type {
         "burst.csv" => {
             for record in records {
-                match store_burst_emotion_data(txn, session_id, participant_id, &record).await {
+                match store_burst_emotion_data(txn, session_uuid, participant_uuid, &record).await {
                     Ok(()) => count += 1,
-                    Err(ImportError::Validation(_)) => skipped += 1, // Duplicate
+                    Err(ImportError::Validation(_)) => skipped += 1,
                     Err(e) => {
                         errors += 1;
-                        warn!("Error storing burst emotion data for participant {}: {}", participant_id, e);
+                        warn!("Error storing burst emotion data: {}", e);
                     }
                 }
             }
         }
         "face.csv" => {
             for record in records {
-                match store_face_emotion_data(txn, session_id, participant_id, &record).await {
+                match store_face_emotion_data(txn, session_uuid, participant_uuid, &record).await {
                     Ok(()) => count += 1,
-                    Err(ImportError::Validation(_)) => skipped += 1, // Duplicate
+                    Err(ImportError::Validation(_)) => skipped += 1,
                     Err(e) => {
                         errors += 1;
-                        warn!("Error storing face emotion data for participant {}: {}", participant_id, e);
+                        warn!("Error storing face emotion data: {}", e);
                     }
                 }
             }
         }
         "language.csv" => {
             for record in records {
-                match store_language_emotion_data(txn, session_id, participant_id, &record).await {
+                match store_language_emotion_data(txn, session_uuid, participant_uuid, &record).await {
                     Ok(()) => count += 1,
-                    Err(ImportError::Validation(_)) => skipped += 1, // Duplicate
+                    Err(ImportError::Validation(_)) => skipped += 1,
                     Err(e) => {
                         errors += 1;
-                        warn!("Error storing language emotion data for participant {}: {}", participant_id, e);
+                        warn!("Error storing language emotion data: {}", e);
                     }
                 }
             }
         }
         "prosody.csv" => {
             for record in records {
-                match store_prosody_emotion_data(txn, session_id, participant_id, &record).await {
+                match store_prosody_emotion_data(txn, session_uuid, participant_uuid, &record).await {
                     Ok(()) => count += 1,
-                    Err(ImportError::Validation(_)) => skipped += 1, // Duplicate
+                    Err(ImportError::Validation(_)) => skipped += 1,
                     Err(e) => {
                         errors += 1;
-                        warn!("Error storing prosody emotion data for participant {}: {}", participant_id, e);
+                        warn!("Error storing prosody emotion data: {}", e);
                     }
                 }
             }
@@ -484,39 +491,18 @@ async fn process_csv_file(
 }
 
 async fn store_burst_emotion_data(
-    txn: &mut crate::neo4j::client::Transaction,
-    session_id: &ValidatedSessionId,
-    participant_id: &str,
+    txn: &mut Transaction<'_, Postgres>,
+    session_uuid: Uuid,
+    participant_uuid: Uuid,
     record: &HashMap<String, String>,
 ) -> Result<(), ImportError> {
     let record_id = record.get("Id").unwrap_or(&"unknown".to_string()).clone();
     let begin_time = record.get("BeginTime").and_then(|s| s.parse::<f64>().ok());
     let end_time = record.get("EndTime").and_then(|s| s.parse::<f64>().ok());
 
-    // Check for duplicates
-    let mut check_params = HashMap::new();
-    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone())));
-    check_params.insert("begin_time".to_string(), begin_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    check_params.insert("end_time".to_string(), end_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-
-    let check_query = r#"
-        MATCH (s:Session {id: $session_id})-[:HAS_BURST_EMOTION_DATA]->(b:BurstEmotionData)
-        WHERE b.record_id = $record_id 
-          AND b.begin_time = $begin_time 
-          AND b.end_time = $end_time
-        RETURN b.id as existingId
-        LIMIT 1
-    "#;
-
-    let existing: Vec<neo4rs::Row> = txn.execute(check_query, check_params).await?;
-    if !existing.is_empty() {
-        return Ok(());
-    }
-
     // Extract emotion scores and vocal types
     let mut emotion_scores = HashMap::new();
-    let mut vocal_types = HashMap::new();
+    let mut vocal_types = Vec::new();
 
     for key in EMOTION_KEYS {
         if let Some(value_str) = record.get(*key) {
@@ -529,73 +515,72 @@ async fn store_burst_emotion_data(
     for key in VOCAL_KEYS {
         if let Some(value_str) = record.get(*key) {
             if let Ok(value) = value_str.parse::<f64>() {
-                vocal_types.insert(key.to_string(), value);
+                if value > 0.0 {
+                    vocal_types.push(key.to_string());
+                }
             }
         }
     }
 
-    let node_id = format!("burst_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
-    
-    let mut create_params = HashMap::new();
-    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    create_params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
-    create_params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
-    create_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id)));
-    create_params.insert("begin_time".to_string(), begin_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("end_time".to_string(), end_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("emotion_scores".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&emotion_scores)?)));
-    create_params.insert("vocal_types".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&vocal_types)?)));
-
-    let create_query = r#"
-        MATCH (s:Session {id: $session_id})
-        CREATE (b:BurstEmotionData {
-            id: $node_id,
-            participant_id: $participant_id,
-            session_id: $session_id,
-            record_id: $record_id,
-            begin_time: $begin_time,
-            end_time: $end_time,
-            emotion_scores: $emotion_scores,
-            vocal_types: $vocal_types,
-            created_at: datetime()
+    // Calculate time from begin_time (convert seconds to timestamp)
+    let time = begin_time
+        .map(|bt| {
+            chrono::Utc::now() + chrono::Duration::seconds(bt as i64)
         })
-        CREATE (s)-[:HAS_BURST_EMOTION_DATA]->(b)
-    "#;
+        .unwrap_or_else(|| chrono::Utc::now());
 
-    txn.execute(create_query, create_params).await?;
+    // Check for duplicates
+    let existing: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT id FROM burst_emotion_data 
+        WHERE session_id = $1 AND record_id = $2 AND begin_time = $3 AND end_time = $4
+        LIMIT 1
+        "#
+    )
+    .bind(session_uuid)
+    .bind(&record_id)
+    .bind(begin_time)
+    .bind(end_time)
+    .fetch_optional(txn)
+    .await?;
+
+    if existing.is_some() {
+        return Ok(());
+    }
+
+    // Insert into burst_emotion_data
+    sqlx::query(
+        r#"
+        INSERT INTO burst_emotion_data (
+            time, session_id, participant_id, record_id, begin_time, end_time, 
+            emotion_scores, vocal_types, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        "#
+    )
+    .bind(time)
+    .bind(session_uuid)
+    .bind(participant_uuid)
+    .bind(&record_id)
+    .bind(begin_time)
+    .bind(end_time)
+    .bind(&emotion_scores as &serde_json::Value)
+    .bind(&vocal_types as &serde_json::Value)
+    .execute(txn)
+    .await?;
+
     Ok(())
 }
 
 async fn store_face_emotion_data(
-    txn: &mut crate::neo4j::client::Transaction,
-    session_id: &ValidatedSessionId,
-    participant_id: &str,
+    txn: &mut Transaction<'_, Postgres>,
+    session_uuid: Uuid,
+    participant_uuid: Uuid,
     record: &HashMap<String, String>,
 ) -> Result<(), ImportError> {
     let record_id = record.get("Id").unwrap_or(&"unknown".to_string()).clone();
     let frame = record.get("Frame").and_then(|s| s.parse::<i32>().ok());
-    let time = record.get("Time").and_then(|s| s.parse::<f64>().ok());
-
-    // Check for duplicates
-    let mut check_params = HashMap::new();
-    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone())));
-    check_params.insert("frame".to_string(), frame.map(|f| neo4rs::BoltType::Integer(BoltInteger::from(f))).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    check_params.insert("time".to_string(), time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-
-    let check_query = r#"
-        MATCH (s:Session {id: $session_id})-[:HAS_FACE_EMOTION_DATA]->(f:FaceEmotionData)
-        WHERE f.record_id = $record_id 
-          AND f.frame = $frame 
-          AND f.time = $time
-        RETURN f.id as existingId
-        LIMIT 1
-    "#;
-
-    let existing: Vec<neo4rs::Row> = txn.execute(check_query, check_params).await?;
-    if !existing.is_empty() {
-        return Ok(());
-    }
+    let begin_time = record.get("Time").and_then(|s| s.parse::<f64>().ok());
 
     // Extract emotion scores and AU scores
     let mut emotion_scores = HashMap::new();
@@ -617,81 +602,71 @@ async fn store_face_emotion_data(
         }
     }
 
-    let node_id = format!("face_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
-    
-    let mut create_params = HashMap::new();
-    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    create_params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
-    create_params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
-    create_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id)));
-    create_params.insert("frame".to_string(), frame.map(|f| neo4rs::BoltType::Integer(BoltInteger::from(f))).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("time".to_string(), time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("probability".to_string(), record.get("Probability").and_then(|s| s.parse::<f64>().ok()).map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("face_x0".to_string(), record.get("FaceX0").and_then(|s| s.parse::<f64>().ok()).map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("face_y0".to_string(), record.get("FaceY0").and_then(|s| s.parse::<f64>().ok()).map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("face_width".to_string(), record.get("FaceWidth").and_then(|s| s.parse::<f64>().ok()).map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("face_height".to_string(), record.get("FaceHeight").and_then(|s| s.parse::<f64>().ok()).map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("emotion_scores".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&emotion_scores)?)));
-    create_params.insert("au_scores".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&au_scores)?)));
-
-    let create_query = r#"
-        MATCH (s:Session {id: $session_id})
-        CREATE (f:FaceEmotionData {
-            id: $node_id,
-            participant_id: $participant_id,
-            session_id: $session_id,
-            record_id: $record_id,
-            frame: $frame,
-            time: $time,
-            probability: $probability,
-            face_x0: $face_x0,
-            face_y0: $face_y0,
-            face_width: $face_width,
-            face_height: $face_height,
-            emotion_scores: $emotion_scores,
-            au_scores: $au_scores,
-            created_at: datetime()
+    // Calculate time from begin_time
+    let time = begin_time
+        .map(|bt| {
+            chrono::Utc::now() + chrono::Duration::seconds(bt as i64)
         })
-        CREATE (s)-[:HAS_FACE_EMOTION_DATA]->(f)
-    "#;
+        .unwrap_or_else(|| chrono::Utc::now());
 
-    txn.execute(create_query, create_params).await?;
+    // Check for duplicates
+    let existing: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT id FROM face_emotion_data 
+        WHERE session_id = $1 AND record_id = $2 AND frame = $3 AND begin_time = $4
+        LIMIT 1
+        "#
+    )
+    .bind(session_uuid)
+    .bind(&record_id)
+    .bind(frame)
+    .bind(begin_time)
+    .fetch_optional(txn)
+    .await?;
+
+    if existing.is_some() {
+        return Ok(());
+    }
+
+    // Insert into face_emotion_data
+    sqlx::query(
+        r#"
+        INSERT INTO face_emotion_data (
+            time, session_id, participant_id, record_id, frame, begin_time,
+            emotion_scores, au_scores, probability, face_x0, face_y0, face_width, face_height, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+        "#
+    )
+    .bind(time)
+    .bind(session_uuid)
+    .bind(participant_uuid)
+    .bind(&record_id)
+    .bind(frame)
+    .bind(begin_time)
+    .bind(&emotion_scores as &serde_json::Value)
+    .bind(&au_scores as &serde_json::Value)
+    .bind(record.get("Probability").and_then(|s| s.parse::<f64>().ok()))
+    .bind(record.get("FaceX0").and_then(|s| s.parse::<i32>().ok()))
+    .bind(record.get("FaceY0").and_then(|s| s.parse::<i32>().ok()))
+    .bind(record.get("FaceWidth").and_then(|s| s.parse::<i32>().ok()))
+    .bind(record.get("FaceHeight").and_then(|s| s.parse::<i32>().ok()))
+    .execute(txn)
+    .await?;
+
     Ok(())
 }
 
 async fn store_language_emotion_data(
-    txn: &mut crate::neo4j::client::Transaction,
-    session_id: &ValidatedSessionId,
-    participant_id: &str,
+    txn: &mut Transaction<'_, Postgres>,
+    session_uuid: Uuid,
+    participant_uuid: Uuid,
     record: &HashMap<String, String>,
 ) -> Result<(), ImportError> {
     let record_id = record.get("Id").unwrap_or(&"unknown".to_string()).clone();
     let text = record.get("Text").cloned();
     let begin_time = record.get("BeginTime").and_then(|s| s.parse::<f64>().ok());
     let end_time = record.get("EndTime").and_then(|s| s.parse::<f64>().ok());
-
-    // Check for duplicates
-    let mut check_params = HashMap::new();
-    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone())));
-    check_params.insert("text".to_string(), text.as_ref().map(|t| neo4rs::BoltType::String(BoltString::from(t.clone()))).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    check_params.insert("begin_time".to_string(), begin_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    check_params.insert("end_time".to_string(), end_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-
-    let check_query = r#"
-        MATCH (s:Session {id: $session_id})-[:HAS_LANGUAGE_EMOTION_DATA]->(l:LanguageEmotionData)
-        WHERE l.record_id = $record_id 
-          AND l.text = $text 
-          AND l.begin_time = $begin_time 
-          AND l.end_time = $end_time
-        RETURN l.id as existingId
-        LIMIT 1
-    "#;
-
-    let existing: Vec<neo4rs::Row> = txn.execute(check_query, check_params).await?;
-    if !existing.is_empty() {
-        return Ok(());
-    }
 
     // Extract emotion scores and toxicity scores
     let mut emotion_scores = HashMap::new();
@@ -705,74 +680,72 @@ async fn store_language_emotion_data(
         }
     }
 
-    // Extract toxicity scores (if present)
     if let Some(toxicity_str) = record.get("Toxicity") {
         if let Ok(toxicity) = toxicity_str.parse::<f64>() {
             toxicity_scores.insert("toxicity".to_string(), toxicity);
         }
     }
 
-    let node_id = format!("language_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
-    
-    let mut create_params = HashMap::new();
-    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    create_params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
-    create_params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
-    create_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id)));
-    create_params.insert("text".to_string(), text.as_ref().map(|t| neo4rs::BoltType::String(BoltString::from(t.clone()))).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("begin_time".to_string(), begin_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("end_time".to_string(), end_time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("emotion_scores".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&emotion_scores)?)));
-    create_params.insert("toxicity_scores".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&toxicity_scores)?)));
-
-    let create_query = r#"
-        MATCH (s:Session {id: $session_id})
-        CREATE (l:LanguageEmotionData {
-            id: $node_id,
-            participant_id: $participant_id,
-            session_id: $session_id,
-            record_id: $record_id,
-            text: $text,
-            begin_time: $begin_time,
-            end_time: $end_time,
-            emotion_scores: $emotion_scores,
-            toxicity_scores: $toxicity_scores,
-            created_at: datetime()
+    // Calculate time from begin_time
+    let time = begin_time
+        .map(|bt| {
+            chrono::Utc::now() + chrono::Duration::seconds(bt as i64)
         })
-        CREATE (s)-[:HAS_LANGUAGE_EMOTION_DATA]->(l)
-    "#;
+        .unwrap_or_else(|| chrono::Utc::now());
 
-    txn.execute(create_query, create_params).await?;
+    // Check for duplicates
+    let existing: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT id FROM language_emotion_data 
+        WHERE session_id = $1 AND record_id = $2 AND text = $3 AND begin_time = $4 AND end_time = $5
+        LIMIT 1
+        "#
+    )
+    .bind(session_uuid)
+    .bind(&record_id)
+    .bind(&text)
+    .bind(begin_time)
+    .bind(end_time)
+    .fetch_optional(txn)
+    .await?;
+
+    if existing.is_some() {
+        return Ok(());
+    }
+
+    // Insert into language_emotion_data
+    sqlx::query(
+        r#"
+        INSERT INTO language_emotion_data (
+            time, session_id, participant_id, record_id, text, begin_time, end_time,
+            emotion_scores, toxicity_scores, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+        "#
+    )
+    .bind(time)
+    .bind(session_uuid)
+    .bind(participant_uuid)
+    .bind(&record_id)
+    .bind(&text)
+    .bind(begin_time)
+    .bind(end_time)
+    .bind(&emotion_scores as &serde_json::Value)
+    .bind(&toxicity_scores as &serde_json::Value)
+    .execute(txn)
+    .await?;
+
     Ok(())
 }
 
 async fn store_prosody_emotion_data(
-    txn: &mut crate::neo4j::client::Transaction,
-    session_id: &ValidatedSessionId,
-    participant_id: &str,
+    txn: &mut Transaction<'_, Postgres>,
+    session_uuid: Uuid,
+    participant_uuid: Uuid,
     record: &HashMap<String, String>,
 ) -> Result<(), ImportError> {
     let record_id = record.get("Id").unwrap_or(&"unknown".to_string()).clone();
-    let time = record.get("Time").and_then(|s| s.parse::<f64>().ok());
-
-    // Check for duplicates
-    let mut check_params = HashMap::new();
-    check_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    check_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id.clone())));
-    check_params.insert("time".to_string(), time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-
-    let check_query = r#"
-        MATCH (s:Session {id: $session_id})-[:HAS_PROSODY_EMOTION_DATA]->(pr:ProsodyEmotionData)
-        WHERE pr.record_id = $record_id 
-          AND pr.time = $time
-        RETURN pr.id as existingId
-        LIMIT 1
-    "#;
-
-    let existing: Vec<neo4rs::Row> = txn.execute(check_query, check_params).await?;
-    if !existing.is_empty() {
-        return Ok(());
-    }
+    let begin_time = record.get("Time").and_then(|s| s.parse::<f64>().ok());
 
     // Extract emotion scores
     let mut emotion_scores = HashMap::new();
@@ -785,31 +758,48 @@ async fn store_prosody_emotion_data(
         }
     }
 
-    let node_id = format!("prosody_{}_{}", chrono::Utc::now().timestamp_millis(), uuid::Uuid::new_v4());
-    
-    let mut create_params = HashMap::new();
-    create_params.insert("session_id".to_string(), neo4rs::BoltType::String(BoltString::from(session_id.as_str().to_string())));
-    create_params.insert("node_id".to_string(), neo4rs::BoltType::String(BoltString::from(node_id)));
-    create_params.insert("participant_id".to_string(), neo4rs::BoltType::String(BoltString::from(participant_id.to_string())));
-    create_params.insert("record_id".to_string(), neo4rs::BoltType::String(BoltString::from(record_id)));
-    create_params.insert("time".to_string(), time.map(|t| neo4rs::BoltType::Float(BoltFloat { value: t })).unwrap_or_else(|| neo4rs::BoltType::Null(BoltNull)));
-    create_params.insert("emotion_scores".to_string(), neo4rs::BoltType::String(BoltString::from(serde_json::to_string(&emotion_scores)?)));
-
-    let create_query = r#"
-        MATCH (s:Session {id: $session_id})
-        CREATE (pr:ProsodyEmotionData {
-            id: $node_id,
-            participant_id: $participant_id,
-            session_id: $session_id,
-            record_id: $record_id,
-            time: $time,
-            emotion_scores: $emotion_scores,
-            created_at: datetime()
+    // Calculate time from begin_time
+    let time = begin_time
+        .map(|bt| {
+            chrono::Utc::now() + chrono::Duration::seconds(bt as i64)
         })
-        CREATE (s)-[:HAS_PROSODY_EMOTION_DATA]->(pr)
-    "#;
+        .unwrap_or_else(|| chrono::Utc::now());
 
-    txn.execute(create_query, create_params).await?;
+    // Check for duplicates
+    let existing: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT id FROM prosody_emotion_data 
+        WHERE session_id = $1 AND record_id = $2 AND begin_time = $3
+        LIMIT 1
+        "#
+    )
+    .bind(session_uuid)
+    .bind(&record_id)
+    .bind(begin_time)
+    .fetch_optional(txn)
+    .await?;
+
+    if existing.is_some() {
+        return Ok(());
+    }
+
+    // Insert into prosody_emotion_data
+    sqlx::query(
+        r#"
+        INSERT INTO prosody_emotion_data (
+            time, session_id, participant_id, record_id, begin_time, emotion_scores, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        "#
+    )
+    .bind(time)
+    .bind(session_uuid)
+    .bind(participant_uuid)
+    .bind(&record_id)
+    .bind(begin_time)
+    .bind(&emotion_scores as &serde_json::Value)
+    .execute(txn)
+    .await?;
+
     Ok(())
 }
-

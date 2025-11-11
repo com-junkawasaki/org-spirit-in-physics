@@ -3,7 +3,7 @@
 
 mod config;
 mod error;
-mod neo4j;
+mod database;
 mod types;
 mod import;
 mod utils;
@@ -16,16 +16,15 @@ use axum::{
     Router,
 };
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tracing::{info, error};
 
 use config::Config;
-use neo4j::client::Neo4jClient;
+use database::PostgresClient;
 use import::{participants, sessions, emotions};
 
 #[derive(Clone)]
 struct AppState {
-    neo4j_client: Arc<Mutex<Neo4jClient>>,
+    db_client: Arc<PostgresClient>,
     config: Arc<Config>,
 }
 
@@ -42,12 +41,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Arc::new(Config::from_env()?);
     info!("Configuration loaded");
 
-    // Initialize Neo4j client
-    let neo4j_client = Neo4jClient::new(&config.neo4j).await?;
-    info!("Neo4j client initialized");
+    // Initialize PostgreSQL client
+    let db_client = PostgresClient::new(&config.database_url).await?;
+    info!("PostgreSQL client initialized");
 
     let app_state = AppState {
-        neo4j_client: Arc::new(Mutex::new(neo4j_client)),
+        db_client: Arc::new(db_client),
         config,
     };
 
@@ -71,8 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn import_participants(
     State(state): State<AppState>,
 ) -> Result<Json<participants::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    let mut client = state.neo4j_client.lock().await;
-    match participants::import_participants(&mut *client, &state.config).await {
+    match participants::import_participants(state.db_client.pool(), &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
             error!("Error importing participants: {}", e);
@@ -87,8 +85,7 @@ async fn import_participants(
 async fn import_sessions(
     State(state): State<AppState>,
 ) -> Result<Json<sessions::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    let mut client = state.neo4j_client.lock().await;
-    match sessions::import_sessions(&mut *client, &state.config).await {
+    match sessions::import_sessions(state.db_client.pool(), &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
             error!("Error importing sessions: {}", e);
@@ -103,8 +100,7 @@ async fn import_sessions(
 async fn import_emotions(
     State(state): State<AppState>,
 ) -> Result<Json<emotions::ImportResult>, (StatusCode, Json<serde_json::Value>)> {
-    let mut client = state.neo4j_client.lock().await;
-    match emotions::import_emotions(&mut *client, &state.config).await {
+    match emotions::import_emotions(state.db_client.pool(), &state.config).await {
         Ok(result) => Ok(Json(result)),
         Err(e) => {
             error!("Error importing emotions: {}", e);
