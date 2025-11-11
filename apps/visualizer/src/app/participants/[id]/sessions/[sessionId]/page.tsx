@@ -150,13 +150,28 @@ export default function SessionTimelinePage() {
                 </span>
                 <span className="text-muted-foreground">
                   {debugInfo.checks?.session?.exists ? '存在' : '不存在'}
-                  {debugInfo.checks?.session?.eventsInfo && ` (${debugInfo.checks.session.eventsInfo.total}イベント)`}
+                  {debugInfo.checks?.session?.eventsInfo && (() => {
+                    // Neo4j Integer型を数値に変換
+                    const totalRaw = debugInfo.checks.session.eventsInfo.total || 0
+                    const total = typeof totalRaw === 'object' && totalRaw !== null && 'low' in totalRaw 
+                      ? totalRaw.low 
+                      : typeof totalRaw === 'number' 
+                      ? totalRaw 
+                      : 0
+                    return ` (${total}イベント)`
+                  })()}
                 </span>
               </div>
               {debugInfo.checks?.session?.eventsInfo && (
                 <div className="pl-5 text-xs text-muted-foreground space-y-1">
-                  <div>word_displayed: {debugInfo.checks.session.eventsInfo.wordDisplayed}件</div>
-                  <div>speech_detected: {debugInfo.checks.session.eventsInfo.speechDetected}件</div>
+                  <div>word_displayed: {(() => {
+                    const wdRaw = debugInfo.checks.session.eventsInfo.wordDisplayed || 0
+                    return typeof wdRaw === 'object' && wdRaw !== null && 'low' in wdRaw ? wdRaw.low : wdRaw
+                  })()}件</div>
+                  <div>speech_detected: {(() => {
+                    const sdRaw = debugInfo.checks.session.eventsInfo.speechDetected || 0
+                    return typeof sdRaw === 'object' && sdRaw !== null && 'low' in sdRaw ? sdRaw.low : sdRaw
+                  })()}件</div>
                 </div>
               )}
             </div>
@@ -168,7 +183,13 @@ export default function SessionTimelinePage() {
                 {['burst', 'face', 'language', 'prosody'].map((type) => {
                   const check = debugInfo.checks?.[type]
                   const exists = check?.exists || false
-                  const count = check?.count || 0
+                  // Neo4j Integer型を数値に変換
+                  const countRaw = check?.count || 0
+                  const count = typeof countRaw === 'object' && countRaw !== null && 'low' in countRaw 
+                    ? countRaw.low 
+                    : typeof countRaw === 'number' 
+                    ? countRaw 
+                    : 0
                   return (
                     <div key={type} className="flex items-center justify-between text-xs">
                       <span className="flex items-center gap-1">
@@ -203,7 +224,16 @@ export default function SessionTimelinePage() {
                   生理データ
                 </span>
                 <span className="text-muted-foreground">
-                  {debugInfo.checks?.physiological?.exists ? `存在 (${debugInfo.checks.physiological.count}件)` : '不存在'}
+                  {debugInfo.checks?.physiological?.exists ? (() => {
+                    // Neo4j Integer型を数値に変換
+                    const countRaw = debugInfo.checks.physiological.count || 0
+                    const count = typeof countRaw === 'object' && countRaw !== null && 'low' in countRaw 
+                      ? countRaw.low 
+                      : typeof countRaw === 'number' 
+                      ? countRaw 
+                      : 0
+                    return `存在 (${count}件)`
+                  })() : '不存在'}
                 </span>
               </div>
             </div>

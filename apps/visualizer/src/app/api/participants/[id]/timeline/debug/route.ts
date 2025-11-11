@@ -75,15 +75,24 @@ export async function GET(
         } else {
           debugInfo.checks.session.eventsMissing = true;
         }
-        debugInfo.checks.session.eventsInfo = {
-          total: parsedEvents.length,
-          wordDisplayed: parsedEvents.filter((e: any) => e.type === 'word_displayed' || e.event_type === 'word_displayed').length,
-          speechDetected: parsedEvents.filter((e: any) => e.type === 'speech_detected' || e.event_type === 'speech_detected').length,
-          firstEvent: parsedEvents[0] || null,
-          lastEvent: parsedEvents[parsedEvents.length - 1] || null,
-          rawEventsType: typeof events,
-          rawEventsLength: typeof events === 'string' ? events.length : Array.isArray(events) ? events.length : 0
-        };
+          // Neo4j Integer型を数値に変換するヘルパー関数
+          const toNumber = (value: any): number => {
+            if (value === null || value === undefined) return 0;
+            if (typeof value === 'object' && value !== null && 'low' in value) {
+              return value.low;
+            }
+            return typeof value === 'number' ? value : 0;
+          };
+          
+          debugInfo.checks.session.eventsInfo = {
+            total: parsedEvents.length,
+            wordDisplayed: parsedEvents.filter((e: any) => e.type === 'word_displayed' || e.event_type === 'word_displayed').length,
+            speechDetected: parsedEvents.filter((e: any) => e.type === 'speech_detected' || e.event_type === 'speech_detected').length,
+            firstEvent: parsedEvents[0] || null,
+            lastEvent: parsedEvents[parsedEvents.length - 1] || null,
+            rawEventsType: typeof events,
+            rawEventsLength: typeof events === 'string' ? events.length : Array.isArray(events) ? events.length : 0
+          };
       }
     } catch (error: any) {
       debugInfo.checks.session = { error: error.message };
@@ -105,7 +114,13 @@ export async function GET(
           : `MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)-[:${relationship}]->(e:${emotionType}) RETURN count(e) as total`;
         
         const countResults = await client.query(countQuery, { participantId, sessionId: sessionId || undefined });
-        const totalCount = countResults.length > 0 ? (countResults[0].total?.low || countResults[0].total || 0) : 0;
+        // Neo4j Integer型を数値に変換
+        const totalCountRaw = countResults.length > 0 ? (countResults[0].total || 0) : 0;
+        const totalCount = typeof totalCountRaw === 'object' && totalCountRaw !== null && 'low' in totalCountRaw 
+          ? totalCountRaw.low 
+          : typeof totalCountRaw === 'number' 
+          ? totalCountRaw 
+          : 0;
         
         // サンプルデータを取得（最大10件）
         const emotionQuery = sessionId
@@ -124,6 +139,15 @@ export async function GET(
           emotionKeys = Object.keys(emotionNode);
         }
         
+        // Neo4j Integer型を数値に変換するヘルパー関数
+        const toNumber = (value: any): any => {
+          if (value === null || value === undefined) return value;
+          if (typeof value === 'object' && value !== null && 'low' in value) {
+            return value.low;
+          }
+          return value;
+        };
+        
         debugInfo.checks[source] = {
           exists: totalCount > 0,
           count: totalCount,
@@ -131,8 +155,8 @@ export async function GET(
             id: emotionNode.id,
             hasEmotionScores: !!emotionNode.emotion_scores,
             emotionScoresType: typeof emotionNode.emotion_scores,
-            beginTime: emotionNode.begin_time || emotionNode.time,
-            endTime: emotionNode.end_time,
+            beginTime: toNumber(emotionNode.begin_time || emotionNode.time),
+            endTime: toNumber(emotionNode.end_time),
             sessionId: emotionNode.session_id,
             availableKeys: emotionKeys
           } : null

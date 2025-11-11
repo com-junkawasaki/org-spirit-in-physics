@@ -747,9 +747,10 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
         const beginTime = emotion.beginTime || 0; // 秒単位
         const endTime = emotion.endTime || (beginTime > 0 ? beginTime + 1 : 1); // 秒単位（endTimeがない場合はbeginTime+1秒）
         
-        // 感情データの時間範囲でマッチング（より柔軟なマッチング：±5秒の範囲内）
+        // 感情データの時間範囲でマッチング（より柔軟なマッチング：±30秒の範囲内）
         const timeDiff = Math.abs(relativeTimestampSec - beginTime);
-        return timeDiff <= 5 || (beginTime <= relativeTimestampSec && endTime >= relativeTimestampSec);
+        const isInRange = beginTime <= relativeTimestampSec && endTime >= relativeTimestampSec;
+        return timeDiff <= 30 || isInRange;
       });
       
       // 対応する生理データを検索（時間範囲でマッチング）
@@ -779,12 +780,23 @@ function integrateTimelineData(sessionData: any, emotionData: any[], physiologic
       });
       
       // デバッグ: 最初の数個のデータポイントで感情データの統合状況を確認
-      if (timelineData.length < 5) {
-        console.log(`Timeline point ${timelineData.length}: word=${word}, relatedEmotions=${relatedEmotions.length}, emotionDetails=${emotionDetails.length}`, {
+      if (timelineData.length < 10) {
+        console.log(`Timeline point ${timelineData.length}: word=${word}, timestamp=${timestamp}, relatedEmotions=${relatedEmotions.length}, emotionDetails=${emotionDetails.length}`, {
           emotionTypes: emotionDetails.map(e => e.fileType),
-          emotionNames: emotionDetails.map(e => e.name)
-          });
-        }
+          emotionNames: emotionDetails.map(e => e.name),
+          emotionScores: emotionDetails.map(e => e.score),
+          relatedEmotionTimes: relatedEmotions.map(e => ({ beginTime: e.beginTime, endTime: e.endTime, fileType: e.fileType, emotionsCount: e.emotions?.length || 0 }))
+        });
+      }
+      
+      // 感情データが存在する場合の統計
+      if (emotionDetails.length > 0 && timelineData.length < 10) {
+        const emotionTypeCounts = emotionDetails.reduce((acc: any, e: any) => {
+          acc[e.fileType] = (acc[e.fileType] || 0) + 1;
+          return acc;
+        }, {});
+        console.log(`Emotion type counts for word "${word}":`, emotionTypeCounts);
+      }
       
       // 従来の数値データも計算（後方互換性のため）
       const emotionValues = {
