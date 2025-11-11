@@ -135,36 +135,48 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
         # Calculate reaction time
         reaction_time = calculate_reaction_time(events, timestamp, idx)
         
-        # Find related emotions (within ±60 seconds)
+        # Find related emotions (within ±2 seconds for precise matching)
         relative_timestamp_sec = (timestamp - start_ts) / 1000.0
         related_emotions = find_related_emotions(emotion_data, relative_timestamp_sec)
         
         # Find related physiological data (within ±5 seconds)
         related_physiological = find_related_physiological(physiological_data, timestamp)
         
-        # Build emotions array (deduplicate by name and fileType)
+        # Build emotions array with optimizations:
+        # 1. Score threshold: only keep emotions with score >= 0.1
+        # 2. Deduplicate by name and fileType (keep max score)
+        # 3. Limit to top 5 emotions per file_type
         emotions_dict = {}  # Key: (name, fileType), Value: max score
         for emotion in related_emotions:
             emotion_scores = emotion.get('emotion_scores', {})
             file_type = emotion.get('file_type', 'unknown')
             
             for name, score in emotion_scores.items():
-                if score > 0:
+                # Apply score threshold: only keep emotions with score >= 0.1
+                score_float = float(score)
+                if score_float >= 0.1:
                     normalized_name = normalize_emotion_name(name)
                     key = (normalized_name, file_type)
                     # Keep the maximum score for each emotion name + fileType combination
-                    if key not in emotions_dict or emotions_dict[key] < score:
-                        emotions_dict[key] = float(score)
+                    if key not in emotions_dict or emotions_dict[key] < score_float:
+                        emotions_dict[key] = score_float
         
-        # Convert dict to array
-        emotions_array = [
-            {
+        # Group by file_type and keep top 5 per file_type
+        emotions_by_file_type = {}
+        for (name, file_type), score in emotions_dict.items():
+            if file_type not in emotions_by_file_type:
+                emotions_by_file_type[file_type] = []
+            emotions_by_file_type[file_type].append({
                 'name': name,
                 'score': score,
                 'fileType': file_type
-            }
-            for (name, file_type), score in emotions_dict.items()
-        ]
+            })
+        
+        # Sort by score descending and keep top 5 per file_type
+        emotions_array = []
+        for file_type, emotion_list in emotions_by_file_type.items():
+            sorted_emotions = sorted(emotion_list, key=lambda x: x['score'], reverse=True)
+            emotions_array.extend(sorted_emotions[:5])
         
         # Build physiological object
         physiological_obj = {
@@ -399,9 +411,9 @@ def calculate_reaction_time(events, timestamp: int, event_index: int):
 
 
 def find_related_emotions(emotion_data, relative_timestamp_sec: float):
-    """Find emotions related to a timestamp (within ±5 seconds for precise matching)"""
-    search_start_sec = max(0, relative_timestamp_sec - 5)
-    search_end_sec = relative_timestamp_sec + 5
+    """Find emotions related to a timestamp (within ±2 seconds for precise matching)"""
+    search_start_sec = max(0, relative_timestamp_sec - 2)
+    search_end_sec = relative_timestamp_sec + 2
     
     related = []
     zero_time_emotions = []  # Collect emotions with begin_time = 0 separately
@@ -415,7 +427,7 @@ def find_related_emotions(emotion_data, relative_timestamp_sec: float):
         
         end_time = emotion.get('end_time') or (begin_time + 1.0)
         
-        # Check if emotion time range overlaps with search window (±5 seconds)
+        # Check if emotion time range overlaps with search window (±2 seconds)
         if begin_time <= search_end_sec and end_time >= search_start_sec:
             related.append(emotion)
     
@@ -439,23 +451,76 @@ def find_related_physiological(physiological_data, timestamp: int):
 
 
 def normalize_emotion_name(name: str) -> str:
-    """Normalize emotion name"""
+    """Normalize emotion name with comprehensive mapping"""
+    # Remove common suffixes and clean
     cleaned = name.replace(' (negative)', '').replace(' (positive)', '').strip().lower()
     
+    # Comprehensive emotion name mapping
     mapping = {
+        # Basic emotions
         'surprise (negative)': 'surprise',
         'surprise (positive)': 'surprise',
         'surprise': 'surprise',
         'joy': 'joy',
+        'happiness': 'joy',
         'sadness': 'sadness',
+        'sad': 'sadness',
         'anger': 'anger',
+        'angry': 'anger',
         'fear': 'fear',
+        'afraid': 'fear',
         'disgust': 'disgust',
+        'disgusted': 'disgust',
+        
+        # Extended emotions
         'calmness': 'calm',
+        'calm': 'calm',
         'concentration': 'focus',
+        'focus': 'focus',
         'excitement': 'excitement',
-        'confusion': 'confusion'
+        'excited': 'excitement',
+        'confusion': 'confusion',
+        'confused': 'confusion',
+        
+        # Vocal expressions (burst emotions)
+        'grr': 'anger',
+        'hiss': 'disgust',
+        'moan': 'sadness',
+        'pant': 'fear',
+        'screech': 'fear',
+        'wow': 'surprise',
+        'sympathy': 'sadness',
+        'awkwardness': 'confusion',
+        'contempt': 'disgust',
+        
+        # Face emotions
+        'neutral': 'calm',
+        'happy': 'joy',
+        'sad': 'sadness',
+        'angry': 'anger',
+        'fearful': 'fear',
+        'disgusted': 'disgust',
+        'surprised': 'surprise',
+        
+        # Language emotions
+        'positive': 'joy',
+        'negative': 'sadness',
+        'neutral': 'calm',
+        
+        # Prosody emotions
+        'arousal': 'excitement',
+        'valence': 'joy',
     }
     
-    return mapping.get(cleaned, cleaned)
+    # Try exact match first
+    if cleaned in mapping:
+        return mapping[cleaned]
+    
+    # Try partial match (contains)
+    for key, value in mapping.items():
+        if key in cleaned or cleaned in key:
+            return value
+    
+    # Return cleaned name if no mapping found
+    return cleaned
 

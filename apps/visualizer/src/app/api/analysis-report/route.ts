@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server'
-import { createNeo4jClient } from '@/lib/neo4j'
+import { getAllParticipants, getAnalysisResults } from '@/lib/data'
+import type { GetTimelineQueryResult } from '@/generated/graphql'
+import { graphqlClient, GetTimelineDocument } from '@/lib/graphql/client'
 
 export async function GET() {
   try {
-    console.log('API: Generating analysis report from Neo4j...')
-    const client = createNeo4jClient()
-
-    // Get participants
-    const participants = await client.getParticipants()
+    console.log('API: Generating analysis report from GraphQL...')
+    
+    // GraphQL経由で参加者データを取得
+    const participants = await getAllParticipants()
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
 
     // Create participant name mapping
-    const participantNames = new Map()
-    participants?.forEach(p => participantNames.set(p.participant_id, `Participant ${p.participant_id.slice(0, 8)}`))
+    const participantNames = new Map<string, string>()
+    participants.forEach(p => participantNames.set(p.id, p.name || `Participant ${p.id.slice(0, 8)}`))
 
     // 感情データを集計
     const emotionStats = {
@@ -23,12 +24,15 @@ export async function GET() {
     }
 
     // 参加者ごとの統計を計算
-    const participantStats = new Map()
+    const participantStats = new Map<string, any>()
 
-    // Get all responses and process them
-    for (const participant of participants || []) {
-      const participantId = participant.participant_id
-      const responses = await client.getParticipantResponses(participantId)
+    // Get all analysis results
+    const allAnalysisResults = await getAnalysisResults()
+    
+    // 参加者ごとにグループ化
+    for (const participant of participants) {
+      const participantId = participant.id
+      const participantResults = allAnalysisResults.filter(r => r.id.startsWith(participantId))
 
       if (!participantStats.has(participantId)) {
         participantStats.set(participantId, {
@@ -42,35 +46,41 @@ export async function GET() {
 
       const stats = participantStats.get(participantId)
 
-      responses.forEach((result: any) => {
+      // タイムラインデータから感情データを集計
+      try {
+        const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
+        const timeline = timelineData.timeline || []
+        
+        timeline.forEach((point: any) => {
+          if (Array.isArray(point.emotions)) {
+            point.emotions.forEach((emotion: any) => {
+              const fileType = emotion.fileType || emotion.file_type || ''
+              if (fileType.includes('face')) emotionStats.totalFaceDataPoints++
+              if (fileType.includes('prosody')) emotionStats.totalProsodyDataPoints++
+              if (fileType.includes('language')) emotionStats.totalLanguageDataPoints++
+              emotionStats.emotionSources.add('graphql')
+            })
+          }
+        })
+      } catch (error) {
+        console.error(`Failed to fetch timeline for participant ${participantId}:`, error)
+      }
+
+      participantResults.forEach((result) => {
         stats.total_responses++
-
-        // Generate mock Spirit probability (since we don't have real analysis results)
-        // This is a simplified calculation based on reaction time and emotion confidence
-        const baseProbability = 0.5
-        const reactionTimeFactor = Math.max(0, 1 - (result.reaction_time_ms / 10000)) // Faster = higher probability
-        const emotionFactor = result.emotion_confidence || 0.5
-        const mockPValue = Math.min(0.9999, baseProbability + (reactionTimeFactor * 0.3) + (emotionFactor * 0.2))
-
-        stats.spirit_probabilities.push(mockPValue)
+        stats.spirit_probabilities.push(result.p_value)
         stats.results.push({
-          p_value: mockPValue,
+          p_value: result.p_value,
           components: {
-            word2vec: (Math.random() - 0.5) * 0.4, // Mock word2vec component
-            reaction_time: 10 / (1 + result.reaction_time_ms / 1000), // Mock reaction time component
-            skin_potential: 0.1, // Mock skin potential
-            emotion: emotionFactor // Mock emotion component
+            word2vec: result.word2vec_component,
+            reaction_time: result.reaction_time_component,
+            skin_potential: result.skin_potential_component,
+            emotion: result.emotion_component
           },
           stimulus_word: result.stimulus_word,
           response_word: result.response_word,
           reaction_time_ms: result.reaction_time_ms
         })
-
-        // 感情データの集計
-        if (result.emotion) {
-          emotionStats.totalLanguageDataPoints++
-          emotionStats.emotionSources.add('terminusdb')
-        }
       })
     }
 

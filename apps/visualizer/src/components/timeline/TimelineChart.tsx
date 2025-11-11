@@ -8,7 +8,12 @@ import type { TimelineDataPoint, FilterSettings, TimeRange } from './types'
 /**
  * タイムスタンプをDateオブジェクトに変換（ミリ秒単位を前提）
  */
-function toDate(ts: number): Date {
+function toDate(ts: number | null | undefined): Date {
+  // undefined/nullのチェック
+  if (ts == null || typeof ts !== 'number' || isNaN(ts)) {
+    console.warn('Invalid timestamp:', ts)
+    return new Date() // フォールバック
+  }
   // timestampがミリ秒単位であることを確認（1e12 = 2001-09-09 01:46:40 UTC）
   // それより小さい場合は秒単位とみなして1000倍
   const ms = ts > 1e12 ? ts : ts * 1000
@@ -155,11 +160,12 @@ export default function TimelineChart({
     const innerWidth = width - margin.left - margin.right
     const innerHeight = height - margin.top - margin.bottom
 
-    // フィルタリングされたデータ
-    const filteredData = timeRange
-      ? data.filter(d => d.timestamp >= timeRange.start && d.timestamp <= timeRange.end)
-      : data
-    const filteredDataSorted = [...filteredData].sort((a, b) => a.timestamp - b.timestamp)
+          // フィルタリングされたデータ（無効なtimestampを除外）
+          const filteredData = (timeRange
+            ? data.filter(d => d.timestamp >= timeRange.start && d.timestamp <= timeRange.end)
+            : data
+          ).filter(d => d.timestamp != null && typeof d.timestamp === 'number' && !isNaN(d.timestamp))
+          const filteredDataSorted = [...filteredData].sort((a, b) => a.timestamp - b.timestamp)
 
     // データがない場合の処理
     if (filteredDataSorted.length === 0) {
@@ -290,11 +296,14 @@ export default function TimelineChart({
     // 単語表示（時間軸上）
     if (filters.wordDisplay && filters.showWordLabels) {
       g.selectAll('.word-label')
-        .data(filteredDataSorted)
+        .data(filteredDataSorted.filter(d => d.word))
         .enter()
         .append('text')
         .attr('class', 'word-label')
-        .attr('x', d => xScale(toDate(d.timestamp)))
+        .attr('x', d => {
+          const x = xScale(toDate(d.timestamp))
+          return x != null && !isNaN(x) ? x : 0
+        })
         .attr('y', innerHeight + 20)
         .attr('text-anchor', 'middle')
         .attr('font-size', '11px')
@@ -315,11 +324,14 @@ export default function TimelineChart({
     // 反応値データポイント
     if (filters.reactionValues) {
       g.selectAll('.reaction-value-point')
-        .data(filteredDataSorted)
+        .data(filteredDataSorted.filter(d => d.reactionValue != null))
         .enter()
         .append('circle')
         .attr('class', 'reaction-value-point')
-        .attr('cx', d => xScale(toDate(d.timestamp)))
+        .attr('cx', d => {
+          const x = xScale(toDate(d.timestamp))
+          return x != null && !isNaN(x) ? x : 0
+        })
         .attr('cy', d => reactionValueScale(d.reactionValue))
         .attr('r', 3)
         .style('fill', '#2563eb')
@@ -339,11 +351,14 @@ export default function TimelineChart({
     // 反応時間データポイント
     if (filters.reactionTime) {
       g.selectAll('.reaction-time-point')
-        .data(filteredDataSorted.filter(d => d.hasResponse))
+        .data(filteredDataSorted.filter(d => d.hasResponse && d.reactionTime != null))
         .enter()
         .append('circle')
         .attr('class', 'reaction-time-point')
-        .attr('cx', d => xScale(toDate(d.timestamp)))
+        .attr('cx', d => {
+          const x = xScale(toDate(d.timestamp))
+          return x != null && !isNaN(x) ? x : 0
+        })
         .attr('cy', d => reactionTimeScale(d.reactionTime))
         .attr('r', 3)
         .style('fill', '#dc2626')
@@ -362,7 +377,10 @@ export default function TimelineChart({
         .enter()
         .append('circle')
         .attr('class', 'physiological-point')
-        .attr('cx', d => xScale(toDate(d.timestamp)))
+        .attr('cx', d => {
+          const x = xScale(toDate(d.timestamp))
+          return x != null && !isNaN(x) ? x : 0
+        })
         .attr('cy', d => {
           const p = d.physiological as unknown
           if (Array.isArray(p)) return physiologicalScale(0)
@@ -383,10 +401,13 @@ export default function TimelineChart({
     if (filters.emotionChange) {
       // Burst感情
       filteredDataSorted.forEach(d => {
+        if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) return
         d.emotions.filter(e => e.fileType === 'burst').forEach(emotion => {
+          const x = xScale(toDate(d.timestamp))
+          if (x == null || isNaN(x)) return
           g.append('circle')
             .attr('class', 'emotion-burst-point')
-            .attr('cx', xScale(toDate(d.timestamp)))
+            .attr('cx', x)
             .attr('cy', burstEmotionScale(emotion.score))
             .attr('r', 3)
             .style('fill', '#9333ea')
@@ -406,10 +427,13 @@ export default function TimelineChart({
 
       // Face感情
       filteredDataSorted.forEach(d => {
+        if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) return
         d.emotions.filter(e => e.fileType === 'face').forEach(emotion => {
+          const x = xScale(toDate(d.timestamp))
+          if (x == null || isNaN(x)) return
           g.append('circle')
             .attr('class', 'emotion-face-point')
-            .attr('cx', xScale(toDate(d.timestamp)))
+            .attr('cx', x)
             .attr('cy', faceEmotionScale(emotion.score))
             .attr('r', 3)
             .style('fill', '#ec4899')
@@ -429,10 +453,13 @@ export default function TimelineChart({
 
       // Language感情
       filteredDataSorted.forEach(d => {
+        if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) return
         d.emotions.filter(e => e.fileType === 'language').forEach(emotion => {
+          const x = xScale(toDate(d.timestamp))
+          if (x == null || isNaN(x)) return
           g.append('circle')
             .attr('class', 'emotion-language-point')
-            .attr('cx', xScale(toDate(d.timestamp)))
+            .attr('cx', x)
             .attr('cy', languageEmotionScale(emotion.score))
             .attr('r', 3)
             .style('fill', '#10b981')
@@ -452,10 +479,13 @@ export default function TimelineChart({
 
       // Prosody感情
       filteredDataSorted.forEach(d => {
+        if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) return
         d.emotions.filter(e => e.fileType === 'prosody').forEach(emotion => {
+          const x = xScale(toDate(d.timestamp))
+          if (x == null || isNaN(x)) return
           g.append('circle')
             .attr('class', 'emotion-prosody-point')
-            .attr('cx', xScale(toDate(d.timestamp)))
+            .attr('cx', x)
             .attr('cy', prosodyEmotionScale(emotion.score))
             .attr('r', 3)
             .style('fill', '#f59e0b')
@@ -477,6 +507,11 @@ export default function TimelineChart({
     // 感情データの詳細表示（fileTypeに応じて適切なスケールを使用）
     if (filters.showEmotionDetails) {
       filteredDataSorted.forEach(d => {
+        // timestampが無効な場合はスキップ
+        if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) {
+          return
+        }
+        
         if (d.emotions.length > 0) {
           // 感情データポイントを個別に表示
           d.emotions.forEach((emotion) => {
@@ -506,9 +541,17 @@ export default function TimelineChart({
                 baseColor = '#9333ea';
             }
 
+            const xPos = xScale(toDate(d.timestamp))
+            const yPos = emotionYScale(emotion.score)
+            
+            // xPosまたはyPosが無効な場合はスキップ
+            if (xPos == null || isNaN(xPos) || yPos == null || isNaN(yPos)) {
+              return
+            }
+
             const emotionGroup = g.append('g')
               .attr('class', 'emotion-detail-group')
-              .attr('transform', `translate(${xScale(toDate(d.timestamp))}, ${emotionYScale(emotion.score)})`)
+              .attr('transform', `translate(${xPos}, ${yPos})`)
 
             // 感情の色を決定
             const emotionColors: Record<string, string> = {
