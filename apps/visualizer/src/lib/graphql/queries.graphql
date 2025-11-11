@@ -68,3 +68,82 @@ query GetTimeline(
   }
 }
 
+query GetWordAggregates(
+  $participantId: ID!
+  $sessionId: ID
+) {
+  wordAggregates(
+    participantId: $participantId
+    sessionId: $sessionId
+  ) {
+    participantId
+    sessionId
+    word
+    count
+    avgReactionValue
+    sumReactionValue
+    avgReactionTime
+    sumReactionTime
+    avgPhysiological
+    sumPhysAbs
+    physSeries
+    rtSeries
+    rvSeries
+    firstTime
+    lastTime
+  }
+}
+
+query GetEmotionVectors(
+  $participantId: ID!
+  $sessionId: ID
+) {
+  emotionVectors(
+    participantId: $participantId
+    sessionId: $sessionId
+  ) {
+    participantId
+    sessionId
+    word
+    joySum
+    sadnessSum
+    angerSum
+    fearSum
+    surpriseSum
+    disgustSum
+    calmSum
+    focusSum
+    excitementSum
+    confusionSum
+    emotionEntryCount
+    emotionByModality
+  }
+}
+
+query GetWordStatistics(
+  $participantId: ID!
+  $sessionId: ID
+) {
+  wordStatistics(
+    participantId: $participantId
+    sessionId: $sessionId
+  ) {
+    participantId
+    sessionId
+    word
+    count
+    avgReactionTime
+    stdReactionTime
+    varReactionTime
+    avgReactionValue
+    stdReactionValue
+    varReactionValue
+    avgPhysiological
+    stdPhysiological
+    varPhysiological
+    speedIndex
+    physSeries
+    rtSeries
+  }
+}
+

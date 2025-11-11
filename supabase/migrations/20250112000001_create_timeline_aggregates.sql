@@ -2,6 +2,18 @@
 -- TimescaleDB Continuous Aggregate による効率化
 -- 単語別・感情別の集約を事前計算してクライアント側の処理を削減
 
+-- 前提条件チェック: timeline_pointsテーブルが存在することを確認
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'timeline_points') THEN
+    RAISE EXCEPTION 'timeline_points table does not exist. Please run migration 20250111000002_create_timeseries_tables.sql first.';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    RAISE EXCEPTION 'TimescaleDB extension is not installed. Please install TimescaleDB first.';
+  END IF;
+END $$;
+
 -- 1. 単語別集約ビュー（セッション単位）
 -- 用途: 距離タブのノード指標計算を事前集約
 CREATE MATERIALIZED VIEW IF NOT EXISTS timeline_word_aggregates_by_session
