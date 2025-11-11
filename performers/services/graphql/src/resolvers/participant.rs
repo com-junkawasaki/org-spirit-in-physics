@@ -6,6 +6,7 @@ use sqlx::{PgPool, Pool, Postgres};
 use uuid::Uuid;
 use crate::types::Participant;
 
+#[derive(Default)]
 pub struct ParticipantQuery;
 
 #[Object]

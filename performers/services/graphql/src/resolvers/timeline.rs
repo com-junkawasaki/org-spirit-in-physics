@@ -2,10 +2,11 @@
 // Timeline resolvers using SQLx + TimescaleDB
 
 use async_graphql::*;
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
 use crate::types::{TimelinePoint, Session, EmotionData};
 
+#[derive(Default)]
 pub struct TimelineQuery;
 
 #[Object]
@@ -113,14 +114,14 @@ impl TimelineQuery {
                 .await?;
 
             // Convert aggregated rows to TimelinePoint
-            rows.into_iter().map(|row| {
-                let bucket_time: chrono::DateTime<chrono::Utc> = row.get("bucket_time");
-                let participant_id_val: Uuid = row.get("participant_id");
-                let session_id_val: Uuid = row.get("session_id");
-                let avg_reaction_value: Option<f64> = row.get("avg_reaction_value");
-                let event_count: i64 = row.get("event_count");
+            rows.into_iter().filter_map(|row| {
+                let bucket_time: chrono::DateTime<chrono::Utc> = row.try_get("bucket_time").ok()?;
+                let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
+                let session_id_val: Uuid = row.try_get("session_id").ok()?;
+                let avg_reaction_value: Option<f64> = row.try_get("avg_reaction_value").ok();
+                let event_count: i64 = row.try_get("event_count").ok()?;
 
-                TimelinePoint {
+                Some(TimelinePoint {
                     time: bucket_time.to_rfc3339(),
                     participant_id: ID::from(participant_id_val.to_string()),
                     session_id: ID::from(session_id_val.to_string()),
@@ -132,7 +133,7 @@ impl TimelineQuery {
                     emotions: Vec::new(),
                     physiological: serde_json::json!({}),
                     metadata: serde_json::json!({ "event_count": event_count }),
-                }
+                })
             }).collect()
         } else {
             // Return raw timeline points
@@ -175,18 +176,18 @@ impl TimelineQuery {
                 .await?;
 
             // Convert rows to TimelinePoint
-            rows.into_iter().map(|row| {
-                let time: chrono::DateTime<chrono::Utc> = row.get("time");
-                let participant_id_val: Uuid = row.get("participant_id");
-                let session_id_val: Uuid = row.get("session_id");
-                let word: Option<String> = row.get("word");
-                let event_type: Option<String> = row.get("event_type");
-                let reaction_value: Option<f64> = row.get("reaction_value");
-                let reaction_time: Option<f64> = row.get("reaction_time");
-                let has_response: bool = row.get("has_response");
-                let emotions_json: serde_json::Value = row.get("emotions");
-                let physiological_json: serde_json::Value = row.get("physiological");
-                let metadata_json: serde_json::Value = row.get("metadata");
+            rows.into_iter().filter_map(|row| {
+                let time: chrono::DateTime<chrono::Utc> = row.try_get("time").ok()?;
+                let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
+                let session_id_val: Uuid = row.try_get("session_id").ok()?;
+                let word: Option<String> = row.try_get("word").ok();
+                let event_type: Option<String> = row.try_get("event_type").ok();
+                let reaction_value: Option<f64> = row.try_get("reaction_value").ok();
+                let reaction_time: Option<f64> = row.try_get("reaction_time").ok();
+                let has_response: bool = row.try_get("has_response").ok().unwrap_or(false);
+                let emotions_json: serde_json::Value = row.try_get("emotions").ok().unwrap_or_default();
+                let physiological_json: serde_json::Value = row.try_get("physiological").ok().unwrap_or_default();
+                let metadata_json: serde_json::Value = row.try_get("metadata").ok().unwrap_or_default();
 
                 // Parse emotions array
                 let emotions: Vec<EmotionData> = if let Some(emotions_array) = emotions_json.as_array() {
@@ -201,7 +202,7 @@ impl TimelineQuery {
                     Vec::new()
                 };
 
-                TimelinePoint {
+                Some(TimelinePoint {
                     time: time.to_rfc3339(),
                     participant_id: ID::from(participant_id_val.to_string()),
                     session_id: ID::from(session_id_val.to_string()),
@@ -213,7 +214,7 @@ impl TimelineQuery {
                     emotions,
                     physiological: physiological_json,
                     metadata: metadata_json,
-                }
+                })
             }).collect()
         };
 

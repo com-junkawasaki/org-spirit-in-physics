@@ -1,4 +1,4 @@
-FROM rust:1.75-slim as builder
+FROM rust:1.90-slim as builder
 
 WORKDIR /app
 
@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Cargo files
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml ./
+# Cargo.lock is optional - will be generated if not present
+COPY Cargo.lock* ./
 
 # Copy source code
 COPY src ./src
@@ -24,6 +26,7 @@ WORKDIR /app
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the binary from builder

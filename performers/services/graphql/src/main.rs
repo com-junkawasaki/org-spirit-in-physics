@@ -15,11 +15,9 @@ use axum::{
 };
 use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
-    Request, Response as GraphQLResponse,
 };
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse as AxumGraphQLResponse};
-use std::sync::Arc;
-use tracing::{info, error};
+use tracing::info;
 
 use database::PostgresPool;
 use schema::create_schema;
@@ -51,11 +49,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/health", get(health_check))
         .with_state(schema);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8081").await?;
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 8081));
     info!("GraphQL service listening on 0.0.0.0:8081");
     info!("GraphQL Playground available at http://localhost:8081/graphql/playground");
 
-    axum::serve(listener, app).await?;
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await?;
 
     Ok(())
 }
