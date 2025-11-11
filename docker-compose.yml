@@ -111,7 +111,7 @@ services:
       start_period: 30s
     command: sh -lc "rm -f .env.local && pnpm dev"
 
-  # Rust import service
+  # Python import service
   import-service:
     build:
       context: ./performers/services/import
@@ -124,13 +124,14 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
       - DATASET_PATH=/app/dataset/participants
+      - PORT=8082
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - spirit-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8082/import/status || exit 1"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8082/import/status')\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

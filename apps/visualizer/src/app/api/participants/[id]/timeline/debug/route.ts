@@ -36,9 +36,9 @@ export async function GET(
         count: sessions.length,
         sample: targetSession ? {
           id: targetSession.id,
-          sessionIndex: targetSession.sessionIndex ?? targetSession.session_index,
-          startTs: targetSession.startTs ?? targetSession.start_ts,
-          endTs: targetSession.endTs ?? targetSession.end_ts,
+          sessionIndex: targetSession.sessionIndex,
+          startTs: targetSession.startTs,
+          endTs: targetSession.endTs,
           hasEvents: !!targetSession.events && Array.isArray(targetSession.events) && targetSession.events.length > 0,
           eventsCount: Array.isArray(targetSession.events) ? targetSession.events.length : 0
         } : null
@@ -78,13 +78,13 @@ export async function GET(
           firstPoint: {
             time: timeline[0].time,
             hasWord: !!timeline[0].word,
-            hasReaction: timeline[0].hasResponse || timeline[0].has_response || false,
+                  hasReaction: timeline[0].hasResponse || false,
             emotionsCount: Array.isArray(timeline[0].emotions) ? timeline[0].emotions.length : 0
           },
           lastPoint: timeline.length > 1 ? {
             time: timeline[timeline.length - 1].time,
             hasWord: !!timeline[timeline.length - 1].word,
-            hasReaction: timeline[timeline.length - 1].hasResponse || timeline[timeline.length - 1].has_response || false,
+                  hasReaction: timeline[timeline.length - 1].hasResponse || false,
             emotionsCount: Array.isArray(timeline[timeline.length - 1].emotions) ? timeline[timeline.length - 1].emotions.length : 0
           } : null
           } : null
@@ -117,27 +117,43 @@ export async function GET(
     }
     
     // 3. データ信頼性スコアの計算
-    const reliability = {
+    const reliability: {
+      session: number;
+      emotions: {
+        burst: number;
+        face: number;
+        language: number;
+        prosody: number;
+        total: number;
+      };
+      physiological: number;
+      overall: number;
+    } = {
       session: debugInfo.checks.session?.exists ? 1.0 : 0.0,
       emotions: {
         burst: debugInfo.checks.emotions?.burst?.exists ? 1.0 : 0.0,
         face: debugInfo.checks.emotions?.face?.exists ? 1.0 : 0.0,
         language: debugInfo.checks.emotions?.language?.exists ? 1.0 : 0.0,
-        prosody: debugInfo.checks.emotions?.prosody?.exists ? 1.0 : 0.0
+        prosody: debugInfo.checks.emotions?.prosody?.exists ? 1.0 : 0.0,
+        total: 0.0
       },
-      physiological: debugInfo.checks.physiological?.exists ? 1.0 : 0.0
+      physiological: debugInfo.checks.physiological?.exists ? 1.0 : 0.0,
+      overall: 0.0
     };
     
-    const emotionCount = Object.values(reliability.emotions).filter(v => v > 0).length;
-            const emotionsTotal = emotionCount / 4; // 4種類中何種類存在するか
-            reliability.emotions = { ...reliability.emotions, total: emotionsTotal };
+    const emotionCount = Object.values({
+      burst: reliability.emotions.burst,
+      face: reliability.emotions.face,
+      language: reliability.emotions.language,
+      prosody: reliability.emotions.prosody
+    }).filter(v => v > 0).length;
+    reliability.emotions.total = emotionCount / 4; // 4種類中何種類存在するか
     
-            const overall = (
-              reliability.session * 0.3 +
-              emotionsTotal * 0.5 +
-              reliability.physiological * 0.2
-            );
-            reliability.overall = overall;
+    reliability.overall = (
+      reliability.session * 0.3 +
+      reliability.emotions.total * 0.5 +
+      reliability.physiological * 0.2
+    );
     
     debugInfo.reliability = reliability;
     

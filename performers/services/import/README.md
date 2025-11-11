@@ -1,60 +1,61 @@
 # Import Service
 
-Rust-based import service for importing participant, session, and emotion data into Neo4j.
+Python-based import service for spirit-in-physics project.
 
-## Features
+## Overview
 
-- **Type-safe imports**: Uses type-level dependencies (`ValidatedSessionId`) to ensure sessions exist before importing emotion data
-- **Per-participant transactions**: Each participant is processed in a separate transaction, allowing partial failures
-- **Comprehensive error handling**: Detailed error types and logging
-- **CSV parsing**: Robust CSV parsing with support for quoted values and commas within values
-- **Multiple emotion data types**: Supports burst, face, language, and prosody emotion data
+This service provides HTTP endpoints for importing various types of data into PostgreSQL:
+- Participants
+- Sessions
+- Emotions (from CSV files)
+- Timeline points (integrated data)
 
 ## Architecture
 
-The service uses:
-- **neo4rs**: Async Neo4j client for Bolt protocol communication
-- **axum**: HTTP server framework
-- **tracing**: Structured logging
-- **Type-level dependencies**: `ValidatedSessionId` ensures session existence at compile time
+- **Framework**: FastAPI
+- **Database**: PostgreSQL (via asyncpg)
+- **Port**: 8082
 
-## Configuration
+## Endpoints
 
-Set the following environment variables:
+- `GET /import/status` - Health check
+- `POST /import/participants` - Import participants from dataset
+- `POST /import/sessions` - Import sessions from dataset
+- `POST /import/emotions` - Import emotion data from CSV files
+- `POST /import/timeline` - Generate timeline points by integrating data
 
-```bash
-NEO4J_URI=neo4j://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=neo4jpassword
-NEO4J_DATABASE=neo4j
-DATASET_PATH=dataset/participants
-```
+## Environment Variables
 
-## API Endpoints
+- `DATABASE_URL` - PostgreSQL connection string (default: `postgresql://postgres:postgres@postgres:5432/spirit_in_physics`)
+- `DATASET_PATH` - Path to participants dataset directory (default: `/app/dataset/participants`)
+- `PORT` - Server port (default: `8082`)
 
-- `POST /import/participants` - Import participant data from consent.json files
-- `POST /import/sessions` - Import session data from session_data.json files
-- `POST /import/emotions` - Import emotion data from Hume AI artifacts
-- `GET /import/status` - Check service status
-
-## Running
+## Development
 
 ```bash
-cd performers/services/import
-cargo run
+# Install dependencies
+pip install -r requirements.txt
+
+# Run locally
+python main.py
+
+# Or with uvicorn
+uvicorn main:app --host 0.0.0.0 --port 8082
 ```
 
-The service will listen on `0.0.0.0:8082`.
+## Docker
 
-## Type-Level Dependencies
+```bash
+# Build
+docker build -t import-service .
 
-The service uses `ValidatedSessionId` to ensure sessions exist before importing emotion data:
-
-```rust
-// This will fail at compile time if session doesn't exist
-let validated_session = ValidatedSessionId::from_participant(participant_id, txn).await?;
-store_burst_emotion_data(validated_session, record, txn).await?;
+# Run
+docker run -p 8082:8082 \
+  -e DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics \
+  -e DATASET_PATH=/app/dataset/participants \
+  import-service
 ```
 
-This prevents the runtime error of trying to import emotion data for non-existent sessions.
+## Migration from Rust
 
+The previous Rust implementation has been replaced with this Python version for better maintainability and easier debugging.

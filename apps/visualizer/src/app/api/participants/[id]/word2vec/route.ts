@@ -23,12 +23,12 @@ export async function GET(
     
     // タイムラインデータから単語データを抽出
     const responses = timeline
-      .filter((point: any) => point.word && (point.hasResponse || point.has_response))
-      .map((point: any) => ({
-        stimulus_word: point.word,
-        response_word: point.word, // 応答語はタイムラインデータに含まれていないため、同じ単語を使用
-        reaction_time_ms: (point.reactionTime || point.reaction_time) ? (point.reactionTime || point.reaction_time) * 1000 : null,
-        spirit_probability: point.reactionValue || point.reaction_value || 0.5,
+      .filter((point) => point.word && point.hasResponse)
+      .map((point) => ({
+        stimulus_word: point.word || '',
+        response_word: point.word || '', // 応答語はタイムラインデータに含まれていないため、同じ単語を使用
+        reaction_time_ms: point.reactionTime ? point.reactionTime * 1000 : null,
+        spirit_probability: point.reactionValue || 0.5,
         timestamp: point.time,
         response_id: point.time, // タイムスタンプをIDとして使用
         experiment_id: point.sessionId || point.session_id,

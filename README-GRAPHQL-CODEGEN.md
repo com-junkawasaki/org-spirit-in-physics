@@ -50,11 +50,14 @@ generates:
 #### 型の生成
 
 ```bash
-# 一度だけ生成
+# 手動で生成
 pnpm codegen
 
 # ウォッチモード（開発中）
 pnpm codegen:watch
+
+# ビルド時に自動生成（prebuildフック）
+pnpm build  # prebuildが自動実行される
 ```
 
 #### 生成された型の使用
@@ -76,12 +79,19 @@ const data = await graphqlClient.request<GetParticipantsQueryResult>(
 
 1. RustでGraphQLスキーマを定義（`performers/services/graphql/src/`）
 2. GraphQLサービスを起動
-3. `pnpm codegen` で型を生成
+3. `pnpm build` で型を自動生成（`prebuild`フック）
 4. 生成された型を使用してTypeScriptコードを記述
+
+## スクリプト
+
+- `pnpm codegen` - 型を手動で生成
+- `pnpm codegen:watch` - ウォッチモードで型を生成（開発中）
+- `pnpm prebuild` - ビルド前に自動実行（型生成）
+- `pnpm build` - Next.jsアプリをビルド（`prebuild`が自動実行される）
 
 ## 注意事項
 
 - `src/generated/` ディレクトリは `.gitignore` に追加されています
-- ビルド時に自動的に型が生成されます（`package.json`の`build`スクリプト）
+- ビルド時に自動的に型が生成されます（`prebuild`フック）
 - GraphQLサービスが起動している必要があります
-
+- 開発中は `pnpm codegen:watch` を使用すると便利です
