@@ -41,19 +41,48 @@ export async function GET(
     console.log(`[TIMELINE API] Timeline data points: ${data.timeline?.length || 0}`);
 
     // Transform GraphQL response to API response format
-    const timelineData = (data.timeline || []).map((point: any) => ({
-      ts: new Date(point.time).getTime(),
-      w: point.word || null,
-      rt: point.reaction_time || null,
-      rv: point.reaction_value || null,
-      em: point.emotions?.map((e: any) => ({
-        n: e.name,
-        s: e.score,
-        t: e.file_type,
-      })) || [],
-      ph: point.physiological || {},
-      md: point.metadata || {},
-    }));
+    const timelineData = (data.timeline || []).map((point: any) => {
+      // Parse time field - GraphQL returns ISO 8601 string
+      let timestamp: number;
+      if (typeof point.time === 'string') {
+        timestamp = new Date(point.time).getTime();
+      } else if (typeof point.time === 'number') {
+        // Already in milliseconds
+        timestamp = point.time;
+      } else {
+        console.warn('[TIMELINE API] Invalid time format:', point.time);
+        timestamp = Date.now(); // Fallback
+      }
+
+      // Transform emotions array - ensure proper structure
+      const emotions = Array.isArray(point.emotions) 
+        ? point.emotions.map((e: any) => ({
+            n: e.name || '',
+            s: typeof e.score === 'number' ? e.score : 0,
+            t: e.file_type || '',
+          }))
+        : [];
+
+      // Ensure physiological is an object
+      const physiological = point.physiological && typeof point.physiological === 'object'
+        ? point.physiological
+        : { average: 0, max: 0, min: 0 };
+
+      // Ensure metadata is an object
+      const metadata = point.metadata && typeof point.metadata === 'object'
+        ? point.metadata
+        : { emotionCount: 0, physiologicalCount: 0 };
+
+      return {
+        ts: timestamp,
+        w: point.word || null,
+        rt: point.reaction_time ?? null,
+        rv: point.reaction_value ?? null,
+        em: emotions,
+        ph: physiological,
+        md: metadata,
+      };
+    });
 
     const totalTime = Date.now() - startTime;
     console.log(`[TIMELINE API] ===== Response =====`);
@@ -76,9 +105,36 @@ export async function GET(
     };
 
     return NextResponse.json(responseData);
-  } catch (error) {
+  } catch (error: any) {
     console.error('[TIMELINE API] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // GraphQL error details
+    if (error.response?.errors) {
+      const graphqlErrors = error.response.errors.map((e: any) => e.message).join('; ');
+      console.error('[TIMELINE API] GraphQL errors:', graphqlErrors);
+      return NextResponse.json(
+        {
+          success: false,
+          error: `GraphQL query failed: ${graphqlErrors}`,
+          errors: [graphqlErrors, errorMessage],
+        },
+        { status: 500 }
+      );
+    }
+
+    // Network errors
+    if (error.message?.includes('fetch') || error.message?.includes('network')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Network error: Failed to connect to GraphQL service',
+          errors: [errorMessage],
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,

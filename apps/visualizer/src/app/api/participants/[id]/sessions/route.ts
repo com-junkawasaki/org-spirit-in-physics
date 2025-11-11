@@ -1,8 +1,9 @@
 // Merkle DAG: participants.sessions.endpoint
 // 参加者のセッション一覧取得APIエンドポイント
+// GraphQL経由でデータを取得
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createNeo4jClient } from '@/lib/neo4j'
+import { graphqlClient, GET_SESSIONS } from '@/lib/graphql/client'
 
 export async function GET(
   request: NextRequest,
@@ -10,57 +11,61 @@ export async function GET(
 ) {
   try {
     const participantId = params.id
-    const client = createNeo4jClient()
 
-    // 新しい構造（Participant -> Session）でセッション一覧を取得
-    const sessionsQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-      RETURN s.id as id, s.session_index as sessionIndex, s.created_at as createdAt, 
-             s.start_ts as startTs, s.end_ts as endTs
-      ORDER BY s.created_at DESC
-    `
+    console.log(`[SESSIONS API] Fetching sessions for participant: ${participantId}`)
 
-    const sessionsResult = await client.query(sessionsQuery, { participantId })
-    
-    // Helper function to convert Neo4j Integer objects to JavaScript numbers
-    const toNumber = (value: any): number | null => {
-      if (value === null || value === undefined) return null
-      if (typeof value === 'object' && value !== null && 'low' in value) {
-        // Neo4j Integer型の場合
-        return value.low
+    // Query GraphQL service for sessions
+    const data = await graphqlClient.request(GET_SESSIONS, { participantId })
+
+    console.log(`[SESSIONS API] GraphQL query completed, sessions count: ${data.sessions?.length || 0}`)
+
+    // Transform GraphQL response to API response format
+    const sessions = (data.sessions || []).map((session: any) => {
+      // Parse created_at timestamp
+      const createdAt = session.created_at 
+        ? new Date(session.created_at).toISOString()
+        : null
+
+      // start_ts and end_ts are already in milliseconds (BIGINT)
+      const startTs = session.start_ts ?? null
+      const endTs = session.end_ts ?? null
+
+      return {
+        id: session.id || '',
+        sessionIndex: session.session_index ?? null,
+        createdAt,
+        startTs,
+        endTs,
       }
-      const num = Number(value)
-      return isNaN(num) ? null : num
-    }
-    
-    // Helper function to convert Neo4j date/timestamp to string or number
-    const toTimestamp = (value: any): number | null => {
-      if (value === null || value === undefined) return null
-      if (typeof value === 'object' && value !== null && 'low' in value) {
-        // Neo4j Integer型の場合
-        return value.low
-      }
-      if (typeof value === 'string') {
-        const date = new Date(value)
-        return isNaN(date.getTime()) ? null : date.getTime()
-      }
-      const num = Number(value)
-      return isNaN(num) ? null : num
-    }
-    
-    const sessions = sessionsResult?.map((record: any) => ({
-      id: record.id || '',
-      sessionIndex: toNumber(record.sessionIndex),
-      createdAt: record.createdAt ? (typeof record.createdAt === 'string' ? record.createdAt : new Date(toTimestamp(record.createdAt) || Date.now()).toISOString()) : null,
-      startTs: toTimestamp(record.startTs),
-      endTs: toTimestamp(record.endTs),
-    })) || []
+    })
+
+    // Sort by created_at DESC (most recent first)
+    sessions.sort((a: any, b: any) => {
+      if (!a.createdAt && !b.createdAt) return 0
+      if (!a.createdAt) return 1
+      if (!b.createdAt) return -1
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+
+    console.log(`[SESSIONS API] Returning ${sessions.length} sessions`)
 
     return NextResponse.json({ sessions })
   } catch (error: any) {
-    console.error('Error fetching sessions:', error)
+    console.error('[SESSIONS API] Error fetching sessions:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    
+    // GraphQL error details
+    if (error.response?.errors) {
+      const graphqlErrors = error.response.errors.map((e: any) => e.message).join('; ')
+      console.error('[SESSIONS API] GraphQL errors:', graphqlErrors)
+      return NextResponse.json(
+        { error: `GraphQL query failed: ${graphqlErrors}`, details: errorMessage },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
-      { error: error.message || 'Unknown error' },
+      { error: `Failed to fetch sessions: ${errorMessage}` },
       { status: 500 }
     )
   }
