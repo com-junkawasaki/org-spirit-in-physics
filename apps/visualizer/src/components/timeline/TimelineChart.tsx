@@ -277,20 +277,42 @@ export default function TimelineChart({
       d.emotions.filter(e => e.fileType === 'prosody').map(e => e.score)
     );
 
+    // domainの計算を統一（最小値と最大値の両方を考慮）
+    const burstEmotionExtent = burstEmotions.length > 0 
+      ? (d3.extent(burstEmotions) as [number, number])
+      : [0, 1];
+    const faceEmotionExtent = faceEmotions.length > 0 
+      ? (d3.extent(faceEmotions) as [number, number])
+      : [0, 1];
+    const languageEmotionExtent = languageEmotions.length > 0 
+      ? (d3.extent(languageEmotions) as [number, number])
+      : [0, 1];
+    const prosodyEmotionExtent = prosodyEmotions.length > 0 
+      ? (d3.extent(prosodyEmotions) as [number, number])
+      : [0, 1];
+
     const burstEmotionScale = d3.scaleLinear()
-      .domain([0, burstEmotions.length > 0 ? d3.max(burstEmotions) || 1 : 1])
+      .domain(burstEmotionExtent[0] === burstEmotionExtent[1] 
+        ? [0, Math.max(1, burstEmotionExtent[1])] 
+        : burstEmotionExtent)
       .range([axisHeight * 3.5, axisHeight * 3.1]);
 
     const faceEmotionScale = d3.scaleLinear()
-      .domain([0, faceEmotions.length > 0 ? d3.max(faceEmotions) || 1 : 1])
+      .domain(faceEmotionExtent[0] === faceEmotionExtent[1] 
+        ? [0, Math.max(1, faceEmotionExtent[1])] 
+        : faceEmotionExtent)
       .range([axisHeight * 4.5, axisHeight * 4.1]);
 
     const languageEmotionScale = d3.scaleLinear()
-      .domain([0, languageEmotions.length > 0 ? d3.max(languageEmotions) || 1 : 1])
+      .domain(languageEmotionExtent[0] === languageEmotionExtent[1] 
+        ? [0, Math.max(1, languageEmotionExtent[1])] 
+        : languageEmotionExtent)
       .range([axisHeight * 5.5, axisHeight * 5.1]);
 
     const prosodyEmotionScale = d3.scaleLinear()
-      .domain([0, prosodyEmotions.length > 0 ? d3.max(prosodyEmotions) || 1 : 1])
+      .domain(prosodyEmotionExtent[0] === prosodyEmotionExtent[1] 
+        ? [0, Math.max(1, prosodyEmotionExtent[1])] 
+        : prosodyEmotionExtent)
       .range([axisHeight * 6.5, axisHeight * 6.1]);
 
     // 単語表示（時間軸上）

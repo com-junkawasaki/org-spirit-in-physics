@@ -96,11 +96,12 @@ services:
       - ./apps/visualizer/public/dataset:/app/dataset:cached
     env_file:
       - ./apps/patient/env.docker
-    environment:
-      - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=ZApfDTJmpJAmBpMXgCHWn826CV69dE9_ntxtPHUc7hI
-      - NEO4J_DATABASE=neo4j
+    # Neo4j環境変数は削除済み - GraphQLサービス経由でPostgreSQLを使用
+    # environment:
+    #   - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687
+    #   - NEO4J_USER=neo4j
+    #   - NEO4J_PASSWORD=ZApfDTJmpJAmBpMXgCHWn826CV69dE9_ntxtPHUc7hI
+    #   - NEO4J_DATABASE=neo4j
     networks:
       - spirit-network
     healthcheck:

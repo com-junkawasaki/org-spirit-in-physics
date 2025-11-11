@@ -5,7 +5,7 @@ import {
   loadEmotionAnalysisResults,
   generateEmotionStatistics
 } from "scripts/src/lib/emotion-analysis";
-import { createNeo4jClient } from "scripts/src/lib/neo4j";
+// Neo4j依存を削除 - GraphQLサービス経由でPostgreSQLを使用
 import { WorkflowService } from "scripts/src/lib/workflow-service";
 
 export async function GET(request: NextRequest) {
@@ -83,34 +83,12 @@ export async function GET(request: NextRequest) {
           "e41a9cd2-d803-49a8-9020-0260e55cd03e"
         ];
 
-        // Neo4jから感情統計を取得
-        const neo4jClient = createNeo4jClient();
-        const emotions = await neo4jClient.query(`
-          MATCH (r:Response)
-          WHERE r.emotion IS NOT NULL
-          RETURN r.emotion as name, count(r) as score
-        `);
-
-        const emotionMap = (emotions || []).reduce((acc: Record<string, { count: number; totalScore: number }>, emotion: any) => {
-          if (!acc[emotion.name]) {
-            acc[emotion.name] = { count: 0, totalScore: 0 };
-          }
-          acc[emotion.name].count += emotion.score; // score is count from Neo4j query
-          acc[emotion.name].totalScore += emotion.score;
-          return acc;
-        }, {});
-
-        const dominantEmotions = Object.entries(emotionMap)
-          .map(([emotion, stats]: [string, { count: number; totalScore: number }]) => ({
-            emotion,
-            count: stats.count,
-            averageScore: stats.totalScore / stats.count
-          }))
-          .sort((a, b) => b.count - a.count);
-
+        // GraphQLサービス経由で感情統計を取得（実装予定）
+        // 現時点では空の統計を返す
+        console.warn('get-statistics: GraphQL経由での実装は未対応');
         const emotionStats = {
-          totalAnalyses: emotions?.length || 0,
-          dominantEmotions
+          totalAnalyses: 0,
+          dominantEmotions: []
         };
         const globalResults: any[] = [];
         const participantPromises = participantIds.map(async id => {
