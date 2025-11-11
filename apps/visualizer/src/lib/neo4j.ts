@@ -1,8 +1,7 @@
-// Merkle DAG: NeogmaベースのNeo4jクライアント
-// Neogmaを使用した型安全なNeo4j Object-Graph Mapping
+// Merkle DAG: Cypher Code BuilderベースのNeo4jクライアント
+// neo4j-driverを直接使用し、Cypher Code Builderでクエリを構築
 
-import { Neogma } from 'neogma'
-import { createNeogmaModels } from './neogma-models'
+import neo4j, { Driver, Session } from 'neo4j-driver'
 
 interface Neo4jConfig {
   uri: string
@@ -13,58 +12,48 @@ interface Neo4jConfig {
 
 class Neo4jClient {
   private config: Neo4jConfig
-  private neogma: Neogma
-  private Participant: any
-  private ExperimentSession: any
-  private Response: any
-  private EmotionAnalysis: any
-  private ImportJob: any
+  private driver: Driver
 
   constructor(config: Neo4jConfig) {
     this.config = config
-    this.neogma = new Neogma(
+    this.driver = neo4j.driver(
+      this.config.uri,
+      neo4j.auth.basic(this.config.user, this.config.password),
       {
-        url: this.config.uri,
-        username: this.config.user,
-        password: this.config.password,
         database: this.config.database,
-      },
-      {
-        logger: console.log,
       }
     )
-
-    // Neogmaモデルを作成
-    const models = createNeogmaModels(this.neogma)
-
-    // モデルをクラスプロパティとして設定
-    this.Participant = models.Participant
-    this.ExperimentSession = models.ExperimentSession
-    this.Response = models.Response
-    this.EmotionAnalysis = models.EmotionAnalysis
-    this.ImportJob = models.ImportJob
   }
 
   async query(cypherQuery: string, params?: Record<string, any>): Promise<any[]> {
+    const session = this.driver.session({ database: this.config.database })
     try {
-      console.log('Neogma query:', cypherQuery, 'params:', params)
+      console.log('Neo4j query:', cypherQuery, 'params:', params)
 
-      const result = await this.neogma.queryRunner.run(cypherQuery, params || {})
-      console.log('Neogma response records:', result.records?.length || 0)
+      const result = await session.run(cypherQuery, params || {})
+      console.log('Neo4j response records:', result.records?.length || 0)
 
-      const records = result.records?.map(record => {
+      const records = result.records.map(record => {
         const obj: any = {}
         record.keys.forEach(key => {
-          obj[key] = record.get(key)
+          const value = record.get(key)
+          // Neo4j Integer型をJavaScript numberに変換
+          if (typeof value === 'object' && value !== null && 'low' in value) {
+            obj[key] = value.low
+          } else {
+            obj[key] = value
+          }
         })
         return obj
-      }) || []
+      })
 
-      console.log('Neogma response data:', records)
+      console.log('Neo4j response data:', records)
       return records
     } catch (error) {
-      console.error('Neogma query error:', error)
+      console.error('Neo4j query error:', error)
       throw error
+    } finally {
+      await session.close()
     }
   }
 
@@ -79,18 +68,18 @@ class Neo4jClient {
         MERGE (n:${nodeLabel} {id: $id})
         SET n += $properties
         RETURN n
-      `;
+      `
       
       const params = {
         id: properties.id,
         properties: { ...properties, ...updateProperties }
-      };
+      }
       
-      const result = await this.query(query, params);
-      return result[0]?.n || result[0];
+      const result = await this.query(query, params)
+      return result[0]?.n || result[0]
     } catch (error) {
-      console.error('Error in mergeNode:', error);
-      throw error;
+      console.error('Error in mergeNode:', error)
+      throw error
     }
   }
 
@@ -106,17 +95,17 @@ class Neo4jClient {
         CREATE (n:${nodeLabel})
         SET n += item
         RETURN count(n) as created_count
-      `;
+      `
       
       const params = {
         data: dataArray
-      };
+      }
       
-      const result = await this.query(query, params);
-      return result[0]?.created_count || 0;
+      const result = await this.query(query, params)
+      return result[0]?.created_count || 0
     } catch (error) {
-      console.error('Error in bulkInsertNodes:', error);
-      throw error;
+      console.error('Error in bulkInsertNodes:', error)
+      throw error
     }
   }
 
@@ -128,13 +117,13 @@ class Neo4jClient {
     options: { limit?: number; skip?: number } = {}
   ): Promise<unknown[]> {
     try {
-      const fields = projectionFields.map(field => `n.${field} as ${field}`).join(', ');
+      const fields = projectionFields.map(field => `n.${field} as ${field}`).join(', ')
       const whereClause = Object.keys(conditions).length > 0 
         ? `WHERE ${Object.keys(conditions).map(key => `n.${key} = $${key}`).join(' AND ')}`
-        : '';
+        : ''
       
-      const limitClause = options.limit ? `LIMIT ${options.limit}` : '';
-      const skipClause = options.skip ? `SKIP ${options.skip}` : '';
+      const limitClause = options.limit ? `LIMIT ${options.limit}` : ''
+      const skipClause = options.skip ? `SKIP ${options.skip}` : ''
       
       const query = `
         MATCH (n:${nodeLabel})
@@ -142,53 +131,58 @@ class Neo4jClient {
         RETURN ${fields}
         ${skipClause}
         ${limitClause}
-      `;
+      `
       
-      const result = await this.query(query, conditions);
-      return result;
+      const result = await this.query(query, conditions)
+      return result
     } catch (error) {
-      console.error('Error in projectMinimalFields:', error);
-      throw error;
+      console.error('Error in projectMinimalFields:', error)
+      throw error
     }
   }
 
   async close(): Promise<void> {
-    await this.neogma.driver.close()
+    await this.driver.close()
   }
 
   async getParticipants(): Promise<any[]> {
     try {
-      // Neogmaを使って参加者データを取得
-      const participants = await this.Participant.findMany()
+      // Cypherクエリを使って参加者データを取得
+      const query = `
+        MATCH (p:Participant)
+        RETURN p.id as participant_id, p.created_at as created_at
+        ORDER BY p.created_at DESC
+      `
+      const participants = await this.query(query)
 
       // 各参加者の統計情報を取得
       const processed = await Promise.all(participants.map(async (participant: any) => {
-        // Neogmaでは直接countが使えないので、findManyの長さをカウント
-        const [sessions, responses] = await Promise.all([
-          this.ExperimentSession.findMany({ where: { participant_id: participant.id } }),
-          this.Response.findMany({ where: { participant_id: participant.id } }),
+        const participantId = participant.participant_id
+        
+        // セッション数とレスポンス数を取得
+        const [sessionsResult, responsesResult] = await Promise.all([
+          this.query(`
+            MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
+            RETURN count(s) as count
+          `, { participantId }),
+          this.query(`
+            MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)-[:HAS_RESPONSE]->(r:Response)
+            RETURN count(r) as count, avg(r.spirit_probability) as avg_spirit
+          `, { participantId })
         ])
 
-        const sessionCount = sessions.length
-        const totalResponses = responses.length
-        const averageSpiritProbability = responses.length > 0
-          ? responses.reduce((sum: number, response: any) =>
-              sum + (response.spirit_probability || 0), 0) / responses.length
-          : 0.5
+        const sessionCount = sessionsResult[0]?.count || 0
+        const totalResponses = responsesResult[0]?.count || 0
+        const averageSpiritProbability = responsesResult[0]?.avg_spirit || 0.5
 
         return {
-          participant_id: participant.id,
+          participant_id: participantId,
           session_count: sessionCount,
           total_responses: totalResponses,
           average_spirit_probability: averageSpiritProbability,
           last_activity: participant.created_at
         }
       }))
-
-      // 作成日時で降順ソート
-      processed.sort((a: any, b: any) =>
-        new Date(b.last_activity).getTime() - new Date(a.last_activity).getTime()
-      )
 
       return processed
     } catch (error) {
@@ -199,21 +193,18 @@ class Neo4jClient {
 
   async getParticipantDetails(participantId: string): Promise<any> {
     try {
-      // Neogmaを使って参加者詳細を取得
-      const participant = await this.Participant.findOne({
-        where: { id: participantId },
-      })
+      // Cypherクエリを使って参加者詳細を取得
+      const query = `
+        MATCH (p:Participant {id: $participantId})
+        RETURN p.id as id, p.age as age, p.gender as gender, p.handedness as handedness
+      `
+      const result = await this.query(query, { participantId })
 
-      if (!participant) {
+      if (result.length === 0) {
         return null
       }
 
-      return {
-        id: participant.id,
-        age: participant.age,
-        gender: participant.gender,
-        handedness: participant.handedness
-      }
+      return result[0]
     } catch (error) {
       console.error('Error in getParticipantDetails:', error)
       return null
@@ -222,10 +213,16 @@ class Neo4jClient {
 
   async getParticipantResponses(participantId: string): Promise<any[]> {
     try {
-      // Neogmaを使って参加者のレスポンスを取得
-      const responses = await this.Response.findMany({
-        where: { participant_id: participantId },
-      })
+      // Cypherクエリを使って参加者のレスポンスを取得
+      const query = `
+        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)-[:HAS_RESPONSE]->(r:Response)
+        RETURN r.id as id, r.stimulus_word as stimulus_word, r.response_word as response_word,
+               r.reaction_time_ms as reaction_time_ms, r.emotion as emotion,
+               r.emotion_confidence as emotion_confidence, s.id as session_id,
+               r.spirit_probability as spirit_probability, r.event_ts as event_ts
+        ORDER BY r.event_ts DESC
+      `
+      const responses = await this.query(query, { participantId })
 
       // データを整形
       const processed = responses.map((response: any) => ({
@@ -240,11 +237,6 @@ class Neo4jClient {
         event_ts: response.event_ts,
       }))
 
-      // 作成日時で降順ソート
-      processed.sort((a: any, b: any) =>
-        new Date(b.event_ts || 0).getTime() - new Date(a.event_ts || 0).getTime()
-      )
-
       return processed
     } catch (error) {
       console.error('Error in getParticipantResponses:', error)
@@ -254,16 +246,15 @@ class Neo4jClient {
 }
 
 // Neo4j configuration
-// Neogmaはneo4j://形式をサポートしているが、Docker環境ではbolt://形式の方が確実
-// 環境変数でneo4j://が指定されている場合は、bolt://に変換する
+// neo4j://形式をbolt://形式に変換（Docker環境での接続問題を回避）
 const getNeo4jUri = (): string => {
-  const uri = process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'bolt://localhost:7687';
+  const uri = process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'bolt://localhost:7687'
   // neo4j://形式をbolt://形式に変換（Docker環境での接続問題を回避）
   if (uri.startsWith('neo4j://')) {
-    return uri.replace('neo4j://', 'bolt://');
+    return uri.replace('neo4j://', 'bolt://')
   }
-  return uri;
-};
+  return uri
+}
 
 const neo4jConfig: Neo4jConfig = {
   uri: getNeo4jUri(),
@@ -278,7 +269,7 @@ console.log('Neo4j configuration:', {
   user: neo4jConfig.user,
   database: neo4jConfig.database,
   envUri: process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'not set'
-});
+})
 
 // Create singleton client instance
 let clientInstance: Neo4jClient | null = null
@@ -299,28 +290,14 @@ export function createArangoDBClient(): Neo4jClient {
 // Neo4jManager class for unified data access
 export class Neo4jManager {
   private client: Neo4jClient
-  private neogma: any
-  private Participant: any
-  private ExperimentSession: any
-  private Response: any
-  private EmotionAnalysis: any
-  private ImportJob: any
 
   constructor() {
     this.client = createNeo4jClient()
-    // クライアントのモデルを参照
-    const neo4jClient = this.client as any
-    this.neogma = neo4jClient.neogma
-    this.Participant = neo4jClient.Participant
-    this.ExperimentSession = neo4jClient.ExperimentSession
-    this.Response = neo4jClient.Response
-    this.EmotionAnalysis = neo4jClient.EmotionAnalysis
-    this.ImportJob = neo4jClient.ImportJob
   }
 
   async testConnection(): Promise<boolean> {
     try {
-      // Neogmaを使って接続テスト
+      // Cypherクエリを使って接続テスト
       const result = await this.client.query('RETURN 1 as test')
       // Neo4j IntegerオブジェクトをJavaScript numberに変換
       const testValue = result && result.length > 0 ? result[0].test : null
@@ -329,7 +306,7 @@ export class Neo4jManager {
         : Number(testValue) || 0
       return numValue === 1
     } catch (error) {
-      console.error('Neogma connection test failed:', error)
+      console.error('Neo4j connection test failed:', error)
       return false
     }
   }
@@ -352,21 +329,26 @@ export class Neo4jManager {
 
   async getImportJobs(): Promise<unknown[]> {
     try {
-      // Neogmaを使ってImportJobを取得
-      const jobs = await this.ImportJob.findMany({
-        order: [['created_at', 'DESC']],
-        limit: 50,
-      })
+      // Cypherクエリを使ってImportJobを取得
+      const query = `
+        MATCH (j:ImportJob)
+        RETURN j.id as id, j.session_id as sessionId, j.participant_id as participantId,
+               j.status as status, j.created_at as createdAt, j.completed_at as completedAt,
+               j.error_message as error, j.progress_percentage as progress
+        ORDER BY j.created_at DESC
+        LIMIT 50
+      `
+      const jobs = await this.query(query)
 
       return jobs.map((job: any) => ({
         id: job.id,
-        sessionId: job.session_id,
-        participantId: job.participant_id,
+        sessionId: job.sessionId,
+        participantId: job.participantId,
         status: job.status,
-        createdAt: job.created_at,
-        completedAt: job.completed_at,
-        error: job.error_message,
-        progress: job.progress_percentage,
+        createdAt: job.createdAt,
+        completedAt: job.completedAt,
+        error: job.error,
+        progress: job.progress,
       }))
     } catch (error) {
       console.error('Error in getImportJobs:', error)
@@ -415,28 +397,38 @@ export class Neo4jManager {
   async createImportJob(sessionId: string): Promise<unknown> {
     try {
       // まずセッションから参加者IDを取得
-      const session = await this.ExperimentSession.findOne({
-        where: { id: sessionId },
-      })
+      const sessionQuery = `
+        MATCH (s:Session {id: $sessionId})
+        RETURN s.participant_id as participant_id
+      `
+      const sessionResult = await this.query(sessionQuery, { sessionId })
 
-      if (!session) {
+      if (sessionResult.length === 0) {
         throw new Error('Session not found')
       }
 
-      const participantId = session.participant_id
+      const participantId = sessionResult[0].participant_id
       const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-      // Neogmaを使ってImportJobを作成
-      const job = await this.ImportJob.createOne({
-        id: jobId,
-        session_id: sessionId,
-        participant_id: participantId,
-        status: 'PENDING',
-        created_at: new Date().toISOString(),
-        progress_percentage: 0,
+      // Cypherクエリを使ってImportJobを作成
+      const createQuery = `
+        CREATE (j:ImportJob {
+          id: $jobId,
+          session_id: $sessionId,
+          participant_id: $participantId,
+          status: 'PENDING',
+          created_at: datetime(),
+          progress_percentage: 0
+        })
+        RETURN j
+      `
+      const jobResult = await this.query(createQuery, {
+        jobId,
+        sessionId,
+        participantId
       })
 
-      return job
+      return jobResult[0]?.j || jobResult[0]
     } catch (error) {
       console.error('Error in createImportJob:', error)
       throw error
@@ -445,12 +437,14 @@ export class Neo4jManager {
 
   async getSessionById(sessionId: string): Promise<unknown> {
     try {
-      // Neogmaを使ってセッションを取得
-      const session = await this.ExperimentSession.findOne({
-        where: { id: sessionId },
-      })
+      // Cypherクエリを使ってセッションを取得
+      const query = `
+        MATCH (s:Session {id: $sessionId})
+        RETURN s
+      `
+      const result = await this.query(query, { sessionId })
 
-      return session
+      return result[0]?.s || null
     } catch (error) {
       console.error('Error in getSessionById:', error)
       return null
@@ -463,46 +457,47 @@ export class Neo4jManager {
     try {
       console.log(`Creating physiological data for session ${sessionId}, ${physiologicalData.length} records`)
 
-      // 各生理データレコードを処理
-      for (const record of physiologicalData) {
-        const physiologicalId = `physio_${sessionId}_${record.timestamp}`
+      // バルク挿入用のクエリ
+      const query = `
+        UNWIND $data as record
+        MATCH (s:Session {id: $sessionId})
+        CREATE (p:PhysiologicalData {
+          id: record.physiologicalId,
+          participant_id: $participantId,
+          session_id: $sessionId,
+          timestamp: datetime(record.timestamp),
+          time_sec: record.time_sec,
+          ch1: record.ch1,
+          ch2: record.ch2,
+          ch3: record.ch3,
+          ch4: record.ch4,
+          ch5: record.ch5,
+          ch6: record.ch6,
+          ch7: record.ch7,
+          ch8: record.ch8,
+          imported_at: datetime()
+        })-[:BELONGS_TO]->(s)
+      `
 
-        // PhysiologicalDataノードを作成
-        await this.neogma.queryRunner.run(
-          `CREATE (p:PhysiologicalData {
-            id: $physiologicalId,
-            participant_id: $participantId,
-            session_id: $sessionId,
-            timestamp: $timestamp,
-            time_sec: $time_sec,
-            ch1: $ch1,
-            ch2: $ch2,
-            ch3: $ch3,
-            ch4: $ch4,
-            ch5: $ch5,
-            ch6: $ch6,
-            ch7: $ch7,
-            ch8: $ch8,
-            imported_at: datetime($imported_at)
-          })-[:BELONGS_TO]->(s:ExperimentSession {id: $sessionId})`,
-          {
-            physiologicalId,
-            participantId,
-            sessionId,
-            timestamp: new Date(record.timestamp).toISOString(),
-            time_sec: record.time_sec,
-            ch1: record.ch1,
-            ch2: record.ch2,
-            ch3: record.ch3,
-            ch4: record.ch4,
-            ch5: record.ch5,
-            ch6: record.ch6,
-            ch7: record.ch7,
-            ch8: record.ch8,
-            imported_at: new Date().toISOString()
-          }
-        )
-      }
+      const data = physiologicalData.map(record => ({
+        physiologicalId: `physio_${sessionId}_${record.timestamp}`,
+        timestamp: new Date(record.timestamp).toISOString(),
+        time_sec: record.time_sec,
+        ch1: record.ch1,
+        ch2: record.ch2,
+        ch3: record.ch3,
+        ch4: record.ch4,
+        ch5: record.ch5,
+        ch6: record.ch6,
+        ch7: record.ch7,
+        ch8: record.ch8,
+      }))
+
+      await this.query(query, {
+        participantId,
+        sessionId,
+        data
+      })
 
       console.log(`Successfully created ${physiologicalData.length} physiological data records`)
     } catch (error) {
@@ -514,138 +509,151 @@ export class Neo4jManager {
   // Merkle DAG: neo4j.methods.create_participant
   // 参加者ノード作成
   async createParticipant(participantData: { participant_id: string; signature?: string; agreed_at?: string; agreements_json?: string; imported_at?: string }): Promise<void> {
-    await this.neogma.queryRunner.run(
-      `CREATE (p:Participant {
+    const query = `
+      CREATE (p:Participant {
         id: $participant_id,
         participant_id: $participant_id,
         signature: $signature,
         agreed_at: datetime($agreed_at),
         agreements_json: $agreements_json,
         created_at: datetime($imported_at)
-      })`,
-      {
-        participant_id: participantData.participant_id,
-        signature: participantData.signature ?? null,
-        agreed_at: participantData.agreed_at ?? new Date().toISOString(),
-        agreements_json: participantData.agreements_json ?? '{}',
-        imported_at: participantData.imported_at ?? new Date().toISOString(),
-      }
-    )
+      })
+    `
+    await this.query(query, {
+      participant_id: participantData.participant_id,
+      signature: participantData.signature ?? null,
+      agreed_at: participantData.agreed_at ?? new Date().toISOString(),
+      agreements_json: participantData.agreements_json ?? '{}',
+      imported_at: participantData.imported_at ?? new Date().toISOString(),
+    })
   }
 
   // Merkle DAG: neo4j.methods.create_session_events
   // セッションイベント作成（簡易: SessionEventノードとして保存）
   async createSessionEvents(events: Array<{ participant_id: string; type: string; timestamp: string; payload: any; imported_at: string }>): Promise<void> {
-    for (const ev of events) {
-      await this.neogma.queryRunner.run(
-        `MERGE (p:Participant { id: $participant_id })
-         MERGE (s:ExperimentSession { id: $session_id })
-           ON CREATE SET s.participant_id = $participant_id, s.created_at = datetime($imported_at)
-         CREATE (e:SessionEvent {
-           id: $event_id,
-           participant_id: $participant_id,
-           type: $type,
-           timestamp: datetime($timestamp),
-           payload: $payload,
-           imported_at: datetime($imported_at)
-         })-[:IN_SESSION]->(s)`,
-        {
-          participant_id: ev.participant_id,
-          session_id: `session_${ev.participant_id}`,
-          event_id: `evt_${ev.participant_id}_${Date.parse(ev.timestamp)}`,
-          type: ev.type,
-          timestamp: ev.timestamp,
-          payload: ev.payload ?? {},
-          imported_at: ev.imported_at,
-        }
-      )
-    }
+    const query = `
+      UNWIND $events as ev
+      MERGE (p:Participant { id: ev.participant_id })
+      MERGE (s:Session { id: ev.session_id })
+        ON CREATE SET s.participant_id = ev.participant_id, s.created_at = datetime(ev.imported_at)
+      CREATE (e:SessionEvent {
+        id: ev.event_id,
+        participant_id: ev.participant_id,
+        type: ev.type,
+        timestamp: datetime(ev.timestamp),
+        payload: ev.payload,
+        imported_at: datetime(ev.imported_at)
+      })-[:IN_SESSION]->(s)
+    `
+
+    const eventsData = events.map(ev => ({
+      participant_id: ev.participant_id,
+      session_id: `session_${ev.participant_id}`,
+      event_id: `evt_${ev.participant_id}_${Date.parse(ev.timestamp)}`,
+      type: ev.type,
+      timestamp: ev.timestamp,
+      payload: ev.payload ?? {},
+      imported_at: ev.imported_at,
+    }))
+
+    await this.query(query, { events: eventsData })
   }
 
   // Merkle DAG: neo4j.methods.create_word_responses
   async createWordResponses(participantId: string, responses: Array<{ stimulusWord: string; responseWord: string; reactionTimeMs: number; isDelayed: boolean; timestamp: string }>): Promise<void> {
-    for (const r of responses) {
-      await this.neogma.queryRunner.run(
-        `CREATE (resp:Response {
-          id: $id,
-          participant_id: $participant_id,
-          stimulus_word: $stimulus_word,
-          response_word: $response_word,
-          reaction_time_ms: $reaction_time_ms,
-          is_delayed: $is_delayed,
-          event_ts: datetime($event_ts)
-        })`,
-        {
-          id: `resp_${participantId}_${Date.parse(r.timestamp)}`,
-          participant_id: participantId,
-          stimulus_word: r.stimulusWord,
-          response_word: r.responseWord,
-          reaction_time_ms: r.reactionTimeMs ?? 0,
-          is_delayed: !!r.isDelayed,
-          event_ts: r.timestamp,
-        }
-      )
-    }
+    const query = `
+      UNWIND $responses as r
+      CREATE (resp:Response {
+        id: r.id,
+        participant_id: $participant_id,
+        stimulus_word: r.stimulus_word,
+        response_word: r.response_word,
+        reaction_time_ms: r.reaction_time_ms,
+        is_delayed: r.is_delayed,
+        event_ts: datetime(r.event_ts)
+      })
+    `
+
+    const responsesData = responses.map(r => ({
+      id: `resp_${participantId}_${Date.parse(r.timestamp)}`,
+      participant_id: participantId,
+      stimulus_word: r.stimulusWord,
+      response_word: r.responseWord,
+      reaction_time_ms: r.reactionTimeMs ?? 0,
+      is_delayed: !!r.isDelayed,
+      event_ts: r.timestamp,
+    }))
+
+    await this.query(query, {
+      participant_id: participantId,
+      responses: responsesData
+    })
   }
 
   // Merkle DAG: neo4j.methods.get_sessions_by_participant
   async getSessionsByParticipantId(participantId: string): Promise<any[]> {
-    const res = await this.neogma.queryRunner.run(
-      `MATCH (s:ExperimentSession) WHERE s.participant_id = $participant_id RETURN s AS session`,
-      { participant_id: participantId }
-    )
-    return res.records?.map(r => r.get('session')) ?? []
+    const query = `
+      MATCH (s:Session)
+      WHERE s.participant_id = $participant_id
+      RETURN s AS session
+    `
+    const result = await this.query(query, { participant_id: participantId })
+    return result.map((r: any) => r.session) || []
   }
 
   // Merkle DAG: neo4j.methods.create_emotion_entries
   async createEmotionEntries(entries: Array<{ participant_id: string; registry_uuid?: string; text?: string; begin_time?: number; end_time?: number; confidence?: number; emotions?: any; position?: any; imported_at?: string }>): Promise<void> {
-    for (const e of entries) {
-      await this.neogma.queryRunner.run(
-        `CREATE (em:EmotionEntry {
-          id: $id,
-          participant_id: $participant_id,
-          registry_uuid: $registry_uuid,
-          text: $text,
-          begin_time: $begin_time,
-          end_time: $end_time,
-          confidence: $confidence,
-          emotions: $emotions,
-          position: $position,
-          imported_at: datetime($imported_at)
-        })`,
-        {
-          id: `emo_${e.participant_id}_${Date.now()}`,
-          participant_id: e.participant_id,
-          registry_uuid: e.registry_uuid ?? null,
-          text: e.text ?? null,
-          begin_time: e.begin_time ?? null,
-          end_time: e.end_time ?? null,
-          confidence: e.confidence ?? null,
-          emotions: e.emotions ?? [],
-          position: e.position ?? null,
-          imported_at: e.imported_at ?? new Date().toISOString(),
-        }
-      )
-    }
+    const query = `
+      UNWIND $entries as e
+      CREATE (em:EmotionEntry {
+        id: e.id,
+        participant_id: e.participant_id,
+        registry_uuid: e.registry_uuid,
+        text: e.text,
+        begin_time: e.begin_time,
+        end_time: e.end_time,
+        confidence: e.confidence,
+        emotions: e.emotions,
+        position: e.position,
+        imported_at: datetime(e.imported_at)
+      })
+    `
+
+    const entriesData = entries.map(e => ({
+      id: `emo_${e.participant_id}_${Date.now()}`,
+      participant_id: e.participant_id,
+      registry_uuid: e.registry_uuid ?? null,
+      text: e.text ?? null,
+      begin_time: e.begin_time ?? null,
+      end_time: e.end_time ?? null,
+      confidence: e.confidence ?? null,
+      emotions: e.emotions ?? [],
+      position: e.position ?? null,
+      imported_at: e.imported_at ?? new Date().toISOString(),
+    }))
+
+    await this.query(query, { entries: entriesData })
   }
 
   // Merkle DAG: neo4j.methods.create_csv_elements
   async createCSVElements(elements: Array<Record<string, unknown>>): Promise<void> {
-    for (const element of elements) {
-      await this.neogma.queryRunner.run(
-        `CREATE (c:CSVElement $props)`,
-        { props: element }
-      )
-    }
+    const query = `
+      UNWIND $elements as element
+      CREATE (c:CSVElement)
+      SET c += element
+    `
+    await this.query(query, { elements })
   }
 
   // Merkle DAG: neo4j.methods.get_emotions_by_participant
   async getEmotionDataByParticipantId(participantId: string): Promise<any[]> {
-    const res = await this.neogma.queryRunner.run(
-      `MATCH (e:EmotionEntry) WHERE e.participant_id = $participant_id RETURN e AS emotion`,
-      { participant_id: participantId }
-    )
-    return res.records?.map(r => r.get('emotion')) ?? []
+    const query = `
+      MATCH (e:EmotionEntry)
+      WHERE e.participant_id = $participant_id
+      RETURN e AS emotion
+    `
+    const result = await this.query(query, { participant_id: participantId })
+    return result.map((r: any) => r.emotion) || []
   }
 
   async close(): Promise<void> {

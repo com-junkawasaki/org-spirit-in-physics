@@ -1,5 +1,5 @@
 import { inngest, events, type Neo4jPersistenceEvent } from '../inngest';
-import { Neogma } from 'neogma';
+import { createNeo4jClient } from '../neo4j';
 
 // Merkle DAG: neo4j_persistence_workflow -> data_persistence
 // Neo4j保存ワークフロー
@@ -28,19 +28,15 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
 
     // Merkle DAG: neo4j_connection -> database_access
     // ステップ1: Neo4j接続の確立
-    const neo4jConnection = await step.run('establish-neo4j-connection', async () => {
+    const neo4jClient = await step.run('establish-neo4j-connection', async () => {
       try {
-        const neogma = new Neogma({
-          url: process.env.NEO4J_URI || 'bolt://localhost:7687',
-          username: process.env.NEO4J_USERNAME || 'neo4j',
-          password: process.env.NEO4J_PASSWORD || 'password',
-        });
+        const client = createNeo4jClient();
 
         // 接続テスト
-        await (neogma as any).query('RETURN 1 as test');
+        await client.query('RETURN 1 as test');
         
         logger.info(`Neo4j connection established for ${participantId}`);
-        return neogma;
+        return client;
       } catch (error) {
         logger.error(`Failed to connect to Neo4j for ${participantId}`, { error });
         throw error;
@@ -52,7 +48,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         await step.run('create-participant-node', async () => {
       try {
         // 参加者ノードの存在確認
-        const existingParticipant = await (neo4jConnection as any).query(
+        const existingParticipant = await neo4jClient.query(
           'MATCH (p:Participant {id: $participantId}) RETURN p',
           { participantId }
         );
@@ -63,7 +59,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         }
 
         // 新しい参加者ノードを作成
-        await (neo4jConnection as any).query(
+        await neo4jClient.query(
           'CREATE (p:Participant {id: $participantId, createdAt: datetime(), updatedAt: datetime()}) RETURN p',
           { participantId }
         );
@@ -79,13 +75,13 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
     // ステップ3: 実験ノードの作成
     await step.run('create-experiment-node', async () => {
       try {
-        await (neo4jConnection as any).query(
+        await neo4jClient.query(
           'CREATE (e:Experiment {id: $experimentId, participantId: $participantId, createdAt: datetime(), updatedAt: datetime()}) RETURN e',
           { experimentId, participantId }
         );
 
         // 参加者と実験の関係を作成
-        await (neo4jConnection as any).query(
+        await neo4jClient.query(
           'MATCH (p:Participant {id: $participantId}), (e:Experiment {id: $experimentId}) CREATE (p)-[:HAS_EXPERIMENT]->(e)',
           { participantId, experimentId }
         );
@@ -109,7 +105,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
           reactionTimeMs: w.reactionTimeMs ?? null,
         }));
 
-        await (neo4jConnection as any).query(
+        await neo4jClient.query(
           `UNWIND $windows AS w
            MERGE (e:Experiment {id: $experimentId})
            MERGE (win:Window {id: w.id})
@@ -156,7 +152,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         }
 
         if (emotionsPayload.length > 0) {
-          await (neo4jConnection as any).query(
+          await neo4jClient.query(
             `UNWIND $rows AS ea
              MERGE (w:Window {id: ea.windowId})
              MERGE (n:EmotionAggregation {id: ea.id})
@@ -203,7 +199,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         }
 
         if (physPayload.length > 0) {
-          await (neo4jConnection as any).query(
+          await neo4jClient.query(
             `UNWIND $rows AS pa
              MERGE (w:Window {id: pa.windowId})
              MERGE (n:PhysiologicalAggregation {id: pa.id})
@@ -234,7 +230,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
       try {
         const fusionRunId = `fusion_${participantId}_${Date.now()}`;
         
-        await (neo4jConnection as any).query(
+        await neo4jClient.query(
           `CREATE (fr:KernelFusionRun {
             id: $fusionRunId,
             participantId: $participantId,
@@ -255,7 +251,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         );
 
         // 実験と核融合実行の関係を作成
-        await (neo4jConnection as any).query(
+        await neo4jClient.query(
           'MATCH (e:Experiment {id: $experimentId}), (fr:KernelFusionRun {id: $fusionRunId}) CREATE (e)-[:HAS_FUSION_RUN]->(fr)',
           { experimentId, fusionRunId }
         );
@@ -279,7 +275,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
         }));
 
         if (embPayload.length > 0) {
-          await (neo4jConnection as any).query(
+          await neo4jClient.query(
             `UNWIND $rows AS er
              MERGE (n:EmbeddingResult {id: er.id})
              ON CREATE SET n.createdAt = datetime()
@@ -290,7 +286,7 @@ export const neo4jPersistenceWorkflow = inngest.createFunction(
                  n.updatedAt = datetime()`,
             { participantId, rows: embPayload }
           );
-          await (neo4jConnection as any).query(
+          await neo4jClient.query(
             `UNWIND $rows AS er
              MATCH (fr:KernelFusionRun {participantId: $participantId}), (n:EmbeddingResult {id: er.id})
              MERGE (fr)-[:HAS_EMBEDDING]->(n)`,
