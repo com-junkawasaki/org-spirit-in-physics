@@ -357,15 +357,14 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
     }
   }, [participantId])
 
-  // 時間範囲を初期化
+  // 時間範囲を初期化（全範囲を表示）
   const initializeTimeRange = useCallback(() => {
     if (data.length === 0) return
 
     const timeExtent = d3.extent(data, d => d.timestamp) as [number, number]
-    const range = timeExtent[1] - timeExtent[0]
     const initialRange = {
-      start: timeExtent[0] + range * 0.2, // 20%から開始
-      end: timeExtent[1] - range * 0.2   // 80%で終了
+      start: timeExtent[0], // 開始時刻
+      end: timeExtent[1]    // 終了時刻（全範囲）
     }
     setTimeRange(initialRange)
   }, [data])

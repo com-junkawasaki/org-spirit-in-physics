@@ -62,6 +62,7 @@ export default function TimelineVisualization({
     selectedDataPoint,
     setSelectedDataPoint,
     timeRange,
+    setTimeRange,
     filters,
     setFilters,
     getPhysStat,
@@ -899,6 +900,7 @@ export default function TimelineVisualization({
                 width={width}
                 height={height}
                 timeRange={timeRange}
+                onTimeRangeChange={setTimeRange}
                 onDataPointSelect={setSelectedDataPoint}
                 onTooltipShow={(event, point) => {
                   if (!tooltipRef.current) return
@@ -1609,6 +1611,7 @@ export default function TimelineVisualization({
                     width={Math.min(width / 2 - 40, 600)}
                     height={Math.min(height, 400)}
                     timeRange={timeRange}
+                    onTimeRangeChange={setTimeRange}
                     onDataPointSelect={setSelectedDataPoint}
                     onTooltipShow={() => {}}
                     onTooltipHide={() => {}}

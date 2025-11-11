@@ -34,6 +34,7 @@ interface TimelineChartProps {
   onDataPointSelect: (point: TimelineDataPoint | null) => void
   onTooltipShow: (event: MouseEvent, point: TimelineDataPoint) => void
   onTooltipHide: () => void
+  onTimeRangeChange?: (range: TimeRange | null) => void
 }
 
 export default function TimelineChart({
@@ -44,7 +45,8 @@ export default function TimelineChart({
   timeRange,
   onDataPointSelect,
   onTooltipShow,
-  onTooltipHide
+  onTooltipHide,
+  onTimeRangeChange
 }: TimelineChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
@@ -148,7 +150,51 @@ export default function TimelineChart({
       .style('font-size', '10px')
       .style('fill', '#666')
 
-  }, [data, width, timeRange])
+    // Brush機能を追加
+    const brush = d3.brushX()
+      .extent([[0, 0], [overviewWidth, overviewHeight]])
+      .on('brush end', function(event) {
+        if (!event.selection) {
+          // 選択範囲が空の場合は全範囲にリセット
+          if (onTimeRangeChange) {
+            const fullRange: TimeRange = {
+              start: timeExtent[0].getTime(),
+              end: timeExtent[1].getTime()
+            }
+            onTimeRangeChange(fullRange)
+          }
+          return
+        }
+
+        const [x0, x1] = event.selection
+        const startDate = xScale.invert(x0)
+        const endDate = xScale.invert(x1)
+        
+        // Dateからtimestampに変換
+        const startTimestamp = startDate.getTime()
+        const endTimestamp = endDate.getTime()
+
+        if (onTimeRangeChange && startTimestamp !== endTimestamp) {
+          onTimeRangeChange({
+            start: startTimestamp,
+            end: endTimestamp
+          })
+        }
+      })
+
+    // Brushを適用
+    const brushGroup = g.append('g')
+      .attr('class', 'brush')
+      .call(brush)
+
+    // 現在のtimeRangeに基づいてbrushの選択範囲を設定
+    if (timeRange) {
+      const startDate = toDate(timeRange.start)
+      const endDate = toDate(timeRange.end)
+      brushGroup.call(brush.move, [xScale(startDate), xScale(endDate)])
+    }
+
+  }, [data, width, timeRange, onTimeRangeChange])
 
   const renderTimeline = useCallback(() => {
     if (!svgRef.current || data.length === 0) return
