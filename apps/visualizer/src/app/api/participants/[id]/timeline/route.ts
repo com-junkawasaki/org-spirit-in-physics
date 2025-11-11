@@ -45,7 +45,34 @@ export async function GET(
       
       try {
         const timelinePoints = await manager.getTimelinePoints(participantId, sessionId || undefined);
+        
+        // デバッグ: 感情データの確認
+        const pointsWithEmotions = timelinePoints.filter(p => Array.isArray(p.emotions) && p.emotions.length > 0);
+        console.log(`[TIMELINE API] Pre-computed data: ${timelinePoints.length} points, ${pointsWithEmotions.length} with emotions (${((pointsWithEmotions.length / timelinePoints.length) * 100).toFixed(1)}%)`);
+        
+        if (pointsWithEmotions.length > 0) {
+          console.log(`[TIMELINE API] Sample point with emotions:`, {
+            word: pointsWithEmotions[0].word,
+            timestamp: pointsWithEmotions[0].timestamp,
+            emotionsCount: pointsWithEmotions[0].emotions.length,
+            emotionsSample: pointsWithEmotions[0].emotions.slice(0, 3),
+            emotionsType: typeof pointsWithEmotions[0].emotions
+          });
+        } else if (timelinePoints.length > 0) {
+          console.log(`[TIMELINE API] ⚠️ Sample point without emotions:`, {
+            word: timelinePoints[0].word,
+            timestamp: timelinePoints[0].timestamp,
+            emotions: timelinePoints[0].emotions,
+            emotionsType: typeof timelinePoints[0].emotions,
+            emotionsIsArray: Array.isArray(timelinePoints[0].emotions)
+          });
+        }
+        
         const timelineData = convertTimelinePointsToApiResponse(timelinePoints);
+        
+        // デバッグ: 変換後の感情データの確認
+        const convertedWithEmotions = timelineData.filter(d => Array.isArray(d.em) && d.em.length > 0);
+        console.log(`[TIMELINE API] Converted data: ${timelineData.length} points, ${convertedWithEmotions.length} with emotions (${((convertedWithEmotions.length / timelineData.length) * 100).toFixed(1)}%)`);
         
         const totalTime = Date.now() - startTime;
         console.log(`[TIMELINE API] ===== Response from pre-computed data =====`);
@@ -289,19 +316,54 @@ export async function GET(
       }
     }
     
-    const timelineData = integrated.map((pt: any) => {
+    // デバッグ: 統合データの感情データ確認
+    const integratedWithEmotions = integrated.filter((pt: any) => Array.isArray(pt.emotions) && pt.emotions.length > 0);
+    console.log(`[TIMELINE API] Integrated data: ${integrated.length} points, ${integratedWithEmotions.length} with emotions (${((integratedWithEmotions.length / integrated.length) * 100).toFixed(1)}%)`);
+    
+    if (integratedWithEmotions.length > 0) {
+      console.log(`[TIMELINE API] Sample integrated point with emotions:`, {
+        word: integratedWithEmotions[0].word,
+        timestamp: integratedWithEmotions[0].timestamp,
+        emotionsCount: integratedWithEmotions[0].emotions.length,
+        emotionsSample: integratedWithEmotions[0].emotions.slice(0, 3)
+      });
+    } else if (integrated.length > 0) {
+      console.log(`[TIMELINE API] ⚠️ Sample integrated point without emotions:`, {
+        word: integrated[0].word,
+        timestamp: integrated[0].timestamp,
+        emotions: integrated[0].emotions,
+        emotionsType: typeof integrated[0].emotions,
+        emotionsIsArray: Array.isArray(integrated[0].emotions),
+        metadata: integrated[0].metadata
+      });
+    }
+    
+    const timelineData = integrated.map((pt: any, index: number) => {
       // NaNを防ぐための安全な変換
       const safeReactionValue = typeof pt.reactionValue === 'number' && !isNaN(pt.reactionValue) ? pt.reactionValue : 0;
       const safePhysioAverage = typeof pt?.physiological?.average === 'number' && !isNaN(pt.physiological.average) ? pt.physiological.average : 0;
       const safePhysioMax = typeof pt?.physiological?.max === 'number' && !isNaN(pt.physiological.max) ? pt.physiological.max : 0;
       const safePhysioMin = typeof pt?.physiological?.min === 'number' && !isNaN(pt.physiological.min) ? pt.physiological.min : 0;
       
+      const emotionsArray = Array.isArray(pt.emotions) ? pt.emotions : [];
+      
+      // デバッグ: 最初の数件で感情データの確認
+      if (index < 5 && emotionsArray.length === 0 && pt.metadata?.emotionCount > 0) {
+        console.log(`[TIMELINE API] ⚠️ Point has emotionCount > 0 but emotions array is empty:`, {
+          word: pt.word,
+          timestamp: pt.timestamp,
+          emotionCount: pt.metadata?.emotionCount,
+          emotions: pt.emotions,
+          emotionsType: typeof pt.emotions
+        });
+      }
+      
       return {
         t: pt.timestamp,
         w: pt.word,
         e: pt.eventType,
         rt: pt.reactionTime ?? null, // 反応時間を追加
-        em: Array.isArray(pt.emotions) ? pt.emotions : [],
+        em: emotionsArray,
         ph: {
           average: safePhysioAverage,
           max: safePhysioMax,
@@ -315,6 +377,10 @@ export async function GET(
         }
       };
     })
+    
+    // デバッグ: 変換後の感情データの確認
+    const convertedWithEmotions = timelineData.filter(d => Array.isArray(d.em) && d.em.length > 0);
+    console.log(`[TIMELINE API] Converted timeline data: ${timelineData.length} points, ${convertedWithEmotions.length} with emotions (${((convertedWithEmotions.length / timelineData.length) * 100).toFixed(1)}%)`);
 
     // ストリーミングレスポンスで大きなデータを効率的に送信
     const totalTime = Date.now() - startTime;

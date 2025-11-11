@@ -380,44 +380,37 @@ export async function getResponseTimeseries(responseId: string): Promise<{
 
 export async function getAnalysisResults(participantId?: string): Promise<AnalysisResult[]> {
   try {
-    // For now, return mock analysis results since we don't have analysis results in TerminusDB yet
-    // In the future, this should query actual analysis results from TerminusDB
-
     if (participantId) {
       return getAnalysisResultsForParticipant(participantId)
     }
 
-    // Mock data for all participants
-    return [
-      {
-        id: 'mock-result-1',
-        stimulus_word: 'love',
-        response_word: 'peace',
-        p_value: 0.85,
-        word2vec_component: 0.3,
-        reaction_time_component: 0.2,
-        skin_potential_component: 0.1,
-        emotion_component: 0.25,
-        emotion_data: { joy: 0.8, sadness: 0.1 },
-        physiological_data: { gsr: 2.3 },
-        created_at: new Date().toISOString(),
-        reaction_time_ms: 1200
-      },
-      {
-        id: 'mock-result-2',
-        stimulus_word: 'hate',
-        response_word: 'anger',
-        p_value: 0.72,
-        word2vec_component: 0.2,
-        reaction_time_component: 0.15,
-        skin_potential_component: 0.12,
-        emotion_component: 0.25,
-        emotion_data: { anger: 0.7, fear: 0.2 },
-        physiological_data: { gsr: 3.1 },
-        created_at: new Date().toISOString(),
-        reaction_time_ms: 950
-      }
-    ]
+    // 全参加者のレスポンスを取得して分析結果を生成
+    const client = createNeo4jClient()
+    const query = `
+      MATCH (p:Participant)-[:HAS_SESSION]->(s:Session)-[:HAS_RESPONSE]->(r:Response)
+      RETURN r.id as id, r.stimulus_word as stimulus_word, r.response_word as response_word,
+             r.reaction_time_ms as reaction_time_ms, r.emotion as emotion,
+             r.emotion_confidence as emotion_confidence, r.spirit_probability as spirit_probability,
+             r.event_ts as event_ts, p.id as participant_id
+      ORDER BY r.event_ts DESC
+    `
+    const responses = await client.query(query)
+
+    // 実際のデータに基づいて分析結果を生成
+    return responses.map((response, index) => ({
+      id: response.id || `analysis-all-${index}`,
+      stimulus_word: response.stimulus_word,
+      response_word: response.response_word,
+      p_value: response.spirit_probability || 0.5,
+      word2vec_component: 0, // TODO: 実際のWord2Vecコンポーネントを実装
+      reaction_time_component: response.reaction_time_ms ? 10 / (1 + response.reaction_time_ms / 1000) : 0,
+      skin_potential_component: 0, // TODO: 生理データコンポーネントを実装
+      emotion_component: response.emotion_confidence || 0,
+      emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence || 0 } : {},
+      physiological_data: {}, // TODO: 生理データを統合
+      created_at: response.event_ts || new Date().toISOString(),
+      reaction_time_ms: response.reaction_time_ms,
+    }))
   } catch (error) {
     console.error('Failed to get analysis results:', error)
     return []
