@@ -284,6 +284,9 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
   try {
     console.log('Getting session data from Neo4j for participant:', participantId, sessionId ? `session: ${sessionId}` : '');
     
+    // sessionResultsを外側で定義
+    let sessionResults: any[] = [];
+    
     // まず、新しい構造（Participant -> Session）を試す
     try {
       const builder = new Neo4jQueryBuilder();
@@ -293,7 +296,7 @@ async function getSessionData(client: any, participantId: string, sessionId?: st
       console.log('Query:', query);
       console.log('Params:', JSON.stringify(params, null, 2));
       
-      let sessionResults = await client.query(query, params);
+      sessionResults = await client.query(query, params);
       console.log('Session query results count (new structure):', sessionResults.length);
       
       // 新しい構造でデータが見つからない場合、古い構造（Participant -> Experiment -> ExperimentSession）を試す

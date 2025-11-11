@@ -1,7 +1,8 @@
 // Merkle DAG: Neo4jクライアント設定
 // サーバー/クライアント両方で使用可能なNeo4jクライアント
+// neo4j-driverを直接使用
 
-import { Neogma } from 'neogma'
+import neo4j, { Driver, Session } from 'neo4j-driver'
 
 interface Neo4jConfig {
   uri: string
@@ -12,32 +13,34 @@ interface Neo4jConfig {
 
 class Neo4jClient {
   private config: Neo4jConfig
-  private neogma: Neogma
+  private driver: Driver
 
   constructor(config: Neo4jConfig) {
     this.config = config
-    this.neogma = new Neogma(
+    this.driver = neo4j.driver(
+      this.config.uri,
+      neo4j.auth.basic(this.config.user, this.config.password),
       {
-        url: this.config.uri,
-        username: this.config.user,
-        password: this.config.password,
         database: this.config.database,
-      },
-      {
-        logger: console.log,
-        // Do not force encryption here; Aura uses encrypted URI (neo4j+s)
       }
     )
   }
 
   async query(cypherQuery: string, params?: Record<string, any>): Promise<any[]> {
+    const session = this.driver.session({ database: this.config.database })
     try {
-      const result = await this.neogma.queryRunner.run(cypherQuery, params || {})
+      const result = await session.run(cypherQuery, params || {})
 
       const records = result.records.map(record => {
         const obj: any = {}
         record.keys.forEach(key => {
-          obj[key] = record.get(key)
+          const value = record.get(key)
+          // Neo4j Integer型をJavaScript numberに変換
+          if (typeof value === 'object' && value !== null && 'low' in value) {
+            obj[key] = value.low
+          } else {
+            obj[key] = value
+          }
         })
         return obj
       })
@@ -46,11 +49,13 @@ class Neo4jClient {
     } catch (error) {
       console.error('Neo4j query error:', error)
       throw error
+    } finally {
+      await session.close()
     }
   }
 
   async close(): Promise<void> {
-    await this.neogma.driver.close()
+    await this.driver.close()
   }
 
   // Patient app specific methods
