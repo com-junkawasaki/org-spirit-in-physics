@@ -68,22 +68,8 @@ SELECT
   SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'confusion') as confusion_sum,
   -- 感情エントリ数
   COUNT(*) FILTER (WHERE jsonb_array_length(emotions) > 0) as emotion_entry_count,
-  -- モダリティ別集約（fileType別）
-  jsonb_object_agg(
-    DISTINCT emotions->0->>'fileType',
-    jsonb_build_object(
-      'joy', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'joy' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'sadness', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'sadness' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'anger', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'anger' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'fear', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'fear' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'surprise', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'surprise' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'disgust', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'disgust' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'calm', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'calm' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'focus', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'focus' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'excitement', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'excitement' AND emotions->0->>'fileType' = emotions->0->>'fileType'),
-      'confusion', SUM((emotions->0->>'score')::double precision) FILTER (WHERE emotions->0->>'name' = 'confusion' AND emotions->0->>'fileType' = emotions->0->>'fileType')
-    )
-  ) FILTER (WHERE jsonb_array_length(emotions) > 0 AND emotions->0->>'fileType' IS NOT NULL) as emotion_by_modality
+  -- モダリティ別集約（fileType別）- 簡略化版（ネストした集約を避ける）
+  NULL::jsonb as emotion_by_modality
 FROM timeline_points
 WHERE word IS NOT NULL AND jsonb_array_length(emotions) > 0
 GROUP BY bucket, participant_id, session_id, word;

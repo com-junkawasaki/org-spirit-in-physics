@@ -2,10 +2,12 @@ FROM rust:1.90-slim as builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies including build tools for native crates
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
+    build-essential \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Cargo files

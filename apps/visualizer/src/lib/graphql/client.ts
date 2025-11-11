@@ -27,7 +27,53 @@ import {
   type GetWordStatisticsQueryVariables,
 } from '@/generated/graphql';
 
-const GRAPHQL_API_URL = process.env.GRAPHQL_API_URL || process.env.NEXT_PUBLIC_GRAPHQL_API_URL || 'http://localhost:8081/graphql';
+// Determine GraphQL API URL based on execution context
+// Server-side: Use GRAPHQL_API_URL (for Docker internal communication)
+// Client-side: Use NEXT_PUBLIC_GRAPHQL_API_URL (for browser access)
+// Fallback: localhost for local development
+function getGraphQLApiUrl(): string {
+  // Server-side (Node.js environment)
+  if (typeof window === 'undefined') {
+    const serverUrl = process.env.GRAPHQL_API_URL;
+    if (serverUrl) {
+      // Check if we're running in Docker by checking for Docker-specific environment variables
+      // or by attempting to resolve the service name
+      const isDocker = process.env.DOCKER_ENV === 'true' || 
+                      process.env.IN_DOCKER === 'true' ||
+                      process.env.HOSTNAME?.includes('spirit-');
+      
+      if (serverUrl.includes('graphql-service') && !isDocker) {
+        // Running locally but env var has Docker service name - replace with localhost
+        return serverUrl.replace('graphql-service', 'localhost');
+      }
+      // In Docker or URL doesn't contain service name - use as-is
+      return serverUrl;
+    }
+    // Fallback for server-side local development
+    return 'http://localhost:8081/graphql';
+  }
+  
+  // Client-side (browser environment)
+  const clientUrl = process.env.NEXT_PUBLIC_GRAPHQL_API_URL;
+  if (clientUrl) {
+    // Client-side should always use localhost or public URL (never Docker service names)
+    // Replace Docker service names with localhost for local development
+    return clientUrl.replace('graphql-service', 'localhost');
+  }
+  
+  // Fallback for client-side local development
+  return 'http://localhost:8081/graphql';
+}
+
+const GRAPHQL_API_URL = getGraphQLApiUrl();
+
+// Log the GraphQL API URL for debugging (only in development)
+if (process.env.NODE_ENV === 'development') {
+  console.log('[GraphQL Client] Using API URL:', GRAPHQL_API_URL);
+  console.log('[GraphQL Client] Environment:', typeof window === 'undefined' ? 'server-side' : 'client-side');
+  console.log('[GraphQL Client] GRAPHQL_API_URL:', process.env.GRAPHQL_API_URL);
+  console.log('[GraphQL Client] NEXT_PUBLIC_GRAPHQL_API_URL:', process.env.NEXT_PUBLIC_GRAPHQL_API_URL);
+}
 
 export const graphqlClient = new GraphQLClient(GRAPHQL_API_URL, {
   headers: {

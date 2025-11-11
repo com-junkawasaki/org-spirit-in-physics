@@ -14,6 +14,7 @@ import type {
   WordDistancePair
 } from './timeline/types'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
+import { useWordAggregates } from '@/hooks/useWordAggregates'
 
 // 3D Force コンポーネントを動的インポート（SSR無効化）
 const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })

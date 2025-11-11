@@ -79,37 +79,37 @@ impl TimelineQuery {
         // Build query based on whether aggregation is requested
         let points = if let Some(interval_str) = interval {
             // Use TimescaleDB time_bucket for aggregation
-            let query = format!(
-                r#"
-                SELECT 
-                    time_bucket('{}', time) as bucket_time,
-                    participant_id,
-                    session_id,
-                    AVG(reaction_value) as avg_reaction_value,
-                    COUNT(*) as event_count
-                FROM timeline_points
-                WHERE participant_id = $1
-                    {}
-                    {}
-                GROUP BY bucket_time, participant_id, session_id
-                ORDER BY bucket_time ASC
-                LIMIT 10000
-                "#,
-                interval_str,
-                if let Some(sid) = session_uuid {
-                    format!("AND session_id = '{}'", sid)
-                } else {
-                    String::new()
-                },
-                if let Some(st) = start_ts {
-                    format!("AND time >= to_timestamp({} / 1000.0)", st)
-                } else {
-                    String::new()
-                }
+            let mut query_builder = sqlx::QueryBuilder::new(
+                format!(
+                    r#"
+                    SELECT 
+                        time_bucket('{}', time) as bucket_time,
+                        participant_id,
+                        session_id,
+                        AVG(reaction_value) as avg_reaction_value,
+                        COUNT(*) as event_count
+                    FROM timeline_points
+                    WHERE participant_id = "#,
+                    interval_str
+                )
             );
+            
+            query_builder.push_bind(participant_uuid);
+            
+            if let Some(sid) = session_uuid {
+                query_builder.push(" AND session_id = ");
+                query_builder.push_bind(sid);
+            }
+            
+            if let Some(st) = start_ts {
+                query_builder.push(" AND time >= to_timestamp(");
+                query_builder.push_bind(st as i64);
+                query_builder.push(" / 1000.0)");
+            }
+            
+            query_builder.push(" GROUP BY bucket_time, participant_id, session_id ORDER BY bucket_time ASC LIMIT 10000");
 
-            let rows = sqlx::query(&query)
-                .bind(participant_uuid)
+            let rows = query_builder.build()
                 .fetch_all(pool)
                 .await?;
 
@@ -136,8 +136,8 @@ impl TimelineQuery {
                 })
             }).collect()
         } else {
-            // Return raw timeline points
-            let mut query = String::from(
+            // Return raw timeline points - use parameterized query for better performance
+            let mut query_builder = sqlx::QueryBuilder::new(
                 r#"
                 SELECT 
                     time,
@@ -152,26 +152,31 @@ impl TimelineQuery {
                     physiological,
                     metadata
                 FROM timeline_points
-                WHERE participant_id = $1
-                "#
+                WHERE participant_id = "#
             );
-
+            
+            query_builder.push_bind(participant_uuid);
+            
             if let Some(sid) = session_uuid {
-                query.push_str(&format!(" AND session_id = '{}'", sid));
+                query_builder.push(" AND session_id = ");
+                query_builder.push_bind(sid);
             }
-
+            
             if let Some(st) = start_ts {
+                query_builder.push(" AND time >= to_timestamp(");
+                query_builder.push_bind(st as i64);
+                query_builder.push(" / 1000.0)");
+                
                 if let Some(et) = end_ts {
-                    query.push_str(&format!(" AND time >= to_timestamp({} / 1000.0) AND time <= to_timestamp({} / 1000.0)", st, et));
-                } else {
-                    query.push_str(&format!(" AND time >= to_timestamp({} / 1000.0)", st));
+                    query_builder.push(" AND time <= to_timestamp(");
+                    query_builder.push_bind(et as i64);
+                    query_builder.push(" / 1000.0)");
                 }
             }
+            
+            query_builder.push(" ORDER BY time ASC LIMIT 10000");
 
-            query.push_str(" ORDER BY time ASC LIMIT 10000");
-
-            let rows = sqlx::query(&query)
-                .bind(participant_uuid)
+            let rows = query_builder.build()
                 .fetch_all(pool)
                 .await?;
 
@@ -240,7 +245,7 @@ impl TimelineQuery {
             None
         };
 
-        let mut query = String::from(
+        let mut query_builder = sqlx::QueryBuilder::new(
             r#"
             SELECT 
                 participant_id,
@@ -259,18 +264,19 @@ impl TimelineQuery {
                 first_time,
                 last_time
             FROM timeline_word_aggregates_by_session
-            WHERE participant_id = $1
-            "#
+            WHERE participant_id = "#
         );
 
+        query_builder.push_bind(participant_uuid);
+
         if let Some(sid) = session_uuid {
-            query.push_str(&format!(" AND session_id = '{}'", sid));
+            query_builder.push(" AND session_id = ");
+            query_builder.push_bind(sid);
         }
 
-        query.push_str(" ORDER BY word ASC");
+        query_builder.push(" ORDER BY word ASC");
 
-        let rows = sqlx::query(&query)
-            .bind(participant_uuid)
+        let rows = query_builder.build()
             .fetch_all(pool)
             .await?;
 
@@ -348,7 +354,7 @@ impl TimelineQuery {
             None
         };
 
-        let mut query = String::from(
+        let mut query_builder = sqlx::QueryBuilder::new(
             r#"
             SELECT 
                 participant_id,
@@ -367,18 +373,19 @@ impl TimelineQuery {
                 emotion_entry_count,
                 emotion_by_modality
             FROM timeline_emotion_vectors_by_word
-            WHERE participant_id = $1
-            "#
+            WHERE participant_id = "#
         );
 
+        query_builder.push_bind(participant_uuid);
+
         if let Some(sid) = session_uuid {
-            query.push_str(&format!(" AND session_id = '{}'", sid));
+            query_builder.push(" AND session_id = ");
+            query_builder.push_bind(sid);
         }
 
-        query.push_str(" ORDER BY word ASC");
+        query_builder.push(" ORDER BY word ASC");
 
-        let rows = sqlx::query(&query)
-            .bind(participant_uuid)
+        let rows = query_builder.build()
             .fetch_all(pool)
             .await?;
 
@@ -440,7 +447,7 @@ impl TimelineQuery {
             None
         };
 
-        let mut query = String::from(
+        let mut query_builder = sqlx::QueryBuilder::new(
             r#"
             SELECT 
                 participant_id,
@@ -460,18 +467,19 @@ impl TimelineQuery {
                 phys_series,
                 rt_series
             FROM timeline_word_statistics_by_session
-            WHERE participant_id = $1
-            "#
+            WHERE participant_id = "#
         );
 
+        query_builder.push_bind(participant_uuid);
+
         if let Some(sid) = session_uuid {
-            query.push_str(&format!(" AND session_id = '{}'", sid));
+            query_builder.push(" AND session_id = ");
+            query_builder.push_bind(sid);
         }
 
-        query.push_str(" ORDER BY word ASC");
+        query_builder.push(" ORDER BY word ASC");
 
-        let rows = sqlx::query(&query)
-            .bind(participant_uuid)
+        let rows = query_builder.build()
             .fetch_all(pool)
             .await?;
 

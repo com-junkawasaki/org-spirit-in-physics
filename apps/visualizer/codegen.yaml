@@ -2,9 +2,7 @@
 # Generates TypeScript types and operations from Rust GraphQL service SDL
 
 schema:
-  - http://localhost:8081/graphql:
-      headers:
-        Content-Type: application/json
+  - graphql-schema.graphql
 
 documents:
   - 'src/**/*.{ts,tsx}'
