@@ -6,6 +6,7 @@ import { useTimelineData } from './timeline/useTimelineData'
 import TimelineChart from './timeline/TimelineChart'
 import KPICards from './timeline/KPICards'
 import Force3DControls from './timeline/Force3DControls'
+import StructureAnalysisPanel from './timeline/StructureAnalysisPanel'
 import type {
   TimelineVisualizationProps,
   ForcePreset,
@@ -15,6 +16,14 @@ import type {
 } from './timeline/types'
 import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
 import { useWordAggregates } from '@/hooks/useWordAggregates'
+import {
+  detectGapAreas,
+  analyzeDensity,
+  detectDuplicates,
+  type GapArea,
+  type DensityRegion,
+  type DuplicateCandidate
+} from '@/lib/structure-analysis'
 
 // 3D Force コンポーネントを動的インポート（SSR無効化）
 const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
@@ -52,6 +61,9 @@ export default function TimelineVisualization({
   const [gamma, setGamma] = useState(1.0)  // ΔSP の係数 γ
   const [lambda, setLambda] = useState(1.0) // ΔSP のスケール λ
   const [eta, setEta] = useState(1.0)    // 感情スコア係数 η
+
+  // 構造分析の表示制御
+  const [showAnalysis, setShowAnalysis] = useState(false)
 
   // データ管理フックを使用
   const {
@@ -752,6 +764,105 @@ export default function TimelineVisualization({
     getPhysStat,
   ])
 
+  // 構造分析の実行（3D Forceグラフデータが存在する場合のみ）
+  const structureAnalysis = useMemo(() => {
+    if (!mounted || force3DGraphData.nodes.length === 0 || !showAnalysis) {
+      return {
+        gapAreas: [] as GapArea[],
+        densityRegions: [] as DensityRegion[],
+        duplicates: [] as DuplicateCandidate[],
+        overallDensity: 0
+      }
+    }
+
+    try {
+      // 感情ベクトルを構築
+      const emotionVectors: Record<string, number[]> = {}
+      const EMOTION_KEYS = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'calm', 'focus', 'excitement', 'confusion'] as const
+      
+      // セッションデータから感情ベクトルを集約
+      const wordEmotionSum: Record<string, number[]> = {}
+      JUNG_STIMULUS_WORDS.forEach(({ japanese }) => {
+        wordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
+      })
+
+      for (const dpt of data) {
+        const w = dpt.word
+        if (!wordEmotionSum[w]) continue
+        if (Array.isArray(dpt.emotions)) {
+          for (const e of dpt.emotions) {
+            const key = (e.name || 'unknown').toLowerCase()
+            const idx = EMOTION_KEYS.indexOf(key as typeof EMOTION_KEYS[number])
+            if (idx >= 0) {
+              wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+            }
+          }
+        }
+      }
+
+      // 正規化
+      const normalize = (vec: number[]): number[] => {
+        const norm = Math.hypot(...vec)
+        if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+        return vec.map((x) => x / norm)
+      }
+
+      JUNG_STIMULUS_WORDS.forEach(({ japanese }) => {
+        emotionVectors[japanese] = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
+      })
+
+      // 空白エリアの検出
+      const gapAreas = detectGapAreas(
+        force3DGraphData.nodes,
+        force3DGraphData.links,
+        emotionVectors,
+        data,
+        {
+          minGapRadius: 50,
+          maxGapRadius: 200,
+          minNearbyNodes: 3,
+          gridResolution: 40,
+          densityThreshold: 0.1
+        }
+      )
+
+      // 密度分析
+      const densityAnalysis = analyzeDensity(force3DGraphData.nodes, {
+        overcrowdingThreshold: 1.5,
+        sparseThreshold: 0.5,
+        gridResolution: 25,
+        minRegionNodes: 3
+      })
+
+      // 重複検出
+      const duplicates = detectDuplicates(
+        force3DGraphData.nodes,
+        emotionVectors,
+        data,
+        {
+          distanceThreshold: 0.15,
+          spatialDistanceThreshold: 30,
+          minSimilarity: 0.85
+        }
+      )
+
+      return {
+        gapAreas,
+        densityRegions: [...densityAnalysis.overcrowdedRegions, ...densityAnalysis.sparseRegions],
+        duplicates,
+        overallDensity: densityAnalysis.overallDensity
+      }
+    } catch (error) {
+      console.error('構造分析エラー:', error)
+      return {
+        gapAreas: [] as GapArea[],
+        densityRegions: [] as DensityRegion[],
+        duplicates: [] as DuplicateCandidate[],
+        overallDensity: 0
+      }
+    }
+  }, [mounted, force3DGraphData, data, showAnalysis])
+
   // ローディング状態（すべてのフックの後に配置）
   if (loading) {
                   return (
@@ -1019,6 +1130,19 @@ export default function TimelineVisualization({
                           minSep,
                           sepK
                         }}
+                        gapAreas={structureAnalysis.gapAreas.map(g => ({
+                          id: g.id,
+                          center: g.center,
+                          radius: g.radius,
+                          confidence: g.confidence
+                        }))}
+                        densityRegions={structureAnalysis.densityRegions.map(r => ({
+                          id: r.id,
+                          center: r.center,
+                          radius: r.radius,
+                          isOvercrowded: r.isOvercrowded
+                        }))}
+                        showAnalysis={showAnalysis}
                       />
                     </div>
                   )
@@ -1120,6 +1244,43 @@ export default function TimelineVisualization({
                       スナップショット補間（形状変化を滑らかに）
                     </label>
                   </div>
+
+                  {/* 構造分析のON/OFF */}
+                  <div className="mt-4 mb-2">
+                    <label className="flex items-center gap-2 text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        checked={showAnalysis}
+                        onChange={(e) => setShowAnalysis(e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      <span>構造分析を表示</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      空白エリア（?）、密集/分散領域、重複候補を可視化
+                    </p>
+                  </div>
+
+                  {/* 構造分析パネル */}
+                  {showAnalysis && (
+                    <div className="mt-4">
+                      <StructureAnalysisPanel
+                        gapAreas={structureAnalysis.gapAreas}
+                        densityRegions={structureAnalysis.densityRegions}
+                        duplicates={structureAnalysis.duplicates}
+                        overallDensity={structureAnalysis.overallDensity}
+                        onGapAreaClick={(gap) => {
+                          console.log('空白エリアクリック:', gap)
+                        }}
+                        onDensityRegionClick={(region) => {
+                          console.log('密度領域クリック:', region)
+                        }}
+                        onDuplicateClick={(dup) => {
+                          console.log('重複候補クリック:', dup)
+                        }}
+                      />
+                    </div>
+                  )}
 
                   <h4 className="font-medium mt-4 mb-2 text-sm">データ範囲</h4>
                   <div className="flex flex-wrap gap-2">

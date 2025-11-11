@@ -91,6 +91,20 @@ interface Force3DWordGraphTypeGPUProps {
     minSep?: number
     sepK?: number
   }
+  // 構造分析データ（オプション）
+  gapAreas?: Array<{
+    id: string
+    center: [number, number, number]
+    radius: number
+    confidence: number
+  }>
+  densityRegions?: Array<{
+    id: string
+    center: [number, number, number]
+    radius: number
+    isOvercrowded: boolean
+  }>
+  showAnalysis?: boolean  // 分析結果を表示するか
 }
 
 function Force3DWordGraphTypeGPU({
@@ -99,7 +113,10 @@ function Force3DWordGraphTypeGPU({
   width = 1000,
   height = 600,
   background = '#ffffff',
-  physics
+  physics,
+  gapAreas = [],
+  densityRegions = [],
+  showAnalysis = false
 }: Force3DWordGraphTypeGPUProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const deviceRef = useRef<GPUDevice | null>(null)
@@ -862,9 +879,126 @@ function Force3DWordGraphTypeGPU({
                 ctx.lineTo(tScreenX, tScreenY)
                 ctx.stroke()
               }
+              
+              // 構造分析結果の可視化
+              if (showAnalysis) {
+                const camera = cameraRef.current
+                const zoom = Math.max(0.05, 600 / Math.max(50, camera.distance))
+                const maxDepth = Math.max(100, camera.distance)
+
+                // 空白エリアの可視化（?マーク）
+                for (const gap of gapAreas) {
+                  const [gx, gy, gz] = gap.center
+                  
+                  // カメラ変換
+                  const wx = gx - camera.centerX
+                  const wy = gy - camera.centerY
+                  const wz = gz - camera.centerZ
+                  
+                  const cosY = Math.cos(camera.rotationY)
+                  const sinY = Math.sin(camera.rotationY)
+                  const rx = wx * cosY - wz * sinY
+                  const ry = wy
+                  const rz = wx * sinY + wz * cosY
+                  
+                  const cosX = Math.cos(camera.rotationX)
+                  const sinX = Math.sin(camera.rotationX)
+                  const cx = rx
+                  const cy = ry * cosX - rz * sinX
+                  const cz = ry * sinX + rz * cosX
+                  
+                  const screenX = width / 2 + cx * zoom
+                  const screenY = height / 2 + cy * zoom
+                  
+                  // 深度に応じた透明度
+                  const depthWeight = 1 - Math.min(1, Math.abs(cz) / maxDepth)
+                  const alpha = Math.max(0.3, Math.min(0.8, 0.3 + 0.5 * depthWeight * gap.confidence))
+                  
+                  // 空白エリアの円を描画
+                  ctx.globalAlpha = alpha * 0.3
+                  ctx.strokeStyle = `rgba(255, 193, 7, ${alpha})`
+                  ctx.lineWidth = 2
+                  ctx.setLineDash([5, 5])
+                  ctx.beginPath()
+                  const radius = gap.radius * zoom * depthWeight
+                  ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
+                  ctx.stroke()
+                  
+                  // ?マークを描画
+                  ctx.globalAlpha = alpha
+                  ctx.fillStyle = `rgba(255, 193, 7, ${alpha})`
+                  ctx.font = `bold ${Math.round(16 + 8 * depthWeight)}px sans-serif`
+                  ctx.textAlign = 'center'
+                  ctx.textBaseline = 'middle'
+                  ctx.fillText('?', screenX, screenY)
+                  
+                  ctx.setLineDash([])
+                }
+
+                // 密度領域の可視化
+                for (const region of densityRegions) {
+                  const [rx, ry, rz] = region.center
+                  
+                  // カメラ変換
+                  const wx = rx - camera.centerX
+                  const wy = ry - camera.centerY
+                  const wz = rz - camera.centerZ
+                  
+                  const cosY = Math.cos(camera.rotationY)
+                  const sinY = Math.sin(camera.rotationY)
+                  const rrx = wx * cosY - wz * sinY
+                  const rry = wy
+                  const rrz = wx * sinY + wz * cosY
+                  
+                  const cosX = Math.cos(camera.rotationX)
+                  const sinX = Math.sin(camera.rotationX)
+                  const rcx = rrx
+                  const rcy = rry * cosX - rrz * sinX
+                  const rcz = rry * sinX + rrz * cosX
+                  
+                  const screenX = width / 2 + rcx * zoom
+                  const screenY = height / 2 + rcy * zoom
+                  
+                  // 深度に応じた透明度
+                  const depthWeight = 1 - Math.min(1, Math.abs(rcz) / maxDepth)
+                  const alpha = Math.max(0.2, Math.min(0.6, 0.2 + 0.4 * depthWeight))
+                  
+                  // 密集領域は赤、分散領域は青で表示
+                  const color = region.isOvercrowded 
+                    ? `rgba(239, 68, 68, ${alpha})`  // 赤（密集）
+                    : `rgba(59, 130, 246, ${alpha})`  // 青（分散）
+                  
+                  ctx.globalAlpha = alpha * 0.2
+                  ctx.fillStyle = color
+                  ctx.beginPath()
+                  const radius = region.radius * zoom * depthWeight
+                  ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
+                  ctx.fill()
+                  
+                  // 境界線
+                  ctx.globalAlpha = alpha
+                  ctx.strokeStyle = color
+                  ctx.lineWidth = 2
+                  ctx.beginPath()
+                  ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
+                  ctx.stroke()
+                  
+                  // 警告アイコン（密集領域のみ）
+                  if (region.isOvercrowded) {
+                    ctx.globalAlpha = alpha
+                    ctx.fillStyle = color
+                    ctx.font = `bold ${Math.round(14 + 6 * depthWeight)}px sans-serif`
+                    ctx.textAlign = 'center'
+                    ctx.textBaseline = 'middle'
+                    ctx.fillText('⚠', screenX, screenY)
+                  }
+                }
+              }
+              
               // 状態復元
               ctx.globalAlpha = 1
               ctx.lineWidth = 1
+              ctx.setLineDash([])
             }
           }
 
@@ -883,7 +1017,7 @@ function Force3DWordGraphTypeGPU({
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current)
     }
-  }, [width, height, background, nodes, links])
+  }, [width, height, background, nodes, links, gapAreas, densityRegions, showAnalysis])
 
   // 物理パラメータの差分反映
   useEffect(() => {

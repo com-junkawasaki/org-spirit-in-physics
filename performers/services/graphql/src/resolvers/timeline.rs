@@ -107,7 +107,7 @@ impl TimelineQuery {
                 query_builder.push(" / 1000.0)");
             }
             
-            query_builder.push(" GROUP BY bucket_time, participant_id, session_id ORDER BY bucket_time ASC LIMIT 10000");
+            query_builder.push(" GROUP BY bucket_time, participant_id, session_id ORDER BY bucket_time ASC LIMIT 20000");
 
             let rows = query_builder.build()
                 .fetch_all(pool)
@@ -174,7 +174,7 @@ impl TimelineQuery {
                 }
             }
             
-            query_builder.push(" ORDER BY time ASC LIMIT 10000");
+            query_builder.push(" ORDER BY time ASC LIMIT 20000");
 
             let rows = query_builder.build()
                 .fetch_all(pool)

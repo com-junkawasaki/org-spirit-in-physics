@@ -50,6 +50,14 @@ export default function TimelineChart({
 }: TimelineChartProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const overviewSvgRef = useRef<SVGSVGElement>(null)
+  const onTimeRangeChangeRef = useRef(onTimeRangeChange)
+  const isUpdatingBrushRef = useRef(false)
+  const brushRef = useRef<d3.BrushBehavior<unknown> | null>(null)
+  
+  // onTimeRangeChangeの参照を最新に保つ
+  useEffect(() => {
+    onTimeRangeChangeRef.current = onTimeRangeChange
+  }, [onTimeRangeChange])
 
   const renderOverviewChart = useCallback(() => {
     if (!overviewSvgRef.current || data.length === 0) return
@@ -154,14 +162,19 @@ export default function TimelineChart({
     const brush = d3.brushX()
       .extent([[0, 0], [overviewWidth, overviewHeight]])
       .on('brush end', function(event) {
+        // brush.moveによる更新中はイベントを無視（無限ループ防止）
+        if (isUpdatingBrushRef.current) {
+          return
+        }
+        
         if (!event.selection) {
           // 選択範囲が空の場合は全範囲にリセット
-          if (onTimeRangeChange) {
+          if (onTimeRangeChangeRef.current) {
             const fullRange: TimeRange = {
               start: timeExtent[0].getTime(),
               end: timeExtent[1].getTime()
             }
-            onTimeRangeChange(fullRange)
+            onTimeRangeChangeRef.current(fullRange)
           }
           return
         }
@@ -174,13 +187,16 @@ export default function TimelineChart({
         const startTimestamp = startDate.getTime()
         const endTimestamp = endDate.getTime()
 
-        if (onTimeRangeChange && startTimestamp !== endTimestamp) {
-          onTimeRangeChange({
+        if (onTimeRangeChangeRef.current && startTimestamp !== endTimestamp) {
+          onTimeRangeChangeRef.current({
             start: startTimestamp,
             end: endTimestamp
           })
         }
       })
+
+    // Brushの参照を保存
+    brushRef.current = brush
 
     // Brushを適用
     const brushGroup = g.append('g')
@@ -191,10 +207,26 @@ export default function TimelineChart({
     if (timeRange) {
       const startDate = toDate(timeRange.start)
       const endDate = toDate(timeRange.end)
-      brushGroup.call(brush.move, [xScale(startDate), xScale(endDate)])
+      const expectedX0 = xScale(startDate)
+      const expectedX1 = xScale(endDate)
+      
+      // 現在のbrushの選択範囲を取得
+      const currentSelection = d3.brushSelection(brushGroup.node() as any)
+      
+      // 選択範囲が異なる場合のみ更新（無限ループを防ぐ）
+      if (!currentSelection || 
+          Math.abs(currentSelection[0] - expectedX0) > 1 || 
+          Math.abs(currentSelection[1] - expectedX1) > 1) {
+        isUpdatingBrushRef.current = true
+        brushGroup.call(brush.move, [expectedX0, expectedX1])
+        // 次のフレームでフラグをリセット
+        requestAnimationFrame(() => {
+          isUpdatingBrushRef.current = false
+        })
+      }
     }
 
-  }, [data, width, timeRange, onTimeRangeChange])
+  }, [data, width, timeRange])
 
   const renderTimeline = useCallback(() => {
     if (!svgRef.current || data.length === 0) return

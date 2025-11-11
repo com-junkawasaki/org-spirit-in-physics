@@ -184,10 +184,23 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
         const pointsWithPhysiological = convertedData.filter(d => d.physiological && typeof d.physiological === 'object' && (d.physiological.average > 0 || d.physiological.max > 0))
         const pointsWithReactionTime = convertedData.filter(d => d.reactionTime != null)
         
+        // タイムスタンプ範囲を確認
+        const timestamps = convertedData.map(d => d.timestamp).filter((ts): ts is number => typeof ts === 'number')
+        const timeExtent = timestamps.length > 0 ? d3.extent(timestamps) as [number, number] : null
+        const startTime = timeExtent ? new Date(timeExtent[0]).toISOString() : 'N/A'
+        const endTime = timeExtent ? new Date(timeExtent[1]).toISOString() : 'N/A'
+        const durationHours = timeExtent ? (timeExtent[1] - timeExtent[0]) / (1000 * 60 * 60) : 0
+        
         console.log(`Total data points: ${totalPoints}`)
+        console.log(`Time range: ${startTime} to ${endTime} (${durationHours.toFixed(2)} hours)`)
         console.log(`Points with emotions: ${pointsWithEmotions.length} (${((pointsWithEmotions.length / totalPoints) * 100).toFixed(1)}%)`)
         console.log(`Points with physiological: ${pointsWithPhysiological.length} (${((pointsWithPhysiological.length / totalPoints) * 100).toFixed(1)}%)`)
         console.log(`Points with reaction time: ${pointsWithReactionTime.length} (${((pointsWithReactionTime.length / totalPoints) * 100).toFixed(1)}%)`)
+        
+        // LIMIT 20000に達しているか確認
+        if (totalPoints >= 20000) {
+          console.warn('⚠️ WARNING: Data points reached LIMIT 20000. Some data may be missing!')
+        }
         
         // 感情データの詳細分析
         if (pointsWithEmotions.length > 0) {
