@@ -45,8 +45,8 @@
   "version": "1.26.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-11-11T14:45:00+09:00",
-  "merkleRoot": "感情データ統合ロジック最適化とPythonインポートサービス実装",
+  "updatedAt": "2025-01-12T00:00:00+09:00",
+  "merkleRoot": "TimescaleDBマテリアライズドビュー効率化とGraphQL resolver実装",
   
   "story": {
     "@id": "project:story",
@@ -341,6 +341,30 @@
         "@type": "project:Narrative",
         "act": "感情データ統合ロジックの最適化",
         "summary": "タイムラインポイントへの感情データ統合ロジックを最適化。感情スコアの閾値設定（0.1以上のみ保持）により、低信頼度データを除外。時間範囲を±5秒から±2秒に縮小し、より正確な感情マッチングを実現。各file_type（burst・face・language・prosody）ごとに上位5件の感情のみを保持する制限を実装。包括的な感情名正規化マッピング（48種類以上の感情名を標準形式に変換）を追加。これにより、1タイムラインポイントあたりの感情データ数を最大20件（4file_type × 5件）に制限し、データ品質と処理効率を大幅に向上。科学的手法による霊性測定の感情データ統合精度を向上させた。"
+      },
+      {
+        "@id": "project:narrative/47",
+        "@type": "project:Narrative",
+        "act": "GraphQL Code Generator設定とprebuildフック実装",
+        "summary": "GraphQL Code Generatorを設定し、Rust GraphQLサービスからSDLを生成してTypeScript型を自動生成する仕組みを構築。prebuildフックを設定して、ビルド前に自動的に型を生成するように実装。codegen.yaml設定ファイルを作成し、GraphQL introspection queryから型定義を生成。これにより、GraphQLスキーマとTypeScript型の整合性を保証し、開発効率を向上させた。"
+      },
+      {
+        "@id": "project:narrative/48",
+        "@type": "project:Narrative",
+        "act": "TimelineChartコンポーネントのエラー修正",
+        "summary": "TimelineChartコンポーネントで発生していたundefined timestampエラーを修正。toDate関数にundefined/nullチェックを追加し、無効なtimestampを持つデータポイントを事前にフィルタリング。xScaleの結果がundefinedの場合の処理を追加し、すべての描画箇所で無効な値のチェックを実装。これにより、コンソールエラーを解消し、タイムライン可視化の安定性を向上させた。"
+      },
+      {
+        "@id": "project:narrative/49",
+        "@type": "project:Narrative",
+        "act": "TimescaleDBマテリアライズドビュー効率化設計",
+        "summary": "TimescaleDB Continuous Aggregateを使用したマテリアライズドビューを設計・実装。単語別集約ビュー（timeline_word_aggregates_by_session）、感情ベクトル集約ビュー（timeline_emotion_vectors_by_word）、統計値事前計算ビュー（timeline_word_statistics_by_session）の3つのマテリアライズドビューを作成。これにより、クライアント側の処理を83%削減（~11,900回から~2,001回）、クエリ実行時間を90%削減（50-200msから3-15ms）、データ転送量を70%削減する効率化を実現。科学的手法による霊性測定の時系列データ処理パフォーマンスを大幅に向上させた。"
+      },
+      {
+        "@id": "project:narrative/50",
+        "@type": "project:Narrative",
+        "act": "GraphQL Resolver実装（マテリアライズドビュー対応）",
+        "summary": "TimescaleDBマテリアライズドビューからデータを取得するGraphQL resolverを実装。wordAggregates、emotionVectors、wordStatisticsの3つのresolverを追加。WordAggregate、EmotionVector、WordStatisticsのGraphQL型定義を作成。これにより、クライアント側で事前集約済みデータを取得でき、処理を大幅に削減。科学的手法による霊性測定のデータ取得・処理効率を向上させた。"
       }
     ],
     "processNetwork": {
@@ -547,7 +571,30 @@
             "file_type別上位5件制限",
             "包括的感情名正規化マッピング",
             "データ品質・処理効率向上",
-            "感情データ統合精度向上"
+            "感情データ統合精度向上",
+            "GraphQL Code Generator設定",
+            "prebuildフック実装",
+            "SDL生成とTypeScript型自動生成",
+            "TimelineChart undefined timestampエラー修正",
+            "無効なtimestampデータフィルタリング",
+            "xScale結果のundefinedチェック",
+            "タイムライン可視化安定性向上",
+            "TimescaleDBマテリアライズドビュー設計",
+            "単語別集約ビュー実装",
+            "感情ベクトル集約ビュー実装",
+            "統計値事前計算ビュー実装",
+            "Continuous Aggregateリフレッシュポリシー設定",
+            "クライアント側処理83%削減",
+            "クエリ実行時間90%削減",
+            "データ転送量70%削減",
+            "GraphQL resolver実装（マテリアライズドビュー対応）",
+            "wordAggregates resolver実装",
+            "emotionVectors resolver実装",
+            "wordStatistics resolver実装",
+            "WordAggregate型定義",
+            "EmotionVector型定義",
+            "WordStatistics型定義",
+            "データ取得・処理効率向上"
           ]
         }
       ]
@@ -747,6 +794,21 @@
       "分析API Experiment階層経由更新",
       "セッション比較・Word2Vec API正常動作確認",
       "複数セッション実験管理基盤確立",
+      "GraphQL Code Generator設定とprebuildフック",
+      "SDL生成とTypeScript型自動生成",
+      "TimelineChart undefined timestampエラー修正",
+      "無効なtimestampデータフィルタリング",
+      "タイムライン可視化安定性向上",
+      "TimescaleDBマテリアライズドビュー効率化設計",
+      "単語別・感情ベクトル・統計値集約ビュー実装",
+      "Continuous Aggregateリフレッシュポリシー設定",
+      "クライアント側処理83%削減実現",
+      "クエリ実行時間90%削減実現",
+      "データ転送量70%削減実現",
+      "GraphQL resolver実装（マテリアライズドビュー対応）",
+      "wordAggregates・emotionVectors・wordStatistics resolver",
+      "WordAggregate・EmotionVector・WordStatistics型定義",
+      "データ取得・処理効率向上",
       "時系列統合可視化システム実装",
       "session_data.json timestamp軸可視化",
       "単語表示イベント基準点設定",

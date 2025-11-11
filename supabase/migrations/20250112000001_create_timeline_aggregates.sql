@@ -116,29 +116,51 @@ ON timeline_word_statistics_by_session (participant_id, session_id, word);
 
 -- Continuous Aggregate のリフレッシュポリシー設定
 -- 1分ごとに自動リフレッシュ（最新データを反映）
-SELECT add_continuous_aggregate_policy('timeline_word_aggregates_by_session',
-  start_offset => INTERVAL '1 hour',
-  end_offset => INTERVAL '1 minute',
-  schedule_interval => INTERVAL '1 minute',
-  if_not_exists => TRUE
-);
+-- 注意: テーブルが存在する場合のみ実行
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'timeline_word_aggregates_by_session') THEN
+    PERFORM add_continuous_aggregate_policy('timeline_word_aggregates_by_session',
+      start_offset => INTERVAL '1 hour',
+      end_offset => INTERVAL '1 minute',
+      schedule_interval => INTERVAL '1 minute',
+      if_not_exists => TRUE
+    );
+  END IF;
 
-SELECT add_continuous_aggregate_policy('timeline_emotion_vectors_by_word',
-  start_offset => INTERVAL '1 hour',
-  end_offset => INTERVAL '1 minute',
-  schedule_interval => INTERVAL '1 minute',
-  if_not_exists => TRUE
-);
+  IF EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'timeline_emotion_vectors_by_word') THEN
+    PERFORM add_continuous_aggregate_policy('timeline_emotion_vectors_by_word',
+      start_offset => INTERVAL '1 hour',
+      end_offset => INTERVAL '1 minute',
+      schedule_interval => INTERVAL '1 minute',
+      if_not_exists => TRUE
+    );
+  END IF;
 
-SELECT add_continuous_aggregate_policy('timeline_word_statistics_by_session',
-  start_offset => INTERVAL '1 hour',
-  end_offset => INTERVAL '1 minute',
-  schedule_interval => INTERVAL '1 minute',
-  if_not_exists => TRUE
-);
+  IF EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'timeline_word_statistics_by_session') THEN
+    PERFORM add_continuous_aggregate_policy('timeline_word_statistics_by_session',
+      start_offset => INTERVAL '1 hour',
+      end_offset => INTERVAL '1 minute',
+      schedule_interval => INTERVAL '1 minute',
+      if_not_exists => TRUE
+    );
+  END IF;
+END $$;
 
 -- 既存データの初期バックフィル（過去データを集約）
-CALL refresh_continuous_aggregate('timeline_word_aggregates_by_session', NULL, NULL);
-CALL refresh_continuous_aggregate('timeline_emotion_vectors_by_word', NULL, NULL);
-CALL refresh_continuous_aggregate('timeline_word_statistics_by_session', NULL, NULL);
+-- 注意: テーブルが存在する場合のみ実行
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'timeline_word_aggregates_by_session') THEN
+    CALL refresh_continuous_aggregate('timeline_word_aggregates_by_session', NULL, NULL);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'timeline_emotion_vectors_by_word') THEN
+    CALL refresh_continuous_aggregate('timeline_emotion_vectors_by_word', NULL, NULL);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'timeline_word_statistics_by_session') THEN
+    CALL refresh_continuous_aggregate('timeline_word_statistics_by_session', NULL, NULL);
+  END IF;
+END $$;
 

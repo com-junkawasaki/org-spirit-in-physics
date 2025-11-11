@@ -4,7 +4,7 @@
 use async_graphql::*;
 use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
-use crate::types::{TimelinePoint, Session, EmotionData};
+use crate::types::{TimelinePoint, Session, EmotionData, WordAggregate, EmotionVector, WordStatistics};
 
 #[derive(Default)]
 pub struct TimelineQuery;
@@ -219,5 +219,289 @@ impl TimelineQuery {
         };
 
         Ok(points)
+    }
+
+    /// Get word aggregates by session (from materialized view)
+    /// This provides pre-aggregated data for efficient client-side processing
+    async fn word_aggregates(
+        &self,
+        ctx: &Context<'_>,
+        participant_id: ID,
+        session_id: Option<ID>,
+    ) -> Result<Vec<WordAggregate>> {
+        let pool = ctx.data::<Pool<Postgres>>()?;
+        let participant_uuid = Uuid::parse_str(participant_id.as_str())
+            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+
+        let session_uuid = if let Some(sid) = session_id {
+            Some(Uuid::parse_str(sid.as_str())
+                .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?)
+        } else {
+            None
+        };
+
+        let mut query = String::from(
+            r#"
+            SELECT 
+                participant_id,
+                session_id,
+                word,
+                count,
+                avg_reaction_value,
+                sum_reaction_value,
+                avg_reaction_time,
+                sum_reaction_time,
+                avg_physiological,
+                sum_phys_abs,
+                phys_series,
+                rt_series,
+                rv_series,
+                first_time,
+                last_time
+            FROM timeline_word_aggregates_by_session
+            WHERE participant_id = $1
+            "#
+        );
+
+        if let Some(sid) = session_uuid {
+            query.push_str(&format!(" AND session_id = '{}'", sid));
+        }
+
+        query.push_str(" ORDER BY word ASC");
+
+        let rows = sqlx::query(&query)
+            .bind(participant_uuid)
+            .fetch_all(pool)
+            .await?;
+
+        let aggregates: Vec<WordAggregate> = rows.into_iter().filter_map(|row| {
+            let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
+            let session_id_val: Uuid = row.try_get("session_id").ok()?;
+            let word: String = row.try_get("word").ok()?;
+            let count: i64 = row.try_get("count").ok()?;
+            let avg_reaction_value: Option<f64> = row.try_get("avg_reaction_value").ok();
+            let sum_reaction_value: Option<f64> = row.try_get("sum_reaction_value").ok();
+            let avg_reaction_time: Option<f64> = row.try_get("avg_reaction_time").ok();
+            let sum_reaction_time: Option<f64> = row.try_get("sum_reaction_time").ok();
+            let avg_physiological: Option<f64> = row.try_get("avg_physiological").ok();
+            let sum_phys_abs: Option<f64> = row.try_get("sum_phys_abs").ok();
+            
+            // Parse array columns (PostgreSQL arrays)
+            let phys_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("phys_series").ok();
+            let rt_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("rt_series").ok();
+            let rv_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("rv_series").ok();
+
+            let first_time: chrono::DateTime<chrono::Utc> = row.try_get("first_time").ok()?;
+            let last_time: chrono::DateTime<chrono::Utc> = row.try_get("last_time").ok()?;
+
+            Some(WordAggregate {
+                participant_id: ID::from(participant_id_val.to_string()),
+                session_id: ID::from(session_id_val.to_string()),
+                word,
+                count,
+                avg_reaction_value,
+                sum_reaction_value,
+                avg_reaction_time,
+                sum_reaction_time,
+                avg_physiological,
+                sum_phys_abs,
+                phys_series,
+                rt_series,
+                rv_series,
+                first_time: first_time.to_rfc3339(),
+                last_time: last_time.to_rfc3339(),
+            })
+        }).collect();
+
+        Ok(aggregates)
+    }
+
+    /// Get emotion vectors by word (from materialized view)
+    /// This provides pre-aggregated emotion data for efficient vector operations
+    async fn emotion_vectors(
+        &self,
+        ctx: &Context<'_>,
+        participant_id: ID,
+        session_id: Option<ID>,
+    ) -> Result<Vec<EmotionVector>> {
+        let pool = ctx.data::<Pool<Postgres>>()?;
+        let participant_uuid = Uuid::parse_str(participant_id.as_str())
+            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+
+        let session_uuid = if let Some(sid) = session_id {
+            Some(Uuid::parse_str(sid.as_str())
+                .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?)
+        } else {
+            None
+        };
+
+        let mut query = String::from(
+            r#"
+            SELECT 
+                participant_id,
+                session_id,
+                word,
+                joy_sum,
+                sadness_sum,
+                anger_sum,
+                fear_sum,
+                surprise_sum,
+                disgust_sum,
+                calm_sum,
+                focus_sum,
+                excitement_sum,
+                confusion_sum,
+                emotion_entry_count,
+                emotion_by_modality
+            FROM timeline_emotion_vectors_by_word
+            WHERE participant_id = $1
+            "#
+        );
+
+        if let Some(sid) = session_uuid {
+            query.push_str(&format!(" AND session_id = '{}'", sid));
+        }
+
+        query.push_str(" ORDER BY word ASC");
+
+        let rows = sqlx::query(&query)
+            .bind(participant_uuid)
+            .fetch_all(pool)
+            .await?;
+
+        let vectors: Vec<EmotionVector> = rows.into_iter().filter_map(|row| {
+            let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
+            let session_id_val: Uuid = row.try_get("session_id").ok()?;
+            let word: String = row.try_get("word").ok()?;
+            let joy_sum: Option<f64> = row.try_get("joy_sum").ok();
+            let sadness_sum: Option<f64> = row.try_get("sadness_sum").ok();
+            let anger_sum: Option<f64> = row.try_get("anger_sum").ok();
+            let fear_sum: Option<f64> = row.try_get("fear_sum").ok();
+            let surprise_sum: Option<f64> = row.try_get("surprise_sum").ok();
+            let disgust_sum: Option<f64> = row.try_get("disgust_sum").ok();
+            let calm_sum: Option<f64> = row.try_get("calm_sum").ok();
+            let focus_sum: Option<f64> = row.try_get("focus_sum").ok();
+            let excitement_sum: Option<f64> = row.try_get("excitement_sum").ok();
+            let confusion_sum: Option<f64> = row.try_get("confusion_sum").ok();
+            let emotion_entry_count: i64 = row.try_get("emotion_entry_count").ok()?;
+            let emotion_by_modality: Option<serde_json::Value> = row.try_get("emotion_by_modality").ok();
+
+            Some(EmotionVector {
+                participant_id: ID::from(participant_id_val.to_string()),
+                session_id: ID::from(session_id_val.to_string()),
+                word,
+                joy_sum,
+                sadness_sum,
+                anger_sum,
+                fear_sum,
+                surprise_sum,
+                disgust_sum,
+                calm_sum,
+                focus_sum,
+                excitement_sum,
+                confusion_sum,
+                emotion_entry_count,
+                emotion_by_modality,
+            })
+        }).collect();
+
+        Ok(vectors)
+    }
+
+    /// Get word statistics by session (from materialized view)
+    /// This provides pre-calculated statistics for efficient client-side processing
+    async fn word_statistics(
+        &self,
+        ctx: &Context<'_>,
+        participant_id: ID,
+        session_id: Option<ID>,
+    ) -> Result<Vec<WordStatistics>> {
+        let pool = ctx.data::<Pool<Postgres>>()?;
+        let participant_uuid = Uuid::parse_str(participant_id.as_str())
+            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+
+        let session_uuid = if let Some(sid) = session_id {
+            Some(Uuid::parse_str(sid.as_str())
+                .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?)
+        } else {
+            None
+        };
+
+        let mut query = String::from(
+            r#"
+            SELECT 
+                participant_id,
+                session_id,
+                word,
+                count,
+                avg_reaction_time,
+                std_reaction_time,
+                var_reaction_time,
+                avg_reaction_value,
+                std_reaction_value,
+                var_reaction_value,
+                avg_physiological,
+                std_physiological,
+                var_physiological,
+                speed_index,
+                phys_series,
+                rt_series
+            FROM timeline_word_statistics_by_session
+            WHERE participant_id = $1
+            "#
+        );
+
+        if let Some(sid) = session_uuid {
+            query.push_str(&format!(" AND session_id = '{}'", sid));
+        }
+
+        query.push_str(" ORDER BY word ASC");
+
+        let rows = sqlx::query(&query)
+            .bind(participant_uuid)
+            .fetch_all(pool)
+            .await?;
+
+        let statistics: Vec<WordStatistics> = rows.into_iter().filter_map(|row| {
+            let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
+            let session_id_val: Uuid = row.try_get("session_id").ok()?;
+            let word: String = row.try_get("word").ok()?;
+            let count: i64 = row.try_get("count").ok()?;
+            let avg_reaction_time: Option<f64> = row.try_get("avg_reaction_time").ok();
+            let std_reaction_time: Option<f64> = row.try_get("std_reaction_time").ok();
+            let var_reaction_time: Option<f64> = row.try_get("var_reaction_time").ok();
+            let avg_reaction_value: Option<f64> = row.try_get("avg_reaction_value").ok();
+            let std_reaction_value: Option<f64> = row.try_get("std_reaction_value").ok();
+            let var_reaction_value: Option<f64> = row.try_get("var_reaction_value").ok();
+            let avg_physiological: Option<f64> = row.try_get("avg_physiological").ok();
+            let std_physiological: Option<f64> = row.try_get("std_physiological").ok();
+            let var_physiological: Option<f64> = row.try_get("var_physiological").ok();
+            let speed_index: Option<f64> = row.try_get("speed_index").ok();
+            
+            // Parse array columns (PostgreSQL arrays)
+            let phys_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("phys_series").ok();
+            let rt_series: Option<Vec<Option<f64>>> = row.try_get::<Option<Vec<Option<f64>>>, _>("rt_series").ok();
+
+            Some(WordStatistics {
+                participant_id: ID::from(participant_id_val.to_string()),
+                session_id: ID::from(session_id_val.to_string()),
+                word,
+                count,
+                avg_reaction_time,
+                std_reaction_time,
+                var_reaction_time,
+                avg_reaction_value,
+                std_reaction_value,
+                var_reaction_value,
+                avg_physiological,
+                std_physiological,
+                var_physiological,
+                speed_index,
+                phys_series,
+                rt_series,
+            })
+        }).collect();
+
+        Ok(statistics)
     }
 }

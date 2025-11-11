@@ -1,0 +1,192 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/capabilities#",
+    "id": "@id",
+    "type": "@type",
+    
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "title": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    "version": "dct:hasVersion",
+    
+    "capability": "capability:capability",
+    "name": "capability:name",
+    "purpose": "capability:purpose",
+    "activities": "capability:activities",
+    "resources": "capability:resources",
+    "performers": "capability:performers",
+    "measures": "capability:measures",
+    "relatedCapabilities": "capability:relatedCapabilities"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/capabilities",
+  "@type": "capability:CapabilitySet",
+  "title": "Spirit in Physics Capabilities",
+  "description": "科学的手法による霊性測定システムの能力定義",
+  "version": "1.0.0",
+  "createdAt": "2024-01-01T00:00:00+09:00",
+  "updatedAt": "2025-01-12T00:00:00+09:00",
+  
+  "capability": [
+    {
+      "@id": "capability:data-visualization",
+      "@type": "capability:Capability",
+      "name": "データ可視化",
+      "purpose": "時系列データ、感情データ、生理データを統合的に可視化し、参加者の霊性測定結果を視覚的に表現する",
+      "activities": [
+        "タイムライン可視化",
+        "3D Force Graph可視化",
+        "単語距離感可視化",
+        "感情ベクトル可視化"
+      ],
+      "resources": [
+        "TimelineChartコンポーネント",
+        "Force3DWordGraphTypeGPUコンポーネント",
+        "D3.js可視化ライブラリ",
+        "Three.js 3D可視化ライブラリ"
+      ],
+      "performers": [
+        "visualizer Actor",
+        "TimelineVisualizationコンポーネント"
+      ],
+      "measures": [
+        "可視化レンダリング時間",
+        "データポイント処理数",
+        "エラー発生率"
+      ]
+    },
+    {
+      "@id": "capability:data-aggregation",
+      "@type": "capability:Capability",
+      "name": "データ集約",
+      "purpose": "時系列データを単語別・感情別・統計値別に集約し、効率的なデータ処理を実現する",
+      "activities": [
+        "単語別集約",
+        "感情ベクトル集約",
+        "統計値事前計算",
+        "マテリアライズドビュー管理"
+      ],
+      "resources": [
+        "TimescaleDB Continuous Aggregate",
+        "timeline_word_aggregates_by_session",
+        "timeline_emotion_vectors_by_word",
+        "timeline_word_statistics_by_session"
+      ],
+      "performers": [
+        "PostgreSQL Database System",
+        "TimescaleDB Extension"
+      ],
+      "measures": [
+        "集約処理時間",
+        "データ転送量削減率",
+        "クエリ実行時間削減率",
+        "クライアント側処理削減率"
+      ],
+      "relatedCapabilities": [
+        "capability:data-visualization",
+        "capability:data-query"
+      ]
+    },
+    {
+      "@id": "capability:data-query",
+      "@type": "capability:Capability",
+      "name": "データクエリ",
+      "purpose": "GraphQL APIを通じて、参加者・セッション・タイムラインデータ・集約データを効率的に取得する",
+      "activities": [
+        "GraphQLクエリ実行",
+        "マテリアライズドビューからのデータ取得",
+        "生データ取得",
+        "集約データ取得"
+      ],
+      "resources": [
+        "GraphQL API Service",
+        "PostgreSQL Database",
+        "TimescaleDB Materialized Views",
+        "GraphQL Schema"
+      ],
+      "performers": [
+        "GraphQL Service (Rust async-graphql)",
+        "PostgreSQL Database System"
+      ],
+      "measures": [
+        "クエリ実行時間",
+        "データ転送量",
+        "API応答時間",
+        "エラー発生率"
+      ],
+      "relatedCapabilities": [
+        "capability:data-aggregation",
+        "capability:data-visualization"
+      ]
+    },
+    {
+      "@id": "capability:type-generation",
+      "@type": "capability:Capability",
+      "name": "型生成",
+      "purpose": "GraphQLスキーマからTypeScript型を自動生成し、型安全性を保証する",
+      "activities": [
+        "GraphQL introspection",
+        "SDL生成",
+        "TypeScript型生成",
+        "prebuildフック実行"
+      ],
+      "resources": [
+        "GraphQL Code Generator",
+        "GraphQL Schema",
+        "codegen.yaml設定",
+        "生成されたTypeScript型定義"
+      ],
+      "performers": [
+        "GraphQL Code Generator CLI",
+        "Build System (pnpm)"
+      ],
+      "measures": [
+        "型生成時間",
+        "型整合性",
+        "ビルド成功率"
+      ],
+      "relatedCapabilities": [
+        "capability:data-query"
+      ]
+    },
+    {
+      "@id": "capability:error-handling",
+      "@type": "capability:Capability",
+      "name": "エラーハンドリング",
+      "purpose": "無効なデータやエラーを適切に処理し、システムの安定性を保証する",
+      "activities": [
+        "無効なtimestamp検出",
+        "undefined値チェック",
+        "データフィルタリング",
+        "エラーログ記録"
+      ],
+      "resources": [
+        "TimelineChartコンポーネント",
+        "toDate関数",
+        "データバリデーションロジック"
+      ],
+      "performers": [
+        "TimelineChartコンポーネント",
+        "useTimelineDataフック"
+      ],
+      "measures": [
+        "エラー発生率",
+        "エラー解決率",
+        "システム安定性"
+      ],
+      "relatedCapabilities": [
+        "capability:data-visualization"
+      ]
+    }
+  ]
+}
+
