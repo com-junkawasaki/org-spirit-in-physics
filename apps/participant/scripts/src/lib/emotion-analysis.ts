@@ -1,7 +1,7 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { neo4jClient } from './neo4j';
+import { neo4jClient } from './neo4j.ts';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -173,7 +173,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
     }
 
     // Neo4jに保存（storageAdapter経由）
-    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
+    const { storageAdapter } = await import('../50_adapters/storage-adapter');
     await storageAdapter.saveEmotionAnalysis(result.participantId, result);
 
   } catch (error) {
@@ -187,7 +187,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
     // storageAdapter経由でNeo4jから感情分析データを取得
-    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
+    const { storageAdapter } = await import('../50_adapters/storage-adapter');
     return await storageAdapter.loadEmotionAnalysis(participantId);
   } catch (error) {
     console.error(`Error loading emotion analysis results for ${participantId}:`, error);
@@ -212,7 +212,7 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       .filter((file: string) => file.endsWith('.webm'));
 
     const results: EmotionAnalysisResult[] = [];
-    const { storageAdapter } = await import('../50_adapters/storage-adapter.ts');
+    const { storageAdapter } = await import('../50_adapters/storage-adapter');
 
     for (const videoFile of videoFiles) {
       // セッションタイプをファイル名から判定
