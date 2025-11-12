@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 
 // Merkle DAG: components.react.timeline_visualization
 // Timeline visualization component for research app
@@ -25,6 +25,12 @@ export default function TimelineVisualization({
   width = 1000,
   height = 400
 }: TimelineVisualizationProps) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const processedData = useMemo(() => {
     return data.map((point, index) => ({
       ...point,
@@ -32,6 +38,14 @@ export default function TimelineVisualization({
       index
     })).sort((a, b) => a.timestamp - b.timestamp)
   }, [data])
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center border rounded-lg" style={{ width, height }}>
+        <div className="text-gray-500">Loading timeline...</div>
+      </div>
+    )
+  }
 
   if (processedData.length === 0) {
     return (
@@ -44,6 +58,12 @@ export default function TimelineVisualization({
   const minTime = processedData[0]?.timestamp || 0
   const maxTime = processedData[processedData.length - 1]?.timestamp || 1
   const timeRange = maxTime - minTime || 1
+
+  // Format time consistently (ISO string to avoid hydration mismatch)
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp)
+    return date.toISOString().split('T')[1].split('.')[0] // HH:MM:SS format
+  }
 
   return (
     <div className="border rounded-lg p-4 bg-white" style={{ width, height }}>
@@ -87,7 +107,7 @@ export default function TimelineVisualization({
         })}
       </svg>
       <div className="mt-2 text-xs text-gray-500">
-        {processedData.length} data points | Time range: {new Date(minTime).toLocaleTimeString()} - {new Date(maxTime).toLocaleTimeString()}
+        {processedData.length} data points | Time range: {formatTime(minTime)} - {formatTime(maxTime)}
       </div>
     </div>
   )
