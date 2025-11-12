@@ -25,7 +25,7 @@ services:
   # Patient app (Next.js)
   patient:
     build:
-      context: ./apps/patient
+      context: ./apps/participant
       dockerfile: Dockerfile
     container_name: spirit-patient
     ports:
@@ -33,7 +33,7 @@ services:
     volumes:
       - ./apps/visualizer/public/dataset:/app/dataset:cached
     env_file:
-      - ./apps/patient/env.docker
+      - ./apps/participant/env.docker
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,7 +87,7 @@ services:
   patient-cloud:
     profiles: ["cloud"]
     build:
-      context: ./apps/patient
+      context: ./apps/participant
       dockerfile: Dockerfile
     container_name: spirit-patient-cloud
     ports:
@@ -95,7 +95,7 @@ services:
     volumes:
       - ./apps/visualizer/public/dataset:/app/dataset:cached
     env_file:
-      - ./apps/patient/env.docker
+      - ./apps/participant/env.docker
     # Neo4j環境変数は削除済み - GraphQLサービス経由でPostgreSQLを使用
     # environment:
     #   - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687
