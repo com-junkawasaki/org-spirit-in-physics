@@ -117,9 +117,9 @@ export default function TimelineVisualization({
   const MOD_KEYS = ['prosody','face','language','burst'] as const
   const [selectedModalities, setSelectedModalities] = useState<Set<typeof MOD_KEYS[number]>>(new Set(MOD_KEYS))
   // トポロジ調整パラメータ（UIで調整可能）
-  const [topK, setTopK] = useState<number>(2)
-  const [minW, setMinW] = useState<number>(0.25)
-  const [weightGamma, setWeightGamma] = useState<number>(1.6)
+  const [topK, setTopK] = useState<number>(10) // 全ての感情アンカー（10個）に接続
+  const [minW, setMinW] = useState<number>(0.1)
+  const [weightGamma, setWeightGamma] = useState<number>(0.1)
   const [animateTransitions, setAnimateTransitions] = useState<boolean>(true)
   // 画面内収まり: 詳細コントロールは折りたたみ（初期非表示）
   const [showAdvancedControls, setShowAdvancedControls] = useState<boolean>(false)
@@ -668,7 +668,15 @@ export default function TimelineVisualization({
                       // Top-K選定
                       weights.sort((a, b) => b.w - a.w)
                       let chosen = weights.filter(x => x.w >= minW).slice(0, topK)
-                      if (chosen.length === 0 && weights.length > 0) chosen = weights.slice(0, 1)
+                      // フォールバック: minWを超える接続がない場合でも、重みが0より大きい接続を最大topK個生成
+                      if (chosen.length === 0 && weights.length > 0) {
+                        // 重みが0より大きい接続を全て選択（最大topK個）
+                        chosen = weights.filter(x => x.w > 0).slice(0, topK)
+                        // それでも接続がない場合は、最大重みの接続を1つ生成
+                        if (chosen.length === 0 && weights[0] && weights[0].w >= 0) {
+                          chosen = [weights[0]]
+                        }
+                      }
 
                       // 力学モード: 単語係数
                       const factor = physicsMode === 'all'
@@ -1226,7 +1234,7 @@ export default function TimelineVisualization({
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-600 w-20">Top-K</span>
-                      <input type="range" min="1" max="5" step="1" value={topK} onChange={(e)=>setTopK(Number(e.target.value))} className="flex-1" />
+                      <input type="range" min="1" max="10" step="1" value={topK} onChange={(e)=>setTopK(Number(e.target.value))} className="flex-1" />
                       <span className="text-xs w-8 text-right">{topK}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1236,7 +1244,7 @@ export default function TimelineVisualization({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-600 w-20">Gamma</span>
-                      <input type="range" min="1.0" max="3.0" step="0.1" value={weightGamma} onChange={(e)=>setWeightGamma(Number(e.target.value))} className="flex-1" />
+                      <input type="range" min="0.1" max="3.0" step="0.1" value={weightGamma} onChange={(e)=>setWeightGamma(Number(e.target.value))} className="flex-1" />
                       <span className="text-xs w-8 text-right">{weightGamma.toFixed(1)}</span>
                     </div>
                     <label className="flex items-center gap-2 text-xs text-gray-600">
@@ -1963,9 +1971,8 @@ export default function TimelineVisualization({
 
                         // 感情結合に基づくリンク生成（Shannon: Top-K疎化 + 初期位置寄せ）
                         const links: WordLink[] = []
-                        const topK = 2
-                        const minW = 0.25
-                        const weightGamma = 1.6
+                        // 状態変数からパラメータを取得（全ての感情アンカーに接続）
+                        // topK, minW, weightGamma はコンポーネントの状態変数から使用
 
                         const anchorPos: Array<[number, number, number]> = anchorNodes.map(a => (a.initial as [number, number, number]))
 
@@ -1984,7 +1991,15 @@ export default function TimelineVisualization({
 
                           weights.sort((a, b) => b.w - a.w)
                           let chosen = weights.filter(x => x.w >= minW).slice(0, topK)
-                          if (chosen.length === 0 && weights.length > 0) chosen = weights.slice(0, 1)
+                          // フォールバック: minWを超える接続がない場合でも、重みが0より大きい接続を最大topK個生成
+                          if (chosen.length === 0 && weights.length > 0) {
+                            // 重みが0より大きい接続を全て選択（最大topK個）
+                            chosen = weights.filter(x => x.w > 0).slice(0, topK)
+                            // それでも接続がない場合は、最大重みの接続を1つ生成
+                            if (chosen.length === 0 && weights[0] && weights[0].w >= 0) {
+                              chosen = [weights[0]]
+                            }
+                          }
 
                           if (chosen.length > 0) {
                             let vx = 0, vy = 0, vz = 0, sw = 0
