@@ -11,8 +11,7 @@ import type {
   ClassificationResult,
   ComponentStats,
 } from '../types/experimental';
-
-const GRAPHQL_API_URL = import.meta.env.GRAPHQL_API_URL || 'http://localhost:8081/graphql';
+import { graphqlClient } from './graphql/client';
 
 /**
  * Fetch participants data from GraphQL API
@@ -31,14 +30,8 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
       }
     `;
 
-    const response = await fetch(GRAPHQL_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-    });
-
-    const data = await response.json();
-    return (data.data?.participants || []).map((p: any) => ({
+    const data = await graphqlClient.request<{ participants: any[] }>(query);
+    return (data.participants || []).map((p: any) => ({
       id: p.id,
       name: `Participant ${p.id.slice(0, 8)}`,
       age: p.age,
@@ -60,43 +53,41 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
   try {
     const query = participantId
       ? `
-        query GetSessions($participantId: UUID!) {
-          experimentSessions(participantId: $participantId) {
+        query GetSessions($participantId: ID!) {
+          sessions(participantId: $participantId) {
             id
             participantId
-            sessionType
-            startTime
-            endTime
+            sessionIndex
+            startTs
+            endTs
+            createdAt
+            updatedAt
           }
         }
       `
       : `
         query GetSessions {
-          experimentSessions {
+          sessions {
             id
             participantId
-            sessionType
-            startTime
-            endTime
+            sessionIndex
+            startTs
+            endTs
+            createdAt
+            updatedAt
           }
         }
       `;
 
-    const variables = participantId ? { participantId } : {};
+    const variables = participantId ? { participantId } : undefined;
 
-    const response = await fetch(GRAPHQL_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables }),
-    });
-
-    const data = await response.json();
-    return (data.data?.experimentSessions || []).map((s: any) => ({
+    const data = await graphqlClient.request<{ sessions: any[] }>(query, variables);
+    return (data.sessions || []).map((s: any) => ({
       id: s.id,
       participantId: s.participantId,
-      sessionType: s.sessionType,
-      startTime: s.startTime,
-      endTime: s.endTime,
+      sessionType: `session-${s.sessionIndex}`,
+      startTime: s.startTs,
+      endTime: s.endTs,
       responseCount: 0, // Will be populated from responses
     }));
   } catch (error) {
@@ -111,48 +102,37 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
 export async function fetchAnalysisResults(participantId?: string): Promise<AnalysisResult[]> {
   try {
     // Try GraphQL first
-    const query = participantId
-      ? `
-        query GetTimeline($participantId: UUID!) {
-          timeline(participantId: $participantId) {
-            word
-            time
-            hasResponse
-            reactionTime
-            reactionValue
-            emotions {
-              name
-              score
-            }
+    if (!participantId) {
+      console.warn('fetchAnalysisResults: participantId is required');
+      return [];
+    }
+
+    const query = `
+      query GetTimeline($participantId: ID!) {
+        timeline(participantId: $participantId) {
+          time
+          participantId
+          sessionId
+          word
+          eventType
+          reactionValue
+          reactionTime
+          hasResponse
+          emotions {
+            name
+            score
+            fileType
           }
+          physiological
+          metadata
         }
-      `
-      : `
-        query GetTimeline {
-          timeline {
-            word
-            time
-            hasResponse
-            reactionTime
-            reactionValue
-            emotions {
-              name
-              score
-            }
-          }
-        }
-      `;
+      }
+    `;
 
-    const variables = participantId ? { participantId } : {};
+    const variables = { participantId };
 
-    const response = await fetch(GRAPHQL_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables }),
-    });
-
-    const data = await response.json();
-    const timeline = data.data?.timeline || [];
+    const data = await graphqlClient.request<{ timeline: any[] }>(query, variables);
+    const timeline = data.timeline || [];
 
     return timeline
       .filter((point: any) => point.hasResponse)
@@ -161,52 +141,39 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
           ? point.emotions[0]
           : null;
 
+        // Extract emotion data
+        const emotionData: Record<string, number> = {};
+        if (Array.isArray(point.emotions)) {
+          point.emotions.forEach((emotion: any) => {
+            if (emotion.name && emotion.score !== undefined) {
+              emotionData[emotion.name] = emotion.score;
+            }
+          });
+        }
+
+        // Extract physiological data
+        const physiologicalData = point.physiological || {};
+
         return {
-          id: `${participantId || 'all'}-${index}`,
-          participantId: participantId || '',
-          experimentId: 'default',
+          id: `${participantId}-${index}`,
+          participantId: participantId || point.participantId || '',
+          experimentId: point.sessionId || 'default',
           stimulusWord: point.word || '',
           responseWord: point.word || '',
           reactionTimeMs: point.reactionTime,
           wordAssociationProbability: point.reactionValue || 0.5, // P(w_O | w_I)
           word2vecComponent: 0, // Will be calculated
           reactionTimeComponent: point.reactionTime ? 10 / (1 + point.reactionTime / 1000) : 0,
-          skinPotentialComponent: 0, // Will be calculated
+          skinPotentialComponent: Array.isArray(physiologicalData) ? physiologicalData.reduce((sum: number, val: number) => sum + Math.abs(val), 0) / physiologicalData.length : 0,
           emotionComponent: primaryEmotion?.score || 0,
-          emotionData: primaryEmotion ? { [primaryEmotion.name || 'unknown']: primaryEmotion.score || 0 } : {},
-          physiologicalData: {},
+          emotionData,
+          physiologicalData,
           createdAt: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
         };
       });
   } catch (error) {
     console.error('Failed to fetch analysis results:', error);
-    // Fallback to visualizer API
-    try {
-      const visualizerUrl = participantId
-        ? `http://localhost:25260/api/analysis-results?participantId=${participantId}`
-        : 'http://localhost:25260/api/analysis-results';
-      const response = await fetch(visualizerUrl);
-      const results = await response.json();
-      return results.map((r: any) => ({
-        id: r.id,
-        participantId: participantId || '',
-        experimentId: 'default',
-        stimulusWord: r.stimulus_word,
-        responseWord: r.response_word,
-        reactionTimeMs: r.reaction_time_ms,
-        wordAssociationProbability: r.p_value, // P(w_O | w_I)
-        word2vecComponent: r.word2vec_component || 0,
-        reactionTimeComponent: r.reaction_time_component || 0,
-        skinPotentialComponent: r.skin_potential_component || 0,
-        emotionComponent: r.emotion_component || 0,
-        emotionData: r.emotion_data || {},
-        physiologicalData: r.physiological_data || {},
-        createdAt: r.created_at,
-      }));
-    } catch (fallbackError) {
-      console.error('Failed to fetch from visualizer API:', fallbackError);
-      return [];
-    }
+    return [];
   }
 }
 

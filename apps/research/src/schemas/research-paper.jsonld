@@ -22,7 +22,9 @@
     "affiliation": {"@id": "schema:affiliation", "@type": "@id"},
     "citation": {"@id": "schema:citation", "@type": "@id"},
     "hasPart": {"@id": "schema:hasPart", "@type": "@id"},
-    "about": {"@id": "schema:about", "@type": "@id"}
+    "about": {"@id": "schema:about", "@type": "@id"},
+    "hasVisualization": {"@id": "https://spirit-in-physics.gftd.ai/research#hasVisualization", "@type": "@id"},
+    "hasPipeline": {"@id": "https://spirit-in-physics.gftd.ai/research#hasPipeline", "@type": "@id"}
   },
   
   "@id": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics",
@@ -53,10 +55,20 @@
     "https://spirit-in-physics.gftd.ai/research/sections/vectorization",
     "https://spirit-in-physics.gftd.ai/research/sections/measurement-emotion",
     "https://spirit-in-physics.gftd.ai/research/sections/measurement-skin-potential",
-    "https://spirit-in-physics.gftd.ai/research/sections/conclusion",
+    "https://spirit-in-physics.gftd.ai/research/sections/methods",
     "https://spirit-in-physics.gftd.ai/research/sections/results",
+    "https://spirit-in-physics.gftd.ai/research/sections/discussion",
+    "https://spirit-in-physics.gftd.ai/research/sections/conclusion",
     "https://spirit-in-physics.gftd.ai/research/sections/references"
   ],
+  "hasVisualization": [
+    "https://spirit-in-physics.gftd.ai/research/visualizations/3d-force-graph",
+    "https://spirit-in-physics.gftd.ai/research/visualizations/complex-space-3d",
+    "https://spirit-in-physics.gftd.ai/research/visualizations/network-graph",
+    "https://spirit-in-physics.gftd.ai/research/visualizations/clustering",
+    "https://spirit-in-physics.gftd.ai/research/visualizations/word-list"
+  ],
+  "hasPipeline": "https://spirit-in-physics.gftd.ai/research/pipelines/data-processing",
   "citation": [
     "https://spirit-in-physics.gftd.ai/research/references/landauer-1991",
     "https://spirit-in-physics.gftd.ai/research/references/berut-2012",

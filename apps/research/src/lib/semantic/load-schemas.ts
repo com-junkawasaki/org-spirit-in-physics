@@ -7,6 +7,8 @@ import affiliationsSchema from '../../schemas/affiliations.jsonld?raw';
 import sectionsSchema from '../../schemas/sections.jsonld?raw';
 import equationsSchema from '../../schemas/equations.jsonld?raw';
 import referencesSchema from '../../schemas/references.jsonld?raw';
+import pipelineStepsSchema from '../../schemas/pipeline-steps.jsonld?raw';
+import visualizationSchema from '../../schemas/visualization.jsonld?raw';
 
 interface LoadedSchemas {
   researchPaper: any;
@@ -15,6 +17,8 @@ interface LoadedSchemas {
   sections: any;
   equations: any;
   references: any;
+  pipelineSteps: any;
+  visualization: any;
 }
 
 /**
@@ -28,6 +32,8 @@ export function loadSchemas(): LoadedSchemas {
     sections: JSON.parse(sectionsSchema),
     equations: JSON.parse(equationsSchema),
     references: JSON.parse(referencesSchema),
+    pipelineSteps: JSON.parse(pipelineStepsSchema),
+    visualization: JSON.parse(visualizationSchema),
   };
 }
 
@@ -45,6 +51,8 @@ export function getCombinedContext() {
       ...(schemas.sections['@graph'] || []),
       ...(schemas.equations['@graph'] || []),
       ...(schemas.references['@graph'] || []),
+      ...(schemas.pipelineSteps['@graph'] || []),
+      ...(schemas.visualization['@graph'] || []),
     ],
   };
 }

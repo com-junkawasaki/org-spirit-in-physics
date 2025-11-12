@@ -8,6 +8,7 @@ import AuthorInfo from '../components/AuthorInfo.astro';
 import ReferenceList from '../components/ReferenceList.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import ResultsSection from '../components/ResultsSection.astro';
+import VisualizationResults from '../components/VisualizationResults.astro';
 import { getEntry } from 'astro:content';
 import { loadExperimentalData } from '../lib/experimental-data';
 
@@ -112,6 +113,7 @@ const references = [
       >
         <Content />
         <ResultsSection data={experimentalData} />
+        <VisualizationResults data={experimentalData} />
         <ReferenceList references={references} />
       </ResearchPaper>
     </div>

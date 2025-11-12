@@ -1,0 +1,94 @@
+---
+// Merkle DAG: components.visualization_results
+// Main visualization results component integrating all visualizations
+
+import type { ExperimentalData } from '../types/experimental';
+import SpiritType3DVisualization from './SpiritType3DVisualization.astro';
+import ComplexSpace3D from './ComplexSpace3D.astro';
+import WordNetworkGraph from './WordNetworkGraph.astro';
+import WordClusteringVisualization from './WordClusteringVisualization.astro';
+import InteractiveWordList from './InteractiveWordList.astro';
+import PipelineDiagram from './PipelineDiagram.astro';
+
+interface Props {
+  data: ExperimentalData;
+}
+
+const { data } = Astro.props;
+const { spiritTypes, ghostPatterns } = data;
+---
+
+<section id="visualization-results" class="space-y-8">
+  <div>
+    <h2 class="text-2xl font-bold mb-4">Visualization Results</h2>
+    <p class="text-gray-600 mb-6">
+      The following visualizations demonstrate the data processing pipeline results,
+      showing Spirit Type and Ghost Pattern classifications in multiple formats.
+    </p>
+  </div>
+
+  <!-- Pipeline Diagram -->
+  <div class="mb-8">
+    <PipelineDiagram />
+  </div>
+
+  <!-- 3D Force Graph Visualization -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold mb-4">3D Force Graph Visualization</h3>
+    <SpiritType3DVisualization
+      spiritTypes={spiritTypes}
+      ghostPatterns={ghostPatterns}
+      width={1000}
+      height={600}
+      use3DProjection={true}
+      projectionMethod="pca"
+    />
+  </div>
+
+  <!-- Complex Space 3D Visualization -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold mb-4">Complex Space 3D Visualization</h3>
+    <ComplexSpace3D
+      spiritTypes={spiritTypes}
+      ghostPatterns={ghostPatterns}
+      width={1000}
+      height={600}
+      projectionMethod="pca"
+      showInformationSpace={true}
+      showBiologicalSpace={true}
+    />
+  </div>
+
+  <!-- Network Graph Visualization -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold mb-4">Word Network Graph</h3>
+    <WordNetworkGraph
+      spiritTypes={spiritTypes}
+      ghostPatterns={ghostPatterns}
+      width={800}
+      height={600}
+      minWeight={0.1}
+    />
+  </div>
+
+  <!-- Clustering Visualization -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold mb-4">Word Clustering Visualization</h3>
+    <WordClusteringVisualization
+      spiritTypes={spiritTypes}
+      ghostPatterns={ghostPatterns}
+      width={800}
+      height={600}
+    />
+  </div>
+
+  <!-- Interactive Word List -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold mb-4">Interactive Word List</h3>
+    <InteractiveWordList
+      spiritTypes={spiritTypes}
+      ghostPatterns={ghostPatterns}
+    />
+  </div>
+</section>
+
