@@ -271,6 +271,109 @@ Healthy adults: 30 participants (target sample size).
 - Methods: UMAP (Uniform Manifold Approximation and Projection) or PCA (Principal Component Analysis)
 - Output: 2D/3D visualization dimensions
 
+### Data Processing and Visualization Pipeline
+
+**Pipeline Overview:**
+The data processing pipeline integrates experimental data from TimelineVisualization, performs component extraction and classification, and generates visualizations for analysis.
+
+**Step 1: Data Collection**
+- Source: TimelineVisualization component (visualizer app)
+- Data types:
+  - Word display events: stimulus word presentation timestamps
+  - Response events: verbal response detection with reaction time
+  - Physiological data: 8-channel skin potential measurements (±2 seconds around word display)
+  - Emotion data: Hume AI emotion analysis (burst, face, language, prosody modalities)
+- Integration: GraphQL API queries to fetch timeline data
+- Time matching: ±2 seconds window for data association
+
+**Step 2: Data Aggregation**
+- Word aggregates: Pre-aggregated statistics per word (TimescaleDB materialized view)
+  - Count, average reaction value, average reaction time
+  - Physiological data series, reaction time series, reaction value series
+- Emotion vectors: Emotion scores per word aggregated across modalities
+  - Joy, sadness, anger, fear, surprise, disgust, calm, focus, excitement, confusion
+  - Modality-specific emotion scores (prosody, face, language, burst)
+- Word statistics: Statistical measures per word
+  - Mean, standard deviation, variance for reaction time, reaction value, physiological data
+  - Speed index calculation
+
+**Step 3: Component Extraction**
+- **Gene component extraction:**
+  - Input: Reaction time data (biological response speed)
+  - Method: Normalization (z-score) of reaction times
+  - Formula: $gene_i = \frac{rt_i - \mu_{rt}}{\sigma_{rt}}$
+  - Future: Integration with GWAS data for actual genetic markers
+- **Meme component extraction:**
+  - Input: Word2Vec embeddings + emotion component scores
+  - Method: Cultural pattern similarity calculation
+  - Formula: $meme_i = \frac{word2vec_i + emotion_i}{2}$
+  - Cultural similarity: Cosine similarity with cultural pattern vectors
+- **Field component extraction:**
+  - Input: Skin potential component + temporal position
+  - Method: Spatial-temporal pattern analysis
+  - Formula: $field_i = \frac{skinPotential_i + temporalPosition_i}{2}$
+  - Spatial patterns: Environmental and contextual spatial configurations
+
+**Step 4: Dimensionality Reduction (1024d → 3d)**
+- Input: 1024-dimensional Complex space vectors
+- Methods:
+  - **PCA (Principal Component Analysis):**
+    - Covariance matrix computation
+    - Eigenvalue decomposition
+    - Projection onto first 3 principal components
+  - **UMAP (Uniform Manifold Approximation and Projection):**
+    - Neighborhood graph construction (k=15 neighbors)
+    - Manifold learning
+    - Low-dimensional embedding (3D)
+- Output: 3D coordinates for visualization
+- Scaling: Normalize to visualization bounds (default: -200 to 200)
+
+**Step 5: Classification**
+- **Spirit Type Classification:**
+  - Input: Vectors $\vec{v} = (\vec{v}_{gene}, \vec{v}_{meme}, \vec{v}_{field})$
+  - Methods: K-means clustering, DBSCAN, Hierarchical Clustering
+  - Classification rule: $classify(\vec{v}) = \{SpiritType \text{ if } ||\vec{v} - \vec{v}_{archetype}|| < threshold_{type}; GhostPattern \text{ otherwise}\}$
+  - Distance calculation: Euclidean distance to archetype vector
+  - Archetype vector: $Archetype(Gene, Meme, Field)$
+- **Ghost Pattern Detection:**
+  - Input: Vectors with high deviation from Spirit Type clusters
+  - Methods: Isolation Forest, One-Class SVM
+  - Detection: $GhostPattern = HiddenPattern(Meme, Field)$
+  - Problematic indicators:
+    - High meme variance (cultural pattern interference)
+    - High field variance (environmental pattern interference)
+    - High deviation from archetype (cognitive bias)
+
+**Step 6: Visualization**
+- **3D Force Graph Visualization:**
+  - Technology: WebGPU (Force3DWordGraphTypeGPU)
+  - Nodes: Spirit Type and Ghost Pattern classifications
+  - Node properties:
+    - Color: Blue for Spirit Type, Red/Orange for Ghost Pattern
+    - Scale: Based on distance to archetype/hidden pattern
+    - Position: 3D coordinates from dimensionality reduction
+  - Links: Word association relationships
+    - Weight: Word association probability $P(w_O | w_I)$
+    - Mode: Tension (Spirit Type), Compression (Ghost Pattern)
+- **Network Graph Visualization:**
+  - Nodes: Unique words from word pairs
+  - Edges: Word associations with weights based on $P(w_O | w_I)$
+  - Node coloring: Spirit Type (blue) vs Ghost Pattern (red)
+- **Clustering Visualization:**
+  - Grouping: By archetype (Spirit Types) and shadow type (Ghost Patterns)
+  - Cluster centers: Mean Gene/Meme/Field components
+  - Cluster distance visualization
+- **Interactive Word List:**
+  - Filtering: By classification type, emotion, reaction time
+  - Sorting: By frequency, reaction value, reaction time
+  - Search: Text search across word pairs
+
+**Pipeline Parameters:**
+- Dimensionality reduction: PCA (default) or UMAP
+- Classification threshold: $threshold_{type} = 1.0$ (Euclidean distance)
+- Visualization bounds: $[-200, 200]$ for each dimension
+- Minimum link weight: $0.1$ (for network graph)
+
 ### Classification Analysis
 
 **Spirit Type Classification:**
@@ -323,6 +426,15 @@ Healthy adults: 30 participants (target sample size).
 ## Results
 
 Experimental results with Spirit Type and Ghost Pattern classification are displayed below.
+
+### Visualization Results
+
+The data processing pipeline generates multiple visualizations for analysis:
+
+1. **3D Force Graph**: Spirit Type and Ghost Pattern classifications visualized in 3D space using WebGPU
+2. **Network Graph**: Word association network with nodes colored by classification type
+3. **Clustering Visualization**: Grouped by archetype (Spirit Types) and shadow type (Ghost Patterns)
+4. **Interactive Word List**: Filterable and sortable list of word pairs with classification metadata
 
 [Original blog post: https://www.junkawasaki.com/posts/spirit-in-physics](https://www.junkawasaki.com/posts/spirit-in-physics)
 

@@ -1,0 +1,98 @@
+---
+// Merkle DAG: components.spirit_type_3d_visualization
+// 3D visualization component for Spirit Type and Ghost Pattern classification
+
+import { convertToVisualizationData } from '../lib/visualization-data';
+import { projectComplexSpaceTo3D, scale3DCoordinates } from '../lib/dimensionality-reduction';
+import type { SpiritType, GhostPattern } from '../types/experimental';
+
+interface Props {
+  spiritTypes: SpiritType[];
+  ghostPatterns: GhostPattern[];
+  width?: number;
+  height?: number;
+  use3DProjection?: boolean;
+  projectionMethod?: 'pca' | 'umap';
+}
+
+const { 
+  spiritTypes = [],
+  ghostPatterns = [],
+  width = 1000,
+  height = 600,
+  use3DProjection = true,
+  projectionMethod = 'pca'
+} = Astro.props;
+
+// Convert to visualization data
+const { nodes, links } = convertToVisualizationData(spiritTypes, ghostPatterns, use3DProjection);
+
+// If 3D projection is enabled, project 1024d vectors to 3D
+if (use3DProjection && nodes.length > 0) {
+  const vectors = [...spiritTypes, ...ghostPatterns].map(item => item.vector);
+  const projected3D = projectComplexSpaceTo3D(vectors, projectionMethod);
+  const scaled3D = scale3DCoordinates(projected3D, { min: -200, max: 200 });
+  
+  // Update node initial positions
+  nodes.forEach((node, index) => {
+    if (scaled3D[index]) {
+      node.initial = [
+        scaled3D[index][0],
+        scaled3D[index][1],
+        scaled3D[index][2],
+      ] as [number, number, number];
+    }
+  });
+}
+
+// Prepare data for client-side rendering
+const visualizationData = {
+  nodes,
+  links,
+  width,
+  height,
+};
+---
+
+<div class="spirit-type-3d-visualization" data-visualization={JSON.stringify(visualizationData)}>
+  <div id="force3d-container" style={`width: ${width}px; height: ${height}px;`}>
+    <!-- 3D visualization will be rendered here by client-side script -->
+    <p class="text-sm text-gray-500">Loading 3D visualization...</p>
+  </div>
+  
+  <script>
+    // Client-side rendering script
+    // Note: In production, this should use React/Vue component or WebGPU directly
+    // For now, we'll provide the data structure for integration with Force3DWordGraphTypeGPU
+    
+    const container = document.getElementById('force3d-container');
+    if (container) {
+      const dataAttr = container.closest('.spirit-type-3d-visualization')?.getAttribute('data-visualization');
+      if (dataAttr) {
+        const data = JSON.parse(dataAttr);
+        console.log('Spirit Type 3D Visualization Data:', data);
+        // Integration with Force3DWordGraphTypeGPU would happen here
+        // This is a placeholder - actual rendering requires React component
+      }
+    }
+  </script>
+</div>
+
+<style>
+  .spirit-type-3d-visualization {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  #force3d-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
+
