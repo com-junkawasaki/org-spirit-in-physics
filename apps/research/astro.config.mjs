@@ -28,4 +28,11 @@ export default defineConfig({
     remarkPlugins: [remarkMath, remarkGfm],
     rehypePlugins: [rehypeKatex],
   },
+  vite: {
+    resolve: {
+      alias: {
+        '@spirit-in-physics/visualization-components': '/app/packages/visualization-components/src/index.ts',
+      },
+    },
+  },
 });

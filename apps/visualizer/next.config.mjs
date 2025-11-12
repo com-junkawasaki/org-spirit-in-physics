@@ -1,6 +1,8 @@
-import { fileURLToPath } from 'url'
+import { fileURLToPath, pathToFileURL } from 'url'
+import { dirname, resolve } from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -25,6 +27,10 @@ const nextConfig = {
     // Merkle DAG: Serverless Workflow SDK module resolution configuration
     config.resolve = {
       ...config.resolve,
+      alias: {
+        ...config.resolve.alias,
+        '@spirit-in-physics/visualization-components': resolve(__dirname, '../packages/visualization-components/src/index.ts'),
+      },
       fallback: {
         ...config.resolve?.fallback,
         fs: false,
@@ -35,7 +41,7 @@ const nextConfig = {
     }
 
     // Merkle DAG: External modules configuration for server-side
-    
+
     return config
   },
   // Configure headers for better security and performance

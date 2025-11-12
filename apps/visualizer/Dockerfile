@@ -29,6 +29,9 @@ COPY apps/visualizer/env.docker .env.local
 # Copy source code
 COPY apps/visualizer ./
 
+# Ensure packages directory is preserved
+COPY packages/visualization-components ./packages/visualization-components
+
 # Build the application
 # RUN pnpm build
 

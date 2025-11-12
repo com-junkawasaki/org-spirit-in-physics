@@ -1,0 +1,224 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Dataset (if not needed)
+dataset/
+
+# Archive directories - VERY LARGE
+archive/
+_archive/
+*_archive/
+archive/
+**/archive/
+**/archive/**
+
+# Build directories
+build/
+dist/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# Temporary and log files
+*.log
+logs/
+*.tmp
+*.temp
+
+# Large data files
+*.zip
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.iso
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Backup and archive files
+*.bak
+*.backup
+*.old
+*~
+
+# Large application directories
+apps/*/node_modules/
+performers/*/node_modules/
+packages/*/node_modules/
+
+# Specific large directories
+apps/visualizer/public/dataset/
+apps/visualizer/dataset/
+**/dataset/
+**/public/dataset/
+
+# Logs and temporary files
+logs/
+tmp/
+temp/
+*.log
+*.tmp
+*.temp
+
+# Development files
+.envrc
+.direnv/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Large binary files
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Package manager files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Build artifacts
+build/
+dist/
+*.tsbuildinfo
+
+# Testing
+.nyc_output
+coverage/
+test-results/
+playwright-report/
+
+# Documentation
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Local development
+.envrc
+.direnv/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Temporary files
+*.tmp
+*.temp

@@ -59,6 +59,7 @@ services:
       - "25260:3000"
     volumes:
       - ./apps/visualizer:/app
+      - ./packages/visualization-components:/app/packages/visualization-components
       - /app/node_modules
       - ./dataset:/app/dataset:cached
     command: pnpm run dev

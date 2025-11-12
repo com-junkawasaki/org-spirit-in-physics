@@ -33,3 +33,6 @@ EXPOSE 4321
 # Start the application
 CMD ["pnpm", "dev"]
 
+
+CMD ["pnpm", "dev"]
+
