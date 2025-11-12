@@ -4,6 +4,8 @@
 
 import type { ExperimentalData } from '../types/experimental';
 import SpiritType3DVisualization from './SpiritType3DVisualization.astro';
+import TimelineView from './TimelineView.astro';
+import WordDistanceView from './WordDistanceView.astro';
 import ComplexSpace3D from './ComplexSpace3D.astro';
 import WordNetworkGraph from './WordNetworkGraph.astro';
 import WordClusteringVisualization from './WordClusteringVisualization.astro';
@@ -30,6 +32,18 @@ const { spiritTypes, ghostPatterns } = data;
   <!-- Pipeline Diagram -->
   <div class="mb-8">
     <PipelineDiagram />
+  </div>
+
+  <!-- Timeline Visualization -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold mb-4">Timeline Visualization</h3>
+    <TimelineView data={data} width={1000} height={400} />
+  </div>
+
+  <!-- Word Distance Visualization -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold mb-4">Word Distance Visualization</h3>
+    <WordDistanceView data={data} width={1000} height={600} topK={20} />
   </div>
 
   <!-- 3D Force Graph Visualization -->

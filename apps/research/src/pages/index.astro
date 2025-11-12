@@ -1,18 +1,118 @@
 ---
 // Merkle DAG: pages.index
-// Home page redirecting to research paper
+// Research papers index page
 
+import ResearchLayout from '../layouts/ResearchLayout.astro';
+import { getCollection } from 'astro:content';
+
+// Get all research papers
+const papers = await getCollection('papers');
+
+// Sort by date (newest first)
+const sortedPapers = papers.sort((a, b) => {
+  const dateA = typeof a.data.date === 'string' ? new Date(a.data.date) : a.data.date;
+  const dateB = typeof b.data.date === 'string' ? new Date(b.data.date) : b.data.date;
+  return dateB.getTime() - dateA.getTime();
+});
 ---
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<meta http-equiv="refresh" content="0; url=/spirit-in-physics" />
-		<title>Spirit in Physics - Research</title>
-	</head>
-	<body>
-		<p>Redirecting to <a href="/spirit-in-physics">Spirit in Physics</a>...</p>
-	</body>
-</html>
+
+<ResearchLayout
+  title="Spirit in Physics Research"
+  description="Research papers on structuring and quantifying human spirit using informational vector space"
+  authors={[]}
+  date={new Date().toISOString().split('T')[0]}
+>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <header class="mb-12">
+      <h1 class="text-4xl font-bold mb-4">Spirit in Physics Research</h1>
+      <p class="text-xl text-gray-600">
+        Research papers on structuring and quantifying human spirit using informational vector space
+      </p>
+    </header>
+
+    <section class="space-y-6">
+      <h2 class="text-2xl font-semibold mb-4">Research Papers</h2>
+      
+      {sortedPapers.length > 0 ? (
+        <div class="space-y-6">
+          {sortedPapers.map((paper) => {
+            const paperDate = typeof paper.data.date === 'string' 
+              ? new Date(paper.data.date) 
+              : paper.data.date;
+            const formattedDate = paperDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+
+            return (
+              <article class="border rounded-lg p-6 hover:shadow-lg transition-shadow">
+                <h3 class="text-2xl font-semibold mb-2">
+                  <a 
+                    href={`/${paper.id}`}
+                    class="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {paper.data.title}
+                  </a>
+                </h3>
+                
+                <p class="text-gray-600 mb-4">{paper.data.description}</p>
+                
+                <div class="flex flex-wrap gap-4 text-sm text-gray-500 mb-4">
+                  <div>
+                    <strong>Published:</strong> {formattedDate}
+                  </div>
+                  {paper.data.authors && paper.data.authors.length > 0 && (
+                    <div>
+                      <strong>Authors:</strong>{' '}
+                      {paper.data.authors.map((author, idx) => (
+                        <span key={idx}>
+                          {author.name}
+                          {idx < paper.data.authors.length - 1 ? ', ' : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {paper.data.affiliations && paper.data.affiliations.length > 0 && (
+                  <div class="text-sm text-gray-500 mb-4">
+                    <strong>Affiliations:</strong>{' '}
+                    {paper.data.affiliations.join(', ')}
+                  </div>
+                )}
+
+                <a 
+                  href={`/${paper.id}`}
+                  class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  Read Paper →
+                </a>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="text-center py-12 text-gray-500">
+          <p>No research papers available.</p>
+        </div>
+      )}
+    </section>
+
+    <section class="mt-12 pt-8 border-t">
+      <h2 class="text-2xl font-semibold mb-4">About</h2>
+      <div class="prose prose-lg max-w-none">
+        <p>
+          This research explores the quantification of human spirit using informational vector space,
+          combining Jung's word association test with modern data analysis techniques including
+          emotion recognition, physiological measurements, and machine learning.
+        </p>
+        <p>
+          The research integrates concepts from psychology, physics, and information theory to
+          develop a comprehensive model for understanding spirit as a measurable phenomenon in
+          vector information space.
+        </p>
+      </div>
+    </section>
+  </div>
+</ResearchLayout>
