@@ -1,19 +1,9 @@
-'use client'
-
 import React, { useMemo } from 'react'
 
 // Merkle DAG: components.react.word_distance_visualization
 // Word distance visualization component for research app
 
-export interface WordDistancePair {
-  word1: string
-  word2: string
-  totalDistance: number
-  emotionDistance: number
-  reactionValueDistance: number
-  reactionTimeDistance: number
-  physiologicalDistance: number
-}
+import type { WordDistancePair } from './timeline/types'
 
 interface WordDistanceVisualizationProps {
   distances: WordDistancePair[]

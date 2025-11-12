@@ -1,7 +1,4 @@
-'use client'
-
-import React, { useState, useRef, useCallback, useMemo } from 'react'
-import dynamic from 'next/dynamic'
+import React, { useState, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
 import { useTimelineData } from './timeline/useTimelineData'
 import TimelineChart from './timeline/TimelineChart'
 import KPICards from './timeline/KPICards'
@@ -14,8 +11,7 @@ import type {
   WordLink,
   WordDistancePair
 } from './timeline/types'
-import { JUNG_STIMULUS_WORDS } from '@/constants/jung'
-import { useWordAggregates } from '@/hooks/useWordAggregates'
+import { JUNG_STIMULUS_WORDS } from './constants/jung'
 import {
   detectGapAreas,
   analyzeDensity,
@@ -23,10 +19,11 @@ import {
   type GapArea,
   type DensityRegion,
   type DuplicateCandidate
-} from '@/lib/structure-analysis'
+} from './lib/structure-analysis'
 
 // 3D Force コンポーネントを動的インポート（SSR無効化）
-const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
+// Next.jsのdynamicの代わりにReact.lazyを使用
+const Force3D = lazy(() => import('./Force3DWordGraphTypeGPU'))
 
 // Merkle DAG: components.timeline_visualization
 // 時系列統合可視化コンポーネント
@@ -34,7 +31,7 @@ const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false 
 // BPMN: TimelineVisualizationComponent
 
 import DebugPanel, { type PipelineStep, type DataSourceStatus } from './timeline/DebugPanel'
-import { normalizeEmotionName, EMOTION_KEYS as NORMALIZED_EMOTION_KEYS } from '@/lib/emotion-normalization'
+import { normalizeEmotionName, EMOTION_KEYS as NORMALIZED_EMOTION_KEYS } from './lib/emotion-normalization'
 
 export default function TimelineVisualization({ 
   participantId,
@@ -42,6 +39,11 @@ export default function TimelineVisualization({
   width = 800, 
   height = 400,
   hideFilters = false,
+  wordAggregates: injectedWordAggregates,
+  emotionVectors: injectedEmotionVectors,
+  wordStatistics: injectedWordStatistics,
+  aggregatesLoading: injectedAggregatesLoading,
+  aggregatesError: injectedAggregatesError,
 }: Omit<TimelineVisualizationProps, 'forceMode'>) {
   // 3D Force パラメータ
   const [springK, setSpringK] = useState(2.0)
@@ -140,14 +142,12 @@ export default function TimelineVisualization({
   const [distanceK, setDistanceK] = useState<number>(6)
   const [distanceMaxLinks, setDistanceMaxLinks] = useState<number>(500)
 
-  // TimescaleDBマテリアライズドビューから集約データを取得
-  const {
-    wordAggregates,
-    emotionVectors,
-    wordStatistics,
-    loading: aggregatesLoading,
-    error: aggregatesError
-  } = useWordAggregates(participantId, sessionId)
+  // Word aggregates data (use injected props or fallback to empty arrays)
+  const wordAggregates = injectedWordAggregates ?? []
+  const emotionVectors = injectedEmotionVectors ?? []
+  const wordStatistics = injectedWordStatistics ?? []
+  const aggregatesLoading = injectedAggregatesLoading ?? false
+  const aggregatesError = injectedAggregatesError ?? null
 
   // 距離計算用のデータ集約（マテリアライズドビューを使用）
   // 注意: すべてのフックは早期リターンの前に呼び出す必要がある
@@ -295,7 +295,7 @@ export default function TimelineVisualization({
         vec.angerSum ?? 0,
         vec.fearSum ?? 0,
         vec.surpriseSum ?? 0,
-        vec.disinfectSum ?? 0, // disgustSum (mapped from GraphQL disgustSum field)
+        vec.disinfectSum ?? 0, // disgustSum (mapped from GraphQL disgustSum field) - Note: typo in original, should be disgustSum
         vec.calmSum ?? 0,
         vec.focusSum ?? 0,
         vec.excitementSum ?? 0,
@@ -1784,39 +1784,41 @@ export default function TimelineVisualization({
                       </div>
                     ) : (
                     <div className="border rounded overflow-hidden">
-                      <Force3D
+                      <Suspense fallback={<div className="p-4">Loading 3D visualization...</div>}>
+                        <Force3D
                           nodes={force3DGraphData.nodes}
                           links={force3DGraphData.links}
-                        width={width}
-                        height={Math.min(460, Math.max(360, height))}
-                        physics={{
-                          springK,
-                          repulsionK,
-                          damping,
-                          restLength,
-                          maxSpeed: 200,
-                          shellRadius,
-                          shellK,
-                          radialOutK: radialOutK,
-                          constraintIters: constraintIters,
-                          constraintStiffness: constraintStiffness,
-                          minSep,
-                          sepK
-                        }}
-                        gapAreas={structureAnalysis.gapAreas.map(g => ({
-                          id: g.id,
-                          center: g.center,
-                          radius: g.radius,
-                          confidence: g.confidence
-                        }))}
-                        densityRegions={structureAnalysis.densityRegions.map(r => ({
-                          id: r.id,
-                          center: r.center,
-                          radius: r.radius,
-                          isOvercrowded: r.isOvercrowded
-                        }))}
-                        showAnalysis={showAnalysis}
-                      />
+                          width={width}
+                          height={Math.min(460, Math.max(360, height))}
+                          physics={{
+                            springK,
+                            repulsionK,
+                            damping,
+                            restLength,
+                            maxSpeed: 200,
+                            shellRadius,
+                            shellK,
+                            radialOutK: radialOutK,
+                            constraintIters: constraintIters,
+                            constraintStiffness: constraintStiffness,
+                            minSep,
+                            sepK
+                          }}
+                          gapAreas={structureAnalysis.gapAreas.map(g => ({
+                            id: g.id,
+                            center: g.center,
+                            radius: g.radius,
+                            confidence: g.confidence
+                          }))}
+                          densityRegions={structureAnalysis.densityRegions.map(r => ({
+                            id: r.id,
+                            center: r.center,
+                            radius: r.radius,
+                            isOvercrowded: r.isOvercrowded
+                          }))}
+                          showAnalysis={showAnalysis}
+                        />
+                      </Suspense>
                     </div>
                   )
                   )}
@@ -2476,25 +2478,27 @@ export default function TimelineVisualization({
                     </div>
                   </div>
                   <div style={{ width: '100%', height: '600px' }}>
-                    <Force3D
-                      nodes={distance3DGraphData.nodes}
-                      links={distance3DGraphData.links}
-                      width={800}
-                      height={600}
-                      background="#ffffff"
-                      physics={{
-                        springK,
-                        repulsionK,
-                        damping,
-                        restLength,
-                        maxSpeed: 200,
-                        shellRadius,
-                        shellK,
-                        radialOutK,
-                        minSep,
-                        sepK
-                      }}
-                    />
+                    <Suspense fallback={<div className="p-4">Loading 3D visualization...</div>}>
+                      <Force3D
+                        nodes={distance3DGraphData.nodes}
+                        links={distance3DGraphData.links}
+                        width={800}
+                        height={600}
+                        background="#ffffff"
+                        physics={{
+                          springK,
+                          repulsionK,
+                          damping,
+                          restLength,
+                          maxSpeed: 200,
+                          shellRadius,
+                          shellK,
+                          radialOutK,
+                          minSep,
+                          sepK
+                        }}
+                      />
+                    </Suspense>
                   </div>
                 </div>
               )}
@@ -2806,11 +2810,11 @@ export default function TimelineVisualization({
                         return { nodes: allNodes, links }
                       }
 
-                      const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
                       const { nodes, links } = generateForce3DGraph()
 
                       return (
                         <div className="border rounded overflow-hidden">
+                          <Suspense fallback={<div className="p-4">Loading 3D visualization...</div>}>
                             <Force3D
                             nodes={nodes}
                             links={links}
@@ -2831,6 +2835,7 @@ export default function TimelineVisualization({
                               sepK
                             }}
                           />
+                          </Suspense>
                         </div>
                       )
                     } catch (error) {

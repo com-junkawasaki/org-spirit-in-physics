@@ -5,7 +5,7 @@
 import { convertToVisualizationData } from '../lib/visualization-data';
 import { projectComplexSpaceTo3D, scale3DCoordinates } from '../lib/dimensionality-reduction';
 import type { SpiritType, GhostPattern } from '../types/experimental';
-import Force3DVisualization from './react/Force3DVisualization';
+import { Force3DWordGraphTypeGPU } from '@spirit-in-physics/visualization-components';
 
 interface Props {
   spiritTypes: SpiritType[];
@@ -48,7 +48,7 @@ if (use3DProjection && nodes.length > 0) {
 ---
 
 <div class="spirit-type-3d-visualization">
-  <Force3DVisualization
+  <Force3DWordGraphTypeGPU
     client:only="react"
     nodes={nodes}
     links={links}

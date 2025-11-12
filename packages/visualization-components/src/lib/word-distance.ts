@@ -1,8 +1,17 @@
 // Merkle DAG: lib.word_distance
-// Word distance calculation utilities for research app
+// Word distance calculation utilities
 
-import type { AnalysisResult } from '../types/experimental';
-import type { WordDistancePair } from '../components/react/WordDistanceVisualization';
+import type { WordDistancePair } from '../timeline/types';
+
+// Generic interface for word response data
+export interface WordResponseData {
+  stimulusWord: string;
+  reactionTimeMs?: number;
+  wordAssociationProbability: number;
+  emotionData?: Record<string, number>;
+  physiologicalData?: number[] | Record<string, unknown>;
+  skinPotentialComponent?: number;
+}
 
 /**
  * Calculate cosine similarity between two emotion vectors
@@ -34,13 +43,13 @@ function normalize(value: number, min: number, max: number): number {
 }
 
 /**
- * Calculate word distances from analysis results
+ * Calculate word distances from word response data
  */
-export function calculateWordDistances(results: AnalysisResult[]): WordDistancePair[] {
+export function calculateWordDistances(results: WordResponseData[]): WordDistancePair[] {
   if (results.length < 2) return []
 
   // Group results by word
-  const wordGroups = new Map<string, AnalysisResult[]>()
+  const wordGroups = new Map<string, WordResponseData[]>()
   results.forEach(result => {
     const word = result.stimulusWord
     if (!wordGroups.has(word)) {
@@ -109,13 +118,13 @@ export function calculateWordDistances(results: AnalysisResult[]): WordDistanceP
         if (Array.isArray(r.physiologicalData)) {
           return sum + r.physiologicalData.reduce((s, v) => s + Math.abs(v), 0) / r.physiologicalData.length
         }
-        return sum + r.skinPotentialComponent
+        return sum + (r.skinPotentialComponent || 0)
       }, 0) / results1.length
       const avgPh2 = results2.reduce((sum, r) => {
         if (Array.isArray(r.physiologicalData)) {
           return sum + r.physiologicalData.reduce((s, v) => s + Math.abs(v), 0) / r.physiologicalData.length
         }
-        return sum + r.skinPotentialComponent
+        return sum + (r.skinPotentialComponent || 0)
       }, 0) / results2.length
 
       // Calculate distances

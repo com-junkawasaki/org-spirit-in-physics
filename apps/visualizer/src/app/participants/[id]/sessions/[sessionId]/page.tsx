@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/PageLayout'
-import TimelineVisualization from '@/components/TimelineVisualization'
+import { TimelineVisualization } from '@spirit-in-physics/visualization-components'
+import { useWordAggregates } from '@/hooks/useWordAggregates'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, CheckCircle, XCircle } from 'lucide-react'
@@ -12,6 +13,15 @@ export default function SessionTimelinePage() {
   const params = useParams<{ id: string; sessionId: string }>()
   const participantId = params.id
   const sessionId = params.sessionId
+  
+  // Word aggregates data for TimelineVisualization
+  const {
+    wordAggregates,
+    emotionVectors,
+    wordStatistics,
+    loading: aggregatesLoading,
+    error: aggregatesError
+  } = useWordAggregates(participantId, sessionId)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 960, height: 540 })
   const [debugInfo, setDebugInfo] = useState<any>(null)
@@ -110,6 +120,11 @@ export default function SessionTimelinePage() {
           width={viewport.width}
           height={viewport.height}
           hideFilters
+          wordAggregates={wordAggregates}
+          emotionVectors={emotionVectors}
+          wordStatistics={wordStatistics}
+          aggregatesLoading={aggregatesLoading}
+          aggregatesError={aggregatesError}
         />
       </div>
 

@@ -3,7 +3,7 @@
 // Timeline view component for research app
 
 import type { ExperimentalData } from '../types/experimental';
-import TimelineVisualization from './react/TimelineVisualization';
+import { TimelineVisualization } from '@spirit-in-physics/visualization-components';
 
 interface Props {
   data: ExperimentalData;
@@ -13,23 +13,19 @@ interface Props {
 
 const { data, width = 1000, height = 400 } = Astro.props;
 
-// Convert responses to timeline data points
-const timelineData = data.responses.map(response => ({
-  time: response.createdAt,
-  word: response.stimulusWord,
-  reactionTime: response.reactionTimeMs,
-  reactionValue: response.wordAssociationProbability,
-  emotion: response.emotionData,
-  physiological: Array.isArray(response.physiologicalData) ? response.physiologicalData : undefined,
-}));
+// Get participantId and sessionId from data
+const participantId = data.participants.length > 0 ? data.participants[0].id : '';
+const sessionId = data.sessions.length > 0 ? data.sessions[0].id : undefined;
 ---
 
 <div class="timeline-view">
   <TimelineVisualization
     client:only="react"
-    data={timelineData}
+    participantId={participantId}
+    sessionId={sessionId}
     width={width}
     height={height}
+    hideFilters={true}
   />
 </div>
 

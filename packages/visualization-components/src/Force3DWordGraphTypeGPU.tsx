@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useRef, useEffect, useCallback, useState } from 'react'
 
 // WebGPU型定義（簡略版）
