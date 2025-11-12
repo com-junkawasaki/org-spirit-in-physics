@@ -116,6 +116,7 @@ function Force3DWordGraphTypeGPU({
   densityRegions = [],
   showAnalysis = false
 }: Force3DWordGraphTypeGPUProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const deviceRef = useRef<GPUDevice | null>(null)
   const positionsRef = useRef<Float32Array | null>(null)
@@ -125,6 +126,11 @@ function Force3DWordGraphTypeGPU({
   const linksRef = useRef<WordLink[]>(links)
   // Merkle DAG: rendering.connectivity ー ノード接続度の正規化値を保持
   const connectivityRef = useRef<Float32Array | null>(null)
+  
+  // ビューポート可視性のref（パフォーマンス最適化）
+  // refを使用することで、クロージャの問題を回避し、最新の値を参照できる
+  const isVisibleRef = useRef(true)
+  const [isVisible, setIsVisible] = useState(true)
   
   // ズームレベル表示用のstate
   const [zoomLevel, setZoomLevel] = useState(600)
@@ -280,6 +286,31 @@ function Force3DWordGraphTypeGPU({
       document.removeEventListener('mouseup', handleMouseUp)
     }
   }, [handleMouseDown, handleMouseMove, handleMouseUp, handleWheel])
+
+  // Intersection Observer: ビューポート可視性の監視（パフォーマンス最適化）
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        isVisibleRef.current = entry.isIntersecting
+        setIsVisible(entry.isIntersecting)
+      },
+      {
+        // 少し余裕を持たせて、完全に画面外になる前に停止
+        rootMargin: '50px',
+        threshold: 0.01
+      }
+    )
+
+    observer.observe(container)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
 
   // WebGPU 初期化
   useEffect(() => {
@@ -541,6 +572,12 @@ function Force3DWordGraphTypeGPU({
         // アニメーションループ
         let lastTime = performance.now()
         const tick = () => {
+          // ビューポート外の場合は処理をスキップ（パフォーマンス最適化）
+          if (!isVisibleRef.current) {
+            animRef.current = requestAnimationFrame(tick)
+            return
+          }
+
           const now = performance.now()
           const delta = Math.min(0.05, (now - lastTime) / 1000)
           lastTime = now
@@ -1047,7 +1084,7 @@ function Force3DWordGraphTypeGPU({
   }, [nodes, links])
 
   return (
-    <div style={{ width, height, background, position: 'relative' }}>
+    <div ref={containerRef} style={{ width, height, background, position: 'relative' }}>
       <canvas
         ref={canvasRef}
         width={width}
