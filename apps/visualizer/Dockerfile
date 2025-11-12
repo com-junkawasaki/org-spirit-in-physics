@@ -4,21 +4,30 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-
 # Install pnpm
 RUN npm install -g pnpm
+
+# Copy workspace root package.json and pnpm-workspace.yaml if exists
+COPY package.json* pnpm-workspace.yaml* ./
+
+# Copy common visualization-components package
+COPY packages/visualization-components ./packages/visualization-components
+
+# Copy visualizer app package files
+COPY apps/visualizer/package.json apps/visualizer/pnpm-lock.yaml* ./
+
+# Fix the file: reference in package.json to match the container path
+RUN sed -i 's|file:../../packages/visualization-components|file:./packages/visualization-components|g' package.json
 
 # Install dependencies and wget for healthcheck
 RUN pnpm install --no-frozen-lockfile && \
     apk add --no-cache wget
 
 # Copy environment file
-COPY env.docker .env.local
+COPY apps/visualizer/env.docker .env.local
 
 # Copy source code
-COPY . .
+COPY apps/visualizer ./
 
 # Build the application
 # RUN pnpm build
