@@ -48,38 +48,30 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
 
 /**
  * Fetch experiment sessions from GraphQL API
+ * Note: participantId is required by GraphQL schema
  */
 export async function fetchSessions(participantId?: string): Promise<ExperimentSession[]> {
   try {
-    const query = participantId
-      ? `
-        query GetSessions($participantId: ID!) {
-          sessions(participantId: $participantId) {
-            id
-            participantId
-            sessionIndex
-            startTs
-            endTs
-            createdAt
-            updatedAt
-          }
-        }
-      `
-      : `
-        query GetSessions {
-          sessions {
-            id
-            participantId
-            sessionIndex
-            startTs
-            endTs
-            createdAt
-            updatedAt
-          }
-        }
-      `;
+    // GraphQL schema requires participantId, so return empty if not provided
+    if (!participantId) {
+      return [];
+    }
 
-    const variables = participantId ? { participantId } : undefined;
+    const query = `
+      query GetSessions($participantId: ID!) {
+        sessions(participantId: $participantId) {
+          id
+          participantId
+          sessionIndex
+          startTs
+          endTs
+          createdAt
+          updatedAt
+        }
+      }
+    `;
+
+    const variables = { participantId };
 
     const data = await graphqlClient.request<{ sessions: any[] }>(query, variables);
     return (data.sessions || []).map((s: any) => ({
@@ -320,11 +312,16 @@ function calculateComponentStats(component: number[]): ComponentStats {
 
 /**
  * Load all experimental data
+ * If participantId is not provided, uses first participant's ID
  */
 export async function loadExperimentalData(participantId?: string): Promise<ExperimentalData> {
   const participants = await fetchParticipants();
-  const sessions = await fetchSessions(participantId);
-  const responses = await fetchAnalysisResults(participantId);
+  
+  // If participantId is not provided, use first participant's ID
+  const effectiveParticipantId = participantId || (participants.length > 0 ? participants[0].id : undefined);
+  
+  const sessions = effectiveParticipantId ? await fetchSessions(effectiveParticipantId) : [];
+  const responses = effectiveParticipantId ? await fetchAnalysisResults(effectiveParticipantId) : [];
 
   // Extract components
   const geneComponent = extractGeneComponent(responses);
