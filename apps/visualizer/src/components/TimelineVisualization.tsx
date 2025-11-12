@@ -34,6 +34,7 @@ const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false 
 // BPMN: TimelineVisualizationComponent
 
 import DebugPanel, { type PipelineStep, type DataSourceStatus } from './timeline/DebugPanel'
+import { normalizeEmotionName, EMOTION_KEYS as NORMALIZED_EMOTION_KEYS } from '@/lib/emotion-normalization'
 
 export default function TimelineVisualization({ 
   participantId,
@@ -113,7 +114,8 @@ export default function TimelineVisualization({
   // 単語選択（上位100をUIに表示）
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   // 感情フィルターと力学モード、データセグメント
-  const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
+  // 正規化されたEMOTION_KEYSを使用（emotion-normalization.tsからインポート）
+  const EMOTION_KEYS = NORMALIZED_EMOTION_KEYS
   const [selectedEmotions, setSelectedEmotions] = useState<Set<typeof EMOTION_KEYS[number]>>(new Set(EMOTION_KEYS))
   const [physicsMode, setPhysicsMode] = useState<'all' | 'emotion' | 'physio' | 'reactionSpeed'>('all')
   const [segment, setSegment] = useState<'all' | 'first100' | 'next100'>('all')
@@ -191,8 +193,11 @@ export default function TimelineVisualization({
         if (!wordEmotionSum[w]) continue
         if (Array.isArray(dpt.emotions)) {
           for (const e of dpt.emotions) {
-            const key = (e.name || 'unknown').toLowerCase()
-            const idx = emotionIndex[key]
+            // 感情タイプ名を正規化
+            const normalizedKey = normalizeEmotionName(e.name || 'unknown')
+            if (normalizedKey === null) continue // メタデータはスキップ
+            
+            const idx = emotionIndex[normalizedKey]
             const ft = String((e as any).fileType || '')
             const ftLow = ft.toLowerCase()
             const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
@@ -558,6 +563,14 @@ export default function TimelineVisualization({
     const startTime = performance.now()
     const pipelineSteps: PipelineStep[] = []
     const dataSources: DataSourceStatus[] = []
+    let modalityStats: Array<{
+      modality: 'burst' | 'face' | 'language' | 'prosody'
+      totalEmotions: number
+      emotionDistribution: Record<string, number>
+      wordsWithEmotions: number
+      wordsWithoutEmotions: number
+      sampleWordsWithoutEmotions: string[]
+    }> = []
     
     // データソース状態
     // Timeline Dataのサンプルに感情データの詳細を含める
@@ -675,8 +688,11 @@ export default function TimelineVisualization({
               modalityFilteredCount++
               continue
             }
-            const key = (e.name || 'unknown').toLowerCase()
-            const idx = emotionIndex[key]
+            // 感情タイプ名を正規化
+            const normalizedKey = normalizeEmotionName(e.name || 'unknown')
+            if (normalizedKey === null) continue // メタデータはスキップ
+            
+            const idx = emotionIndex[normalizedKey]
             if (idx !== undefined) {
               wordEmotionSum[dpt.word][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
             }
@@ -795,6 +811,78 @@ export default function TimelineVisualization({
         message: `${connectedWords}/${jungWords.length}件の単語が接続済み（総接続数: ${totalConnections}）`,
         data: { connectedWords, totalWords: jungWords.length, totalConnections, disconnectedWords: disconnectedWords.slice(0, 10) }
       })
+      
+      // モダリティ別統計を計算
+      modalityStats = []
+      
+      for (const mod of MOD_KEYS) {
+        const modalityWordEmotionSum: Record<string, number[]> = {}
+        jungWords.forEach(({ japanese }) => {
+          modalityWordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
+        })
+        
+        let modalityEmotionCount = 0
+        const modalityEmotionDistribution: Record<string, number> = {}
+        const modalityWordsWithEmotions = new Set<string>()
+        const modalityWordsWithoutEmotions = new Set<string>()
+        
+        for (const dpt of sessionData) {
+          if (Array.isArray(dpt.emotions)) {
+            let hasEmotionForModality = false
+            for (const e of dpt.emotions) {
+              const ft = String((e as any).fileType || '')
+              const ftLow = ft.toLowerCase()
+              const detectedMod = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+              
+              if (detectedMod === mod) {
+                hasEmotionForModality = true
+                modalityEmotionCount++
+                
+                // 感情タイプ名を正規化
+                const normalizedKey = normalizeEmotionName(e.name || 'unknown')
+                if (normalizedKey === null) continue // メタデータはスキップ
+                
+                const idx = emotionIndex[normalizedKey]
+                if (idx !== undefined) {
+                  modalityWordEmotionSum[dpt.word][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+                  modalityEmotionDistribution[normalizedKey] = (modalityEmotionDistribution[normalizedKey] || 0) + 1
+                }
+              }
+            }
+            
+            if (hasEmotionForModality && dpt.word) {
+              modalityWordsWithEmotions.add(dpt.word)
+            } else if (dpt.word) {
+              modalityWordsWithoutEmotions.add(dpt.word)
+            }
+          } else if (dpt.word) {
+            modalityWordsWithoutEmotions.add(dpt.word)
+          }
+        }
+        
+        // 各単語の感情ベクトルのマグニチュードを計算
+        const modalityWordsWithEmotionVec = new Set<string>()
+        const modalityWordsWithoutEmotionVec = new Set<string>()
+        
+        jungWords.forEach(({ japanese }) => {
+          const vec = modalityWordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0)
+          const magnitude = Math.hypot(...vec)
+          if (magnitude > 0) {
+            modalityWordsWithEmotionVec.add(japanese)
+          } else {
+            modalityWordsWithoutEmotionVec.add(japanese)
+          }
+        })
+        
+        modalityStats.push({
+          modality: mod,
+          totalEmotions: modalityEmotionCount,
+          emotionDistribution: modalityEmotionDistribution,
+          wordsWithEmotions: modalityWordsWithEmotionVec.size,
+          wordsWithoutEmotions: modalityWordsWithoutEmotionVec.size,
+          sampleWordsWithoutEmotions: Array.from(modalityWordsWithoutEmotionVec).slice(0, 10)
+        })
+      }
     }
     
     const endTime = performance.now()
@@ -823,6 +911,7 @@ export default function TimelineVisualization({
           ? (pipelineSteps.find(s => s.id === 'step-4')?.data?.emotionDistribution || {})
           : {}
       } : undefined,
+      modalityStats: mounted && data.length > 0 ? modalityStats : undefined,
       processingTime: endTime - startTime
     }
   }, [mounted, data, loading, error, aggregatesLoading, aggregatesError, wordAggregates, emotionVectors, segment, selectedModalities, selectedEmotions, topK, minW, weightGamma])
@@ -902,8 +991,11 @@ export default function TimelineVisualization({
                       if (!wordEmotionSum[w]) continue
                       if (Array.isArray(dpt.emotions)) {
                         for (const e of dpt.emotions) {
-                          const key = (e.name || 'unknown').toLowerCase()
-                          const idx = emotionIndex[key]
+                          // 感情タイプ名を正規化
+                          const normalizedKey = normalizeEmotionName(e.name || 'unknown')
+                          if (normalizedKey === null) continue // メタデータはスキップ
+                          
+                          const idx = emotionIndex[normalizedKey]
                           // モダリティフィルタ
                           const ft = String((e as any).fileType || '')
                           const ftLow = ft.toLowerCase()
@@ -1034,6 +1126,71 @@ export default function TimelineVisualization({
                       }
                     })
 
+                    // モダリティ別の感情ベクトルを計算（色分け用）
+                    const modalityWordEmotionSum: Record<string, Record<'burst' | 'face' | 'language' | 'prosody', number[]>> = {}
+                    jungWords.forEach(({ japanese }) => {
+                      modalityWordEmotionSum[japanese] = {
+                        burst: new Array(EMOTION_KEYS.length).fill(0),
+                        face: new Array(EMOTION_KEYS.length).fill(0),
+                        language: new Array(EMOTION_KEYS.length).fill(0),
+                        prosody: new Array(EMOTION_KEYS.length).fill(0)
+                      }
+                    })
+
+                    for (const dpt of sessionData) {
+                      const w = dpt.word
+                      if (!modalityWordEmotionSum[w]) continue
+                      if (Array.isArray(dpt.emotions)) {
+                        for (const e of dpt.emotions) {
+                          const ft = String((e as any).fileType || '')
+                          const ftLow = ft.toLowerCase()
+                          const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+                          
+                          if (mod) {
+                            // 感情タイプ名を正規化
+                            const normalizedKey = normalizeEmotionName(e.name || 'unknown')
+                            if (normalizedKey === null) continue // メタデータはスキップ
+                            
+                            const idx = emotionIndex[normalizedKey]
+                            if (idx !== undefined) {
+                              modalityWordEmotionSum[w][mod][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+                            }
+                          }
+                        }
+                      }
+                    }
+
+                    // 各単語の主要モダリティを計算（最大の感情ベクトルマグニチュードを持つモダリティ）
+                    const wordPrimaryModality: Record<string, 'burst' | 'face' | 'language' | 'prosody' | null> = {}
+                    const modalityColors: Record<'burst' | 'face' | 'language' | 'prosody', string> = {
+                      burst: '#3b82f6', // 青
+                      face: '#10b981', // 緑
+                      language: '#f97316', // オレンジ
+                      prosody: '#a855f7' // 紫
+                    }
+
+                    for (const { japanese } of jungWords) {
+                      let maxMagnitude = 0
+                      let primaryMod: 'burst' | 'face' | 'language' | 'prosody' | null = null
+                      
+                      for (const mod of MOD_KEYS) {
+                        const vec = modalityWordEmotionSum[japanese]?.[mod] || new Array(EMOTION_KEYS.length).fill(0)
+                        const magnitude = Math.hypot(...vec)
+                        if (magnitude > maxMagnitude) {
+                          maxMagnitude = magnitude
+                          primaryMod = mod
+                        }
+                      }
+                      
+                      wordPrimaryModality[japanese] = primaryMod
+                      
+                      // ノードの色を主要モダリティに応じて設定
+                      const node = nodes.find(n => n.label === japanese)
+                      if (node && primaryMod) {
+                        node.color = modalityColors[primaryMod]
+                      }
+                    }
+
                     // アンカー追加と接続
                     const baseOffset = nodes.length
                     const allNodes = [...anchorNodes, ...nodes]
@@ -1123,16 +1280,40 @@ export default function TimelineVisualization({
                         }
                       }
 
-                      // リンク生成（感情色を付与）
+                      // リンク生成（モダリティ別の色を付与）
+                      const primaryMod = wordPrimaryModality[label]
+                      const linkBaseColor = primaryMod ? modalityColors[primaryMod] : undefined
+                      
                       for (const c of chosen) {
                         const a = anchorNodes[c.ai]
                         const key = anchorToKey[a.label]
-                        const base = key ? emotionColor[key] : undefined
+                        // モダリティ色と感情色をブレンド（モダリティ色70%、感情色30%）
+                        const emotionBase = key ? emotionColor[key] : undefined
+                        const base = linkBaseColor || emotionBase
                         const w = Math.max(0, Math.min(1, c.w * Math.max(0.1, factor)))
                         const L0 = Math.max(20, restLength * (1 - 0.6 * w))
                         const k = springK * (0.3 + 0.7 * w)
                         const alpha = Math.max(0.12, Math.min(0.95, 0.12 + 0.88 * w))
-                        const color = base ? `rgba(${parseInt(base.slice(1,3),16)}, ${parseInt(base.slice(3,5),16)}, ${parseInt(base.slice(5,7),16)}, ${alpha.toFixed(3)})` : `rgba(30, 64, 175, ${alpha.toFixed(3)})`
+                        
+                        let color: string
+                        if (linkBaseColor && emotionBase) {
+                          // モダリティ色と感情色をブレンド
+                          const modR = parseInt(linkBaseColor.slice(1,3),16)
+                          const modG = parseInt(linkBaseColor.slice(3,5),16)
+                          const modB = parseInt(linkBaseColor.slice(5,7),16)
+                          const emoR = parseInt(emotionBase.slice(1,3),16)
+                          const emoG = parseInt(emotionBase.slice(3,5),16)
+                          const emoB = parseInt(emotionBase.slice(5,7),16)
+                          const r = Math.round(modR * 0.7 + emoR * 0.3)
+                          const g = Math.round(modG * 0.7 + emoG * 0.3)
+                          const b = Math.round(modB * 0.7 + emoB * 0.3)
+                          color = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`
+                        } else if (base) {
+                          color = `rgba(${parseInt(base.slice(1,3),16)}, ${parseInt(base.slice(3,5),16)}, ${parseInt(base.slice(5,7),16)}, ${alpha.toFixed(3)})`
+                        } else {
+                          color = `rgba(30, 64, 175, ${alpha.toFixed(3)})`
+                        }
+                        
                         links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k, color })
                       }
                     }
@@ -1197,7 +1378,6 @@ export default function TimelineVisualization({
     try {
       // 感情ベクトルを構築
       const emotionVectors: Record<string, number[]> = {}
-      const EMOTION_KEYS = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'calm', 'focus', 'excitement', 'confusion'] as const
       
       // セッションデータから感情ベクトルを集約
       const wordEmotionSum: Record<string, number[]> = {}
@@ -1210,8 +1390,11 @@ export default function TimelineVisualization({
         if (!wordEmotionSum[w]) continue
         if (Array.isArray(dpt.emotions)) {
           for (const e of dpt.emotions) {
-            const key = (e.name || 'unknown').toLowerCase()
-            const idx = EMOTION_KEYS.indexOf(key as typeof EMOTION_KEYS[number])
+            // 感情タイプ名を正規化
+            const normalizedKey = normalizeEmotionName(e.name || 'unknown')
+            if (normalizedKey === null) continue // メタデータはスキップ
+            
+            const idx = EMOTION_KEYS.indexOf(normalizedKey)
             if (idx >= 0) {
               wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
             }
@@ -1430,6 +1613,7 @@ export default function TimelineVisualization({
               pipelineSteps={debugInfo.pipelineSteps}
               connectionStats={debugInfo.connectionStats}
               emotionVectorStats={debugInfo.emotionVectorStats}
+              modalityStats={debugInfo.modalityStats}
               onClose={() => setShowDebugPanel(false)}
             />
           </div>
@@ -2083,7 +2267,7 @@ export default function TimelineVisualization({
           )}
 
           {activeTab === 'distance' && (
-              <div className="bg-white border rounded-lg p-4">
+            <div className="bg-white border rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="font-medium text-sm">単語距離感</h4>
@@ -2339,7 +2523,6 @@ export default function TimelineVisualization({
                         const denom = rawMax - rawMin || 1
 
                         // 感情ベクトル（10カテゴリに射影）を単語ごとに集約して正規化
-                        const EMOTION_KEYS = ['joy','sadness','anger','fear','surprise','disgust','calm','focus','excitement','confusion'] as const
                         const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
                         const wordEmotionSum: Record<string, number[]> = {}
                         
@@ -2354,8 +2537,11 @@ export default function TimelineVisualization({
                           if (!wordEmotionSum[w]) continue
                           if (Array.isArray(dpt.emotions)) {
                             for (const e of dpt.emotions) {
-                              const key = (e.name || 'unknown').toLowerCase()
-                              const idx = emotionIndex[key]
+                              // 感情タイプ名を正規化
+                              const normalizedKey = normalizeEmotionName(e.name || 'unknown')
+                              if (normalizedKey === null) continue // メタデータはスキップ
+                              
+                              const idx = emotionIndex[normalizedKey]
                               if (idx !== undefined) {
                                 wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
                               }

@@ -162,5 +162,15 @@ export interface WordDistancePair {
   physiologicalDistance: number
 }
 
+export interface ModalityEmotionStats {
+  modality: 'burst' | 'face' | 'language' | 'prosody'
+  totalEmotions: number
+  emotionDistribution: Record<string, number> // emotion name -> count
+  emotionScores: Record<string, number[]> // emotion name -> scores array
+  wordsWithEmotions: number
+  wordsWithoutEmotions: number
+  sampleWordsWithoutEmotions: string[]
+}
+
 // Merkle DAG: timeline.types -> definitions_complete
 // 時系列可視化コンポーネントの型定義完了

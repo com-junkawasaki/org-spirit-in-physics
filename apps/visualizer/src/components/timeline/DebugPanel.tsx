@@ -51,6 +51,14 @@ export interface DebugPanelProps {
     averageEmotionMagnitude: number
     emotionDistribution: Record<string, number>
   }
+  modalityStats?: Array<{
+    modality: 'burst' | 'face' | 'language' | 'prosody'
+    totalEmotions: number
+    emotionDistribution: Record<string, number>
+    wordsWithEmotions: number
+    wordsWithoutEmotions: number
+    sampleWordsWithoutEmotions: string[]
+  }>
   onClose?: () => void
 }
 
@@ -59,6 +67,7 @@ export default function DebugPanel({
   pipelineSteps,
   connectionStats,
   emotionVectorStats,
+  modalityStats,
   onClose
 }: DebugPanelProps) {
   const getStatusColor = (status: PipelineStep['status']) => {
@@ -259,6 +268,76 @@ export default function DebugPanel({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* モダリティ別統計 */}
+        {modalityStats && modalityStats.length > 0 && (
+          <div>
+            <h4 className="font-medium text-sm mb-2">モダリティ別統計</h4>
+            <div className="space-y-3">
+              {modalityStats.map((modStat) => {
+                const modalityColors: Record<string, string> = {
+                  burst: 'bg-blue-50 border-blue-200',
+                  face: 'bg-green-50 border-green-200',
+                  language: 'bg-orange-50 border-orange-200',
+                  prosody: 'bg-purple-50 border-purple-200'
+                }
+                const modalityLabels: Record<string, string> = {
+                  burst: 'Burst (音声表現)',
+                  face: 'Face (顔表情)',
+                  language: 'Language (言語)',
+                  prosody: 'Prosody (韻律)'
+                }
+                return (
+                  <div key={modStat.modality} className={`p-3 rounded border text-xs ${modalityColors[modStat.modality] || 'bg-gray-50 border-gray-200'}`}>
+                    <div className="font-medium text-sm mb-2">{modalityLabels[modStat.modality] || modStat.modality}</div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <span className="text-gray-600">感情データ総数:</span>
+                        <span className="ml-2 font-medium">{modStat.totalEmotions}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">感情データありの単語:</span>
+                        <span className="ml-2 font-medium text-green-600">
+                          {modStat.wordsWithEmotions}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">感情データなしの単語:</span>
+                        <span className="ml-2 font-medium text-red-600">
+                          {modStat.wordsWithoutEmotions}
+                        </span>
+                      </div>
+                    </div>
+                    {Object.keys(modStat.emotionDistribution).length > 0 && (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-xs font-medium">感情タイプ分布</summary>
+                        <div className="mt-1 text-xs space-y-1">
+                          {Object.entries(modStat.emotionDistribution)
+                            .sort((a, b) => b[1] - a[1])
+                            .slice(0, 10)
+                            .map(([emotion, count]) => (
+                              <div key={emotion} className="flex justify-between">
+                                <span>{emotion}:</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </details>
+                    )}
+                    {modStat.sampleWordsWithoutEmotions.length > 0 && (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-xs font-medium">感情データなしの単語サンプル</summary>
+                        <div className="mt-1 text-xs">
+                          {modStat.sampleWordsWithoutEmotions.join(', ')}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
