@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.26.0",
+  "version": "1.28.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-12T00:00:00+09:00",
-  "merkleRoot": "TimescaleDBマテリアライズドビュー効率化とGraphQL resolver実装",
+  "updatedAt": "2025-01-15T12:00:00+09:00",
+  "merkleRoot": "3D Force Graphノード位置決定ロジックと動的/固定ノード制御の分析",
   
   "story": {
     "@id": "project:story",
@@ -365,6 +365,18 @@
         "@type": "project:Narrative",
         "act": "GraphQL Resolver実装（マテリアライズドビュー対応）",
         "summary": "TimescaleDBマテリアライズドビューからデータを取得するGraphQL resolverを実装。wordAggregates、emotionVectors、wordStatisticsの3つのresolverを追加。WordAggregate、EmotionVector、WordStatisticsのGraphQL型定義を作成。これにより、クライアント側で事前集約済みデータを取得でき、処理を大幅に削減。科学的手法による霊性測定のデータ取得・処理効率を向上させた。"
+      },
+      {
+        "@id": "project:narrative/51",
+        "@type": "project:Narrative",
+        "act": "3D Force Graph接続最適化とデバッグパネル実装",
+        "summary": "3D Force Graphの接続パラメータ（topK, minW, weightGamma）を調整可能にし、全感情アンカーへの接続を保証するフォールバックロジックを実装。接続モデルと数理モデルをJSON-LD（RDF/SHACL）形式で定義し、単語距離感の3D可視化システムを実装。デバッグパネルを追加し、データ取得・処理パイプラインの各ステップの状態を可視化。Hume AI感情名正規化ユーティリティを実装し、48種類以上の感情名を標準10感情カテゴリにマッピング。モダリティ別（burst・face・language・prosody）統計を計算・表示し、3D Force Graphでモダリティ別の色分け表示を実装。科学的手法による霊性測定の可視化システムの透明性とデバッグ容易性を大幅に向上させた。"
+      },
+      {
+        "@id": "project:narrative/52",
+        "@type": "project:Narrative",
+        "act": "3D Force Graphノード位置決定ロジックと動的/固定ノード制御の分析",
+        "summary": "3D Force Graphにおけるノード位置決定メカニズムを詳細に分析。単語ノードの初期位置は感情アンカーの重み付き平均位置（weighted centroid）により決定され、アンカーは球面（shellRadius）上に固定配置、単語はその内側（shellRadius * 0.65）に配置されることを確認。感情の外にある単語（chosen.length === 0）は初期位置が未設定となり、エッジも生成されないが、フォールバックロジックにより通常は発生しないことを検証。ノードの動的/固定制御はfixedプロパティにより実現され、感情アンカーと選択された単語は固定（fixed: true）、それ以外の単語はフォース計算により動的に位置が更新されることを確認。WebGPUシェーダーで固定ノードはフォース計算をスキップし、他のノードへの影響は与えるが自身は動かない仕組みを実装。科学的手法による霊性測定の可視化システムの位置決定アルゴリズムの完全性を確立。"
       }
     ],
     "processNetwork": {
@@ -843,7 +855,39 @@
             "file_type別上位5件制限",
             "包括的感情名正規化マッピング",
             "データ品質・処理効率向上",
-            "感情データ統合精度向上"
+            "感情データ統合精度向上",
+            "3D Force Graph接続パラメータ調整機能",
+            "topK・minW・weightGamma動的調整UI",
+            "全感情アンカー接続保証フォールバックロジック",
+            "接続モデルJSON-LD定義（RDF/SHACL）",
+            "数理モデルJSON-LD定義（RDF/SHACL）",
+            "単語距離感3D可視化システム",
+            "k-NNグラフによる単語クラスタリング",
+            "距離ベースリンク生成アルゴリズム",
+            "デバッグパネル実装",
+            "データソース状態可視化",
+            "パイプラインステップ状態表示",
+            "接続統計情報表示",
+            "感情ベクトル統計情報表示",
+            "Hume AI感情名正規化ユーティリティ",
+            "48種類以上感情名マッピング",
+            "標準10感情カテゴリへの統合",
+            "モダリティ別統計計算システム",
+            "burst・face・language・prosody別集約",
+            "モダリティ別色分け3D可視化",
+            "ノード・リンクのモダリティ色表示",
+            "感情ベクトル0の場合のフォールバック処理",
+            "接続生成ロジックの堅牢性向上",
+            "ノード位置決定ロジック分析",
+            "感情アンカー重み付き平均位置計算",
+            "球面配置アルゴリズム（shellRadius）",
+            "単語ノード初期位置決定（weighted centroid）",
+            "固定ノード（fixed: true）制御メカニズム",
+            "動的ノードフォース計算システム",
+            "WebGPUシェーダー固定ノードスキップ実装",
+            "感情の外の単語検出ロジック",
+            "エッジ未接続単語の条件分析",
+            "ノード動的/固定制御の完全性検証"
           ]
         },
   
