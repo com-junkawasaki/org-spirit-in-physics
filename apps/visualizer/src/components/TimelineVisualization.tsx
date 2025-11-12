@@ -681,9 +681,17 @@ export default function TimelineVisualization({
         if (Array.isArray(dpt.emotions)) {
           for (const e of dpt.emotions) {
             emotionDataCount++
-            const ft = String((e as any).fileType || '')
+            // fileTypeの認識を改善（複数の形式に対応）
+            const ft = String((e as any).fileType || (e as any).file_type || '')
             const ftLow = ft.toLowerCase()
-            const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+            // モダリティの判定を改善（より柔軟なマッチング）
+            const mod: typeof MOD_KEYS[number] | undefined = 
+              ftLow.includes('prosody') || ftLow.includes('prosodic') ? 'prosody' :
+              ftLow.includes('burst') ? 'burst' :
+              ftLow.includes('face') || ftLow.includes('facial') ? 'face' :
+              ftLow.includes('language') || ftLow.includes('text') || ftLow.includes('nlp') ? 'language' :
+              undefined
+            
             if (!mod || !selectedModalities.has(mod)) {
               modalityFilteredCount++
               continue
@@ -694,18 +702,39 @@ export default function TimelineVisualization({
             
             const idx = emotionIndex[normalizedKey]
             if (idx !== undefined) {
-              wordEmotionSum[dpt.word][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+              // スコアが0より大きい場合は全て含める（閾値フィルタリングはインポート時に行われている）
+              const score = Number.isFinite(e.score) ? (e.score as number) : 0
+              if (score > 0) {
+                wordEmotionSum[dpt.word][idx] += score
+              }
             }
           }
         }
       }
       
+      // デバッグ情報: 各単語の感情データ数をカウント
+      const wordEmotionCounts: Record<string, number> = {}
+      for (const dpt of sessionData) {
+        if (Array.isArray(dpt.emotions) && dpt.emotions.length > 0) {
+          wordEmotionCounts[dpt.word] = (wordEmotionCounts[dpt.word] || 0) + dpt.emotions.length
+        }
+      }
+      const wordsWithEmotionData = Object.keys(wordEmotionCounts).length
+      const wordsWithoutEmotionData = jungWords.length - wordsWithEmotionData
+      
       pipelineSteps.push({
         id: 'step-3',
         name: '感情ベクトル集約',
         status: emotionDataCount > 0 ? 'success' : 'warning',
-        message: `${emotionDataCount}件の感情データを処理（${modalityFilteredCount}件がモダリティフィルタで除外）`,
-        data: { emotionDataCount, modalityFilteredCount, selectedModalities: Array.from(selectedModalities) }
+        message: `${emotionDataCount}件の感情データを処理（${modalityFilteredCount}件がモダリティフィルタで除外、${wordsWithEmotionData}語に感情データあり、${wordsWithoutEmotionData}語に感情データなし）`,
+        data: { 
+          emotionDataCount, 
+          modalityFilteredCount, 
+          selectedModalities: Array.from(selectedModalities),
+          wordsWithEmotionData,
+          wordsWithoutEmotionData,
+          wordEmotionCounts
+        }
       })
       
       // 正規化
@@ -991,17 +1020,31 @@ export default function TimelineVisualization({
                       if (!wordEmotionSum[w]) continue
                       if (Array.isArray(dpt.emotions)) {
                         for (const e of dpt.emotions) {
+                          // fileTypeの認識を改善（複数の形式に対応）
+                          const ft = String((e as any).fileType || (e as any).file_type || '')
+                          const ftLow = ft.toLowerCase()
+                          // モダリティの判定を改善（より柔軟なマッチング）
+                          const mod: typeof MOD_KEYS[number] | undefined = 
+                            ftLow.includes('prosody') || ftLow.includes('prosodic') ? 'prosody' :
+                            ftLow.includes('burst') ? 'burst' :
+                            ftLow.includes('face') || ftLow.includes('facial') ? 'face' :
+                            ftLow.includes('language') || ftLow.includes('text') || ftLow.includes('nlp') ? 'language' :
+                            undefined
+                          
+                          // モダリティフィルタを適用
+                          if (!mod || !selectedModalities.has(mod)) continue
+                          
                           // 感情タイプ名を正規化
                           const normalizedKey = normalizeEmotionName(e.name || 'unknown')
                           if (normalizedKey === null) continue // メタデータはスキップ
                           
                           const idx = emotionIndex[normalizedKey]
-                          // モダリティフィルタ
-                          const ft = String((e as any).fileType || '')
-                          const ftLow = ft.toLowerCase()
-                          const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
-                          if (idx !== undefined && (!mod || selectedModalities.has(mod))) {
-                            wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+                          if (idx !== undefined) {
+                            // スコアが0より大きい場合は全て含める（閾値フィルタリングはインポート時に行われている）
+                            const score = Number.isFinite(e.score) ? (e.score as number) : 0
+                            if (score > 0) {
+                              wordEmotionSum[w][idx] += score
+                            }
                           }
                         }
                       }
@@ -1142,9 +1185,16 @@ export default function TimelineVisualization({
                       if (!modalityWordEmotionSum[w]) continue
                       if (Array.isArray(dpt.emotions)) {
                         for (const e of dpt.emotions) {
-                          const ft = String((e as any).fileType || '')
+                          // fileTypeの認識を改善（複数の形式に対応）
+                          const ft = String((e as any).fileType || (e as any).file_type || '')
                           const ftLow = ft.toLowerCase()
-                          const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+                          // モダリティの判定を改善（より柔軟なマッチング）
+                          const mod: typeof MOD_KEYS[number] | undefined = 
+                            ftLow.includes('prosody') || ftLow.includes('prosodic') ? 'prosody' :
+                            ftLow.includes('burst') ? 'burst' :
+                            ftLow.includes('face') || ftLow.includes('facial') ? 'face' :
+                            ftLow.includes('language') || ftLow.includes('text') || ftLow.includes('nlp') ? 'language' :
+                            undefined
                           
                           if (mod) {
                             // 感情タイプ名を正規化
@@ -1153,7 +1203,11 @@ export default function TimelineVisualization({
                             
                             const idx = emotionIndex[normalizedKey]
                             if (idx !== undefined) {
-                              modalityWordEmotionSum[w][mod][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+                              // スコアが0より大きい場合は全て含める（閾値フィルタリングはインポート時に行われている）
+                              const score = Number.isFinite(e.score) ? (e.score as number) : 0
+                              if (score > 0) {
+                                modalityWordEmotionSum[w][mod][idx] += score
+                              }
                             }
                           }
                         }
@@ -2537,13 +2591,31 @@ export default function TimelineVisualization({
                           if (!wordEmotionSum[w]) continue
                           if (Array.isArray(dpt.emotions)) {
                             for (const e of dpt.emotions) {
+                              // fileTypeの認識を改善（複数の形式に対応）
+                              const ft = String((e as any).fileType || (e as any).file_type || '')
+                              const ftLow = ft.toLowerCase()
+                              // モダリティの判定を改善（より柔軟なマッチング）
+                              const mod: typeof MOD_KEYS[number] | undefined = 
+                                ftLow.includes('prosody') || ftLow.includes('prosodic') ? 'prosody' :
+                                ftLow.includes('burst') ? 'burst' :
+                                ftLow.includes('face') || ftLow.includes('facial') ? 'face' :
+                                ftLow.includes('language') || ftLow.includes('text') || ftLow.includes('nlp') ? 'language' :
+                                undefined
+                              
+                              // モダリティフィルタを適用
+                              if (!mod || !selectedModalities.has(mod)) continue
+                              
                               // 感情タイプ名を正規化
                               const normalizedKey = normalizeEmotionName(e.name || 'unknown')
                               if (normalizedKey === null) continue // メタデータはスキップ
                               
                               const idx = emotionIndex[normalizedKey]
                               if (idx !== undefined) {
-                                wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+                                // スコアが0より大きい場合は全て含める（閾値フィルタリングはインポート時に行われている）
+                                const score = Number.isFinite(e.score) ? (e.score as number) : 0
+                                if (score > 0) {
+                                  wordEmotionSum[w][idx] += score
+                                }
                               }
                             }
                           }

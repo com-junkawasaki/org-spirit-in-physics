@@ -153,33 +153,51 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
         # Calculate reaction time
         reaction_time = calculate_reaction_time(events, timestamp, idx)
         
-        # Find related emotions (within ±2 seconds for precise matching)
+        # Find related emotions (within ±5 seconds for better coverage)
+        # Expanded from ±2 seconds to capture more emotion data
         relative_timestamp_sec = (timestamp - start_ts) / 1000.0
-        related_emotions = find_related_emotions(emotion_data, relative_timestamp_sec)
+        related_emotions = find_related_emotions(emotion_data, relative_timestamp_sec, time_window_sec=5.0)
         if idx < 5:  # Log first 5 events for debugging
-            logger.debug(f"[process_session_timeline] Event {idx}: word={word}, relative_ts={relative_timestamp_sec:.2f}s, found {len(related_emotions)} related emotions")
+            logger.debug(f"[process_session_timeline] Event {idx}: word={word}, relative_ts={relative_timestamp_sec:.2f}s, found {len(related_emotions)} related emotions (time_window=±5.0s)")
         
         # Find related physiological data (within ±5 seconds)
         related_physiological = find_related_physiological(physiological_data, timestamp)
         
         # Build emotions array with optimizations:
-        # 1. Score threshold: only keep emotions with score >= 0.1
+        # 1. Score threshold: lowered to 0.01 to include more emotion data (was 0.1)
         # 2. Deduplicate by name and fileType (keep max score)
-        # 3. Limit to top 5 emotions per file_type
+        # 3. Limit to top 10 emotions per file_type (increased from 5)
+        EMOTION_SCORE_THRESHOLD = 0.01  # Lowered from 0.1 to capture more data
         emotions_dict = {}  # Key: (name, fileType), Value: max score
+        total_scores_processed = 0
+        scores_below_threshold = 0
+        invalid_emotion_names = 0
+        
         for emotion in related_emotions:
             emotion_scores = emotion.get('emotion_scores', {})
             file_type = emotion.get('file_type', 'unknown')
             
             for name, score in emotion_scores.items():
-                # Apply score threshold: only keep emotions with score >= 0.1
+                total_scores_processed += 1
+                # Apply score threshold: lowered to 0.01 to include more emotion data
                 score_float = float(score)
-                if score_float >= 0.1:
+                if score_float >= EMOTION_SCORE_THRESHOLD:
                     normalized_name = normalize_emotion_name(name)
-                    key = (normalized_name, file_type)
-                    # Keep the maximum score for each emotion name + fileType combination
-                    if key not in emotions_dict or emotions_dict[key] < score_float:
-                        emotions_dict[key] = score_float
+                    if normalized_name:  # Only process valid emotion names
+                        key = (normalized_name, file_type)
+                        # Keep the maximum score for each emotion name + fileType combination
+                        if key not in emotions_dict or emotions_dict[key] < score_float:
+                            emotions_dict[key] = score_float
+                    else:
+                        invalid_emotion_names += 1
+                else:
+                    scores_below_threshold += 1
+        
+        # Log debug info for first few events
+        if idx < 5:
+            logger.debug(f"[process_session_timeline] Event {idx}: word={word}, processed {total_scores_processed} scores, "
+                       f"below_threshold={scores_below_threshold}, invalid_names={invalid_emotion_names}, "
+                       f"final_emotions={len(emotions_dict)}")
         
         # Group by file_type and keep top 5 per file_type
         emotions_by_file_type = {}
@@ -192,11 +210,11 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                 'fileType': file_type
             })
         
-        # Sort by score descending and keep top 5 per file_type
+        # Sort by score descending and keep top 10 per file_type (increased from 5)
         emotions_array = []
         for file_type, emotion_list in emotions_by_file_type.items():
             sorted_emotions = sorted(emotion_list, key=lambda x: x['score'], reverse=True)
-            emotions_array.extend(sorted_emotions[:5])
+            emotions_array.extend(sorted_emotions[:10])  # Increased from 5 to 10
         
         # Build physiological object
         physiological_obj = {
@@ -535,10 +553,16 @@ def calculate_reaction_time(events, timestamp: int, event_index: int):
     return None
 
 
-def find_related_emotions(emotion_data, relative_timestamp_sec: float):
-    """Find emotions related to a timestamp (within ±2 seconds for precise matching)"""
-    search_start_sec = max(0, relative_timestamp_sec - 2)
-    search_end_sec = relative_timestamp_sec + 2
+def find_related_emotions(emotion_data, relative_timestamp_sec: float, time_window_sec: float = 5.0):
+    """Find emotions related to a timestamp (within ±time_window_sec seconds)
+    
+    Args:
+        emotion_data: List of emotion entries
+        relative_timestamp_sec: Timestamp relative to session start (in seconds)
+        time_window_sec: Time window in seconds (default: 5.0, expanded from 2.0)
+    """
+    search_start_sec = max(0, relative_timestamp_sec - time_window_sec)
+    search_end_sec = relative_timestamp_sec + time_window_sec
     
     related = []
     zero_time_emotions_by_type = {}  # Group zero-time emotions by file_type
