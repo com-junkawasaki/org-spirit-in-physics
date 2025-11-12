@@ -1,0 +1,80 @@
+---
+// Merkle DAG: pages.spirit_in_physics
+// Main research paper page
+
+import ResearchLayout from '../layouts/ResearchLayout.astro';
+import ResearchPaper from '../components/ResearchPaper.astro';
+import AuthorInfo from '../components/AuthorInfo.astro';
+import ReferenceList from '../components/ReferenceList.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import { getEntry } from 'astro:content';
+
+const paper = await getEntry('papers', 'spirit-in-physics');
+
+if (!paper) {
+  throw new Error('Paper not found');
+}
+
+const { Content } = await paper.render();
+
+const sections = [
+  { id: 'introduction', title: 'Introduction', level: 1 },
+  { id: 'hypothesis-1', title: 'Hypothesis 1', level: 2 },
+  { id: 'hypothesis-2', title: 'Hypothesis 2', level: 2 },
+  { id: 'kawasaki-model', title: 'Spirit Physical Space (Kawasaki Model)', level: 1 },
+  { id: 'vectorization', title: 'Vectorization Spirit Using the Word Association Experiment', level: 1 },
+  { id: 'measurement-emotion', title: 'Measurement via Emotion Analytics', level: 1 },
+  { id: 'measurement-skin-potential', title: 'Measurement via Skin Potential', level: 1 },
+  { id: 'conclusion', title: 'Conclusion', level: 1 },
+  { id: 'results', title: 'Results', level: 1 },
+  { id: 'references', title: 'References', level: 1 },
+];
+
+const references = [
+  {
+    id: 'landauer-1991',
+    citation: 'Landauer, R. (1991). Information is physical. Physics Today, 44(5), 23–29.',
+    doi: '10.1063/1.881299',
+  },
+  {
+    id: 'berut-2012',
+    citation: 'Bérut, A., Arakelyan, A., Petrosyan, A., Ciliberto, S., Dillenschneider, R., & Lutz, E. (2012). Experimental verification of Landauer\'s principle linking information and thermodynamics. Nature, 483(7388), 187–189.',
+    doi: '10.1038/nature10872',
+  },
+  {
+    id: 'botvinick-1998',
+    citation: 'Botvinick, M., & Cohen, J. (1998). Rubber-hand illusion. Nature, 391, 756.',
+    doi: '10.1038/35784',
+  },
+  {
+    id: 'toyabe-2010',
+    citation: 'Toyabe, S., Sagawa, T., Ueda, M., Muneyuki, E., & Sano, M. (2010). Experimental demonstration of information-to-energy conversion and validation of the generalized Jarzynski equality. Nature Physics, 6, 988–992.',
+    doi: '10.1038/nphys1821',
+  },
+];
+---
+
+<ResearchLayout
+  title={paper.data.title}
+  description={paper.data.description}
+  authors={paper.data.authors}
+  date={paper.data.date}
+>
+  <div class="flex flex-col lg:flex-row">
+    <div class="flex-1">
+      <ResearchPaper
+        title={paper.data.title}
+        description={paper.data.description}
+        authors={paper.data.authors}
+        date={paper.data.date}
+        affiliations={paper.data.affiliations}
+        schemaId={paper.data.schemaId}
+      >
+        <Content />
+        <ReferenceList references={references} />
+      </ResearchPaper>
+    </div>
+    <TableOfContents sections={sections} />
+  </div>
+</ResearchLayout>
+

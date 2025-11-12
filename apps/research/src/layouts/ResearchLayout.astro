@@ -1,0 +1,79 @@
+---
+// Merkle DAG: layouts.research_layout
+// Base layout for research papers
+
+import { getCombinedContext } from '../lib/semantic/load-schemas';
+
+interface Props {
+  title: string;
+  description: string;
+  authors: Array<{ name: string; email?: string; affiliation: string }>;
+  date: string;
+}
+
+const { title, description, authors, date } = Astro.props;
+const schemas = getCombinedContext();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-Xm7+6X6mEo87B/13Q9U8G1nn5PA4kVgQOWMG5OE8FRO/r3lX8d4c0X7gRHgqJhTx" crossorigin="anonymous" />
+    
+    <title>{title}</title>
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify(schemas, null, 2)} />
+  </head>
+  <body class="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main class="container mx-auto px-4 py-8">
+      <slot />
+    </main>
+    
+    <footer class="mt-16 py-8 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-gray-500">
+      <p>All rights reserved by Jun Kawasaki. @CC BY-NC-SA</p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+  
+  /* KaTeX display styles */
+  .katex-display {
+    display: block;
+    margin: 1em 0;
+    text-align: center;
+  }
+  
+  .katex-inline {
+    display: inline-block;
+  }
+  
+  /* Print styles */
+  @media print {
+    nav {
+      display: none;
+    }
+  }
+</style>
+

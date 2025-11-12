@@ -1,0 +1,68 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/research#",
+    "id": "@id",
+    "type": "@type",
+    
+    "schema": "https://schema.org/",
+    "dct": "http://purl.org/dc/terms/",
+    
+    "name": "schema:name",
+    "description": "dct:description",
+    "mathExpression": "schema:mathExpression",
+    "isPartOf": {"@id": "schema:isPartOf", "@type": "@id"}
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/spirit-space",
+      "@type": "schema:MathExpression",
+      "name": "Spirit Physical Space",
+      "description": "Mathematical model: S = V, E, T",
+      "mathExpression": "S = \\{V, E, T\\}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/kawasaki-model"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/spirit-space-energy",
+      "@type": "schema:MathExpression",
+      "name": "Energy Definition",
+      "description": "E = -ln P(w_O | w_I), V = {w_I, w_O, ...}, T = time axis",
+      "mathExpression": "E = -\\ln P(w_O | w_I),\\; V = \\{\\vec{w_I}, \\vec{w_O}, ...\\},\\; T = \\text{time axis}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/kawasaki-model"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/spirit-definition",
+      "@type": "schema:MathExpression",
+      "name": "Physical Definition of Spirit",
+      "description": "Spirit as the derivative of energy with respect to spirit space",
+      "mathExpression": "\\psi(S) = \\frac{\\delta E(S)}{\\delta S}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/kawasaki-model"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/word-association-probability",
+      "@type": "schema:MathExpression",
+      "name": "Word Association Probability",
+      "description": "Complete probability model integrating Word2Vec, reaction time, skin potential, and emotion",
+      "mathExpression": "P(w_O | w_I) = \\frac{\\exp(\\vec{w_I} \\cdot \\vec{w_O}) \\cdot [r(w_I, w_O)]^{\\alpha} \\cdot \\exp(\\gamma \\frac{\\Delta SP(w_I,w_O)}{\\lambda}) \\cdot \\exp(\\eta F(w_I, w_O))}{\\sum_{j} \\exp(\\vec{w_I} \\cdot \\vec{w_j}) \\cdot [r(w_I, w_j)]^{\\alpha} \\cdot \\exp(\\gamma \\frac{\\Delta SP(w_I,w_j)}{\\lambda}) \\cdot \\exp(\\eta F(w_I, w_j))}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/vectorization"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/reaction-time",
+      "@type": "schema:MathExpression",
+      "name": "Reaction Time Factor",
+      "description": "Reaction time as inverse of association strength",
+      "mathExpression": "r(w_I, w_O) = \\frac{1}{T(w_I, w_O) + \\epsilon}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/measurement-emotion"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/skin-potential",
+      "@type": "schema:MathExpression",
+      "name": "Skin Potential Factor",
+      "description": "Skin potential change using rubber hand illusion",
+      "mathExpression": "s(w_I, w_O) = \\exp\\left(\\frac{\\Delta SP(w_I, w_O)}{\\lambda}\\right)",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/measurement-skin-potential"
+    }
+  ]
+}
+

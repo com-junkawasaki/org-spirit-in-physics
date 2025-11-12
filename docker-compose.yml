@@ -161,6 +161,28 @@ services:
       retries: 5
       start_period: 10s
 
+  # Research app (Astro)
+  research:
+    build:
+      context: ./apps/research
+      dockerfile: Dockerfile
+    container_name: spirit-research
+    ports:
+      - "25270:4321"
+    volumes:
+      - ./apps/research:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:4321 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   # One-shot importer to push dataset into PostgreSQL via Rust import service
   import-service-runner:
     image: curlimages/curl:8.9.1
