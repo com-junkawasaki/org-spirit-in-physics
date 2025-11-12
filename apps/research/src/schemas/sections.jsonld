@@ -25,7 +25,7 @@
     {
       "@id": "https://spirit-in-physics.gftd.ai/research/sections/hypothesis-1",
       "@type": "schema:Article",
-      "title": "Hypothesis 1: Information is Physics",
+      "title": "Hypothesis 1: Information is Physical",
       "description": "Information is inherently physical and obeys the laws of thermodynamics",
       "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
     },
