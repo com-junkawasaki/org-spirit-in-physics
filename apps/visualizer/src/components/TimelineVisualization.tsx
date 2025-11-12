@@ -33,6 +33,8 @@ const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false 
 // 依存関係: React, timeline modules
 // BPMN: TimelineVisualizationComponent
 
+import DebugPanel, { type PipelineStep, type DataSourceStatus } from './timeline/DebugPanel'
+
 export default function TimelineVisualization({ 
   participantId,
   sessionId,
@@ -64,6 +66,8 @@ export default function TimelineVisualization({
 
   // 構造分析の表示制御
   const [showAnalysis, setShowAnalysis] = useState(false)
+  // デバッグパネルの表示制御
+  const [showDebugPanel, setShowDebugPanel] = useState(false)
 
   // データ管理フックを使用
   const {
@@ -128,6 +132,11 @@ export default function TimelineVisualization({
   const [wordsSortDir, setWordsSortDir] = useState<'asc' | 'desc'>('desc')
   // 距離タブの並び順
   const [distanceSortDir, setDistanceSortDir] = useState<'asc' | 'desc'>('desc')
+  // 距離3D可視化の表示制御
+  const [showDistance3D, setShowDistance3D] = useState<boolean>(false)
+  // 距離3Dグラフのk-NNパラメータ
+  const [distanceK, setDistanceK] = useState<number>(6)
+  const [distanceMaxLinks, setDistanceMaxLinks] = useState<number>(500)
 
   // TimescaleDBマテリアライズドビューから集約データを取得
   const {
@@ -436,6 +445,340 @@ export default function TimelineVisualization({
     return pairs
   }, [distanceData, EMOTION_KEYS])
 
+  // 距離データから3Dグラフを生成
+  const distance3DGraphData = useMemo(() => {
+    if (!showDistance3D || !distanceData || wordDistances.length === 0) {
+      return { nodes: [] as WordNode[], links: [] as WordLink[] }
+    }
+
+    try {
+      const jungWords = JUNG_STIMULUS_WORDS
+      const wordIndexMap = new Map<string, number>()
+      jungWords.forEach(({ japanese }, idx) => {
+        wordIndexMap.set(japanese, idx)
+      })
+
+      // ノード生成（全単語）
+      const avgReactionValue = distanceData.avgReactionValue || {}
+      const nodeEntries = jungWords.map(({ japanese }) => {
+        const avgRV = avgReactionValue[japanese] || 0
+        // 出現回数を取得（wordDistancesから推測）
+        const count = wordDistances.filter(p => p.word1 === japanese || p.word2 === japanese).length > 0 ? 1 : 0
+        const raw = avgRV * Math.log1p(Math.max(1, count))
+        return { japanese, avgRV, raw }
+      })
+      const rawMin = Math.min(...nodeEntries.map(n => n.raw))
+      const rawMax = Math.max(...nodeEntries.map(n => n.raw))
+      const denom = rawMax - rawMin || 1
+      
+      const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
+        id: String(idx),
+        label: n.japanese,
+        scale: Math.max(0.5, Math.min(6, 0.5 + 5.5 * ((n.raw - rawMin) / denom))),
+        nodeType: 'word'
+      }))
+
+      // 距離に基づくk-NNグラフ生成
+      const links: WordLink[] = []
+      const wordToNeighbors = new Map<string, Array<{ word: string; distance: number }>>()
+
+      // 各単語について、距離が近いk個の単語を選択
+      for (const { japanese } of jungWords) {
+        const neighbors = wordDistances
+          .filter(p => p.word1 === japanese || p.word2 === japanese)
+          .map(p => ({
+            word: p.word1 === japanese ? p.word2 : p.word1,
+            distance: p.totalDistance
+          }))
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, distanceK)
+        
+        wordToNeighbors.set(japanese, neighbors)
+      }
+
+      // リンク生成（重複回避、最大リンク数制限）
+      const linkSet = new Set<string>()
+      const allLinks: Array<{ source: number; target: number; distance: number; weight: number }> = []
+
+      for (const [word, neighbors] of wordToNeighbors.entries()) {
+        const sourceIdx = wordIndexMap.get(word)
+        if (sourceIdx === undefined) continue
+
+        for (const neighbor of neighbors) {
+          const targetIdx = wordIndexMap.get(neighbor.word)
+          if (targetIdx === undefined) continue
+
+          const linkKey = sourceIdx < targetIdx 
+            ? `${sourceIdx}-${targetIdx}` 
+            : `${targetIdx}-${sourceIdx}`
+          
+          if (!linkSet.has(linkKey)) {
+            linkSet.add(linkKey)
+            // 距離から重みを計算（距離が小さいほど重みが大きい）
+            const weight = Math.max(0.1, 1 - neighbor.distance)
+            allLinks.push({
+              source: sourceIdx,
+              target: targetIdx,
+              distance: neighbor.distance,
+              weight
+            })
+          }
+        }
+      }
+
+      // 距離でソートして最大リンク数まで選択
+      allLinks.sort((a, b) => a.distance - b.distance)
+      const selectedLinks = allLinks.slice(0, distanceMaxLinks)
+
+      // WordLink形式に変換
+      const maxDist = Math.max(...wordDistances.map(d => d.totalDistance), 1)
+      for (const link of selectedLinks) {
+        const alpha = Math.max(0.1, Math.min(0.8, 0.8 * (1 - link.distance / maxDist)))
+        const color = `rgba(59, 130, 246, ${alpha.toFixed(3)})`
+        links.push({
+          source: link.source,
+          target: link.target,
+          weight: link.weight,
+          mode: 'tension',
+          L0: Math.max(20, restLength * (0.5 + 0.5 * link.distance / maxDist)),
+          k: springK * (0.3 + 0.7 * link.weight),
+          color
+        })
+      }
+
+      return { nodes, links }
+    } catch (error) {
+      console.error('距離3Dグラフ生成エラー:', error)
+      return { nodes: [] as WordNode[], links: [] as WordLink[] }
+    }
+  }, [showDistance3D, distanceData, wordDistances, distanceK, distanceMaxLinks, restLength, springK])
+
+  // デバッグ情報を収集
+  const debugInfo = useMemo(() => {
+    const startTime = performance.now()
+    const pipelineSteps: PipelineStep[] = []
+    const dataSources: DataSourceStatus[] = []
+    
+    // データソース状態
+    dataSources.push({
+      name: 'Timeline Data',
+      status: loading ? 'loading' : error ? 'error' : data.length === 0 ? 'empty' : 'success',
+      count: data.length,
+      error: error || undefined,
+      sample: data.length > 0 ? data[0] : undefined
+    })
+    
+    dataSources.push({
+      name: 'Word Aggregates',
+      status: aggregatesLoading ? 'loading' : aggregatesError ? 'error' : wordAggregates.length === 0 ? 'empty' : 'success',
+      count: wordAggregates.length,
+      error: aggregatesError || undefined
+    })
+    
+    dataSources.push({
+      name: 'Emotion Vectors',
+      status: aggregatesLoading ? 'loading' : aggregatesError ? 'error' : emotionVectors.length === 0 ? 'empty' : 'success',
+      count: emotionVectors.length,
+      error: aggregatesError || undefined
+    })
+    
+    // パイプラインステップ
+    if (mounted && data.length > 0) {
+      pipelineSteps.push({
+        id: 'step-1',
+        name: 'データ取得',
+        status: 'success',
+        message: `${data.length}件のデータポイントを取得`,
+        duration: 0
+      })
+      
+      const sessionData = (() => {
+        if (segment === 'first100') return data.slice(0, 100)
+        if (segment === 'next100') return data.slice(100, 200)
+        return data
+      })()
+      
+      pipelineSteps.push({
+        id: 'step-2',
+        name: 'セグメント抽出',
+        status: 'success',
+        message: `${sessionData.length}件のデータポイントを抽出`,
+        data: { segment, count: sessionData.length }
+      })
+      
+      // 感情ベクトル集約の状態を確認
+      const jungWords = JUNG_STIMULUS_WORDS
+      const emotionIndex: Record<string, number> = Object.fromEntries(EMOTION_KEYS.map((k, i) => [k, i]))
+      const wordEmotionSum: Record<string, number[]> = {}
+      jungWords.forEach(({ japanese }) => {
+        wordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
+      })
+      
+      let emotionDataCount = 0
+      let modalityFilteredCount = 0
+      for (const dpt of sessionData) {
+        if (Array.isArray(dpt.emotions)) {
+          for (const e of dpt.emotions) {
+            emotionDataCount++
+            const ft = String((e as any).fileType || '')
+            const ftLow = ft.toLowerCase()
+            const mod: typeof MOD_KEYS[number] | undefined = ftLow.includes('prosody') ? 'prosody' : ftLow.includes('burst') ? 'burst' : ftLow.includes('face') ? 'face' : ftLow.includes('language') ? 'language' : undefined
+            if (!mod || !selectedModalities.has(mod)) {
+              modalityFilteredCount++
+              continue
+            }
+            const key = (e.name || 'unknown').toLowerCase()
+            const idx = emotionIndex[key]
+            if (idx !== undefined) {
+              wordEmotionSum[dpt.word][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+            }
+          }
+        }
+      }
+      
+      pipelineSteps.push({
+        id: 'step-3',
+        name: '感情ベクトル集約',
+        status: emotionDataCount > 0 ? 'success' : 'warning',
+        message: `${emotionDataCount}件の感情データを処理（${modalityFilteredCount}件がモダリティフィルタで除外）`,
+        data: { emotionDataCount, modalityFilteredCount, selectedModalities: Array.from(selectedModalities) }
+      })
+      
+      // 正規化
+      const normalize = (vec: number[]): number[] => {
+        const norm = Math.hypot(...vec)
+        if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+        return vec.map((x) => x / norm)
+      }
+      
+      const normalizedEmotionVec: Record<string, number[]> = {}
+      let zeroEmotionCount = 0
+      const zeroEmotionWords: string[] = []
+      let totalMagnitude = 0
+      const emotionDistribution: Record<string, number> = {}
+      jungWords.forEach(({ japanese }) => {
+        const vec = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
+        normalizedEmotionVec[japanese] = vec
+        const magnitude = Math.hypot(...vec)
+        totalMagnitude += magnitude
+        emotionDistribution[japanese] = magnitude
+        if (magnitude === 0) {
+          zeroEmotionCount++
+          zeroEmotionWords.push(japanese)
+        }
+      })
+      
+      pipelineSteps.push({
+        id: 'step-4',
+        name: '感情ベクトル正規化',
+        status: zeroEmotionCount > 0 ? 'warning' : 'success',
+        message: `${zeroEmotionCount}件の単語が感情ベクトル0`,
+        data: { zeroEmotionCount, totalWords: jungWords.length, zeroEmotionWords: zeroEmotionWords.slice(0, 20), totalMagnitude, averageMagnitude: totalMagnitude / jungWords.length, emotionDistribution }
+      })
+      
+      // 接続生成の状態を確認
+      const anchorToKey: Record<string, typeof EMOTION_KEYS[number]> = {
+        Joy: 'joy',
+        Sadness: 'sadness',
+        Anger: 'anger',
+        Fear: 'fear',
+        Disgust: 'disgust',
+        Calmness: 'calm',
+        Interest: 'focus',
+        Surprise: 'surprise',
+        Confusion: 'confusion',
+        Determination: 'excitement', // 'focus'から'excitement'に変更（Interestとの重複を解消）
+      }
+      
+      let totalConnections = 0
+      let connectedWords = 0
+      const disconnectedWords: string[] = []
+      
+      for (const { japanese } of jungWords) {
+        const ei = normalizedEmotionVec[japanese] || new Array(10).fill(0)
+        
+        // 各アンカーに対する重みを計算
+        const weights: Array<{ ai: number; w: number }> = Array.from({ length: 10 }, (_, ai) => {
+          const anchorLabels = ['Joy', 'Sadness', 'Anger', 'Fear', 'Disgust', 'Calmness', 'Interest', 'Surprise', 'Confusion', 'Determination']
+          const key = anchorToKey[anchorLabels[ai]] as typeof EMOTION_KEYS[number] | undefined
+          if (key && !selectedEmotions.has(key)) return { ai, w: 0 }
+          const kIdx = key ? (EMOTION_KEYS as readonly string[]).indexOf(key) : -1
+          const sim = kIdx >= 0 ? (ei[kIdx] || 0) : (ei.reduce((s, x) => s + (x || 0), 0) / Math.max(1, ei.length))
+          const w = Math.pow(Math.max(0, Math.min(1, sim)), weightGamma)
+          return { ai, w }
+        })
+        
+        weights.sort((a, b) => b.w - a.w)
+        let chosen = weights.filter(x => x.w >= minW).slice(0, topK)
+        if (chosen.length === 0 && weights.length > 0) {
+          chosen = weights.filter(x => x.w > 0).slice(0, topK)
+          if (chosen.length === 0 && weights[0] && weights[0].w > 0) {
+            chosen = [weights[0]]
+          }
+          // 感情ベクトルが全て0の場合でも、均等分布を仮定して接続を生成
+          if (chosen.length === 0 && weights.length > 0) {
+            const selectedAnchors = weights
+              .map((w, idx) => {
+                const anchorLabels = ['Joy', 'Sadness', 'Anger', 'Fear', 'Disgust', 'Calmness', 'Interest', 'Surprise', 'Confusion', 'Determination']
+                const key = anchorToKey[anchorLabels[idx]] as typeof EMOTION_KEYS[number] | undefined
+                if (key && selectedEmotions.has(key)) return idx
+                return null
+              })
+              .filter((idx): idx is number => idx !== null)
+            const equalWeight = selectedAnchors.length > 0 ? 1.0 / Math.min(topK, selectedAnchors.length) : 1.0 / topK
+            chosen = selectedAnchors
+              .slice(0, topK)
+              .map(ai => ({ ai, w: equalWeight }))
+          }
+        }
+        
+        if (chosen.length > 0) {
+          connectedWords++
+          totalConnections += chosen.length
+        } else {
+          disconnectedWords.push(japanese)
+        }
+      }
+      
+      pipelineSteps.push({
+        id: 'step-5',
+        name: '接続生成',
+        status: disconnectedWords.length > 0 ? 'warning' : 'success',
+        message: `${connectedWords}/${jungWords.length}件の単語が接続済み（総接続数: ${totalConnections}）`,
+        data: { connectedWords, totalWords: jungWords.length, totalConnections, disconnectedWords: disconnectedWords.slice(0, 10) }
+      })
+    }
+    
+    const endTime = performance.now()
+    
+    return {
+      dataSources,
+      pipelineSteps,
+      connectionStats: mounted && data.length > 0 ? {
+        totalWords: JUNG_STIMULUS_WORDS.length,
+        connectedWords: pipelineSteps.find(s => s.id === 'step-5')?.data?.connectedWords || 0,
+        totalConnections: pipelineSteps.find(s => s.id === 'step-5')?.data?.totalConnections || 0,
+        averageConnectionsPerWord: pipelineSteps.find(s => s.id === 'step-5')?.data?.totalConnections 
+          ? (pipelineSteps.find(s => s.id === 'step-5')?.data?.totalConnections as number) / JUNG_STIMULUS_WORDS.length 
+          : 0,
+        disconnectedWords: pipelineSteps.find(s => s.id === 'step-5')?.data?.disconnectedWords || [],
+        zeroEmotionWords: pipelineSteps.find(s => s.id === 'step-4')?.data?.zeroEmotionWords || []
+      } : undefined,
+      emotionVectorStats: mounted && data.length > 0 ? {
+        totalWords: JUNG_STIMULUS_WORDS.length,
+        wordsWithEmotion: JUNG_STIMULUS_WORDS.length - (pipelineSteps.find(s => s.id === 'step-4')?.data?.zeroEmotionCount || 0),
+        wordsWithZeroEmotion: pipelineSteps.find(s => s.id === 'step-4')?.data?.zeroEmotionCount || 0,
+        averageEmotionMagnitude: mounted && data.length > 0 && JUNG_STIMULUS_WORDS.length > 0
+          ? (pipelineSteps.find(s => s.id === 'step-4')?.data?.totalMagnitude || 0) / JUNG_STIMULUS_WORDS.length
+          : 0,
+        emotionDistribution: mounted && data.length > 0
+          ? (pipelineSteps.find(s => s.id === 'step-4')?.data?.emotionDistribution || {})
+          : {}
+      } : undefined,
+      processingTime: endTime - startTime
+    }
+  }, [mounted, data, loading, error, aggregatesLoading, aggregatesError, wordAggregates, emotionVectors, segment, selectedModalities, selectedEmotions, topK, minW, weightGamma])
+
   // 3D Force グラフデータをメモ化（パフォーマンス最適化）
   const force3DGraphData = useMemo(() => {
     // activeTabのチェックを外して、常にデータを準備（タブ切り替え時の再計算を防ぐ）
@@ -526,7 +869,11 @@ export default function TimelineVisualization({
 
                     const normalize = (vec: number[]): number[] => {
                       const norm = Math.hypot(...vec)
-                      if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+                      if (!Number.isFinite(norm) || norm === 0) {
+                        // 感情ベクトルが全て0の場合、最小値（0.01）を設定して均等分布を仮定
+                        const minValue = 0.01
+                        return vec.map(() => minValue / Math.sqrt(vec.length))
+                      }
                       return vec.map((x) => x / norm)
                     }
 
@@ -600,7 +947,7 @@ export default function TimelineVisualization({
                       Interest: 'focus',
                       Surprise: 'surprise',
                       Confusion: 'confusion',
-                      Determination: 'focus',
+                      Determination: 'excitement', // 'focus'から'excitement'に変更（Interestとの重複を解消）
                     }
 
                     const emotionColor: Record<typeof EMOTION_KEYS[number], string> = {
@@ -672,9 +1019,25 @@ export default function TimelineVisualization({
                       if (chosen.length === 0 && weights.length > 0) {
                         // 重みが0より大きい接続を全て選択（最大topK個）
                         chosen = weights.filter(x => x.w > 0).slice(0, topK)
-                        // それでも接続がない場合は、最大重みの接続を1つ生成
-                        if (chosen.length === 0 && weights[0] && weights[0].w >= 0) {
+                        // それでも接続がない場合は、最大重みの接続を1つ生成（ただし重みが0より大きい場合のみ）
+                        if (chosen.length === 0 && weights[0] && weights[0].w > 0) {
                           chosen = [weights[0]]
+                        }
+                        // 感情ベクトルが全て0の場合でも、均等分布を仮定して接続を生成
+                        if (chosen.length === 0 && weights.length > 0) {
+                          // 全てのアンカーに均等に接続（感情データがない場合のフォールバック）
+                          const selectedAnchors = weights
+                            .map((w, idx) => {
+                              const anchorLabels = ['Joy', 'Sadness', 'Anger', 'Fear', 'Disgust', 'Calmness', 'Interest', 'Surprise', 'Confusion', 'Determination']
+                              const key = anchorToKey[anchorLabels[idx]] as typeof EMOTION_KEYS[number] | undefined
+                              if (key && selectedEmotions.has(key)) return idx
+                              return null
+                            })
+                            .filter((idx): idx is number => idx !== null)
+                          const equalWeight = selectedAnchors.length > 0 ? 1.0 / Math.min(topK, selectedAnchors.length) : 1.0 / topK
+                          chosen = selectedAnchors
+                            .slice(0, topK)
+                            .map(ai => ({ ai, w: equalWeight }))
                         }
                       }
 
@@ -1004,9 +1367,25 @@ export default function TimelineVisualization({
               <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => {
                 setSelectedEmotions(new Set(EMOTION_KEYS)); setTopK(2); setMinW(0.25); setWeightGamma(1.6); setAnimateTransitions(true)
               }}>Reset</button>
+              <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => setShowDebugPanel(!showDebugPanel)}>
+                {showDebugPanel ? '🔍 デバッグ非表示' : '🔍 デバッグ表示'}
+              </button>
             </div>
           </div>
         </div>
+
+        {/* デバッグパネル */}
+        {showDebugPanel && (
+          <div className="p-4 border-b bg-gray-50">
+            <DebugPanel
+              dataSources={debugInfo.dataSources}
+              pipelineSteps={debugInfo.pipelineSteps}
+              connectionStats={debugInfo.connectionStats}
+              emotionVectorStats={debugInfo.emotionVectorStats}
+              onClose={() => setShowDebugPanel(false)}
+            />
+          </div>
+        )}
 
         {/* タブコンテンツ */}
         <div className="p-4">
@@ -1656,13 +2035,23 @@ export default function TimelineVisualization({
           )}
 
           {activeTab === 'distance' && (
-            <div className="bg-white border rounded-lg p-4">
+              <div className="bg-white border rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="font-medium text-sm">単語距離感</h4>
                   <p className="text-xs text-gray-500 mt-1">
                     値が大きいほど単語同士は「遠い」（異なる）、小さいほど「近い」（類似）を意味します
                   </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-xs text-gray-600">
+                    <input 
+                      type="checkbox" 
+                      checked={showDistance3D} 
+                      onChange={(e) => setShowDistance3D(e.target.checked)} 
+                    />
+                    3D可視化を表示
+                  </label>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span>全単語ペア間の距離</span>
@@ -1765,6 +2154,64 @@ export default function TimelineVisualization({
                   )
                 })()}
               </div>
+              
+              {/* 3D距離可視化 */}
+              {showDistance3D && distance3DGraphData.nodes.length > 0 && (
+                <div className="mt-4 border rounded-lg overflow-hidden">
+                  <div className="p-3 bg-gray-50 border-b flex items-center justify-between">
+                    <h5 className="font-medium text-sm">3D距離可視化</h5>
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">k-NN:</span>
+                        <input 
+                          type="range" 
+                          min="3" 
+                          max="15" 
+                          step="1" 
+                          value={distanceK} 
+                          onChange={(e) => setDistanceK(Number(e.target.value))} 
+                          className="w-20"
+                        />
+                        <span className="w-6 text-right">{distanceK}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">最大リンク数:</span>
+                        <input 
+                          type="range" 
+                          min="100" 
+                          max="2000" 
+                          step="100" 
+                          value={distanceMaxLinks} 
+                          onChange={(e) => setDistanceMaxLinks(Number(e.target.value))} 
+                          className="w-24"
+                        />
+                        <span className="w-12 text-right">{distanceMaxLinks}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ width: '100%', height: '600px' }}>
+                    <Force3D
+                      nodes={distance3DGraphData.nodes}
+                      links={distance3DGraphData.links}
+                      width={800}
+                      height={600}
+                      background="#ffffff"
+                      physics={{
+                        springK,
+                        repulsionK,
+                        damping,
+                        restLength,
+                        maxSpeed: 200,
+                        shellRadius,
+                        shellK,
+                        radialOutK,
+                        minSep,
+                        sepK
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1870,7 +2317,11 @@ export default function TimelineVisualization({
 
                         const normalize = (vec: number[]): number[] => {
                           const norm = Math.hypot(...vec)
-                          if (!Number.isFinite(norm) || norm === 0) return vec.map(() => 0)
+                          if (!Number.isFinite(norm) || norm === 0) {
+                            // 感情ベクトルが全て0の場合、最小値（0.01）を設定して均等分布を仮定
+                            const minValue = 0.01
+                            return vec.map(() => minValue / Math.sqrt(vec.length))
+                          }
                           return vec.map((x) => x / norm)
                         }
 
@@ -1926,7 +2377,7 @@ export default function TimelineVisualization({
                           Interest: 'focus',
                           Surprise: 'surprise',
                           Confusion: 'confusion',
-                          Determination: 'focus',
+                          Determination: 'excitement', // 'focus'から'excitement'に変更（Interestとの重複を解消）
                         }
 
                         const emotionColor: Record<typeof EMOTION_KEYS[number], string> = {
@@ -1995,9 +2446,25 @@ export default function TimelineVisualization({
                           if (chosen.length === 0 && weights.length > 0) {
                             // 重みが0より大きい接続を全て選択（最大topK個）
                             chosen = weights.filter(x => x.w > 0).slice(0, topK)
-                            // それでも接続がない場合は、最大重みの接続を1つ生成
-                            if (chosen.length === 0 && weights[0] && weights[0].w >= 0) {
+                            // それでも接続がない場合は、最大重みの接続を1つ生成（ただし重みが0より大きい場合のみ）
+                            if (chosen.length === 0 && weights[0] && weights[0].w > 0) {
                               chosen = [weights[0]]
+                            }
+                            // 感情ベクトルが全て0の場合でも、均等分布を仮定して接続を生成
+                            if (chosen.length === 0 && weights.length > 0) {
+                              // 全てのアンカーに均等に接続（感情データがない場合のフォールバック）
+                              const selectedAnchors = weights
+                                .map((w, idx) => {
+                                  const anchorLabels = ['Joy', 'Sadness', 'Anger', 'Fear', 'Disgust', 'Calmness', 'Interest', 'Surprise', 'Confusion', 'Determination']
+                                  const key = anchorToKey[anchorLabels[idx]] as typeof EMOTION_KEYS[number] | undefined
+                                  if (key && selectedEmotions.has(key)) return idx
+                                  return null
+                                })
+                                .filter((idx): idx is number => idx !== null)
+                              const equalWeight = selectedAnchors.length > 0 ? 1.0 / Math.min(topK, selectedAnchors.length) : 1.0 / topK
+                              chosen = selectedAnchors
+                                .slice(0, topK)
+                                .map(ai => ({ ai, w: equalWeight }))
                             }
                           }
 
@@ -2084,3 +2551,4 @@ export default function TimelineVisualization({
 
 // Merkle DAG: components.timeline_visualization -> refactored_complete
 // 時系列統合可視化コンポーネントのモジュール化完了
+
