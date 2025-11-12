@@ -21,6 +21,16 @@ export interface DataSourceStatus {
   count?: number
   error?: string
   sample?: any
+  stats?: {
+    totalEmotions?: number
+    pointsWithEmotions?: number
+    pointsWithoutEmotions?: number
+    emotionTypes?: string[]
+    fileTypes?: string[]
+    wordsWithEmotions?: number
+    wordsWithoutEmotions?: number
+    sampleWordsWithoutEmotions?: string[]
+  }
 }
 
 export interface DebugPanelProps {
@@ -106,6 +116,55 @@ export default function DebugPanel({
                 </div>
                 {source.error && (
                   <div className="mt-1 text-xs text-red-600">{source.error}</div>
+                )}
+                {source.stats && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                    <div className="text-xs space-y-1">
+                      {source.stats.totalEmotions !== undefined && (
+                        <div>
+                          <span className="font-medium">感情データ総数:</span> {source.stats.totalEmotions}
+                        </div>
+                      )}
+                      {source.stats.pointsWithEmotions !== undefined && (
+                        <div>
+                          <span className="font-medium">感情データありのポイント:</span> {source.stats.pointsWithEmotions} / {source.count}
+                        </div>
+                      )}
+                      {source.stats.pointsWithoutEmotions !== undefined && (
+                        <div>
+                          <span className="font-medium">感情データなしのポイント:</span> {source.stats.pointsWithoutEmotions} / {source.count}
+                        </div>
+                      )}
+                      {source.stats.wordsWithEmotions !== undefined && (
+                        <div>
+                          <span className="font-medium">感情データありの単語:</span> {source.stats.wordsWithEmotions}
+                        </div>
+                      )}
+                      {source.stats.wordsWithoutEmotions !== undefined && (
+                        <div>
+                          <span className="font-medium">感情データなしの単語:</span> {source.stats.wordsWithoutEmotions}
+                        </div>
+                      )}
+                      {source.stats.emotionTypes && source.stats.emotionTypes.length > 0 && (
+                        <div>
+                          <span className="font-medium">検出された感情タイプ:</span> {source.stats.emotionTypes.join(', ')}
+                        </div>
+                      )}
+                      {source.stats.fileTypes && source.stats.fileTypes.length > 0 && (
+                        <div>
+                          <span className="font-medium">検出されたファイルタイプ:</span> {source.stats.fileTypes.join(', ')}
+                        </div>
+                      )}
+                      {source.stats.sampleWordsWithoutEmotions && source.stats.sampleWordsWithoutEmotions.length > 0 && (
+                        <details className="mt-1">
+                          <summary className="cursor-pointer text-xs font-medium">感情データなしの単語サンプル</summary>
+                          <div className="mt-1 text-xs">
+                            {source.stats.sampleWordsWithoutEmotions.join(', ')}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {source.sample && (
                   <details className="mt-1">

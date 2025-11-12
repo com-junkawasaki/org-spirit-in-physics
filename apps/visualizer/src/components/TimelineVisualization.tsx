@@ -560,12 +560,60 @@ export default function TimelineVisualization({
     const dataSources: DataSourceStatus[] = []
     
     // データソース状態
+    // Timeline Dataのサンプルに感情データの詳細を含める
+    const timelineSample = data.length > 0 ? {
+      ...data[0],
+      emotionsCount: Array.isArray(data[0].emotions) ? data[0].emotions.length : 0,
+      emotionsSample: Array.isArray(data[0].emotions) ? data[0].emotions.slice(0, 3) : [],
+      hasEmotions: Array.isArray(data[0].emotions) && data[0].emotions.length > 0,
+      word: data[0].word
+    } : undefined
+    
+    // 感情データの統計を計算
+    const emotionDataStats = data.length > 0 ? (() => {
+      let totalEmotions = 0
+      let pointsWithEmotions = 0
+      const emotionTypes = new Set<string>()
+      const fileTypes = new Set<string>()
+      const wordsWithEmotions = new Set<string>()
+      const wordsWithoutEmotions = new Set<string>()
+      
+      for (const dpt of data) {
+        if (Array.isArray(dpt.emotions) && dpt.emotions.length > 0) {
+          pointsWithEmotions++
+          totalEmotions += dpt.emotions.length
+          if (dpt.word) wordsWithEmotions.add(dpt.word)
+          
+          for (const e of dpt.emotions) {
+            const name = (e.name || '').toLowerCase()
+            const fileType = String((e as any).fileType || '').toLowerCase()
+            if (name) emotionTypes.add(name)
+            if (fileType) fileTypes.add(fileType)
+          }
+        } else {
+          if (dpt.word) wordsWithoutEmotions.add(dpt.word)
+        }
+      }
+      
+      return {
+        totalEmotions,
+        pointsWithEmotions,
+        pointsWithoutEmotions: data.length - pointsWithEmotions,
+        emotionTypes: Array.from(emotionTypes),
+        fileTypes: Array.from(fileTypes),
+        wordsWithEmotions: wordsWithEmotions.size,
+        wordsWithoutEmotions: wordsWithoutEmotions.size,
+        sampleWordsWithoutEmotions: Array.from(wordsWithoutEmotions).slice(0, 10)
+      }
+    })() : null
+    
     dataSources.push({
       name: 'Timeline Data',
       status: loading ? 'loading' : error ? 'error' : data.length === 0 ? 'empty' : 'success',
       count: data.length,
       error: error || undefined,
-      sample: data.length > 0 ? data[0] : undefined
+      sample: timelineSample,
+      stats: emotionDataStats
     })
     
     dataSources.push({
