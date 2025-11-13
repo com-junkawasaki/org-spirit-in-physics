@@ -55,14 +55,15 @@ impl SupabaseStorage {
             .await
             .context("Failed to upload file to Supabase Storage")?;
 
-        if !response.status().is_success() {
+        let status = response.status();
+        if !status.is_success() {
             let error_text = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             anyhow::bail!(
                 "Supabase Storage upload failed: {} - {}",
-                response.status(),
+                status,
                 error_text
             );
         }
@@ -98,14 +99,15 @@ impl SupabaseStorage {
             .await
             .context("Failed to get signed URL from Supabase Storage")?;
 
-        if !response.status().is_success() {
+        let status = response.status();
+        if !status.is_success() {
             let error_text = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             anyhow::bail!(
                 "Supabase Storage signed URL failed: {} - {}",
-                response.status(),
+                status,
                 error_text
             );
         }

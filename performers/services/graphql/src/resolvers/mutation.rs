@@ -36,6 +36,7 @@ pub struct UploadArtifactInput {
     pub artifact_type: String, // "video", "audio", "consent", "session_data"
 }
 
+#[derive(Default)]
 pub struct ParticipantMutation;
 
 #[Object]
