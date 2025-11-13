@@ -62,6 +62,46 @@
       "description": "Skin potential change using rubber hand illusion",
       "mathExpression": "s(w_I, w_O) = \\exp\\left(\\frac{\\Delta SP(w_I, w_O)}{\\lambda}\\right)",
       "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/measurement-skin-potential"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/complex-space-definition",
+      "@type": "schema:MathExpression",
+      "name": "Complex Space Definition",
+      "description": "Complex state vector integrating Gene, Meme, and Field components",
+      "mathExpression": "\\mathbf{x}_{ik} = \\big[g_{ik}, \\mathbf{m}_{ik}^{\\top}, \\mathbf{f}_{ik}^{\\top}\\big]^{\\top} \\in \\mathbb{R}^{D}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/nature-physical-definition"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/information-energy",
+      "@type": "schema:MathExpression",
+      "name": "Information Energy",
+      "description": "Energy representation of word association: how surprising (low-probability) the association is",
+      "mathExpression": "E_{ik} = - \\ln P(w_{O,ik} \\mid w_{I,ik})",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/nature-physical-definition"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/entropy-production-density",
+      "@type": "schema:MathExpression",
+      "name": "Entropy Production Density",
+      "description": "Entropy-production-like density representing magnitude of state change in information-bio-field space",
+      "mathExpression": "\\sigma_{ik} = \\mathbf{v}_{ik}^{\\top} G \\, \\mathbf{v}_{ik}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/nature-physical-definition"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/spirit-scalar-quantity",
+      "@type": "schema:MathExpression",
+      "name": "Spirit Scalar Quantity",
+      "description": "Spirit as energy-weighted average of entropy-production over trials",
+      "mathExpression": "S_i^{\\ast} = \\frac{1}{K_i} \\sum_{k=1}^{K_i} E_{ik} \\, \\sigma_{ik}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/nature-physical-definition"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/equations/spirit-vector-field",
+      "@type": "schema:MathExpression",
+      "name": "Spirit Vector Field Representation",
+      "description": "Spirit vector field representing direction of self-expansion in information space",
+      "mathExpression": "\\boldsymbol{\\Psi}_i = \\frac{1}{K_i} \\sum_{k=1}^{K_i} E_{ik} \\, G^{1/2} \\mathbf{v}_{ik}",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/sections/nature-physical-definition"
     }
   ]
 }
