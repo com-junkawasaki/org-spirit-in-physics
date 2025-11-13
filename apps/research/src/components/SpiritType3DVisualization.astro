@@ -1,59 +1,38 @@
 ---
 // Merkle DAG: components.spirit_type_3d_visualization
 // 3D visualization component for Spirit Type and Ghost Pattern classification
+// Note: This component now uses TimelineVisualization's 3D Force Graph generation logic
+// by passing forceMode='force-3d-typegpu' to use the actual timeline data
 
-import { convertToVisualizationData } from '../lib/visualization-data';
-import { projectComplexSpaceTo3D, scale3DCoordinates } from '../lib/dimensionality-reduction';
-import type { SpiritType, GhostPattern } from '../types/experimental';
-import { Force3DWordGraphTypeGPU } from '@spirit-in-physics/visualization-components';
+import type { ExperimentalData } from '../types/experimental';
+import { TimelineVisualization } from '@spirit-in-physics/visualization-components';
 
 interface Props {
-  spiritTypes: SpiritType[];
-  ghostPatterns: GhostPattern[];
+  data: ExperimentalData;
   width?: number;
   height?: number;
-  use3DProjection?: boolean;
-  projectionMethod?: 'pca' | 'umap';
 }
 
 const { 
-  spiritTypes = [],
-  ghostPatterns = [],
+  data,
   width = 1000,
   height = 600,
-  use3DProjection = true,
-  projectionMethod = 'pca'
 } = Astro.props;
 
-// Convert to visualization data
-const { nodes, links } = convertToVisualizationData(spiritTypes, ghostPatterns, use3DProjection);
-
-// If 3D projection is enabled, project 1024d vectors to 3D
-if (use3DProjection && nodes.length > 0) {
-  const vectors = [...spiritTypes, ...ghostPatterns].map(item => item.vector);
-  const projected3D = projectComplexSpaceTo3D(vectors, projectionMethod);
-  const scaled3D = scale3DCoordinates(projected3D, { min: -200, max: 200 });
-  
-  // Update node initial positions
-  nodes.forEach((node, index) => {
-    if (scaled3D[index]) {
-      node.initial = [
-        scaled3D[index][0],
-        scaled3D[index][1],
-        scaled3D[index][2],
-      ] as [number, number, number];
-    }
-  });
-}
+// Get participantId and sessionId from data
+const participantId = data.participants.length > 0 ? data.participants[0].id : '';
+const sessionId = data.sessions.length > 0 ? data.sessions[0].id : undefined;
 ---
 
 <div class="spirit-type-3d-visualization">
-  <Force3DWordGraphTypeGPU
+  <TimelineVisualization
     client:only="react"
-    nodes={nodes}
-    links={links}
+    participantId={participantId}
+    sessionId={sessionId}
     width={width}
     height={height}
+    forceMode="force-3d-typegpu"
+    hideFilters={true}
   />
 </div>
 

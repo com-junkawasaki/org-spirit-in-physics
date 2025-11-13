@@ -39,12 +39,13 @@ export default function TimelineVisualization({
   width = 800, 
   height = 400,
   hideFilters = false,
+  forceMode,
   wordAggregates: injectedWordAggregates,
   emotionVectors: injectedEmotionVectors,
   wordStatistics: injectedWordStatistics,
   aggregatesLoading: injectedAggregatesLoading,
   aggregatesError: injectedAggregatesError,
-}: Omit<TimelineVisualizationProps, 'forceMode'>) {
+}: TimelineVisualizationProps) {
   // 3D Force パラメータ
   const [springK, setSpringK] = useState(2.0)
   const [repulsionK, setRepulsionK] = useState(2000.0)
@@ -111,8 +112,10 @@ export default function TimelineVisualization({
   const tooltipRef = useRef<HTMLDivElement>(null)
   const lastInitialsRef = useRef<Map<string, [number, number, number]>>(new Map())
 
-  // 表示モードの状態
-  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words' | 'distance'>('timeline')
+  // 表示モードの状態（forceModeが指定されている場合はそれに従う）
+  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words' | 'distance'>(
+    forceMode === 'force-3d-typegpu' ? 'force3d' : 'timeline'
+  )
   // 単語選択（上位100をUIに表示）
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   // 感情フィルターと力学モード、データセグメント
