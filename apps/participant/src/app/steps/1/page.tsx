@@ -27,7 +27,8 @@ export default function ConsentPage() {
     if (!participantId) {
       initializeParticipant();
     }
-  }, [initializeParticipant, participantId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participantId]);
 
   const handleConsent = async (participantId: string, signature: string, agreements: Agreements) => {
     try {
