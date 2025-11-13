@@ -6,12 +6,6 @@ import react from '@astrojs/react';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
-import { fileURLToPath } from 'url';
-import { resolve, dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 // https://astro.build/config
 export default defineConfig({
   integrations: [
@@ -21,7 +15,6 @@ export default defineConfig({
     }),
     tailwind({
       applyBaseStyles: false,
-      configFile: resolve(__dirname, 'tailwind.config.mjs'),
     }),
     react(),
   ],
@@ -43,6 +36,20 @@ export default defineConfig({
     resolve: {
       alias: {
         '@spirit-in-physics/visualization-components': '/app/packages/visualization-components/src/index.ts',
+      },
+    },
+    server: {
+      // HMR settings for Docker
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 4321,
+        clientPort: 25270, // External port for HMR
+      },
+      watch: {
+        // Use polling for file watching in Docker
+        usePolling: true,
+        interval: 1000,
       },
     },
   },

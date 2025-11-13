@@ -177,6 +177,13 @@ services:
     environment:
       - NODE_ENV=development
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # Astro HMR settings
+      - ASTRO_TELEMETRY_DISABLED=1
     depends_on:
       graphql-service:
         condition: service_healthy
