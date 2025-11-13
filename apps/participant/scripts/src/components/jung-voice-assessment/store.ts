@@ -221,29 +221,6 @@ export const useKawasakiStore = create<KawasakiStore>()(
                 throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
             }
 
-            // Blob Storageにも保存（後方互換性のため）
-            try {
-                const payload = {
-                    type: 'session-data' as const,
-                    data: {
-                        participantId,
-                        events,
-                        wordResponses: wordResponses.map(r => ({
-                            ...r,
-                            audioBlob: undefined,
-                        })),
-                    }
-                };
-                await fetch('/api/save-data', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
-            } catch (blobError) {
-                console.warn('Failed to save to Blob Storage:', blobError);
-                // GraphQLへの保存は成功しているので続行
-            }
-
             get().logEvent('session_data_saved');
         } catch (error) {
             console.error('Error in saveSessionData:', error);

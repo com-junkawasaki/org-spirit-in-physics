@@ -193,7 +193,13 @@ artifacts/
 
 ### API Endpoints
 
-- `POST /api/save-artifact`: Upload artifacts (videos, audio files) - Legacy, use GraphQL mutations
-- `POST /api/save-data`: Save structured data (consent, session data) - Legacy, use GraphQL mutations
+**GraphQL API (Primary):**
+- All data operations use GraphQL mutations/queries
+- GraphQL endpoint: `http://localhost:8081/graphql`
+- GraphQL Playground: `http://localhost:8081/graphql/playground`
 
-**Note:** All new data operations should use GraphQL mutations. REST API endpoints are maintained for backward compatibility.
+**REST API (Legacy - Deprecated):**
+- `POST /api/save-artifact`: Upload artifacts (videos, audio files) - **Deprecated, use GraphQL mutations**
+- `POST /api/save-data`: Save structured data (consent, session data) - **Deprecated, use GraphQL mutations**
+
+**Note:** All data operations should use GraphQL mutations. REST API endpoints are deprecated and will be removed in future versions.

@@ -40,26 +40,6 @@ export default function ConsentPage() {
         throw new Error(m.data_save_error());
       }
 
-      // Blob Storageにも保存（後方互換性のため）
-      try {
-        await fetch('/api/save-data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'consent',
-            data: {
-              participantId,
-              signature,
-              agreements,
-              agreedAt: new Date().toISOString(),
-            }
-          }),
-        });
-      } catch (blobError) {
-        console.warn('Failed to save to Blob Storage:', blobError);
-        // GraphQLへの保存は成功しているので続行
-      }
-
       startPreflight();
       router.push('/steps/2');
     } catch (error) {
