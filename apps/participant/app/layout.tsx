@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.ts";
+import "./globals.css";
+import { baseLocale, getLocale } from "../src/paraglide/runtime";
+import * as m from "../src/paraglide/messages";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Spirit in Physics",
-  description: "Extended evaluation of human illusion by Jungian psychology and computational models.",
+  title: m.app_title(),
+  description: m.app_description(),
 };
 
 export default function RootLayout({
@@ -14,8 +16,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // サーバーサイドで言語を取得（デフォルトはbaseLocale）
+  const locale = typeof window === "undefined" ? baseLocale : getLocale();
+  
   return (
-    <html lang="ja">
+    <html lang={locale}>
       <body className={inter.className}>{children}</body>
     </html>
   );

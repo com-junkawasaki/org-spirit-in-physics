@@ -30,10 +30,39 @@ This process is for experimental research on spirituality, based on Jung's word 
 ### Installation & Development
 
 ```bash
-cd apps/patient
+cd apps/participant
 pnpm install
+pnpm paraglide  # 翻訳ファイルをコンパイル
 pnpm dev
 ```
+
+### Internationalization (i18n)
+
+This project uses [paraglide-js](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) for internationalization.
+
+**Supported Languages:**
+- Japanese (ja) - Default
+- English (en)
+
+**Translation Files:**
+- `messages/ja.json` - Japanese translations
+- `messages/en.json` - English translations
+
+**Usage:**
+```typescript
+import * as m from '../src/paraglide/messages';
+
+// In your component
+<h1>{m.app_title()}</h1>
+```
+
+**Adding New Translations:**
+1. Add the translation key to both `messages/ja.json` and `messages/en.json`
+2. Run `pnpm paraglide` to compile translations
+3. Use the generated function in your components
+
+**Language Detection:**
+The app automatically detects the user's preferred language from the `Accept-Language` header. Users can also switch languages via URL (e.g., `/en/steps/1` for English).
 
 ## 🏗️ Architecture
 

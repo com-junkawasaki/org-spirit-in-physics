@@ -2,7 +2,33 @@
 const nextConfig = {
   // Configure `pageExtensions` to include MDX files
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-  // Optionally, add any other Next.js config below
+  webpack: (config, { isServer }) => {
+    // Node.js ポリフィルの追加（Inngestで必要）
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        "async_hooks": false,
+        "fs": false,
+        "path": false,
+        "crypto": false,
+        "stream": false,
+        "util": false,
+        "url": false,
+        "http": false,
+        "https": false,
+        "zlib": false,
+        "querystring": false,
+      };
+    }
+
+    // サーバーサイドでの外部モジュール設定
+    if (isServer) {
+      config.externals = config.externals || [];
+      // Neo4jはwebpackバンドルに含めるため、外部設定は不要
+    }
+
+    return config;
+  },
 }
 
 export default nextConfig 

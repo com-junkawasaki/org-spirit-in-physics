@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import ConsentForm from 'scripts/src/app/ConsentForm';
 import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
 import { useRouter } from 'next/navigation';
+import * as m from '../../../src/paraglide/messages';
 
 export default function ConsentPage() {
   const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
@@ -36,18 +37,18 @@ export default function ConsentPage() {
       });
 
       if (!response.ok) {
-        throw new Error('データの保存に失敗しました。');
+        throw new Error(m.data_save_error());
       }
       startPreflight();
       router.push('/steps/2');
     } catch (error) {
-      console.error('同意データの保存中にエラーが発生しました:', error);
+      console.error(m.consent_save_error(), error);
       // TODO: ユーザーにエラーを通知するUIを実装
     }
   };
 
   if (!participantId) {
-    return <div>参加者IDを生成中...</div>;
+    return <div>{m.participant_id_generating()}</div>;
   }
 
   return (

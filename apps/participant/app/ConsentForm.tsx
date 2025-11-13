@@ -7,6 +7,7 @@ import { Checkbox } from "scripts/src/components/ui/checkbox";
 import { Input } from "scripts/src/components/ui/input";
 import { Label } from "scripts/src/components/ui/label";
 import ResearchPlanContent from './ResearchPlanContent';
+import * as m from '../src/paraglide/messages';
 
 const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: string, signature: string, agreements: any) => void, participantId: string }) => {
   const [agreements, setAgreements] = useState({
@@ -33,8 +34,8 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>研究参加への同意</CardTitle>
-        <CardDescription>研究計画書をよくお読みの上、各項目に同意いただけましたら署名をお願いします。</CardDescription>
+        <CardTitle>{m.consent_title()}</CardTitle>
+        <CardDescription>{m.consent_description()}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="border rounded-md p-4 max-h-[50vh] overflow-y-auto mb-6 bg-gray-50/50 dark:bg-gray-900/50">
@@ -44,29 +45,29 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
           <div className="space-y-4">
             <div className="flex items-start space-x-3 cursor-pointer">
               <Checkbox id="understand" checked={agreements.understand} onCheckedChange={handleAgreementChange('understand')} className="mt-1" />
-              <Label htmlFor="understand" className="flex-1 cursor-pointer">研究の性質と目的を理解しました。</Label>
+              <Label htmlFor="understand" className="flex-1 cursor-pointer">{m.consent_understand()}</Label>
             </div>  
             <div className="flex items-start space-x-3 cursor-pointer">
               <Checkbox id="voluntary" checked={agreements.voluntary} onCheckedChange={handleAgreementChange('voluntary')} className="mt-1" />
-              <Label htmlFor="voluntary" className="flex-1 cursor-pointer">自身の自由意思に基づき、研究に任意で参加することに同意します。</Label>
+              <Label htmlFor="voluntary" className="flex-1 cursor-pointer">{m.consent_voluntary()}</Label>
             </div>
             <div className="flex items-start space-x-3 cursor-pointer">
               <Checkbox id="withdraw" checked={agreements.withdraw} onCheckedChange={handleAgreementChange('withdraw')} className="mt-1" />
-              <Label htmlFor="withdraw" className="flex-1 cursor-pointer">いつでも同意を撤回し、研究への参加を中止できることを理解しました。</Label>
+              <Label htmlFor="withdraw" className="flex-1 cursor-pointer">{m.consent_withdraw()}</Label>
             </div>
             <div className="flex items-start space-x-3 cursor-pointer">
               <Checkbox id="recording" checked={agreements.recording} onCheckedChange={handleAgreementChange('recording')} className="mt-1" />
-              <Label htmlFor="recording" className="flex-1 cursor-pointer">実験中の音声および映像の記録に同意します。</Label>
+              <Label htmlFor="recording" className="flex-1 cursor-pointer">{m.consent_recording()}</Label>
             </div>
           </div>
           <div className="mt-8">
-            <Label htmlFor="signature" className="font-bold text-lg">電子署名</Label>
+            <Label htmlFor="signature" className="font-bold text-lg">{m.signature_label()}</Label>
             <Input
               type="text"
               id="signature"
               value={signature}
               onChange={(e) => setSignature(e.target.value)}
-              placeholder="氏名を入力してください"
+              placeholder={m.signature_placeholder()}
               className="mt-2 text-base p-3"
             />
           </div>
@@ -79,7 +80,7 @@ const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: 
           disabled={!isAllAgreed}
           className="w-full text-lg py-6"
         >
-          同意して実験を開始する
+          {m.consent_submit()}
         </Button>
       </CardFooter>
     </Card>

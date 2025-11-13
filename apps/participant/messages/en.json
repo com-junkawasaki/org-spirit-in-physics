@@ -1,0 +1,19 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "app_title": "Spirit in Physics",
+  "app_description": "Extended evaluation of human illusion by Jungian psychology and computational models.",
+  "participant_screen": "Participant Screen",
+  "consent_title": "Research Participation Consent",
+  "consent_description": "Please read the research plan carefully and sign if you agree to each item.",
+  "consent_understand": "I understand the nature and purpose of the research.",
+  "consent_voluntary": "I agree to participate in the research voluntarily based on my own free will.",
+  "consent_withdraw": "I understand that I can withdraw my consent and stop participating in the research at any time.",
+  "consent_recording": "I agree to the recording of audio and video during the experiment.",
+  "signature_label": "Electronic Signature",
+  "signature_placeholder": "Please enter your name",
+  "consent_submit": "Agree and Start Experiment",
+  "participant_id_generating": "Generating participant ID...",
+  "data_save_error": "Failed to save data.",
+  "consent_save_error": "An error occurred while saving consent data:"
+}
+
