@@ -209,9 +209,9 @@ export const useKawasakiStore = create<KawasakiStore>()(
                 mutation: CREATE_SESSION,
                 variables: {
                     input: {
-                        participant_id: participantId!,
-                        session_index: sessionIndex,
-                        start_ts: startTs,
+                        participantId: participantId!,
+                        sessionIndex: sessionIndex,
+                        startTs: startTs,
                         events: events,
                     },
                 },
@@ -266,11 +266,11 @@ export const useKawasakiStore = create<KawasakiStore>()(
                 mutation: UPLOAD_ARTIFACT,
                 variables: {
                     input: {
-                        participant_id: participantId,
-                        file_name: fileName,
-                        file_data: base64Data,
-                        content_type: 'video/webm',
-                        artifact_type: 'video',
+                        participantId: participantId,
+                        fileName: fileName,
+                        fileData: base64Data,
+                        contentType: 'video/webm',
+                        artifactType: 'video',
                     },
                 },
             });

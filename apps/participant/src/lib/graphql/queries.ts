@@ -13,8 +13,8 @@ export const GET_PARTICIPANTS = gql`
       age
       gender
       handedness
-      created_at
-      updated_at
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -27,8 +27,8 @@ export const GET_PARTICIPANT = gql`
       age
       gender
       handedness
-      created_at
-      updated_at
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -36,15 +36,15 @@ export const GET_PARTICIPANT = gql`
 // Get sessions for a participant
 export const GET_SESSIONS = gql`
   query GetSessions($participantId: ID!) {
-    sessions(participant_id: $participantId) {
+    sessions(participantId: $participantId) {
       id
-      participant_id
-      session_index
-      start_ts
-      end_ts
+      participantId
+      sessionIndex
+      startTs
+      endTs
       events
-      created_at
-      updated_at
+      createdAt
+      updatedAt
     }
   }
 `;

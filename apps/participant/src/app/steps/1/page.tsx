@@ -39,7 +39,7 @@ export default function ConsentPage() {
             id: participantId,
             signature,
             agreements: agreements,
-            agreed_at: new Date().toISOString(),
+            agreedAt: new Date().toISOString(),
           },
         },
       });
