@@ -195,8 +195,8 @@ export const useKawasakiStore = create<KawasakiStore>()(
         // GraphQL mutationを使用してセッションデータを保存
         try {
             // Apollo Clientを使用するため、動的インポート
-            const { apolloClient } = await import('../../../src/lib/graphql');
-            const { CREATE_SESSION } = await import('../../../src/lib/graphql/mutations');
+            const { apolloClient } = await import('@/lib/graphql');
+            const { CREATE_SESSION } = await import('@/lib/graphql/mutations');
             
             // セッション開始時刻を取得（eventsから）
             const sessionStartedEvent = events.find((e: any) => e.type === 'session_started');
@@ -258,8 +258,8 @@ export const useKawasakiStore = create<KawasakiStore>()(
             const base64Data = await base64Promise;
 
             // Apollo Clientを使用するため、動的インポート
-            const { apolloClient } = await import('../../../lib/graphql');
-            const { UPLOAD_ARTIFACT } = await import('../../../lib/graphql/mutations');
+            const { apolloClient } = await import('@/lib/graphql');
+            const { UPLOAD_ARTIFACT } = await import('@/lib/graphql/mutations');
 
             const fileName = `session-${session}-video.webm`;
             const result = await apolloClient.mutate({

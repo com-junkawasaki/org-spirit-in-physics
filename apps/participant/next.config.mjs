@@ -2,7 +2,12 @@
 const nextConfig = {
   // Configure `pageExtensions` to include MDX files
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  // Transpile Apollo Client packages
+  transpilePackages: ['@apollo/client'],
   webpack: (config, { isServer, dev }) => {
+    // Enable symlinks resolution for pnpm
+    config.resolve.symlinks = true;
+    
     // Node.js ポリフィルの追加（Inngestで必要）
     if (!isServer) {
       config.resolve.fallback = {

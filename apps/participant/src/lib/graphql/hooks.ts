@@ -3,7 +3,7 @@
  * React hooks for GraphQL operations
  */
 
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { CREATE_PARTICIPANT, CREATE_SESSION } from './mutations';
 import { GET_PARTICIPANT, GET_SESSIONS } from './queries';
 
