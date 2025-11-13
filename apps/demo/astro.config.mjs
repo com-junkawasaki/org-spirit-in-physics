@@ -2,18 +2,12 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
-import { fileURLToPath } from 'url';
-import { resolve, dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // https://astro.build/config
 export default defineConfig({
   integrations: [
     tailwind({
       applyBaseStyles: false,
-      configFile: resolve(__dirname, 'tailwind.config.mjs'),
     }),
     react(),
   ],
@@ -21,11 +15,30 @@ export default defineConfig({
   server: {
     host: true,
     port: 4322,
+    allowedHosts: [
+      'demo.spirit-in-physics.orb.local',
+      'localhost',
+      '.orb.local',
+    ],
   },
   vite: {
     resolve: {
       alias: {
-        '@spirit-in-physics/visualization-components': resolve(__dirname, '../../packages/visualization-components/src/index.ts'),
+        '@spirit-in-physics/visualization-components': '/app/packages/visualization-components/src/index.ts',
+      },
+    },
+    server: {
+      // HMR settings for Docker
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 4322,
+        clientPort: 25271, // External port for HMR
+      },
+      watch: {
+        // Use polling for file watching in Docker
+        usePolling: true,
+        interval: 1000,
       },
     },
   },

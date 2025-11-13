@@ -38,6 +38,13 @@ const schemas = getCombinedContext();
     <!-- KaTeX CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
     
+    <!-- Tailwind CSS (injected by @astrojs/tailwind, but ensure it's loaded) -->
+    <style>
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+    </style>
+    
     <title>{title}</title>
     
     <!-- JSON-LD Structured Data -->

@@ -9,9 +9,7 @@ import StructureAnalysis from './StructureAnalysis'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
 import { analyzeEmotionRealtime, captureVideoFrame, captureAudioFrame } from '../lib/hume-realtime'
 import { calculateComplexSpace } from '../lib/complex-calculator'
-import { detectGapAreas, analyzeDensity, detectDuplicates } from '@spirit-in-physics/visualization-components/src/lib/structure-analysis'
 import type { WordEmotionData, ComplexSpaceData } from '../types/demo'
-import type { WordNode, WordLink } from '@spirit-in-physics/visualization-components/src/timeline/types'
 
 export default function DemoApp() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)

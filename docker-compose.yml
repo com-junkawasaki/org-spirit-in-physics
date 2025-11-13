@@ -190,7 +190,37 @@ services:
     networks:
       - spirit-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:4321 || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:4321/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Demo app (Astro)
+  demo:
+    build:
+      context: .
+      dockerfile: ./apps/demo/Dockerfile
+    container_name: spirit-demo
+    ports:
+      - "25271:4322"
+    volumes:
+      - ./apps/demo:/app
+      - ./packages/visualization-components:/app/packages/visualization-components
+      - demo_node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # Astro HMR settings
+      - ASTRO_TELEMETRY_DISABLED=1
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:4322 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -259,6 +289,7 @@ services:
 volumes:
   postgres_data:
   research_node_modules:
+  demo_node_modules:
 
 networks:
   spirit-network:

@@ -15,6 +15,7 @@ export default defineConfig({
     }),
     tailwind({
       applyBaseStyles: false,
+      configFile: './tailwind.config.mjs',
     }),
     react(),
   ],
