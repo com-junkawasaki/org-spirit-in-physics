@@ -10,7 +10,7 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@spirit-in-physics/visualization-components": "file:../../packages/visualization-components",
+    "@spirit-in-physics/visualization-components": "file:./packages/visualization-components",
     "@astrojs/react": "^3.6.2",
     "@astrojs/tailwind": "^5.1.4",
     "astro": "^5.15.5",

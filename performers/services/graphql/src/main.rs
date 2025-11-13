@@ -8,7 +8,7 @@ mod database;
 mod storage;
 
 use axum::{
-    extract::State,
+    extract::{State, HeaderMap},
     http::{HeaderValue, StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -46,13 +46,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // GraphQL handler with CORS headers
     async fn graphql_handler(
         State(schema): State<async_graphql::Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
+        headers: HeaderMap,
         req: GraphQLRequest,
     ) -> impl IntoResponse {
         let graphql_res: AxumGraphQLResponse = schema.execute(req.into_inner()).await.into();
         let mut res: Response = graphql_res.into_response();
+        
+        // Get origin from request headers
+        let origin = headers
+            .get(axum::http::header::ORIGIN)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("http://localhost:25250");
+        
+        // Set CORS headers with specific origin (required when credentials: 'include')
         res.headers_mut().insert(
             axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN,
-            HeaderValue::from_static("*"),
+            HeaderValue::from_str(origin).unwrap_or_else(|_| HeaderValue::from_static("http://localhost:25250")),
+        );
+        res.headers_mut().insert(
+            axum::http::header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
+            HeaderValue::from_static("true"),
         );
         res.headers_mut().insert(
             axum::http::header::ACCESS_CONTROL_ALLOW_METHODS,
@@ -66,11 +79,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // CORS preflight handler
-    async fn cors_preflight() -> impl IntoResponse {
+    async fn cors_preflight(headers: HeaderMap) -> impl IntoResponse {
+        // Get origin from request headers
+        let origin = headers
+            .get(axum::http::header::ORIGIN)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("http://localhost:25250");
+        
         (
             StatusCode::NO_CONTENT,
             [
-                (axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*"),
+                (axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN, origin),
+                (axum::http::header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"),
                 (axum::http::header::ACCESS_CONTROL_ALLOW_METHODS, "GET, POST, OPTIONS"),
                 (axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type, Authorization"),
             ],

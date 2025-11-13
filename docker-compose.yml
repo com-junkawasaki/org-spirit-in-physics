@@ -35,8 +35,6 @@ services:
       - ./apps/visualizer/public/dataset:/app/dataset:cached
       - /app/node_modules
       - /app/.next
-    env_file:
-      - ./apps/participant/env.docker
     environment:
       - NODE_ENV=development
       # HMR and file watching settings for Docker
@@ -46,6 +44,11 @@ services:
       - WATCHPACK_POLLING_INTERVAL=1000
       # Next.js HMR settings
       - NEXT_TELEMETRY_DISABLED=1
+      # GraphQL API URL (hardcoded for development)
+      # Client-side: use localhost for browser access
+      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      # Server-side: use container name for server-to-server communication
+      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
     depends_on:
       postgres:
         condition: service_healthy

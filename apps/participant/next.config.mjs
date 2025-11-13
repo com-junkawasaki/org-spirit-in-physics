@@ -8,6 +8,12 @@ const nextConfig = {
     // Enable symlinks resolution for pnpm
     config.resolve.symlinks = true;
     
+    // Ensure @apollo/client subpaths are resolved correctly
+    config.resolve.extensionAlias = {
+      '.js': ['.js', '.ts', '.tsx'],
+      '.jsx': ['.jsx', '.tsx'],
+    };
+    
     // Node.js ポリフィルの追加（Inngestで必要）
     if (!isServer) {
       config.resolve.fallback = {

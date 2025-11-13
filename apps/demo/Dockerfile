@@ -30,6 +30,22 @@ ENV PORT=4322
 # Expose port 4322
 EXPOSE 4322
 
+# Create entrypoint script to fix package.json path and install dependencies
+RUN echo '#!/bin/sh' > /usr/local/bin/docker-entrypoint.sh && \
+    echo 'set -e' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'cd /app' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'if [ -f package.json ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  sed -i.bak "s|file:../../packages/visualization-components|file:./packages/visualization-components|g" package.json && rm -f package.json.bak' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'fi' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'if [ ! -d node_modules ] || [ ! -f node_modules/.pnpm-lock.yaml ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  echo "Installing dependencies..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  CI=true pnpm install --no-frozen-lockfile --force' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'fi' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'exec "$@"' >> /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
 # Start the application
 CMD ["pnpm", "dev"]
 
