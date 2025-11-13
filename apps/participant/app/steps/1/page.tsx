@@ -5,11 +5,13 @@ import ConsentForm from 'scripts/src/app/ConsentForm';
 import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
 import { useRouter } from 'next/navigation';
 import * as m from '../../../src/paraglide/messages';
+import { useCreateParticipant } from '../../../src/lib/graphql/hooks';
 
 export default function ConsentPage() {
   const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
   const startPreflight = useKawasakiStore((state) => state.startPreflight);
   const participantId = useKawasakiStore((state) => state.participantId);
+  const [createParticipant, { loading, error }] = useCreateParticipant();
 
   const router = useRouter();
 
@@ -22,23 +24,42 @@ export default function ConsentPage() {
 
   const handleConsent = async (participantId: string, signature: string, agreements: any) => {
     try {
-      const response = await fetch('/api/save-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'consent',
-          data: {
-            participantId,
+      // GraphQL mutationを使用して参加者データを保存
+      const result = await createParticipant({
+        variables: {
+          input: {
+            id: participantId,
             signature,
-            agreements,
-            agreedAt: new Date().toISOString(),
-          }
-        }),
+            agreements: agreements,
+            agreed_at: new Date().toISOString(),
+          },
+        },
       });
 
-      if (!response.ok) {
+      if (result.errors) {
         throw new Error(m.data_save_error());
       }
+
+      // Blob Storageにも保存（後方互換性のため）
+      try {
+        await fetch('/api/save-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'consent',
+            data: {
+              participantId,
+              signature,
+              agreements,
+              agreedAt: new Date().toISOString(),
+            }
+          }),
+        });
+      } catch (blobError) {
+        console.warn('Failed to save to Blob Storage:', blobError);
+        // GraphQLへの保存は成功しているので続行
+      }
+
       startPreflight();
       router.push('/steps/2');
     } catch (error) {
@@ -49,6 +70,14 @@ export default function ConsentPage() {
 
   if (!participantId) {
     return <div>{m.participant_id_generating()}</div>;
+  }
+
+  if (loading) {
+    return <div>{m.participant_id_generating()}</div>;
+  }
+
+  if (error) {
+    console.error('GraphQL error:', error);
   }
 
   return (

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { baseLocale, getLocale } from "../src/paraglide/runtime";
 import * as m from "../src/paraglide/messages";
+import { ApolloProvider } from "../src/components/providers/ApolloProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +22,11 @@ export default function RootLayout({
   
   return (
     <html lang={locale}>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <ApolloProvider>
+          {children}
+        </ApolloProvider>
+      </body>
     </html>
   );
 } 

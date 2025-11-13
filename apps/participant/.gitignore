@@ -44,6 +44,7 @@ pnpm-debug.log*
 # Compiled output
 /dist
 /src/paraglide
+/src/generated
 
 # Test results
 /coverage

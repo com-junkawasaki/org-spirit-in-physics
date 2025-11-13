@@ -190,31 +190,60 @@ export const useKawasakiStore = create<KawasakiStore>()(
     },
 
     saveSessionData: async () => {
-        const { participantId, events, wordResponses } = get();
-        const payload = {
-            type: 'session-data' as const,
-            data: {
-                participantId,
-                events,
-                wordResponses: wordResponses.map(r => ({
-                    ...r,
-                    audioBlob: undefined,
-                })),
-            }
-        };
-        console.log('Attempting to save session data:', payload);
+        const { participantId, events, wordResponses, currentSession } = get();
+        
+        // GraphQL mutationを使用してセッションデータを保存
         try {
-            const response = await fetch('/api/save-data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+            // Apollo Clientを使用するため、動的インポート
+            const { apolloClient } = await import('../../../src/lib/graphql');
+            const { CREATE_SESSION } = await import('../../../src/lib/graphql/mutations');
+            
+            // セッション開始時刻を取得（eventsから）
+            const sessionStartedEvent = events.find((e: any) => e.type === 'session_started');
+            const startTs = sessionStartedEvent?.timestamp || Date.now();
+            
+            // セッションインデックスを取得（currentSessionから、またはeventsから）
+            const sessionIndex = currentSession || (sessionStartedEvent?.payload?.session as number | undefined) || 1;
+            
+            const result = await apolloClient.mutate({
+                mutation: CREATE_SESSION,
+                variables: {
+                    input: {
+                        participant_id: participantId!,
+                        session_index: sessionIndex,
+                        start_ts: startTs,
+                        events: events,
+                    },
+                },
             });
-            const responseData = await response.json().catch(() => response.text());
-            console.log('Server response from /api/save-data:', { status: response.status, body: responseData });
 
-            if (!response.ok) {
-                throw new Error(`Failed to save session data. Status: ${response.status}. Details: ${JSON.stringify(responseData)}`);
+            if (result.errors) {
+                throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
             }
+
+            // Blob Storageにも保存（後方互換性のため）
+            try {
+                const payload = {
+                    type: 'session-data' as const,
+                    data: {
+                        participantId,
+                        events,
+                        wordResponses: wordResponses.map(r => ({
+                            ...r,
+                            audioBlob: undefined,
+                        })),
+                    }
+                };
+                await fetch('/api/save-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+            } catch (blobError) {
+                console.warn('Failed to save to Blob Storage:', blobError);
+                // GraphQLへの保存は成功しているので続行
+            }
+
             get().logEvent('session_data_saved');
         } catch (error) {
             console.error('Error in saveSessionData:', error);
