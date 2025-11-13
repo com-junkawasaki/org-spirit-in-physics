@@ -174,9 +174,14 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
       - RUST_LOG=info
-      - SUPABASE_URL=${SUPABASE_URL:-http://127.0.0.1:54321}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET:-spirit-in-physics}
+      # Supabase Storage Configuration (hardcoded for local development)
+      # Local Supabase API URL (from supabase/config.toml: api.port = 54321)
+      - SUPABASE_URL=http://127.0.0.1:54321
+      # Supabase Service Role Key (default for local development)
+      # This is the default JWT secret for Supabase local development
+      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      # Storage bucket name (from supabase/migrations/20241004000003_storage_policies.sql)
+      - SUPABASE_STORAGE_BUCKET=spirit-in-physics
     depends_on:
       postgres:
         condition: service_healthy

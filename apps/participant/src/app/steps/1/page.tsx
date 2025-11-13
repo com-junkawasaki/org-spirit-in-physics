@@ -1,11 +1,18 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import ConsentForm from '@/app/ConsentForm';
 import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
 import { useRouter } from 'next/navigation';
-import * as m from '../../paraglide/messages';
-import { useCreateParticipant } from '../../lib/graphql/hooks';
+import * as m from '@/paraglide/messages';
+import { useCreateParticipant } from '@/lib/graphql/hooks';
+
+type Agreements = {
+  understand: boolean;
+  voluntary: boolean;
+  withdraw: boolean;
+  recording: boolean;
+};
 
 export default function ConsentPage() {
   const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
@@ -22,7 +29,7 @@ export default function ConsentPage() {
     }
   }, [initializeParticipant, participantId]);
 
-  const handleConsent = async (participantId: string, signature: string, agreements: any) => {
+  const handleConsent = async (participantId: string, signature: string, agreements: Agreements) => {
     try {
       // GraphQL mutationを使用して参加者データを保存
       const result = await createParticipant({

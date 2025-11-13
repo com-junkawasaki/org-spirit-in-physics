@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ResearchPlanContent from './ResearchPlanContent';
-import * as m from '../src/paraglide/messages';
+import * as m from '@/paraglide/messages';
 
 const ConsentForm = ({ onConsent, participantId }: { onConsent: (participantId: string, signature: string, agreements: any) => void, participantId: string }) => {
   const [agreements, setAgreements] = useState({

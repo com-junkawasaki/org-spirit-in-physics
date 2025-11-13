@@ -4,7 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
 import Link from 'next/link';
-import * as m from '../../paraglide/messages';
+import * as m from '@/paraglide/messages';
 
 export default function CompletionPage() {
   const resetTest = useKawasakiStore((state) => state.resetTest);
