@@ -19,10 +19,15 @@ export default defineConfig({
     }),
     react(),
   ],
-  output: 'static',
+  output: 'server', // Enable SSR for API routes and pages
   server: {
     host: true,
     port: 4321,
+    allowedHosts: [
+      'research.spirit-in-physics.orb.local',
+      'localhost',
+      '.orb.local',
+    ],
   },
   markdown: {
     remarkPlugins: [remarkMath, remarkGfm],
