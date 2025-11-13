@@ -69,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // When credentials: 'include' is used, we must specify exact origins (not wildcard)
     let allowed_origins = vec![
         "http://localhost:25250",      // participant app
+        "https://patient.spirit-in-physics.orb.local", // participant app via orb.local
         "http://localhost:3000",      // visualizer app
         "http://localhost:4321",      // research app
         "http://localhost:4322",      // demo app
