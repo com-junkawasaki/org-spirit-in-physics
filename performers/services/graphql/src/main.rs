@@ -1,5 +1,5 @@
 // Merkle DAG: graphql.service.main
-// GraphQL service entry point using async-graphql + Axum
+// GraphQL service entry point using async-graphql + Poem
 
 mod schema;
 mod types;
@@ -7,21 +7,43 @@ mod resolvers;
 mod database;
 mod storage;
 
-use axum::{
-    extract::{State, HeaderMap},
-    http::{HeaderValue, StatusCode},
-    response::{IntoResponse, Response},
-    routing::{get, post},
-    Router, Json,
+use poem::{
+    handler,
+    http::Method,
+    listener::TcpListener,
+    middleware::Cors,
+    web::{Data, Html, Json},
+    EndpointExt, Route, Server,
 };
 use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
+    Schema,
 };
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse as AxumGraphQLResponse};
+use async_graphql_poem::GraphQL;
 use tracing::info;
 
 use database::PostgresPool;
 use schema::create_schema;
+
+#[handler]
+async fn graphql_playground() -> Html<String> {
+    Html(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
+}
+
+#[handler]
+async fn schema_handler(
+    Data(schema): Data<&Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
+) -> String {
+    schema.sdl()
+}
+
+#[handler]
+async fn health_check() -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "status": "ok",
+        "service": "graphql-service"
+    }))
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -43,101 +65,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create GraphQL schema
     let schema = create_schema(pool.pool().clone()).await?;
 
-    // GraphQL handler with CORS headers
-    async fn graphql_handler(
-        State(schema): State<async_graphql::Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
-        headers: HeaderMap,
-        req: GraphQLRequest,
-    ) -> impl IntoResponse {
-        let graphql_res: AxumGraphQLResponse = schema.execute(req.into_inner()).await.into();
-        let mut res: Response = graphql_res.into_response();
-        
-        // Get origin from request headers
-        let origin = headers
-            .get(axum::http::header::ORIGIN)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("http://localhost:25250");
-        
-        // Set CORS headers with specific origin (required when credentials: 'include')
-        res.headers_mut().insert(
-            axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN,
-            HeaderValue::from_str(origin).unwrap_or_else(|_| HeaderValue::from_static("http://localhost:25250")),
-        );
-        res.headers_mut().insert(
-            axum::http::header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
-            HeaderValue::from_static("true"),
-        );
-        res.headers_mut().insert(
-            axum::http::header::ACCESS_CONTROL_ALLOW_METHODS,
-            HeaderValue::from_static("GET, POST, OPTIONS"),
-        );
-        res.headers_mut().insert(
-            axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS,
-            HeaderValue::from_static("Content-Type, Authorization"),
-        );
-        res
-    }
+    // Configure CORS
+    // When credentials: 'include' is used, we must specify exact origins (not wildcard)
+    let allowed_origins = vec![
+        "http://localhost:25250",      // participant app
+        "http://localhost:3000",      // visualizer app
+        "http://localhost:4321",      // research app
+        "http://localhost:4322",      // demo app
+        "https://demo.spirit-in-physics.orb.local", // demo app via orb.local
+        "http://localhost:8080",      // fallback
+        "http://127.0.0.1:25250",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:4321",
+        "http://127.0.0.1:4322",
+    ];
+    
+    let cors = Cors::new()
+        .allow_origins(allowed_origins)
+        .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers(vec!["Content-Type", "Authorization"])
+        .allow_credentials(true);
 
-    // CORS preflight handler
-    async fn cors_preflight(headers: HeaderMap) -> impl IntoResponse {
-        // Get origin from request headers
-        let origin = headers
-            .get(axum::http::header::ORIGIN)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("http://localhost:25250");
-        
-        (
-            StatusCode::NO_CONTENT,
-            [
-                (axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN, origin),
-                (axum::http::header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"),
-                (axum::http::header::ACCESS_CONTROL_ALLOW_METHODS, "GET, POST, OPTIONS"),
-                (axum::http::header::ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type, Authorization"),
-            ],
-        )
-    }
-
-    let app = Router::new()
-        .route("/graphql", post(graphql_handler).options(cors_preflight))
-        .route("/graphql/playground", get(graphql_playground))
-        .route("/graphql/schema", get(schema_handler))
-        .route("/health", get(health_check))
-        .with_state(schema);
+    // Build routes
+    let app = Route::new()
+        .at("/graphql", GraphQL::new(schema.clone()))
+        .at("/graphql/playground", graphql_playground)
+        .at("/graphql/schema", schema_handler)
+        .at("/health", health_check)
+        .data(schema)
+        .with(cors);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 8081));
     info!("GraphQL service listening on 0.0.0.0:8081");
     info!("GraphQL Playground available at http://localhost:8081/graphql/playground");
 
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    Server::new(TcpListener::bind(addr))
+        .run(app)
         .await?;
 
     Ok(())
 }
-
-
-async fn graphql_playground() -> impl IntoResponse {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("content-type", "text/html; charset=utf-8")
-        .body(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
-        .unwrap()
-}
-
-async fn schema_handler(
-    State(schema): State<async_graphql::Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
-) -> impl IntoResponse {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("content-type", "text/plain; charset=utf-8")
-        .body(schema.sdl())
-        .unwrap()
-}
-
-async fn health_check() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "status": "ok",
-        "service": "graphql-service"
-    }))
-}
-
