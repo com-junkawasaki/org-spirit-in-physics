@@ -6,6 +6,11 @@ import react from '@astrojs/react';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
+import { fileURLToPath } from 'url';
+import { resolve, dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // https://astro.build/config
 export default defineConfig({
@@ -16,6 +21,7 @@ export default defineConfig({
     }),
     tailwind({
       applyBaseStyles: false,
+      configFile: resolve(__dirname, 'tailwind.config.mjs'),
     }),
     react(),
   ],

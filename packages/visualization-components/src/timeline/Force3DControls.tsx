@@ -69,10 +69,10 @@ export default function Force3DControls({
   onEtaChange,
 }: Force3DControlsProps) {
   return (
-    <div className="mb-6 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+    <div className="mb-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
       {/* プリセット選択 */}
       <div className="mb-4">
-        <div className="block text-sm font-medium text-gray-700 mb-2">Preset Configuration</div>
+        <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preset Configuration</div>
         <div className="flex flex-wrap gap-2">
           {forcePresets.map(p => (
             <button
@@ -82,7 +82,7 @@ export default function Force3DControls({
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                 forcePresetId === p.id
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               {p.label}
@@ -95,11 +95,11 @@ export default function Force3DControls({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* バネ力コントロール */}
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-700 border-b pb-1">Spring Forces</h4>
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-1">Spring Forces</h4>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Spring K</span>
-              <span className="text-xs text-gray-500">{springK.toFixed(1)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Spring K</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{springK.toFixed(1)}</span>
             </div>
             <input
               type="range"
@@ -108,13 +108,13 @@ export default function Force3DControls({
               step="0.1"
               value={springK}
               onChange={(e) => onSpringKChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Rest Length</span>
-              <span className="text-xs text-gray-500">{restLength}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Rest Length</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{restLength}</span>
             </div>
             <input
               type="range"
@@ -123,18 +123,18 @@ export default function Force3DControls({
               step="5"
               value={restLength}
               onChange={(e) => onRestLengthChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
         </div>
 
         {/* 反発力コントロール */}
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-700 border-b pb-1">Repulsion Forces</h4>
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-1">Repulsion Forces</h4>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Repulsion K</span>
-              <span className="text-xs text-gray-500">{repulsionK.toFixed(0)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Repulsion K</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{repulsionK.toFixed(0)}</span>
             </div>
             <input
               type="range"
@@ -143,13 +143,13 @@ export default function Force3DControls({
               step="100"
               value={repulsionK}
               onChange={(e) => onRepulsionKChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Min Separation</span>
-              <span className="text-xs text-gray-500">{minSep}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Min Separation</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{minSep}</span>
             </div>
             <input
               type="range"
@@ -158,13 +158,13 @@ export default function Force3DControls({
               step="5"
               value={minSep}
               onChange={(e) => onMinSepChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Separation K</span>
-              <span className="text-xs text-gray-500">{sepK.toFixed(0)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Separation K</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{sepK.toFixed(0)}</span>
             </div>
             <input
               type="range"
@@ -173,18 +173,18 @@ export default function Force3DControls({
               step="200"
               value={sepK}
               onChange={(e) => onSepKChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
         </div>
 
         {/* シェル力コントロール */}
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-700 border-b pb-1">Shell Forces</h4>
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-1">Shell Forces</h4>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Shell Radius</span>
-              <span className="text-xs text-gray-500">{shellRadius}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Shell Radius</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{shellRadius}</span>
             </div>
             <input
               type="range"
@@ -193,13 +193,13 @@ export default function Force3DControls({
               step="20"
               value={shellRadius}
               onChange={(e) => onShellRadiusChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Shell K</span>
-              <span className="text-xs text-gray-500">{shellK.toFixed(1)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Shell K</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{shellK.toFixed(1)}</span>
             </div>
             <input
               type="range"
@@ -208,13 +208,13 @@ export default function Force3DControls({
               step="0.1"
               value={shellK}
               onChange={(e) => onShellKChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Radial Out K</span>
-              <span className="text-xs text-gray-500">{(radialOutK ?? 0).toFixed(0)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Radial Out K</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{(radialOutK ?? 0).toFixed(0)}</span>
             </div>
             <input
               type="range"
@@ -223,13 +223,13 @@ export default function Force3DControls({
               step="10"
               value={radialOutK ?? 0}
               onChange={(e) => onRadialOutKChange?.(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Damping</span>
-              <span className="text-xs text-gray-500">{damping.toFixed(2)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">Damping</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{damping.toFixed(2)}</span>
             </div>
             <input
               type="range"
@@ -238,20 +238,20 @@ export default function Force3DControls({
               step="0.01"
               value={damping}
               onChange={(e) => onDampingChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
         </div>
       </div>
 
       {/* 感情パラメータコントロール */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Emotion Parameters</h4>
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Emotion Parameters</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">α</span>
-              <span className="text-xs text-gray-500">{alpha.toFixed(1)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">α</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{alpha.toFixed(1)}</span>
             </div>
             <input
               type="range"
@@ -260,13 +260,13 @@ export default function Force3DControls({
               step="0.1"
               value={alpha}
               onChange={(e) => onAlphaChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">γ</span>
-              <span className="text-xs text-gray-500">{gamma.toFixed(1)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">γ</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{gamma.toFixed(1)}</span>
             </div>
             <input
               type="range"
@@ -275,13 +275,13 @@ export default function Force3DControls({
               step="0.1"
               value={gamma}
               onChange={(e) => onGammaChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">λ</span>
-              <span className="text-xs text-gray-500">{lambda.toFixed(1)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">λ</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{lambda.toFixed(1)}</span>
             </div>
             <input
               type="range"
@@ -290,13 +290,13 @@ export default function Force3DControls({
               step="0.1"
               value={lambda}
               onChange={(e) => onLambdaChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">η</span>
-              <span className="text-xs text-gray-500">{eta.toFixed(1)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">η</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{eta.toFixed(1)}</span>
             </div>
             <input
               type="range"
@@ -305,7 +305,7 @@ export default function Force3DControls({
               step="0.1"
               value={eta}
               onChange={(e) => onEtaChange(Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
         </div>

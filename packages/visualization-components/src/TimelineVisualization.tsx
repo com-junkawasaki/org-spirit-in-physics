@@ -1592,9 +1592,10 @@ export default function TimelineVisualization({
       )}
 
       {/* 表示モード切り替えタブ */}
-      <div className="bg-white border border-gray-200 rounded-lg">
-        {/* Top Toolbar (iPad friendly) */}
-        <div className="border-b border-gray-200 sticky top-0 z-10 bg-white/90 backdrop-blur px-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        {/* Top Toolbar (iPad friendly) - hide when forceMode is set */}
+        {!forceMode && (
+        <div className="border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur px-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 py-3">
             <div className="flex items-center gap-2">
               <nav className="inline-flex rounded-md shadow-sm" role="tablist" aria-label="View Tabs">
@@ -1609,7 +1610,7 @@ export default function TimelineVisualization({
                 type="button"
                 aria-pressed={activeTab === tab.id}
                 className={`portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm first:rounded-l-md last:rounded-r-md border ${
-                  activeTab === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'
+                  activeTab === tab.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                 }`}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
               >
@@ -1652,19 +1653,20 @@ export default function TimelineVisualization({
                   >{o.label}</button>
                 ))}
               </div>
-              <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => {
+              <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" onClick={() => {
                 setSelectedEmotions(new Set(EMOTION_KEYS)); setTopK(2); setMinW(0.25); setWeightGamma(1.6); setAnimateTransitions(true)
               }}>Reset</button>
-              <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => setShowDebugPanel(!showDebugPanel)}>
+              <button type="button" className="portrait:px-2 portrait:py-1.5 landscape:px-3 landscape:py-2 portrait:text-xs landscape:text-sm rounded-md border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" onClick={() => setShowDebugPanel(!showDebugPanel)}>
                 {showDebugPanel ? '🔍 デバッグ非表示' : '🔍 デバッグ表示'}
               </button>
             </div>
           </div>
         </div>
+        )}
 
         {/* デバッグパネル */}
         {showDebugPanel && (
-          <div className="p-4 border-b bg-gray-50">
+          <div className="p-4 border-b bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <DebugPanel
               dataSources={debugInfo.dataSources}
               pipelineSteps={debugInfo.pipelineSteps}
@@ -1677,7 +1679,7 @@ export default function TimelineVisualization({
         )}
 
         {/* タブコンテンツ */}
-        <div className="p-4">
+        <div className="p-4 dark:bg-gray-800">
           {activeTab === 'timeline' && (
             <div className="space-y-4">
               <h3 className="font-semibold mb-3">時系列統合可視化</h3>
@@ -1733,7 +1735,7 @@ export default function TimelineVisualization({
 
           {activeTab === 'force3d' && (
             <div className="space-y-4">
-              <h3 className="font-semibold mb-3">3D Force 可視化</h3>
+              {!forceMode && <h3 className="font-semibold mb-3 dark:text-gray-100">3D Force 可視化</h3>}
 
               {/* 単語選択: 上位100語 */}
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -1742,7 +1744,7 @@ export default function TimelineVisualization({
                     <button
                       type="button"
                       onClick={() => setShowAdvancedControls(v => !v)}
-                      className="px-3 py-1.5 text-sm rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
+                      className="px-3 py-1.5 text-sm rounded-md border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                     >{showAdvancedControls ? 'Hide Advanced' : 'Show Advanced'}</button>
                   </div>
                   {showAdvancedControls && (
@@ -1782,11 +1784,11 @@ export default function TimelineVisualization({
                   {/* 3D Force グラフ本体 */}
                   {mounted && activeTab === 'force3d' && (
                     force3DGraphData.nodes.length === 0 ? (
-                      <div className="border rounded overflow-hidden p-4 text-gray-500">
+                      <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden p-4 text-gray-500 dark:text-gray-400">
                         データがありません
                       </div>
                     ) : (
-                    <div className="border rounded overflow-hidden">
+                    <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
                       <Suspense fallback={<div className="p-4">Loading 3D visualization...</div>}>
                         <Force3D
                           nodes={force3DGraphData.nodes}
@@ -1828,8 +1830,8 @@ export default function TimelineVisualization({
                 </div>
                 {/* Control Panel - iPad sticky and touch-friendly */}
                 <div className="lg:col-span-1 order-1 lg:order-2 sticky top-4 self-start max-h-[78vh] overflow-auto pr-1">
-                  <h4 className="font-medium mb-2 text-sm">単語選択（上位100）</h4>
-                  <div className="border rounded max-h-[38vh] overflow-auto p-2 text-sm">
+                  <h4 className="font-medium mb-2 text-sm dark:text-gray-100">単語選択（上位100）</h4>
+                  <div className="border border-gray-200 dark:border-gray-700 rounded max-h-[38vh] overflow-auto p-2 text-sm bg-white dark:bg-gray-800">
                     {(() => {
                       // データから出現回数順に上位100語
                       const counts: Record<string, number> = {}
@@ -1843,17 +1845,17 @@ export default function TimelineVisualization({
                           key={w}
                           type="button"
                           onClick={() => setSelectedWord(prev => prev === w ? null : w)}
-                          className={`w-full text-left px-2 py-1 rounded ${selectedWord === w ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}
+                          className={`w-full text-left px-2 py-1 rounded ${selectedWord === w ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100'}`}
                         >
                           {w}
                         </button>
                       ))
                     })()}
                   </div>
-                  <h4 className="font-medium mt-4 mb-2 text-sm">感情フィルター</h4>
-                  <div className="border rounded max-h-[20vh] overflow-auto p-2 text-sm grid grid-cols-2 gap-1">
+                  <h4 className="font-medium mt-4 mb-2 text-sm dark:text-gray-100">感情フィルター</h4>
+                  <div className="border border-gray-200 dark:border-gray-700 rounded max-h-[20vh] overflow-auto p-2 text-sm grid grid-cols-2 gap-1 bg-white dark:bg-gray-800">
                     {EMOTION_KEYS.map((k) => (
-                      <label key={k} className="flex items-center gap-1">
+                      <label key={k} className="flex items-center gap-1 text-gray-900 dark:text-gray-100">
                         <input
                           type="checkbox"
                           checked={selectedEmotions.has(k)}
@@ -1864,27 +1866,29 @@ export default function TimelineVisualization({
                               return next
                             })
                           }}
+                          className="text-blue-600 dark:text-blue-500"
                         />
                         <span>{k}</span>
                       </label>
                     ))}
                   </div>
 
-                  <h4 className="font-medium mt-4 mb-2 text-sm">モダリティ（感情抽出元）</h4>
+                  <h4 className="font-medium mt-4 mb-2 text-sm dark:text-gray-100">モダリティ（感情抽出元）</h4>
                   <div className="flex flex-wrap gap-2">
                     {MOD_KEYS.map((m) => (
-                      <label key={m} className="flex items-center gap-1 text-sm border rounded px-2 py-1 bg-white">
+                      <label key={m} className="flex items-center gap-1 text-sm border border-gray-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <input
                           type="checkbox"
                           checked={selectedModalities.has(m)}
                           onChange={(e) => setSelectedModalities(prev => { const next = new Set(prev); if (e.target.checked) next.add(m); else next.delete(m); return next })}
+                          className="text-blue-600 dark:text-blue-500"
                         />
                         <span>{m}</span>
                       </label>
                     ))}
                   </div>
 
-                  <h4 className="font-medium mt-4 mb-2 text-sm">力学モード</h4>
+                  <h4 className="font-medium mt-4 mb-2 text-sm dark:text-gray-100">力学モード</h4>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { id: 'emotion', label: 'Emotion' },
@@ -1895,46 +1899,46 @@ export default function TimelineVisualization({
                         key={o.id}
                         type="button"
                         onClick={() => setPhysicsMode(o.id as typeof physicsMode)}
-                        className={`px-2 py-1 rounded text-sm ${physicsMode === o.id ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                        className={`px-2 py-1 rounded text-sm ${physicsMode === o.id ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                       >{o.label}</button>
                     ))}
                   </div>
 
-                  <h4 className="font-medium mt-4 mb-2 text-sm">Top-K / 閾値 / ガンマ</h4>
+                  <h4 className="font-medium mt-4 mb-2 text-sm dark:text-gray-100">Top-K / 閾値 / ガンマ</h4>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600 w-20">Top-K</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 w-20">Top-K</span>
                       <input type="range" min="1" max="10" step="1" value={topK} onChange={(e)=>setTopK(Number(e.target.value))} className="flex-1" />
-                      <span className="text-xs w-8 text-right">{topK}</span>
+                      <span className="text-xs w-8 text-right text-gray-900 dark:text-gray-100">{topK}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600 w-20">Min W</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 w-20">Min W</span>
                       <input type="range" min="0" max="0.6" step="0.05" value={minW} onChange={(e)=>setMinW(Number(e.target.value))} className="flex-1" />
-                      <span className="text-xs w-8 text-right">{minW.toFixed(2)}</span>
+                      <span className="text-xs w-8 text-right text-gray-900 dark:text-gray-100">{minW.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600 w-20">Gamma</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 w-20">Gamma</span>
                       <input type="range" min="0.1" max="3.0" step="0.1" value={weightGamma} onChange={(e)=>setWeightGamma(Number(e.target.value))} className="flex-1" />
-                      <span className="text-xs w-8 text-right">{weightGamma.toFixed(1)}</span>
+                      <span className="text-xs w-8 text-right text-gray-900 dark:text-gray-100">{weightGamma.toFixed(1)}</span>
                     </div>
-                    <label className="flex items-center gap-2 text-xs text-gray-600">
-                      <input type="checkbox" checked={animateTransitions} onChange={(e)=>setAnimateTransitions(e.target.checked)} />
+                    <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <input type="checkbox" checked={animateTransitions} onChange={(e)=>setAnimateTransitions(e.target.checked)} className="text-blue-600 dark:text-blue-500" />
                       スナップショット補間（形状変化を滑らかに）
                     </label>
                   </div>
 
                   {/* 構造分析のON/OFF */}
                   <div className="mt-4 mb-2">
-                    <label className="flex items-center gap-2 text-sm font-medium">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
                       <input
                         type="checkbox"
                         checked={showAnalysis}
                         onChange={(e) => setShowAnalysis(e.target.checked)}
-                        className="w-4 h-4"
+                        className="w-4 h-4 text-blue-600 dark:text-blue-500"
                       />
                       <span>構造分析を表示</span>
                     </label>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       空白エリア（?）、密集/分散領域、重複候補を可視化
                     </p>
                   </div>
@@ -1960,7 +1964,7 @@ export default function TimelineVisualization({
                     </div>
                   )}
 
-                  <h4 className="font-medium mt-4 mb-2 text-sm">データ範囲</h4>
+                  <h4 className="font-medium mt-4 mb-2 text-sm dark:text-gray-100">データ範囲</h4>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { id: 'all', label: 'All 200' },
@@ -1971,7 +1975,7 @@ export default function TimelineVisualization({
                         key={o.id}
                         type="button"
                         onClick={() => setSegment(o.id as typeof segment)}
-                        className={`px-2 py-1 rounded text-sm ${segment === o.id ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                        className={`px-2 py-1 rounded text-sm ${segment === o.id ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                       >{o.label}</button>
                     ))}
                   </div>
@@ -2011,11 +2015,11 @@ export default function TimelineVisualization({
                     const second = avgObj(sections.second)
                     const cell = (v: number, digits = 2) => Number.isFinite(v) ? v.toFixed(digits) : '-'
                     return (
-                      <div className="mt-4 border rounded bg-white/60 overflow-auto">
-                        <div className="text-sm font-medium p-3 pb-0">単語詳細: {selectedWord}</div>
+                      <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded bg-white/60 dark:bg-gray-800/60 overflow-auto">
+                        <div className="text-sm font-medium p-3 pb-0 text-gray-900 dark:text-gray-100">単語詳細: {selectedWord}</div>
                         <table className="min-w-full text-xs">
                           <thead>
-                            <tr className="text-gray-500">
+                            <tr className="text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900">
                               <th className="text-left px-3 py-2">区分</th>
                               <th className="text-right px-3 py-2">反応時間(ms)</th>
                               <th className="text-right px-3 py-2">生理</th>
@@ -2027,8 +2031,8 @@ export default function TimelineVisualization({
                             </tr>
                           </thead>
                           <tbody>
-                            <tr>
-                              <td className="px-3 py-2 text-gray-700">全体</td>
+                            <tr className="dark:bg-gray-800">
+                              <td className="px-3 py-2 text-gray-700 dark:text-gray-300">全体</td>
                               <td className="px-3 py-2 text-right">{Math.round(overall.reactionTimeAvg)}</td>
                               <td className="px-3 py-2 text-right">{cell(overall.physioAvg, 3)}</td>
                               <td className="px-3 py-2 text-right">{cell(overall.reactionValueAvg)}</td>
@@ -2037,8 +2041,8 @@ export default function TimelineVisualization({
                               <td className="px-3 py-2 text-right">{cell(overall.faceAvg)}</td>
                               <td className="px-3 py-2 text-right">{cell(overall.languageAvg)}</td>
                             </tr>
-                            <tr className="bg-gray-50/70">
-                              <td className="px-3 py-2 text-gray-700">1回目</td>
+                            <tr className="bg-gray-50/70 dark:bg-gray-700/50">
+                              <td className="px-3 py-2 text-gray-700 dark:text-gray-300">1回目</td>
                               <td className="px-3 py-2 text-right">{Math.round(first.reactionTimeAvg)}</td>
                               <td className="px-3 py-2 text-right">{cell(first.physioAvg, 3)}</td>
                               <td className="px-3 py-2 text-right">{cell(first.reactionValueAvg)}</td>
@@ -2047,8 +2051,8 @@ export default function TimelineVisualization({
                               <td className="px-3 py-2 text-right">{cell(first.faceAvg)}</td>
                               <td className="px-3 py-2 text-right">{cell(first.languageAvg)}</td>
                             </tr>
-                            <tr>
-                              <td className="px-3 py-2 text-gray-700">2回目以降</td>
+                            <tr className="dark:bg-gray-800">
+                              <td className="px-3 py-2 text-gray-700 dark:text-gray-300">2回目以降</td>
                               <td className="px-3 py-2 text-right">{Math.round(second.reactionTimeAvg)}</td>
                               <td className="px-3 py-2 text-right">{cell(second.physioAvg, 3)}</td>
                               <td className="px-3 py-2 text-right">{cell(second.reactionValueAvg)}</td>
