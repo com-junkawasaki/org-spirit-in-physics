@@ -22,8 +22,8 @@ const { spiritTypes, ghostPatterns } = data;
 
 <section id="visualization-results" class="space-y-8">
   <div>
-    <h2 class="text-2xl font-bold mb-4">Visualization Results</h2>
-    <p class="text-gray-600 mb-6">
+    <h2 class="text-2xl font-bold mb-4 dark:text-gray-100">Visualization Results</h2>
+    <p class="text-gray-600 dark:text-gray-400 mb-6">
       The following visualizations demonstrate the data processing pipeline results,
       showing Spirit Type and Ghost Pattern classifications in multiple formats.
     </p>
@@ -36,19 +36,19 @@ const { spiritTypes, ghostPatterns } = data;
 
   <!-- Timeline Visualization -->
   <div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4">Timeline Visualization</h3>
+    <h3 class="text-xl font-semibold mb-4 dark:text-gray-100">Timeline Visualization</h3>
     <TimelineView data={data} width={1000} height={400} />
   </div>
 
   <!-- Word Distance Visualization -->
   <div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4">Word Distance Visualization</h3>
+    <h3 class="text-xl font-semibold mb-4 dark:text-gray-100">Word Distance Visualization</h3>
     <WordDistanceView data={data} width={1000} height={600} topK={20} />
   </div>
 
   <!-- 3D Force Graph Visualization -->
   <div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4">3D Force Graph Visualization</h3>
+    <h3 class="text-xl font-semibold mb-4 dark:text-gray-100">3D Force Graph Visualization</h3>
     <SpiritType3DVisualization
       spiritTypes={spiritTypes}
       ghostPatterns={ghostPatterns}
@@ -61,7 +61,7 @@ const { spiritTypes, ghostPatterns } = data;
 
   <!-- Complex Space 3D Visualization -->
   <div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4">Complex Space 3D Visualization</h3>
+    <h3 class="text-xl font-semibold mb-4 dark:text-gray-100">Complex Space 3D Visualization</h3>
     <ComplexSpace3D
       spiritTypes={spiritTypes}
       ghostPatterns={ghostPatterns}
@@ -75,7 +75,7 @@ const { spiritTypes, ghostPatterns } = data;
 
   <!-- Network Graph Visualization -->
   <div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4">Word Network Graph</h3>
+    <h3 class="text-xl font-semibold mb-4 dark:text-gray-100">Word Network Graph</h3>
     <WordNetworkGraph
       spiritTypes={spiritTypes}
       ghostPatterns={ghostPatterns}
@@ -87,7 +87,7 @@ const { spiritTypes, ghostPatterns } = data;
 
   <!-- Clustering Visualization -->
   <div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4">Word Clustering Visualization</h3>
+    <h3 class="text-xl font-semibold mb-4 dark:text-gray-100">Word Clustering Visualization</h3>
     <WordClusteringVisualization
       spiritTypes={spiritTypes}
       ghostPatterns={ghostPatterns}
@@ -98,7 +98,7 @@ const { spiritTypes, ghostPatterns } = data;
 
   <!-- Interactive Word List -->
   <div class="mb-8">
-    <h3 class="text-xl font-semibold mb-4">Interactive Word List</h3>
+    <h3 class="text-xl font-semibold mb-4 dark:text-gray-100">Interactive Word List</h3>
     <InteractiveWordList
       spiritTypes={spiritTypes}
       ghostPatterns={ghostPatterns}

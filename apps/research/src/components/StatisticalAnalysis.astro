@@ -20,7 +20,7 @@ const { componentBreakdown } = classification;
     <p>
       Overall classification accuracy: <strong>{(classification.classificationAccuracy * 100).toFixed(1)}%</strong>
     </p>
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
       Spirit Type: {classification.spiritTypeCount} responses ({((classification.spiritTypeCount / (classification.spiritTypeCount + classification.ghostPatternCount)) * 100).toFixed(1)}%)
       <br />
       Ghost Pattern: {classification.ghostPatternCount} responses ({((classification.ghostPatternCount / (classification.spiritTypeCount + classification.ghostPatternCount)) * 100).toFixed(1)}%)
@@ -30,41 +30,41 @@ const { componentBreakdown } = classification;
   <div class="my-4">
     <h4>Component Breakdown</h4>
     <div class="overflow-x-auto">
-      <table class="min-w-full border-collapse border border-gray-300">
+      <table class="min-w-full border-collapse border border-gray-300 dark:border-gray-700">
         <thead>
-          <tr class="bg-gray-100">
-            <th class="border border-gray-300 px-4 py-2 text-left">Component</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Mean</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Std Dev</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Min</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Max</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Median</th>
+          <tr class="bg-gray-100 dark:bg-gray-800">
+            <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Component</th>
+            <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Mean</th>
+            <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Std Dev</th>
+            <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Min</th>
+            <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Max</th>
+            <th class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left">Median</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td class="border border-gray-300 px-4 py-2 font-semibold">Gene</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.gene.mean.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.gene.stdDev.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.gene.min.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.gene.max.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.gene.median.toFixed(3)}</td>
+          <tr class="dark:bg-gray-900/50">
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2 font-semibold">Gene</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.gene.mean.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.gene.stdDev.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.gene.min.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.gene.max.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.gene.median.toFixed(3)}</td>
           </tr>
-          <tr>
-            <td class="border border-gray-300 px-4 py-2 font-semibold">Meme</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.meme.mean.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.meme.stdDev.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.meme.min.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.meme.max.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.meme.median.toFixed(3)}</td>
+          <tr class="dark:bg-gray-900/50">
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2 font-semibold">Meme</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.meme.mean.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.meme.stdDev.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.meme.min.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.meme.max.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.meme.median.toFixed(3)}</td>
           </tr>
-          <tr>
-            <td class="border border-gray-300 px-4 py-2 font-semibold">Field</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.field.mean.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.field.stdDev.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.field.min.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.field.max.toFixed(3)}</td>
-            <td class="border border-gray-300 px-4 py-2">{componentBreakdown.field.median.toFixed(3)}</td>
+          <tr class="dark:bg-gray-900/50">
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2 font-semibold">Field</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.field.mean.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.field.stdDev.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.field.min.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.field.max.toFixed(3)}</td>
+            <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">{componentBreakdown.field.median.toFixed(3)}</td>
           </tr>
         </tbody>
       </table>
