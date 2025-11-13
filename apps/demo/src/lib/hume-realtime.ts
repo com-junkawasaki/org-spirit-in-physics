@@ -2,7 +2,7 @@
 // Real-time Hume AI emotion analysis integration
 
 import type { EmotionData } from '../types/demo'
-import { normalizeEmotionName, EMOTION_KEYS } from '@spirit-in-physics/visualization-components/src/lib/emotion-normalization'
+import { normalizeEmotionName, EMOTION_KEYS } from './emotion-normalization'
 
 export interface HumeAnalysisResult {
   emotions: EmotionData[]

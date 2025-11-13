@@ -3,9 +3,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import WordDisplay from './WordDisplay'
-import ComplexForce3D from './ComplexForce3D'
-import ComplexVisualization from './ComplexVisualization'
-import StructureAnalysis from './StructureAnalysis'
+// import ComplexForce3D from './ComplexForce3D'
+// import ComplexVisualization from './ComplexVisualization'
+// import StructureAnalysis from './StructureAnalysis'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
 import { analyzeEmotionRealtime, captureVideoFrame, captureAudioFrame } from '../lib/hume-realtime'
 import { calculateComplexSpace } from '../lib/complex-calculator'
@@ -155,8 +155,8 @@ export default function DemoApp() {
   const currentWord = JUNG_STIMULUS_WORDS[currentWordIndex]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
@@ -217,21 +217,34 @@ export default function DemoApp() {
                 3D Force Graph
               </h2>
               <div className="w-full overflow-auto">
-                <ComplexForce3D
+                {/* Temporarily disabled until import issues are resolved */}
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  3D Force Graph visualization will be available here
+                </div>
+                {/* <ComplexForce3D
                   wordEmotionData={wordEmotionData}
                   width={Math.min(800, typeof window !== 'undefined' ? window.innerWidth - 64 : 800)}
                   height={600}
-                />
+                /> */}
               </div>
             </div>
 
             {/* Complex Visualization */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-              <ComplexVisualization
+              {/* Temporarily disabled until import issues are resolved */}
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                Complex Visualization will be available here
+                {complexData && (
+                  <div className="mt-4 text-sm">
+                    Complex regions detected: {complexData.regions.length}
+                  </div>
+                )}
+              </div>
+              {/* <ComplexVisualization
                 complexData={complexData}
                 width={Math.min(800, typeof window !== 'undefined' ? window.innerWidth - 64 : 800)}
                 height={600}
-              />
+              /> */}
             </div>
           </div>
         )}
@@ -239,12 +252,21 @@ export default function DemoApp() {
         {/* Structure Analysis */}
         {wordEmotionData.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-            <StructureAnalysis
+            {/* Temporarily disabled until import issues are resolved */}
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                構造分析
+              </h3>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                全体密度: {(structureAnalysis.overallDensity * 100).toFixed(1)}%
+              </div>
+            </div>
+            {/* <StructureAnalysis
               gapAreas={structureAnalysis.gapAreas}
               densityRegions={structureAnalysis.densityRegions}
               duplicates={structureAnalysis.duplicates}
               overallDensity={structureAnalysis.overallDensity}
-            />
+            /> */}
           </div>
         )}
 

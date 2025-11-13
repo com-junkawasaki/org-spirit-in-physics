@@ -2,7 +2,7 @@
 // Complex space calculations: C = InformationSpace × BiologicalSpace
 
 import type { ComplexSpaceData, ComplexRegion, WordEmotionData } from '../types/demo'
-import { EMOTION_KEYS } from '@spirit-in-physics/visualization-components/src/lib/emotion-normalization'
+import { EMOTION_KEYS } from './emotion-normalization'
 
 /**
  * Calculate Complex space from emotion vectors and word associations
