@@ -19,7 +19,7 @@ export default defineConfig({
     }),
     react(),
   ],
-  output: 'server', // Enable SSR for API routes and pages
+  output: 'static', // Static site generation for research paper pages
   server: {
     host: true,
     port: 4321,
