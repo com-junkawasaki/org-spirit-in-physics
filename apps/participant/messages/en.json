@@ -14,6 +14,9 @@
   "consent_submit": "Agree and Start Experiment",
   "participant_id_generating": "Generating participant ID...",
   "data_save_error": "Failed to save data.",
-  "consent_save_error": "An error occurred while saving consent data:"
+  "consent_save_error": "An error occurred while saving consent data:",
+  "completion_thank_you": "Thank you for your cooperation.",
+  "completion_message": "The experiment is now complete. Please close the window.",
+  "start_new_session": "Start New Session"
 }
 

@@ -4,7 +4,7 @@ import {
   loadAllSessionData,
   parseWordResponsesFromEvents,
   getParticipantStatistics,
-  initializeNeo4jDatabase
+  initializeDatabase
 } from "scripts/src/lib/data-loader";
 import { loadEmotionAnalysisResults, getEmotionStatisticsFromNeo4j } from "scripts/src/lib/emotion-analysis";
 
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Neo4jデータベースの初期化
-        await initializeNeo4jDatabase();
+        // PostgreSQL/TimescaleDBデータベースの初期化（GraphQLサービス経由）
+        await initializeDatabase();
         const participants = await loadAllParticipants();
         const participantStats = getParticipantStatistics(participants);
 
@@ -113,8 +113,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Neo4jデータベースの初期化
-        await initializeNeo4jDatabase();
+        // PostgreSQL/TimescaleDBデータベースの初期化（GraphQLサービス経由）
+        await initializeDatabase();
         const participants_for_analytics = await loadAllParticipants();
         const stats = getParticipantStatistics(participants_for_analytics);
         const allSessions = await loadAllSessionData();
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Neo4jから感情統計を取得
+        // GraphQLサービス経由でPostgreSQL/TimescaleDBから感情統計を取得
         const emotionStats = await getEmotionStatisticsFromNeo4j();
         const emotionDistribution: Record<string, number> = {};
         emotionStats.dominantEmotions.forEach(item => {

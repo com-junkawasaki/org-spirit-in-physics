@@ -31,9 +31,21 @@ services:
     ports:
       - "25250:25250"
     volumes:
+      - ./apps/participant:/app
       - ./apps/visualizer/public/dataset:/app/dataset:cached
+      - /app/node_modules
+      - /app/.next
     env_file:
       - ./apps/participant/env.docker
+    environment:
+      - NODE_ENV=development
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # Next.js HMR settings
+      - NEXT_TELEMETRY_DISABLED=1
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,9 +106,21 @@ services:
     ports:
       - "25251:25250"
     volumes:
+      - ./apps/participant:/app
       - ./apps/visualizer/public/dataset:/app/dataset:cached
+      - /app/node_modules
+      - /app/.next
     env_file:
       - ./apps/participant/env.docker
+    environment:
+      - NODE_ENV=development
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # Next.js HMR settings
+      - NEXT_TELEMETRY_DISABLED=1
     # Neo4j環境変数は削除済み - GraphQLサービス経由でPostgreSQLを使用
     # environment:
     #   - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687

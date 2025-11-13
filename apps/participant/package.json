@@ -41,7 +41,7 @@
     "zustand": "^5.0.6"
   },
   "scripts": {
-    "dev": "next dev -p 25250",
+    "dev": "next dev -p 25250 -H 0.0.0.0",
     "build": "paraglide-js compile && next build",
     "start": "next start",
     "lint": "next lint",

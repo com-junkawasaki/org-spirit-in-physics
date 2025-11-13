@@ -2,7 +2,7 @@
 const nextConfig = {
   // Configure `pageExtensions` to include MDX files
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     // Node.js ポリフィルの追加（Inngestで必要）
     if (!isServer) {
       config.resolve.fallback = {
@@ -25,6 +25,15 @@ const nextConfig = {
     if (isServer) {
       config.externals = config.externals || [];
       // Neo4jはwebpackバンドルに含めるため、外部設定は不要
+    }
+
+    // HMR設定（Docker環境でのファイル監視を改善）
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000, // 1秒ごとにポーリング
+        aggregateTimeout: 300, // 変更後の待機時間
+        ignored: ['**/node_modules', '**/.git', '**/.next'],
+      };
     }
 
     return config;

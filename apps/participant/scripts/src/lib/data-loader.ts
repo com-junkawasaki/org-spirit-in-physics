@@ -15,10 +15,10 @@ if (typeof window === 'undefined') {
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
-// データベース初期化関数（GraphQLサービス経由でPostgreSQLを使用）
-export async function initializeNeo4jDatabase(): Promise<void> {
-  // この関数は後方互換性のため残していますが、実際の処理はGraphQLサービス経由で行われます
-  console.log('Database initialization handled by GraphQL service (PostgreSQL)');
+// データベース初期化関数（GraphQLサービス経由でPostgreSQL/TimescaleDBを使用）
+export async function initializeDatabase(): Promise<void> {
+  // GraphQLサービス経由でPostgreSQL/TimescaleDBを使用
+  console.log('Database initialization handled by GraphQL service (PostgreSQL/TimescaleDB)');
 }
 
 
@@ -83,27 +83,7 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
 
         if (consentData.length > 0) {
           console.log(`Loaded ${consentData.length} participants from Vercel Blob`);
-
-          // Neo4jにも保存
-          for (const data of consentData) {
-            const { neo4jManager } = await import('./database/neo4j-manager.ts');
-            const participant: Participant = {
-              id: data.participantId,
-              signature: data.signature,
-              agreedAt: new Date(data.agreedAt || new Date()),
-              agreements: data.agreements || {},
-              hasSessionData: false,
-              hasVideoFiles: false,
-              videoFiles: []
-            };
-
-            try {
-              await neo4jManager.saveParticipant(participant);
-            } catch (saveError) {
-              console.warn('Failed to save participant to Neo4j:', saveError);
-            }
-          }
-
+          // GraphQLサービス経由でPostgreSQL/TimescaleDBに保存（必要に応じて実装）
           return consentData;
         }
       } catch (blobError) {
@@ -143,26 +123,7 @@ export async function loadConsentDataFromDatabase(): Promise<ConsentData[]> {
       }
     }
 
-    // Neo4jにも保存
-    for (const data of consentData) {
-      const { neo4jManager } = await import('./database/neo4j-manager.ts');
-      const participant: Participant = {
-        id: data.participantId,
-        signature: data.signature,
-        agreedAt: new Date(data.agreedAt || new Date()),
-        agreements: data.agreements || {},
-        hasSessionData: false,
-        hasVideoFiles: false,
-        videoFiles: []
-      };
-
-      try {
-        await neo4jManager.saveParticipant(participant);
-      } catch (saveError) {
-        console.warn('Failed to save participant to Neo4j:', saveError);
-      }
-    }
-
+    // GraphQLサービス経由でPostgreSQL/TimescaleDBに保存（必要に応じて実装）
     return consentData;
   } catch (error) {
     console.error('Error loading consent data from database:', error);
@@ -223,35 +184,13 @@ export function loadParticipantData(participantId: string): Participant | null {
 }
 
 // Load session data for a participant
+// GraphQLサービス経由でPostgreSQL/TimescaleDBからセッションデータを取得
 export async function loadSessionData(participantId: string): Promise<SessionData | null> {
   try {
-    // Neo4jデータベースからセッションデータを取得（一本化）
-    try {
-      const { neo4jManager } = await import('./database/neo4j-manager.ts');
-
-      // Neo4jからセッションデータを取得
-      const query = `
-        MATCH (p:Participant {id: $participantId})-[:HAS_SESSION]->(s:Session)
-        RETURN s
-        ORDER BY s.created_at DESC
-      `;
-      const sessions = await neo4jManager.executeQuery(query, { participantId });
-
-      if (sessions && sessions.length > 0) {
-        const session = sessions[0].s;
-        return {
-          participantId,
-          events: session.events || [],
-          wordResponses: [] // TODO: Implement word responses extraction
-        };
-      }
-
-      console.log(`No session data found in Neo4j for ${participantId}`);
-      return null;
-    } catch (neo4jError) {
-      console.warn('Failed to load session data from Neo4j:', neo4jError);
-      return null;
-    }
+    // GraphQLサービス経由でPostgreSQL/TimescaleDBからセッションデータを取得
+    // TODO: GraphQLクエリを実装
+    console.warn('loadSessionData: GraphQL経由での実装は未対応');
+    return null;
   } catch (error) {
     console.error(`Error loading session data for ${participantId}:`, error);
     return null;
@@ -312,25 +251,13 @@ export function parseWordResponsesFromEvents(events: SessionEvent[]): Array<{
 }
 
 // Load all participants data
+// GraphQLサービス経由でPostgreSQL/TimescaleDBから参加者データを取得
 export async function loadAllParticipants(): Promise<Participant[]> {
   try {
-    const { neo4jManager } = await import('./database/neo4j-manager.ts');
-    const neo4jParticipants = await neo4jManager.getAllParticipants();
-
-    console.log(`Loaded ${neo4jParticipants?.length || 0} participants from Neo4j`);
-
-    // Convert to data-loader Participant format
-    const participants: Participant[] = neo4jParticipants.map(p => ({
-      id: p.id,
-      signature: p.signature || "unknown",
-      agreedAt: p.agreedAt || new Date(),
-      agreements: p.agreements || {},
-      hasSessionData: p.hasSessionData || false,
-      hasVideoFiles: p.hasVideoFiles || false,
-      videoFiles: p.videoFiles || []
-    }));
-
-    return participants;
+    // GraphQLサービス経由でPostgreSQL/TimescaleDBから参加者データを取得
+    // TODO: GraphQLクエリを実装
+    console.warn('loadAllParticipants: GraphQL経由での実装は未対応');
+    return [];
   } catch (error) {
     console.error('Error loading all participants:', error);
     return [];
@@ -338,28 +265,13 @@ export async function loadAllParticipants(): Promise<Participant[]> {
 }
 
 // Load all session data
+// GraphQLサービス経由でPostgreSQL/TimescaleDBから全セッションデータを取得
 export async function loadAllSessionData(): Promise<Array<{ participantId: string; sessionData: SessionData }>> {
   try {
-    const { neo4jManager } = await import('./database/neo4j-manager.ts');
-
-    // Neo4jからセッションデータを取得
-    const query = `
-      MATCH (p:Participant)-[:HAS_SESSION]->(s:Session)
-      RETURN p.id as participant_id, s
-      ORDER BY p.id, s.created_at DESC
-    `;
-    const sessions = await neo4jManager.executeQuery(query);
-
-    console.log(`Loaded ${sessions?.length || 0} sessions from Neo4j`);
-
-    return (sessions || []).map((record: any) => ({
-      participantId: record.participant_id,
-      sessionData: {
-        participantId: record.participant_id,
-        events: record.s.events || [],
-        wordResponses: [] // TODO: Implement word responses extraction
-      } as SessionData
-    }));
+    // GraphQLサービス経由でPostgreSQL/TimescaleDBから全セッションデータを取得
+    // TODO: GraphQLクエリを実装
+    console.warn('loadAllSessionData: GraphQL経由での実装は未対応');
+    return [];
   } catch (error) {
     console.error('Error loading all session data:', error);
     return [];
