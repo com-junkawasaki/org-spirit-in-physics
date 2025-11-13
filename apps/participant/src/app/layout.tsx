@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { baseLocale, getLocale } from "../src/paraglide/runtime";
-import * as m from "../src/paraglide/messages";
-import { ApolloProvider } from "../src/components/providers/ApolloProvider";
+import { baseLocale, getLocale } from "../paraglide/runtime";
+import * as m from "../paraglide/messages";
+import { ApolloProvider } from "../components/providers/ApolloProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 

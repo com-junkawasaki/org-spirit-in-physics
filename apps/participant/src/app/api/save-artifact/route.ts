@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { blobStorage } from "scripts/src/lib/blob";
+import { blobStorage } from "@/lib/blob";
 
 export async function POST(request: NextRequest) {
     try {

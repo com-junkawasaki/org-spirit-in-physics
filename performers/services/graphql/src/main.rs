@@ -5,6 +5,7 @@ mod schema;
 mod types;
 mod resolvers;
 mod database;
+mod storage;
 
 use axum::{
     extract::State,

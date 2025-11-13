@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Button } from 'scripts/src/components/ui/button';
-import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
+import { Button } from '@/components/ui/button';
+import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
 import Link from 'next/link';
-import * as m from '../../../src/paraglide/messages';
+import * as m from '../../paraglide/messages';
 
 export default function CompletionPage() {
   const resetTest = useKawasakiStore((state) => state.resetTest);

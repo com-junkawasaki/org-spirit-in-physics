@@ -5,8 +5,8 @@ import {
   parseWordResponsesFromEvents,
   getParticipantStatistics,
   initializeDatabase
-} from "scripts/src/lib/data-loader";
-import { loadEmotionAnalysisResults, getEmotionStatisticsFromNeo4j } from "scripts/src/lib/emotion-analysis";
+} from "@/lib/data-loader";
+import { loadEmotionAnalysisResults, getEmotionStatisticsFromNeo4j } from "@/lib/emotion-analysis";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

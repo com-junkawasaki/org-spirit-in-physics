@@ -1,14 +1,14 @@
 import { serve } from 'inngest/next';
-import { inngest } from 'scripts/src/50_adapters';
+import { inngest } from '@/lib/adapters';
 import {
   videoAnalysisWorkflow,
   videoAnalysisFailureWorkflow,
   resultsProcessingWorkflow
-} from 'scripts/src/70_supervisors';
+} from '@/lib/supervisors';
 import {
   batchAnalysisWorkflow,
   batchAnalysisFailureWorkflow
-} from 'scripts/src/70_supervisors';
+} from '@/lib/supervisors';
 
 // Inngest APIルート（v3形式）
 export const { GET, POST, PUT } = serve({

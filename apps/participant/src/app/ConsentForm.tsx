@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from "scripts/src/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "scripts/src/components/ui/card";
-import { Checkbox } from "scripts/src/components/ui/checkbox";
-import { Input } from "scripts/src/components/ui/input";
-import { Label } from "scripts/src/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import ResearchPlanContent from './ResearchPlanContent';
 import * as m from '../src/paraglide/messages';
 

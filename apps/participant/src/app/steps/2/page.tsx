@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import JungVoiceTest from 'scripts/src/components/jung-voice-assessment/JungVoiceTest';
+import JungVoiceTest from '@/components/jung-voice-assessment/JungVoiceTest';
 
 export default function TestPage() {
   const router = useRouter();

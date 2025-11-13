@@ -35,3 +35,10 @@ export const CREATE_SESSION = gql`
   }
 `;
 
+// Upload artifact (video, audio, etc.) to Supabase Storage
+export const UPLOAD_ARTIFACT = gql`
+  mutation UploadArtifact($input: UploadArtifactInput!) {
+    upload_artifact(input: $input)
+  }
+`;
+

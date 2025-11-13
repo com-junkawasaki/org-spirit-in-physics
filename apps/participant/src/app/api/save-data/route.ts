@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { blobStorage } from "scripts/src/lib/blob";
-import { SaveStructuredDataPayloadSchema } from "scripts/src/components/jung-voice-assessment/schema";
+import { blobStorage } from "@/lib/blob";
+import { SaveStructuredDataPayloadSchema } from "@/components/jung-voice-assessment/schema";
 
 export async function POST(request: NextRequest) {
     try {

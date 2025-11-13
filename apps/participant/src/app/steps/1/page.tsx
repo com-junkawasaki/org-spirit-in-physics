@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import ConsentForm from 'scripts/src/app/ConsentForm';
-import { useKawasakiStore } from 'scripts/src/components/jung-voice-assessment/store';
+import ConsentForm from '@/app/ConsentForm';
+import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
 import { useRouter } from 'next/navigation';
-import * as m from '../../../src/paraglide/messages';
-import { useCreateParticipant } from '../../../src/lib/graphql/hooks';
+import * as m from '../../paraglide/messages';
+import { useCreateParticipant } from '../../lib/graphql/hooks';
 
 export default function ConsentPage() {
   const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);

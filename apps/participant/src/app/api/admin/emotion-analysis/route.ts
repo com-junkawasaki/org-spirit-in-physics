@@ -4,9 +4,9 @@ import {
   analyzeAllParticipantVideos,
   loadEmotionAnalysisResults,
   generateEmotionStatistics
-} from "scripts/src/lib/emotion-analysis";
+} from "@/lib/emotion-analysis";
 // Neo4j依存を削除 - GraphQLサービス経由でPostgreSQLを使用
-import { WorkflowService } from "scripts/src/lib/workflow-service";
+import { WorkflowService } from "@/lib/workflow-service";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

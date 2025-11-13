@@ -6,8 +6,10 @@ use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 use serde_json::Value;
 use chrono::Utc;
+use base64::{Engine as _, engine::general_purpose};
 
 use crate::types::{Participant, Session};
+use crate::storage::SupabaseStorage;
 
 #[derive(InputObject)]
 pub struct CreateParticipantInput {
@@ -23,6 +25,15 @@ pub struct CreateSessionInput {
     pub session_index: Option<i32>,
     pub start_ts: i64,
     pub events: Value,
+}
+
+#[derive(InputObject)]
+pub struct UploadArtifactInput {
+    pub participant_id: ID,
+    pub file_name: String,
+    pub file_data: String, // Base64 encoded file data
+    pub content_type: String, // MIME type (e.g., "video/webm")
+    pub artifact_type: String, // "video", "audio", "consent", "session_data"
 }
 
 pub struct ParticipantMutation;
@@ -142,6 +153,35 @@ impl ParticipantMutation {
             created_at: row.6.to_rfc3339(),
             updated_at: row.7.to_rfc3339(),
         })
+    }
+
+    /// Upload an artifact (video, audio, etc.) to Supabase Storage
+    async fn upload_artifact(
+        &self,
+        _ctx: &Context<'_>,
+        input: UploadArtifactInput,
+    ) -> Result<String> {
+        // Decode base64 file data
+        let file_data = general_purpose::STANDARD
+            .decode(&input.file_data)
+            .map_err(|e| Error::new(format!("Invalid base64 file data: {}", e)))?;
+
+        // Initialize Supabase Storage client
+        let storage = SupabaseStorage::new()
+            .map_err(|e| Error::new(format!("Failed to initialize storage: {}", e)))?;
+
+        // Upload file to Supabase Storage
+        let public_url = storage
+            .upload_file(
+                input.participant_id.as_str(),
+                &input.file_name,
+                &file_data,
+                &input.content_type,
+            )
+            .await
+            .map_err(|e| Error::new(format!("Failed to upload artifact: {}", e)))?;
+
+        Ok(public_url)
     }
 }
 
