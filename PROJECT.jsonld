@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.28.0",
+  "version": "1.29.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-15T12:00:00+09:00",
-  "merkleRoot": "3D Force Graphノード位置決定ロジックと動的/固定ノード制御の分析",
+  "updatedAt": "2025-01-15T14:00:00+09:00",
+  "merkleRoot": "3D Force Graph TypeGPUビューポート可視性最適化",
   
   "story": {
     "@id": "project:story",
@@ -383,6 +383,12 @@
         "@type": "project:Narrative",
         "act": "研究論文公開ページの構築",
         "summary": "Astro + MDX + JSON-LDを使用した研究論文公開ページを構築。Spirit in Physics論文をMDX形式で管理し、KaTeXによる数式レンダリング、JSON-LDによるセマンティックアノテーション、Apple HIG準拠のレスポンシブUIを実装。研究論文、著者、所属、セクション、数式、参考文献の包括的なJSON-LDスキーマを設計・実装し、知識グラフ統合とSEO最適化を実現。静的サイト生成により高速なパフォーマンスと検索エンジン最適化を達成。"
+      },
+      {
+        "@id": "project:narrative/54",
+        "@type": "project:Narrative",
+        "act": "3D Force Graph TypeGPUパフォーマンス最適化",
+        "summary": "Force3DWordGraphTypeGPUコンポーネントにIntersection Observer APIを実装し、ビューポート可視性に基づくパフォーマンス最適化を実現。可視エリア外の場合はWebGPU計算と描画処理を停止し、CPU/GPU負荷を大幅に削減。rootMargin: 50pxによる余裕を持たせた停止判定により、スクロール時のパフォーマンスを向上。isVisibleRefによるクロージャ問題を回避した最新状態参照を実装し、アニメーションループの効率的な制御を実現。科学的手法による霊性測定の可視化システムのパフォーマンスとユーザー体験を大幅に改善。"
       }
     ],
     "processNetwork": {
@@ -900,7 +906,15 @@
             "セマンティックアノテーション",
             "知識グラフ統合",
             "SEO最適化",
-            "静的サイト生成"
+            "静的サイト生成",
+            "3D Force Graph TypeGPUパフォーマンス最適化",
+            "Intersection Observer API実装",
+            "ビューポート可視性監視システム",
+            "可視エリア外WebGPU処理停止",
+            "CPU/GPU負荷削減",
+            "スクロール時パフォーマンス向上",
+            "isVisibleRefクロージャ問題回避",
+            "アニメーションループ効率制御"
           ]
         }
       ]
@@ -1007,6 +1021,12 @@
           "nodePositions": "emotion anchors on spherical shell, words at weighted centroid",
           "graphStructure": "Top-K sparse graph with minimum distance constraints",
           "visualization": "interactive 3D force graph with emotion-colored nodes and links"
+        },
+        "optimization": {
+          "viewportVisibility": "Intersection Observer APIによるビューポート可視性監視",
+          "performanceOptimization": "可視エリア外でのWebGPU処理停止",
+          "rootMargin": "50px",
+          "threshold": 0.01
         },
         "appliesTo": ["visualizer"]
       },
@@ -1363,7 +1383,15 @@
       "visualizerアプリ3D Force Graph可視化",
       "visualizerアプリ時系列可視化",
       "visualizerアプリ構造分析",
-      "visualizerアプリ感情距離可視化"
+      "visualizerアプリ感情距離可視化",
+      "3D Force Graph TypeGPUパフォーマンス最適化",
+      "Intersection Observer API実装",
+      "ビューポート可視性監視システム",
+      "可視エリア外WebGPU処理停止",
+      "CPU/GPU負荷削減",
+      "スクロール時パフォーマンス向上",
+      "isVisibleRefクロージャ問題回避",
+      "アニメーションループ効率制御"
     ]
   },
   
