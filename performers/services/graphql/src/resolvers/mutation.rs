@@ -136,18 +136,8 @@ impl ParticipantMutation {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| Error::new("Event missing 'type' field"))?;
             
-                   // Get or create event type (cast to session_event_type_enum)
-                   let event_type_id: i32 = sqlx::query_scalar(
-                       r#"
-                       INSERT INTO event_types (event_type)
-                       VALUES ($1::session_event_type_enum)
-                       ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
-                       RETURNING id
-                       "#
-                   )
-                   .bind(event_type_str)
-                   .fetch_one(pool)
-                   .await?;
+                   // Cast event type string to session_event_type_enum (no master table lookup)
+                   let event_type: String = event_type_str.to_string();
 
             let event_timestamp = event.get("timestamp")
                 .and_then(|v| v.as_i64())
@@ -166,13 +156,13 @@ impl ParticipantMutation {
 
             sqlx::query(
                 r#"
-                INSERT INTO session_events (session_id, event_type_id, event_timestamp, event_data, word_id, reaction_time_ms)
+                INSERT INTO session_events (session_id, event_type, event_timestamp, event_data, word_id, reaction_time_ms)
                 VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT DO NOTHING
                 "#
             )
             .bind(session_id)
-            .bind(event_type_id)
+            .bind(event_type_str)
             .bind(event_timestamp)
             .bind(event_data)
             .bind(word_id)
@@ -195,7 +185,7 @@ impl ParticipantMutation {
                 COALESCE(
                     json_agg(
                         jsonb_build_object(
-                            'type', et.event_type::text,
+                            'type', se.event_type::text,
                             'timestamp', se.event_timestamp,
                             'data', se.event_data,
                             'word_id', se.word_id,

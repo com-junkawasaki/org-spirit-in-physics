@@ -166,17 +166,7 @@ async def process_session(conn, participant_id: str, participant_path: Path):
         if not event_type_str:
             continue
         
-                                       # Get or create event type (cast to session_event_type_enum)
-                                       event_type_id = await conn.fetchval(
-                                           """
-                                           INSERT INTO event_types (event_type)
-                                           VALUES ($1::session_event_type_enum)
-                                           ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
-                                           RETURNING id
-                                           """,
-                                           event_type_str
-                                       )
-        
+        # Insert event (direct ENUM type, no master table lookup)
         event_timestamp = event.get('timestamp', start_ts)
         event_data = json.dumps(event.get('data', {})) if event.get('data') else None
         word_id = event.get('word_id')
@@ -185,13 +175,13 @@ async def process_session(conn, participant_id: str, participant_path: Path):
         await conn.execute(
             """
             INSERT INTO session_events (
-                session_id, event_type_id, event_timestamp, event_data, word_id, reaction_time_ms
+                session_id, event_type, event_timestamp, event_data, word_id, reaction_time_ms
             )
-            VALUES ($1::uuid, $2, $3, $4, $5, $6)
+            VALUES ($1::uuid, $2::session_event_type_enum, $3, $4, $5, $6)
             ON CONFLICT DO NOTHING
             """,
             session_id,
-            event_type_id,
+            event_type_str,
             event_timestamp,
             event_data,
             word_id,

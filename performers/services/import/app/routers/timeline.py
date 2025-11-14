@@ -132,7 +132,6 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
             se.word_id,
             se.reaction_time_ms
         FROM session_events se
-        JOIN event_types et ON et.id = se.event_type_id
         WHERE se.session_id::text = $1
         ORDER BY se.event_timestamp ASC
         """,
@@ -314,30 +313,19 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
             emotion_score = emotion['score']
             file_type = emotion['fileType']
             
-            # Get emotion name ID (ENUM型なので既に存在するはず)
-            emotion_name_id = await conn.fetchval(
-                """
-                SELECT id FROM emotion_names WHERE name = $1::emotion_name_enum
-                """,
-                emotion_name
-            )
-            if not emotion_name_id:
-                logger.warning(f"Emotion name '{emotion_name}' not found in emotion_names table, skipping")
-                continue
-            
-            # Insert emotion entry
+            # Insert emotion entry (direct ENUM type, no master table lookup)
             await conn.execute(
                 """
                 INSERT INTO timeline_emotion_entries (
                     timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
-                    emotion_name_id, score, file_type
+                    emotion_name, score, file_type
                 )
-                VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6)
-                ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, emotion_name_id, file_type) DO UPDATE
+                VALUES ($1, $2::uuid, $3::uuid, $4::emotion_name_enum, $5, $6::emotion_file_type)
+                ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, emotion_name, file_type) DO UPDATE
                 SET score = EXCLUDED.score
                 """,
                 time_dt, participant_id, session_id,
-                emotion_name_id, emotion_score, file_type
+                emotion_name, emotion_score, file_type
             )
         
         # Insert physiological measurements into normalized table
@@ -348,30 +336,19 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                     if not isinstance(value, (int, float)):
                         continue
                     
-                    # Get or create measurement type (cast to ENUM type)
-                    measurement_type_id = await conn.fetchval(
-                        """
-                        INSERT INTO physiological_measurement_types (measurement_type)
-                        VALUES ($1::measurement_type_enum)
-                        ON CONFLICT (measurement_type) DO UPDATE SET measurement_type = EXCLUDED.measurement_type
-                        RETURNING id
-                        """,
-                        measurement_type
-                    )
-                    
-                    # Insert measurement
+                    # Insert measurement (direct ENUM type, no master table lookup)
                     await conn.execute(
                         """
                         INSERT INTO physiological_measurements (
                             timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
-                            measurement_type_id, value
+                            measurement_type, value, unit
                         )
-                        VALUES ($1, $2::uuid, $3::uuid, $4, $5)
-                        ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, measurement_type_id) DO UPDATE
+                        VALUES ($1, $2::uuid, $3::uuid, $4::measurement_type_enum, $5, 'unknown'::measurement_unit_enum)
+                        ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, measurement_type) DO UPDATE
                         SET value = EXCLUDED.value
                         """,
                         time_dt, participant_id, session_id,
-                        measurement_type_id, float(value)
+                        measurement_type, float(value)
                     )
         
         timeline_points_count += 1
@@ -397,10 +374,9 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         SELECT 
             bed.begin_time,
             bed.end_time,
-            json_object_agg(en.name, bes.score) FILTER (WHERE bes.id IS NOT NULL) as emotion_scores
+            json_object_agg(bes.emotion_name::text, bes.score) FILTER (WHERE bes.id IS NOT NULL) as emotion_scores
         FROM hume_burst_emotion_data bed
         LEFT JOIN hume_burst_emotion_scores bes ON bes.hume_burst_emotion_data_id = bed.id
-        LEFT JOIN emotion_names en ON en.id = bes.emotion_name_id
         WHERE bed.session_id::text = $1
         GROUP BY bed.id, bed.begin_time, bed.end_time
         ORDER BY bed.begin_time ASC NULLS LAST
@@ -423,10 +399,9 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         """
         SELECT 
             fed.begin_time,
-            json_object_agg(en.name, fes.score) FILTER (WHERE fes.id IS NOT NULL) as emotion_scores
+            json_object_agg(fes.emotion_name::text, fes.score) FILTER (WHERE fes.id IS NOT NULL) as emotion_scores
         FROM hume_face_emotion_data fed
         LEFT JOIN hume_face_emotion_scores fes ON fes.hume_face_emotion_data_id = fed.id
-        LEFT JOIN emotion_names en ON en.id = fes.emotion_name_id
         WHERE fed.session_id::text = $1
         GROUP BY fed.id, fed.begin_time
         ORDER BY fed.begin_time ASC NULLS LAST
@@ -450,10 +425,9 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         SELECT 
             led.begin_time,
             led.end_time,
-            json_object_agg(en.name, les.score) FILTER (WHERE les.id IS NOT NULL) as emotion_scores
+            json_object_agg(les.emotion_name::text, les.score) FILTER (WHERE les.id IS NOT NULL) as emotion_scores
         FROM hume_language_emotion_data led
         LEFT JOIN hume_language_emotion_scores les ON les.hume_language_emotion_data_id = led.id
-        LEFT JOIN emotion_names en ON en.id = les.emotion_name_id
         WHERE led.session_id::text = $1
         GROUP BY led.id, led.begin_time, led.end_time
         ORDER BY led.begin_time ASC NULLS LAST
@@ -476,10 +450,9 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         """
         SELECT 
             ped.begin_time,
-            json_object_agg(en.name, pes.score) FILTER (WHERE pes.id IS NOT NULL) as emotion_scores
+            json_object_agg(pes.emotion_name::text, pes.score) FILTER (WHERE pes.id IS NOT NULL) as emotion_scores
         FROM hume_prosody_emotion_data ped
         LEFT JOIN hume_prosody_emotion_scores pes ON pes.hume_prosody_emotion_data_id = ped.id
-        LEFT JOIN emotion_names en ON en.id = pes.emotion_name_id
         WHERE ped.session_id::text = $1
         GROUP BY ped.id, ped.begin_time
         ORDER BY ped.begin_time ASC NULLS LAST

@@ -36,7 +36,7 @@ impl TimelineQuery {
                 COALESCE(
                     json_agg(
                         jsonb_build_object(
-                            'type', et.event_type::text,
+                            'type', se.event_type::text,
                             'timestamp', se.event_timestamp,
                             'data', se.event_data,
                             'word_id', se.word_id,
@@ -186,10 +186,10 @@ impl TimelineQuery {
                     COALESCE(
                         json_agg(
                             DISTINCT jsonb_build_object(
-                                'name', en.name,
+                                'name', tee.emotion_name::text,
                                 'score', tee.score,
-                                'fileType', tee.file_type,
-                                'color', en.color
+                                'fileType', tee.file_type::text,
+                                'color', get_emotion_color(tee.emotion_name)::text
                             )
                         ) FILTER (WHERE tee.id IS NOT NULL),
                         '[]'::json
@@ -197,8 +197,9 @@ impl TimelineQuery {
                     COALESCE(
                         json_agg(
                             jsonb_build_object(
-                                'measurement_type', pmt.measurement_type::text,
+                                'measurement_type', pm.measurement_type::text,
                                 'value', pm.value,
+                                'unit', COALESCE(pm.unit::text, 'unknown'),
                                 'timestamp', tp.time::text
                             )
                         ) FILTER (WHERE pm.id IS NOT NULL),
@@ -209,12 +210,10 @@ impl TimelineQuery {
                     tee.timeline_point_time = tp.time AND
                     tee.timeline_point_participant_id = tp.participant_id AND
                     tee.timeline_point_session_id = tp.session_id
-                LEFT JOIN emotion_names en ON en.id = tee.emotion_name_id
                 LEFT JOIN physiological_measurements pm ON
                     pm.timeline_point_time = tp.time AND
                     pm.timeline_point_participant_id = tp.participant_id AND
                     pm.timeline_point_session_id = tp.session_id
-                LEFT JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
                 WHERE tp.participant_id = "#
             );
             
