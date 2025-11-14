@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.32.0",
+  "version": "1.33.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-15T18:30:00+09:00",
-  "merkleRoot": "ENUM型への完全移行完了: マスターテーブル削除、color/unit ENUM化、直接ENUM参照、本番環境マイグレーション適用完了、スキーマ最適化完了",
+  "updatedAt": "2025-01-15T20:00:00+09:00",
+  "merkleRoot": "jung-voice-assessmentパッケージ共通化完了: GraphQL依存抽象化、UIコンポーネント依存抽象化、stimulus_words GraphQL API実装、Rust GraphQL resolver追加、PostgreSQL stimulus_wordsテーブル作成",
   
   "story": {
     "@id": "project:story",
@@ -401,6 +401,12 @@
         "@type": "project:Narrative",
         "act": "Domain Firstアプローチによるsession_event_type_enum実装",
         "summary": "アプリケーションコードから抽出した17種類のセッションイベントタイプをDomain Firstアプローチで実装。Rust側でSessionEventType ENUMを定義し、PostgreSQLにsession_event_type_enumとして登録。event_typesテーブルをsession_event_type_enum型に変換し、既存のevent_type_enumから移行。GraphQL resolverとimport serviceでENUM型キャスト対応を実装し、event_type::textキャストによりJSON出力に対応。ビューとマテリアライズドビューを再作成し、timeline_pointsテーブルの複合主キー（time, participant_id, session_id）に対応。Domain Firstアプローチ（Rust → PostgreSQL → GraphQL → TypeScript）により、型安全性と一貫性を保証するイベントタイプ管理システムを確立。"
+      },
+      {
+        "@id": "project:narrative/57",
+        "@type": "project:Narrative",
+        "act": "jung-voice-assessmentコンポーネントの共通パッケージ化",
+        "summary": "apps/participant/src/components/jung-voice-assessmentを@spirit-in-physics/jung-voice-assessmentパッケージとして共通化。GraphQL依存を抽象化し、ApolloClientとmutationsをpropsで注入可能に実装。UIコンポーネント（Button、Card）をpeerDependenciesとして定義し、propsで注入可能に抽象化。Rust GraphQL APIにstimulus_wordsクエリとStimulusWord型を追加し、PostgreSQLにstimulus_wordsテーブルを作成して100語の刺激語データを移行。useStimulusWordsフックを実装し、GraphQL APIから刺激語を取得するように変更。constants.tsのJUNG_STIMULUS_WORDSを削除し、GraphQL APIから動的に取得するアーキテクチャに移行。複数のアプリで再利用可能な共通パッケージとして設計し、SOLID原則に基づく依存関係の最小化を実現。"
       }
     ],
     "processNetwork": {
@@ -520,7 +526,19 @@
             "重み付き和による総合距離統合",
             "距離並び替え可能テーブルUI",
             "距離色分け可視化システム",
-            "単語間関係性分析基盤確立"
+            "単語間関係性分析基盤確立",
+            "jung-voice-assessmentコンポーネント共通パッケージ化",
+            "@spirit-in-physics/jung-voice-assessmentパッケージ作成",
+            "GraphQL依存抽象化（ApolloClient props注入）",
+            "UIコンポーネント依存抽象化（Button・Card props注入）",
+            "Rust GraphQL stimulus_wordsクエリ実装",
+            "PostgreSQL stimulus_wordsテーブル作成",
+            "100語刺激語データベース移行",
+            "useStimulusWordsフック実装",
+            "GraphQL APIから刺激語動的取得",
+            "constants.ts JUNG_STIMULUS_WORDS削除",
+            "複数アプリ再利用可能な共通パッケージ設計",
+            "SOLID原則に基づく依存関係最小化"
           ]
         },
         {
@@ -1465,7 +1483,37 @@
       "timeline_word_statistics_by_session マテリアライズドビュー作成完了",
       "participant_summary ビュー作成完了",
       "session_detail ビュー作成完了",
-      "participant_detail ビュー作成完了"
+      "participant_detail ビュー作成完了",
+      "jung-voice-assessmentコンポーネント共通パッケージ化",
+      "@spirit-in-physics/jung-voice-assessmentパッケージ作成",
+      "packages/jung-voice-assessment/ディレクトリ構造確立",
+      "GraphQL依存抽象化実装",
+      "ApolloClient props注入システム",
+      "GraphQL mutations props注入システム",
+      "GraphQL callbacks抽象化システム",
+      "UIコンポーネント依存抽象化実装",
+      "Button・Card・CardHeader・CardTitle・CardContent props注入",
+      "peerDependencies定義（react・react-dom・@apollo/client・graphql）",
+      "Rust GraphQL stimulus_wordsクエリ実装",
+      "StimulusWord型定義（id・japanese・english・pronunciation）",
+      "ParticipantQueryにstimulus_words・stimulus_word resolver追加",
+      "PostgreSQL stimulus_wordsテーブル作成",
+      "100語刺激語データベース移行",
+      "stimulus_wordsテーブルマイグレーション実装",
+      "useStimulusWordsフック実装",
+      "GraphQL APIから刺激語動的取得システム",
+      "constants.ts JUNG_STIMULUS_WORDS削除",
+      "GraphQL queries.graphql作成",
+      "GraphQL mutations.graphql作成",
+      "GraphQL codegen設定",
+      "packages/jung-voice-assessment/codegen.yaml作成",
+      "TypeScript型自動生成設定",
+      "apps/participant使用箇所更新",
+      "インポートパス更新（@spirit-in-physics/jung-voice-assessment）",
+      "package.json依存関係追加",
+      "複数アプリ再利用可能な共通パッケージ設計",
+      "SOLID原則に基づく依存関係最小化",
+      "疎結合アーキテクチャ実現"
     ]
   },
   
