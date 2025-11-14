@@ -96,6 +96,14 @@ async def import_timeline():
                 timeline_points_count=0
             ))
     
+    # マテリアライズドビューをリフレッシュ
+    async with pool.acquire() as conn:
+        try:
+            await conn.execute("SELECT refresh_timeline_materialized_views();")
+            logger.info("Refreshed materialized views after timeline import")
+        except Exception as e:
+            logger.warning(f"Failed to refresh materialized views: {e}")
+    
     return ImportResult(
         success=True,
         total_sessions=total_sessions,

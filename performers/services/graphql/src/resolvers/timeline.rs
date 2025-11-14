@@ -285,8 +285,8 @@ impl TimelineQuery {
         Ok(points)
     }
 
-    /// Get word aggregates by session (calculated from timeline_points)
-    /// This provides aggregated data for efficient client-side processing
+    /// Get word aggregates by session (from materialized view)
+    /// This provides pre-aggregated data for efficient client-side processing
     async fn word_aggregates(
         &self,
         ctx: &Context<'_>,
@@ -307,57 +307,33 @@ impl TimelineQuery {
         let mut query_builder = sqlx::QueryBuilder::new(
             r#"
             SELECT 
-                tp.participant_id,
-                tp.session_id,
-                tp.word,
-                COUNT(*)::bigint as count,
-                AVG(tp.reaction_value) as avg_reaction_value,
-                SUM(tp.reaction_value) as sum_reaction_value,
-                AVG(tp.reaction_time) as avg_reaction_time,
-                SUM(tp.reaction_time) as sum_reaction_time,
-                AVG(
-                    (SELECT AVG(pm.value) 
-                     FROM physiological_measurements pm 
-                     WHERE pm.timeline_point_time = tp.time 
-                     AND pm.timeline_point_participant_id = tp.participant_id 
-                     AND pm.timeline_point_session_id = tp.session_id)
-                ) as avg_physiological,
-                SUM(ABS(
-                    (SELECT AVG(pm.value) 
-                     FROM physiological_measurements pm 
-                     WHERE pm.timeline_point_time = tp.time 
-                     AND pm.timeline_point_participant_id = tp.participant_id 
-                     AND pm.timeline_point_session_id = tp.session_id)
-                )) as sum_phys_abs,
-                ARRAY_AGG(tp.reaction_value ORDER BY tp.time) FILTER (WHERE tp.reaction_value IS NOT NULL) as rv_series,
-                ARRAY_AGG(tp.reaction_time ORDER BY tp.time) FILTER (WHERE tp.reaction_time IS NOT NULL) as rt_series,
-                ARRAY_AGG(
-                    (SELECT AVG(pm.value) 
-                     FROM physiological_measurements pm 
-                     WHERE pm.timeline_point_time = tp.time 
-                     AND pm.timeline_point_participant_id = tp.participant_id 
-                     AND pm.timeline_point_session_id = tp.session_id)
-                    ORDER BY tp.time
-                ) FILTER (WHERE EXISTS (
-                    SELECT 1 FROM physiological_measurements pm 
-                    WHERE pm.timeline_point_time = tp.time 
-                    AND pm.timeline_point_participant_id = tp.participant_id 
-                    AND pm.timeline_point_session_id = tp.session_id
-                )) as phys_series,
-                MIN(tp.time) as first_time,
-                MAX(tp.time) as last_time
-            FROM timeline_points tp
-            WHERE tp.participant_id = "#
+                participant_id,
+                session_id,
+                word,
+                count,
+                avg_reaction_value,
+                sum_reaction_value,
+                avg_reaction_time,
+                sum_reaction_time,
+                avg_physiological,
+                sum_phys_abs,
+                phys_series,
+                rt_series,
+                rv_series,
+                first_time,
+                last_time
+            FROM timeline_word_aggregates_by_session
+            WHERE participant_id = "#
         );
 
         query_builder.push_bind(participant_uuid);
 
         if let Some(sid) = session_uuid {
-            query_builder.push(" AND tp.session_id = ");
+            query_builder.push(" AND session_id = ");
             query_builder.push_bind(sid);
         }
 
-        query_builder.push(" AND tp.word IS NOT NULL GROUP BY tp.participant_id, tp.session_id, tp.word ORDER BY tp.word ASC");
+        query_builder.push(" ORDER BY word ASC");
 
         let rows = query_builder.build()
             .fetch_all(pool)
@@ -418,8 +394,8 @@ impl TimelineQuery {
         Ok(aggregates)
     }
 
-    /// Get emotion vectors by word (calculated from timeline_emotion_entries)
-    /// This provides aggregated emotion data for efficient vector operations
+    /// Get emotion vectors by word (from materialized view)
+    /// This provides pre-aggregated emotion data for efficient vector operations
     async fn emotion_vectors(
         &self,
         ctx: &Context<'_>,
@@ -440,44 +416,33 @@ impl TimelineQuery {
         let mut query_builder = sqlx::QueryBuilder::new(
             r#"
             SELECT 
-                tp.participant_id,
-                tp.session_id,
-                tp.word,
-                SUM(CASE WHEN en.name IN ('Joy', 'joy', 'Happiness', 'happiness') THEN tee.score ELSE 0 END) as joy_sum,
-                SUM(CASE WHEN en.name IN ('Sadness', 'sadness', 'Sad', 'sad') THEN tee.score ELSE 0 END) as sadness_sum,
-                SUM(CASE WHEN en.name IN ('Anger', 'anger', 'Angry', 'angry') THEN tee.score ELSE 0 END) as anger_sum,
-                SUM(CASE WHEN en.name IN ('Fear', 'fear', 'Anxiety', 'anxiety') THEN tee.score ELSE 0 END) as fear_sum,
-                SUM(CASE WHEN en.name IN ('Surprise', 'surprise', 'Surprised', 'surprised') THEN tee.score ELSE 0 END) as surprise_sum,
-                SUM(CASE WHEN en.name IN ('Disgust', 'disgust', 'Disgusted', 'disgusted') THEN tee.score ELSE 0 END) as disgust_sum,
-                SUM(CASE WHEN en.name IN ('Calm', 'calm', 'Calmness', 'calmness') THEN tee.score ELSE 0 END) as calm_sum,
-                SUM(CASE WHEN en.name IN ('Focus', 'focus', 'Concentration', 'concentration') THEN tee.score ELSE 0 END) as focus_sum,
-                SUM(CASE WHEN en.name IN ('Excitement', 'excitement', 'Excited', 'excited') THEN tee.score ELSE 0 END) as excitement_sum,
-                SUM(CASE WHEN en.name IN ('Confusion', 'confusion', 'Confused', 'confused') THEN tee.score ELSE 0 END) as confusion_sum,
-                COUNT(tee.id)::bigint as emotion_entry_count,
-                COALESCE(
-                    json_object_agg(
-                        DISTINCT tee.file_type,
-                        SUM(tee.score)
-                    ) FILTER (WHERE tee.id IS NOT NULL),
-                    '{}'::json
-                ) as emotion_by_modality
-            FROM timeline_points tp
-            LEFT JOIN timeline_emotion_entries tee ON 
-                tee.timeline_point_time = tp.time AND
-                tee.timeline_point_participant_id = tp.participant_id AND
-                tee.timeline_point_session_id = tp.session_id
-            LEFT JOIN emotion_names en ON en.id = tee.emotion_name_id
-            WHERE tp.participant_id = "#
+                participant_id,
+                session_id,
+                word,
+                joy_sum,
+                sadness_sum,
+                anger_sum,
+                fear_sum,
+                surprise_sum,
+                disgust_sum,
+                calm_sum,
+                focus_sum,
+                excitement_sum,
+                confusion_sum,
+                emotion_entry_count,
+                emotion_by_modality
+            FROM timeline_emotion_vectors_by_word
+            WHERE participant_id = "#
         );
 
         query_builder.push_bind(participant_uuid);
 
         if let Some(sid) = session_uuid {
-            query_builder.push(" AND tp.session_id = ");
+            query_builder.push(" AND session_id = ");
             query_builder.push_bind(sid);
         }
 
-        query_builder.push(" AND tp.word IS NOT NULL GROUP BY tp.participant_id, tp.session_id, tp.word ORDER BY tp.word ASC");
+        query_builder.push(" ORDER BY word ASC");
 
         let rows = query_builder.build()
             .fetch_all(pool)
@@ -522,8 +487,8 @@ impl TimelineQuery {
         Ok(vectors)
     }
 
-    /// Get word statistics by session (calculated from timeline_points)
-    /// This provides calculated statistics for efficient client-side processing
+    /// Get word statistics by session (from materialized view)
+    /// This provides pre-calculated statistics for efficient client-side processing
     async fn word_statistics(
         &self,
         ctx: &Context<'_>,
@@ -544,67 +509,34 @@ impl TimelineQuery {
         let mut query_builder = sqlx::QueryBuilder::new(
             r#"
             SELECT 
-                tp.participant_id,
-                tp.session_id,
-                tp.word,
-                COUNT(*)::bigint as count,
-                AVG(tp.reaction_time) as avg_reaction_time,
-                STDDEV(tp.reaction_time) as std_reaction_time,
-                VARIANCE(tp.reaction_time) as var_reaction_time,
-                AVG(tp.reaction_value) as avg_reaction_value,
-                STDDEV(tp.reaction_value) as std_reaction_value,
-                VARIANCE(tp.reaction_value) as var_reaction_value,
-                AVG(
-                    (SELECT AVG(pm.value) 
-                     FROM physiological_measurements pm 
-                     WHERE pm.timeline_point_time = tp.time 
-                     AND pm.timeline_point_participant_id = tp.participant_id 
-                     AND pm.timeline_point_session_id = tp.session_id)
-                ) as avg_physiological,
-                STDDEV(
-                    (SELECT AVG(pm.value) 
-                     FROM physiological_measurements pm 
-                     WHERE pm.timeline_point_time = tp.time 
-                     AND pm.timeline_point_participant_id = tp.participant_id 
-                     AND pm.timeline_point_session_id = tp.session_id)
-                ) as std_physiological,
-                VARIANCE(
-                    (SELECT AVG(pm.value) 
-                     FROM physiological_measurements pm 
-                     WHERE pm.timeline_point_time = tp.time 
-                     AND pm.timeline_point_participant_id = tp.participant_id 
-                     AND pm.timeline_point_session_id = tp.session_id)
-                ) as var_physiological,
-                CASE 
-                    WHEN AVG(tp.reaction_time) > 0 THEN 1.0 / AVG(tp.reaction_time)
-                    ELSE NULL
-                END as speed_index,
-                ARRAY_AGG(
-                    (SELECT AVG(pm.value) 
-                     FROM physiological_measurements pm 
-                     WHERE pm.timeline_point_time = tp.time 
-                     AND pm.timeline_point_participant_id = tp.participant_id 
-                     AND pm.timeline_point_session_id = tp.session_id)
-                    ORDER BY tp.time
-                ) FILTER (WHERE EXISTS (
-                    SELECT 1 FROM physiological_measurements pm 
-                    WHERE pm.timeline_point_time = tp.time 
-                    AND pm.timeline_point_participant_id = tp.participant_id 
-                    AND pm.timeline_point_session_id = tp.session_id
-                )) as phys_series,
-                ARRAY_AGG(tp.reaction_time ORDER BY tp.time) FILTER (WHERE tp.reaction_time IS NOT NULL) as rt_series
-            FROM timeline_points tp
-            WHERE tp.participant_id = "#
+                participant_id,
+                session_id,
+                word,
+                count,
+                avg_reaction_time,
+                std_reaction_time,
+                var_reaction_time,
+                avg_reaction_value,
+                std_reaction_value,
+                var_reaction_value,
+                avg_physiological,
+                std_physiological,
+                var_physiological,
+                speed_index,
+                phys_series,
+                rt_series
+            FROM timeline_word_statistics_by_session
+            WHERE participant_id = "#
         );
 
         query_builder.push_bind(participant_uuid);
 
         if let Some(sid) = session_uuid {
-            query_builder.push(" AND tp.session_id = ");
+            query_builder.push(" AND session_id = ");
             query_builder.push_bind(sid);
         }
 
-        query_builder.push(" AND tp.word IS NOT NULL GROUP BY tp.participant_id, tp.session_id, tp.word ORDER BY tp.word ASC");
+        query_builder.push(" ORDER BY word ASC");
 
         let rows = query_builder.build()
             .fetch_all(pool)
