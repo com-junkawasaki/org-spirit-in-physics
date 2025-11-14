@@ -64,7 +64,11 @@ query GetTimeline(
       fileType
       color
     }
-    physiological
+    physiological {
+      measurementType
+      value
+      timestamp
+    }
     metadata
   }
 }

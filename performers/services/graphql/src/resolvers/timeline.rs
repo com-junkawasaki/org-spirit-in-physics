@@ -164,7 +164,7 @@ impl TimelineQuery {
                     reaction_time: None,
                     has_response: event_count > 0,
                     emotions: Vec::new(),
-                    physiological: serde_json::json!({}),
+                    physiological: serde_json::Value::Array(Vec::new()),
                     metadata: serde_json::json!({ "event_count": event_count }),
                 })
             }).collect()
@@ -195,11 +195,14 @@ impl TimelineQuery {
                         '[]'::json
                     ) as emotions,
                     COALESCE(
-                        json_object_agg(
-                            pmt.measurement_type::text,
-                            pm.value
+                        json_agg(
+                            jsonb_build_object(
+                                'measurement_type', pmt.measurement_type::text,
+                                'value', pm.value,
+                                'timestamp', tp.time::text
+                            )
                         ) FILTER (WHERE pm.id IS NOT NULL),
-                        '{}'::json
+                        '[]'::json
                     ) as physiological
                 FROM timeline_points tp
                 LEFT JOIN timeline_emotion_entries tee ON 

@@ -5,6 +5,7 @@ use async_graphql::*;
 use serde::Serialize;
 use uuid::Uuid;
 use crate::types::enums::{HandednessType, EmotionFileType};
+use crate::types::timeline::PhysiologicalData;
 
 #[derive(SimpleObject, Debug, Clone, Serialize)]
 pub struct Participant {
@@ -40,7 +41,7 @@ pub struct TimelinePoint {
     pub reaction_time: Option<f64>,
     pub has_response: bool,
     pub emotions: Vec<EmotionData>,
-    pub physiological: serde_json::Value,
+    pub physiological: Vec<PhysiologicalData>,
     pub metadata: serde_json::Value,
 }
 

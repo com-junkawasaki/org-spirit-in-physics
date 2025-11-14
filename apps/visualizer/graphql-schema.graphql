@@ -1,8 +1,15 @@
 
 type EmotionData {
-	name: String!
-	score: Float!
-	fileType: String!
+  name: String!
+  score: Float!
+  fileType: String!
+  color: String
+}
+
+type PhysiologicalData {
+  measurementType: String!
+  value: Float!
+  timestamp: String!
 }
 
 type EmotionVector {
@@ -103,7 +110,7 @@ type TimelinePoint {
 	reactionTime: Float
 	hasResponse: Boolean!
 	emotions: [EmotionData!]!
-	physiological: JSON!
+  physiological: [PhysiologicalData!]!
 	metadata: JSON!
 }
 
