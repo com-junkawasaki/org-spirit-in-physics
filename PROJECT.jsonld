@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.29.0",
+  "version": "1.30.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-15T14:00:00+09:00",
-  "merkleRoot": "3D Force Graph TypeGPUビューポート可視性最適化",
+  "updatedAt": "2025-01-15T15:30:00+09:00",
+  "merkleRoot": "データベースENUM型変換とHume感情タイプ色情報統合",
   
   "story": {
     "@id": "project:story",
@@ -389,6 +389,12 @@
         "@type": "project:Narrative",
         "act": "3D Force Graph TypeGPUパフォーマンス最適化",
         "summary": "Force3DWordGraphTypeGPUコンポーネントにIntersection Observer APIを実装し、ビューポート可視性に基づくパフォーマンス最適化を実現。可視エリア外の場合はWebGPU計算と描画処理を停止し、CPU/GPU負荷を大幅に削減。rootMargin: 50pxによる余裕を持たせた停止判定により、スクロール時のパフォーマンスを向上。isVisibleRefによるクロージャ問題を回避した最新状態参照を実装し、アニメーションループの効率的な制御を実現。科学的手法による霊性測定の可視化システムのパフォーマンスとユーザー体験を大幅に改善。"
+      },
+      {
+        "@id": "project:narrative/55",
+        "@type": "project:Narrative",
+        "act": "データベースENUM型変換とHume感情タイプ色情報統合",
+        "summary": "PostgreSQLデータベースの型安全性とパフォーマンス向上のため、event_typesとphysiological_measurement_typesテーブルをENUM型に変換。動的追加が不要な型をENUM型で管理し、型安全性とクエリ効率を向上。Hume AIの感情タイプ82件（基本感情・拡張感情・Vocal表現）をemotion_namesテーブルに登録し、各感情に色情報（HEXカラーコード）を付与。感情可視化システムの一貫性と視覚的表現力を向上させ、科学的手法による霊性測定の感情データ表現を強化。不要なtypeテーブル（agreement_types, prosody_feature_types, prosody_features）を削除し、データベーススキーマを最適化。"
       }
     ],
     "processNetwork": {
@@ -1326,6 +1332,16 @@
       "時系列データハイパーテーブル設計",
       "Rust async-graphql GraphQL API実装",
       "タイムラインデータ取得・可視化システム",
+      "データベースENUM型変換実装",
+      "event_type_enum・measurement_type_enum・emotion_file_type・handedness_type ENUM型定義",
+      "event_types・physiological_measurement_types ENUM型変換",
+      "型安全性とクエリ効率向上",
+      "Hume AI感情タイプ82件登録",
+      "emotion_namesテーブル色情報（color）カラム追加",
+      "感情タイプ別HEXカラーコード設定",
+      "感情可視化システム一貫性向上",
+      "不要なtypeテーブル削除（agreement_types・prosody_feature_types・prosody_features）",
+      "データベーススキーマ最適化",
       "Python FastAPIインポートサービス実装",
       "asyncpg PostgreSQL接続プール管理",
       "参加者・セッション・感情・タイムラインデータインポートAPI",
