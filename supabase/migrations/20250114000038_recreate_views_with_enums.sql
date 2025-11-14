@@ -78,7 +78,7 @@ SELECT
     VARIANCE(pm.value) as var_physiological,
     -- 時系列データ
     ARRAY_AGG(
-        DISTINCT jsonb_build_object(
+        jsonb_build_object(
             'time', tp.time::text,
             'reaction_value', tp.reaction_value,
             'reaction_time', tp.reaction_time
@@ -86,7 +86,7 @@ SELECT
         ORDER BY tp.time
     ) FILTER (WHERE tp.time IS NOT NULL) as reaction_series,
     ARRAY_AGG(
-        DISTINCT jsonb_build_object(
+        jsonb_build_object(
             'time', tp.time::text,
             'physiological_value', pm.value,
             'measurement_type', pm.measurement_type::text

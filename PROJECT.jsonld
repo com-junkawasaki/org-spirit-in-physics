@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.31.0",
+  "version": "1.32.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-15T17:00:00+09:00",
-  "merkleRoot": "ENUM型への完全移行: マスターテーブル削除、color/unit ENUM化、直接ENUM参照実装完了",
+  "updatedAt": "2025-01-15T18:00:00+09:00",
+  "merkleRoot": "ENUM型への完全移行完了: マスターテーブル削除、color/unit ENUM化、直接ENUM参照、本番環境マイグレーション適用完了",
   
   "story": {
     "@id": "project:story",
@@ -1445,7 +1445,27 @@
       "Python Import service更新（emotions.py, timeline.py, sessions.py）",
       "型安全性向上（ENUM型によるコンパイル時チェック）",
       "パフォーマンス向上（JOIN削除によるクエリ最適化）",
-      "スキーマ簡素化（マスターテーブル不要）"
+      "スキーマ簡素化（マスターテーブル不要）",
+      "本番環境マイグレーション適用完了",
+      "emotion_color_enum ENUM型作成（32種類のHEXカラーコード）",
+      "measurement_unit_enum ENUM型作成（mV, bpm, mmHg等）",
+      "get_emotion_color()関数実装（emotion_name_enum → emotion_color_enumマッピング）",
+      "hume_burst_emotion_scores.emotion_name_id → emotion_name ENUM型変換完了",
+      "hume_face_emotion_scores.emotion_name_id → emotion_name ENUM型変換完了",
+      "hume_language_emotion_scores.emotion_name_id → emotion_name ENUM型変換完了",
+      "hume_prosody_emotion_scores.emotion_name_id → emotion_name ENUM型変換完了",
+      "timeline_emotion_entries.emotion_name_id → emotion_name ENUM型変換完了",
+      "session_events.event_type ENUM型確認完了",
+      "physiological_measurements.measurement_type ENUM型確認完了",
+      "physiological_measurements.unit ENUM型追加完了",
+      "マスターテーブル削除確認（emotion_names, event_types, physiological_measurement_types）",
+      "ビューとマテリアライズドビュー再作成完了（ENUM型直接使用）",
+      "timeline_word_aggregates_by_session マテリアライズドビュー作成完了",
+      "timeline_emotion_vectors_by_word マテリアライズドビュー作成完了",
+      "timeline_word_statistics_by_session マテリアライズドビュー作成完了",
+      "participant_summary ビュー作成完了",
+      "session_detail ビュー作成完了",
+      "participant_detail ビュー作成完了"
     ]
   },
   
