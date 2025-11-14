@@ -45,8 +45,8 @@
   "version": "1.32.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-15T18:00:00+09:00",
-  "merkleRoot": "ENUM型への完全移行完了: マスターテーブル削除、color/unit ENUM化、直接ENUM参照、本番環境マイグレーション適用完了",
+  "updatedAt": "2025-01-15T18:30:00+09:00",
+  "merkleRoot": "ENUM型への完全移行完了: マスターテーブル削除、color/unit ENUM化、直接ENUM参照、本番環境マイグレーション適用完了、スキーマ最適化完了",
   
   "story": {
     "@id": "project:story",
