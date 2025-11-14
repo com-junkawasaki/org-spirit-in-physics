@@ -151,7 +151,10 @@ services:
     volumes:
       - ./apps/visualizer/public/dataset:/app/dataset:cached
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
+      # Production Supabase Database URL
+      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+      # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
+      - DATABASE_URL=${SUPABASE_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/spirit_in_physics}
       - DATASET_PATH=/app/dataset/participants
       - PORT=8082
     depends_on:
@@ -175,14 +178,15 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
+      # Production Supabase Database URL
+      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+      # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
+      - DATABASE_URL=${SUPABASE_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/spirit_in_physics}
       - RUST_LOG=info
-      # Supabase Storage Configuration (hardcoded for local development)
-      # Local Supabase API URL (from supabase/config.toml: api.port = 54321)
-      - SUPABASE_URL=http://127.0.0.1:54321
-      # Supabase Service Role Key (default for local development)
-      # This is the default JWT secret for Supabase local development
-      - SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      # Production Supabase Configuration
+      - SUPABASE_URL=${SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
+      # Production Supabase Service Role Key
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDUxNjk3MiwiZXhwIjoyMDY2MDkyOTcyfQ.7KSDYa5pxYCiA_ZtTe_8KPGBKELdj0buxba2nG7EnJc}
       # Storage bucket name (from supabase/migrations/20241004000003_storage_policies.sql)
       - SUPABASE_STORAGE_BUCKET=spirit-in-physics
     depends_on:
