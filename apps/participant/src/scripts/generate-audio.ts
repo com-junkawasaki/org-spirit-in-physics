@@ -1,7 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import OpenAI from 'openai';
-import { JUNG_STIMULUS_WORDS, JUNG_TEST_WELCOME_MESSAGE } from '../components/jung-voice-assessment/constants';
+import { JUNG_TEST_WELCOME_MESSAGE } from '@spirit-in-physics/jung-voice-assessment';
+// Note: JUNG_STIMULUS_WORDS is now fetched from GraphQL API
+// For this script, we'll need to query the API or use a local constant
+// For now, keeping the old import path for backward compatibility during migration
+import { JUNG_STIMULUS_WORDS } from '../components/jung-voice-assessment/constants';
 import 'dotenv/config';
 
 /**

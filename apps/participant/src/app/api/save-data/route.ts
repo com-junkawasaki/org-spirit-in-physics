@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { blobStorage } from "@/lib/blob";
-import { SaveStructuredDataPayloadSchema } from "@/components/jung-voice-assessment/schema";
+import { SaveStructuredDataPayloadSchema } from "@spirit-in-physics/jung-voice-assessment";
 
 export async function POST(request: NextRequest) {
     try {

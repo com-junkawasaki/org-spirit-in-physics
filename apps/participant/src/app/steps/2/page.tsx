@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import JungVoiceTest from '@/components/jung-voice-assessment/JungVoiceTest';
-import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
+import { JungVoiceTest, useKawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { apolloClient } from '@/lib/graphql';
+import { CREATE_SESSION, UPLOAD_ARTIFACT } from '@/lib/graphql/mutations';
 
 export default function TestPage() {
   const router = useRouter();
@@ -46,7 +49,19 @@ export default function TestPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 md:p-24">
       <div className="w-full max-w-2xl bg-card/50 backdrop-blur-sm border rounded-xl shadow-lg">
-        <JungVoiceTest onComplete={handleTestComplete} />
+        <JungVoiceTest 
+          onComplete={handleTestComplete}
+          apolloClient={apolloClient}
+          graphQLMutations={{
+            createSession: CREATE_SESSION,
+            uploadArtifact: UPLOAD_ARTIFACT,
+          }}
+          Button={Button}
+          Card={Card}
+          CardHeader={CardHeader}
+          CardTitle={CardTitle}
+          CardContent={CardContent}
+        />
       </div>
     </main>
   );

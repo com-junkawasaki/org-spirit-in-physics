@@ -4,7 +4,7 @@
 use async_graphql::*;
 use sqlx::{PgPool, Pool, Postgres};
 use uuid::Uuid;
-use crate::types::Participant;
+use crate::types::{Participant, StimulusWord};
 
 #[derive(Default)]
 pub struct ParticipantQuery;
@@ -54,6 +54,47 @@ impl ParticipantQuery {
                 handedness: handedness.map(|h| h.to_string()),
                 created_at: created_at.to_rfc3339(),
                 updated_at: updated_at.to_rfc3339(),
+            }
+        }))
+    }
+
+    /// Get all stimulus words for Jung word association test
+    async fn stimulus_words(&self, ctx: &Context<'_>) -> Result<Vec<StimulusWord>> {
+        let pool = ctx.data::<Pool<Postgres>>()?;
+        
+        let rows = sqlx::query_as::<_, (i32, String, String, String)>(
+            "SELECT id, japanese, english, pronunciation FROM stimulus_words ORDER BY id"
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rows.into_iter().map(|(id, japanese, english, pronunciation)| {
+            StimulusWord {
+                id,
+                japanese,
+                english,
+                pronunciation,
+            }
+        }).collect())
+    }
+
+    /// Get a stimulus word by ID
+    async fn stimulus_word(&self, ctx: &Context<'_>, id: i32) -> Result<Option<StimulusWord>> {
+        let pool = ctx.data::<Pool<Postgres>>()?;
+
+        let row = sqlx::query_as::<_, (i32, String, String, String)>(
+            "SELECT id, japanese, english, pronunciation FROM stimulus_words WHERE id = $1"
+        )
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(row.map(|(id, japanese, english, pronunciation)| {
+            StimulusWord {
+                id,
+                japanese,
+                english,
+                pronunciation,
             }
         }))
     }

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import ConsentForm from '@/app/ConsentForm';
-import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
+import { useKawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
 import { useRouter } from 'next/navigation';
 import * as m from '@/paraglide/messages';
 import { useCreateParticipant } from '@/lib/graphql/hooks';

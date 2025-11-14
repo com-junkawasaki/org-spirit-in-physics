@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useKawasakiStore } from '@/components/jung-voice-assessment/store';
+import { useKawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
 import Link from 'next/link';
 import * as m from '@/paraglide/messages';
 
