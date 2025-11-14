@@ -564,7 +564,7 @@ async def debug_timeline_data(
             """
             SELECT 
                 COUNT(*) as total_points,
-                COUNT(CASE WHEN emotions IS NOT NULL AND emotions != '[]'::jsonb THEN 1 END) as points_with_emotions
+                COUNT(DISTINCT tee.id) as points_with_emotions
             FROM timeline_points
             WHERE session_id::text = $1
             """,
@@ -574,10 +574,12 @@ async def debug_timeline_data(
         # Get emotion types in timeline
         emotion_types = await conn.fetch(
             """
-            SELECT DISTINCT jsonb_array_elements(emotions)->>'fileType' as file_type
-            FROM timeline_points
-            WHERE session_id::text = $1
-            AND jsonb_array_length(emotions) > 0
+            SELECT DISTINCT tee.file_type as file_type
+            FROM timeline_emotion_entries tee
+            JOIN timeline_points tp ON tee.timeline_point_time = tp.time
+                AND tee.timeline_point_participant_id = tp.participant_id
+                AND tee.timeline_point_session_id = tp.session_id
+            WHERE tp.session_id::text = $1
             """,
             target_session_id
         )
