@@ -49,12 +49,20 @@ CREATE INDEX IF NOT EXISTS idx_physiological_measurements_type ON physiological_
 CREATE INDEX IF NOT EXISTS idx_prosody_features_prediction ON prosody_features(prosody_prediction_id);
 CREATE INDEX IF NOT EXISTS idx_prosody_features_type ON prosody_features(feature_type_id);
 
--- 初期データ投入（timeline_points.physiologicalから）
-INSERT INTO physiological_measurement_types (measurement_type, unit) 
-SELECT DISTINCT 
-  jsonb_object_keys(physiological)::TEXT as measurement_type,
-  NULL as unit
-FROM timeline_points 
-WHERE physiological != '{}'::jsonb
-ON CONFLICT (measurement_type) DO NOTHING;
+-- 初期データ投入（timeline_points.physiologicalから - カラムが存在する場合のみ）
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'timeline_points' AND column_name = 'physiological'
+  ) THEN
+    INSERT INTO physiological_measurement_types (measurement_type, unit) 
+    SELECT DISTINCT 
+      jsonb_object_keys(physiological)::TEXT as measurement_type,
+      NULL as unit
+    FROM timeline_points 
+    WHERE physiological != '{}'::jsonb
+    ON CONFLICT (measurement_type) DO NOTHING;
+  END IF;
+END $$;
 

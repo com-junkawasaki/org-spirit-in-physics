@@ -117,53 +117,77 @@ WHERE tp.physiological != '{}'::jsonb
   AND (tp.physiological->>measurement_key)::TEXT ~ '^[0-9]+\.?[0-9]*$'
 ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, measurement_type_id) DO NOTHING;
 
--- 9. sessionsのeventsを移行
-INSERT INTO session_events (
-  session_id,
-  event_type_id,
-  event_timestamp,
-  event_data,
-  word_id,
-  reaction_time_ms
-)
-SELECT 
-  s.id as session_id,
-  et.id as event_type_id,
-  COALESCE((event->>'timestamp')::BIGINT, s.start_ts) as event_timestamp,
-  (event->>'data')::TEXT as event_data,
-  CASE 
-    WHEN (event->>'word_id') IS NOT NULL THEN (event->>'word_id')::INTEGER
-    ELSE NULL
-  END as word_id,
-  (event->>'reaction_time_ms')::INTEGER as reaction_time_ms
-FROM sessions s,
-  LATERAL jsonb_array_elements(s.events) as event
-JOIN event_types et ON et.event_type = (event->>'type')::TEXT
-WHERE s.events != '[]'::jsonb
-ON CONFLICT DO NOTHING;
+-- 9. sessionsのeventsを移行（eventsカラムが存在する場合のみ）
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'sessions' AND column_name = 'events'
+  ) THEN
+    INSERT INTO session_events (
+      session_id,
+      event_type_id,
+      event_timestamp,
+      event_data,
+      word_id,
+      reaction_time_ms
+    )
+    SELECT 
+      s.id as session_id,
+      et.id as event_type_id,
+      COALESCE((event->>'timestamp')::BIGINT, s.start_ts) as event_timestamp,
+      (event->>'data')::TEXT as event_data,
+      CASE 
+        WHEN (event->>'word_id') IS NOT NULL THEN (event->>'word_id')::INTEGER
+        ELSE NULL
+      END as word_id,
+      (event->>'reaction_time_ms')::INTEGER as reaction_time_ms
+    FROM sessions s,
+      LATERAL jsonb_array_elements(s.events) as event
+    JOIN event_types et ON et.event_type = (event->>'type')::TEXT
+    WHERE s.events != '[]'::jsonb
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
 
--- 10. participant_consentsのagreementsを移行
-INSERT INTO consent_agreements (
-  participant_consent_id,
-  agreement_type_id,
-  agreed
-)
-SELECT 
-  pc.id as participant_consent_id,
-  at.id as agreement_type_id,
-  (pc.agreements->>jsonb_object_keys(pc.agreements))::BOOLEAN as agreed
-FROM participant_consents pc,
-  LATERAL jsonb_object_keys(pc.agreements) as agreement_key
-JOIN agreement_types at ON at.agreement_type = agreement_key
-WHERE pc.agreements != '{}'::jsonb
-ON CONFLICT (participant_consent_id, agreement_type_id) DO NOTHING;
+-- 10. participant_consentsのagreementsを移行（テーブルが存在する場合のみ）
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'participant_consents'
+  ) THEN
+    INSERT INTO consent_agreements (
+      participant_consent_id,
+      agreement_type_id,
+      agreed
+    )
+    SELECT 
+      pc.id as participant_consent_id,
+      at.id as agreement_type_id,
+      (pc.agreements->>jsonb_object_keys(pc.agreements))::BOOLEAN as agreed
+    FROM participant_consents pc,
+      LATERAL jsonb_object_keys(pc.agreements) as agreement_key
+    JOIN agreement_types at ON at.agreement_type = agreement_key
+    WHERE pc.agreements != '{}'::jsonb
+    ON CONFLICT (participant_consent_id, agreement_type_id) DO NOTHING;
+  END IF;
+END $$;
 
--- 11. burst_emotion_dataのvocal_typesを移行
-INSERT INTO vocal_type_entries (burst_emotion_data_id, vocal_type)
-SELECT 
-  bed.id as burst_emotion_data_id,
-  jsonb_array_elements_text(bed.vocal_types) as vocal_type
-FROM burst_emotion_data bed
-WHERE bed.vocal_types != '[]'::jsonb
-ON CONFLICT (burst_emotion_data_id, vocal_type) DO NOTHING;
+-- 11. burst_emotion_dataのvocal_typesを移行（vocal_typesカラムが存在する場合のみ）
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'burst_emotion_data' AND column_name = 'vocal_types'
+  ) THEN
+    INSERT INTO vocal_type_entries (burst_emotion_data_id, vocal_type)
+    SELECT 
+      bed.id as burst_emotion_data_id,
+      jsonb_array_elements_text(bed.vocal_types) as vocal_type
+    FROM burst_emotion_data bed
+    WHERE bed.vocal_types != '[]'::jsonb
+    ON CONFLICT (burst_emotion_data_id, vocal_type) DO NOTHING;
+  END IF;
+END $$;
 

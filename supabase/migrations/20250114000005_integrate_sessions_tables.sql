@@ -25,36 +25,46 @@ WHERE end_time IS NULL AND end_ts IS NOT NULL;
 -- participant_experiment_sessionsからsession_typeを移行（データがある場合）
 -- 現在はparticipant_experiment_sessionsが0件のため、この処理はスキップ
 
--- participant_hume_analysis_jobsの外部キーをsessionsに変更
--- まず、participant_hume_analysis_jobsがsessionsを参照できるようにする
-ALTER TABLE participant_hume_analysis_jobs
-DROP CONSTRAINT IF EXISTS participant_hume_analysis_job_participant_experiment_sessi_fkey;
+-- participant_hume_analysis_jobsの外部キーをsessionsに変更（テーブルが存在する場合のみ）
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'participant_hume_analysis_jobs'
+  ) THEN
+    ALTER TABLE participant_hume_analysis_jobs
+    DROP CONSTRAINT IF EXISTS participant_hume_analysis_job_participant_experiment_sessi_fkey;
 
--- sessionsへの参照を追加（experiment_session_id経由）
-ALTER TABLE participant_hume_analysis_jobs
-ADD COLUMN IF NOT EXISTS session_id UUID REFERENCES sessions(id) ON DELETE CASCADE;
+    ALTER TABLE participant_hume_analysis_jobs
+    ADD COLUMN IF NOT EXISTS session_id UUID REFERENCES sessions(id) ON DELETE CASCADE;
 
--- experiment_session_idからsession_idを設定（データがある場合）
-UPDATE participant_hume_analysis_jobs phaj
-SET session_id = s.id
-FROM sessions s
-WHERE phaj.participant_experiment_session_id IS NOT NULL
-  AND s.experiment_session_id = phaj.participant_experiment_session_id
-  AND phaj.session_id IS NULL;
+    UPDATE participant_hume_analysis_jobs phaj
+    SET session_id = s.id
+    FROM sessions s
+    WHERE phaj.participant_experiment_session_id IS NOT NULL
+      AND s.experiment_session_id = phaj.participant_experiment_session_id
+      AND phaj.session_id IS NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_participant_hume_analysis_jobs_session_id ON participant_hume_analysis_jobs(session_id);
+  END IF;
+END $$;
+
+-- participant_analysis_resultsのexperiment_idをsessions.idに変更（テーブルが存在する場合のみ）
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'participant_analysis_results'
+  ) THEN
+    ALTER TABLE participant_analysis_results
+    ADD COLUMN IF NOT EXISTS session_id UUID REFERENCES sessions(id) ON DELETE CASCADE;
+
+    CREATE INDEX IF NOT EXISTS idx_participant_analysis_results_session_id ON participant_analysis_results(session_id);
+  END IF;
+END $$;
 
 -- インデックス作成
 CREATE INDEX IF NOT EXISTS idx_sessions_session_type ON sessions(session_type);
 CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time);
 CREATE INDEX IF NOT EXISTS idx_sessions_end_time ON sessions(end_time);
-CREATE INDEX IF NOT EXISTS idx_participant_hume_analysis_jobs_session_id ON participant_hume_analysis_jobs(session_id);
-
--- participant_analysis_resultsのexperiment_idをsessions.idに変更
-ALTER TABLE participant_analysis_results
-ADD COLUMN IF NOT EXISTS session_id UUID REFERENCES sessions(id) ON DELETE CASCADE;
-
--- experiment_idからsession_idを設定（データがある場合）
--- 現在はparticipant_analysis_resultsが0件のため、この処理はスキップ
-
--- インデックス作成
-CREATE INDEX IF NOT EXISTS idx_participant_analysis_results_session_id ON participant_analysis_results(session_id);
 

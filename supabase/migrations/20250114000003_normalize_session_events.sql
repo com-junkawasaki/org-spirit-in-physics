@@ -27,13 +27,21 @@ CREATE INDEX IF NOT EXISTS idx_session_events_event_type ON session_events(event
 CREATE INDEX IF NOT EXISTS idx_session_events_timestamp ON session_events(event_timestamp);
 CREATE INDEX IF NOT EXISTS idx_session_events_word_id ON session_events(word_id);
 
--- 初期データ投入（sessions.eventsから）
+-- 初期データ投入（sessions.eventsから - カラムが存在する場合のみ）
 -- イベントタイプを抽出して登録
-INSERT INTO event_types (event_type) 
-SELECT DISTINCT 
-  (event->>'type')::TEXT as event_type
-FROM sessions,
-  LATERAL jsonb_array_elements(events) as event
-WHERE events != '[]'::jsonb
-ON CONFLICT (event_type) DO NOTHING;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'sessions' AND column_name = 'events'
+  ) THEN
+    INSERT INTO event_types (event_type) 
+    SELECT DISTINCT 
+      (event->>'type')::TEXT as event_type
+    FROM sessions,
+      LATERAL jsonb_array_elements(events) as event
+    WHERE events != '[]'::jsonb
+    ON CONFLICT (event_type) DO NOTHING;
+  END IF;
+END $$;
 

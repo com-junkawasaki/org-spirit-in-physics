@@ -26,10 +26,14 @@ DROP TABLE IF EXISTS response_emotion_timeseries CASCADE;
 
 -- 未使用の分析テーブルを削除（0件、または使用予定がない場合）
 -- 注意: analysis_resultsとparticipant_analysis_resultsは用途が異なる可能性があるため、削除しない
--- DROP TABLE IF EXISTS analysis_results CASCADE;
--- DROP TABLE IF EXISTS analysis_runs CASCADE;
-
--- コメントを追加して非推奨を明示（削除しない場合）
-COMMENT ON TABLE analysis_results IS 'DEPRECATED: Use participant_analysis_results instead. This table is kept for backward compatibility.';
-COMMENT ON TABLE analysis_runs IS 'DEPRECATED: May be removed in future versions if not used.';
+-- テーブルが存在する場合のみコメントを追加
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'analysis_results') THEN
+    COMMENT ON TABLE analysis_results IS 'DEPRECATED: Use participant_analysis_results instead. This table is kept for backward compatibility.';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'analysis_runs') THEN
+    COMMENT ON TABLE analysis_runs IS 'DEPRECATED: May be removed in future versions if not used.';
+  END IF;
+END $$;
 
