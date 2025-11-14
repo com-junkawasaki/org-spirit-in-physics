@@ -166,16 +166,16 @@ async def process_session(conn, participant_id: str, participant_path: Path):
         if not event_type_str:
             continue
         
-        # Get or create event type
-        event_type_id = await conn.fetchval(
-            """
-            INSERT INTO event_types (event_type)
-            VALUES ($1::event_type_enum)
-            ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
-            RETURNING id
-            """,
-            event_type_str
-        )
+                                       # Get or create event type (cast to session_event_type_enum)
+                                       event_type_id = await conn.fetchval(
+                                           """
+                                           INSERT INTO event_types (event_type)
+                                           VALUES ($1::session_event_type_enum)
+                                           ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
+                                           RETURNING id
+                                           """,
+                                           event_type_str
+                                       )
         
         event_timestamp = event.get('timestamp', start_ts)
         event_data = json.dumps(event.get('data', {})) if event.get('data') else None

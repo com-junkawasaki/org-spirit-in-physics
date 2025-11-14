@@ -24,6 +24,30 @@ pub enum HandednessType {
     Unknown,
 }
 
+/// Session event type enum
+/// Domain first: アプリケーションコードから抽出したイベントタイプ
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Type, Serialize, Deserialize)]
+#[sqlx(type_name = "session_event_type_enum", rename_all = "snake_case")]
+pub enum SessionEventType {
+    ParticipantInitialized,
+    PreflightStarted,
+    PreflightDevicesAcquired,
+    RecordingStarted,
+    RecordingStoppedAndSaved,
+    SessionStarted,
+    WordDisplayed,
+    ResponseWindowOpened,
+    SpeechDetected,
+    ResponseWindowClosed,
+    SessionDataSaved,
+    Session1Completed,
+    Session1VideoSaved,
+    Session2Completed,
+    TestCompleted,
+    TestReset,
+    MediaRecorderSetupFailed,
+}
+
 impl HandednessType {
     /// Convert to lowercase string for GraphQL
     pub fn to_string(&self) -> String {
@@ -48,3 +72,27 @@ impl EmotionFileType {
     }
 }
 
+impl SessionEventType {
+    /// Convert to snake_case string for GraphQL
+    pub fn to_string(&self) -> String {
+        match self {
+            SessionEventType::ParticipantInitialized => "participant_initialized".to_string(),
+            SessionEventType::PreflightStarted => "preflight_started".to_string(),
+            SessionEventType::PreflightDevicesAcquired => "preflight_devices_acquired".to_string(),
+            SessionEventType::RecordingStarted => "recording_started".to_string(),
+            SessionEventType::RecordingStoppedAndSaved => "recording_stopped_and_saved".to_string(),
+            SessionEventType::SessionStarted => "session_started".to_string(),
+            SessionEventType::WordDisplayed => "word_displayed".to_string(),
+            SessionEventType::ResponseWindowOpened => "response_window_opened".to_string(),
+            SessionEventType::SpeechDetected => "speech_detected".to_string(),
+            SessionEventType::ResponseWindowClosed => "response_window_closed".to_string(),
+            SessionEventType::SessionDataSaved => "session_data_saved".to_string(),
+            SessionEventType::Session1Completed => "session_1_completed".to_string(),
+            SessionEventType::Session1VideoSaved => "session_1_video_saved".to_string(),
+            SessionEventType::Session2Completed => "session_2_completed".to_string(),
+            SessionEventType::TestCompleted => "test_completed".to_string(),
+            SessionEventType::TestReset => "test_reset".to_string(),
+            SessionEventType::MediaRecorderSetupFailed => "media_recorder_setup_failed".to_string(),
+        }
+    }
+}

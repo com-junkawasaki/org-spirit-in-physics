@@ -36,7 +36,7 @@ impl TimelineQuery {
                 COALESCE(
                     json_agg(
                         jsonb_build_object(
-                            'type', et.event_type,
+                            'type', et.event_type::text,
                             'timestamp', se.event_timestamp,
                             'data', se.event_data,
                             'word_id', se.word_id,

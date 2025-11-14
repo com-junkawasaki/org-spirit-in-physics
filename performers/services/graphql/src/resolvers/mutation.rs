@@ -136,18 +136,18 @@ impl ParticipantMutation {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| Error::new("Event missing 'type' field"))?;
             
-            // Get or create event type (cast to ENUM type)
-            let event_type_id: i32 = sqlx::query_scalar(
-                r#"
-                INSERT INTO event_types (event_type)
-                VALUES ($1::event_type_enum)
-                ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
-                RETURNING id
-                "#
-            )
-            .bind(event_type_str)
-            .fetch_one(pool)
-            .await?;
+                   // Get or create event type (cast to session_event_type_enum)
+                   let event_type_id: i32 = sqlx::query_scalar(
+                       r#"
+                       INSERT INTO event_types (event_type)
+                       VALUES ($1::session_event_type_enum)
+                       ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
+                       RETURNING id
+                       "#
+                   )
+                   .bind(event_type_str)
+                   .fetch_one(pool)
+                   .await?;
 
             let event_timestamp = event.get("timestamp")
                 .and_then(|v| v.as_i64())
@@ -195,7 +195,7 @@ impl ParticipantMutation {
                 COALESCE(
                     json_agg(
                         jsonb_build_object(
-                            'type', et.event_type,
+                            'type', et.event_type::text,
                             'timestamp', se.event_timestamp,
                             'data', se.event_data,
                             'word_id', se.word_id,
