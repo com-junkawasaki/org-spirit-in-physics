@@ -114,16 +114,43 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
         session_id
     )
     
-    # Get session events
-    events_json = await conn.fetchval(
-        "SELECT events FROM sessions WHERE id::text = $1",
+    # Get session events from session_events table
+    event_rows = await conn.fetch(
+        """
+        SELECT 
+            et.event_type as type,
+            se.event_timestamp as timestamp,
+            se.event_data as data,
+            se.word_id,
+            se.reaction_time_ms
+        FROM session_events se
+        JOIN event_types et ON et.id = se.event_type_id
+        WHERE se.session_id::text = $1
+        ORDER BY se.event_timestamp ASC
+        """,
         session_id
     )
     
-    if not events_json:
+    if not event_rows:
         raise ValueError(f"No events found for session {session_id}")
     
-    events = json.loads(events_json) if isinstance(events_json, str) else events_json
+    # Convert to list of dicts
+    events = []
+    for row in event_rows:
+        event = {
+            'type': row['type'],
+            'timestamp': row['timestamp']
+        }
+        if row['data']:
+            try:
+                event['data'] = json.loads(row['data']) if isinstance(row['data'], str) else row['data']
+            except:
+                pass
+        if row['word_id']:
+            event['word_id'] = row['word_id']
+        if row['reaction_time_ms']:
+            event['reaction_time_ms'] = row['reaction_time_ms']
+        events.append(event)
     
     # Filter word_displayed events
     word_events = [e for e in events if e.get('type') == 'word_displayed']
@@ -249,24 +276,96 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
         from datetime import datetime, timezone
         time_dt = datetime.fromtimestamp(timestamp / 1000.0, tz=timezone.utc)
         
-        # Insert timeline point
+        # Insert timeline point (without emotions and physiological JSONB columns)
         await conn.execute(
             """
             INSERT INTO timeline_points (
                 time, participant_id, session_id, word, event_type,
                 reaction_value, reaction_time, has_response,
-                emotions, physiological, metadata, created_at
+                metadata, created_at
             )
-            VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11::jsonb, NOW())
+            VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9::jsonb, NOW())
+            ON CONFLICT (time, participant_id, session_id) DO UPDATE SET
+                word = EXCLUDED.word,
+                event_type = EXCLUDED.event_type,
+                reaction_value = EXCLUDED.reaction_value,
+                reaction_time = EXCLUDED.reaction_time,
+                has_response = EXCLUDED.has_response,
+                metadata = EXCLUDED.metadata
             """,
             time_dt, participant_id, session_id, word, 'word_displayed',
             reaction_value,
             reaction_time / 1000.0 if reaction_time else None,
             reaction_time is not None,
-            json.dumps(emotions_array),
-            json.dumps(physiological_obj),
             json.dumps(metadata)
         )
+        
+        # Insert emotions into normalized table
+        for emotion in emotions_array:
+            emotion_name = emotion['name']
+            emotion_score = emotion['score']
+            file_type = emotion['fileType']
+            
+            # Get or create emotion name
+            emotion_name_id = await conn.fetchval(
+                """
+                INSERT INTO emotion_names (name, category)
+                VALUES ($1, $2)
+                ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                RETURNING id
+                """,
+                emotion_name,
+                file_type
+            )
+            
+            # Insert emotion entry
+            await conn.execute(
+                """
+                INSERT INTO timeline_emotion_entries (
+                    timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
+                    emotion_name_id, score, file_type
+                )
+                VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6)
+                ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, emotion_name_id, file_type) DO UPDATE
+                SET score = EXCLUDED.score
+                """,
+                time_dt, participant_id, session_id,
+                emotion_name_id, emotion_score, file_type
+            )
+        
+        # Insert physiological measurements into normalized table
+        if related_physiological:
+            for physio in related_physiological:
+                channels = physio.get('channels', {})
+                for measurement_type, value in channels.items():
+                    if not isinstance(value, (int, float)):
+                        continue
+                    
+                    # Get or create measurement type
+                    measurement_type_id = await conn.fetchval(
+                        """
+                        INSERT INTO physiological_measurement_types (measurement_type)
+                        VALUES ($1)
+                        ON CONFLICT (measurement_type) DO UPDATE SET measurement_type = EXCLUDED.measurement_type
+                        RETURNING id
+                        """,
+                        measurement_type
+                    )
+                    
+                    # Insert measurement
+                    await conn.execute(
+                        """
+                        INSERT INTO physiological_measurements (
+                            timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
+                            measurement_type_id, value
+                        )
+                        VALUES ($1, $2::uuid, $3::uuid, $4, $5)
+                        ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, measurement_type_id) DO UPDATE
+                        SET value = EXCLUDED.value
+                        """,
+                        time_dt, participant_id, session_id,
+                        measurement_type_id, float(value)
+                    )
         
         timeline_points_count += 1
     
@@ -282,23 +381,29 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
 
 
 async def get_emotion_data(conn, session_id: str, participant_id: str):
-    """Get emotion data for a session"""
+    """Get emotion data for a session from normalized tables"""
     emotion_entries = []
     
-    # Get burst emotion data
+    # Get burst emotion data with normalized scores
     burst_rows = await conn.fetch(
         """
-        SELECT begin_time, end_time, emotion_scores
-        FROM burst_emotion_data
-        WHERE session_id::text = $1
-        ORDER BY begin_time ASC NULLS LAST
+        SELECT 
+            bed.begin_time,
+            bed.end_time,
+            json_object_agg(en.name, bes.score) FILTER (WHERE bes.id IS NOT NULL) as emotion_scores
+        FROM burst_emotion_data bed
+        LEFT JOIN burst_emotion_scores bes ON bes.burst_emotion_data_id = bed.id
+        LEFT JOIN emotion_names en ON en.id = bes.emotion_name_id
+        WHERE bed.session_id::text = $1
+        GROUP BY bed.id, bed.begin_time, bed.end_time
+        ORDER BY bed.begin_time ASC NULLS LAST
         """,
         session_id
     )
     logger.info(f"[get_emotion_data] Found {len(burst_rows)} burst emotion records for session {session_id}")
     
     for row in burst_rows:
-        emotion_scores = json.loads(row['emotion_scores']) if isinstance(row['emotion_scores'], str) else row['emotion_scores']
+        emotion_scores = row['emotion_scores'] or {}
         emotion_entries.append({
             'begin_time': row['begin_time'],
             'end_time': row['end_time'],
@@ -306,20 +411,25 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
             'file_type': 'burst'
         })
     
-    # Get face emotion data
+    # Get face emotion data with normalized scores
     face_rows = await conn.fetch(
         """
-        SELECT begin_time, emotion_scores
-        FROM face_emotion_data
-        WHERE session_id::text = $1
-        ORDER BY begin_time ASC NULLS LAST
+        SELECT 
+            fed.begin_time,
+            json_object_agg(en.name, fes.score) FILTER (WHERE fes.id IS NOT NULL) as emotion_scores
+        FROM face_emotion_data fed
+        LEFT JOIN face_emotion_scores fes ON fes.face_emotion_data_id = fed.id
+        LEFT JOIN emotion_names en ON en.id = fes.emotion_name_id
+        WHERE fed.session_id::text = $1
+        GROUP BY fed.id, fed.begin_time
+        ORDER BY fed.begin_time ASC NULLS LAST
         """,
         session_id
     )
     logger.info(f"[get_emotion_data] Found {len(face_rows)} face emotion records for session {session_id}")
     
     for row in face_rows:
-        emotion_scores = json.loads(row['emotion_scores']) if isinstance(row['emotion_scores'], str) else row['emotion_scores']
+        emotion_scores = row['emotion_scores'] or {}
         emotion_entries.append({
             'begin_time': row['begin_time'],
             'end_time': row['begin_time'] + 1.0 if row['begin_time'] else None,
@@ -327,20 +437,26 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
             'file_type': 'face'
         })
     
-    # Get language emotion data
+    # Get language emotion data with normalized scores
     language_rows = await conn.fetch(
         """
-        SELECT begin_time, end_time, emotion_scores
-        FROM language_emotion_data
-        WHERE session_id::text = $1
-        ORDER BY begin_time ASC NULLS LAST
+        SELECT 
+            led.begin_time,
+            led.end_time,
+            json_object_agg(en.name, les.score) FILTER (WHERE les.id IS NOT NULL) as emotion_scores
+        FROM language_emotion_data led
+        LEFT JOIN language_emotion_scores les ON les.language_emotion_data_id = led.id
+        LEFT JOIN emotion_names en ON en.id = les.emotion_name_id
+        WHERE led.session_id::text = $1
+        GROUP BY led.id, led.begin_time, led.end_time
+        ORDER BY led.begin_time ASC NULLS LAST
         """,
         session_id
     )
     logger.info(f"[get_emotion_data] Found {len(language_rows)} language emotion records for session {session_id}")
     
     for row in language_rows:
-        emotion_scores = json.loads(row['emotion_scores']) if isinstance(row['emotion_scores'], str) else row['emotion_scores']
+        emotion_scores = row['emotion_scores'] or {}
         emotion_entries.append({
             'begin_time': row['begin_time'],
             'end_time': row['end_time'],
@@ -348,20 +464,25 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
             'file_type': 'language'
         })
     
-    # Get prosody emotion data
+    # Get prosody emotion data with normalized scores
     prosody_rows = await conn.fetch(
         """
-        SELECT begin_time, emotion_scores
-        FROM prosody_emotion_data
-        WHERE session_id::text = $1
-        ORDER BY begin_time ASC NULLS LAST
+        SELECT 
+            ped.begin_time,
+            json_object_agg(en.name, pes.score) FILTER (WHERE pes.id IS NOT NULL) as emotion_scores
+        FROM prosody_emotion_data ped
+        LEFT JOIN prosody_emotion_scores pes ON pes.prosody_emotion_data_id = ped.id
+        LEFT JOIN emotion_names en ON en.id = pes.emotion_name_id
+        WHERE ped.session_id::text = $1
+        GROUP BY ped.id, ped.begin_time
+        ORDER BY ped.begin_time ASC NULLS LAST
         """,
         session_id
     )
     logger.info(f"[get_emotion_data] Found {len(prosody_rows)} prosody emotion records for session {session_id}")
     
     for row in prosody_rows:
-        emotion_scores = json.loads(row['emotion_scores']) if isinstance(row['emotion_scores'], str) else row['emotion_scores']
+        emotion_scores = row['emotion_scores'] or {}
         emotion_entries.append({
             'begin_time': row['begin_time'],
             'end_time': None,

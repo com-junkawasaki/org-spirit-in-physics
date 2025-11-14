@@ -113,12 +113,11 @@ impl ParticipantMutation {
         let events: Vec<Value> = serde_json::from_value(input.events.clone())
             .map_err(|e| Error::new(format!("Invalid events format: {}", e)))?;
 
-        // Insert session into database
+        // Insert session into database (without events JSONB column)
         sqlx::query(
             r#"
-            INSERT INTO sessions (id, participant_id, session_index, start_ts, end_ts, events, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id, participant_id, session_index, start_ts, end_ts, events, created_at, updated_at
+            INSERT INTO sessions (id, participant_id, session_index, start_ts, end_ts, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#
         )
         .bind(session_id)
@@ -126,33 +125,114 @@ impl ParticipantMutation {
         .bind(input.session_index)
         .bind(input.start_ts)
         .bind::<Option<i64>>(None)
-        .bind(serde_json::json!(events))
         .bind(now)
         .bind(now)
         .execute(pool)
         .await?;
 
-        // Fetch the created session
-        let row = sqlx::query_as::<_, (Uuid, Uuid, Option<i32>, i64, Option<i64>, serde_json::Value, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
+        // Insert events into session_events table
+        for event in events {
+            let event_type_str = event.get("type")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| Error::new("Event missing 'type' field"))?;
+            
+            // Get or create event type
+            let event_type_id: i32 = sqlx::query_scalar(
+                r#"
+                INSERT INTO event_types (event_type)
+                VALUES ($1)
+                ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
+                RETURNING id
+                "#
+            )
+            .bind(event_type_str)
+            .fetch_one(pool)
+            .await?;
+
+            let event_timestamp = event.get("timestamp")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(input.start_ts);
+            
+            let event_data = event.get("data")
+                .map(|v| serde_json::to_string(v).unwrap_or_default());
+            
+            let word_id = event.get("word_id")
+                .and_then(|v| v.as_i64())
+                .map(|v| v as i32);
+            
+            let reaction_time_ms = event.get("reaction_time_ms")
+                .and_then(|v| v.as_i64())
+                .map(|v| v as i32);
+
+            sqlx::query(
+                r#"
+                INSERT INTO session_events (session_id, event_type_id, event_timestamp, event_data, word_id, reaction_time_ms)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT DO NOTHING
+                "#
+            )
+            .bind(session_id)
+            .bind(event_type_id)
+            .bind(event_timestamp)
+            .bind(event_data)
+            .bind(word_id)
+            .bind(reaction_time_ms)
+            .execute(pool)
+            .await?;
+        }
+
+        // Fetch the created session with events
+        let row = sqlx::query(
             r#"
-            SELECT id, participant_id, session_index, start_ts, end_ts, events, created_at, updated_at
-            FROM sessions
-            WHERE id = $1
+            SELECT 
+                s.id,
+                s.participant_id,
+                s.session_index,
+                s.start_ts,
+                s.end_ts,
+                s.created_at,
+                s.updated_at,
+                COALESCE(
+                    json_agg(
+                        jsonb_build_object(
+                            'type', et.event_type,
+                            'timestamp', se.event_timestamp,
+                            'data', se.event_data,
+                            'word_id', se.word_id,
+                            'reaction_time_ms', se.reaction_time_ms
+                        )
+                    ) FILTER (WHERE se.id IS NOT NULL),
+                    '[]'::json
+                ) as events
+            FROM sessions s
+            LEFT JOIN session_events se ON se.session_id = s.id
+            LEFT JOIN event_types et ON et.id = se.event_type_id
+            WHERE s.id = $1
+            GROUP BY s.id, s.participant_id, s.session_index, s.start_ts, s.end_ts, s.created_at, s.updated_at
             "#
         )
         .bind(session_id)
         .fetch_one(pool)
         .await?;
 
+        let id: Uuid = row.try_get("id").map_err(|e| Error::new(format!("Failed to get id: {}", e)))?;
+        let participant_id: Uuid = row.try_get("participant_id").map_err(|e| Error::new(format!("Failed to get participant_id: {}", e)))?;
+        let session_index: Option<i32> = row.try_get("session_index").ok();
+        let start_ts: i64 = row.try_get("start_ts").map_err(|e| Error::new(format!("Failed to get start_ts: {}", e)))?;
+        let end_ts: Option<i64> = row.try_get("end_ts").ok();
+        let events_json: serde_json::Value = row.try_get("events").ok().unwrap_or_else(|| serde_json::json!([]));
+        let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").map_err(|e| Error::new(format!("Failed to get created_at: {}", e)))?;
+        let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").map_err(|e| Error::new(format!("Failed to get updated_at: {}", e)))?;
+
         Ok(Session {
-            id: ID::from(row.0.to_string()),
-            participant_id: ID::from(row.1.to_string()),
-            session_index: row.2,
-            start_ts: row.3,
-            end_ts: row.4,
-            events: serde_json::from_value(row.5).unwrap_or_default(),
-            created_at: row.6.to_rfc3339(),
-            updated_at: row.7.to_rfc3339(),
+            id: ID::from(id.to_string()),
+            participant_id: ID::from(participant_id.to_string()),
+            session_index,
+            start_ts,
+            end_ts,
+            events: serde_json::from_value(events_json).unwrap_or_default(),
+            created_at: created_at.to_rfc3339(),
+            updated_at: updated_at.to_rfc3339(),
         })
     }
 

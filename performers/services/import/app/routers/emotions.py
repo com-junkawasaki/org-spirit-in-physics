@@ -201,59 +201,178 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
             if not emotion_scores:
                 continue
             
-            # Insert based on CSV type
+            # Insert based on CSV type and normalize emotion scores
             if csv_type == 'burst.csv':
-                await conn.execute(
+                # Insert burst_emotion_data record
+                burst_id = await conn.fetchval(
                     """
                     INSERT INTO burst_emotion_data (
                         time, session_id, participant_id, record_id,
-                        begin_time, end_time, emotion_scores, created_at
+                        begin_time, end_time, created_at
                     )
-                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, NOW())
+                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5, NOW())
                     ON CONFLICT DO NOTHING
+                    RETURNING id
                     """,
                     session_id, participant_id, record_id,
-                    begin_time, end_time, json.dumps(emotion_scores)
+                    begin_time, end_time
                 )
+                
+                if burst_id:
+                    # Insert emotion scores into normalized table
+                    for emotion_name, score in emotion_scores.items():
+                        # Get or create emotion name
+                        emotion_name_id = await conn.fetchval(
+                            """
+                            INSERT INTO emotion_names (name, category)
+                            VALUES ($1, 'vocal')
+                            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                            RETURNING id
+                            """,
+                            emotion_name
+                        )
+                        
+                        # Insert emotion score
+                        await conn.execute(
+                            """
+                            INSERT INTO burst_emotion_scores (
+                                burst_emotion_data_id, emotion_name_id, score
+                            )
+                            VALUES ($1::uuid, $2, $3)
+                            ON CONFLICT (burst_emotion_data_id, emotion_name_id) DO UPDATE
+                            SET score = EXCLUDED.score
+                            """,
+                            burst_id, emotion_name_id, score
+                        )
+                        
             elif csv_type == 'face.csv':
-                await conn.execute(
+                # Insert face_emotion_data record
+                face_id = await conn.fetchval(
                     """
                     INSERT INTO face_emotion_data (
                         time, session_id, participant_id, record_id,
-                        begin_time, emotion_scores, created_at
+                        begin_time, created_at
                     )
-                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5::jsonb, NOW())
+                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, NOW())
                     ON CONFLICT DO NOTHING
+                    RETURNING id
                     """,
                     session_id, participant_id, record_id,
-                    begin_time, json.dumps(emotion_scores)
+                    begin_time
                 )
+                
+                if face_id:
+                    # Insert emotion scores into normalized table
+                    for emotion_name, score in emotion_scores.items():
+                        # Get or create emotion name
+                        emotion_name_id = await conn.fetchval(
+                            """
+                            INSERT INTO emotion_names (name, category)
+                            VALUES ($1, 'facial')
+                            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                            RETURNING id
+                            """,
+                            emotion_name
+                        )
+                        
+                        # Insert emotion score
+                        await conn.execute(
+                            """
+                            INSERT INTO face_emotion_scores (
+                                face_emotion_data_id, emotion_name_id, score
+                            )
+                            VALUES ($1::uuid, $2, $3)
+                            ON CONFLICT (face_emotion_data_id, emotion_name_id) DO UPDATE
+                            SET score = EXCLUDED.score
+                            """,
+                            face_id, emotion_name_id, score
+                        )
+                        
             elif csv_type == 'language.csv':
-                await conn.execute(
+                # Insert language_emotion_data record
+                language_id = await conn.fetchval(
                     """
                     INSERT INTO language_emotion_data (
                         time, session_id, participant_id, record_id,
-                        begin_time, end_time, emotion_scores, created_at
+                        begin_time, end_time, created_at
                     )
-                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, NOW())
+                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5, NOW())
                     ON CONFLICT DO NOTHING
+                    RETURNING id
                     """,
                     session_id, participant_id, record_id,
-                    begin_time, end_time, json.dumps(emotion_scores)
+                    begin_time, end_time
                 )
+                
+                if language_id:
+                    # Insert emotion scores into normalized table
+                    for emotion_name, score in emotion_scores.items():
+                        # Get or create emotion name
+                        emotion_name_id = await conn.fetchval(
+                            """
+                            INSERT INTO emotion_names (name, category)
+                            VALUES ($1, 'language')
+                            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                            RETURNING id
+                            """,
+                            emotion_name
+                        )
+                        
+                        # Insert emotion score
+                        await conn.execute(
+                            """
+                            INSERT INTO language_emotion_scores (
+                                language_emotion_data_id, emotion_name_id, score
+                            )
+                            VALUES ($1::uuid, $2, $3)
+                            ON CONFLICT (language_emotion_data_id, emotion_name_id) DO UPDATE
+                            SET score = EXCLUDED.score
+                            """,
+                            language_id, emotion_name_id, score
+                        )
+                        
             elif csv_type == 'prosody.csv':
-                await conn.execute(
+                # Insert prosody_emotion_data record
+                prosody_id = await conn.fetchval(
                     """
                     INSERT INTO prosody_emotion_data (
                         time, session_id, participant_id, record_id,
-                        begin_time, emotion_scores, created_at
+                        begin_time, created_at
                     )
-                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5::jsonb, NOW())
+                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, NOW())
                     ON CONFLICT DO NOTHING
+                    RETURNING id
                     """,
                     session_id, participant_id, record_id,
-                    begin_time, json.dumps(emotion_scores)
+                    begin_time
                 )
+                
+                if prosody_id:
+                    # Insert emotion scores into normalized table
+                    for emotion_name, score in emotion_scores.items():
+                        # Get or create emotion name
+                        emotion_name_id = await conn.fetchval(
+                            """
+                            INSERT INTO emotion_names (name, category)
+                            VALUES ($1, 'prosody')
+                            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                            RETURNING id
+                            """,
+                            emotion_name
+                        )
+                        
+                        # Insert emotion score
+                        await conn.execute(
+                            """
+                            INSERT INTO prosody_emotion_scores (
+                                prosody_emotion_data_id, emotion_name_id, score
+                            )
+                            VALUES ($1::uuid, $2, $3)
+                            ON CONFLICT (prosody_emotion_data_id, emotion_name_id) DO UPDATE
+                            SET score = EXCLUDED.score
+                            """,
+                            prosody_id, emotion_name_id, score
+                        )
             
             entries_count += 1
     

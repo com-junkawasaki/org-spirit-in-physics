@@ -21,29 +21,61 @@ impl TimelineQuery {
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
             .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
 
-        let rows = sqlx::query_as::<_, (Uuid, Uuid, Option<i32>, i64, Option<i64>, serde_json::Value, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
+        // Join with session_events table to get events
+        let rows = sqlx::query(
             r#"
-            SELECT id, participant_id, session_index, start_ts, end_ts, events, created_at, updated_at
-            FROM sessions
-            WHERE participant_id = $1
-            ORDER BY session_index ASC
+            SELECT 
+                s.id,
+                s.participant_id,
+                s.session_index,
+                s.start_ts,
+                s.end_ts,
+                s.created_at,
+                s.updated_at,
+                COALESCE(
+                    json_agg(
+                        jsonb_build_object(
+                            'type', et.event_type,
+                            'timestamp', se.event_timestamp,
+                            'data', se.event_data,
+                            'word_id', se.word_id,
+                            'reaction_time_ms', se.reaction_time_ms
+                        )
+                    ) FILTER (WHERE se.id IS NOT NULL),
+                    '[]'::json
+                ) as events
+            FROM sessions s
+            LEFT JOIN session_events se ON se.session_id = s.id
+            LEFT JOIN event_types et ON et.id = se.event_type_id
+            WHERE s.participant_id = $1
+            GROUP BY s.id, s.participant_id, s.session_index, s.start_ts, s.end_ts, s.created_at, s.updated_at
+            ORDER BY s.session_index ASC
             "#
         )
         .bind(participant_uuid)
         .fetch_all(pool)
         .await?;
 
-        Ok(rows.into_iter().map(|(id, participant_id, session_index, start_ts, end_ts, events, created_at, updated_at)| {
-            Session {
+        Ok(rows.into_iter().filter_map(|row| {
+            let id: Uuid = row.try_get("id").ok()?;
+            let participant_id: Uuid = row.try_get("participant_id").ok()?;
+            let session_index: Option<i32> = row.try_get("session_index").ok();
+            let start_ts: i64 = row.try_get("start_ts").ok()?;
+            let end_ts: Option<i64> = row.try_get("end_ts").ok();
+            let events_json: serde_json::Value = row.try_get("events").ok().unwrap_or_else(|| serde_json::json!([]));
+            let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").ok()?;
+            let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").ok()?;
+
+            Some(Session {
                 id: ID::from(id.to_string()),
                 participant_id: ID::from(participant_id.to_string()),
                 session_index,
                 start_ts,
                 end_ts,
-                events: serde_json::from_value(events).unwrap_or_default(),
+                events: serde_json::from_value(events_json).unwrap_or_default(),
                 created_at: created_at.to_rfc3339(),
                 updated_at: updated_at.to_rfc3339(),
-            }
+            })
         }).collect())
     }
 
@@ -137,22 +169,48 @@ impl TimelineQuery {
             }).collect()
         } else {
             // Return raw timeline points - use parameterized query for better performance
+            // Join with normalized emotion and physiological tables
             let mut query_builder = sqlx::QueryBuilder::new(
                 r#"
                 SELECT 
-                    time,
-                    participant_id,
-                    session_id,
-                    word,
-                    event_type,
-                    reaction_value,
-                    reaction_time,
-                    has_response,
-                    emotions,
-                    physiological,
-                    metadata
-                FROM timeline_points
-                WHERE participant_id = "#
+                    tp.time,
+                    tp.participant_id,
+                    tp.session_id,
+                    tp.word,
+                    tp.event_type,
+                    tp.reaction_value,
+                    tp.reaction_time,
+                    tp.has_response,
+                    tp.metadata,
+                    COALESCE(
+                        json_agg(
+                            DISTINCT jsonb_build_object(
+                                'name', en.name,
+                                'score', tee.score,
+                                'fileType', tee.file_type
+                            )
+                        ) FILTER (WHERE tee.id IS NOT NULL),
+                        '[]'::json
+                    ) as emotions,
+                    COALESCE(
+                        json_object_agg(
+                            pmt.measurement_type,
+                            pm.value
+                        ) FILTER (WHERE pm.id IS NOT NULL),
+                        '{}'::json
+                    ) as physiological
+                FROM timeline_points tp
+                LEFT JOIN timeline_emotion_entries tee ON 
+                    tee.timeline_point_time = tp.time AND
+                    tee.timeline_point_participant_id = tp.participant_id AND
+                    tee.timeline_point_session_id = tp.session_id
+                LEFT JOIN emotion_names en ON en.id = tee.emotion_name_id
+                LEFT JOIN physiological_measurements pm ON
+                    pm.timeline_point_time = tp.time AND
+                    pm.timeline_point_participant_id = tp.participant_id AND
+                    pm.timeline_point_session_id = tp.session_id
+                LEFT JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
+                WHERE tp.participant_id = "#
             );
             
             query_builder.push_bind(participant_uuid);
@@ -174,7 +232,7 @@ impl TimelineQuery {
                 }
             }
             
-            query_builder.push(" ORDER BY time ASC LIMIT 20000");
+            query_builder.push(" GROUP BY tp.time, tp.participant_id, tp.session_id, tp.word, tp.event_type, tp.reaction_value, tp.reaction_time, tp.has_response, tp.metadata ORDER BY tp.time ASC LIMIT 20000");
 
             let rows = query_builder.build()
                 .fetch_all(pool)
@@ -190,11 +248,11 @@ impl TimelineQuery {
                 let reaction_value: Option<f64> = row.try_get("reaction_value").ok();
                 let reaction_time: Option<f64> = row.try_get("reaction_time").ok();
                 let has_response: bool = row.try_get("has_response").ok().unwrap_or(false);
-                let emotions_json: serde_json::Value = row.try_get("emotions").ok().unwrap_or_default();
-                let physiological_json: serde_json::Value = row.try_get("physiological").ok().unwrap_or_default();
-                let metadata_json: serde_json::Value = row.try_get("metadata").ok().unwrap_or_default();
+                let emotions_json: serde_json::Value = row.try_get("emotions").ok().unwrap_or_else(|| serde_json::json!([]));
+                let physiological_json: serde_json::Value = row.try_get("physiological").ok().unwrap_or_else(|| serde_json::json!({}));
+                let metadata_json: serde_json::Value = row.try_get("metadata").ok().unwrap_or_else(|| serde_json::json!({}));
 
-                // Parse emotions array
+                // Parse emotions array (already aggregated as JSON array)
                 let emotions: Vec<EmotionData> = if let Some(emotions_array) = emotions_json.as_array() {
                     emotions_array.iter().filter_map(|e| {
                         Some(EmotionData {

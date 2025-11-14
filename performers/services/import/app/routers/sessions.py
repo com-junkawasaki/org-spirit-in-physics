@@ -137,13 +137,12 @@ async def process_session(conn, participant_id: str, participant_path: Path):
     avg_reaction_time = sum(reaction_times) / len(reaction_times) if reaction_times else None
     session_duration = (end_ts - start_ts) if end_ts and start_ts else None
     
-    # Insert or update session
+    # Insert or update session (without events JSONB column)
     session_id = await conn.fetchval(
         """
-        INSERT INTO sessions (id, participant_id, session_index, start_ts, end_ts, events, created_at, updated_at)
-        VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, $5::jsonb, NOW(), NOW())
+        INSERT INTO sessions (id, participant_id, session_index, start_ts, end_ts, created_at, updated_at)
+        VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, NOW(), NOW())
         ON CONFLICT (participant_id, session_index) DO UPDATE SET
-            events = EXCLUDED.events,
             start_ts = EXCLUDED.start_ts,
             end_ts = EXCLUDED.end_ts,
             updated_at = NOW()
@@ -152,9 +151,52 @@ async def process_session(conn, participant_id: str, participant_path: Path):
         participant_id,
         0,  # session_index
         start_ts,
-        end_ts,
-        json.dumps(events)
+        end_ts
     )
+    
+    # Delete existing session events
+    await conn.execute(
+        "DELETE FROM session_events WHERE session_id = $1::uuid",
+        session_id
+    )
+    
+    # Insert events into session_events table
+    for event in events:
+        event_type_str = event.get('type')
+        if not event_type_str:
+            continue
+        
+        # Get or create event type
+        event_type_id = await conn.fetchval(
+            """
+            INSERT INTO event_types (event_type)
+            VALUES ($1)
+            ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
+            RETURNING id
+            """,
+            event_type_str
+        )
+        
+        event_timestamp = event.get('timestamp', start_ts)
+        event_data = json.dumps(event.get('data', {})) if event.get('data') else None
+        word_id = event.get('word_id')
+        reaction_time_ms = event.get('reaction_time_ms')
+        
+        await conn.execute(
+            """
+            INSERT INTO session_events (
+                session_id, event_type_id, event_timestamp, event_data, word_id, reaction_time_ms
+            )
+            VALUES ($1::uuid, $2, $3, $4, $5, $6)
+            ON CONFLICT DO NOTHING
+            """,
+            session_id,
+            event_type_id,
+            event_timestamp,
+            event_data,
+            word_id,
+            reaction_time_ms
+        )
     
     logger.info(f"Imported session {session_id} for participant {participant_id}")
     
