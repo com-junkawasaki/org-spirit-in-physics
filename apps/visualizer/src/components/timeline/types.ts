@@ -42,6 +42,7 @@ export interface EmotionData {
   name: string
   score: number
   fileType: string
+  color?: string // HEX color code from database
 }
 
 export interface TimelineDataPoint {

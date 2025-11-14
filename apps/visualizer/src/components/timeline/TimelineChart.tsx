@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import type { TimelineDataPoint, FilterSettings, TimeRange } from './types'
+import { getEmotionColor } from '@/lib/utils'
 
 // Merkle DAG: timeline.components.timeline_chart
 // 時系列チャートコンポーネント
@@ -653,21 +654,8 @@ export default function TimelineChart({
               .attr('class', 'emotion-detail-group')
               .attr('transform', `translate(${xPos}, ${yPos})`)
 
-            // 感情の色を決定
-            const emotionColors: Record<string, string> = {
-              'joy': '#fbbf24',
-              'sadness': '#3b82f6',
-              'anger': '#ef4444',
-              'fear': '#8b5cf6',
-              'surprise': '#10b981',
-              'disgust': '#6b7280',
-              'calm': '#84cc16',
-              'focus': '#f59e0b',
-              'excitement': '#ec4899',
-              'confusion': '#6366f1'
-            }
-
-            const color = emotionColors[(emotion.name || 'unknown').toLowerCase()] || baseColor
+            // 感情の色を決定（データベースから取得した色情報を優先、フォールバックはgetEmotionColor）
+            const color = emotion.color || getEmotionColor(emotion.name || 'unknown')
 
             emotionGroup.append('circle')
               .attr('r', 4)

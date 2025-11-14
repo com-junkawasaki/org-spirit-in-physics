@@ -2,7 +2,7 @@
 // GraphQL Mutation resolvers
 
 use async_graphql::*;
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
 use serde_json::Value;
 use chrono::Utc;
@@ -136,11 +136,11 @@ impl ParticipantMutation {
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| Error::new("Event missing 'type' field"))?;
             
-            // Get or create event type
+            // Get or create event type (cast to ENUM type)
             let event_type_id: i32 = sqlx::query_scalar(
                 r#"
                 INSERT INTO event_types (event_type)
-                VALUES ($1)
+                VALUES ($1::event_type_enum)
                 ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
                 RETURNING id
                 "#

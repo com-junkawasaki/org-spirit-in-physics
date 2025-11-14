@@ -349,11 +349,11 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                     if not isinstance(value, (int, float)):
                         continue
                     
-                    # Get or create measurement type
+                    # Get or create measurement type (cast to ENUM type)
                     measurement_type_id = await conn.fetchval(
                         """
                         INSERT INTO physiological_measurement_types (measurement_type)
-                        VALUES ($1)
+                        VALUES ($1::measurement_type_enum)
                         ON CONFLICT (measurement_type) DO UPDATE SET measurement_type = EXCLUDED.measurement_type
                         RETURNING id
                         """,

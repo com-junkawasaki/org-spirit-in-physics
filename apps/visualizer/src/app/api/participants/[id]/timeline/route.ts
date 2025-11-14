@@ -132,6 +132,7 @@ export async function GET(
             n: e.name || '',
             s: typeof e.score === 'number' ? e.score : 0,
             t: e.fileType || e.file_type || '',
+            c: e.color || null, // Include color from database
           }))
         : [];
 

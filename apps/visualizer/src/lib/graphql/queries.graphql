@@ -62,6 +62,7 @@ query GetTimeline(
       name
       score
       fileType
+      color
     }
     physiological
     metadata

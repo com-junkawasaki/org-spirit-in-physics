@@ -2,11 +2,11 @@
 // Participant GraphQL types
 
 use async_graphql::*;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use uuid::Uuid;
 use crate::types::enums::{HandednessType, EmotionFileType};
 
-#[derive(SimpleObject, Debug, Clone)]
+#[derive(SimpleObject, Debug, Clone, Serialize)]
 pub struct Participant {
     pub id: ID,
     pub age: Option<i32>,
@@ -44,10 +44,12 @@ pub struct TimelinePoint {
     pub metadata: serde_json::Value,
 }
 
-#[derive(SimpleObject, Debug, Clone)]
+#[derive(SimpleObject, Debug, Clone, Serialize)]
 pub struct EmotionData {
     pub name: String,
     pub score: f64,
     pub file_type: String, // ENUM型だが、GraphQLではStringとして公開
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>, // HEX color code from emotion_names table
 }
 

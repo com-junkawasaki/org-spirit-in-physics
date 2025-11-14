@@ -188,14 +188,15 @@ impl TimelineQuery {
                             DISTINCT jsonb_build_object(
                                 'name', en.name,
                                 'score', tee.score,
-                                'fileType', tee.file_type
+                                'fileType', tee.file_type,
+                                'color', en.color
                             )
                         ) FILTER (WHERE tee.id IS NOT NULL),
                         '[]'::json
                     ) as emotions,
                     COALESCE(
                         json_object_agg(
-                            pmt.measurement_type,
+                            pmt.measurement_type::text,
                             pm.value
                         ) FILTER (WHERE pm.id IS NOT NULL),
                         '{}'::json
@@ -260,6 +261,7 @@ impl TimelineQuery {
                             name: e.get("name")?.as_str()?.to_string(),
                             score: e.get("score")?.as_f64()?,
                             file_type: e.get("fileType")?.as_str()?.to_string(),
+                            color: e.get("color").and_then(|v| v.as_str()).map(|s| s.to_string()),
                         })
                     }).collect()
                 } else {

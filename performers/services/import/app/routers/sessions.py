@@ -170,7 +170,7 @@ async def process_session(conn, participant_id: str, participant_path: Path):
         event_type_id = await conn.fetchval(
             """
             INSERT INTO event_types (event_type)
-            VALUES ($1)
+            VALUES ($1::event_type_enum)
             ON CONFLICT (event_type) DO UPDATE SET event_type = EXCLUDED.event_type
             RETURNING id
             """,
