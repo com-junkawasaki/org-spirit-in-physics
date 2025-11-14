@@ -314,17 +314,16 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
             emotion_score = emotion['score']
             file_type = emotion['fileType']
             
-            # Get or create emotion name
+            # Get emotion name ID (ENUM型なので既に存在するはず)
             emotion_name_id = await conn.fetchval(
                 """
-                INSERT INTO emotion_names (name, category)
-                VALUES ($1, $2)
-                ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-                RETURNING id
+                SELECT id FROM emotion_names WHERE name = $1::emotion_name_enum
                 """,
-                emotion_name,
-                file_type
+                emotion_name
             )
+            if not emotion_name_id:
+                logger.warning(f"Emotion name '{emotion_name}' not found in emotion_names table, skipping")
+                continue
             
             # Insert emotion entry
             await conn.execute(
@@ -399,8 +398,8 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
             bed.begin_time,
             bed.end_time,
             json_object_agg(en.name, bes.score) FILTER (WHERE bes.id IS NOT NULL) as emotion_scores
-        FROM burst_emotion_data bed
-        LEFT JOIN burst_emotion_scores bes ON bes.burst_emotion_data_id = bed.id
+        FROM hume_burst_emotion_data bed
+        LEFT JOIN hume_burst_emotion_scores bes ON bes.hume_burst_emotion_data_id = bed.id
         LEFT JOIN emotion_names en ON en.id = bes.emotion_name_id
         WHERE bed.session_id::text = $1
         GROUP BY bed.id, bed.begin_time, bed.end_time
@@ -425,8 +424,8 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         SELECT 
             fed.begin_time,
             json_object_agg(en.name, fes.score) FILTER (WHERE fes.id IS NOT NULL) as emotion_scores
-        FROM face_emotion_data fed
-        LEFT JOIN face_emotion_scores fes ON fes.face_emotion_data_id = fed.id
+        FROM hume_face_emotion_data fed
+        LEFT JOIN hume_face_emotion_scores fes ON fes.hume_face_emotion_data_id = fed.id
         LEFT JOIN emotion_names en ON en.id = fes.emotion_name_id
         WHERE fed.session_id::text = $1
         GROUP BY fed.id, fed.begin_time
@@ -452,8 +451,8 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
             led.begin_time,
             led.end_time,
             json_object_agg(en.name, les.score) FILTER (WHERE les.id IS NOT NULL) as emotion_scores
-        FROM language_emotion_data led
-        LEFT JOIN language_emotion_scores les ON les.language_emotion_data_id = led.id
+        FROM hume_language_emotion_data led
+        LEFT JOIN hume_language_emotion_scores les ON les.hume_language_emotion_data_id = led.id
         LEFT JOIN emotion_names en ON en.id = les.emotion_name_id
         WHERE led.session_id::text = $1
         GROUP BY led.id, led.begin_time, led.end_time
@@ -478,8 +477,8 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
         SELECT 
             ped.begin_time,
             json_object_agg(en.name, pes.score) FILTER (WHERE pes.id IS NOT NULL) as emotion_scores
-        FROM prosody_emotion_data ped
-        LEFT JOIN prosody_emotion_scores pes ON pes.prosody_emotion_data_id = ped.id
+        FROM hume_prosody_emotion_data ped
+        LEFT JOIN hume_prosody_emotion_scores pes ON pes.hume_prosody_emotion_data_id = ped.id
         LEFT JOIN emotion_names en ON en.id = pes.emotion_name_id
         WHERE ped.session_id::text = $1
         GROUP BY ped.id, ped.begin_time
@@ -534,10 +533,10 @@ async def debug_timeline_data(
         # Check emotion data tables
         emotion_counts = {}
         for table_name, emotion_type in [
-            ('burst_emotion_data', 'burst'),
-            ('face_emotion_data', 'face'),
-            ('language_emotion_data', 'language'),
-            ('prosody_emotion_data', 'prosody'),
+            ('hume_burst_emotion_data', 'burst'),
+            ('hume_face_emotion_data', 'face'),
+            ('hume_language_emotion_data', 'language'),
+            ('hume_prosody_emotion_data', 'prosody'),
         ]:
             table_exists = await conn.fetchval(
                 """

@@ -113,19 +113,19 @@ async def process_emotions(conn, participant_id: str, participant_path: Path):
     
     # Delete existing emotion data
     await conn.execute(
-        "DELETE FROM burst_emotion_data WHERE participant_id::text = $1",
+        "DELETE FROM hume_burst_emotion_data WHERE participant_id::text = $1",
         participant_id
     )
     await conn.execute(
-        "DELETE FROM face_emotion_data WHERE participant_id::text = $1",
+        "DELETE FROM hume_face_emotion_data WHERE participant_id::text = $1",
         participant_id
     )
     await conn.execute(
-        "DELETE FROM language_emotion_data WHERE participant_id::text = $1",
+        "DELETE FROM hume_language_emotion_data WHERE participant_id::text = $1",
         participant_id
     )
     await conn.execute(
-        "DELETE FROM prosody_emotion_data WHERE participant_id::text = $1",
+        "DELETE FROM hume_prosody_emotion_data WHERE participant_id::text = $1",
         participant_id
     )
     
@@ -203,10 +203,10 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
             
             # Insert based on CSV type and normalize emotion scores
             if csv_type == 'burst.csv':
-                # Insert burst_emotion_data record
+                # Insert hume_burst_emotion_data record
                 burst_id = await conn.fetchval(
                     """
-                    INSERT INTO burst_emotion_data (
+                    INSERT INTO hume_burst_emotion_data (
                         time, session_id, participant_id, record_id,
                         begin_time, end_time, created_at
                     )
@@ -221,35 +221,35 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
                 if burst_id:
                     # Insert emotion scores into normalized table
                     for emotion_name, score in emotion_scores.items():
-                        # Get or create emotion name
+                        # Get emotion name ID (ENUM型なので既に存在するはず)
                         emotion_name_id = await conn.fetchval(
                             """
-                            INSERT INTO emotion_names (name, category)
-                            VALUES ($1, 'vocal')
-                            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-                            RETURNING id
+                            SELECT id FROM emotion_names WHERE name = $1::emotion_name_enum
                             """,
                             emotion_name
                         )
+                        if not emotion_name_id:
+                            logger.warning(f"Emotion name '{emotion_name}' not found in emotion_names table, skipping")
+                            continue
                         
                         # Insert emotion score
                         await conn.execute(
                             """
-                            INSERT INTO burst_emotion_scores (
-                                burst_emotion_data_id, emotion_name_id, score
+                            INSERT INTO hume_burst_emotion_scores (
+                                hume_burst_emotion_data_id, emotion_name_id, score
                             )
                             VALUES ($1::uuid, $2, $3)
-                            ON CONFLICT (burst_emotion_data_id, emotion_name_id) DO UPDATE
+                            ON CONFLICT (hume_burst_emotion_data_id, emotion_name_id) DO UPDATE
                             SET score = EXCLUDED.score
                             """,
                             burst_id, emotion_name_id, score
                         )
                         
             elif csv_type == 'face.csv':
-                # Insert face_emotion_data record
+                # Insert hume_face_emotion_data record
                 face_id = await conn.fetchval(
                     """
-                    INSERT INTO face_emotion_data (
+                    INSERT INTO hume_face_emotion_data (
                         time, session_id, participant_id, record_id,
                         begin_time, created_at
                     )
@@ -264,35 +264,35 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
                 if face_id:
                     # Insert emotion scores into normalized table
                     for emotion_name, score in emotion_scores.items():
-                        # Get or create emotion name
+                        # Get emotion name ID (ENUM型なので既に存在するはず)
                         emotion_name_id = await conn.fetchval(
                             """
-                            INSERT INTO emotion_names (name, category)
-                            VALUES ($1, 'facial')
-                            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-                            RETURNING id
+                            SELECT id FROM emotion_names WHERE name = $1::emotion_name_enum
                             """,
                             emotion_name
                         )
+                        if not emotion_name_id:
+                            logger.warning(f"Emotion name '{emotion_name}' not found in emotion_names table, skipping")
+                            continue
                         
                         # Insert emotion score
                         await conn.execute(
                             """
-                            INSERT INTO face_emotion_scores (
-                                face_emotion_data_id, emotion_name_id, score
+                            INSERT INTO hume_face_emotion_scores (
+                                hume_face_emotion_data_id, emotion_name_id, score
                             )
                             VALUES ($1::uuid, $2, $3)
-                            ON CONFLICT (face_emotion_data_id, emotion_name_id) DO UPDATE
+                            ON CONFLICT (hume_face_emotion_data_id, emotion_name_id) DO UPDATE
                             SET score = EXCLUDED.score
                             """,
                             face_id, emotion_name_id, score
                         )
                         
             elif csv_type == 'language.csv':
-                # Insert language_emotion_data record
+                # Insert hume_language_emotion_data record
                 language_id = await conn.fetchval(
                     """
-                    INSERT INTO language_emotion_data (
+                    INSERT INTO hume_language_emotion_data (
                         time, session_id, participant_id, record_id,
                         begin_time, end_time, created_at
                     )
@@ -307,35 +307,35 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
                 if language_id:
                     # Insert emotion scores into normalized table
                     for emotion_name, score in emotion_scores.items():
-                        # Get or create emotion name
+                        # Get emotion name ID (ENUM型なので既に存在するはず)
                         emotion_name_id = await conn.fetchval(
                             """
-                            INSERT INTO emotion_names (name, category)
-                            VALUES ($1, 'language')
-                            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-                            RETURNING id
+                            SELECT id FROM emotion_names WHERE name = $1::emotion_name_enum
                             """,
                             emotion_name
                         )
+                        if not emotion_name_id:
+                            logger.warning(f"Emotion name '{emotion_name}' not found in emotion_names table, skipping")
+                            continue
                         
                         # Insert emotion score
                         await conn.execute(
                             """
-                            INSERT INTO language_emotion_scores (
-                                language_emotion_data_id, emotion_name_id, score
+                            INSERT INTO hume_language_emotion_scores (
+                                hume_language_emotion_data_id, emotion_name_id, score
                             )
                             VALUES ($1::uuid, $2, $3)
-                            ON CONFLICT (language_emotion_data_id, emotion_name_id) DO UPDATE
+                            ON CONFLICT (hume_language_emotion_data_id, emotion_name_id) DO UPDATE
                             SET score = EXCLUDED.score
                             """,
                             language_id, emotion_name_id, score
                         )
                         
             elif csv_type == 'prosody.csv':
-                # Insert prosody_emotion_data record
+                # Insert hume_prosody_emotion_data record
                 prosody_id = await conn.fetchval(
                     """
-                    INSERT INTO prosody_emotion_data (
+                    INSERT INTO hume_prosody_emotion_data (
                         time, session_id, participant_id, record_id,
                         begin_time, created_at
                     )
@@ -350,25 +350,25 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
                 if prosody_id:
                     # Insert emotion scores into normalized table
                     for emotion_name, score in emotion_scores.items():
-                        # Get or create emotion name
+                        # Get emotion name ID (ENUM型なので既に存在するはず)
                         emotion_name_id = await conn.fetchval(
                             """
-                            INSERT INTO emotion_names (name, category)
-                            VALUES ($1, 'prosody')
-                            ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-                            RETURNING id
+                            SELECT id FROM emotion_names WHERE name = $1::emotion_name_enum
                             """,
                             emotion_name
                         )
+                        if not emotion_name_id:
+                            logger.warning(f"Emotion name '{emotion_name}' not found in emotion_names table, skipping")
+                            continue
                         
                         # Insert emotion score
                         await conn.execute(
                             """
-                            INSERT INTO prosody_emotion_scores (
-                                prosody_emotion_data_id, emotion_name_id, score
+                            INSERT INTO hume_prosody_emotion_scores (
+                                hume_prosody_emotion_data_id, emotion_name_id, score
                             )
                             VALUES ($1::uuid, $2, $3)
-                            ON CONFLICT (prosody_emotion_data_id, emotion_name_id) DO UPDATE
+                            ON CONFLICT (hume_prosody_emotion_data_id, emotion_name_id) DO UPDATE
                             SET score = EXCLUDED.score
                             """,
                             prosody_id, emotion_name_id, score
