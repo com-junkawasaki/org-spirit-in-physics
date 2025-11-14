@@ -78,7 +78,7 @@ impl ParticipantMutation {
         // For now, we'll just return the participant
 
         // Fetch the created participant
-        let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<String>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
+        let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
             "SELECT id, age, gender, handedness, created_at, updated_at FROM participants WHERE id = $1"
         )
         .bind(participant_id)
@@ -89,7 +89,7 @@ impl ParticipantMutation {
             id: ID::from(row.0.to_string()),
             age: row.1,
             gender: row.2,
-            handedness: row.3,
+            handedness: row.3.map(|h| h.to_string()),
             created_at: row.4.to_rfc3339(),
             updated_at: row.5.to_rfc3339(),
         })

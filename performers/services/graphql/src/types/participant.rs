@@ -4,13 +4,15 @@
 use async_graphql::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use crate::types::enums::{HandednessType, EmotionFileType};
 
 #[derive(SimpleObject, Debug, Clone)]
 pub struct Participant {
     pub id: ID,
     pub age: Option<i32>,
     pub gender: Option<String>,
-    pub handedness: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub handedness: Option<String>, // ENUM型だが、GraphQLではStringとして公開
     pub created_at: String,
     pub updated_at: String,
 }
@@ -46,6 +48,6 @@ pub struct TimelinePoint {
 pub struct EmotionData {
     pub name: String,
     pub score: f64,
-    pub file_type: String,
+    pub file_type: String, // ENUM型だが、GraphQLではStringとして公開
 }
 

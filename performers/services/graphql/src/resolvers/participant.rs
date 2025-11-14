@@ -15,7 +15,7 @@ impl ParticipantQuery {
     async fn participants(&self, ctx: &Context<'_>) -> Result<Vec<Participant>> {
         let pool = ctx.data::<Pool<Postgres>>()?;
         
-        let rows = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<String>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
+        let rows = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
             "SELECT id, age, gender, handedness, created_at, updated_at FROM participants ORDER BY created_at DESC"
         )
         .fetch_all(pool)
@@ -26,7 +26,7 @@ impl ParticipantQuery {
                 id: ID::from(id.to_string()),
                 age,
                 gender,
-                handedness,
+                handedness: handedness.map(|h| h.to_string()),
                 created_at: created_at.to_rfc3339(),
                 updated_at: updated_at.to_rfc3339(),
             }
@@ -39,7 +39,7 @@ impl ParticipantQuery {
         let uuid = Uuid::parse_str(id.as_str())
             .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
 
-        let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<String>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
+        let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
             "SELECT id, age, gender, handedness, created_at, updated_at FROM participants WHERE id = $1"
         )
         .bind(uuid)
@@ -51,7 +51,7 @@ impl ParticipantQuery {
                 id: ID::from(id.to_string()),
                 age,
                 gender,
-                handedness,
+                handedness: handedness.map(|h| h.to_string()),
                 created_at: created_at.to_rfc3339(),
                 updated_at: updated_at.to_rfc3339(),
             }
