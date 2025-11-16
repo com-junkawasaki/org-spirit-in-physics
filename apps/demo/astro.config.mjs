@@ -24,7 +24,7 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
-        '@spirit-in-physics/visualization-components': '/app/packages/visualization-components/src/index.ts',
+        '@spirit-in-physics/visualization-components': new URL('../../packages/visualization-components/src/index.ts', import.meta.url).pathname,
       },
     },
     server: {

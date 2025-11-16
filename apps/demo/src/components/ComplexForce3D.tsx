@@ -499,7 +499,7 @@ export default function ComplexForce3D({
     .with({ webGpuAvailable: false }, () => <ErrorFallback error={null} />)
     .with({ loadError: P.not(null) }, ({ loadError }) => <ErrorFallback error={loadError} />)
     .otherwise(() => (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex items-center justify-center" style={{ width, height }}>
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex items-center justify-center" style={{ width, height }}>
       <Suspense 
         fallback={
           <div className="flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 p-8" style={{ width, height }}>
@@ -533,8 +533,7 @@ export default function ComplexForce3D({
           }}
         />
       </Suspense>
-    </div>
+      </div>
     ))
-  }
 }
 

@@ -304,6 +304,7 @@ describe('validateComplexSpaceData', () => {
       informationSpace: new Array(512).fill(0),
       biologicalSpace: new Array(512).fill(0),
       projected3D: [1.0, 2.0, 3.0],
+      regions: [],
     }
 
     const result = validateComplexSpaceData(data)
