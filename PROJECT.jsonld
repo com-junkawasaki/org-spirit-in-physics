@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.34.0",
+  "version": "1.35.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-15T21:00:00+09:00",
-  "merkleRoot": "Clerk認証統合完了: participant・visualizerアプリにClerk v6統合、管理者APIキー認証をClerk認証に置き換え、middleware・providers・認証ページ実装、GraphQL client認証対応、環境変数設定",
+  "updatedAt": "2025-01-16T00:00:00+09:00",
+  "merkleRoot": "3D Force Graph最適化完了: Zustand統合による状態管理最適化、FPS制御機能実装、デバウンス処理によるレンダリング頻度制御、useMemo依存配列最適化、MediaRecorderエラーハンドリング改善",
   
   "story": {
     "@id": "project:story",
@@ -1537,7 +1537,17 @@
       ".envrc Clerk環境変数追加",
       "docker-compose.yml Clerk環境変数追加",
       "セキュアな認証基盤確立",
-      "管理者機能アクセス制御強化"
+      "管理者機能アクセス制御強化",
+      "3D Force Graph Zustand状態管理統合",
+      "wordEmotionDataデバウンス処理実装",
+      "3D Force Graph FPS制御機能実装",
+      "最大FPS調整UIコントロール追加",
+      "useMemo依存配列最適化によるレンダリング頻度制御",
+      "MediaRecorderエラーハンドリング改善",
+      "空の感情データスキップ処理",
+      "Zustandストアによるバッチキュー管理",
+      "3D Force Graph初期ノード表示機能",
+      "WebGPUレンダリングパフォーマンス最適化"
     ]
   },
   
