@@ -6,118 +6,152 @@ import type { APIRoute } from 'astro'
 const HUME_API_BASE = 'https://api.hume.ai/v0'
 
 // Helper to get environment variable (works in both Astro and Node.js)
+// In Astro, server-side API routes can access both import.meta.env and process.env
+// However, import.meta.env is the recommended way for Astro
 function getEnvVar(key: string): string | undefined {
-  // In Astro server-side API routes, process.env is the most reliable
-  // Try process.env first (Node.js runtime)
-  if (typeof process !== 'undefined' && process.env) {
-    const value = process.env[key]
-    if (value) return value
-  }
-  // Fallback to import.meta.env (Astro client-side)
+  // Try import.meta.env first (Astro's recommended way, works in server-side API routes)
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     const value = (import.meta.env as any)[key]
-    if (value) return value
+    if (value && typeof value === 'string' && value.length > 0) {
+      return value
+    }
+  }
+  // Fallback to process.env (Node.js runtime)
+  if (typeof process !== 'undefined' && process.env) {
+    const value = process.env[key]
+    if (value && typeof value === 'string' && value.length > 0) {
+      return value
+    }
   }
   return undefined
 }
 
 /**
- * Call Hume AI Expression Measurement API (Face)
+ * Check job status and wait for completion
  */
-async function analyzeFace(videoBlob: Blob, apiKey: string): Promise<any> {
+async function waitForJobCompletion(jobId: string, apiKey: string, maxWaitTime: number = 60000): Promise<any> {
+  const startTime = Date.now()
+  const pollInterval = 2000 // Poll every 2 seconds
+
+  while (Date.now() - startTime < maxWaitTime) {
+    const response = await fetch(`${HUME_API_BASE}/batch/jobs/${jobId}`, {
+      method: 'GET',
+      headers: {
+        'X-Hume-Api-Key': apiKey,
+        'Accept': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to check job status: ${response.status} ${errorText}`)
+    }
+
+    const jobStatus = await response.json()
+    console.log(`Job ${jobId} status: ${jobStatus.state}`)
+
+    if (jobStatus.state === 'COMPLETED') {
+      // Get predictions
+      const predictionsResponse = await fetch(`${HUME_API_BASE}/batch/jobs/${jobId}/predictions`, {
+        method: 'GET',
+        headers: {
+          'X-Hume-Api-Key': apiKey,
+          'Accept': 'application/json',
+        },
+      })
+
+      if (!predictionsResponse.ok) {
+        const errorText = await predictionsResponse.text()
+        throw new Error(`Failed to get predictions: ${predictionsResponse.status} ${errorText}`)
+      }
+
+      return await predictionsResponse.json()
+    }
+
+    if (jobStatus.state === 'FAILED') {
+      throw new Error(`Job ${jobId} failed: ${jobStatus.error || 'Unknown error'}`)
+    }
+
+    // Wait before next poll
+    await new Promise(resolve => setTimeout(resolve, pollInterval))
+  }
+
+  throw new Error(`Job ${jobId} did not complete within ${maxWaitTime}ms`)
+}
+
+/**
+ * Call Hume AI Batch API to analyze video and audio
+ */
+async function analyzeBatch(videoBlob: Blob, audioBlob: Blob | null, apiKey: string): Promise<any> {
+  // Prepare models configuration
+  const models: Record<string, any> = {
+    face: {}, // Face expression analysis
+  }
+
+  // Add audio models if audio is available
+  if (audioBlob && audioBlob.size > 0) {
+    models.prosody = {} // Speech prosody analysis
+    models.burst = {} // Vocal burst analysis
+  }
+
+  // Create multipart/form-data request
   const formData = new FormData()
+  
+  // Add models configuration as JSON string
+  formData.append('json', JSON.stringify({ models }))
+  
+  // Add video file
   formData.append('file', videoBlob, 'video.webm')
+  
+  // Add audio file if available
+  if (audioBlob && audioBlob.size > 0) {
+    formData.append('file', audioBlob, 'audio.webm')
+  }
 
-  const response = await fetch(`${HUME_API_BASE}/expression-measurement/models`, {
+  // Submit job
+  const response = await fetch(`${HUME_API_BASE}/batch/jobs`, {
     method: 'POST',
     headers: {
       'X-Hume-Api-Key': apiKey,
-      'Accept': 'application/json',
+      // Don't set Content-Type header - browser will set it with boundary
     },
     body: formData,
   })
 
   if (!response.ok) {
-    const errorText = await response.text()
-    console.error('Hume Face API error:', {
+    let errorText = ''
+    try {
+      errorText = await response.text()
+    } catch (err) {
+      errorText = 'Failed to read error response'
+    }
+    const errorDetails = {
       status: response.status,
       statusText: response.statusText,
+      url: `${HUME_API_BASE}/batch/jobs`,
       headers: Object.fromEntries(response.headers.entries()),
       errorText: errorText.substring(0, 500),
       apiKeyPrefix: apiKey.substring(0, 10),
-    })
-    throw new Error(`Hume Face API error: ${response.status} ${errorText}`)
+      apiKeyLength: apiKey.length,
+    }
+    console.error('Hume Batch API error:', JSON.stringify(errorDetails, null, 2))
+    throw new Error(`Hume Batch API error: ${response.status} ${errorText || response.statusText}`)
   }
 
-  const result = await response.json()
-  console.log('Hume Face API response:', JSON.stringify(result).substring(0, 500))
-  return result
-}
+  const jobResponse = await response.json()
+  const jobId = jobResponse.job_id
 
-/**
- * Call Hume AI Prosody API (Voice)
- */
-async function analyzeProsody(audioBlob: Blob, apiKey: string): Promise<any> {
-  const formData = new FormData()
-  formData.append('file', audioBlob, 'audio.webm')
-
-  const response = await fetch(`${HUME_API_BASE}/prosody/models`, {
-    method: 'POST',
-    headers: {
-      'X-Hume-Api-Key': apiKey,
-      'Accept': 'application/json',
-    },
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error('Hume Prosody API error:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      errorText: errorText.substring(0, 500),
-      apiKeyPrefix: apiKey.substring(0, 10),
-    })
-    throw new Error(`Hume Prosody API error: ${response.status} ${errorText}`)
+  if (!jobId) {
+    throw new Error('No job_id returned from Hume API')
   }
 
-  const result = await response.json()
-  console.log('Hume Prosody API response:', JSON.stringify(result).substring(0, 500))
-  return result
-}
+  console.log(`Hume Batch API job started: ${jobId}`)
 
-/**
- * Call Hume AI Burst API (Short audio bursts)
- */
-async function analyzeBurst(audioBlob: Blob, apiKey: string): Promise<any> {
-  const formData = new FormData()
-  formData.append('file', audioBlob, 'audio.webm')
-
-  const response = await fetch(`${HUME_API_BASE}/burst/models`, {
-    method: 'POST',
-    headers: {
-      'X-Hume-Api-Key': apiKey,
-      'Accept': 'application/json',
-    },
-    body: formData,
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error('Hume Burst API error:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      errorText: errorText.substring(0, 500),
-      apiKeyPrefix: apiKey.substring(0, 10),
-    })
-    throw new Error(`Hume Burst API error: ${response.status} ${errorText}`)
-  }
-
-  const result = await response.json()
-  console.log('Hume Burst API response:', JSON.stringify(result).substring(0, 500))
-  return result
+  // Wait for job completion and get predictions
+  const predictions = await waitForJobCompletion(jobId, apiKey)
+  
+  console.log('Hume Batch API predictions received:', JSON.stringify(predictions).substring(0, 500))
+  return predictions
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -135,7 +169,16 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Get API key from environment (hardcoded in docker-compose.yaml for development)
-    const apiKey = getEnvVar('HUME_API_KEY') || getEnvVar('HUME_API') || null
+    // In Astro SSR mode, process.env is available at runtime in server-side API routes
+    // Try multiple methods to get the API key
+    const apiKey = 
+      (typeof process !== 'undefined' && process.env?.HUME_API_KEY) ||
+      (typeof process !== 'undefined' && process.env?.HUME_API) ||
+      getEnvVar('HUME_API_KEY') || 
+      getEnvVar('HUME_API') ||
+      (typeof import.meta !== 'undefined' ? (import.meta.env as any)?.HUME_API_KEY : undefined) ||
+      (typeof import.meta !== 'undefined' ? (import.meta.env as any)?.HUME_API : undefined) ||
+      null
 
     // Enhanced logging for debugging
     const envCheck = {
@@ -145,15 +188,20 @@ export const POST: APIRoute = async ({ request }) => {
       hasHumeApi_process: typeof process !== 'undefined' ? !!process.env?.HUME_API : false,
       apiKeyLength: apiKey?.length || 0,
       apiKeyPrefix: apiKey ? `${apiKey.substring(0, 10)}...` : 'N/A',
-      allEnvKeys: typeof process !== 'undefined' ? Object.keys(process.env).filter(k => k.includes('HUME')).join(', ') : 'N/A',
+      allEnvKeys_process: typeof process !== 'undefined' ? Object.keys(process.env).filter(k => k.includes('HUME')).join(', ') : 'N/A',
+      allEnvKeys_import: typeof import.meta !== 'undefined' ? Object.keys((import.meta.env as any) || {}).filter((k: string) => k.includes('HUME')).join(', ') : 'N/A',
       selectedApiKey: apiKey ? 'Found' : 'Not found',
-      processEnvKeys: typeof process !== 'undefined' ? Object.keys(process.env).slice(0, 10).join(', ') : 'N/A',
+      processEnvSample: typeof process !== 'undefined' ? Object.keys(process.env).slice(0, 10).join(', ') : 'N/A',
+      processEnvHumeApiKey: typeof process !== 'undefined' ? (process.env?.HUME_API_KEY ? `${process.env.HUME_API_KEY.substring(0, 10)}...` : 'undefined') : 'N/A',
+      processEnvHumeApi: typeof process !== 'undefined' ? (process.env?.HUME_API ? `${process.env.HUME_API.substring(0, 10)}...` : 'undefined') : 'N/A',
     }
-    console.log('Hume API key check:', envCheck)
+    console.log('Hume API key check:', JSON.stringify(envCheck, null, 2))
     
     // If no API key found, log detailed error
     if (!apiKey) {
-      console.error('Hume API key not found. Environment check:', envCheck)
+      console.error('Hume API key not found. Environment check:', JSON.stringify(envCheck, null, 2))
+      console.error('Available process.env keys:', typeof process !== 'undefined' ? Object.keys(process.env).slice(0, 20).join(', ') : 'N/A')
+      console.error('Available import.meta.env keys:', typeof import.meta !== 'undefined' ? Object.keys((import.meta.env as any) || {}).slice(0, 20).join(', ') : 'N/A')
     }
 
     if (!apiKey) {
@@ -168,80 +216,68 @@ export const POST: APIRoute = async ({ request }) => {
     const videoBlob = await videoFile.arrayBuffer().then(buf => new Blob([buf], { type: videoFile.type }))
     const audioBlob = audioFile ? await audioFile.arrayBuffer().then(buf => new Blob([buf], { type: audioFile.type })) : null
 
-    // Call Hume AI APIs in parallel
-    const promises: Promise<any>[] = []
-
-    // Always analyze face from video
-    promises.push(
-      analyzeFace(videoBlob, apiKey).catch(err => {
-        console.warn('Face analysis failed:', err)
-        return null
-      })
-    )
-
-    // Analyze prosody if audio is available
-    if (audioBlob && audioBlob.size > 0) {
-      promises.push(
-        analyzeProsody(audioBlob, apiKey).catch(err => {
-          console.warn('Prosody analysis failed:', err)
-          return null
-        })
-      )
-      promises.push(
-        analyzeBurst(audioBlob, apiKey).catch(err => {
-          console.warn('Burst analysis failed:', err)
-          return null
-        })
+    // Call Hume AI Batch API
+    let batchResult: any
+    try {
+      batchResult = await analyzeBatch(videoBlob, audioBlob, apiKey)
+    } catch (err) {
+      console.error('Hume Batch API call failed:', err)
+      // Return empty predictions for graceful degradation
+      return new Response(
+        JSON.stringify({
+          predictions: [],
+          error: err instanceof Error ? err.message : 'Unknown error',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
     }
 
-    // Wait for all API calls to complete
-    const results = await Promise.all(promises)
-    const [faceResult, prosodyResult, burstResult] = results
-
-    // Combine results into unified format
-    // Hume AI API returns results in format: { results: [{ predictions: [...] }] }
+    // Process Batch API response format
+    // Batch API returns: { results: [{ source: {...}, results: [{ face: {...}, prosody: {...}, burst: {...} }] }] }
+    // Each result in results array contains model-specific predictions
     const predictions: any[] = []
 
-    if (faceResult) {
-      // Extract predictions from face result
-      const facePredictions = faceResult.results?.[0]?.predictions || faceResult.predictions || []
-      if (facePredictions.length > 0) {
-        predictions.push({
-          face: {
-            predictions: facePredictions,
-          },
-        })
+    if (batchResult.results && Array.isArray(batchResult.results)) {
+      for (const fileResult of batchResult.results) {
+        // Each fileResult has a results array containing model predictions
+        if (fileResult.results && Array.isArray(fileResult.results)) {
+          // Aggregate all model predictions from all results
+          const aggregatedModels: Record<string, any> = {
+            face: { predictions: [] },
+            prosody: { predictions: [] },
+            burst: { predictions: [] },
+          }
+
+          for (const modelResult of fileResult.results) {
+            // Extract predictions by model type
+            if (modelResult.face && modelResult.face.predictions) {
+              aggregatedModels.face.predictions.push(...modelResult.face.predictions)
+            }
+            if (modelResult.prosody && modelResult.prosody.predictions) {
+              aggregatedModels.prosody.predictions.push(...modelResult.prosody.predictions)
+            }
+            if (modelResult.burst && modelResult.burst.predictions) {
+              aggregatedModels.burst.predictions.push(...modelResult.burst.predictions)
+            }
+          }
+
+          // Add non-empty model predictions to predictions array
+          if (aggregatedModels.face.predictions.length > 0) {
+            predictions.push({ face: aggregatedModels.face })
+          }
+          if (aggregatedModels.prosody.predictions.length > 0) {
+            predictions.push({ prosody: aggregatedModels.prosody })
+          }
+          if (aggregatedModels.burst.predictions.length > 0) {
+            predictions.push({ burst: aggregatedModels.burst })
+          }
+        }
       }
     }
 
-    if (prosodyResult) {
-      // Extract predictions from prosody result
-      const prosodyPredictions = prosodyResult.results?.[0]?.predictions || prosodyResult.predictions || []
-      if (prosodyPredictions.length > 0) {
-        predictions.push({
-          prosody: {
-            predictions: prosodyPredictions,
-          },
-        })
-      }
-    }
-
-    if (burstResult) {
-      // Extract predictions from burst result
-      const burstPredictions = burstResult.results?.[0]?.predictions || burstResult.predictions || []
-      if (burstPredictions.length > 0) {
-        predictions.push({
-          burst: {
-            predictions: burstPredictions,
-          },
-        })
-      }
-    }
-
-    // If no predictions were successful, return empty result
+    // If no predictions were found, return empty result
     if (predictions.length === 0) {
-      console.warn('All Hume API calls failed, returning empty predictions')
+      console.warn('No predictions found in Batch API response')
       return new Response(
         JSON.stringify({
           predictions: [],
