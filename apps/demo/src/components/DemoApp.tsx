@@ -1,6 +1,7 @@
 // Merkle DAG: components.demo_app
 // Main demo app component
 
+import { match, P } from 'ts-pattern'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import WordDisplay from './WordDisplay'
 import ComplexForce3D from './ComplexForce3D'
@@ -223,7 +224,9 @@ export default function DemoApp() {
         })
       } catch (err) {
         console.warn('Video capture failed, using empty blob:', err)
-        const errorMsg = err instanceof Error ? err.message : 'Video capture failed'
+        const errorMsg = match(err)
+          .with(P.instanceOf(Error), (e) => e.message)
+          .otherwise(() => 'Video capture failed')
         addStepLog(videoStep.id, `Video capture error: ${errorMsg}`)
         videoBlob = new Blob([], { type: 'video/webm' })
         updateStep(videoStep.id, {
@@ -263,7 +266,9 @@ export default function DemoApp() {
         }
       } catch (err) {
         console.warn('Audio capture failed, continuing without audio:', err)
-        const errorMsg = err instanceof Error ? err.message : 'Audio capture failed'
+        const errorMsg = match(err)
+          .with(P.instanceOf(Error), (e) => e.message)
+          .otherwise(() => 'Audio capture failed')
         addStepLog(audioStep.id, `Audio capture error: ${errorMsg}`)
         audioBlob = undefined
         updateStep(audioStep.id, {
@@ -444,7 +449,9 @@ export default function DemoApp() {
               }
             }, 250) // Wait for debounce to complete
           } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+            const errorMsg = match(err)
+              .with(P.instanceOf(Error), (e) => e.message)
+              .otherwise(() => 'Unknown error')
             addStepLog(analysisStep.id, `[Pipeline] Error: ${errorMsg}`)
             updateStep(analysisStep.id, {
               status: 'error',

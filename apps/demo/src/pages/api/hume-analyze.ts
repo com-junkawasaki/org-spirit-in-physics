@@ -1,6 +1,7 @@
 // Merkle DAG: api.hume_analyze
 // Hume AI API proxy endpoint
 
+import { match, P } from 'ts-pattern'
 import type { APIRoute } from 'astro'
 
 const HUME_API_BASE = 'https://api.hume.ai/v0'
@@ -50,44 +51,56 @@ async function waitForJobCompletion(jobId: string, apiKey: string, maxWaitTime: 
     const jobStatus = await response.json()
     console.log(`Job ${jobId} status: ${jobStatus.state}`)
 
-    if (jobStatus.state === 'COMPLETED') {
-      // Get predictions
-      const predictionsResponse = await fetch(`${HUME_API_BASE}/batch/jobs/${jobId}/predictions`, {
-        method: 'GET',
-        headers: {
-          'X-Hume-Api-Key': apiKey,
-          'Accept': 'application/json',
-        },
+    // Use ts-pattern to handle job status
+    const result = await match(jobStatus.state)
+      .with('COMPLETED', async () => {
+        // Get predictions
+        const predictionsResponse = await fetch(`${HUME_API_BASE}/batch/jobs/${jobId}/predictions`, {
+          method: 'GET',
+          headers: {
+            'X-Hume-Api-Key': apiKey,
+            'Accept': 'application/json',
+          },
+        })
+
+        if (!predictionsResponse.ok) {
+          const errorText = await predictionsResponse.text()
+          throw new Error(`Failed to get predictions: ${predictionsResponse.status} ${errorText}`)
+        }
+
+        const predictionsData = await predictionsResponse.json()
+        console.log(`[Job ${jobId}] Predictions received (full):`, JSON.stringify(predictionsData, null, 2))
+        console.log(`[Job ${jobId}] Predictions structure:`, {
+          type: typeof predictionsData,
+          isArray: Array.isArray(predictionsData),
+          keys: typeof predictionsData === 'object' && predictionsData !== null ? Object.keys(predictionsData) : [],
+          hasResults: !!(predictionsData as any)?.results,
+          resultsType: Array.isArray((predictionsData as any)?.results) ? 'array' : typeof (predictionsData as any)?.results,
+          resultsLength: Array.isArray((predictionsData as any)?.results) ? (predictionsData as any).results.length : 0,
+          // Deep structure check
+          firstResultKeys: Array.isArray((predictionsData as any)?.results) && (predictionsData as any).results[0] 
+            ? Object.keys((predictionsData as any).results[0]) 
+            : [],
+          firstResultHasResults: Array.isArray((predictionsData as any)?.results) && (predictionsData as any).results[0]
+            ? !!(predictionsData as any).results[0].results
+            : false,
+        })
+        return { completed: true, data: predictionsData } as const
       })
-
-      if (!predictionsResponse.ok) {
-        const errorText = await predictionsResponse.text()
-        throw new Error(`Failed to get predictions: ${predictionsResponse.status} ${errorText}`)
-      }
-
-      const predictionsData = await predictionsResponse.json()
-      console.log(`[Job ${jobId}] Predictions received (full):`, JSON.stringify(predictionsData, null, 2))
-      console.log(`[Job ${jobId}] Predictions structure:`, {
-        type: typeof predictionsData,
-        isArray: Array.isArray(predictionsData),
-        keys: typeof predictionsData === 'object' && predictionsData !== null ? Object.keys(predictionsData) : [],
-        hasResults: !!(predictionsData as any)?.results,
-        resultsType: Array.isArray((predictionsData as any)?.results) ? 'array' : typeof (predictionsData as any)?.results,
-        resultsLength: Array.isArray((predictionsData as any)?.results) ? (predictionsData as any).results.length : 0,
-        // Deep structure check
-        firstResultKeys: Array.isArray((predictionsData as any)?.results) && (predictionsData as any).results[0] 
-          ? Object.keys((predictionsData as any).results[0]) 
-          : [],
-        firstResultHasResults: Array.isArray((predictionsData as any)?.results) && (predictionsData as any).results[0]
-          ? !!(predictionsData as any).results[0].results
-          : false,
+      .with('FAILED', () => {
+        const errorMessage = match(jobStatus.error)
+          .with(P.string, (e) => e)
+          .otherwise(() => 'Unknown error')
+        console.error(`Job ${jobId} failed:`, errorMessage)
+        throw new Error(`Job ${jobId} failed: ${errorMessage}`)
       })
-      return predictionsData
-    }
-
-    if (jobStatus.state === 'FAILED') {
-      console.error(`Job ${jobId} failed:`, jobStatus.error || 'Unknown error')
-      throw new Error(`Job ${jobId} failed: ${jobStatus.error || 'Unknown error'}`)
+      .otherwise(() => {
+        // Continue polling for other states (PENDING, RUNNING, etc.)
+        return { completed: false } as const
+      })
+    
+    if (result.completed) {
+      return result.data
     }
 
     // Wait before next poll

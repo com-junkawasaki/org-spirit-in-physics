@@ -1,6 +1,7 @@
 // Merkle DAG: lib.hume_realtime
 // Real-time Hume AI emotion analysis integration
 
+import { match, P } from 'ts-pattern'
 import type { EmotionData } from '../types/demo'
 import { normalizeEmotionName, EMOTION_KEYS } from './emotion-normalization'
 
@@ -365,24 +366,29 @@ export async function captureVideoFrame(stream: MediaStream, durationMs: number 
       console.log(`[captureVideoFrame] MediaRecorder started, duration: ${durationMs}ms, mimeType: ${mimeType}`)
     } catch (err: any) {
       console.warn('[captureVideoFrame] MediaRecorder.start() error:', err)
-      // Check if recording actually started despite error
-      if (mediaRecorder.state === 'recording') {
-        console.warn('[captureVideoFrame] MediaRecorder started despite error, continuing...')
-      } else {
-        console.error('[captureVideoFrame] MediaRecorder failed to start, returning empty blob')
-        resolve(new Blob([], { type: mimeType }))
-        return
-      }
+      // Check if recording actually started despite error using ts-pattern
+      const state = mediaRecorder.state as 'inactive' | 'recording' | 'paused'
+      match(state)
+        .with('recording', () => {
+          console.warn('[captureVideoFrame] MediaRecorder started despite error, continuing...')
+        })
+        .otherwise(() => {
+          console.error('[captureVideoFrame] MediaRecorder failed to start, returning empty blob')
+          resolve(new Blob([], { type: mimeType }))
+        })
     }
 
     setTimeout(() => {
         try {
-          if (mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop()
-          } else {
-            // Already stopped, resolve with empty blob
-            resolve(new Blob([], { type: mimeType }))
-          }
+          const state = mediaRecorder.state as 'inactive' | 'recording' | 'paused'
+          match(state)
+            .with('inactive', () => {
+              // Already stopped, resolve with empty blob
+              resolve(new Blob([], { type: mimeType }))
+            })
+            .otherwise(() => {
+              mediaRecorder.stop()
+            })
         } catch (err) {
           console.warn('Error stopping MediaRecorder:', err)
           resolve(new Blob([], { type: mimeType }))

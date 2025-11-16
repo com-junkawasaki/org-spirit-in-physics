@@ -11,7 +11,7 @@ export default defineConfig({
     }),
     react(),
   ],
-  output: 'server',
+  output: 'static', // Changed to static for build
   server: {
     host: true,
     port: 4322,

@@ -1,6 +1,7 @@
 // Merkle DAG: components.complex_force_3d
 // 3D Force Graph wrapper for Complex visualization
 
+import { match, P } from 'ts-pattern'
 import React, { useMemo, lazy, Suspense, useState, useEffect, useRef } from 'react'
 import type { WordNode, WordLink } from '@spirit-in-physics/visualization-components'
 import type { WordEmotionData } from '../types/demo'
@@ -456,43 +457,48 @@ export default function ComplexForce3D({
   }, [dataLength, lastUpdateTime, shellRadius, restLength, springK]) // Removed wordEmotionData - use value-based comparison instead
 
   // Error boundary component for WebGPU errors
-  const ErrorFallback = ({ error }: { error: Error | null }) => (
-    <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 p-8" style={{ width, height }}>
-      <div className="text-red-600 dark:text-red-400 mb-2">
-        <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      </div>
-      <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-        {webGpuAvailable === false ? 'WebGPUが利用できません' : '3D可視化の読み込みに失敗しました'}
-      </p>
-      <p className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-md">
-        {webGpuAvailable === false
-          ? 'お使いのブラウザはWebGPUに対応していません。Chrome 113以降、Edge 113以降、またはSafari 18以降をご使用ください。'
-          : error?.message || '3D Force Graphの初期化中にエラーが発生しました。'}
-      </p>
-    </div>
-  )
+  const ErrorFallback = ({ error }: { error: Error | null }) => {
+    const errorState = match({ webGpuAvailable, error })
+      .with({ webGpuAvailable: false }, () => ({
+        title: 'WebGPUが利用できません',
+        message: 'お使いのブラウザはWebGPUに対応していません。Chrome 113以降、Edge 113以降、またはSafari 18以降をご使用ください。'
+      }))
+      .with({ error: P.not(null) }, ({ error }) => ({
+        title: '3D可視化の読み込みに失敗しました',
+        message: error.message || '3D Force Graphの初期化中にエラーが発生しました。'
+      }))
+      .otherwise(() => ({
+        title: '3D可視化の読み込みに失敗しました',
+        message: '3D Force Graphの初期化中にエラーが発生しました。'
+      }))
 
-  if (graphData.nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900" style={{ width, height }}>
-        <p className="text-gray-500 dark:text-gray-400">データがありません</p>
+      <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 p-8" style={{ width, height }}>
+        <div className="text-red-600 dark:text-red-400 mb-2">
+          <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+          {errorState.title}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-md">
+          {errorState.message}
+        </p>
       </div>
     )
   }
 
-  // Show error if WebGPU is not available
-  if (webGpuAvailable === false) {
-    return <ErrorFallback error={null} />
-  }
-
-  // Show error if load error occurred
-  if (loadError) {
-    return <ErrorFallback error={loadError} />
-  }
-
-  return (
+  // Use ts-pattern for conditional rendering
+  return match({ hasData: graphData.nodes.length > 0, webGpuAvailable, loadError })
+    .with({ hasData: false }, () => (
+      <div className="flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900" style={{ width, height }}>
+        <p className="text-gray-500 dark:text-gray-400">データがありません</p>
+      </div>
+    ))
+    .with({ webGpuAvailable: false }, () => <ErrorFallback error={null} />)
+    .with({ loadError: P.not(null) }, ({ loadError }) => <ErrorFallback error={loadError} />)
+    .otherwise(() => (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex items-center justify-center" style={{ width, height }}>
       <Suspense 
         fallback={
@@ -528,6 +534,7 @@ export default function ComplexForce3D({
         />
       </Suspense>
     </div>
-  )
+    ))
+  }
 }
 
