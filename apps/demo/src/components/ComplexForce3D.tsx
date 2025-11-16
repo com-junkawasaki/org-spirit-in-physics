@@ -26,6 +26,7 @@ interface ComplexForce3DProps {
   radialOutK?: number
   minSep?: number
   sepK?: number
+  showAnalysis?: boolean  // デバッグパネルを表示するか
 }
 
 export default function ComplexForce3D({
@@ -41,6 +42,7 @@ export default function ComplexForce3D({
   radialOutK = 120,
   minSep = 80,
   sepK = 8000,
+  showAnalysis = false,  // デバッグパネルはデフォルトで非表示
 }: ComplexForce3DProps) {
   // Get wordEmotionData from Jotai atoms (automatically optimized)
   // Jotai automatically prevents unnecessary re-renders
@@ -508,6 +510,7 @@ export default function ComplexForce3D({
           width={width}
           height={height}
           maxFps={optimalFps}
+          showAnalysis={showAnalysis}
           physics={{
             springK,
             repulsionK,

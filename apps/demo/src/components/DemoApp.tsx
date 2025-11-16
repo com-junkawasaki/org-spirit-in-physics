@@ -46,6 +46,7 @@ export default function DemoApp() {
   const [hasError, setHasError] = useState(false)
   const [stepOrderCounter, setStepOrderCounter] = useState(0)
   const [maxFps, setMaxFps] = useState(0)  // Default: 0 = auto (memory-aware, max 1GB)
+  const [showAnalysis, setShowAnalysis] = useState(false)  // デバッグパネル表示フラグ
   
   // Use Jotai atoms for batch queue and word emotion data
   const addToBatchQueue = useSetAtom(addToBatchQueueAtom)
@@ -323,8 +324,15 @@ export default function DemoApp() {
               audioSize: item.audioBlob?.size || 0,
             }
             console.warn(`[Batch ${item.word}] No emotions detected (video-only mode):`, errorDetails)
-            addStepLog(analysisStep.id, `Warning: No emotions detected (emotionCount: 0) - This may be normal for video-only mode`)
-            addStepLog(analysisStep.id, `Video: ${item.videoBlob.size} bytes, Audio: ${item.audioBlob?.size || 0} bytes`)
+            addStepLog(analysisStep.id, `Warning: No emotions detected (emotionCount: 0)`)
+            addStepLog(analysisStep.id, `Possible causes:`)
+            addStepLog(analysisStep.id, `  1. Video blob size: ${item.videoBlob.size} bytes ${item.videoBlob.size === 0 ? '(EMPTY - this is likely the cause!)' : ''}`)
+            addStepLog(analysisStep.id, `  2. Audio blob size: ${item.audioBlob?.size || 0} bytes ${(item.audioBlob?.size || 0) === 0 ? '(no audio - video-only mode)' : ''}`)
+            addStepLog(analysisStep.id, `  3. Processing time: ${analysisResult.processingTime}ms`)
+            addStepLog(analysisStep.id, `  4. API response: ${analysisResult.emotions?.length === 0 ? 'Empty predictions array' : 'Unknown'}`)
+            if (item.videoBlob.size === 0) {
+              addStepLog(analysisStep.id, `  ⚠️ CRITICAL: Video blob is empty! MediaRecorder may have failed.`)
+            }
             
             // In video-only mode, continue processing even with empty emotions
             // This allows the UI to show that processing occurred
@@ -565,6 +573,7 @@ export default function DemoApp() {
             width={dimensions.width}
             height={dimensions.height}
             maxFps={maxFps}
+            showAnalysis={showAnalysis}
           />
         </div>
         {/* Remove the conditional rendering - ComplexForce3D handles empty data internally */}
@@ -629,6 +638,19 @@ export default function DemoApp() {
               >
                 停止
               </button>
+            </div>
+
+            {/* Debug Panel Toggle */}
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              <label className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <input
+                  type="checkbox"
+                  checked={showAnalysis}
+                  onChange={(e) => setShowAnalysis(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <span>TypeGPU デバッグパネル表示</span>
+              </label>
             </div>
 
             {/* FPS Control */}

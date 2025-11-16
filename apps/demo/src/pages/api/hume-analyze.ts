@@ -66,14 +66,21 @@ async function waitForJobCompletion(jobId: string, apiKey: string, maxWaitTime: 
       }
 
       const predictionsData = await predictionsResponse.json()
-      console.log(`Job ${jobId} predictions received:`, JSON.stringify(predictionsData).substring(0, 2000))
-      console.log(`Job ${jobId} predictions structure:`, {
+      console.log(`[Job ${jobId}] Predictions received (full):`, JSON.stringify(predictionsData, null, 2))
+      console.log(`[Job ${jobId}] Predictions structure:`, {
         type: typeof predictionsData,
         isArray: Array.isArray(predictionsData),
         keys: typeof predictionsData === 'object' && predictionsData !== null ? Object.keys(predictionsData) : [],
         hasResults: !!(predictionsData as any)?.results,
         resultsType: Array.isArray((predictionsData as any)?.results) ? 'array' : typeof (predictionsData as any)?.results,
         resultsLength: Array.isArray((predictionsData as any)?.results) ? (predictionsData as any).results.length : 0,
+        // Deep structure check
+        firstResultKeys: Array.isArray((predictionsData as any)?.results) && (predictionsData as any).results[0] 
+          ? Object.keys((predictionsData as any).results[0]) 
+          : [],
+        firstResultHasResults: Array.isArray((predictionsData as any)?.results) && (predictionsData as any).results[0]
+          ? !!(predictionsData as any).results[0].results
+          : false,
       })
       return predictionsData
     }
@@ -227,10 +234,43 @@ export const POST: APIRoute = async ({ request }) => {
     const videoBlob = await videoFile.arrayBuffer().then(buf => new Blob([buf], { type: videoFile.type }))
     const audioBlob = audioFile ? await audioFile.arrayBuffer().then(buf => new Blob([buf], { type: audioFile.type })) : null
 
+    // Validate video blob size
+    if (!videoBlob || videoBlob.size === 0) {
+      console.error('[API Route] Validation failed: Video blob is empty or invalid', {
+        videoBlobSize: videoBlob?.size || 0,
+        videoFileSize: videoFile.size,
+        videoFileType: videoFile.type
+      })
+      return new Response(
+        JSON.stringify({
+          predictions: [],
+          error: 'Video blob is empty or invalid',
+          debug: {
+            videoBlobSize: videoBlob?.size || 0,
+            videoFileSize: videoFile.size,
+            videoFileType: videoFile.type
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('[API Route] Validation passed:', {
+      videoBlobSize: videoBlob.size,
+      audioBlobSize: audioBlob?.size || 0,
+      videoFileType: videoFile.type
+    })
+
     // Call Hume AI Batch API
     let batchResult: any
     try {
       batchResult = await analyzeBatch(videoBlob, audioBlob, apiKey)
+      console.log('[API Route] Batch result received:', {
+        type: typeof batchResult,
+        isArray: Array.isArray(batchResult),
+        keys: typeof batchResult === 'object' && batchResult !== null ? Object.keys(batchResult) : [],
+        fullStructure: JSON.stringify(batchResult).substring(0, 5000)
+      })
     } catch (err) {
       console.error('Hume Batch API call failed:', err)
       // Return empty predictions for graceful degradation
@@ -248,31 +288,40 @@ export const POST: APIRoute = async ({ request }) => {
     // 1. { results: [{ source: {...}, results: [{ face: {...}, prosody: {...}, burst: {...} }] }] }
     // 2. Direct array of predictions: [{ face: {...}, prosody: {...}, burst: {...} }]
     // 3. Single object with models: { face: {...}, prosody: {...}, burst: {...} }
-    console.log('Batch API response structure:', {
+    console.log('[API Route] Stage 1: Batch API response structure analysis:', {
       type: typeof batchResult,
       isArray: Array.isArray(batchResult),
+      isNull: batchResult === null,
+      isUndefined: batchResult === undefined,
       keys: typeof batchResult === 'object' && batchResult !== null ? Object.keys(batchResult) : [],
       hasResults: !!(batchResult as any)?.results,
       resultsType: Array.isArray((batchResult as any)?.results) ? 'array' : typeof (batchResult as any)?.results,
       resultsLength: Array.isArray((batchResult as any)?.results) ? (batchResult as any).results.length : 0,
+      firstResultKeys: Array.isArray((batchResult as any)?.results) && (batchResult as any).results[0] 
+        ? Object.keys((batchResult as any).results[0])
+        : [],
       firstResultSample: Array.isArray((batchResult as any)?.results) && (batchResult as any).results[0] 
-        ? JSON.stringify((batchResult as any).results[0]).substring(0, 1000) 
+        ? JSON.stringify((batchResult as any).results[0]).substring(0, 2000) 
         : 'none',
-      fullResponseSample: JSON.stringify(batchResult).substring(0, 2000)
+      fullResponseSample: JSON.stringify(batchResult).substring(0, 5000)
     })
     
     const predictions: any[] = []
 
     // Handle case 1: { results: [...] }
     if ((batchResult as any).results && Array.isArray((batchResult as any).results)) {
-      console.log(`Processing ${(batchResult as any).results.length} file results`)
+      console.log(`[API Route] Stage 2: Processing case 1 - results array with ${(batchResult as any).results.length} file results`)
       for (let fileIdx = 0; fileIdx < (batchResult as any).results.length; fileIdx++) {
         const fileResult = (batchResult as any).results[fileIdx]
-        console.log(`File result ${fileIdx}:`, {
+        console.log(`[API Route] Stage 2.${fileIdx}: File result structure:`, {
+          fileResultKeys: Object.keys(fileResult),
+          hasSource: !!fileResult.source,
           hasResults: !!fileResult.results,
+          resultsIsArray: Array.isArray(fileResult.results),
           resultsLength: fileResult.results?.length || 0,
           resultsKeys: fileResult.results?.[0] ? Object.keys(fileResult.results[0]) : [],
-          firstResultSample: fileResult.results?.[0] ? JSON.stringify(fileResult.results[0]).substring(0, 500) : 'none'
+          firstResultSample: fileResult.results?.[0] ? JSON.stringify(fileResult.results[0]).substring(0, 1000) : 'none',
+          fullFileResult: JSON.stringify(fileResult).substring(0, 3000)
         })
         
         // Each fileResult has a results array containing model predictions
@@ -286,14 +335,28 @@ export const POST: APIRoute = async ({ request }) => {
 
           for (let modelIdx = 0; modelIdx < fileResult.results.length; modelIdx++) {
             const modelResult = fileResult.results[modelIdx]
-            console.log(`Model result ${modelIdx}:`, {
+            console.log(`[API Route] Stage 2.${fileIdx}.${modelIdx}: Model result structure:`, {
               keys: Object.keys(modelResult),
               hasFace: !!modelResult.face,
               hasProsody: !!modelResult.prosody,
               hasBurst: !!modelResult.burst,
-              facePredictions: modelResult.face?.predictions?.length || 0,
-              prosodyPredictions: modelResult.prosody?.predictions?.length || 0,
-              burstPredictions: modelResult.burst?.predictions?.length || 0
+              faceStructure: modelResult.face ? {
+                hasPredictions: !!modelResult.face.predictions,
+                predictionsIsArray: Array.isArray(modelResult.face.predictions),
+                predictionsLength: modelResult.face.predictions?.length || 0,
+                firstPredictionSample: modelResult.face.predictions?.[0] ? JSON.stringify(modelResult.face.predictions[0]).substring(0, 500) : 'none'
+              } : null,
+              prosodyStructure: modelResult.prosody ? {
+                hasPredictions: !!modelResult.prosody.predictions,
+                predictionsIsArray: Array.isArray(modelResult.prosody.predictions),
+                predictionsLength: modelResult.prosody.predictions?.length || 0
+              } : null,
+              burstStructure: modelResult.burst ? {
+                hasPredictions: !!modelResult.burst.predictions,
+                predictionsIsArray: Array.isArray(modelResult.burst.predictions),
+                predictionsLength: modelResult.burst.predictions?.length || 0
+              } : null,
+              fullModelResult: JSON.stringify(modelResult).substring(0, 2000)
             })
             
             // Extract predictions by model type
@@ -311,10 +374,11 @@ export const POST: APIRoute = async ({ request }) => {
             }
           }
 
-          console.log(`Aggregated models:`, {
+          console.log(`[API Route] Stage 2.${fileIdx}: Aggregated models summary:`, {
             face: aggregatedModels.face.predictions.length,
             prosody: aggregatedModels.prosody.predictions.length,
-            burst: aggregatedModels.burst.predictions.length
+            burst: aggregatedModels.burst.predictions.length,
+            totalPredictions: aggregatedModels.face.predictions.length + aggregatedModels.prosody.predictions.length + aggregatedModels.burst.predictions.length
           })
 
           // Add non-empty model predictions to predictions array
@@ -337,7 +401,7 @@ export const POST: APIRoute = async ({ request }) => {
     } 
     // Handle case 2: Direct array of predictions
     else if (Array.isArray(batchResult)) {
-      console.log('Batch API response is direct array, processing as predictions')
+      console.log('[API Route] Stage 2: Processing case 2 - direct array of predictions, length:', batchResult.length)
       for (const prediction of batchResult) {
         if (prediction && typeof prediction === 'object') {
           const hasFace = !!(prediction as any).face
@@ -353,7 +417,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
     // Handle case 3: Single object with models
     else if (batchResult && typeof batchResult === 'object' && !Array.isArray(batchResult)) {
-      console.log('Batch API response is single object, checking for model keys')
+      console.log('[API Route] Stage 2: Processing case 3 - single object with model keys:', Object.keys(batchResult))
       const hasFace = !!(batchResult as any).face
       const hasProsody = !!(batchResult as any).prosody
       const hasBurst = !!(batchResult as any).burst
@@ -377,60 +441,208 @@ export const POST: APIRoute = async ({ request }) => {
       })
     }
     
-    console.log(`Final predictions array length: ${predictions.length}`)
+    console.log(`[API Route] Stage 3: Final predictions array length: ${predictions.length}`)
     
     // Log detailed structure for debugging
     if (predictions.length === 0) {
-      console.warn('No predictions found in Batch API response, checking alternative structures...')
-      console.log('Full batchResult structure:', {
+      console.warn('[API Route] Stage 3: No predictions found in Batch API response, checking alternative structures...')
+      console.log('[API Route] Stage 3: Full batchResult structure for debugging:', {
         type: typeof batchResult,
         isArray: Array.isArray(batchResult),
+        isNull: batchResult === null,
+        isUndefined: batchResult === undefined,
         keys: typeof batchResult === 'object' && batchResult !== null ? Object.keys(batchResult) : [],
-        fullSample: JSON.stringify(batchResult).substring(0, 3000)
+        fullSample: JSON.stringify(batchResult, null, 2).substring(0, 10000)
       })
       
       // Try to extract face predictions directly from batchResult
       // Sometimes Batch API returns predictions in a different structure
+      console.log('[API Route] Stage 3: Attempting alternative extraction methods...')
+      
+      // Method 1: Check if batchResult itself contains face/prosody/burst data
       if (batchResult && typeof batchResult === 'object' && !Array.isArray(batchResult)) {
-        // Check if batchResult itself contains face data
-        if ((batchResult as any).face) {
-          console.log('Found face data directly in batchResult')
-          predictions.push({ face: (batchResult as any).face })
+        const batchObj = batchResult as any
+        
+        // Check for direct model keys
+        if (batchObj.face) {
+          console.log('[API Route] Stage 3: Method 1a - Found face data directly in batchResult')
+          predictions.push({ face: batchObj.face })
         }
-        // Check if batchResult.results contains face data
+        if (batchObj.prosody) {
+          console.log('[API Route] Stage 3: Method 1b - Found prosody data directly in batchResult')
+          predictions.push({ prosody: batchObj.prosody })
+        }
+        if (batchObj.burst) {
+          console.log('[API Route] Stage 3: Method 1c - Found burst data directly in batchResult')
+          predictions.push({ burst: batchObj.burst })
+        }
+        
+        // Method 2: Check nested structures
+        // Check if batchResult has a nested structure like { data: { face: {...} } }
+        if (batchObj.data) {
+          console.log('[API Route] Stage 3: Method 2a - Found data property, checking nested structure')
+          if (batchObj.data.face) {
+            console.log('[API Route] Stage 3: Method 2a - Found face in data.face')
+            predictions.push({ face: batchObj.data.face })
+          }
+          if (batchObj.data.prosody) {
+            console.log('[API Route] Stage 3: Method 2a - Found prosody in data.prosody')
+            predictions.push({ prosody: batchObj.data.prosody })
+          }
+          if (batchObj.data.burst) {
+            console.log('[API Route] Stage 3: Method 2a - Found burst in data.burst')
+            predictions.push({ burst: batchObj.data.burst })
+          }
+        }
+        
+        // Method 3: Deep search for predictions arrays (limited depth to avoid infinite loops)
+        const deepSearch = (obj: any, path: string = '', depth: number = 0): void => {
+          if (!obj || typeof obj !== 'object' || depth > 4) return
+          
+          // Check if this object has predictions array
+          if (Array.isArray(obj.predictions) && obj.predictions.length > 0) {
+            // Determine model type from context
+            if (path.includes('face') || obj.name === 'face' || obj.type === 'face') {
+              console.log(`[API Route] Stage 3: Method 3a - Found face predictions at path: ${path}`)
+              predictions.push({ face: obj })
+            } else if (path.includes('prosody') || obj.name === 'prosody' || obj.type === 'prosody') {
+              console.log(`[API Route] Stage 3: Method 3b - Found prosody predictions at path: ${path}`)
+              predictions.push({ prosody: obj })
+            } else if (path.includes('burst') || obj.name === 'burst' || obj.type === 'burst') {
+              console.log(`[API Route] Stage 3: Method 3c - Found burst predictions at path: ${path}`)
+              predictions.push({ burst: obj })
+            } else {
+              // Default to face if we can't determine
+              console.log(`[API Route] Stage 3: Method 3d - Found predictions array at path: ${path}, defaulting to face`)
+              predictions.push({ face: obj })
+            }
+          }
+          
+          // Recursively search nested objects
+          for (const key in obj) {
+            if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
+              deepSearch(obj[key], path ? `${path}.${key}` : key, depth + 1)
+            }
+          }
+        }
+        
+        console.log('[API Route] Stage 3: Method 3 - Performing deep search for predictions...')
+        deepSearch(batchObj)
+        
+        // Method 4: Check if batchResult.results contains face data in various formats
         if (Array.isArray((batchResult as any).results)) {
-          for (const result of (batchResult as any).results) {
-            if (result.face) {
-              console.log('Found face data in results array')
-              predictions.push({ face: result.face })
+          console.log('[API Route] Stage 3: Method 4 - Checking results array for nested structures')
+          for (let i = 0; i < (batchResult as any).results.length; i++) {
+            const result = (batchResult as any).results[i]
+            if (result && typeof result === 'object') {
+              // Check direct model keys
+              if (result.face) {
+                console.log(`[API Route] Stage 3: Method 4a - Found face in results[${i}]`)
+                predictions.push({ face: result.face })
+              }
+              if (result.prosody) {
+                console.log(`[API Route] Stage 3: Method 4b - Found prosody in results[${i}]`)
+                predictions.push({ prosody: result.prosody })
+              }
+              if (result.burst) {
+                console.log(`[API Route] Stage 3: Method 4c - Found burst in results[${i}]`)
+                predictions.push({ burst: result.burst })
+              }
+              
+              // Check nested results array
+              if (Array.isArray(result.results)) {
+                for (const nestedResult of result.results) {
+                  if (nestedResult.face) {
+                    console.log(`[API Route] Stage 3: Method 4d - Found face in results[${i}].results`)
+                    predictions.push({ face: nestedResult.face })
+                  }
+                  if (nestedResult.prosody) {
+                    console.log(`[API Route] Stage 3: Method 4e - Found prosody in results[${i}].results`)
+                    predictions.push({ prosody: nestedResult.prosody })
+                  }
+                  if (nestedResult.burst) {
+                    console.log(`[API Route] Stage 3: Method 4f - Found burst in results[${i}].results`)
+                    predictions.push({ burst: nestedResult.burst })
+                  }
+                }
+              }
             }
           }
         }
       }
       
-      console.log(`After alternative extraction, predictions array length: ${predictions.length}`)
+      console.log(`[API Route] Stage 3: After alternative extraction, predictions array length: ${predictions.length}`)
     }
 
     // If still no predictions, return empty result but log detailed info
     if (predictions.length === 0) {
-      console.error('No predictions found after all extraction attempts')
+      console.error('[API Route] Stage 4: No predictions found after all extraction attempts')
+      const errorResponse = {
+        predictions: [],
+        error: 'No predictions found in Batch API response',
+        debug: {
+          batchResultType: typeof batchResult,
+          batchResultIsNull: batchResult === null,
+          batchResultIsUndefined: batchResult === undefined,
+          batchResultIsArray: Array.isArray(batchResult),
+          batchResultKeys: typeof batchResult === 'object' && batchResult !== null ? Object.keys(batchResult) : [],
+          batchResultSample: JSON.stringify(batchResult, null, 2).substring(0, 5000),
+          extractionMethodsAttempted: [
+            'Case 1: results array processing',
+            'Case 2: Direct array processing',
+            'Case 3: Single object processing',
+            'Method 1: Direct model keys',
+            'Method 2: Nested data structure',
+            'Method 3: Deep search',
+            'Method 4: Results array nested search'
+          ],
+          possibleCauses: [
+            'Video blob may be empty or corrupted',
+            'No faces detected in video',
+            'Hume API returned unexpected response structure',
+            'API job may have failed or timed out'
+          ]
+        }
+      }
+      console.error('[API Route] Stage 4: Error response:', JSON.stringify(errorResponse, null, 2))
+      return new Response(
+        JSON.stringify(errorResponse),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate predictions structure
+    const validatedPredictions = predictions.filter((pred: any) => {
+      const hasValidStructure = 
+        (pred.face && (pred.face.predictions || Array.isArray(pred.face))) ||
+        (pred.prosody && (pred.prosody.predictions || Array.isArray(pred.prosody))) ||
+        (pred.burst && (pred.burst.predictions || Array.isArray(pred.burst)))
+      if (!hasValidStructure) {
+        console.warn('[API Route] Stage 4: Invalid prediction structure filtered out:', pred)
+      }
+      return hasValidStructure
+    })
+
+    if (validatedPredictions.length === 0) {
+      console.error('[API Route] Stage 4: All predictions failed validation')
       return new Response(
         JSON.stringify({
           predictions: [],
-          error: 'No predictions found in Batch API response',
+          error: 'All predictions failed validation',
           debug: {
-            batchResultType: typeof batchResult,
-            batchResultKeys: typeof batchResult === 'object' && batchResult !== null ? Object.keys(batchResult) : [],
-            batchResultSample: JSON.stringify(batchResult).substring(0, 1000)
+            originalPredictionsCount: predictions.length,
+            validatedPredictionsCount: validatedPredictions.length
           }
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
     }
 
+    console.log(`[API Route] Stage 4: Returning ${validatedPredictions.length} validated predictions`)
+
     return new Response(
       JSON.stringify({
-        predictions,
+        predictions: validatedPredictions,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )

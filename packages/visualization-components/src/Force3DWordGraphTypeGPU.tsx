@@ -129,6 +129,12 @@ function Force3DWordGraphTypeGPU({
   const maxFpsRef = useRef<number>(maxFps)
   // Merkle DAG: rendering.connectivity ー ノード接続度の正規化値を保持
   const connectivityRef = useRef<Float32Array | null>(null)
+  // WebGPUバッファとパイプラインのref
+  const nodeBufferRef = useRef<any>(null)
+  const linkBufferRef = useRef<any>(null)
+  const paramsBufferRef = useRef<any>(null)
+  const bindGroupRef = useRef<any>(null)
+  const computePipelineRef = useRef<any>(null)
   
   // ビューポート可視性のref（パフォーマンス最適化）
   // refを使用することで、クロージャの問題を回避し、最新の値を参照できる
@@ -336,6 +342,13 @@ function Force3DWordGraphTypeGPU({
     const initWebGPU = async () => {
       try {
         console.log('Force3DWordGraphTypeGPU: Initializing WebGPU, nodes:', nodes.length, 'links:', links.length)
+        
+        // ノードが空の場合は初期化をスキップ
+        if (nodes.length === 0) {
+          console.log('Force3DWordGraphTypeGPU: Skipping WebGPU initialization - no nodes')
+          return
+        }
+        
         if (!navigator.gpu) {
           console.error('WebGPU not supported')
           return
@@ -350,8 +363,8 @@ function Force3DWordGraphTypeGPU({
         const device = await adapter.requestDevice()
         deviceRef.current = device
 
-        // 初期位置設定
-        const N = nodesRef.current.length
+        // 初期位置設定（propsのnodesを直接使用）
+        const N = nodes.length
         positionsRef.current = new Float32Array(N * 3)
         velocitiesRef.current = new Float32Array(N * 3)
         
@@ -361,7 +374,7 @@ function Force3DWordGraphTypeGPU({
         let centerX = 0, centerY = 0, centerZ = 0
         
         for (let i = 0; i < N; i++) {
-          const init = nodesRef.current[i]?.initial
+          const init = nodes[i]?.initial
           if (init) {
             pos[i * 3] = init[0]
             pos[i * 3 + 1] = init[1]
@@ -566,12 +579,19 @@ function Force3DWordGraphTypeGPU({
         const linkStructSize = 24 // bytes per link
         const paramsBufferSize = 64 // bytes
         
-        const nodeCount = nodesRef.current.length
-        const linkCount = linksRef.current.length
+        // propsのnodesとlinksを直接使用（nodesRef.currentではなく）
+        const nodeCount = nodes.length
+        const linkCount = links.length
+        
+        // バッファサイズが0になることを防ぐ
+        if (nodeCount === 0) {
+          console.warn('[Force3DWordGraphTypeGPU] Cannot create buffers: nodeCount is 0')
+          return
+        }
         
         // Calculate required memory
         const nodeBufferSize = nodeCount * nodeStructSize
-        const linkBufferSize = linkCount * linkStructSize
+        const linkBufferSize = Math.max(linkCount * linkStructSize, linkStructSize) // 最小サイズを保証（リンクが0でも1つのリンク分のサイズ）
         const totalRequiredMemory = nodeBufferSize + linkBufferSize + paramsBufferSize
         
         // Check if we exceed memory limit
@@ -591,22 +611,31 @@ function Force3DWordGraphTypeGPU({
         }
         
         console.log(`[Force3DWordGraphTypeGPU] Buffer memory usage: ${(totalRequiredMemory / (1024 * 1024)).toFixed(2)}MB (${((totalRequiredMemory / MAX_BUFFER_MEMORY) * 100).toFixed(1)}% of 1GB limit)`)
+        console.log(`[Force3DWordGraphTypeGPU] Creating buffers: nodeCount=${nodeCount}, linkCount=${linkCount}, nodeBufferSize=${nodeBufferSize}, linkBufferSize=${linkBufferSize}`)
         
-        // WebGPUバッファを作成
+        // WebGPUバッファを作成（サイズが0でないことを確認）
+        if (nodeBufferSize === 0) {
+          console.error('[Force3DWordGraphTypeGPU] Cannot create nodeBuffer: size is 0')
+          return
+        }
+        
         const nodeBuffer = device.createBuffer({
           size: nodeBufferSize,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
         })
+        nodeBufferRef.current = nodeBuffer
         
         const linkBuffer = device.createBuffer({
           size: linkBufferSize,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         })
+        linkBufferRef.current = linkBuffer
         
         const paramsBuffer = device.createBuffer({
           size: paramsBufferSize,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
+        paramsBufferRef.current = paramsBuffer
         
         // バインディンググループを作成
         const bindGroup = device.createBindGroup({
@@ -617,6 +646,8 @@ function Force3DWordGraphTypeGPU({
             { binding: 2, resource: { buffer: paramsBuffer } }
           ]
         })
+        bindGroupRef.current = bindGroup
+        computePipelineRef.current = computePipeline
 
         // アニメーションループ
         let lastTime = performance.now()
@@ -646,11 +677,25 @@ function Force3DWordGraphTypeGPU({
           
           const delta = Math.min(0.05, (now - lastTime) / 1000)
           lastTime = now
-
+          
+          // nodesRef.currentとlinksRef.currentが更新されていることを確認
           const n = nodesRef.current.length
           const l = linksRef.current.length
-
+          
           if (n === 0) {
+            // ノードが空の場合はスキップ（初期化待ち）
+            animRef.current = requestAnimationFrame(tick)
+            return
+          }
+          
+          // バッファが存在しない場合はスキップ（初期化未完了）
+          const nodeBuffer = nodeBufferRef.current
+          const linkBuffer = linkBufferRef.current
+          const paramsBuffer = paramsBufferRef.current
+          const bindGroup = bindGroupRef.current
+          const computePipeline = computePipelineRef.current
+          
+          if (!nodeBuffer || !linkBuffer || !paramsBuffer || !bindGroup || !computePipeline) {
             animRef.current = requestAnimationFrame(tick)
             return
           }
@@ -1121,6 +1166,12 @@ function Force3DWordGraphTypeGPU({
 
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current)
+      // バッファとパイプラインをクリーンアップ
+      nodeBufferRef.current = null
+      linkBufferRef.current = null
+      paramsBufferRef.current = null
+      bindGroupRef.current = null
+      computePipelineRef.current = null
     }
   }, [width, height, background, nodes, links, gapAreas, densityRegions, showAnalysis])
 
@@ -1152,8 +1203,85 @@ function Force3DWordGraphTypeGPU({
     }
   }, [physics])
 
-  // ノード・リンクの差分反映
+  // デバッグ情報用のref（前回のノード/リンクを追跡）
+  const prevNodesRef = useRef<WordNode[]>([])
+  const prevLinksRef = useRef<WordLink[]>([])
+  const debugInfoRef = useRef<{
+    newNodeIds: string[]
+    newLinkIds: string[]
+    updatedNodeIds: string[]
+    emotionStats: Record<string, { count: number; avgScore: number }>
+  }>({
+    newNodeIds: [],
+    newLinkIds: [],
+    updatedNodeIds: [],
+    emotionStats: {}
+  })
+
+  // ノード・リンクの差分反映とデバッグ情報の計算
   useEffect(() => {
+    const prevNodes = prevNodesRef.current
+    const prevLinks = prevLinksRef.current
+    
+    // 新規ノードと更新されたノードを検出
+    const newNodeIds: string[] = []
+    const updatedNodeIds: string[] = []
+    const prevNodeMap = new Map(prevNodes.map(n => [n.id, n]))
+    
+    nodes.forEach(node => {
+      const prevNode = prevNodeMap.get(node.id)
+      if (!prevNode) {
+        newNodeIds.push(node.id)
+      } else {
+        // 感情データが変更されたかチェック
+        const emotionChanged = JSON.stringify(node.emotion) !== JSON.stringify(prevNode.emotion)
+        const scaleChanged = node.scale !== prevNode.scale
+        if (emotionChanged || scaleChanged) {
+          updatedNodeIds.push(node.id)
+        }
+      }
+    })
+    
+    // 新規リンクを検出
+    const newLinkIds: string[] = []
+    const prevLinkSet = new Set(prevLinks.map(l => `${l.source}-${l.target}`))
+    links.forEach(link => {
+      const linkKey = `${link.source}-${link.target}`
+      if (!prevLinkSet.has(linkKey)) {
+        newLinkIds.push(linkKey)
+      }
+    })
+    
+    // 感情統計を計算
+    const emotionStats: Record<string, { count: number; avgScore: number }> = {}
+    nodes.forEach(node => {
+      if (node.emotion) {
+        Object.entries(node.emotion).forEach(([emotion, score]) => {
+          if (!emotionStats[emotion]) {
+            emotionStats[emotion] = { count: 0, avgScore: 0 }
+          }
+          emotionStats[emotion].count++
+          emotionStats[emotion].avgScore += score
+        })
+      }
+    })
+    Object.keys(emotionStats).forEach(emotion => {
+      emotionStats[emotion].avgScore /= emotionStats[emotion].count
+    })
+    
+    // デバッグ情報を更新
+    debugInfoRef.current = {
+      newNodeIds,
+      newLinkIds,
+      updatedNodeIds,
+      emotionStats
+    }
+    
+    // 前回の値を更新
+    prevNodesRef.current = nodes
+    prevLinksRef.current = links
+    
+    // 現在の値を更新
     nodesRef.current = nodes
     linksRef.current = links
   }, [nodes, links])
@@ -1170,6 +1298,125 @@ function Force3DWordGraphTypeGPU({
           cursor: isDraggingRef.current ? 'grabbing' : 'grab'
         }}
       />
+      {/* デバッグパネル */}
+      {showAnalysis && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            background: 'rgba(0, 0, 0, 0.85)',
+            color: 'white',
+            padding: '12px',
+            borderRadius: '8px',
+            fontSize: '11px',
+            fontFamily: 'monospace',
+            pointerEvents: 'none',
+            zIndex: 10,
+            maxWidth: '400px',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            lineHeight: '1.5'
+          }}
+        >
+          <div style={{ fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.3)', paddingBottom: '4px' }}>
+            TypeGPU Debug Info
+          </div>
+          
+          {/* ノード・リンク数 */}
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ color: '#a0a0a0', fontSize: '10px' }}>Graph Stats</div>
+            <div>Nodes: {nodes.length} | Links: {links.length}</div>
+          </div>
+          
+          {/* 新規追加 */}
+          {debugInfoRef.current.newNodeIds.length > 0 && (
+            <div style={{ marginBottom: '8px', color: '#4ade80' }}>
+              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>New Nodes ({debugInfoRef.current.newNodeIds.length})</div>
+              <div style={{ fontSize: '10px', maxHeight: '60px', overflow: 'auto' }}>
+                {debugInfoRef.current.newNodeIds.slice(0, 5).map(id => {
+                  const node = nodes.find(n => n.id === id)
+                  return <div key={id}>+ {node?.label || id}</div>
+                })}
+                {debugInfoRef.current.newNodeIds.length > 5 && <div>... (+{debugInfoRef.current.newNodeIds.length - 5} more)</div>}
+              </div>
+            </div>
+          )}
+          
+          {/* 差分追加 */}
+          {debugInfoRef.current.updatedNodeIds.length > 0 && (
+            <div style={{ marginBottom: '8px', color: '#60a5fa' }}>
+              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>Updated Nodes ({debugInfoRef.current.updatedNodeIds.length})</div>
+              <div style={{ fontSize: '10px', maxHeight: '60px', overflow: 'auto' }}>
+                {debugInfoRef.current.updatedNodeIds.slice(0, 5).map(id => {
+                  const node = nodes.find(n => n.id === id)
+                  return <div key={id}>~ {node?.label || id}</div>
+                })}
+                {debugInfoRef.current.updatedNodeIds.length > 5 && <div>... (+{debugInfoRef.current.updatedNodeIds.length - 5} more)</div>}
+              </div>
+            </div>
+          )}
+          
+          {/* 新規リンク */}
+          {debugInfoRef.current.newLinkIds.length > 0 && (
+            <div style={{ marginBottom: '8px', color: '#fbbf24' }}>
+              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>New Links ({debugInfoRef.current.newLinkIds.length})</div>
+              <div style={{ fontSize: '10px', maxHeight: '40px', overflow: 'auto' }}>
+                {debugInfoRef.current.newLinkIds.slice(0, 3).map(linkKey => (
+                  <div key={linkKey}>+ {linkKey}</div>
+                ))}
+                {debugInfoRef.current.newLinkIds.length > 3 && <div>... (+{debugInfoRef.current.newLinkIds.length - 3} more)</div>}
+              </div>
+            </div>
+          )}
+          
+          {/* 感情統計 */}
+          {Object.keys(debugInfoRef.current.emotionStats).length > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>Emotion Stats</div>
+              <div style={{ fontSize: '10px', maxHeight: '100px', overflow: 'auto' }}>
+                {Object.entries(debugInfoRef.current.emotionStats)
+                  .sort((a, b) => b[1].avgScore - a[1].avgScore)
+                  .map(([emotion, stats]) => (
+                    <div key={emotion} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                      <span>{emotion}:</span>
+                      <span>{stats.count} nodes, avg {(stats.avgScore * 100).toFixed(1)}%</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+          
+          {/* 物理パラメータ */}
+          <div style={{ marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.3)', paddingTop: '8px' }}>
+            <div style={{ color: '#a0a0a0', fontSize: '10px' }}>Physics Params</div>
+            <div style={{ fontSize: '10px' }}>
+              <div>springK: {physicsRef.current.springK.toFixed(2)}</div>
+              <div>repulsionK: {physicsRef.current.repulsionK.toFixed(0)}</div>
+              <div>damping: {physicsRef.current.damping.toFixed(2)}</div>
+              <div>restLength: {physicsRef.current.restLength.toFixed(0)}</div>
+              <div>maxSpeed: {physicsRef.current.maxSpeed.toFixed(0)}</div>
+              {physicsRef.current.shellRadius && <div>shellRadius: {physicsRef.current.shellRadius.toFixed(0)}</div>}
+              {physicsRef.current.shellK && <div>shellK: {physicsRef.current.shellK.toFixed(2)}</div>}
+              {physicsRef.current.radialOutK && <div>radialOutK: {physicsRef.current.radialOutK.toFixed(0)}</div>}
+              {physicsRef.current.minSep && <div>minSep: {physicsRef.current.minSep.toFixed(0)}</div>}
+              {physicsRef.current.sepK && <div>sepK: {physicsRef.current.sepK.toFixed(0)}</div>}
+            </div>
+          </div>
+          
+          {/* WebGPU情報 */}
+          <div style={{ marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.3)', paddingTop: '8px' }}>
+            <div style={{ color: '#a0a0a0', fontSize: '10px' }}>WebGPU</div>
+            <div style={{ fontSize: '10px' }}>
+              <div>Device: {deviceRef.current ? '✓' : '✗'}</div>
+              <div>Node Buffer: {nodeBufferRef.current ? '✓' : '✗'}</div>
+              <div>Link Buffer: {linkBufferRef.current ? '✓' : '✗'}</div>
+              <div>FPS: {maxFpsRef.current === 0 ? 'Unlimited' : maxFpsRef.current}</div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* ズームレベル表示 */}
       <div 
         ref={zoomLevelDisplayRef}

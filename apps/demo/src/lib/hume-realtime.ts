@@ -40,6 +40,28 @@ export async function analyzeEmotionRealtime(
     const data = await response.json()
     const processingTime = Date.now() - startTime
 
+    // Log API response structure for debugging
+    console.log('[Hume API] Response structure:', {
+      hasPredictions: !!data.predictions,
+      predictionsType: Array.isArray(data.predictions) ? 'array' : typeof data.predictions,
+      predictionsLength: Array.isArray(data.predictions) ? data.predictions.length : 'N/A',
+      hasError: !!data.error,
+      error: data.error,
+      allKeys: Object.keys(data),
+      fullResponse: JSON.stringify(data).substring(0, 2000)
+    })
+
+    // Validate predictions before processing
+    if (!data.predictions || !Array.isArray(data.predictions)) {
+      console.warn('[Hume API] Invalid predictions structure:', {
+        predictions: data.predictions,
+        type: typeof data.predictions,
+        isArray: Array.isArray(data.predictions),
+        error: data.error,
+        debug: data.debug
+      })
+    }
+
     // Process Hume predictions into normalized emotion vectors
     const emotions = processHumePredictions(data.predictions || [])
 
@@ -290,6 +312,12 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
  * Capture frame from MediaStream as Blob
  */
 export async function captureVideoFrame(stream: MediaStream, durationMs: number = 2000): Promise<Blob> {
+  // Validate stream
+  if (!stream || stream.getVideoTracks().length === 0) {
+    console.warn('[captureVideoFrame] Invalid stream: no video tracks')
+    return new Blob([], { type: 'video/webm' })
+  }
+
   // Check if MediaRecorder is supported
   let mimeType = 'video/webm;codecs=vp9'
   if (!MediaRecorder.isTypeSupported(mimeType)) {
@@ -299,7 +327,7 @@ export async function captureVideoFrame(stream: MediaStream, durationMs: number 
     mimeType = 'video/webm'
   }
   if (!MediaRecorder.isTypeSupported(mimeType)) {
-    console.warn('No supported video MIME type found, using empty blob')
+    console.warn('[captureVideoFrame] No supported video MIME type found, using empty blob')
     return new Blob([], { type: 'video/webm' })
   }
 
@@ -319,16 +347,33 @@ export async function captureVideoFrame(stream: MediaStream, durationMs: number 
 
     mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: mimeType })
-      resolve(blob)
+        console.log(`[captureVideoFrame] Recording stopped, blob size: ${blob.size} bytes, chunks: ${chunks.length}`)
+        if (blob.size === 0) {
+          console.warn('[captureVideoFrame] Warning: Captured blob is empty')
+        }
+        resolve(blob)
     }
 
     mediaRecorder.onerror = (error) => {
-        console.warn('MediaRecorder error:', error)
+        console.warn('[captureVideoFrame] MediaRecorder error:', error)
         // Return empty blob instead of rejecting
         resolve(new Blob([], { type: mimeType }))
     }
 
-    mediaRecorder.start()
+    try {
+      mediaRecorder.start()
+      console.log(`[captureVideoFrame] MediaRecorder started, duration: ${durationMs}ms, mimeType: ${mimeType}`)
+    } catch (err: any) {
+      console.warn('[captureVideoFrame] MediaRecorder.start() error:', err)
+      // Check if recording actually started despite error
+      if (mediaRecorder.state === 'recording') {
+        console.warn('[captureVideoFrame] MediaRecorder started despite error, continuing...')
+      } else {
+        console.error('[captureVideoFrame] MediaRecorder failed to start, returning empty blob')
+        resolve(new Blob([], { type: mimeType }))
+        return
+      }
+    }
 
     setTimeout(() => {
         try {

@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.35.0",
+  "version": "1.36.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-16T00:00:00+09:00",
-  "merkleRoot": "3D Force Graph最適化完了: Zustand統合による状態管理最適化、FPS制御機能実装、デバウンス処理によるレンダリング頻度制御、useMemo依存配列最適化、MediaRecorderエラーハンドリング改善",
+  "updatedAt": "2025-01-16T12:00:00+09:00",
+  "merkleRoot": "3D Force Graph最適化完了: Jotai状態管理移行、Zoomパラメータ安定化（useRef変換・初期化追跡）、Emotion検出0問題診断・修正（詳細ログ・レスポンスパース改善・バリデーション追加・エラーメッセージ改善・MediaRecorder改善）、FPS制御機能実装、デバウンス処理によるレンダリング頻度制御、useMemo依存配列最適化",
   
   "story": {
     "@id": "project:story",
@@ -413,6 +413,18 @@
         "@type": "project:Narrative",
         "act": "Clerk認証統合の実現",
         "summary": "participant・visualizerアプリにClerk v6認証を統合。@clerk/nextjs v6をインストールし、clerkMiddlewareによるルート保護を実装。participantアプリの既存管理者APIキー認証をClerk認証に完全置き換え。i18n機能（paraglide）との統合を維持しつつ、/admin・/api/adminルートをClerkで保護。ClerkProviderをprovidersに追加し、signin/signupページを実装。GraphQL clientのauthLinkをClerkトークン対応に更新。.envrc・docker-compose.ymlにClerk環境変数を追加。セキュアな認証基盤を確立し、管理者機能へのアクセス制御を強化。"
+      },
+      {
+        "@id": "project:narrative/59",
+        "@type": "project:Narrative",
+        "act": "3D Force Graph状態管理Jotai移行とZoomパラメータ安定化",
+        "summary": "3D Force Graphの状態管理をZustandからJotaiに移行し、useMemo依存配列の問題を根本的に解決。Zoomパラメータの不安定性を修正するため、zoomLevelをuseStateからuseRefに変換し、初期化追跡フラグ（isInitializedRef、userZoomSetRef）を追加。ユーザーが手動でズームを設定した場合は自動調整をスキップし、初期化時のみカメラ距離を自動調整。requestAnimationFrame内でDOMを直接更新することで再レンダリングを回避。これにより、Zoomパラメータが安定し、不要な再レンダリングを防止。"
+      },
+      {
+        "@id": "project:narrative/60",
+        "@type": "project:Narrative",
+        "act": "Emotion検出0問題の診断と修正",
+        "summary": "Hume Batch APIからの予測データが取得できず、emotionが0になる問題を診断・修正。各処理ステージ（Stage 1-4）で詳細なログを追加し、Hume Batch APIのレスポンス構造を記録。4つのフォールバックメソッド（直接モデルキー、ネスト構造、深い検索、results配列ネスト検索）を実装し、想定外のレスポンス構造にも対応。ビデオblobサイズの検証、予測データ構造の検証、ストリーム検証を追加。詳細なデバッグ情報を含むエラーメッセージを改善し、MediaRecorderエラーハンドリングを強化。これにより、emotionが0になる原因を特定しやすくなり、問題解決の効率を向上。"
       }
     ],
     "processNetwork": {
@@ -1538,16 +1550,38 @@
       "docker-compose.yml Clerk環境変数追加",
       "セキュアな認証基盤確立",
       "管理者機能アクセス制御強化",
-      "3D Force Graph Zustand状態管理統合",
-      "wordEmotionDataデバウンス処理実装",
+      "3D Force Graph Jotai状態管理移行",
+      "ZustandからJotaiへの完全移行",
+      "wordEmotionDataデバウンス処理実装（Jotai）",
       "3D Force Graph FPS制御機能実装",
       "最大FPS調整UIコントロール追加",
       "useMemo依存配列最適化によるレンダリング頻度制御",
+      "Zoomパラメータ安定化実装",
+      "zoomLevel useStateからuseRef変換",
+      "カメラ初期化追跡フラグ（isInitializedRef、userZoomSetRef）追加",
+      "ユーザー手動ズーム時の自動調整スキップ",
+      "初期化時のみカメラ距離自動調整",
+      "requestAnimationFrame内DOM直接更新による再レンダリング回避",
       "MediaRecorderエラーハンドリング改善",
+      "ストリーム検証（ビデオトラック存在確認）追加",
+      "キャプチャされたblobサイズ検証",
+      "MediaRecorder.start()エラー詳細ログ",
       "空の感情データスキップ処理",
-      "Zustandストアによるバッチキュー管理",
+      "Jotaiアトムによるバッチキュー管理",
       "3D Force Graph初期ノード表示機能",
-      "WebGPUレンダリングパフォーマンス最適化"
+      "WebGPUレンダリングパフォーマンス最適化",
+      "Hume Batch APIレスポンス構造診断システム",
+      "詳細ログ追加（Stage 1-4各処理ステージ）",
+      "4つのフォールバックメソッド実装",
+      "直接モデルキーチェック（Method 1）",
+      "ネスト構造チェック（Method 2）",
+      "深い検索（Method 3、最大深度4）",
+      "results配列ネスト検索（Method 4）",
+      "予測データ構造バリデーション実装",
+      "ビデオblobサイズ検証",
+      "詳細なデバッグ情報を含むエラーメッセージ",
+      "可能な原因リスト表示",
+      "Hume Batch APIレスポンス構造完全記録"
     ]
   },
   

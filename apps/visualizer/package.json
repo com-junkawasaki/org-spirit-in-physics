@@ -23,7 +23,7 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@react-spring/three": "^10.0.3",
-    "@spirit-in-physics/visualization-components": "file:../../packages/visualization-components",
+    "@spirit-in-physics/visualization-components": "file:./packages/visualization-components",
     "@types/three": "^0.180.0",
     "@vercel/blob": "^0.23.4",
     "@xyflow/react": "^12.8.6",

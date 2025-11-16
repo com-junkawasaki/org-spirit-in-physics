@@ -1,11 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
-import { extractLocaleFromRequest, setLocale } from "./src/paraglide/runtime";
+import { NextRequest } from "next/server";
 
 /**
  * Merkle DAG: middleware.clerk_auth + i18n
  * Clerk 認証による管理者APIと管理者ページへのアクセス制御
  * 言語検出と設定
+ * 
+ * Note: setLocale is not available in Edge Runtime (middleware).
+ * Locale is set via cookie/header detection in extractLocaleFromRequest.
  */
 
 // 保護するルートを定義
@@ -15,20 +17,14 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request: NextRequest) => {
-  const pathname = request.nextUrl.pathname;
-  
-  // 言語検出（Accept-Languageヘッダーから）
-  try {
-    const locale = extractLocaleFromRequest(request);
-    setLocale(locale, { reload: false });
-  } catch {
-    // フォールバック: デフォルト言語を使用
-  }
-  
   // 保護されたルートへのアクセスをチェック
   if (isProtectedRoute(request)) {
     await auth.protect();
   }
+  
+  // Note: 言語検出はparaglide-nextが自動的に処理します
+  // middlewareではextractLocaleFromRequestを呼び出す必要はありません
+  // クライアントサイドでgetLocale()が呼ばれた際に自動的に検出されます
 });
 
 export const config = {
