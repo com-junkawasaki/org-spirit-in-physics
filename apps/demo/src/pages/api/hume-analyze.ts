@@ -378,13 +378,51 @@ export const POST: APIRoute = async ({ request }) => {
     }
     
     console.log(`Final predictions array length: ${predictions.length}`)
-
-    // If no predictions were found, return empty result
+    
+    // Log detailed structure for debugging
     if (predictions.length === 0) {
-      console.warn('No predictions found in Batch API response')
+      console.warn('No predictions found in Batch API response, checking alternative structures...')
+      console.log('Full batchResult structure:', {
+        type: typeof batchResult,
+        isArray: Array.isArray(batchResult),
+        keys: typeof batchResult === 'object' && batchResult !== null ? Object.keys(batchResult) : [],
+        fullSample: JSON.stringify(batchResult).substring(0, 3000)
+      })
+      
+      // Try to extract face predictions directly from batchResult
+      // Sometimes Batch API returns predictions in a different structure
+      if (batchResult && typeof batchResult === 'object' && !Array.isArray(batchResult)) {
+        // Check if batchResult itself contains face data
+        if ((batchResult as any).face) {
+          console.log('Found face data directly in batchResult')
+          predictions.push({ face: (batchResult as any).face })
+        }
+        // Check if batchResult.results contains face data
+        if (Array.isArray((batchResult as any).results)) {
+          for (const result of (batchResult as any).results) {
+            if (result.face) {
+              console.log('Found face data in results array')
+              predictions.push({ face: result.face })
+            }
+          }
+        }
+      }
+      
+      console.log(`After alternative extraction, predictions array length: ${predictions.length}`)
+    }
+
+    // If still no predictions, return empty result but log detailed info
+    if (predictions.length === 0) {
+      console.error('No predictions found after all extraction attempts')
       return new Response(
         JSON.stringify({
           predictions: [],
+          error: 'No predictions found in Batch API response',
+          debug: {
+            batchResultType: typeof batchResult,
+            batchResultKeys: typeof batchResult === 'object' && batchResult !== null ? Object.keys(batchResult) : [],
+            batchResultSample: JSON.stringify(batchResult).substring(0, 1000)
+          }
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       )

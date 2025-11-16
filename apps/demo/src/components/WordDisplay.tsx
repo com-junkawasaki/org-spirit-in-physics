@@ -49,7 +49,7 @@ export default function WordDisplay({
           }
         } catch (err) {
           // Audio file may not exist or network error, that's okay
-          setIsPlaying(false)
+        setIsPlaying(false)
         }
       }
       checkAudioExists()

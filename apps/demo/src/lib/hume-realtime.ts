@@ -109,8 +109,17 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
       }
       
       console.log(`Processing ${facePredictions.length} face predictions`)
+      if (facePredictions.length === 0) {
+        console.warn('No face predictions found in faceData:', {
+          hasPredictions: !!faceData.predictions,
+          hasResults: !!faceData.results,
+          keys: Object.keys(faceData),
+          sample: JSON.stringify(faceData).substring(0, 500)
+        })
+      }
       for (const facePred of facePredictions) {
         if (facePred && facePred.emotions && Array.isArray(facePred.emotions)) {
+          console.log(`Processing face prediction with ${facePred.emotions.length} emotions`)
           for (const emotion of facePred.emotions) {
             if (emotion && emotion.name && typeof emotion.score === 'number') {
               const normalized = normalizeEmotionName(emotion.name)
@@ -121,11 +130,26 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
                   score: Math.max(current.score, emotion.score || 0),
                   fileType: 'face',
                 })
+                console.log(`Added emotion: ${normalized}_face = ${emotion.score}`)
               }
             }
           }
+        } else {
+          console.warn('Face prediction structure:', {
+            hasEmotions: !!facePred?.emotions,
+            isArray: Array.isArray(facePred?.emotions),
+            keys: facePred ? Object.keys(facePred) : [],
+            sample: facePred ? JSON.stringify(facePred).substring(0, 200) : 'null'
+          })
         }
       }
+    } else {
+      console.warn('No face data found in prediction:', {
+        hasFace: !!prediction.face,
+        hasResults: !!prediction.results,
+        keys: Object.keys(prediction),
+        sample: JSON.stringify(prediction).substring(0, 500)
+      })
     }
 
     // Handle prosody predictions - support multiple formats
@@ -152,19 +176,19 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
         if (prosodyPred && prosodyPred.emotions && Array.isArray(prosodyPred.emotions)) {
           for (const emotion of prosodyPred.emotions) {
             if (emotion && emotion.name && typeof emotion.score === 'number') {
-              const normalized = normalizeEmotionName(emotion.name)
-              if (normalized) {
-                const key = `${normalized}_prosody`
-                const current = emotionMap.get(key) || { score: 0, fileType: 'prosody' }
-                emotionMap.set(key, {
-                  score: Math.max(current.score, emotion.score || 0),
-                  fileType: 'prosody',
-                })
-              }
+            const normalized = normalizeEmotionName(emotion.name)
+            if (normalized) {
+              const key = `${normalized}_prosody`
+              const current = emotionMap.get(key) || { score: 0, fileType: 'prosody' }
+              emotionMap.set(key, {
+                score: Math.max(current.score, emotion.score || 0),
+                fileType: 'prosody',
+              })
             }
           }
         }
       }
+    }
     }
 
     // Handle burst predictions - support multiple formats
@@ -191,20 +215,20 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
         if (burstPred && burstPred.emotions && Array.isArray(burstPred.emotions)) {
           for (const emotion of burstPred.emotions) {
             if (emotion && emotion.name && typeof emotion.score === 'number') {
-              const normalized = normalizeEmotionName(emotion.name)
-              if (normalized) {
-                const key = `${normalized}_burst`
-                const current = emotionMap.get(key) || { score: 0, fileType: 'burst' }
-                emotionMap.set(key, {
-                  score: Math.max(current.score, emotion.score || 0),
-                  fileType: 'burst',
-                })
-              }
+            const normalized = normalizeEmotionName(emotion.name)
+            if (normalized) {
+              const key = `${normalized}_burst`
+              const current = emotionMap.get(key) || { score: 0, fileType: 'burst' }
+              emotionMap.set(key, {
+                score: Math.max(current.score, emotion.score || 0),
+                fileType: 'burst',
+              })
             }
           }
         }
       }
     }
+  }
 
     // Handle direct results format (if predictions array contains results directly)
     if (prediction.results && Array.isArray(prediction.results)) {
@@ -281,35 +305,35 @@ export async function captureVideoFrame(stream: MediaStream, durationMs: number 
 
   return new Promise((resolve, reject) => {
     try {
-      const mediaRecorder = new MediaRecorder(stream, {
+    const mediaRecorder = new MediaRecorder(stream, {
         mimeType,
-      })
+    })
 
-      const chunks: Blob[] = []
+    const chunks: Blob[] = []
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data)
-        }
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data)
       }
+    }
 
-      mediaRecorder.onstop = () => {
+    mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: mimeType })
-        resolve(blob)
-      }
+      resolve(blob)
+    }
 
-      mediaRecorder.onerror = (error) => {
+    mediaRecorder.onerror = (error) => {
         console.warn('MediaRecorder error:', error)
         // Return empty blob instead of rejecting
         resolve(new Blob([], { type: mimeType }))
-      }
+    }
 
-      mediaRecorder.start()
+    mediaRecorder.start()
 
-      setTimeout(() => {
+    setTimeout(() => {
         try {
           if (mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop()
+      mediaRecorder.stop()
           } else {
             // Already stopped, resolve with empty blob
             resolve(new Blob([], { type: mimeType }))
@@ -318,7 +342,7 @@ export async function captureVideoFrame(stream: MediaStream, durationMs: number 
           console.warn('Error stopping MediaRecorder:', err)
           resolve(new Blob([], { type: mimeType }))
         }
-      }, durationMs)
+    }, durationMs)
     } catch (err) {
       console.warn('Failed to create MediaRecorder:', err)
       // Return empty blob instead of rejecting
@@ -376,25 +400,25 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
     }
 
     try {
-      const mediaRecorder = new MediaRecorder(stream, {
+    const mediaRecorder = new MediaRecorder(stream, {
         mimeType,
-      })
+    })
 
-      const chunks: Blob[] = []
+    const chunks: Blob[] = []
       let hasError = false
       let stopTimeout: NodeJS.Timeout | null = null
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data)
-        }
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data)
       }
+    }
 
-      mediaRecorder.onstop = () => {
+    mediaRecorder.onstop = () => {
         if (stopTimeout) clearTimeout(stopTimeout)
         if (!hasError) {
           const blob = chunks.length > 0 ? new Blob(chunks, { type: mimeType }) : null
-          resolve(blob)
+      resolve(blob)
         } else {
           resolve(null)
         }
@@ -429,7 +453,7 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
         // Some browsers don't support timeslice parameter, so try without it first
         try {
           // First try without timeslice (more compatible)
-          mediaRecorder.start()
+    mediaRecorder.start()
         } catch (startError) {
           // Check if it actually started despite the error
           // Some browsers may throw an error but still start recording
@@ -468,7 +492,7 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
         stopTimeout = setTimeout(() => {
           try {
             if (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused') {
-              mediaRecorder.stop()
+      mediaRecorder.stop()
             } else if (mediaRecorder.state === 'inactive') {
               // Already stopped, resolve with what we have
               const blob = chunks.length > 0 ? new Blob(chunks, { type: mimeType }) : null
@@ -478,7 +502,7 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
             console.warn('Error stopping MediaRecorder:', err)
             resolve(null)
           }
-        }, durationMs)
+    }, durationMs)
       } catch (err) {
         console.warn('Failed to start MediaRecorder:', err)
         if (stopTimeout) clearTimeout(stopTimeout)
