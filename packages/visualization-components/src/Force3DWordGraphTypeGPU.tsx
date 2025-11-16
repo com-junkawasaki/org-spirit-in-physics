@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react'
+import React, { useRef, useEffect, useCallback, useState } from 'react'
 
 // WebGPU型定義（簡略版）
 declare global {
@@ -1206,7 +1206,8 @@ function Force3DWordGraphTypeGPU({
   // デバッグ情報用のref（前回のノード/リンクを追跡）
   const prevNodesRef = useRef<WordNode[]>([])
   const prevLinksRef = useRef<WordLink[]>([])
-  const debugInfoRef = useRef<{
+  // デバッグ情報を状態として管理（リアルタイム更新のため）
+  const [debugInfo, setDebugInfo] = useState<{
     newNodeIds: string[]
     newLinkIds: string[]
     updatedNodeIds: string[]
@@ -1269,13 +1270,13 @@ function Force3DWordGraphTypeGPU({
       emotionStats[emotion].avgScore /= emotionStats[emotion].count
     })
     
-    // デバッグ情報を更新
-    debugInfoRef.current = {
+    // デバッグ情報を更新（状態として更新してリアルタイム表示を確保）
+    setDebugInfo({
       newNodeIds,
       newLinkIds,
       updatedNodeIds,
       emotionStats
-    }
+    })
     
     // 前回の値を更新
     prevNodesRef.current = nodes
@@ -1330,52 +1331,52 @@ function Force3DWordGraphTypeGPU({
           </div>
           
           {/* 新規追加 */}
-          {debugInfoRef.current.newNodeIds.length > 0 && (
+          {debugInfo.newNodeIds.length > 0 && (
             <div style={{ marginBottom: '8px', color: '#4ade80' }}>
-              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>New Nodes ({debugInfoRef.current.newNodeIds.length})</div>
+              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>New Nodes ({debugInfo.newNodeIds.length})</div>
               <div style={{ fontSize: '10px', maxHeight: '60px', overflow: 'auto' }}>
-                {debugInfoRef.current.newNodeIds.slice(0, 5).map(id => {
+                {debugInfo.newNodeIds.slice(0, 5).map(id => {
                   const node = nodes.find(n => n.id === id)
                   return <div key={id}>+ {node?.label || id}</div>
                 })}
-                {debugInfoRef.current.newNodeIds.length > 5 && <div>... (+{debugInfoRef.current.newNodeIds.length - 5} more)</div>}
+                {debugInfo.newNodeIds.length > 5 && <div>... (+{debugInfo.newNodeIds.length - 5} more)</div>}
               </div>
             </div>
           )}
           
           {/* 差分追加 */}
-          {debugInfoRef.current.updatedNodeIds.length > 0 && (
+          {debugInfo.updatedNodeIds.length > 0 && (
             <div style={{ marginBottom: '8px', color: '#60a5fa' }}>
-              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>Updated Nodes ({debugInfoRef.current.updatedNodeIds.length})</div>
+              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>Updated Nodes ({debugInfo.updatedNodeIds.length})</div>
               <div style={{ fontSize: '10px', maxHeight: '60px', overflow: 'auto' }}>
-                {debugInfoRef.current.updatedNodeIds.slice(0, 5).map(id => {
+                {debugInfo.updatedNodeIds.slice(0, 5).map(id => {
                   const node = nodes.find(n => n.id === id)
                   return <div key={id}>~ {node?.label || id}</div>
                 })}
-                {debugInfoRef.current.updatedNodeIds.length > 5 && <div>... (+{debugInfoRef.current.updatedNodeIds.length - 5} more)</div>}
+                {debugInfo.updatedNodeIds.length > 5 && <div>... (+{debugInfo.updatedNodeIds.length - 5} more)</div>}
               </div>
             </div>
           )}
           
           {/* 新規リンク */}
-          {debugInfoRef.current.newLinkIds.length > 0 && (
+          {debugInfo.newLinkIds.length > 0 && (
             <div style={{ marginBottom: '8px', color: '#fbbf24' }}>
-              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>New Links ({debugInfoRef.current.newLinkIds.length})</div>
+              <div style={{ color: '#a0a0a0', fontSize: '10px' }}>New Links ({debugInfo.newLinkIds.length})</div>
               <div style={{ fontSize: '10px', maxHeight: '40px', overflow: 'auto' }}>
-                {debugInfoRef.current.newLinkIds.slice(0, 3).map(linkKey => (
+                {debugInfo.newLinkIds.slice(0, 3).map(linkKey => (
                   <div key={linkKey}>+ {linkKey}</div>
                 ))}
-                {debugInfoRef.current.newLinkIds.length > 3 && <div>... (+{debugInfoRef.current.newLinkIds.length - 3} more)</div>}
+                {debugInfo.newLinkIds.length > 3 && <div>... (+{debugInfo.newLinkIds.length - 3} more)</div>}
               </div>
             </div>
           )}
           
           {/* 感情統計 */}
-          {Object.keys(debugInfoRef.current.emotionStats).length > 0 && (
+          {Object.keys(debugInfo.emotionStats).length > 0 && (
             <div style={{ marginBottom: '8px' }}>
               <div style={{ color: '#a0a0a0', fontSize: '10px' }}>Emotion Stats</div>
               <div style={{ fontSize: '10px', maxHeight: '100px', overflow: 'auto' }}>
-                {Object.entries(debugInfoRef.current.emotionStats)
+                {Object.entries(debugInfo.emotionStats)
                   .sort((a, b) => b[1].avgScore - a[1].avgScore)
                   .map(([emotion, stats]) => (
                     <div key={emotion} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
@@ -1459,6 +1460,11 @@ function Force3DWordGraphTypeGPU({
 // パフォーマンス最適化: React.memoでメモ化
 // 深い比較を行い、内容が同じなら再レンダリングをスキップ
 export default React.memo(Force3DWordGraphTypeGPU, (prevProps, nextProps) => {
+  // showAnalysisプロップが変更された場合は再レンダリングが必要
+  if (prevProps.showAnalysis !== nextProps.showAnalysis) {
+    return false // 再レンダリングが必要
+  }
+  
   // ノードとリンクの数が同じかチェック
   if (
     prevProps.nodes.length !== nextProps.nodes.length ||
@@ -1539,7 +1545,8 @@ export default React.memo(Force3DWordGraphTypeGPU, (prevProps, nextProps) => {
   if (
     prevProps.width !== nextProps.width ||
     prevProps.height !== nextProps.height ||
-    prevProps.background !== nextProps.background
+    prevProps.background !== nextProps.background ||
+    prevProps.maxFps !== nextProps.maxFps
   ) {
     return false // 再レンダリングが必要
   }

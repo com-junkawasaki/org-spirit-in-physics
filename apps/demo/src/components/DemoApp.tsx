@@ -9,6 +9,7 @@ import StructureAnalysis from './StructureAnalysis'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
 import { analyzeEmotionRealtime, captureVideoFrame, captureAudioFrame } from '../lib/hume-realtime'
 import { calculateComplexSpace } from '../lib/complex-calculator'
+import { EmotionProcessingPipeline } from '../lib/pipelines/emotion-pipeline'
 import type { WordEmotionData, ComplexSpaceData } from '../types/demo'
 import type { AnalysisStep, StepType, StepStatus, StepMetadata } from '../types/step'
 import { useAtomValue, useSetAtom } from 'jotai'
@@ -22,6 +23,7 @@ import {
   clearBatchQueueAtom,
   addWordEmotionDataAtom,
   clearWordEmotionDataAtom,
+  type BatchQueueItem,
 } from '../store/demo-atoms'
 
 // BPM 85 = 85 beats per minute = 60000ms / 85 = ~706ms per beat
@@ -48,6 +50,36 @@ export default function DemoApp() {
   const [maxFps, setMaxFps] = useState(0)  // Default: 0 = auto (memory-aware, max 1GB)
   const [showAnalysis, setShowAnalysis] = useState(false)  // デバッグパネル表示フラグ
   
+  // Initialize Emotion Processing Pipeline
+  const pipelineRef = useRef<EmotionProcessingPipeline | null>(null)
+  useEffect(() => {
+    pipelineRef.current = new EmotionProcessingPipeline({
+      enableValidation: true,
+      enableMonitoring: true,
+      enableRetry: true,
+      maxRetries: 3,
+      retryBackoffMs: 200
+    })
+    
+    // Subscribe to pipeline events for logging
+    pipelineRef.current.on('step:started', (event) => {
+      console.log(`[Pipeline] ${event.step} started:`, event.data)
+    })
+    pipelineRef.current.on('step:completed', (event) => {
+      console.log(`[Pipeline] ${event.step} completed:`, event.data)
+    })
+    pipelineRef.current.on('step:error', (event) => {
+      console.error(`[Pipeline] ${event.step} error:`, event.metadata)
+    })
+    pipelineRef.current.on('pipeline:completed', (event) => {
+      console.log(`[Pipeline] Pipeline completed:`, event.data)
+    })
+    
+    return () => {
+      pipelineRef.current?.clearListeners()
+    }
+  }, [])
+  
   // Use Jotai atoms for batch queue and word emotion data
   const addToBatchQueue = useSetAtom(addToBatchQueueAtom)
   // Use useAtomCallback to get return value from processBatchQueueAtom
@@ -56,16 +88,15 @@ export default function DemoApp() {
       const currentQueue = get(batchQueueAtom)
       if (currentQueue.length === 0) {
         console.log('[DemoStore] Batch queue is empty, nothing to process')
-        return []
+        return [] as BatchQueueItem[]
       }
       
       console.log(`[DemoStore] Processing batch queue: ${currentQueue.length} items`)
       // Clear queue
       set(batchQueueAtom, [])
       return currentQueue
-    },
-    []
-  )
+    }
+  ) as () => BatchQueueItem[]
   const clearBatchQueue = useSetAtom(clearBatchQueueAtom)
   const batchQueueLength = useAtomValue(batchQueueLengthAtom)
   const addWordEmotionData = useSetAtom(addWordEmotionDataAtom)
@@ -258,9 +289,9 @@ export default function DemoApp() {
     }
   }, [stream, isRunning, currentWordIndex, stepOrderCounter, batchQueueLength, addToBatchQueue, createStep, updateStep, addStepLog])
 
-  // BPM 85 batch processing timer
+  // BPM 85 batch processing timer with Pipeline
   useEffect(() => {
-    if (!isRunning) return
+    if (!isRunning || !pipelineRef.current) return
 
     const processBatch = async () => {
       // Check if already analyzing
@@ -275,34 +306,146 @@ export default function DemoApp() {
       // If no items to process, return early
       if (itemsToProcess.length === 0) return
       
-      console.log(`Processing batch: ${itemsToProcess.length} items`)
+      console.log(`[Pipeline] Processing batch: ${itemsToProcess.length} items`)
       
       setIsAnalyzing(true)
       
       try {
-        // Process each item in the batch
+        // Process each item using the pipeline
         for (const item of itemsToProcess) {
-          const analysisStep = createStep('process_predictions', item.stepOrder + 2, 'Analyze Emotions', 'Call Hume AI Batch API and process predictions', {
+          const analysisStep = createStep('process_predictions', item.stepOrder + 2, 'Analyze Emotions', 'Pipeline: Event-Driven + Validation + Monitoring', {
             word: item.word,
             wordIndex: item.wordIndex,
           })
           setAnalysisSteps(prev => [...prev, analysisStep])
-          addStepLog(analysisStep.id, `Processing batch item: ${item.word} (BPM 85 batch mode)`)
+          addStepLog(analysisStep.id, `[Pipeline] Processing batch item: ${item.word} (BPM 85 batch mode)`)
 
           const analysisStartTime = Date.now()
-          let analysisResult: any
+          
           try {
-            console.log(`[Batch ${item.word}] Calling analyzeEmotionRealtime with video: ${item.videoBlob.size} bytes, audio: ${item.audioBlob?.size || 0} bytes`)
-            analysisResult = await analyzeEmotionRealtime(item.videoBlob, item.audioBlob)
-            console.log(`[Batch ${item.word}] Analysis result:`, {
-              emotionsCount: analysisResult.emotions?.length || 0,
-              processingTime: analysisResult.processingTime,
-              emotions: analysisResult.emotions?.slice(0, 3).map((e: any) => `${e.name}:${e.score?.toFixed(2)}`).join(', ') || 'none'
+            // Execute pipeline with blobs from batch queue
+            if (!pipelineRef.current) {
+              console.error('[Pipeline] Pipeline not initialized')
+              continue
+            }
+            
+            const result = await pipelineRef.current.execute(
+              { videoBlob: item.videoBlob, audioBlob: item.audioBlob },
+              item.word,
+              item.timestamp
+            )
+            
+            const analysisDuration = Date.now() - analysisStartTime
+            
+            if (!result.wordEmotionData) {
+              // Pipeline validation failed or no emotions detected
+              addStepLog(analysisStep.id, `[Pipeline] No emotions detected or validation failed`)
+              updateStep(analysisStep.id, {
+                status: 'completed',
+                output: { 
+                  emotionCount: 0,
+                  note: 'Pipeline: Validation failed or no emotions detected',
+                  traceId: result.traceId,
+                  executionTime: result.executionTime,
+                },
+                duration: analysisDuration,
+              })
+              continue
+            }
+            
+            // Pipeline succeeded
+            addStepLog(analysisStep.id, `[Pipeline] Completed in ${result.executionTime.toFixed(0)}ms (trace: ${result.traceId})`)
+            addStepLog(analysisStep.id, `Detected ${result.wordEmotionData.emotions.length} emotions: ${result.wordEmotionData.emotions.slice(0, 3).map((e: any) => `${e.name}(${e.score.toFixed(2)})`).join(', ')}${result.wordEmotionData.emotions.length > 3 ? '...' : ''}`)
+            
+            updateStep(analysisStep.id, {
+              status: 'completed',
+              output: { 
+                emotionCount: result.wordEmotionData.emotions.length,
+                emotions: result.wordEmotionData.emotions.map((e: any) => ({ name: e.name, score: e.score })),
+                processingTime: result.executionTime,
+                traceId: result.traceId,
+              },
+              duration: analysisDuration,
             })
-            addStepLog(analysisStep.id, `API call completed in ${analysisResult.processingTime}ms, emotions: ${analysisResult.emotions?.length || 0}`)
+
+            // Add to Jotai store (with debouncing and duplicate prevention)
+            addWordEmotionData({ data: result.wordEmotionData, options: { skipEmpty: true, debounceMs: 200 } })
+            
+            // Update complex data if available (pipeline already calculated it)
+            if (result.complexData) {
+              setComplexData(result.complexData)
+            }
+            
+            // Update structure analysis if available
+            if (result.structureAnalysis) {
+              setStructureAnalysis({
+                gapAreas: result.structureAnalysis.gapAreas,
+                densityRegions: result.structureAnalysis.densityRegions,
+                duplicates: result.structureAnalysis.duplicates,
+                overallDensity: result.complexData?.regions?.length || 0,
+              })
+            }
+            
+            // Update demo steps after debounced update
+            // Use setTimeout to wait for debounced update to complete
+            setTimeout(() => {
+              // Use ref to get latest wordEmotionData (avoids closure issues)
+              const updated = wordEmotionDataRef.current
+              
+              // Update demo step for data collection
+              setDemoSteps(prevSteps => {
+                const dataCollectionStep = prevSteps.find(s => s.stepType === 'demo_data_collection')
+                if (!dataCollectionStep) {
+                  const newStep = createStep('demo_data_collection', 2, 'Data Collection', 'Collect emotion data from Hume AI', {
+                    word: result.wordEmotionData?.word || item.word,
+                    emotionCount: result.wordEmotionData?.emotions.length || 0,
+                  })
+                  addStepLog(newStep.id, `Collected data for word: ${result.wordEmotionData?.word || item.word}`)
+                  addStepLog(newStep.id, `Emotions detected: ${result.wordEmotionData?.emotions.length || 0}`)
+                  updateStep(newStep.id, {
+                    status: 'completed',
+                    output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
+                  })
+                  return [...prevSteps, newStep]
+                } else {
+                  addStepLog(dataCollectionStep.id, `Updated: ${updated.length} words, ${updated.reduce((sum, d) => sum + d.emotions.length, 0)} total emotions`)
+                  updateStep(dataCollectionStep.id, {
+                    status: 'running',
+                    output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
+                  })
+                  return prevSteps
+                }
+              })
+              
+              // Complex space is already calculated by pipeline, but update visualization step
+              if (result.complexData) {
+                setDemoSteps(prev => {
+                  const visualizationStep = prev.find(s => s.stepType === 'demo_visualization')
+                  if (!visualizationStep && updated.length > 0) {
+                  const newStep = createStep('demo_visualization', 3, 'Visualization', 'Update 3D Force Graph visualization', {
+                    word: item.word,
+                    wordCount: updated.length,
+                  } as any)
+                    addStepLog(newStep.id, `Starting visualization update for ${updated.length} words`)
+                    updateStep(newStep.id, { status: 'running' })
+                    return [...prev, newStep]
+                  } else if (visualizationStep) {
+                    addStepLog(visualizationStep.id, `Visualization updated: ${result.complexData?.regions.length || 0} regions, ${updated.length} nodes`)
+                    updateStep(visualizationStep.id, {
+                      status: 'completed',
+                      output: {
+                        regionCount: result.complexData?.regions.length || 0,
+                        nodeCount: updated.length,
+                      },
+                    })
+                  }
+                  return prev
+                })
+              }
+            }, 250) // Wait for debounce to complete
           } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-            addStepLog(analysisStep.id, `API call failed: ${errorMsg}`)
+            addStepLog(analysisStep.id, `[Pipeline] Error: ${errorMsg}`)
             updateStep(analysisStep.id, {
               status: 'error',
               error: errorMsg,
@@ -310,161 +453,6 @@ export default function DemoApp() {
             })
             continue // Skip to next item on error
           }
-          
-          const analysisDuration = Date.now() - analysisStartTime
-          
-          // Check if emotions are empty (error condition)
-          // Note: For video-only mode, we allow empty emotions but log a warning
-          if (!analysisResult.emotions || analysisResult.emotions.length === 0) {
-            const errorDetails = {
-              hasEmotions: !!analysisResult.emotions,
-              emotionsLength: analysisResult.emotions?.length || 0,
-              processingTime: analysisResult.processingTime,
-              videoSize: item.videoBlob.size,
-              audioSize: item.audioBlob?.size || 0,
-            }
-            console.warn(`[Batch ${item.word}] No emotions detected (video-only mode):`, errorDetails)
-            addStepLog(analysisStep.id, `Warning: No emotions detected (emotionCount: 0)`)
-            addStepLog(analysisStep.id, `Possible causes:`)
-            addStepLog(analysisStep.id, `  1. Video blob size: ${item.videoBlob.size} bytes ${item.videoBlob.size === 0 ? '(EMPTY - this is likely the cause!)' : ''}`)
-            addStepLog(analysisStep.id, `  2. Audio blob size: ${item.audioBlob?.size || 0} bytes ${(item.audioBlob?.size || 0) === 0 ? '(no audio - video-only mode)' : ''}`)
-            addStepLog(analysisStep.id, `  3. Processing time: ${analysisResult.processingTime}ms`)
-            addStepLog(analysisStep.id, `  4. API response: ${analysisResult.emotions?.length === 0 ? 'Empty predictions array' : 'Unknown'}`)
-            if (item.videoBlob.size === 0) {
-              addStepLog(analysisStep.id, `  ⚠️ CRITICAL: Video blob is empty! MediaRecorder may have failed.`)
-            }
-            
-            // In video-only mode, continue processing even with empty emotions
-            // This allows the UI to show that processing occurred
-            updateStep(analysisStep.id, {
-              status: 'completed',
-              output: { 
-                emotionCount: 0,
-                note: 'Video-only mode: No emotions detected. This may be normal.',
-                videoSize: item.videoBlob.size,
-                audioSize: item.audioBlob?.size || 0,
-              },
-              duration: analysisDuration,
-            })
-            
-            // Skip empty emotion data in video-only mode
-            // Zustand store will handle debouncing and duplicate prevention
-            console.log(`[Batch ${item.word}] Skipping empty emotion data (video-only mode)`)
-            continue // Skip to next item
-          }
-
-          addStepLog(analysisStep.id, `Detected ${analysisResult.emotions.length} emotions: ${analysisResult.emotions.slice(0, 3).map((e: any) => `${e.name}(${e.score.toFixed(2)})`).join(', ')}${analysisResult.emotions.length > 3 ? '...' : ''}`)
-          updateStep(analysisStep.id, {
-            status: 'completed',
-            output: { 
-              emotionCount: analysisResult.emotions.length,
-              emotions: analysisResult.emotions.map((e: any) => ({ name: e.name, score: e.score })),
-              processingTime: analysisResult.processingTime,
-            },
-            duration: analysisDuration,
-          })
-
-          // Update word emotion data using Zustand store
-          const newData: WordEmotionData = {
-            word: item.word,
-            timestamp: item.timestamp,
-            emotions: analysisResult.emotions,
-            reactionTime: analysisResult.processingTime,
-            reactionValue: analysisResult.emotions.length > 0
-              ? analysisResult.emotions.reduce((sum, e) => sum + e.score, 0) / analysisResult.emotions.length
-              : 0,
-          }
-
-          // Add to Jotai store (with debouncing and duplicate prevention)
-          addWordEmotionData({ data: newData, options: { skipEmpty: true, debounceMs: 200 } })
-          
-          // Update demo steps after debounced update
-          // Use setTimeout to wait for debounced update to complete
-          setTimeout(() => {
-            // Use ref to get latest wordEmotionData (avoids closure issues)
-            const updated = wordEmotionDataRef.current
-            
-            // Update demo step for data collection
-            setDemoSteps(prevSteps => {
-              const dataCollectionStep = prevSteps.find(s => s.stepType === 'demo_data_collection')
-              if (!dataCollectionStep) {
-                const newStep = createStep('demo_data_collection', 2, 'Data Collection', 'Collect emotion data from Hume AI', {
-                  word: newData.word,
-                  emotionCount: newData.emotions.length,
-                })
-                addStepLog(newStep.id, `Collected data for word: ${newData.word}`)
-                addStepLog(newStep.id, `Emotions detected: ${newData.emotions.length}`)
-                updateStep(newStep.id, {
-                  status: 'completed',
-                  output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
-                })
-                return [...prevSteps, newStep]
-              } else {
-                addStepLog(dataCollectionStep.id, `Updated: ${updated.length} words, ${updated.reduce((sum, d) => sum + d.emotions.length, 0)} total emotions`)
-                updateStep(dataCollectionStep.id, {
-                  status: 'running',
-                  output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
-                })
-                return prevSteps
-              }
-            })
-            
-            // Calculate Complex space
-            let complex: ComplexSpaceData | null = null
-            try {
-              complex = calculateComplexSpace(updated)
-              setComplexData(complex)
-              
-              // Update demo step for visualization
-              setDemoSteps(prev => {
-                const visualizationStep = prev.find(s => s.stepType === 'demo_visualization')
-                if (!visualizationStep && updated.length > 0) {
-                  const newStep = createStep('demo_visualization', 3, 'Visualization', 'Update 3D Force Graph visualization', {
-                    wordCount: updated.length,
-                  })
-                  addStepLog(newStep.id, `Starting visualization update for ${updated.length} words`)
-                  updateStep(newStep.id, { status: 'running' })
-                  return [...prev, newStep]
-                } else if (visualizationStep) {
-                  addStepLog(visualizationStep.id, `Visualization updated: ${complex?.regions.length || 0} regions, ${updated.length} nodes`)
-                  updateStep(visualizationStep.id, {
-                    status: 'completed',
-                    output: {
-                      regionCount: complex?.regions.length || 0,
-                      nodeCount: updated.length,
-                    },
-                  })
-                }
-                return prev
-              })
-            } catch (err) {
-              console.error('Complex calculation error:', err)
-            }
-
-            // Run structure analysis (debounced - every 5 words)
-            if (updated.length % 5 === 0 && updated.length > 0 && complex) {
-              try {
-                const overallDensity = complex.regions.length > 0
-                  ? complex.regions.reduce((sum, r) => sum + r.intensity, 0) / complex.regions.length
-                  : 0
-
-                setStructureAnalysis({
-                  gapAreas: [],
-                  densityRegions: complex.regions.map(r => ({
-                    id: r.id,
-                    center: r.center,
-                    radius: r.radius,
-                    isOvercrowded: r.intensity > 0.5,
-                    nodeCount: r.words.length,
-                  })),
-                  duplicates: [],
-                  overallDensity,
-                })
-              } catch (err) {
-                console.error('Structure analysis error:', err)
-              }
-            }
-          }, 250) // Wait for debounce to complete
         }
       } catch (err) {
         console.error('Error processing batch:', err)

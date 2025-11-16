@@ -502,10 +502,11 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
         } catch (startError) {
           // Check if it actually started despite the error
           // Some browsers may throw an error but still start recording
-          if (mediaRecorder.state === 'recording') {
+          const currentState = mediaRecorder.state as 'inactive' | 'recording' | 'paused'
+          if (currentState === 'recording') {
             console.warn('MediaRecorder started despite error, continuing...')
             // Continue with recording - don't try again
-          } else if (mediaRecorder.state === 'inactive') {
+          } else {
             // If that fails, try with timeslice (some browsers require it)
             console.warn('Failed to start without timeslice, trying with timeslice:', startError)
             try {
@@ -513,7 +514,8 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
             } catch (timesliceError) {
               console.warn('Failed to start MediaRecorder with timeslice:', timesliceError)
               // Check if it actually started despite the error
-              if (mediaRecorder.state === 'recording') {
+              const stateAfterRetry = mediaRecorder.state as 'inactive' | 'recording' | 'paused'
+              if (stateAfterRetry === 'recording') {
                 console.warn('MediaRecorder started despite error, continuing...')
                 // Continue with recording
               } else {
@@ -523,14 +525,18 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
                 return
               }
             }
-          } else {
-            // Unexpected state
-            console.warn('MediaRecorder in unexpected state:', mediaRecorder.state)
-            if (stopTimeout) clearTimeout(stopTimeout)
-            hasError = true
-            resolve(null)
-            return
           }
+        }
+        
+        // Check final state after start attempts
+        const finalState = mediaRecorder.state as 'inactive' | 'recording' | 'paused'
+        if (finalState === 'inactive') {
+          // Unexpected state - recording didn't start
+          console.warn('MediaRecorder in unexpected state:', finalState)
+          if (stopTimeout) clearTimeout(stopTimeout)
+          hasError = true
+          resolve(null)
+          return
         }
         
         // Stop after duration
