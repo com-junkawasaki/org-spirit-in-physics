@@ -70,6 +70,7 @@ interface Force3DWordGraphTypeGPUProps {
   width?: number
   height?: number
   background?: string
+  maxFps?: number  // Maximum frames per second (0 = unlimited)
   physics?: {
     springK: number
     repulsionK: number
@@ -111,6 +112,7 @@ function Force3DWordGraphTypeGPU({
   width = 1000,
   height = 600,
   background = '#ffffff',
+  maxFps = 0,  // 0 = unlimited (default)
   physics,
   gapAreas = [],
   densityRegions = [],
@@ -124,6 +126,7 @@ function Force3DWordGraphTypeGPU({
   const animRef = useRef<number | null>(null)
   const nodesRef = useRef<WordNode[]>(nodes)
   const linksRef = useRef<WordLink[]>(links)
+  const maxFpsRef = useRef<number>(maxFps)
   // Merkle DAG: rendering.connectivity ー ノード接続度の正規化値を保持
   const connectivityRef = useRef<Float32Array | null>(null)
   
@@ -571,6 +574,8 @@ function Force3DWordGraphTypeGPU({
 
         // アニメーションループ
         let lastTime = performance.now()
+        let lastFrameTime = performance.now()
+        
         const tick = () => {
           // ビューポート外の場合は処理をスキップ（パフォーマンス最適化）
           if (!isVisibleRef.current) {
@@ -579,6 +584,20 @@ function Force3DWordGraphTypeGPU({
           }
 
           const now = performance.now()
+          
+          // FPS制限: 指定されたFPSを超えないようにする
+          const currentMaxFps = maxFpsRef.current
+          if (currentMaxFps > 0) {
+            const minFrameInterval = 1000 / currentMaxFps  // milliseconds per frame
+            const elapsed = now - lastFrameTime
+            if (elapsed < minFrameInterval) {
+              // まだ次のフレームの時間になっていない場合はスキップ
+              animRef.current = requestAnimationFrame(tick)
+              return
+            }
+            lastFrameTime = now - (elapsed % minFrameInterval)  // 余りを調整してドリフトを防ぐ
+          }
+          
           const delta = Math.min(0.05, (now - lastTime) / 1000)
           lastTime = now
 
@@ -1053,6 +1072,11 @@ function Force3DWordGraphTypeGPU({
       if (animRef.current) cancelAnimationFrame(animRef.current)
     }
   }, [width, height, background, nodes, links, gapAreas, densityRegions, showAnalysis])
+
+  // Update maxFps ref when prop changes (without re-initializing animation loop)
+  useEffect(() => {
+    maxFpsRef.current = maxFps
+  }, [maxFps])
 
   // 物理パラメータの差分反映
   useEffect(() => {

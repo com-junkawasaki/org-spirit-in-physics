@@ -19,7 +19,6 @@ const BPM_85_INTERVAL_MS = Math.round(60000 / 85) // ~706ms
 export default function DemoApp() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
-  const [wordEmotionData, setWordEmotionData] = useState<WordEmotionData[]>([])
   const [complexData, setComplexData] = useState<ComplexSpaceData | null>(null)
   const [structureAnalysis, setStructureAnalysis] = useState({
     gapAreas: [] as any[],
@@ -35,12 +34,16 @@ export default function DemoApp() {
   const [demoSteps, setDemoSteps] = useState<AnalysisStep[]>([])
   const [hasError, setHasError] = useState(false)
   const [stepOrderCounter, setStepOrderCounter] = useState(0)
+  const [maxFps, setMaxFps] = useState(6)  // Default: 6 FPS (0 = unlimited)
   
-  // Use Zustand store for batch queue
+  // Use Zustand store for batch queue and word emotion data
   const addToBatchQueue = useDemoStore((state) => state.addToBatchQueue)
   const processBatchQueue = useDemoStore((state) => state.processBatchQueue)
   const clearBatchQueue = useDemoStore((state) => state.clearBatchQueue)
   const batchQueueLength = useDemoStore((state) => state.batchQueue.length)
+  const addWordEmotionData = useDemoStore((state) => state.addWordEmotionData)
+  const clearWordEmotionData = useDemoStore((state) => state.clearWordEmotionData)
+  const wordEmotionData = useDemoStore((state) => state.wordEmotionData)
 
   // Request media access
   useEffect(() => {
@@ -304,26 +307,10 @@ export default function DemoApp() {
               duration: analysisDuration,
             })
             
-            // Add empty emotion data to allow visualization to proceed
-            // This helps debug the 3D Force Graph display issue
-            const emptyData: WordEmotionData = {
-              word: item.word,
-              timestamp: item.timestamp,
-              emotions: [],
-              reactionTime: analysisResult.processingTime,
-              reactionValue: 0,
-            }
-            
-            setWordEmotionData(prev => {
-              const isDuplicate = prev.some(d => d.word === emptyData.word && Math.abs(d.timestamp - emptyData.timestamp) < 1000)
-              if (isDuplicate) {
-                return prev
-              }
-              console.log(`[Batch ${item.word}] Adding empty emotion data for debugging (video-only mode)`)
-              return [...prev, emptyData]
-            })
-            
-            continue // Skip to next item but data was added for debugging
+            // Skip empty emotion data in video-only mode
+            // Zustand store will handle debouncing and duplicate prevention
+            console.log(`[Batch ${item.word}] Skipping empty emotion data (video-only mode)`)
+            continue // Skip to next item
           }
 
           addStepLog(analysisStep.id, `Detected ${analysisResult.emotions.length} emotions: ${analysisResult.emotions.slice(0, 3).map((e: any) => `${e.name}(${e.score.toFixed(2)})`).join(', ')}${analysisResult.emotions.length > 3 ? '...' : ''}`)
@@ -337,7 +324,7 @@ export default function DemoApp() {
             duration: analysisDuration,
           })
 
-          // Update word emotion data
+          // Update word emotion data using Zustand store
           const newData: WordEmotionData = {
             word: item.word,
             timestamp: item.timestamp,
@@ -348,30 +335,14 @@ export default function DemoApp() {
               : 0,
           }
 
-          setWordEmotionData(prev => {
-            // Prevent duplicate entries
-            const isDuplicate = prev.some(d => d.word === newData.word && Math.abs(d.timestamp - newData.timestamp) < 1000)
-            if (isDuplicate) {
-              console.log(`Skipping duplicate entry for word: ${newData.word}`)
-              return prev
-            }
-            
-            // Check if emotions are empty (error condition)
-            if (!newData.emotions || newData.emotions.length === 0) {
-              console.error(`No emotions detected for word: ${newData.word}, skipping update`, {
-                word: newData.word,
-                timestamp: newData.timestamp,
-                emotionsLength: newData.emotions?.length || 0,
-                reactionTime: newData.reactionTime,
-              })
-              setHasError(true)
-              setIsRunning(false)
-              setError(`感情データが取得できませんでした。単語: ${newData.word}, 処理時間: ${newData.reactionTime}ms`)
-              return prev
-            }
-            
-            const updated = [...prev, newData]
-            console.log(`Updated wordEmotionData: ${updated.length} entries (added: ${newData.word} with ${newData.emotions.length} emotions)`)
+          // Add to Zustand store (with debouncing and duplicate prevention)
+          addWordEmotionData(newData, { skipEmpty: true, debounceMs: 200 })
+          
+          // Update demo steps after debounced update
+          // Use setTimeout to wait for debounced update to complete
+          setTimeout(() => {
+            const currentData = useDemoStore.getState().wordEmotionData
+            const updated = currentData
             
             // Update demo step for data collection
             setDemoSteps(prevSteps => {
@@ -398,35 +369,28 @@ export default function DemoApp() {
               }
             })
             
-            // Update demo step for visualization
-            setDemoSteps(prevSteps => {
-              const visualizationStep = prevSteps.find(s => s.stepType === 'demo_visualization')
-              if (!visualizationStep && updated.length > 0) {
-                const newStep = createStep('demo_visualization', 3, 'Visualization', 'Update 3D Force Graph visualization', {
-                  wordCount: updated.length,
-                })
-                addStepLog(newStep.id, `Starting visualization update for ${updated.length} words`)
-                updateStep(newStep.id, { status: 'running' })
-                return [...prevSteps, newStep]
-              }
-              return prevSteps
-            })
-            
             // Calculate Complex space
             let complex: ComplexSpaceData | null = null
             try {
               complex = calculateComplexSpace(updated)
               setComplexData(complex)
               
-              // Update visualization step
+              // Update demo step for visualization
               setDemoSteps(prev => {
                 const visualizationStep = prev.find(s => s.stepType === 'demo_visualization')
-                if (visualizationStep) {
-                  addStepLog(visualizationStep.id, `Visualization updated: ${complex.regions.length} regions, ${updated.length} nodes`)
+                if (!visualizationStep && updated.length > 0) {
+                  const newStep = createStep('demo_visualization', 3, 'Visualization', 'Update 3D Force Graph visualization', {
+                    wordCount: updated.length,
+                  })
+                  addStepLog(newStep.id, `Starting visualization update for ${updated.length} words`)
+                  updateStep(newStep.id, { status: 'running' })
+                  return [...prev, newStep]
+                } else if (visualizationStep) {
+                  addStepLog(visualizationStep.id, `Visualization updated: ${complex?.regions.length || 0} regions, ${updated.length} nodes`)
                   updateStep(visualizationStep.id, {
                     status: 'completed',
                     output: {
-                      regionCount: complex.regions.length,
+                      regionCount: complex?.regions.length || 0,
                       nodeCount: updated.length,
                     },
                   })
@@ -460,9 +424,7 @@ export default function DemoApp() {
                 console.error('Structure analysis error:', err)
               }
             }
-
-            return updated
-          })
+          }, 250) // Wait for debounce to complete
         }
       } catch (err) {
         console.error('Error processing batch:', err)
@@ -517,7 +479,7 @@ export default function DemoApp() {
 
   const handleStart = () => {
     setCurrentWordIndex(0)
-    setWordEmotionData([])
+    clearWordEmotionData()
     setComplexData(null)
     setAnalysisSteps([])
     setHasError(false)
@@ -565,15 +527,16 @@ export default function DemoApp() {
     <div className="bg-gray-50 dark:bg-gray-900 overflow-hidden flex h-screen min-h-screen">
       {/* Left: 3D Force Graph (Main Display) */}
       <div className="flex-1 flex items-center justify-center min-w-0 p-4">
-        {wordEmotionData.length > 0 ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <ComplexForce3D
-              wordEmotionData={wordEmotionData}
-              width={dimensions.width}
-              height={dimensions.height}
-            />
-          </div>
-        ) : (
+        {/* Always show 3D Force Graph - it will display initial nodes even without emotion data */}
+        <div className="w-full h-full flex items-center justify-center">
+          <ComplexForce3D
+            width={dimensions.width}
+            height={dimensions.height}
+            maxFps={maxFps}
+          />
+        </div>
+        {/* Remove the conditional rendering - ComplexForce3D handles empty data internally */}
+        {false && (
           <div className="flex flex-col items-center justify-center text-center p-8">
             <div className="text-gray-400 dark:text-gray-600 mb-4">
               <svg className="w-24 h-24 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="3D Force Graph">
@@ -634,6 +597,45 @@ export default function DemoApp() {
               >
                 停止
               </button>
+            </div>
+
+            {/* FPS Control */}
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                最大FPS: {maxFps === 0 ? '無制限' : `${maxFps} FPS`}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="120"
+                  step="5"
+                  value={maxFps}
+                  onChange={(e) => setMaxFps(Number(e.target.value))}
+                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                  style={{
+                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(maxFps / 120) * 100}%, #e5e7eb ${(maxFps / 120) * 100}%, #e5e7eb 100%)`
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMaxFps(0)}
+                  className={`px-2 py-1 text-xs rounded ${
+                    maxFps === 0
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  無制限
+                </button>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <span>0</span>
+                <span>30</span>
+                <span>60</span>
+                <span>90</span>
+                <span>120</span>
+              </div>
             </div>
 
             {/* Status Indicators */}

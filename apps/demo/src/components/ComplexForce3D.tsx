@@ -6,15 +6,16 @@ import type { WordNode, WordLink } from '@spirit-in-physics/visualization-compon
 import type { WordEmotionData } from '../types/demo'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
 import { EMOTION_KEYS } from '@spirit-in-physics/visualization-components'
+import { useDemoStore } from '../store/demo-store'
 
 const Force3DWordGraphTypeGPU = lazy(() => 
   import('@spirit-in-physics/visualization-components').then(module => ({ default: module.Force3DWordGraphTypeGPU }))
 )
 
 interface ComplexForce3DProps {
-  wordEmotionData: WordEmotionData[]
   width?: number
   height?: number
+  maxFps?: number  // Maximum frames per second (0 = unlimited)
   springK?: number
   repulsionK?: number
   restLength?: number
@@ -27,9 +28,9 @@ interface ComplexForce3DProps {
 }
 
 export default function ComplexForce3D({
-  wordEmotionData,
   width = 800,
   height = 600,
+  maxFps = 0,  // 0 = unlimited (default)
   springK = 2.0,
   repulsionK = 2000,
   restLength = 80,
@@ -40,6 +41,25 @@ export default function ComplexForce3D({
   minSep = 80,
   sepK = 8000,
 }: ComplexForce3DProps) {
+  // Get wordEmotionData from Zustand store with stable selector
+  // Use selector that only triggers on actual data changes (length + lastUpdateTime)
+  const dataLength = useDemoStore((state) => state.wordEmotionData.length)
+  const lastUpdateTime = useDemoStore((state) => state.lastUpdateTime)
+  
+  // Get wordEmotionData only when needed (inside useMemo)
+  // This prevents unnecessary re-renders
+  const getWordEmotionData = useDemoStore((state) => state.getWordEmotionData)
+  
+  // Debug: Log when data changes
+  useEffect(() => {
+    const data = getWordEmotionData()
+    console.log('[ComplexForce3D] wordEmotionData updated:', {
+      length: data.length,
+      lastUpdateTime,
+      hasData: data.length > 0,
+    })
+  }, [dataLength, lastUpdateTime, getWordEmotionData])
+  
   const [webGpuAvailable, setWebGpuAvailable] = useState<boolean | null>(null)
   const [loadError, setLoadError] = useState<Error | null>(null)
 
@@ -54,11 +74,64 @@ export default function ComplexForce3D({
       setWebGpuAvailable(false)
     }
   }, [])
+  
   const graphData = useMemo(() => {
-    console.log('[ComplexForce3D] useMemo triggered, wordEmotionData.length:', wordEmotionData.length)
-    if (wordEmotionData.length === 0) {
-      console.log('[ComplexForce3D] No wordEmotionData, returning empty graph')
-      return { nodes: [] as WordNode[], links: [] as WordLink[] }
+    // Get fresh data from store inside useMemo
+    const wordEmotionData = getWordEmotionData()
+    console.log('[ComplexForce3D] useMemo triggered, wordEmotionData.length:', wordEmotionData.length, 'lastUpdateTime:', lastUpdateTime)
+    
+    // Even if wordEmotionData is empty, create initial nodes for all words
+    // This ensures the 3D graph is always visible
+    const hasEmotionData = wordEmotionData.length > 0
+    
+    if (!hasEmotionData) {
+      console.log('[ComplexForce3D] No wordEmotionData, creating initial graph with all words')
+      // Create initial nodes for all words (without emotion data)
+      const initialNodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word, idx) => ({
+        id: String(idx),
+        label: word.japanese,
+        scale: 1.0,
+        nodeType: 'word',
+        initial: undefined, // Will be positioned by force simulation
+      }))
+      
+      // Create anchor nodes
+      const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
+        { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
+        { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
+        { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
+        { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
+        { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
+        { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
+        { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
+        { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
+        { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
+        { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
+      ]
+      
+      const toSphere = (x01: number, y01: number): [number, number, number] => {
+        const u = (x01 - 0.5) * Math.PI * 1.6
+        const v = (y01 - 0.5) * Math.PI
+        const cx = Math.cos(v) * Math.cos(u)
+        const cy = Math.cos(v) * Math.sin(u)
+        const cz = Math.sin(v)
+        return [shellRadius * cx, shellRadius * cy, shellRadius * cz]
+      }
+      
+      const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
+        const [x, y, z] = toSphere(a.x, a.y)
+        return {
+          id: `A${idx}`,
+          label: a.name,
+          scale: 6,
+          fixed: true,
+          nodeType: 'anchor',
+          initial: [x, y, z],
+          color: a.color,
+        }
+      })
+      
+      return { nodes: [...anchorNodes, ...initialNodes], links: [] }
     }
 
     try {
@@ -257,7 +330,7 @@ export default function ComplexForce3D({
       console.error('[ComplexForce3D] 3Dグラフ生成エラー:', error)
       return { nodes: [] as WordNode[], links: [] as WordLink[] }
     }
-  }, [wordEmotionData, shellRadius, restLength, springK])
+  }, [dataLength, lastUpdateTime, getWordEmotionData, shellRadius, restLength, springK]) // Only depend on length and timestamp to prevent excessive re-renders
 
   // Error boundary component for WebGPU errors
   const ErrorFallback = ({ error }: { error: Error | null }) => (
@@ -313,6 +386,7 @@ export default function ComplexForce3D({
           links={graphData.links}
           width={width}
           height={height}
+          maxFps={maxFps}
           physics={{
             springK,
             repulsionK,
