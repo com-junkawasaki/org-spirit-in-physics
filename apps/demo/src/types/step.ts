@@ -6,6 +6,11 @@
  * @see src/schemas/emotion-analysis-step.jsonld
  */
 export type StepType =
+  | 'demo_start'
+  | 'demo_word_display'
+  | 'demo_data_collection'
+  | 'demo_visualization'
+  | 'demo_complete'
   | 'capture_video'
   | 'capture_audio'
   | 'hume_api_face'

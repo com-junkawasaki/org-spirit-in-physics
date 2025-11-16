@@ -164,7 +164,7 @@ impl TimelineQuery {
                     reaction_time: None,
                     has_response: event_count > 0,
                     emotions: Vec::new(),
-                    physiological: serde_json::Value::Array(Vec::new()),
+                    physiological: Vec::new(),
                     metadata: serde_json::json!({ "event_count": event_count }),
                 })
             }).collect()

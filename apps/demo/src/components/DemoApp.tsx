@@ -28,6 +28,8 @@ export default function DemoApp() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isRequestingMedia, setIsRequestingMedia] = useState(true)
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([])
+  const [demoSteps, setDemoSteps] = useState<AnalysisStep[]>([])
+  const [hasError, setHasError] = useState(false)
 
   // Request media access
   useEffect(() => {
@@ -58,7 +60,9 @@ export default function DemoApp() {
   useEffect(() => {
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop())
+        stream.getTracks().forEach(track => {
+          track.stop()
+        })
       }
     }
   }, [stream])
@@ -193,6 +197,19 @@ export default function DemoApp() {
       const analysisResult = await analyzeEmotionRealtime(videoBlob, audioBlob)
       const analysisDuration = Date.now() - analysisStartTime
       
+      // Check if emotions are empty (error condition)
+      if (analysisResult.emotions.length === 0) {
+        updateStep(analysisStep.id, {
+          status: 'error',
+          error: 'No emotions detected from Hume AI API',
+          duration: analysisDuration,
+        })
+        setHasError(true)
+        setIsRunning(false)
+        setError('感情データが取得できませんでした。Hume AI APIの設定を確認してください。')
+        return
+      }
+
       updateStep(analysisStep.id, {
         status: 'completed',
         output: { 
@@ -235,7 +252,55 @@ export default function DemoApp() {
           return prev
         }
         
+        // Check if emotions are empty (error condition)
+        if (newData.emotions.length === 0) {
+          updateStep(updateStep_.id, {
+            status: 'error',
+            error: 'No emotions in word data',
+            duration: Date.now() - updateStartTime,
+          })
+          setHasError(true)
+          setIsRunning(false)
+          setError('感情データが取得できませんでした。')
+          return prev
+        }
+        
         const updated = [...prev, newData]
+        
+        // Update demo step for data collection
+        setDemoSteps(prevSteps => {
+          const dataCollectionStep = prevSteps.find(s => s.stepType === 'demo_data_collection')
+          if (!dataCollectionStep) {
+            const newStep = createStep('demo_data_collection', 2, 'Data Collection', 'Collect emotion data from Hume AI', {
+              word: newData.word,
+              emotionCount: newData.emotions.length,
+            })
+            updateStep(newStep.id, {
+              status: 'completed',
+              output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
+            })
+            return [...prevSteps, newStep]
+          } else {
+            updateStep(dataCollectionStep.id, {
+              status: 'running',
+              output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
+            })
+            return prevSteps
+          }
+        })
+        
+        // Update demo step for visualization
+        setDemoSteps(prevSteps => {
+          const visualizationStep = prevSteps.find(s => s.stepType === 'demo_visualization')
+          if (!visualizationStep && updated.length > 0) {
+            const newStep = createStep('demo_visualization', 3, 'Visualization', 'Update 3D Force Graph visualization', {
+              wordCount: updated.length,
+            })
+            updateStep(newStep.id, { status: 'running' })
+            return [...prevSteps, newStep]
+          }
+          return prevSteps
+        })
         
         // Step 5: Calculate Complex space
         const complexStep = createStep('calculate_complex', stepOrder++, 'Calculate Complex Space', 'Calculate Complex space from emotion data', {
@@ -258,12 +323,30 @@ export default function DemoApp() {
             },
             duration: Date.now() - complexStartTime,
           })
+          
+          // Update visualization step
+          setDemoSteps(prev => {
+            const visualizationStep = prev.find(s => s.stepType === 'demo_visualization')
+            if (visualizationStep) {
+              updateStep(visualizationStep.id, {
+                status: 'completed',
+                output: {
+                  regionCount: complex.regions.length,
+                  nodeCount: updated.length,
+                },
+              })
+            }
+            return prev
+          })
         } catch (err) {
           updateStep(complexStep.id, {
             status: 'error',
             error: err instanceof Error ? err.message : 'Complex calculation failed',
             duration: Date.now() - complexStartTime,
           })
+          setHasError(true)
+          setIsRunning(false)
+          setError('Complex空間の計算に失敗しました。')
         }
 
         // Run structure analysis (debounced - every 5 words)
@@ -320,24 +403,53 @@ export default function DemoApp() {
 
   // Auto advance words
   useEffect(() => {
-    if (!isRunning || currentWordIndex >= JUNG_STIMULUS_WORDS.length) {
+    if (!isRunning || currentWordIndex >= JUNG_STIMULUS_WORDS.length || hasError) {
+      if (currentWordIndex >= JUNG_STIMULUS_WORDS.length) {
+        setDemoSteps(prevSteps => {
+          const demoCompleteStep = createStep('demo_complete', prevSteps.length, 'Demo Complete', 'All words processed', {})
+          updateStep(demoCompleteStep.id, { status: 'completed' })
+          return [...prevSteps, demoCompleteStep]
+        })
+      }
       setIsRunning(false)
       return
     }
+
+    // Update demo step for word display
+    setDemoSteps(prevSteps => {
+      const wordDisplayStep = prevSteps.find(s => s.stepType === 'demo_word_display')
+      if (wordDisplayStep) {
+        updateStep(wordDisplayStep.id, {
+          status: 'running',
+          metadata: { word: JUNG_STIMULUS_WORDS[currentWordIndex]?.japanese, wordIndex: currentWordIndex },
+        })
+      }
+      return prevSteps
+    })
 
     const timer = setTimeout(() => {
       setCurrentWordIndex(prev => prev + 1)
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, [isRunning, currentWordIndex])
+  }, [isRunning, currentWordIndex, hasError, createStep, updateStep])
 
   const handleStart = () => {
     setCurrentWordIndex(0)
     setWordEmotionData([])
     setComplexData(null)
     setAnalysisSteps([])
+    setHasError(false)
+    setError(null)
     setIsRunning(true)
+
+    // Create demo execution steps
+    const demoStartStep = createStep('demo_start', 0, 'Demo Start', 'Initialize demo application', {})
+    setDemoSteps([demoStartStep])
+    updateStep(demoStartStep.id, { status: 'completed' })
+
+    const demoWordDisplayStep = createStep('demo_word_display', 1, 'Word Display', 'Display current word to user', {})
+    setDemoSteps(prev => [...prev, demoWordDisplayStep])
   }
 
   const handleStop = () => {
@@ -419,15 +531,15 @@ export default function DemoApp() {
               <button
                 type="button"
                 onClick={handleStart}
-                disabled={isRunning || !stream || isRequestingMedia}
+                disabled={isRunning || !stream || isRequestingMedia || hasError}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed touch-target hover:bg-blue-700 transition-colors"
               >
-                {isRunning ? '実行中...' : '開始'}
+                {isRunning ? '実行中...' : hasError ? 'エラー - 再開始' : '開始'}
               </button>
               <button
                 type="button"
                 onClick={handleStop}
-                disabled={!isRunning}
+                disabled={!isRunning && !hasError}
                 className="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed touch-target hover:bg-red-700 transition-colors"
               >
                 停止
@@ -460,13 +572,83 @@ export default function DemoApp() {
                   <span>{error}</span>
                 </div>
               )}
-              {isAnalyzing && (
+              {isAnalyzing && !hasError && (
                 <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                   <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                   <span>感情分析中...</span>
                 </div>
               )}
+              {hasError && (
+                <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 font-bold">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Error">
+                    <title>Error</title>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>エラー: 実行停止</span>
+                </div>
+              )}
             </div>
+
+            {/* Demo Execution Steps */}
+            {demoSteps.length > 0 && (
+              <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  Demo Execution Steps
+                </h4>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                  {demoSteps.map((step) => {
+                    const statusColors = {
+                      pending: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+                      running: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+                      completed: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+                      error: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
+                    }
+                    const statusIcons = {
+                      pending: '○',
+                      running: '⟳',
+                      completed: '✓',
+                      error: '✗',
+                    }
+                    return (
+                      <div
+                        key={step.id}
+                        className={`text-xs p-1.5 rounded ${statusColors[step.status] || statusColors.pending}`}
+                      >
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="font-medium">
+                            {statusIcons[step.status]} {step.stepOrder + 1}. {step.name}
+                          </span>
+                          {step.duration !== undefined && (
+                            <span className="text-xs opacity-75">{step.duration}ms</span>
+                          )}
+                        </div>
+                        {step.output && (
+                          <div className="text-xs opacity-75 mt-0.5">
+                            {step.output.collectedWords !== undefined && (
+                              <span>Words: {step.output.collectedWords} </span>
+                            )}
+                            {step.output.totalEmotions !== undefined && (
+                              <span>Emotions: {step.output.totalEmotions} </span>
+                            )}
+                            {step.output.regionCount !== undefined && (
+                              <span>Regions: {step.output.regionCount} </span>
+                            )}
+                            {step.output.nodeCount !== undefined && (
+                              <span>Nodes: {step.output.nodeCount} </span>
+                            )}
+                          </div>
+                        )}
+                        {step.error && (
+                          <div className="text-xs opacity-75 mt-0.5 truncate" title={step.error}>
+                            Error: {step.error}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Analysis Steps */}
             {analysisSteps.length > 0 && (
@@ -504,7 +686,9 @@ export default function DemoApp() {
                         {step.output && (
                           <div className="text-xs opacity-75 mt-0.5">
                             {step.output.emotionCount !== undefined && (
-                              <span>Emotions: {step.output.emotionCount} </span>
+                              <span className={step.output.emotionCount === 0 ? 'text-red-600 font-bold' : ''}>
+                                Emotions: {step.output.emotionCount}{' '}
+                              </span>
                             )}
                             {step.output.blobSize !== undefined && (
                               <span>Size: {Math.round(step.output.blobSize / 1024)}KB </span>
@@ -515,13 +699,33 @@ export default function DemoApp() {
                           </div>
                         )}
                         {step.error && (
-                          <div className="text-xs opacity-75 mt-0.5 truncate" title={step.error}>
+                          <div className="text-xs opacity-75 mt-0.5 truncate text-red-600 font-bold" title={step.error}>
                             Error: {step.error}
                           </div>
                         )}
                       </div>
                     )
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Error Display */}
+            {hasError && (
+              <div className="pt-2 border-t border-red-300 dark:border-red-700">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2">
+                  <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-400 font-bold mb-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Error">
+                      <title>Error</title>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>エラー: 実行が停止されました</span>
+                  </div>
+                  {error && (
+                    <div className="text-xs text-red-600 dark:text-red-400">
+                      {error}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

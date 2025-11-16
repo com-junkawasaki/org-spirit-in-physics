@@ -100,8 +100,14 @@ export const POST: APIRoute = async ({ request }) => {
       )
     }
 
-    // Get API key from environment
+    // Get API key from environment (hardcoded in docker-compose.yaml for development)
     const apiKey = import.meta.env.HUME_API_KEY || import.meta.env.HUME_API
+
+    console.log('Hume API key check:', {
+      hasHumeApiKey: !!import.meta.env.HUME_API_KEY,
+      hasHumeApi: !!import.meta.env.HUME_API,
+      apiKeyLength: apiKey?.length || 0,
+    })
 
     if (!apiKey) {
       console.error('Hume API key not found in environment variables')
