@@ -29,10 +29,12 @@ export default defineConfig({
     },
     server: {
       // HMR settings for Docker
-      // Note: HMR may not work perfectly in SSR mode with Docker
-      // File changes will still trigger page reloads
+      // Note: HMR WebSocket may fail in SSR mode, but file changes will still trigger page reloads
+      // This is a known limitation of Astro SSR mode
       hmr: {
+        host: 'localhost', // Use localhost for HMR connection
         clientPort: 25271, // External port for HMR client
+        protocol: 'ws', // Use ws instead of wss for local development
       },
       watch: {
         // Use polling for file watching in Docker

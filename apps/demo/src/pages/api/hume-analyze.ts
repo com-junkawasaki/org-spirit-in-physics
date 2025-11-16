@@ -7,14 +7,16 @@ const HUME_API_BASE = 'https://api.hume.ai/v0'
 
 // Helper to get environment variable (works in both Astro and Node.js)
 function getEnvVar(key: string): string | undefined {
-  // Try import.meta.env first (Astro)
+  // In Astro server-side API routes, process.env is the most reliable
+  // Try process.env first (Node.js runtime)
+  if (typeof process !== 'undefined' && process.env) {
+    const value = process.env[key]
+    if (value) return value
+  }
+  // Fallback to import.meta.env (Astro client-side)
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     const value = (import.meta.env as any)[key]
     if (value) return value
-  }
-  // Fallback to process.env (Node.js)
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env[key]
   }
   return undefined
 }
@@ -135,16 +137,24 @@ export const POST: APIRoute = async ({ request }) => {
     // Get API key from environment (hardcoded in docker-compose.yaml for development)
     const apiKey = getEnvVar('HUME_API_KEY') || getEnvVar('HUME_API') || null
 
-    console.log('Hume API key check:', {
+    // Enhanced logging for debugging
+    const envCheck = {
       hasHumeApiKey_import: !!(typeof import.meta !== 'undefined' && (import.meta.env as any)?.HUME_API_KEY),
       hasHumeApi_import: !!(typeof import.meta !== 'undefined' && (import.meta.env as any)?.HUME_API),
-      hasHumeApiKey_process: typeof process !== 'undefined' ? !!process.env?.HUME_API_KEY : 'N/A',
-      hasHumeApi_process: typeof process !== 'undefined' ? !!process.env?.HUME_API : 'N/A',
+      hasHumeApiKey_process: typeof process !== 'undefined' ? !!process.env?.HUME_API_KEY : false,
+      hasHumeApi_process: typeof process !== 'undefined' ? !!process.env?.HUME_API : false,
       apiKeyLength: apiKey?.length || 0,
       apiKeyPrefix: apiKey ? `${apiKey.substring(0, 10)}...` : 'N/A',
       allEnvKeys: typeof process !== 'undefined' ? Object.keys(process.env).filter(k => k.includes('HUME')).join(', ') : 'N/A',
       selectedApiKey: apiKey ? 'Found' : 'Not found',
-    })
+      processEnvKeys: typeof process !== 'undefined' ? Object.keys(process.env).slice(0, 10).join(', ') : 'N/A',
+    }
+    console.log('Hume API key check:', envCheck)
+    
+    // If no API key found, log detailed error
+    if (!apiKey) {
+      console.error('Hume API key not found. Environment check:', envCheck)
+    }
 
     if (!apiKey) {
       console.error('Hume API key not found in environment variables')

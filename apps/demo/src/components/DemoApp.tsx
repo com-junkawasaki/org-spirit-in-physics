@@ -523,29 +523,32 @@ export default function DemoApp() {
 
   const currentWord = JUNG_STIMULUS_WORDS[currentWordIndex]
 
-  // Calculate dimensions for 3D Force Graph (main display)
-  const forceGraphWidth = typeof window !== 'undefined' 
-    ? Math.floor(window.innerWidth * 0.65) // 65% of screen width
-    : 800
-  const forceGraphHeight = typeof window !== 'undefined'
-    ? Math.floor(window.innerHeight * 0.9) // 90% of screen height
-    : 600
+  // Calculate dimensions for 3D Force Graph (main display) - use useEffect to avoid hydration mismatch
+  const [dimensions, setDimensions] = React.useState({ width: 800, height: 600, rightPanelWidth: 400 })
 
-  // Right panel width (35% of screen width)
-  const rightPanelWidth = typeof window !== 'undefined'
-    ? Math.floor(window.innerWidth * 0.35)
-    : 400
+  React.useEffect(() => {
+    const updateDimensions = () => {
+      setDimensions({
+        width: Math.floor(window.innerWidth * 0.65), // 65% of screen width
+        height: Math.floor(window.innerHeight * 0.9), // 90% of screen height
+        rightPanelWidth: Math.floor(window.innerWidth * 0.35), // 35% of screen width
+      })
+    }
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [])
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 overflow-hidden flex" style={{ height: '100vh', minHeight: '100vh' }}>
+    <div className="bg-gray-50 dark:bg-gray-900 overflow-hidden flex h-screen min-h-screen">
       {/* Left: 3D Force Graph (Main Display) */}
-      <div className="flex-1 flex items-center justify-center" style={{ minWidth: 0, padding: '1rem' }}>
+      <div className="flex-1 flex items-center justify-center min-w-0 p-4">
         {wordEmotionData.length > 0 ? (
           <div className="w-full h-full flex items-center justify-center">
             <ComplexForce3D
               wordEmotionData={wordEmotionData}
-              width={forceGraphWidth}
-              height={forceGraphHeight}
+              width={dimensions.width}
+              height={dimensions.height}
             />
           </div>
         ) : (
@@ -567,7 +570,7 @@ export default function DemoApp() {
       </div>
 
       {/* Right Panel */}
-      <div className="flex flex-col bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-hidden" style={{ width: rightPanelWidth, minWidth: rightPanelWidth }}>
+      <div className="flex flex-col bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-hidden" style={{ width: `${dimensions.rightPanelWidth}px`, minWidth: `${dimensions.rightPanelWidth}px` }}>
         {/* Top: Word Display (右上) */}
         <div className="flex-shrink-0 p-2 md:p-3 border-b border-gray-200 dark:border-gray-700">
           {currentWord && (

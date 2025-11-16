@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.33.0",
+  "version": "1.34.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-15T20:00:00+09:00",
-  "merkleRoot": "jung-voice-assessmentパッケージ共通化完了: GraphQL依存抽象化、UIコンポーネント依存抽象化、stimulus_words GraphQL API実装、Rust GraphQL resolver追加、PostgreSQL stimulus_wordsテーブル作成",
+  "updatedAt": "2025-01-15T21:00:00+09:00",
+  "merkleRoot": "Clerk認証統合完了: participant・visualizerアプリにClerk v6統合、管理者APIキー認証をClerk認証に置き換え、middleware・providers・認証ページ実装、GraphQL client認証対応、環境変数設定",
   
   "story": {
     "@id": "project:story",
@@ -407,6 +407,12 @@
         "@type": "project:Narrative",
         "act": "jung-voice-assessmentコンポーネントの共通パッケージ化",
         "summary": "apps/participant/src/components/jung-voice-assessmentを@spirit-in-physics/jung-voice-assessmentパッケージとして共通化。GraphQL依存を抽象化し、ApolloClientとmutationsをpropsで注入可能に実装。UIコンポーネント（Button、Card）をpeerDependenciesとして定義し、propsで注入可能に抽象化。Rust GraphQL APIにstimulus_wordsクエリとStimulusWord型を追加し、PostgreSQLにstimulus_wordsテーブルを作成して100語の刺激語データを移行。useStimulusWordsフックを実装し、GraphQL APIから刺激語を取得するように変更。constants.tsのJUNG_STIMULUS_WORDSを削除し、GraphQL APIから動的に取得するアーキテクチャに移行。複数のアプリで再利用可能な共通パッケージとして設計し、SOLID原則に基づく依存関係の最小化を実現。"
+      },
+      {
+        "@id": "project:narrative/58",
+        "@type": "project:Narrative",
+        "act": "Clerk認証統合の実現",
+        "summary": "participant・visualizerアプリにClerk v6認証を統合。@clerk/nextjs v6をインストールし、clerkMiddlewareによるルート保護を実装。participantアプリの既存管理者APIキー認証をClerk認証に完全置き換え。i18n機能（paraglide）との統合を維持しつつ、/admin・/api/adminルートをClerkで保護。ClerkProviderをprovidersに追加し、signin/signupページを実装。GraphQL clientのauthLinkをClerkトークン対応に更新。.envrc・docker-compose.ymlにClerk環境変数を追加。セキュアな認証基盤を確立し、管理者機能へのアクセス制御を強化。"
       }
     ],
     "processNetwork": {
@@ -1513,7 +1519,25 @@
       "package.json依存関係追加",
       "複数アプリ再利用可能な共通パッケージ設計",
       "SOLID原則に基づく依存関係最小化",
-      "疎結合アーキテクチャ実現"
+      "疎結合アーキテクチャ実現",
+      "Clerk認証統合実装",
+      "@clerk/nextjs v6インストール",
+      "participantアプリClerk統合",
+      "visualizerアプリClerk統合",
+      "clerkMiddlewareによるルート保護実装",
+      "管理者APIキー認証からClerk認証への置き換え",
+      "i18n機能（paraglide）との統合維持",
+      "/admin・/api/adminルートClerk保護",
+      "participant middleware.ts更新",
+      "visualizer middleware.ts作成",
+      "ClerkProvider実装（participant・visualizer）",
+      "signin/signupページ実装（participant・visualizer）",
+      "GraphQL client authLink更新",
+      "Clerkトークン対応実装",
+      ".envrc Clerk環境変数追加",
+      "docker-compose.yml Clerk環境変数追加",
+      "セキュアな認証基盤確立",
+      "管理者機能アクセス制御強化"
     ]
   },
   
