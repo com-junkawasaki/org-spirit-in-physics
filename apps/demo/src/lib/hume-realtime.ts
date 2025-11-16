@@ -305,6 +305,7 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
 
       const chunks: Blob[] = []
       let hasError = false
+      let stopTimeout: NodeJS.Timeout | null = null
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -313,6 +314,7 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
       }
 
       mediaRecorder.onstop = () => {
+        if (stopTimeout) clearTimeout(stopTimeout)
         if (!hasError) {
           const blob = chunks.length > 0 ? new Blob(chunks, { type: mimeType }) : null
           resolve(blob)
@@ -321,7 +323,9 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
         }
       }
 
+      // Handle errors
       mediaRecorder.onerror = (event) => {
+        if (stopTimeout) clearTimeout(stopTimeout)
         hasError = true
         console.warn('MediaRecorder error:', event)
         try {
@@ -334,30 +338,33 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
         resolve(null) // Return null instead of rejecting
       }
 
-      // Start recording
+      // Start recording with timeslice to ensure data is available
       try {
-        mediaRecorder.start()
+        // Use timeslice to get data chunks periodically
+        mediaRecorder.start(100) // Request data every 100ms
+        
+        // Stop after duration
+        stopTimeout = setTimeout(() => {
+          try {
+            if (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused') {
+              mediaRecorder.stop()
+            } else if (mediaRecorder.state === 'inactive') {
+              // Already stopped, resolve with what we have
+              const blob = chunks.length > 0 ? new Blob(chunks, { type: mimeType }) : null
+              resolve(blob)
+            }
+          } catch (err) {
+            console.warn('Error stopping MediaRecorder:', err)
+            resolve(null)
+          }
+        }, durationMs)
       } catch (err) {
         console.warn('Failed to start MediaRecorder:', err)
+        if (stopTimeout) clearTimeout(stopTimeout)
+        hasError = true
         resolve(null)
         return
       }
-
-      // Stop after duration
-      setTimeout(() => {
-        try {
-          if (mediaRecorder.state === 'recording') {
-            mediaRecorder.stop()
-          } else if (mediaRecorder.state === 'inactive') {
-            // Already stopped, resolve with what we have
-            const blob = chunks.length > 0 ? new Blob(chunks, { type: mimeType }) : null
-            resolve(blob)
-          }
-        } catch (err) {
-          console.warn('Error stopping MediaRecorder:', err)
-          resolve(null)
-        }
-      }, durationMs)
     } catch (err) {
       console.warn('Failed to create MediaRecorder:', err)
       resolve(null) // Return null instead of rejecting

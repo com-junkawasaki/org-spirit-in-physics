@@ -12,6 +12,18 @@ import { calculateComplexSpace } from '../lib/complex-calculator'
 import type { WordEmotionData, ComplexSpaceData } from '../types/demo'
 import type { AnalysisStep, StepType, StepStatus, StepMetadata } from '../types/step'
 
+// BPM 85 = 85 beats per minute = 60000ms / 85 = ~706ms per beat
+const BPM_85_INTERVAL_MS = Math.round(60000 / 85) // ~706ms
+
+interface BatchQueueItem {
+  word: string
+  wordIndex: number
+  timestamp: number
+  videoBlob: Blob
+  audioBlob?: Blob
+  stepOrder: number
+}
+
 export default function DemoApp() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
@@ -30,6 +42,8 @@ export default function DemoApp() {
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([])
   const [demoSteps, setDemoSteps] = useState<AnalysisStep[]>([])
   const [hasError, setHasError] = useState(false)
+  const [batchQueue, setBatchQueue] = useState<BatchQueueItem[]>([])
+  const [stepOrderCounter, setStepOrderCounter] = useState(0)
 
   // Request media access
   useEffect(() => {
@@ -115,40 +129,22 @@ export default function DemoApp() {
     ))
   }, [])
 
-  // Handle word display event
+  // Handle word display event - capture frames and add to batch queue
   const handleWordDisplayed = useCallback(async () => {
-    if (!stream) return
-    
-    // Prevent concurrent analysis
-    setIsAnalyzing(prev => {
-      if (prev) {
-        console.log('Already analyzing, skipping...')
-        return prev // Already analyzing, skip
-      }
-      return true
-    })
-    
-    // Double-check after state update (async state update)
-    if (isAnalyzing) {
-      console.log('Already analyzing (state check), skipping...')
-      return
-    }
+    if (!stream || !isRunning) return
 
     const currentWord = JUNG_STIMULUS_WORDS[currentWordIndex]
     const timestamp = Date.now()
-    let stepOrder = 0
-
-    // Clear previous steps for this word
-    setAnalysisSteps([])
+    const stepOrder = stepOrderCounter
 
     try {
       // Step 1: Capture video
-      const videoStep = createStep('capture_video', stepOrder++, 'Capture Video', 'Capture video frame from MediaStream', {
+      const videoStep = createStep('capture_video', stepOrder, 'Capture Video', 'Capture video frame from MediaStream', {
         word: currentWord.japanese,
         wordIndex: currentWordIndex,
       })
       setAnalysisSteps(prev => [...prev, videoStep])
-      addStepLog(videoStep.id, `Capturing video for word: ${currentWord.japanese}`)
+      addStepLog(videoStep.id, `Capturing video for word: ${currentWord.japanese} (BPM 85 batch mode)`)
       
       let videoBlob: Blob
       const videoStartTime = Date.now()
@@ -174,7 +170,7 @@ export default function DemoApp() {
       }
       
       // Step 2: Capture audio
-      const audioStep = createStep('capture_audio', stepOrder++, 'Capture Audio', 'Capture audio frame from MediaStream', {
+      const audioStep = createStep('capture_audio', stepOrder + 1, 'Capture Audio', 'Capture audio frame from MediaStream', {
         word: currentWord.japanese,
         wordIndex: currentWordIndex,
       })
@@ -213,251 +209,231 @@ export default function DemoApp() {
         })
       }
 
-      // Step 3: Analyze emotions with Hume AI
-      const analysisStep = createStep('process_predictions', stepOrder++, 'Analyze Emotions', 'Call Hume AI API and process predictions', {
+      // Add to batch queue instead of processing immediately
+      setBatchQueue(prev => [...prev, {
         word: currentWord.japanese,
         wordIndex: currentWordIndex,
-      })
-      setAnalysisSteps(prev => [...prev, analysisStep])
-      addStepLog(analysisStep.id, `Starting emotion analysis for word: ${currentWord.japanese}`)
-      addStepLog(analysisStep.id, `Video blob size: ${Math.round(videoBlob.size / 1024)}KB, Audio blob size: ${audioBlob ? Math.round(audioBlob.size / 1024) : 0}KB`)
-      
-      const analysisStartTime = Date.now()
-      let analysisResult: any
-      try {
-        analysisResult = await analyzeEmotionRealtime(videoBlob, audioBlob)
-        addStepLog(analysisStep.id, `API call completed in ${analysisResult.processingTime}ms`)
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-        addStepLog(analysisStep.id, `API call failed: ${errorMsg}`)
-        updateStep(analysisStep.id, {
-          status: 'error',
-          error: errorMsg,
-          duration: Date.now() - analysisStartTime,
-        })
-        setHasError(true)
-        setIsRunning(false)
-        setError('感情データが取得できませんでした。Hume AI APIの設定を確認してください。')
-        return
-      }
-      
-      const analysisDuration = Date.now() - analysisStartTime
-      
-      // Check if emotions are empty (error condition)
-      if (analysisResult.emotions.length === 0) {
-        addStepLog(analysisStep.id, `Warning: No emotions detected (emotionCount: 0)`)
-        updateStep(analysisStep.id, {
-          status: 'error',
-          error: 'No emotions detected from Hume AI API',
-          duration: analysisDuration,
-        })
-        setHasError(true)
-        setIsRunning(false)
-        setError('感情データが取得できませんでした。Hume AI APIの設定を確認してください。')
-        return
-      }
-
-      addStepLog(analysisStep.id, `Detected ${analysisResult.emotions.length} emotions: ${analysisResult.emotions.slice(0, 3).map((e: any) => `${e.name}(${e.score.toFixed(2)})`).join(', ')}${analysisResult.emotions.length > 3 ? '...' : ''}`)
-      updateStep(analysisStep.id, {
-        status: 'completed',
-        output: { 
-          emotionCount: analysisResult.emotions.length,
-          emotions: analysisResult.emotions.map((e: any) => ({ name: e.name, score: e.score })),
-          processingTime: analysisResult.processingTime,
-        },
-        duration: analysisDuration,
-      })
-
-      // Step 4: Update word emotion data
-      const updateStep_ = createStep('update_data', stepOrder++, 'Update Word Emotion Data', 'Update word emotion data state', {
-        word: currentWord.japanese,
-        wordIndex: currentWordIndex,
-        emotionCount: analysisResult.emotions.length,
-      })
-      setAnalysisSteps(prev => [...prev, updateStep_])
-      
-      const updateStartTime = Date.now()
-      const newData: WordEmotionData = {
-        word: currentWord.japanese,
         timestamp,
-        emotions: analysisResult.emotions,
-        reactionTime: analysisResult.processingTime,
-        reactionValue: analysisResult.emotions.length > 0
-          ? analysisResult.emotions.reduce((sum, e) => sum + e.score, 0) / analysisResult.emotions.length
-          : 0,
-      }
-
-      setWordEmotionData(prev => {
-        // Prevent duplicate entries for the same word at the same timestamp
-        const isDuplicate = prev.some(d => d.word === newData.word && Math.abs(d.timestamp - newData.timestamp) < 1000)
-        if (isDuplicate) {
-          console.log('Duplicate word data detected, skipping:', newData.word)
-          updateStep(updateStep_.id, {
-            status: 'error',
-            error: 'Duplicate word data detected',
-            duration: Date.now() - updateStartTime,
-          })
-          return prev
-        }
-        
-        // Check if emotions are empty (error condition)
-        if (newData.emotions.length === 0) {
-          updateStep(updateStep_.id, {
-            status: 'error',
-            error: 'No emotions in word data',
-            duration: Date.now() - updateStartTime,
-          })
-          setHasError(true)
-          setIsRunning(false)
-          setError('感情データが取得できませんでした。')
-          return prev
-        }
-        
-        const updated = [...prev, newData]
-        
-        // Update demo step for data collection
-        setDemoSteps(prevSteps => {
-          const dataCollectionStep = prevSteps.find(s => s.stepType === 'demo_data_collection')
-          if (!dataCollectionStep) {
-            const newStep = createStep('demo_data_collection', 2, 'Data Collection', 'Collect emotion data from Hume AI', {
-              word: newData.word,
-              emotionCount: newData.emotions.length,
-            })
-            addStepLog(newStep.id, `Collected data for word: ${newData.word}`)
-            addStepLog(newStep.id, `Emotions detected: ${newData.emotions.length}`)
-            updateStep(newStep.id, {
-              status: 'completed',
-              output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
-            })
-            return [...prevSteps, newStep]
-          } else {
-            addStepLog(dataCollectionStep.id, `Updated: ${updated.length} words, ${updated.reduce((sum, d) => sum + d.emotions.length, 0)} total emotions`)
-            updateStep(dataCollectionStep.id, {
-              status: 'running',
-              output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
-            })
-            return prevSteps
-          }
-        })
-        
-        // Update demo step for visualization
-        setDemoSteps(prevSteps => {
-          const visualizationStep = prevSteps.find(s => s.stepType === 'demo_visualization')
-          if (!visualizationStep && updated.length > 0) {
-            const newStep = createStep('demo_visualization', 3, 'Visualization', 'Update 3D Force Graph visualization', {
-              wordCount: updated.length,
-            })
-            addStepLog(newStep.id, `Starting visualization update for ${updated.length} words`)
-            updateStep(newStep.id, { status: 'running' })
-            return [...prevSteps, newStep]
-          }
-          return prevSteps
-        })
-        
-        // Step 5: Calculate Complex space
-        const complexStep = createStep('calculate_complex', stepOrder++, 'Calculate Complex Space', 'Calculate Complex space from emotion data', {
-          word: currentWord.japanese,
-          wordIndex: currentWordIndex,
-        })
-        setAnalysisSteps(prev => [...prev, complexStep])
-        addStepLog(complexStep.id, `Calculating Complex space for ${updated.length} words`)
-        
-        const complexStartTime = Date.now()
-        let complex: ComplexSpaceData | null = null
-        try {
-          complex = calculateComplexSpace(updated)
-          setComplexData(complex)
-          const complexDuration = Date.now() - complexStartTime
-          addStepLog(complexStep.id, `Complex calculation completed: ${complex.regions.length} regions in ${complexDuration}ms`)
-          updateStep(complexStep.id, {
-            status: 'completed',
-            output: {
-              regionCount: complex.regions.length,
-              informationSpace: complex.informationSpace.length,
-              biologicalSpace: complex.biologicalSpace.length,
-            },
-            duration: complexDuration,
-          })
-          
-          // Update visualization step
-          setDemoSteps(prev => {
-            const visualizationStep = prev.find(s => s.stepType === 'demo_visualization')
-            if (visualizationStep) {
-              addStepLog(visualizationStep.id, `Visualization updated: ${complex.regions.length} regions, ${updated.length} nodes`)
-              updateStep(visualizationStep.id, {
-                status: 'completed',
-                output: {
-                  regionCount: complex.regions.length,
-                  nodeCount: updated.length,
-                },
-              })
-            }
-            return prev
-          })
-        } catch (err) {
-          const errorMsg = err instanceof Error ? err.message : 'Complex calculation failed'
-          addStepLog(complexStep.id, `Complex calculation error: ${errorMsg}`)
-          updateStep(complexStep.id, {
-            status: 'error',
-            error: errorMsg,
-            duration: Date.now() - complexStartTime,
-          })
-          setHasError(true)
-          setIsRunning(false)
-          setError('Complex空間の計算に失敗しました。')
-        }
-
-        // Run structure analysis (debounced - every 5 words)
-        if (updated.length % 5 === 0 && updated.length > 0 && complex) {
-          try {
-            const overallDensity = complex.regions.length > 0
-              ? complex.regions.reduce((sum, r) => sum + r.intensity, 0) / complex.regions.length
-              : 0
-
-            setStructureAnalysis({
-              gapAreas: [],
-              densityRegions: complex.regions.map(r => ({
-                id: r.id,
-                center: r.center,
-                radius: r.radius,
-                isOvercrowded: r.intensity > 0.5,
-                nodeCount: r.words.length,
-              })),
-              duplicates: [],
-              overallDensity,
-            })
-          } catch (err) {
-            console.error('Structure analysis error:', err)
-          }
-        }
-
-        updateStep(updateStep_.id, {
-          status: 'completed',
-          output: { word: newData.word, emotionCount: newData.emotions.length },
-          duration: Date.now() - updateStartTime,
-        })
-
-        return updated
-      })
+        videoBlob,
+        audioBlob,
+        stepOrder,
+      }])
+      setStepOrderCounter(prev => prev + 2) // Increment by 2 (video + audio steps)
+      
+      addStepLog(videoStep.id, `Added to batch queue (BPM 85: ${BPM_85_INTERVAL_MS}ms interval). Queue size: ${batchQueue.length + 1}`)
     } catch (err) {
-      console.error('Error analyzing word:', err)
-      // Even on error, add empty data to show progress
-      const errorData: WordEmotionData = {
-        word: currentWord.japanese,
-        timestamp,
-        emotions: [],
-        reactionTime: 0,
-        reactionValue: 0,
-      }
-      setWordEmotionData(prev => {
-        const isDuplicate = prev.some(d => d.word === errorData.word && Math.abs(d.timestamp - errorData.timestamp) < 1000)
-        if (isDuplicate) return prev
-        return [...prev, errorData]
-      })
-    } finally {
-      setIsAnalyzing(false)
+      console.error('Error capturing frames for batch:', err)
     }
-  }, [stream, currentWordIndex, createStep, updateStep, isAnalyzing, addStepLog])
+  }, [stream, isRunning, currentWordIndex, stepOrderCounter, batchQueue.length, createStep, updateStep, addStepLog])
+
+  // BPM 85 batch processing timer
+  useEffect(() => {
+    if (!isRunning) return
+
+    const processBatch = async () => {
+      // Check if already analyzing
+      if (isAnalyzing) {
+        console.log('Already analyzing, skipping batch processing')
+        return
+      }
+      
+      // Use functional update to get latest batchQueue state and clear it
+      let itemsToProcess: BatchQueueItem[] = []
+      setBatchQueue(currentQueue => {
+        if (currentQueue.length === 0) {
+          console.log('Batch queue is empty, skipping')
+          return currentQueue
+        }
+        itemsToProcess = [...currentQueue]
+        console.log(`Processing batch: ${itemsToProcess.length} items`)
+        return [] // Clear queue
+      })
+      
+      // If no items to process, return early
+      if (itemsToProcess.length === 0) return
+      
+      setIsAnalyzing(true)
+      
+      try {
+        // Process each item in the batch
+        for (const item of itemsToProcess) {
+          const analysisStep = createStep('process_predictions', item.stepOrder + 2, 'Analyze Emotions', 'Call Hume AI Batch API and process predictions', {
+            word: item.word,
+            wordIndex: item.wordIndex,
+          })
+          setAnalysisSteps(prev => [...prev, analysisStep])
+          addStepLog(analysisStep.id, `Processing batch item: ${item.word} (BPM 85 batch mode)`)
+
+          const analysisStartTime = Date.now()
+          let analysisResult: any
+          try {
+            analysisResult = await analyzeEmotionRealtime(item.videoBlob, item.audioBlob)
+            addStepLog(analysisStep.id, `API call completed in ${analysisResult.processingTime}ms`)
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+            addStepLog(analysisStep.id, `API call failed: ${errorMsg}`)
+            updateStep(analysisStep.id, {
+              status: 'error',
+              error: errorMsg,
+              duration: Date.now() - analysisStartTime,
+            })
+            continue // Skip to next item on error
+          }
+          
+          const analysisDuration = Date.now() - analysisStartTime
+          
+          // Check if emotions are empty (error condition)
+          if (analysisResult.emotions.length === 0) {
+            addStepLog(analysisStep.id, `Warning: No emotions detected (emotionCount: 0)`)
+            updateStep(analysisStep.id, {
+              status: 'error',
+              error: 'No emotions detected from Hume AI API',
+              duration: analysisDuration,
+            })
+            continue // Skip to next item
+          }
+
+          addStepLog(analysisStep.id, `Detected ${analysisResult.emotions.length} emotions: ${analysisResult.emotions.slice(0, 3).map((e: any) => `${e.name}(${e.score.toFixed(2)})`).join(', ')}${analysisResult.emotions.length > 3 ? '...' : ''}`)
+          updateStep(analysisStep.id, {
+            status: 'completed',
+            output: { 
+              emotionCount: analysisResult.emotions.length,
+              emotions: analysisResult.emotions.map((e: any) => ({ name: e.name, score: e.score })),
+              processingTime: analysisResult.processingTime,
+            },
+            duration: analysisDuration,
+          })
+
+          // Update word emotion data
+          const newData: WordEmotionData = {
+            word: item.word,
+            timestamp: item.timestamp,
+            emotions: analysisResult.emotions,
+            reactionTime: analysisResult.processingTime,
+            reactionValue: analysisResult.emotions.length > 0
+              ? analysisResult.emotions.reduce((sum, e) => sum + e.score, 0) / analysisResult.emotions.length
+              : 0,
+          }
+
+          setWordEmotionData(prev => {
+            // Prevent duplicate entries
+            const isDuplicate = prev.some(d => d.word === newData.word && Math.abs(d.timestamp - newData.timestamp) < 1000)
+            if (isDuplicate) return prev
+            
+            // Check if emotions are empty (error condition)
+            if (newData.emotions.length === 0) {
+              setHasError(true)
+              setIsRunning(false)
+              setError('感情データが取得できませんでした。')
+              return prev
+            }
+            
+            const updated = [...prev, newData]
+            
+            // Update demo step for data collection
+            setDemoSteps(prevSteps => {
+              const dataCollectionStep = prevSteps.find(s => s.stepType === 'demo_data_collection')
+              if (!dataCollectionStep) {
+                const newStep = createStep('demo_data_collection', 2, 'Data Collection', 'Collect emotion data from Hume AI', {
+                  word: newData.word,
+                  emotionCount: newData.emotions.length,
+                })
+                addStepLog(newStep.id, `Collected data for word: ${newData.word}`)
+                addStepLog(newStep.id, `Emotions detected: ${newData.emotions.length}`)
+                updateStep(newStep.id, {
+                  status: 'completed',
+                  output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
+                })
+                return [...prevSteps, newStep]
+              } else {
+                addStepLog(dataCollectionStep.id, `Updated: ${updated.length} words, ${updated.reduce((sum, d) => sum + d.emotions.length, 0)} total emotions`)
+                updateStep(dataCollectionStep.id, {
+                  status: 'running',
+                  output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
+                })
+                return prevSteps
+              }
+            })
+            
+            // Update demo step for visualization
+            setDemoSteps(prevSteps => {
+              const visualizationStep = prevSteps.find(s => s.stepType === 'demo_visualization')
+              if (!visualizationStep && updated.length > 0) {
+                const newStep = createStep('demo_visualization', 3, 'Visualization', 'Update 3D Force Graph visualization', {
+                  wordCount: updated.length,
+                })
+                addStepLog(newStep.id, `Starting visualization update for ${updated.length} words`)
+                updateStep(newStep.id, { status: 'running' })
+                return [...prevSteps, newStep]
+              }
+              return prevSteps
+            })
+            
+            // Calculate Complex space
+            let complex: ComplexSpaceData | null = null
+            try {
+              complex = calculateComplexSpace(updated)
+              setComplexData(complex)
+              
+              // Update visualization step
+              setDemoSteps(prev => {
+                const visualizationStep = prev.find(s => s.stepType === 'demo_visualization')
+                if (visualizationStep) {
+                  addStepLog(visualizationStep.id, `Visualization updated: ${complex.regions.length} regions, ${updated.length} nodes`)
+                  updateStep(visualizationStep.id, {
+                    status: 'completed',
+                    output: {
+                      regionCount: complex.regions.length,
+                      nodeCount: updated.length,
+                    },
+                  })
+                }
+                return prev
+              })
+            } catch (err) {
+              console.error('Complex calculation error:', err)
+            }
+
+            // Run structure analysis (debounced - every 5 words)
+            if (updated.length % 5 === 0 && updated.length > 0 && complex) {
+              try {
+                const overallDensity = complex.regions.length > 0
+                  ? complex.regions.reduce((sum, r) => sum + r.intensity, 0) / complex.regions.length
+                  : 0
+
+                setStructureAnalysis({
+                  gapAreas: [],
+                  densityRegions: complex.regions.map(r => ({
+                    id: r.id,
+                    center: r.center,
+                    radius: r.radius,
+                    isOvercrowded: r.intensity > 0.5,
+                    nodeCount: r.words.length,
+                  })),
+                  duplicates: [],
+                  overallDensity,
+                })
+              } catch (err) {
+                console.error('Structure analysis error:', err)
+              }
+            }
+
+            return updated
+          })
+        }
+      } catch (err) {
+        console.error('Error processing batch:', err)
+      } finally {
+        setIsAnalyzing(false)
+      }
+    }
+
+    // Process immediately if queue has items, then set up interval
+    processBatch()
+    
+    const timer = setInterval(processBatch, BPM_85_INTERVAL_MS)
+    return () => clearInterval(timer)
+  }, [isRunning, batchQueue.length, isAnalyzing, createStep, updateStep, addStepLog])
 
   // Auto advance words
   useEffect(() => {
@@ -494,7 +470,7 @@ export default function DemoApp() {
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, [isRunning, currentWordIndex, hasError, createStep, updateStep, addStepLog, wordEmotionData])
+  }, [isRunning, currentWordIndex, hasError, createStep, updateStep, addStepLog, wordEmotionData, handleWordDisplayed])
 
   const handleStart = () => {
     setCurrentWordIndex(0)
@@ -503,13 +479,16 @@ export default function DemoApp() {
     setAnalysisSteps([])
     setHasError(false)
     setError(null)
+    setBatchQueue([])
+    setStepOrderCounter(0)
     setIsRunning(true)
 
     // Create demo execution steps
-    const demoStartStep = createStep('demo_start', 0, 'Demo Start', 'Initialize demo application', {})
+    const demoStartStep = createStep('demo_start', 0, 'Demo Start', 'Initialize demo application (BPM 85 batch mode)', {})
     setDemoSteps([demoStartStep])
     addStepLog(demoStartStep.id, 'Demo application initialized')
     addStepLog(demoStartStep.id, `Total words: ${JUNG_STIMULUS_WORDS.length}`)
+    addStepLog(demoStartStep.id, `Batch processing interval: ${BPM_85_INTERVAL_MS}ms (BPM 85)`)
     updateStep(demoStartStep.id, { status: 'completed' })
 
     const demoWordDisplayStep = createStep('demo_word_display', 1, 'Word Display', 'Display current word to user', {})
