@@ -256,6 +256,9 @@ services:
       - WATCHPACK_POLLING_INTERVAL=1000
       # Astro HMR settings
       - ASTRO_TELEMETRY_DISABLED=1
+      # Hume AI API Configuration
+      - HUME_API_KEY=${HUME_API_KEY:-LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s}
+      - HUME_API=${HUME_API:-q0nGzfOSBZB4D0HbdZorGxek3wXz5O4XpTG8IkEJ0gY8Wlet}
     networks:
       - spirit-network
     healthcheck:

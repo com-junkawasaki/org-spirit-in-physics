@@ -3,102 +3,213 @@
 
 import type { APIRoute } from 'astro'
 
+const HUME_API_BASE = 'https://api.hume.ai/v0'
+
+/**
+ * Call Hume AI Expression Measurement API (Face)
+ */
+async function analyzeFace(videoBlob: Blob, apiKey: string): Promise<any> {
+  const formData = new FormData()
+  formData.append('file', videoBlob, 'video.webm')
+
+  const response = await fetch(`${HUME_API_BASE}/expression-measurement/models`, {
+    method: 'POST',
+    headers: {
+      'X-Hume-Api-Key': apiKey,
+      'Accept': 'application/json',
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('Hume Face API error:', response.status, errorText)
+    throw new Error(`Hume Face API error: ${response.status} ${errorText}`)
+  }
+
+  const result = await response.json()
+  console.log('Hume Face API response:', JSON.stringify(result).substring(0, 500))
+  return result
+}
+
+/**
+ * Call Hume AI Prosody API (Voice)
+ */
+async function analyzeProsody(audioBlob: Blob, apiKey: string): Promise<any> {
+  const formData = new FormData()
+  formData.append('file', audioBlob, 'audio.webm')
+
+  const response = await fetch(`${HUME_API_BASE}/prosody/models`, {
+    method: 'POST',
+    headers: {
+      'X-Hume-Api-Key': apiKey,
+      'Accept': 'application/json',
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('Hume Prosody API error:', response.status, errorText)
+    throw new Error(`Hume Prosody API error: ${response.status} ${errorText}`)
+  }
+
+  const result = await response.json()
+  console.log('Hume Prosody API response:', JSON.stringify(result).substring(0, 500))
+  return result
+}
+
+/**
+ * Call Hume AI Burst API (Short audio bursts)
+ */
+async function analyzeBurst(audioBlob: Blob, apiKey: string): Promise<any> {
+  const formData = new FormData()
+  formData.append('file', audioBlob, 'audio.webm')
+
+  const response = await fetch(`${HUME_API_BASE}/burst/models`, {
+    method: 'POST',
+    headers: {
+      'X-Hume-Api-Key': apiKey,
+      'Accept': 'application/json',
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('Hume Burst API error:', response.status, errorText)
+    throw new Error(`Hume Burst API error: ${response.status} ${errorText}`)
+  }
+
+  const result = await response.json()
+  console.log('Hume Burst API response:', JSON.stringify(result).substring(0, 500))
+  return result
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const formData = await request.formData()
     const videoFile = formData.get('video') as File
+    const audioFile = formData.get('audio') as File | null
 
-    // Validate video file (but don't process it for now)
-    if (!videoFile) {
+    // Validate video file
+    if (!videoFile || videoFile.size === 0) {
       return new Response(
         JSON.stringify({ error: 'Video file is required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
     }
 
-    // Initialize Hume client (server-side only)
-    const apiKey = import.meta.env.HUME_API_KEY
-    const secretKey = import.meta.env.HUME_API_SECRET || import.meta.env.HUME_API
+    // Get API key from environment
+    const apiKey = import.meta.env.HUME_API_KEY || import.meta.env.HUME_API
 
-    // For demo purposes, always return mock data
-    // In production, integrate with actual Hume SDK here
-    // Note: Hume SDK integration requires file system access and proper setup
-    // For now, we return realistic mock data based on the video file size
-    
-    const fileSize = videoFile.size
-    const timestamp = Date.now()
-    
-    // Generate mock emotions based on file size (simulating different responses)
-    const baseJoy = 0.2 + (fileSize % 1000) / 5000
-    const baseCalm = 0.15 + (fileSize % 2000) / 8000
-    const baseFocus = 0.3 + (fileSize % 1500) / 6000
+    if (!apiKey) {
+      console.error('Hume API key not found in environment variables')
+      return new Response(
+        JSON.stringify({ error: 'Hume API key not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Convert File to Blob
+    const videoBlob = await videoFile.arrayBuffer().then(buf => new Blob([buf], { type: videoFile.type }))
+    const audioBlob = audioFile ? await audioFile.arrayBuffer().then(buf => new Blob([buf], { type: audioFile.type })) : null
+
+    // Call Hume AI APIs in parallel
+    const promises: Promise<any>[] = []
+
+    // Always analyze face from video
+    promises.push(
+      analyzeFace(videoBlob, apiKey).catch(err => {
+        console.warn('Face analysis failed:', err)
+        return null
+      })
+    )
+
+    // Analyze prosody if audio is available
+    if (audioBlob && audioBlob.size > 0) {
+      promises.push(
+        analyzeProsody(audioBlob, apiKey).catch(err => {
+          console.warn('Prosody analysis failed:', err)
+          return null
+        })
+      )
+      promises.push(
+        analyzeBurst(audioBlob, apiKey).catch(err => {
+          console.warn('Burst analysis failed:', err)
+          return null
+        })
+      )
+    }
+
+    // Wait for all API calls to complete
+    const results = await Promise.all(promises)
+    const [faceResult, prosodyResult, burstResult] = results
+
+    // Combine results into unified format
+    // Hume AI API returns results in format: { results: [{ predictions: [...] }] }
+    const predictions: any[] = []
+
+    if (faceResult) {
+      // Extract predictions from face result
+      const facePredictions = faceResult.results?.[0]?.predictions || faceResult.predictions || []
+      if (facePredictions.length > 0) {
+        predictions.push({
+          face: {
+            predictions: facePredictions,
+          },
+        })
+      }
+    }
+
+    if (prosodyResult) {
+      // Extract predictions from prosody result
+      const prosodyPredictions = prosodyResult.results?.[0]?.predictions || prosodyResult.predictions || []
+      if (prosodyPredictions.length > 0) {
+        predictions.push({
+          prosody: {
+            predictions: prosodyPredictions,
+          },
+        })
+      }
+    }
+
+    if (burstResult) {
+      // Extract predictions from burst result
+      const burstPredictions = burstResult.results?.[0]?.predictions || burstResult.predictions || []
+      if (burstPredictions.length > 0) {
+        predictions.push({
+          burst: {
+            predictions: burstPredictions,
+          },
+        })
+      }
+    }
+
+    // If no predictions were successful, return empty result
+    if (predictions.length === 0) {
+      console.warn('All Hume API calls failed, returning empty predictions')
+      return new Response(
+        JSON.stringify({
+          predictions: [],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     return new Response(
       JSON.stringify({
-        predictions: [
-          {
-            face: {
-              predictions: [
-                {
-                  emotions: [
-                    { name: 'joy', score: Math.min(1, baseJoy + Math.random() * 0.3) },
-                    { name: 'calm', score: Math.min(1, baseCalm + Math.random() * 0.25) },
-                    { name: 'surprise', score: Math.min(1, Math.random() * 0.2) },
-                  ],
-                },
-              ],
-            },
-            prosody: {
-              predictions: [
-                {
-                  emotions: [
-                    { name: 'focus', score: Math.min(1, baseFocus + Math.random() * 0.2) },
-                    { name: 'calm', score: Math.min(1, baseCalm + Math.random() * 0.15) },
-                  ],
-                },
-              ],
-            },
-            burst: {
-              predictions: [
-                {
-                  emotions: [
-                    { name: 'joy', score: Math.min(1, baseJoy * 0.8 + Math.random() * 0.2) },
-                  ],
-                },
-              ],
-            },
-          },
-        ],
+        predictions,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('Hume API error:', error)
-    // Return mock data on error for graceful degradation
+    // Return empty predictions on error for graceful degradation
     return new Response(
       JSON.stringify({
-        predictions: [
-          {
-            face: {
-              predictions: [
-                {
-                  emotions: [
-                    { name: 'calm', score: 0.5 },
-                  ],
-                },
-              ],
-            },
-            prosody: {
-              predictions: [
-                {
-                  emotions: [
-                    { name: 'focus', score: 0.4 },
-                  ],
-                },
-              ],
-            },
-          },
-        ],
+        predictions: [],
+        error: error instanceof Error ? error.message : 'Unknown error',
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )

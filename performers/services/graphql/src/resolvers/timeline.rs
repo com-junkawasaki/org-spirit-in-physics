@@ -5,7 +5,7 @@ use async_graphql::*;
 use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
 use std::collections::HashMap;
-use crate::types::{TimelinePoint, Session, EmotionData, WordAggregate, EmotionVector, WordStatistics};
+use crate::types::{TimelinePoint, Session, EmotionData, WordAggregate, EmotionVector, WordStatistics, PhysiologicalData};
 
 #[derive(Default)]
 pub struct TimelineQuery;
@@ -253,7 +253,7 @@ impl TimelineQuery {
                 let reaction_time: Option<f64> = row.try_get("reaction_time").ok();
                 let has_response: bool = row.try_get("has_response").ok().unwrap_or(false);
                 let emotions_json: serde_json::Value = row.try_get("emotions").ok().unwrap_or_else(|| serde_json::json!([]));
-                let physiological_json: serde_json::Value = row.try_get("physiological").ok().unwrap_or_else(|| serde_json::json!({}));
+                let physiological_json: serde_json::Value = row.try_get("physiological").ok().unwrap_or_else(|| serde_json::json!([]));
                 let metadata_json: serde_json::Value = row.try_get("metadata").ok().unwrap_or_else(|| serde_json::json!({}));
 
                 // Parse emotions array (already aggregated as JSON array)
@@ -270,6 +270,19 @@ impl TimelineQuery {
                     Vec::new()
                 };
 
+                // Parse physiological data array
+                let physiological: Vec<PhysiologicalData> = if let Some(phys_array) = physiological_json.as_array() {
+                    phys_array.iter().filter_map(|p| {
+                        Some(PhysiologicalData {
+                            timestamp: p.get("timestamp").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                            value: p.get("value").and_then(|v| v.as_f64()),
+                            metadata: p.get("metadata").cloned(),
+                        })
+                    }).collect()
+                } else {
+                    Vec::new()
+                };
+
                 Some(TimelinePoint {
                     time: time.to_rfc3339(),
                     participant_id: ID::from(participant_id_val.to_string()),
@@ -280,7 +293,7 @@ impl TimelineQuery {
                     reaction_time,
                     has_response,
                     emotions,
-                    physiological: physiological_json,
+                    physiological,
                     metadata: metadata_json,
                 })
             }).collect()

@@ -205,14 +205,14 @@ impl ParticipantMutation {
         .fetch_one(pool)
         .await?;
 
-        let id: Uuid = row.try_get("id").map_err(|e| Error::new(format!("Failed to get id: {}", e)))?;
-        let participant_id: Uuid = row.try_get("participant_id").map_err(|e| Error::new(format!("Failed to get participant_id: {}", e)))?;
+        let id: Uuid = row.try_get("id").map_err(|e| Error::from(format!("Failed to get id: {}", e)))?;
+        let participant_id: Uuid = row.try_get("participant_id").map_err(|e| Error::from(format!("Failed to get participant_id: {}", e)))?;
         let session_index: Option<i32> = row.try_get("session_index").ok();
-        let start_ts: i64 = row.try_get("start_ts").map_err(|e| Error::new(format!("Failed to get start_ts: {}", e)))?;
+        let start_ts: i64 = row.try_get("start_ts").map_err(|e| Error::from(format!("Failed to get start_ts: {}", e)))?;
         let end_ts: Option<i64> = row.try_get("end_ts").ok();
         let events_json: serde_json::Value = row.try_get("events").ok().unwrap_or_else(|| serde_json::json!([]));
-        let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").map_err(|e| Error::new(format!("Failed to get created_at: {}", e)))?;
-        let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").map_err(|e| Error::new(format!("Failed to get updated_at: {}", e)))?;
+        let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").map_err(|e| Error::from(format!("Failed to get created_at: {}", e)))?;
+        let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").map_err(|e| Error::from(format!("Failed to get updated_at: {}", e)))?;
 
         Ok(Session {
             id: ID::from(id.to_string()),

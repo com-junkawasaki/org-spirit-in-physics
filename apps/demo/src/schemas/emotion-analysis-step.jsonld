@@ -1,0 +1,86 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://example.dev/emotion-analysis#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "schema": "https://schema.org/",
+    
+    "name": "schema:name",
+    "description": "schema:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "status": "ex:status",
+    "step": "ex:step",
+    "stepType": "ex:stepType",
+    "stepOrder": "ex:stepOrder",
+    "input": "ex:input",
+    "output": "ex:output",
+    "error": "ex:error",
+    "duration": "ex:duration",
+    "metadata": "ex:metadata",
+    
+    "EmotionAnalysisStep": "ex:EmotionAnalysisStep",
+    "StepType": {
+      "@id": "ex:StepType",
+      "@type": "@vocab"
+    }
+  },
+  
+  "@id": "https://example.dev/schemas/emotion-analysis-step",
+  "@type": "schema:DataCatalog",
+  "name": "Emotion Analysis Step Schema",
+  "description": "JSON-LD schema for emotion analysis processing steps",
+  
+  "stepTypes": {
+    "capture_video": {
+      "@id": "ex:StepType/capture_video",
+      "name": "Capture Video",
+      "description": "Capture video frame from MediaStream"
+    },
+    "capture_audio": {
+      "@id": "ex:StepType/capture_audio",
+      "name": "Capture Audio",
+      "description": "Capture audio frame from MediaStream"
+    },
+    "hume_api_face": {
+      "@id": "ex:StepType/hume_api_face",
+      "name": "Hume AI Face Analysis",
+      "description": "Call Hume AI Expression Measurement API"
+    },
+    "hume_api_prosody": {
+      "@id": "ex:StepType/hume_api_prosody",
+      "name": "Hume AI Prosody Analysis",
+      "description": "Call Hume AI Prosody API"
+    },
+    "hume_api_burst": {
+      "@id": "ex:StepType/hume_api_burst",
+      "name": "Hume AI Burst Analysis",
+      "description": "Call Hume AI Burst API"
+    },
+    "process_predictions": {
+      "@id": "ex:StepType/process_predictions",
+      "name": "Process Predictions",
+      "description": "Process and normalize Hume AI predictions"
+    },
+    "normalize_emotions": {
+      "@id": "ex:StepType/normalize_emotions",
+      "name": "Normalize Emotions",
+      "description": "Normalize emotion names to EmotionKey"
+    },
+    "update_data": {
+      "@id": "ex:StepType/update_data",
+      "name": "Update Word Emotion Data",
+      "description": "Update word emotion data state"
+    },
+    "calculate_complex": {
+      "@id": "ex:StepType/calculate_complex",
+      "name": "Calculate Complex Space",
+      "description": "Calculate Complex space from emotion data"
+    }
+  }
+}
+

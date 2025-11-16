@@ -61,15 +61,20 @@ export async function analyzeEmotionRealtime(
 
 /**
  * Process Hume AI predictions into normalized emotion data
+ * Handles both direct predictions format and results format from API
  */
 function processHumePredictions(predictions: any[]): EmotionData[] {
   const emotions: EmotionData[] = []
   const emotionMap = new Map<string, { score: number; fileType?: string }>()
 
+  console.log('Processing Hume predictions:', JSON.stringify(predictions).substring(0, 500))
+
   for (const prediction of predictions) {
-    // Handle face predictions
-    if (prediction.face?.predictions) {
-      for (const facePred of prediction.face.predictions) {
+    // Handle face predictions - support both formats
+    const faceData = prediction.face || (prediction.results?.[0] && prediction.results[0].face)
+    if (faceData) {
+      const facePredictions = faceData.predictions || faceData.results?.[0]?.predictions || []
+      for (const facePred of facePredictions) {
         if (facePred.emotions) {
           for (const emotion of facePred.emotions) {
             const normalized = normalizeEmotionName(emotion.name)
@@ -86,9 +91,11 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
       }
     }
 
-    // Handle prosody predictions
-    if (prediction.prosody?.predictions) {
-      for (const prosodyPred of prediction.prosody.predictions) {
+    // Handle prosody predictions - support both formats
+    const prosodyData = prediction.prosody || (prediction.results?.[0] && prediction.results[0].prosody)
+    if (prosodyData) {
+      const prosodyPredictions = prosodyData.predictions || prosodyData.results?.[0]?.predictions || []
+      for (const prosodyPred of prosodyPredictions) {
         if (prosodyPred.emotions) {
           for (const emotion of prosodyPred.emotions) {
             const normalized = normalizeEmotionName(emotion.name)
@@ -105,9 +112,11 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
       }
     }
 
-    // Handle burst predictions
-    if (prediction.burst?.predictions) {
-      for (const burstPred of prediction.burst.predictions) {
+    // Handle burst predictions - support both formats
+    const burstData = prediction.burst || (prediction.results?.[0] && prediction.results[0].burst)
+    if (burstData) {
+      const burstPredictions = burstData.predictions || burstData.results?.[0]?.predictions || []
+      for (const burstPred of burstPredictions) {
         if (burstPred.emotions) {
           for (const emotion of burstPred.emotions) {
             const normalized = normalizeEmotionName(emotion.name)
@@ -123,17 +132,54 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
         }
       }
     }
+
+    // Handle direct results format (if predictions array contains results directly)
+    if (prediction.results && Array.isArray(prediction.results)) {
+      for (const result of prediction.results) {
+        if (result.predictions && Array.isArray(result.predictions)) {
+          for (const pred of result.predictions) {
+            if (pred.emotions && Array.isArray(pred.emotions)) {
+              for (const emotion of pred.emotions) {
+                const normalized = normalizeEmotionName(emotion.name)
+                if (normalized) {
+                  // Determine file type from prediction structure
+                  const fileType = prediction.face ? 'face' : prediction.prosody ? 'prosody' : prediction.burst ? 'burst' : 'language'
+                  const key = `${normalized}_${fileType}`
+                  const current = emotionMap.get(key) || { score: 0, fileType }
+                  emotionMap.set(key, {
+                    score: Math.max(current.score, emotion.score || 0),
+                    fileType: fileType as 'face' | 'prosody' | 'burst' | 'language',
+                  })
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
-  // Convert map to array
+  // Convert map to array - aggregate scores for same emotion from different sources
+  const aggregatedEmotions = new Map<string, { score: number; fileTypes: Set<string> }>()
   for (const [key, value] of emotionMap.entries()) {
     const emotionName = key.split('_')[0]
-    emotions.push({
-      name: emotionName,
-      score: value.score,
-      fileType: value.fileType as 'face' | 'prosody' | 'burst' | 'language',
+    const current = aggregatedEmotions.get(emotionName) || { score: 0, fileTypes: new Set<string>() }
+    aggregatedEmotions.set(emotionName, {
+      score: Math.max(current.score, value.score),
+      fileTypes: current.fileTypes.add(value.fileType || 'language'),
     })
   }
+
+  // Convert to EmotionData array
+  for (const [emotionName, data] of aggregatedEmotions.entries()) {
+    emotions.push({
+      name: emotionName,
+      score: data.score,
+      fileType: Array.from(data.fileTypes)[0] as 'face' | 'prosody' | 'burst' | 'language',
+    })
+  }
+
+  console.log('Processed emotions:', emotions.map(e => `${e.name}:${e.score.toFixed(3)}`).join(', '))
 
   // Sort by score descending
   return emotions.sort((a, b) => b.score - a.score)
