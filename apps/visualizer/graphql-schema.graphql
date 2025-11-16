@@ -110,7 +110,7 @@ type TimelinePoint {
 	reactionTime: Float
 	hasResponse: Boolean!
 	emotions: [EmotionData!]!
-  physiological: [PhysiologicalData!]!
+  physiological: JSON!
 	metadata: JSON!
 }
 

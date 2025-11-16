@@ -62,13 +62,8 @@ query GetTimeline(
       name
       score
       fileType
-      color
     }
-    physiological {
-      measurementType
-      value
-      timestamp
-    }
+    physiological
     metadata
   }
 }
