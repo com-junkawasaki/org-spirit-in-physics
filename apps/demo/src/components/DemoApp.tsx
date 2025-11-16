@@ -3,9 +3,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import WordDisplay from './WordDisplay'
-// import ComplexForce3D from './ComplexForce3D'
-// import ComplexVisualization from './ComplexVisualization'
-// import StructureAnalysis from './StructureAnalysis'
+import ComplexForce3D from './ComplexForce3D'
+import ComplexVisualization from './ComplexVisualization'
+import StructureAnalysis from './StructureAnalysis'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
 import { analyzeEmotionRealtime, captureVideoFrame, captureAudioFrame } from '../lib/hume-realtime'
 import { calculateComplexSpace } from '../lib/complex-calculator'
@@ -25,18 +25,23 @@ export default function DemoApp() {
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isRequestingMedia, setIsRequestingMedia] = useState(true)
 
   // Request media access
   useEffect(() => {
     const requestMedia = async () => {
+      setIsRequestingMedia(true)
+      setError(null)
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user' },
           audio: true,
         })
         setStream(mediaStream)
+        setIsRequestingMedia(false)
       } catch (err) {
         setError('カメラ/マイクへのアクセスが必要です')
+        setIsRequestingMedia(false)
         console.error('Media access error:', err)
       }
     }
@@ -155,37 +160,57 @@ export default function DemoApp() {
   const currentWord = JUNG_STIMULUS_WORDS[currentWordIndex]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+    <div className="bg-gray-50 dark:bg-gray-900 overflow-hidden flex flex-col" style={{ height: '100vh', minHeight: '100vh' }}>
+      <div className="flex-1 overflow-y-auto p-2 md:p-3" style={{ minHeight: 0 }}>
+        <div className="max-w-full mx-auto space-y-2 md:space-y-3">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 md:p-3">
+          <h1 className="text-lg md:text-xl font-bold mb-1 text-gray-900 dark:text-white">
             リアルタイムComplex可視化デモ
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
             Jung単語連合テスト × Hume AI感情分析 × 3D Force Graph
           </p>
         </div>
 
         {/* Controls */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <div className="flex items-center gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 md:p-3">
+          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
             <button
               onClick={handleStart}
-              disabled={isRunning || !stream}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed touch-target"
+              disabled={isRunning || !stream || isRequestingMedia}
+              className="px-4 py-2 md:px-6 md:py-3 bg-blue-600 text-white rounded-lg text-sm md:text-base font-medium disabled:bg-gray-400 disabled:cursor-not-allowed touch-target"
             >
               {isRunning ? '実行中...' : '開始'}
             </button>
             <button
               onClick={handleStop}
               disabled={!isRunning}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed touch-target"
+              className="px-4 py-2 md:px-6 md:py-3 bg-red-600 text-white rounded-lg text-sm md:text-base font-medium disabled:bg-gray-400 disabled:cursor-not-allowed touch-target"
             >
               停止
             </button>
+            {isRequestingMedia && (
+              <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <span>カメラ・マイクへのアクセスを取得中...</span>
+              </div>
+            )}
+            {!isRequestingMedia && stream && (
+              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>カメラ・マイクが利用可能です</span>
+              </div>
+            )}
             {error && (
-              <div className="text-red-600 text-sm">{error}</div>
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{error}</span>
+              </div>
             )}
             {isAnalyzing && (
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -210,94 +235,75 @@ export default function DemoApp() {
 
         {/* Visualizations Grid */}
         {wordEmotionData.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
             {/* 3D Force Graph */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 md:p-3">
+              <h2 className="text-sm md:text-base font-semibold mb-2 text-gray-900 dark:text-white">
                 3D Force Graph
               </h2>
               <div className="w-full overflow-auto">
-                {/* Temporarily disabled until import issues are resolved */}
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  3D Force Graph visualization will be available here
-                </div>
-                {/* <ComplexForce3D
+                <ComplexForce3D
                   wordEmotionData={wordEmotionData}
-                  width={Math.min(800, typeof window !== 'undefined' ? window.innerWidth - 64 : 800)}
-                  height={600}
-                /> */}
+                  width={typeof window !== 'undefined' ? Math.min(400, window.innerWidth / 2 - 32) : 400}
+                  height={typeof window !== 'undefined' ? Math.min(300, (window.innerHeight - 400) / 2) : 300}
+                />
               </div>
             </div>
 
             {/* Complex Visualization */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-              {/* Temporarily disabled until import issues are resolved */}
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                Complex Visualization will be available here
-                {complexData && (
-                  <div className="mt-4 text-sm">
-                    Complex regions detected: {complexData.regions.length}
-                  </div>
-                )}
-              </div>
-              {/* <ComplexVisualization
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 md:p-3">
+              <ComplexVisualization
                 complexData={complexData}
-                width={Math.min(800, typeof window !== 'undefined' ? window.innerWidth - 64 : 800)}
-                height={600}
-              /> */}
+                width={typeof window !== 'undefined' ? Math.min(400, window.innerWidth / 2 - 32) : 400}
+                height={typeof window !== 'undefined' ? Math.min(300, (window.innerHeight - 400) / 2) : 300}
+              />
             </div>
           </div>
         )}
 
         {/* Structure Analysis */}
         {wordEmotionData.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-            {/* Temporarily disabled until import issues are resolved */}
-            <div className="p-4">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                構造分析
-              </h3>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                全体密度: {(structureAnalysis.overallDensity * 100).toFixed(1)}%
-              </div>
-            </div>
-            {/* <StructureAnalysis
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 md:p-3">
+            <h3 className="text-sm md:text-base font-semibold mb-2 text-gray-900 dark:text-white">
+              構造分析
+            </h3>
+            <StructureAnalysis
               gapAreas={structureAnalysis.gapAreas}
               densityRegions={structureAnalysis.densityRegions}
               duplicates={structureAnalysis.duplicates}
               overallDensity={structureAnalysis.overallDensity}
-            /> */}
+            />
           </div>
         )}
 
         {/* Data Summary */}
         {wordEmotionData.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 md:p-3">
+            <h2 className="text-sm md:text-base font-semibold mb-2 text-gray-900 dark:text-white">
               データサマリー
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">処理済み単語</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">処理済み単語</div>
+                <div className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                   {wordEmotionData.length}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">検出感情数</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">検出感情数</div>
+                <div className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                   {wordEmotionData.reduce((sum, d) => sum + d.emotions.length, 0)}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Complex領域</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Complex領域</div>
+                <div className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                   {complexData?.regions.length || 0}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">平均反応時間</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400">平均反応時間</div>
+                <div className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                   {wordEmotionData.length > 0
                     ? Math.round(
                         wordEmotionData.reduce((sum, d) => sum + (d.reactionTime || 0), 0) /
@@ -310,33 +316,9 @@ export default function DemoApp() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
-      <style>{`
-        .touch-target {
-          min-height: 44px;
-          min-width: 44px;
-        }
-        @media (max-width: 768px) {
-          /* iPad portrait optimization */
-          .grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-        @media (min-width: 769px) and (max-width: 1024px) {
-          /* iPad landscape optimization */
-          .grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-        }
-        /* Prevent text selection on touch devices */
-        @media (hover: none) {
-          * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-          }
-        }
-      `}</style>
     </div>
   )
 }

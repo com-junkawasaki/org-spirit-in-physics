@@ -3,6 +3,10 @@ name = "graphql-service"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "graphql"
+path = "api/graphql.rs"
+
 [dependencies]
 async-graphql = "6.0"
 async-graphql-poem = "6.0"
@@ -17,6 +21,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde", "clock"] }
-reqwest = { version = "0.11", features = ["json", "multipart"] }
+reqwest = { version = "0.11", features = ["json", "multipart", "rustls-tls"], default-features = false }
 base64 = "0.22"
 vercel_runtime = "1"

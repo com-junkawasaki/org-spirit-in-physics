@@ -74,30 +74,30 @@ export default function WordDisplay({
   }, [word.id, autoAdvance, displayDuration, onWordDisplayed])
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full">
+    <div className="flex flex-col items-center justify-center p-2 md:p-3 bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full">
       {/* Progress indicator */}
-      <div className="mb-6 w-full max-w-2xl">
-        <div className="flex justify-between items-center text-sm md:text-base text-gray-600 dark:text-gray-400 mb-3">
+      <div className="mb-2 md:mb-3 w-full">
+        <div className="flex justify-between items-center text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1 md:mb-2">
           <span className="font-medium">単語 {currentIndex + 1} / {totalWords}</span>
           <span className="font-medium">{Math.min(100, Math.round(((currentIndex + 1) / totalWords) * 100))}%</span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div
-            className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
             style={{ width: `${Math.min(100, ((currentIndex + 1) / totalWords) * 100)}%` }}
           />
         </div>
       </div>
 
       {/* Word display */}
-      <div className="text-center mb-6 w-full">
-        <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold text-gray-900 dark:text-white mb-4 break-words">
+      <div className="text-center mb-2 md:mb-3 w-full">
+        <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3 break-words">
           {word.japanese}
         </h2>
-        <p className="text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-gray-400 mb-2 font-medium">
+        <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-1 font-medium">
           {word.english}
         </p>
-        <p className="text-base md:text-lg text-gray-500 dark:text-gray-500">
+        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-500">
           {word.pronunciation}
         </p>
       </div>

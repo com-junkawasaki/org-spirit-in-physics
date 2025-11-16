@@ -1,14 +1,14 @@
 // Merkle DAG: components.complex_force_3d
 // 3D Force Graph wrapper for Complex visualization
 
-import React, { useMemo, lazy, Suspense } from 'react'
-import type { WordNode, WordLink } from '@spirit-in-physics/visualization-components/src/timeline/types'
+import React, { useMemo, lazy, Suspense, useState, useEffect } from 'react'
+import type { WordNode, WordLink } from '@spirit-in-physics/visualization-components'
 import type { WordEmotionData } from '../types/demo'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
-import { EMOTION_KEYS } from '@spirit-in-physics/visualization-components/src/lib/emotion-normalization'
+import { EMOTION_KEYS } from '@spirit-in-physics/visualization-components'
 
 const Force3DWordGraphTypeGPU = lazy(() => 
-  import('@spirit-in-physics/visualization-components/src/Force3DWordGraphTypeGPU')
+  import('@spirit-in-physics/visualization-components').then(module => ({ default: module.Force3DWordGraphTypeGPU }))
 )
 
 interface ComplexForce3DProps {
@@ -40,6 +40,20 @@ export default function ComplexForce3D({
   minSep = 80,
   sepK = 8000,
 }: ComplexForce3DProps) {
+  const [webGpuAvailable, setWebGpuAvailable] = useState<boolean | null>(null)
+  const [loadError, setLoadError] = useState<Error | null>(null)
+
+  // Check WebGPU availability
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'gpu' in navigator) {
+      // @ts-ignore - WebGPU API
+      navigator.gpu.requestAdapter()
+        .then(() => setWebGpuAvailable(true))
+        .catch(() => setWebGpuAvailable(false))
+    } else {
+      setWebGpuAvailable(false)
+    }
+  }, [])
   const graphData = useMemo(() => {
     if (wordEmotionData.length === 0) {
       return { nodes: [] as WordNode[], links: [] as WordLink[] }
@@ -241,6 +255,25 @@ export default function ComplexForce3D({
     }
   }, [wordEmotionData, shellRadius, restLength, springK])
 
+  // Error boundary component for WebGPU errors
+  const ErrorFallback = ({ error }: { error: Error | null }) => (
+    <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 p-8" style={{ width, height }}>
+      <div className="text-red-600 dark:text-red-400 mb-2">
+        <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+        {webGpuAvailable === false ? 'WebGPUが利用できません' : '3D可視化の読み込みに失敗しました'}
+      </p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-md">
+        {webGpuAvailable === false
+          ? 'お使いのブラウザはWebGPUに対応していません。Chrome 113以降、Edge 113以降、またはSafari 18以降をご使用ください。'
+          : error?.message || '3D Force Graphの初期化中にエラーが発生しました。'}
+      </p>
+    </div>
+  )
+
   if (graphData.nodes.length === 0) {
     return (
       <div className="flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900" style={{ width, height }}>
@@ -249,9 +282,28 @@ export default function ComplexForce3D({
     )
   }
 
+  // Show error if WebGPU is not available
+  if (webGpuAvailable === false) {
+    return <ErrorFallback error={null} />
+  }
+
+  // Show error if load error occurred
+  if (loadError) {
+    return <ErrorFallback error={loadError} />
+  }
+
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      <Suspense fallback={<div className="p-4">Loading 3D visualization...</div>}>
+      <Suspense 
+        fallback={
+          <div className="flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 p-8" style={{ width, height }}>
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-sm text-gray-600 dark:text-gray-400">3D可視化を読み込み中...</p>
+            </div>
+          </div>
+        }
+      >
         <Force3DWordGraphTypeGPU
           nodes={graphData.nodes}
           links={graphData.links}

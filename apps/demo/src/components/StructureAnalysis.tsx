@@ -2,7 +2,7 @@
 // Structure analysis panel component
 
 import React from 'react'
-import type { GapArea, DensityRegion, DuplicateCandidate } from '@spirit-in-physics/visualization-components/src/lib/structure-analysis'
+import type { GapArea, DensityRegion, DuplicateCandidate } from '@spirit-in-physics/visualization-components'
 
 interface StructureAnalysisProps {
   gapAreas: GapArea[]

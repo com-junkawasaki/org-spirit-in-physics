@@ -7,7 +7,7 @@ import react from '@astrojs/react';
 export default defineConfig({
   integrations: [
     tailwind({
-      applyBaseStyles: false,
+      applyBaseStyles: true,
     }),
     react(),
   ],
@@ -29,11 +29,10 @@ export default defineConfig({
     },
     server: {
       // HMR settings for Docker
+      // Note: HMR may not work perfectly in SSR mode with Docker
+      // File changes will still trigger page reloads
       hmr: {
-        protocol: 'ws',
-        host: 'localhost',
-        port: 4322,
-        clientPort: 25271, // External port for HMR
+        clientPort: 25271, // External port for HMR client
       },
       watch: {
         // Use polling for file watching in Docker
