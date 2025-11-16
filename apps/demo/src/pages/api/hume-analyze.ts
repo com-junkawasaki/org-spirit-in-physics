@@ -65,10 +65,21 @@ async function waitForJobCompletion(jobId: string, apiKey: string, maxWaitTime: 
         throw new Error(`Failed to get predictions: ${predictionsResponse.status} ${errorText}`)
       }
 
-      return await predictionsResponse.json()
+      const predictionsData = await predictionsResponse.json()
+      console.log(`Job ${jobId} predictions received:`, JSON.stringify(predictionsData).substring(0, 2000))
+      console.log(`Job ${jobId} predictions structure:`, {
+        type: typeof predictionsData,
+        isArray: Array.isArray(predictionsData),
+        keys: typeof predictionsData === 'object' && predictionsData !== null ? Object.keys(predictionsData) : [],
+        hasResults: !!(predictionsData as any)?.results,
+        resultsType: Array.isArray((predictionsData as any)?.results) ? 'array' : typeof (predictionsData as any)?.results,
+        resultsLength: Array.isArray((predictionsData as any)?.results) ? (predictionsData as any).results.length : 0,
+      })
+      return predictionsData
     }
 
     if (jobStatus.state === 'FAILED') {
+      console.error(`Job ${jobId} failed:`, jobStatus.error || 'Unknown error')
       throw new Error(`Job ${jobId} failed: ${jobStatus.error || 'Unknown error'}`)
     }
 
@@ -233,12 +244,37 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Process Batch API response format
-    // Batch API returns: { results: [{ source: {...}, results: [{ face: {...}, prosody: {...}, burst: {...} }] }] }
-    // Each result in results array contains model-specific predictions
+    // Batch API can return different structures:
+    // 1. { results: [{ source: {...}, results: [{ face: {...}, prosody: {...}, burst: {...} }] }] }
+    // 2. Direct array of predictions: [{ face: {...}, prosody: {...}, burst: {...} }]
+    // 3. Single object with models: { face: {...}, prosody: {...}, burst: {...} }
+    console.log('Batch API response structure:', {
+      type: typeof batchResult,
+      isArray: Array.isArray(batchResult),
+      keys: typeof batchResult === 'object' && batchResult !== null ? Object.keys(batchResult) : [],
+      hasResults: !!(batchResult as any)?.results,
+      resultsType: Array.isArray((batchResult as any)?.results) ? 'array' : typeof (batchResult as any)?.results,
+      resultsLength: Array.isArray((batchResult as any)?.results) ? (batchResult as any).results.length : 0,
+      firstResultSample: Array.isArray((batchResult as any)?.results) && (batchResult as any).results[0] 
+        ? JSON.stringify((batchResult as any).results[0]).substring(0, 1000) 
+        : 'none',
+      fullResponseSample: JSON.stringify(batchResult).substring(0, 2000)
+    })
+    
     const predictions: any[] = []
 
-    if (batchResult.results && Array.isArray(batchResult.results)) {
-      for (const fileResult of batchResult.results) {
+    // Handle case 1: { results: [...] }
+    if ((batchResult as any).results && Array.isArray((batchResult as any).results)) {
+      console.log(`Processing ${(batchResult as any).results.length} file results`)
+      for (let fileIdx = 0; fileIdx < (batchResult as any).results.length; fileIdx++) {
+        const fileResult = (batchResult as any).results[fileIdx]
+        console.log(`File result ${fileIdx}:`, {
+          hasResults: !!fileResult.results,
+          resultsLength: fileResult.results?.length || 0,
+          resultsKeys: fileResult.results?.[0] ? Object.keys(fileResult.results[0]) : [],
+          firstResultSample: fileResult.results?.[0] ? JSON.stringify(fileResult.results[0]).substring(0, 500) : 'none'
+        })
+        
         // Each fileResult has a results array containing model predictions
         if (fileResult.results && Array.isArray(fileResult.results)) {
           // Aggregate all model predictions from all results
@@ -248,32 +284,100 @@ export const POST: APIRoute = async ({ request }) => {
             burst: { predictions: [] },
           }
 
-          for (const modelResult of fileResult.results) {
+          for (let modelIdx = 0; modelIdx < fileResult.results.length; modelIdx++) {
+            const modelResult = fileResult.results[modelIdx]
+            console.log(`Model result ${modelIdx}:`, {
+              keys: Object.keys(modelResult),
+              hasFace: !!modelResult.face,
+              hasProsody: !!modelResult.prosody,
+              hasBurst: !!modelResult.burst,
+              facePredictions: modelResult.face?.predictions?.length || 0,
+              prosodyPredictions: modelResult.prosody?.predictions?.length || 0,
+              burstPredictions: modelResult.burst?.predictions?.length || 0
+            })
+            
             // Extract predictions by model type
             if (modelResult.face && modelResult.face.predictions) {
+              console.log(`Adding ${modelResult.face.predictions.length} face predictions`)
               aggregatedModels.face.predictions.push(...modelResult.face.predictions)
             }
             if (modelResult.prosody && modelResult.prosody.predictions) {
+              console.log(`Adding ${modelResult.prosody.predictions.length} prosody predictions`)
               aggregatedModels.prosody.predictions.push(...modelResult.prosody.predictions)
             }
             if (modelResult.burst && modelResult.burst.predictions) {
+              console.log(`Adding ${modelResult.burst.predictions.length} burst predictions`)
               aggregatedModels.burst.predictions.push(...modelResult.burst.predictions)
             }
           }
 
+          console.log(`Aggregated models:`, {
+            face: aggregatedModels.face.predictions.length,
+            prosody: aggregatedModels.prosody.predictions.length,
+            burst: aggregatedModels.burst.predictions.length
+          })
+
           // Add non-empty model predictions to predictions array
           if (aggregatedModels.face.predictions.length > 0) {
             predictions.push({ face: aggregatedModels.face })
+            console.log(`Added face predictions to array`)
           }
           if (aggregatedModels.prosody.predictions.length > 0) {
             predictions.push({ prosody: aggregatedModels.prosody })
+            console.log(`Added prosody predictions to array`)
           }
           if (aggregatedModels.burst.predictions.length > 0) {
             predictions.push({ burst: aggregatedModels.burst })
+            console.log(`Added burst predictions to array`)
+          }
+        } else {
+          console.warn(`File result ${fileIdx} has no results array`)
+        }
+      }
+    } 
+    // Handle case 2: Direct array of predictions
+    else if (Array.isArray(batchResult)) {
+      console.log('Batch API response is direct array, processing as predictions')
+      for (const prediction of batchResult) {
+        if (prediction && typeof prediction === 'object') {
+          const hasFace = !!(prediction as any).face
+          const hasProsody = !!(prediction as any).prosody
+          const hasBurst = !!(prediction as any).burst
+          
+          if (hasFace || hasProsody || hasBurst) {
+            predictions.push(prediction)
+            console.log(`Added prediction from array: face=${hasFace}, prosody=${hasProsody}, burst=${hasBurst}`)
           }
         }
       }
     }
+    // Handle case 3: Single object with models
+    else if (batchResult && typeof batchResult === 'object' && !Array.isArray(batchResult)) {
+      console.log('Batch API response is single object, checking for model keys')
+      const hasFace = !!(batchResult as any).face
+      const hasProsody = !!(batchResult as any).prosody
+      const hasBurst = !!(batchResult as any).burst
+      
+      if (hasFace || hasProsody || hasBurst) {
+        predictions.push(batchResult)
+        console.log(`Added single object prediction: face=${hasFace}, prosody=${hasProsody}, burst=${hasBurst}`)
+      } else {
+        console.warn('Batch API response has no recognized structure, checking alternative structure:', {
+          keys: Object.keys(batchResult),
+          sample: JSON.stringify(batchResult).substring(0, 1000)
+        })
+      }
+    }
+    else {
+      console.warn('Batch API response has unrecognized structure:', {
+        type: typeof batchResult,
+        isArray: Array.isArray(batchResult),
+        keys: batchResult && typeof batchResult === 'object' ? Object.keys(batchResult) : [],
+        sample: JSON.stringify(batchResult).substring(0, 1000)
+      })
+    }
+    
+    console.log(`Final predictions array length: ${predictions.length}`)
 
     // If no predictions were found, return empty result
     if (predictions.length === 0) {

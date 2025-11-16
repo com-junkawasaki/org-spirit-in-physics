@@ -55,7 +55,9 @@ export default function ComplexForce3D({
     }
   }, [])
   const graphData = useMemo(() => {
+    console.log('[ComplexForce3D] useMemo triggered, wordEmotionData.length:', wordEmotionData.length)
     if (wordEmotionData.length === 0) {
+      console.log('[ComplexForce3D] No wordEmotionData, returning empty graph')
       return { nodes: [] as WordNode[], links: [] as WordLink[] }
     }
 
@@ -125,6 +127,7 @@ export default function ComplexForce3D({
       }
 
       // Create nodes (after anchor2d and toSphere are defined)
+      console.log('[ComplexForce3D] Creating nodes, normalizedEmotionVec keys:', Object.keys(normalizedEmotionVec).length)
       const nodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word, idx) => {
         const emotionVec = normalizedEmotionVec[word.japanese] || new Array(EMOTION_KEYS.length).fill(0)
         const magnitude = Math.hypot(...emotionVec)
@@ -248,9 +251,10 @@ export default function ComplexForce3D({
         }
       }
 
+      console.log('[ComplexForce3D] Graph data created:', { nodes: allNodes.length, links: links.length })
       return { nodes: allNodes, links }
     } catch (error) {
-      console.error('3Dグラフ生成エラー:', error)
+      console.error('[ComplexForce3D] 3Dグラフ生成エラー:', error)
       return { nodes: [] as WordNode[], links: [] as WordLink[] }
     }
   }, [wordEmotionData, shellRadius, restLength, springK])

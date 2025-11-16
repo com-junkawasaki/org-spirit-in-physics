@@ -267,8 +267,14 @@ export default function DemoApp() {
           const analysisStartTime = Date.now()
           let analysisResult: any
           try {
+            console.log(`[Batch ${item.word}] Calling analyzeEmotionRealtime with video: ${item.videoBlob.size} bytes, audio: ${item.audioBlob?.size || 0} bytes`)
             analysisResult = await analyzeEmotionRealtime(item.videoBlob, item.audioBlob)
-            addStepLog(analysisStep.id, `API call completed in ${analysisResult.processingTime}ms`)
+            console.log(`[Batch ${item.word}] Analysis result:`, {
+              emotionsCount: analysisResult.emotions?.length || 0,
+              processingTime: analysisResult.processingTime,
+              emotions: analysisResult.emotions?.slice(0, 3).map((e: any) => `${e.name}:${e.score?.toFixed(2)}`).join(', ') || 'none'
+            })
+            addStepLog(analysisStep.id, `API call completed in ${analysisResult.processingTime}ms, emotions: ${analysisResult.emotions?.length || 0}`)
           } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Unknown error'
             addStepLog(analysisStep.id, `API call failed: ${errorMsg}`)
@@ -283,11 +289,20 @@ export default function DemoApp() {
           const analysisDuration = Date.now() - analysisStartTime
           
           // Check if emotions are empty (error condition)
-          if (analysisResult.emotions.length === 0) {
+          if (!analysisResult.emotions || analysisResult.emotions.length === 0) {
+            const errorDetails = {
+              hasEmotions: !!analysisResult.emotions,
+              emotionsLength: analysisResult.emotions?.length || 0,
+              processingTime: analysisResult.processingTime,
+              videoSize: item.videoBlob.size,
+              audioSize: item.audioBlob?.size || 0,
+            }
+            console.error(`[Batch ${item.word}] No emotions detected:`, errorDetails)
             addStepLog(analysisStep.id, `Warning: No emotions detected (emotionCount: 0)`)
+            addStepLog(analysisStep.id, `Error details: ${JSON.stringify(errorDetails)}`)
             updateStep(analysisStep.id, {
               status: 'error',
-              error: 'No emotions detected from Hume AI API',
+              error: `No emotions detected from Hume AI API. Video: ${item.videoBlob.size} bytes, Audio: ${item.audioBlob?.size || 0} bytes. Processing time: ${analysisResult.processingTime}ms`,
               duration: analysisDuration,
             })
             continue // Skip to next item
@@ -324,11 +339,16 @@ export default function DemoApp() {
             }
             
             // Check if emotions are empty (error condition)
-            if (newData.emotions.length === 0) {
-              console.warn(`No emotions detected for word: ${newData.word}, skipping update`)
+            if (!newData.emotions || newData.emotions.length === 0) {
+              console.error(`No emotions detected for word: ${newData.word}, skipping update`, {
+                word: newData.word,
+                timestamp: newData.timestamp,
+                emotionsLength: newData.emotions?.length || 0,
+                reactionTime: newData.reactionTime,
+              })
               setHasError(true)
               setIsRunning(false)
-              setError('感情データが取得できませんでした。')
+              setError(`感情データが取得できませんでした。単語: ${newData.word}, 処理時間: ${newData.reactionTime}ms`)
               return prev
             }
             

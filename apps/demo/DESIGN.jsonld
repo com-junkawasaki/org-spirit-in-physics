@@ -1249,6 +1249,114 @@
     }
   ],
   
+  "diagnosis": {
+    "@id": "demo:diagnosis",
+    "@type": "demo:Diagnosis",
+    "name": "3D Force Graph Update Failure Diagnosis",
+    "description": "JSON-LD specification for diagnosing why 3D Force Graph does not update",
+    "specification": "src/schemas/data-flow-diagnosis.jsonld",
+    "rootCauses": [
+      {
+        "@id": "demo:rootCause/emptyEmotions",
+        "name": "Empty Emotions Array from Hume AI API",
+        "probability": "HIGH",
+        "description": "Hume AI API returns empty emotions array, causing analysisResult.emotions.length === 0 check to fail",
+        "location": "DemoApp.tsx:292",
+        "impact": "setWordEmotionData is never called, wordEmotionData remains empty",
+        "solution": "Check Hume AI API response structure and processHumePredictions function"
+      },
+      {
+        "@id": "demo:rootCause/duplicatePrevention",
+        "name": "Duplicate Entry Prevention Too Aggressive",
+        "probability": "MEDIUM",
+        "description": "Duplicate detection logic prevents valid updates if same word appears within 1 second",
+        "location": "DemoApp.tsx:326",
+        "impact": "Valid emotion data is skipped",
+        "solution": "Review duplicate detection threshold (currently 1000ms)"
+      },
+      {
+        "@id": "demo:rootCause/stateUpdateNotTriggered",
+        "name": "State Update Not Triggering Re-render",
+        "probability": "LOW",
+        "description": "setWordEmotionData functional update returns same reference, React doesn't detect change",
+        "location": "DemoApp.tsx:324",
+        "impact": "ComplexForce3D useMemo not triggered",
+        "solution": "Verify setWordEmotionData always returns new array"
+      }
+    ],
+    "diagnosticCheckpoints": [
+      {
+        "@id": "demo:checkpoint/apiResponse",
+        "name": "Hume AI API Response",
+        "location": "apps/demo/src/pages/api/hume-analyze.ts:241",
+        "logs": [
+          "Batch API response structure",
+          "Processing {count} file results",
+          "Model result {idx}: {keys, hasFace, hasProsody, hasBurst}",
+          "Final predictions array length: {length}"
+        ]
+      },
+      {
+        "@id": "demo:checkpoint/emotionProcessing",
+        "name": "Emotion Processing",
+        "location": "apps/demo/src/lib/hume-realtime.ts:70",
+        "logs": [
+          "Processing Hume predictions: {predictions}",
+          "Processed emotions: {emotions}",
+          "processHumePredictions returning {count} emotions"
+        ]
+      },
+      {
+        "@id": "demo:checkpoint/stateUpdate",
+        "name": "State Update",
+        "location": "DemoApp.tsx:342",
+        "logs": [
+          "[Batch {word}] Analysis result: {emotionsCount}",
+          "Updated wordEmotionData: {count} entries"
+        ]
+      },
+      {
+        "@id": "demo:checkpoint/complexForce3D",
+        "name": "ComplexForce3D useMemo",
+        "location": "ComplexForce3D.tsx:58",
+        "logs": [
+          "[ComplexForce3D] useMemo triggered, wordEmotionData.length: {length}",
+          "[ComplexForce3D] Graph data created: {nodes, links}"
+        ]
+      }
+    ],
+    "implementationStatus": {
+      "batchApiResponseHandling": {
+        "status": "completed",
+        "description": "Added support for multiple Batch API response structures",
+        "changes": [
+          "Handle { results: [...] } format",
+          "Handle direct array format",
+          "Handle single object format",
+          "Added detailed structure logging"
+        ]
+      },
+      "emotionProcessing": {
+        "status": "completed",
+        "description": "Improved processHumePredictions to handle multiple prediction formats",
+        "changes": [
+          "Support multiple face/prosody/burst prediction structures",
+          "Added validation for emotion data",
+          "Improved error handling for invalid structures"
+        ]
+      },
+      "errorHandling": {
+        "status": "completed",
+        "description": "Enhanced error messages with detailed context",
+        "changes": [
+          "Added error details logging (video size, audio size, processing time)",
+          "Improved user-facing error messages",
+          "Added error details to step logs"
+        ]
+      }
+    }
+  },
+  
   "wasDerivedFrom": {
     "@id": "demo:wasDerivedFrom",
     "@type": "prov:Entity",
@@ -1271,6 +1379,10 @@
       },
       {
         "@id": "src/schemas/emotion-analysis-step.jsonld",
+        "@type": "prov:PrimarySource"
+      },
+      {
+        "@id": "src/schemas/data-flow-diagnosis.jsonld",
         "@type": "prov:PrimarySource"
       }
     ]

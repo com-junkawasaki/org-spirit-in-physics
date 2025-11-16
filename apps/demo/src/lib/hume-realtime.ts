@@ -67,66 +67,139 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
   const emotions: EmotionData[] = []
   const emotionMap = new Map<string, { score: number; fileType?: string }>()
 
-  console.log('Processing Hume predictions:', JSON.stringify(predictions).substring(0, 500))
+  console.log('Processing Hume predictions:', JSON.stringify(predictions).substring(0, 1000))
+  console.log('Predictions array length:', predictions.length)
+  console.log('Predictions structure:', {
+    isArray: Array.isArray(predictions),
+    firstItemType: predictions[0] ? typeof predictions[0] : 'none',
+    firstItemKeys: predictions[0] && typeof predictions[0] === 'object' ? Object.keys(predictions[0]) : [],
+  })
+  
+  if (predictions.length === 0) {
+    console.warn('No predictions provided to processHumePredictions')
+    return []
+  }
 
   for (const prediction of predictions) {
-    // Handle face predictions - support both formats
+    if (!prediction || typeof prediction !== 'object') {
+      console.warn('Skipping invalid prediction:', prediction)
+      continue
+    }
+    
+    // Handle face predictions - support multiple formats
+    // Format 1: { face: { predictions: [...] } }
+    // Format 2: { face: { results: [{ predictions: [...] }] } }
+    // Format 3: { results: [{ face: { predictions: [...] } }] }
     const faceData = prediction.face || (prediction.results?.[0] && prediction.results[0].face)
     if (faceData) {
-      const facePredictions = faceData.predictions || faceData.results?.[0]?.predictions || []
+      let facePredictions: any[] = []
+      
+      // Try different structures
+      if (Array.isArray(faceData.predictions)) {
+        facePredictions = faceData.predictions
+      } else if (faceData.results?.[0]?.predictions) {
+        facePredictions = faceData.results[0].predictions
+      } else if (Array.isArray(faceData.results)) {
+        // Flatten results array
+        for (const result of faceData.results) {
+          if (result.predictions && Array.isArray(result.predictions)) {
+            facePredictions.push(...result.predictions)
+          }
+        }
+      }
+      
+      console.log(`Processing ${facePredictions.length} face predictions`)
       for (const facePred of facePredictions) {
-        if (facePred.emotions) {
+        if (facePred && facePred.emotions && Array.isArray(facePred.emotions)) {
           for (const emotion of facePred.emotions) {
-            const normalized = normalizeEmotionName(emotion.name)
-            if (normalized) {
-              const key = `${normalized}_face`
-              const current = emotionMap.get(key) || { score: 0, fileType: 'face' }
-              emotionMap.set(key, {
-                score: Math.max(current.score, emotion.score || 0),
-                fileType: 'face',
-              })
+            if (emotion && emotion.name && typeof emotion.score === 'number') {
+              const normalized = normalizeEmotionName(emotion.name)
+              if (normalized) {
+                const key = `${normalized}_face`
+                const current = emotionMap.get(key) || { score: 0, fileType: 'face' }
+                emotionMap.set(key, {
+                  score: Math.max(current.score, emotion.score || 0),
+                  fileType: 'face',
+                })
+              }
             }
           }
         }
       }
     }
 
-    // Handle prosody predictions - support both formats
+    // Handle prosody predictions - support multiple formats
     const prosodyData = prediction.prosody || (prediction.results?.[0] && prediction.results[0].prosody)
     if (prosodyData) {
-      const prosodyPredictions = prosodyData.predictions || prosodyData.results?.[0]?.predictions || []
+      let prosodyPredictions: any[] = []
+      
+      // Try different structures
+      if (Array.isArray(prosodyData.predictions)) {
+        prosodyPredictions = prosodyData.predictions
+      } else if (prosodyData.results?.[0]?.predictions) {
+        prosodyPredictions = prosodyData.results[0].predictions
+      } else if (Array.isArray(prosodyData.results)) {
+        // Flatten results array
+        for (const result of prosodyData.results) {
+          if (result.predictions && Array.isArray(result.predictions)) {
+            prosodyPredictions.push(...result.predictions)
+          }
+        }
+      }
+      
+      console.log(`Processing ${prosodyPredictions.length} prosody predictions`)
       for (const prosodyPred of prosodyPredictions) {
-        if (prosodyPred.emotions) {
+        if (prosodyPred && prosodyPred.emotions && Array.isArray(prosodyPred.emotions)) {
           for (const emotion of prosodyPred.emotions) {
-            const normalized = normalizeEmotionName(emotion.name)
-            if (normalized) {
-              const key = `${normalized}_prosody`
-              const current = emotionMap.get(key) || { score: 0, fileType: 'prosody' }
-              emotionMap.set(key, {
-                score: Math.max(current.score, emotion.score || 0),
-                fileType: 'prosody',
-              })
+            if (emotion && emotion.name && typeof emotion.score === 'number') {
+              const normalized = normalizeEmotionName(emotion.name)
+              if (normalized) {
+                const key = `${normalized}_prosody`
+                const current = emotionMap.get(key) || { score: 0, fileType: 'prosody' }
+                emotionMap.set(key, {
+                  score: Math.max(current.score, emotion.score || 0),
+                  fileType: 'prosody',
+                })
+              }
             }
           }
         }
       }
     }
 
-    // Handle burst predictions - support both formats
+    // Handle burst predictions - support multiple formats
     const burstData = prediction.burst || (prediction.results?.[0] && prediction.results[0].burst)
     if (burstData) {
-      const burstPredictions = burstData.predictions || burstData.results?.[0]?.predictions || []
+      let burstPredictions: any[] = []
+      
+      // Try different structures
+      if (Array.isArray(burstData.predictions)) {
+        burstPredictions = burstData.predictions
+      } else if (burstData.results?.[0]?.predictions) {
+        burstPredictions = burstData.results[0].predictions
+      } else if (Array.isArray(burstData.results)) {
+        // Flatten results array
+        for (const result of burstData.results) {
+          if (result.predictions && Array.isArray(result.predictions)) {
+            burstPredictions.push(...result.predictions)
+          }
+        }
+      }
+      
+      console.log(`Processing ${burstPredictions.length} burst predictions`)
       for (const burstPred of burstPredictions) {
-        if (burstPred.emotions) {
+        if (burstPred && burstPred.emotions && Array.isArray(burstPred.emotions)) {
           for (const emotion of burstPred.emotions) {
-            const normalized = normalizeEmotionName(emotion.name)
-            if (normalized) {
-              const key = `${normalized}_burst`
-              const current = emotionMap.get(key) || { score: 0, fileType: 'burst' }
-              emotionMap.set(key, {
-                score: Math.max(current.score, emotion.score || 0),
-                fileType: 'burst',
-              })
+            if (emotion && emotion.name && typeof emotion.score === 'number') {
+              const normalized = normalizeEmotionName(emotion.name)
+              if (normalized) {
+                const key = `${normalized}_burst`
+                const current = emotionMap.get(key) || { score: 0, fileType: 'burst' }
+                emotionMap.set(key, {
+                  score: Math.max(current.score, emotion.score || 0),
+                  fileType: 'burst',
+                })
+              }
             }
           }
         }
@@ -179,10 +252,14 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
     })
   }
 
-  console.log('Processed emotions:', emotions.map(e => `${e.name}:${e.score.toFixed(3)}`).join(', '))
+  console.log('Processed emotions:', emotions.length > 0 
+    ? emotions.map(e => `${e.name}:${e.score.toFixed(3)}`).join(', ')
+    : 'NONE - emotionMap entries:', emotionMap.size)
 
   // Sort by score descending
-  return emotions.sort((a, b) => b.score - a.score)
+  const sorted = emotions.sort((a, b) => b.score - a.score)
+  console.log(`processHumePredictions returning ${sorted.length} emotions`)
+  return sorted
 }
 
 /**
@@ -354,31 +431,36 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
           // First try without timeslice (more compatible)
           mediaRecorder.start()
         } catch (startError) {
-          // If that fails, try with timeslice (some browsers require it)
-          console.warn('Failed to start without timeslice, trying with timeslice:', startError)
-          try {
-            // Check state before retrying
-            if (mediaRecorder.state === 'inactive') {
+          // Check if it actually started despite the error
+          // Some browsers may throw an error but still start recording
+          if (mediaRecorder.state === 'recording') {
+            console.warn('MediaRecorder started despite error, continuing...')
+            // Continue with recording - don't try again
+          } else if (mediaRecorder.state === 'inactive') {
+            // If that fails, try with timeslice (some browsers require it)
+            console.warn('Failed to start without timeslice, trying with timeslice:', startError)
+            try {
               mediaRecorder.start(100) // Request data every 100ms
-            } else {
-              console.warn('MediaRecorder state changed to:', mediaRecorder.state)
-              if (stopTimeout) clearTimeout(stopTimeout)
-              hasError = true
-              resolve(null)
-              return
+            } catch (timesliceError) {
+              console.warn('Failed to start MediaRecorder with timeslice:', timesliceError)
+              // Check if it actually started despite the error
+              if (mediaRecorder.state === 'recording') {
+                console.warn('MediaRecorder started despite error, continuing...')
+                // Continue with recording
+              } else {
+                if (stopTimeout) clearTimeout(stopTimeout)
+                hasError = true
+                resolve(null)
+                return
+              }
             }
-          } catch (timesliceError) {
-            console.warn('Failed to start MediaRecorder with timeslice:', timesliceError)
-            // Check if it actually started despite the error
-            if (mediaRecorder.state === 'recording') {
-              console.warn('MediaRecorder started despite error, continuing...')
-              // Continue with recording
-            } else {
-              if (stopTimeout) clearTimeout(stopTimeout)
-              hasError = true
-              resolve(null)
-              return
-            }
+          } else {
+            // Unexpected state
+            console.warn('MediaRecorder in unexpected state:', mediaRecorder.state)
+            if (stopTimeout) clearTimeout(stopTimeout)
+            hasError = true
+            resolve(null)
+            return
           }
         }
         
