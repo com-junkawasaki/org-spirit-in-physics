@@ -32,13 +32,24 @@ export default function WordDisplay({
     // Try to play audio if available (optional, graceful degradation)
     const audioPath = `/audio/jung-voice-assessment/${word.id}.mp3`
     if (audioRef.current) {
-      audioRef.current.src = audioPath
-      audioRef.current.play().catch((err) => {
-        // Audio file may not exist, that's okay
-        console.debug('Audio playback skipped (file may not exist):', audioPath)
-        setIsPlaying(false)
-      })
-      setIsPlaying(true)
+      // Check if audio file exists before attempting to play
+      const checkAudioExists = async () => {
+        try {
+          const response = await fetch(audioPath, { method: 'HEAD' })
+          if (response.ok) {
+            audioRef.current!.src = audioPath
+            await audioRef.current!.play()
+            setIsPlaying(true)
+          } else {
+            // Audio file doesn't exist, skip silently
+            setIsPlaying(false)
+          }
+        } catch (err) {
+          // Audio file may not exist or network error, that's okay
+          setIsPlaying(false)
+        }
+      }
+      checkAudioExists()
       
       audioRef.current.onended = () => setIsPlaying(false)
       audioRef.current.onerror = () => setIsPlaying(false)
