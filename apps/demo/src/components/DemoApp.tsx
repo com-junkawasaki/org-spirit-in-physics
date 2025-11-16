@@ -318,10 +318,14 @@ export default function DemoApp() {
           setWordEmotionData(prev => {
             // Prevent duplicate entries
             const isDuplicate = prev.some(d => d.word === newData.word && Math.abs(d.timestamp - newData.timestamp) < 1000)
-            if (isDuplicate) return prev
+            if (isDuplicate) {
+              console.log(`Skipping duplicate entry for word: ${newData.word}`)
+              return prev
+            }
             
             // Check if emotions are empty (error condition)
             if (newData.emotions.length === 0) {
+              console.warn(`No emotions detected for word: ${newData.word}, skipping update`)
               setHasError(true)
               setIsRunning(false)
               setError('感情データが取得できませんでした。')
@@ -329,6 +333,7 @@ export default function DemoApp() {
             }
             
             const updated = [...prev, newData]
+            console.log(`Updated wordEmotionData: ${updated.length} entries (added: ${newData.word} with ${newData.emotions.length} emotions)`)
             
             // Update demo step for data collection
             setDemoSteps(prevSteps => {

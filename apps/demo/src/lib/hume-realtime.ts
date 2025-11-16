@@ -340,8 +340,47 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
 
       // Start recording with timeslice to ensure data is available
       try {
-        // Use timeslice to get data chunks periodically
-        mediaRecorder.start(100) // Request data every 100ms
+        // Check if MediaRecorder can actually start
+        // Some browsers may throw errors even after creation
+        if (mediaRecorder.state !== 'inactive') {
+          console.warn('MediaRecorder is not in inactive state:', mediaRecorder.state)
+          resolve(null)
+          return
+        }
+        
+        // Try to start recording
+        // Some browsers don't support timeslice parameter, so try without it first
+        try {
+          // First try without timeslice (more compatible)
+          mediaRecorder.start()
+        } catch (startError) {
+          // If that fails, try with timeslice (some browsers require it)
+          console.warn('Failed to start without timeslice, trying with timeslice:', startError)
+          try {
+            // Check state before retrying
+            if (mediaRecorder.state === 'inactive') {
+              mediaRecorder.start(100) // Request data every 100ms
+            } else {
+              console.warn('MediaRecorder state changed to:', mediaRecorder.state)
+              if (stopTimeout) clearTimeout(stopTimeout)
+              hasError = true
+              resolve(null)
+              return
+            }
+          } catch (timesliceError) {
+            console.warn('Failed to start MediaRecorder with timeslice:', timesliceError)
+            // Check if it actually started despite the error
+            if (mediaRecorder.state === 'recording') {
+              console.warn('MediaRecorder started despite error, continuing...')
+              // Continue with recording
+            } else {
+              if (stopTimeout) clearTimeout(stopTimeout)
+              hasError = true
+              resolve(null)
+              return
+            }
+          }
+        }
         
         // Stop after duration
         stopTimeout = setTimeout(() => {
