@@ -1,7 +1,7 @@
 // Merkle DAG: components.demo_app
 // Main demo app component
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import WordDisplay from './WordDisplay'
 import ComplexForce3D from './ComplexForce3D'
 import ComplexVisualization from './ComplexVisualization'
@@ -11,7 +11,18 @@ import { analyzeEmotionRealtime, captureVideoFrame, captureAudioFrame } from '..
 import { calculateComplexSpace } from '../lib/complex-calculator'
 import type { WordEmotionData, ComplexSpaceData } from '../types/demo'
 import type { AnalysisStep, StepType, StepStatus, StepMetadata } from '../types/step'
-import { useDemoStore } from '../store/demo-store'
+import { useAtomValue, useSetAtom } from 'jotai'
+import { useAtomCallback } from 'jotai/utils'
+import {
+  batchQueueAtom,
+  batchQueueLengthAtom,
+  wordEmotionDataAtom,
+  addToBatchQueueAtom,
+  processBatchQueueAtom,
+  clearBatchQueueAtom,
+  addWordEmotionDataAtom,
+  clearWordEmotionDataAtom,
+} from '../store/demo-atoms'
 
 // BPM 85 = 85 beats per minute = 60000ms / 85 = ~706ms per beat
 const BPM_85_INTERVAL_MS = Math.round(60000 / 85) // ~706ms
@@ -34,16 +45,37 @@ export default function DemoApp() {
   const [demoSteps, setDemoSteps] = useState<AnalysisStep[]>([])
   const [hasError, setHasError] = useState(false)
   const [stepOrderCounter, setStepOrderCounter] = useState(0)
-  const [maxFps, setMaxFps] = useState(6)  // Default: 6 FPS (0 = unlimited)
+  const [maxFps, setMaxFps] = useState(0)  // Default: 0 = auto (memory-aware, max 1GB)
   
-  // Use Zustand store for batch queue and word emotion data
-  const addToBatchQueue = useDemoStore((state) => state.addToBatchQueue)
-  const processBatchQueue = useDemoStore((state) => state.processBatchQueue)
-  const clearBatchQueue = useDemoStore((state) => state.clearBatchQueue)
-  const batchQueueLength = useDemoStore((state) => state.batchQueue.length)
-  const addWordEmotionData = useDemoStore((state) => state.addWordEmotionData)
-  const clearWordEmotionData = useDemoStore((state) => state.clearWordEmotionData)
-  const wordEmotionData = useDemoStore((state) => state.wordEmotionData)
+  // Use Jotai atoms for batch queue and word emotion data
+  const addToBatchQueue = useSetAtom(addToBatchQueueAtom)
+  // Use useAtomCallback to get return value from processBatchQueueAtom
+  const processBatchQueue = useAtomCallback(
+    (get, set) => {
+      const currentQueue = get(batchQueueAtom)
+      if (currentQueue.length === 0) {
+        console.log('[DemoStore] Batch queue is empty, nothing to process')
+        return []
+      }
+      
+      console.log(`[DemoStore] Processing batch queue: ${currentQueue.length} items`)
+      // Clear queue
+      set(batchQueueAtom, [])
+      return currentQueue
+    },
+    []
+  )
+  const clearBatchQueue = useSetAtom(clearBatchQueueAtom)
+  const batchQueueLength = useAtomValue(batchQueueLengthAtom)
+  const addWordEmotionData = useSetAtom(addWordEmotionDataAtom)
+  const clearWordEmotionData = useSetAtom(clearWordEmotionDataAtom)
+  const wordEmotionData = useAtomValue(wordEmotionDataAtom)
+  
+  // Keep ref to latest wordEmotionData for use in setTimeout callbacks
+  const wordEmotionDataRef = useRef(wordEmotionData)
+  useEffect(() => {
+    wordEmotionDataRef.current = wordEmotionData
+  }, [wordEmotionData])
 
   // Request media access
   useEffect(() => {
@@ -236,7 +268,7 @@ export default function DemoApp() {
         return
       }
       
-      // Use Zustand store to get and clear batch queue
+      // Use Jotai store to get and clear batch queue
       const itemsToProcess = processBatchQueue()
       
       // If no items to process, return early
@@ -335,14 +367,14 @@ export default function DemoApp() {
               : 0,
           }
 
-          // Add to Zustand store (with debouncing and duplicate prevention)
-          addWordEmotionData(newData, { skipEmpty: true, debounceMs: 200 })
+          // Add to Jotai store (with debouncing and duplicate prevention)
+          addWordEmotionData({ data: newData, options: { skipEmpty: true, debounceMs: 200 } })
           
           // Update demo steps after debounced update
           // Use setTimeout to wait for debounced update to complete
           setTimeout(() => {
-            const currentData = useDemoStore.getState().wordEmotionData
-            const updated = currentData
+            // Use ref to get latest wordEmotionData (avoids closure issues)
+            const updated = wordEmotionDataRef.current
             
             // Update demo step for data collection
             setDemoSteps(prevSteps => {

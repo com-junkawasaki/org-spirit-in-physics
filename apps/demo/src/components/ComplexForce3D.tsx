@@ -1,12 +1,13 @@
 // Merkle DAG: components.complex_force_3d
 // 3D Force Graph wrapper for Complex visualization
 
-import React, { useMemo, lazy, Suspense, useState, useEffect } from 'react'
+import React, { useMemo, lazy, Suspense, useState, useEffect, useRef } from 'react'
 import type { WordNode, WordLink } from '@spirit-in-physics/visualization-components'
 import type { WordEmotionData } from '../types/demo'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
 import { EMOTION_KEYS } from '@spirit-in-physics/visualization-components'
-import { useDemoStore } from '../store/demo-store'
+import { useAtomValue } from 'jotai'
+import { wordEmotionDataAtom, wordEmotionDataLengthAtom, lastUpdateTimeAtom } from '../store/demo-atoms'
 
 const Force3DWordGraphTypeGPU = lazy(() => 
   import('@spirit-in-physics/visualization-components').then(module => ({ default: module.Force3DWordGraphTypeGPU }))
@@ -41,24 +42,20 @@ export default function ComplexForce3D({
   minSep = 80,
   sepK = 8000,
 }: ComplexForce3DProps) {
-  // Get wordEmotionData from Zustand store with stable selector
-  // Use selector that only triggers on actual data changes (length + lastUpdateTime)
-  const dataLength = useDemoStore((state) => state.wordEmotionData.length)
-  const lastUpdateTime = useDemoStore((state) => state.lastUpdateTime)
-  
-  // Get wordEmotionData only when needed (inside useMemo)
-  // This prevents unnecessary re-renders
-  const getWordEmotionData = useDemoStore((state) => state.getWordEmotionData)
+  // Get wordEmotionData from Jotai atoms (automatically optimized)
+  // Jotai automatically prevents unnecessary re-renders
+  const dataLength = useAtomValue(wordEmotionDataLengthAtom)
+  const lastUpdateTime = useAtomValue(lastUpdateTimeAtom)
+  const wordEmotionData = useAtomValue(wordEmotionDataAtom)
   
   // Debug: Log when data changes
   useEffect(() => {
-    const data = getWordEmotionData()
     console.log('[ComplexForce3D] wordEmotionData updated:', {
-      length: data.length,
+      length: wordEmotionData.length,
       lastUpdateTime,
-      hasData: data.length > 0,
+      hasData: wordEmotionData.length > 0,
     })
-  }, [dataLength, lastUpdateTime, getWordEmotionData])
+  }, [dataLength, lastUpdateTime, wordEmotionData.length])
   
   const [webGpuAvailable, setWebGpuAvailable] = useState<boolean | null>(null)
   const [loadError, setLoadError] = useState<Error | null>(null)
@@ -75,9 +72,89 @@ export default function ComplexForce3D({
     }
   }, [])
   
+  // Memory-aware performance optimization
+  const [memoryInfo, setMemoryInfo] = useState<{
+    deviceMemory?: number // GB
+    jsHeapSizeLimit?: number // bytes
+    usedJSHeapSize?: number // bytes
+    totalJSHeapSize?: number // bytes
+  }>({})
+  
+  // Calculate optimal FPS and node limits based on available memory
+  // Use ref to store memory values to prevent unnecessary re-computations
+  const memoryInfoRef = useRef(memoryInfo)
+  memoryInfoRef.current = memoryInfo
+  
+  const optimalFps = useMemo(() => {
+    if (maxFps > 0) return maxFps // User-specified FPS takes priority
+    
+    const deviceMemoryGB = memoryInfoRef.current.deviceMemory || 4 // Default to 4GB if unknown
+    const jsHeapLimitGB = memoryInfoRef.current.jsHeapSizeLimit ? memoryInfoRef.current.jsHeapSizeLimit / (1024 * 1024 * 1024) : deviceMemoryGB
+    
+    // Target: Use max 1GB for WebGPU buffers
+    const availableMemoryGB = Math.min(deviceMemoryGB, jsHeapLimitGB, 1.0)
+    
+    // Calculate optimal FPS based on available memory
+    // More memory = higher FPS, but cap at 60 for smooth rendering
+    if (availableMemoryGB >= 1.0) return 60
+    if (availableMemoryGB >= 0.5) return 30
+    if (availableMemoryGB >= 0.25) return 15
+    return 10
+  }, [maxFps]) // Only depend on maxFps, not memoryInfo
+  
+  // Monitor memory usage (only update when values actually change)
+  useEffect(() => {
+    const updateMemoryInfo = () => {
+      const info: typeof memoryInfo = {}
+      
+      // @ts-ignore - deviceMemory API
+      if ('deviceMemory' in navigator) {
+        // @ts-ignore
+        info.deviceMemory = navigator.deviceMemory
+      }
+      
+      // @ts-ignore - performance.memory API (Chrome)
+      if (performance.memory) {
+        // @ts-ignore
+        info.jsHeapSizeLimit = performance.memory.jsHeapSizeLimit
+        // @ts-ignore
+        info.usedJSHeapSize = performance.memory.usedJSHeapSize
+        // @ts-ignore
+        info.totalJSHeapSize = performance.memory.totalJSHeapSize
+      }
+      
+      // Only update state if values actually changed (deep comparison)
+      setMemoryInfo(prev => {
+        const changed = 
+          prev.deviceMemory !== info.deviceMemory ||
+          prev.jsHeapSizeLimit !== info.jsHeapSizeLimit ||
+          prev.usedJSHeapSize !== info.usedJSHeapSize ||
+          prev.totalJSHeapSize !== info.totalJSHeapSize
+        
+        if (!changed) return prev
+        
+        console.log('[ComplexForce3D] Memory info updated:', {
+          deviceMemory: info.deviceMemory ? `${info.deviceMemory}GB` : 'unknown',
+          jsHeapLimit: info.jsHeapSizeLimit ? `${(info.jsHeapSizeLimit / (1024 * 1024 * 1024)).toFixed(2)}GB` : 'unknown',
+          usedJSHeap: info.usedJSHeapSize ? `${(info.usedJSHeapSize / (1024 * 1024 * 1024)).toFixed(2)}GB` : 'unknown',
+        })
+        
+        return info
+      })
+    }
+    
+    updateMemoryInfo()
+    const interval = setInterval(updateMemoryInfo, 10000) // Update every 10 seconds (reduced frequency)
+    
+    return () => clearInterval(interval)
+  }, []) // No dependencies - only run once on mount
+  
+  // Stable reference for initial nodes to prevent re-creation
+  const initialNodesRef = useRef<WordNode[] | null>(null)
+  const initialAnchorNodesRef = useRef<WordNode[] | null>(null)
+  
   const graphData = useMemo(() => {
-    // Get fresh data from store inside useMemo
-    const wordEmotionData = getWordEmotionData()
+    // wordEmotionData is already stable from Jotai atom
     console.log('[ComplexForce3D] useMemo triggered, wordEmotionData.length:', wordEmotionData.length, 'lastUpdateTime:', lastUpdateTime)
     
     // Even if wordEmotionData is empty, create initial nodes for all words
@@ -85,53 +162,62 @@ export default function ComplexForce3D({
     const hasEmotionData = wordEmotionData.length > 0
     
     if (!hasEmotionData) {
-      console.log('[ComplexForce3D] No wordEmotionData, creating initial graph with all words')
-      // Create initial nodes for all words (without emotion data)
-      const initialNodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word, idx) => ({
-        id: String(idx),
-        label: word.japanese,
-        scale: 1.0,
-        nodeType: 'word',
-        initial: undefined, // Will be positioned by force simulation
-      }))
-      
-      // Create anchor nodes
-      const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
-        { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
-        { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
-        { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
-        { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
-        { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
-        { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
-        { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
-        { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
-        { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
-        { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
-      ]
-      
-      const toSphere = (x01: number, y01: number): [number, number, number] => {
-        const u = (x01 - 0.5) * Math.PI * 1.6
-        const v = (y01 - 0.5) * Math.PI
-        const cx = Math.cos(v) * Math.cos(u)
-        const cy = Math.cos(v) * Math.sin(u)
-        const cz = Math.sin(v)
-        return [shellRadius * cx, shellRadius * cy, shellRadius * cz]
+      // Use cached initial nodes to prevent re-creation
+      if (!initialNodesRef.current || !initialAnchorNodesRef.current) {
+        console.log('[ComplexForce3D] Creating initial graph nodes (first time)')
+        
+        // Create initial nodes for all words (without emotion data)
+        // Use deterministic positioning to prevent position shifts
+        const initialNodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word, idx) => ({
+          id: String(idx),
+          label: word.japanese,
+          scale: 1.0,
+          nodeType: 'word',
+          initial: undefined, // Will be positioned by force simulation
+        }))
+        
+        // Create anchor nodes
+        const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
+          { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
+          { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
+          { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
+          { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
+          { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
+          { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
+          { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
+          { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
+          { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
+          { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
+        ]
+        
+        const toSphere = (x01: number, y01: number): [number, number, number] => {
+          const u = (x01 - 0.5) * Math.PI * 1.6
+          const v = (y01 - 0.5) * Math.PI
+          const cx = Math.cos(v) * Math.cos(u)
+          const cy = Math.cos(v) * Math.sin(u)
+          const cz = Math.sin(v)
+          return [shellRadius * cx, shellRadius * cy, shellRadius * cz]
+        }
+        
+        const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
+          const [x, y, z] = toSphere(a.x, a.y)
+          return {
+            id: `A${idx}`,
+            label: a.name,
+            scale: 6,
+            fixed: true,
+            nodeType: 'anchor',
+            initial: [x, y, z],
+            color: a.color,
+          }
+        })
+        
+        initialNodesRef.current = initialNodes
+        initialAnchorNodesRef.current = anchorNodes
       }
       
-      const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-        const [x, y, z] = toSphere(a.x, a.y)
-        return {
-          id: `A${idx}`,
-          label: a.name,
-          scale: 6,
-          fixed: true,
-          nodeType: 'anchor',
-          initial: [x, y, z],
-          color: a.color,
-        }
-      })
-      
-      return { nodes: [...anchorNodes, ...initialNodes], links: [] }
+      // Return cached nodes (same reference = no re-render)
+      return { nodes: [...initialAnchorNodesRef.current, ...initialNodesRef.current], links: [] }
     }
 
     try {
@@ -330,7 +416,7 @@ export default function ComplexForce3D({
       console.error('[ComplexForce3D] 3Dグラフ生成エラー:', error)
       return { nodes: [] as WordNode[], links: [] as WordLink[] }
     }
-  }, [dataLength, lastUpdateTime, getWordEmotionData, shellRadius, restLength, springK]) // Only depend on length and timestamp to prevent excessive re-renders
+  }, [wordEmotionData, dataLength, lastUpdateTime, shellRadius, restLength, springK]) // Jotai automatically optimizes wordEmotionData, so it's safe to include
 
   // Error boundary component for WebGPU errors
   const ErrorFallback = ({ error }: { error: Error | null }) => (
@@ -386,7 +472,7 @@ export default function ComplexForce3D({
           links={graphData.links}
           width={width}
           height={height}
-          maxFps={maxFps}
+          maxFps={optimalFps}
           physics={{
             springK,
             repulsionK,

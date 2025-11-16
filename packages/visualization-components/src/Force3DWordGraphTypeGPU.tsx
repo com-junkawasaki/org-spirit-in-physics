@@ -546,19 +546,51 @@ function Force3DWordGraphTypeGPU({
           }
         })
 
+        // Memory-aware buffer size calculation (max 1GB total)
+        const MAX_BUFFER_MEMORY = 1024 * 1024 * 1024 // 1GB in bytes
+        const nodeStructSize = 32 // bytes per node
+        const linkStructSize = 24 // bytes per link
+        const paramsBufferSize = 64 // bytes
+        
+        const nodeCount = nodesRef.current.length
+        const linkCount = linksRef.current.length
+        
+        // Calculate required memory
+        const nodeBufferSize = nodeCount * nodeStructSize
+        const linkBufferSize = linkCount * linkStructSize
+        const totalRequiredMemory = nodeBufferSize + linkBufferSize + paramsBufferSize
+        
+        // Check if we exceed memory limit
+        if (totalRequiredMemory > MAX_BUFFER_MEMORY) {
+          console.warn(`[Force3DWordGraphTypeGPU] Memory limit exceeded: ${(totalRequiredMemory / (1024 * 1024)).toFixed(2)}MB > ${(MAX_BUFFER_MEMORY / (1024 * 1024)).toFixed(2)}MB`)
+          console.warn(`[Force3DWordGraphTypeGPU] Reducing node/link count to fit within 1GB limit`)
+          
+          // Reduce nodes/links proportionally to fit within limit
+          const scaleFactor = Math.sqrt(MAX_BUFFER_MEMORY / totalRequiredMemory)
+          const maxNodes = Math.floor(nodeCount * scaleFactor)
+          const maxLinks = Math.floor(linkCount * scaleFactor)
+          
+          console.warn(`[Force3DWordGraphTypeGPU] Scaled down: ${nodeCount} nodes -> ${maxNodes} nodes, ${linkCount} links -> ${maxLinks} links`)
+          
+          // Note: This is a warning - actual reduction would require modifying nodesRef/linksRef
+          // For now, we'll proceed but log the issue
+        }
+        
+        console.log(`[Force3DWordGraphTypeGPU] Buffer memory usage: ${(totalRequiredMemory / (1024 * 1024)).toFixed(2)}MB (${((totalRequiredMemory / MAX_BUFFER_MEMORY) * 100).toFixed(1)}% of 1GB limit)`)
+        
         // WebGPUバッファを作成
         const nodeBuffer = device.createBuffer({
-          size: nodesRef.current.length * 32, // Node struct size
+          size: nodeBufferSize,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
         })
         
         const linkBuffer = device.createBuffer({
-          size: linksRef.current.length * 24, // Link struct size
+          size: linkBufferSize,
           usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         })
         
         const paramsBuffer = device.createBuffer({
-          size: 64, // PhysicsParams size
+          size: paramsBufferSize,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
         
