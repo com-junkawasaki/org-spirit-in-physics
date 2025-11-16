@@ -12,6 +12,7 @@
     "codegen:watch": "graphql-codegen --config codegen.yaml --watch"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.0.0",
     "@spirit-in-physics/visualization-components": "file:../../packages/visualization-components",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-dialog": "^1.1.15",

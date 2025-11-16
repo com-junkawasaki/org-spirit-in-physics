@@ -7,14 +7,11 @@
 
 import type { ReactNode } from 'react';
 import { ClerkProvider } from '@clerk/nextjs';
-import { ApolloProvider } from '@/components/providers/ApolloProvider';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider>
-      <ApolloProvider>
-        {children}
-      </ApolloProvider>
+      {children}
     </ClerkProvider>
   );
 }
