@@ -153,9 +153,28 @@ export default function ComplexForce3D({
   const initialNodesRef = useRef<WordNode[] | null>(null)
   const initialAnchorNodesRef = useRef<WordNode[] | null>(null)
   
+  // Cache graphData to prevent unnecessary re-renders
+  const graphDataRef = useRef<{ nodes: WordNode[]; links: WordLink[] } | null>(null)
+  const prevDataLengthRef = useRef(0)
+  const prevLastUpdateTimeRef = useRef(0)
+  
   const graphData = useMemo(() => {
-    // wordEmotionData is already stable from Jotai atom
-    console.log('[ComplexForce3D] useMemo triggered, wordEmotionData.length:', wordEmotionData.length, 'lastUpdateTime:', lastUpdateTime)
+    // Check if data actually changed (value-based comparison, not reference)
+    const dataChanged = 
+      prevDataLengthRef.current !== dataLength ||
+      prevLastUpdateTimeRef.current !== lastUpdateTime
+    
+    // If data hasn't changed and we have cached graphData, return cached reference
+    if (!dataChanged && graphDataRef.current) {
+      console.log('[ComplexForce3D] useMemo: Using cached graphData (data unchanged)')
+      return graphDataRef.current
+    }
+    
+    console.log('[ComplexForce3D] useMemo triggered, wordEmotionData.length:', wordEmotionData.length, 'lastUpdateTime:', lastUpdateTime, 'dataChanged:', dataChanged)
+    
+    // Update refs
+    prevDataLengthRef.current = dataLength
+    prevLastUpdateTimeRef.current = lastUpdateTime
     
     // Even if wordEmotionData is empty, create initial nodes for all words
     // This ensures the 3D graph is always visible
@@ -217,7 +236,18 @@ export default function ComplexForce3D({
       }
       
       // Return cached nodes (same reference = no re-render)
-      return { nodes: [...initialAnchorNodesRef.current, ...initialNodesRef.current], links: [] }
+      // Check if we already have cached initial graphData
+      if (graphDataRef.current && 
+          graphDataRef.current.nodes.length === initialAnchorNodesRef.current.length + initialNodesRef.current.length &&
+          graphDataRef.current.links.length === 0) {
+        // Return cached reference (same reference = no re-render)
+        return graphDataRef.current
+      }
+      
+      const initialGraphData = { nodes: [...initialAnchorNodesRef.current, ...initialNodesRef.current], links: [] }
+      // Cache the result
+      graphDataRef.current = initialGraphData
+      return initialGraphData
     }
 
     try {
@@ -411,12 +441,17 @@ export default function ComplexForce3D({
       }
 
       console.log('[ComplexForce3D] Graph data created:', { nodes: allNodes.length, links: links.length })
-      return { nodes: allNodes, links }
+      const newGraphData = { nodes: allNodes, links }
+      // Cache the result
+      graphDataRef.current = newGraphData
+      return newGraphData
     } catch (error) {
       console.error('[ComplexForce3D] 3Dグラフ生成エラー:', error)
-      return { nodes: [] as WordNode[], links: [] as WordLink[] }
+      const errorGraphData = { nodes: [] as WordNode[], links: [] as WordLink[] }
+      graphDataRef.current = errorGraphData
+      return errorGraphData
     }
-  }, [wordEmotionData, dataLength, lastUpdateTime, shellRadius, restLength, springK]) // Jotai automatically optimizes wordEmotionData, so it's safe to include
+  }, [dataLength, lastUpdateTime, shellRadius, restLength, springK]) // Removed wordEmotionData - use value-based comparison instead
 
   // Error boundary component for WebGPU errors
   const ErrorFallback = ({ error }: { error: Error | null }) => (

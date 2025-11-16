@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react'
+import React, { useRef, useEffect, useCallback } from 'react'
 
 // WebGPU型定義（簡略版）
 declare global {
@@ -133,10 +133,15 @@ function Force3DWordGraphTypeGPU({
   // ビューポート可視性のref（パフォーマンス最適化）
   // refを使用することで、クロージャの問題を回避し、最新の値を参照できる
   const isVisibleRef = useRef(true)
-  const [isVisible, setIsVisible] = useState(true)
   
-  // ズームレベル表示用のstate
-  const [zoomLevel, setZoomLevel] = useState(600)
+  // ズームレベル表示用のref（再レンダリングを防ぐためuseStateから変更）
+  const zoomLevelRef = useRef(600)
+  
+  // カメラ初期化追跡用のref
+  const isInitializedRef = useRef(false)
+  
+  // ユーザーが手動でズームを設定したかどうかを追跡するref
+  const userZoomSetRef = useRef(false)
   
   // カメラ制御用の状態
   const cameraRef = useRef({
@@ -150,6 +155,9 @@ function Force3DWordGraphTypeGPU({
   
   const isDraggingRef = useRef(false)
   const lastMouseRef = useRef({ x: 0, y: 0 })
+  
+  // ズームレベル表示用のDOM要素への参照
+  const zoomLevelDisplayRef = useRef<HTMLDivElement | null>(null)
 
   // 感情カラー合成（線形混色）
   const mixEmotionColor = useCallback((node: WordNode, alpha: number): string => {
@@ -217,6 +225,9 @@ function Force3DWordGraphTypeGPU({
   
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault()
+    // ユーザーが手動でズームを設定したことを記録
+    userZoomSetRef.current = true
+    
     // 直感的なズーム: 上にスクロールでズームイン（距離を短く）、下にスクロールでズームアウト（距離を長く）
     const zoomSpeed = 0.05 // より細かい調整
     const delta = e.deltaY > 0 ? 1 + zoomSpeed : 1 - zoomSpeed
@@ -241,8 +252,8 @@ function Force3DWordGraphTypeGPU({
       cameraRef.current.distance = Math.max(100, Math.min(1500, cameraRef.current.distance))
     }
     
-    // ズームレベル表示を更新
-    setZoomLevel(cameraRef.current.distance)
+    // ズームレベル表示を更新（refを使用）
+    zoomLevelRef.current = cameraRef.current.distance
   }, [])
   
   const physicsRef = useRef({
@@ -299,7 +310,6 @@ function Force3DWordGraphTypeGPU({
       (entries) => {
         const entry = entries[0]
         isVisibleRef.current = entry.isIntersecting
-        setIsVisible(entry.isIntersecting)
       },
       {
         // 少し余裕を持たせて、完全に画面外になる前に停止
@@ -379,19 +389,23 @@ function Force3DWordGraphTypeGPU({
           cameraRef.current.centerY = centerY / N
           cameraRef.current.centerZ = centerZ / N
           
-          // ノード群のサイズに基づいてカメラ距離を調整
-          let maxDistance = 0
-          for (let i = 0; i < N; i++) {
-            const dx = pos[i * 3] - cameraRef.current.centerX
-            const dy = pos[i * 3 + 1] - cameraRef.current.centerY
-            const dz = pos[i * 3 + 2] - cameraRef.current.centerZ
-            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
-            maxDistance = Math.max(maxDistance, distance)
+          // 初期化時のみ、またはユーザーがズームを設定していない場合のみ、カメラ距離を自動調整
+          if (!isInitializedRef.current && !userZoomSetRef.current) {
+            // ノード群のサイズに基づいてカメラ距離を調整
+            let maxDistance = 0
+            for (let i = 0; i < N; i++) {
+              const dx = pos[i * 3] - cameraRef.current.centerX
+              const dy = pos[i * 3 + 1] - cameraRef.current.centerY
+              const dz = pos[i * 3 + 2] - cameraRef.current.centerZ
+              const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
+              maxDistance = Math.max(maxDistance, distance)
+            }
+            
+            // ノード群の最大距離の2.5倍をカメラ距離に設定
+            cameraRef.current.distance = Math.max(400, maxDistance * 2.5)
+            zoomLevelRef.current = cameraRef.current.distance
+            isInitializedRef.current = true
           }
-          
-          // ノード群の最大距離の2.5倍をカメラ距離に設定
-          cameraRef.current.distance = Math.max(400, maxDistance * 2.5)
-          setZoomLevel(cameraRef.current.distance)
         }
 
         // WebGPUシェーダーコード
@@ -1088,6 +1102,11 @@ function Force3DWordGraphTypeGPU({
             }
           }
 
+          // ズームレベル表示を更新（再レンダリングを避けるためDOMを直接更新）
+          if (zoomLevelDisplayRef.current) {
+            zoomLevelDisplayRef.current.textContent = `Zoom: ${zoomLevelRef.current.toFixed(0)}`
+          }
+          
           animRef.current = requestAnimationFrame(tick)
         }
 
@@ -1152,20 +1171,23 @@ function Force3DWordGraphTypeGPU({
         }}
       />
       {/* ズームレベル表示 */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        background: 'rgba(0, 0, 0, 0.7)',
-        color: 'white',
-        padding: '8px 12px',
-        borderRadius: '6px',
-        fontSize: '12px',
-        fontFamily: 'monospace',
-        pointerEvents: 'none',
-        zIndex: 10
-      }}>
-        Zoom: {zoomLevel.toFixed(0)}
+      <div 
+        ref={zoomLevelDisplayRef}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          background: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          pointerEvents: 'none',
+          zIndex: 10
+        }}
+      >
+        Zoom: {(zoomLevelRef.current ?? 600).toFixed(0)}
       </div>
       {/* 操作説明 */}
       <div style={{
@@ -1188,8 +1210,9 @@ function Force3DWordGraphTypeGPU({
 }
 
 // パフォーマンス最適化: React.memoでメモ化
+// 深い比較を行い、内容が同じなら再レンダリングをスキップ
 export default React.memo(Force3DWordGraphTypeGPU, (prevProps, nextProps) => {
-  // ノードとリンクの数が同じで、参照が同じなら再レンダリングをスキップ
+  // ノードとリンクの数が同じかチェック
   if (
     prevProps.nodes.length !== nextProps.nodes.length ||
     prevProps.links.length !== nextProps.links.length
@@ -1197,9 +1220,52 @@ export default React.memo(Force3DWordGraphTypeGPU, (prevProps, nextProps) => {
     return false // 再レンダリングが必要
   }
 
-  // ノードとリンクの参照が同じならスキップ
-  if (prevProps.nodes !== nextProps.nodes || prevProps.links !== nextProps.links) {
-    return false // 再レンダリングが必要
+  // 参照が同じならスキップ（最適化）
+  if (prevProps.nodes === nextProps.nodes && prevProps.links === nextProps.links) {
+    return true // 再レンダリング不要
+  }
+
+  // 深い比較: ノードの内容を比較（ID、label、initial位置）
+  for (let i = 0; i < prevProps.nodes.length; i++) {
+    const prev = prevProps.nodes[i]
+    const next = nextProps.nodes[i]
+    if (
+      prev.id !== next.id ||
+      prev.label !== next.label ||
+      prev.scale !== next.scale ||
+      prev.fixed !== next.fixed ||
+      prev.nodeType !== next.nodeType
+    ) {
+      return false // 再レンダリングが必要
+    }
+    // initial位置の比較（配列の深い比較）
+    if (prev.initial && next.initial) {
+      if (
+        prev.initial[0] !== next.initial[0] ||
+        prev.initial[1] !== next.initial[1] ||
+        prev.initial[2] !== next.initial[2]
+      ) {
+        return false // 再レンダリングが必要
+      }
+    } else if (prev.initial !== next.initial) {
+      return false // 再レンダリングが必要
+    }
+  }
+
+  // 深い比較: リンクの内容を比較
+  for (let i = 0; i < prevProps.links.length; i++) {
+    const prev = prevProps.links[i]
+    const next = nextProps.links[i]
+    if (
+      prev.source !== next.source ||
+      prev.target !== next.target ||
+      prev.weight !== next.weight ||
+      prev.mode !== next.mode ||
+      prev.L0 !== next.L0 ||
+      prev.k !== next.k
+    ) {
+      return false // 再レンダリングが必要
+    }
   }
 
   // 物理パラメータが変更されたかチェック
