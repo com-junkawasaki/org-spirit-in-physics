@@ -92,7 +92,25 @@ export default function DemoApp() {
   const updateStep = useCallback((stepId: string, updates: Partial<AnalysisStep>) => {
     setAnalysisSteps(prev => prev.map(step => 
       step.id === stepId 
-        ? { ...step, ...updates, completedAt: updates.status === 'completed' || updates.status === 'error' ? Date.now() : step.completedAt }
+        ? { 
+            ...step, 
+            ...updates, 
+            completedAt: updates.status === 'completed' || updates.status === 'error' ? Date.now() : step.completedAt,
+            logs: updates.logs ? [...(step.logs || []), ...(Array.isArray(updates.logs) ? updates.logs : [updates.logs])] : step.logs,
+          }
+        : step
+    ))
+  }, [])
+
+  const addStepLog = useCallback((stepId: string, logMessage: string) => {
+    setAnalysisSteps(prev => prev.map(step => 
+      step.id === stepId 
+        ? { ...step, logs: [...(step.logs || []), `${new Date().toISOString()}: ${logMessage}`] }
+        : step
+    ))
+    setDemoSteps(prev => prev.map(step => 
+      step.id === stepId 
+        ? { ...step, logs: [...(step.logs || []), `${new Date().toISOString()}: ${logMessage}`] }
         : step
     ))
   }, [])
@@ -130,12 +148,14 @@ export default function DemoApp() {
         wordIndex: currentWordIndex,
       })
       setAnalysisSteps(prev => [...prev, videoStep])
+      addStepLog(videoStep.id, `Capturing video for word: ${currentWord.japanese}`)
       
       let videoBlob: Blob
       const videoStartTime = Date.now()
       try {
         videoBlob = await captureVideoFrame(stream, 2000)
         const videoDuration = Date.now() - videoStartTime
+        addStepLog(videoStep.id, `Video captured: ${Math.round(videoBlob.size / 1024)}KB in ${videoDuration}ms`)
         updateStep(videoStep.id, {
           status: 'completed',
           output: { blobSize: videoBlob.size, blobType: videoBlob.type },
@@ -143,10 +163,12 @@ export default function DemoApp() {
         })
       } catch (err) {
         console.warn('Video capture failed, using empty blob:', err)
+        const errorMsg = err instanceof Error ? err.message : 'Video capture failed'
+        addStepLog(videoStep.id, `Video capture error: ${errorMsg}`)
         videoBlob = new Blob([], { type: 'video/webm' })
         updateStep(videoStep.id, {
           status: 'error',
-          error: err instanceof Error ? err.message : 'Video capture failed',
+          error: errorMsg,
           duration: Date.now() - videoStartTime,
         })
       }
@@ -157,6 +179,7 @@ export default function DemoApp() {
         wordIndex: currentWordIndex,
       })
       setAnalysisSteps(prev => [...prev, audioStep])
+      addStepLog(audioStep.id, `Capturing audio for word: ${currentWord.japanese}`)
       
       let audioBlob: Blob | undefined
       const audioStartTime = Date.now()
@@ -164,12 +187,14 @@ export default function DemoApp() {
         audioBlob = await captureAudioFrame(stream, 2000) || undefined
         const audioDuration = Date.now() - audioStartTime
         if (audioBlob) {
+          addStepLog(audioStep.id, `Audio captured: ${Math.round(audioBlob.size / 1024)}KB in ${audioDuration}ms`)
           updateStep(audioStep.id, {
             status: 'completed',
             output: { blobSize: audioBlob.size, blobType: audioBlob.type },
             duration: audioDuration,
           })
         } else {
+          addStepLog(audioStep.id, `No audio track available`)
           updateStep(audioStep.id, {
             status: 'completed',
             output: { blobSize: 0, note: 'No audio track available' },
@@ -178,10 +203,12 @@ export default function DemoApp() {
         }
       } catch (err) {
         console.warn('Audio capture failed, continuing without audio:', err)
+        const errorMsg = err instanceof Error ? err.message : 'Audio capture failed'
+        addStepLog(audioStep.id, `Audio capture error: ${errorMsg}`)
         audioBlob = undefined
         updateStep(audioStep.id, {
           status: 'error',
-          error: err instanceof Error ? err.message : 'Audio capture failed',
+          error: errorMsg,
           duration: Date.now() - audioStartTime,
         })
       }
@@ -192,13 +219,33 @@ export default function DemoApp() {
         wordIndex: currentWordIndex,
       })
       setAnalysisSteps(prev => [...prev, analysisStep])
+      addStepLog(analysisStep.id, `Starting emotion analysis for word: ${currentWord.japanese}`)
+      addStepLog(analysisStep.id, `Video blob size: ${Math.round(videoBlob.size / 1024)}KB, Audio blob size: ${audioBlob ? Math.round(audioBlob.size / 1024) : 0}KB`)
       
       const analysisStartTime = Date.now()
-      const analysisResult = await analyzeEmotionRealtime(videoBlob, audioBlob)
+      let analysisResult: any
+      try {
+        analysisResult = await analyzeEmotionRealtime(videoBlob, audioBlob)
+        addStepLog(analysisStep.id, `API call completed in ${analysisResult.processingTime}ms`)
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+        addStepLog(analysisStep.id, `API call failed: ${errorMsg}`)
+        updateStep(analysisStep.id, {
+          status: 'error',
+          error: errorMsg,
+          duration: Date.now() - analysisStartTime,
+        })
+        setHasError(true)
+        setIsRunning(false)
+        setError('感情データが取得できませんでした。Hume AI APIの設定を確認してください。')
+        return
+      }
+      
       const analysisDuration = Date.now() - analysisStartTime
       
       // Check if emotions are empty (error condition)
       if (analysisResult.emotions.length === 0) {
+        addStepLog(analysisStep.id, `Warning: No emotions detected (emotionCount: 0)`)
         updateStep(analysisStep.id, {
           status: 'error',
           error: 'No emotions detected from Hume AI API',
@@ -210,11 +257,12 @@ export default function DemoApp() {
         return
       }
 
+      addStepLog(analysisStep.id, `Detected ${analysisResult.emotions.length} emotions: ${analysisResult.emotions.slice(0, 3).map((e: any) => `${e.name}(${e.score.toFixed(2)})`).join(', ')}${analysisResult.emotions.length > 3 ? '...' : ''}`)
       updateStep(analysisStep.id, {
         status: 'completed',
         output: { 
           emotionCount: analysisResult.emotions.length,
-          emotions: analysisResult.emotions.map(e => ({ name: e.name, score: e.score })),
+          emotions: analysisResult.emotions.map((e: any) => ({ name: e.name, score: e.score })),
           processingTime: analysisResult.processingTime,
         },
         duration: analysisDuration,
@@ -275,12 +323,15 @@ export default function DemoApp() {
               word: newData.word,
               emotionCount: newData.emotions.length,
             })
+            addStepLog(newStep.id, `Collected data for word: ${newData.word}`)
+            addStepLog(newStep.id, `Emotions detected: ${newData.emotions.length}`)
             updateStep(newStep.id, {
               status: 'completed',
               output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
             })
             return [...prevSteps, newStep]
           } else {
+            addStepLog(dataCollectionStep.id, `Updated: ${updated.length} words, ${updated.reduce((sum, d) => sum + d.emotions.length, 0)} total emotions`)
             updateStep(dataCollectionStep.id, {
               status: 'running',
               output: { collectedWords: updated.length, totalEmotions: updated.reduce((sum, d) => sum + d.emotions.length, 0) },
@@ -296,6 +347,7 @@ export default function DemoApp() {
             const newStep = createStep('demo_visualization', 3, 'Visualization', 'Update 3D Force Graph visualization', {
               wordCount: updated.length,
             })
+            addStepLog(newStep.id, `Starting visualization update for ${updated.length} words`)
             updateStep(newStep.id, { status: 'running' })
             return [...prevSteps, newStep]
           }
@@ -308,12 +360,15 @@ export default function DemoApp() {
           wordIndex: currentWordIndex,
         })
         setAnalysisSteps(prev => [...prev, complexStep])
+        addStepLog(complexStep.id, `Calculating Complex space for ${updated.length} words`)
         
         const complexStartTime = Date.now()
         let complex: ComplexSpaceData | null = null
         try {
           complex = calculateComplexSpace(updated)
           setComplexData(complex)
+          const complexDuration = Date.now() - complexStartTime
+          addStepLog(complexStep.id, `Complex calculation completed: ${complex.regions.length} regions in ${complexDuration}ms`)
           updateStep(complexStep.id, {
             status: 'completed',
             output: {
@@ -321,13 +376,14 @@ export default function DemoApp() {
               informationSpace: complex.informationSpace.length,
               biologicalSpace: complex.biologicalSpace.length,
             },
-            duration: Date.now() - complexStartTime,
+            duration: complexDuration,
           })
           
           // Update visualization step
           setDemoSteps(prev => {
             const visualizationStep = prev.find(s => s.stepType === 'demo_visualization')
             if (visualizationStep) {
+              addStepLog(visualizationStep.id, `Visualization updated: ${complex.regions.length} regions, ${updated.length} nodes`)
               updateStep(visualizationStep.id, {
                 status: 'completed',
                 output: {
@@ -339,9 +395,11 @@ export default function DemoApp() {
             return prev
           })
         } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : 'Complex calculation failed'
+          addStepLog(complexStep.id, `Complex calculation error: ${errorMsg}`)
           updateStep(complexStep.id, {
             status: 'error',
-            error: err instanceof Error ? err.message : 'Complex calculation failed',
+            error: errorMsg,
             duration: Date.now() - complexStartTime,
           })
           setHasError(true)
@@ -399,7 +457,7 @@ export default function DemoApp() {
     } finally {
       setIsAnalyzing(false)
     }
-  }, [stream, currentWordIndex, createStep, updateStep, isAnalyzing])
+  }, [stream, currentWordIndex, createStep, updateStep, isAnalyzing, addStepLog])
 
   // Auto advance words
   useEffect(() => {
@@ -407,6 +465,8 @@ export default function DemoApp() {
       if (currentWordIndex >= JUNG_STIMULUS_WORDS.length) {
         setDemoSteps(prevSteps => {
           const demoCompleteStep = createStep('demo_complete', prevSteps.length, 'Demo Complete', 'All words processed', {})
+          addStepLog(demoCompleteStep.id, `All ${JUNG_STIMULUS_WORDS.length} words processed`)
+          addStepLog(demoCompleteStep.id, `Total emotion data collected: ${wordEmotionData.length} entries`)
           updateStep(demoCompleteStep.id, { status: 'completed' })
           return [...prevSteps, demoCompleteStep]
         })
@@ -419,9 +479,11 @@ export default function DemoApp() {
     setDemoSteps(prevSteps => {
       const wordDisplayStep = prevSteps.find(s => s.stepType === 'demo_word_display')
       if (wordDisplayStep) {
+        const currentWord = JUNG_STIMULUS_WORDS[currentWordIndex]
+        addStepLog(wordDisplayStep.id, `Displaying word ${currentWordIndex + 1}/${JUNG_STIMULUS_WORDS.length}: ${currentWord?.japanese}`)
         updateStep(wordDisplayStep.id, {
           status: 'running',
-          metadata: { word: JUNG_STIMULUS_WORDS[currentWordIndex]?.japanese, wordIndex: currentWordIndex },
+          metadata: { word: currentWord?.japanese, wordIndex: currentWordIndex },
         })
       }
       return prevSteps
@@ -432,7 +494,7 @@ export default function DemoApp() {
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, [isRunning, currentWordIndex, hasError, createStep, updateStep])
+  }, [isRunning, currentWordIndex, hasError, createStep, updateStep, addStepLog, wordEmotionData])
 
   const handleStart = () => {
     setCurrentWordIndex(0)
@@ -446,10 +508,13 @@ export default function DemoApp() {
     // Create demo execution steps
     const demoStartStep = createStep('demo_start', 0, 'Demo Start', 'Initialize demo application', {})
     setDemoSteps([demoStartStep])
+    addStepLog(demoStartStep.id, 'Demo application initialized')
+    addStepLog(demoStartStep.id, `Total words: ${JUNG_STIMULUS_WORDS.length}`)
     updateStep(demoStartStep.id, { status: 'completed' })
 
     const demoWordDisplayStep = createStep('demo_word_display', 1, 'Word Display', 'Display current word to user', {})
     setDemoSteps(prev => [...prev, demoWordDisplayStep])
+    addStepLog(demoWordDisplayStep.id, 'Word display ready')
   }
 
   const handleStop = () => {
@@ -639,9 +704,23 @@ export default function DemoApp() {
                           </div>
                         )}
                         {step.error && (
-                          <div className="text-xs opacity-75 mt-0.5 truncate" title={step.error}>
+                          <div className="text-xs opacity-75 mt-0.5 truncate text-red-600 font-bold" title={step.error}>
                             Error: {step.error}
                           </div>
+                        )}
+                        {step.logs && step.logs.length > 0 && (
+                          <details className="mt-1">
+                            <summary className="text-xs opacity-75 cursor-pointer hover:opacity-100">
+                              Logs ({step.logs.length})
+                            </summary>
+                            <div className="mt-1 ml-2 space-y-0.5 max-h-24 overflow-y-auto bg-black/10 dark:bg-white/10 rounded p-1 text-xs font-mono">
+                              {step.logs.slice(-10).map((log, idx) => (
+                                <div key={idx} className="text-xs opacity-75 break-words">
+                                  {log}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
                         )}
                       </div>
                     )

@@ -6,11 +6,9 @@
 use graphql_service::{PostgresPool, create_schema, Query, Mutation, get_allowed_origins};
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
-use async_graphql::{
-    http::{GraphQLRequest, GraphQLResponse},
-    Schema,
-};
-use tracing::{error, info};
+use async_graphql::Schema;
+use serde_json::json;
+use tracing::info;
 use std::sync::OnceLock;
 
 // Global schema instance (initialized once per Serverless Function instance)
@@ -99,13 +97,34 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 Body::Empty => "{}".to_string(),
             };
 
-            let graphql_request: GraphQLRequest = serde_json::from_str(&body_str)
-                .unwrap_or_else(|_| GraphQLRequest::new("query { __typename }"));
+            // Parse GraphQL request from JSON
+            let request_json: serde_json::Value = serde_json::from_str(&body_str)
+                .unwrap_or_else(|_| json!({ "query": "query { __typename }" }));
+            
+            let query = request_json.get("query")
+                .and_then(|v| v.as_str())
+                .unwrap_or("query { __typename }");
+            let variables = request_json.get("variables").cloned();
+            let operation_name = request_json.get("operationName")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
 
-            let response = schema.execute(graphql_request.into_inner()).await;
-            let graphql_response = GraphQLResponse::from(response);
+            // Create GraphQL request
+            let mut request = async_graphql::Request::new(query);
+            if let Some(vars) = variables {
+                if let Ok(vars_value) = serde_json::from_value::<async_graphql::Variables>(vars) {
+                    request = request.variables(vars_value);
+                }
+            }
+            if let Some(op_name) = operation_name {
+                request = request.operation_name(op_name);
+            }
 
-            let response_body = serde_json::to_string(&graphql_response)
+            // Execute GraphQL query
+            let response = schema.execute(request).await;
+
+            // Convert response to JSON
+            let response_body = serde_json::to_string(&response)
                 .map_err(|e| Error::from(format!("Failed to serialize response: {}", e)))?;
 
             let response = Response::builder()

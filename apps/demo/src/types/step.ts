@@ -39,6 +39,7 @@ export interface AnalysisStep {
   metadata?: Record<string, any>
   createdAt: number
   completedAt?: number
+  logs?: string[] // Log messages for this step
 }
 
 export interface StepMetadata {

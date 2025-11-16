@@ -5,6 +5,20 @@ import type { APIRoute } from 'astro'
 
 const HUME_API_BASE = 'https://api.hume.ai/v0'
 
+// Helper to get environment variable (works in both Astro and Node.js)
+function getEnvVar(key: string): string | undefined {
+  // Try import.meta.env first (Astro)
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    const value = (import.meta.env as any)[key]
+    if (value) return value
+  }
+  // Fallback to process.env (Node.js)
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key]
+  }
+  return undefined
+}
+
 /**
  * Call Hume AI Expression Measurement API (Face)
  */
@@ -23,7 +37,13 @@ async function analyzeFace(videoBlob: Blob, apiKey: string): Promise<any> {
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('Hume Face API error:', response.status, errorText)
+    console.error('Hume Face API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      errorText: errorText.substring(0, 500),
+      apiKeyPrefix: apiKey.substring(0, 10),
+    })
     throw new Error(`Hume Face API error: ${response.status} ${errorText}`)
   }
 
@@ -50,7 +70,13 @@ async function analyzeProsody(audioBlob: Blob, apiKey: string): Promise<any> {
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('Hume Prosody API error:', response.status, errorText)
+    console.error('Hume Prosody API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      errorText: errorText.substring(0, 500),
+      apiKeyPrefix: apiKey.substring(0, 10),
+    })
     throw new Error(`Hume Prosody API error: ${response.status} ${errorText}`)
   }
 
@@ -77,7 +103,13 @@ async function analyzeBurst(audioBlob: Blob, apiKey: string): Promise<any> {
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('Hume Burst API error:', response.status, errorText)
+    console.error('Hume Burst API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      errorText: errorText.substring(0, 500),
+      apiKeyPrefix: apiKey.substring(0, 10),
+    })
     throw new Error(`Hume Burst API error: ${response.status} ${errorText}`)
   }
 
@@ -101,12 +133,17 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Get API key from environment (hardcoded in docker-compose.yaml for development)
-    const apiKey = import.meta.env.HUME_API_KEY || import.meta.env.HUME_API
+    const apiKey = getEnvVar('HUME_API_KEY') || getEnvVar('HUME_API') || null
 
     console.log('Hume API key check:', {
-      hasHumeApiKey: !!import.meta.env.HUME_API_KEY,
-      hasHumeApi: !!import.meta.env.HUME_API,
+      hasHumeApiKey_import: !!(typeof import.meta !== 'undefined' && (import.meta.env as any)?.HUME_API_KEY),
+      hasHumeApi_import: !!(typeof import.meta !== 'undefined' && (import.meta.env as any)?.HUME_API),
+      hasHumeApiKey_process: typeof process !== 'undefined' ? !!process.env?.HUME_API_KEY : 'N/A',
+      hasHumeApi_process: typeof process !== 'undefined' ? !!process.env?.HUME_API : 'N/A',
       apiKeyLength: apiKey?.length || 0,
+      apiKeyPrefix: apiKey ? `${apiKey.substring(0, 10)}...` : 'N/A',
+      allEnvKeys: typeof process !== 'undefined' ? Object.keys(process.env).filter(k => k.includes('HUME')).join(', ') : 'N/A',
+      selectedApiKey: apiKey ? 'Found' : 'Not found',
     })
 
     if (!apiKey) {
