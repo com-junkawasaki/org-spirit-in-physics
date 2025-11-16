@@ -11,18 +11,10 @@ import { analyzeEmotionRealtime, captureVideoFrame, captureAudioFrame } from '..
 import { calculateComplexSpace } from '../lib/complex-calculator'
 import type { WordEmotionData, ComplexSpaceData } from '../types/demo'
 import type { AnalysisStep, StepType, StepStatus, StepMetadata } from '../types/step'
+import { useDemoStore } from '../store/demo-store'
 
 // BPM 85 = 85 beats per minute = 60000ms / 85 = ~706ms per beat
 const BPM_85_INTERVAL_MS = Math.round(60000 / 85) // ~706ms
-
-interface BatchQueueItem {
-  word: string
-  wordIndex: number
-  timestamp: number
-  videoBlob: Blob
-  audioBlob?: Blob
-  stepOrder: number
-}
 
 export default function DemoApp() {
   const [currentWordIndex, setCurrentWordIndex] = useState(0)
@@ -42,8 +34,12 @@ export default function DemoApp() {
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([])
   const [demoSteps, setDemoSteps] = useState<AnalysisStep[]>([])
   const [hasError, setHasError] = useState(false)
-  const [batchQueue, setBatchQueue] = useState<BatchQueueItem[]>([])
   const [stepOrderCounter, setStepOrderCounter] = useState(0)
+  
+  // Use Zustand store for batch queue
+  const addToBatchQueue = useDemoStore((state) => state.addToBatchQueue)
+  const processBatchQueue = useDemoStore((state) => state.processBatchQueue)
+  const batchQueueLength = useDemoStore((state) => state.batchQueue.length)
 
   // Request media access
   useEffect(() => {
@@ -210,21 +206,20 @@ export default function DemoApp() {
       }
 
       // Add to batch queue instead of processing immediately
-      setBatchQueue(prev => [...prev, {
+      addToBatchQueue({
         word: currentWord.japanese,
         wordIndex: currentWordIndex,
         timestamp,
         videoBlob,
         audioBlob,
         stepOrder,
-      }])
+      })
+      addStepLog(videoStep.id, `Added to batch queue (BPM 85: ${BPM_85_INTERVAL_MS}ms interval). Queue size: ${batchQueueLength + 1}`)
       setStepOrderCounter(prev => prev + 2) // Increment by 2 (video + audio steps)
-      
-      addStepLog(videoStep.id, `Added to batch queue (BPM 85: ${BPM_85_INTERVAL_MS}ms interval). Queue size: ${batchQueue.length + 1}`)
     } catch (err) {
       console.error('Error capturing frames for batch:', err)
     }
-  }, [stream, isRunning, currentWordIndex, stepOrderCounter, batchQueue.length, createStep, updateStep, addStepLog])
+  }, [stream, isRunning, currentWordIndex, stepOrderCounter, batchQueueLength, addToBatchQueue, createStep, updateStep, addStepLog])
 
   // BPM 85 batch processing timer
   useEffect(() => {
@@ -237,20 +232,13 @@ export default function DemoApp() {
         return
       }
       
-      // Use functional update to get latest batchQueue state and clear it
-      let itemsToProcess: BatchQueueItem[] = []
-      setBatchQueue(currentQueue => {
-        if (currentQueue.length === 0) {
-          console.log('Batch queue is empty, skipping')
-          return currentQueue
-        }
-        itemsToProcess = [...currentQueue]
-        console.log(`Processing batch: ${itemsToProcess.length} items`)
-        return [] // Clear queue
-      })
+      // Use Zustand store to get and clear batch queue
+      const itemsToProcess = processBatchQueue()
       
       // If no items to process, return early
       if (itemsToProcess.length === 0) return
+      
+      console.log(`Processing batch: ${itemsToProcess.length} items`)
       
       setIsAnalyzing(true)
       
@@ -458,7 +446,7 @@ export default function DemoApp() {
     
     const timer = setInterval(processBatch, BPM_85_INTERVAL_MS)
     return () => clearInterval(timer)
-  }, [isRunning, batchQueue.length, isAnalyzing, createStep, updateStep, addStepLog])
+  }, [isRunning, batchQueueLength, isAnalyzing, processBatchQueue, createStep, updateStep, addStepLog])
 
   // Auto advance words
   useEffect(() => {
