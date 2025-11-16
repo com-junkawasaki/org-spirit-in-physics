@@ -37,7 +37,7 @@ impl ParticipantQuery {
     async fn participant(&self, ctx: &Context<'_>, id: ID) -> Result<Option<Participant>> {
         let pool = ctx.data::<Pool<Postgres>>()?;
         let uuid = Uuid::parse_str(id.as_str())
-            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
 
         let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
             "SELECT id, age, gender, handedness, created_at, updated_at FROM participants WHERE id = $1"

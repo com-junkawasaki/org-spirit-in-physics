@@ -26,7 +26,10 @@ export default function WordDisplay({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    // Trigger word displayed event
+    // Reset playing state when word changes
+    setIsPlaying(false)
+    
+    // Trigger word displayed event (only when word.id changes)
     onWordDisplayed()
 
     // Try to play audio if available (optional, graceful degradation)
@@ -71,7 +74,7 @@ export default function WordDisplay({
         audioRef.current.currentTime = 0
       }
     }
-  }, [word.id, autoAdvance, displayDuration, onWordDisplayed])
+  }, [word.id, autoAdvance, displayDuration]) // Remove onWordDisplayed from dependencies
 
   return (
     <div className="flex flex-col items-center justify-center p-2 md:p-3 bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full">

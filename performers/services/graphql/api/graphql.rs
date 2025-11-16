@@ -2,30 +2,8 @@
 // Vercel Serverless Function entry point for GraphQL API
 // This file is the entry point for /api/graphql route
 
-// Note: vercel-community/rust treats each api/*.rs file as an independent Serverless Function
-// We'll use include! to include the source files directly
-
-// Include all necessary modules from src/
-include!("../src/schema/mod.rs");
-include!("../src/schema/query.rs");
-include!("../src/schema/mutation.rs");
-include!("../src/database/mod.rs");
-include!("../src/database/postgres.rs");
-include!("../src/types/mod.rs");
-include!("../src/types/enums.rs");
-include!("../src/types/participant.rs");
-include!("../src/types/session.rs");
-include!("../src/types/stimulus_word.rs");
-include!("../src/types/timeline.rs");
-include!("../src/types/word_aggregate.rs");
-include!("../src/resolvers/mod.rs");
-include!("../src/resolvers/mutation.rs");
-include!("../src/resolvers/participant.rs");
-include!("../src/resolvers/timeline.rs");
-include!("../src/storage.rs");
-
-use database::PostgresPool;
-use schema::{create_schema, Query, Mutation};
+// Import from the library crate
+use graphql_service::{PostgresPool, create_schema, Query, Mutation, get_allowed_origins};
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use async_graphql::{
@@ -57,44 +35,6 @@ async fn get_or_initialize_schema() -> Result<&'static tokio::sync::Mutex<Option
     }
     
     Ok(schema_mutex)
-}
-
-// Include the get_allowed_origins function from main.rs
-fn get_allowed_origins() -> Vec<String> {
-    let mut origins = vec![
-        "http://localhost:25250".to_string(),
-        "https://patient.spirit-in-physics.orb.local".to_string(),
-        "http://localhost:3000".to_string(),
-        "http://localhost:4321".to_string(),
-        "http://localhost:4322".to_string(),
-        "https://demo.spirit-in-physics.orb.local".to_string(),
-        "http://localhost:8080".to_string(),
-        "http://127.0.0.1:25250".to_string(),
-        "http://127.0.0.1:3000".to_string(),
-        "http://127.0.0.1:4321".to_string(),
-        "http://127.0.0.1:4322".to_string(),
-    ];
-
-    if let Ok(vercel_url) = std::env::var("VERCEL_URL") {
-        origins.push(format!("https://{}", vercel_url));
-    }
-    if let Ok(vercel_deployment_url) = std::env::var("VERCEL_DEPLOYMENT_URL") {
-        origins.push(format!("https://{}", vercel_deployment_url));
-    }
-    if let Ok(next_public_app_url) = std::env::var("NEXT_PUBLIC_APP_URL") {
-        origins.push(next_public_app_url);
-    }
-
-    if let Ok(custom_origins) = std::env::var("ALLOWED_ORIGINS") {
-        for origin in custom_origins.split(',') {
-            let trimmed = origin.trim().to_string();
-            if !trimmed.is_empty() {
-                origins.push(trimmed);
-            }
-        }
-    }
-
-    origins
 }
 
 fn is_allowed_origin(origin: &str) -> bool {
@@ -154,7 +94,7 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
             // Handle GraphQL requests
             let body = req.body();
             let body_str = match body {
-                Body::Text(text) => text,
+                Body::Text(text) => text.clone(),
                 Body::Binary(bytes) => String::from_utf8_lossy(bytes).to_string(),
                 Body::Empty => "{}".to_string(),
             };
@@ -191,4 +131,3 @@ async fn main() -> Result<(), Error> {
     info!("Starting GraphQL API handler on Vercel...");
     run(handler).await
 }
-

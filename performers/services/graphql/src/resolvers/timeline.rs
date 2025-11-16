@@ -20,7 +20,7 @@ impl TimelineQuery {
     ) -> Result<Vec<Session>> {
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
 
         // Join with session_events table to get events
         let rows = sqlx::query(
@@ -92,11 +92,11 @@ impl TimelineQuery {
     ) -> Result<Vec<TimelinePoint>> {
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
 
         let session_uuid = if let Some(sid) = session_id {
             Some(Uuid::parse_str(sid.as_str())
-                .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?)
+                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?)
         } else {
             None
         };
@@ -299,11 +299,11 @@ impl TimelineQuery {
     ) -> Result<Vec<WordAggregate>> {
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
 
         let session_uuid = if let Some(sid) = session_id {
             Some(Uuid::parse_str(sid.as_str())
-                .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?)
+                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?)
         } else {
             None
         };
@@ -408,11 +408,11 @@ impl TimelineQuery {
     ) -> Result<Vec<EmotionVector>> {
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
 
         let session_uuid = if let Some(sid) = session_id {
             Some(Uuid::parse_str(sid.as_str())
-                .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?)
+                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?)
         } else {
             None
         };
@@ -501,11 +501,11 @@ impl TimelineQuery {
     ) -> Result<Vec<WordStatistics>> {
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
 
         let session_uuid = if let Some(sid) = session_id {
             Some(Uuid::parse_str(sid.as_str())
-                .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?)
+                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?)
         } else {
             None
         };

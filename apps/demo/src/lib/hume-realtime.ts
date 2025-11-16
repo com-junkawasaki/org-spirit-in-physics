@@ -143,33 +143,64 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
  * Capture frame from MediaStream as Blob
  */
 export async function captureVideoFrame(stream: MediaStream, durationMs: number = 2000): Promise<Blob> {
+  // Check if MediaRecorder is supported
+  let mimeType = 'video/webm;codecs=vp9'
+  if (!MediaRecorder.isTypeSupported(mimeType)) {
+    mimeType = 'video/webm;codecs=vp8'
+  }
+  if (!MediaRecorder.isTypeSupported(mimeType)) {
+    mimeType = 'video/webm'
+  }
+  if (!MediaRecorder.isTypeSupported(mimeType)) {
+    console.warn('No supported video MIME type found, using empty blob')
+    return new Blob([], { type: 'video/webm' })
+  }
+
   return new Promise((resolve, reject) => {
-    const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=vp9',
-    })
+    try {
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+      })
 
-    const chunks: Blob[] = []
+      const chunks: Blob[] = []
 
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        chunks.push(event.data)
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data)
+        }
       }
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: mimeType })
+        resolve(blob)
+      }
+
+      mediaRecorder.onerror = (error) => {
+        console.warn('MediaRecorder error:', error)
+        // Return empty blob instead of rejecting
+        resolve(new Blob([], { type: mimeType }))
+      }
+
+      mediaRecorder.start()
+
+      setTimeout(() => {
+        try {
+          if (mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop()
+          } else {
+            // Already stopped, resolve with empty blob
+            resolve(new Blob([], { type: mimeType }))
+          }
+        } catch (err) {
+          console.warn('Error stopping MediaRecorder:', err)
+          resolve(new Blob([], { type: mimeType }))
+        }
+      }, durationMs)
+    } catch (err) {
+      console.warn('Failed to create MediaRecorder:', err)
+      // Return empty blob instead of rejecting
+      resolve(new Blob([], { type: mimeType }))
     }
-
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'video/webm' })
-      resolve(blob)
-    }
-
-    mediaRecorder.onerror = (error) => {
-      reject(new Error('Failed to capture video frame'))
-    }
-
-    mediaRecorder.start()
-
-    setTimeout(() => {
-      mediaRecorder.stop()
-    }, durationMs)
   })
 }
 
@@ -182,33 +213,65 @@ export async function captureAudioFrame(stream: MediaStream, durationMs: number 
     return null
   }
 
+  // Check if MediaRecorder is supported
+  if (!MediaRecorder.isTypeSupported('audio/webm') && !MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+    console.warn('Audio MediaRecorder not supported, returning null')
+    return null
+  }
+
   return new Promise((resolve, reject) => {
-    const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'audio/webm',
-    })
+    let mimeType = 'audio/webm'
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = 'audio/webm;codecs=opus'
+    }
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = 'audio/ogg;codecs=opus'
+    }
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      console.warn('No supported audio MIME type found')
+      resolve(null)
+      return
+    }
 
-    const chunks: Blob[] = []
+    try {
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+      })
 
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        chunks.push(event.data)
+      const chunks: Blob[] = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data)
+        }
       }
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: mimeType })
+        resolve(blob)
+      }
+
+      mediaRecorder.onerror = (error) => {
+        console.warn('MediaRecorder error:', error)
+        resolve(null) // Return null instead of rejecting
+      }
+
+      mediaRecorder.start()
+
+      setTimeout(() => {
+        try {
+          if (mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop()
+          }
+        } catch (err) {
+          console.warn('Error stopping MediaRecorder:', err)
+          resolve(null)
+        }
+      }, durationMs)
+    } catch (err) {
+      console.warn('Failed to create MediaRecorder:', err)
+      resolve(null) // Return null instead of rejecting
     }
-
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'audio/webm' })
-      resolve(blob)
-    }
-
-    mediaRecorder.onerror = (error) => {
-      reject(new Error('Failed to capture audio frame'))
-    }
-
-    mediaRecorder.start()
-
-    setTimeout(() => {
-      mediaRecorder.stop()
-    }, durationMs)
   })
 }
 

@@ -63,21 +63,49 @@ export default function DemoApp() {
 
   // Handle word display event
   const handleWordDisplayed = useCallback(async () => {
-    if (!stream || isAnalyzing) return
+    if (!stream) return
+    
+    // Prevent concurrent analysis
+    setIsAnalyzing(prev => {
+      if (prev) {
+        console.log('Already analyzing, skipping...')
+        return prev // Already analyzing, skip
+      }
+      return true
+    })
+    
+    // Double-check after state update (async state update)
+    if (isAnalyzing) {
+      console.log('Already analyzing (state check), skipping...')
+      return
+    }
 
-    setIsAnalyzing(true)
     const currentWord = JUNG_STIMULUS_WORDS[currentWordIndex]
     const timestamp = Date.now()
 
     try {
-      // Capture video/audio frames
-      const videoBlob = await captureVideoFrame(stream, 2000)
-      const audioBlob = await captureAudioFrame(stream, 2000)
+      // Capture video/audio frames (with error handling)
+      let videoBlob: Blob
+      let audioBlob: Blob | undefined
+      
+      try {
+        videoBlob = await captureVideoFrame(stream, 2000)
+      } catch (err) {
+        console.warn('Video capture failed, using empty blob:', err)
+        videoBlob = new Blob([], { type: 'video/webm' })
+      }
+      
+      try {
+        audioBlob = await captureAudioFrame(stream, 2000) || undefined
+      } catch (err) {
+        console.warn('Audio capture failed, continuing without audio:', err)
+        audioBlob = undefined
+      }
 
       // Analyze emotions with Hume AI
-      const analysisResult = await analyzeEmotionRealtime(videoBlob, audioBlob || undefined)
+      const analysisResult = await analyzeEmotionRealtime(videoBlob, audioBlob)
 
-      // Update word emotion data
+      // Update word emotion data (always add data, even if analysis failed)
       const newData: WordEmotionData = {
         word: currentWord.japanese,
         timestamp,
@@ -89,6 +117,13 @@ export default function DemoApp() {
       }
 
       setWordEmotionData(prev => {
+        // Prevent duplicate entries for the same word at the same timestamp
+        const isDuplicate = prev.some(d => d.word === newData.word && Math.abs(d.timestamp - newData.timestamp) < 1000)
+        if (isDuplicate) {
+          console.log('Duplicate word data detected, skipping:', newData.word)
+          return prev
+        }
+        
         const updated = [...prev, newData]
         
         // Calculate Complex space
@@ -127,10 +162,23 @@ export default function DemoApp() {
       })
     } catch (err) {
       console.error('Error analyzing word:', err)
+      // Even on error, add empty data to show progress
+      const errorData: WordEmotionData = {
+        word: currentWord.japanese,
+        timestamp,
+        emotions: [],
+        reactionTime: 0,
+        reactionValue: 0,
+      }
+      setWordEmotionData(prev => {
+        const isDuplicate = prev.some(d => d.word === errorData.word && Math.abs(d.timestamp - errorData.timestamp) < 1000)
+        if (isDuplicate) return prev
+        return [...prev, errorData]
+      })
     } finally {
       setIsAnalyzing(false)
     }
-  }, [stream, currentWordIndex, isAnalyzing])
+  }, [stream, currentWordIndex])
 
   // Auto advance words
   useEffect(() => {

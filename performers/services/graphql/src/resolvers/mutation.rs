@@ -51,13 +51,13 @@ impl ParticipantMutation {
         
         let participant_id = if let Some(id) = input.id {
             Uuid::parse_str(id.as_str())
-                .map_err(|e| Error::new(format!("Invalid UUID: {}", e)))?
+                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?
         } else {
             Uuid::new_v4()
         };
 
         let agreed_at = chrono::DateTime::parse_from_rfc3339(&input.agreed_at)
-            .map_err(|e| Error::new(format!("Invalid date format: {}", e)))?
+            .map_err(|e| Error::from(format!("Invalid date format: {}", e)))?
             .with_timezone(&Utc);
 
         // Insert participant into database
@@ -104,14 +104,14 @@ impl ParticipantMutation {
         let pool = ctx.data::<Pool<Postgres>>()?;
         
         let participant_uuid = Uuid::parse_str(input.participant_id.as_str())
-            .map_err(|e| Error::new(format!("Invalid participant UUID: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid participant UUID: {}", e)))?;
 
         let session_id = Uuid::new_v4();
         let now = Utc::now();
 
         // Parse events JSON
         let events: Vec<Value> = serde_json::from_value(input.events.clone())
-            .map_err(|e| Error::new(format!("Invalid events format: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid events format: {}", e)))?;
 
         // Insert session into database (without events JSONB column)
         sqlx::query(
@@ -134,7 +134,7 @@ impl ParticipantMutation {
         for event in events {
             let event_type_str = event.get("type")
                 .and_then(|v| v.as_str())
-                .ok_or_else(|| Error::new("Event missing 'type' field"))?;
+                .ok_or_else(|| Error::from("Event missing 'type' field"))?;
             
                    // Cast event type string to session_event_type_enum (no master table lookup)
                    let event_type: String = event_type_str.to_string();
@@ -235,11 +235,11 @@ impl ParticipantMutation {
         // Decode base64 file data
         let file_data = general_purpose::STANDARD
             .decode(&input.file_data)
-            .map_err(|e| Error::new(format!("Invalid base64 file data: {}", e)))?;
+            .map_err(|e| Error::from(format!("Invalid base64 file data: {}", e)))?;
 
         // Initialize Supabase Storage client
         let storage = SupabaseStorage::new()
-            .map_err(|e| Error::new(format!("Failed to initialize storage: {}", e)))?;
+            .map_err(|e| Error::from(format!("Failed to initialize storage: {}", e)))?;
 
         // Upload file to Supabase Storage
         let public_url = storage
@@ -250,7 +250,7 @@ impl ParticipantMutation {
                 &input.content_type,
             )
             .await
-            .map_err(|e| Error::new(format!("Failed to upload artifact: {}", e)))?;
+            .map_err(|e| Error::from(format!("Failed to upload artifact: {}", e)))?;
 
         Ok(public_url)
     }
