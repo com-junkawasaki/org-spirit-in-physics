@@ -4,7 +4,7 @@
 set -e
 
 GRAPHQL_API_URL="${GRAPHQL_API_URL:-http://localhost:8081/graphql/schema}"
-SCHEMA_OUTPUT="${SCHEMA_OUTPUT:-apps/visualizer/schema.graphql}"
+SCHEMA_OUTPUT="${SCHEMA_OUTPUT:-apps/researcher/schema.graphql}"
 
 echo "Fetching GraphQL schema from ${GRAPHQL_API_URL}..."
 

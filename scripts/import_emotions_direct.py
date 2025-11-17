@@ -147,7 +147,7 @@ if __name__ == '__main__':
     )
     
     # Find participant directory
-    dataset_path = Path('apps/visualizer/public/dataset/participants') / participant_id
+    dataset_path = Path('apps/researcher/public/dataset/participants') / participant_id
     if not dataset_path.exists():
         print(f"Participant directory not found: {dataset_path}")
         sys.exit(1)

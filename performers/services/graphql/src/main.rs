@@ -37,8 +37,8 @@ pub fn get_allowed_origins() -> Vec<String> {
     let mut origins = vec![
         "http://localhost:25250".to_string(),      // participant app
         "https://patient.spirit-in-physics.orb.local".to_string(), // participant app via orb.local
-        "http://localhost:3000".to_string(),      // visualizer app
-        "http://localhost:4321".to_string(),      // research app
+        "http://localhost:3000".to_string(),      // researcher app
+        "http://localhost:4321".to_string(),      // paper app
         "http://localhost:4322".to_string(),      // demo app
         "https://demo.spirit-in-physics.orb.local".to_string(), // demo app via orb.local
         "http://localhost:8080".to_string(),      // fallback

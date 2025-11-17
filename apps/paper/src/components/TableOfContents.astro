@@ -1,0 +1,35 @@
+---
+// Merkle DAG: components.table_of_contents
+// Navigation component with section linking
+
+interface Props {
+  sections: Array<{
+    id: string;
+    title: string;
+    level: number;
+  }>;
+}
+
+const { sections } = Astro.props;
+---
+
+<nav class="sticky top-4 hidden lg:block w-64 ml-8">
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
+    <h3 class="text-lg font-semibold mb-4">Table of Contents</h3>
+    <ul class="space-y-2">
+      {sections.map((section) => (
+        <li>
+          <a
+            href={`#${section.id}`}
+            class={`block text-sm hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
+              section.level === 1 ? 'font-semibold' : section.level === 2 ? 'ml-4' : 'ml-8'
+            }`}
+          >
+            {section.title}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</nav>
+

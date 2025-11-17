@@ -59,7 +59,7 @@
 ### 10. 実行
 ```
 pnpm i
-pnpm -F apps/visualizer dev
+pnpm -F apps/researcher dev
 ```
 ブラウザで 3D Force Timeline（`/3d-force-timeline`）へアクセス。UI で σ, Spectral Init, Shell/Constraints 等を調整します。
 
@@ -76,7 +76,7 @@ pnpm -F apps/visualizer dev
 
 ---
 実装の中心ファイル:
-- `apps/visualizer/src/components/TimelineVisualization.tsx`
-- `apps/visualizer/src/components/Force3DWordGraph.tsx`
+- `apps/researcher/src/components/TimelineVisualization.tsx`
+- `apps/researcher/src/components/Force3DWordGraph.tsx`
 
 

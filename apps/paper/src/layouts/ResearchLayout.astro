@@ -1,0 +1,108 @@
+---
+// Merkle DAG: layouts.research_layout
+// Base layout for research papers
+
+import { getCombinedContext } from '../lib/semantic/load-schemas';
+import ThemeToggle from '../components/ThemeToggle';
+
+interface Props {
+  title: string;
+  description: string;
+  authors: Array<{ name: string; email?: string; affiliation: string }>;
+  date: string;
+}
+
+const { title, description, authors, date } = Astro.props;
+const schemas = getCombinedContext();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
+    
+    <!-- Tailwind CSS (injected by @astrojs/tailwind, but ensure it's loaded) -->
+    <style>
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+    </style>
+    
+    <title>{title}</title>
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify(schemas, null, 2)} />
+    
+    <!-- Theme initialization script (prevents flash of wrong theme) -->
+    <script is:inline>
+      (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+      <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+        <nav class="flex items-center space-x-4">
+          <a href="/" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+            ← Back to Index
+          </a>
+        </nav>
+        <div class="flex items-center space-x-4">
+          <ThemeToggle client:load />
+        </div>
+      </div>
+    </header>
+    
+    <main class="container mx-auto px-4 py-8">
+      <slot />
+    </main>
+    
+    <footer class="mt-16 py-8 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
+      <p>All rights reserved by Jun Kawasaki. @CC BY-NC-SA</p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  /* KaTeX display styles */
+  .katex-display {
+    display: block;
+    margin: 1em 0;
+    text-align: center;
+  }
+  
+  .katex-inline {
+    display: inline-block;
+  }
+  
+  /* Print styles */
+  @media print {
+    nav {
+      display: none;
+    }
+  }
+</style>
+

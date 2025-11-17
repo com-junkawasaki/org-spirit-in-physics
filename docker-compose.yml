@@ -32,7 +32,7 @@ services:
       - "25250:25250"
     volumes:
       - ./apps/participant:/app
-      - ./apps/visualizer/public/dataset:/app/dataset:cached
+      - ./apps/researcher/public/dataset:/app/dataset:cached
       - /app/node_modules
       - /app/.next
     environment:
@@ -67,22 +67,22 @@ services:
       start_period: 30s
 
 
-  # Visualizer app (Next.js)
-  visualizer:
+  # Researcher app (Next.js)
+  researcher:
     build:
       context: .
-      dockerfile: ./apps/visualizer/Dockerfile
-    container_name: spirit-visualizer
+      dockerfile: ./apps/researcher/Dockerfile
+    container_name: spirit-researcher
     ports:
       - "25260:3000"
     volumes:
-      - ./apps/visualizer:/app
+      - ./apps/researcher:/app
       - ./packages/visualization-components:/app/packages/visualization-components
       - /app/node_modules
       - ./dataset:/app/dataset:cached
     command: pnpm run dev
     env_file:
-      - ./apps/visualizer/env.docker
+      - ./apps/researcher/env.docker
     environment:
       - NODE_ENV=development
       - INNGEST_EVENT_KEY=local_dev_key
@@ -120,7 +120,7 @@ services:
       - "25251:25250"
     volumes:
       - ./apps/participant:/app
-      - ./apps/visualizer/public/dataset:/app/dataset:cached
+      - ./apps/researcher/public/dataset:/app/dataset:cached
       - /app/node_modules
       - /app/.next
     env_file:
@@ -162,12 +162,13 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ./apps/visualizer/public/dataset:/app/dataset:cached
+      - ./apps/researcher/public/dataset:/app/dataset:cached
     environment:
       # Production Supabase Database URL
       # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
       # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
-      - DATABASE_URL=${SUPABASE_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/spirit_in_physics}
+      # For local development, use local PostgreSQL container
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
       - DATASET_PATH=/app/dataset/participants
       - PORT=8082
     depends_on:
@@ -195,7 +196,8 @@ services:
       # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
       # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
       # Note: Using pooler to avoid IPv6 connectivity issues in Docker
-      - DATABASE_URL=postgresql://postgres.pxsuqemlayhnmcxuiigk:yJ21jzT0oy3Dgmfz@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require
+      # For local development, use local PostgreSQL container (override .envrc)
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
       - RUST_LOG=info
       # Production Supabase Configuration
       - SUPABASE_URL=${SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
@@ -215,18 +217,18 @@ services:
       retries: 5
       start_period: 10s
 
-  # Research app (Astro)
-  research:
+  # Paper app (Astro)
+  paper:
     build:
       context: .
-      dockerfile: ./apps/research/Dockerfile
-    container_name: spirit-research
+      dockerfile: ./apps/paper/Dockerfile
+    container_name: spirit-paper
     ports:
       - "25270:4321"
     volumes:
-      - ./apps/research:/app
+      - ./apps/paper:/app
       - ./packages/visualization-components:/app/packages/visualization-components
-      - research_node_modules:/app/node_modules
+      - paper_node_modules:/app/node_modules
     environment:
       - NODE_ENV=development
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
@@ -312,10 +314,10 @@ services:
   #         dockerfile: Dockerfile
   #       container_name: spirit-bpmn-runner
   #       environment:
-  #         - API_BASE=http://visualizer:3000
+  #         - API_BASE=http://researcher:3000
   #         - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
   #       depends_on:
-  #         - visualizer
+  #         - researcher
   #       networks:
   #         - spirit-network
   #       restart: "no"
@@ -344,7 +346,7 @@ services:
 
 volumes:
   postgres_data:
-  research_node_modules:
+  paper_node_modules:
   demo_node_modules:
 
 networks:

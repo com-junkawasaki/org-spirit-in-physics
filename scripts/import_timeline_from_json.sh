@@ -4,7 +4,7 @@
 set -e
 
 PARTICIPANT_ID="2a0d7a69-f953-4c29-87a5-8a8e4e8bd413"
-SESSION_DATA_PATH="apps/visualizer/public/dataset/participants/${PARTICIPANT_ID}/session_data.json"
+SESSION_DATA_PATH="apps/researcher/public/dataset/participants/${PARTICIPANT_ID}/session_data.json"
 
 if [ ! -f "$SESSION_DATA_PATH" ]; then
     echo "Error: Session data file not found: $SESSION_DATA_PATH"
@@ -14,7 +14,7 @@ fi
 echo "Reading session data from $SESSION_DATA_PATH..."
 
 # Use Node.js to process JSON and generate SQL
-docker exec spirit-visualizer sh -c "cd /app && node" <<NODE_SCRIPT
+docker exec spirit-researcher sh -c "cd /app && node" <<NODE_SCRIPT
 const fs = require('fs');
 const data = JSON.parse(fs.readFileSync('public/dataset/participants/${PARTICIPANT_ID}/session_data.json', 'utf8'));
 const events = data.events || [];
