@@ -31,7 +31,7 @@ import {
 // Server-side: Use GRAPHQL_API_URL (for Docker internal communication)
 // Client-side: Use NEXT_PUBLIC_GRAPHQL_API_URL (for browser access)
 // Fallback: localhost for local development
-function getGraphQLApiUrl(): string {
+export function getGraphQLApiUrl(): string {
   // Server-side (Node.js environment)
   if (typeof window === 'undefined') {
     const serverUrl = process.env.GRAPHQL_API_URL;
@@ -56,21 +56,30 @@ function getGraphQLApiUrl(): string {
   return 'http://localhost:8081/graphql';
 }
 
-const GRAPHQL_API_URL = getGraphQLApiUrl();
-
-// Log the GraphQL API URL for debugging (only in development)
-if (process.env.NODE_ENV === 'development') {
-  console.log('[GraphQL Client] Using API URL:', GRAPHQL_API_URL);
-  console.log('[GraphQL Client] Environment:', typeof window === 'undefined' ? 'server-side' : 'client-side');
-  console.log('[GraphQL Client] GRAPHQL_API_URL:', process.env.GRAPHQL_API_URL);
-  console.log('[GraphQL Client] NEXT_PUBLIC_GRAPHQL_API_URL:', process.env.NEXT_PUBLIC_GRAPHQL_API_URL);
+// Create a function that returns a GraphQL client with the correct URL
+// This ensures the URL is determined at runtime, not at module load time
+export function createGraphQLClient(): GraphQLClient {
+  const url = getGraphQLApiUrl();
+  
+  // Log the GraphQL API URL for debugging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[GraphQL Client] Using API URL:', url);
+    console.log('[GraphQL Client] Environment:', typeof window === 'undefined' ? 'server-side' : 'client-side');
+    console.log('[GraphQL Client] GRAPHQL_API_URL:', process.env.GRAPHQL_API_URL);
+    console.log('[GraphQL Client] NEXT_PUBLIC_GRAPHQL_API_URL:', process.env.NEXT_PUBLIC_GRAPHQL_API_URL);
+  }
+  
+  return new GraphQLClient(url, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 }
 
-export const graphqlClient = new GraphQLClient(GRAPHQL_API_URL, {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Export a default client for backward compatibility
+// Note: This uses a fallback URL and may not work correctly in all contexts
+// Prefer using createGraphQLClient() in API routes
+export const graphqlClient = createGraphQLClient();
 
 // Re-export generated queries and types for convenience
 export {

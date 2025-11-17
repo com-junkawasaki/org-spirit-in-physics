@@ -3,7 +3,7 @@
 // GraphQL経由でデータを取得
 
 import { NextRequest, NextResponse } from 'next/server'
-import { graphqlClient, GetSessionsDocument } from '@/lib/graphql/client'
+import { createGraphQLClient, GetSessionsDocument } from '@/lib/graphql/client'
 import type { GetSessionsQueryResult } from '@/generated/graphql'
 
 export async function GET(
@@ -25,6 +25,9 @@ export async function GET(
 
     console.log(`[SESSIONS API] Fetching sessions for participant: ${participantId}`)
     console.log(`[SESSIONS API] GraphQL API URL: ${process.env.GRAPHQL_API_URL || 'not set'}`)
+
+    // Create GraphQL client with server-side URL (graphql-service in Docker)
+    const graphqlClient = createGraphQLClient()
 
     // Query GraphQL service for sessions
     let data: GetSessionsQueryResult

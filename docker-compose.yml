@@ -89,6 +89,9 @@ services:
       - INNGEST_SIGNING_KEY=local_dev_signing_key
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
       - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      # Supabase Configuration (hardcoded for development)
+      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
       # Clerk Authentication (hardcoded for development)
       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_ZW5vdWdoLWNoaXBtdW5rLTkyLmNsZXJrLmFjY291bnRzLmRldiQ
       - CLERK_SECRET_KEY=sk_test_FmPI35dNxAij0tuaX7rV5PDIDVmVvx8J11nyVyxEGu
@@ -188,10 +191,11 @@ services:
     ports:
       - "8081:8081"
     environment:
-      # Production Supabase Database URL
+      # Production Supabase Database URL (Connection pooler - IPv4 compatible)
       # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
       # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
-      - DATABASE_URL=${SUPABASE_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/spirit_in_physics}
+      # Note: Using pooler to avoid IPv6 connectivity issues in Docker
+      - DATABASE_URL=postgresql://postgres.pxsuqemlayhnmcxuiigk:yJ21jzT0oy3Dgmfz@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require
       - RUST_LOG=info
       # Production Supabase Configuration
       - SUPABASE_URL=${SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
@@ -347,3 +351,8 @@ networks:
   spirit-network:
     driver: bridge
     name: spirit-network-v2
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+        - subnet: 2001:db8::/32
