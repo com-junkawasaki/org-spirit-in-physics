@@ -17,6 +17,7 @@ COPY Cargo.lock* ./
 
 # Copy source code
 COPY src ./src
+COPY api ./api
 
 # Build the application
 RUN cargo build --release

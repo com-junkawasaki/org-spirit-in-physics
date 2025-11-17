@@ -25,8 +25,8 @@ services:
   # Patient app (Next.js)
   patient:
     build:
-      context: ./apps/participant
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/participant/Dockerfile
     container_name: spirit-patient
     ports:
       - "25250:25250"

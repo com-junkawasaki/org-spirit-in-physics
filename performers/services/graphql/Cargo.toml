@@ -11,6 +11,10 @@ path = "src/lib.rs"
 name = "graphql"
 path = "api/graphql.rs"
 
+[[bin]]
+name = "graphql-service"
+path = "src/main.rs"
+
 [dependencies]
 async-graphql = "6.0"
 async-graphql-poem = "6.0"
