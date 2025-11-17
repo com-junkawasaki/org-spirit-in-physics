@@ -36,9 +36,8 @@ function getGraphQLApiUrl(): string {
   if (typeof window === 'undefined') {
     const serverUrl = process.env.GRAPHQL_API_URL;
     if (serverUrl) {
-      // If GRAPHQL_API_URL is explicitly set (e.g., in Docker), use it as-is
-      // Docker Compose sets this to http://graphql-service:8081/graphql
-      // which works within the Docker network
+      // In Docker: graphql-service resolves within the Docker network
+      // Outside Docker: use localhost (fallback)
       return serverUrl;
     }
     // Fallback for server-side local development

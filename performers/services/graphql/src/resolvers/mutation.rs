@@ -196,7 +196,6 @@ impl ParticipantMutation {
                 ) as events
             FROM sessions s
             LEFT JOIN session_events se ON se.session_id = s.id
-            LEFT JOIN event_types et ON et.id = se.event_type_id
             WHERE s.id = $1
             GROUP BY s.id, s.participant_id, s.session_index, s.start_ts, s.end_ts, s.created_at, s.updated_at
             "#
