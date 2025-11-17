@@ -2,6 +2,7 @@
 // GraphQL Subscription resolvers
 
 use async_graphql::*;
+use futures::Stream;
 use crate::physics::SimulationManager;
 use crate::types::*;
 
@@ -14,7 +15,7 @@ impl ForceGraphSubscription {
         ctx: &Context<'_>,
         simulation_id: String,
         max_fps: Option<i32>,
-    ) -> Result<impl futures::Stream<Item = ForceGraphUpdate>> {
+    ) -> Result<impl Stream<Item = ForceGraphUpdate>> {
         let simulation_manager = ctx.data::<SimulationManager>()?;
         let max_fps = max_fps.unwrap_or(0); // 0 = unlimited
 

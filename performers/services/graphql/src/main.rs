@@ -163,9 +163,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Get port from environment or use default
     let port = std::env::var("PORT")
-        .unwrap_or_else(|_| "8081".to_string())
+        .unwrap_or_else(|_| "19910".to_string())
         .parse::<u16>()
-        .unwrap_or(8081);
+        .unwrap_or(19910);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     info!("GraphQL service listening on 0.0.0.0:{}", port);

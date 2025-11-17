@@ -1,0 +1,25 @@
+subscription ForceGraphUpdates($simulationId: String!, $maxFps: Int) {
+  forceGraphUpdates(simulationId: $simulationId, maxFps: $maxFps) {
+    simulationId
+    timestamp
+    iteration
+    nodes {
+      id
+      position {
+        x
+        y
+        z
+      }
+      velocity {
+        x
+        y
+        z
+      }
+    }
+  }
+}
+
+mutation CreateForceGraphSimulation($input: ForceGraphSimulationInput!) {
+  createForceGraphSimulation(input: $input)
+}
+

@@ -1,0 +1,24 @@
+{
+  "query": "mutation CreateForceGraphSimulation($input: ForceGraphSimulationInput!) { createForceGraphSimulation(input: $input) }",
+  "variables": {
+    "input": {
+      "nodes": [
+        {"id": "node1", "label": "Node 1", "scale": 1.0},
+        {"id": "node2", "label": "Node 2", "scale": 1.5},
+        {"id": "node3", "label": "Node 3", "scale": 2.0}
+      ],
+      "links": [
+        {"source": 0, "target": 1, "weight": 1.0},
+        {"source": 1, "target": 2, "weight": 1.5}
+      ],
+      "physics": {
+        "springK": 2.0,
+        "repulsionK": 2000.0,
+        "damping": 0.92,
+        "restLength": 80,
+        "maxSpeed": 200
+      },
+      "maxFps": 30
+    }
+  }
+}

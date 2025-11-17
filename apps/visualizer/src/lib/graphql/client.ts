@@ -37,12 +37,12 @@ function getGraphQLApiUrl(): string {
     const serverUrl = process.env.GRAPHQL_API_URL;
     if (serverUrl) {
       // If GRAPHQL_API_URL is explicitly set (e.g., in Docker), use it as-is
-      // Docker Compose sets this to http://graphql-service:8081/graphql
+      // Docker Compose sets this to http://graphql-service:19910/graphql
       // which works within the Docker network
       return serverUrl;
     }
     // Fallback for server-side local development
-    return 'http://localhost:8081/graphql';
+    return 'http://localhost:19910/graphql';
   }
   
   // Client-side (browser environment)
@@ -54,7 +54,7 @@ function getGraphQLApiUrl(): string {
   }
   
   // Fallback for client-side local development
-  return 'http://localhost:8081/graphql';
+  return 'http://localhost:19910/graphql';
 }
 
 const GRAPHQL_API_URL = getGraphQLApiUrl();

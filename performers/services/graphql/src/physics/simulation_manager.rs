@@ -5,6 +5,7 @@ use crate::physics::force_graph::*;
 use crate::types::*;
 use async_stream::stream;
 use chrono::Utc;
+use futures::Stream;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -64,7 +65,7 @@ impl SimulationManager {
         &self,
         simulation_id: &str,
         max_fps: i32,
-    ) -> Result<impl futures::Stream<Item = ForceGraphUpdate>, String> {
+    ) -> Result<impl Stream<Item = ForceGraphUpdate>, String> {
         let simulation = self.get_simulation(simulation_id).await?;
 
         let interval_ms = if max_fps > 0 {

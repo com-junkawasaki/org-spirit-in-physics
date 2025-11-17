@@ -14,7 +14,7 @@ function getGraphQLApiUrl(): string {
     if (serverUrl) {
       return serverUrl;
     }
-    return 'http://localhost:8081/graphql';
+    return 'http://localhost:19910/graphql';
   }
   
   const clientUrl = process.env.NEXT_PUBLIC_GRAPHQL_API_URL;
@@ -22,7 +22,7 @@ function getGraphQLApiUrl(): string {
     return clientUrl.replace('graphql-service', 'localhost');
   }
   
-  return 'http://localhost:8081/graphql';
+  return 'http://localhost:19910/graphql';
 }
 
 // Determine WebSocket URL

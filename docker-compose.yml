@@ -46,9 +46,9 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
       # GraphQL API URL (hardcoded for development)
       # Client-side: use localhost for browser access
-      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:19910/graphql
       # Server-side: use container name for server-to-server communication
-      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      - GRAPHQL_API_URL=http://graphql-service:19910/graphql
       # Clerk Authentication (hardcoded for development)
       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_ZW5vdWdoLWNoaXBtdW5rLTkyLmNsZXJrLmFjY291bnRzLmRldiQ
       - CLERK_SECRET_KEY=sk_test_FmPI35dNxAij0tuaX7rV5PDIDVmVvx8J11nyVyxEGu
@@ -87,7 +87,7 @@ services:
       - NODE_ENV=development
       - INNGEST_EVENT_KEY=local_dev_key
       - INNGEST_SIGNING_KEY=local_dev_signing_key
-      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      - GRAPHQL_API_URL=http://graphql-service:19910/graphql
       # Clerk Authentication (hardcoded for development)
       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_ZW5vdWdoLWNoaXBtdW5rLTkyLmNsZXJrLmFjY291bnRzLmRldiQ
       - CLERK_SECRET_KEY=sk_test_FmPI35dNxAij0tuaX7rV5PDIDVmVvx8J11nyVyxEGu
@@ -185,12 +185,13 @@ services:
       dockerfile: Dockerfile
     container_name: spirit-graphql-service
     ports:
-      - "8081:8081"
+      - "19910:19910"
     environment:
       # Production Supabase Database URL
       # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
       # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
       - DATABASE_URL=${SUPABASE_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/spirit_in_physics}
+      - PORT=19910
       - RUST_LOG=info
       # Production Supabase Configuration
       - SUPABASE_URL=${SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
@@ -204,7 +205,7 @@ services:
     networks:
       - spirit-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8081/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:19910/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -224,7 +225,7 @@ services:
       - research_node_modules:/app/node_modules
     environment:
       - NODE_ENV=development
-      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      - GRAPHQL_API_URL=http://graphql-service:19910/graphql
       # HMR and file watching settings for Docker
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=1000
