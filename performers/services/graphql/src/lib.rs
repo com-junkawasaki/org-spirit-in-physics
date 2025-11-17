@@ -15,7 +15,7 @@ pub use schema::{create_schema, Query, Mutation};
 pub fn get_allowed_origins() -> Vec<String> {
     let mut origins = vec![
         "http://localhost:25250".to_string(),
-        "https://patient.spirit-in-physics.orb.local".to_string(),
+        "https://participant.spirit-in-physics.orb.local".to_string(),
         "http://localhost:3000".to_string(),
         "http://localhost:4321".to_string(),
         "http://localhost:4322".to_string(),

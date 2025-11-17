@@ -22,12 +22,12 @@ services:
       retries: 5
       start_period: 10s
 
-  # Patient app (Next.js)
-  patient:
+  # Participant app (Next.js)
+  participant:
     build:
       context: .
       dockerfile: ./apps/participant/Dockerfile
-    container_name: spirit-patient
+    container_name: spirit-participant
     ports:
       - "25250:25250"
     volumes:
@@ -109,13 +109,13 @@ services:
       retries: 10
       start_period: 30s
 
-  # Patient app for cloud (Aura) profile
-  patient-cloud:
+  # Participant app for cloud (Aura) profile
+  participant-cloud:
     profiles: ["cloud"]
     build:
       context: ./apps/participant
       dockerfile: Dockerfile
-    container_name: spirit-patient-cloud
+    container_name: spirit-participant-cloud
     ports:
       - "25251:25250"
     volumes:
@@ -323,22 +323,22 @@ services:
   #       restart: "no"
 
   # One-shot importer for cloud (Aura)
-  patient-cloud-importer:
+  participant-cloud-importer:
     profiles: ["cloud"]
     image: curlimages/curl:8.9.1
-    container_name: spirit-patient-cloud-importer
+    container_name: spirit-participant-cloud-importer
     depends_on:
-      patient-cloud:
+      participant-cloud:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-lc"]
     command: >-
       'set -euo pipefail;
        echo "Triggering participants import (cloud)";
-       curl -sS -X POST http://patient-cloud:25250/api/admin/import/participants || exit 1;
+       curl -sS -X POST http://participant-cloud:25250/api/admin/import/participants || exit 1;
        echo "Triggering sessions import (cloud)";
-       curl -sS -X POST http://patient-cloud:25250/api/admin/import/sessions || exit 1;
+       curl -sS -X POST http://participant-cloud:25250/api/admin/import/sessions || exit 1;
        echo "Triggering emotions import (cloud)";
-       curl -sS -X POST http://patient-cloud:25250/api/admin/import/emotions || exit 1;
+       curl -sS -X POST http://participant-cloud:25250/api/admin/import/emotions || exit 1;
        echo "Cloud imports completed";'
     networks:
       - spirit-network
