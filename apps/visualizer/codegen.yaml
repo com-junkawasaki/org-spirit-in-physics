@@ -27,8 +27,8 @@ generates:
         JSON: any
       # Skip type checking for generated files
       skipTypename: false
-      # Use typed document nodes
-      documentMode: string
+      # Use typed document nodes (typescript-graphql-request generates TypedDocumentString)
+      # documentMode is not needed when using typescript-graphql-request
       # Generate hooks for React (if needed)
       withHooks: false
       # Generate fragments
@@ -39,4 +39,8 @@ generates:
       inputMaybeValue: T | null | undefined
       # Use graphql-request client
       rawRequest: false
+    # typescript-operations plugin config: don't generate string literals
+    # typescript-graphql-request will generate TypedDocumentString instead
+    typescript-operations:
+      documentMode: documentNode
 

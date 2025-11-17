@@ -19,31 +19,45 @@ interface Session {
 export default function ParticipantPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
-  const participantId = params.id
+  const participantId = params?.id
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchSessions() {
+      if (!participantId) {
+        setError('参加者IDが取得できませんでした')
+        setLoading(false)
+        return
+      }
+
       try {
         setLoading(true)
+        setError(null)
         const response = await fetch(`/api/participants/${participantId}/sessions`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch sessions')
-        }
         const data = await response.json()
+        
+        if (!response.ok) {
+          const errorMessage = data.error || `HTTP ${response.status}: ${response.statusText}`
+          const errorDetails = data.details ? `\n詳細: ${data.details}` : ''
+          throw new Error(`${errorMessage}${errorDetails}`)
+        }
+        
+        if (!data.sessions) {
+          throw new Error('Invalid response format: sessions array not found')
+        }
+        
         setSessions(data.sessions || [])
       } catch (err: any) {
+        console.error('[ParticipantPage] Error fetching sessions:', err)
         setError(err.message || 'Failed to load sessions')
       } finally {
         setLoading(false)
       }
     }
 
-    if (participantId) {
-      fetchSessions()
-    }
+    fetchSessions()
   }, [participantId])
 
   const formatDate = (timestamp?: number | string | null): string => {
@@ -67,6 +81,28 @@ export default function ParticipantPage() {
     }
   }, [loading, sessions, participantId, router])
 
+  // Early return if participantId is not available
+  if (!participantId) {
+    return (
+      <DashboardLayout
+        header={{
+          title: '参加者情報',
+          backHref: '/participants',
+          backLabel: '参加者一覧へ'
+        }}
+      >
+        <Card className="border-destructive">
+          <CardContent className="py-12">
+            <div className="text-center">
+              <p className="text-destructive font-semibold mb-2">エラーが発生しました</p>
+              <p className="text-sm text-muted-foreground">参加者IDが取得できませんでした</p>
+            </div>
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout
       header={{
@@ -82,9 +118,14 @@ export default function ParticipantPage() {
       )}
 
       {error && (
-        <div className="flex items-center justify-center py-12">
-          <p className="text-destructive">{error}</p>
-        </div>
+        <Card className="border-destructive">
+          <CardContent className="py-12">
+            <div className="text-center">
+              <p className="text-destructive font-semibold mb-2">エラーが発生しました</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {!loading && !error && (
