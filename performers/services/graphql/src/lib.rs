@@ -7,9 +7,10 @@ pub mod types;
 pub mod resolvers;
 pub mod database;
 pub mod storage;
+pub mod physics;
 
 pub use database::PostgresPool;
-pub use schema::{create_schema, Query, Mutation};
+pub use schema::{create_schema, Query, Mutation, Subscription};
 
 // Re-export get_allowed_origins from main.rs logic
 pub fn get_allowed_origins() -> Vec<String> {

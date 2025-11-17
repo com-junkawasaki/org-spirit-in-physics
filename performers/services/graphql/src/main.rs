@@ -23,11 +23,11 @@ use poem::{
     http::Method,
     listener::TcpListener,
     middleware::Cors,
-    web::{Data, Html, Json},
-    EndpointExt, Route, Server,
+    web::{websocket::WebSocket, Data, Html, Json},
+    EndpointExt, IntoResponse, Route, Server,
 };
 #[cfg(not(feature = "vercel"))]
-use async_graphql_poem::GraphQL;
+use async_graphql_poem::{GraphQL, GraphQLProtocol, GraphQLWebSocket};
 
 #[cfg(feature = "vercel")]
 mod vercel_handler;
@@ -93,9 +93,22 @@ async fn graphql_playground() -> Html<String> {
 #[cfg(not(feature = "vercel"))]
 #[handler]
 async fn schema_handler(
-    Data(schema): Data<&Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
+    Data(schema): Data<&Schema<schema::Query, schema::Mutation, schema::Subscription>>,
 ) -> String {
     schema.sdl()
+}
+
+#[cfg(not(feature = "vercel"))]
+#[handler]
+async fn graphql_ws(
+    Data(schema): Data<&Schema<schema::Query, schema::Mutation, schema::Subscription>>,
+    websocket: WebSocket,
+) -> impl IntoResponse {
+    GraphQLWebSocket::new(GraphQLProtocol::GraphQLWS)
+        .schema(schema.clone())
+        .on_connection_init(|_value| async { Ok::<_, async_graphql::Error>(()) })
+        .serve(websocket)
+        .await
 }
 
 #[cfg(not(feature = "vercel"))]
@@ -141,6 +154,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build routes
     let app = Route::new()
         .at("/graphql", GraphQL::new(schema.clone()))
+        .at("/graphql/ws", graphql_ws)
         .at("/graphql/playground", graphql_playground)
         .at("/graphql/schema", schema_handler)
         .at("/health", health_check)

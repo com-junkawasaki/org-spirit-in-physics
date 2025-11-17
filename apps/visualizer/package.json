@@ -35,6 +35,8 @@
     "dotenv": "^17.2.1",
     "graphql": "^16.12.0",
     "graphql-request": "^6.1.0",
+    "@apollo/client": "^3.11.0",
+    "graphql-ws": "^5.16.0",
     "inngest": "^3.44.3",
     "lucide-react": "^0.528.0",
     "next": "14.2.25",

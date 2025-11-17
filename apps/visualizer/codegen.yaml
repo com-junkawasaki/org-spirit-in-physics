@@ -7,6 +7,7 @@ schema:
 documents:
   - 'src/**/*.{ts,tsx}'
   - 'src/**/*.graphql'
+  - 'packages/visualization-components/src/**/*.graphql'
   - '!src/generated/**'
 
 generates:
@@ -15,6 +16,7 @@ generates:
       - typescript
       - typescript-operations
       - typescript-graphql-request
+      - typed-document-node
     config:
       # Use const assertions for better type inference
       constEnums: true
@@ -39,4 +41,21 @@ generates:
       inputMaybeValue: T | null | undefined
       # Use graphql-request client
       rawRequest: false
+  src/generated/graphql-apollo.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typed-document-node
+    config:
+      constEnums: true
+      enumsAsTypes: true
+      scalars:
+        ID: string
+        DateTime: string
+        JSON: any
+      skipTypename: false
+      documentMode: documentNode
+      dedupeFragments: true
+      operationResultSuffix: Result
+      inputMaybeValue: T | null | undefined
 

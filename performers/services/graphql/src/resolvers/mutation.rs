@@ -8,8 +8,10 @@ use serde_json::Value;
 use chrono::Utc;
 use base64::{Engine as _, engine::general_purpose};
 
-use crate::types::{Participant, Session};
+use crate::types::{Participant, Session, ForceGraphSimulationInput, PhysicsParamsInput};
 use crate::storage::SupabaseStorage;
+use crate::physics::SimulationManager;
+use uuid;
 
 #[derive(InputObject)]
 pub struct CreateParticipantInput {
@@ -253,6 +255,62 @@ impl ParticipantMutation {
             .map_err(|e| Error::from(format!("Failed to upload artifact: {}", e)))?;
 
         Ok(public_url)
+    }
+}
+
+#[derive(Default)]
+pub struct ForceGraphMutation;
+
+#[Object]
+impl ForceGraphMutation {
+    /// Create a new force graph simulation
+    async fn create_force_graph_simulation(
+        &self,
+        ctx: &Context<'_>,
+        input: ForceGraphSimulationInput,
+    ) -> Result<String> {
+        let simulation_manager = ctx.data::<SimulationManager>()?;
+        let simulation_id = uuid::Uuid::new_v4().to_string();
+        
+        simulation_manager
+            .create_simulation(simulation_id.clone(), input)
+            .await
+            .map_err(|e| Error::from(e))?;
+        
+        Ok(simulation_id)
+    }
+    
+    /// Update physics parameters for a simulation
+    async fn update_force_graph_physics(
+        &self,
+        ctx: &Context<'_>,
+        simulation_id: String,
+        physics: PhysicsParamsInput,
+    ) -> Result<bool> {
+        let simulation_manager = ctx.data::<SimulationManager>()?;
+        
+        simulation_manager
+            .update_physics(&simulation_id, physics)
+            .await
+            .map_err(|e| Error::from(e))?;
+        
+        Ok(true)
+    }
+    
+    /// Stop and remove a simulation
+    async fn stop_force_graph_simulation(
+        &self,
+        ctx: &Context<'_>,
+        simulation_id: String,
+    ) -> Result<bool> {
+        let simulation_manager = ctx.data::<SimulationManager>()?;
+        
+        simulation_manager
+            .stop_simulation(&simulation_id)
+            .await
+            .map_err(|e| Error::from(e))?;
+        
+        Ok(true)
     }
 }
 

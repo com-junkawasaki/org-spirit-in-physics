@@ -43,6 +43,18 @@ type Mutation {
 	Create a new participant
 	"""
 	createParticipant: String!
+	"""
+	Create a new force graph simulation
+	"""
+	createForceGraphSimulation(input: ForceGraphSimulationInput!): String!
+	"""
+	Update physics parameters for a simulation
+	"""
+	updateForceGraphPhysics(simulationId: String!, physics: PhysicsParamsInput!): Boolean!
+	"""
+	Stop and remove a simulation
+	"""
+	stopForceGraphSimulation(simulationId: String!): Boolean!
 }
 
 type Participant {
@@ -151,7 +163,80 @@ type WordStatistics {
 	rtSeries: [Float]
 }
 
+type Vec3 {
+	x: Float!
+	y: Float!
+	z: Float!
+}
+
+type NodePosition {
+	id: String!
+	position: Vec3!
+	velocity: Vec3!
+}
+
+type ForceGraphUpdate {
+	simulationId: String!
+	timestamp: String!
+	nodes: [NodePosition!]!
+	iteration: Int!
+}
+
+input Vec3Input {
+	x: Float!
+	y: Float!
+	z: Float!
+}
+
+input NodeInput {
+	id: String!
+	label: String!
+	scale: Float!
+	axis: Vec3Input
+	fixed: Boolean
+	initial: Vec3Input
+	color: String
+}
+
+input LinkInput {
+	source: Int!
+	target: Int!
+	weight: Float!
+	mode: String
+	l0: Float
+	k: Float
+}
+
+input PhysicsParamsInput {
+	springK: Float
+	repulsionK: Float
+	damping: Float
+	restLength: Float
+	maxSpeed: Float
+	shellRadius: Float
+	shellK: Float
+	shellRadiusOuter: Float
+	shellKOuter: Float
+	radialOutK: Float
+	minSep: Float
+	sepK: Float
+	constraintIters: Int
+	constraintStiffness: Float
+}
+
+input ForceGraphSimulationInput {
+	nodes: [NodeInput!]!
+	links: [LinkInput!]!
+	physics: PhysicsParamsInput
+	maxFps: Int
+}
+
+type Subscription {
+	forceGraphUpdates(simulationId: String!, maxFps: Int): ForceGraphUpdate!
+}
+
 schema {
 	query: Query
 	mutation: Mutation
+	subscription: Subscription
 }

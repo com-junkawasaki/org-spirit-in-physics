@@ -3,7 +3,7 @@
 // This file is the entry point for /api/graphql route
 
 // Import from the library crate
-use graphql_service::{PostgresPool, create_schema, Query, Mutation, get_allowed_origins};
+use graphql_service::{PostgresPool, create_schema, Query, Mutation, Subscription, get_allowed_origins};
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use async_graphql::Schema;
@@ -12,9 +12,9 @@ use tracing::info;
 use std::sync::OnceLock;
 
 // Global schema instance (initialized once per Serverless Function instance)
-static SCHEMA: OnceLock<tokio::sync::Mutex<Option<Schema<Query, Mutation, async_graphql::EmptySubscription>>>> = OnceLock::new();
+static SCHEMA: OnceLock<tokio::sync::Mutex<Option<Schema<Query, Mutation, Subscription>>>> = OnceLock::new();
 
-async fn get_or_initialize_schema() -> Result<&'static tokio::sync::Mutex<Option<Schema<Query, Mutation, async_graphql::EmptySubscription>>>, Error> {
+async fn get_or_initialize_schema() -> Result<&'static tokio::sync::Mutex<Option<Schema<Query, Mutation, Subscription>>>, Error> {
     let schema_mutex = SCHEMA.get_or_init(|| tokio::sync::Mutex::new(None));
     
     let mut schema_guard = schema_mutex.lock().await;
