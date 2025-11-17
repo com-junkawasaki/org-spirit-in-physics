@@ -272,7 +272,7 @@ impl ForceGraphSimulation {
                     continue;
                 }
 
-                let dx = &self.nodes[i].position - &self.nodes[j].position;
+                let dx = self.nodes[i].position.clone() - self.nodes[j].position.clone();
                 let dist_sq = dx.length_sq() + 1e-6;
                 let dist = dist_sq.sqrt();
 
@@ -301,7 +301,7 @@ impl ForceGraphSimulation {
                 };
 
                 let other = &self.nodes[other_idx];
-                let dx = &other.position - &self.nodes[i].position;
+                let dx = other.position.clone() - self.nodes[i].position.clone();
                 let dist = dx.length() + 1e-6;
 
                 let w_clamped = link.weight.clamp(0.0, 1.0);
@@ -395,7 +395,7 @@ impl ForceGraphSimulation {
                         continue;
                     }
 
-                    let dx = &self.nodes[i].position - &self.nodes[j].position;
+                    let dx = self.nodes[i].position.clone() - self.nodes[j].position.clone();
                     let dist = dx.length().max(1.0);
 
                     let ri = self.nodes[i].scale * scale_factor;
