@@ -34,36 +34,45 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
   }
 });
 
-// Auth Link with Clerk token
+// Auth Link with Supabase token
 const authLink = setContext(async (_, { headers }) => {
-  // Get Clerk token (works on both client and server)
-  // On client side, this will use cookies; on server side, it will use the request context
+  // Get Supabase token (works on both client and server)
   let token: string | null = null;
   
   if (typeof window !== 'undefined') {
-    // Client-side: use Clerk's client-side token retrieval
-    // Note: In a real implementation, you might want to use useAuth hook in a component
-    // and pass the token through context, or use Clerk's getToken() from @clerk/nextjs
-    // For now, we'll rely on cookies being sent automatically
-    // Clerk automatically includes the token in cookies for same-origin requests
-  } else {
-    // Server-side: get token from request
-    // This will be handled by Clerk middleware automatically via cookies
-    // For server-side requests, we can get the token if needed
+    // Client-side: get token from Supabase client
     try {
-      // In server-side context, Clerk middleware handles authentication
-      // The token is available via cookies automatically
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.warn('Failed to get Supabase session:', error);
+      } else {
+        token = session?.access_token || null;
+      }
     } catch (error) {
-      console.warn('Failed to get Clerk token:', error);
+      console.warn('Failed to get Supabase token:', error);
+    }
+  } else {
+    // Server-side: get token from cookies via Supabase server client
+    try {
+      const { createClient } = await import('@/lib/supabase/server');
+      const supabase = await createClient();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.warn('Failed to get Supabase session:', error);
+      } else {
+        token = session?.access_token || null;
+      }
+    } catch (error) {
+      console.warn('Failed to get Supabase token from server:', error);
     }
   }
   
   return {
     headers: {
       ...headers,
-      // Clerk token is automatically included in cookies for same-origin requests
-      // If you need to send it as Authorization header, uncomment below:
-      // ...(token && { authorization: `Bearer ${token}` }),
+      ...(token && { authorization: `Bearer ${token}` }),
     },
   };
 });

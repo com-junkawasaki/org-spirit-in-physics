@@ -49,9 +49,9 @@ services:
       - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
       # Server-side: use container name for server-to-server communication
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
-      # Clerk Authentication (hardcoded for development)
-      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_ZW5vdWdoLWNoaXBtdW5rLTkyLmNsZXJrLmFjY291bnRzLmRldiQ
-      - CLERK_SECRET_KEY=sk_test_FmPI35dNxAij0tuaX7rV5PDIDVmVvx8J11nyVyxEGu
+      # Supabase Authentication (hardcoded for development)
+      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,9 +92,6 @@ services:
       # Supabase Configuration (hardcoded for development)
       - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
-      # Clerk Authentication (hardcoded for development)
-      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_ZW5vdWdoLWNoaXBtdW5rLTkyLmNsZXJrLmFjY291bnRzLmRldiQ
-      - CLERK_SECRET_KEY=sk_test_FmPI35dNxAij0tuaX7rV5PDIDVmVvx8J11nyVyxEGu
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,9 +131,9 @@ services:
       - WATCHPACK_POLLING_INTERVAL=1000
       # Next.js HMR settings
       - NEXT_TELEMETRY_DISABLED=1
-      # Clerk Authentication (hardcoded for development)
-      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_ZW5vdWdoLWNoaXBtdW5rLTkyLmNsZXJrLmFjY291bnRzLmRldiQ
-      - CLERK_SECRET_KEY=sk_test_FmPI35dNxAij0tuaX7rV5PDIDVmVvx8J11nyVyxEGu
+      # Supabase Authentication (hardcoded for development)
+      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
     # Neo4j環境変数は削除済み - GraphQLサービス経由でPostgreSQLを使用
     # environment:
     #   - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687
@@ -205,8 +202,6 @@ services:
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDUxNjk3MiwiZXhwIjoyMDY2MDkyOTcyfQ.7KSDYa5pxYCiA_ZtTe_8KPGBKELdj0buxba2nG7EnJc}
       # Storage bucket name (from supabase/migrations/20241004000003_storage_policies.sql)
       - SUPABASE_STORAGE_BUCKET=spirit-in-physics
-      # Clerk Authentication (for JWT verification)
-      - CLERK_DOMAIN=enough-chipmunk-92.clerk.accounts.dev
     depends_on:
       postgres:
         condition: service_healthy

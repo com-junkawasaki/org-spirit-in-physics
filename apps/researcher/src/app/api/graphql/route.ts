@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getGraphQLApiUrl } from '@/lib/graphql/client';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,12 +14,23 @@ export async function POST(request: NextRequest) {
     // Get GraphQL API URL (server-side)
     const graphqlUrl = getGraphQLApiUrl();
     
+    // Get Supabase session token
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || null;
+    
     // Forward the GraphQL request to the GraphQL service
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const response = await fetch(graphqlUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         query: body.query,
         variables: body.variables || {},

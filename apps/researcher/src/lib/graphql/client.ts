@@ -62,6 +62,9 @@ export function createGraphQLClient(): GraphQLClient {
     console.log('[GraphQL Client] NEXT_PUBLIC_GRAPHQL_API_URL:', process.env.NEXT_PUBLIC_GRAPHQL_API_URL);
   }
   
+  // Note: For client-side requests, authentication is handled via the API proxy route
+  // The proxy route (/api/graphql) will add the Supabase token from cookies
+  // For server-side requests, we can add the token here if needed
   const client = new GraphQLClient(url, {
     headers: {
       'Content-Type': 'application/json',
