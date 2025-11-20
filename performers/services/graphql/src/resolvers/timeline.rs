@@ -253,7 +253,7 @@ impl TimelineQuery {
                     COALESCE(
                         json_agg(
                             jsonb_build_object(
-                                'measurement_type', pm.measurement_type::text,
+                                'measurement_type', pm.measurement_type_id::text,
                                 'value', pm.value,
                                 'unit', COALESCE(pm.unit::text, 'unknown'),
                                 'timestamp', tp.time::text
@@ -296,7 +296,7 @@ impl TimelineQuery {
                     COALESCE(
                         json_agg(
                             jsonb_build_object(
-                                'measurement_type', pm.measurement_type::text,
+                                'measurement_type', pm.measurement_type_id::text,
                                 'value', pm.value,
                                 'unit', COALESCE(pm.unit::text, 'unknown'),
                                 'timestamp', tp.time::text
