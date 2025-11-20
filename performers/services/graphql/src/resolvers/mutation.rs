@@ -17,6 +17,7 @@ pub struct CreateParticipantInput {
     pub signature: String,
     pub agreements: Value,
     pub agreed_at: String,
+    pub is_public: Option<bool>, // Optional: defaults to true if not provided
 }
 
 #[derive(InputObject)]
@@ -60,15 +61,19 @@ impl ParticipantMutation {
             .map_err(|e| Error::from(format!("Invalid date format: {}", e)))?
             .with_timezone(&Utc);
 
+        // Default is_public to true if not provided
+        let is_public = input.is_public.unwrap_or(true);
+
         // Insert participant into database
         sqlx::query(
             r#"
-            INSERT INTO participants (id, created_at, updated_at)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (id) DO UPDATE SET updated_at = $3
+            INSERT INTO participants (id, is_public, created_at, updated_at)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id) DO UPDATE SET updated_at = $4
             "#
         )
         .bind(participant_id)
+        .bind(is_public)
         .bind(agreed_at)
         .bind(Utc::now())
         .execute(pool)
@@ -78,8 +83,8 @@ impl ParticipantMutation {
         // For now, we'll just return the participant
 
         // Fetch the created participant
-        let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
-            "SELECT id, age, gender, handedness, created_at, updated_at FROM participants WHERE id = $1"
+        let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
+            "SELECT id, age, gender, handedness, is_public, created_at, updated_at FROM participants WHERE id = $1"
         )
         .bind(participant_id)
         .fetch_one(pool)
@@ -90,8 +95,9 @@ impl ParticipantMutation {
             age: row.1,
             gender: row.2,
             handedness: row.3.map(|h| h.to_string()),
-            created_at: row.4.to_rfc3339(),
-            updated_at: row.5.to_rfc3339(),
+            is_public: row.4,
+            created_at: row.5.to_rfc3339(),
+            updated_at: row.6.to_rfc3339(),
         })
     }
 

@@ -13,8 +13,12 @@ interface Props {
 
 const { data, width = 1000, height = 400 } = Astro.props;
 
+// Default participantId (hardcoded for paper app)
+const DEFAULT_PARTICIPANT_ID = '15592cdb-86cf-4baf-86f5-66184169ee39';
+
 // Get participantId and sessionId from data
-const participantId = data.participants.length > 0 ? data.participants[0].id : '';
+// Priority: data.participants[0]?.id > hardcoded ID
+const participantId = data.participants[0]?.id || DEFAULT_PARTICIPANT_ID;
 const sessionId = data.sessions.length > 0 ? data.sessions[0].id : undefined;
 ---
 

@@ -5,31 +5,40 @@ use async_graphql::*;
 use sqlx::{PgPool, Pool, Postgres};
 use uuid::Uuid;
 use crate::types::{Participant, StimulusWord};
-use crate::auth::require_auth;
+use crate::auth::{require_auth, get_auth};
 
 #[derive(Default)]
 pub struct ParticipantQuery;
 
 #[Object]
 impl ParticipantQuery {
-    /// Get all participants (requires authentication - researcher only)
+    /// Get all participants
+    /// - Authenticated users: get all participants
+    /// - Unauthenticated users: get only public participants (is_public = true)
     async fn participants(&self, ctx: &Context<'_>) -> Result<Vec<Participant>> {
-        // Require authentication for researcher access
-        require_auth(ctx)?;
         let pool = ctx.data::<Pool<Postgres>>()?;
+        let is_authenticated = get_auth(ctx).is_some();
         
-        let rows = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
-            "SELECT id, age, gender, handedness, created_at, updated_at FROM participants ORDER BY created_at DESC"
+        // Build query based on authentication status
+        let query = if is_authenticated {
+            "SELECT id, age, gender, handedness, is_public, created_at, updated_at FROM participants ORDER BY created_at DESC"
+        } else {
+            "SELECT id, age, gender, handedness, is_public, created_at, updated_at FROM participants WHERE is_public = true ORDER BY created_at DESC"
+        };
+        
+        let rows = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
+            query
         )
         .fetch_all(pool)
         .await?;
 
-        Ok(rows.into_iter().map(|(id, age, gender, handedness, created_at, updated_at)| {
+        Ok(rows.into_iter().map(|(id, age, gender, handedness, is_public, created_at, updated_at)| {
             Participant {
                 id: ID::from(id.to_string()),
                 age,
                 gender,
                 handedness: handedness.map(|h| h.to_string()),
+                is_public,
                 created_at: created_at.to_rfc3339(),
                 updated_at: updated_at.to_rfc3339(),
             }
@@ -37,24 +46,35 @@ impl ParticipantQuery {
     }
 
     /// Get a participant by ID
+    /// - Authenticated users: can get any participant
+    /// - Unauthenticated users: can only get public participants (is_public = true)
     async fn participant(&self, ctx: &Context<'_>, id: ID) -> Result<Option<Participant>> {
         let pool = ctx.data::<Pool<Postgres>>()?;
         let uuid = Uuid::parse_str(id.as_str())
             .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+        let is_authenticated = get_auth(ctx).is_some();
 
-        let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
-            "SELECT id, age, gender, handedness, created_at, updated_at FROM participants WHERE id = $1"
+        // Build query based on authentication status
+        let query = if is_authenticated {
+            "SELECT id, age, gender, handedness, is_public, created_at, updated_at FROM participants WHERE id = $1"
+        } else {
+            "SELECT id, age, gender, handedness, is_public, created_at, updated_at FROM participants WHERE id = $1 AND is_public = true"
+        };
+
+        let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
+            query
         )
         .bind(uuid)
         .fetch_optional(pool)
         .await?;
 
-        Ok(row.map(|(id, age, gender, handedness, created_at, updated_at)| {
+        Ok(row.map(|(id, age, gender, handedness, is_public, created_at, updated_at)| {
             Participant {
                 id: ID::from(id.to_string()),
                 age,
                 gender,
                 handedness: handedness.map(|h| h.to_string()),
+                is_public,
                 created_at: created_at.to_rfc3339(),
                 updated_at: updated_at.to_rfc3339(),
             }

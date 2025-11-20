@@ -404,13 +404,16 @@ function calculateComponentStats(component: number[]): ComponentStats {
 
 /**
  * Load all experimental data
- * If participantId is not provided, uses first participant's ID
+ * If participantId is not provided, uses hardcoded default participant ID
  */
 export async function loadExperimentalData(participantId?: string): Promise<ExperimentalData> {
   const participants = await fetchParticipants();
   
-  // If participantId is not provided, use first participant's ID
-  const effectiveParticipantId = participantId || (participants.length > 0 ? participants[0].id : undefined);
+  // Default participantId (hardcoded for paper app)
+  const DEFAULT_PARTICIPANT_ID = '15592cdb-86cf-4baf-86f5-66184169ee39';
+  
+  // Priority: argument > hardcoded ID > first participant
+  const effectiveParticipantId = participantId || DEFAULT_PARTICIPANT_ID || (participants.length > 0 ? participants[0].id : undefined);
   
   const sessions = effectiveParticipantId ? await fetchSessions(effectiveParticipantId) : [];
   const responses = effectiveParticipantId ? await fetchAnalysisResults(effectiveParticipantId) : [];
