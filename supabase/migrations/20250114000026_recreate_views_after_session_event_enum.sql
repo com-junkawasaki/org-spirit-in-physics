@@ -15,7 +15,6 @@ SELECT
     AVG(
         (SELECT AVG(pm.value)
          FROM physiological_measurements pm
-         JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
          WHERE pm.timeline_point_time = tp.time
            AND pm.timeline_point_participant_id = tp.participant_id
            AND pm.timeline_point_session_id = tp.session_id)
@@ -23,7 +22,6 @@ SELECT
     SUM(
         (SELECT ABS(AVG(pm.value))
          FROM physiological_measurements pm
-         JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
          WHERE pm.timeline_point_time = tp.time
            AND pm.timeline_point_participant_id = tp.participant_id
            AND pm.timeline_point_session_id = tp.session_id)
@@ -31,7 +29,6 @@ SELECT
     ARRAY_AGG(
         (SELECT AVG(pm.value)
          FROM physiological_measurements pm
-         JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
          WHERE pm.timeline_point_time = tp.time
            AND pm.timeline_point_participant_id = tp.participant_id
            AND pm.timeline_point_session_id = tp.session_id)
@@ -55,16 +52,16 @@ SELECT
     tp.participant_id,
     tp.session_id,
     tp.word,
-    SUM(CASE WHEN en.name = 'joy' THEN tee.score ELSE 0 END) as joy_sum,
-    SUM(CASE WHEN en.name = 'sadness' THEN tee.score ELSE 0 END) as sadness_sum,
-    SUM(CASE WHEN en.name = 'anger' THEN tee.score ELSE 0 END) as anger_sum,
-    SUM(CASE WHEN en.name = 'fear' THEN tee.score ELSE 0 END) as fear_sum,
-    SUM(CASE WHEN en.name = 'surprise' THEN tee.score ELSE 0 END) as surprise_sum,
-    SUM(CASE WHEN en.name = 'disgust' THEN tee.score ELSE 0 END) as disgust_sum,
-    SUM(CASE WHEN en.name = 'calm' THEN tee.score ELSE 0 END) as calm_sum,
-    SUM(CASE WHEN en.name = 'focus' THEN tee.score ELSE 0 END) as focus_sum,
-    SUM(CASE WHEN en.name = 'excitement' THEN tee.score ELSE 0 END) as excitement_sum,
-    SUM(CASE WHEN en.name = 'confusion' THEN tee.score ELSE 0 END) as confusion_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'joy' THEN tee.score ELSE 0 END) as joy_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'sadness' THEN tee.score ELSE 0 END) as sadness_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'anger' THEN tee.score ELSE 0 END) as anger_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'fear' THEN tee.score ELSE 0 END) as fear_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'surprise' THEN tee.score ELSE 0 END) as surprise_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'disgust' THEN tee.score ELSE 0 END) as disgust_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'calm' THEN tee.score ELSE 0 END) as calm_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'focus' THEN tee.score ELSE 0 END) as focus_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'excitement' THEN tee.score ELSE 0 END) as excitement_sum,
+    SUM(CASE WHEN tee.emotion_name::text = 'confusion' THEN tee.score ELSE 0 END) as confusion_sum,
     COUNT(tee.id) as emotion_entry_count,
     COALESCE(
         (SELECT json_object_agg(file_type, emotions_json)
@@ -73,12 +70,11 @@ SELECT
              tee2.file_type::text as file_type,
              json_agg(
                json_build_object(
-                 'name', en2.name,
+                 'name', tee2.emotion_name::text,
                  'score', tee2.score
                )
              ) as emotions_json
            FROM timeline_emotion_entries tee2
-           JOIN emotion_names en2 ON en2.id = tee2.emotion_name_id
            WHERE tee2.timeline_point_participant_id = tp.participant_id
            AND tee2.timeline_point_session_id = tp.session_id
            AND EXISTS (
@@ -97,7 +93,6 @@ LEFT JOIN timeline_emotion_entries tee ON
     tee.timeline_point_time = tp.time AND
     tee.timeline_point_participant_id = tp.participant_id AND
     tee.timeline_point_session_id = tp.session_id
-LEFT JOIN emotion_names en ON en.id = tee.emotion_name_id
 WHERE tp.word IS NOT NULL
 GROUP BY tp.participant_id, tp.session_id, tp.word;
 
@@ -122,7 +117,6 @@ SELECT
     AVG(
         (SELECT AVG(pm.value)
          FROM physiological_measurements pm
-         JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
          WHERE pm.timeline_point_time = tp.time
            AND pm.timeline_point_participant_id = tp.participant_id
            AND pm.timeline_point_session_id = tp.session_id)
@@ -130,7 +124,6 @@ SELECT
     STDDEV(
         (SELECT AVG(pm.value)
          FROM physiological_measurements pm
-         JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
          WHERE pm.timeline_point_time = tp.time
            AND pm.timeline_point_participant_id = tp.participant_id
            AND pm.timeline_point_session_id = tp.session_id)
@@ -138,7 +131,6 @@ SELECT
     VARIANCE(
         (SELECT AVG(pm.value)
          FROM physiological_measurements pm
-         JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
          WHERE pm.timeline_point_time = tp.time
            AND pm.timeline_point_participant_id = tp.participant_id
            AND pm.timeline_point_session_id = tp.session_id)
@@ -151,7 +143,6 @@ SELECT
     ARRAY_AGG(
         (SELECT AVG(pm.value)
          FROM physiological_measurements pm
-         JOIN physiological_measurement_types pmt ON pmt.id = pm.measurement_type_id
          WHERE pm.timeline_point_time = tp.time
            AND pm.timeline_point_participant_id = tp.participant_id
            AND pm.timeline_point_session_id = tp.session_id)
