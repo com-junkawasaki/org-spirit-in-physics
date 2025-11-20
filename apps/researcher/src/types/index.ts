@@ -1,142 +1,184 @@
-// Common types for the visualizer dashboard
+// Merkle DAG: timeline.types
+// 時系列可視化コンポーネントの型定義
 
-// Merkle DAG: types.consent_schema -> consent_data_validation
-export interface ConsentData {
-  participantId: string
-  signature: string
-  agreements: {
-    understand: boolean
-    voluntary: boolean
-    withdraw: boolean
-    recording: boolean
-  }
-  agreedAt: string
+// TypeGPU 用型
+export interface WordNode {
+  id: string
+  label: string
+  scale: number
+  axis?: [number, number, number]
+  fixed?: boolean
+  nodeType?: 'word' | 'anchor'
+  initial?: [number, number, number]
+  color?: string
+  // 感情スコア（0..1）。存在する場合は色合成に使用
+  emotion?: Partial<Record<'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'disgust' | 'calm' | 'focus' | 'excitement' | 'confusion', number>>
 }
 
-export interface ChartDataPoint {
-  x: number | string
-  y: number
-  label?: string
+export interface WordLink {
+  source: number
+  target: number
+  weight: number
+  mode?: 'tension' | 'compression'
+  L0?: number
+  k?: number
   color?: string
 }
 
-export interface TimeSeriesPoint {
-  timestamp: number
-  value: number
-  emotion_type?: string
-  confidence?: number
+export interface WordDetailStats {
+  word: string
+  overall: {
+    reactionTimeAvg: number
+    physioAvg: number
+    reactionValueAvg: number
+    prosodyAvg: number
+    burstAvg: number
+    faceAvg: number
+    languageAvg: number
+  }
+  first: WordDetailStats['overall']
+  second: WordDetailStats['overall']
 }
 
 export interface EmotionData {
-  timestamp: number
-  emotions: {
-    joy: number
-    sadness: number
-    anger: number
-    fear: number
-    surprise: number
-    disgust?: number
-    neutral?: number
-  }
-}
-
-export interface ComponentBreakdown {
-  word2vec: number
-  reaction_time: number
-  skin_potential: number
-  emotion: number
-  total: number
-}
-
-export interface ParticipantSummary {
-  id: string
-  name: string | null
-  sessionCount: number
-  responseCount: number
-  averageSpiritProbability: number
-  dominantEmotion: string
-  lastActivity: string
-}
-
-export interface SessionSummary {
-  id: string
-  participantId: string
-  sessionType: string
-  startTime: string | null
-  endTime: string | null
-  responseCount: number
-  averageReactionTime: number
-  averageSpiritProbability: number
-}
-
-export interface AnalysisMetrics {
-  totalParticipants: number
-  totalSessions: number
-  totalResponses: number
-  averageSpiritProbability: number
-  emotionDistribution: Record<string, number>
-  componentAverages: ComponentBreakdown
-  responseTimeDistribution: {
-    min: number
-    max: number
-    median: number
-    p25: number
-    p75: number
-  }
-  physiologicalStats: {
-    averageSkinPotential: number
-    skinPotentialRange: [number, number]
-    skinPotentialVariance: number
-  }
-}
-
-// Filter and sorting options
-export interface FilterOptions {
-  participantId?: string
-  sessionType?: string
-  dateRange?: {
-    start: Date
-    end: Date
-  }
-  minSpiritProbability?: number
-  maxSpiritProbability?: number
-  emotionTypes?: string[]
-}
-
-export interface SortOptions {
-  field: 'timestamp' | 'spirit_probability' | 'reaction_time' | 'participant_name'
-  direction: 'asc' | 'desc'
-}
-
-// Chart configuration types
-export interface ChartConfig {
-  type: 'line' | 'bar' | 'scatter' | 'pie' | 'heatmap'
-  title: string
-  xAxis: string
-  yAxis: string
-  colors?: string[]
-  showLegend?: boolean
-  interactive?: boolean
-}
-
-// Dashboard layout types
-export interface DashboardSection {
-  id: string
-  title: string
-  type: 'stats' | 'chart' | 'table' | 'timeseries'
-  config: any
-  size: 'small' | 'medium' | 'large'
-  position: {
-    x: number
-    y: number
-  }
-}
-
-export interface DashboardLayout {
-  id: string
   name: string
-  sections: DashboardSection[]
-  createdBy: string
-  createdAt: string
-  isDefault?: boolean
+  score: number
+  fileType: string
 }
+
+export interface TimelineDataPoint {
+  timestamp: number
+  word: string
+  reactionTime: number
+  hasResponse: boolean
+  emotions: EmotionData[]
+  physiological: { average?: number; max?: number; min?: number } | unknown[]
+  reactionValue: number
+  eventType?: string
+  metadata?: { emotionCount?: number; physiologicalCount?: number }
+}
+
+export interface FilterSettings {
+  emotions: boolean
+  physiological: boolean
+  reactionValues: boolean
+  wordDisplay: boolean
+  reactionTime: boolean
+  physiologicalThreshold: boolean
+  emotionChange: boolean
+  range: number
+  timeScale: number
+  verticalScale: number
+  showEmotionDetails: boolean
+  showWordLabels: boolean
+}
+
+export interface TimeRange {
+  start: number
+  end: number
+}
+
+export type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d-typegpu'
+
+export interface TimelineVisualizationProps {
+  participantId: string
+  width?: number
+  height?: number
+  // このページでモードを固定したい場合に指定（例: 'force-3d-typegpu'）
+  forceMode?: VisualizationMode
+  // フィルターUIを非表示にする
+  hideFilters?: boolean
+}
+
+export interface KPICalculations {
+  current: {
+    avgReactionTime: number
+    avgReactionValue: number
+    responseRate: number
+    totalResponses: number
+  }
+  previous: {
+    avgReactionTime: number
+    avgReactionValue: number
+    responseRate: number
+    totalResponses: number
+  }
+  changes: {
+    avgReactionTime: number
+    avgReactionValue: number
+    responseRate: number
+    totalResponses: number
+  }
+}
+
+export interface DumbbellDataPoint {
+  word: string
+  firstHalf: {
+    avgReactionTime: number
+    avgReactionValue: number
+    count: number
+  }
+  secondHalf: {
+    avgReactionTime: number
+    avgReactionValue: number
+    count: number
+  }
+}
+
+export interface SmallMultiplesDataPoint {
+  word: string
+  data: TimelineDataPoint[]
+  stats: {
+    avgReactionTime: number
+    avgReactionValue: number
+    maxReactionValue: number
+    responseRate: number
+  }
+}
+
+export interface ForcePreset {
+  id: string
+  label: string
+  springK: number
+  repulsionK: number
+  restLength: number
+  damping: number
+  emoWeak: number
+  emoStrong: number
+  emoGain: number
+}
+
+export interface Force3DGraphData {
+  nodes: WordNode[]
+  links: WordLink[]
+}
+
+export interface DebugInfo {
+  apiStatus: 'loading' | 'success' | 'error' | 'idle'
+  apiResponseReceived: boolean
+  dataPointCount: number
+  dataConversionStatus: 'pending' | 'success' | 'error'
+  errors: string[]
+  sessionDataStatus: 'pending' | 'success' | 'error' | 'not_available'
+  emotionDataStatus: 'pending' | 'success' | 'error' | 'not_available'
+  physiologicalDataStatus: 'pending' | 'success' | 'error' | 'not_available'
+  sessionEventsCount?: number
+  emotionEntriesCount?: number
+  physiologicalEntriesCount?: number
+  lastUpdateTime?: number
+  apiUrl?: string
+  responseMetadata?: {
+    sessionEvents?: number
+    emotionEntries?: number
+    physiologicalEntries?: number
+    totalDataPoints?: number
+    dataSource?: string
+    errors?: string[]
+    truncated?: boolean
+    originalSize?: number
+  }
+}
+
+// Merkle DAG: timeline.types -> definitions_complete
+// 時系列可視化コンポーネントの型定義完了
+

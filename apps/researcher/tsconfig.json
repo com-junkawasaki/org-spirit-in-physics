@@ -1,5 +1,26 @@
 {
   "compilerOptions": {
+<<<<<<< HEAD
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+<<<<<<<< HEAD:apps/researcher/tsconfig.json
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@spirit-in-physics/visualization-components": ["../packages/visualization-components/src/index.ts"]
+=======
     "target": "ES2017",
     "lib": [
       "dom",
@@ -21,14 +42,26 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@spirit-in-physics/visualization-components": ["../packages/visualization-components/src/index.ts"]
+      "@/*": ["src/*"]
+>>>>>>> origin/main
     },
     "plugins": [
       {
         "name": "next"
       }
     ]
+<<<<<<< HEAD
+========
+    "declaration": true,
+    "declarationMap": true,
+    "composite": false
+>>>>>>>> origin/main:apps/visualizer/tsconfig.json
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
+
+=======
   },
   "include": [
     "next-env.d.ts",
@@ -40,3 +73,4 @@
     "node_modules"
   ]
 }
+>>>>>>> origin/main

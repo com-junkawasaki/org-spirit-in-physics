@@ -6,6 +6,7 @@ import { Header } from '@/components/Header'
 import { MobileMenuOverlay } from '@/components/MobileMenuOverlay'
 import { Providers } from './providers'
 import { ReactNode } from 'react'
+// import { ClerkProvider } from '@clerk/nextjs'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,8 +24,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
+<<<<<<< HEAD
       <body className={`${inter.className} h-full bg-background text-foreground`}> 
         <Providers>
+=======
+      <body className={`${inter.className} h-full bg-background text-foreground`}>
+        {/* Clerk 認証を一時的に無効化 */}
+        {/* <ClerkProvider> */}
+>>>>>>> origin/main
           <SidebarProvider>
             <div className="min-h-screen flex">
               <Sidebar />
@@ -37,7 +44,11 @@ export default function RootLayout({
               <MobileMenuOverlay />
             </div>
           </SidebarProvider>
+<<<<<<< HEAD
         </Providers>
+=======
+        {/* </ClerkProvider> */}
+>>>>>>> origin/main
       </body>
     </html>
   )

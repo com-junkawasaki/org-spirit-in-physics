@@ -1,6 +1,10 @@
 import React, { useCallback } from 'react'
 import * as d3 from 'd3'
+<<<<<<< HEAD
+import type { TimelineDataPoint, KPICalculations } from '../../types'
+=======
 import type { TimelineDataPoint, KPICalculations } from './types'
+>>>>>>> origin/main
 
 // Merkle DAG: timeline.components.kpi_cards
 // KPIカードコンポーネント
@@ -95,6 +99,7 @@ export default function KPICards({ data }: KPICardsProps) {
                 <title>スパークライン: {card.title}</title>
                 <path
                   d={d3.line<number>()
+<<<<<<< HEAD
                     .defined(d => typeof d === 'number' && !isNaN(d))
                     .x((_, i) => {
                       const val = (i / Math.max(1, card.sparkline.length - 1)) * 100;
@@ -106,6 +111,10 @@ export default function KPICards({ data }: KPICardsProps) {
                       const y = maxVal > 0 ? 100 - (val / maxVal) * 100 : 50;
                       return isNaN(y) ? 50 : y;
                     })
+=======
+                    .x((_, i) => (i / (card.sparkline.length - 1)) * 100)
+                    .y(d => 100 - (d / Math.max(...card.sparkline)) * 100)
+>>>>>>> origin/main
                     .curve(d3.curveMonotoneX)(card.sparkline) || ''}
                   fill="none"
                   stroke="currentColor"

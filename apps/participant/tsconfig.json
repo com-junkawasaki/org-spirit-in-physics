@@ -21,7 +21,11 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
+<<<<<<< HEAD
       "@/*": ["src/*"]
+=======
+      "@/*": ["scripts/src/*"]
+>>>>>>> origin/main
     },
     "plugins": [
       {

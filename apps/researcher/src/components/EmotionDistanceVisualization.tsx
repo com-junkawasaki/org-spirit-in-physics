@@ -268,7 +268,7 @@ export default function EmotionDistanceVisualization({
             </div>
             <select
               value={methodLocal}
-              onChange={(e) => setMethodLocal(e.target.value as EmotionDistanceVisualizationProps['method'])}
+              onChange={(e) => setMethodLocal((e.target.value || method) as Required<EmotionDistanceVisualizationProps>['method'])}
               className="w-full border rounded px-2 py-1 text-sm"
             >
               <option value="cosine">Cosine Distance</option>
@@ -285,7 +285,7 @@ export default function EmotionDistanceVisualization({
             </div>
             <select
               value={embeddingLocal}
-              onChange={(e) => setEmbeddingLocal(e.target.value as EmotionDistanceVisualizationProps['embeddingMethod'])}
+              onChange={(e) => setEmbeddingLocal((e.target.value || embeddingMethod) as Required<EmotionDistanceVisualizationProps>['embeddingMethod'])}
               className="w-full border rounded px-2 py-1 text-sm"
             >
               <option value="pca">PCA</option>

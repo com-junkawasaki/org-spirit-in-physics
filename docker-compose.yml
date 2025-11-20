@@ -77,7 +77,10 @@ services:
       - "25260:3000"
     volumes:
       - ./apps/researcher:/app
+<<<<<<< HEAD
       - ./packages/visualization-components:/app/packages/visualization-components
+=======
+>>>>>>> origin/main
       - /app/node_modules
       - ./dataset:/app/dataset:cached
     command: pnpm run dev
@@ -311,10 +314,17 @@ services:
   #         dockerfile: Dockerfile
   #       container_name: spirit-bpmn-runner
   #       environment:
+<<<<<<< HEAD
   #         - API_BASE=http://researcher:3000
   #         - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
   #       depends_on:
   #         - researcher
+=======
+  #         - API_BASE=http://visualizer:3000
+  #         - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
+  #       depends_on:
+  #         - visualizer
+>>>>>>> origin/main
   #       networks:
   #         - spirit-network
   #       restart: "no"
