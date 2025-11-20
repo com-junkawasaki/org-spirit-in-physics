@@ -3,12 +3,12 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Authentication context containing user information from Clerk JWT
+/// Authentication context containing user information from Supabase JWT
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthContext {
-    /// Clerk user ID
+    /// Supabase user ID (UUID from JWT 'sub' claim)
     pub user_id: String,
-    /// Clerk session ID
+    /// Session ID (Supabase JWT doesn't include session ID, so this is typically None)
     pub session_id: Option<String>,
     /// User email (if available)
     pub email: Option<String>,

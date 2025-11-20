@@ -93,7 +93,7 @@ async fn test_participants_query_with_auth_returns_all() {
     "#;
     
     // 認証コンテキストを追加（モック）
-    // 実際の実装では、Clerk JWT トークンから取得される
+    // 実際の実装では、Supabase JWT トークンから取得される
     use graphql_service::auth::AuthContext;
     let auth_context = AuthContext::new(
         "test-user-id".to_string(),

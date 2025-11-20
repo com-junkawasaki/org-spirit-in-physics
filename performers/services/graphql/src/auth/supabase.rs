@@ -1,33 +1,33 @@
-// Merkle DAG: graphql.service.auth.clerk
-// Clerk JWT verification using JWKS
+// Merkle DAG: graphql.service.auth.supabase
+// Supabase JWT verification using JWKS
 
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, info};
+use tracing::info;
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 
 use crate::auth::context::AuthContext;
 
-/// Clerk JWT claims structure
+/// Supabase JWT claims structure
 #[derive(Debug, Serialize, Deserialize)]
-struct ClerkClaims {
-    /// Subject (user ID)
+struct SupabaseClaims {
+    /// Subject (user UUID)
     sub: String,
-    /// Session ID
-    sid: Option<String>,
     /// Email
     email: Option<String>,
-    /// Issuer
-    iss: Option<String>,
-    /// Audience
-    aud: Option<String>,
-    /// Expiration time
-    exp: i64,
+    /// Audience (typically "authenticated")
+    aud: String,
+    /// Role (typically "authenticated" or "anon")
+    role: Option<String>,
     /// Issued at
     iat: i64,
+    /// Expiration time
+    exp: i64,
+    /// Issuer
+    iss: String,
 }
 
 /// JWKS (JSON Web Key Set) structure
@@ -53,32 +53,37 @@ struct JWK {
     e: Option<String>,
 }
 
-/// Clerk JWT verifier with JWKS caching
-pub struct ClerkVerifier {
-    /// Clerk domain (e.g., "enough-chipmunk-92.clerk.accounts.dev")
-    clerk_domain: String,
+/// Supabase JWT verifier with JWKS caching
+pub struct SupabaseVerifier {
+    /// Supabase project reference (e.g., "xxxxx" from "https://xxxxx.supabase.co")
+    project_ref: String,
     /// JWKS cache with TTL
     jwks_cache: Arc<RwLock<Option<(HashMap<String, DecodingKey>, u64)>>>,
     /// Cache TTL in seconds (default: 1 hour)
     cache_ttl: u64,
 }
 
-impl ClerkVerifier {
-    /// Create a new Clerk verifier
-    pub fn new(clerk_domain: String) -> Self {
+impl SupabaseVerifier {
+    /// Create a new Supabase verifier
+    pub fn new(project_ref: String) -> Self {
         Self {
-            clerk_domain,
+            project_ref,
             jwks_cache: Arc::new(RwLock::new(None)),
             cache_ttl: 3600, // 1 hour
         }
     }
 
-    /// Get JWKS URL from Clerk domain
+    /// Get JWKS URL from Supabase project reference
     fn jwks_url(&self) -> String {
-        format!("https://{}/.well-known/jwks.json", self.clerk_domain)
+        format!("https://{}.supabase.co/.well-known/jwks.json", self.project_ref)
     }
 
-    /// Fetch JWKS from Clerk
+    /// Get issuer URL from Supabase project reference
+    fn issuer_url(&self) -> String {
+        format!("https://{}.supabase.co/auth/v1", self.project_ref)
+    }
+
+    /// Fetch JWKS from Supabase
     async fn fetch_jwks(&self) -> Result<HashMap<String, DecodingKey>, Box<dyn std::error::Error>> {
         let url = self.jwks_url();
         info!("Fetching JWKS from {}", url);
@@ -159,7 +164,7 @@ impl ClerkVerifier {
         Ok(keys)
     }
 
-    /// Verify Clerk JWT token and extract claims
+    /// Verify Supabase JWT token and extract claims
     pub async fn verify_token(&self, token: &str) -> Result<AuthContext, Box<dyn std::error::Error>> {
         // Decode header to get kid (key ID)
         let header = decode_header(token)?;
@@ -176,18 +181,20 @@ impl ClerkVerifier {
         validation.validate_exp = true;
         validation.leeway = 60; // 60 seconds leeway for clock skew
         
-        // Set issuer validation (Clerk issuer format: https://{domain}/)
-        let issuer = format!("https://{}/", self.clerk_domain);
+        // Set issuer validation (Supabase issuer format: https://{project-ref}.supabase.co/auth/v1)
+        let issuer = self.issuer_url();
         validation.set_issuer(&[issuer.as_str()]);
 
         // Decode and verify token
-        let token_data = decode::<ClerkClaims>(token, decoding_key, &validation)?;
+        let token_data = decode::<SupabaseClaims>(token, decoding_key, &validation)?;
         let claims = token_data.claims;
 
         // Create auth context
+        // Supabase doesn't have a separate session ID in the JWT, so we use None
+        // The user_id is the UUID from the 'sub' claim
         Ok(AuthContext::new(
             claims.sub,
-            claims.sid,
+            None, // Supabase JWT doesn't include session ID
             claims.email,
         ))
     }
@@ -200,45 +207,55 @@ pub fn extract_token_from_header(auth_header: Option<&str>) -> Option<String> {
         .map(|s| s.trim().to_string())
 }
 
-/// Get Clerk domain from environment variables
-/// Tries CLERK_DOMAIN first, then extracts from CLERK_PUBLISHABLE_KEY if available
-/// 
-/// Note: CLERK_PUBLISHABLE_KEY extraction is complex and may not always work.
-/// It's recommended to set CLERK_DOMAIN explicitly.
-pub fn get_clerk_domain() -> Option<String> {
-    // Try CLERK_DOMAIN first (recommended)
-    if let Ok(domain) = std::env::var("CLERK_DOMAIN") {
-        if !domain.is_empty() {
-            return Some(domain);
+/// Extract Supabase project reference from SUPABASE_URL
+/// Example: "https://xxxxx.supabase.co" -> "xxxxx"
+pub fn extract_project_ref_from_url(url: &str) -> Option<String> {
+    // Remove protocol if present
+    let url = url.trim_start_matches("https://").trim_start_matches("http://");
+    
+    // Extract project-ref (everything before ".supabase.co")
+    if let Some(dot_pos) = url.find(".supabase.co") {
+        let project_ref = url[..dot_pos].to_string();
+        if !project_ref.is_empty() {
+            return Some(project_ref);
         }
     }
-
-    // Try CLERK_FRONTEND_API (alternative environment variable)
-    if let Ok(domain) = std::env::var("CLERK_FRONTEND_API") {
-        if !domain.is_empty() {
-            return Some(domain);
-        }
-    }
-
-    // Note: Extracting domain from CLERK_PUBLISHABLE_KEY is complex
-    // because it's base64url-encoded JSON. It's better to set CLERK_DOMAIN explicitly.
-    // For now, we'll return None and let the caller handle the error.
+    
     None
 }
 
-/// Verify Clerk JWT token from Authorization header
-pub async fn verify_clerk_token(
+/// Get Supabase project reference from environment variables
+/// Tries SUPABASE_URL first and extracts project-ref from it
+pub fn get_supabase_project_ref() -> Option<String> {
+    // Try SUPABASE_URL first (recommended)
+    if let Ok(url) = std::env::var("SUPABASE_URL") {
+        if !url.is_empty() {
+            if let Some(project_ref) = extract_project_ref_from_url(&url) {
+                return Some(project_ref);
+            }
+        }
+    }
+
+    None
+}
+
+/// Verify Supabase JWT token from Authorization header
+pub async fn verify_supabase_token(
     auth_header: Option<&str>,
-    clerk_domain: Option<String>,
+    supabase_url: Option<String>,
 ) -> Result<AuthContext, Box<dyn std::error::Error>> {
     let token = extract_token_from_header(auth_header)
         .ok_or("Missing or invalid Authorization header")?;
 
-    let domain = clerk_domain
-        .or_else(get_clerk_domain)
-        .ok_or("CLERK_DOMAIN environment variable is required. Set it to your Clerk instance domain (e.g., 'enough-chipmunk-92.clerk.accounts.dev')")?;
+    let project_ref = if let Some(url) = supabase_url {
+        extract_project_ref_from_url(&url)
+            .ok_or_else(|| format!("Invalid SUPABASE_URL format: {}", url))?
+    } else {
+        get_supabase_project_ref()
+            .ok_or("SUPABASE_URL environment variable is required. Set it to your Supabase project URL (e.g., 'https://xxxxx.supabase.co')")?
+    };
 
-    let verifier = ClerkVerifier::new(domain);
+    let verifier = SupabaseVerifier::new(project_ref);
     verifier.verify_token(&token).await
 }
 

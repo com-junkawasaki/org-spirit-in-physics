@@ -32,7 +32,7 @@ use async_graphql_poem::GraphQL;
 #[cfg(not(feature = "vercel"))]
 use async_graphql::Request as GraphQLRequest;
 #[cfg(not(feature = "vercel"))]
-use auth::verify_clerk_token;
+use auth::verify_supabase_token;
 #[cfg(not(feature = "vercel"))]
 use tracing::{warn, error};
 
@@ -136,10 +136,10 @@ async fn graphql_handler(
     
     // Extract and verify JWT token from Authorization header
     let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
-    let clerk_domain = std::env::var("CLERK_DOMAIN").ok();
+    let supabase_url = std::env::var("SUPABASE_URL").ok();
     
     // Verify token and add auth context to request
-    if let Ok(auth_context) = verify_clerk_token(auth_header, clerk_domain).await {
+    if let Ok(auth_context) = verify_supabase_token(auth_header, supabase_url).await {
         graphql_request = graphql_request.data(auth_context);
         tracing::info!("Auth context added to GraphQL request");
     } else {

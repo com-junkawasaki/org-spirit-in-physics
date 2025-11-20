@@ -12,7 +12,7 @@ use tracing::{error, info};
 use crate::database::PostgresPool;
 use crate::schema::{create_schema, Query, Mutation};
 use crate::get_allowed_origins;
-use crate::auth::{verify_clerk_token, AuthContext};
+use crate::auth::{verify_supabase_token, AuthContext};
 
 // Global schema instance (initialized once)
 static SCHEMA: tokio::sync::OnceCell<Schema<Query, Mutation, async_graphql::EmptySubscription>> = tokio::sync::OnceCell::const_new();
@@ -106,10 +106,10 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
 
             // Extract and verify JWT token from Authorization header
             let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
-            let clerk_domain = std::env::var("CLERK_DOMAIN").ok();
+            let supabase_url = std::env::var("SUPABASE_URL").ok();
             
             // Verify token and add auth context to request
-            if let Ok(auth_context) = verify_clerk_token(auth_header, clerk_domain).await {
+            if let Ok(auth_context) = verify_supabase_token(auth_header, supabase_url).await {
                 graphql_request = graphql_request.data(auth_context);
             }
             // If token verification fails, continue without auth context

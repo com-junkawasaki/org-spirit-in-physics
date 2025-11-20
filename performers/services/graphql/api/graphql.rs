@@ -4,6 +4,7 @@
 
 // Import from the library crate
 use graphql_service::{PostgresPool, create_schema, Query, Mutation, get_allowed_origins};
+use graphql_service::auth::{verify_supabase_token, AuthContext};
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use async_graphql::Schema;
@@ -119,6 +120,17 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
             if let Some(op_name) = operation_name {
                 request = request.operation_name(op_name);
             }
+
+            // Extract and verify JWT token from Authorization header
+            let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
+            let supabase_url = std::env::var("SUPABASE_URL").ok();
+            
+            // Verify token and add auth context to request
+            if let Ok(auth_context) = verify_supabase_token(auth_header, supabase_url).await {
+                request = request.data(auth_context);
+            }
+            // If token verification fails, continue without auth context
+            // Individual resolvers will check for auth if needed
 
             // Execute GraphQL query
             let response = schema.execute(request).await;

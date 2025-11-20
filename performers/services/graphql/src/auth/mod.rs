@@ -1,11 +1,11 @@
 // Merkle DAG: graphql.service.auth
-// Clerk JWT authentication and authorization
+// Supabase JWT authentication and authorization
 
-pub mod clerk;
+pub mod supabase;
 pub mod context;
 pub mod helpers;
 
-pub use clerk::*;
+pub use supabase::*;
 pub use context::*;
 pub use helpers::*;
 
