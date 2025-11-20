@@ -20,8 +20,10 @@ RUN sed -i.bak 's|file:../../packages/visualization-components|file:./packages/v
 RUN pnpm install --no-frozen-lockfile && \
     apk add --no-cache wget
 
-# Copy demo app source code
+# Copy demo app source code (exclude large audio directory)
 COPY apps/demo ./
+# Remove large audio directory if it was copied (it should be excluded by .dockerignore, but ensure it)
+RUN rm -rf public/audio || true
 
 # Set hostname and port to bind to all interfaces
 ENV HOSTNAME=0.0.0.0

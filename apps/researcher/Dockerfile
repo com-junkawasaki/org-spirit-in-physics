@@ -26,8 +26,10 @@ RUN pnpm install --no-frozen-lockfile && \
 # Copy environment file
 COPY apps/researcher/env.docker .env.local
 
-# Copy source code
+# Copy source code (exclude large dataset directory)
 COPY apps/researcher ./
+# Remove large dataset directory if it was copied (it should be excluded by .dockerignore, but ensure it)
+RUN rm -rf public/dataset || true
 
 # Ensure packages directory is preserved
 COPY packages/visualization-components ./packages/visualization-components

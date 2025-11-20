@@ -60,7 +60,19 @@ dist
 
 # Gatsby files
 .cache/
-public
+
+# Public directories - exclude large media files but keep structure
+# Exclude large media files explicitly (must be before COPY commands in Dockerfile)
+# Use absolute paths from build context root
+apps/researcher/public/dataset
+apps/researcher/public/dataset/**
+apps/participant/public/audio
+apps/participant/public/audio/**
+apps/demo/public/audio
+apps/demo/public/audio/**
+# Also exclude with wildcards
+**/public/dataset/**
+**/public/audio/**
 
 # Storybook build outputs
 .out
@@ -169,6 +181,53 @@ temp/
 *.dll
 *.so
 *.dylib
+
+# Large media files (MP3, WebM, video, audio) - exclude from all locations
+*.mp3
+*.mp4
+*.webm
+*.wav
+*.ogg
+*.flac
+*.m4a
+*.avi
+*.mov
+*.mkv
+
+# Large data files (CSV, JSON datasets) - exclude from all locations
+*.csv
+*.json
+!package.json
+!package-lock.json
+!pnpm-lock.yaml
+!tsconfig.json
+!*.config.json
+!*.config.js
+!*.config.mjs
+!*.config.ts
+!*.config.tsx
+!codegen.yaml
+!components.json
+!tailwind-setup.json
+!tailwind.config.*
+!postcss.config.*
+!next.config.*
+!astro.config.*
+!vitest.config.*
+!paraglide.config.*
+!project.inlang/**/*.json
+
+# Exclude all dataset directories (absolute paths)
+apps/researcher/public/dataset
+apps/researcher/public/dataset/**
+apps/participant/public/audio
+apps/participant/public/audio/**
+apps/demo/public/audio
+apps/demo/public/audio/**
+dataset
+dataset/**
+**/dataset
+**/dataset/**
 
 # Git
 .git
