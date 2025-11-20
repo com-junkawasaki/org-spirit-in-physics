@@ -126,7 +126,7 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
     event_rows = await conn.fetch(
         """
         SELECT 
-            et.event_type as type,
+            se.event_type as type,
             se.event_timestamp as timestamp,
             se.event_data as data,
             se.word_id,
@@ -216,14 +216,12 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                 # Apply score threshold: lowered to 0.01 to include more emotion data
                 score_float = float(score)
                 if score_float >= EMOTION_SCORE_THRESHOLD:
-                    normalized_name = normalize_emotion_name(name)
-                    if normalized_name:  # Only process valid emotion names
-                        key = (normalized_name, file_type)
-                        # Keep the maximum score for each emotion name + fileType combination
-                        if key not in emotions_dict or emotions_dict[key] < score_float:
-                            emotions_dict[key] = score_float
-                    else:
-                        invalid_emotion_names += 1
+                    # Use emotion name as-is (already validated against ENUM in import_emotions)
+                    # ENUM type is case-sensitive, so use the original name from database
+                    key = (name, file_type)
+                    # Keep the maximum score for each emotion name + fileType combination
+                    if key not in emotions_dict or emotions_dict[key] < score_float:
+                        emotions_dict[key] = score_float
                 else:
                     scores_below_threshold += 1
         
@@ -289,44 +287,48 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
             INSERT INTO timeline_points (
                 time, participant_id, session_id, word, event_type,
                 reaction_value, reaction_time, has_response,
-                metadata, created_at
+                created_at
             )
-            VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9::jsonb, NOW())
+            VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, NOW())
             ON CONFLICT (time, participant_id, session_id) DO UPDATE SET
                 word = EXCLUDED.word,
                 event_type = EXCLUDED.event_type,
                 reaction_value = EXCLUDED.reaction_value,
                 reaction_time = EXCLUDED.reaction_time,
-                has_response = EXCLUDED.has_response,
-                metadata = EXCLUDED.metadata
+                has_response = EXCLUDED.has_response
             """,
             time_dt, participant_id, session_id, word, 'word_displayed',
             reaction_value,
             reaction_time / 1000.0 if reaction_time else None,
-            reaction_time is not None,
-            json.dumps(metadata)
+            reaction_time is not None
         )
         
         # Insert emotions into normalized table
         for emotion in emotions_array:
-            emotion_name = emotion['name']
+            emotion_name_raw = emotion['name']
             emotion_score = emotion['score']
             file_type = emotion['fileType']
             
-            # Insert emotion entry (direct ENUM type, no master table lookup)
-            await conn.execute(
-                """
-                INSERT INTO timeline_emotion_entries (
-                    timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
-                    emotion_name, score, file_type
+            # Insert emotion entry (direct ENUM type, PostgreSQL will validate)
+            # Skip invalid emotion names by catching the exception
+            try:
+                await conn.execute(
+                    """
+                    INSERT INTO timeline_emotion_entries (
+                        timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
+                        emotion_name, score, file_type
+                    )
+                    VALUES ($1, $2::uuid, $3::uuid, $4::emotion_name_enum, $5, $6::emotion_file_type)
+                    ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, emotion_name, file_type) DO UPDATE
+                    SET score = EXCLUDED.score
+                    """,
+                    time_dt, participant_id, session_id,
+                    emotion_name_raw, emotion_score, file_type
                 )
-                VALUES ($1, $2::uuid, $3::uuid, $4::emotion_name_enum, $5, $6::emotion_file_type)
-                ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, emotion_name, file_type) DO UPDATE
-                SET score = EXCLUDED.score
-                """,
-                time_dt, participant_id, session_id,
-                emotion_name, emotion_score, file_type
-            )
+            except Exception as e:
+                # Skip invalid emotion names (e.g., not in ENUM type)
+                logger.debug(f"Skipping invalid emotion name '{emotion_name_raw}' for timeline point at {time_dt}: {e}")
+                continue
         
         # Insert physiological measurements into normalized table
         if related_physiological:
@@ -386,7 +388,11 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
     logger.info(f"[get_emotion_data] Found {len(burst_rows)} burst emotion records for session {session_id}")
     
     for row in burst_rows:
-        emotion_scores = row['emotion_scores'] or {}
+        emotion_scores_raw = row['emotion_scores']
+        if isinstance(emotion_scores_raw, str):
+            emotion_scores = json.loads(emotion_scores_raw) if emotion_scores_raw else {}
+        else:
+            emotion_scores = emotion_scores_raw or {}
         emotion_entries.append({
             'begin_time': row['begin_time'],
             'end_time': row['end_time'],
@@ -411,7 +417,11 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
     logger.info(f"[get_emotion_data] Found {len(face_rows)} face emotion records for session {session_id}")
     
     for row in face_rows:
-        emotion_scores = row['emotion_scores'] or {}
+        emotion_scores_raw = row['emotion_scores']
+        if isinstance(emotion_scores_raw, str):
+            emotion_scores = json.loads(emotion_scores_raw) if emotion_scores_raw else {}
+        else:
+            emotion_scores = emotion_scores_raw or {}
         emotion_entries.append({
             'begin_time': row['begin_time'],
             'end_time': row['begin_time'] + 1.0 if row['begin_time'] else None,
@@ -437,7 +447,11 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
     logger.info(f"[get_emotion_data] Found {len(language_rows)} language emotion records for session {session_id}")
     
     for row in language_rows:
-        emotion_scores = row['emotion_scores'] or {}
+        emotion_scores_raw = row['emotion_scores']
+        if isinstance(emotion_scores_raw, str):
+            emotion_scores = json.loads(emotion_scores_raw) if emotion_scores_raw else {}
+        else:
+            emotion_scores = emotion_scores_raw or {}
         emotion_entries.append({
             'begin_time': row['begin_time'],
             'end_time': row['end_time'],
@@ -462,7 +476,11 @@ async def get_emotion_data(conn, session_id: str, participant_id: str):
     logger.info(f"[get_emotion_data] Found {len(prosody_rows)} prosody emotion records for session {session_id}")
     
     for row in prosody_rows:
-        emotion_scores = row['emotion_scores'] or {}
+        emotion_scores_raw = row['emotion_scores']
+        if isinstance(emotion_scores_raw, str):
+            emotion_scores = json.loads(emotion_scores_raw) if emotion_scores_raw else {}
+        else:
+            emotion_scores = emotion_scores_raw or {}
         emotion_entries.append({
             'begin_time': row['begin_time'],
             'end_time': None,

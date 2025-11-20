@@ -177,6 +177,12 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
     entries_count = 0
     emotions_count = 0
     
+    # Get valid emotion names from ENUM type
+    valid_emotion_names = await conn.fetch(
+        "SELECT unnest(enum_range(NULL::emotion_name_enum))::text as emotion_name"
+    )
+    valid_emotion_set = {row['emotion_name'] for row in valid_emotion_names}
+    
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         
@@ -187,9 +193,10 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
             end_time = float(row.get('EndTime', begin_time + 1.0))
             record_id = row.get('Id', 'unknown')
             
-            # Extract all emotion columns (skip Id, BeginTime, EndTime)
+            # Extract all emotion columns (skip Id, BeginTime, EndTime, BeginPosition, EndPosition, and other metadata columns)
+            excluded_columns = ['Id', 'BeginTime', 'EndTime', 'BeginPosition', 'EndPosition', 'FrameNumber', 'Time', 'Confidence']
             for key, value in row.items():
-                if key not in ['Id', 'BeginTime', 'EndTime']:
+                if key not in excluded_columns and key in valid_emotion_set:
                     try:
                         score = float(value)
                         if score > 0:

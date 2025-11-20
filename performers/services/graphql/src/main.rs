@@ -93,12 +93,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[handler]
 async fn graphql_handler(
     req: &Request,
-    Json(body_json): Json<serde_json::Value>,
+    body: poem::web::Json<serde_json::Value>,
     Data(schema): Data<&Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
-) -> Json<serde_json::Value> {
+) -> poem::Result<Json<serde_json::Value>> {
     // Extract GraphQL request from body
-    let mut graphql_request: GraphQLRequest = serde_json::from_value(body_json)
-        .unwrap_or_else(|_| GraphQLRequest::new("query { __typename }"));
+    let mut graphql_request: GraphQLRequest = match serde_json::from_value(body.0) {
+        Ok(req) => req,
+        Err(e) => {
+            tracing::warn!("Failed to parse GraphQL request: {}", e);
+            GraphQLRequest::new("query { __typename }")
+        }
+    };
 
     // Extract and verify JWT token from Authorization header
     let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
@@ -114,7 +119,7 @@ async fn graphql_handler(
     let response = schema.execute(graphql_request).await;
     let graphql_response = GraphQLResponse::from(response);
     
-    Json(serde_json::to_value(graphql_response).unwrap_or_default())
+    Ok(Json(serde_json::to_value(graphql_response).unwrap_or_default()))
 }
 
 #[cfg(not(feature = "vercel"))]
