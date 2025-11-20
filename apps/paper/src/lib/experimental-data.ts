@@ -134,7 +134,11 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
             score
             fileType
           }
-          physiological
+          physiological {
+            timestamp
+            value
+            metadata
+          }
           metadata
         }
       }
