@@ -7,6 +7,7 @@ pub mod types;
 pub mod resolvers;
 pub mod database;
 pub mod storage;
+pub mod auth;
 
 pub use database::PostgresPool;
 pub use schema::{create_schema, Query, Mutation};

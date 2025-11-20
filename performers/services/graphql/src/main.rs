@@ -7,6 +7,7 @@ mod types;
 mod resolvers;
 mod database;
 mod storage;
+mod auth;
 
 use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
@@ -24,10 +25,14 @@ use poem::{
     listener::TcpListener,
     middleware::Cors,
     web::{Data, Html, Json},
-    EndpointExt, Route, Server,
+    EndpointExt, Route, Server, Request,
 };
 #[cfg(not(feature = "vercel"))]
 use async_graphql_poem::GraphQL;
+#[cfg(not(feature = "vercel"))]
+use async_graphql::{Request as GraphQLRequest, Response as GraphQLResponse};
+#[cfg(not(feature = "vercel"))]
+use auth::verify_clerk_token;
 
 #[cfg(feature = "vercel")]
 mod vercel_handler;
@@ -86,6 +91,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg(not(feature = "vercel"))]
 #[handler]
+async fn graphql_handler(
+    req: &Request,
+    Json(body_json): Json<serde_json::Value>,
+    Data(schema): Data<&Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
+) -> Json<serde_json::Value> {
+    // Extract GraphQL request from body
+    let mut graphql_request: GraphQLRequest = serde_json::from_value(body_json)
+        .unwrap_or_else(|_| GraphQLRequest::new("query { __typename }"));
+
+    // Extract and verify JWT token from Authorization header
+    let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
+    let clerk_domain = std::env::var("CLERK_DOMAIN").ok();
+    
+    // Verify token and add auth context to request
+    if let Ok(auth_context) = verify_clerk_token(auth_header, clerk_domain).await {
+        graphql_request = graphql_request.data(auth_context);
+    }
+    // If token verification fails, continue without auth context
+    // Individual resolvers will check for auth if needed
+
+    let response = schema.execute(graphql_request).await;
+    let graphql_response = GraphQLResponse::from(response);
+    
+    Json(serde_json::to_value(graphql_response).unwrap_or_default())
+}
+
+#[cfg(not(feature = "vercel"))]
+#[handler]
 async fn graphql_playground() -> Html<String> {
     Html(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
 }
@@ -140,7 +173,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build routes
     let app = Route::new()
-        .at("/graphql", GraphQL::new(schema.clone()))
+        .at("/graphql", graphql_handler)
         .at("/graphql/playground", graphql_playground)
         .at("/graphql/schema", schema_handler)
         .at("/health", health_check)

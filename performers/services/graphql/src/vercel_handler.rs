@@ -12,6 +12,7 @@ use tracing::{error, info};
 use crate::database::PostgresPool;
 use crate::schema::{create_schema, Query, Mutation};
 use crate::get_allowed_origins;
+use crate::auth::{verify_clerk_token, AuthContext};
 
 // Global schema instance (initialized once)
 static SCHEMA: tokio::sync::OnceCell<Schema<Query, Mutation, async_graphql::EmptySubscription>> = tokio::sync::OnceCell::const_new();
@@ -100,8 +101,19 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 Body::Empty => "{}".to_string(),
             };
 
-            let graphql_request: GraphQLRequest = serde_json::from_str(&body_str)
+            let mut graphql_request: GraphQLRequest = serde_json::from_str(&body_str)
                 .unwrap_or_else(|_| GraphQLRequest::new("query { __typename }"));
+
+            // Extract and verify JWT token from Authorization header
+            let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
+            let clerk_domain = std::env::var("CLERK_DOMAIN").ok();
+            
+            // Verify token and add auth context to request
+            if let Ok(auth_context) = verify_clerk_token(auth_header, clerk_domain).await {
+                graphql_request = graphql_request.data(auth_context);
+            }
+            // If token verification fails, continue without auth context
+            // Individual resolvers will check for auth if needed
 
             let response = schema.execute(graphql_request.into_inner()).await;
             let graphql_response = GraphQLResponse::from(response);

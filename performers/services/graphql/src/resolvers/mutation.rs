@@ -137,7 +137,7 @@ impl ParticipantMutation {
                 .ok_or_else(|| Error::from("Event missing 'type' field"))?;
             
                    // Cast event type string to session_event_type_enum (no master table lookup)
-                   let event_type: String = event_type_str.to_string();
+                   let _event_type: String = event_type_str.to_string();
 
             let event_timestamp = event.get("timestamp")
                 .and_then(|v| v.as_i64())

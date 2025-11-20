@@ -32,3 +32,6 @@ chrono = { version = "0.4", features = ["serde", "clock"] }
 reqwest = { version = "0.11", features = ["json", "multipart", "rustls-tls"], default-features = false }
 base64 = "0.22"
 vercel_runtime = "1"
+jsonwebtoken = "9.2"
+rsa = "0.9"
+async-trait = "0.1"

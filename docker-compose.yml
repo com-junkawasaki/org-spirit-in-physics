@@ -205,6 +205,8 @@ services:
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDUxNjk3MiwiZXhwIjoyMDY2MDkyOTcyfQ.7KSDYa5pxYCiA_ZtTe_8KPGBKELdj0buxba2nG7EnJc}
       # Storage bucket name (from supabase/migrations/20241004000003_storage_policies.sql)
       - SUPABASE_STORAGE_BUCKET=spirit-in-physics
+      # Clerk Authentication (for JWT verification)
+      - CLERK_DOMAIN=enough-chipmunk-92.clerk.accounts.dev
     depends_on:
       postgres:
         condition: service_healthy

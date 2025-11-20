@@ -5,14 +5,17 @@ use async_graphql::*;
 use sqlx::{PgPool, Pool, Postgres};
 use uuid::Uuid;
 use crate::types::{Participant, StimulusWord};
+use crate::auth::require_auth;
 
 #[derive(Default)]
 pub struct ParticipantQuery;
 
 #[Object]
 impl ParticipantQuery {
-    /// Get all participants
+    /// Get all participants (requires authentication - researcher only)
     async fn participants(&self, ctx: &Context<'_>) -> Result<Vec<Participant>> {
+        // Require authentication for researcher access
+        require_auth(ctx)?;
         let pool = ctx.data::<Pool<Postgres>>()?;
         
         let rows = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
