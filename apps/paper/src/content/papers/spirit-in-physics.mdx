@@ -35,16 +35,16 @@ schemaId: https://spirit-in-physics.gftd.ai/research/spirit-in-physics
 
 ### Hypothesis 3
 
-**Spirit is Complex:** Jung's Complex functions as a psychosomatic composite representing both information space and biological space. Complex dimensionality of approximately 1024 dimensions is sufficient for representation. The Complex integrates:
+**Spirit is Complex:** Jung's Complex functions as a psychosomatic composite representing both information space and biological space. A Complex can be conscious or unconscious; its unconscious parts, often suppressed, constitute the **Shadow**. Complex dimensionality of approximately 1024 dimensions is sufficient for representation. The Complex integrates:
 - Information space (semantic, linguistic vectors)
 - Biological space (physiological, emotional responses)
 
 Mathematical representation: Complex as a high-dimensional manifold in combined space.
 
 **Correspondence with Jung's Archetype:**
-- Archetype = structural pattern of Complex
-- Collective Unconscious = collection of Archetypes in information space
-- Individual Complex = individual-specific patterns in information space
+- **Archetype**: A universal, structural pattern within the Collective Unconscious that gives rise to a Complex.
+- **Collective Unconscious**: A shared, inherited reservoir of Archetypes in information space.
+- **Individual Complex**: A personally acquired implementation of an Archetype, which may be conscious or form part of the individual's Shadow.
 
 ### Hypothesis 4
 
@@ -54,25 +54,22 @@ Mathematical expression: $\frac{dS}{dt} = \frac{dS_{internal}}{dt} + \frac{dS_{e
 
 ### Hypothesis 5
 
-**Spirit is Gene + Meme + Field:**
+**Spirit is Gene + Meme + Field, operating through Conscious and Unconscious Systems:**
 
 - **Gene**: Genetic foundation (biological space)
 - **Meme**: Cultural transmission unit (information space)
 - **Field**: Field-theoretic structure (field space)
 
-**Spirit Type**: $SpiritType = Archetype(Gene, Meme, Field)$ — typical patterns
-- Gene component: biological foundation through genetic variation
-- Meme component: information patterns through cultural transmission
-- Field component: spatial configuration through field-theoretic structure
+**Spirit Type (Conscious Integration)**: $SpiritType = Archetype(Gene, Meme, Field)$ — typical, integrated patterns
+- Healthy, stable patterns resulting from the conscious integration of archetypal structures with personal experience.
 - Mathematical expression: $\vec{v}_{type} = \alpha \cdot \vec{v}_{gene} + \beta \cdot \vec{v}_{meme} + \gamma \cdot \vec{v}_{field}$ (archetypal combination)
 
-**Ghost Pattern**: $GhostPattern = HiddenPattern(Meme, Field)$ — hidden patterns
-- Meme component: cultural patterns through language and emotion cosine similarity
-- Field component: environmental and contextual spatial patterns
-- Characteristics: often produces problematic bugs (pattern interference, cognitive bias, cultural constraints)
-- Mathematical expression: $\vec{v}_{ghost} = \delta \cdot \vec{v}_{meme} + \epsilon \cdot \vec{v}_{field}$ (hidden combination)
+**Ghost Pattern (Unconscious Interference)**: $GhostPattern = f(Shadow, CollectiveArchetype, Meme_{cultural}, Field)$ — hidden, problematic patterns
+- Arises from the interference of the individual's **Shadow** (unconscious personal complexes) and unintegrated archetypes from the **Collective Unconscious**.
+- These patterns are shaped by cultural memes and environmental fields, often producing bugs like cognitive biases and cultural constraints.
+- Mathematical expression: $\vec{v}_{ghost} = f(\vec{v}_{shadow}, \vec{v}_{archetype}, \vec{v}_{meme}, \vec{v}_{field})$ (complex interference)
 
-**Classification**: Identification of Spirit Type vs Ghost Pattern is crucial.
+**Classification**: Distinguishing between integrated Spirit Types and interfering Ghost Patterns is crucial.
 
 ## Spirit Physical Space (Kawasaki Model)
 
@@ -112,24 +109,32 @@ $$
 
 ## Spirit Type and Ghost Pattern Classification
 
-### Spirit Type (Typical Patterns)
+To classify patterns within the spirit's informational vector space, we first define the core Jungian concepts as they apply to our model:
 
-Spirit Type is defined as archetypal patterns composed of gene + meme + field:
-- Typical and predictable patterns
-- Healthy information space structure
-- Stable patterns that do not produce problems
+- **Collective Unconscious**: A species-wide, inherited informational structure containing universal patterns. It is the foundational field from which both healthy and problematic structures emerge.
+- **Archetype**: A fundamental, structural template residing in the Collective Unconscious. It is a latent pattern that, when activated, shapes conscious and unconscious experience.
+- **Complex**: An individual's personal implementation of an Archetype, formed by integrating genetic predispositions (Gene), personal experiences, and cultural influences (Meme). A Complex acts as an energy-charged node in the informational space.
+- **Shadow**: The unconscious and often suppressed part of a Complex. The Shadow is not inherently negative but contains aspects of the self that the conscious mind has rejected or failed to integrate. It is a primary source of internal conflict and projection.
+
+Based on these definitions, we can classify the observed informational patterns.
+
+### Spirit Type (Integrated Archetypal Patterns)
+
+Spirit Type represents the healthy, stable, and integrated structures within the spirit.
+- It is formed by the conscious and harmonious integration of Archetypes with an individual's unique genetic, memetic, and field-based experiences.
+- Corresponds to typical, predictable, and adaptive patterns that form a coherent information space structure.
 
 Mathematical expression: $SpiritType = Archetype(Gene, Meme, Field)$
 
 Classification: $classify(\vec{v}) = \begin{cases} SpiritType & \text{if } ||\vec{v} - \vec{v}_{archetype}|| < threshold_{type} \\ GhostPattern & \text{otherwise} \end{cases}$
 
-### Ghost Pattern (Hidden Patterns)
+### Ghost Pattern (Unintegrated/Shadow Patterns)
 
-Ghost Pattern is primarily composed of meme + field:
-- Hidden information space through cultural, environmental, and contextual patterns in language and emotion cosine similarity
-- Often produces problematic bugs (pattern interference, cognitive bias, cultural constraints)
+The Ghost Pattern represents hidden, problematic, and unintegrated structures.
+- It arises from the interference of the individual's **Shadow** and unintegrated Archetypes from the **Collective Unconscious**.
+- These unintegrated patterns interact with cultural memes and environmental fields, often producing problematic bugs such as cognitive biases, pattern interference, and cultural constraints.
 
-Mathematical expression: $GhostPattern = HiddenPattern(Meme, Field)$
+Mathematical expression: $GhostPattern = f(Shadow, CollectiveArchetype, Meme_{cultural}, Field)$
 
 **Individual Shadow**: Ghost Patterns suppressed in individual information space
 - Mathematical expression: $Shadow_i = \{\vec{v} \in GhostPattern | suppressed(\vec{v}, participant_i)\}$
@@ -379,14 +384,13 @@ The data processing pipeline integrates experimental data from TimelineVisualiza
 **Spirit Type Classification:**
 - Methods: K-means clustering, DBSCAN, Hierarchical Clustering
 - Input: vectors $\vec{v} = (\vec{v}_{gene}, \vec{v}_{meme}, \vec{v}_{field})$
-- Classification: $classify(\vec{v}) = \{SpiritType \text{ if } ||\vec{v} - \vec{v}_{archetype}|| < threshold_{type}; GhostPattern \text{ otherwise}\}$
-- Distance calculation: Euclidean distance to archetype vector
+- Classification: Identifies clusters corresponding to integrated Archetypes.
 - Archetype vector: $Archetype(Gene, Meme, Field)$
 
 **Ghost Pattern Detection:**
 - Methods: Isolation Forest, One-Class SVM
 - Input: vectors with high deviation from Spirit Type clusters
-- Detection: $GhostPattern = HiddenPattern(Meme, Field)$
+- Detection: Identifies patterns arising from the Shadow and unintegrated Archetypes.
 - Problematic indicators:
   - High meme variance (cultural pattern interference)
   - High field variance (environmental pattern interference)
@@ -446,7 +450,7 @@ The data processing pipeline generates multiple visualizations for analysis:
 The experimental results validate the Kawasaki Model's ability to structure, measure, and quantify spirit as dynamic physical information in vector information space. Spirit is not a probability but a position, direction, and distance in this space.
 
 **Spirit Type and Ghost Pattern Identification:**
-Through classification of Spirit Type (typical patterns) and Ghost Pattern (hidden patterns), we can identify healthy information space structures and problematic patterns that produce bugs. The classification results demonstrate the utility of the Gene + Meme + Field model in understanding information space structures.
+Through classification of Spirit Type (integrated archetypal patterns) and Ghost Pattern (unintegrated/shadow patterns), we can identify healthy information space structures and problematic patterns that produce bugs. The classification results demonstrate the utility of the Gene + Meme + Field model in understanding the interplay between conscious and unconscious information space structures.
 
 **Component Contributions:**
 - Gene component: Biological foundation through genetic variation (proxied by reaction time)
@@ -455,13 +459,13 @@ Through classification of Spirit Type (typical patterns) and Ghost Pattern (hidd
 
 **Ghost Pattern Mechanisms:**
 Ghost Patterns often produce problematic bugs through:
-- Pattern interference: Cultural patterns conflicting with biological patterns
-- Cognitive bias: Hidden patterns influencing decision-making
-- Cultural constraints: Environmental patterns limiting information space exploration
+- Pattern interference: Unconscious Shadow patterns conflicting with conscious intentions
+- Cognitive bias: Hidden archetypal patterns influencing decision-making
+- Cultural constraints: Environmental patterns activating suppressed complexes
 
 ### Comparison with Existing Research
 
-**Jung (1910):** Word association test provides the foundation for measuring information space structures. Our model extends Jung's work by quantifying associations in vector space and classifying patterns.
+**Jung (1910):** Word association test provides the foundation for measuring information space structures. Our model extends Jung's work by quantifying associations in vector space and classifying patterns based on their integration with conscious (Spirit Type) or unconscious (Ghost Pattern, Shadow) structures.
 
 **Botvinick & Cohen (1998):** Rubber hand illusion demonstrates self-boundary extension into information space. Our model quantifies this extension through Spirit Type and Ghost Pattern classification.
 
@@ -471,11 +475,11 @@ Ghost Patterns often produce problematic bugs through:
 
 **Sample Size:** Current sample size (30 participants) limits generalizability. Future studies should include larger, more diverse samples.
 
-**Cross-sectional Design:** Current study is cross-sectional. Longitudinal tracking would provide insights into Spirit Type and Ghost Pattern dynamics over time.
+**Cross-sectional Design:** Current study is cross-sectional. Longitudinal tracking would provide insights into the dynamics of Shadow integration and Ghost Pattern evolution over time.
 
 **Genetic Data:** Current Gene component uses reaction time as proxy. Future integration of actual genetic data (GWAS) would strengthen the model.
 
-**Clinical Applications:** Ghost Pattern detection may have clinical applications in identifying problematic information space structures. Future research should explore therapeutic interventions.
+**Clinical Applications:** Ghost Pattern detection may have clinical applications in identifying problematic information space structures related to an individual's Shadow. Future research should explore therapeutic interventions aimed at integrating these unconscious patterns.
 
 ## Conclusion
 
@@ -483,7 +487,7 @@ Ghost Patterns often produce problematic bugs through:
 
 **Spirit as Vector Information Space:** The Kawasaki Model demonstrates that spirit can be structured, measured, and quantified as dynamic physical information in vector information space. Spirit is not a probability but a position, direction, and distance in this space.
 
-**Spirit Type and Ghost Pattern Classification:** Through classification of Spirit Type (typical patterns) and Ghost Pattern (hidden patterns), we can identify healthy information space structures and problematic patterns that produce bugs. This classification provides a framework for understanding information space dynamics and potential therapeutic applications.
+**Spirit Type and Ghost Pattern Classification:** Through classification of Spirit Type (integrated archetypal patterns) and Ghost Pattern (unintegrated/shadow patterns), we can identify healthy information space structures and problematic patterns that produce bugs. This classification provides a framework for understanding the dynamics between the conscious and unconscious, with potential therapeutic applications for integrating the Shadow.
 
 $$
 P(w_O | w_I) = \frac{\exp(\vec{w_I} \cdot \vec{w_O}) \cdot [r(w_I, w_O)]^{\alpha} \cdot \exp(\gamma \frac{\Delta SP(w_I,w_O)}{\lambda}) \cdot \exp(\eta F(w_I, w_O))}{\sum_{j} \exp(\vec{w_I} \cdot \vec{w_j}) \cdot [r(w_I, w_j)]^{\alpha} \cdot \exp(\gamma \frac{\Delta SP(w_I,w_j)}{\lambda}) \cdot \exp(\eta F(w_I, w_j))}
