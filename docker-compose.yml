@@ -25,8 +25,8 @@ services:
   # Participant app (Next.js)
   participant:
     build:
-      context: .
-      dockerfile: ./apps/participant/Dockerfile
+      context: ./apps/participant
+      dockerfile: Dockerfile
     container_name: spirit-participant
     ports:
       - "25250:25250"
@@ -70,8 +70,8 @@ services:
   # Researcher app (Next.js)
   researcher:
     build:
-      context: .
-      dockerfile: ./apps/researcher/Dockerfile
+      context: ./apps/researcher
+      dockerfile: Dockerfile
     container_name: spirit-researcher
     ports:
       - "25260:3000"
@@ -220,8 +220,8 @@ services:
   # Paper app (Astro)
   paper:
     build:
-      context: .
-      dockerfile: ./apps/paper/Dockerfile
+      context: ./apps/paper
+      dockerfile: Dockerfile
     container_name: spirit-paper
     ports:
       - "25270:4321"
@@ -254,8 +254,8 @@ services:
   # Demo app (Astro)
   demo:
     build:
-      context: .
-      dockerfile: ./apps/demo/Dockerfile
+      context: ./apps/demo
+      dockerfile: Dockerfile
     container_name: spirit-demo
     ports:
       - "25271:4322"

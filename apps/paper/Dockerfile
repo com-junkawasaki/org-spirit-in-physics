@@ -7,11 +7,11 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy common visualization-components package first
-COPY packages/visualization-components ./packages/visualization-components
+# Copy app package files
+COPY package.json pnpm-lock.yaml* ./
 
-# Copy paper app package files
-COPY apps/paper/package.json apps/paper/pnpm-lock.yaml* ./
+# Copy common visualization-components package
+COPY packages/visualization-components ./packages/visualization-components
 
 # Fix the file: reference in package.json to match the container path
 RUN sed -i.bak 's|file:../../packages/visualization-components|file:./packages/visualization-components|g' package.json && rm package.json.bak
@@ -21,7 +21,7 @@ RUN pnpm install --no-frozen-lockfile && \
     apk add --no-cache wget
 
 # Copy paper app source code
-COPY apps/paper ./
+COPY . ./
 
 # Set hostname and port to bind to all interfaces
 ENV HOSTNAME=0.0.0.0
