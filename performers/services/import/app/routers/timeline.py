@@ -141,6 +141,30 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
     if not event_rows:
         raise ValueError(f"No events found for session {session_id}")
     
+    # Try to get word information from session_data.json if event_data is empty
+    # This is a fallback for cases where event_data was not populated during import
+    word_map = {}  # Map timestamp -> word
+    try:
+        from pathlib import Path
+        import os
+        dataset_path = os.getenv('DATASET_PATH', '/app/dataset')
+        participant_path = Path(dataset_path) / participant_id
+        session_data_path = participant_path / "session_data.json"
+        
+        if session_data_path.exists():
+            with open(session_data_path, 'r', encoding='utf-8') as f:
+                session_data = json.load(f)
+            events_from_file = session_data.get('events', [])
+            for event in events_from_file:
+                if event.get('type') == 'word_displayed':
+                    timestamp = event.get('timestamp')
+                    payload = event.get('payload', {})
+                    word = payload.get('word')
+                    if timestamp and word:
+                        word_map[timestamp] = word
+    except Exception as e:
+        logger.warning(f"Could not load word data from session_data.json: {e}")
+    
     # Convert to list of dicts
     events = []
     for row in event_rows:
@@ -157,6 +181,14 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
             event['word_id'] = row['word_id']
         if row['reaction_time_ms']:
             event['reaction_time_ms'] = row['reaction_time_ms']
+        # Add word from word_map if available
+        timestamp_val = row['timestamp']
+        if timestamp_val in word_map:
+            if not event.get('data'):
+                event['data'] = {}
+            if isinstance(event['data'], dict):
+                event['data']['word'] = word_map[timestamp_val]
+                logger.debug(f"Added word '{word_map[timestamp_val]}' from word_map for timestamp {timestamp_val}")
         events.append(event)
     
     # Filter word_displayed events
@@ -182,7 +214,31 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
     
     for idx, event in enumerate(word_events):
         timestamp = event.get('timestamp')
-        word = event.get('payload', {}).get('word', 'Unknown')
+        # Extract word from event_data (stored as JSON string in session_events table)
+        # Try multiple ways to get the word:
+        # 1. From event['data'] (parsed JSON from event_data column, or added from word_map)
+        # 2. From event['payload'] (legacy format)
+        # 3. From word_map directly (fallback)
+        # 4. Default to 'Unknown'
+        word = 'Unknown'
+        if event.get('data'):
+            if isinstance(event['data'], dict):
+                word = event['data'].get('word', 'Unknown')
+            elif isinstance(event['data'], str):
+                try:
+                    data_dict = json.loads(event['data'])
+                    word = data_dict.get('word', 'Unknown')
+                except:
+                    pass
+        if word == 'Unknown' and event.get('payload'):
+            word = event.get('payload', {}).get('word', 'Unknown')
+        # Final fallback: try word_map directly
+        if word == 'Unknown' and timestamp in word_map:
+            word = word_map[timestamp]
+            logger.debug(f"Used word_map fallback for timestamp {timestamp}: '{word}'")
+        
+        if idx < 5:  # Log first 5 words for debugging
+            logger.info(f"Event {idx}: timestamp={timestamp}, word='{word}', has_data={bool(event.get('data'))}, word_in_map={timestamp in word_map}")
         
         # Calculate reaction time
         reaction_time = calculate_reaction_time(events, timestamp, idx)

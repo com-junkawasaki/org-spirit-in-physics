@@ -45,15 +45,8 @@ export function getGraphQLApiUrl(): string {
   }
   
   // Client-side (browser environment)
-  const clientUrl = process.env.NEXT_PUBLIC_GRAPHQL_API_URL;
-  if (clientUrl) {
-    // Client-side should always use localhost or public URL (never Docker service names)
-    // Replace Docker service names with localhost for browser access
-    return clientUrl.replace('graphql-service', 'localhost');
-  }
-  
-  // Fallback for client-side local development
-  return 'http://localhost:8081/graphql';
+  // Use Next.js API route as proxy to avoid CORS and mixed content issues
+  return '/api/graphql';
 }
 
 // Create a function that returns a GraphQL client with the correct URL
