@@ -1,8 +1,11 @@
 # GraphQL Code Generator configuration
 # Generates TypeScript types and operations from Rust GraphQL service SDL
+# Supports both SDL file and introspection endpoint
 
 schema:
   - graphql-schema.graphql
+  # Alternative: Use introspection endpoint (uncomment to use live schema)
+  # - https://graphql-nabrznw3h-gftdcojp.vercel.app/api/graphql
 
 documents:
   - 'src/**/*.{ts,tsx}'
