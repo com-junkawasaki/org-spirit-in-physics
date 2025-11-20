@@ -206,8 +206,21 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
     // Use GraphQL to fetch participants
     const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
     
-    const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
+    console.log('[getAllParticipants] Fetching participants from GraphQL...')
+    let participantsData: GetParticipantsQueryResult
+    try {
+      participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
+    } catch (error) {
+      console.error('[getAllParticipants] Failed to fetch participants:', error)
+      if (error instanceof Error) {
+        console.error('[getAllParticipants] Error message:', error.message)
+        console.error('[getAllParticipants] Error stack:', error.stack)
+      }
+      throw error
+    }
+    
     const participants = participantsData.participants || []
+    console.log(`[getAllParticipants] Found ${participants.length} participants`)
 
     // For each participant, get detailed data including statistics
     const participantsWithData = await Promise.all(
@@ -215,13 +228,35 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
         const participantId = participant.id
         
         try {
+          console.log(`[getAllParticipants] Fetching data for participant ${participantId}...`)
+          
           // Get sessions for this participant
-          const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId })
+          let sessionsData: GetSessionsQueryResult
+          try {
+            sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId })
+          } catch (error) {
+            console.error(`[getAllParticipants] Failed to fetch sessions for ${participantId}:`, error)
+            if (error instanceof Error) {
+              console.error(`[getAllParticipants] Error message:`, error.message)
+            }
+            throw error
+          }
           const sessions = sessionsData.sessions || []
+          console.log(`[getAllParticipants] Found ${sessions.length} sessions for participant ${participantId}`)
           
           // Get timeline data to calculate response count and average spirit probability
-          const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
+          let timelineData: GetTimelineQueryResult
+          try {
+            timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
+          } catch (error) {
+            console.error(`[getAllParticipants] Failed to fetch timeline for ${participantId}:`, error)
+            if (error instanceof Error) {
+              console.error(`[getAllParticipants] Error message:`, error.message)
+            }
+            throw error
+          }
           const timeline = timelineData.timeline || []
+          console.log(`[getAllParticipants] Found ${timeline.length} timeline points for participant ${participantId}`)
           
           // Calculate statistics
           const responseCount = timeline.filter((p) => p.hasResponse).length
@@ -231,6 +266,13 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
           const averageSpiritProbability = reactionValues.length > 0
             ? reactionValues.reduce((sum, val) => sum + val, 0) / reactionValues.length
             : 0
+          
+          console.log(`[getAllParticipants] Participant ${participantId} stats:`, {
+            sessionCount: sessions.length,
+            responseCount,
+            averageSpiritProbability,
+            timelineLength: timeline.length
+          })
           
           // Get last activity timestamp
           const lastActivity = timeline.length > 0
@@ -256,7 +298,12 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
             lastActivity,
           } as ParticipantData
         } catch (error) {
-          console.error(`Failed to fetch data for participant ${participantId}:`, error)
+          console.error(`[getAllParticipants] Failed to fetch data for participant ${participantId}:`, error)
+          if (error instanceof Error) {
+            console.error(`[getAllParticipants] Error message:`, error.message)
+            console.error(`[getAllParticipants] Error stack:`, error.stack)
+          }
+          // Return participant with zero stats instead of throwing
           return {
             id: participantId,
             name: `Participant ${participantId.slice(0, 8)}`,
@@ -271,9 +318,16 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
       })
     )
 
-    return participantsWithData.filter(Boolean) as ParticipantData[]
+    const validParticipants = participantsWithData.filter(Boolean) as ParticipantData[]
+    console.log(`[getAllParticipants] Returning ${validParticipants.length} participants with data`)
+    return validParticipants
   } catch (error) {
-    console.error('Failed to fetch all participants:', error)
+    console.error('[getAllParticipants] Failed to fetch all participants:', error)
+    if (error instanceof Error) {
+      console.error('[getAllParticipants] Error message:', error.message)
+      console.error('[getAllParticipants] Error stack:', error.stack)
+    }
+    // Return empty array instead of throwing to prevent API route from crashing
     return []
   }
 }

@@ -13,7 +13,7 @@ use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
     Schema,
 };
-use tracing::info;
+use tracing;
 
 use database::PostgresPool;
 use schema::create_schema;
@@ -25,14 +25,16 @@ use poem::{
     listener::TcpListener,
     middleware::Cors,
     web::{Data, Html, Json},
-    EndpointExt, Route, Server, Request,
+    EndpointExt, Route, Server, Request, Endpoint,
 };
 #[cfg(not(feature = "vercel"))]
 use async_graphql_poem::GraphQL;
 #[cfg(not(feature = "vercel"))]
-use async_graphql::{Request as GraphQLRequest, Response as GraphQLResponse};
+use async_graphql::Request as GraphQLRequest;
 #[cfg(not(feature = "vercel"))]
 use auth::verify_clerk_token;
+#[cfg(not(feature = "vercel"))]
+use tracing::{warn, error};
 
 #[cfg(feature = "vercel")]
 mod vercel_handler;
@@ -42,13 +44,15 @@ pub fn get_allowed_origins() -> Vec<String> {
     let mut origins = vec![
         "http://localhost:25250".to_string(),      // participant app
         "https://participant.spirit-in-physics.orb.local".to_string(), // participant app via orb.local
-        "http://localhost:3000".to_string(),      // researcher app
+        "http://localhost:3000".to_string(),      // researcher app (legacy)
+        "http://localhost:25260".to_string(),     // researcher app (current)
         "http://localhost:4321".to_string(),      // paper app
         "http://localhost:4322".to_string(),      // demo app
         "https://demo.spirit-in-physics.orb.local".to_string(), // demo app via orb.local
         "http://localhost:8080".to_string(),      // fallback
         "http://127.0.0.1:25250".to_string(),
         "http://127.0.0.1:3000".to_string(),
+        "http://127.0.0.1:25260".to_string(),
         "http://127.0.0.1:4321".to_string(),
         "http://127.0.0.1:4322".to_string(),
     ];
@@ -85,26 +89,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    info!("Starting GraphQL service on Vercel...");
+    tracing::info!("Starting GraphQL service on Vercel...");
     vercel_handler::run().await
 }
 
+// GraphQL handler with authentication middleware
 #[cfg(not(feature = "vercel"))]
 #[handler]
 async fn graphql_handler(
     req: &Request,
-    body: poem::web::Json<serde_json::Value>,
+    body: Result<Json<serde_json::Value>, poem::Error>,
     Data(schema): Data<&Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
 ) -> poem::Result<Json<serde_json::Value>> {
-    // Extract GraphQL request from body
-    let mut graphql_request: GraphQLRequest = match serde_json::from_value(body.0) {
-        Ok(req) => req,
+    tracing::info!("GraphQL request received from: {}", req.remote_addr());
+    
+    // Handle JSON parsing error gracefully
+    let body_json = match body {
+        Ok(json) => json.0,
         Err(e) => {
-            tracing::warn!("Failed to parse GraphQL request: {}", e);
-            GraphQLRequest::new("query { __typename }")
+            error!("Failed to parse JSON body: {}", e);
+            return Ok(Json(serde_json::json!({
+                "errors": [{"message": format!("Invalid JSON: {}", e)}]
+            })));
         }
     };
-
+    
+    // Log request for debugging
+    if let Some(query) = body_json.get("query").and_then(|v| v.as_str()) {
+        let query_preview: String = query.chars().take(100).collect();
+        tracing::info!("GraphQL query: {}", query_preview);
+    } else {
+        warn!("GraphQL request missing query field");
+    }
+    
+    // Parse GraphQL request
+    let mut graphql_request: GraphQLRequest = match serde_json::from_value(body_json) {
+        Ok(req) => req,
+        Err(e) => {
+            warn!("Failed to parse GraphQL request: {}", e);
+            return Ok(Json(serde_json::json!({
+                "errors": [{"message": format!("Invalid GraphQL request: {}", e)}]
+            })));
+        }
+    };
+    
     // Extract and verify JWT token from Authorization header
     let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
     let clerk_domain = std::env::var("CLERK_DOMAIN").ok();
@@ -112,15 +140,25 @@ async fn graphql_handler(
     // Verify token and add auth context to request
     if let Ok(auth_context) = verify_clerk_token(auth_header, clerk_domain).await {
         graphql_request = graphql_request.data(auth_context);
+        tracing::info!("Auth context added to GraphQL request");
+    } else {
+        warn!("Failed to verify auth token, continuing without auth context");
     }
-    // If token verification fails, continue without auth context
-    // Individual resolvers will check for auth if needed
-
-    let response = schema.execute(graphql_request).await;
-    let graphql_response = GraphQLResponse::from(response);
     
-    Ok(Json(serde_json::to_value(graphql_response).unwrap_or_default()))
+    // Execute GraphQL request
+    tracing::info!("Executing GraphQL request");
+    let response = schema.execute(graphql_request).await;
+    let graphql_response = async_graphql::Response::from(response);
+    
+    tracing::info!("GraphQL request completed successfully");
+    Ok(Json(serde_json::to_value(graphql_response).unwrap_or_else(|e| {
+        error!("Failed to serialize GraphQL response: {}", e);
+        serde_json::json!({
+            "errors": [{"message": "Failed to serialize response"}]
+        })
+    })))
 }
+
 
 #[cfg(not(feature = "vercel"))]
 #[handler]
@@ -153,7 +191,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    info!("Starting GraphQL service...");
+    tracing::info!("Starting GraphQL service...");
 
     // Load database URL from environment
     let database_url = std::env::var("DATABASE_URL")
@@ -161,7 +199,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize database pool
     let pool = PostgresPool::new(&database_url).await?;
-    info!("PostgreSQL connection pool initialized");
+    tracing::info!("PostgreSQL connection pool initialized");
 
     // Create GraphQL schema
     let schema = create_schema(pool.pool().clone()).await?;
@@ -176,7 +214,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_headers(vec!["Content-Type", "Authorization"])
         .allow_credentials(true);
 
-    // Build routes
+    // Build routes with comprehensive error handling
     let app = Route::new()
         .at("/graphql", graphql_handler)
         .at("/graphql/playground", graphql_playground)
@@ -192,8 +230,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or(8081);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
-    info!("GraphQL service listening on 0.0.0.0:{}", port);
-    info!("GraphQL Playground available at http://localhost:{}/graphql/playground", port);
+    tracing::info!("GraphQL service listening on 0.0.0.0:{}", port);
+    tracing::info!("GraphQL Playground available at http://localhost:{}/graphql/playground", port);
 
     Server::new(TcpListener::bind(addr))
         .run(app)

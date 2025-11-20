@@ -69,11 +69,49 @@ export function createGraphQLClient(): GraphQLClient {
     console.log('[GraphQL Client] NEXT_PUBLIC_GRAPHQL_API_URL:', process.env.NEXT_PUBLIC_GRAPHQL_API_URL);
   }
   
-  return new GraphQLClient(url, {
+  const client = new GraphQLClient(url, {
     headers: {
       'Content-Type': 'application/json',
     },
   });
+  
+  // Wrap request method to add better error handling
+  const originalRequest = client.request.bind(client);
+  (client as any).request = async function<T = any, V = any>(
+    document: any,
+    variables?: V
+  ): Promise<T> {
+    try {
+      return await originalRequest<T, V>(document, variables);
+    } catch (error: any) {
+      // Enhance error messages with more context
+      if (error?.response) {
+        const errorMessage = error.response.errors?.[0]?.message || error.message;
+        const errorCode = error.response.errors?.[0]?.extensions?.code;
+        console.error('[GraphQL Client] GraphQL error:', {
+          message: errorMessage,
+          code: errorCode,
+          url,
+          variables,
+        });
+        throw new Error(`GraphQL query failed: ${errorMessage}${errorCode ? ` (code: ${errorCode})` : ''}`);
+      } else if (error?.request) {
+        // Network error
+        console.error('[GraphQL Client] Network error:', {
+          message: error.message,
+          url,
+          variables,
+        });
+        throw new Error(`GraphQL connection failed: ${error.message}. URL: ${url}`);
+      } else {
+        // Unknown error
+        console.error('[GraphQL Client] Unknown error:', error);
+        throw error;
+      }
+    }
+  };
+  
+  return client;
 }
 
 // Export a default client for backward compatibility
