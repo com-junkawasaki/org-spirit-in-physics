@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.38.0",
+  "version": "1.39.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-20T14:00:00+09:00",
-  "merkleRoot": "GraphQL timeline resolver ENUM型対応完了: physiological_measurementsテーブルのmeasurement_type_idをmeasurement_type ENUM型に変換、measurement_type_enum ENUM型作成、GraphQL resolverとマイグレーションファイルをENUM型スキーマに完全対応、データベースマイグレーション適用完了",
+  "updatedAt": "2025-01-20T15:00:00+09:00",
+  "merkleRoot": "タイムライン表示と3Dフォースモデル表示問題解決完了: timeline_pointsテーブルのwordカラムをsession_data.jsonから更新、GraphQLプロキシAPI実装、CORS設定更新、クライアント側GraphQLリクエストのプロキシ経由化によりブラウザからのアクセス問題を解決",
   
   "story": {
     "@id": "project:story",
@@ -437,6 +437,12 @@
         "@type": "project:Narrative",
         "act": "GraphQL timeline resolver ENUM型対応完了",
         "summary": "GraphQL timeline resolverのENUM型スキーマ対応を完了。physiological_measurementsテーブルのmeasurement_type_idカラムをmeasurement_type ENUM型に変換し、measurement_type_enum ENUM型を作成。GraphQL resolver（timeline.rs）の2箇所でmeasurement_type_id参照をmeasurement_type ENUM型参照に修正。マイグレーションファイル（20250114000026_recreate_views_after_session_event_enum.sql）をENUM型対応に修正し、physiological_measurement_typesテーブルへのJOINを削除。ビューとマテリアライズドビューを再作成し、ENUM型を直接使用するように更新。これにより、GraphQLクエリのエラー（column pm.measurement_type does not exist）を解消し、ENUM型スキーマへの完全移行を実現。"
+      },
+      {
+        "@id": "project:narrative/63",
+        "@type": "project:Narrative",
+        "act": "タイムライン表示と3Dフォースモデル表示問題解決",
+        "summary": "タイムラインと3Dフォースモデルが表示されない問題を解決。timeline_pointsテーブルのwordカラムがすべて'Unknown'になっていた原因を特定し、session_data.jsonからword情報を取得して更新するスクリプト（scripts/update_timeline_words.py）を作成。GraphQLサービスのCORS設定にhttps://researcher.spirit-in-physics.orb.localを追加し、ブラウザからのアクセスを許可。Next.js APIルート経由のGraphQLプロキシエンドポイント（/api/graphql）を実装し、クライアント側のGraphQLリクエストをプロキシ経由に変更することで、CORSとMixed Contentの問題を回避。マテリアライズドビューをリフレッシュし、100個のユニークな単語が正しく表示されるようになった。"
       }
     ],
     "processNetwork": {
@@ -681,10 +687,10 @@
             "データ取得・処理効率向上"
           ]
         }
-      ]
+      ],
+      "subProcesses": []
     }
   },
-  
   "metadata": {
     "@id": "project:metadata",
     "@type": "project:Metadata",
@@ -974,13 +980,23 @@
             "CPU/GPU負荷削減",
             "スクロール時パフォーマンス向上",
             "isVisibleRefクロージャ問題回避",
-            "アニメーションループ効率制御"
+            "アニメーションループ効率制御",
+            "タイムラインポイントwordカラム更新スクリプト実装",
+            "session_data.jsonからword情報取得・更新機能",
+            "GraphQLサービスCORS設定更新",
+            "researcher.spirit-in-physics.orb.localオリジン追加",
+            "Next.js GraphQLプロキシAPIエンドポイント実装",
+            "クライアント側GraphQLリクエストプロキシ経由化",
+            "CORS・Mixed Content問題回避",
+            "マテリアライズドビューリフレッシュ機能",
+            "タイムライン表示機能完全復旧",
+            "3Dフォースモデル表示機能完全復旧"
           ]
         }
-      ]
+      ],
+      "subProcesses": []
     }
   },
-  
   "metadata": {
     "@id": "project:metadata",
     "@type": "project:Metadata",
