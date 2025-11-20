@@ -6,18 +6,21 @@ use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
 use std::collections::HashMap;
 use crate::types::{TimelinePoint, Session, EmotionData, WordAggregate, EmotionVector, WordStatistics, PhysiologicalData};
+use crate::auth::require_auth;
 
 #[derive(Default)]
 pub struct TimelineQuery;
 
 #[Object]
 impl TimelineQuery {
-    /// Get sessions for a participant
+    /// Get sessions for a participant (requires authentication - researcher only)
     async fn sessions(
         &self,
         ctx: &Context<'_>,
         participant_id: ID,
     ) -> Result<Vec<Session>> {
+        // Require authentication for researcher access
+        require_auth(ctx)?;
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
             .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
@@ -79,7 +82,7 @@ impl TimelineQuery {
         }).collect())
     }
 
-    /// Get timeline data for a participant and optional session
+    /// Get timeline data for a participant and optional session (requires authentication - researcher only)
     async fn timeline(
         &self,
         ctx: &Context<'_>,
@@ -89,6 +92,8 @@ impl TimelineQuery {
         end_time: Option<String>,
         interval: Option<String>, // e.g., "1 hour", "1 day"
     ) -> Result<Vec<TimelinePoint>> {
+        // Require authentication for researcher access
+        require_auth(ctx)?;
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
             .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;

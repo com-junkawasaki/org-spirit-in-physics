@@ -202,16 +202,27 @@ pub fn extract_token_from_header(auth_header: Option<&str>) -> Option<String> {
 
 /// Get Clerk domain from environment variables
 /// Tries CLERK_DOMAIN first, then extracts from CLERK_PUBLISHABLE_KEY if available
+/// 
+/// Note: CLERK_PUBLISHABLE_KEY extraction is complex and may not always work.
+/// It's recommended to set CLERK_DOMAIN explicitly.
 pub fn get_clerk_domain() -> Option<String> {
-    // Try CLERK_DOMAIN first
+    // Try CLERK_DOMAIN first (recommended)
     if let Ok(domain) = std::env::var("CLERK_DOMAIN") {
-        return Some(domain);
+        if !domain.is_empty() {
+            return Some(domain);
+        }
     }
 
-    // Try to extract from CLERK_PUBLISHABLE_KEY
-    // Format: pk_test_... or pk_live_...
-    // Domain is typically in the format: {instance-id}.clerk.accounts.dev
-    // For now, we'll use a default or require CLERK_DOMAIN to be set
+    // Try CLERK_FRONTEND_API (alternative environment variable)
+    if let Ok(domain) = std::env::var("CLERK_FRONTEND_API") {
+        if !domain.is_empty() {
+            return Some(domain);
+        }
+    }
+
+    // Note: Extracting domain from CLERK_PUBLISHABLE_KEY is complex
+    // because it's base64url-encoded JSON. It's better to set CLERK_DOMAIN explicitly.
+    // For now, we'll return None and let the caller handle the error.
     None
 }
 
