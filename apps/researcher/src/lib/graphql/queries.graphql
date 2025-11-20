@@ -63,7 +63,11 @@ query GetTimeline(
       score
       fileType
     }
-    physiological
+    physiological {
+      timestamp
+      value
+      metadata
+    }
     metadata
   }
 }

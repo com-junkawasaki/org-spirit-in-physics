@@ -7,9 +7,9 @@ type EmotionData {
 }
 
 type PhysiologicalData {
-  measurementType: String!
-  value: Float!
-  timestamp: String!
+  timestamp: String
+  value: Float
+  metadata: JSON
 }
 
 type EmotionVector {
@@ -110,7 +110,7 @@ type TimelinePoint {
 	reactionTime: Float
 	hasResponse: Boolean!
 	emotions: [EmotionData!]!
-  physiological: JSON!
+  physiological: [PhysiologicalData!]!
 	metadata: JSON!
 }
 
