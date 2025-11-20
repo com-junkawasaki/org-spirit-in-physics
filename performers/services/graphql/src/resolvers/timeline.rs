@@ -6,27 +6,28 @@ use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
 use std::collections::HashMap;
 use crate::types::{TimelinePoint, Session, EmotionData, WordAggregate, EmotionVector, WordStatistics, PhysiologicalData};
-use crate::auth::require_auth;
+use crate::auth::get_auth;
 
 #[derive(Default)]
 pub struct TimelineQuery;
 
 #[Object]
 impl TimelineQuery {
-    /// Get sessions for a participant (requires authentication - researcher only)
+    /// Get sessions for a participant
+    /// - Authenticated users: get all sessions for the participant
+    /// - Unauthenticated users: get sessions only for public participants (is_public = true)
     async fn sessions(
         &self,
         ctx: &Context<'_>,
         participant_id: ID,
     ) -> Result<Vec<Session>> {
-        // Require authentication for researcher access
-        require_auth(ctx)?;
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
             .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+        let is_authenticated = get_auth(ctx).is_some();
 
-        // Join with session_events table to get events
-        let rows = sqlx::query(
+        // Build query based on authentication status
+        let query = if is_authenticated {
             r#"
             SELECT 
                 s.id,
@@ -54,7 +55,38 @@ impl TimelineQuery {
             GROUP BY s.id, s.participant_id, s.session_index, s.start_ts, s.end_ts, s.created_at, s.updated_at
             ORDER BY s.session_index ASC
             "#
-        )
+        } else {
+            r#"
+            SELECT 
+                s.id,
+                s.participant_id,
+                s.session_index,
+                s.start_ts,
+                s.end_ts,
+                s.created_at,
+                s.updated_at,
+                COALESCE(
+                    json_agg(
+                        jsonb_build_object(
+                            'type', se.event_type::text,
+                            'timestamp', se.event_timestamp,
+                            'data', se.event_data,
+                            'word_id', se.word_id,
+                            'reaction_time_ms', se.reaction_time_ms
+                        )
+                    ) FILTER (WHERE se.id IS NOT NULL),
+                    '[]'::json
+                ) as events
+            FROM sessions s
+            INNER JOIN participants p ON p.id = s.participant_id
+            LEFT JOIN session_events se ON se.session_id = s.id
+            WHERE s.participant_id = $1 AND p.is_public = true
+            GROUP BY s.id, s.participant_id, s.session_index, s.start_ts, s.end_ts, s.created_at, s.updated_at
+            ORDER BY s.session_index ASC
+            "#
+        };
+
+        let rows = sqlx::query(query)
         .bind(participant_uuid)
         .fetch_all(pool)
         .await?;
@@ -82,7 +114,9 @@ impl TimelineQuery {
         }).collect())
     }
 
-    /// Get timeline data for a participant and optional session (requires authentication - researcher only)
+    /// Get timeline data for a participant and optional session
+    /// - Authenticated users: get all timeline data for the participant
+    /// - Unauthenticated users: get timeline data only for public participants (is_public = true)
     async fn timeline(
         &self,
         ctx: &Context<'_>,
@@ -92,11 +126,10 @@ impl TimelineQuery {
         end_time: Option<String>,
         interval: Option<String>, // e.g., "1 hour", "1 day"
     ) -> Result<Vec<TimelinePoint>> {
-        // Require authentication for researcher access
-        require_auth(ctx)?;
         let pool = ctx.data::<Pool<Postgres>>()?;
         let participant_uuid = Uuid::parse_str(participant_id.as_str())
             .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+        let is_authenticated = get_auth(ctx).is_some();
 
         let session_uuid = if let Some(sid) = session_id {
             Some(Uuid::parse_str(sid.as_str())
@@ -116,35 +149,55 @@ impl TimelineQuery {
         // Build query based on whether aggregation is requested
         let points = if let Some(interval_str) = interval {
             // Use TimescaleDB time_bucket for aggregation
-            let mut query_builder = sqlx::QueryBuilder::new(
+            let base_query = if is_authenticated {
                 format!(
                     r#"
                     SELECT 
-                        time_bucket('{}', time) as bucket_time,
-                        participant_id,
-                        session_id,
-                        AVG(reaction_value) as avg_reaction_value,
+                        time_bucket('{}', tp.time) as bucket_time,
+                        tp.participant_id,
+                        tp.session_id,
+                        AVG(tp.reaction_value) as avg_reaction_value,
                         COUNT(*) as event_count
-                    FROM timeline_points
-                    WHERE participant_id = "#,
+                    FROM timeline_points tp
+                    WHERE tp.participant_id = "#,
                     interval_str
                 )
-            );
+            } else {
+                format!(
+                    r#"
+                    SELECT 
+                        time_bucket('{}', tp.time) as bucket_time,
+                        tp.participant_id,
+                        tp.session_id,
+                        AVG(tp.reaction_value) as avg_reaction_value,
+                        COUNT(*) as event_count
+                    FROM timeline_points tp
+                    INNER JOIN participants p ON p.id = tp.participant_id
+                    WHERE tp.participant_id = "#,
+                    interval_str
+                )
+            };
+            
+            let mut query_builder = sqlx::QueryBuilder::new(base_query);
             
             query_builder.push_bind(participant_uuid);
             
+            if !is_authenticated {
+                query_builder.push(" AND p.is_public = true");
+            }
+            
             if let Some(sid) = session_uuid {
-                query_builder.push(" AND session_id = ");
+                query_builder.push(" AND tp.session_id = ");
                 query_builder.push_bind(sid);
             }
             
             if let Some(st) = start_ts {
-                query_builder.push(" AND time >= to_timestamp(");
+                query_builder.push(" AND tp.time >= to_timestamp(");
                 query_builder.push_bind(st as i64);
                 query_builder.push(" / 1000.0)");
             }
             
-            query_builder.push(" GROUP BY bucket_time, participant_id, session_id ORDER BY bucket_time ASC LIMIT 20000");
+            query_builder.push(" GROUP BY bucket_time, tp.participant_id, tp.session_id ORDER BY bucket_time ASC LIMIT 20000");
 
             let rows = query_builder.build()
                 .fetch_all(pool)
@@ -175,7 +228,7 @@ impl TimelineQuery {
         } else {
             // Return raw timeline points - use parameterized query for better performance
             // Join with normalized emotion and physiological tables
-            let mut query_builder = sqlx::QueryBuilder::new(
+            let base_query = if is_authenticated {
                 r#"
                 SELECT 
                     tp.time,
@@ -218,22 +271,72 @@ impl TimelineQuery {
                     pm.timeline_point_participant_id = tp.participant_id AND
                     pm.timeline_point_session_id = tp.session_id
                 WHERE tp.participant_id = "#
-            );
+            } else {
+                r#"
+                SELECT 
+                    tp.time,
+                    tp.participant_id,
+                    tp.session_id,
+                    tp.word,
+                    tp.event_type,
+                    tp.reaction_value,
+                    tp.reaction_time,
+                    tp.has_response,
+                    COALESCE(
+                        json_agg(
+                            DISTINCT jsonb_build_object(
+                                'name', tee.emotion_name::text,
+                                'score', tee.score,
+                                'fileType', tee.file_type::text,
+                                'color', get_emotion_color(tee.emotion_name)::text
+                            )
+                        ) FILTER (WHERE tee.id IS NOT NULL),
+                        '[]'::json
+                    ) as emotions,
+                    COALESCE(
+                        json_agg(
+                            jsonb_build_object(
+                                'measurement_type', pm.measurement_type::text,
+                                'value', pm.value,
+                                'unit', COALESCE(pm.unit::text, 'unknown'),
+                                'timestamp', tp.time::text
+                            )
+                        ) FILTER (WHERE pm.id IS NOT NULL),
+                        '[]'::json
+                    ) as physiological
+                FROM timeline_points tp
+                INNER JOIN participants p ON p.id = tp.participant_id
+                LEFT JOIN timeline_emotion_entries tee ON 
+                    tee.timeline_point_time = tp.time AND
+                    tee.timeline_point_participant_id = tp.participant_id AND
+                    tee.timeline_point_session_id = tp.session_id
+                LEFT JOIN physiological_measurements pm ON
+                    pm.timeline_point_time = tp.time AND
+                    pm.timeline_point_participant_id = tp.participant_id AND
+                    pm.timeline_point_session_id = tp.session_id
+                WHERE tp.participant_id = "#
+            };
+            
+            let mut query_builder = sqlx::QueryBuilder::new(base_query);
             
             query_builder.push_bind(participant_uuid);
             
+            if !is_authenticated {
+                query_builder.push(" AND p.is_public = true");
+            }
+            
             if let Some(sid) = session_uuid {
-                query_builder.push(" AND session_id = ");
+                query_builder.push(" AND tp.session_id = ");
                 query_builder.push_bind(sid);
             }
             
             if let Some(st) = start_ts {
-                query_builder.push(" AND time >= to_timestamp(");
+                query_builder.push(" AND tp.time >= to_timestamp(");
                 query_builder.push_bind(st as i64);
                 query_builder.push(" / 1000.0)");
                 
                 if let Some(et) = end_ts {
-                    query_builder.push(" AND time <= to_timestamp(");
+                    query_builder.push(" AND tp.time <= to_timestamp(");
                     query_builder.push_bind(et as i64);
                     query_builder.push(" / 1000.0)");
                 }
