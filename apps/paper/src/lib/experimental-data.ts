@@ -31,6 +31,11 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
     `;
 
     const data = await graphqlClient.request<{ participants: any[] }>(query);
+    // Check if data is empty (API not available)
+    if (!data || Object.keys(data).length === 0) {
+      console.warn('GraphQL API returned empty data. Service may not be available.');
+      return [];
+    }
     return (data.participants || []).map((p: any) => ({
       id: p.id,
       name: `Participant ${p.id.slice(0, 8)}`,
@@ -40,7 +45,12 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
       sessionCount: 0, // Will be populated from sessions
       responseCount: 0, // Will be populated from responses
     }));
-  } catch (error) {
+  } catch (error: any) {
+    // Handle 404 and connection errors gracefully
+    if (error?.response?.status === 404 || error?.message?.includes('fetch failed') || error?.message?.includes('ECONNREFUSED')) {
+      console.warn('GraphQL API is not available. Using empty data.');
+      return [];
+    }
     console.error('Failed to fetch participants:', error);
     return [];
   }
@@ -74,6 +84,10 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
     const variables = { participantId };
 
     const data = await graphqlClient.request<{ sessions: any[] }>(query, variables);
+    // Check if data is empty (API not available)
+    if (!data || Object.keys(data).length === 0) {
+      return [];
+    }
     return (data.sessions || []).map((s: any) => ({
       id: s.id,
       participantId: s.participantId,
@@ -82,7 +96,12 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
       endTime: s.endTs,
       responseCount: 0, // Will be populated from responses
     }));
-  } catch (error) {
+  } catch (error: any) {
+    // Handle 404 and connection errors gracefully
+    if (error?.response?.status === 404 || error?.message?.includes('fetch failed') || error?.message?.includes('ECONNREFUSED')) {
+      console.warn('GraphQL API is not available. Using empty data.');
+      return [];
+    }
     console.error('Failed to fetch sessions:', error);
     return [];
   }
@@ -124,6 +143,10 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
     const variables = { participantId };
 
     const data = await graphqlClient.request<{ timeline: any[] }>(query, variables);
+    // Check if data is empty (API not available)
+    if (!data || Object.keys(data).length === 0) {
+      return [];
+    }
     const timeline = data.timeline || [];
 
     return timeline
@@ -163,7 +186,12 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
           createdAt: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
         };
       });
-  } catch (error) {
+  } catch (error: any) {
+    // Handle 404 and connection errors gracefully
+    if (error?.response?.status === 404 || error?.message?.includes('fetch failed') || error?.message?.includes('ECONNREFUSED')) {
+      console.warn('GraphQL API is not available. Using empty data.');
+      return [];
+    }
     console.error('Failed to fetch analysis results:', error);
     return [];
   }

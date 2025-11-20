@@ -6,6 +6,17 @@ import react from '@astrojs/react';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+// Resolve visualization-components path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const visualizationComponentsPath = resolve(
+  __dirname,
+  '../../packages/visualization-components/src/index.ts'
+);
+
 // https://astro.build/config
 export default defineConfig({
   integrations: [
@@ -36,8 +47,14 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
-        '@spirit-in-physics/visualization-components': '/app/packages/visualization-components/src/index.ts',
+        '@spirit-in-physics/visualization-components': visualizationComponentsPath,
       },
+    },
+    optimizeDeps: {
+      exclude: ['@spirit-in-physics/visualization-components'],
+    },
+    ssr: {
+      noExternal: ['@spirit-in-physics/visualization-components'],
     },
     server: {
       // HMR settings for Docker

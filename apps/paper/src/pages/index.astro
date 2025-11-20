@@ -1,126 +1,121 @@
 ---
-// Merkle DAG: pages.index
-// Research papers index page
+// Merkle DAG: pages.index -> content.papers.spirit_in_physics
+// Main research paper page - displays spirit-in-physics.mdx content
 
 import ResearchLayout from '../layouts/ResearchLayout.astro';
-import ThemeToggle from '../components/ThemeToggle';
-import { getCollection } from 'astro:content';
+import ResearchPaper from '../components/ResearchPaper.astro';
+import ReferenceList from '../components/ReferenceList.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import ResultsSection from '../components/ResultsSection.astro';
+import VisualizationResults from '../components/VisualizationResults.astro';
+import { getEntry } from 'astro:content';
+import { loadExperimentalData } from '../lib/experimental-data';
 
-// Get all research papers
-const papers = await getCollection('papers');
+const paper = await getEntry('papers', 'spirit-in-physics');
 
-// Sort by date (newest first)
-const sortedPapers = papers.sort((a, b) => {
-  const dateA = typeof a.data.date === 'string' ? new Date(a.data.date) : a.data.date;
-  const dateB = typeof b.data.date === 'string' ? new Date(b.data.date) : b.data.date;
-  return dateB.getTime() - dateA.getTime();
-});
+if (!paper) {
+  throw new Error('Paper not found');
+}
+
+const { Content } = await paper.render();
+
+// Load experimental data
+let experimentalData;
+try {
+  experimentalData = await loadExperimentalData();
+} catch (error) {
+  console.error('Failed to load experimental data:', error);
+  // Create empty data structure as fallback
+  experimentalData = {
+    participants: [],
+    sessions: [],
+    responses: [],
+    spiritTypes: [],
+    ghostPatterns: [],
+    classification: {
+      spiritTypeCount: 0,
+      ghostPatternCount: 0,
+      classificationAccuracy: 0,
+      componentBreakdown: {
+        gene: { mean: 0, stdDev: 0, min: 0, max: 0, median: 0 },
+        meme: { mean: 0, stdDev: 0, min: 0, max: 0, median: 0 },
+        field: { mean: 0, stdDev: 0, min: 0, max: 0, median: 0 },
+      },
+    },
+  };
+}
+
+const sections = [
+  { id: 'introduction', title: 'Introduction', level: 1 },
+  { id: 'hypothesis-1', title: 'Hypothesis 1', level: 2 },
+  { id: 'hypothesis-2', title: 'Hypothesis 2', level: 2 },
+  { id: 'hypothesis-3', title: 'Hypothesis 3', level: 2 },
+  { id: 'hypothesis-4', title: 'Hypothesis 4', level: 2 },
+  { id: 'hypothesis-5', title: 'Hypothesis 5', level: 2 },
+  { id: 'kawasaki-model', title: 'Spirit Physical Space (Kawasaki Model)', level: 1 },
+  { id: 'vectorization', title: 'Vectorization Spirit Using the Word Association Experiment', level: 1 },
+  { id: 'spirit-type-ghost-pattern', title: 'Spirit Type and Ghost Pattern Classification', level: 1 },
+  { id: 'measurement-emotion', title: 'Measurement via Emotion Analytics', level: 1 },
+  { id: 'measurement-skin-potential', title: 'Measurement via Skin Potential', level: 1 },
+  { id: 'complex-space', title: 'Complex Space and Open System Dynamics', level: 1 },
+  { id: 'methods', title: 'Methods', level: 1 },
+  { id: 'results', title: 'Results', level: 1 },
+  { id: 'discussion', title: 'Discussion', level: 1 },
+  { id: 'conclusion', title: 'Conclusion', level: 1 },
+  { id: 'references', title: 'References', level: 1 },
+];
+
+const references = [
+  {
+    id: 'landauer-1991',
+    citation: 'Landauer, R. (1991). Information is physical. Physics Today, 44(5), 23–29.',
+    doi: '10.1063/1.881299',
+  },
+  {
+    id: 'berut-2012',
+    citation: 'Bérut, A., Arakelyan, A., Petrosyan, A., Ciliberto, S., Dillenschneider, R., & Lutz, E. (2012). Experimental verification of Landauer\'s principle linking information and thermodynamics. Nature, 483(7388), 187–189.',
+    doi: '10.1038/nature10872',
+  },
+  {
+    id: 'botvinick-1998',
+    citation: 'Botvinick, M., & Cohen, J. (1998). Rubber-hand illusion. Nature, 391, 756.',
+    doi: '10.1038/35784',
+  },
+  {
+    id: 'toyabe-2010',
+    citation: 'Toyabe, S., Sagawa, T., Ueda, M., Muneyuki, E., & Sano, M. (2010). Experimental demonstration of information-to-energy conversion and validation of the generalized Jarzynski equality. Nature Physics, 6, 988–992.',
+    doi: '10.1038/nphys1821',
+  },
+  {
+    id: 'jung-1910',
+    citation: 'Jung, C. G. (1910). The association method. American Journal of Psychology, 21(2), 219–269.',
+    doi: null,
+  },
+];
 ---
 
 <ResearchLayout
-  title="Spirit in Physics Research"
-  description="Research papers on structuring and quantifying human spirit using informational vector space"
-  authors={[]}
-  date={new Date().toISOString().split('T')[0]}
+  title={paper.data.title}
+  description={paper.data.description}
+  authors={paper.data.authors}
+  date={paper.data.date}
 >
-  <div class="max-w-4xl mx-auto px-4 py-8">
-    <header class="mb-12">
-      <div class="flex items-start justify-between mb-4">
-        <div class="flex-1">
-          <h1 class="text-4xl font-bold mb-4 dark:text-gray-100">Spirit in Physics Research</h1>
-          <p class="text-xl text-gray-600 dark:text-gray-400">
-            Research papers on structuring and quantifying human spirit using informational vector space
-          </p>
-        </div>
-        <div class="ml-4">
-          <ThemeToggle client:load />
-        </div>
-      </div>
-    </header>
-
-    <section class="space-y-6">
-      <h2 class="text-2xl font-semibold mb-4">Research Papers</h2>
-      
-      {sortedPapers.length > 0 ? (
-        <div class="space-y-6">
-          {sortedPapers.map((paper) => {
-            const paperDate = typeof paper.data.date === 'string' 
-              ? new Date(paper.data.date) 
-              : paper.data.date;
-            const formattedDate = paperDate.toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-
-            return (
-              <article class="border rounded-lg p-6 hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <h3 class="text-2xl font-semibold mb-2">
-                  <a 
-                    href={`/${paper.id}`}
-                    class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
-                  >
-                    {paper.data.title}
-                  </a>
-                </h3>
-                
-                <p class="text-gray-600 dark:text-gray-400 mb-4">{paper.data.description}</p>
-                
-                <div class="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  <div>
-                    <strong>Published:</strong> {formattedDate}
-                  </div>
-                  {paper.data.authors && paper.data.authors.length > 0 && (
-                    <div>
-                      <strong>Authors:</strong>{' '}
-                      {paper.data.authors.map((author, idx) => (
-                        <span key={idx}>
-                          {author.name}
-                          {idx < paper.data.authors.length - 1 ? ', ' : ''}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {paper.data.affiliations && paper.data.affiliations.length > 0 && (
-                  <div class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    <strong>Affiliations:</strong>{' '}
-                    {paper.data.affiliations.join(', ')}
-                  </div>
-                )}
-
-                <a 
-                  href={`/${paper.id}`}
-                  class="inline-block px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-                >
-                  Read Paper →
-                </a>
-              </article>
-            );
-          })}
-        </div>
-      ) : (
-        <div class="text-center py-12 text-gray-500">
-          <p>No research papers available.</p>
-        </div>
-      )}
-    </section>
-
-    <section class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
-      <h2 class="text-2xl font-semibold mb-4 dark:text-gray-100">About</h2>
-      <div class="prose prose-lg dark:prose-invert max-w-none">
-        <p>
-          This research explores the quantification of human spirit using informational vector space,
-          combining Jung's word association test with modern data analysis techniques including
-          emotion recognition, physiological measurements, and machine learning.
-        </p>
-        <p>
-          The research integrates concepts from psychology, physics, and information theory to
-          develop a comprehensive model for understanding spirit as a measurable phenomenon in
-          vector information space.
-        </p>
-      </div>
-    </section>
+  <div class="flex flex-col lg:flex-row">
+    <div class="flex-1">
+      <ResearchPaper
+        title={paper.data.title}
+        description={paper.data.description}
+        authors={paper.data.authors}
+        date={paper.data.date}
+        affiliations={paper.data.affiliations}
+        schemaId={paper.data.schemaId}
+      >
+        <Content />
+        <ResultsSection data={experimentalData} />
+        <VisualizationResults data={experimentalData} />
+        <ReferenceList references={references} />
+      </ResearchPaper>
+    </div>
+    <TableOfContents sections={sections} />
   </div>
 </ResearchLayout>

@@ -34,7 +34,7 @@ export const graphqlClient = new GraphQLClient(GRAPHQL_API_URL, {
 });
 
 /**
- * Execute a GraphQL query
+ * Execute a GraphQL query with improved error handling
  */
 export async function executeQuery<T = any>(
   query: string,
@@ -43,9 +43,23 @@ export async function executeQuery<T = any>(
   try {
     const data = await graphqlClient.request<T>(query, variables);
     return data;
-  } catch (error) {
+  } catch (error: any) {
+    // Handle 404 errors gracefully
+    if (error?.response?.status === 404) {
+      console.warn('[GraphQL Client] API endpoint not found (404). GraphQL service may not be running.');
+      console.warn('[GraphQL Client] Falling back to empty data.');
+      // Return empty data structure instead of throwing
+      return {} as T;
+    }
+    // Handle network errors
+    if (error?.message?.includes('fetch failed') || error?.message?.includes('ECONNREFUSED')) {
+      console.warn('[GraphQL Client] Connection refused. GraphQL service may not be running.');
+      console.warn('[GraphQL Client] Falling back to empty data.');
+      return {} as T;
+    }
     console.error('[GraphQL Client] Query error:', error);
-    throw error;
+    // For other errors, still return empty data to prevent page crash
+    return {} as T;
   }
 }
 
