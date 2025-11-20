@@ -46,12 +46,32 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
       responseCount: 0, // Will be populated from responses
     }));
   } catch (error: any) {
-    // Handle 404 and connection errors gracefully
-    if (error?.response?.status === 404 || error?.message?.includes('fetch failed') || error?.message?.includes('ECONNREFUSED')) {
-      console.warn('GraphQL API is not available. Using empty data.');
+    const errorMessage = error?.message || String(error);
+    const errorCode = error?.code;
+    
+    // Handle DNS resolution errors (ENOTFOUND)
+    if (errorCode === 'ENOTFOUND' || errorMessage.includes('ENOTFOUND') || 
+        errorMessage.includes('getaddrinfo')) {
+      console.warn('[fetchParticipants] DNS resolution failed. GraphQL service hostname cannot be resolved.');
+      console.warn('[fetchParticipants] Error details:', { message: errorMessage, code: errorCode });
+      console.warn('[fetchParticipants] Using empty data.');
       return [];
     }
-    console.error('Failed to fetch participants:', error);
+    
+    // Handle 404 and connection errors gracefully
+    if (error?.response?.status === 404 || 
+        errorMessage.includes('fetch failed') || 
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ECONNRESET')) {
+      console.warn('[fetchParticipants] GraphQL API is not available. Using empty data.');
+      console.warn('[fetchParticipants] Error details:', { message: errorMessage, code: errorCode });
+      return [];
+    }
+    console.error('[fetchParticipants] Failed to fetch participants:', {
+      message: errorMessage,
+      code: errorCode,
+      stack: error?.stack,
+    });
     return [];
   }
 }
@@ -97,12 +117,32 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
       responseCount: 0, // Will be populated from responses
     }));
   } catch (error: any) {
-    // Handle 404 and connection errors gracefully
-    if (error?.response?.status === 404 || error?.message?.includes('fetch failed') || error?.message?.includes('ECONNREFUSED')) {
-      console.warn('GraphQL API is not available. Using empty data.');
+    const errorMessage = error?.message || String(error);
+    const errorCode = error?.code;
+    
+    // Handle DNS resolution errors (ENOTFOUND)
+    if (errorCode === 'ENOTFOUND' || errorMessage.includes('ENOTFOUND') || 
+        errorMessage.includes('getaddrinfo')) {
+      console.warn('[fetchSessions] DNS resolution failed. GraphQL service hostname cannot be resolved.');
+      console.warn('[fetchSessions] Error details:', { message: errorMessage, code: errorCode });
+      console.warn('[fetchSessions] Using empty data.');
       return [];
     }
-    console.error('Failed to fetch sessions:', error);
+    
+    // Handle 404 and connection errors gracefully
+    if (error?.response?.status === 404 || 
+        errorMessage.includes('fetch failed') || 
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ECONNRESET')) {
+      console.warn('[fetchSessions] GraphQL API is not available. Using empty data.');
+      console.warn('[fetchSessions] Error details:', { message: errorMessage, code: errorCode });
+      return [];
+    }
+    console.error('[fetchSessions] Failed to fetch sessions:', {
+      message: errorMessage,
+      code: errorCode,
+      stack: error?.stack,
+    });
     return [];
   }
 }
@@ -191,12 +231,32 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
         };
       });
   } catch (error: any) {
-    // Handle 404 and connection errors gracefully
-    if (error?.response?.status === 404 || error?.message?.includes('fetch failed') || error?.message?.includes('ECONNREFUSED')) {
-      console.warn('GraphQL API is not available. Using empty data.');
+    const errorMessage = error?.message || String(error);
+    const errorCode = error?.code;
+    
+    // Handle DNS resolution errors (ENOTFOUND)
+    if (errorCode === 'ENOTFOUND' || errorMessage.includes('ENOTFOUND') || 
+        errorMessage.includes('getaddrinfo')) {
+      console.warn('[fetchAnalysisResults] DNS resolution failed. GraphQL service hostname cannot be resolved.');
+      console.warn('[fetchAnalysisResults] Error details:', { message: errorMessage, code: errorCode });
+      console.warn('[fetchAnalysisResults] Using empty data.');
       return [];
     }
-    console.error('Failed to fetch analysis results:', error);
+    
+    // Handle 404 and connection errors gracefully
+    if (error?.response?.status === 404 || 
+        errorMessage.includes('fetch failed') || 
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ECONNRESET')) {
+      console.warn('[fetchAnalysisResults] GraphQL API is not available. Using empty data.');
+      console.warn('[fetchAnalysisResults] Error details:', { message: errorMessage, code: errorCode });
+      return [];
+    }
+    console.error('[fetchAnalysisResults] Failed to fetch analysis results:', {
+      message: errorMessage,
+      code: errorCode,
+      stack: error?.stack,
+    });
     return [];
   }
 }

@@ -46,6 +46,14 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
   useEffect(() => { setMounted(true) }, [])
 
   const fetchTimelineData = useCallback(async () => {
+    // participantIdのバリデーション
+    if (!participantId || typeof participantId !== 'string' || participantId.trim() === '') {
+      setError('参加者IDが指定されていません')
+      setLoading(false)
+      console.error('TimelineVisualization: Invalid participantId:', participantId)
+      return
+    }
+
     const abortController = new AbortController()
     const timeoutId = setTimeout(() => {
       abortController.abort()
@@ -349,6 +357,12 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
 
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = useCallback(async () => {
+    // participantIdのバリデーション
+    if (!participantId || typeof participantId !== 'string' || participantId.trim() === '') {
+      console.warn('TimelineVisualization: Skipping word2vec fetch - invalid participantId:', participantId)
+      return
+    }
+
     try {
       const res = await fetch(`/api/participants/${participantId}/word2vec`)
       const json = await res.json()

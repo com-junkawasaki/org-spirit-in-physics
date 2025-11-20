@@ -46,6 +46,16 @@ export default function TimelineVisualization({
   aggregatesLoading: injectedAggregatesLoading,
   aggregatesError: injectedAggregatesError,
 }: TimelineVisualizationProps) {
+  // participantIdのバリデーション
+  if (!participantId || typeof participantId !== 'string' || participantId.trim() === '') {
+    return (
+      <div className="border rounded p-4 text-red-600">
+        <p>エラー: 参加者IDが指定されていません</p>
+        <p className="text-sm text-gray-600 mt-2">participantIdプロパティに有効な値を指定してください。</p>
+      </div>
+    )
+  }
+
   // 3D Force パラメータ
   const [springK, setSpringK] = useState(2.0)
   const [repulsionK, setRepulsionK] = useState(2000.0)
