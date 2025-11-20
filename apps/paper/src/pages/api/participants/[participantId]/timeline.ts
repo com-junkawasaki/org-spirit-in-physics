@@ -40,7 +40,11 @@ export const GET: APIRoute = async ({ params, url }) => {
             score
             fileType
           }
-          physiological
+          physiological {
+            timestamp
+            value
+            metadata
+          }
           metadata
         }
       }
@@ -85,11 +89,17 @@ export const GET: APIRoute = async ({ params, url }) => {
       // Emotions are already in the correct format
       const emotions = Array.isArray(point.emotions) ? point.emotions : [];
       
-      // Convert physiological data
-      const physiological = point.physiological || {};
-      const physAverage = typeof physiological.average === 'number' ? physiological.average : 0;
-      const physMax = typeof physiological.max === 'number' ? physiological.max : physAverage;
-      const physMin = typeof physiological.min === 'number' ? physiological.min : physAverage;
+      // Convert physiological data (array of PhysiologicalData)
+      const physiologicalArray = Array.isArray(point.physiological) ? point.physiological : [];
+      const physiologicalValues = physiologicalArray
+        .map((p: any) => typeof p.value === 'number' ? p.value : null)
+        .filter((v: any) => v !== null) as number[];
+      
+      const physAverage = physiologicalValues.length > 0
+        ? physiologicalValues.reduce((sum, val) => sum + val, 0) / physiologicalValues.length
+        : 0;
+      const physMax = physiologicalValues.length > 0 ? Math.max(...physiologicalValues) : physAverage;
+      const physMin = physiologicalValues.length > 0 ? Math.min(...physiologicalValues) : physAverage;
 
       return {
         w: point.word || '',
@@ -116,7 +126,7 @@ export const GET: APIRoute = async ({ params, url }) => {
         eventType: point.eventType || 'word_response',
         m: point.metadata || {
           emotionCount: emotions.length,
-          physiologicalCount: Object.keys(physiological).length > 0 ? 1 : 0,
+          physiologicalCount: physiologicalArray.length,
         },
       };
     });

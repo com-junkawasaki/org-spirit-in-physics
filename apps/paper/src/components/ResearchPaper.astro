@@ -17,7 +17,7 @@ const { title, description, authors, date, affiliations, schemaId } = Astro.prop
 const schemas = getCombinedContext();
 ---
 
-<article class="prose prose-lg dark:prose-invert max-w-4xl mx-auto px-4 py-8">
+<article class="prose prose-lg dark:prose-invert w-full max-w-none py-8 prose-headings:max-w-none prose-p:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-li:max-w-none">
   <header class="mb-8">
     <h1 class="text-4xl font-bold mb-4">{title}</h1>
     <p class="text-xl text-gray-600 dark:text-gray-400 mb-6">{description}</p>

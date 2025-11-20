@@ -9,6 +9,7 @@ import ReferenceList from '../components/ReferenceList.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 import ResultsSection from '../components/ResultsSection.astro';
 import VisualizationResults from '../components/VisualizationResults.astro';
+import VisualizationSidebar from '../components/VisualizationSidebar.astro';
 import { getEntry } from 'astro:content';
 import { loadExperimentalData } from '../lib/experimental-data';
 
@@ -101,8 +102,14 @@ const references = [
   authors={paper.data.authors}
   date={paper.data.date}
 >
-  <div class="flex flex-col lg:flex-row">
-    <div class="flex-1">
+  <div class="flex flex-col md:flex-row md:items-start w-full gap-0 px-4 md:px-6 lg:px-8 md:pl-[max(24px,env(safe-area-inset-left,0px))] md:pr-[max(24px,env(safe-area-inset-right,0px))]">
+    <!-- Left column: Table of Contents (iPad+) -->
+    <aside class="hidden md:block w-[220px] lg:w-[260px] flex-shrink-0 pr-6 lg:pr-8">
+      <TableOfContents sections={sections} />
+    </aside>
+    
+    <!-- Center column: Paper content -->
+    <main class="flex-1 min-w-0 w-full">
       <ResearchPaper
         title={paper.data.title}
         description={paper.data.description}
@@ -113,11 +120,18 @@ const references = [
       >
         <Content />
         <ResultsSection data={experimentalData} />
-        <VisualizationResults data={experimentalData} />
+        <!-- VisualizationResults is moved to sidebar on iPad+ -->
+        <div class="md:hidden">
+          <VisualizationResults data={experimentalData} />
+        </div>
         <ReferenceList references={references} />
       </ResearchPaper>
-    </div>
-    <TableOfContents sections={sections} />
+    </main>
+    
+    <!-- Right column: Visualization Sidebar (iPad+) -->
+    <aside class="hidden md:block w-[360px] lg:w-[420px] flex-shrink-0 pl-6 lg:pl-8">
+      <VisualizationSidebar data={experimentalData} />
+    </aside>
   </div>
 </ResearchLayout>
 

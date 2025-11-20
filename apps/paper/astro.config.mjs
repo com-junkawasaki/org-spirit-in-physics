@@ -25,7 +25,7 @@ export default defineConfig({
       rehypePlugins: [rehypeKatex],
     }),
     tailwind({
-      applyBaseStyles: false,
+      applyBaseStyles: true,
       configFile: './tailwind.config.mjs',
     }),
     react(),
