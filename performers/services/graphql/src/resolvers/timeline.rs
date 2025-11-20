@@ -169,7 +169,7 @@ impl TimelineQuery {
                     has_response: event_count > 0,
                     emotions: Vec::new(),
                     physiological: Vec::new(),
-                    metadata: serde_json::json!({ "event_count": event_count }),
+                    metadata: serde_json::json!({}),
                 })
             }).collect()
         } else {
@@ -186,7 +186,6 @@ impl TimelineQuery {
                     tp.reaction_value,
                     tp.reaction_time,
                     tp.has_response,
-                    tp.metadata,
                     COALESCE(
                         json_agg(
                             DISTINCT jsonb_build_object(
@@ -240,7 +239,7 @@ impl TimelineQuery {
                 }
             }
             
-            query_builder.push(" GROUP BY tp.time, tp.participant_id, tp.session_id, tp.word, tp.event_type, tp.reaction_value, tp.reaction_time, tp.has_response, tp.metadata ORDER BY tp.time ASC LIMIT 20000");
+            query_builder.push(" GROUP BY tp.time, tp.participant_id, tp.session_id, tp.word, tp.event_type, tp.reaction_value, tp.reaction_time, tp.has_response ORDER BY tp.time ASC LIMIT 20000");
 
             let rows = query_builder.build()
                 .fetch_all(pool)
@@ -258,7 +257,8 @@ impl TimelineQuery {
                 let has_response: bool = row.try_get("has_response").ok().unwrap_or(false);
                 let emotions_json: serde_json::Value = row.try_get("emotions").ok().unwrap_or_else(|| serde_json::json!([]));
                 let physiological_json: serde_json::Value = row.try_get("physiological").ok().unwrap_or_else(|| serde_json::json!([]));
-                let metadata_json: serde_json::Value = row.try_get("metadata").ok().unwrap_or_else(|| serde_json::json!({}));
+                // metadataカラムはSupabaseに存在しないため、デフォルト値を返す
+                let metadata_json: serde_json::Value = serde_json::json!({});
 
                 // Parse emotions array (already aggregated as JSON array)
                 let emotions: Vec<EmotionData> = if let Some(emotions_array) = emotions_json.as_array() {

@@ -5,7 +5,7 @@
 import ResearchLayout from '../layouts/ResearchLayout.astro';
 import ResearchPaper from '../components/ResearchPaper.astro';
 import ReferenceList from '../components/ReferenceList.astro';
-import TableOfContents from '../components/TableOfContents.astro';
+import TableOfContentsSheet from '../components/TableOfContentsSheet';
 import ResultsSection from '../components/ResultsSection.astro';
 import VisualizationResults from '../components/VisualizationResults.astro';
 import VisualizationSidebar from '../components/VisualizationSidebar.astro';
@@ -101,11 +101,17 @@ const references = [
   authors={paper.data.authors}
   date={paper.data.date}
 >
+  <!-- Table of Contents Sheet (Mobile & Desktop) -->
   <div class="flex flex-col md:flex-row md:items-start w-full gap-0 px-4 md:px-6 lg:px-8 md:pl-[max(24px,env(safe-area-inset-left,0px))] md:pr-[max(24px,env(safe-area-inset-right,0px))]">
-    <!-- Left column: Table of Contents (iPad+) -->
-    <aside class="hidden md:block w-[220px] lg:w-[260px] flex-shrink-0 pr-6 lg:pr-8">
-      <TableOfContents sections={sections} />
+    <!-- Left column: Table of Contents Sheet (iPad+) -->
+    <aside class="hidden md:block w-[220px] lg:w-[260px] flex-shrink-0 pr-6 lg:pr-8 sticky top-[calc(64px+env(safe-area-inset-top,0px)+16px)] self-start max-h-[calc(100vh-64px-env(safe-area-inset-top,0px)-32px)]">
+      <TableOfContentsSheet client:load sections={sections} />
     </aside>
+    
+    <!-- Mobile: Table of Contents Sheet -->
+    <div class="md:hidden">
+      <TableOfContentsSheet client:load sections={sections} />
+    </div>
     
     <!-- Center column: Paper content -->
     <main class="flex-1 min-w-0 w-full">
