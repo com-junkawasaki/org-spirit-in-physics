@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.36.0",
+  "version": "1.37.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-16T12:00:00+09:00",
-  "merkleRoot": "3D Force Graph最適化完了: Jotai状態管理移行、Zoomパラメータ安定化（useRef変換・初期化追跡）、Emotion検出0問題診断・修正（詳細ログ・レスポンスパース改善・バリデーション追加・エラーメッセージ改善・MediaRecorder改善）、FPS制御機能実装、デバウンス処理によるレンダリング頻度制御、useMemo依存配列最適化",
+  "updatedAt": "2025-11-20T09:00:00+09:00",
+  "merkleRoot": "研究論文公開ページCSS修正完了: ResearchLayout.astroから@tailwindディレクティブ削除、astro.config.mjsでapplyBaseStyles: true設定、Tailwind CSS自動注入による正しいスタイル適用を実現",
   
   "story": {
     "@id": "project:story",
@@ -425,6 +425,12 @@
         "@type": "project:Narrative",
         "act": "Emotion検出0問題の診断と修正",
         "summary": "Hume Batch APIからの予測データが取得できず、emotionが0になる問題を診断・修正。各処理ステージ（Stage 1-4）で詳細なログを追加し、Hume Batch APIのレスポンス構造を記録。4つのフォールバックメソッド（直接モデルキー、ネスト構造、深い検索、results配列ネスト検索）を実装し、想定外のレスポンス構造にも対応。ビデオblobサイズの検証、予測データ構造の検証、ストリーム検証を追加。詳細なデバッグ情報を含むエラーメッセージを改善し、MediaRecorderエラーハンドリングを強化。これにより、emotionが0になる原因を特定しやすくなり、問題解決の効率を向上。"
+      },
+      {
+        "@id": "project:narrative/61",
+        "@type": "project:Narrative",
+        "act": "研究論文公開ページCSS修正",
+        "summary": "研究論文公開ページ（apps/paper）のCSSが正しく反映されない問題を修正。ResearchLayout.astroから不要な@tailwindディレクティブを削除し、Astroの@astrojs/tailwind統合による自動注入に依存するように変更。astro.config.mjsでapplyBaseStyles: falseをapplyBaseStyles: trueに変更し、Tailwind CSSのベーススタイルが正しく適用されるように設定。これにより、Tailwind CSSが正しく処理され、スタイルが適切に反映されるようになった。"
       }
     ],
     "processNetwork": {
@@ -1570,18 +1576,24 @@
       "Jotaiアトムによるバッチキュー管理",
       "3D Force Graph初期ノード表示機能",
       "WebGPUレンダリングパフォーマンス最適化",
-      "Hume Batch APIレスポンス構造診断システム",
-      "詳細ログ追加（Stage 1-4各処理ステージ）",
-      "4つのフォールバックメソッド実装",
-      "直接モデルキーチェック（Method 1）",
-      "ネスト構造チェック（Method 2）",
-      "深い検索（Method 3、最大深度4）",
-      "results配列ネスト検索（Method 4）",
-      "予測データ構造バリデーション実装",
-      "ビデオblobサイズ検証",
-      "詳細なデバッグ情報を含むエラーメッセージ",
-      "可能な原因リスト表示",
-      "Hume Batch APIレスポンス構造完全記録"
+            "Hume Batch APIレスポンス構造診断システム",
+            "詳細ログ追加（Stage 1-4各処理ステージ）",
+            "4つのフォールバックメソッド実装",
+            "直接モデルキーチェック（Method 1）",
+            "ネスト構造チェック（Method 2）",
+            "深い検索（Method 3、最大深度4）",
+            "results配列ネスト検索（Method 4）",
+            "予測データ構造バリデーション実装",
+            "ビデオblobサイズ検証",
+            "詳細なデバッグ情報を含むエラーメッセージ",
+            "可能な原因リスト表示",
+            "Hume Batch APIレスポンス構造完全記録",
+            "研究論文公開ページCSS修正",
+            "ResearchLayout.astroから@tailwindディレクティブ削除",
+            "Astro @astrojs/tailwind統合による自動注入に依存",
+            "astro.config.mjs applyBaseStyles: true設定",
+            "Tailwind CSSベーススタイル正しい適用",
+            "スタイル反映問題の完全解決"
     ]
   },
   
