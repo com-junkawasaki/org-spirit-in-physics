@@ -12,6 +12,14 @@ name = "graphql"
 path = "api/graphql.rs"
 
 [[bin]]
+name = "health"
+path = "api/health.rs"
+
+[[bin]]
+name = "graphql-schema"
+path = "api/graphql/schema.rs"
+
+[[bin]]
 name = "graphql-service"
 path = "src/main.rs"
 

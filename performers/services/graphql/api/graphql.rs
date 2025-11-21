@@ -4,7 +4,7 @@
 
 // Import from the library crate
 use graphql_service::{PostgresPool, create_schema, Query, Mutation, get_allowed_origins};
-use graphql_service::auth::{verify_supabase_token, AuthContext};
+use graphql_service::auth::verify_supabase_token;
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use async_graphql::Schema;
@@ -83,9 +83,66 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     }
 
     // Initialize schema if not already initialized
-    let schema_mutex = get_or_initialize_schema().await?;
+    let schema_mutex_result = get_or_initialize_schema().await;
+    
+    // Handle routes that don't require schema first
+    match path {
+        "/api/health" | "/health" => {
+            // Health check - doesn't require schema
+            let health_response = json!({
+                "status": "ok",
+                "service": "graphql-service",
+                "runtime": "vercel"
+            });
+
+            let response = Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "application/json")
+                .body(Body::Text(serde_json::to_string(&health_response)?))?;
+            return build_cors_response(response, origin);
+        }
+        _ => {}
+    }
+    
+    // For other routes, schema is required
+    let schema_mutex = match schema_mutex_result {
+        Ok(mutex) => mutex,
+        Err(e) => {
+            let error_response = json!({
+                "errors": [{
+                    "message": format!("Failed to initialize schema: {}", e),
+                    "extensions": {
+                        "code": "SCHEMA_INIT_ERROR"
+                    }
+                }]
+            });
+            let response = Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header("Content-Type", "application/json")
+                .body(Body::Text(serde_json::to_string(&error_response)?))?;
+            return Ok(response);
+        }
+    };
+    
     let schema_guard = schema_mutex.lock().await;
-    let schema = schema_guard.as_ref().ok_or_else(|| Error::from("Schema not initialized"))?;
+    let schema = match schema_guard.as_ref() {
+        Some(s) => s,
+        None => {
+            let error_response = json!({
+                "errors": [{
+                    "message": "Schema not initialized",
+                    "extensions": {
+                        "code": "SCHEMA_NOT_INITIALIZED"
+                    }
+                }]
+            });
+            let response = Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header("Content-Type", "application/json")
+                .body(Body::Text(serde_json::to_string(&error_response)?))?;
+            return Ok(response);
+        }
+    };
 
     // Route handling
     match path {
@@ -145,6 +202,17 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 .body(Body::Text(response_body))?;
             build_cors_response(response, origin)
         }
+        "/api/graphql/schema" | "/graphql/schema" => {
+            // GraphQL Schema SDL
+            let sdl = schema.sdl();
+
+            let response = Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "text/plain")
+                .body(Body::Text(sdl))?;
+            build_cors_response(response, origin)
+        }
+        // Health check is handled above before schema initialization
         _ => {
             Ok(Response::builder()
                 .status(StatusCode::NOT_FOUND)
