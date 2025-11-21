@@ -83,7 +83,6 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     }
 
     // Initialize schema if not already initialized
-    // For health and schema endpoints, we don't need the schema initialized
     let schema_mutex_result = get_or_initialize_schema().await;
     
     // Handle routes that don't require schema first
@@ -106,9 +105,44 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     }
     
     // For other routes, schema is required
-    let schema_mutex = schema_mutex_result?;
+    let schema_mutex = match schema_mutex_result {
+        Ok(mutex) => mutex,
+        Err(e) => {
+            let error_response = json!({
+                "errors": [{
+                    "message": format!("Failed to initialize schema: {}", e),
+                    "extensions": {
+                        "code": "SCHEMA_INIT_ERROR"
+                    }
+                }]
+            });
+            let response = Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header("Content-Type", "application/json")
+                .body(Body::Text(serde_json::to_string(&error_response)?))?;
+            return Ok(response);
+        }
+    };
+    
     let schema_guard = schema_mutex.lock().await;
-    let schema = schema_guard.as_ref().ok_or_else(|| Error::from("Schema not initialized"))?;
+    let schema = match schema_guard.as_ref() {
+        Some(s) => s,
+        None => {
+            let error_response = json!({
+                "errors": [{
+                    "message": "Schema not initialized",
+                    "extensions": {
+                        "code": "SCHEMA_NOT_INITIALIZED"
+                    }
+                }]
+            });
+            let response = Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header("Content-Type", "application/json")
+                .body(Body::Text(serde_json::to_string(&error_response)?))?;
+            return Ok(response);
+        }
+    };
 
     // Route handling
     match path {
