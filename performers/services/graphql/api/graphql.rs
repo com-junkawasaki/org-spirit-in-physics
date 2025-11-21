@@ -4,7 +4,7 @@
 
 // Import from the library crate
 use graphql_service::{PostgresPool, create_schema, Query, Mutation, get_allowed_origins};
-use graphql_service::auth::{verify_supabase_token, AuthContext};
+use graphql_service::auth::verify_supabase_token;
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
 use async_graphql::Schema;
@@ -83,7 +83,30 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     }
 
     // Initialize schema if not already initialized
-    let schema_mutex = get_or_initialize_schema().await?;
+    // For health and schema endpoints, we don't need the schema initialized
+    let schema_mutex_result = get_or_initialize_schema().await;
+    
+    // Handle routes that don't require schema first
+    match path {
+        "/api/health" | "/health" => {
+            // Health check - doesn't require schema
+            let health_response = json!({
+                "status": "ok",
+                "service": "graphql-service",
+                "runtime": "vercel"
+            });
+
+            let response = Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "application/json")
+                .body(Body::Text(serde_json::to_string(&health_response)?))?;
+            return build_cors_response(response, origin);
+        }
+        _ => {}
+    }
+    
+    // For other routes, schema is required
+    let schema_mutex = schema_mutex_result?;
     let schema_guard = schema_mutex.lock().await;
     let schema = schema_guard.as_ref().ok_or_else(|| Error::from("Schema not initialized"))?;
 
@@ -145,6 +168,17 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 .body(Body::Text(response_body))?;
             build_cors_response(response, origin)
         }
+        "/api/graphql/schema" | "/graphql/schema" => {
+            // GraphQL Schema SDL
+            let sdl = schema.sdl();
+
+            let response = Response::builder()
+                .status(StatusCode::OK)
+                .header("Content-Type", "text/plain")
+                .body(Body::Text(sdl))?;
+            build_cors_response(response, origin)
+        }
+        // Health check is handled above before schema initialization
         _ => {
             Ok(Response::builder()
                 .status(StatusCode::NOT_FOUND)
