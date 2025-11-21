@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createNeo4jClient } from '@/lib/neo4j'
+import { getAllParticipants } from '@/lib/data'
 
 interface AnalysisResultData {
   participant_id: string
@@ -29,15 +29,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const client = createNeo4jClient()
-
-    // Validate participant exists in Neo4j
+    // Validate participant exists via GraphQL
     if (participantId) {
-      try {
-        await client.getParticipantDetails(participantId)
-      } catch (error) {
+      const participants = await getAllParticipants()
+      const participant = participants.find(p => p.id === participantId)
+      if (!participant) {
         return NextResponse.json(
-          { error: 'Participant not found in TerminusDB' },
+          { error: 'Participant not found' },
           { status: 404 }
         )
       }
@@ -74,15 +72,15 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Note: TerminusDB doesn't have analysis results storage yet
+    // Note: GraphQL service doesn't have analysis results storage yet
     // This is a placeholder for future implementation
-    console.log(`Would import ${validatedResults.length} analysis results to TerminusDB`)
+    console.log(`Would import ${validatedResults.length} analysis results via GraphQL`)
 
     return NextResponse.json({
-      message: `Analysis results import prepared for ${validatedResults.length} results (TerminusDB storage not yet implemented)`,
+      message: `Analysis results import prepared for ${validatedResults.length} results (GraphQL storage not yet implemented)`,
       count: validatedResults.length,
       results: validatedResults.map(r => ({ ...r, id: `mock-${Date.now()}` })),
-      note: 'TerminusDB analysis results storage will be implemented in future updates'
+      note: 'GraphQL analysis results storage will be implemented in future updates'
     })
 
   } catch (error) {

@@ -1,44 +1,62 @@
 services:
-  # Neo4j
-  neo4j:
-    image: neo4j:latest
-    container_name: spirit-neo4j
+  # PostgreSQL + TimescaleDB
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: spirit-postgres
     ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
+      - "5432:5432"
     environment:
-      - NEO4J_AUTH=neo4j/neo4jpassword
-      - NEO4J_PLUGINS=["graph-data-science"]
-      - NEO4J_dbms_memory_heap_initial__size=512m
-      - NEO4J_dbms_memory_heap_max__size=1G
-      - NEO4J_dbms_memory_pagecache_size=512m
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=spirit_in_physics
     volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
     networks:
       - spirit-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4jpassword", "MATCH () RETURN count(*) limit 1"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 10s
 
-
-  # Patient app (Next.js)
-  patient:
+  # Participant app (Next.js)
+  participant:
     build:
-      context: ./apps/patient
+      context: ./apps/participant
       dockerfile: Dockerfile
-    container_name: spirit-patient
+    container_name: spirit-participant
     ports:
       - "25250:25250"
     volumes:
-      - ./apps/visualizer/public/dataset:/app/dataset:cached
-    env_file:
-      - ./apps/patient/env.docker
+      - ./apps/participant:/app
+      - ./apps/researcher/public/dataset:/app/dataset:cached
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # Next.js HMR settings
+      - NEXT_TELEMETRY_DISABLED=1
+      # GraphQL API URL (hardcoded for development)
+      # Client-side: use localhost for browser access
+      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      # Server-side: use container name for server-to-server communication
+      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      # Supabase Authentication (hardcoded for development)
+      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
     depends_on:
-      - neo4j
+      postgres:
+        condition: service_healthy
+      graphql-service:
+        condition: service_healthy
     networks:
       - spirit-network
     healthcheck:
@@ -49,16 +67,20 @@ services:
       start_period: 30s
 
 
-  # Visualizer app (Next.js)
-  visualizer:
+  # Researcher app (Next.js)
+  researcher:
     build:
       context: ./apps/researcher
       dockerfile: Dockerfile
-    container_name: spirit-visualizer
+    container_name: spirit-researcher
     ports:
       - "25260:3000"
     volumes:
       - ./apps/researcher:/app
+<<<<<<< HEAD
+      - ./packages/visualization-components:/app/packages/visualization-components
+=======
+>>>>>>> origin/main
       - /app/node_modules
       - ./dataset:/app/dataset:cached
     command: pnpm run dev
@@ -68,29 +90,59 @@ services:
       - NODE_ENV=development
       - INNGEST_EVENT_KEY=local_dev_key
       - INNGEST_SIGNING_KEY=local_dev_signing_key
+      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      # Supabase Configuration (hardcoded for development)
+      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
     depends_on:
-      - neo4j
+      postgres:
+        condition: service_healthy
+      graphql-service:
+        condition: service_healthy
     networks:
       - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
-  # Patient app for cloud (Aura) profile
-  patient-cloud:
+  # Participant app for cloud (Aura) profile
+  participant-cloud:
     profiles: ["cloud"]
     build:
-      context: ./apps/patient
+      context: ./apps/participant
       dockerfile: Dockerfile
-    container_name: spirit-patient-cloud
+    container_name: spirit-participant-cloud
     ports:
       - "25251:25250"
     volumes:
-      - ./apps/visualizer/public/dataset:/app/dataset:cached
+      - ./apps/participant:/app
+      - ./apps/researcher/public/dataset:/app/dataset:cached
+      - /app/node_modules
+      - /app/.next
     env_file:
-      - ./apps/patient/env.docker
+      - ./apps/participant/env.docker
     environment:
-      - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=ZApfDTJmpJAmBpMXgCHWn826CV69dE9_ntxtPHUc7hI
-      - NEO4J_DATABASE=neo4j
+      - NODE_ENV=development
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # Next.js HMR settings
+      - NEXT_TELEMETRY_DISABLED=1
+      # Supabase Authentication (hardcoded for development)
+      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
+    # Neo4j環境変数は削除済み - GraphQLサービス経由でPostgreSQLを使用
+    # environment:
+    #   - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687
+    #   - NEO4J_USER=neo4j
+    #   - NEO4J_PASSWORD=ZApfDTJmpJAmBpMXgCHWn826CV69dE9_ntxtPHUc7hI
+    #   - NEO4J_DATABASE=neo4j
     networks:
       - spirit-network
     healthcheck:
@@ -101,25 +153,156 @@ services:
       start_period: 30s
     command: sh -lc "rm -f .env.local && pnpm dev"
 
-  # One-shot importer to push dataset into Neo4j via patient API
-  patient-importer:
-    image: curlimages/curl:8.9.1
-    container_name: spirit-patient-importer
+  # Python import service
+  import-service:
+    build:
+      context: ./performers/services/import
+      dockerfile: Dockerfile
+    container_name: spirit-import-service
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./apps/researcher/public/dataset:/app/dataset:cached
+    environment:
+      # Production Supabase Database URL
+      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+      # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
+      # For local development, use local PostgreSQL container
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
+      - DATASET_PATH=/app/dataset/participants
+      - PORT=8082
     depends_on:
-      neo4j:
+      postgres:
         condition: service_healthy
-      patient:
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8082/import/status')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # GraphQL service (Rust + async-graphql)
+  graphql-service:
+    build:
+      context: ./performers/services/graphql
+      dockerfile: Dockerfile
+    container_name: spirit-graphql-service
+    ports:
+      - "8081:8081"
+    environment:
+      # Production Supabase Database URL (Connection pooler - IPv4 compatible)
+      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+      # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
+      # Note: Using pooler to avoid IPv6 connectivity issues in Docker
+      # For local development, use local PostgreSQL container (override .envrc)
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
+      - RUST_LOG=info
+      # Production Supabase Configuration
+      - SUPABASE_URL=${SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
+      # Production Supabase Service Role Key
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDUxNjk3MiwiZXhwIjoyMDY2MDkyOTcyfQ.7KSDYa5pxYCiA_ZtTe_8KPGBKELdj0buxba2nG7EnJc}
+      # Storage bucket name (from supabase/migrations/20241004000003_storage_policies.sql)
+      - SUPABASE_STORAGE_BUCKET=spirit-in-physics
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Paper app (Astro)
+  paper:
+    build:
+      context: ./apps/paper
+      dockerfile: Dockerfile
+    container_name: spirit-paper
+    ports:
+      - "25270:4321"
+    volumes:
+      - ./apps/paper:/app
+      - ./packages/visualization-components:/app/packages/visualization-components
+      - paper_node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # Astro HMR settings
+      - ASTRO_TELEMETRY_DISABLED=1
+    depends_on:
+      graphql-service:
+        condition: service_healthy
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:4321/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Demo app (Astro)
+  demo:
+    build:
+      context: ./apps/demo
+      dockerfile: Dockerfile
+    container_name: spirit-demo
+    ports:
+      - "25271:4322"
+    volumes:
+      - ./apps/demo:/app
+      - ./packages/visualization-components:/app/packages/visualization-components
+      - demo_node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # Astro HMR settings
+      - ASTRO_TELEMETRY_DISABLED=1
+      # Hume AI API Configuration (hardcoded for development)
+      - HUME_API_KEY=LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s
+      - HUME_API=q0nGzfOSBZB4D0HbdZorGxek3wXz5O4XpTG8IkEJ0gY8Wlet
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:4322 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # One-shot importer to push dataset into PostgreSQL via Rust import service
+  import-service-runner:
+    image: curlimages/curl:8.9.1
+    container_name: spirit-import-service-runner
+    depends_on:
+      postgres:
+        condition: service_healthy
+      import-service:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-lc"]
     command: >-
       'set -euo pipefail;
-       echo "Triggering participants import";
-       curl -sS -X POST http://patient:25250/api/admin/import/participants || exit 1;
-       echo "Triggering sessions import";
-       curl -sS -X POST http://patient:25250/api/admin/import/sessions || exit 1;
-       echo "Triggering emotions import";
-       curl -sS -X POST http://patient:25250/api/admin/import/emotions || exit 1;
-       echo "Imports completed";'
+       echo "Triggering participants import (Rust service)";
+       curl -sS -X POST http://import-service:8082/import/participants || exit 1;
+       echo "Triggering sessions import (Rust service)";
+       curl -sS -X POST http://import-service:8082/import/sessions || exit 1;
+       echo "Triggering emotions import (Rust service)";
+       curl -sS -X POST http://import-service:8082/import/emotions || exit 1;
+       echo "Rust import service imports completed";'
     networks:
       - spirit-network
     restart: "no"
@@ -131,40 +314,54 @@ services:
   #         dockerfile: Dockerfile
   #       container_name: spirit-bpmn-runner
   #       environment:
+<<<<<<< HEAD
+  #         - API_BASE=http://researcher:3000
+  #         - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
+  #       depends_on:
+  #         - researcher
+=======
   #         - API_BASE=http://visualizer:3000
   #         - PARTICIPANT_IDS=2a0d7a69-f953-4c29-87a5-8a8e4e8bd413
   #       depends_on:
   #         - visualizer
+>>>>>>> origin/main
   #       networks:
   #         - spirit-network
   #       restart: "no"
 
   # One-shot importer for cloud (Aura)
-  patient-cloud-importer:
+  participant-cloud-importer:
     profiles: ["cloud"]
     image: curlimages/curl:8.9.1
-    container_name: spirit-patient-cloud-importer
+    container_name: spirit-participant-cloud-importer
     depends_on:
-      patient-cloud:
+      participant-cloud:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-lc"]
     command: >-
       'set -euo pipefail;
        echo "Triggering participants import (cloud)";
-       curl -sS -X POST http://patient-cloud:25250/api/admin/import/participants || exit 1;
+       curl -sS -X POST http://participant-cloud:25250/api/admin/import/participants || exit 1;
        echo "Triggering sessions import (cloud)";
-       curl -sS -X POST http://patient-cloud:25250/api/admin/import/sessions || exit 1;
+       curl -sS -X POST http://participant-cloud:25250/api/admin/import/sessions || exit 1;
        echo "Triggering emotions import (cloud)";
-       curl -sS -X POST http://patient-cloud:25250/api/admin/import/emotions || exit 1;
+       curl -sS -X POST http://participant-cloud:25250/api/admin/import/emotions || exit 1;
        echo "Cloud imports completed";'
     networks:
       - spirit-network
     restart: "no"
 
 volumes:
-  neo4j_data:
-  neo4j_logs:
+  postgres_data:
+  paper_node_modules:
+  demo_node_modules:
 
 networks:
   spirit-network:
     driver: bridge
+    name: spirit-network-v2
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+        - subnet: 2001:db8::/32

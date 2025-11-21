@@ -25,20 +25,6 @@ const menuItems: MenuItem[] = [
         href: '/participants',
         icon: '👥',
         description: '参加者データ管理'
-    },
-    {
-        id: 'timeline',
-        label: '時系列可視化',
-        href: '/participants/2a0d7a69-f953-4c29-87a5-8a8e4e8bd413/timeline',
-        icon: '📈',
-        description: '時系列統合可視化'
-    },
-    {
-        id: 'force-timeline',
-        label: '3D Force Timeline',
-        href: '/3d-force-timeline',
-        icon: '🧲',
-        description: '感情距離フォース統合の専用ページ'
     }
 ]
 
@@ -101,16 +87,9 @@ export function Sidebar() {
                 ))}
             </nav>
 
-            {/* Sidebar Footer */}
             <div className="p-3 md:p-4 border-t">
                 {sidebarOpen ? (
                     <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-xs text-muted-foreground">
-                                Real-time Analytics
-                            </span>
-                        </div>
                         <div className="text-xs text-muted-foreground">
                             © 2024 Spirit in Physics Research
                         </div>

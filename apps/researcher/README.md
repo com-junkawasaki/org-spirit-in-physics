@@ -1,4 +1,4 @@
-# Spirit in Physics - Visualizer
+# Spirit in Physics - Researcher
 
 ## Neo4j Migration Complete
 

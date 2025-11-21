@@ -1,0 +1,41 @@
+---
+// Merkle DAG: components.timeline_view
+// Timeline view component for research app
+
+import type { ExperimentalData } from '../types/experimental';
+import { TimelineVisualization } from '@spirit-in-physics/visualization-components';
+
+interface Props {
+  data: ExperimentalData;
+  width?: number;
+  height?: number;
+}
+
+const { data, width = 1000, height = 400 } = Astro.props;
+
+// Default participantId (hardcoded for paper app)
+const DEFAULT_PARTICIPANT_ID = '15592cdb-86cf-4baf-86f5-66184169ee39';
+
+// Get participantId and sessionId from data
+// Priority: data.participants[0]?.id > hardcoded ID
+const participantId = data.participants[0]?.id || DEFAULT_PARTICIPANT_ID;
+const sessionId = data.sessions.length > 0 ? data.sessions[0].id : undefined;
+---
+
+<div class="timeline-view">
+  <TimelineVisualization
+    client:only="react"
+    participantId={participantId}
+    sessionId={sessionId}
+    width={width}
+    height={height}
+    hideFilters={true}
+  />
+</div>
+
+<style>
+  .timeline-view {
+    width: 100%;
+  }
+</style>
+

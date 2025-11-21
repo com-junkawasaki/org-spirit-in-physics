@@ -9,7 +9,7 @@ import { getSpiritProbabilityColor } from '@/components/SpiritProbabilityBadge'
 
 interface Participant {
   id: string
-  name: string
+  name: string | null
   sessionCount: number
   responseCount: number
   averageSpiritProbability: number

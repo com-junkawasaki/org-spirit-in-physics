@@ -1,0 +1,242 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/demo#",
+    "id": "@id",
+    "type": "@type",
+    
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "step": "demo:step",
+    "input": "demo:input",
+    "output": "demo:output",
+    "condition": "demo:condition",
+    "error": "demo:error",
+    "validation": "demo:validation"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/demo/data-flow-spec",
+  "@type": "demo:DataFlowSpecification",
+  "name": "3D Force Graph Data Flow Specification",
+  "description": "JSON-LD specification for data flow from batch processing to 3D Force Graph visualization",
+  
+  "dataFlow": {
+    "@id": "demo:dataFlow/batchToVisualization",
+    "@type": "demo:DataFlow",
+    "steps": [
+      {
+        "@id": "demo:step/batchProcessing",
+        "step": 1,
+        "name": "Batch Processing",
+        "description": "Process batch queue items at BPM 85 interval",
+        "component": "DemoApp",
+        "function": "processBatch",
+        "input": {
+          "batchQueue": "BatchQueueItem[]",
+          "condition": "isRunning === true && batchQueue.length > 0"
+        },
+        "output": {
+          "analysisResult": {
+            "emotions": "EmotionData[]",
+            "processingTime": "number",
+            "timestamp": "number"
+          },
+          "condition": "analysisResult.emotions.length > 0"
+        },
+        "validation": {
+          "@type": "sh:NodeShape",
+          "property": [
+            {
+              "sh:path": "demo:emotions",
+              "sh:minCount": 1,
+              "sh:message": "emotions array must not be empty"
+            }
+          ]
+        }
+      },
+      {
+        "@id": "demo:step/updateWordEmotionData",
+        "step": 2,
+        "name": "Update WordEmotionData State",
+        "description": "Update wordEmotionData state with new emotion data",
+        "component": "DemoApp",
+        "function": "setWordEmotionData",
+        "input": {
+          "newData": {
+            "word": "string",
+            "timestamp": "number",
+            "emotions": "EmotionData[]",
+            "reactionTime": "number",
+            "reactionValue": "number"
+          },
+          "prev": "WordEmotionData[]"
+        },
+        "output": {
+          "updated": "WordEmotionData[]",
+          "condition": "updated.length === prev.length + 1"
+        },
+        "validation": {
+          "@type": "sh:NodeShape",
+          "property": [
+            {
+              "sh:path": "demo:emotions",
+              "sh:minCount": 1,
+              "sh:message": "emotions array must not be empty"
+            },
+            {
+              "sh:path": "demo:duplicateCheck",
+              "sh:maxCount": 0,
+              "sh:message": "duplicate entries must be prevented"
+            }
+          ]
+        },
+        "conditions": [
+          {
+            "name": "duplicateCheck",
+            "description": "Prevent duplicate entries for same word within 1 second",
+            "code": "!prev.some(d => d.word === newData.word && Math.abs(d.timestamp - newData.timestamp) < 1000)"
+          },
+          {
+            "name": "emotionsNotEmpty",
+            "description": "Skip update if emotions array is empty",
+            "code": "newData.emotions.length > 0"
+          }
+        ]
+      },
+      {
+        "@id": "demo:step/calculateComplexSpace",
+        "step": 3,
+        "name": "Calculate Complex Space",
+        "description": "Calculate Complex space from word-emotion data",
+        "component": "DemoApp",
+        "function": "calculateComplexSpace",
+        "input": {
+          "wordEmotionData": "WordEmotionData[]",
+          "condition": "wordEmotionData.length > 0"
+        },
+        "output": {
+          "complexData": "ComplexSpaceData",
+          "condition": "complexData !== null"
+        },
+        "validation": {
+          "@type": "sh:NodeShape",
+          "property": [
+            {
+              "sh:path": "demo:informationSpace",
+              "sh:minCount": 1,
+              "sh:message": "informationSpace array is required"
+            },
+            {
+              "sh:path": "demo:biologicalSpace",
+              "sh:minCount": 1,
+              "sh:message": "biologicalSpace array is required"
+            },
+            {
+              "sh:path": "demo:projected3D",
+              "sh:minCount": 3,
+              "sh:maxCount": 3,
+              "sh:message": "projected3D must have exactly 3 elements"
+            }
+          ]
+        }
+      },
+      {
+        "@id": "demo:step/renderComplexForce3D",
+        "step": 4,
+        "name": "Render ComplexForce3D",
+        "description": "Render 3D Force Graph with updated wordEmotionData",
+        "component": "ComplexForce3D",
+        "hook": "useMemo",
+        "input": {
+          "wordEmotionData": "WordEmotionData[]",
+          "condition": "wordEmotionData.length > 0"
+        },
+        "output": {
+          "graphData": {
+            "nodes": "WordNode[]",
+            "links": "WordLink[]"
+          },
+          "condition": "graphData.nodes.length > 0"
+        },
+        "dependencies": ["wordEmotionData", "shellRadius", "restLength", "springK"],
+        "validation": {
+          "@type": "sh:NodeShape",
+          "property": [
+            {
+              "sh:path": "demo:nodes",
+              "sh:minCount": 1,
+              "sh:message": "nodes array must not be empty"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  
+  "issues": [
+    {
+      "@id": "demo:issue/emptyEmotions",
+      "name": "Empty Emotions Array",
+      "description": "Hume AI API returns empty emotions array, causing wordEmotionData update to be skipped",
+      "location": "DemoApp.tsx:286-294",
+      "condition": "analysisResult.emotions.length === 0",
+      "impact": "wordEmotionData state is not updated, 3D Force Graph does not render",
+      "solution": "Check Hume AI API response structure and processHumePredictions function"
+    },
+    {
+      "@id": "demo:issue/duplicatePrevention",
+      "name": "Duplicate Entry Prevention",
+      "description": "Duplicate entries are prevented, but may cause valid updates to be skipped",
+      "location": "DemoApp.tsx:320-324",
+      "condition": "isDuplicate === true",
+      "impact": "Valid emotion data may be skipped if timestamp is within 1 second",
+      "solution": "Review duplicate detection logic"
+    },
+    {
+      "@id": "demo:issue/stateUpdateTiming",
+      "name": "State Update Timing",
+      "description": "setWordEmotionData functional update may not trigger re-render if conditions are not met",
+      "location": "DemoApp.tsx:318-427",
+      "condition": "Multiple nested setState calls may cause timing issues",
+      "impact": "ComplexForce3D useMemo may not be triggered",
+      "solution": "Ensure state updates are properly batched and dependencies are correct"
+    }
+  ],
+  
+  "diagnostics": [
+    {
+      "@id": "demo:diagnostic/checkEmotions",
+      "name": "Check Emotions Array",
+      "description": "Verify that analysisResult.emotions is not empty before updating state",
+      "code": "console.log('Emotions count:', analysisResult.emotions.length)",
+      "location": "DemoApp.tsx:286"
+    },
+    {
+      "@id": "demo:diagnostic/checkStateUpdate",
+      "name": "Check State Update",
+      "description": "Verify that setWordEmotionData actually updates the state",
+      "code": "console.log('wordEmotionData updated:', updated.length)",
+      "location": "DemoApp.tsx:336"
+    },
+    {
+      "@id": "demo:diagnostic/checkComplexCalculation",
+      "name": "Check Complex Calculation",
+      "description": "Verify that calculateComplexSpace is called and returns valid data",
+      "code": "console.log('Complex data:', complex)",
+      "location": "DemoApp.tsx:380"
+    },
+    {
+      "@id": "demo:diagnostic/checkGraphData",
+      "name": "Check Graph Data",
+      "description": "Verify that ComplexForce3D useMemo is triggered and generates graph data",
+      "code": "console.log('[ComplexForce3D] Graph data:', graphData)",
+      "location": "ComplexForce3D.tsx:57"
+    }
+  ]
+}
+

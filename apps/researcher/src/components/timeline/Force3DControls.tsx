@@ -1,5 +1,5 @@
 import React from 'react'
-import type { ForcePreset } from './types'
+import type { ForcePreset } from '../../types'
 
 // Merkle DAG: timeline.components.force_3d_controls
 // 3Dフォースコントロールコンポーネント

@@ -42,6 +42,7 @@ export interface EmotionData {
   name: string
   score: number
   fileType: string
+  color?: string // HEX color code from database
 }
 
 export interface TimelineDataPoint {
@@ -80,6 +81,7 @@ export type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multipl
 
 export interface TimelineVisualizationProps {
   participantId: string
+  sessionId?: string
   width?: number
   height?: number
   // このページでモードを固定したい場合に指定（例: 'force-3d-typegpu'）
@@ -151,6 +153,26 @@ export interface Force3DGraphData {
   links: WordLink[]
 }
 
+<<<<<<< HEAD
+export interface WordDistancePair {
+  word1: string
+  word2: string
+  totalDistance: number
+  emotionDistance: number
+  reactionValueDistance: number
+  reactionTimeDistance: number
+  physiologicalDistance: number
+}
+
+export interface ModalityEmotionStats {
+  modality: 'burst' | 'face' | 'language' | 'prosody'
+  totalEmotions: number
+  emotionDistribution: Record<string, number> // emotion name -> count
+  emotionScores: Record<string, number[]> // emotion name -> scores array
+  wordsWithEmotions: number
+  wordsWithoutEmotions: number
+  sampleWordsWithoutEmotions: string[]
+=======
 export interface DebugInfo {
   apiStatus: 'loading' | 'success' | 'error' | 'idle'
   apiResponseReceived: boolean
@@ -175,6 +197,7 @@ export interface DebugInfo {
     truncated?: boolean
     originalSize?: number
   }
+>>>>>>> origin/main
 }
 
 // Merkle DAG: timeline.types -> definitions_complete

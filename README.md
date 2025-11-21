@@ -54,12 +54,12 @@
 ### 9. データ/API
 - Timeline API から語イベントを取得し、感情・生理指標を集約。
 - 可視化向けダミー（デモ）データも提供可能（`?demo=1`）。
-- Neo4j モデル（Neogma）は別ファイルに定義。
+- Neo4j クエリは Cypher Code Builder を使用して構築。
 
 ### 10. 実行
 ```
 pnpm i
-pnpm -F apps/visualizer dev
+pnpm -F apps/researcher dev
 ```
 ブラウザで 3D Force Timeline（`/3d-force-timeline`）へアクセス。UI で σ, Spectral Init, Shell/Constraints 等を調整します。
 
@@ -76,7 +76,7 @@ pnpm -F apps/visualizer dev
 
 ---
 実装の中心ファイル:
-- `apps/visualizer/src/components/TimelineVisualization.tsx`
-- `apps/visualizer/src/components/Force3DWordGraph.tsx`
+- `apps/researcher/src/components/TimelineVisualization.tsx`
+- `apps/researcher/src/components/Force3DWordGraph.tsx`
 
 

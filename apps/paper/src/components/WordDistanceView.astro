@@ -1,0 +1,45 @@
+---
+// Merkle DAG: components.word_distance_view
+// Word distance visualization component for research app
+
+import type { ExperimentalData } from '../types/experimental';
+import { WordDistanceVisualization, calculateWordDistances } from '@spirit-in-physics/visualization-components';
+
+interface Props {
+  data: ExperimentalData;
+  width?: number;
+  height?: number;
+  topK?: number;
+}
+
+const { data, width = 1000, height = 600, topK = 20 } = Astro.props;
+
+// Calculate word distances from responses
+// Convert AnalysisResult[] to WordResponseData[] format
+const wordResponseData = data.responses.map(r => ({
+  stimulusWord: r.stimulusWord,
+  reactionTimeMs: r.reactionTimeMs,
+  wordAssociationProbability: r.wordAssociationProbability,
+  emotionData: r.emotionData,
+  physiologicalData: Array.isArray(r.physiologicalData) ? r.physiologicalData : undefined,
+  skinPotentialComponent: r.skinPotentialComponent,
+}));
+const distances = calculateWordDistances(wordResponseData);
+---
+
+<div class="word-distance-view">
+  <WordDistanceVisualization
+    client:only="react"
+    distances={distances}
+    width={width}
+    height={height}
+    topK={topK}
+  />
+</div>
+
+<style>
+  .word-distance-view {
+    width: 100%;
+  }
+</style>
+

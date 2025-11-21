@@ -1,0 +1,103 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/research#",
+    "id": "@id",
+    "type": "@type",
+    
+    "schema": "https://schema.org/",
+    "dct": "http://purl.org/dc/terms/",
+    
+    "title": "dct:title",
+    "description": "dct:description",
+    "hasPart": {"@id": "schema:hasPart", "@type": "@id"},
+    "isPartOf": {"@id": "schema:isPartOf", "@type": "@id"}
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/introduction",
+      "@type": "schema:Article",
+      "title": "Introduction: Structuring and Quantifying Human Spirit Using the Informational Vector Space",
+      "description": "Introduction to the research on quantifying human spirit using computational methods",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/hypothesis-1",
+      "@type": "schema:Article",
+      "title": "Hypothesis 1: Information is Physical",
+      "description": "Information is inherently physical and obeys the laws of thermodynamics",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/hypothesis-2",
+      "@type": "schema:Article",
+      "title": "Hypothesis 2: Self-expansiveness into information space",
+      "description": "Self-boundaries can extend to incorporate external objects based on rubber hand illusion",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/kawasaki-model",
+      "@type": "schema:Article",
+      "title": "Spirit Physical Space (Kawasaki Model)",
+      "description": "Mathematical model for spirit measurement using vector space",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics",
+      "hasPart": [
+        "https://spirit-in-physics.gftd.ai/research/equations/spirit-space",
+        "https://spirit-in-physics.gftd.ai/research/equations/spirit-definition"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/vectorization",
+      "@type": "schema:Article",
+      "title": "Vectorization Spirit Using the Word Association Experiment (Jung, 1910)",
+      "description": "Vectorization of spirit using word association and probability models",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics",
+      "hasPart": [
+        "https://spirit-in-physics.gftd.ai/research/equations/word-association-probability"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/measurement-emotion",
+      "@type": "schema:Article",
+      "title": "Measurement via Emotion Analytics (Quantitative Analysis)",
+      "description": "Emotion measurement using facial and voice recognition",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics",
+      "hasPart": [
+        "https://spirit-in-physics.gftd.ai/research/equations/reaction-time"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/measurement-skin-potential",
+      "@type": "schema:Article",
+      "title": "Measurement via Skin Potential Using the Rubber Hand Illusion (Qualitative Analysis)",
+      "description": "Skin potential measurement using rubber hand illusion",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics",
+      "hasPart": [
+        "https://spirit-in-physics.gftd.ai/research/equations/skin-potential"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/conclusion",
+      "@type": "schema:Article",
+      "title": "Conclusion",
+      "description": "Summary and conclusions of the research",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/results",
+      "@type": "schema:Article",
+      "title": "Results",
+      "description": "Research results and findings",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/sections/references",
+      "@type": "schema:Article",
+      "title": "References",
+      "description": "Bibliography and citations",
+      "isPartOf": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
+    }
+  ]
+}
+

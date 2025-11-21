@@ -1,0 +1,422 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/demo#",
+    "id": "@id",
+    "type": "@type",
+    
+    "sh": "http://www.w3.org/ns/shacl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "schema": "https://schema.org/",
+    "ex": "https://example.dev/emotion-analysis#",
+    
+    "targetClass": "sh:targetClass",
+    "property": "sh:property",
+    "path": "sh:path",
+    "datatype": "sh:datatype",
+    "minCount": "sh:minCount",
+    "maxCount": "sh:maxCount",
+    "minInclusive": "sh:minInclusive",
+    "maxInclusive": "sh:maxInclusive",
+    "pattern": "sh:pattern",
+    "in": "sh:in",
+    "nodeKind": "sh:nodeKind",
+    "class": "sh:class",
+    "or": "sh:or",
+    "and": "sh:and",
+    "not": "sh:not",
+    "message": "sh:message",
+    "severity": "sh:severity",
+    "name": "schema:name",
+    "description": "schema:description"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/demo/spec",
+  "@type": "sh:NodeShape",
+  "name": "Demo Application Specification",
+  "description": "SHACL constraints for demo application components and data structures",
+  
+  "shapes": [
+    {
+      "@id": "demo:shape/AnalysisStep",
+      "@type": "sh:NodeShape",
+      "targetClass": "ex:EmotionAnalysisStep",
+      "name": "AnalysisStep Shape",
+      "description": "Constraints for AnalysisStep type",
+      "property": [
+        {
+          "path": "ex:id",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1,
+          "pattern": "^step-\\d+-\\d+$",
+          "message": "id must be in format 'step-{timestamp}-{order}'"
+        },
+        {
+          "path": "ex:stepType",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1,
+          "in": [
+            "demo_start",
+            "demo_word_display",
+            "demo_data_collection",
+            "demo_visualization",
+            "demo_complete",
+            "capture_video",
+            "capture_audio",
+            "hume_api_face",
+            "hume_api_prosody",
+            "hume_api_burst",
+            "process_predictions",
+            "normalize_emotions",
+            "update_data",
+            "calculate_complex"
+          ],
+          "message": "stepType must be one of the defined step types"
+        },
+        {
+          "path": "ex:stepOrder",
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "message": "stepOrder must be a non-negative integer"
+        },
+        {
+          "path": "ex:status",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1,
+          "in": ["pending", "running", "completed", "error"],
+          "message": "status must be one of: pending, running, completed, error"
+        },
+        {
+          "path": "schema:name",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "name is required"
+        },
+        {
+          "path": "dct:created",
+          "datatype": "xsd:dateTime",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "createdAt is required"
+        },
+        {
+          "path": "ex:duration",
+          "datatype": "xsd:integer",
+          "minCount": 0,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "message": "duration must be a non-negative integer (milliseconds)"
+        },
+        {
+          "path": "ex:logs",
+          "nodeKind": "sh:List",
+          "minCount": 0,
+          "maxCount": 1,
+          "message": "logs must be an array of strings"
+        }
+      ]
+    },
+    {
+      "@id": "demo:shape/WordEmotionData",
+      "@type": "sh:NodeShape",
+      "targetClass": "demo:WordEmotionData",
+      "name": "WordEmotionData Shape",
+      "description": "Constraints for WordEmotionData type",
+      "property": [
+        {
+          "path": "demo:word",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "word is required"
+        },
+        {
+          "path": "demo:timestamp",
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "message": "timestamp must be a non-negative integer (milliseconds)"
+        },
+        {
+          "path": "demo:emotions",
+          "nodeKind": "sh:List",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "emotions array is required and must not be empty"
+        },
+        {
+          "path": "demo:reactionTime",
+          "datatype": "xsd:double",
+          "minCount": 0,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "message": "reactionTime must be a non-negative number"
+        },
+        {
+          "path": "demo:reactionValue",
+          "datatype": "xsd:double",
+          "minCount": 0,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "maxInclusive": 1,
+          "message": "reactionValue must be between 0 and 1"
+        }
+      ]
+    },
+    {
+      "@id": "demo:shape/EmotionData",
+      "@type": "sh:NodeShape",
+      "targetClass": "demo:EmotionData",
+      "name": "EmotionData Shape",
+      "description": "Constraints for EmotionData type",
+      "property": [
+        {
+          "path": "demo:name",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "emotion name is required"
+        },
+        {
+          "path": "demo:score",
+          "datatype": "xsd:double",
+          "minCount": 1,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "maxInclusive": 1,
+          "message": "emotion score must be between 0 and 1"
+        },
+        {
+          "path": "demo:fileType",
+          "datatype": "xsd:string",
+          "minCount": 0,
+          "maxCount": 1,
+          "in": ["face", "prosody", "burst", "language"],
+          "message": "fileType must be one of: face, prosody, burst, language"
+        }
+      ]
+    },
+    {
+      "@id": "demo:shape/ComplexSpaceData",
+      "@type": "sh:NodeShape",
+      "targetClass": "demo:ComplexSpaceData",
+      "name": "ComplexSpaceData Shape",
+      "description": "Constraints for ComplexSpaceData type",
+      "property": [
+        {
+          "path": "demo:informationSpace",
+          "nodeKind": "sh:List",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "informationSpace array is required"
+        },
+        {
+          "path": "demo:biologicalSpace",
+          "nodeKind": "sh:List",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "biologicalSpace array is required"
+        },
+        {
+          "path": "demo:projected3D",
+          "nodeKind": "sh:List",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "projected3D array is required and must have exactly 3 elements"
+        },
+        {
+          "path": "demo:regions",
+          "nodeKind": "sh:List",
+          "minCount": 0,
+          "maxCount": 1,
+          "message": "regions array is optional"
+        }
+      ]
+    },
+    {
+      "@id": "demo:shape/BatchQueueItem",
+      "@type": "sh:NodeShape",
+      "targetClass": "demo:BatchQueueItem",
+      "name": "BatchQueueItem Shape",
+      "description": "Constraints for BatchQueueItem type",
+      "property": [
+        {
+          "path": "demo:word",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1,
+          "message": "word is required"
+        },
+        {
+          "path": "demo:wordIndex",
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "maxInclusive": 99,
+          "message": "wordIndex must be between 0 and 99"
+        },
+        {
+          "path": "demo:timestamp",
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "message": "timestamp must be a non-negative integer"
+        },
+        {
+          "path": "demo:stepOrder",
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "maxCount": 1,
+          "minInclusive": 0,
+          "message": "stepOrder must be a non-negative integer"
+        }
+      ]
+    },
+    {
+      "@id": "demo:shape/Configuration",
+      "@type": "sh:NodeShape",
+      "targetClass": "demo:Configuration",
+      "name": "Configuration Shape",
+      "description": "Constraints for application configuration",
+      "property": [
+        {
+          "path": "demo:bpm85Interval",
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "maxCount": 1,
+          "minInclusive": 600,
+          "maxInclusive": 800,
+          "message": "BPM 85 interval must be between 600ms and 800ms (approximately 706ms)"
+        },
+        {
+          "path": "demo:mediaCaptureDuration",
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "maxCount": 1,
+          "minInclusive": 1000,
+          "maxInclusive": 5000,
+          "message": "Media capture duration must be between 1000ms and 5000ms"
+        }
+      ]
+    }
+  ],
+  
+  "testCases": [
+    {
+      "@id": "demo:testCase/AnalysisStepValid",
+      "name": "Valid AnalysisStep",
+      "description": "Test that a valid AnalysisStep passes all constraints",
+      "input": {
+        "@context": "https://example.dev/schemas/emotion-analysis-step.jsonld",
+        "@type": "ex:EmotionAnalysisStep",
+        "id": "step-1234567890-1",
+        "stepType": "capture_video",
+        "stepOrder": 1,
+        "status": "running",
+        "name": "Capture Video",
+        "description": "Capture video frame from MediaStream",
+        "createdAt": 1234567890,
+        "logs": ["Starting video capture", "Video captured successfully"]
+      },
+      "expected": {
+        "valid": true,
+        "errors": []
+      }
+    },
+    {
+      "@id": "demo:testCase/AnalysisStepInvalidStepType",
+      "name": "Invalid AnalysisStep - Invalid stepType",
+      "description": "Test that an invalid stepType fails validation",
+      "input": {
+        "@context": "https://example.dev/schemas/emotion-analysis-step.jsonld",
+        "@type": "ex:EmotionAnalysisStep",
+        "id": "step-1234567890-1",
+        "stepType": "invalid_step_type",
+        "stepOrder": 1,
+        "status": "running",
+        "name": "Invalid Step",
+        "createdAt": 1234567890
+      },
+      "expected": {
+        "valid": false,
+        "errors": [
+          {
+            "path": "ex:stepType",
+            "message": "stepType must be one of the defined step types"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "demo:testCase/WordEmotionDataValid",
+      "name": "Valid WordEmotionData",
+      "description": "Test that valid WordEmotionData passes all constraints",
+      "input": {
+        "word": "頭",
+        "timestamp": 1234567890,
+        "emotions": [
+          {
+            "name": "joy",
+            "score": 0.75,
+            "fileType": "face"
+          }
+        ],
+        "reactionTime": 1500,
+        "reactionValue": 0.8
+      },
+      "expected": {
+        "valid": true,
+        "errors": []
+      }
+    },
+    {
+      "@id": "demo:testCase/WordEmotionDataEmptyEmotions",
+      "name": "Invalid WordEmotionData - Empty emotions",
+      "description": "Test that WordEmotionData with empty emotions array fails validation",
+      "input": {
+        "word": "頭",
+        "timestamp": 1234567890,
+        "emotions": []
+      },
+      "expected": {
+        "valid": false,
+        "errors": [
+          {
+            "path": "demo:emotions",
+            "message": "emotions array is required and must not be empty"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "demo:testCase/EmotionDataInvalidScore",
+      "name": "Invalid EmotionData - Score out of range",
+      "description": "Test that EmotionData with score > 1 fails validation",
+      "input": {
+        "name": "joy",
+        "score": 1.5,
+        "fileType": "face"
+      },
+      "expected": {
+        "valid": false,
+        "errors": [
+          {
+            "path": "demo:score",
+            "message": "emotion score must be between 0 and 1"
+          }
+        ]
+      }
+    }
+  ]
+}
+

@@ -126,27 +126,8 @@ export interface EmbeddingGenerationEvent {
   n: number;
 }
 
-export interface Neo4jPersistenceEvent {
-  participantId: string;
-  windows: Array<{
-    word: string;
-    start: number;
-    end: number;
-    reactionTimeMs: number | null;
-    physioAggregation?: Record<string, number>;
-    humeAggregation?: Record<string, Record<string, number>>;
-  }>;
-  embeddings: number[][];
-  fusionResults: {
-    weights: number[];
-    embedding: number[][];
-    eigenValues: number[];
-  };
-  metadata: {
-    nodes: number;
-    relationships: number;
-  };
-}
+// Neo4jPersistenceEventは削除済み（GraphQL経由でPostgreSQLを使用）
+// データ永続化はGraphQLサービス経由で行われる
 
 export interface ExportEvent {
   participantId: string;
@@ -175,5 +156,5 @@ export type WindowsGenerationWorkflow = (event: WindowsGenerationEvent) => Promi
 export type DistanceCalculationWorkflow = (event: DistanceCalculationEvent) => Promise<void>;
 export type KernelFusionWorkflow = (event: KernelFusionEvent) => Promise<void>;
 export type EmbeddingGenerationWorkflow = (event: EmbeddingGenerationEvent) => Promise<void>;
-export type Neo4jPersistenceWorkflow = (event: Neo4jPersistenceEvent) => Promise<void>;
+// Neo4jPersistenceWorkflowは削除済み（GraphQL経由でPostgreSQLを使用）
 export type ExportWorkflow = (event: ExportEvent) => Promise<void>;

@@ -46,3 +46,9 @@ logs/
 # Archive (keep but don't track changes)
 archive/
 _archive/
+
+# Rust
+target/
+**/*.rs.bk
+*.pdb
+Cargo.lock

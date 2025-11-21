@@ -1,0 +1,49 @@
+# GraphQL Code Generator configuration
+# Generates TypeScript types and operations from Rust GraphQL service SDL
+# Supports both SDL file and introspection endpoint
+
+schema:
+  - graphql-schema.graphql
+  # Alternative: Use introspection endpoint (uncomment to use live schema)
+  # - https://graphql-nabrznw3h-gftdcojp.vercel.app/api/graphql
+
+documents:
+  - 'src/**/*.{ts,tsx}'
+  - 'src/**/*.graphql'
+  - '!src/generated/**'
+
+generates:
+  src/generated/graphql.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typescript-graphql-request
+    config:
+      # Use const assertions for better type inference
+      constEnums: true
+      # Generate enums as TypeScript enums
+      enumsAsTypes: true
+      # Use string literal types for scalars
+      scalars:
+        ID: string
+        DateTime: string
+        JSON: any
+      # Skip type checking for generated files
+      skipTypename: false
+      # Use typed document nodes (typescript-graphql-request generates TypedDocumentString)
+      # documentMode is not needed when using typescript-graphql-request
+      # Generate hooks for React (if needed)
+      withHooks: false
+      # Generate fragments
+      dedupeFragments: true
+      # Generate operation names
+      operationResultSuffix: Result
+      # Generate input types
+      inputMaybeValue: T | null | undefined
+      # Use graphql-request client
+      rawRequest: false
+    # typescript-operations plugin config: don't generate string literals
+    # typescript-graphql-request will generate TypedDocumentString instead
+    typescript-operations:
+      documentMode: documentNode
+

@@ -1,0 +1,13 @@
+schema: ${GRAPHQL_API_URL:-http://localhost:8081/graphql}
+documents: 'src/**/*.{ts,tsx,graphql,gql}'
+generates:
+  src/generated/graphql.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typed-document-node
+    config:
+      useIndexSignature: true
+      skipTypename: false
+      enumsAsTypes: true
+

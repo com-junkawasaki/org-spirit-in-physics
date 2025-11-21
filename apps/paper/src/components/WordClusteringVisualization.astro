@@ -1,0 +1,155 @@
+---
+// Merkle DAG: components.word_clustering_visualization
+// Clustering visualization for Spirit Type and Ghost Pattern
+
+import type { SpiritType, GhostPattern } from '../types/experimental';
+
+interface Props {
+  spiritTypes: SpiritType[];
+  ghostPatterns: GhostPattern[];
+  width?: number;
+  height?: number;
+}
+
+const {
+  spiritTypes = [],
+  ghostPatterns = [],
+  width = 800,
+  height = 600,
+} = Astro.props;
+
+// Group by archetype (Spirit Types)
+const archetypeGroups = new Map<string, SpiritType[]>();
+spiritTypes.forEach(st => {
+  const archetype = st.archetype || 'unknown';
+  if (!archetypeGroups.has(archetype)) {
+    archetypeGroups.set(archetype, []);
+  }
+  archetypeGroups.get(archetype)!.push(st);
+});
+
+// Group by shadow type (Ghost Patterns)
+const shadowGroups = new Map<string, GhostPattern[]>();
+ghostPatterns.forEach(gp => {
+  const shadowType = gp.shadowType || 'unknown';
+  if (!shadowGroups.has(shadowType)) {
+    shadowGroups.set(shadowType, []);
+  }
+  shadowGroups.get(shadowType)!.push(gp);
+});
+
+// Calculate cluster centers
+const spiritTypeClusters = Array.from(archetypeGroups.entries()).map(([archetype, items]) => {
+  const center = {
+    gene: items.reduce((sum, item) => sum + item.geneComponent[0], 0) / items.length,
+    meme: items.reduce((sum, item) => sum + item.memeComponent[0], 0) / items.length,
+    field: items.reduce((sum, item) => sum + item.fieldComponent[0], 0) / items.length,
+  };
+  return {
+    id: `spirit-type-${archetype}`,
+    archetype,
+    items,
+    center,
+    count: items.length,
+  };
+});
+
+const ghostPatternClusters = Array.from(shadowGroups.entries()).map(([shadowType, items]) => {
+  const center = {
+    meme: items.reduce((sum, item) => sum + item.memeComponent[0], 0) / items.length,
+    field: items.reduce((sum, item) => sum + item.fieldComponent[0], 0) / items.length,
+  };
+  return {
+    id: `ghost-pattern-${shadowType}`,
+    shadowType,
+    items,
+    center,
+    count: items.length,
+  };
+});
+
+const clusteringData = {
+  spiritTypeClusters,
+  ghostPatternClusters,
+  width,
+  height,
+};
+---
+
+<div class="word-clustering-visualization" data-clustering={JSON.stringify(clusteringData)}>
+  <div class="mb-4">
+    <h3 class="text-lg font-semibold mb-2">Word Clustering Visualization</h3>
+    <p class="text-sm text-gray-600">
+      Spirit Type Clusters: {spiritTypeClusters.length} | 
+      Ghost Pattern Clusters: {ghostPatternClusters.length}
+    </p>
+  </div>
+  
+  <div id="clustering-container" style={`width: ${width}px; height: ${height}px;`}>
+    <!-- Clustering visualization will be rendered here -->
+    <div class="flex items-center justify-center h-full text-gray-500">
+      <div class="text-center">
+        <p class="mb-2">Word Clustering Visualization</p>
+        <p class="text-xs">Integration with clustering visualization library required</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="mt-4 space-y-2">
+    <div>
+      <h4 class="text-sm font-semibold mb-1">Spirit Type Clusters:</h4>
+      <ul class="text-xs text-gray-600 space-y-1">
+        {spiritTypeClusters.map(cluster => (
+          <li key={cluster.id}>
+            <strong>{cluster.archetype}:</strong> {cluster.count} items | 
+            Center: Gene={cluster.center.gene.toFixed(2)}, 
+            Meme={cluster.center.meme.toFixed(2)}, 
+            Field={cluster.center.field.toFixed(2)}
+          </li>
+        ))}
+      </ul>
+    </div>
+    
+    <div>
+      <h4 class="text-sm font-semibold mb-1">Ghost Pattern Clusters:</h4>
+      <ul class="text-xs text-gray-600 space-y-1">
+        {ghostPatternClusters.map(cluster => (
+          <li key={cluster.id}>
+            <strong>{cluster.shadowType}:</strong> {cluster.count} items | 
+            Center: Meme={cluster.center.meme.toFixed(2)}, 
+            Field={cluster.center.field.toFixed(2)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    // Client-side script for clustering visualization
+    const container = document.getElementById('clustering-container');
+    if (container) {
+      const dataAttr = container.closest('.word-clustering-visualization')?.getAttribute('data-clustering');
+      if (dataAttr) {
+        const data = JSON.parse(dataAttr);
+        console.log('Word Clustering Data:', data);
+        // Integration with clustering visualization library would happen here
+      }
+    }
+  </script>
+</div>
+
+<style>
+  .word-clustering-visualization {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #clustering-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    position: relative;
+  }
+</style>
+

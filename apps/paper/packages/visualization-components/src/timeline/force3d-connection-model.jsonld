@@ -1,0 +1,306 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "id": "@id",
+    "type": "@type",
+    
+    "ex": "https://spirit-in-physics.orb.local/ontology/force3d#",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "qudt": "http://qudt.org/schema/qudt/",
+    "unit": "http://qudt.org/vocab/unit/",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "hasParameter": "ex:hasParameter",
+    "hasAlgorithm": "ex:hasAlgorithm",
+    "hasConstraint": "ex:hasConstraint",
+    "hasDistribution": "ex:hasDistribution",
+    "hasConnection": "ex:hasConnection",
+    "hasComputation": "ex:hasComputation",
+    
+    "parameterName": "ex:parameterName",
+    "parameterValue": "ex:parameterValue",
+    "parameterType": "ex:parameterType",
+    "parameterDefault": "ex:parameterDefault",
+    "parameterRange": "ex:parameterRange",
+    
+    "algorithmStep": "ex:algorithmStep",
+    "stepOrder": "ex:stepOrder",
+    "stepDescription": "ex:stepDescription",
+    "stepFormula": "ex:stepFormula",
+    
+    "constraintType": "ex:constraintType",
+    "constraintCondition": "ex:constraintCondition",
+    
+    "distributionType": "ex:distributionType",
+    "distributionMethod": "ex:distributionMethod",
+    
+    "connectionType": "ex:connectionType",
+    "connectionWeight": "ex:connectionWeight",
+    "connectionSource": "ex:connectionSource",
+    "connectionTarget": "ex:connectionTarget",
+    
+    "computationType": "ex:computationType",
+    "computationInput": "ex:computationInput",
+    "computationOutput": "ex:computationOutput"
+  },
+  
+  "id": "https://spirit-in-physics.orb.local/ontology/force3d-connection-model",
+  "type": "ex:Force3DConnectionModel",
+  "name": "3D Force Graph Connection Model",
+  "description": "3D Force可視化における単語ノードと感情アンカーノード間の接続、分布、計算の概念モデル",
+  "createdAt": "2025-01-27T00:00:00+09:00",
+  "updatedAt": "2025-01-27T00:00:00+09:00",
+  
+  "hasParameter": [
+    {
+      "id": "ex:param-topK",
+      "type": "ex:Parameter",
+      "parameterName": "topK",
+      "parameterType": "xsd:integer",
+      "parameterDefault": 10,
+      "parameterRange": {"min": 1, "max": 10},
+      "description": "各単語ノードが接続する最大の感情アンカー数。10に設定すると全ての感情アンカー（10個）に接続可能"
+    },
+    {
+      "id": "ex:param-minW",
+      "type": "ex:Parameter",
+      "parameterName": "minW",
+      "parameterType": "xsd:double",
+      "parameterDefault": 0.1,
+      "parameterRange": {"min": 0.0, "max": 0.6},
+      "description": "接続を生成する最小重み閾値。この値未満の重みを持つ接続は除外される"
+    },
+    {
+      "id": "ex:param-weightGamma",
+      "type": "ex:Parameter",
+      "parameterName": "weightGamma",
+      "parameterType": "xsd:double",
+      "parameterDefault": 0.1,
+      "parameterRange": {"min": 0.1, "max": 3.0},
+      "description": "重み計算の非線形性パラメータ。w = sim^gamma で計算。小さい値（0.1）は線形に近く、大きい値（1.6以上）は強い非線形性を持つ"
+    },
+    {
+      "id": "ex:param-shellRadius",
+      "type": "ex:Parameter",
+      "parameterName": "shellRadius",
+      "parameterType": "xsd:double",
+      "parameterDefault": 300,
+      "description": "感情アンカーノードを配置する球殻の半径"
+    },
+    {
+      "id": "ex:param-springK",
+      "type": "ex:Parameter",
+      "parameterName": "springK",
+      "parameterType": "xsd:double",
+      "parameterDefault": 2.0,
+      "description": "バネ定数。接続の強度を決定"
+    },
+    {
+      "id": "ex:param-restLength",
+      "type": "ex:Parameter",
+      "parameterName": "restLength",
+      "parameterType": "xsd:double",
+      "parameterDefault": 80,
+      "description": "バネの自然長。重みに応じて調整される"
+    }
+  ],
+  
+  "hasAlgorithm": {
+    "id": "ex:algorithm-connection-generation",
+    "type": "ex:Algorithm",
+    "name": "Connection Generation Algorithm",
+    "description": "単語ノードと感情アンカーノード間の接続を生成するアルゴリズム",
+    "algorithmStep": [
+      {
+        "id": "ex:step-1-emotion-vector-aggregation",
+        "stepOrder": 1,
+        "stepDescription": "感情ベクトルの集約と正規化",
+        "stepFormula": "wordEmotionSum[w][idx] += emotion.score (モダリティフィルタ適用後)",
+        "computationType": "aggregation"
+      },
+      {
+        "id": "ex:step-2-emotion-vector-normalization",
+        "stepOrder": 2,
+        "stepDescription": "感情ベクトルの正規化（L2正規化）",
+        "stepFormula": "normalizedVec = vec / ||vec|| (if ||vec|| > 0 else zero vector)",
+        "computationType": "normalization"
+      },
+      {
+        "id": "ex:step-3-weight-calculation",
+        "stepOrder": 3,
+        "stepDescription": "各アンカーに対する重み計算",
+        "stepFormula": "sim = ei[kIdx] if kIdx >= 0 else mean(ei); w = clamp(sim, 0, 1)^weightGamma",
+        "computationType": "weight-calculation",
+        "hasConstraint": [
+          {
+            "constraintType": "emotion-filter",
+            "constraintCondition": "if key && !selectedEmotions.has(key) then w = 0"
+          }
+        ]
+      },
+      {
+        "id": "ex:step-4-topk-selection",
+        "stepOrder": 4,
+        "stepDescription": "Top-K選定と閾値フィルタリング",
+        "stepFormula": "weights.sort(desc); chosen = weights.filter(w >= minW).slice(0, topK); if chosen.length === 0 then chosen = weights.slice(0, 1)",
+        "computationType": "selection",
+        "hasConstraint": [
+          {
+            "constraintType": "min-weight-threshold",
+            "constraintCondition": "w >= minW"
+          },
+          {
+            "constraintType": "top-k-limit",
+            "constraintCondition": "chosen.length <= topK"
+          }
+        ]
+      },
+      {
+        "id": "ex:step-5-link-generation",
+        "stepOrder": 5,
+        "stepDescription": "リンク生成と物理パラメータ計算",
+        "stepFormula": "w_final = clamp(c.w * max(0.1, factor), 0, 1); L0 = max(20, restLength * (1 - 0.6 * w_final)); k = springK * (0.3 + 0.7 * w_final); alpha = clamp(0.12 + 0.88 * w_final, 0.12, 0.95)",
+        "computationType": "link-generation",
+        "computationInput": ["chosen", "factor", "restLength", "springK"],
+        "computationOutput": ["link"]
+      }
+    ]
+  },
+  
+  "hasDistribution": [
+    {
+      "id": "ex:dist-anchor-sphere",
+      "type": "ex:Distribution",
+      "distributionType": "spherical",
+      "distributionMethod": "toSphere",
+      "description": "感情アンカーノードの球面分布",
+      "stepFormula": "u = (x01 - 0.5) * π * 1.6; v = (y01 - 0.5) * π; [cx, cy, cz] = [cos(v)*cos(u), cos(v)*sin(u), sin(v)]; position = shellRadius * [cx, cy, cz]"
+    },
+    {
+      "id": "ex:dist-word-initial",
+      "type": "ex:Distribution",
+      "distributionType": "weighted-centroid",
+      "distributionMethod": "weightedAverage",
+      "description": "単語ノードの初期位置分布（選択されたアンカーの重み付き平均）",
+      "stepFormula": "v = Σ(chosen[i].w * anchorPos[i]) / Σ(chosen[i].w); r = shellRadius * 0.65; init = normalize(v) * r * (1 + random(-0.05, 0.05))"
+    }
+  ],
+  
+  "hasConnection": {
+    "id": "ex:connection-model",
+    "type": "ex:ConnectionModel",
+    "connectionType": "word-to-emotion-anchor",
+    "description": "単語ノードから感情アンカーノードへの接続モデル",
+    "hasConstraint": [
+      {
+        "constraintType": "source-type",
+        "constraintCondition": "source must be emotion anchor node index (0-9)"
+      },
+      {
+        "constraintType": "target-type",
+        "constraintCondition": "target must be word node index (baseOffset + wordIndex)"
+      },
+      {
+        "constraintType": "weight-range",
+        "constraintCondition": "weight ∈ [0, 1]"
+      },
+      {
+        "constraintType": "mode",
+        "constraintCondition": "mode = 'tension'"
+      }
+    ],
+    "connectionWeight": {
+      "computationType": "nonlinear-transform",
+      "formula": "w = sim^weightGamma * factor",
+      "description": "重みは類似度の非線形変換と物理モード係数の積"
+    },
+    "connectionSource": {
+      "type": "emotion-anchor",
+      "count": 10,
+      "labels": ["Joy", "Sadness", "Anger", "Fear", "Disgust", "Calmness", "Interest", "Surprise", "Confusion", "Determination"]
+    },
+    "connectionTarget": {
+      "type": "word-node",
+      "count": "variable",
+      "description": "JUNG_STIMULUS_WORDSの全単語（通常100語）"
+    }
+  },
+  
+  "hasComputation": [
+    {
+      "id": "ex:comp-emotion-similarity",
+      "type": "ex:Computation",
+      "computationType": "similarity-calculation",
+      "computationInput": ["normalizedEmotionVec[word]", "emotionKey"],
+      "computationOutput": "similarity score (0-1)",
+      "formula": "sim = ei[kIdx] if kIdx >= 0 else mean(ei)",
+      "description": "単語の感情ベクトルと特定感情カテゴリの類似度計算"
+    },
+    {
+      "id": "ex:comp-physics-factor",
+      "type": "ex:Computation",
+      "computationType": "physics-mode-factor",
+      "computationInput": ["physicsMode", "emotionVec", "physByWord", "speedByWord"],
+      "computationOutput": "factor (0-1)",
+      "formula": "if mode='all': 0.5*mean(ei) + 0.3*norm01(phys) + 0.2*norm01(speed); if mode='emotion': 1; if mode='physio': norm01(phys); if mode='reactionSpeed': norm01(speed)",
+      "description": "物理モードに応じた係数計算"
+    },
+    {
+      "id": "ex:comp-spring-parameters",
+      "type": "ex:Computation",
+      "computationType": "spring-parameter-calculation",
+      "computationInput": ["weight", "restLength", "springK"],
+      "computationOutput": ["L0", "k", "alpha"],
+      "formula": "L0 = max(20, restLength * (1 - 0.6 * w)); k = springK * (0.3 + 0.7 * w); alpha = clamp(0.12 + 0.88 * w, 0.12, 0.95)",
+      "description": "バネの物理パラメータ（自然長、バネ定数、透明度）の計算"
+    }
+  ],
+  
+  "hasConstraint": [
+    {
+      "id": "ex:constraint-emotion-filter",
+      "constraintType": "filter",
+      "constraintCondition": "selectedEmotions.has(key)",
+      "description": "選択されていない感情アンカーへの接続は重み0となり、接続が生成されない"
+    },
+    {
+      "id": "ex:constraint-modality-filter",
+      "constraintType": "filter",
+      "constraintCondition": "selectedModalities.has(mod)",
+      "description": "選択されていないモダリティ（prosody/burst/face/language）の感情データは集約に含まれない"
+    },
+    {
+      "id": "ex:constraint-min-weight",
+      "constraintType": "threshold",
+      "constraintCondition": "w >= minW",
+      "description": "minW未満の重みを持つ接続は除外される"
+    },
+    {
+      "id": "ex:constraint-top-k",
+      "constraintType": "limit",
+      "constraintCondition": "chosen.length <= topK",
+      "description": "各単語は最大topK個のアンカーに接続される"
+    },
+    {
+      "id": "ex:constraint-fallback",
+      "constraintType": "fallback",
+      "constraintCondition": "if chosen.length === 0 && weights.length > 0 then chosen = weights.slice(0, 1)",
+      "description": "minWを超える接続がない場合でも、最大重みの接続を1つ生成する"
+    }
+  ],
+  
+  "prov:wasDerivedFrom": [
+    {
+      "@id": "https://spirit-in-physics.orb.local/source/TimelineVisualization.tsx",
+      "dct:title": "TimelineVisualization Component"
+    }
+  ]
+}
+

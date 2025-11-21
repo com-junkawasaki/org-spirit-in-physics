@@ -23,10 +23,9 @@ export interface EmotionData {
 }
 
 export interface PhysiologicalData {
-  channel: string;
+  measurementType: string;
   value: number;
-  timestamp: number;
-  quality?: number;
+  timestamp: string;
 }
 
 export interface FeatureVector {

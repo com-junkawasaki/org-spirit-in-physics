@@ -1,0 +1,438 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/demo#",
+    "id": "@id",
+    "type": "@type",
+    
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "name": "dct:title",
+    "description": "dct:description",
+    "step": "demo:step",
+    "input": "demo:input",
+    "output": "demo:output",
+    "condition": "demo:condition",
+    "error": "demo:error",
+    "validation": "demo:validation",
+    "diagnosis": "demo:diagnosis",
+    "solution": "demo:solution"
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/demo/data-flow-diagnosis",
+  "@type": "demo:DiagnosisSpecification",
+  "name": "3D Force Graph Update Failure Diagnosis",
+  "description": "JSON-LD specification for diagnosing why 3D Force Graph does not update",
+  
+  "symptoms": {
+    "@id": "demo:symptom/forceGraphNotUpdating",
+    "name": "3D Force Graph Not Updating",
+    "description": "3D Force Graph remains in initial state '開始ボタンを押してデータを収集してください' even after data collection starts",
+    "observed": {
+      "uiState": "wordEmotionData.length === 0",
+      "expectedState": "wordEmotionData.length > 0",
+      "component": "DemoApp.tsx:536",
+      "condition": "wordEmotionData.length > 0 ? <ComplexForce3D> : <EmptyState>"
+    }
+  },
+  
+  "dataFlow": {
+    "@id": "demo:dataFlow/complete",
+    "@type": "demo:DataFlow",
+    "steps": [
+      {
+        "@id": "demo:step/1-batchProcessing",
+        "step": 1,
+        "name": "Batch Processing",
+        "component": "DemoApp",
+        "function": "processBatch",
+        "location": "DemoApp.tsx:233",
+        "input": {
+          "batchQueue": "BatchQueueItem[]",
+          "condition": "isRunning === true"
+        },
+        "output": {
+          "analysisResult": {
+            "emotions": "EmotionData[]",
+            "processingTime": "number"
+          }
+        },
+        "validation": {
+          "emotionsNotEmpty": {
+            "condition": "analysisResult.emotions.length > 0",
+            "location": "DemoApp.tsx:292",
+            "onFailure": "continue (skip to next item)"
+          }
+        },
+        "diagnosis": {
+          "checkpoint": "DemoApp.tsx:270-277",
+          "logs": [
+            "[Batch {word}] Calling analyzeEmotionRealtime",
+            "[Batch {word}] Analysis result: { emotionsCount, processingTime, emotions }"
+          ],
+          "expected": {
+            "emotionsCount": "> 0",
+            "emotions": "non-empty array"
+          }
+        }
+      },
+      {
+        "@id": "demo:step/2-updateState",
+        "step": 2,
+        "name": "Update wordEmotionData State",
+        "component": "DemoApp",
+        "function": "setWordEmotionData",
+        "location": "DemoApp.tsx:324",
+        "input": {
+          "newData": "WordEmotionData",
+          "prev": "WordEmotionData[]"
+        },
+        "output": {
+          "updated": "WordEmotionData[]",
+          "condition": "updated.length === prev.length + 1"
+        },
+        "validation": [
+          {
+            "name": "duplicateCheck",
+            "location": "DemoApp.tsx:326",
+            "condition": "!prev.some(d => d.word === newData.word && Math.abs(d.timestamp - newData.timestamp) < 1000)",
+            "onFailure": "return prev (skip update)"
+          },
+          {
+            "name": "emotionsNotEmpty",
+            "location": "DemoApp.tsx:333",
+            "condition": "newData.emotions.length > 0",
+            "onFailure": "return prev, setHasError(true), setIsRunning(false)"
+          }
+        ],
+        "diagnosis": {
+          "checkpoint": "DemoApp.tsx:342",
+          "logs": [
+            "Updated wordEmotionData: {count} entries (added: {word} with {emotionCount} emotions)"
+          ],
+          "expected": {
+            "count": "increasing",
+            "emotionCount": "> 0"
+          },
+          "failurePoints": [
+            {
+              "name": "Duplicate Entry",
+              "location": "DemoApp.tsx:328",
+              "log": "Skipping duplicate entry for word: {word}",
+              "impact": "State not updated"
+            },
+            {
+              "name": "Empty Emotions",
+              "location": "DemoApp.tsx:334",
+              "log": "No emotions detected for word: {word}, skipping update",
+              "impact": "State not updated, execution stopped"
+            }
+          ]
+        }
+      },
+      {
+        "@id": "demo:step/3-renderCheck",
+        "step": 3,
+        "name": "Render Condition Check",
+        "component": "DemoApp",
+        "location": "DemoApp.tsx:536",
+        "condition": "wordEmotionData.length > 0",
+        "onTrue": "Render <ComplexForce3D>",
+        "onFalse": "Render <EmptyState>",
+        "diagnosis": {
+          "checkpoint": "DemoApp.tsx:536",
+          "expected": "wordEmotionData.length > 0 after data collection",
+          "actual": "wordEmotionData.length === 0 (observed)"
+        }
+      },
+      {
+        "@id": "demo:step/4-complexForce3D",
+        "step": 4,
+        "name": "ComplexForce3D useMemo",
+        "component": "ComplexForce3D",
+        "hook": "useMemo",
+        "location": "ComplexForce3D.tsx:57",
+        "dependencies": ["wordEmotionData", "shellRadius", "restLength", "springK"],
+        "input": {
+          "wordEmotionData": "WordEmotionData[]",
+          "condition": "wordEmotionData.length > 0"
+        },
+        "output": {
+          "graphData": {
+            "nodes": "WordNode[]",
+            "links": "WordLink[]"
+          }
+        },
+        "diagnosis": {
+          "checkpoint": "ComplexForce3D.tsx:58",
+          "logs": [
+            "[ComplexForce3D] useMemo triggered, wordEmotionData.length: {length}",
+            "[ComplexForce3D] Graph data created: { nodes: {count}, links: {count} }"
+          ],
+          "expected": {
+            "length": "> 0",
+            "nodes": "> 0",
+            "links": ">= 0"
+          }
+        }
+      }
+    ]
+  },
+  
+  "rootCauseAnalysis": [
+    {
+      "@id": "demo:rootCause/emptyEmotions",
+      "name": "Empty Emotions Array from Hume AI API",
+      "probability": "HIGH",
+      "description": "Hume AI API returns empty emotions array, causing analysisResult.emotions.length === 0 check to fail",
+      "location": "DemoApp.tsx:292",
+      "impact": "setWordEmotionData is never called, wordEmotionData remains empty",
+      "evidence": {
+        "consoleLogs": [
+          "Warning: No emotions detected (emotionCount: 0)",
+          "No emotions detected from Hume AI API"
+        ],
+        "codePath": "DemoApp.tsx:292-299 -> continue"
+      },
+      "solution": {
+        "step1": "Check Hume AI API response structure",
+        "step2": "Verify processHumePredictions function processes Batch API format correctly",
+        "step3": "Add detailed logging to trace API response → emotions conversion"
+      }
+    },
+    {
+      "@id": "demo:rootCause/duplicatePrevention",
+      "name": "Duplicate Entry Prevention Too Aggressive",
+      "probability": "MEDIUM",
+      "description": "Duplicate detection logic prevents valid updates if same word appears within 1 second",
+      "location": "DemoApp.tsx:326",
+      "impact": "Valid emotion data is skipped",
+      "solution": {
+        "step1": "Review duplicate detection threshold (currently 1000ms)",
+        "step2": "Consider using wordIndex instead of timestamp for duplicate detection"
+      }
+    },
+    {
+      "@id": "demo:rootCause/stateUpdateNotTriggered",
+      "name": "State Update Not Triggering Re-render",
+      "probability": "LOW",
+      "description": "setWordEmotionData functional update returns same reference, React doesn't detect change",
+      "location": "DemoApp.tsx:324",
+      "impact": "ComplexForce3D useMemo not triggered",
+      "solution": {
+        "step1": "Verify setWordEmotionData always returns new array",
+        "step2": "Check React DevTools for state updates"
+      }
+    }
+  ],
+  
+  "diagnosticSteps": [
+    {
+      "@id": "demo:diagnostic/checkApiResponse",
+      "step": 1,
+      "name": "Check Hume AI API Response",
+      "description": "Verify that Hume AI API returns predictions with emotions",
+      "location": "apps/demo/src/pages/api/hume-analyze.ts:238-276",
+      "logs": [
+        "Batch API response structure: { hasResults, resultsLength, resultsKeys, firstResultSample }",
+        "Processing Hume predictions: { predictions structure }",
+        "processHumePredictions returning {count} emotions"
+      ],
+      "expected": {
+        "hasResults": true,
+        "resultsLength": "> 0",
+        "predictionsLength": "> 0",
+        "emotionsCount": "> 0"
+      }
+    },
+    {
+      "@id": "demo:diagnostic/checkEmotionProcessing",
+      "step": 2,
+      "name": "Check Emotion Processing",
+      "description": "Verify processHumePredictions correctly extracts emotions from Batch API format",
+      "location": "apps/demo/src/lib/hume-realtime.ts:66-196",
+      "logs": [
+        "Processing Hume predictions: { predictions }",
+        "Processed emotions: { emotions }",
+        "processHumePredictions returning {count} emotions"
+      ],
+      "expected": {
+        "predictionsLength": "> 0",
+        "emotionMapSize": "> 0",
+        "emotionsCount": "> 0"
+      }
+    },
+    {
+      "@id": "demo:diagnostic/checkStateUpdate",
+      "step": 3,
+      "name": "Check State Update",
+      "description": "Verify setWordEmotionData actually updates the state",
+      "location": "DemoApp.tsx:324-433",
+      "logs": [
+        "[Batch {word}] Analysis result: { emotionsCount }",
+        "Updated wordEmotionData: {count} entries"
+      ],
+      "expected": {
+        "emotionsCount": "> 0",
+        "updatedCount": "increasing"
+      }
+    },
+    {
+      "@id": "demo:diagnostic/checkRender",
+      "step": 4,
+      "name": "Check Render Condition",
+      "description": "Verify wordEmotionData.length > 0 condition is met",
+      "location": "DemoApp.tsx:536",
+      "expected": {
+        "wordEmotionDataLength": "> 0"
+      }
+    },
+    {
+      "@id": "demo:diagnostic/checkComplexForce3D",
+      "step": 5,
+      "name": "Check ComplexForce3D useMemo",
+      "description": "Verify useMemo is triggered and generates graph data",
+      "location": "ComplexForce3D.tsx:57",
+      "logs": [
+        "[ComplexForce3D] useMemo triggered, wordEmotionData.length: {length}",
+        "[ComplexForce3D] Graph data created: { nodes, links }"
+      ],
+      "expected": {
+        "useMemoTriggered": true,
+        "nodesCount": "> 0"
+      }
+    }
+  ],
+  
+  "expectedBehavior": {
+    "@id": "demo:expectedBehavior",
+    "description": "Expected data flow for 3D Force Graph to update",
+    "sequence": [
+      {
+        "step": 1,
+        "action": "User clicks '開始' button",
+        "result": "isRunning = true, batchQueue starts receiving items"
+      },
+      {
+        "step": 2,
+        "action": "handleWordDisplayed captures video/audio",
+        "result": "BatchQueueItem added to batchQueue"
+      },
+      {
+        "step": 3,
+        "action": "processBatch processes queue at BPM 85 interval",
+        "result": "analysisResult.emotions.length > 0"
+      },
+      {
+        "step": 4,
+        "action": "setWordEmotionData updates state",
+        "result": "wordEmotionData.length increases"
+      },
+      {
+        "step": 5,
+        "action": "DemoApp re-renders with wordEmotionData.length > 0",
+        "result": "<ComplexForce3D> component rendered"
+      },
+      {
+        "step": 6,
+        "action": "ComplexForce3D useMemo generates graphData",
+        "result": "graphData.nodes.length > 0, 3D Force Graph displayed"
+      }
+    ]
+  },
+  
+  "actualBehavior": {
+    "@id": "demo:actualBehavior",
+    "description": "Actual observed behavior",
+    "sequence": [
+      {
+        "step": 1,
+        "action": "User clicks '開始' button",
+        "result": "isRunning = true ✓"
+      },
+      {
+        "step": 2,
+        "action": "handleWordDisplayed captures video/audio",
+        "result": "BatchQueueItem added to batchQueue ✓ (Size: 539KB, 650KB observed)"
+      },
+      {
+        "step": 3,
+        "action": "processBatch processes queue",
+        "result": "UNKNOWN - emotions may be empty"
+      },
+      {
+        "step": 4,
+        "action": "setWordEmotionData updates state",
+        "result": "wordEmotionData.length === 0 (observed)"
+      },
+      {
+        "step": 5,
+        "action": "DemoApp renders",
+        "result": "<EmptyState> rendered (wordEmotionData.length === 0)"
+      },
+      {
+        "step": 6,
+        "action": "ComplexForce3D useMemo",
+        "result": "NOT TRIGGERED (wordEmotionData.length === 0)"
+      }
+    ]
+  },
+  
+  "solution": {
+    "@id": "demo:solution",
+    "steps": [
+      {
+        "step": 1,
+        "name": "Add Comprehensive Logging",
+        "description": "Add detailed logging at each step to trace data flow",
+        "locations": [
+          "DemoApp.tsx:270 (API call)",
+          "DemoApp.tsx:292 (emotions check)",
+          "DemoApp.tsx:342 (state update)",
+          "ComplexForce3D.tsx:58 (useMemo)"
+        ],
+        "status": "completed"
+      },
+      {
+        "step": 2,
+        "name": "Verify Hume AI API Response",
+        "description": "Check Batch API response structure matches expected format",
+        "location": "apps/demo/src/pages/api/hume-analyze.ts:238",
+        "status": "completed",
+        "changes": [
+          "Added support for multiple Batch API response structures",
+          "Added detailed logging for response structure analysis",
+          "Handled direct array, single object, and nested results formats"
+        ]
+      },
+      {
+        "step": 3,
+        "name": "Fix processHumePredictions",
+        "description": "Ensure processHumePredictions correctly handles Batch API format",
+        "location": "apps/demo/src/lib/hume-realtime.ts:66",
+        "status": "completed",
+        "changes": [
+          "Added support for multiple prediction formats",
+          "Improved error handling for invalid prediction structures",
+          "Added detailed logging for prediction processing"
+        ]
+      },
+      {
+        "step": 4,
+        "name": "Improve Error Handling",
+        "description": "Add detailed error messages when emotions are empty",
+        "location": "DemoApp.tsx:292",
+        "status": "completed",
+        "changes": [
+          "Added detailed error logging with context (video size, audio size, processing time)",
+          "Improved user-facing error messages",
+          "Added error details to step logs"
+        ]
+      }
+    ]
+  }
+}
+
