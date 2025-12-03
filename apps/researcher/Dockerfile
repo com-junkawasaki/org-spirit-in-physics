@@ -4,7 +4,6 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-<<<<<<< HEAD
 # Install pnpm
 RUN npm install -g pnpm
 
@@ -20,21 +19,10 @@ RUN sed -i 's|file:../../packages/visualization-components|file:./packages/visua
 # Install dependencies and wget for healthcheck
 RUN pnpm install --no-frozen-lockfile && \
     apk add --no-cache wget
-=======
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
-
-# Install pnpm
-RUN npm install -g pnpm
-
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
->>>>>>> origin/main
 
 # Copy environment file
 COPY env.docker .env.local
 
-<<<<<<< HEAD
 # Copy source code (exclude large dataset directory)
 COPY . ./
 # Remove large dataset directory if it was copied (it should be excluded by .dockerignore, but ensure it)
@@ -42,10 +30,6 @@ RUN rm -rf public/dataset || true
 
 # Ensure packages directory is preserved
 COPY packages/visualization-components ./packages/visualization-components
-=======
-# Copy source code
-COPY . .
->>>>>>> origin/main
 
 # Build the application
 # RUN pnpm build
