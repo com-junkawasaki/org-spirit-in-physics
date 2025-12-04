@@ -382,8 +382,16 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
       ;(json.wordData as Array<{ word: string; embedding: number[] }>).forEach((item) => {
         if (!byWord[item.word]) byWord[item.word] = { sum: new Array(item.embedding.length).fill(0), count: 0 }
         const acc = byWord[item.word]
-        for (let i = 0; i < item.embedding.length; i++) acc.sum[i] += item.embedding[i]
-        acc.count += 1
+        if (acc && acc.sum) {
+          for (let i = 0; i < item.embedding.length; i++) {
+            const sumValue = acc.sum[i];
+            const embValue = item.embedding[i];
+            if (sumValue !== undefined && embValue !== undefined) {
+              acc.sum[i] = sumValue + embValue;
+            }
+          }
+          acc.count += 1
+        }
       })
       const averaged: Record<string, number[]> = {}
       Object.entries(byWord).forEach(([w, { sum, count }]) => {

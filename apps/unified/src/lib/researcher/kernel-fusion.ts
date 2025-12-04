@@ -433,9 +433,10 @@ export function fuseKernels(
       const ktRow = Kt[i];
       if (kfRow && ktRow) {
         for (let j = 0; j < n; j++) {
+          const kfValue = kfRow[j];
           const ktValue = ktRow[j];
           if (ktValue !== undefined) {
-            kfRow[j] = (kfRow[j] ?? 0) + wt * ktValue;
+            kfRow[j] = (kfValue ?? 0) + wt * ktValue;
           }
         }
       }
