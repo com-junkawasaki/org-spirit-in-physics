@@ -6,6 +6,8 @@
 import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
+import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 // GraphQL API URL
 const GRAPHQL_API_URL = 
@@ -42,8 +44,7 @@ const authLink = setContext(async (_, { headers }) => {
   if (typeof window !== 'undefined') {
     // Client-side: get token from Supabase client
     try {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
+      const supabase = createSupabaseClient();
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
         console.warn('Failed to get Supabase session:', error);
@@ -56,8 +57,7 @@ const authLink = setContext(async (_, { headers }) => {
   } else {
     // Server-side: get token from cookies via Supabase server client
     try {
-      const { createClient } = await import('@/lib/supabase/server');
-      const supabase = await createClient();
+      const supabase = await createSupabaseServerClient();
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
         console.warn('Failed to get Supabase session:', error);

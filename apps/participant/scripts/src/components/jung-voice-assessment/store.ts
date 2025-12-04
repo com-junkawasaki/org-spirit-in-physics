@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
 import { JUNG_STIMULUS_WORDS } from './constants';
+import { apolloClient } from '@/lib/graphql';
+import { CREATE_SESSION, UPLOAD_ARTIFACT } from '@/lib/graphql/mutations';
 
 // --- Type Definitions (from types.ts) ---
 
@@ -194,10 +196,6 @@ export const useKawasakiStore = create<KawasakiStore>()(
         
         // GraphQL mutationを使用してセッションデータを保存
         try {
-            // Apollo Clientを使用するため、動的インポート
-            const { apolloClient } = await import('@/lib/graphql');
-            const { CREATE_SESSION } = await import('@/lib/graphql/mutations');
-            
             // セッション開始時刻を取得（eventsから）
             const sessionStartedEvent = events.find((e: any) => e.type === 'session_started');
             const startTs = sessionStartedEvent?.timestamp || Date.now();
@@ -256,10 +254,6 @@ export const useKawasakiStore = create<KawasakiStore>()(
             });
             reader.readAsDataURL(blob);
             const base64Data = await base64Promise;
-
-            // Apollo Clientを使用するため、動的インポート
-            const { apolloClient } = await import('@/lib/graphql');
-            const { UPLOAD_ARTIFACT } = await import('@/lib/graphql/mutations');
 
             const fileName = `session-${session}-video.webm`;
             const result = await apolloClient.mutate({

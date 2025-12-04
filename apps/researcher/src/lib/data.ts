@@ -2,13 +2,16 @@
 
 // Use generated types from GraphQL Code Generator
 import type {
-  Participant as GraphQLParticipant,
-  Session as GraphQLSession,
-  TimelinePoint as GraphQLTimelinePoint,
   GetParticipantsQueryResult,
   GetSessionsQueryResult,
   GetTimelineQueryResult,
 } from '@/generated/graphql';
+import {
+  graphqlClient,
+  GetParticipantsDocument,
+  GetSessionsDocument,
+  GetTimelineDocument,
+} from './graphql/client';
 
 export interface AnalysisResult {
   id: string
@@ -97,7 +100,6 @@ export interface DashboardStats {
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
     // GraphQL経由でデータを取得
-    const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
 
     // 参加者一覧を取得
     const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
@@ -203,7 +205,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
     // Use GraphQL to fetch participants
-    const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
     
     console.log('[getAllParticipants] Fetching participants from GraphQL...')
     let participantsData: GetParticipantsQueryResult
@@ -334,7 +335,6 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
     // GraphQL経由でデータを取得
-    const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
 
     // 参加者情報を取得（GetParticipantがない場合はGetParticipantsから検索）
     const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
@@ -482,7 +482,6 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
     }
 
     // 全参加者のタイムラインデータを取得して分析結果を生成
-    const { graphqlClient, GetParticipantsDocument, GetTimelineDocument } = await import('./graphql/client')
     
     const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
     const participants = participantsData.participants || []
@@ -537,7 +536,6 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   try {
     // GraphQL経由でタイムラインデータを取得
-    const { graphqlClient, GetTimelineDocument } = await import('./graphql/client')
     
     const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
     const timeline = timelineData.timeline || []

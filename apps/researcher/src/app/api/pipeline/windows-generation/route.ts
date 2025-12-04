@@ -3,6 +3,7 @@ import { inngest } from '@/lib/inngest';
 import { z } from 'zod';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { executeWindowsGenerationWorkflow } from '@/lib/workflows/windows-generation-workflow';
 
 // Merkle DAG: windows_generation_api_route -> workflow_orchestration
 // ウィンドウ生成パイプラインAPIエンドポイント
@@ -117,8 +118,6 @@ export async function POST(request: NextRequest) {
       console.log('Inngest send failed, running workflow directly:', error);
       
       // ローカル開発では直接ワークフローを実行
-      const { executeWindowsGenerationWorkflow } = await import('@/lib/workflows/windows-generation-workflow');
-      
       // 統計情報を収集
       const sessionContent = readFileSync(sessionPath, 'utf-8');
       const sessionData = JSON.parse(sessionContent);

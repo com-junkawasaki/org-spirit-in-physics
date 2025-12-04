@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { inngest } from '@/lib/inngest';
 import { z } from 'zod';
+import { executeFileImportWorkflow } from '@/lib/workflows/file-import-workflow';
 
 // Merkle DAG: pipeline_api_route -> workflow_orchestration
 // パイプライン分析APIエンドポイント
@@ -56,7 +57,6 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.log('Inngest send failed, running workflow directly:', error);
       // ローカル開発では直接ワークフローを実行
-      const { executeFileImportWorkflow } = await import('@/lib/workflows/file-import-workflow');
       const result = await executeFileImportWorkflow({
         participantId,
         dataRootPath,

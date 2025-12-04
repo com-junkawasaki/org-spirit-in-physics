@@ -1,6 +1,7 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { storageAdapter } from './adapters/storage-adapter';
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -172,7 +173,6 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
     }
 
     // PostgreSQLに保存（storageAdapter経由）
-    const { storageAdapter } = await import('./adapters/storage-adapter');
     await storageAdapter.saveEmotionAnalysis(result.participantId, result);
 
   } catch (error) {
@@ -186,7 +186,6 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
     // storageAdapter経由でPostgreSQLから感情分析データを取得
-    const { storageAdapter } = await import('./adapters/storage-adapter');
     return await storageAdapter.loadEmotionAnalysis(participantId);
   } catch (error) {
     console.error(`Error loading emotion analysis results for ${participantId}:`, error);
@@ -211,7 +210,6 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       .filter((file: string) => file.endsWith('.webm'));
 
     const results: EmotionAnalysisResult[] = [];
-    const { storageAdapter } = await import('./adapters/storage-adapter');
 
     for (const videoFile of videoFiles) {
       // セッションタイプをファイル名から判定
