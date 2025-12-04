@@ -1,6 +1,6 @@
 import { fileURLToPath, pathToFileURL } from 'url'
 import { dirname, resolve } from 'path'
-import { existsSync } from 'fs'
+import { existsSync, realpathSync } from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -29,9 +29,10 @@ const nextConfig = {
   // Merkle DAG: Webpack最適化設定
   webpack: (config, { dev, isServer }) => {
     // Merkle DAG: Serverless Workflow SDK module resolution configuration
+    // Enable symlink resolution to handle pnpm's symlink structure
     config.resolve = {
       ...config.resolve,
-      symlinks: dev !== false, // Enable symlink resolution in development, disable in production
+      symlinks: true, // Always enable symlink resolution for pnpm
       alias: {
         ...config.resolve.alias,
         '@spirit-in-physics/visualization-components': resolve(__dirname, '../../packages/visualization-components/src/index.ts'),
@@ -53,17 +54,32 @@ const nextConfig = {
 
     // Merkle DAG: External modules configuration for server-side
     // Ensure react-plotly.js is resolved correctly (check both local and root node_modules)
-    const reactPlotlyPath = resolve(__dirname, 'node_modules/react-plotly.js')
-    const rootReactPlotlyPath = resolve(__dirname, '../../node_modules/react-plotly.js')
-    // Try to resolve from local node_modules first, then root
-    // Always set alias to help webpack resolve the module
-    if (existsSync(reactPlotlyPath)) {
-      config.resolve.alias['react-plotly.js'] = reactPlotlyPath
-    } else if (existsSync(rootReactPlotlyPath)) {
-      config.resolve.alias['react-plotly.js'] = rootReactPlotlyPath
-    } else {
-      // If not found, still set alias to local path (will fail at runtime if not installed)
-      // This allows webpack to build successfully
+    // Handle pnpm's symlink structure by resolving the actual package location
+    const reactPlotlyPaths = [
+      resolve(__dirname, 'node_modules/react-plotly.js'),
+      resolve(__dirname, '../../node_modules/react-plotly.js'),
+    ]
+    
+    // Try to resolve the actual package location (following symlinks)
+    let reactPlotlyPath = null
+    for (const path of reactPlotlyPaths) {
+      if (existsSync(path)) {
+        // Resolve symlinks to get the actual path
+        try {
+          const resolvedPath = realpathSync(path)
+          reactPlotlyPath = resolvedPath
+          break
+        } catch (e) {
+          // If realpathSync fails, use the original path
+          reactPlotlyPath = path
+          break
+        }
+      }
+    }
+    
+    // Set alias to help webpack resolve the module
+    // Even if not found, webpack's normal resolution should work with symlinks enabled
+    if (reactPlotlyPath) {
       config.resolve.alias['react-plotly.js'] = reactPlotlyPath
     }
 

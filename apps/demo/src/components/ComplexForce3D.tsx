@@ -2,17 +2,14 @@
 // 3D Force Graph wrapper for Complex visualization
 
 import { match, P } from 'ts-pattern'
-import React, { useMemo, lazy, Suspense, useState, useEffect, useRef } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
+import { Force3DWordGraphTypeGPU } from '@spirit-in-physics/visualization-components'
 import type { WordNode, WordLink } from '@spirit-in-physics/visualization-components'
 import type { WordEmotionData } from '../types/demo'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
 import { EMOTION_KEYS } from '@spirit-in-physics/visualization-components'
 import { useAtomValue } from 'jotai'
 import { wordEmotionDataAtom, wordEmotionDataLengthAtom, lastUpdateTimeAtom } from '../store/demo-atoms'
-
-const Force3DWordGraphTypeGPU = lazy(() => 
-  import('@spirit-in-physics/visualization-components').then(module => ({ default: module.Force3DWordGraphTypeGPU }))
-)
 
 interface ComplexForce3DProps {
   width?: number
@@ -500,16 +497,6 @@ export default function ComplexForce3D({
     .with({ loadError: P.not(null) }, ({ loadError }) => <ErrorFallback error={loadError} />)
     .otherwise(() => (
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex items-center justify-center" style={{ width, height }}>
-      <Suspense 
-        fallback={
-          <div className="flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 p-8" style={{ width, height }}>
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-sm text-gray-600 dark:text-gray-400">3D可視化を読み込み中...</p>
-            </div>
-          </div>
-        }
-      >
         <Force3DWordGraphTypeGPU
           nodes={graphData.nodes}
           links={graphData.links}
@@ -532,7 +519,6 @@ export default function ComplexForce3D({
             sepK,
           }}
         />
-      </Suspense>
       </div>
     ))
 }

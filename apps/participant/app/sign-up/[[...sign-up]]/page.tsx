@@ -1,13 +1,8 @@
 'use client';
 
-import dynamic from 'next/dynamic';
+import { SignUp } from '@clerk/nextjs';
 
 export const runtime = 'nodejs';
-
-const SignUp = dynamic(
-  () => import('@clerk/nextjs').then(m => ({ default: m.SignUp })),
-  { ssr: false }
-);
 
 export default function Page() {
   return (

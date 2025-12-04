@@ -5,13 +5,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-
-// 3D可視化コンポーネントの動的インポート
-const Force3DWordGraphTypeGPU = dynamic(
-  () => import('./Force3DWordGraphTypeGPU'),
-  { ssr: false }
-);
+import Force3DWordGraphTypeGPU from './Force3DWordGraphTypeGPU';
 
 interface EmotionDistanceVisualizationProps {
   participantId: string;

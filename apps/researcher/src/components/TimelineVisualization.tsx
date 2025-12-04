@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from 'react'
-import dynamic from 'next/dynamic'
+import Force3DWordGraphTypeGPU from './Force3DWordGraphTypeGPU'
 import { useTimelineData } from './timeline/useTimelineData'
 import TimelineChart from './timeline/TimelineChart'
 import KPICards from './timeline/KPICards'
@@ -642,8 +642,7 @@ export default function TimelineVisualization({
                     return { nodes: allNodes, links }
                   }
 
-                  const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
-                    const { nodes, links } = generateForce3DGraph()
+                  const { nodes, links } = generateForce3DGraph()
 
                     // 選択語を中心へ（固定）し目立たせる
                     if (selectedWord) {
@@ -660,7 +659,7 @@ export default function TimelineVisualization({
 
                   return (
                     <div className="border rounded overflow-hidden">
-                      <Force3D
+                      <Force3DWordGraphTypeGPU
                         nodes={nodes}
                         links={links}
                         width={width}
@@ -1362,12 +1361,11 @@ export default function TimelineVisualization({
                         return { nodes: allNodes, links }
                       }
 
-                      const Force3D = dynamic(() => import('./Force3DWordGraphTypeGPU'), { ssr: false })
                       const { nodes, links } = generateForce3DGraph()
 
                       return (
                         <div className="border rounded overflow-hidden">
-                            <Force3D
+                            <Force3DWordGraphTypeGPU
                             nodes={nodes}
                             links={links}
                             width={Math.min(width / 2 - 40, 600)}
