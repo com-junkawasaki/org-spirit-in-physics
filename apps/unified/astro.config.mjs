@@ -20,6 +20,11 @@ const visualizationComponentsPath = resolve(
   __dirname,
   '../../packages/visualization-components/src/index.ts'
 );
+// Use source files for grpc-client to let Vite handle TypeScript compilation
+const grpcClientPath = resolve(
+  __dirname,
+  '../../packages/grpc-client/src/index.ts'
+);
 
 // Check if we're in dev mode BEFORE any adapter imports
 const isDev = process.argv.includes('dev') || process.argv.includes('--dev') || 
@@ -82,18 +87,21 @@ export default defineConfig(async () => {
           '@/': resolve(__dirname, './src/'),
           '@spirit-in-physics/jung-voice-assessment': jungVoiceAssessmentPath,
           '@spirit-in-physics/visualization-components': visualizationComponentsPath,
+          '@spirit-in-physics/grpc-client': grpcClientPath,
         },
       },
       optimizeDeps: {
         exclude: [
           '@spirit-in-physics/jung-voice-assessment',
           '@spirit-in-physics/visualization-components',
+          '@spirit-in-physics/grpc-client',
         ],
       },
       ssr: {
         noExternal: [
           '@spirit-in-physics/jung-voice-assessment',
           '@spirit-in-physics/visualization-components',
+          '@spirit-in-physics/grpc-client',
         ],
       },
       server: {

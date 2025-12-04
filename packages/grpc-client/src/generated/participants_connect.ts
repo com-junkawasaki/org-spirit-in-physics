@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import { CreateParticipantRequest, CreateParticipantResponse, GetParticipantRequest, GetParticipantResponse, GetParticipantsRequest, GetParticipantsResponse } from "./participants_pb.js";
-import { MethodKind } from "@bufbuild/protobuf";
+import { MethodKind } from "@connectrpc/connect";
 
 /**
  * Participant service definition

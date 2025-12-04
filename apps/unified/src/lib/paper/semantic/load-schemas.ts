@@ -1,14 +1,14 @@
 // Merkle DAG: lib.semantic.load_schemas
 // Schema loader utility for JSON-LD schemas
 
-import researchPaperSchema from '../../schemas/research-paper.jsonld?raw';
-import authorsSchema from '../../schemas/authors.jsonld?raw';
-import affiliationsSchema from '../../schemas/affiliations.jsonld?raw';
-import sectionsSchema from '../../schemas/sections.jsonld?raw';
-import equationsSchema from '../../schemas/equations.jsonld?raw';
-import referencesSchema from '../../schemas/references.jsonld?raw';
-import pipelineStepsSchema from '../../schemas/pipeline-steps.jsonld?raw';
-import visualizationSchema from '../../schemas/visualization.jsonld?raw';
+import researchPaperSchema from '@/schemas/paper/research-paper.jsonld?raw';
+import authorsSchema from '@/schemas/paper/authors.jsonld?raw';
+import affiliationsSchema from '@/schemas/paper/affiliations.jsonld?raw';
+import sectionsSchema from '@/schemas/paper/sections.jsonld?raw';
+import equationsSchema from '@/schemas/paper/equations.jsonld?raw';
+import referencesSchema from '@/schemas/paper/references.jsonld?raw';
+import pipelineStepsSchema from '@/schemas/paper/pipeline-steps.jsonld?raw';
+import visualizationSchema from '@/schemas/paper/visualization.jsonld?raw';
 
 interface LoadedSchemas {
   researchPaper: any;

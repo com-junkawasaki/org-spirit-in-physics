@@ -4,6 +4,13 @@
   "description": "gRPC client library for Spirit in Physics using Connect protocol",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "generate": "bash scripts/generate-proto.sh",
