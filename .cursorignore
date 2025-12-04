@@ -1,2 +1,5 @@
 _archive
 archive
+
+**/generated/**
+

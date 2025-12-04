@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import { CreateSessionRequest, CreateSessionResponse, GetSessionsRequest, GetSessionsResponse } from "./sessions_pb.js";
-import { MethodKind } from "@connectrpc/connect";
+import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * Session service definition

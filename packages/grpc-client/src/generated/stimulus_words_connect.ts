@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import { GetStimulusWordRequest, GetStimulusWordResponse, GetStimulusWordsRequest, GetStimulusWordsResponse } from "./stimulus_words_pb.js";
-import { MethodKind } from "@connectrpc/connect";
+import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * Stimulus word service definition

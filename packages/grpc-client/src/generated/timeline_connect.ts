@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import { GetEmotionVectorsRequest, GetEmotionVectorsResponse, GetTimelineRequest, GetTimelineResponse, GetWordAggregatesRequest, GetWordAggregatesResponse, GetWordStatisticsRequest, GetWordStatisticsResponse } from "./timeline_pb.js";
-import { MethodKind } from "@connectrpc/connect";
+import { MethodKind } from "@bufbuild/protobuf";
 
 /**
  * Timeline service definition
