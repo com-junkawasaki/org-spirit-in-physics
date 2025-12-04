@@ -8,7 +8,8 @@ import {
   getParticipantStatistics,
   initializeDatabase
 } from "@/lib/data-loader";
-import { loadEmotionAnalysisResults, getEmotionStatisticsFromGraphQL } from "@/lib/emotion-analysis";
+import { getEmotionStatisticsFromGraphQL } from "@/lib/emotion-analysis";
+// import { loadEmotionAnalysisResults } from "@/lib/emotion-analysis";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

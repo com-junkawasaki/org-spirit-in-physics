@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 
 // Merkle DAG: components.react.word_distance_visualization
 // Word distance visualization component for research app

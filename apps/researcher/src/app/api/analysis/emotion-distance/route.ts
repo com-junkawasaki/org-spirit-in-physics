@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // Merkle DAG: api.analysis.emotion_distance.data_extraction
     // データの抽出（ファイルベース）
     const dataRootPath = '/app/public/dataset';
-    const basePath = `${dataRootPath}/participants/${participantId}`;
+    // const basePath = `${dataRootPath}/participants/${participantId}`;
     
     // セッションデータの読み込み（ファイルベースの読み込みは未実装）
     // const sessionData = await loadSessionDataFromFile(basePath);
@@ -103,13 +103,29 @@ export async function POST(request: NextRequest) {
         const M = Array.from({ length: n }, () => Array(n).fill(0));
         for (let i = 0; i < n; i++) {
           for (let j = 0; j < n; j++) {
-            if (i === j) { M[i][j] = 0; continue; }
-            const vi = vectors[i];
-            const vj = vectors[j];
+            if (i === j) { 
+              const row = M[i]
+              if (row) {
+                row[j] = 0
+              }
+              continue; 
+            }
+            const vi = vectors[i]
+            const vj = vectors[j]
+            if (!vi || !vj) continue
             let dot = 0, n1 = 0, n2 = 0;
-            for (let d = 0; d < vi.length; d++) { dot += vi[d] * vj[d]; n1 += vi[d] * vi[d]; n2 += vj[d] * vj[d]; }
+            for (let d = 0; d < vi.length; d++) { 
+              const vid = vi[d] ?? 0
+              const vjd = vj[d] ?? 0
+              dot += vid * vjd
+              n1 += vid * vid
+              n2 += vjd * vjd
+            }
             const sim = (Math.sqrt(n1) > 0 && Math.sqrt(n2) > 0) ? dot / (Math.sqrt(n1) * Math.sqrt(n2)) : 0;
-            M[i][j] = 1 - sim;
+            const row = M[i]
+            if (row) {
+              row[j] = 1 - sim
+            }
           }
         }
         return M;

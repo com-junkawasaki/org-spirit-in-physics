@@ -1275,11 +1275,13 @@ function Force3DWordGraphTypeGPU({
     nodes.forEach(node => {
       if (node.emotion) {
         Object.entries(node.emotion).forEach(([emotion, score]) => {
-          if (!emotionStats[emotion]) {
+          const stat = emotionStats[emotion]
+          if (!stat) {
             emotionStats[emotion] = { count: 0, avgScore: 0 }
+          } else {
+            stat.count++
+            stat.avgScore += score
           }
-          emotionStats[emotion].count++
-          emotionStats[emotion].avgScore += score
         })
       }
     })

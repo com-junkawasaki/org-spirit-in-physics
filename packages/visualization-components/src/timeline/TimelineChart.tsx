@@ -960,7 +960,7 @@ export default function TimelineChart({
 
       legendItems.append('circle')
         .attr('r', 4)
-        .style('fill', d => emotionColors[d])
+        .style('fill', d => emotionColors[d] || '#000')
         .style('stroke', '#fff')
         .style('stroke-width', 1)
 

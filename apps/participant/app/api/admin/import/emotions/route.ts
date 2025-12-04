@@ -123,7 +123,7 @@ async function importEmotionsFromDataset() {
 
 // Merkle DAG: import.emotions.check_participant
 // 参加者存在チェック関数
-async function checkParticipantExists(participantId: string): Promise<boolean> {
+async function checkParticipantExists(_participantId: string): Promise<boolean> {
   // GraphQLサービス経由で参加者存在を確認
   // TODO: GraphQLクエリを使用した実装
   return true; // 仮実装
@@ -147,7 +147,7 @@ async function findHumeArtifactsDirectory(participantPath: string): Promise<stri
 
 // Merkle DAG: import.emotions.check_existing_data
 // 既存感情データチェック関数
-async function checkExistingEmotionData(participantId: string): Promise<boolean> {
+async function checkExistingEmotionData(_participantId: string): Promise<boolean> {
   // GraphQLサービス経由で既存感情データを確認
   // TODO: GraphQLクエリを使用した実装
   return false; // 仮実装
@@ -192,7 +192,7 @@ async function processEmotionData(participantId: string, predictionsData: any) {
 
 // Merkle DAG: import.emotions.store_entry
 // 感情エントリ格納関数
-async function storeEmotionEntry(emotionRecord: any) {
+async function storeEmotionEntry(_emotionRecord: any) {
   // GraphQLサービス経由で感情データを格納
   // TODO: GraphQLミューテーションを使用した実装
 }
@@ -252,12 +252,12 @@ async function processCSVFile(participantId: string, fileName: string, content: 
 
 // Merkle DAG: import.emotions.store_csv
 // CSVレコード格納関数
-async function storeCSVRecord(csvRecord: any) {
+async function storeCSVRecord(_csvRecord: any) {
   // GraphQLサービス経由でCSVデータを格納
   // TODO: GraphQLミューテーションを使用した実装
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
 
   try {
     // Merkle DAG: import.emotions.execute

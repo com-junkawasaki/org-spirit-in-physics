@@ -61,7 +61,7 @@ async function importParticipantsFromDataset() {
 
         // Merkle DAG: import.participants.create_participant
         // PostgreSQLに参加者データを作成
-        const participantNode = await createParticipantNode({
+        const _participantNode = await createParticipantNode({
           id: participantId,
           signature: consentData.signature,
           agreedAt: consentData.agreedAt,
@@ -121,7 +121,7 @@ async function importParticipantsFromDataset() {
 
 // Merkle DAG: import.participants.check_existing
 // 既存参加者チェック関数
-async function checkExistingParticipant(participantId: string): Promise<boolean> {
+async function checkExistingParticipant(_participantId: string): Promise<boolean> {
   // GraphQLサービス経由で既存参加者をチェック
   // TODO: GraphQLクエリを使用した実装
   return false; // 仮実装
@@ -159,12 +159,12 @@ async function checkHumeData(participantPath: string): Promise<boolean> {
 
 // Merkle DAG: import.participants.update_metadata
 // メタデータ更新関数
-async function updateParticipantMetadata(participantId: string, metadata: any) {
+async function updateParticipantMetadata(_participantId: string, _metadata: any) {
   // GraphQLサービス経由でメタデータを更新
   // TODO: GraphQLミューテーションを使用した実装
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
 
   try {
     // Merkle DAG: import.participants.execute

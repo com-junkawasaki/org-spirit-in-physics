@@ -1,11 +1,59 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, MutableRefObject, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import { useKawasakiStore, type Word } from './store';
 import AudioVisualizer from './AudioVisualizer';
 import { JUNG_TEST_WELCOME_MESSAGE } from './constants';
 import type { JungVoiceTestProps } from './types';
 import { useStimulusWords } from './hooks/useStimulusWords';
+
+// SpeechRecognition型定義
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
+
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+declare var SpeechRecognition: {
+  prototype: SpeechRecognition;
+  new (): SpeechRecognition;
+};
 
 // Default UI components (can be overridden via props)
 const DefaultButton: React.FC<any> = ({ children, ...props }) => (
@@ -124,7 +172,6 @@ const SessionScreen = React.memo<{
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioChunksRef = useRef<Blob[]>([]);
     const stimulusAudioRef = useRef<HTMLAudioElement | null>(null);
     const advanceOnSpeechTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -142,7 +189,6 @@ const SessionScreen = React.memo<{
             
             let recognitionStartTimer: NodeJS.Timeout | null = null;
             let audioContext: AudioContext | null = null;
-            let animationFrameId: number;
 
             const startRecognitionAndDetection = () => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -156,10 +202,14 @@ const SessionScreen = React.memo<{
                     recognition.onstart = () => setIsListening(true);
                     recognition.onend = () => setIsListening(false);
 
-                    recognition.onresult = (event) => {
-                        const transcript = Array.from(event.results).map(result => result[0]).map(result => result.transcript).join('');
+                    recognition.onresult = (event: SpeechRecognitionEvent) => {
+                        const results = Array.from(event.results);
+                        const transcript = results.map(result => {
+                            const firstAlternative = result[0];
+                            return firstAlternative ? firstAlternative.transcript : '';
+                        }).join('');
                         setRecognizedText(transcript);
-                        if (event.results[0].isFinal) {
+                        if (results[0]?.isFinal) {
                             onResponse(transcript, new Blob());
                             if (recognitionRef.current) {
                                 recognitionRef.current.stop();

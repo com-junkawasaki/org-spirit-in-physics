@@ -86,10 +86,10 @@ export async function GET(request: NextRequest) {
 
         // GraphQLサービス経由でPostgreSQL/TimescaleDBから感情統計を取得
         // TODO: GraphQL経由で感情統計を実装
-        const emotionStats = {
-          totalAnalyses: 0,
-          dominantEmotions: []
-        };
+        // const emotionStats = {
+        //   totalAnalyses: 0,
+        //   dominantEmotions: []
+        // };
         const globalResults: any[] = [];
         const participantPromises = participantIds.map(async id => {
           const results = await loadEmotionAnalysisResults(id);

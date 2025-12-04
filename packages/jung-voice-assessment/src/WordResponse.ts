@@ -1,4 +1,4 @@
-import { WordResponse as WordResponseSchema } from "./schema";
+import type { WordResponse as WordResponseSchema } from "./schema";
 
 // Extend the WordResponse interface with runtime-only properties
 export interface WordResponseWithExtras extends WordResponseSchema {

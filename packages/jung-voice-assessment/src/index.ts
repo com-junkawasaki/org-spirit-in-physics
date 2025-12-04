@@ -9,7 +9,7 @@ export { useStimulusWords } from './hooks/useStimulusWords';
 // Export types
 export type {
   Word,
-  WordResponse,
+  WordResponse as WordResponseType,
   TestResult,
   MediaStatus,
   KawasakiStoreState,
@@ -35,6 +35,7 @@ export {
 export type {
   Participant,
   WordStimulus,
+  WordResponse,
   ResponseData,
   ConsentData,
   SaveStructuredDataPayload,

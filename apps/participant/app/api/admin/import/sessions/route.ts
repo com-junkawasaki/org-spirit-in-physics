@@ -73,7 +73,7 @@ async function importSessionsFromDataset() {
 
         // Merkle DAG: import.sessions.create_session
         // セッションイベントを処理してPostgreSQLに格納
-        const sessionResult = await processSessionEvents(participantId, sessionData.events);
+        const _sessionResult = await processSessionEvents(participantId, sessionData.events);
 
         // Merkle DAG: import.sessions.create_word_responses
         // 単語応答データを抽出して格納
