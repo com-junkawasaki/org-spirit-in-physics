@@ -1,4 +1,5 @@
 {
+  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "target": "ES2020",
     "lib": [
@@ -7,7 +8,8 @@
       "DOM.Iterable"
     ],
     "module": "ESNext",
-    "jsx": "preserve",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "allowJs": true,
@@ -32,18 +34,17 @@
         "../packages/visualization-components/src/index.ts"
       ]
     },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "incremental": true
   },
   "include": [
     "src/**/*",
-    ".next/types/**/*.ts"
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.astro"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist",
+    ".astro"
   ]
 }

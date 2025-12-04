@@ -1,0 +1,11 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { SignIn } from '@clerk/astro';
+---
+
+<Layout>
+  <div class="min-h-screen flex items-center justify-center p-6">
+    <SignIn afterSignInUrl="/admin" afterSignUpUrl="/admin" />
+  </div>
+</Layout>
+

@@ -1,0 +1,32 @@
+---
+import '../styles/globals.css';
+import AppShell from '../components/AppShell';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { 
+  title = 'Spirit in Physics',
+  description = 'Spirit in Physics Research Platform'
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body class="h-full bg-background text-foreground">
+    <AppShell client:load>
+      <slot />
+    </AppShell>
+  </body>
+</html>
+
