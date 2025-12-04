@@ -172,7 +172,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
       }
     }
 
-    // Neo4jに保存（storageAdapter経由）
+    // PostgreSQLに保存（storageAdapter経由）
     const { storageAdapter } = await import('./adapters/storage-adapter');
     await storageAdapter.saveEmotionAnalysis(result.participantId, result);
 
@@ -186,7 +186,7 @@ export async function saveEmotionAnalysisResult(result: EmotionAnalysisResult): 
  */
 export async function loadEmotionAnalysisResults(participantId: string): Promise<EmotionAnalysisResult[]> {
   try {
-    // storageAdapter経由でNeo4jから感情分析データを取得
+    // storageAdapter経由でPostgreSQLから感情分析データを取得
     const { storageAdapter } = await import('./adapters/storage-adapter');
     return await storageAdapter.loadEmotionAnalysis(participantId);
   } catch (error) {
@@ -221,7 +221,7 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
       const result = await analyzeVideoEmotions(participantId, videoFile, sessionType);
       if (result) {
         results.push(result);
-        // Neo4jに個別に保存
+        // PostgreSQLに個別に保存
         await storageAdapter.saveEmotionAnalysis(participantId, result);
       }
 

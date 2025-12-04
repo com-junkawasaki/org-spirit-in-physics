@@ -39,7 +39,7 @@ const nextConfig = {
     // サーバーサイドでの外部モジュール設定
     if (isServer) {
       config.externals = config.externals || [];
-      // Neo4jはwebpackバンドルに含めるため、外部設定は不要
+      // GraphQLサービスはwebpackバンドルに含めるため、外部設定は不要
     }
 
     return config;

@@ -1,73 +1,45 @@
 # Spirit in Physics - Researcher
 
-## Neo4j Migration Complete
+## PostgreSQL + GraphQL Migration Complete
 
-This visualizer has been fully migrated from Supabase to **Neo4j**, a powerful graph database.
+This visualizer has been fully migrated to **PostgreSQL + TimescaleDB** with **GraphQL API** (Rust + async-graphql + sqlx).
 
 ## Key Changes
 
-### Client Library (`src/lib/neo4j.ts`)
-- **Before**: Supabase JavaScript client
-- **After**: Custom Neo4j client with Cypher queries
+### Database
+- **Before**: Neo4j graph database (removed)
+- **After**: PostgreSQL + TimescaleDB (relational database with time-series extensions)
 
-### API Routes (`src/app/api/`)
-- **Before**: Supabase queries in API routes
-- **After**: Neo4j client calls with Cypher queries
+### API Layer
+- **Before**: Neo4j Cypher queries (removed)
+- **After**: GraphQL API (Rust service using async-graphql + sqlx)
 
-### Data Functions (`src/lib/data.ts`)
-- **Before**: Supabase server client queries
-- **After**: Neo4j client integration with graph traversals
+### Data Access
+- **Before**: Direct Neo4j client calls (removed)
+- **After**: GraphQL queries and mutations
 
-## Neo4j Client Features
+## GraphQL API Features
 
-### Participants Query
-```typescript
-async getParticipants(): Promise<any[]> {
-  const query = `
-    MATCH (p:Participant)
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(:Session)-[:HAS_RESPONSE]->(r:Response)
-    RETURN
-      p.id as participant_id,
-      count(distinct s) as session_count,
-      count(distinct r) as total_responses,
-      0.5 as average_spirit_probability,
-      p.created_at as last_activity
-    ORDER BY p.created_at DESC
-  `
-  // Returns processed participant data
-}
-```
-
-### Participant Details Query
-```typescript
-async getParticipantDetails(participantId: string): Promise<any> {
-  const query = `
-    MATCH (p:Participant {id: $participantId})
-    OPTIONAL MATCH (p)-[:HAS_SESSION]->(s:Session)
-    OPTIONAL MATCH (s)-[:HAS_RESPONSE]->(r:Response)
-    RETURN p, s, r
-    ORDER BY s.created_at, r.event_ts
-  `
-}
-```
+The GraphQL service (`performers/services/graphql/`) provides:
+- Type-safe queries and mutations
+- PostgreSQL connection pooling via sqlx
+- TimescaleDB for efficient time-series data storage
+- Async/await support for high performance
 
 ## Configuration
 
-Add to your environment variables:
+The GraphQL service connects to PostgreSQL via:
 ```bash
-NEO4J_URI=neo4j://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=neo4jpassword
-NEO4J_DATABASE=neo4j
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
 ```
 
 ## Migration Benefits
 
-1. **Type Safety**: TypeScript interfaces maintained
-2. **Performance**: Direct graph queries for complex relationships
-3. **Scalability**: Efficient handling of connected data
-4. **Consistency**: Unified data access across the application
+1. **Type Safety**: TypeScript interfaces maintained via GraphQL codegen
+2. **Performance**: Efficient SQL queries with connection pooling
+3. **Scalability**: PostgreSQL + TimescaleDB for time-series data
+4. **Consistency**: Unified GraphQL API across the application
+5. **Standard SQL**: Easier to maintain and debug than Cypher queries
 
 ## Usage
 

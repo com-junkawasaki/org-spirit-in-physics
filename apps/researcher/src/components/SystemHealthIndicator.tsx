@@ -43,8 +43,6 @@ export interface SystemHealthIndicatorProps {
 function ServiceIcon({ service }: { service: string }) {
   switch (service.toLowerCase()) {
     // Neo4j removed - using GraphQL service with PostgreSQL instead
-    // case 'neo4j':
-    //   return <Database className="h-4 w-4" />
      case 'workflows':
       return <Clock className="h-4 w-4" />
     case 'hume ai':

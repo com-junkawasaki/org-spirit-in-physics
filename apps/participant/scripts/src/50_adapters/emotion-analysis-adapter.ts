@@ -101,7 +101,7 @@ export class EmotionAnalysisAdapter implements EmotionAnalysisPort {
   async getEmotionStatistics(): Promise<EmotionStatistics> {
     try {
       // これは管理画面での統計計算用
-      // 実際の実装ではNeo4jからデータを取得して計算
+      // 実際の実装ではPostgreSQLからデータを取得して計算
       const results: EmotionAnalysisResult[] = [];
       return foldEmotionStatistics(results);
     } catch (error) {

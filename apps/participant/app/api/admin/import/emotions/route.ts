@@ -1,12 +1,12 @@
 // LLM-BOUNDARY: 80_app - app/(segments)/...（RSC & Client）
 // Merkle DAG: import.emotions.endpoint
 // 感情分析データインポートAPIエンドポイント
-// 依存関係: @participants/ (dataset), neo4j, hume-ai-integration
+// 依存関係: @participants/ (dataset), GraphQLサービス, hume-ai-integration
 
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
+// GraphQLサービス経由でPostgreSQLを使用（initializeNeo4jDatabaseは削除済み）
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +30,8 @@ async function importEmotionsFromDataset() {
     const participantDirs = entries.filter(entry => entry.isDirectory());
 
     // Merkle DAG: import.emotions.initialize_db
-    // Neo4jデータベース初期化
-    await initializeNeo4jDatabase();
+    // GraphQLサービス経由でPostgreSQLを使用（データベース初期化は不要）
+    // await initializeNeo4jDatabase();
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
@@ -80,7 +80,7 @@ async function importEmotionsFromDataset() {
         const predictionsData = JSON.parse(await fs.readFile(predictionsFile, 'utf-8'));
 
         // Merkle DAG: import.emotions.process_emotion_data
-        // 感情データを処理してNeo4jに格納
+        // 感情データを処理してPostgreSQLに格納
         const emotionResult = await processEmotionData(participantId, predictionsData);
 
         // Merkle DAG: import.emotions.process_csv_data
@@ -126,8 +126,8 @@ async function importEmotionsFromDataset() {
 // Merkle DAG: import.emotions.check_participant
 // 参加者存在チェック関数
 async function checkParticipantExists(participantId: string): Promise<boolean> {
-  // Neo4jクエリで参加者存在を確認
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由で参加者存在を確認
+  // TODO: GraphQLクエリを使用した実装
   return true; // 仮実装
 }
 
@@ -150,8 +150,8 @@ async function findHumeArtifactsDirectory(participantPath: string): Promise<stri
 // Merkle DAG: import.emotions.check_existing_data
 // 既存感情データチェック関数
 async function checkExistingEmotionData(participantId: string): Promise<boolean> {
-  // Neo4jクエリで既存感情データを確認
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由で既存感情データを確認
+  // TODO: GraphQLクエリを使用した実装
   return false; // 仮実装
 }
 
@@ -183,7 +183,7 @@ async function processEmotionData(participantId: string, predictionsData: any) {
 
         totalEmotions += entry.emotions.length;
 
-        // Neo4jに感情データを格納
+        // PostgreSQLに感情データを格納
         await storeEmotionEntry(emotionRecord);
       }
     }
@@ -195,8 +195,8 @@ async function processEmotionData(participantId: string, predictionsData: any) {
 // Merkle DAG: import.emotions.store_entry
 // 感情エントリ格納関数
 async function storeEmotionEntry(emotionRecord: any) {
-  // Neo4jクエリで感情データを格納
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由で感情データを格納
+  // TODO: GraphQLミューテーションを使用した実装
 }
 
 // Merkle DAG: import.emotions.process_csv
@@ -233,7 +233,7 @@ async function processEmotionCSVData(participantId: string, artifactsDir: string
 // Merkle DAG: import.emotions.process_csv_file
 // 個別CSVファイル処理関数
 async function processCSVFile(participantId: string, fileName: string, content: string) {
-  // CSVデータを解析してNeo4jに格納
+  // CSVデータを解析してPostgreSQLに格納
   // TODO: CSVパーサーを使用した実装
   const lines = content.split('\n');
   // ヘッダーをスキップしてデータを処理
@@ -255,8 +255,8 @@ async function processCSVFile(participantId: string, fileName: string, content: 
 // Merkle DAG: import.emotions.store_csv
 // CSVレコード格納関数
 async function storeCSVRecord(csvRecord: any) {
-  // Neo4jクエリでCSVデータを格納
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由でCSVデータを格納
+  // TODO: GraphQLミューテーションを使用した実装
 }
 
 export async function POST(request: NextRequest) {

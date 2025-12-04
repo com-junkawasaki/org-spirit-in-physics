@@ -18,7 +18,7 @@ export {
   kernelFusionFailureWorkflow,
 } from './kernel-fusion-workflow';
 
-// Neo4j保存ワークフロー（削除済み - GraphQL経由に統一）
+// Neo4j保存ワークフロー（削除済み - GraphQLサービス経由に統一）
 
 // Inngestクライアントとイベント定義
 export { inngest, events } from '../inngest';

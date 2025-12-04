@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         }); */
 
       case 'sessions':
-        // Neo4jからセッションデータを取得
+        // PostgreSQLからセッションデータを取得
         const sessionsData = await loadAllSessionData();
 
         // Transform session data to match expected format
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
 
         const stats = getParticipantStatistics(participants);
 
-        // Calculate reaction time statistics from Neo4j data
+        // Calculate reaction time statistics from PostgreSQL data
         let totalReactionTime = 0;
         let totalResponses = 0;
 
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
         });
 
       case 'reaction-times':
-        // Neo4jからreaction timeデータを取得
+        // PostgreSQLからreaction timeデータを取得
         const reactionTimeSessionsData = await loadAllSessionData();
         const reactionTimeData: any[] = [];
 

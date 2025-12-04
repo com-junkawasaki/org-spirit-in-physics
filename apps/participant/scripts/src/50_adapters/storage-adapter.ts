@@ -6,7 +6,7 @@ import { ConsentData, SaveStructuredDataPayload, EmotionAnalysisResult, Particip
 
 export class StorageAdapter implements StoragePort {
   async saveStructuredData(payload: SaveStructuredDataPayload): Promise<void> {
-    // Neo4jデータベースに保存（一本化）
+    // PostgreSQLデータベースに保存（GraphQLサービス経由）
     if (payload.type === "consent") {
       await this.saveConsentData(payload.data);
     } else if (payload.type === "session-data") {
@@ -63,7 +63,7 @@ export class StorageAdapter implements StoragePort {
         processingTime: sa.processingTime
       })); */
     /* } catch (error) {
-      console.warn('Failed to load emotion analysis from Neo4j:', error);
+      console.warn('Failed to load emotion analysis from PostgreSQL:', error);
       return [];
     } */
   }
@@ -83,9 +83,9 @@ export class StorageAdapter implements StoragePort {
       const neo4jParticipants = await neo4jManager.getAllParticipants();
       return neo4jParticipants.map(sp => ({
         id: sp.id,
-        age: undefined, // Neo4jParticipantにはない
-        gender: undefined, // Neo4jParticipantにはない
-        handedness: undefined, // Neo4jParticipantにはない
+        age: undefined,
+        gender: undefined,
+        handedness: undefined,
         createdAt: new Date(sp.agreedAt), // agreedAtを使用
         signature: sp.signature,
         agreedAt: sp.agreedAt?.toISOString() || new Date().toISOString(),
@@ -95,7 +95,7 @@ export class StorageAdapter implements StoragePort {
         videoFiles: []
       })); */
     /* } catch (error) {
-      console.warn('Failed to load participants from Neo4j:', error);
+      console.warn('Failed to load participants from PostgreSQL:', error);
       return [];
     } */
   }
@@ -105,12 +105,12 @@ export class StorageAdapter implements StoragePort {
     console.warn('loadSessionData: GraphQL経由での実装は未対応');
     return null;
     /* try {
-      // Neo4jManagerからセッションデータを取得
+      // GraphQLサービス経由でセッションデータを取得
       // 現時点では仮の実装
-      console.log(`Loading session data from Neo4j for ${participantId}`);
+      console.log(`Loading session data from PostgreSQL for ${participantId}`);
       return null; // 仮実装
     } catch (error) {
-      console.warn('Failed to load session data from Neo4j:', error);
+      console.warn('Failed to load session data from PostgreSQL:', error);
       return null;
     } */
   }

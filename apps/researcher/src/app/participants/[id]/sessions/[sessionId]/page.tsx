@@ -198,7 +198,7 @@ export default function SessionTimelinePage() {
                 {['burst', 'face', 'language', 'prosody'].map((type) => {
                   const check = debugInfo.checks?.[type]
                   const exists = check?.exists || false
-                  // Neo4j Integer型を数値に変換
+                  // PostgreSQLの数値型を数値に変換
                   const countRaw = check?.count || 0
                   const count = typeof countRaw === 'object' && countRaw !== null && 'low' in countRaw 
                     ? countRaw.low 

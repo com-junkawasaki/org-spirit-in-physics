@@ -53,9 +53,9 @@ export class ImportTransactionManager {
     console.warn('ImportTransactionManager: GraphQL経由での実装は未対応');
     /* try {
       await this.driver.verifyConnectivity();
-      console.log('Neo4j connection established for import transactions');
+      console.log('PostgreSQL connection established for import transactions');
     } catch (error) {
-      throw new Error(`Failed to connect to Neo4j: ${error}`);
+      throw new Error(`Failed to connect to PostgreSQL: ${error}`);
     } */
   }
 

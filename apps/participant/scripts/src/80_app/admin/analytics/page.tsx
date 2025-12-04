@@ -55,7 +55,7 @@ import {
 interface IntegratedAnalyticsData {
   storageStatus: {
     blob: boolean;
-    postgresql: boolean; // Neo4jからPostgreSQLに変更
+    postgresql: boolean;
     filesystem: boolean;
   };
   participantStats: {
@@ -78,7 +78,7 @@ interface IntegratedAnalyticsData {
   };
   storageStats: {
     blobUsage: number;
-    postgresqlUsage: number; // Neo4jからPostgreSQLに変更
+    postgresqlUsage: number;
     totalDataPoints: number;
     syncStatus: 'synced' | 'syncing' | 'error';
   };

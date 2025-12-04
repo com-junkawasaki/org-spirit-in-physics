@@ -1,12 +1,12 @@
 // LLM-BOUNDARY: 80_app - app/(segments)/...（RSC & Client）
 // Merkle DAG: import.sessions.endpoint
 // セッションデータインポートAPIエンドポイント
-// 依存関係: @participants/ (dataset), neo4j, session-data-processor
+// 依存関係: @participants/ (dataset), GraphQLサービス, session-data-processor
 
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
+// GraphQLサービス経由でPostgreSQLを使用（initializeNeo4jDatabaseは削除済み）
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +30,8 @@ async function importSessionsFromDataset() {
     const participantDirs = entries.filter(entry => entry.isDirectory());
 
     // Merkle DAG: import.sessions.initialize_db
-    // Neo4jデータベース初期化
-    await initializeNeo4jDatabase();
+    // GraphQLサービス経由でPostgreSQLを使用（データベース初期化は不要）
+    // await initializeNeo4jDatabase();
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
@@ -74,7 +74,7 @@ async function importSessionsFromDataset() {
         }
 
         // Merkle DAG: import.sessions.create_session
-        // セッションイベントを処理してNeo4jに格納
+        // セッションイベントを処理してPostgreSQLに格納
         const sessionResult = await processSessionEvents(participantId, sessionData.events);
 
         // Merkle DAG: import.sessions.create_word_responses
@@ -126,24 +126,24 @@ async function importSessionsFromDataset() {
 // Merkle DAG: import.sessions.check_participant
 // 参加者存在チェック関数
 async function checkParticipantExists(participantId: string): Promise<boolean> {
-  // Neo4jクエリで参加者存在を確認
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由で参加者存在を確認
+  // TODO: GraphQLクエリを使用した実装
   return true; // 仮実装
 }
 
 // Merkle DAG: import.sessions.check_existing_session
 // 既存セッション存在チェック関数
 async function checkExistingSession(participantId: string): Promise<boolean> {
-  // Neo4jクエリで既存セッションを確認
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由で既存セッションを確認
+  // TODO: GraphQLクエリを使用した実装
   return false; // 仮実装
 }
 
 // Merkle DAG: import.sessions.process_events
 // セッションイベント処理関数
 async function processSessionEvents(participantId: string, events: any[]) {
-  // イベントデータをNeo4jに格納
-  // TODO: Neo4jドライバーを使用した実装
+  // イベントデータをPostgreSQLに格納
+  // TODO: GraphQLミューテーションを使用した実装
   return { eventsProcessed: events.length };
 }
 
@@ -170,8 +170,8 @@ async function extractWordResponses(events: any[]) {
 // Merkle DAG: import.sessions.store_responses
 // 単語応答格納関数
 async function storeWordResponses(participantId: string, responses: any[]) {
-  // 単語応答をNeo4jに格納
-  // TODO: Neo4jドライバーを使用した実装
+  // 単語応答をPostgreSQLに格納
+  // TODO: GraphQLミューテーションを使用した実装
 }
 
 // Merkle DAG: import.sessions.calculate_stats

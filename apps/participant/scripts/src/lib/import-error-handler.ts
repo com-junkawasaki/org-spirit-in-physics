@@ -1,7 +1,7 @@
 // LLM-BOUNDARY: 80_app - @/lib/...（Serverロジック）
 // Merkle DAG: import.error_handler
 // インポート処理のエラーハンドリングとログ管理
-// 依存関係: インポートAPI, Neo4j, ログシステム
+// 依存関係: インポートAPI, GraphQLサービス, ログシステム
 
 import { promises as fs } from 'fs';
 import path from 'path';

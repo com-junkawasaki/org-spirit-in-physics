@@ -1,12 +1,12 @@
 // LLM-BOUNDARY: 80_app - app/(segments)/...（RSC & Client）
 // Merkle DAG: import.participants.endpoint
 // 参加者データインポートAPIエンドポイント
-// 依存関係: @participants/ (dataset), neo4j, data-loader
+// 依存関係: @participants/ (dataset), GraphQLサービス, data-loader
 
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
-import { initializeNeo4jDatabase } from "scripts/src/lib/data-loader";
+// GraphQLサービス経由でPostgreSQLを使用（initializeNeo4jDatabaseは削除済み）
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +30,8 @@ async function importParticipantsFromDataset() {
     const participantDirs = entries.filter(entry => entry.isDirectory());
 
     // Merkle DAG: import.participants.initialize_db
-    // Neo4jデータベース初期化
-    await initializeNeo4jDatabase();
+    // GraphQLサービス経由でPostgreSQLを使用（データベース初期化は不要）
+    // await initializeNeo4jDatabase();
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
@@ -62,7 +62,7 @@ async function importParticipantsFromDataset() {
         }
 
         // Merkle DAG: import.participants.create_participant
-        // Neo4jに参加者ノードを作成
+        // PostgreSQLに参加者データを作成
         const participantNode = await createParticipantNode({
           id: participantId,
           signature: consentData.signature,
@@ -124,16 +124,16 @@ async function importParticipantsFromDataset() {
 // Merkle DAG: import.participants.check_existing
 // 既存参加者チェック関数
 async function checkExistingParticipant(participantId: string): Promise<boolean> {
-  // Neo4jクエリで既存参加者をチェック
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由で既存参加者をチェック
+  // TODO: GraphQLクエリを使用した実装
   return false; // 仮実装
 }
 
 // Merkle DAG: import.participants.create_node
 // 参加者ノード作成関数
 async function createParticipantNode(data: any) {
-  // Neo4jクエリで参加者ノードを作成
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由で参加者データを作成
+  // TODO: GraphQLミューテーションを使用した実装
   return { id: data.id, created: true };
 }
 
@@ -162,8 +162,8 @@ async function checkHumeData(participantPath: string): Promise<boolean> {
 // Merkle DAG: import.participants.update_metadata
 // メタデータ更新関数
 async function updateParticipantMetadata(participantId: string, metadata: any) {
-  // Neo4jクエリでメタデータを更新
-  // TODO: Neo4jドライバーを使用した実装
+  // GraphQLサービス経由でメタデータを更新
+  // TODO: GraphQLミューテーションを使用した実装
 }
 
 export async function POST(request: NextRequest) {

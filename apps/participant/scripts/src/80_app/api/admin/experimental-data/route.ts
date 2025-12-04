@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { storageAdapter } from "scripts/src/50_adapters";
 import { emotionAnalysisAdapter } from "scripts/src/50_adapters";
-import { parseWordResponsesFromEvents, getParticipantStatistics, initializeNeo4jDatabase, loadAllSessionData } from "scripts/src/lib/data-loader";
+import { parseWordResponsesFromEvents, getParticipantStatistics, loadAllSessionData } from "scripts/src/lib/data-loader";
+// GraphQLサービス経由でPostgreSQLを使用（initializeNeo4jDatabaseは削除済み）
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -11,8 +12,8 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Neo4jデータベースの初期化
-        await initializeNeo4jDatabase();
+        // GraphQLサービス経由でPostgreSQLを使用（データベース初期化は不要）
+        // await initializeNeo4jDatabase();
         const participants = await storageAdapter.loadAllParticipants();
         const participantsForStats = participants.map(p => ({
           ...p,
@@ -113,8 +114,8 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Neo4jデータベースの初期化
-        await initializeNeo4jDatabase();
+        // GraphQLサービス経由でPostgreSQLを使用（データベース初期化は不要）
+        // await initializeNeo4jDatabase();
         const participants_for_analytics = await storageAdapter.loadAllParticipants();
         const participantsForStats2 = participants_for_analytics.map(p => ({
           ...p,
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Neo4jから感情統計を取得
+        // PostgreSQLから感情統計を取得
         const emotionStats = await emotionAnalysisAdapter.getEmotionStatistics();
         const emotionDistribution: Record<string, number> = {};
         emotionStats.dominantEmotions.forEach(item => {

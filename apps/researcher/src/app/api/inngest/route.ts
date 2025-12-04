@@ -5,8 +5,8 @@ import {
   windowsGenerationWorkflow,
   kernelFusionWorkflow,
   kernelFusionFailureWorkflow,
-  // neo4jPersistenceWorkflow, // Neo4j依存のため無効化
-  // neo4jPersistenceFailureWorkflow, // Neo4j依存のため無効化
+  // neo4jPersistenceWorkflow, // GraphQLサービス経由に統一のため削除済み
+  // neo4jPersistenceFailureWorkflow, // GraphQLサービス経由に統一のため削除済み
   inngest,
 } from '@/lib/workflows';
 
@@ -26,7 +26,7 @@ export const { GET, POST, PUT } = serve({
     kernelFusionWorkflow,
     kernelFusionFailureWorkflow,
     
-    // Neo4j保存ワークフロー（Neo4j依存のため無効化）
+    // Neo4j保存ワークフロー（GraphQLサービス経由に統一のため削除済み）
     // GraphQL経由でのデータ保存が必要な場合は、GraphQLサービス側で実装
     // neo4jPersistenceWorkflow,
     // neo4jPersistenceFailureWorkflow,
