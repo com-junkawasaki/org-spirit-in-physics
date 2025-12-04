@@ -8,15 +8,17 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copy app package files
-COPY package.json pnpm-lock.yaml* ./
+COPY apps/unified/package.json apps/unified/pnpm-lock.yaml* ./
 
 # Copy common packages
 COPY packages/jung-voice-assessment ./packages/jung-voice-assessment
 COPY packages/visualization-components ./packages/visualization-components
+COPY packages/grpc-client ./packages/grpc-client
 
 # Fix the file: reference in package.json to match the container path
 RUN sed -i.bak 's|file:../../packages/jung-voice-assessment|file:./packages/jung-voice-assessment|g' package.json && \
     sed -i.bak 's|file:../../packages/visualization-components|file:./packages/visualization-components|g' package.json && \
+    sed -i.bak 's|"@spirit-in-physics/grpc-client": "\*"|"@spirit-in-physics/grpc-client": "file:./packages/grpc-client"|g' packages/jung-voice-assessment/package.json && \
     rm package.json.bak
 
 # Install dependencies and wget for healthcheck
@@ -24,7 +26,7 @@ RUN pnpm install --no-frozen-lockfile && \
     apk add --no-cache wget
 
 # Copy unified app source code
-COPY . ./
+COPY apps/unified/ ./
 
 # Create symlinks for .mdx files as .md files for Astro content collections
 # This is a workaround for Astro's content collection loader only matching .md files

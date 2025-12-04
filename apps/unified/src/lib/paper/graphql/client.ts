@@ -1,5 +1,8 @@
 // Merkle DAG: graphql.client
 // GraphQL client for connecting to GraphQL service
+// 
+// @deprecated This file is deprecated. Use gRPC client instead.
+// See: apps/unified/src/lib/paper/grpc/client.ts
 
 import { GraphQLClient } from 'graphql-request';
 
@@ -119,4 +122,3 @@ export async function executeQuery<T = any>(
     return {} as T;
   }
 }
-

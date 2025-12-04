@@ -25,8 +25,8 @@ services:
   # Unified app (Astro) - replaces participant, researcher, demo, and paper apps
   unified:
     build:
-      context: ./apps/unified
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/unified/Dockerfile
     container_name: spirit-unified
     ports:
       - "3000:3000"

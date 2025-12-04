@@ -2,6 +2,11 @@ import type { APIRoute } from 'astro';
 import { getGraphQLApiUrl } from '../../../lib/researcher/graphql/client';
 import { createClient } from '../../../lib/researcher/supabase/server';
 
+/**
+ * @deprecated This GraphQL API proxy is deprecated. Use gRPC API proxy instead.
+ * See: apps/unified/src/pages/researcher/api/grpc.ts
+ */
+
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, cookies: astroCookies }) => {
@@ -68,4 +73,3 @@ export const GET: APIRoute = async () => {
     { headers: { 'Content-Type': 'application/json' } }
   );
 };
-

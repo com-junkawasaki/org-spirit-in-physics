@@ -1,15 +1,11 @@
 // Merkle DAG: api.participants.timeline
-// Timeline API endpoint for research app
+// Timeline API endpoint for research app (gRPC)
 
 import type { APIRoute } from 'astro';
+import { getTimeline } from '@/lib/paper/grpc/client';
 
 // Disable prerendering for dynamic API routes
 export const prerender = false;
-
-// Get GraphQL API URL from environment
-function getGraphQLApiUrl(): string {
-  return import.meta.env.GRAPHQL_API_URL || 'http://graphql-service:8081/graphql';
-}
 
 export const GET: APIRoute = async ({ params, url }) => {
   const participantId = params.participantId;
@@ -23,64 +19,16 @@ export const GET: APIRoute = async ({ params, url }) => {
   const sessionId = url.searchParams.get('sessionId') || undefined;
 
   try {
-    // Fetch timeline data directly from GraphQL using fetch
-    const query = `
-      query GetTimeline($participantId: ID!, $sessionId: ID) {
-        timeline(participantId: $participantId, sessionId: $sessionId) {
-          time
-          participantId
-          sessionId
-          word
-          eventType
-          reactionValue
-          reactionTime
-          hasResponse
-          emotions {
-            name
-            score
-            fileType
-          }
-          physiological {
-            timestamp
-            value
-            metadata
-          }
-          metadata
-        }
-      }
-    `;
-
-    const variables: Record<string, any> = { participantId };
-    if (sessionId) {
-      variables.sessionId = sessionId;
-    }
-    
-    const graphqlUrl = getGraphQLApiUrl();
-    
-    const response = await fetch(graphqlUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query,
-        variables,
-      }),
+    // Fetch timeline data from gRPC
+    const data = await getTimeline({
+      participantId,
+      sessionId,
     });
 
-    if (!response.ok) {
-      throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    if (result.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-    }
-
-    const timelinePoints = result.data?.timeline || [];
+    const timelinePoints = data.points || [];
     
     // Convert timeline points to the format expected by TimelineVisualization
-    const timelineData = timelinePoints.map((point: any) => {
+    const timelineData = timelinePoints.map((point) => {
       // Convert time string to timestamp (milliseconds)
       const timestamp = typeof point.time === 'string' 
         ? new Date(point.time).getTime() 
@@ -92,9 +40,9 @@ export const GET: APIRoute = async ({ params, url }) => {
       // Convert physiological data (array of PhysiologicalData)
       const physiologicalArray = Array.isArray(point.physiological) ? point.physiological : [];
       const physiologicalValues = physiologicalArray
-        .map((p: any) => typeof p.value === 'number' ? p.value : null)
-        .filter((v: any) => v !== null) as number[];
-      
+        .map((p) => p.value)
+        .filter((v): v is number => v !== undefined && v !== null);
+
       const physAverage = physiologicalValues.length > 0
         ? physiologicalValues.reduce((sum, val) => sum + val, 0) / physiologicalValues.length
         : 0;
@@ -106,10 +54,10 @@ export const GET: APIRoute = async ({ params, url }) => {
         word: point.word || '',
         ts: timestamp,
         timestamp: timestamp,
-        rt: point.reactionTime || 0,
-        reactionTime: point.reactionTime || 0,
-        rv: point.reactionValue || 0,
-        reactionValue: point.reactionValue || 0,
+        rt: point.reactionTime ? Number(point.reactionTime) : 0,
+        reactionTime: point.reactionTime ? Number(point.reactionTime) : 0,
+        rv: point.reactionValue ?? 0,
+        reactionValue: point.reactionValue ?? 0,
         em: emotions,
         emotions: emotions,
         phys: {
@@ -138,13 +86,11 @@ export const GET: APIRoute = async ({ params, url }) => {
           timelineData,
           metadata: {
             sessionEvents: timelineData.length,
-            emotionEntries: timelineData.reduce((sum: number, item: unknown) => {
-              const typedItem = item as { em?: unknown[] };
-              return sum + (typedItem?.em?.length || 0);
+            emotionEntries: timelineData.reduce((sum, item) => {
+              return sum + (item.em?.length || 0);
             }, 0),
-            physiologicalEntries: timelineData.filter((item: unknown) => {
-              const typedItem = item as { phys?: Record<string, unknown> };
-              return typedItem?.phys && Object.keys(typedItem.phys).length > 0;
+            physiologicalEntries: timelineData.filter((item) => {
+              return item.phys && Object.keys(item.phys).length > 0;
             }).length,
             totalDataPoints: timelineData.length,
             errors: [],
@@ -173,4 +119,3 @@ export const GET: APIRoute = async ({ params, url }) => {
     );
   }
 };
-

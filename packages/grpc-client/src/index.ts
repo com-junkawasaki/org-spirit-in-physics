@@ -8,3 +8,6 @@ export * from "./services/timeline";
 export * from "./services/stimulus_words";
 export * from "./hooks";
 
+// Re-export service functions for convenience
+export { getStimulusWords, getStimulusWord } from "./services/stimulus_words";
+

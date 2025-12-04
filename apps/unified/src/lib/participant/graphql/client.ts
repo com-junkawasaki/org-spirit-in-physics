@@ -2,6 +2,9 @@
 /**
  * Merkle DAG: graphql.client
  * Apollo Client configuration for GraphQL API
+ * 
+ * @deprecated This file is deprecated. Use gRPC client instead.
+ * See: apps/unified/src/lib/participant/grpc/client.ts
  */
 
 import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
@@ -39,41 +42,29 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 
 // Auth Link with Supabase token
 const authLink = setContext(async (_, { headers }) => {
-  // Get Supabase token (works on both client and server)
   let token: string | null = null;
-  
+
   if (typeof window !== 'undefined') {
-    // Client-side: get token from Supabase client
-    try {
-      const supabase = createSupabaseClient();
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.warn('Failed to get Supabase session:', error);
-      } else {
-        token = session?.access_token || null;
-      }
-    } catch (error) {
-      console.warn('Failed to get Supabase token:', error);
-    }
+    // Client-side: use Supabase client
+    const supabase = createSupabaseClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token || null;
   } else {
-    // Server-side: get token from cookies via Supabase server client
+    // Server-side: use Supabase server client
+    // Note: This won't work in all contexts - may need to pass cookies/request
     try {
-      const supabase = await createSupabaseServerClient();
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.warn('Failed to get Supabase session:', error);
-      } else {
-        token = session?.access_token || null;
-      }
+      const supabase = createSupabaseServerClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      token = session?.access_token || null;
     } catch (error) {
-      console.warn('Failed to get Supabase token from server:', error);
+      console.warn('Failed to get server-side session:', error);
     }
   }
-  
+
   return {
     headers: {
       ...headers,
-      ...(token && { authorization: `Bearer ${token}` }),
+      authorization: token ? `Bearer ${token}` : '',
     },
   };
 });
@@ -81,16 +72,7 @@ const authLink = setContext(async (_, { headers }) => {
 // Create Apollo Client
 export const apolloClient = new ApolloClient({
   link: from([errorLink, authLink, httpLink]),
-  cache: new InMemoryCache({
-    typePolicies: {
-      Participant: {
-        keyFields: ['id'],
-      },
-      Session: {
-        keyFields: ['id'],
-      },
-    },
-  }),
+  cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {
       errorPolicy: 'all',
@@ -98,9 +80,5 @@ export const apolloClient = new ApolloClient({
     query: {
       errorPolicy: 'all',
     },
-    mutate: {
-      errorPolicy: 'all',
-    },
   },
 });
-
