@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@apollo/client": "^4.0.9",
+    "@clerk/nextjs": "^5.0.0",
     "@supabase/ssr": "^0.5.2",
     "@spirit-in-physics/jung-voice-assessment": "file:../../packages/jung-voice-assessment",
     "@inlang/paraglide-next": "^0.8.1",

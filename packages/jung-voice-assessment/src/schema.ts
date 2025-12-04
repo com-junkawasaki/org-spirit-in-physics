@@ -42,7 +42,7 @@ export const WordStimulusSchema = z.object({
 });
 export type WordStimulus = z.infer<typeof WordStimulusSchema>;
 
-const ResponseDataSchema = z.object({
+export const ResponseDataSchema = z.object({
   participantId: z.string().uuid(),
   experimentId: z.string().uuid(),
   wordStimulusId: z.number().int(),

@@ -1,91 +1,21 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
-import type { ApolloClient, DocumentNode, FetchResult } from '@apollo/client';
-import type { Word } from './types';
+import type { ApolloClient } from '@apollo/client';
+import type { 
+  Word, 
+  WordResponse, 
+  TestResult, 
+  MediaStatus, 
+  KawasakiStoreState, 
+  KawasakiStoreActions, 
+  KawasakiStore,
+  GraphQLMutations,
+  GraphQLCallbacks
+} from './types';
 
+// Re-export Word for backward compatibility
 export type { Word };
-
-// --- Type Definitions ---
-
-export type WordResponse = {
-  stimulusWord: Word;
-  responseWord: string;
-  reactionTimeMs: number;
-  audioBlob?: Blob;
-  isDelayed?: boolean;
-};
-
-export interface TestResult {
-  totalWords: number;
-  averageReactionTimeMs: number;
-  responses: WordResponse[];
-  completedAt?: Date;
-}
-
-export type MediaStatus = 'idle' | 'recording_session' | 'recording_response' | 'processing';
-
-export interface KawasakiStoreState {
-  testStatus: 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
-  deviceStatus: 'idle' | 'pending' | 'success' | 'error';
-  stream: MediaStream | null;
-  error: string | null;
-  stimulusWords: Word[];
-  currentSession: 1 | 2;
-  currentWordIndex: number;
-  wordResponses: WordResponse[];
-  mediaStatus: MediaStatus;
-  events: { timestamp: number; type: string; payload?: object }[];
-  sessionVideoUrl: string | null;
-  participantId: string | null;
-  graphQLClient: ApolloClient<any> | null;
-  graphQLMutations: GraphQLMutations | null;
-  graphQLCallbacks: GraphQLCallbacks | null;
-}
-
-export interface GraphQLMutations {
-  createSession: DocumentNode;
-  uploadArtifact: DocumentNode;
-}
-
-export interface GraphQLCallbacks {
-  onSaveSession?: (data: {
-    participantId: string;
-    sessionIndex: number;
-    startTs: number;
-    events: Array<{ timestamp: number; type: string; payload?: object }>;
-  }) => Promise<void>;
-  onUploadArtifact?: (data: {
-    participantId: string;
-    fileName: string;
-    fileData: string;
-    contentType: string;
-    artifactType: string;
-  }) => Promise<string>;
-}
-
-export interface KawasakiStoreActions {
-  startSession: (numberOfWords: number) => void;
-  completeSession: () => void;
-  advanceToNextWord: () => void;
-  recordWordResponse: (response: { responseWord: string; reactionTimeMs: number; audioBlob: Blob }) => void;
-  saveSessionData: () => Promise<void>;
-  resetTest: () => void;
-  setMediaStatus: (status: MediaStatus) => void;
-  setDeviceStatus: (status: 'idle' | 'pending' | 'success' | 'error') => void;
-  setStream: (stream: MediaStream | null) => void;
-  setError: (error: string | null) => void;
-  logEvent: (type: string, payload?: object) => void;
-  startPreflight: () => void;
-  saveSessionVideo: (session: 1 | 2, blob: Blob) => void;
-  initializeParticipant: () => void;
-  setStimulusWords: (words: Word[]) => void;
-  setGraphQLClient: (client: ApolloClient<any> | null) => void;
-  setGraphQLMutations: (mutations: GraphQLMutations | null) => void;
-  setGraphQLCallbacks: (callbacks: GraphQLCallbacks | null) => void;
-}
-
-export type KawasakiStore = KawasakiStoreState & KawasakiStoreActions;
 
 const initialState: KawasakiStoreState = {
   testStatus: 'idle',
@@ -183,6 +113,10 @@ export const useKawasakiStore = create<KawasakiStore>()(
     recordWordResponse: ({ responseWord, reactionTimeMs, audioBlob }) => {
         const { currentWordIndex, stimulusWords, advanceToNextWord, logEvent } = get();
         const stimulusWord = stimulusWords[currentWordIndex];
+        if (!stimulusWord) {
+            get().setError('Stimulus word not found');
+            return;
+        }
 
         const response: WordResponse = {
             stimulusWord,

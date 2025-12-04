@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import type { TimelineDataPoint, FilterSettings, TimeRange } from './types'
 
@@ -373,27 +373,27 @@ export default function TimelineChart({
       : [0, 1];
 
     const burstEmotionScale = d3.scaleLinear()
-      .domain(burstEmotionExtent[0] === burstEmotionExtent[1] 
-        ? [0, Math.max(1, burstEmotionExtent[1])] 
-        : burstEmotionExtent)
+      .domain((burstEmotionExtent[0] ?? 0) === (burstEmotionExtent[1] ?? 0) 
+        ? [0, Math.max(1, burstEmotionExtent[1] ?? 0)] 
+        : [burstEmotionExtent[0] ?? 0, burstEmotionExtent[1] ?? 0])
       .range([axisHeight * 3.5, axisHeight * 3.1]);
 
     const faceEmotionScale = d3.scaleLinear()
-      .domain(faceEmotionExtent[0] === faceEmotionExtent[1] 
-        ? [0, Math.max(1, faceEmotionExtent[1])] 
-        : faceEmotionExtent)
+      .domain((faceEmotionExtent[0] ?? 0) === (faceEmotionExtent[1] ?? 0) 
+        ? [0, Math.max(1, faceEmotionExtent[1] ?? 0)] 
+        : [faceEmotionExtent[0] ?? 0, faceEmotionExtent[1] ?? 0])
       .range([axisHeight * 4.5, axisHeight * 4.1]);
 
     const languageEmotionScale = d3.scaleLinear()
-      .domain(languageEmotionExtent[0] === languageEmotionExtent[1] 
-        ? [0, Math.max(1, languageEmotionExtent[1])] 
-        : languageEmotionExtent)
+      .domain((languageEmotionExtent[0] ?? 0) === (languageEmotionExtent[1] ?? 0) 
+        ? [0, Math.max(1, languageEmotionExtent[1] ?? 0)] 
+        : [languageEmotionExtent[0] ?? 0, languageEmotionExtent[1] ?? 0])
       .range([axisHeight * 5.5, axisHeight * 5.1]);
 
     const prosodyEmotionScale = d3.scaleLinear()
-      .domain(prosodyEmotionExtent[0] === prosodyEmotionExtent[1] 
-        ? [0, Math.max(1, prosodyEmotionExtent[1])] 
-        : prosodyEmotionExtent)
+      .domain((prosodyEmotionExtent[0] ?? 0) === (prosodyEmotionExtent[1] ?? 0) 
+        ? [0, Math.max(1, prosodyEmotionExtent[1] ?? 0)] 
+        : [prosodyEmotionExtent[0] ?? 0, prosodyEmotionExtent[1] ?? 0])
       .range([axisHeight * 6.5, axisHeight * 6.1]);
 
     // 単語表示（時間軸上）

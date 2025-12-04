@@ -1,5 +1,4 @@
-import React from 'react'
-import type { GapArea, DensityRegion, DuplicateCandidate, CommonFeatures } from '../lib/structure-analysis'
+import type { GapArea, DensityRegion, DuplicateCandidate } from '../lib/structure-analysis'
 
 // Merkle DAG: timeline.components.structure_analysis_panel
 // 構造分析結果の表示パネルコンポーネント

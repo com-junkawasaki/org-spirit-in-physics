@@ -2,7 +2,6 @@
 // デバッグパネルコンポーネント
 // データ取得と処理パイプラインの状態を可視化
 
-import React from 'react'
 
 export interface PipelineStep {
   id: string

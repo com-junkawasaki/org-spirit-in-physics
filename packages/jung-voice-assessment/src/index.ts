@@ -20,7 +20,6 @@ export type {
   JungVoiceTestProps,
 } from './types';
 
-export type { WordResponse as WordResponseSchema } from './schema';
 export type { WordResponseWithExtras } from './WordResponse';
 
 // Export schemas

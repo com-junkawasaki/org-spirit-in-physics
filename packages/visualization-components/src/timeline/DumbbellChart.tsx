@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import type { TimelineDataPoint, DumbbellDataPoint } from './types'
 
@@ -19,8 +19,10 @@ export default function DumbbellChart({ data, width }: DumbbellChartProps) {
 
     // 単語ごとにグループ化
     const wordGroups = data.reduce((acc, d) => {
-      if (!acc[d.word]) acc[d.word] = []
-      acc[d.word].push(d)
+      const word = d.word
+      if (!word) return acc
+      if (!acc[word]) acc[word] = []
+      acc[word]!.push(d)
       return acc
     }, {} as Record<string, TimelineDataPoint[]>)
 
@@ -50,7 +52,7 @@ export default function DumbbellChart({ data, width }: DumbbellChartProps) {
   // ダンベルチャートレンダリング
   const renderDumbbellChart = useCallback(() => {
     const dumbbellData = prepareDumbbellData()
-    if (dumbbellData.length === 0) return null
+    if (dumbbellData.length === 0) return <></>
 
     const margin = { top: 20, right: 30, bottom: 60, left: 120 }
     const innerWidth = width - margin.left - margin.right
@@ -176,9 +178,12 @@ export default function DumbbellChart({ data, width }: DumbbellChartProps) {
       .style('font-size', '12px')
       .text('後半（悪化）')
 
+    return () => {
+      // cleanup if needed
+    }
   }, [prepareDumbbellData, width])
 
-  React.useEffect(() => {
+  useEffect(() => {
     renderDumbbellChart()
   }, [renderDumbbellChart])
 

@@ -24,9 +24,9 @@ function cosineSimilarity(vec1: number[], vec2: number[]): number {
   let norm2 = 0
   
   for (let i = 0; i < vec1.length; i++) {
-    dot += vec1[i] * vec2[i]
-    norm1 += vec1[i] * vec1[i]
-    norm2 += vec2[i] * vec2[i]
+    dot += (vec1[i] ?? 0) * (vec2[i] ?? 0)
+    norm1 += (vec1[i] ?? 0) * (vec1[i] ?? 0)
+    norm2 += (vec2[i] ?? 0) * (vec2[i] ?? 0)
   }
   
   const denom = Math.sqrt(norm1) * Math.sqrt(norm2)
@@ -86,6 +86,8 @@ export function calculateWordDistances(results: WordResponseData[]): WordDistanc
     for (let j = i + 1; j < words.length; j++) {
       const word1 = words[i]
       const word2 = words[j]
+
+      if (!word1 || !word2) continue
 
       const results1 = wordGroups.get(word1) || []
       const results2 = wordGroups.get(word2) || []
@@ -148,8 +150,8 @@ export function calculateWordDistances(results: WordResponseData[]): WordDistanc
         wPhysiological * physiologicalDistance
 
       pairs.push({
-        word1,
-        word2,
+        word1: word1 ?? '',
+        word2: word2 ?? '',
         totalDistance,
         emotionDistance,
         reactionValueDistance,

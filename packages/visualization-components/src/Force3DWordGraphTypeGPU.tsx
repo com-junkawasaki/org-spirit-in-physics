@@ -247,9 +247,11 @@ function Force3DWordGraphTypeGPU({
     if (nodes.length > 0) {
       let maxDistance = 0
       for (let i = 0; i < nodes.length; i++) {
-        const dx = nodes[i].initial?.[0] || 0 - cameraRef.current.centerX
-        const dy = nodes[i].initial?.[1] || 0 - cameraRef.current.centerY
-        const dz = nodes[i].initial?.[2] || 0 - cameraRef.current.centerZ
+        const node = nodes[i]
+        if (!node) continue
+        const dx = (node.initial?.[0] ?? 0) - cameraRef.current.centerX
+        const dy = (node.initial?.[1] ?? 0) - cameraRef.current.centerY
+        const dz = (node.initial?.[2] ?? 0) - cameraRef.current.centerZ
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
         maxDistance = Math.max(maxDistance, distance)
       }
@@ -318,7 +320,9 @@ function Force3DWordGraphTypeGPU({
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0]
-        isVisibleRef.current = entry.isIntersecting
+        if (entry) {
+          isVisibleRef.current = entry.isIntersecting
+        }
       },
       {
         // 少し余裕を持たせて、完全に画面外になる前に停止
@@ -391,9 +395,9 @@ function Force3DWordGraphTypeGPU({
             pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
             pos[i * 3 + 2] = r * Math.cos(phi)
           }
-          centerX += pos[i * 3]
-          centerY += pos[i * 3 + 1]
-          centerZ += pos[i * 3 + 2]
+          centerX += pos[i * 3] ?? 0
+          centerY += pos[i * 3 + 1] ?? 0
+          centerZ += pos[i * 3 + 2] ?? 0
           vel[i * 3] = 0
           vel[i * 3 + 1] = 0
           vel[i * 3 + 2] = 0
@@ -410,9 +414,9 @@ function Force3DWordGraphTypeGPU({
             // ノード群のサイズに基づいてカメラ距離を調整
             let maxDistance = 0
             for (let i = 0; i < N; i++) {
-              const dx = pos[i * 3] - cameraRef.current.centerX
-              const dy = pos[i * 3 + 1] - cameraRef.current.centerY
-              const dz = pos[i * 3 + 2] - cameraRef.current.centerZ
+              const dx = (pos[i * 3] ?? 0) - cameraRef.current.centerX
+              const dy = (pos[i * 3 + 1] ?? 0) - cameraRef.current.centerY
+              const dz = (pos[i * 3 + 2] ?? 0) - cameraRef.current.centerZ
               const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
               maxDistance = Math.max(maxDistance, distance)
             }
@@ -709,15 +713,15 @@ function Force3DWordGraphTypeGPU({
             const node = nodesRef.current[i]
             const pos = positionsRef.current
             const vel = velocitiesRef.current
-            if (!pos || !vel) continue
+            if (!pos || !vel || !node) continue
             const ix = i * 3
             
-            nodeData[i * 8] = pos[ix]
-            nodeData[i * 8 + 1] = pos[ix + 1]
-            nodeData[i * 8 + 2] = pos[ix + 2]
-            nodeData[i * 8 + 3] = vel[ix]
-            nodeData[i * 8 + 4] = vel[ix + 1]
-            nodeData[i * 8 + 5] = vel[ix + 2]
+            nodeData[i * 8] = pos[ix] ?? 0
+            nodeData[i * 8 + 1] = pos[ix + 1] ?? 0
+            nodeData[i * 8 + 2] = pos[ix + 2] ?? 0
+            nodeData[i * 8 + 3] = vel[ix] ?? 0
+            nodeData[i * 8 + 4] = vel[ix + 1] ?? 0
+            nodeData[i * 8 + 5] = vel[ix + 2] ?? 0
             nodeData[i * 8 + 6] = node.scale
             nodeData[i * 8 + 7] = node.fixed ? 1 : 0
           }
@@ -726,6 +730,7 @@ function Force3DWordGraphTypeGPU({
           const linkData = new Float32Array(l * 6) // src(1) + dst(1) + weight(1) + mode(1) + L0(1) + k(1)
           for (let k = 0; k < l; k++) {
             const link = linksRef.current[k]
+            if (!link) continue
             linkData[k * 6] = link.source
             linkData[k * 6 + 1] = link.target
             linkData[k * 6 + 2] = link.weight
@@ -774,23 +779,23 @@ function Force3DWordGraphTypeGPU({
               const node = nodesRef.current[i]
               const pos = positionsRef.current
               const vel = velocitiesRef.current
-              if (!pos || !vel) continue
+              if (!pos || !vel || !node) continue
               const ix = i * 3
               
-              if (node?.fixed && node.initial) {
-                pos[ix] = node.initial[0]
-                pos[ix + 1] = node.initial[1]
-                pos[ix + 2] = node.initial[2]
+              if (node.fixed && node.initial) {
+                pos[ix] = node.initial[0] ?? 0
+                pos[ix + 1] = node.initial[1] ?? 0
+                pos[ix + 2] = node.initial[2] ?? 0
                 vel[ix] = 0
                 vel[ix + 1] = 0
                 vel[ix + 2] = 0
               } else {
-                pos[ix] = result[i * 8]
-                pos[ix + 1] = result[i * 8 + 1]
-                pos[ix + 2] = result[i * 8 + 2]
-                vel[ix] = result[i * 8 + 3]
-                vel[ix + 1] = result[i * 8 + 4]
-                vel[ix + 2] = result[i * 8 + 5]
+                pos[ix] = result[i * 8] ?? 0
+                pos[ix + 1] = result[i * 8 + 1] ?? 0
+                pos[ix + 2] = result[i * 8 + 2] ?? 0
+                vel[ix] = result[i * 8 + 3] ?? 0
+                vel[ix + 1] = result[i * 8 + 4] ?? 0
+                vel[ix + 2] = result[i * 8 + 5] ?? 0
               }
             }
             
@@ -812,21 +817,23 @@ function Force3DWordGraphTypeGPU({
               for (let iter = 0; iter < iters; iter++) {
                 for (let i = 0; i < n; i++) {
                   const ni = nodesRef.current[i]
+                  if (!ni) continue
                   const ix = i * 3
                   for (let j = i + 1; j < n; j++) {
                     const nj = nodesRef.current[j]
+                    if (!nj) continue
                     const jx = j * 3
 
                     // 固定ノード同士はスキップ
-                    if ((ni?.fixed) && (nj?.fixed)) continue
+                    if (ni.fixed && nj.fixed) continue
 
-                    const dx = pos[ix] - pos[jx]
-                    const dy = pos[ix + 1] - pos[jx + 1]
-                    const dz = pos[ix + 2] - pos[jx + 2]
+                    const dx = (pos[ix] ?? 0) - (pos[jx] ?? 0)
+                    const dy = (pos[ix + 1] ?? 0) - (pos[jx + 1] ?? 0)
+                    const dz = (pos[ix + 2] ?? 0) - (pos[jx + 2] ?? 0)
                     const dist = Math.hypot(dx, dy, dz) || 1
 
-                    const ri = (ni?.scale ?? 1) * scaleFactor
-                    const rj = (nj?.scale ?? 1) * scaleFactor
+                    const ri = (ni.scale ?? 1) * scaleFactor
+                    const rj = (nj.scale ?? 1) * scaleFactor
                     const minD = Math.max(10, baseMin + ri + rj)
 
                     if (dist < minD) {
@@ -837,22 +844,22 @@ function Force3DWordGraphTypeGPU({
                       const corr = overlap * stiffness
 
                       // どちらかが固定なら、動ける方だけ動かす
-                      if (ni?.fixed && !nj?.fixed) {
-                        pos[jx] -= ux * corr
-                        pos[jx + 1] -= uy * corr
-                        pos[jx + 2] -= uz * corr
-                      } else if (!ni?.fixed && nj?.fixed) {
-                        pos[ix] += ux * corr
-                        pos[ix + 1] += uy * corr
-                        pos[ix + 2] += uz * corr
-                      } else if (!ni?.fixed && !nj?.fixed) {
+                      if (ni.fixed && !nj.fixed) {
+                        pos[jx] = (pos[jx] ?? 0) - ux * corr
+                        pos[jx + 1] = (pos[jx + 1] ?? 0) - uy * corr
+                        pos[jx + 2] = (pos[jx + 2] ?? 0) - uz * corr
+                      } else if (!ni.fixed && nj.fixed) {
+                        pos[ix] = (pos[ix] ?? 0) + ux * corr
+                        pos[ix + 1] = (pos[ix + 1] ?? 0) + uy * corr
+                        pos[ix + 2] = (pos[ix + 2] ?? 0) + uz * corr
+                      } else if (!ni.fixed && !nj.fixed) {
                         const half = corr * 0.5
-                        pos[ix] += ux * half
-                        pos[ix + 1] += uy * half
-                        pos[ix + 2] += uz * half
-                        pos[jx] -= ux * half
-                        pos[jx + 1] -= uy * half
-                        pos[jx + 2] -= uz * half
+                        pos[ix] = (pos[ix] ?? 0) + ux * half
+                        pos[ix + 1] = (pos[ix + 1] ?? 0) + uy * half
+                        pos[ix + 2] = (pos[ix + 2] ?? 0) + uz * half
+                        pos[jx] = (pos[jx] ?? 0) - ux * half
+                        pos[jx + 1] = (pos[jx + 1] ?? 0) - uy * half
+                        pos[jx + 2] = (pos[jx + 2] ?? 0) - uz * half
                       }
                     }
                   }
@@ -867,15 +874,20 @@ function Force3DWordGraphTypeGPU({
             let maxDeg = 0
             for (let k = 0; k < l; k++) {
               const link = linksRef.current[k]
+              if (!link) continue
               const w = Math.max(1e-3, link.weight || 1)
-              if (link.source >= 0 && link.source < n) deg[link.source] += w
-              if (link.target >= 0 && link.target < n) deg[link.target] += w
+              if (link.source >= 0 && link.source < n) {
+                deg[link.source] = (deg[link.source] ?? 0) + w
+              }
+              if (link.target >= 0 && link.target < n) {
+                deg[link.target] = (deg[link.target] ?? 0) + w
+              }
             }
-            for (let i = 0; i < n; i++) maxDeg = Math.max(maxDeg, deg[i])
+            for (let i = 0; i < n; i++) maxDeg = Math.max(maxDeg, deg[i] ?? 0)
             const conn = connectivityRef.current && connectivityRef.current.length === n
               ? connectivityRef.current
               : new Float32Array(n)
-            for (let i = 0; i < n; i++) conn[i] = maxDeg > 0 ? deg[i] / maxDeg : 0
+            for (let i = 0; i < n; i++) conn[i] = maxDeg > 0 ? (deg[i] ?? 0) / maxDeg : 0
             connectivityRef.current = conn
           }
 
@@ -892,10 +904,12 @@ function Force3DWordGraphTypeGPU({
               
               // ノード描画（距離×接続度でスケーリング/濃淡）
               for (let i = 0; i < n; i++) {
+                const node = nodesRef.current[i]
+                if (!node) continue
                 const ix = i * 3
-                const x = pos[ix]
-                const y = pos[ix + 1]
-                const z = pos[ix + 2]
+                const x = pos[ix] ?? 0
+                const y = pos[ix + 1] ?? 0
+                const z = pos[ix + 2] ?? 0
                 
                 // 3D → 2D 投影（カメラ行列ベース）
                 const camera = cameraRef.current
@@ -924,7 +938,6 @@ function Force3DWordGraphTypeGPU({
                 const screenX = width / 2 + cx * zoom
                 const screenY = height / 2 + cy * zoom
                 
-                const node = nodesRef.current[i]
                 const baseRadius = Math.max(1, Math.min(10, 2 + node.scale)) * zoom
                 // 距離に応じてサイズ・アルファを調整（近い=大/濃、遠い=小/薄）
                 const maxDepth = Math.max(100, camera.distance)
@@ -960,15 +973,16 @@ function Force3DWordGraphTypeGPU({
               ctx.lineWidth = 1
               for (let k = 0; k < l; k++) {
                 const link = linksRef.current[k]
+                if (!link) continue
                 const source = link.source
                 const target = link.target
                 
-                const sx = pos[source * 3]
-                const sy = pos[source * 3 + 1]
-                const sz = pos[source * 3 + 2]
-                const tx = pos[target * 3]
-                const ty = pos[target * 3 + 1]
-                const tz = pos[target * 3 + 2]
+                const sx = pos[source * 3] ?? 0
+                const sy = pos[source * 3 + 1] ?? 0
+                const sz = pos[source * 3 + 2] ?? 0
+                const tx = pos[target * 3] ?? 0
+                const ty = pos[target * 3 + 1] ?? 0
+                const tz = pos[target * 3 + 2] ?? 0
                 
                 // カメラ参照を取得
                 const camera = cameraRef.current
@@ -1270,7 +1284,10 @@ function Force3DWordGraphTypeGPU({
       }
     })
     Object.keys(emotionStats).forEach(emotion => {
-      emotionStats[emotion].avgScore /= emotionStats[emotion].count
+      const stat = emotionStats[emotion]
+      if (stat) {
+        stat.avgScore /= stat.count
+      }
     })
     
     // デバッグ情報を更新（状態として更新してリアルタイム表示を確保）
@@ -1485,6 +1502,10 @@ export default React.memo(Force3DWordGraphTypeGPU, (prevProps, nextProps) => {
   for (let i = 0; i < prevProps.nodes.length; i++) {
     const prev = prevProps.nodes[i]
     const next = nextProps.nodes[i]
+    if (!prev || !next) {
+      if (prev !== next) return false
+      continue
+    }
     if (
       prev.id !== next.id ||
       prev.label !== next.label ||
@@ -1497,9 +1518,9 @@ export default React.memo(Force3DWordGraphTypeGPU, (prevProps, nextProps) => {
     // initial位置の比較（配列の深い比較）
     if (prev.initial && next.initial) {
       if (
-        prev.initial[0] !== next.initial[0] ||
-        prev.initial[1] !== next.initial[1] ||
-        prev.initial[2] !== next.initial[2]
+        (prev.initial[0] ?? 0) !== (next.initial[0] ?? 0) ||
+        (prev.initial[1] ?? 0) !== (next.initial[1] ?? 0) ||
+        (prev.initial[2] ?? 0) !== (next.initial[2] ?? 0)
       ) {
         return false // 再レンダリングが必要
       }
@@ -1512,6 +1533,10 @@ export default React.memo(Force3DWordGraphTypeGPU, (prevProps, nextProps) => {
   for (let i = 0; i < prevProps.links.length; i++) {
     const prev = prevProps.links[i]
     const next = nextProps.links[i]
+    if (!prev || !next) {
+      if (prev !== next) return false
+      continue
+    }
     if (
       prev.source !== next.source ||
       prev.target !== next.target ||

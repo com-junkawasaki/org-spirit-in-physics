@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import { useCallback } from 'react'
 import * as d3 from 'd3'
 import type { TimelineDataPoint, KPICalculations } from './types'
 
