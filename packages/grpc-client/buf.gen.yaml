@@ -1,0 +1,13 @@
+version: v2
+plugins:
+  - plugin: es
+    out: src/generated
+    opt:
+      - target=ts
+      - import_extension=.js
+  - plugin: connect-es
+    out: src/generated
+    opt:
+      - target=ts
+      - import_extension=.js
+

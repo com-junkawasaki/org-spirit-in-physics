@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package spirit_in_physics.participants.v1;
+
+import "common.proto";
+
+// Participant message
+message Participant {
+  string id = 1; // UUID as string
+  optional int32 age = 2;
+  optional string gender = 3;
+  optional string handedness = 4; // ENUM as string
+  bool is_public = 5;
+  string created_at = 6; // RFC3339 timestamp
+  string updated_at = 7; // RFC3339 timestamp
+}
+
+// Request to get all participants
+message GetParticipantsRequest {
+  // Empty - no filters for now
+}
+
+// Response with list of participants
+message GetParticipantsResponse {
+  repeated Participant participants = 1;
+}
+
+// Request to get a single participant
+message GetParticipantRequest {
+  string id = 1; // UUID as string
+}
+
+// Response with single participant
+message GetParticipantResponse {
+  optional Participant participant = 1;
+}
+
+// Request to create a new participant
+message CreateParticipantRequest {
+  optional string id = 1; // UUID as string, optional (will be generated if not provided)
+  string signature = 2;
+  common.v1.JsonValue agreements = 3;
+  string agreed_at = 4; // RFC3339 timestamp
+  optional bool is_public = 5; // Defaults to true if not provided
+}
+
+// Response with created participant
+message CreateParticipantResponse {
+  Participant participant = 1;
+}
+
+// Participant service definition
+service ParticipantService {
+  // Get all participants
+  rpc GetParticipants(GetParticipantsRequest) returns (GetParticipantsResponse);
+  
+  // Get a participant by ID
+  rpc GetParticipant(GetParticipantRequest) returns (GetParticipantResponse);
+  
+  // Create a new participant
+  rpc CreateParticipant(CreateParticipantRequest) returns (CreateParticipantResponse);
+}
+

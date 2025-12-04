@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package spirit_in_physics.common.v1;
+
+// Common types used across services
+
+// UUID representation as string
+message Uuid {
+  string value = 1;
+}
+
+// JSON scalar equivalent - represented as string
+message JsonValue {
+  string value = 1;
+}
+
+// Error details for Connect protocol
+message ErrorDetail {
+  string code = 1;
+  string message = 2;
+  map<string, string> metadata = 3;
+}
+

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package spirit_in_physics.stimulus_words.v1;
+
+// Stimulus word message
+message StimulusWord {
+  int32 id = 1;
+  string japanese = 2;
+  string english = 3;
+  string pronunciation = 4;
+}
+
+// Request to get all stimulus words
+message GetStimulusWordsRequest {
+  // Empty - no filters for now
+}
+
+// Response with list of stimulus words
+message GetStimulusWordsResponse {
+  repeated StimulusWord words = 1;
+}
+
+// Request to get a single stimulus word
+message GetStimulusWordRequest {
+  int32 id = 1;
+}
+
+// Response with single stimulus word
+message GetStimulusWordResponse {
+  optional StimulusWord word = 1;
+}
+
+// Stimulus word service definition
+service StimulusWordService {
+  // Get all stimulus words
+  rpc GetStimulusWords(GetStimulusWordsRequest) returns (GetStimulusWordsResponse);
+  
+  // Get a stimulus word by ID
+  rpc GetStimulusWord(GetStimulusWordRequest) returns (GetStimulusWordResponse);
+}
+

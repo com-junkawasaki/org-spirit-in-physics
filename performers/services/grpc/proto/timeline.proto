@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package spirit_in_physics.timeline.v1;
+
+import "common.proto";
+
+// Emotion data point
+message EmotionData {
+  string name = 1;
+  double score = 2;
+  string file_type = 3; // ENUM as string (burst, face, language, prosody)
+  optional string color = 4; // HEX color code
+}
+
+// Physiological data point
+message PhysiologicalData {
+  optional string timestamp = 1; // RFC3339 timestamp
+  optional double value = 2;
+  optional common.v1.JsonValue metadata = 3;
+}
+
+// Timeline point
+message TimelinePoint {
+  string time = 1; // RFC3339 timestamp
+  string participant_id = 2; // UUID as string
+  string session_id = 3; // UUID as string
+  optional string word = 4;
+  optional string event_type = 5; // ENUM as string
+  optional double reaction_value = 6;
+  optional double reaction_time = 7;
+  bool has_response = 8;
+  repeated EmotionData emotions = 9;
+  repeated PhysiologicalData physiological = 10;
+  common.v1.JsonValue metadata = 11;
+}
+
+// Request to get timeline data
+message GetTimelineRequest {
+  string participant_id = 1; // UUID as string
+  optional string session_id = 2; // UUID as string
+  optional string start_time = 3; // RFC3339 timestamp
+  optional string end_time = 4; // RFC3339 timestamp
+  optional string interval = 5; // Time interval string
+}
+
+// Response with timeline points
+message GetTimelineResponse {
+  repeated TimelinePoint points = 1;
+}
+
+// Word aggregate from materialized view
+message WordAggregate {
+  string participant_id = 1; // UUID as string
+  string session_id = 2; // UUID as string
+  string word = 3;
+  int64 count = 4;
+  optional double avg_reaction_value = 5;
+  optional double sum_reaction_value = 6;
+  optional double avg_reaction_time = 7;
+  optional double sum_reaction_time = 8;
+  optional double avg_physiological = 9;
+  optional double sum_phys_abs = 10;
+  repeated double phys_series = 11; // Array of floats
+  repeated double rt_series = 12; // Array of floats
+  repeated double rv_series = 13; // Array of floats
+  string first_time = 14; // RFC3339 timestamp
+  string last_time = 15; // RFC3339 timestamp
+}
+
+// Request to get word aggregates
+message GetWordAggregatesRequest {
+  string participant_id = 1; // UUID as string
+  optional string session_id = 2; // UUID as string
+}
+
+// Response with word aggregates
+message GetWordAggregatesResponse {
+  repeated WordAggregate aggregates = 1;
+}
+
+// Emotion vector from materialized view
+message EmotionVector {
+  string participant_id = 1; // UUID as string
+  string session_id = 2; // UUID as string
+  string word = 3;
+  optional double joy_sum = 4;
+  optional double sadness_sum = 5;
+  optional double anger_sum = 6;
+  optional double fear_sum = 7;
+  optional double surprise_sum = 8;
+  optional double disgust_sum = 9;
+  optional double calm_sum = 10;
+  optional double focus_sum = 11;
+  optional double excitement_sum = 12;
+  optional double confusion_sum = 13;
+  int64 emotion_entry_count = 14;
+  optional common.v1.JsonValue emotion_by_modality = 15; // JSON object
+}
+
+// Request to get emotion vectors
+message GetEmotionVectorsRequest {
+  string participant_id = 1; // UUID as string
+  optional string session_id = 2; // UUID as string
+}
+
+// Response with emotion vectors
+message GetEmotionVectorsResponse {
+  repeated EmotionVector vectors = 1;
+}
+
+// Word statistics from materialized view
+message WordStatistics {
+  string participant_id = 1; // UUID as string
+  string session_id = 2; // UUID as string
+  string word = 3;
+  int64 count = 4;
+  optional double avg_reaction_time = 5;
+  optional double std_reaction_time = 6;
+  optional double var_reaction_time = 7;
+  optional double avg_reaction_value = 8;
+  optional double std_reaction_value = 9;
+  optional double var_reaction_value = 10;
+  optional double avg_physiological = 11;
+  optional double std_physiological = 12;
+  optional double var_physiological = 13;
+  optional double speed_index = 14;
+  repeated double phys_series = 15; // Array of floats
+  repeated double rt_series = 16; // Array of floats
+}
+
+// Request to get word statistics
+message GetWordStatisticsRequest {
+  string participant_id = 1; // UUID as string
+  optional string session_id = 2; // UUID as string
+}
+
+// Response with word statistics
+message GetWordStatisticsResponse {
+  repeated WordStatistics statistics = 1;
+}
+
+// Timeline service definition
+service TimelineService {
+  // Get timeline data for a participant and optional session
+  rpc GetTimeline(GetTimelineRequest) returns (GetTimelineResponse);
+  
+  // Get word aggregates by session (from materialized view)
+  rpc GetWordAggregates(GetWordAggregatesRequest) returns (GetWordAggregatesResponse);
+  
+  // Get emotion vectors by word (from materialized view)
+  rpc GetEmotionVectors(GetEmotionVectorsRequest) returns (GetEmotionVectorsResponse);
+  
+  // Get word statistics by session (from materialized view)
+  rpc GetWordStatistics(GetWordStatisticsRequest) returns (GetWordStatisticsResponse);
+}
+

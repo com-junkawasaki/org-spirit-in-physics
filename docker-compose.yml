@@ -89,6 +89,8 @@ services:
       - INNGEST_SIGNING_KEY=local_dev_signing_key
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
       - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      - GRPC_API_URL=http://grpc-service:8083
+      - NEXT_PUBLIC_GRPC_API_URL=http://localhost:8083
       # Supabase Configuration (hardcoded for development)
       - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
@@ -174,7 +176,7 @@ services:
       retries: 5
       start_period: 10s
 
-  # GraphQL service (Rust + async-graphql)
+  # GraphQL service (Rust + async-graphql) - DEPRECATED
   graphql-service:
     build:
       context: ./performers/services/graphql
@@ -208,6 +210,35 @@ services:
       retries: 5
       start_period: 10s
 
+  # gRPC service (Rust + tonic + tonic-web) - NEW
+  grpc-service:
+    build:
+      context: ./performers/services/grpc
+      dockerfile: Dockerfile
+    container_name: spirit-grpc-service
+    ports:
+      - "8083:8083"
+    environment:
+      # Production Supabase Database URL
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
+      - RUST_LOG=info
+      - PORT=8083
+      # Production Supabase Configuration
+      - SUPABASE_URL=${SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
+      # Production Supabase Service Role Key
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDUxNjk3MiwiZXhwIjoyMDY2MDkyOTcyfQ.7KSDYa5pxYCiA_ZtTe_8KPGBKELdj0buxba2nG7EnJc}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # Paper app (Astro)
   paper:
     build:
@@ -223,6 +254,8 @@ services:
     environment:
       - NODE_ENV=development
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      - GRPC_API_URL=http://grpc-service:8083
+      - NEXT_PUBLIC_GRPC_API_URL=http://localhost:8083
       # HMR and file watching settings for Docker
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=1000

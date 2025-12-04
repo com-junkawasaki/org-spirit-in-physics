@@ -19,7 +19,7 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
   const [selectedDataPoint, setSelectedDataPoint] = useState<TimelineDataPoint | null>(null)
   const [timeRange, setTimeRange] = useState<TimeRange | null>(null)
   const [embeddingsByWord, setEmbeddingsByWord] = useState<Record<string, number[]>>({})
-  const [debugInfo, setDebugInfo] = useState<DebugInfo>({
+  const [_debugInfo, _setDebugInfo] = useState<DebugInfo>({
     apiStatus: 'idle',
     apiResponseReceived: false,
     dataPointCount: 0,
@@ -445,7 +445,7 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
     setFilters,
     getPhysStat,
     refetchData: fetchTimelineData,
-    debugInfo
+    debugInfo: _debugInfo
   }
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import Force3DWordGraphTypeGPU from './Force3DWordGraphTypeGPU'
 import { useTimelineData } from './timeline/useTimelineData'
 import TimelineChart from './timeline/TimelineChart'

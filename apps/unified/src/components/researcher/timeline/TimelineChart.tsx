@@ -615,7 +615,7 @@ export default function TimelineChart({
           d.emotions.forEach((emotion) => {
             // fileTypeに応じて適切なスケールを選択
             let emotionYScale: d3.ScaleLinear<number, number>;
-            let baseColor: string;
+            // let baseColor: string;
             
             switch (emotion.fileType) {
               case 'burst':
@@ -942,7 +942,7 @@ export default function TimelineChart({
 
       legendItems.append('circle')
         .attr('r', 4)
-        .style('fill', d => emotionColors[d])
+        .style('fill', (d: string) => emotionColors[d] ?? '#ccc')
         .style('stroke', '#fff')
         .style('stroke-width', 1)
 

@@ -1,0 +1,26 @@
+{
+  "name": "@spirit-in-physics/grpc-client",
+  "version": "0.1.0",
+  "description": "gRPC client library for Spirit in Physics using Connect protocol",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "generate": "bash scripts/generate-proto.sh",
+    "prebuild": "npm run generate"
+  },
+  "dependencies": {
+    "@connectrpc/connect": "^1.4.0",
+    "@connectrpc/connect-web": "^1.4.0",
+    "@bufbuild/protobuf": "^2.0.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^2.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  }
+}
+
