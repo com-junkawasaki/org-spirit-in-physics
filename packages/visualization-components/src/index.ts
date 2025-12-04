@@ -2,7 +2,7 @@
 // Common visualization components package
 // Exports: TimelineVisualization, Force3DWordGraphTypeGPU, WordDistanceVisualization, types, utilities
 
-export { default as TimelineVisualization } from './TimelineVisualization'
+export { default as TimelineVisualization } from './TimelineVisualization.tsx'
 export { default as Force3DWordGraphTypeGPU } from './Force3DWordGraphTypeGPU'
 export { default as WordDistanceVisualization } from './WordDistanceVisualization'
 

@@ -4,6 +4,13 @@
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./TimelineVisualization": "./src/TimelineVisualization.tsx",
+    "./src/TimelineVisualization.tsx": "./src/TimelineVisualization.tsx",
+    "./Force3DWordGraphTypeGPU": "./src/Force3DWordGraphTypeGPU.tsx",
+    "./WordDistanceVisualization": "./src/WordDistanceVisualization.tsx"
+  },
   "scripts": {
     "type-check": "tsc --noEmit"
   },

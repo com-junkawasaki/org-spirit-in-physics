@@ -3,7 +3,6 @@
 // Timeline view component for research app
 
 import type { ExperimentalData } from '../../types/paper/experimental';
-import { TimelineVisualization } from '@spirit-in-physics/visualization-components';
 
 interface Props {
   data: ExperimentalData;
@@ -23,14 +22,36 @@ const sessionId = data.sessions.length > 0 ? data.sessions[0].id : undefined;
 ---
 
 <div class="timeline-view">
-  <TimelineVisualization
-    client:only="react"
-    participantId={participantId}
-    sessionId={sessionId}
-    width={width}
-    height={height}
-    hideFilters={true}
-  />
+  <div id="timeline-visualization-container" data-participant-id={participantId} data-session-id={sessionId} data-width={width} data-height={height}></div>
+  <script>
+    (async () => {
+      try {
+        const [{ TimelineVisualization }, ReactModule, { createRoot }] = await Promise.all([
+          import('@spirit-in-physics/visualization-components'),
+          import('react'),
+          import('react-dom/client')
+        ]);
+        const React = ReactModule.default || ReactModule;
+        // Set React to global scope for visualization-components
+        if (typeof window !== 'undefined') {
+          window.React = React;
+        }
+        const container = document.getElementById('timeline-visualization-container');
+        if (container) {
+          const root = createRoot(container);
+          root.render(React.createElement(TimelineVisualization, {
+            participantId: container.dataset.participantId,
+            sessionId: container.dataset.sessionId || undefined,
+            width: parseInt(container.dataset.width || '1000'),
+            height: parseInt(container.dataset.height || '400'),
+            hideFilters: true
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load TimelineVisualization:', error);
+      }
+    })();
+  </script>
 </div>
 
 <style>

@@ -15,14 +15,14 @@ const menuItems: MenuItem[] = [
     {
         id: 'dashboard',
         label: 'ダッシュボード',
-        href: '/dashboard',
+        href: '/researcher',
         icon: '📊',
         description: 'システム概要と統計'
     },
     {
         id: 'participants',
         label: '被験者一覧',
-        href: '/participants',
+        href: '/researcher/participants',
         icon: '👥',
         description: '参加者データ管理'
     }

@@ -3,7 +3,7 @@
 // Word distance visualization component for research app
 
 import type { ExperimentalData } from '../../types/paper/experimental';
-import { WordDistanceVisualization, calculateWordDistances } from '@spirit-in-physics/visualization-components';
+import { calculateWordDistances } from '@spirit-in-physics/visualization-components';
 
 interface Props {
   data: ExperimentalData;
@@ -28,13 +28,42 @@ const distances = calculateWordDistances(wordResponseData);
 ---
 
 <div class="word-distance-view">
-  <WordDistanceVisualization
-    client:only="react"
-    distances={distances}
-    width={width}
-    height={height}
-    topK={topK}
-  />
+  <div 
+    id="word-distance-visualization-container" 
+    data-distances={JSON.stringify(distances)}
+    data-width={width}
+    data-height={height}
+    data-top-k={topK}
+  ></div>
+  <script>
+    (async () => {
+      try {
+        const [{ WordDistanceVisualization }, ReactModule, { createRoot }] = await Promise.all([
+          import('@spirit-in-physics/visualization-components'),
+          import('react'),
+          import('react-dom/client')
+        ]);
+        const React = ReactModule.default || ReactModule;
+        // Set React to global scope for visualization-components
+        if (typeof window !== 'undefined') {
+          window.React = React;
+        }
+        const container = document.getElementById('word-distance-visualization-container');
+        if (container) {
+          const distances = JSON.parse(container.dataset.distances || '[]');
+          const root = createRoot(container);
+          root.render(React.createElement(WordDistanceVisualization, {
+            distances,
+            width: parseInt(container.dataset.width || '1000'),
+            height: parseInt(container.dataset.height || '600'),
+            topK: parseInt(container.dataset.topK || '20')
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load WordDistanceVisualization:', error);
+      }
+    })();
+  </script>
 </div>
 
 <style>
