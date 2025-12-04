@@ -4,7 +4,7 @@ import {
   analyzeAllParticipantVideos,
   loadEmotionAnalysisResults,
   generateEmotionStatistics
-} from '@/lib/emotion-analysis';
+} from '../../../../lib/participant/emotion-analysis';
 
 export const prerender = false;
 

@@ -1,8 +1,8 @@
 'use client'
 
 import { ChevronRight, Home } from 'lucide-react'
-import Link from 'next/link'
-import { cn } from '@/lib/utils'
+// import Link from 'next/link' // Removed: Next.js specific
+import { cn } from '../../../lib/utils'
 
 interface BreadcrumbItem {
   label: string
@@ -21,26 +21,26 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
       className={cn("flex items-center space-x-1 text-sm text-muted-foreground mb-6", className)}
       aria-label="Breadcrumb"
     >
-      <Link
-        href="/dashboard"
+      <a
+        href="/researcher/dashboard"
         className="flex items-center hover:text-foreground transition-colors"
       >
         <Home className="h-4 w-4 mr-1" />
         <span className="sr-only">ホーム</span>
-      </Link>
+      </a>
 
       {items.map((item, index) => (
         <div key={index} className="flex items-center">
           <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground/50" />
 
           {item.href ? (
-            <Link
+            <a
               href={item.href}
               className="flex items-center hover:text-foreground transition-colors"
             >
               {item.icon && <span className="mr-1">{item.icon}</span>}
               {item.label}
-            </Link>
+            </a>
           ) : (
             <span className="flex items-center text-foreground font-medium">
               {item.icon && <span className="mr-1">{item.icon}</span>}

@@ -74,6 +74,7 @@ export default defineConfig(async () => {
       resolve: {
         alias: {
           '@': resolve(__dirname, './src'),
+          '@/': resolve(__dirname, './src/'),
           '@spirit-in-physics/jung-voice-assessment': jungVoiceAssessmentPath,
           '@spirit-in-physics/visualization-components': visualizationComponentsPath,
         },

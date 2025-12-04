@@ -16,7 +16,7 @@ import {
   ArrowRight,
   RefreshCw
 } from 'lucide-react'
-import Link from 'next/link'
+// import Link from 'next/link' // Removed: Next.js specific
 
 // Merkle DAG: participant_overview -> participant_data_interface
 interface ParticipantSummary {

@@ -1,7 +1,7 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import Link from 'next/link'
+// import Link from 'next/link' // Removed: Next.js specific
 
 interface QuickAction {
     id: string
@@ -20,7 +20,7 @@ export function QuickActions({ actions }: QuickActionsProps) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {actions.map((action) => (
-                <Link key={action.id} href={action.href}>
+                <a key={action.id} href={action.href}>
                     <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
                         <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-lg ${action.color} text-white`}>
@@ -32,7 +32,7 @@ export function QuickActions({ actions }: QuickActionsProps) {
                             </div>
                         </div>
                     </Card>
-                </Link>
+                </a>
             ))}
         </div>
     )

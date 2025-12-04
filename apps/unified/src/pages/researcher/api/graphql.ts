@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
-import { getGraphQLApiUrl } from '@/lib/graphql/client';
-import { createClient } from '@/lib/supabase/server';
+import { getGraphQLApiUrl } from '../../../lib/researcher/graphql/client';
+import { createClient } from '../../../lib/researcher/supabase/server';
 
 export const prerender = false;
 

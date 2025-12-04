@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { serve } from 'inngest';
+import { serve } from 'inngest/astro';
 import {
   fileImportWorkflow,
   fileImportFailureWorkflow,
@@ -7,7 +7,7 @@ import {
   kernelFusionWorkflow,
   kernelFusionFailureWorkflow,
   inngest,
-} from '@/lib/workflows';
+} from '../../../lib/researcher/workflows';
 
 const handler = serve({
   client: inngest,
@@ -26,14 +26,14 @@ const handler = serve({
 });
 
 export const GET: APIRoute = async ({ request }) => {
-  return handler(request);
+  return handler({ request });
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  return handler(request);
+  return handler({ request });
 };
 
 export const PUT: APIRoute = async ({ request }) => {
-  return handler(request);
+  return handler({ request });
 };
 

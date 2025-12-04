@@ -5,9 +5,7 @@
 export class ExperimentSupervisor {
   // 実験開始時のinvalidate
   static async startExperiment(participantId: string) {
-    // 関連するキャッシュを無効化
-    revalidateTag(`experiment-${participantId}`);
-    revalidateTag('experiment-list');
+    // Astro: Cache revalidation not needed in static mode
   }
 
   // 実験完了時のinvalidate

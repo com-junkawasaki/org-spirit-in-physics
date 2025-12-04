@@ -1,15 +1,15 @@
 import type { APIRoute } from 'astro';
-import { serve } from 'inngest';
-import { inngest } from '@/lib/inngest';
+import { serve } from 'inngest/astro';
+import { inngest } from '../../../lib/participant/inngest';
 import {
   videoAnalysisWorkflow,
   videoAnalysisFailureWorkflow,
   resultsProcessingWorkflow
-} from '@/lib/supervisors';
+} from '../../../lib/participant/supervisors';
 import {
   batchAnalysisWorkflow,
   batchAnalysisFailureWorkflow
-} from '@/lib/supervisors';
+} from '../../../lib/participant/supervisors';
 
 // Inngest APIルート（v3形式）
 const handler = serve({
@@ -27,14 +27,14 @@ const handler = serve({
 });
 
 export const GET: APIRoute = async ({ request }) => {
-  return handler(request);
+  return handler({ request });
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  return handler(request);
+  return handler({ request });
 };
 
 export const PUT: APIRoute = async ({ request }) => {
-  return handler(request);
+  return handler({ request });
 };
 

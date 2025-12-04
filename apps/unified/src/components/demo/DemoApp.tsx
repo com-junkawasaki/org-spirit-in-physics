@@ -25,7 +25,7 @@ import {
   addWordEmotionDataAtom,
   clearWordEmotionDataAtom,
   type BatchQueueItem,
-} from '../../lib/demo/store/demo-atoms'
+} from '../../../lib/demo/store/demo-atoms'
 
 // BPM 85 = 85 beats per minute = 60000ms / 85 = ~706ms per beat
 const BPM_85_INTERVAL_MS = Math.round(60000 / 85) // ~706ms

@@ -5,8 +5,8 @@ import {
   parseWordResponsesFromEvents,
   getParticipantStatistics,
   initializeDatabase
-} from '@/lib/data-loader';
-import { getEmotionStatisticsFromGraphQL } from '@/lib/emotion-analysis';
+} from '../../../../lib/participant/data-loader';
+import { getEmotionStatisticsFromGraphQL } from '../../../../lib/participant/emotion-analysis';
 
 export const prerender = false;
 

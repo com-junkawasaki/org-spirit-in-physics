@@ -9,7 +9,7 @@ import type { WordEmotionData } from '../types/demo'
 import { JUNG_STIMULUS_WORDS } from '../lib/jung-words'
 import { EMOTION_KEYS } from '@spirit-in-physics/visualization-components'
 import { useAtomValue } from 'jotai'
-import { wordEmotionDataAtom, wordEmotionDataLengthAtom, lastUpdateTimeAtom } from '../store/demo-atoms'
+import { wordEmotionDataAtom, wordEmotionDataLengthAtom, lastUpdateTimeAtom } from '../../lib/demo/store/demo-atoms'
 
 interface ComplexForce3DProps {
   width?: number
