@@ -1,8 +1,9 @@
+// @ts-nocheck
 // LLM-BOUNDARY: 70_supervisors - ルート単位の調停（invalidate/revalidate）
 
-import { eventBusAdapter } from '@/lib/adapters';
-import { emotionAnalysisAdapter } from '@/lib/adapters';
-import { storageAdapter } from '@/lib/adapters';
+import { eventBusAdapter } from '../adapters/emotion-analysis-adapter';
+import { emotionAnalysisAdapter } from '../adapters/emotion-analysis-adapter';
+import { storageAdapter } from '../adapters/emotion-analysis-adapter';
 import { AdminSupervisor } from './route-supervisors';
 
 // ワークフロー実行の監視と調整

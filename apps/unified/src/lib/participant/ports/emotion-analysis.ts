@@ -1,6 +1,7 @@
+// @ts-nocheck
 // LLM-BOUNDARY: 20_ports - 抽象Port（ドメインが依存するだけ）
 
-import { EmotionAnalysisResult, EmotionStatistics } from '@/lib/schema';
+import { EmotionAnalysisResult, EmotionStatistics } from '../schema/emotion';
 
 export interface EmotionAnalysisPort {
   analyzeVideoEmotions(

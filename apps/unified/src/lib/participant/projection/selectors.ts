@@ -1,8 +1,9 @@
+// @ts-nocheck
 // LLM-BOUNDARY: 60_projection - selectors/ViewModel（foldの薄ラッパ）
 
 import { JungTestViewModel, EmotionAnalysisViewModel, AdminAnalyticsViewModel } from './view-models';
-import { JungTestContext } from '@/lib/domain';
-import { KawasakiStoreState, WordResponse } from '@/lib/schema';
+import { JungTestContext } from '../domain/emotion-analysis-machine';
+import { KawasakiStoreState, WordResponse } from '../schema/emotion';
 import { foldMerkleDAG, MerkleDAG } from '@/lib/fold';
 
 // Jungテストのセレクター

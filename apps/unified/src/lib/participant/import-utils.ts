@@ -84,13 +84,19 @@ export function parseCSVFile(content: string): Array<Record<string, string>> {
   }
 
   // ヘッダー行をパース
-  const headers = parseCSVLine(lines[0]);
+  const firstLine = lines[0];
+  if (!firstLine) {
+    throw new Error('CSV file is empty');
+  }
+  const headers = parseCSVLine(firstLine);
   
   // データ行をパース
   const records: Array<Record<string, string>> = [];
   
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const lineData = lines[i];
+    if (!lineData) continue;
+    const line = lineData.trim();
     if (!line) {
       // 空行をスキップ
       continue;

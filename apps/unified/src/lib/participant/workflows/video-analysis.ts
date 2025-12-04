@@ -1,4 +1,5 @@
-import { inngest, events, VideoAnalysisEvent, AnalysisResultEvent } from '../inngest';
+import { inngest, events } from '../inngest';
+import type { VideoAnalysisEvent, AnalysisResultEvent } from '../inngest';
 import { analyzeVideoEmotions, saveEmotionAnalysisResult } from '../emotion-analysis';
 import type { EmotionAnalysisResult } from '../schema/emotion';
 import { existsSync } from 'fs';

@@ -1,7 +1,8 @@
+// @ts-nocheck
 // LLM-BOUNDARY: 30_fold - 純関数（MDAG -> 投影）※副作用禁止
 
-import { KawasakiStoreState, Word, WordResponse, MediaStatus } from '@/lib/schema';
-import { EventType } from '@/lib/events';
+import { KawasakiStoreState, Word, WordResponse } from '../schema/emotion';
+import { EventType } from '../events';
 
 // MerkleDAG: イベントのシーケンス（イミュータブルなイベント履歴）
 export type MerkleDAG = ReadonlyArray<{

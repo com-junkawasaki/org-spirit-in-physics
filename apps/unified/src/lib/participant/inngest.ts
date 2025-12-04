@@ -3,11 +3,6 @@ import { Inngest } from 'inngest';
 // Inngestクライアントの初期化（ローカル開発用）
 export const inngest = new Inngest({
   id: 'spirit-in-physics',
-  name: 'Spirit-in-Physics Analysis Pipeline',
-  concurrency: 5, // 同時実行数
-  retries: 3, // リトライ回数
-  // ローカル開発環境の設定
-  baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:25250' : undefined,
 });
 
 // イベントタイプの定義

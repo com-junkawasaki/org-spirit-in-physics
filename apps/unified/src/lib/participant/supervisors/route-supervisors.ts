@@ -4,23 +4,23 @@
 // 実験ページのスーパーバイザー
 export class ExperimentSupervisor {
   // 実験開始時のinvalidate
-  static async startExperiment(participantId: string) {
+  static async startExperiment(_participantId: string) {
     // Astro: Cache revalidation not needed in static mode
   }
 
   // 実験完了時のinvalidate
-  static async completeExperiment(participantId: string) {
+  static async completeExperiment(_participantId: string) {
     // Astro: Cache revalidation not needed in static mode
     // Redirect handled client-side
   }
 
   // セッションデータ保存時のinvalidate
-  static async saveSessionData(participantId: string) {
+  static async saveSessionData(_participantId: string) {
     // Astro: Cache revalidation not needed in static mode
   }
 
   // 参加者初期化時のinvalidate
-  static async initializeParticipant(participantId: string) {
+  static async initializeParticipant(_participantId: string) {
     // Astro: Cache revalidation not needed in static mode
   }
 }
@@ -33,7 +33,7 @@ export class AdminSupervisor {
   }
 
   // 感情分析完了時のinvalidate
-  static async completeEmotionAnalysis(participantId: string) {
+  static async completeEmotionAnalysis(_participantId: string) {
     // Astro: Cache revalidation not needed in static mode
   }
 
@@ -46,12 +46,12 @@ export class AdminSupervisor {
 // 汎用的なキャッシュ管理
 export class CacheSupervisor {
   // パスベースのrevalidate
-  static async revalidateExperimentPaths(participantId?: string) {
+  static async revalidateExperimentPaths(_participantId?: string) {
     // Astro: Cache revalidation not needed in static mode
   }
 
   // タグベースのrevalidate
-  static async revalidateTags(tags: string[]) {
+  static async revalidateTags(_tags: string[]) {
     // Astro: Cache revalidation not needed in static mode
   }
 

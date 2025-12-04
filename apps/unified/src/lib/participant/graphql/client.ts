@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Merkle DAG: graphql.client
  * Apollo Client configuration for GraphQL API

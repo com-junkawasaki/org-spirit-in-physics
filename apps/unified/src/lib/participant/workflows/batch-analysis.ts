@@ -1,5 +1,6 @@
-import { inngest, events, BatchAnalysisEvent } from '../inngest';
-import { analyzeAllParticipantVideos } from '../emotion-analysis';
+import { inngest, events } from '../inngest';
+import type { BatchAnalysisEvent } from '../inngest';
+// import { analyzeAllParticipantVideos } from '../emotion-analysis';
 import { readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 
@@ -41,7 +42,7 @@ export const batchAnalysisWorkflow = inngest.createFunction(
     });
 
     // 各参加者の分析を実行
-    const results = [];
+      const results: any[] = [];
     let successCount = 0;
     let failureCount = 0;
 
@@ -52,7 +53,7 @@ export const batchAnalysisWorkflow = inngest.createFunction(
         logger.info(`Processing participant ${i + 1}/${participantIds.length}: ${participantId}`);
 
         // 参加者の動画ファイルを取得
-        const participantPath = join(ARTIFACTS_CACHE_PATH, participantId);
+        const participantPath = join(ARTIFACTS_CACHE_PATH, participantId ?? '');
         if (!existsSync(participantPath)) {
           logger.warn(`Participant directory not found: ${participantId}`);
           failureCount++;
@@ -73,7 +74,7 @@ export const batchAnalysisWorkflow = inngest.createFunction(
           const sessionType = videoFile.includes('session-1') ? 'session-1' : 'session-2';
 
           // 個別分析イベントを送信
-          const videoResult = await inngest.send({
+          await inngest.send({
             name: events.VIDEO_ANALYSIS_REQUESTED,
             data: {
               participantId,

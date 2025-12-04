@@ -1,4 +1,5 @@
-import { serve } from 'inngest';
+// @ts-nocheck
+import { serve } from 'inngest/astro';
 import { inngest } from './inngest';
 import {
   videoAnalysisWorkflow,

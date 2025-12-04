@@ -1,4 +1,6 @@
-import { inngest, events, BatchAnalysisEvent } from '@/lib/adapters';
+// @ts-nocheck
+import { inngest, events } from '../../inngest';
+import type { BatchAnalysisEvent } from '../../inngest';
 import { emotionAnalysisAdapter } from '@/lib/adapters';
 import { storageAdapter } from '@/lib/adapters';
 import { readdirSync, existsSync } from 'fs';

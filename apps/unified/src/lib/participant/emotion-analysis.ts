@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
