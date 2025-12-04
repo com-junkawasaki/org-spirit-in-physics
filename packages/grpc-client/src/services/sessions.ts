@@ -3,18 +3,17 @@
 
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
-import { SessionService } from "../generated/sessions_pb.js";
+import { SessionService } from "../generated/sessions_connect.js";
 import {
-  GetSessionsRequestSchema,
+  GetSessionsRequest,
   type GetSessionsResponse,
-  CreateSessionRequestSchema,
+  CreateSessionRequest,
   type CreateSessionResponse,
 } from "../generated/sessions_pb.js";
 
 // Re-export types for hooks
 export type { GetSessionsResponse, CreateSessionResponse } from "../generated/sessions_pb.js";
-import { JsonValueSchema } from "../generated/common_pb.js";
-import { create } from "@bufbuild/protobuf";
+import { JsonValue } from "../generated/common_pb.js";
 
 // Create client instance
 let clientInstance: any = null;
@@ -29,7 +28,7 @@ function getClient() {
 
 export async function getSessions(participantId: string): Promise<GetSessionsResponse> {
   const client = getClient();
-  const request = create(GetSessionsRequestSchema, { participantId });
+  const request = new GetSessionsRequest({ participantId });
   return await client.getSessions(request);
 }
 
@@ -40,8 +39,8 @@ export async function createSession(data: {
   events: any[]; // JSON array
 }): Promise<CreateSessionResponse> {
   const client = getClient();
-  const eventsJson = create(JsonValueSchema, { value: JSON.stringify(data.events) });
-  const request = create(CreateSessionRequestSchema, {
+  const eventsJson = new JsonValue({ value: JSON.stringify(data.events) });
+  const request = new CreateSessionRequest({
     participantId: data.participantId,
     ...(data.sessionIndex !== undefined && { sessionIndex: data.sessionIndex }),
     startTs: BigInt(data.startTs),

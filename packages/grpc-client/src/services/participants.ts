@@ -3,17 +3,16 @@
 
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
-import { ParticipantService } from "../generated/participants_pb.js";
+import { ParticipantService } from "../generated/participants_connect.js";
 import {
   type GetParticipantsResponse,
   type GetParticipantResponse,
   type CreateParticipantResponse,
-  GetParticipantsRequestSchema,
-  GetParticipantRequestSchema,
-  CreateParticipantRequestSchema,
+  GetParticipantsRequest,
+  GetParticipantRequest,
+  CreateParticipantRequest,
 } from "../generated/participants_pb.js";
-import { JsonValueSchema } from "../generated/common_pb.js";
-import { create } from "@bufbuild/protobuf";
+import { JsonValue } from "../generated/common_pb.js";
 
 // Re-export types for hooks
 export type { GetParticipantsResponse, GetParticipantResponse, CreateParticipantResponse } from "../generated/participants_pb.js";
@@ -31,13 +30,13 @@ function getClient() {
 
 export async function getParticipants(): Promise<GetParticipantsResponse> {
   const client = getClient();
-  const request = create(GetParticipantsRequestSchema, {});
+  const request = new GetParticipantsRequest({});
   return await client.getParticipants(request);
 }
 
 export async function getParticipant(id: string): Promise<GetParticipantResponse> {
   const client = getClient();
-  const request = create(GetParticipantRequestSchema, { id });
+  const request = new GetParticipantRequest({ id });
   return await client.getParticipant(request);
 }
 
@@ -49,8 +48,8 @@ export async function createParticipant(data: {
   isPublic?: boolean;
 }): Promise<CreateParticipantResponse> {
   const client = getClient();
-  const agreements = create(JsonValueSchema, { value: JSON.stringify(data.agreements) });
-  const request = create(CreateParticipantRequestSchema, {
+  const agreements = new JsonValue({ value: JSON.stringify(data.agreements) });
+  const request = new CreateParticipantRequest({
     ...(data.id !== undefined && { id: data.id }),
     signature: data.signature,
     agreements,

@@ -3,15 +3,15 @@
 
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
-import { TimelineService } from "../generated/timeline_pb.js";
+import { TimelineService } from "../generated/timeline_connect.js";
 import {
-  GetTimelineRequestSchema,
+  GetTimelineRequest,
   type GetTimelineResponse,
-  GetWordAggregatesRequestSchema,
+  GetWordAggregatesRequest,
   type GetWordAggregatesResponse,
-  GetEmotionVectorsRequestSchema,
+  GetEmotionVectorsRequest,
   type GetEmotionVectorsResponse,
-  GetWordStatisticsRequestSchema,
+  GetWordStatisticsRequest,
   type GetWordStatisticsResponse,
 } from "../generated/timeline_pb.js";
 
@@ -22,7 +22,6 @@ export type {
   GetEmotionVectorsResponse,
   GetWordStatisticsResponse,
 } from "../generated/timeline_pb.js";
-import { create } from "@bufbuild/protobuf";
 
 // Create client instance
 let clientInstance: any = null;
@@ -43,7 +42,7 @@ export async function getTimeline(params: {
   interval?: string;
 }): Promise<GetTimelineResponse> {
   const client = getClient();
-  const request = create(GetTimelineRequestSchema, {
+  const request = new GetTimelineRequest({
     participantId: params.participantId,
     ...(params.sessionId !== undefined && { sessionId: params.sessionId }),
     ...(params.startTime !== undefined && { startTime: params.startTime }),
@@ -58,7 +57,7 @@ export async function getWordAggregates(params: {
   sessionId?: string;
 }): Promise<GetWordAggregatesResponse> {
   const client = getClient();
-  const request = create(GetWordAggregatesRequestSchema, {
+  const request = new GetWordAggregatesRequest({
     participantId: params.participantId,
     ...(params.sessionId !== undefined && { sessionId: params.sessionId }),
   });
@@ -70,7 +69,7 @@ export async function getEmotionVectors(params: {
   sessionId?: string;
 }): Promise<GetEmotionVectorsResponse> {
   const client = getClient();
-  const request = create(GetEmotionVectorsRequestSchema, {
+  const request = new GetEmotionVectorsRequest({
     participantId: params.participantId,
     ...(params.sessionId !== undefined && { sessionId: params.sessionId }),
   });
@@ -82,7 +81,7 @@ export async function getWordStatistics(params: {
   sessionId?: string;
 }): Promise<GetWordStatisticsResponse> {
   const client = getClient();
-  const request = create(GetWordStatisticsRequestSchema, {
+  const request = new GetWordStatisticsRequest({
     participantId: params.participantId,
     ...(params.sessionId !== undefined && { sessionId: params.sessionId }),
   });

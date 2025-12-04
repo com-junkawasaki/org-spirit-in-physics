@@ -3,14 +3,13 @@
 
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
-import { StimulusWordService } from "../generated/stimulus_words_pb.js";
+import { StimulusWordService } from "../generated/stimulus_words_connect.js";
 import {
-  GetStimulusWordsRequestSchema,
+  GetStimulusWordsRequest,
   type GetStimulusWordsResponse,
-  GetStimulusWordRequestSchema,
+  GetStimulusWordRequest,
   type GetStimulusWordResponse,
 } from "../generated/stimulus_words_pb.js";
-import { create } from "@bufbuild/protobuf";
 
 // Create client instance
 let clientInstance: any = null;
@@ -25,12 +24,12 @@ function getClient() {
 
 export async function getStimulusWords(): Promise<GetStimulusWordsResponse> {
   const client = getClient();
-  const request = create(GetStimulusWordsRequestSchema, {});
+  const request = new GetStimulusWordsRequest({});
   return await client.getStimulusWords(request) as GetStimulusWordsResponse;
 }
 
 export async function getStimulusWord(id: number): Promise<GetStimulusWordResponse> {
   const client = getClient();
-  const request = create(GetStimulusWordRequestSchema, { id });
+  const request = new GetStimulusWordRequest({ id });
   return await client.getStimulusWord(request) as GetStimulusWordResponse;
 }
