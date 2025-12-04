@@ -4,22 +4,14 @@ import type {
   TimelineDataPoint,
   TimelineVisualizationProps,
   FilterSettings,
-<<<<<<< HEAD
-  TimeRange
-=======
   TimeRange,
   DebugInfo
->>>>>>> origin/main
 } from './types'
 
 // Merkle DAG: timeline.hooks.data
 // 時系列データの取得と状態管理フック
 
-<<<<<<< HEAD
 export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisualizationProps, 'participantId' | 'sessionId'>) {
-=======
-export function useTimelineData({ participantId }: Pick<TimelineVisualizationProps, 'participantId'>) {
->>>>>>> origin/main
   const [mounted, setMounted] = useState(false)
   const [data, setData] = useState<TimelineDataPoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,8 +19,6 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
   const [selectedDataPoint, setSelectedDataPoint] = useState<TimelineDataPoint | null>(null)
   const [timeRange, setTimeRange] = useState<TimeRange | null>(null)
   const [embeddingsByWord, setEmbeddingsByWord] = useState<Record<string, number[]>>({})
-<<<<<<< HEAD
-=======
   const [debugInfo, setDebugInfo] = useState<DebugInfo>({
     apiStatus: 'idle',
     apiResponseReceived: false,
@@ -39,7 +29,6 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
     emotionDataStatus: 'pending',
     physiologicalDataStatus: 'pending'
   })
->>>>>>> origin/main
   const [filters, setFilters] = useState<FilterSettings>({
     emotions: true,
     physiological: true,
@@ -48,21 +37,12 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
     reactionTime: true,
     physiologicalThreshold: true,
     emotionChange: true,
-<<<<<<< HEAD
     range: 200,
-=======
-    range: 100,
->>>>>>> origin/main
     timeScale: 1.0,
     verticalScale: 1.0,
     showEmotionDetails: true,
     showWordLabels: true
   })
-
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
   const getPhysStat = (p: TimelineDataPoint['physiological'], key: 'average' | 'max' | 'min'): number => {
     if (Array.isArray(p)) return 0
     if (p && typeof p === 'object') {
@@ -75,7 +55,6 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
   useEffect(() => { setMounted(true) }, [])
 
   const fetchTimelineData = useCallback(async () => {
-<<<<<<< HEAD
     // participantIdのバリデーション
     if (!participantId || typeof participantId !== 'string' || participantId.trim() === '') {
       setError('参加者IDが指定されていません')
@@ -393,7 +372,6 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
       return
     }
 
-=======
     try {
       setLoading(true)
       setDebugInfo(prev => ({
@@ -567,7 +545,6 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
 
   // Word2Vec 埋め込み（平均）を単語ごとに取得
   const fetchWordEmbeddings = useCallback(async () => {
->>>>>>> origin/main
     try {
       const res = await fetch(`/api/participants/${participantId}/word2vec`)
       const json = await res.json()
@@ -589,25 +566,14 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
     }
   }, [participantId])
 
-<<<<<<< HEAD
   // 時間範囲を初期化（全範囲を表示）
-=======
-  // 時間範囲を初期化
->>>>>>> origin/main
   const initializeTimeRange = useCallback(() => {
     if (data.length === 0) return
 
     const timeExtent = d3.extent(data, d => d.timestamp) as [number, number]
-<<<<<<< HEAD
     const initialRange = {
       start: timeExtent[0], // 開始時刻
       end: timeExtent[1]    // 終了時刻（全範囲）
-=======
-    const range = timeExtent[1] - timeExtent[0]
-    const initialRange = {
-      start: timeExtent[0] + range * 0.2, // 20%から開始
-      end: timeExtent[1] - range * 0.2   // 80%で終了
->>>>>>> origin/main
     }
     setTimeRange(initialRange)
   }, [data])
@@ -641,12 +607,8 @@ export function useTimelineData({ participantId }: Pick<TimelineVisualizationPro
     filters,
     setFilters,
     getPhysStat,
-<<<<<<< HEAD
-    refetchData: fetchTimelineData
-=======
     refetchData: fetchTimelineData,
     debugInfo
->>>>>>> origin/main
   }
 }
 

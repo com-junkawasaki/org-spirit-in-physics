@@ -153,7 +153,6 @@ export interface Force3DGraphData {
   links: WordLink[]
 }
 
-<<<<<<< HEAD
 export interface WordDistancePair {
   word1: string
   word2: string
@@ -172,7 +171,8 @@ export interface ModalityEmotionStats {
   wordsWithEmotions: number
   wordsWithoutEmotions: number
   sampleWordsWithoutEmotions: string[]
-=======
+}
+
 export interface DebugInfo {
   apiStatus: 'loading' | 'success' | 'error' | 'idle'
   apiResponseReceived: boolean
@@ -197,7 +197,6 @@ export interface DebugInfo {
     truncated?: boolean
     originalSize?: number
   }
->>>>>>> origin/main
 }
 
 // Merkle DAG: timeline.types -> definitions_complete

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // Neo4jの直接使用を削除し、GraphQL経由のみに変更
 // import { createNeo4jClient } from './neo4j'
 
@@ -11,9 +10,6 @@ import type {
   GetSessionsQueryResult,
   GetTimelineQueryResult,
 } from '@/generated/graphql';
-=======
-import { createNeo4jClient } from './neo4j'
->>>>>>> origin/main
 
 export interface AnalysisResult {
   id: string
@@ -38,10 +34,7 @@ export interface ParticipantData {
   sessionCount: number
   responseCount: number
   averageSpiritProbability: number
-<<<<<<< HEAD
   lastActivity?: number | null
-=======
->>>>>>> origin/main
 }
 
 export interface ExperimentSession {
@@ -101,7 +94,6 @@ export interface DashboardStats {
   }
 }
 
-<<<<<<< HEAD
 // Server-side data fetching functions - GraphQL経由のみ
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
@@ -181,93 +173,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       reaction_time: 0,
       skin_potential: 0,
       emotion: 0,
-=======
-// Server-side data fetching functions - Neogmaベース
-export async function getDashboardStats(): Promise<DashboardStats> {
-  try {
-    const client = createNeo4jClient()
-
-    // Helper function to convert Neo4j integers to JavaScript numbers
-    const toNumber = (value: any): number => {
-      if (typeof value === 'object' && value !== null && 'low' in value) {
-        return value.low
-      }
-      return Number(value) || 0
-    }
-
-    // Get participants count
-    const participantsQuery = `MATCH (p:Participant) RETURN count(p) as total`
-    const participantsResult = await client.query(participantsQuery)
-    const totalParticipants = toNumber(participantsResult[0]?.total)
-
-    // Get sessions count
-    const sessionsQuery = `MATCH (s:ExperimentSession) RETURN count(s) as total`
-    const sessionsResult = await client.query(sessionsQuery)
-    const totalSessions = toNumber(sessionsResult[0]?.total)
-
-    // Get responses count
-    const responsesQuery = `MATCH (r:Response) RETURN count(r) as total`
-    const responsesResult = await client.query(responsesQuery)
-    const totalResponses = toNumber(responsesResult[0]?.total)
-
-    // Cypherクエリを使ってデータを取得（Neogmaのwhere句でnullチェックがサポートされていないため）
-    const emotionQuery = `
-      MATCH (r:Response)
-      WHERE r.emotion IS NOT NULL
-      RETURN r.emotion as emotion
-    `
-    const spiritQuery = `
-      MATCH (r:Response)
-      WHERE r.spirit_probability IS NOT NULL
-      RETURN r.spirit_probability as spirit_probability
-    `
-    const componentsQuery = `
-      MATCH (r:Response)
-      WHERE r.word2vec_component IS NOT NULL AND
-            r.reaction_time_component IS NOT NULL AND
-            r.skin_potential_component IS NOT NULL AND
-            r.emotion_component IS NOT NULL
-      RETURN r.word2vec_component as word2vec_component,
-             r.reaction_time_component as reaction_time_component,
-             r.skin_potential_component as skin_potential_component,
-             r.emotion_component as emotion_component
-    `
-
-    const [
-      responsesWithEmotions,
-      responsesWithSpirit,
-      responsesWithComponents
-    ] = await Promise.all([
-      client.query(emotionQuery),
-      client.query(spiritQuery),
-      client.query(componentsQuery),
-    ])
-
-    // 感情分布を集計
-    const emotionDistribution: Record<string, number> = {}
-    responsesWithEmotions.forEach(response => {
-      if (response.emotion) {
-        emotionDistribution[response.emotion] = (emotionDistribution[response.emotion] || 0) + 1
-      }
-    })
-
-    // 平均Spirit確率を計算
-    const averageSpiritProbability = responsesWithSpirit.length > 0
-      ? responsesWithSpirit.reduce((sum, r) => sum + (r.spirit_probability || 0), 0) / responsesWithSpirit.length
-      : 0.5
-
-    // コンポーネントの平均を計算
-    const componentAverages = responsesWithComponents.length > 0 ? {
-      word2vec: responsesWithComponents.reduce((sum, r) => sum + (r.word2vec_component || 0), 0) / responsesWithComponents.length,
-      reaction_time: responsesWithComponents.reduce((sum, r) => sum + (r.reaction_time_component || 0), 0) / responsesWithComponents.length,
-      skin_potential: responsesWithComponents.reduce((sum, r) => sum + (r.skin_potential_component || 0), 0) / responsesWithComponents.length,
-      emotion: responsesWithComponents.reduce((sum, r) => sum + (r.emotion_component || 0), 0) / responsesWithComponents.length,
-    } : {
-      word2vec: 0.1,
-      reaction_time: 0.2,
-      skin_potential: 0.1,
-      emotion: 0.3,
->>>>>>> origin/main
     }
 
     return {
@@ -298,7 +203,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-<<<<<<< HEAD
     // Use GraphQL to fetch participants
     const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
     
@@ -410,29 +314,10 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
             averageSpiritProbability: 0,
             lastActivity: null,
           } as ParticipantData
-=======
-    const client = createNeo4jClient()
-    const participants = await client.getParticipants()
-
-    // For each participant, get detailed data
-    const participantsWithData = await Promise.all(
-      participants.map(async (participant) => {
-        const participantId = participant.participant_id
-        const participantData = await getParticipantData(participantId)
-        return participantData || {
-          id: participantId,
-          name: `Participant ${participantId.slice(0, 8)}`,
-          sessions: [],
-          analysisRuns: [],
-          sessionCount: 0,
-          responseCount: 0,
-          averageSpiritProbability: 0,
->>>>>>> origin/main
         }
       })
     )
 
-<<<<<<< HEAD
     const validParticipants = participantsWithData.filter(Boolean) as ParticipantData[]
     console.log(`[getAllParticipants] Returning ${validParticipants.length} participants with data`)
     return validParticipants
@@ -443,18 +328,12 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
       console.error('[getAllParticipants] Error stack:', error.stack)
     }
     // Return empty array instead of throwing to prevent API route from crashing
-=======
-    return participantsWithData.filter(Boolean) as ParticipantData[]
-  } catch (error) {
-    console.error('Failed to fetch all participants:', error)
->>>>>>> origin/main
     return []
   }
 }
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-<<<<<<< HEAD
     // GraphQL経由でデータを取得
     const { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } = await import('./graphql/client')
 
@@ -502,111 +381,27 @@ export async function getParticipantData(participantId: string): Promise<Partici
     // セッション配列を作成
     const experimentSessions: ExperimentSession[] = sessions.map(session => {
       const sessionId = session.id
-=======
-    const client = createNeo4jClient()
-
-    // 参加者詳細を取得
-    const participant = await client.getParticipantDetails(participantId)
-    if (!participant) return null
-
-    // セッションを取得（Experiment階層経由）
-    const sessionsQuery = `
-      MATCH (p:Participant {id: $participantId})-[:HAS_EXPERIMENT]->(e:Experiment)-[:HAS_SESSION]->(s:ExperimentSession)
-      RETURN s, e
-      ORDER BY s.start_ts DESC
-    `
-    const sessionsResult = await client.query(sessionsQuery, { participantId })
-    const dbSessions = sessionsResult?.map((record: any) => {
-      const session = record.s
-      const properties = session && typeof session === 'object' && 'properties' in session
-        ? session.properties
-        : session
-      return {
-        id: properties.id,
-        participant_id: properties.participant_id,
-        start_ts: properties.start_ts,
-        end_ts: properties.end_ts,
-        status: properties.status,
-        total_responses: properties.total_responses,
-        completed_responses: properties.completed_responses,
-        created_at: properties.created_at,
-      }
-    }) || []
-
-    // レスポンスを取得
-    const responses = await client.getParticipantResponses(participantId)
-
-    // Group responses by session
-    const sessionMap: Record<string, ResponseData[]> = {}
-    responses.forEach(response => {
-      const sessionId = response.session_id || 'unknown'
-      if (!sessionMap[sessionId]) {
-        sessionMap[sessionId] = []
-      }
-      sessionMap[sessionId].push({
-        id: response.id,
-        stimulus_word: response.stimulus_word,
-        response_word: response.response_word,
-        reaction_time_ms: response.reaction_time_ms || 0,
-        skin_potential: 0, // Placeholder - 生理データ統合時に実装
-        emotion: response.emotion || '',
-        emotion_confidence: response.emotion_confidence || 0,
-        skinPotentialTimeseries: [], // Placeholder - 時系列データ統合時に実装
-        emotionTimeseries: [] // Placeholder - 時系列データ統合時に実装
-      })
-    })
-
-    // Create sessions array - include both sessions from database and those inferred from responses
-    const sessions: ExperimentSession[] = dbSessions.map((dbSession: any) => {
-      const sessionId = dbSession.id
->>>>>>> origin/main
       const sessionResponses = sessionMap[sessionId] || []
 
       return {
         id: sessionId,
         session_id: sessionId,
-<<<<<<< HEAD
         session_type: 'experiment',
         start_time: session.startTs ? new Date(session.startTs).toISOString() : null,
         end_time: session.endTs ? new Date(session.endTs).toISOString() : null,
-=======
-        session_type: 'word_association', // 固定値として設定
-        start_time: dbSession.start_ts || null,
-        end_time: dbSession.end_ts || null,
->>>>>>> origin/main
         responses: sessionResponses,
         responseCount: sessionResponses.length,
       }
     })
 
-<<<<<<< HEAD
     // 分析結果を作成
     const responses = timeline.filter(p => p.hasResponse)
-=======
-    // セッションが存在しないレスポンスがある場合の処理
-    Object.entries(sessionMap).forEach(([sessionId, sessionResponses]) => {
-      if (!sessions.find(s => s.id === sessionId)) {
-        sessions.push({
-          id: sessionId,
-          session_id: sessionId,
-          session_type: 'word_association',
-          start_time: null,
-          end_time: null,
-          responses: sessionResponses,
-          responseCount: sessionResponses.length,
-        })
-      }
-    })
-
-    // 分析結果の作成 - Spirit確率を含む実際のデータを使用
->>>>>>> origin/main
     const analysisRuns: AnalysisRun[] = [{
       id: 'latest',
       run_id: 'latest',
       status: 'completed',
       created_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
-<<<<<<< HEAD
       results: responses.map((point, index) => {
         const primaryEmotion = Array.isArray(point.emotions) && point.emotions.length > 0
           ? point.emotions[0]
@@ -636,39 +431,12 @@ export async function getParticipantData(participantId: string): Promise<Partici
       .map(p => p.reactionValue ?? 0)
     const averageSpiritProbability = reactionValues.length > 0
       ? reactionValues.reduce((sum, val) => sum + val, 0) / reactionValues.length
-=======
-      results: responses.map(response => ({
-        id: response.id,
-        stimulus_word: response.stimulus_word,
-        response_word: response.response_word,
-        p_value: response.spirit_probability || 0.5,
-        word2vec_component: 0, // TODO: 実際のWord2Vecコンポーネントを実装
-        reaction_time_component: response.reaction_time_ms ? 10 / (1 + response.reaction_time_ms / 1000) : 0,
-        skin_potential_component: 0, // TODO: 生理データコンポーネントを実装
-        emotion_component: response.emotion_confidence || 0,
-        emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence || 0 } : {},
-        physiological_data: {}, // TODO: 生理データを統合
-        created_at: response.event_ts || new Date().toISOString(),
-        reaction_time_ms: response.reaction_time_ms,
-      }))
-    }]
-
-    const sessionCount = sessions.length
-    const responseCount = responses.length
-    const averageSpiritProbability = responses.length > 0
-      ? responses.reduce((sum, response) => sum + (response.spirit_probability || 0), 0) / responses.length
->>>>>>> origin/main
       : 0
 
     return {
       id: participant.id,
-<<<<<<< HEAD
       name: `Participant ${participantId.slice(0, 8)}`,
       sessions: experimentSessions,
-=======
-      name: `Participant ${participantId.slice(0, 8)}`, // デフォルト名
-      sessions,
->>>>>>> origin/main
       analysisRuns,
       sessionCount,
       responseCount,
@@ -684,7 +452,6 @@ export async function getResponseTimeseries(responseId: string): Promise<{
   skinPotential: SkinPotentialPoint[]
   emotions: EmotionPoint[]
 }> {
-<<<<<<< HEAD
   try {
     // GraphQL経由でタイムラインデータを取得
     // responseIdからparticipantIdとsessionIdを抽出（形式: "sessionId-timestamp" または単純なID）
@@ -706,31 +473,15 @@ export async function getResponseTimeseries(responseId: string): Promise<{
       skinPotential: [],
       emotions: []
     }
-=======
-  // Placeholder implementation for TerminusDB
-  // TODO: Implement proper timeseries data retrieval from TerminusDB
-  console.log('Getting timeseries data for response:', responseId)
-
-  return {
-    skinPotential: [], // Placeholder
-    emotions: [] // Placeholder
->>>>>>> origin/main
   }
 }
 
 export async function getAnalysisResults(participantId?: string): Promise<AnalysisResult[]> {
   try {
-<<<<<<< HEAD
-=======
-    // For now, return mock analysis results since we don't have analysis results in TerminusDB yet
-    // In the future, this should query actual analysis results from TerminusDB
-
->>>>>>> origin/main
     if (participantId) {
       return getAnalysisResultsForParticipant(participantId)
     }
 
-<<<<<<< HEAD
     // 全参加者のタイムラインデータを取得して分析結果を生成
     const { graphqlClient, GetParticipantsDocument, GetTimelineDocument } = await import('./graphql/client')
     
@@ -778,39 +529,6 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
       const bTime = new Date(b.created_at).getTime()
       return bTime - aTime // 新しい順
     })
-=======
-    // Mock data for all participants
-    return [
-      {
-        id: 'mock-result-1',
-        stimulus_word: 'love',
-        response_word: 'peace',
-        p_value: 0.85,
-        word2vec_component: 0.3,
-        reaction_time_component: 0.2,
-        skin_potential_component: 0.1,
-        emotion_component: 0.25,
-        emotion_data: { joy: 0.8, sadness: 0.1 },
-        physiological_data: { gsr: 2.3 },
-        created_at: new Date().toISOString(),
-        reaction_time_ms: 1200
-      },
-      {
-        id: 'mock-result-2',
-        stimulus_word: 'hate',
-        response_word: 'anger',
-        p_value: 0.72,
-        word2vec_component: 0.2,
-        reaction_time_component: 0.15,
-        skin_potential_component: 0.12,
-        emotion_component: 0.25,
-        emotion_data: { anger: 0.7, fear: 0.2 },
-        physiological_data: { gsr: 3.1 },
-        created_at: new Date().toISOString(),
-        reaction_time_ms: 950
-      }
-    ]
->>>>>>> origin/main
   } catch (error) {
     console.error('Failed to get analysis results:', error)
     return []
@@ -819,7 +537,6 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
 
 export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
   try {
-<<<<<<< HEAD
     // GraphQL経由でタイムラインデータを取得
     const { graphqlClient, GetTimelineDocument } = await import('./graphql/client')
     
@@ -849,27 +566,6 @@ export async function getAnalysisResultsForParticipant(participantId: string): P
           reaction_time_ms: point.reactionTime || undefined,
         }
       })
-=======
-    // 参加者のレスポンスを取得
-    const client = createNeo4jClient()
-    const responses = await client.getParticipantResponses(participantId)
-
-    // 実際のデータに基づいて分析結果を生成
-    return responses.map((response, index) => ({
-      id: `analysis-${participantId}-${index}`,
-      stimulus_word: response.stimulus_word,
-      response_word: response.response_word,
-      p_value: response.spirit_probability || 0.5,
-      word2vec_component: 0, // TODO: 実際のWord2Vecコンポーネントを実装
-      reaction_time_component: response.reaction_time_ms ? 10 / (1 + response.reaction_time_ms / 1000) : 0,
-      skin_potential_component: 0, // TODO: 生理データコンポーネントを実装
-      emotion_component: response.emotion_confidence || 0,
-      emotion_data: response.emotion ? { [response.emotion]: response.emotion_confidence || 0 } : {},
-      physiological_data: {}, // TODO: 生理データを統合
-      created_at: response.event_ts || new Date().toISOString(),
-      reaction_time_ms: response.reaction_time_ms,
-    }))
->>>>>>> origin/main
   } catch (error) {
     console.error('Failed to get analysis results for participant:', error)
     return []

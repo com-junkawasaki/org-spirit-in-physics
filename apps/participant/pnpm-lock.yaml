@@ -8,18 +8,15 @@ importers:
 
   .:
     dependencies:
-<<<<<<< HEAD
       '@apollo/client':
         specifier: ^4.0.9
         version: 4.0.9(graphql-ws@6.0.6(graphql@16.12.0)(ws@8.18.3))(graphql@16.12.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(rxjs@7.8.2)
-      '@inlang/paraglide-next':
-        specifier: ^0.8.1
-        version: 0.8.1(next@14.2.3(@babel/core@7.28.5)(@opentelemetry/api@1.9.0)(@playwright/test@1.56.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
-=======
       '@clerk/nextjs':
         specifier: 6.34.0
         version: 6.34.0(next@14.2.3(@opentelemetry/api@1.9.0)(@playwright/test@1.56.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
->>>>>>> origin/main
+      '@inlang/paraglide-next':
+        specifier: ^0.8.1
+        version: 0.8.1(next@14.2.3(@babel/core@7.28.5)(@opentelemetry/api@1.9.0)(@playwright/test@1.56.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
       '@radix-ui/react-checkbox':
         specifier: ^1.3.2
         version: 1.3.3(@types/react@19.1.8)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -2064,10 +2061,9 @@ packages:
   '@sqlite.org/sqlite-wasm@3.48.0-build4':
     resolution: {integrity: sha512-hI6twvUkzOmyGZhQMza1gpfqErZxXRw6JEsiVjUbo7tFanVD+8Oil0Ih3l2nGzHdxPI41zFmfUQG7GHqhciKZQ==}
     hasBin: true
-=======
+
   '@stablelib/base64@1.0.1':
     resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
->>>>>>> origin/main
 
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
@@ -2839,11 +2835,10 @@ packages:
 
   cross-fetch@3.2.0:
     resolution: {integrity: sha512-Q+xVJLoGOeIMXZmbUK4HYk+69cQH6LudR0Vu/pRm2YlU/hDV9CiS0gKUMaWY5f2NeUH9C1nV3bsTlCo0FsTV1Q==}
-=======
+
   cookie@1.0.2:
     resolution: {integrity: sha512-9Kr/j4O16ISv8zBBhJoi4bXOYNTkFLOqSL3UDB0njXxCXNezjeyVrJyGOWtgfs/q2km1gwBcfH8q1yEGoMYunA==}
     engines: {node: '>=18'}
->>>>>>> origin/main
 
   cross-fetch@4.1.0:
     resolution: {integrity: sha512-uKm5PU+MHTootlWEY+mZ4vvXoCn4fLQxT9dSc1sXVMSFkINTJVN8cAQROpwcKm8bJ/c7rgZVIBWzH5T78sNZZw==}
@@ -2995,11 +2990,10 @@ packages:
   detect-indent@6.1.0:
     resolution: {integrity: sha512-reYkTUJAZb9gUuZ2RvVCNhVHdg62RHnJ7WJl8ftMi4diZ6NWlciOzQN88pUhSELEwflJht4oQDv0F0BMlwaYtA==}
     engines: {node: '>=8'}
-=======
+
   dequal@2.0.3:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
     engines: {node: '>=6'}
->>>>>>> origin/main
 
   detect-node-es@1.1.0:
     resolution: {integrity: sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ==}
@@ -3857,11 +3851,10 @@ packages:
 
   js-sha256@0.11.1:
     resolution: {integrity: sha512-o6WSo/LUvY2uC4j7mO50a2ms7E/EAdbP0swigLV+nzHKTTaYnaLIWJ02VdXrsJX0vGedDESQnLsOekr94ryfjg==}
-=======
+
   js-cookie@3.0.5:
     resolution: {integrity: sha512-cEiJEAEoIbWfCZYKWhVwFuvPX1gETRYPw6LlaTKoxD3s2AkXzkCjnp6h0V77ozyqj0jakteJ4YqDJT830+lVGw==}
     engines: {node: '>=14'}
->>>>>>> origin/main
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -4844,12 +4837,11 @@ packages:
   sync-fetch@0.6.0-2:
     resolution: {integrity: sha512-c7AfkZ9udatCuAy9RSfiGPpeOKKUAUK5e1cXadLOGUjasdxqYqAK0jTNkM/FSEyJ3a5Ra27j/tw/PS0qLmaF/A==}
     engines: {node: '>=18'}
-=======
+
   swr@2.3.4:
     resolution: {integrity: sha512-bYd2lrhc+VarcpkgWclcUi92wYCpOgMws9Sd1hG1ntAu0NEy+14CbotuFjshBU2kt9rYj9TSmDcybpxpeTU1fg==}
     peerDependencies:
       react: ^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
->>>>>>> origin/main
 
   tailwind-merge@3.3.1:
     resolution: {integrity: sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g==}
@@ -7692,9 +7684,8 @@ snapshots:
       - use-sync-external-store
 
   '@sqlite.org/sqlite-wasm@3.48.0-build4': {}
-=======
+
   '@stablelib/base64@1.0.1': {}
->>>>>>> origin/main
 
   '@standard-schema/spec@1.0.0': {}
 
@@ -8527,9 +8518,8 @@ snapshots:
       node-fetch: 2.7.0
     transitivePeerDependencies:
       - encoding
-=======
+
   cookie@1.0.2: {}
->>>>>>> origin/main
 
   cross-fetch@4.1.0:
     dependencies:
@@ -8653,9 +8643,8 @@ snapshots:
   deprecation@2.3.1: {}
 
   detect-indent@6.1.0: {}
-=======
+
   dequal@2.0.3: {}
->>>>>>> origin/main
 
   detect-node-es@1.1.0: {}
 
@@ -9652,9 +9641,8 @@ snapshots:
   jiti@2.6.1: {}
 
   js-sha256@0.11.1: {}
-=======
+
   js-cookie@3.0.5: {}
->>>>>>> origin/main
 
   js-tokens@4.0.0: {}
 
@@ -10694,13 +10682,12 @@ snapshots:
       node-fetch: 3.3.2
       timeout-signal: 2.0.0
       whatwg-mimetype: 4.0.0
-=======
+
   swr@2.3.4(react@18.2.0):
     dependencies:
       dequal: 2.0.3
       react: 18.2.0
       use-sync-external-store: 1.6.0(react@18.2.0)
->>>>>>> origin/main
 
   tailwind-merge@3.3.1: {}
 

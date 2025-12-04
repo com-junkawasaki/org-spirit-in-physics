@@ -2,7 +2,6 @@
 const nextConfig = {
   // Configure `pageExtensions` to include MDX files
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-<<<<<<< HEAD
   // Transpile Apollo Client packages
   transpilePackages: ['@apollo/client'],
   webpack: (config, { isServer, dev }) => {
@@ -50,9 +49,6 @@ const nextConfig = {
 
     return config;
   },
-=======
-  // Optionally, add any other Next.js config below
->>>>>>> origin/main
 }
 
 export default nextConfig 

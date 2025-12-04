@@ -1,15 +1,11 @@
 import React, { useCallback, useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import type { TimelineDataPoint, FilterSettings, TimeRange } from './types'
-<<<<<<< HEAD
 import { getEmotionColor } from '@/lib/utils'
-=======
->>>>>>> origin/main
 
 // Merkle DAG: timeline.components.timeline_chart
 // 時系列チャートコンポーネント
 
-<<<<<<< HEAD
 /**
  * タイムスタンプをDateオブジェクトに変換（ミリ秒単位を前提）
  */
@@ -29,9 +25,6 @@ function toDate(ts: number | null | undefined): Date {
   }
   return date
 }
-
-=======
->>>>>>> origin/main
 interface TimelineChartProps {
   data: TimelineDataPoint[]
   filters: FilterSettings
@@ -41,10 +34,7 @@ interface TimelineChartProps {
   onDataPointSelect: (point: TimelineDataPoint | null) => void
   onTooltipShow: (event: MouseEvent, point: TimelineDataPoint) => void
   onTooltipHide: () => void
-<<<<<<< HEAD
   onTimeRangeChange?: (range: TimeRange | null) => void
-=======
->>>>>>> origin/main
 }
 
 export default function TimelineChart({
@@ -53,9 +43,6 @@ export default function TimelineChart({
   width,
   height,
   timeRange,
-  onDataPointSelect,
-  onTooltipShow,
-<<<<<<< HEAD
   onTooltipHide,
   onTimeRangeChange
 }: TimelineChartProps) {
@@ -75,33 +62,6 @@ export default function TimelineChart({
 
     const svg = d3.select(overviewSvgRef.current)
     svg.selectAll('*').remove()
-=======
-  onTooltipHide
-}: TimelineChartProps) {
-  const svgRef = useRef<SVGSVGElement>(null)
-  const overviewSvgRef = useRef<SVGSVGElement>(null)
-
-  const renderOverviewChart = useCallback(() => {
-    if (!overviewSvgRef.current) return
-
-    const svg = d3.select(overviewSvgRef.current)
-    svg.selectAll('*').remove()
-    svg.attr('width', width).attr('height', 80)
-
-    // データが空の場合はメッセージを表示
-    if (data.length === 0) {
-      const g = svg.append('g')
-        .attr('transform', `translate(${width / 2}, 40)`)
-      
-      g.append('text')
-        .attr('text-anchor', 'middle')
-        .style('font-size', '12px')
-        .style('fill', '#9ca3af')
-        .text('データなし')
-      
-      return
-    }
->>>>>>> origin/main
 
     const margin = { top: 10, right: 20, bottom: 30, left: 20 }
     const overviewWidth = width - margin.left - margin.right
@@ -114,7 +74,6 @@ export default function TimelineChart({
 
     // 時間範囲（x は単調増加前提のため昇順に整列）
     const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp)
-<<<<<<< HEAD
     const extent = d3.extent(sorted, d => toDate(d.timestamp))
     if (!extent[0] || !extent[1]) {
       return // データが無効な場合は何も描画しない
@@ -159,22 +118,6 @@ export default function TimelineChart({
         const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue)
         return !isNaN(date.getTime()) && val
       })
-=======
-    const timeExtent = d3.extent(sorted, d => new Date(d.timestamp)) as [Date, Date]
-    const xScale = d3.scaleTime()
-      .domain(timeExtent)
-      .range([0, overviewWidth])
-
-    // 反応値のスケール
-    const yScale = d3.scaleLinear()
-      .domain(d3.extent(data, d => d.reactionValue) as [number, number])
-      .range([overviewHeight, 0])
-
-    // メインライン
-    const line = d3.line<TimelineDataPoint>()
-      .x(d => xScale(new Date(d.timestamp)))
-      .y(d => yScale(d.reactionValue))
->>>>>>> origin/main
       .curve(d3.curveMonotoneX)
 
     g.append('path')
@@ -187,7 +130,6 @@ export default function TimelineChart({
 
     // 選択範囲のハイライト
     if (timeRange) {
-<<<<<<< HEAD
       const startDate = toDate(timeRange.start)
       const endDate = toDate(timeRange.end)
       g.append('rect')
@@ -195,13 +137,6 @@ export default function TimelineChart({
         .attr('x', xScale(startDate))
         .attr('y', 0)
         .attr('width', xScale(endDate) - xScale(startDate))
-=======
-      g.append('rect')
-        .attr('class', 'brush-area')
-        .attr('x', xScale(new Date(timeRange.start)))
-        .attr('y', 0)
-        .attr('width', xScale(new Date(timeRange.end)) - xScale(new Date(timeRange.start)))
->>>>>>> origin/main
         .attr('height', overviewHeight)
         .style('fill', '#3b82f6')
         .style('opacity', 0.2)
@@ -214,14 +149,13 @@ export default function TimelineChart({
       .attr('class', 'x-axis-overview')
       .attr('transform', `translate(0,${overviewHeight})`)
       .call(d3.axisBottom(xScale)
-        .tickFormat(d3.timeFormat('%H:%M'))
+        .tickFormat(d3.timeFormat('%H:%M') as (domainValue: Date | d3.NumberValue, index: number) => string)
         .ticks(5)
       )
       .selectAll('text')
       .style('font-size', '10px')
       .style('fill', '#666')
 
-<<<<<<< HEAD
     // Brush機能を追加
     const brush = d3.brushX()
       .extent([[0, 0], [overviewWidth, overviewHeight]])
@@ -275,12 +209,12 @@ export default function TimelineChart({
       const expectedX1 = xScale(endDate)
       
       // 現在のbrushの選択範囲を取得
-      const currentSelection = d3.brushSelection(brushGroup.node() as any)
+      const currentSelection = d3.brushSelection(brushGroup.node() as Element)
       
       // 選択範囲が異なる場合のみ更新（無限ループを防ぐ）
       if (!currentSelection || 
-          Math.abs(currentSelection[0] - expectedX0) > 1 || 
-          Math.abs(currentSelection[1] - expectedX1) > 1) {
+          Math.abs((currentSelection[0] as number) - expectedX0) > 1 || 
+          Math.abs((currentSelection[1] as number) - expectedX1) > 1) {
         isUpdatingBrushRef.current = true
         brushGroup.call(brush.move, [expectedX0, expectedX1])
         // 次のフレームでフラグをリセット
@@ -290,59 +224,23 @@ export default function TimelineChart({
       }
     }
 
-  }, [data, width, timeRange])
+  }, [data, width, timeRange, onTimeRangeChange])
 
   const renderTimeline = useCallback(() => {
     if (!svgRef.current || data.length === 0) return
-=======
-  }, [data, width, timeRange])
-
-  const renderTimeline = useCallback(() => {
-    if (!svgRef.current) return
->>>>>>> origin/main
 
     const svg = d3.select(svgRef.current)
     svg.selectAll('*').remove()
-
-<<<<<<< HEAD
-=======
-    // データが空の場合はメッセージを表示
-    if (data.length === 0) {
-      svg.attr('width', width).attr('height', height)
-      const g = svg.append('g')
-        .attr('transform', `translate(${width / 2}, ${height / 2})`)
-      
-      g.append('text')
-        .attr('text-anchor', 'middle')
-        .attr('dy', '-10px')
-        .style('font-size', '16px')
-        .style('fill', '#6b7280')
-        .style('font-weight', '500')
-        .text('データがありません')
-      
-      g.append('text')
-        .attr('text-anchor', 'middle')
-        .attr('dy', '15px')
-        .style('font-size', '14px')
-        .style('fill', '#9ca3af')
-        .text('時系列データを読み込んでください')
-      
-      return
-    }
-
-
->>>>>>> origin/main
     const margin = { top: 20, right: 20, bottom: 60, left: 60 }
     const innerWidth = width - margin.left - margin.right
     const innerHeight = height - margin.top - margin.bottom
 
-<<<<<<< HEAD
-          // フィルタリングされたデータ（無効なtimestampを除外）
-          const filteredData = (timeRange
-            ? data.filter(d => d.timestamp >= timeRange.start && d.timestamp <= timeRange.end)
-            : data
-          ).filter(d => d.timestamp != null && typeof d.timestamp === 'number' && !isNaN(d.timestamp))
-          const filteredDataSorted = [...filteredData].sort((a, b) => a.timestamp - b.timestamp)
+    // フィルタリングされたデータ（無効なtimestampを除外）
+    const filteredData = (timeRange
+      ? data.filter(d => d.timestamp >= timeRange.start && d.timestamp <= timeRange.end)
+      : data
+    ).filter(d => d.timestamp != null && typeof d.timestamp === 'number' && !isNaN(d.timestamp))
+    const filteredDataSorted = [...filteredData].sort((a, b) => a.timestamp - b.timestamp)
 
     // データがない場合の処理
     if (filteredDataSorted.length === 0) {
@@ -355,7 +253,6 @@ export default function TimelineChart({
         .text('データがありません')
       return
     }
-
 
     // スケール設定
     let timeExtent: [Date, Date]
@@ -389,26 +286,11 @@ export default function TimelineChart({
         .text('時間範囲が無効です')
       return
     }
-=======
-    // フィルタリングされたデータ
-    const filteredData = timeRange
-      ? data.filter(d => d.timestamp >= timeRange.start && d.timestamp <= timeRange.end)
-      : data
-    const filteredDataSorted = [...filteredData].sort((a, b) => a.timestamp - b.timestamp)
-
-    // スケール設定
-    const timeExtent = timeRange
-      ? [new Date(timeRange.start), new Date(timeRange.end)] as [Date, Date]
-      : d3.extent(filteredDataSorted, d => new Date(d.timestamp)) as [Date, Date]
->>>>>>> origin/main
 
     const xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, innerWidth])
-<<<<<<< HEAD
       .nice() // 目盛りを自動調整
-=======
->>>>>>> origin/main
 
     const yScale = d3.scaleLinear()
       .domain([0, d3.max(filteredData, d => d.reactionValue) || 100])
@@ -439,11 +321,7 @@ export default function TimelineChart({
       .style('opacity', 0.5)
 
     // 複数軸の設定
-<<<<<<< HEAD
     const yAxisCount = 7; // 反応値、反応時間、生理閾値、Burst感情、Face感情、Language感情、Prosody感情
-=======
-    const yAxisCount = 4; // 反応値、反応時間、生理閾値、感情変化
->>>>>>> origin/main
     const axisHeight = innerHeight / yAxisCount;
 
     // 各軸のスケール設定
@@ -459,7 +337,6 @@ export default function TimelineChart({
       .domain([0, 100]) // 生理データの閾値
       .range([axisHeight * 2.5, axisHeight * 2.1]);
 
-<<<<<<< HEAD
     // 感情データをfileTypeで分類
     const burstEmotions = filteredDataSorted.flatMap(d => 
       d.emotions.filter(e => e.fileType === 'burst').map(e => e.score)
@@ -523,20 +400,6 @@ export default function TimelineChart({
           const x = xScale(toDate(d.timestamp))
           return x != null && !isNaN(x) ? x : 0
         })
-=======
-    const emotionScale = d3.scaleLinear()
-      .domain([0, 1]) // 感情変化スコア
-      .range([axisHeight * 3.5, axisHeight * 3.1]);
-
-    // 単語表示（時間軸上）
-    if (filters.wordDisplay && filters.showWordLabels) {
-      g.selectAll('.word-label')
-        .data(filteredDataSorted)
-        .enter()
-        .append('text')
-        .attr('class', 'word-label')
-        .attr('x', d => xScale(new Date(d.timestamp)))
->>>>>>> origin/main
         .attr('y', innerHeight + 20)
         .attr('text-anchor', 'middle')
         .attr('font-size', '11px')
@@ -557,7 +420,6 @@ export default function TimelineChart({
     // 反応値データポイント
     if (filters.reactionValues) {
       g.selectAll('.reaction-value-point')
-<<<<<<< HEAD
         .data(filteredDataSorted.filter(d => d.reactionValue != null))
         .enter()
         .append('circle')
@@ -566,13 +428,6 @@ export default function TimelineChart({
           const x = xScale(toDate(d.timestamp))
           return x != null && !isNaN(x) ? x : 0
         })
-=======
-        .data(filteredDataSorted)
-        .enter()
-        .append('circle')
-        .attr('class', 'reaction-value-point')
-        .attr('cx', d => xScale(new Date(d.timestamp)))
->>>>>>> origin/main
         .attr('cy', d => reactionValueScale(d.reactionValue))
         .attr('r', 3)
         .style('fill', '#2563eb')
@@ -592,7 +447,6 @@ export default function TimelineChart({
     // 反応時間データポイント
     if (filters.reactionTime) {
       g.selectAll('.reaction-time-point')
-<<<<<<< HEAD
         .data(filteredDataSorted.filter(d => d.hasResponse && d.reactionTime != null))
         .enter()
         .append('circle')
@@ -601,13 +455,6 @@ export default function TimelineChart({
           const x = xScale(toDate(d.timestamp))
           return x != null && !isNaN(x) ? x : 0
         })
-=======
-        .data(filteredDataSorted.filter(d => d.hasResponse))
-        .enter()
-        .append('circle')
-        .attr('class', 'reaction-time-point')
-        .attr('cx', d => xScale(new Date(d.timestamp)))
->>>>>>> origin/main
         .attr('cy', d => reactionTimeScale(d.reactionTime))
         .attr('r', 3)
         .style('fill', '#dc2626')
@@ -626,7 +473,6 @@ export default function TimelineChart({
         .enter()
         .append('circle')
         .attr('class', 'physiological-point')
-<<<<<<< HEAD
         .attr('cx', d => {
           const x = xScale(toDate(d.timestamp))
           return x != null && !isNaN(x) ? x : 0
@@ -640,10 +486,6 @@ export default function TimelineChart({
           }
           return physiologicalScale(0)
         })
-=======
-        .attr('cx', d => xScale(new Date(d.timestamp)))
-        .attr('cy', _d => physiologicalScale(Math.random() * 100)) // デモ用
->>>>>>> origin/main
         .attr('r', 3)
         .style('fill', '#16a34a')
         .style('stroke', '#fff')
@@ -651,7 +493,6 @@ export default function TimelineChart({
         .style('cursor', 'pointer');
     }
 
-<<<<<<< HEAD
     // 感情変化（4種類に分けて表示）
     if (filters.emotionChange) {
       // Burst感情
@@ -810,57 +651,6 @@ export default function TimelineChart({
 
             // 感情の色を決定（データベースから取得した色情報を優先、フォールバックはgetEmotionColor）
             const color = emotion.color || getEmotionColor(emotion.name || 'unknown')
-=======
-    // 感情変化
-    if (filters.emotionChange) {
-      g.selectAll('.emotion-change-point')
-        .data(filteredDataSorted.filter(d => d.emotions.length > 0))
-        .enter()
-        .append('circle')
-        .attr('class', 'emotion-change-point')
-        .attr('cx', d => xScale(new Date(d.timestamp)))
-        .attr('cy', _d => emotionScale(Math.random())) // デモ用
-        .attr('r', 3)
-        .style('fill', '#9333ea')
-        .style('stroke', '#fff')
-        .style('stroke-width', 1)
-        .style('cursor', 'pointer')
-        .on('mouseover', (event, d) => {
-          onDataPointSelect(d)
-          onTooltipShow(event, d)
-        })
-        .on('mouseout', () => {
-          onDataPointSelect(null)
-          onTooltipHide()
-        });
-    }
-
-    // 感情データの詳細表示
-    if (filters.showEmotionDetails) {
-      filteredDataSorted.forEach(d => {
-        if (d.emotions.length > 0) {
-          // 感情データポイントを個別に表示
-          d.emotions.forEach((emotion) => {
-            const emotionGroup = g.append('g')
-              .attr('class', 'emotion-detail-group')
-              .attr('transform', `translate(${xScale(new Date(d.timestamp))}, ${emotionScale(emotion.score)})`)
-
-            // 感情の色を決定
-            const emotionColors: Record<string, string> = {
-              'joy': '#fbbf24',
-              'sadness': '#3b82f6',
-              'anger': '#ef4444',
-              'fear': '#8b5cf6',
-              'surprise': '#10b981',
-              'disgust': '#6b7280',
-              'calm': '#84cc16',
-              'focus': '#f59e0b',
-              'excitement': '#ec4899',
-              'confusion': '#6366f1'
-            }
-
-            const color = emotionColors[(emotion.name || 'unknown').toLowerCase()] || '#9333ea'
->>>>>>> origin/main
 
             emotionGroup.append('circle')
               .attr('r', 4)
@@ -891,7 +681,6 @@ export default function TimelineChart({
       })
     }
 
-<<<<<<< HEAD
     // 線の描画（反応値）（NaNを防ぐ）
     if (filters.reactionValues) {
       const line = d3.line<TimelineDataPoint>()
@@ -908,13 +697,6 @@ export default function TimelineChart({
           const val = typeof d.reactionValue === 'number' && !isNaN(d.reactionValue)
           return !isNaN(date.getTime()) && val
         })
-=======
-    // 線の描画（反応値）
-    if (filters.reactionValues) {
-      const line = d3.line<TimelineDataPoint>()
-        .x(d => xScale(new Date(d.timestamp)))
-        .y(d => yScale(d.reactionValue))
->>>>>>> origin/main
         .curve(d3.curveMonotoneX)
 
       g.append('path')
@@ -927,7 +709,6 @@ export default function TimelineChart({
     }
 
     // 軸の描画
-<<<<<<< HEAD
     // 時間範囲に応じてフォーマットを変更
     const timeSpan = timeExtent[1].getTime() - timeExtent[0].getTime()
     const hours = timeSpan / (1000 * 60 * 60)
@@ -949,14 +730,11 @@ export default function TimelineChart({
       tickCount = Math.min(15, Math.max(8, Math.floor(innerWidth / 120)))
     }
 
-=======
->>>>>>> origin/main
     g.append('g')
       .attr('class', 'x-axis')
       .attr('transform', `translate(0,${innerHeight})`)
       .call(d3.axisBottom(xScale)
-<<<<<<< HEAD
-        .tickFormat(timeFormat)
+        .tickFormat(timeFormat as (domainValue: Date | d3.NumberValue, index: number) => string)
         .ticks(tickCount)
       )
       .selectAll('text')
@@ -1037,20 +815,6 @@ export default function TimelineChart({
       .style('font-size', '10px')
       .style('fill', '#f59e0b')
       .style('opacity', filters.emotionChange ? 1 : 0.3);
-=======
-        .tickFormat(d3.timeFormat('%H:%M:%S'))
-      )
-      .selectAll('text')
-      .style('font-size', '12px')
-      .style('fill', '#666')
-
-    g.append('g')
-      .attr('class', 'y-axis')
-      .call(d3.axisLeft(yScale))
-      .selectAll('text')
-      .style('font-size', '12px')
-      .style('fill', '#666')
->>>>>>> origin/main
 
     // 軸ラベル
     g.append('text')
@@ -1098,21 +862,15 @@ export default function TimelineChart({
       .text('生理閾値')
       .style('opacity', filters.physiologicalThreshold ? 1 : 0.3);
 
-<<<<<<< HEAD
     // 感情変化のY軸ラベル（4種類）
     g.append('text')
       .attr('class', 'y-label-emotion-burst')
-=======
-    g.append('text')
-      .attr('class', 'y-label-emotion')
->>>>>>> origin/main
       .attr('transform', 'rotate(-90)')
       .attr('y', 0 - margin.left)
       .attr('x', 0 - (axisHeight * 3.5))
       .attr('dy', '1em')
       .style('text-anchor', 'middle')
       .style('font-size', '12px')
-<<<<<<< HEAD
       .style('fill', '#9333ea')
       .text('Burst感情')
       .style('opacity', filters.emotionChange ? 1 : 0.3);
@@ -1151,10 +909,6 @@ export default function TimelineChart({
       .style('font-size', '12px')
       .style('fill', '#f59e0b')
       .text('Prosody感情')
-=======
-      .style('fill', '#333')
-      .text('感情変化')
->>>>>>> origin/main
       .style('opacity', filters.emotionChange ? 1 : 0.3);
 
     // 感情の凡例
@@ -1206,11 +960,7 @@ export default function TimelineChart({
         .attr('stroke-width', 1)
         .attr('rx', 4)
     }
-<<<<<<< HEAD
   }, [data, filters, width, height, timeRange, onDataPointSelect, onTooltipShow, onTooltipHide, svgRef])
-=======
-  }, [data, filters, width, height, timeRange, onDataPointSelect, onTooltipShow, onTooltipHide])
->>>>>>> origin/main
 
   useEffect(() => {
     renderTimeline()
