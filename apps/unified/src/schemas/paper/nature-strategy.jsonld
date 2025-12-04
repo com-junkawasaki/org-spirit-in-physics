@@ -1,0 +1,49 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/research#",
+    "id": "@id",
+    "type": "@type",
+    
+    "dct": "http://purl.org/dc/terms/",
+    "schema": "https://schema.org/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "title": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    "datePublished": {"@id": "schema:datePublished", "@type": "xsd:date"},
+    "author": {"@id": "schema:author", "@type": "@id"},
+    "affiliation": {"@id": "schema:affiliation", "@type": "@id"},
+    "hasPart": {"@id": "schema:hasPart", "@type": "@id"},
+    "relatedTo": {"@id": "schema:relatedTo", "@type": "@id"},
+    "isPartOf": {"@id": "schema:isPartOf", "@type": "@id"}
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/research/nature-submission-strategy",
+  "@type": ["schema:ScholarlyArticle", "schema:ResearchPaper"],
+  "title": "Nature Submission Strategy - Spirit as a Thermodynamic Information Quantity",
+  "description": "Strategic roadmap for submitting 'Spirit as a thermodynamic information quantity in human word association manifolds' to Nature",
+  "datePublished": "2025-01-15",
+  "author": [
+    "https://spirit-in-physics.gftd.ai/research/authors/jun-kawasaki"
+  ],
+  "affiliation": [
+    "https://spirit-in-physics.gftd.ai/research/affiliations/niigata-university"
+  ],
+  "relatedTo": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics",
+  "hasPart": [
+    "https://spirit-in-physics.gftd.ai/research/sections/nature-abstract",
+    "https://spirit-in-physics.gftd.ai/research/sections/nature-physical-definition",
+    "https://spirit-in-physics.gftd.ai/research/sections/nature-strategy-execution",
+    "https://spirit-in-physics.gftd.ai/research/sections/nature-dataset-requirements"
+  ],
+  "createdAt": "2025-01-15T00:00:00+09:00",
+  "updatedAt": "2025-01-15T00:00:00+09:00"
+}
+

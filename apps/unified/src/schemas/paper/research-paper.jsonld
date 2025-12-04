@@ -1,0 +1,81 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/research#",
+    "id": "@id",
+    "type": "@type",
+    
+    "dct": "http://purl.org/dc/terms/",
+    "schema": "https://schema.org/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "title": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    "datePublished": {"@id": "schema:datePublished", "@type": "xsd:date"},
+    "author": {"@id": "schema:author", "@type": "@id"},
+    "affiliation": {"@id": "schema:affiliation", "@type": "@id"},
+    "citation": {"@id": "schema:citation", "@type": "@id"},
+    "hasPart": {"@id": "schema:hasPart", "@type": "@id"},
+    "about": {"@id": "schema:about", "@type": "@id"},
+    "hasVisualization": {"@id": "https://spirit-in-physics.gftd.ai/research#hasVisualization", "@type": "@id"},
+    "hasPipeline": {"@id": "https://spirit-in-physics.gftd.ai/research#hasPipeline", "@type": "@id"}
+  },
+  
+  "@id": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics",
+  "@type": ["schema:ScholarlyArticle", "schema:ResearchPaper"],
+  "title": "Spirit in Physics",
+  "description": "Structuring and Quantifying Human Spirit Using the Informational Vector Space",
+  "datePublished": "2024-11-30",
+  "author": [
+    "https://spirit-in-physics.gftd.ai/research/authors/jun-kawasaki",
+    "https://spirit-in-physics.gftd.ai/research/authors/kazuki-tainaka",
+    "https://spirit-in-physics.gftd.ai/research/authors/tomonori-takeuchi"
+  ],
+  "affiliation": [
+    "https://spirit-in-physics.gftd.ai/research/affiliations/niigata-university",
+    "https://spirit-in-physics.gftd.ai/research/affiliations/aarhus-university"
+  ],
+  "about": {
+    "@id": "https://spirit-in-physics.gftd.ai/research/concepts/spirit-measurement",
+    "@type": "skos:Concept",
+    "skos:prefLabel": "Spirit Measurement",
+    "skos:definition": "Quantitative measurement of human spirit using informational vector space and Jung's word association test"
+  },
+  "hasPart": [
+    "https://spirit-in-physics.gftd.ai/research/sections/introduction",
+    "https://spirit-in-physics.gftd.ai/research/sections/hypothesis-1",
+    "https://spirit-in-physics.gftd.ai/research/sections/hypothesis-2",
+    "https://spirit-in-physics.gftd.ai/research/sections/kawasaki-model",
+    "https://spirit-in-physics.gftd.ai/research/sections/vectorization",
+    "https://spirit-in-physics.gftd.ai/research/sections/measurement-emotion",
+    "https://spirit-in-physics.gftd.ai/research/sections/measurement-skin-potential",
+    "https://spirit-in-physics.gftd.ai/research/sections/methods",
+    "https://spirit-in-physics.gftd.ai/research/sections/results",
+    "https://spirit-in-physics.gftd.ai/research/sections/discussion",
+    "https://spirit-in-physics.gftd.ai/research/sections/conclusion",
+    "https://spirit-in-physics.gftd.ai/research/sections/references"
+  ],
+  "hasVisualization": [
+    "https://spirit-in-physics.gftd.ai/research/visualizations/3d-force-graph",
+    "https://spirit-in-physics.gftd.ai/research/visualizations/complex-space-3d",
+    "https://spirit-in-physics.gftd.ai/research/visualizations/network-graph",
+    "https://spirit-in-physics.gftd.ai/research/visualizations/clustering",
+    "https://spirit-in-physics.gftd.ai/research/visualizations/word-list"
+  ],
+  "hasPipeline": "https://spirit-in-physics.gftd.ai/research/pipelines/data-processing",
+  "citation": [
+    "https://spirit-in-physics.gftd.ai/research/references/landauer-1991",
+    "https://spirit-in-physics.gftd.ai/research/references/berut-2012",
+    "https://spirit-in-physics.gftd.ai/research/references/botvinick-1998",
+    "https://spirit-in-physics.gftd.ai/research/references/toyabe-2010"
+  ],
+  "createdAt": "2024-11-30T00:00:00+09:00",
+  "updatedAt": "2024-11-30T00:00:00+09:00"
+}
+

@@ -1,0 +1,37 @@
+# GraphQL Code Generator configuration
+# Unified configuration for participant and researcher apps
+
+schema:
+  - graphql-schema.graphql
+  # Alternative: Use introspection endpoint (uncomment to use live schema)
+  # - ${GRAPHQL_API_URL:-http://localhost:8081/graphql}
+
+documents:
+  - 'src/**/*.{ts,tsx}'
+  - 'src/**/*.graphql'
+  - '!src/generated/**'
+
+generates:
+  src/generated/graphql.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typed-document-node
+      - typescript-graphql-request
+    config:
+      useIndexSignature: true
+      skipTypename: false
+      enumsAsTypes: true
+      constEnums: true
+      scalars:
+        ID: string
+        DateTime: string
+        JSON: any
+      withHooks: false
+      dedupeFragments: true
+      operationResultSuffix: Result
+      inputMaybeValue: T | null | undefined
+      rawRequest: false
+    typescript-operations:
+      documentMode: documentNode
+

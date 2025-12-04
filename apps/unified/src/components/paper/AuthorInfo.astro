@@ -1,0 +1,32 @@
+---
+// Merkle DAG: components.author_info
+// Author metadata component with JSON-LD annotations
+
+interface Props {
+  authors: Array<{
+    name: string;
+    email?: string;
+    affiliation: string;
+  }>;
+}
+
+const { authors } = Astro.props;
+---
+
+<div class="mb-8 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+  <h3 class="text-xl font-semibold mb-4">Authors</h3>
+  <ul class="space-y-2">
+    {authors.map((author) => (
+      <li>
+        <strong>{author.name}</strong>
+        {author.email && (
+          <a href={`mailto:${author.email}`} class="ml-2 text-blue-600 dark:text-blue-400">
+            {author.email}
+          </a>
+        )}
+        <span class="ml-2 text-gray-600 dark:text-gray-400">{author.affiliation}</span>
+      </li>
+    ))}
+  </ul>
+</div>
+

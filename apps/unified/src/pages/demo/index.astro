@@ -1,0 +1,12 @@
+---
+// Merkle DAG: pages.demo_index
+// Main demo page for real-time Complex visualization
+
+import Layout from '../../layouts/Layout.astro';
+import DemoApp from '../../components/demo/DemoApp';
+import '../../styles/demo.css';
+---
+
+<Layout title="Complex Visualization Demo" description="Real-time Complex visualization demo">
+  <DemoApp client:load />
+</Layout>

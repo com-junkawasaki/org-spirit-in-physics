@@ -1,0 +1,169 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/research#",
+    "id": "@id",
+    "type": "@type",
+    
+    "dct": "http://purl.org/dc/terms/",
+    "schema": "https://schema.org/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    
+    "title": "dct:title",
+    "description": "dct:description",
+    "createdAt": {"@id": "dct:created", "@type": "xsd:dateTime"},
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "hasInput": {"@id": "https://spirit-in-physics.gftd.ai/research#hasInput", "@type": "@id"},
+    "hasOutput": {"@id": "https://spirit-in-physics.gftd.ai/research#hasOutput", "@type": "@id"},
+    "usesAlgorithm": {"@id": "https://spirit-in-physics.gftd.ai/research#usesAlgorithm"},
+    "hasParameter": {"@id": "https://spirit-in-physics.gftd.ai/research#hasParameter"},
+    "wasDerivedFrom": {"@id": "prov:wasDerivedFrom", "@type": "@id"},
+    "wasGeneratedBy": {"@id": "prov:wasGeneratedBy", "@type": "@id"}
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/pipelines/data-processing",
+      "@type": "prov:Activity",
+      "title": "Data Processing and Visualization Pipeline",
+      "description": "Pipeline for processing experimental data and generating visualizations",
+      "hasPart": [
+        "https://spirit-in-physics.gftd.ai/research/pipeline-steps/data-collection",
+        "https://spirit-in-physics.gftd.ai/research/pipeline-steps/data-aggregation",
+        "https://spirit-in-physics.gftd.ai/research/pipeline-steps/component-extraction",
+        "https://spirit-in-physics.gftd.ai/research/pipeline-steps/dimensionality-reduction",
+        "https://spirit-in-physics.gftd.ai/research/pipeline-steps/classification",
+        "https://spirit-in-physics.gftd.ai/research/pipeline-steps/visualization"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/data-collection",
+      "@type": "prov:Activity",
+      "title": "Data Collection",
+      "description": "Collect experimental data from TimelineVisualization",
+      "hasInput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/word-display-events",
+        "https://spirit-in-physics.gftd.ai/research/data-types/response-events",
+        "https://spirit-in-physics.gftd.ai/research/data-types/physiological-data",
+        "https://spirit-in-physics.gftd.ai/research/data-types/emotion-data"
+      ],
+      "hasOutput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/timeline-data",
+        "https://spirit-in-physics.gftd.ai/research/data-types/word-pairs",
+        "https://spirit-in-physics.gftd.ai/research/data-types/reaction-times",
+        "https://spirit-in-physics.gftd.ai/research/data-types/emotion-scores"
+      ],
+      "usesAlgorithm": "GraphQL API Query"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/data-aggregation",
+      "@type": "prov:Activity",
+      "title": "Data Aggregation",
+      "description": "Aggregate data using TimescaleDB materialized views",
+      "hasInput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/timeline-data"
+      ],
+      "hasOutput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/word-aggregates",
+        "https://spirit-in-physics.gftd.ai/research/data-types/emotion-vectors",
+        "https://spirit-in-physics.gftd.ai/research/data-types/word-statistics"
+      ],
+      "usesAlgorithm": "TimescaleDB Materialized View",
+      "wasDerivedFrom": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/data-collection"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/component-extraction",
+      "@type": "prov:Activity",
+      "title": "Component Extraction",
+      "description": "Extract Gene, Meme, and Field components",
+      "hasInput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/word-aggregates",
+        "https://spirit-in-physics.gftd.ai/research/data-types/emotion-vectors",
+        "https://spirit-in-physics.gftd.ai/research/data-types/reaction-times",
+        "https://spirit-in-physics.gftd.ai/research/data-types/skin-potential"
+      ],
+      "hasOutput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/gene-component",
+        "https://spirit-in-physics.gftd.ai/research/data-types/meme-component",
+        "https://spirit-in-physics.gftd.ai/research/data-types/field-component"
+      ],
+      "usesAlgorithm": "Normalization + Cosine Similarity",
+      "hasParameter": {
+        "geneNormalization": "z-score",
+        "memeCombination": "(word2vec + emotion) / 2",
+        "fieldCombination": "(skinPotential + temporalPosition) / 2"
+      },
+      "wasDerivedFrom": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/data-aggregation"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/dimensionality-reduction",
+      "@type": "prov:Activity",
+      "title": "Dimensionality Reduction",
+      "description": "Project 1024d Complex space to 3D",
+      "hasInput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/1024d-vectors"
+      ],
+      "hasOutput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/3d-coordinates"
+      ],
+      "usesAlgorithm": "PCA or UMAP",
+      "hasParameter": {
+        "pcaComponents": 3,
+        "umapNeighbors": 15,
+        "umapMinDist": 0.1,
+        "outputBounds": "[-200, 200]"
+      },
+      "wasDerivedFrom": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/component-extraction"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/classification",
+      "@type": "prov:Activity",
+      "title": "Classification",
+      "description": "Classify Spirit Type vs Ghost Pattern",
+      "hasInput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/gene-component",
+        "https://spirit-in-physics.gftd.ai/research/data-types/meme-component",
+        "https://spirit-in-physics.gftd.ai/research/data-types/field-component",
+        "https://spirit-in-physics.gftd.ai/research/data-types/3d-coordinates"
+      ],
+      "hasOutput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/spirit-types",
+        "https://spirit-in-physics.gftd.ai/research/data-types/ghost-patterns"
+      ],
+      "usesAlgorithm": "K-means / DBSCAN / Isolation Forest",
+      "hasParameter": {
+        "distanceThreshold": 1.0,
+        "kmeansClusters": "auto",
+        "dbscanEps": 0.5
+      },
+      "wasDerivedFrom": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/dimensionality-reduction"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/visualization",
+      "@type": "prov:Activity",
+      "title": "Visualization",
+      "description": "Generate 3D models, network graphs, and word lists",
+      "hasInput": [
+        "https://spirit-in-physics.gftd.ai/research/data-types/spirit-types",
+        "https://spirit-in-physics.gftd.ai/research/data-types/ghost-patterns",
+        "https://spirit-in-physics.gftd.ai/research/data-types/3d-coordinates"
+      ],
+      "hasOutput": [
+        "https://spirit-in-physics.gftd.ai/research/visualizations/3d-force-graph",
+        "https://spirit-in-physics.gftd.ai/research/visualizations/network-graph",
+        "https://spirit-in-physics.gftd.ai/research/visualizations/clustering",
+        "https://spirit-in-physics.gftd.ai/research/visualizations/word-list"
+      ],
+      "usesAlgorithm": "WebGPU / D3.js / Custom",
+      "hasParameter": {
+        "3dPhysics": "Force-directed layout",
+        "networkLayout": "Force-directed",
+        "clusteringMethod": "Hierarchical"
+      },
+      "wasDerivedFrom": "https://spirit-in-physics.gftd.ai/research/pipeline-steps/classification"
+    }
+  ]
+}
+

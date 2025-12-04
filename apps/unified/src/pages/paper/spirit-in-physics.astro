@@ -1,0 +1,136 @@
+---
+// Merkle DAG: pages.spirit_in_physics
+// Main research paper page
+
+import ResearchLayout from '../../layouts/ResearchLayout.astro';
+import ResearchPaper from '../../components/paper/ResearchPaper.astro';
+import AuthorInfo from '../../components/paper/AuthorInfo.astro';
+import ReferenceList from '../../components/paper/ReferenceList.astro';
+import TableOfContentsSheet from '../../components/paper/TableOfContentsSheet';
+import ResultsSection from '../../components/paper/ResultsSection.astro';
+import VisualizationResults from '../../components/paper/VisualizationResults.astro';
+import VisualizationSidebar from '../../components/paper/VisualizationSidebar.astro';
+import { getEntry } from 'astro:content';
+import { loadExperimentalData } from '../../lib/paper/experimental-data';
+
+const paper = await getEntry('papers', 'spirit-in-physics');
+
+if (!paper) {
+  throw new Error('Paper not found');
+}
+
+const { Content } = await paper.render();
+
+// Load experimental data
+let experimentalData;
+try {
+  experimentalData = await loadExperimentalData();
+} catch (error) {
+  console.error('Failed to load experimental data:', error);
+  // Create empty data structure as fallback
+  experimentalData = {
+    participants: [],
+    sessions: [],
+    responses: [],
+    spiritTypes: [],
+    ghostPatterns: [],
+    classification: {
+      spiritTypeCount: 0,
+      ghostPatternCount: 0,
+      classificationAccuracy: 0,
+      componentBreakdown: {
+        gene: { mean: 0, stdDev: 0, min: 0, max: 0, median: 0 },
+        meme: { mean: 0, stdDev: 0, min: 0, max: 0, median: 0 },
+        field: { mean: 0, stdDev: 0, min: 0, max: 0, median: 0 },
+      },
+    },
+  };
+}
+
+const sections = [
+  { id: 'introduction', title: 'Introduction', level: 1 },
+  { id: 'hypothesis-1', title: 'Hypothesis 1', level: 2 },
+  { id: 'hypothesis-2', title: 'Hypothesis 2', level: 2 },
+  { id: 'hypothesis-3', title: 'Hypothesis 3', level: 2 },
+  { id: 'hypothesis-4', title: 'Hypothesis 4', level: 2 },
+  { id: 'hypothesis-5', title: 'Hypothesis 5', level: 2 },
+  { id: 'kawasaki-model', title: 'Spirit Physical Space (Kawasaki Model)', level: 1 },
+  { id: 'vectorization', title: 'Vectorization Spirit Using the Word Association Experiment', level: 1 },
+  { id: 'spirit-type-ghost-pattern', title: 'Spirit Type and Ghost Pattern Classification', level: 1 },
+  { id: 'measurement-emotion', title: 'Measurement via Emotion Analytics', level: 1 },
+  { id: 'measurement-skin-potential', title: 'Measurement via Skin Potential', level: 1 },
+  { id: 'complex-space', title: 'Complex Space and Open System Dynamics', level: 1 },
+  { id: 'methods', title: 'Methods', level: 1 },
+  { id: 'results', title: 'Results', level: 1 },
+  { id: 'discussion', title: 'Discussion', level: 1 },
+  { id: 'conclusion', title: 'Conclusion', level: 1 },
+  { id: 'references', title: 'References', level: 1 },
+];
+
+const references = [
+  {
+    id: 'landauer-1991',
+    citation: 'Landauer, R. (1991). Information is physical. Physics Today, 44(5), 23–29.',
+    doi: '10.1063/1.881299',
+  },
+  {
+    id: 'berut-2012',
+    citation: 'Bérut, A., Arakelyan, A., Petrosyan, A., Ciliberto, S., Dillenschneider, R., & Lutz, E. (2012). Experimental verification of Landauer\'s principle linking information and thermodynamics. Nature, 483(7388), 187–189.',
+    doi: '10.1038/nature10872',
+  },
+  {
+    id: 'botvinick-1998',
+    citation: 'Botvinick, M., & Cohen, J. (1998). Rubber-hand illusion. Nature, 391, 756.',
+    doi: '10.1038/35784',
+  },
+  {
+    id: 'toyabe-2010',
+    citation: 'Toyabe, S., Sagawa, T., Ueda, M., Muneyuki, E., & Sano, M. (2010). Experimental demonstration of information-to-energy conversion and validation of the generalized Jarzynski equality. Nature Physics, 6, 988–992.',
+    doi: '10.1038/nphys1821',
+  },
+  {
+    id: 'jung-1910',
+    citation: 'Jung, C. G. (1910). The association method. American Journal of Psychology, 21(2), 219–269.',
+    doi: null,
+  },
+];
+---
+
+<ResearchLayout
+  title={paper.data.title}
+  description={paper.data.description}
+  authors={paper.data.authors}
+  date={paper.data.date}
+>
+  <!-- Table of Contents Sheet (Independent Sheet Component) -->
+  <TableOfContentsSheet client:load sections={sections} />
+  
+  <!-- Main Content: 2 Columns (Paper Content + Visualization) -->
+  <div class="flex flex-col md:flex-row md:items-start w-full gap-0 px-4 md:px-6 lg:px-8 md:pl-[max(24px,env(safe-area-inset-left,0px))] md:pr-[max(24px,env(safe-area-inset-right,0px))]">
+    <!-- Left column: Paper content -->
+    <main class="flex-1 min-w-0 w-full">
+      <ResearchPaper
+        title={paper.data.title}
+        description={paper.data.description}
+        authors={paper.data.authors}
+        date={paper.data.date}
+        affiliations={paper.data.affiliations}
+        schemaId={paper.data.schemaId}
+      >
+        <Content />
+        <ResultsSection data={experimentalData} />
+        <!-- VisualizationResults is moved to sidebar on iPad+ -->
+        <div class="md:hidden">
+          <VisualizationResults data={experimentalData} />
+        </div>
+        <ReferenceList references={references} />
+      </ResearchPaper>
+    </main>
+    
+    <!-- Right column: Visualization Sidebar (iPad+) -->
+    <aside class="hidden md:block w-[360px] lg:w-[420px] flex-shrink-0 pl-6 lg:pl-8">
+      <VisualizationSidebar data={experimentalData} />
+    </aside>
+  </div>
+</ResearchLayout>
+

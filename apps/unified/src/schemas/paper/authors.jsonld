@@ -1,0 +1,47 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://spirit-in-physics.gftd.ai/research#",
+    "id": "@id",
+    "type": "@type",
+    
+    "schema": "https://schema.org/",
+    "dct": "http://purl.org/dc/terms/",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    
+    "name": "schema:name",
+    "email": "schema:email",
+    "affiliation": {"@id": "schema:affiliation", "@type": "@id"},
+    "sameAs": {"@id": "schema:sameAs", "@type": "@id"}
+  },
+  
+  "@graph": [
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/authors/jun-kawasaki",
+      "@type": "schema:Person",
+      "name": "Jun Kawasaki",
+      "email": "root@junkawasaki.com",
+      "affiliation": [
+        "https://spirit-in-physics.gftd.ai/research/affiliations/niigata-university"
+      ],
+      "sameAs": "https://www.junkawasaki.com"
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/authors/kazuki-tainaka",
+      "@type": "schema:Person",
+      "name": "Kazuki Tainaka",
+      "affiliation": [
+        "https://spirit-in-physics.gftd.ai/research/affiliations/niigata-university"
+      ]
+    },
+    {
+      "@id": "https://spirit-in-physics.gftd.ai/research/authors/tomonori-takeuchi",
+      "@type": "schema:Person",
+      "name": "Tomonori Takeuchi",
+      "affiliation": [
+        "https://spirit-in-physics.gftd.ai/research/affiliations/niigata-university"
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,29 @@
+---
+// Merkle DAG: components.ResultsSection
+// Results section component with Spirit Type/Ghost Pattern classification display
+
+import type { ExperimentalData } from '../types/experimental';
+import DescriptiveStatistics from './DescriptiveStatistics.astro';
+import SpiritTypeClassification from './SpiritTypeClassification.astro';
+import GhostPatternDetection from './GhostPatternDetection.astro';
+import StatisticalAnalysis from './StatisticalAnalysis.astro';
+
+interface Props {
+  data: ExperimentalData;
+}
+
+const { data } = Astro.props;
+---
+
+<section id="results" class="prose prose-lg max-w-none">
+  <h2>Results</h2>
+
+  <DescriptiveStatistics data={data} />
+
+  <SpiritTypeClassification spiritTypes={data.spiritTypes} />
+
+  <GhostPatternDetection ghostPatterns={data.ghostPatterns} />
+
+  <StatisticalAnalysis classification={data.classification} />
+</section>
+
