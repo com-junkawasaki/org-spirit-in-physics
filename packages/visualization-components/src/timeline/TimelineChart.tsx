@@ -211,7 +211,7 @@ export default function TimelineChart({
       const expectedX1 = xScale(endDate)
       
       // 現在のbrushの選択範囲を取得
-      const currentSelection = d3.brushSelection(brushGroup.node() as any)
+      const currentSelection = d3.brushSelection(brushGroup.node() as SVGGElement) as [number, number] | null
       
       // 選択範囲が異なる場合のみ更新（無限ループを防ぐ）
       const sel0 = currentSelection?.[0]

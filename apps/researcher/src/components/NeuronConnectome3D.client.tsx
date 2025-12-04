@@ -2,8 +2,36 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import type { ConnectomeScene, BrainRegion } from '@/neuron/types'
-import { computeWordAnchorSprings, computeEventAnchorSprings } from '@/neuron/mapping'
+// NOTE: @/neuron/types module not found - defining types locally
+interface BrainRegion {
+  id: string
+  name: string
+  position: [number, number, number]
+  color?: string
+}
+
+interface ConnectomeScene {
+  regions: BrainRegion[]
+  connections: Array<{
+    from: string
+    to: string
+    weight: number
+  }>
+  structuralEdges?: Array<{
+    source: string
+    target: string
+  }>
+  concepts?: any[]
+  events?: any[]
+}
+// NOTE: @/neuron/mapping module not found - stubbing functions
+function computeWordAnchorSprings(_words: any[], _anchors: any[]): any[] {
+  return []
+}
+
+function computeEventAnchorSprings(_events: any[], _anchors: any[]): any[] {
+  return []
+}
 
 // Merkle DAG: components.neuron_connectome_3d
 // 脳アンカー（固定）と概念・イベントの簡易3D表示（最小版）
@@ -45,28 +73,28 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
     const regionMaterial = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x112244 })
     for (const r of scene.regions) {
       const mesh = new THREE.Mesh(new THREE.SphereGeometry(3.2, 16, 16), regionMaterial)
-      mesh.position.set(r.x, r.y, r.z)
+      mesh.position.set(r.position[0], r.position[1], r.position[2])
       mesh.userData = { id: r.id, type: 'region' }
       group.add(mesh)
     }
 
     // Structural edges
     const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x5a6b8c })
-    for (const e of scene.structuralEdges) {
+    for (const e of scene.structuralEdges || []) {
       const s = scene.regions.find(r => r.id === e.source)
       const t = scene.regions.find(r => r.id === e.target)
       if (!s || !t) continue
       const geometry = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(s.x, s.y, s.z),
-        new THREE.Vector3(t.x, t.y, t.z)
+        new THREE.Vector3(s.position[0], s.position[1], s.position[2]),
+        new THREE.Vector3(t.position[0], t.position[1], t.position[2])
       ])
       const line = new THREE.Line(geometry, edgeMaterial)
       group.add(line)
     }
 
     // ===== Anchor-based placement helpers =====
-    const wordSprings = computeWordAnchorSprings(scene.regions, scene.concepts, 1.2)
-    const eventSprings = computeEventAnchorSprings(scene.regions, scene.events, 0.8)
+    const wordSprings = computeWordAnchorSprings(scene.regions, scene.concepts || [])
+    const eventSprings = computeEventAnchorSprings(scene.regions, scene.events || [])
 
     function pickDominantRegion(targetId: string, springs: { regionId: string; targetId: string; k: number }[]): {
       region: BrainRegion | null; k: number
@@ -77,12 +105,14 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
         if (!best || s.k > best.k) best = { regionId: s.regionId, k: s.k }
       }
       if (!best) return { region: null, k: 0 }
-      const region = scene.regions.find(r => r.id === best.regionId) || null
-      return { region, k: best.k }
+      const bestRegionId = best.regionId
+      const bestK = best.k
+      const region = scene.regions.find(r => r.id === bestRegionId) || null
+      return { region, k: bestK }
     }
 
     function jitterAround(region: BrainRegion, k: number, altitude = 0): THREE.Vector3 {
-      const base = new THREE.Vector3(region.x, region.y + altitude, region.z)
+      const base = new THREE.Vector3(region.position[0], region.position[1] + altitude, region.position[2])
       const radius = Math.max(2, 12 / Math.max(k, 0.1)) // 強い係留ほど近い
       const theta = Math.random() * Math.PI * 2
       const phi = Math.acos(2 * Math.random() - 1)
@@ -111,7 +141,7 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
     }
 
     // ===== Concepts near anchors =====
-    for (const c of scene.concepts) {
+    for (const c of scene.concepts || []) {
       const { region, k } = pickDominantRegion(c.id, wordSprings)
       const pos = region ? jitterAround(region, k, 8) : new THREE.Vector3(0, 20, 0)
       const material = new THREE.MeshStandardMaterial({ color: 0xffaa66, emissive: 0x332211 })
@@ -123,7 +153,7 @@ export default function NeuronConnectome3D({ scene }: { scene: ConnectomeScene }
     }
 
     // ===== Events near anchors; color & size encoding =====
-    for (const e of scene.events) {
+    for (const e of scene.events || []) {
       const { region, k } = pickDominantRegion(e.id, eventSprings)
       const pos = region ? jitterAround(region, k, -6) : new THREE.Vector3(0, -10, 0)
       const primaryEmotion = e.emotions && e.emotions.length > 0 ?

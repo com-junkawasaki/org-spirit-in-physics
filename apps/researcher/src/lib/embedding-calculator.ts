@@ -242,9 +242,12 @@ export function calculateUMAP(
         const gradient = (currentDist - targetDist) * learningRate;
         
         // 勾配の適用
-        const dx = points[j].x - points[i].x;
-        const dy = points[j].y - points[i].y;
-        const dz = points[j].z ? points[j].z - points[i].z! : 0;
+        const pi = points[i]
+        const pj = points[j]
+        if (!pi || !pj) continue
+        const dx = pj.x - pi.x;
+        const dy = pj.y - pi.y;
+        const dz = pj.z ? pj.z - (pi.z ?? 0) : 0;
         
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
         
@@ -383,9 +386,12 @@ export function calculateForceLayoutEmbedding(
       for (let j = 0; j < n; j++) {
         if (i === j) continue;
         
-        const dx = points[j].x - points[i].x;
-        const dy = points[j].y - points[i].y;
-        const dz = points[j].z !== undefined && points[i].z !== undefined ? points[j].z - points[i].z : 0;
+        const pi = points[i]
+        const pj = points[j]
+        if (!pi || !pj) continue
+        const dx = pj.x - pi.x;
+        const dy = pj.y - pi.y;
+        const dz = pj.z !== undefined && pi.z !== undefined ? pj.z - pi.z : 0;
         
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
         const repulsionForce = 1 / (distance * distance);
@@ -404,9 +410,12 @@ export function calculateForceLayoutEmbedding(
         if (i === j) continue;
         
         const targetDistance = distanceMatrix[i][j];
-        const dx = points[j].x - points[i].x;
-        const dy = points[j].y - points[i].y;
-        const dz = points[j].z !== undefined && points[i].z !== undefined ? points[j].z - points[i].z : 0;
+        const pi = points[i]
+        const pj = points[j]
+        if (!pi || !pj) continue
+        const dx = pj.x - pi.x;
+        const dy = pj.y - pi.y;
+        const dz = pj.z !== undefined && pi.z !== undefined ? pj.z - pi.z : 0;
         
         const currentDistance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
         const attractionForce = (currentDistance - targetDistance) * 0.1;

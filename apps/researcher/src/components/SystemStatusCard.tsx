@@ -181,16 +181,16 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
               </div>
               <div className="text-right">
                 {getStatusBadge(service.status)}
-                {service.details && (
+                {service.details && Object.keys(service.details).length > 0 && (
                   <div className="mt-2 text-xs text-muted-foreground">
-                    {service.service === 'Neo4j' && service.details.database && (
-                      <p>DB: {String(service.details.database)}</p>
+                    {service.service === 'Neo4j' && 'database' in service.details && Boolean((service.details as Record<string, unknown>).database) && (
+                      <p>DB: {String((service.details as Record<string, unknown>).database)}</p>
                     )}
-                    {service.service === 'Workflow' && service.details.server && (
-                      <p>Server: {String(service.details.server)}</p>
+                    {service.service === 'Workflow' && 'server' in service.details && Boolean((service.details as Record<string, unknown>).server) && (
+                      <p>Server: {String((service.details as Record<string, unknown>).server)}</p>
                     )}
-                    {service.service === 'Hume AI' && service.details.endpoint && (
-                      <p>Endpoint: {String(service.details.endpoint)}</p>
+                    {service.service === 'Hume AI' && 'endpoint' in service.details && Boolean((service.details as Record<string, unknown>).endpoint) && (
+                      <p>Endpoint: {String((service.details as Record<string, unknown>).endpoint)}</p>
                     )}
                   </div>
                 )}

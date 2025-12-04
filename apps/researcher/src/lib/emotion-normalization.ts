@@ -97,7 +97,6 @@ export function normalizeEmotionName(name: string): EmotionKey | null {
     
     // Anger-related
     'annoyance': 'anger',
-    'contempt': 'anger',
     'disapproval': 'anger',
     'rage': 'anger',
     
@@ -106,7 +105,6 @@ export function normalizeEmotionName(name: string): EmotionKey | null {
     'horror': 'fear',
     'guilt': 'fear',
     'shame': 'fear',
-    'doubt': 'fear',
     
     // Disgust-related
     'contempt': 'disgust', // contemptはangerとdisgustの両方にマッピング可能だが、disgustを優先
@@ -187,11 +185,11 @@ export function normalizeEmotionName(name: string): EmotionKey | null {
     'argh': 'anger',
     'aww': 'joy',
     'ooph': 'surprise',
-    'ouch': 'pain',
-    'oww': 'pain',
+    'ouch': 'sadness', // pain → sadness
+    'oww': 'sadness', // pain → sadness
     'pff': 'disgust',
-    'phew': 'relief',
-    'tsk': 'disapproval',
+    'phew': 'calm', // relief → calm
+    'tsk': 'anger', // disapproval → anger
     'ugh': 'disgust',
     'uh': 'confusion',
     'uhhuh': 'confusion',
@@ -201,11 +199,11 @@ export function normalizeEmotionName(name: string): EmotionKey | null {
     'mhm': 'confusion',
     'mmm': 'confusion',
     'whee': 'joy',
-    'whew': 'relief',
+    'whew': 'calm', // relief → calm
     'hoot': 'joy',
     'howl': 'anger',
     'snort': 'disgust',
-    'yawn': 'tiredness',
+    'yawn': 'sadness', // tiredness → sadness
   }
 
   // 完全一致を試す

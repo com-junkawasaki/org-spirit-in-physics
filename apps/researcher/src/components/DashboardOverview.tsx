@@ -124,10 +124,10 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
   const spiritProbabilityChart = {
     data: [{
       type: 'bar' as const,
-      x: data.spiritProbabilities.map(d => d.participant),
-      y: data.spiritProbabilities.map(d => d.value),
+      x: data.spiritProbabilities.map((d: { participant: string; value: number; session: string }) => d.participant),
+      y: data.spiritProbabilities.map((d: { participant: string; value: number; session: string }) => d.value),
       marker: {
-        color: data.spiritProbabilities.map(d => d.value > 0.7 ? '#10B981' : d.value > 0.6 ? '#F59E0B' : '#EF4444')
+        color: data.spiritProbabilities.map((d: { participant: string; value: number; session: string }) => d.value > 0.7 ? '#10B981' : d.value > 0.6 ? '#F59E0B' : '#EF4444')
       },
       name: 'Spirit Probability'
     }],
@@ -167,7 +167,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
         type: 'scatter' as const,
         mode: 'lines' as const,
         x: data.timeSeries.timestamps,
-        y: data.timeSeries.emotions.map(e => e.joy),
+        y: data.timeSeries.emotions.map((e: { joy: number; sadness: number; anger: number; fear: number; surprise: number }) => e.joy),
         name: 'Joy',
         line: { color: '#FFD700' }
       },
@@ -175,7 +175,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
         type: 'scatter' as const,
         mode: 'lines' as const,
         x: data.timeSeries.timestamps,
-        y: data.timeSeries.emotions.map(e => e.sadness),
+        y: data.timeSeries.emotions.map((e: { joy: number; sadness: number; anger: number; fear: number; surprise: number }) => e.sadness),
         name: 'Sadness',
         line: { color: '#4169E1' }
       },
@@ -183,7 +183,7 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
         type: 'scatter' as const,
         mode: 'lines' as const,
         x: data.timeSeries.timestamps,
-        y: data.timeSeries.emotions.map(e => e.anger),
+        y: data.timeSeries.emotions.map((e: { joy: number; sadness: number; anger: number; fear: number; surprise: number }) => e.anger),
         name: 'Anger',
         line: { color: '#DC143C' }
       }

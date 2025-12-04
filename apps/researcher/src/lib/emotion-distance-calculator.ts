@@ -174,10 +174,9 @@ function aggregatePhysiologicalInWindow(
   });
   
   return Array.from(channelMap.entries()).map(([channel, values]) => ({
-    channel,
+    measurementType: channel,
     value: values.reduce((a, b) => a + b, 0) / values.length, // 平均
-    timestamp: (startTime + endTime) / 2,
-    quality: values.length / ((endTime - startTime) / 1000) // サンプリング密度
+    timestamp: String((startTime + endTime) / 2),
   }));
 }
 

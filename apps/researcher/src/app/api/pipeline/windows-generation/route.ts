@@ -165,10 +165,10 @@ export async function POST(request: NextRequest) {
         sessionUri: sessionPath,
         physioUri: csvPath,
         humeCsvUris: {
-          burst: csvFiles.filter(f => f.includes('burst')),
-          face: csvFiles.filter(f => f.includes('face')),
-          language: csvFiles.filter(f => f.includes('language')),
-          prosody: csvFiles.filter(f => f.includes('prosody')),
+          burst: csvFiles.filter((f: string) => f.includes('burst')),
+          face: csvFiles.filter((f: string) => f.includes('face')),
+          language: csvFiles.filter((f: string) => f.includes('language')),
+          prosody: csvFiles.filter((f: string) => f.includes('prosody')),
         },
         stats: {
           sessionEvents: sessionData.events?.length || 0,

@@ -73,12 +73,12 @@ export function createGraphQLClient(): GraphQLClient {
   
   // Wrap request method to add better error handling
   const originalRequest = client.request.bind(client);
-  (client as any).request = async function<T = any, V = any>(
+  (client as any).request = async function<T = any, V extends Record<string, any> = Record<string, any>>(
     document: any,
     variables?: V
   ): Promise<T> {
     try {
-      return await originalRequest<T, V>(document, variables);
+      return await (originalRequest as any)(document, variables || ({} as V)) as T;
     } catch (error: any) {
       // Enhance error messages with more context
       if (error?.response) {
