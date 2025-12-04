@@ -1,11 +1,7 @@
 'use client'
 
-// import { useSidebar } from '../../contexts/researcher/SidebarContext' // TODO: Create SidebarContext or remove dependency
-const useSidebar = () => {
-  const [sidebarOpen, setSidebarOpen] = React.useState(true)
-  return { sidebarOpen, setSidebarOpen }
-} // Temporary stub
 import React from 'react'
+import { useSidebar } from '@/contexts/SidebarContext'
 
 // Merkle DAG: sidebar_layout -> navigation_menu_structure
 interface MenuItem {

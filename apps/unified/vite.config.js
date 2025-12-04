@@ -39,7 +39,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     // Allow all hosts in development (Docker/OrbStack environment)
-    allowedHosts: true, // Allow all hosts
+    allowedHosts: [
+      'unified.spirit-in-physics.orb.local',
+      'localhost',
+      '.orb.local',
+      '127.0.0.1',
+    ],
   },
 });
 

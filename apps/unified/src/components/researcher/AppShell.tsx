@@ -4,7 +4,7 @@ import { SidebarProvider } from '@/contexts/SidebarContext';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import { MobileMenuOverlay } from '@/components/MobileMenuOverlay';
-import { Providers } from '../app/providers';
+import { Providers } from '@/components/app/providers';
 import type { ReactNode } from 'react';
 
 interface AppShellProps {
