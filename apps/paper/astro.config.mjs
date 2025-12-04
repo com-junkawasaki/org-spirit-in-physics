@@ -85,16 +85,18 @@ export default defineConfig(async () => {
         host: '0.0.0.0',
         port: 4321,
         // Allow requests from these hosts
-        // Always include these hosts for Docker/local development
-        allowedHosts: [
-          'paper.spirit-in-physics.orb.local',
-          'localhost',
-          '.orb.local',
-          '127.0.0.1',
-          '0.0.0.0',
-          // Pattern to match any .orb.local subdomain
-          '*.orb.local',
-        ],
+        // Use a function to allow all hosts in dev mode (useful for Docker)
+        allowedHosts: isDev
+          ? (host) => {
+              // In development, allow all hosts
+              return true;
+            }
+          : [
+              'paper.spirit-in-physics.orb.local',
+              'localhost',
+              '.orb.local',
+              '127.0.0.1',
+            ],
         // Disable strict host checking in development
         strictPort: false,
         // HMR settings for Docker
@@ -109,7 +111,6 @@ export default defineConfig(async () => {
           usePolling: true,
           interval: 1000,
         },
-        strictPort: false,
       },
     },
   };

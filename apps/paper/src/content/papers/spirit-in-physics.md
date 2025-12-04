@@ -1,0 +1,1 @@
+spirit-in-physics.mdx

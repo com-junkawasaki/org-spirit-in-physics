@@ -23,6 +23,15 @@ RUN pnpm install --no-frozen-lockfile && \
 # Copy paper app source code
 COPY . ./
 
+# Create symlinks for .mdx files as .md files for Astro content collections
+# This is a workaround for Astro's content collection loader only matching .md files
+RUN cd src/content/papers && \
+    for file in *.mdx; do \
+      if [ -f "$file" ] && [ ! -f "${file%.mdx}.md" ]; then \
+        ln -sf "$file" "${file%.mdx}.md"; \
+      fi; \
+    done
+
 # Set hostname and port to bind to all interfaces
 ENV HOSTNAME=0.0.0.0
 ENV PORT=4321

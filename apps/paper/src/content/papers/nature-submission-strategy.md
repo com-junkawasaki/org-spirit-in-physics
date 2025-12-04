@@ -1,0 +1,1 @@
+nature-submission-strategy.mdx
