@@ -2,7 +2,7 @@
 // Timeline API endpoint for research app (gRPC)
 
 import type { APIRoute } from 'astro';
-import { getTimeline } from '@/lib/paper/grpc/client';
+import { getTimeline } from '@spirit-in-physics/grpc-client/services/timeline';
 
 // Disable prerendering for dynamic API routes
 export const prerender = false;

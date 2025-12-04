@@ -10,12 +10,12 @@
     "prebuild": "npm run generate"
   },
   "dependencies": {
-    "@connectrpc/connect": "^1.4.0",
-    "@connectrpc/connect-web": "^1.4.0",
+    "@connectrpc/connect": "^2.0.0",
+    "@connectrpc/connect-web": "^2.0.0",
     "@bufbuild/protobuf": "^2.0.0"
   },
   "devDependencies": {
-    "@bufbuild/buf": "^2.0.0",
+    "@bufbuild/buf": "^1.61.0",
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   },

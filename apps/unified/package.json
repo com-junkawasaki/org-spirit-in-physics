@@ -21,6 +21,7 @@
   "dependencies": {
     "@clerk/astro": "^1.0.0",
     "@supabase/ssr": "^0.5.2",
+    "@spirit-in-physics/grpc-client": "file:../../packages/grpc-client",
     "@spirit-in-physics/jung-voice-assessment": "file:../../packages/jung-voice-assessment",
     "@spirit-in-physics/visualization-components": "file:../../packages/visualization-components",
     "@inlang/paraglide-js": "^2.4.0",
