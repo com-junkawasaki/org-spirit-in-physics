@@ -1,6 +1,6 @@
 // LLM-BOUNDARY: 50_adapters - RouteHandler/ServerActions/外部API実装
 
-import { MediaPort } from '@/lib/ports';
+import type { MediaPort } from '@/lib/participant/ports/media';
 
 export class MediaAdapter implements MediaPort {
   async getUserMedia(constraints: MediaStreamConstraints): Promise<MediaStream> {
@@ -23,7 +23,7 @@ export class MediaAdapter implements MediaPort {
         resolve(blob);
       };
 
-      mediaRecorder.onerror = (event) => {
+      mediaRecorder.onerror = (_event) => {
         reject(new Error('Media recording failed'));
       };
 
@@ -53,7 +53,7 @@ export class MediaAdapter implements MediaPort {
         resolve(blob);
       };
 
-      mediaRecorder.onerror = (event) => {
+      mediaRecorder.onerror = (_event) => {
         reject(new Error('Video recording failed'));
       };
 

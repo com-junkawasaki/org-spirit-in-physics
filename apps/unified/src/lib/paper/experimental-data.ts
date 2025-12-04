@@ -10,7 +10,7 @@ import type {
   GhostPattern,
   ClassificationResult,
   ComponentStats,
-} from '../types/experimental';
+} from '../../types/paper/experimental';
 import { graphqlClient } from './graphql/client';
 
 /**
@@ -332,25 +332,34 @@ function classifySpiritTypeAndGhostPattern(
   const thresholdType = 1.0; // Distance threshold for Spirit Type
 
   results.forEach((result, index) => {
-    const vector = [geneComponent[index], memeComponent[index], fieldComponent[index]];
+    const geneVal = geneComponent[index] ?? 0;
+    const memeVal = memeComponent[index] ?? 0;
+    const fieldVal = fieldComponent[index] ?? 0;
+    const vector = [geneVal, memeVal, fieldVal];
     const distance = Math.sqrt(
-      vector.reduce((sum, v, i) => sum + Math.pow(v - archetypeVector[i], 2), 0)
+      vector.reduce((sum: number, v: number, i: number) => {
+        const archetypeVal = archetypeVector[i] ?? 0;
+        return sum + Math.pow(v - archetypeVal, 2);
+      }, 0)
     );
 
     if (distance < thresholdType) {
       // Spirit Type
+      const geneVal = geneComponent[index] ?? 0;
+      const memeVal = memeComponent[index] ?? 0;
+      const fieldVal = fieldComponent[index] ?? 0;
       spiritTypes.push({
         id: `spirit-type-${index}`,
         archetype: 'typical',
-        geneComponent: [geneComponent[index]],
-        memeComponent: [memeComponent[index]],
-        fieldComponent: [fieldComponent[index]],
+        geneComponent: [geneVal],
+        memeComponent: [memeVal],
+        fieldComponent: [fieldVal],
         vector: vector.concat(Array(1021).fill(0)), // Pad to 1024d
         participants: [result.participantId],
         wordPairs: [{
           stimulusWord: result.stimulusWord,
           responseWord: result.responseWord,
-          reactionTimeMs: result.reactionTimeMs,
+          ...(result.reactionTimeMs !== undefined && { reactionTimeMs: result.reactionTimeMs }),
           wordAssociationProbability: result.wordAssociationProbability,
         }],
         distanceToArchetype: distance,
@@ -358,22 +367,24 @@ function classifySpiritTypeAndGhostPattern(
     } else {
       // Ghost Pattern
       const problematicIndicators: string[] = [];
-      if (Math.abs(memeComponent[index]) > 1.5) problematicIndicators.push('high_meme_variance');
-      if (Math.abs(fieldComponent[index]) > 1.5) problematicIndicators.push('high_field_variance');
+      const memeValue = memeComponent[index] ?? 0;
+      const fieldValue = fieldComponent[index] ?? 0;
+      if (Math.abs(memeValue) > 1.5) problematicIndicators.push('high_meme_variance');
+      if (Math.abs(fieldValue) > 1.5) problematicIndicators.push('high_field_variance');
       if (distance > thresholdType * 2) problematicIndicators.push('high_deviation');
 
       ghostPatterns.push({
         id: `ghost-pattern-${index}`,
-        shadowType: memeComponent[index] > 0 ? 'collective' : 'individual',
-        memeComponent: [memeComponent[index]],
-        fieldComponent: [fieldComponent[index]],
+        shadowType: memeValue > 0 ? 'collective' : 'individual',
+        memeComponent: [memeValue],
+        fieldComponent: [fieldValue],
         vector: vector.concat(Array(1021).fill(0)), // Pad to 1024d
         problematicIndicators,
         participants: [result.participantId],
         wordPairs: [{
           stimulusWord: result.stimulusWord,
           responseWord: result.responseWord,
-          reactionTimeMs: result.reactionTimeMs,
+          ...(result.reactionTimeMs !== undefined && { reactionTimeMs: result.reactionTimeMs }),
           wordAssociationProbability: result.wordAssociationProbability,
         }],
         distanceToHiddenPattern: distance,
@@ -413,7 +424,8 @@ export async function loadExperimentalData(participantId?: string): Promise<Expe
   const DEFAULT_PARTICIPANT_ID = '15592cdb-86cf-4baf-86f5-66184169ee39';
   
   // Priority: argument > hardcoded ID > first participant
-  const effectiveParticipantId = participantId || DEFAULT_PARTICIPANT_ID || (participants.length > 0 ? participants[0].id : undefined);
+  const firstParticipant = participants.length > 0 ? participants[0] : undefined;
+  const effectiveParticipantId = participantId || DEFAULT_PARTICIPANT_ID || firstParticipant?.id;
   
   const sessions = effectiveParticipantId ? await fetchSessions(effectiveParticipantId) : [];
   const responses = effectiveParticipantId ? await fetchAnalysisResults(effectiveParticipantId) : [];

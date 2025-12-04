@@ -1,7 +1,7 @@
 // Merkle DAG: lib.visualization_data
 // Data transformation for 3D visualization of Spirit Type and Ghost Pattern
 
-import type { SpiritType, GhostPattern, WordPair } from '../types/experimental';
+import type { SpiritType, GhostPattern } from '../../types/paper/experimental';
 
 // WordNode and WordLink types matching Force3DWordGraphTypeGPU
 export interface WordNode {
@@ -36,8 +36,9 @@ export interface WordLink {
  */
 function spiritTypeToWordNode(spiritType: SpiritType, index: number): WordNode {
   // Use first word pair for label
-  const label = spiritType.wordPairs.length > 0
-    ? `${spiritType.wordPairs[0].stimulusWord} → ${spiritType.wordPairs[0].responseWord}`
+  const firstPair = spiritType.wordPairs[0];
+  const label = firstPair
+    ? `${firstPair.stimulusWord} → ${firstPair.responseWord}`
     : `Spirit Type ${index}`;
 
   // Scale based on distance to archetype (closer = larger)
@@ -57,9 +58,9 @@ function spiritTypeToWordNode(spiritType: SpiritType, index: number): WordNode {
     emotion,
     classificationType: 'spirit-type',
     archetype: spiritType.archetype,
-    geneComponent: spiritType.geneComponent[0],
-    memeComponent: spiritType.memeComponent[0],
-    fieldComponent: spiritType.fieldComponent[0],
+    geneComponent: spiritType.geneComponent[0] ?? 0,
+    memeComponent: spiritType.memeComponent[0] ?? 0,
+    fieldComponent: spiritType.fieldComponent[0] ?? 0,
   };
 }
 
@@ -68,8 +69,9 @@ function spiritTypeToWordNode(spiritType: SpiritType, index: number): WordNode {
  */
 function ghostPatternToWordNode(ghostPattern: GhostPattern, index: number): WordNode {
   // Use first word pair for label
-  const label = ghostPattern.wordPairs.length > 0
-    ? `${ghostPattern.wordPairs[0].stimulusWord} → ${ghostPattern.wordPairs[0].responseWord}`
+  const firstPair = ghostPattern.wordPairs[0];
+  const label = firstPair
+    ? `${firstPair.stimulusWord} → ${firstPair.responseWord}`
     : `Ghost Pattern ${index}`;
 
   // Scale based on distance to hidden pattern (further = larger, indicating problematic)
@@ -89,8 +91,8 @@ function ghostPatternToWordNode(ghostPattern: GhostPattern, index: number): Word
     emotion,
     classificationType: 'ghost-pattern',
     shadowType: ghostPattern.shadowType,
-    memeComponent: ghostPattern.memeComponent[0],
-    fieldComponent: ghostPattern.fieldComponent[0],
+    memeComponent: ghostPattern.memeComponent[0] ?? 0,
+    fieldComponent: ghostPattern.fieldComponent[0] ?? 0,
   };
 }
 
@@ -134,7 +136,7 @@ function createWordLinks(
     ghostPatterns.slice(i + 1).forEach((gp2) => {
       // Calculate similarity based on problematic indicators
       const commonIndicators = gp.problematicIndicators.filter(
-        ind => gp2.problematicIndicators.includes(ind)
+        (ind: string) => gp2.problematicIndicators.includes(ind)
       ).length;
       const similarity = commonIndicators > 0 ? commonIndicators / 3.0 : 0.1;
       if (similarity >= minWeight) {
@@ -156,8 +158,8 @@ function createWordLinks(
   spiritTypes.forEach((st) => {
     ghostPatterns.forEach((gp) => {
       // Check if they share word pairs (pattern interference)
-      const sharedWords = st.wordPairs.some(wp1 =>
-        gp.wordPairs.some(wp2 =>
+      const sharedWords = st.wordPairs.some((wp1: { stimulusWord: string; responseWord: string }) =>
+        gp.wordPairs.some((wp2: { stimulusWord: string; responseWord: string }) =>
           wp1.stimulusWord === wp2.stimulusWord || wp1.responseWord === wp2.responseWord
         )
       );

@@ -1,6 +1,6 @@
 import { put, head, del, list } from '@vercel/blob';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+// import { join } from 'path'; // Unused
 
 export class BlobStorage {
   private static blobStoreUrl = 'https://kosv1afs1n9zpomr.public.blob.vercel-storage.com';
@@ -212,7 +212,7 @@ export class BlobStorage {
 
       files.forEach(file => {
         const match = file.match(/participants\/([^\/]+)\//);
-        if (match) {
+        if (match && match[1]) {
           participantIds.add(match[1]);
         }
       });

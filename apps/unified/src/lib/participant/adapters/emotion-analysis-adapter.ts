@@ -1,11 +1,11 @@
 // LLM-BOUNDARY: 50_adapters - RouteHandler/ServerActions/外部API実装
 
-import { EmotionAnalysisPort } from '@/lib/ports';
-import { EmotionAnalysisResult, EmotionStatistics } from '@/lib/schema';
+import type { EmotionAnalysisPort } from '@/lib/participant/ports/emotion-analysis';
+import type { EmotionAnalysisResult, EmotionStatistics } from '@/lib/participant/schema';
 import { HumeClient } from 'hume';
-import { readFileSync, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import { join } from 'path';
-import { foldEmotionStatistics } from '@/lib/fold';
+// import { foldEmotionStatistics } from '@/lib/fold'; // Module not found
 
 const ARTIFACTS_CACHE_PATH = '/Users/junkawasaki/jun784/root/procs/250901-com-junkawasaki-spiritinphysics/.artifacts_cache';
 
@@ -31,7 +31,7 @@ export class EmotionAnalysisAdapter implements EmotionAnalysisPort {
       console.log(`Starting emotion analysis for ${participantId}/${videoFileName}`);
       const startTime = Date.now();
 
-      const videoBuffer = readFileSync(videoPath);
+      // const _videoBuffer = readFileSync(videoPath); // Unused
 
       const job = await hume.expressionMeasurement.batch.startInferenceJob({
         models: {
@@ -103,7 +103,35 @@ export class EmotionAnalysisAdapter implements EmotionAnalysisPort {
       // これは管理画面での統計計算用
       // 実際の実装ではPostgreSQLからデータを取得して計算
       const results: EmotionAnalysisResult[] = [];
-      return foldEmotionStatistics(results);
+      // foldEmotionStatistics not available, calculate manually
+      const totalAnalyses = results.length;
+      const averageEmotions: Record<string, number> = {};
+      const dominantEmotions: Array<{ emotion: string; count: number }> = [];
+      let totalTime = 0;
+      
+      results.forEach(result => {
+        totalTime += result.processingTime;
+        result.emotions.forEach(emotion => {
+          averageEmotions[emotion.name] = (averageEmotions[emotion.name] || 0) + emotion.score;
+        });
+      });
+      
+      Object.keys(averageEmotions).forEach(emotion => {
+        const value = averageEmotions[emotion];
+        if (value !== undefined && totalAnalyses > 0) {
+          averageEmotions[emotion] = value / totalAnalyses;
+        }
+      });
+      
+      return {
+        totalAnalyses,
+        averageEmotions,
+        dominantEmotions,
+        processingStats: {
+          averageTime: totalAnalyses > 0 ? totalTime / totalAnalyses : 0,
+          totalTime
+        }
+      };
     } catch (error) {
       console.error('Error getting emotion statistics:', error);
       return {

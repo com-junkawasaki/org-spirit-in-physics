@@ -1,18 +1,17 @@
 // LLM-BOUNDARY: 50_adapters - RouteHandler/ServerActions/外部API実装
 
-import { EventBusPort, DomainEvent } from '@/lib/ports';
-import { EventType } from '@/lib/events';
+import type { EventBusPort, DomainEvent } from '@/lib/participant/ports/event-bus';
+import type { EventType } from '@/lib/participant/events/events';
 import { Inngest } from 'inngest';
 
 // Inngestクライアントの初期化（ローカル開発用）
-export const inngest = new Inngest({
+const inngestOptions: { id: string; baseUrl?: string } = {
   id: 'spirit-in-physics',
-  name: 'Spirit-in-Physics Analysis Pipeline',
-  concurrency: 5, // 同時実行数
-  retries: 3, // リトライ回数
-  // ローカル開発環境の設定
-  baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:25250' : undefined,
-});
+};
+if (process.env.NODE_ENV === 'development') {
+  inngestOptions.baseUrl = 'http://localhost:25250';
+}
+export const inngest = new Inngest(inngestOptions);
 
 // イベントタイプの定義
 export const events = {

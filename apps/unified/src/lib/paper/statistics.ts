@@ -1,7 +1,7 @@
 // Merkle DAG: lib.statistics
 // Statistical calculation functions
 
-import type { ComponentStats } from '../types/experimental';
+import type { ComponentStats } from '../../types/paper/experimental';
 
 /**
  * Calculate mean
@@ -28,9 +28,14 @@ export function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
+  if (sorted.length % 2 === 0) {
+    const val1 = sorted[mid - 1];
+    const val2 = sorted[mid];
+    if (val1 === undefined || val2 === undefined) return 0;
+    return (val1 + val2) / 2;
+  }
+  const val = sorted[mid];
+  return val ?? 0;
 }
 
 /**
@@ -51,8 +56,8 @@ export function calculateComponentStats(component: number[]): ComponentStats {
   return {
     mean: mean(component),
     stdDev: stdDev(component),
-    min: sorted[0],
-    max: sorted[sorted.length - 1],
+    min: sorted[0] ?? 0,
+    max: sorted[sorted.length - 1] ?? 0,
     median: median(sorted),
   };
 }
@@ -60,7 +65,7 @@ export function calculateComponentStats(component: number[]): ComponentStats {
 /**
  * Calculate confidence interval (95%)
  */
-export function confidenceInterval(values: number[], confidence: number = 0.95): [number, number] {
+export function confidenceInterval(values: number[], _confidence: number = 0.95): [number, number] {
   if (values.length === 0) return [0, 0];
   const m = mean(values);
   const s = stdDev(values);

@@ -1,7 +1,8 @@
 // LLM-BOUNDARY: 40_domain - xstate machines（UI非依存）
 
-import { createMachine, assign, ActorRefFrom } from 'xstate';
-import { EmotionAnalysisResult } from '@/lib/schema';
+import { createMachine, assign } from 'xstate';
+import type { ActorRefFrom } from 'xstate';
+import type { EmotionAnalysisResult } from '@/lib/participant/schema';
 
 // コンテキスト型
 export interface EmotionAnalysisContext {
@@ -43,6 +44,7 @@ export const emotionAnalysisMachine = createMachine({
           target: 'analyzing',
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               participantId: event.participantId,
               isAnalyzing: true,
@@ -54,6 +56,7 @@ export const emotionAnalysisMachine = createMachine({
           target: 'loading',
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               participantId: event.participantId,
               error: null
@@ -64,6 +67,7 @@ export const emotionAnalysisMachine = createMachine({
           target: 'batchAnalyzing',
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               participantId: event.participantId,
               isAnalyzing: true,
@@ -92,6 +96,7 @@ export const emotionAnalysisMachine = createMachine({
           target: 'idle',
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               error: event.error,
               isAnalyzing: false
@@ -108,6 +113,7 @@ export const emotionAnalysisMachine = createMachine({
           target: 'idle',
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               analysisResults: event.results
             })),
@@ -118,6 +124,7 @@ export const emotionAnalysisMachine = createMachine({
           target: 'idle',
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               error: event.error
             })),
@@ -133,6 +140,7 @@ export const emotionAnalysisMachine = createMachine({
           target: 'idle',
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               analysisResults: event.results,
               isAnalyzing: false
@@ -144,6 +152,7 @@ export const emotionAnalysisMachine = createMachine({
           target: 'idle',
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               error: event.error,
               isAnalyzing: false

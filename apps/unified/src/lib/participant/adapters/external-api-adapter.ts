@@ -1,7 +1,7 @@
 // LLM-BOUNDARY: 50_adapters - RouteHandler/ServerActions/外部API実装
 
-import { ExternalApiPort, HumeApiPort } from '@/lib/ports';
-import { HumeEmotionResponse } from '@/lib/schema';
+import type { ExternalApiPort, HumeApiPort } from '@/lib/participant/ports/external-api';
+import type { HumeEmotionResponse } from '@/lib/participant/schema';
 import { HumeClient } from 'hume';
 
 class HumeApiAdapter implements HumeApiPort {
@@ -33,7 +33,7 @@ class HumeApiAdapter implements HumeApiPort {
     try {
       // 実際のHume API呼び出し
       // 注意: 実際のAPIエンドポイントとメソッドはHume SDKのドキュメントに従って実装してください
-      const response = await this.hume.expressionMeasurement.analyzeVideo({
+      const response = await (this.hume.expressionMeasurement as any).analyzeVideo({
         data: videoBuffer
       });
 

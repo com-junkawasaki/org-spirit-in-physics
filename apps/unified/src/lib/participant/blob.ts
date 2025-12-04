@@ -1,4 +1,4 @@
-import { del, head, list, put } from "@vercel/blob";
+import { del, list, put } from "@vercel/blob";
 import { v4 as uuidv4 } from "uuid";
 
 export interface ArtifactMetadata {

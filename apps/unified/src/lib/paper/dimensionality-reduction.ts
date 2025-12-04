@@ -10,9 +10,10 @@ export function pca(
   targetDimensions: number = 3
 ): number[][] {
   if (vectors.length === 0) return [];
-  if (vectors[0].length === 0) return [];
+  const firstVector = vectors[0];
+  if (!firstVector || firstVector.length === 0) return [];
 
-  const dimension = vectors[0].length;
+  const dimension = firstVector.length;
   const n = vectors.length;
 
   // Center the data (subtract mean)
@@ -33,13 +34,21 @@ export function pca(
   centered.forEach(v => {
     for (let i = 0; i < dimension; i++) {
       for (let j = 0; j < dimension; j++) {
-        covariance[i][j] += v[i] * v[j];
+        const vI = v[i] ?? 0;
+        const vJ = v[j] ?? 0;
+        const covRow = covariance[i];
+        if (covRow) {
+          covRow[j] = (covRow[j] ?? 0) + vI * vJ;
+        }
       }
     }
   });
   for (let i = 0; i < dimension; i++) {
-    for (let j = 0; j < dimension; j++) {
-      covariance[i][j] /= (n - 1);
+    const covRow = covariance[i];
+    if (covRow) {
+      for (let j = 0; j < dimension; j++) {
+        covRow[j] = (covRow[j] ?? 0) / (n - 1);
+      }
     }
   }
 
@@ -58,8 +67,13 @@ export function pca(
     for (let iter = 0; iter < 10; iter++) {
       const newEigenvector = Array(dimension).fill(0);
       for (let i = 0; i < dimension; i++) {
-        for (let j = 0; j < dimension; j++) {
-          newEigenvector[i] += covariance[i][j] * eigenvector[j];
+        const covRow = covariance[i];
+        if (covRow) {
+          for (let j = 0; j < dimension; j++) {
+            const covVal = covRow[j] ?? 0;
+            const eigenValJ = eigenvector[j] ?? 0;
+            newEigenvector[i] = (newEigenvector[i] ?? 0) + covVal * eigenValJ;
+          }
         }
       }
       // Normalize
@@ -74,7 +88,9 @@ export function pca(
     for (let i = 0; i < dimension; i++) {
       let sum = 0;
       for (let j = 0; j < dimension; j++) {
-        sum += covariance[i][j] * eigenvector[j];
+        const covVal = covariance[i]?.[j] ?? 0;
+        const eigenVal = eigenvector[j] ?? 0;
+        sum += covVal * eigenVal;
       }
       eigenvalue += eigenvector[i] * sum;
     }
@@ -84,13 +100,15 @@ export function pca(
   // Project data onto principal components
   const projected = centered.map(v => {
     const result: number[] = [];
-    for (let d = 0; d < targetDimensions; d++) {
-      let projection = 0;
-      for (let i = 0; i < dimension; i++) {
-        projection += v[i] * eigenvectors[d][i];
+      for (let d = 0; d < targetDimensions; d++) {
+        let projection = 0;
+        for (let i = 0; i < dimension; i++) {
+          const vVal = v[i] ?? 0;
+          const eigenVal = eigenvectors[d]?.[i] ?? 0;
+          projection += vVal * eigenVal;
+        }
+        result.push(projection);
       }
-      result.push(projection);
-    }
     return result;
   });
 
@@ -108,11 +126,12 @@ export function pca(
 export function umap(
   vectors: number[][],
   targetDimensions: number = 3,
-  nNeighbors: number = 15,
-  minDist: number = 0.1
+  _nNeighbors: number = 15,
+  _minDist: number = 0.1
 ): number[][] {
   if (vectors.length === 0) return [];
-  if (vectors[0].length === 0) return [];
+  const firstVector = vectors[0];
+  if (!firstVector || firstVector.length === 0) return [];
 
   // Simplified UMAP: Use PCA as fallback
   // In production, implement proper UMAP algorithm or use library
@@ -130,7 +149,9 @@ export function projectComplexSpaceTo3D(
   if (vectors.length === 0) return [];
   
   // Validate vector dimensions
-  const dimension = vectors[0].length;
+  const firstVector = vectors[0];
+  if (!firstVector) return [];
+  const dimension = firstVector.length;
   if (dimension !== 1024) {
     console.warn(`Expected 1024-dimensional vectors, got ${dimension}-dimensional. Padding or truncating.`);
     vectors = vectors.map(v => {
@@ -165,17 +186,21 @@ export function scale3DCoordinates(
 
   coordinates.forEach(coord => {
     coord.forEach((val, dim) => {
-      mins[dim] = Math.min(mins[dim], val);
-      maxs[dim] = Math.max(maxs[dim], val);
+      const currentMin = mins[dim] ?? Infinity;
+      const currentMax = maxs[dim] ?? -Infinity;
+      mins[dim] = Math.min(currentMin, val);
+      maxs[dim] = Math.max(currentMax, val);
     });
   });
 
   // Scale to bounds
   return coordinates.map(coord => {
     return coord.map((val, dim) => {
-      const range = maxs[dim] - mins[dim];
+      const maxVal = maxs[dim] ?? 0;
+      const minVal = mins[dim] ?? 0;
+      const range = maxVal - minVal;
       if (range === 0) return 0;
-      const normalized = (val - mins[dim]) / range;
+      const normalized = (val - minVal) / range;
       return bounds.min + normalized * (bounds.max - bounds.min);
     });
   });

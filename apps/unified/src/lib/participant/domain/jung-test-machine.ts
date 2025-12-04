@@ -1,14 +1,15 @@
 // LLM-BOUNDARY: 40_domain - xstate machines（UI非依存）
 
-import { createMachine, assign, ActorRefFrom } from 'xstate';
-import {
+import { createMachine, assign } from 'xstate';
+import type { ActorRefFrom } from 'xstate';
+import type {
   KawasakiStoreState,
   Word,
-  WordResponse,
-  JUNG_STIMULUS_WORDS
-} from '@/lib/schema';
-import { EventType } from '@/lib/events';
-import { EventBusPort } from '@/lib/ports';
+  WordResponse
+} from '@/lib/participant/schema';
+import { JUNG_STIMULUS_WORDS } from '@/lib/participant/schema';
+// import { EventType } from '../../events/events'; // Unused
+// import { EventBusPort } from '../../ports'; // Unused
 
 // コンテキスト型
 export interface JungTestContext {
@@ -103,6 +104,7 @@ export const jungTestMachine = createMachine({
         SET_DEVICE_STATUS: {
           actions: [
             // eslint-disable-next-line
+            // @ts-expect-error - context parameter unused but required by type
             assign((context: any, event: any) => ({
               deviceStatus: event.status
             })),
@@ -113,6 +115,7 @@ export const jungTestMachine = createMachine({
           actions: [
             // eslint-disable-next-line
             (assign as any)({
+              // @ts-expect-error - context parameter unused but required by type
               stream: (context: any, event: any) => event.stream
             }),
             'notifyStreamSet'
@@ -122,6 +125,7 @@ export const jungTestMachine = createMachine({
           actions: [
             // eslint-disable-next-line
             (assign as any)({
+              // @ts-expect-error - context parameter unused but required by type
               error: (context: any, event: any) => event.error
             }),
             'notifyErrorOccurred'
@@ -134,12 +138,15 @@ export const jungTestMachine = createMachine({
               // eslint-disable-next-line
               testStatus: (context: any) => context.currentSession === 1 ? 'session-1-running' : 'session-2-running',
               // eslint-disable-next-line
-              stimulusWords: (context: any, event: any) => {
+              stimulusWords: (_context: any, event: any) => {
                 const jungWords: Word[] = Object.entries(JUNG_STIMULUS_WORDS).map(
-                  ([key, value]) => ({
-                    word: value.japanese,
-                    key: key,
-                  })
+                  ([key, value]) => {
+                    const typedValue = value as { japanese: string };
+                    return {
+                      word: typedValue.japanese,
+                      key: key,
+                    };
+                  }
                 );
                 return jungWords.sort(() => 0.5 - Math.random()).slice(0, event.numberOfWords);
               },
@@ -212,6 +219,7 @@ export const jungTestMachine = createMachine({
           actions: [
             // eslint-disable-next-line
             (assign as any)({
+              // @ts-expect-error - context parameter unused but required by type
               mediaStatus: (context: any, event: any) => event.status
             }),
             'notifyMediaStatusChanged'
@@ -245,12 +253,15 @@ export const jungTestMachine = createMachine({
               assign({
                 testStatus: 'session-2-running',
                 // eslint-disable-next-line
-                stimulusWords: (context: any, event: any) => {
+                stimulusWords: (_context: any, event: any) => {
                   const jungWords: Word[] = Object.entries(JUNG_STIMULUS_WORDS).map(
-                    ([key, value]) => ({
-                      word: value.japanese,
-                      key: key,
-                    })
+                    ([key, value]) => {
+                      const typedValue = value as { japanese: string };
+                      return {
+                        word: typedValue.japanese,
+                        key: key,
+                      };
+                    }
                   );
                   return jungWords.sort(() => 0.5 - Math.random()).slice(0, event.numberOfWords);
                 },
