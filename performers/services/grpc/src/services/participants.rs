@@ -2,7 +2,7 @@
 // Participant gRPC service implementation
 
 use tonic::{Request, Response, Status};
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
 use crate::auth::interceptor::extract_auth_context;
 use crate::error::{from_sqlx_error, from_uuid_parse_error, from_chrono_parse_error};
@@ -97,7 +97,7 @@ impl ParticipantServiceTrait for ParticipantServiceImpl {
         &self,
         request: Request<GetParticipantsRequest>,
     ) -> Result<Response<GetParticipantsResponse>, Status> {
-        let auth_context = extract_auth_context(&request).await?;
+        let auth_context = extract_auth_context(&request.map(|_| ())).await?;
         let is_authenticated = auth_context.is_some();
         
         let query = if is_authenticated {
@@ -147,7 +147,7 @@ impl ParticipantServiceTrait for ParticipantServiceImpl {
         &self,
         request: Request<GetParticipantRequest>,
     ) -> Result<Response<GetParticipantResponse>, Status> {
-        let auth_context = extract_auth_context(&request).await?;
+        let auth_context = extract_auth_context(&request.map(|_| ())).await?;
         let is_authenticated = auth_context.is_some();
         
         let uuid = Uuid::parse_str(&request.get_ref().id)

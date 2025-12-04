@@ -78,7 +78,7 @@ impl SessionServiceTrait for SessionServiceImpl {
         &self,
         request: Request<GetSessionsRequest>,
     ) -> Result<Response<GetSessionsResponse>, Status> {
-        let auth_context = extract_auth_context(&request).await?;
+        let auth_context = extract_auth_context(&request.map(|_| ())).await?;
         let is_authenticated = auth_context.is_some();
         
         let participant_uuid = Uuid::parse_str(&request.get_ref().participant_id)

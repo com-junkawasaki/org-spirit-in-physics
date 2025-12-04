@@ -387,8 +387,8 @@ export default function TimelineChart({
 
     const prosodyEmotionScale = d3.scaleLinear()
       .domain(prosodyEmotionExtent[0] === prosodyEmotionExtent[1] 
-        ? [0, Math.max(1, prosodyEmotionExtent[1])] 
-        : prosodyEmotionExtent)
+        ? [0, Math.max(1, prosodyEmotionExtent[1] ?? 0)] 
+        : prosodyEmotionExtent as [number, number])
       .range([axisHeight * 6.5, axisHeight * 6.1]);
 
     // 単語表示（時間軸上）
@@ -615,28 +615,22 @@ export default function TimelineChart({
           d.emotions.forEach((emotion) => {
             // fileTypeに応じて適切なスケールを選択
             let emotionYScale: d3.ScaleLinear<number, number>;
-            // let baseColor: string;
             
             switch (emotion.fileType) {
               case 'burst':
                 emotionYScale = burstEmotionScale;
-                baseColor = '#9333ea';
                 break;
               case 'face':
                 emotionYScale = faceEmotionScale;
-                baseColor = '#ec4899';
                 break;
               case 'language':
                 emotionYScale = languageEmotionScale;
-                baseColor = '#10b981';
                 break;
               case 'prosody':
                 emotionYScale = prosodyEmotionScale;
-                baseColor = '#f59e0b';
                 break;
               default:
                 emotionYScale = burstEmotionScale;
-                baseColor = '#9333ea';
             }
 
             const xPos = xScale(toDate(d.timestamp))
