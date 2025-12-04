@@ -60,9 +60,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
               // Convert Astro cookies to array format expected by Supabase
               const cookies: { name: string; value: string }[] = [];
               // AstroCookies is iterable, but TypeScript doesn't recognize it
-              const cookieEntries = Array.from(context.cookies as any);
+              const cookieEntries = Array.from(context.cookies as any) as Array<[string, { value: string }]>;
               for (const cookie of cookieEntries) {
-                cookies.push({ name: cookie[0], value: cookie[1].value });
+                cookies.push({ name: cookie[0], value: cookie[1]?.value ?? '' });
               }
               return cookies;
             },

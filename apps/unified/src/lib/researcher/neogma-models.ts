@@ -5,8 +5,8 @@
 // import { type Neogma, ModelFactory, type ModelRelatedNodesI } from 'neogma';
 
 type Neogma = any
-type ModelFactory = any
-type ModelRelatedNodesI<T = any, P = any> = any
+// type ModelFactory = any // Unused
+type ModelRelatedNodesI<T = any, P = any> = any // Type parameters kept for API compatibility
 
 // 共通の型定義 - ガイドライン: プロパティ設計は疎に／Map的フィールドは最後に
 interface BaseNode {
@@ -47,6 +47,7 @@ interface ExperimentProperties extends BaseNode {
 }
 
 // ガイドライン: 双方向は必要最小限・片側保存原則
+// @ts-expect-error - Unused type, kept for future use
 interface ParticipantRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   experiments: ModelRelatedNodesI<
@@ -93,6 +94,7 @@ interface ParticipantRelatedNodes {
 }
 
 // Experiment関連ノード定義
+// @ts-expect-error - Unused type, kept for future use
 interface ExperimentRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   participant: ModelRelatedNodesI<
@@ -127,6 +129,7 @@ interface ExperimentSessionProperties extends BaseNode {
 }
 
 // ガイドライン: 双方向は必要最小限・片側保存原則
+// @ts-expect-error - Unused type, kept for future use
 interface ExperimentSessionRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   participant: ModelRelatedNodesI<
@@ -172,6 +175,7 @@ interface ResponseProperties extends BaseNode {
 }
 
 // ガイドライン: 双方向は必要最小限・片側保存原則
+// @ts-expect-error - Unused type, kept for future use
 interface ResponseRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   participant: ModelRelatedNodesI<
@@ -199,6 +203,7 @@ interface ResponseRelatedNodes {
 }
 
 // EmotionAnalysisモデル - ガイドライン: 関係から決める型の写像
+// @ts-expect-error - Unused type, kept for future use
 interface EmotionAnalysisProperties extends BaseNode {
   // 基本プロパティ（疎結合）
   response_id: string; // ガイドライン: 主キーはアプリ側の安定ID
@@ -211,6 +216,7 @@ interface EmotionAnalysisProperties extends BaseNode {
 }
 
 // ガイドライン: 双方向は必要最小限・片側保存原則
+// @ts-expect-error - Unused type, kept for future use
 interface EmotionAnalysisRelatedNodes {
   // 一方向関係のみ定義（片側保存）
   response: ModelRelatedNodesI<
@@ -220,6 +226,7 @@ interface EmotionAnalysisRelatedNodes {
 }
 
 // WordStimulusモデル - ガイドライン: 関係から決める型の写像
+// @ts-expect-error - Unused type, kept for future use
 interface WordStimulusProperties extends BaseNode {
   // 基本プロパティ（疎結合）
   word: string;
@@ -232,6 +239,7 @@ interface WordStimulusProperties extends BaseNode {
 }
 
 // ImportJobモデル - ガイドライン: 関係から決める型の写像
+// @ts-expect-error - Unused type, kept for future use
 interface ImportJobProperties extends BaseNode {
   // 基本プロパティ（疎結合）
   session_id: string; // ガイドライン: 主キーはアプリ側の安定ID
@@ -255,6 +263,7 @@ interface VisualizationDatasetProperties extends BaseNode {
   metadata?: Record<string, unknown>;
 }
 
+// @ts-expect-error - Unused type, kept for future use
 interface VisualizationDatasetRelatedNodes {
   points: ModelRelatedNodesI<any, VisualizationPointProperties>
 }

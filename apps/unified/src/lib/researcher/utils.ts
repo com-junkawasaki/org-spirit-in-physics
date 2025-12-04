@@ -32,7 +32,8 @@ export function getEmotionColor(emotion: string): string {
     neutral: '#808080',
     unknown: '#A9A9A9'
   }
-  return colors[emotion.toLowerCase()] || colors.unknown
+  const lowerEmotion = emotion.toLowerCase();
+  return colors[lowerEmotion] ?? colors.unknown ?? '#A9A9A9'
 }
 
 export function calculateStats(data: number[]): {
@@ -47,12 +48,12 @@ export function calculateStats(data: number[]): {
   }
 
   const sorted = [...data].sort((a, b) => a - b)
-  const min = sorted[0]
-  const max = sorted[sorted.length - 1]
+  const min = sorted[0] ?? 0
+  const max = sorted[sorted.length - 1] ?? 0
   const mean = data.reduce((sum, val) => sum + val, 0) / data.length
   const median = sorted.length % 2 === 0
-    ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-    : sorted[Math.floor(sorted.length / 2)]
+    ? ((sorted[sorted.length / 2 - 1] ?? 0) + (sorted[sorted.length / 2] ?? 0)) / 2
+    : (sorted[Math.floor(sorted.length / 2)] ?? 0)
   const variance = data.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / data.length
   const std = Math.sqrt(variance)
 

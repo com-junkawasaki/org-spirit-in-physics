@@ -2,8 +2,8 @@ import { inngest, events, type FileImportEvent } from '../inngest';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
-import { listCsvFilesDeep, isCsvModalityPath, countLinesStream, withConcurrency } from '@/lib/fs-stream-utils';
-import { loadManifest, saveManifest, isUnchanged, upsertManifest } from '@/lib/import-manifest';
+import { listCsvFilesDeep, isCsvModalityPath, countLinesStream, withConcurrency } from '../fs-stream-utils';
+import { loadManifest, saveManifest, isUnchanged, upsertManifest } from '../import-manifest';
 
 // Merkle DAG: file_import_workflow -> data_ingestion_pipeline
 // ファイルインポートワークフロー（ローカル実行用）

@@ -1,6 +1,6 @@
 import { inngest, events, type KernelFusionEvent } from '../inngest';
 import { fuseKernels } from '../kernel-fusion';
-import { loadManifest, isUnchanged, upsertManifest, saveManifest } from '@/lib/import-manifest';
+import { loadManifest, isUnchanged, upsertManifest, saveManifest } from '../import-manifest';
 import { writeFileSync, existsSync, readFileSync } from 'node:fs';
 
 // Merkle DAG: kernel_fusion_workflow -> multimodal_integration
@@ -93,7 +93,7 @@ export const kernelFusionWorkflow = inngest.createFunction(
         const result = fuseKernels(distanceMatrices as Array<{ name: string; matrix: number[][]; kind: 'distance' }>, {
           normalization: options.normalization,
           nonNegativeWeights: options.nonNegativeWeights,
-          timeKernel: options.timeKernel,
+          timeKernel: options.timeKernel ?? null,
           rank: options.dimensions,
         });
 

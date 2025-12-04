@@ -138,8 +138,14 @@ export const GET: APIRoute = async ({ params, url }) => {
           timelineData,
           metadata: {
             sessionEvents: timelineData.length,
-            emotionEntries: timelineData.reduce((sum, item) => sum + (item?.em?.length || 0), 0),
-            physiologicalEntries: timelineData.filter((item) => item?.phys && Object.keys(item.phys).length > 0).length,
+            emotionEntries: timelineData.reduce((sum: number, item: unknown) => {
+              const typedItem = item as { em?: unknown[] };
+              return sum + (typedItem?.em?.length || 0);
+            }, 0),
+            physiologicalEntries: timelineData.filter((item: unknown) => {
+              const typedItem = item as { phys?: Record<string, unknown> };
+              return typedItem?.phys && Object.keys(typedItem.phys).length > 0;
+            }).length,
             totalDataPoints: timelineData.length,
             errors: [],
           },

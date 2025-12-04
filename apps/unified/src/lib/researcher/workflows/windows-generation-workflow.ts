@@ -1,6 +1,6 @@
 import { inngest, events, type WindowsGenerationEvent } from '../inngest';
 import { readFileSync, writeFileSync } from 'fs';
-import { loadManifest, isUnchanged, upsertManifest, saveManifest } from '@/lib/import-manifest';
+import { loadManifest, isUnchanged, upsertManifest, saveManifest } from '../import-manifest';
 
 // Merkle DAG: windows_generation_workflow -> temporal_segmentation
 // ウィンドウ生成ワークフロー（ローカル実行用）
@@ -79,7 +79,7 @@ async function parsePhysiologicalData(physioUri: string, participantId: string) 
     throw new Error('Invalid physiological data format');
   }
 
-  const header = lines[0].split(',');
+  const header = lines[0]?.split(',') ?? [];
   const samples = lines.slice(1).map(line => {
     const values = line.split(',');
     const sample: Record<string, string> = {};
@@ -119,7 +119,7 @@ async function parseHumeData(humeCsvUris: { burst: string[]; face: string[]; lan
         
         if (lines.length < 2) continue;
 
-        const header = lines[0].split(',');
+        const header = lines[0]?.split(',') ?? [];
         const records = lines.slice(1).map(line => {
           const values = line.split(',');
           const record: Record<string, string> = {};
@@ -129,7 +129,10 @@ async function parseHumeData(humeCsvUris: { burst: string[]; face: string[]; lan
           return record;
         });
 
-        humeRecords[modality].push(...records);
+        const modalityRecords = humeRecords[modality];
+        if (modalityRecords) {
+          modalityRecords.push(...records);
+        }
       } catch (error) {
         console.warn(`Failed to parse Hume CSV: ${filePath}`, { error });
       }
@@ -137,7 +140,7 @@ async function parseHumeData(humeCsvUris: { burst: string[]; face: string[]; lan
   }
 
   console.log(`Hume AI data parsed for ${participantId}`, {
-    modalities: Object.keys(humeRecords).filter(m => humeRecords[m].length > 0),
+    modalities: Object.keys(humeRecords).filter(m => (humeRecords[m]?.length ?? 0) > 0),
   });
 
   return humeRecords;
@@ -165,8 +168,9 @@ async function defineEmotionWindows(sessionData: SessionParsed, physioData: Phys
     const word = wordEvent.payload?.word || wordEvent.word || 'unknown';
 
     const nextWordIndex = sessionData.wordDisplayedEvents.indexOf(wordEvent) + 1;
-    const endTime = nextWordIndex < sessionData.wordDisplayedEvents.length
-      ? sessionData.wordDisplayedEvents[nextWordIndex].timestamp
+    const nextWordEvent = sessionData.wordDisplayedEvents[nextWordIndex];
+    const endTime = nextWordEvent
+      ? nextWordEvent.timestamp
       : startTime + 10000; // Default 10 seconds
 
     // Reaction time calculation (difference with speech_detected)

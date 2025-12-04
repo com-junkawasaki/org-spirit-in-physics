@@ -101,7 +101,7 @@ export function extractEmotionTimeSeries(
         series.points.push({
           timestamp,
           value,
-          confidence: emotion.confidence
+          confidence: emotion.confidence ?? 0
         });
       }
     });
@@ -129,17 +129,25 @@ export function calculateSoftDTW(
   }
   
   // 距離行列の計算
-  const distanceMatrix: number[][] = Array(m).fill(null).map(() => Array(n).fill(0));
+  const distanceMatrix: number[][] = Array.from({ length: m }, () => Array.from({ length: n }, () => 0));
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
-      const diff = series1[i].value - series2[j].value;
-      distanceMatrix[i][j] = diff * diff; // ユークリッド距離の二乗
+      const val1 = series1[i]?.value ?? 0;
+      const val2 = series2[j]?.value ?? 0;
+      const diff = val1 - val2;
+      const row = distanceMatrix[i];
+      if (row) {
+        row[j] = diff * diff; // ユークリッド距離の二乗
+      }
     }
   }
   
   // Soft-DTW 動的プログラミング
-  const softDTWMatrix: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(Infinity));
-  softDTWMatrix[0][0] = 0;
+  const softDTWMatrix: number[][] = Array.from({ length: m + 1 }, () => Array.from({ length: n + 1 }, () => Infinity));
+  const firstRow = softDTWMatrix[0];
+  if (firstRow) {
+    firstRow[0] = 0;
+  }
   
   // Soft minimum関数
   const softMin = (a: number, b: number, c: number): number => {
@@ -151,12 +159,15 @@ export function calculateSoftDTW(
   // DPテーブルの構築
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      const cost = distanceMatrix[i - 1][j - 1];
-      softDTWMatrix[i][j] = cost + softMin(
-        softDTWMatrix[i - 1][j],     // 挿入
-        softDTWMatrix[i][j - 1],     // 削除
-        softDTWMatrix[i - 1][j - 1]  // 置換
-      );
+      const cost = distanceMatrix[i - 1]?.[j - 1] ?? 0;
+      const row = softDTWMatrix[i];
+      if (row) {
+        row[j] = cost + softMin(
+          softDTWMatrix[i - 1]?.[j] ?? Infinity,     // 挿入
+          softDTWMatrix[i]?.[j - 1] ?? Infinity,     // 削除
+          softDTWMatrix[i - 1]?.[j - 1] ?? Infinity  // 置換
+        );
+      }
     }
   }
   
@@ -167,9 +178,9 @@ export function calculateSoftDTW(
   while (i > 0 && j > 0) {
     alignment.unshift({ i: i - 1, j: j - 1 });
     
-    const prevI = softDTWMatrix[i - 1][j];
-    const prevJ = softDTWMatrix[i][j - 1];
-    const prevIJ = softDTWMatrix[i - 1][j - 1];
+      const prevI = softDTWMatrix[i - 1]?.[j] ?? Infinity;
+      const prevJ = softDTWMatrix[i]?.[j - 1] ?? Infinity;
+      const prevIJ = softDTWMatrix[i - 1]?.[j - 1] ?? Infinity;
     
     if (prevIJ <= prevI && prevIJ <= prevJ) {
       i--; j--;
@@ -180,8 +191,11 @@ export function calculateSoftDTW(
     }
   }
   
+  const finalRow = softDTWMatrix[m];
+  const distance = finalRow?.[n] ?? Infinity;
+  
   return {
-    distance: softDTWMatrix[m][n],
+    distance,
     alignment,
     gamma
   };
@@ -245,20 +259,27 @@ export function calculateWeightedSoftDTWDistance(
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       if (i === j) {
-        matrix[i][j] = 0;
+        const row = matrix[i];
+        if (row) {
+          row[j] = 0;
+        }
         continue;
       }
       
       const series1 = emotionSeries[i];
       const series2 = emotionSeries[j];
       
+      if (!series1 || !series2) continue;
+      
       // 同じ感情の系列のみを比較
+      const row = matrix[i];
+      if (!row) continue;
       if (series1.emotion === series2.emotion && topKEmotions.includes(series1.emotion)) {
         const softDTWResult = calculateSoftDTW(series1.points, series2.points, gamma);
         const weightedDistance = softDTWResult.distance * (weights[series1.emotion] || defaultWeight);
-        matrix[i][j] = weightedDistance;
+        row[j] = weightedDistance;
       } else {
-        matrix[i][j] = Infinity; // 異なる感情または上位K外
+        row[j] = Infinity; // 異なる感情または上位K外
       }
     }
   }
@@ -271,9 +292,12 @@ export function calculateWeightedSoftDTWDistance(
     const range = maxDistance - minDistance || 1;
     
     for (let i = 0; i < n; i++) {
+      const row = matrix[i];
+      if (!row) continue;
       for (let j = 0; j < n; j++) {
-        if (matrix[i][j] !== Infinity && matrix[i][j] !== 0) {
-          matrix[i][j] = (matrix[i][j] - minDistance) / range;
+        const value = row[j];
+        if (value !== undefined && value !== Infinity && value !== 0) {
+          row[j] = (value - minDistance) / range;
         }
       }
     }
@@ -300,18 +324,21 @@ export function calculateCombinedDistance(
   alpha: number = 0.6
 ): number[][] {
   const n = cosineMatrix.length;
-  const combinedMatrix: number[][] = Array(n).fill(null).map(() => Array(n).fill(0));
+  const combinedMatrix: number[][] = Array.from({ length: n }, () => Array.from({ length: n }, () => 0));
   
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
-      const cosineDist = cosineMatrix[i][j];
-      const softDTWDist = softDTWMatrix[i][j];
+      const cosineDist = cosineMatrix[i]?.[j];
+      const softDTWDist = softDTWMatrix[i]?.[j];
       
       // 無限大の処理
-      const validCosine = Number.isFinite(cosineDist) ? cosineDist : 1;
-      const validSoftDTW = Number.isFinite(softDTWDist) ? softDTWDist : 1;
+      const validCosine: number = (cosineDist !== undefined && Number.isFinite(cosineDist)) ? cosineDist : 1;
+      const validSoftDTW: number = (softDTWDist !== undefined && Number.isFinite(softDTWDist)) ? softDTWDist : 1;
       
-      combinedMatrix[i][j] = alpha * validCosine + (1 - alpha) * validSoftDTW;
+      const row = combinedMatrix[i];
+      if (row) {
+        row[j] = alpha * validCosine + (1 - alpha) * validSoftDTW;
+      }
     }
   }
   
@@ -345,7 +372,7 @@ export function calculateTimeSeriesDistanceMatrix(
   }>,
   topKEmotions: string[] = ['joy', 'calm', 'anger', 'fear', 'surprise'],
   gamma: number = 0.1,
-  alpha: number = 0.6
+  _alpha: number = 0.6 // Unused parameter, kept for API compatibility
 ): TimeSeriesDistanceMatrix {
   // 1. 時系列データの抽出
   const emotionSeries = extractEmotionTimeSeries(windows);

@@ -6,7 +6,7 @@ import {
   getParticipantStatistics,
   initializeDatabase
 } from '../../../../lib/participant/data-loader';
-import { getEmotionStatisticsFromGraphQL } from '../../../../lib/participant/emotion-analysis';
+// import { getEmotionStatisticsFromGraphQL } from '../../../../lib/participant/emotion-analysis';
 
 export const prerender = false;
 

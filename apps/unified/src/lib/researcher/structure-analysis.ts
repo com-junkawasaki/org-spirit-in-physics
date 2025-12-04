@@ -5,7 +5,7 @@
 // - 密度分析（密集/分散領域の特定）
 // - 重複項目の検出
 
-import type { WordNode, WordLink, TimelineDataPoint } from '@/components/timeline/types'
+import type { WordNode, WordLink, TimelineDataPoint } from '../../components/researcher/timeline/types'
 
 // Merkle DAG: structure_analysis.gap_detection
 // 空白エリア（漏れた項目候補）の検出
@@ -32,7 +32,7 @@ export interface GapArea {
  */
 export function detectGapAreas(
   nodes: WordNode[],
-  links: WordLink[],
+  _links: WordLink[],
   emotionVectors: Record<string, number[]>,
   sessionData: TimelineDataPoint[],
   options: {
@@ -542,7 +542,7 @@ export function detectDuplicates(
       const node1 = wordNodes[i]
       const node2 = wordNodes[j]
 
-      if (!node1.initial || !node2.initial) continue
+      if (!node1 || !node2 || !node1.initial || !node2.initial) continue
 
       // 3D空間での距離
       const [x1, y1, z1] = node1.initial

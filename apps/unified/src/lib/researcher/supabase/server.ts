@@ -26,8 +26,10 @@ export async function createClient(cookies?: AstroCookies) {
           // Convert Astro cookies to array format expected by Supabase
           if (!cookies) return [];
           const cookieArray: { name: string; value: string }[] = [];
-          for (const cookie of cookies) {
-            cookieArray.push({ name: cookie[0], value: cookie[1].value });
+          // AstroCookies is iterable, but TypeScript doesn't recognize it
+          const cookieEntries = Array.from(cookies as any) as Array<[string, { value: string }]>;
+          for (const cookie of cookieEntries) {
+            cookieArray.push({ name: cookie[0], value: cookie[1]?.value ?? '' });
           }
           return cookieArray;
         },

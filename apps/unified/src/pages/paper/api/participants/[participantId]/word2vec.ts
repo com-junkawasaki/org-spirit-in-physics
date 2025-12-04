@@ -7,9 +7,9 @@ import type { APIRoute } from 'astro';
 export const prerender = false;
 
 // Get GraphQL API URL from environment
-function getGraphQLApiUrl(): string {
-  return import.meta.env.GRAPHQL_API_URL || 'http://graphql-service:8081/graphql';
-}
+// function getGraphQLApiUrl(): string {
+//   return import.meta.env.GRAPHQL_API_URL || 'http://graphql-service:8081/graphql';
+// }
 
 export const GET: APIRoute = async ({ params }) => {
   const participantId = params.participantId;
