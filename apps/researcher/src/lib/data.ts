@@ -1,5 +1,4 @@
-// Neo4jの直接使用を削除し、GraphQL経由のみに変更
-// import { createNeo4jClient } from './neo4j'
+// GraphQL経由のみに変更
 
 // Use generated types from GraphQL Code Generator
 import type {

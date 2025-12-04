@@ -1,5 +1,8 @@
 import { inngest, events, type Neo4jPersistenceEvent } from '../inngest';
-import { Neogma } from 'neogma';
+// NOTE: neogma dependency removed - using any types for build compatibility
+// import { Neogma } from 'neogma';
+
+type Neogma = any
 
 // Merkle DAG: neo4j_persistence_workflow -> data_persistence
 // Neo4j保存ワークフロー

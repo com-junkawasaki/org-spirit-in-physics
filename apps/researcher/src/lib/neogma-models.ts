@@ -1,8 +1,12 @@
 // Merkle DAG: Neogmaモデル定義
-// Neogmaを使用した型安全なNeo4j Object-Graph Mapping
 // ガイドライン: グラフ → 型の写像は「関係から決める」
+// NOTE: neogma dependency removed - using any types for build compatibility
 
-import { type Neogma, ModelFactory, type ModelRelatedNodesI } from 'neogma';
+// import { type Neogma, ModelFactory, type ModelRelatedNodesI } from 'neogma';
+
+type Neogma = any
+type ModelFactory = any
+type ModelRelatedNodesI = any
 
 // 共通の型定義 - ガイドライン: プロパティ設計は疎に／Map的フィールドは最後に
 interface BaseNode {
@@ -502,4 +506,3 @@ export function createNeogmaModels(neogmaInstance: Neogma) {
 }
 
 // Merkle DAG: Neogmaモデル定義完了
-// これらのモデルは型安全なNeo4j操作を提供

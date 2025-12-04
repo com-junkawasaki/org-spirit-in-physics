@@ -42,11 +42,6 @@ export const events = {
   EMBEDDING_GENERATION_COMPLETED: 'pipeline.embedding_generation.completed',
   EMBEDDING_GENERATION_FAILED: 'pipeline.embedding_generation.failed',
 
-  // Neo4j保存イベント
-  NEO4J_PERSISTENCE_REQUESTED: 'pipeline.neo4j_persistence.requested',
-  NEO4J_PERSISTENCE_STARTED: 'pipeline.neo4j_persistence.started',
-  NEO4J_PERSISTENCE_COMPLETED: 'pipeline.neo4j_persistence.completed',
-  NEO4J_PERSISTENCE_FAILED: 'pipeline.neo4j_persistence.failed',
 
   // エクスポートイベント
   EXPORT_REQUESTED: 'pipeline.export.requested',
@@ -126,7 +121,6 @@ export interface EmbeddingGenerationEvent {
   n: number;
 }
 
-// Neo4jPersistenceEventは削除済み（GraphQL経由でPostgreSQLを使用）
 // データ永続化はGraphQLサービス経由で行われる
 
 export interface ExportEvent {
@@ -156,5 +150,4 @@ export type WindowsGenerationWorkflow = (event: WindowsGenerationEvent) => Promi
 export type DistanceCalculationWorkflow = (event: DistanceCalculationEvent) => Promise<void>;
 export type KernelFusionWorkflow = (event: KernelFusionEvent) => Promise<void>;
 export type EmbeddingGenerationWorkflow = (event: EmbeddingGenerationEvent) => Promise<void>;
-// Neo4jPersistenceWorkflowは削除済み（GraphQL経由でPostgreSQLを使用）
 export type ExportWorkflow = (event: ExportEvent) => Promise<void>;

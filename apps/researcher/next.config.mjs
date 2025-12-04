@@ -29,7 +29,7 @@ const nextConfig = {
       ...config.resolve,
       alias: {
         ...config.resolve.alias,
-        '@spirit-in-physics/visualization-components': resolve(__dirname, '../packages/visualization-components/src/index.ts'),
+        '@spirit-in-physics/visualization-components': resolve(__dirname, '../../packages/visualization-components/src/index.ts'),
       },
       fallback: {
         ...config.resolve?.fallback,

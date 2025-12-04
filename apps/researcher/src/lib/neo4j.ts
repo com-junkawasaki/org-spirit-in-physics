@@ -1,8 +1,16 @@
-// Merkle DAG: NeogmaベースのNeo4jクライアント
-// Neogmaを使用した型安全なNeo4j Object-Graph Mapping
+// NOTE: neogma dependency removed - using any types for build compatibility
 
-import { Neogma } from 'neogma'
-import { createNeogmaModels } from './neogma-models'
+// import { Neogma } from 'neogma'
+// import { createNeogmaModels } from './neogma-models'
+
+type Neogma = any
+const createNeogmaModels = (_neogma: any) => ({
+  Participant: null,
+  ExperimentSession: null,
+  Response: null,
+  EmotionAnalysis: null,
+  ImportJob: null
+})
 
 interface Neo4jConfig {
   uri: string
@@ -262,7 +270,6 @@ class Neo4jClient {
   }
 }
 
-// Neo4j configuration
 const neo4jConfig: Neo4jConfig = {
   uri: process.env.NEO4J_URI || process.env.NEXT_PUBLIC_NEO4J_URI || 'bolt://localhost:7687',
   user: process.env.NEO4J_USER || 'neo4j',
@@ -270,23 +277,20 @@ const neo4jConfig: Neo4jConfig = {
   database: process.env.NEO4J_DATABASE || 'neo4j'
 }
 
-// Create singleton client instance
 let clientInstance: Neo4jClient | null = null
 
 export function createNeo4jClient(): Neo4jClient {
+  throw new Error('この関数は使用できません。')
   if (!clientInstance) {
     clientInstance = new Neo4jClient(neo4jConfig)
   }
   return clientInstance
 }
 
-// Legacy compatibility functions - maintain for now
 export function createArangoDBClient(): Neo4jClient {
   return createNeo4jClient()
 }
 
-// Merkle DAG: neo4j_manager -> unified_data_access_layer
-// Neo4jManager class for unified data access
 export class Neo4jManager {
   private client: Neo4jClient
   private neogma: any
@@ -312,7 +316,7 @@ export class Neo4jManager {
     try {
       // Neogmaを使って接続テスト
       const result = await this.client.query('RETURN 1 as test')
-      // Neo4j IntegerオブジェクトをJavaScript numberに変換
+      // IntegerオブジェクトをJavaScript numberに変換
       const testValue = result && result.length > 0 ? result[0].test : null
       const numValue = typeof testValue === 'object' && testValue !== null && 'low' in testValue
         ? testValue.low
@@ -447,7 +451,7 @@ export class Neo4jManager {
     }
   }
 
-  // Merkle DAG: neo4j.methods.physiological_data
+  // Merkle DAG: methods.physiological_data
   // 生理データ作成メソッド
   async createPhysiologicalData(participantId: string, sessionId: string, physiologicalData: any[]): Promise<void> {
     try {
@@ -501,7 +505,7 @@ export class Neo4jManager {
     }
   }
 
-  // Merkle DAG: neo4j.methods.create_participant
+  // Merkle DAG: methods.create_participant
   // 参加者ノード作成
   async createParticipant(participantData: { participant_id: string; signature?: string; agreed_at?: string; agreements_json?: string; imported_at?: string }): Promise<void> {
     await this.neogma.queryRunner.run(
@@ -523,7 +527,7 @@ export class Neo4jManager {
     )
   }
 
-  // Merkle DAG: neo4j.methods.create_session_events
+  // Merkle DAG: methods.create_session_events
   // セッションイベント作成（簡易: SessionEventノードとして保存）
   async createSessionEvents(events: Array<{ participant_id: string; type: string; timestamp: string; payload: any; imported_at: string }>): Promise<void> {
     for (const ev of events) {
@@ -552,7 +556,7 @@ export class Neo4jManager {
     }
   }
 
-  // Merkle DAG: neo4j.methods.create_word_responses
+  // Merkle DAG: methods.create_word_responses
   async createWordResponses(participantId: string, responses: Array<{ stimulusWord: string; responseWord: string; reactionTimeMs: number; isDelayed: boolean; timestamp: string }>): Promise<void> {
     for (const r of responses) {
       await this.neogma.queryRunner.run(
@@ -578,7 +582,7 @@ export class Neo4jManager {
     }
   }
 
-  // Merkle DAG: neo4j.methods.get_sessions_by_participant
+  // Merkle DAG: methods.get_sessions_by_participant
   async getSessionsByParticipantId(participantId: string): Promise<any[]> {
     const res = await this.neogma.queryRunner.run(
       `MATCH (s:ExperimentSession) WHERE s.participant_id = $participant_id RETURN s AS session`,
@@ -587,7 +591,7 @@ export class Neo4jManager {
     return res.records?.map(r => r.get('session')) ?? []
   }
 
-  // Merkle DAG: neo4j.methods.create_emotion_entries
+  // Merkle DAG: methods.create_emotion_entries
   async createEmotionEntries(entries: Array<{ participant_id: string; registry_uuid?: string; text?: string; begin_time?: number; end_time?: number; confidence?: number; emotions?: any; position?: any; imported_at?: string }>): Promise<void> {
     for (const e of entries) {
       await this.neogma.queryRunner.run(
@@ -619,7 +623,7 @@ export class Neo4jManager {
     }
   }
 
-  // Merkle DAG: neo4j.methods.create_csv_elements
+  // Merkle DAG: methods.create_csv_elements
   async createCSVElements(elements: Array<Record<string, unknown>>): Promise<void> {
     for (const element of elements) {
       await this.neogma.queryRunner.run(
@@ -629,7 +633,7 @@ export class Neo4jManager {
     }
   }
 
-  // Merkle DAG: neo4j.methods.get_emotions_by_participant
+  // Merkle DAG: methods.get_emotions_by_participant
   async getEmotionDataByParticipantId(participantId: string): Promise<any[]> {
     const res = await this.neogma.queryRunner.run(
       `MATCH (e:EmotionEntry) WHERE e.participant_id = $participant_id RETURN e AS emotion`,

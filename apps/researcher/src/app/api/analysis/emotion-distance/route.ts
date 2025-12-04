@@ -1,10 +1,8 @@
 // Merkle DAG: api.analysis.emotion_distance
 // 感情距離計算API
-// 依存: Neo4j, 感情データ, 時系列データ
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createNeo4jClient } from '@/lib/neo4j';
 import { calculateEmotionDistanceMatrix } from '@/lib/emotion-distance-calculator';
 import { calculateTimeSeriesDistanceMatrix } from '@/lib/soft-dtw-calculator';
 import { calculateEmbedding } from '@/lib/embedding-calculator';
