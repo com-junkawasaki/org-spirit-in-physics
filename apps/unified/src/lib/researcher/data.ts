@@ -1,18 +1,17 @@
 // @ts-nocheck
-// GraphQL経由のみに変更
+// gRPC経由のみに変更
 
-// Use generated types from GraphQL Code Generator
-import type {
-  GetParticipantsQueryResult,
-  GetSessionsQueryResult,
-  GetTimelineQueryResult,
-} from '@/generated/graphql';
+// Use gRPC client instead of GraphQL
 import {
-  graphqlClient,
-  GetParticipantsDocument,
-  GetSessionsDocument,
-  GetTimelineDocument,
-} from './graphql/client';
+  getParticipants,
+  getParticipant,
+  getSessions,
+  getTimeline,
+  type GetParticipantsResponse,
+  type GetParticipantResponse,
+  type GetSessionsResponse,
+  type GetTimelineResponse,
+} from './grpc/client';
 
 export interface AnalysisResult {
   id: string
@@ -97,13 +96,13 @@ export interface DashboardStats {
   }
 }
 
-// Server-side data fetching functions - GraphQL経由のみ
+// Server-side data fetching functions - gRPC経由のみ
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    // GraphQL経由でデータを取得
+    // gRPC経由でデータを取得
 
     // 参加者一覧を取得
-    const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
+    const participantsData = await getParticipants()
     const participants = participantsData.participants || []
     const totalParticipants = participants.length
 
@@ -117,13 +116,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     for (const participant of participants) {
       try {
         // セッションを取得
-        const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId: participant.id })
+        const sessionsData = await getSessions(participant.id)
         const sessions = sessionsData.sessions || []
         totalSessions += sessions.length
 
         // タイムラインデータを取得
-        const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId: participant.id })
-        const timeline = timelineData.timeline || []
+        const timelineData = await getTimeline({ participantId: participant.id })
+        const timeline = timelineData.points || []
         
         // レスポンス数をカウント
         const responses = timeline.filter(p => p.hasResponse)
@@ -136,8 +135,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
               const emotionName = emotion.name || 'unknown'
               emotionDistribution[emotionName] = (emotionDistribution[emotionName] || 0) + 1
             })
-      }
-    })
+          }
+        })
 
         // 反応値とコンポーネントを収集
         timeline.forEach(point => {
@@ -205,12 +204,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function getAllParticipants(): Promise<ParticipantData[]> {
   try {
-    // Use GraphQL to fetch participants
+    // Use gRPC to fetch participants
     
-    console.log('[getAllParticipants] Fetching participants from GraphQL...')
-    let participantsData: GetParticipantsQueryResult
+    console.log('[getAllParticipants] Fetching participants from gRPC...')
+    let participantsData: GetParticipantsResponse
     try {
-      participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
+      participantsData = await getParticipants()
     } catch (error) {
       console.error('[getAllParticipants] Failed to fetch participants:', error)
       if (error instanceof Error) {
@@ -232,9 +231,9 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
           console.log(`[getAllParticipants] Fetching data for participant ${participantId}...`)
           
           // Get sessions for this participant
-          let sessionsData: GetSessionsQueryResult
+          let sessionsData: GetSessionsResponse
           try {
-            sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId })
+            sessionsData = await getSessions(participantId)
           } catch (error) {
             console.error(`[getAllParticipants] Failed to fetch sessions for ${participantId}:`, error)
             if (error instanceof Error) {
@@ -246,9 +245,9 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
           console.log(`[getAllParticipants] Found ${sessions.length} sessions for participant ${participantId}`)
           
           // Get timeline data to calculate response count and average spirit probability
-          let timelineData: GetTimelineQueryResult
+          let timelineData: GetTimelineResponse
           try {
-            timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
+            timelineData = await getTimeline({ participantId })
           } catch (error) {
             console.error(`[getAllParticipants] Failed to fetch timeline for ${participantId}:`, error)
             if (error instanceof Error) {
@@ -256,326 +255,144 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
             }
             throw error
           }
-          const timeline = timelineData.timeline || []
-          console.log(`[getAllParticipants] Found ${timeline.length} timeline points for participant ${participantId}`)
+          const timeline = timelineData.points || []
           
-          // Calculate statistics
-          const responseCount = timeline.filter((p) => p.hasResponse).length
-          const reactionValues = timeline
-            .filter((p) => p.reactionValue != null)
-            .map((p) => p.reactionValue ?? 0)
+          // Calculate response count
+          const responses = timeline.filter(p => p.hasResponse)
+          const responseCount = responses.length
+          
+          // Calculate average spirit probability (using reactionValue)
+          const reactionValues = responses
+            .map(p => p.reactionValue)
+            .filter((v): v is number => v != null)
           const averageSpiritProbability = reactionValues.length > 0
-            ? reactionValues.reduce((sum: number, val: number) => sum + val, 0) / reactionValues.length
+            ? reactionValues.reduce((sum, val) => sum + val, 0) / reactionValues.length
             : 0
           
-          console.log(`[getAllParticipants] Participant ${participantId} stats:`, {
-            sessionCount: sessions.length,
-            responseCount,
-            averageSpiritProbability,
-            timelineLength: timeline.length
-          })
-          
           // Get last activity timestamp
-          const lastTimelinePoint = timeline.length > 0 ? timeline[timeline.length - 1] : null
-          const lastActivity = lastTimelinePoint
-            ? new Date(lastTimelinePoint.time).getTime()
+          const lastActivity = sessions.length > 0 && sessions[0].endTs
+            ? Number(sessions[0].endTs)
             : null
-          
+
           return {
             id: participantId,
-            name: `Participant ${participantId.slice(0, 8)}`,
-            sessions: sessions.map((s) => ({
+            name: null, // GraphQL/gRPC doesn't provide name field
+            sessions: sessions.map(s => ({
               id: s.id,
               session_id: s.id,
               session_type: 'experiment',
-              start_time: s.startTs ? new Date(s.startTs).toISOString() : null,
-              end_time: s.endTs ? new Date(s.endTs).toISOString() : null,
-              responses: [],
-              responseCount: timeline.filter((p) => p.sessionId === s.id && p.hasResponse).length,
+              start_time: s.startTs ? new Date(Number(s.startTs)).toISOString() : null,
+              end_time: s.endTs ? new Date(Number(s.endTs)).toISOString() : null,
+              responses: [], // Will be populated from timeline if needed
+              responseCount: 0,
             })),
             analysisRuns: [],
             sessionCount: sessions.length,
             responseCount,
             averageSpiritProbability,
             lastActivity,
-          } as ParticipantData
-        } catch (error) {
-          console.error(`[getAllParticipants] Failed to fetch data for participant ${participantId}:`, error)
-          if (error instanceof Error) {
-            console.error(`[getAllParticipants] Error message:`, error.message)
-            console.error(`[getAllParticipants] Error stack:`, error.stack)
           }
-          // Return participant with zero stats instead of throwing
+        } catch (error) {
+          console.error(`[getAllParticipants] Failed to process participant ${participantId}:`, error)
+          // Return minimal data for this participant
           return {
             id: participantId,
-            name: `Participant ${participantId.slice(0, 8)}`,
+            name: null,
             sessions: [],
             analysisRuns: [],
             sessionCount: 0,
             responseCount: 0,
             averageSpiritProbability: 0,
             lastActivity: null,
-          } as ParticipantData
+          }
         }
       })
     )
 
-    const validParticipants = participantsWithData.filter(Boolean) as ParticipantData[]
-    console.log(`[getAllParticipants] Returning ${validParticipants.length} participants with data`)
-    return validParticipants
+    console.log(`[getAllParticipants] Returning ${participantsWithData.length} participants with data`)
+    return participantsWithData
   } catch (error) {
-    console.error('[getAllParticipants] Failed to fetch all participants:', error)
+    console.error('[getAllParticipants] Failed to get participants:', error)
     if (error instanceof Error) {
       console.error('[getAllParticipants] Error message:', error.message)
       console.error('[getAllParticipants] Error stack:', error.stack)
     }
-    // Return empty array instead of throwing to prevent API route from crashing
     return []
   }
 }
 
 export async function getParticipantData(participantId: string): Promise<ParticipantData | null> {
   try {
-    // GraphQL経由でデータを取得
+    // gRPC経由でデータを取得
 
-    // 参加者情報を取得（GetParticipantがない場合はGetParticipantsから検索）
-    const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
-    const participant = participantsData.participants?.find(p => p.id === participantId)
+    // 参加者情報を取得
+    const participantData = await getParticipant(participantId)
+    const participant = participantData.participant
     if (!participant) return null
 
     // セッションを取得
-    const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId })
+    const sessionsData = await getSessions(participantId)
     const sessions = sessionsData.sessions || []
 
     // タイムラインデータを取得してレスポンスを構築
-    const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
-    const timeline = timelineData.timeline || []
+    const timelineData = await getTimeline({ participantId })
+    const timeline = timelineData.points || []
 
     // セッションごとにレスポンスをグループ化
     const sessionMap: Record<string, ResponseData[]> = {}
     timeline.forEach(point => {
       if (point.hasResponse && point.sessionId) {
-        const sessionId = point.sessionId
-      if (!sessionMap[sessionId]) {
-        sessionMap[sessionId] = []
-      }
-        
-        // 感情データから主要な感情を取得
-        const primaryEmotion = Array.isArray(point.emotions) && point.emotions.length > 0
-          ? point.emotions[0]
-          : null
-
-      sessionMap[sessionId].push({
+        if (!sessionMap[point.sessionId]) {
+          sessionMap[point.sessionId] = []
+        }
+        // Convert timeline point to response data
+        const response: ResponseData = {
           id: `${point.sessionId}-${point.time}`,
           stimulus_word: point.word || '',
-          response_word: point.word || '', // タイムラインデータからは応答語が取得できないため、刺激語を使用
-          reaction_time_ms: point.reactionTime || 0,
-          skin_potential: 0, // 生理データは別途取得が必要
-          emotion: primaryEmotion?.name || '',
-          emotion_confidence: primaryEmotion?.score || 0,
-          skinPotentialTimeseries: [],
-          emotionTimeseries: []
-      })
+          response_word: '', // Not available in timeline
+          reaction_time_ms: point.reactionTime ? Number(point.reactionTime) : 0,
+          skin_potential: 0, // Extract from physiological data if available
+          emotion: point.emotions && point.emotions.length > 0 ? point.emotions[0].name : '',
+          emotion_confidence: point.emotions && point.emotions.length > 0 ? point.emotions[0].score : 0,
+        }
+        sessionMap[point.sessionId].push(response)
       }
     })
 
-    // セッション配列を作成
-    const experimentSessions: ExperimentSession[] = sessions.map(session => {
-      const sessionId = session.id
-      const sessionResponses = sessionMap[sessionId] || []
+    // Build session data with responses
+    const sessionsWithResponses = sessions.map(session => ({
+      id: session.id,
+      session_id: session.id,
+      session_type: 'experiment',
+      start_time: session.startTs ? new Date(Number(session.startTs)).toISOString() : null,
+      end_time: session.endTs ? new Date(Number(session.endTs)).toISOString() : null,
+      responses: sessionMap[session.id] || [],
+      responseCount: sessionMap[session.id]?.length || 0,
+    }))
 
-      return {
-        id: sessionId,
-        session_id: sessionId,
-        session_type: 'experiment',
-        start_time: session.startTs ? new Date(session.startTs).toISOString() : null,
-        end_time: session.endTs ? new Date(session.endTs).toISOString() : null,
-        responses: sessionResponses,
-        responseCount: sessionResponses.length,
-      }
-    })
-
-    // 分析結果を作成
-    const responses = timeline.filter(p => p.hasResponse)
-    const analysisRuns: AnalysisRun[] = [{
-      id: 'latest',
-      run_id: 'latest',
-      status: 'completed',
-      created_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      results: responses.map((point: any, index: number) => {
-        const primaryEmotion = Array.isArray(point.emotions) && point.emotions.length > 0
-          ? point.emotions[0]
-          : null
-        
-        const result: AnalysisResult = {
-          id: `${participantId}-${index}`,
-          stimulus_word: point.word || '',
-          response_word: point.word || '',
-          p_value: point.reactionValue || 0.5,
-          word2vec_component: 0,
-          reaction_time_component: point.reactionTime ? 10 / (1 + point.reactionTime / 1000) : 0,
-          skin_potential_component: 0,
-          emotion_component: primaryEmotion?.score || 0,
-          emotion_data: primaryEmotion ? { [primaryEmotion.name || 'unknown']: primaryEmotion.score || 0 } : {},
-          physiological_data: {},
-          created_at: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
-        }
-        if (point.reactionTime != null) {
-          result.reaction_time_ms = point.reactionTime
-        }
-        return result
-      })
-    }]
-
-    const sessionCount = experimentSessions.length
-    const responseCount = responses.length
-    const reactionValues = responses
-      .filter((p: any) => p.reactionValue != null)
-      .map((p: any) => p.reactionValue ?? 0)
+    // Calculate statistics
+    const responseCount = timeline.filter(p => p.hasResponse).length
+    const reactionValues = timeline
+      .filter(p => p.hasResponse && p.reactionValue != null)
+      .map(p => p.reactionValue!)
     const averageSpiritProbability = reactionValues.length > 0
-      ? reactionValues.reduce((sum: number, val: number) => sum + val, 0) / reactionValues.length
+      ? reactionValues.reduce((sum, val) => sum + val, 0) / reactionValues.length
       : 0
 
     return {
       id: participant.id,
-      name: `Participant ${participantId.slice(0, 8)}`,
-      sessions: experimentSessions,
-      analysisRuns,
-      sessionCount,
+      name: null,
+      sessions: sessionsWithResponses,
+      analysisRuns: [],
+      sessionCount: sessions.length,
       responseCount,
       averageSpiritProbability,
+      lastActivity: sessions.length > 0 && sessions[0].endTs
+        ? Number(sessions[0].endTs)
+        : null,
     }
   } catch (error) {
-    console.error('Failed to get participant data:', error)
+    console.error(`Failed to get participant data for ${participantId}:`, error)
     return null
-  }
-}
-
-export async function getResponseTimeseries(responseId: string): Promise<{
-  skinPotential: SkinPotentialPoint[]
-  emotions: EmotionPoint[]
-}> {
-  try {
-    // GraphQL経由でタイムラインデータを取得
-    // responseIdからparticipantIdとsessionIdを抽出（形式: "sessionId-timestamp" または単純なID）
-    // 現時点では、GraphQLサービス側でresponseIdベースのクエリが実装されていないため、
-    // タイムラインデータから該当するレスポンスを検索する
-    
-    // 注意: responseIdの形式に依存するため、実装は簡易版とする
-    // 完全な実装には、GraphQLサービス側にresponseIdベースのクエリが必要
-    
-    console.warn('getResponseTimeseries: GraphQL経由での実装は未対応。空データを返します。', responseId)
-    
-      return {
-        skinPotential: [],
-        emotions: []
-    }
-  } catch (error) {
-    console.error('Failed to get response timeseries:', error)
-    return {
-      skinPotential: [],
-      emotions: []
-    }
-  }
-}
-
-export async function getAnalysisResults(participantId?: string): Promise<AnalysisResult[]> {
-  try {
-    if (participantId) {
-      return getAnalysisResultsForParticipant(participantId)
-    }
-
-    // 全参加者のタイムラインデータを取得して分析結果を生成
-    
-    const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument)
-    const participants = participantsData.participants || []
-    
-    const allResults: AnalysisResult[] = []
-    
-    for (const participant of participants) {
-      try {
-        const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId: participant.id })
-        const timeline = timelineData.timeline || []
-        
-        const participantResults = timeline
-          .filter((p: any) => p.hasResponse)
-          .map((point: any, index: number) => {
-            const primaryEmotion = Array.isArray(point.emotions) && point.emotions.length > 0
-              ? point.emotions[0]
-              : null
-            
-        const result: AnalysisResult = {
-          id: `${participant.id}-${index}`,
-          stimulus_word: point.word || '',
-          response_word: point.word || '',
-          p_value: point.reactionValue || 0.5,
-          word2vec_component: 0,
-          reaction_time_component: point.reactionTime ? 10 / (1 + point.reactionTime / 1000) : 0,
-          skin_potential_component: 0,
-          emotion_component: primaryEmotion?.score || 0,
-          emotion_data: primaryEmotion ? { [primaryEmotion.name || 'unknown']: primaryEmotion.score || 0 } : {},
-          physiological_data: {},
-          created_at: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
-        }
-        if (point.reactionTime != null) {
-          result.reaction_time_ms = point.reactionTime
-        }
-        return result
-          })
-        
-        allResults.push(...participantResults)
-      } catch (error) {
-        console.error(`Failed to fetch analysis results for participant ${participant.id}:`, error)
-      }
-    }
-    
-    return allResults.sort((a, b) => {
-      const aTime = new Date(a.created_at).getTime()
-      const bTime = new Date(b.created_at).getTime()
-      return bTime - aTime // 新しい順
-    })
-  } catch (error) {
-    console.error('Failed to get analysis results:', error)
-    return []
-  }
-}
-
-export async function getAnalysisResultsForParticipant(participantId: string): Promise<AnalysisResult[]> {
-  try {
-    // GraphQL経由でタイムラインデータを取得
-    
-    const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
-    const timeline = timelineData.timeline || []
-    
-    // レスポンスがあるポイントから分析結果を生成
-    return timeline
-      .filter((p: any) => p.hasResponse)
-      .map((point: any, index: number) => {
-        const primaryEmotion = Array.isArray(point.emotions) && point.emotions.length > 0
-          ? point.emotions[0]
-          : null
-        
-        const result: AnalysisResult = {
-          id: `${participantId}-${index}`,
-          stimulus_word: point.word || '',
-          response_word: point.word || '',
-          p_value: point.reactionValue || 0.5,
-          word2vec_component: 0,
-          reaction_time_component: point.reactionTime ? 10 / (1 + point.reactionTime / 1000) : 0,
-          skin_potential_component: 0,
-          emotion_component: primaryEmotion?.score || 0,
-          emotion_data: primaryEmotion ? { [primaryEmotion.name || 'unknown']: primaryEmotion.score || 0 } : {},
-          physiological_data: {},
-          created_at: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
-        }
-        if (point.reactionTime != null) {
-          result.reaction_time_ms = point.reactionTime
-        }
-        return result
-      })
-  } catch (error) {
-    console.error('Failed to get analysis results for participant:', error)
-    return []
   }
 }

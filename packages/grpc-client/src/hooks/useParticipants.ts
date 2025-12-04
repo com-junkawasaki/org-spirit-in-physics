@@ -2,7 +2,7 @@
 // React hook for participant service
 
 import { useState, useEffect } from "react";
-import { ParticipantServiceClient, GetParticipantsResponse, GetParticipantResponse } from "../services/participants";
+import { getParticipants, getParticipant, type GetParticipantsResponse, type GetParticipantResponse } from "../services/participants.js";
 
 export function useParticipants() {
   const [data, setData] = useState<GetParticipantsResponse | null>(null);
@@ -10,8 +10,7 @@ export function useParticipants() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const client = new ParticipantServiceClient();
-    client.getParticipants()
+    getParticipants()
       .then(setData)
       .catch(setError)
       .finally(() => setLoading(false));
@@ -30,8 +29,7 @@ export function useParticipant(id: string) {
       setLoading(false);
       return;
     }
-    const client = new ParticipantServiceClient();
-    client.getParticipant(id)
+    getParticipant(id)
       .then(setData)
       .catch(setError)
       .finally(() => setLoading(false));
@@ -39,4 +37,3 @@ export function useParticipant(id: string) {
 
   return { data, loading, error };
 }
-

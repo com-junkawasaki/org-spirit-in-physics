@@ -2,8 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
 import { JUNG_STIMULUS_WORDS } from './constants';
-import { apolloClient } from '@/lib/graphql';
-import { CREATE_SESSION, UPLOAD_ARTIFACT } from '@/lib/graphql/mutations';
+import { createSession } from '@/lib/participant/grpc/client';
 
 // --- Type Definitions (from types.ts) ---
 
@@ -194,7 +193,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
     saveSessionData: async () => {
         const { participantId, events, wordResponses, currentSession } = get();
         
-        // GraphQL mutationを使用してセッションデータを保存
+        // gRPCを使用してセッションデータを保存
         try {
             // セッション開始時刻を取得（eventsから）
             const sessionStartedEvent = events.find((e: any) => e.type === 'session_started');
@@ -203,21 +202,12 @@ export const useKawasakiStore = create<KawasakiStore>()(
             // セッションインデックスを取得（currentSessionから、またはeventsから）
             const sessionIndex = currentSession || (sessionStartedEvent?.payload?.session as number | undefined) || 1;
             
-            const result = await apolloClient.mutate({
-                mutation: CREATE_SESSION,
-                variables: {
-                    input: {
-                        participantId: participantId!,
-                        sessionIndex: sessionIndex,
-                        startTs: startTs,
-                        events: events,
-                    },
-                },
+            const result = await createSession({
+                participantId: participantId!,
+                sessionIndex: sessionIndex,
+                startTs: startTs,
+                events: events,
             });
-
-            if (result.errors) {
-                throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-            }
 
             get().logEvent('session_data_saved');
         } catch (error) {
@@ -256,26 +246,28 @@ export const useKawasakiStore = create<KawasakiStore>()(
             const base64Data = await base64Promise;
 
             const fileName = `session-${session}-video.webm`;
-            const result = await apolloClient.mutate({
-                mutation: UPLOAD_ARTIFACT,
-                variables: {
-                    input: {
-                        participantId: participantId,
-                        fileName: fileName,
-                        fileData: base64Data,
-                        contentType: 'video/webm',
-                        artifactType: 'video',
-                    },
-                },
+            // TODO: Implement UPLOAD_ARTIFACT in gRPC service
+            // For now, use direct API call to existing endpoint
+            const response = await fetch('/api/upload-artifact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    participantId: participantId,
+                    fileName: fileName,
+                    fileData: base64Data,
+                    contentType: 'video/webm',
+                    artifactType: 'video',
+                }),
             });
 
-            if (result.errors) {
-                throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+            if (!response.ok) {
+                throw new Error(`Failed to upload artifact: ${response.statusText}`);
             }
 
-            const publicUrl = result.data?.upload_artifact;
+            const data = await response.json();
+            const publicUrl = data.url;
             if (!publicUrl) {
-                throw new Error('No URL returned from upload_artifact mutation');
+                throw new Error('No URL returned from upload_artifact API');
             }
 
             set({ sessionVideoUrl: publicUrl });

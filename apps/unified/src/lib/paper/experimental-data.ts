@@ -11,37 +11,25 @@ import type {
   ClassificationResult,
   ComponentStats,
 } from '../../types/paper/experimental';
-import { graphqlClient } from './graphql/client';
+import { getParticipants, getSessions, getTimeline } from './grpc/client';
 
 /**
- * Fetch participants data from GraphQL API
+ * Fetch participants data from gRPC API
  */
 export async function fetchParticipants(): Promise<ParticipantSummary[]> {
   try {
-    const query = `
-      query GetParticipants {
-        participants {
-          id
-          age
-          gender
-          handedness
-          createdAt
-        }
-      }
-    `;
-
-    const data = await graphqlClient.request<{ participants: any[] }>(query);
+    const data = await getParticipants();
     // Check if data is empty (API not available)
-    if (!data || Object.keys(data).length === 0) {
-      console.warn('GraphQL API returned empty data. Service may not be available.');
+    if (!data || !data.participants || data.participants.length === 0) {
+      console.warn('gRPC API returned empty data. Service may not be available.');
       return [];
     }
-    return (data.participants || []).map((p: any) => ({
+    return data.participants.map((p) => ({
       id: p.id,
       name: `Participant ${p.id.slice(0, 8)}`,
-      age: p.age,
-      gender: p.gender,
-      handedness: p.handedness,
+      age: p.age ?? undefined,
+      gender: p.gender ?? undefined,
+      handedness: p.handedness ?? undefined,
       sessionCount: 0, // Will be populated from sessions
       responseCount: 0, // Will be populated from responses
     }));
@@ -52,7 +40,7 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
     // Handle DNS resolution errors (ENOTFOUND)
     if (errorCode === 'ENOTFOUND' || errorMessage.includes('ENOTFOUND') || 
         errorMessage.includes('getaddrinfo')) {
-      console.warn('[fetchParticipants] DNS resolution failed. GraphQL service hostname cannot be resolved.');
+      console.warn('[fetchParticipants] DNS resolution failed. gRPC service hostname cannot be resolved.');
       console.warn('[fetchParticipants] Error details:', { message: errorMessage, code: errorCode });
       console.warn('[fetchParticipants] Using empty data.');
       return [];
@@ -63,7 +51,7 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
         errorMessage.includes('fetch failed') || 
         errorMessage.includes('ECONNREFUSED') ||
         errorMessage.includes('ECONNRESET')) {
-      console.warn('[fetchParticipants] GraphQL API is not available. Using empty data.');
+      console.warn('[fetchParticipants] gRPC API is not available. Using empty data.');
       console.warn('[fetchParticipants] Error details:', { message: errorMessage, code: errorCode });
       return [];
     }
@@ -77,43 +65,27 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
 }
 
 /**
- * Fetch experiment sessions from GraphQL API
- * Note: participantId is required by GraphQL schema
+ * Fetch experiment sessions from gRPC API
+ * Note: participantId is required by gRPC schema
  */
 export async function fetchSessions(participantId?: string): Promise<ExperimentSession[]> {
   try {
-    // GraphQL schema requires participantId, so return empty if not provided
+    // gRPC schema requires participantId, so return empty if not provided
     if (!participantId) {
       return [];
     }
 
-    const query = `
-      query GetSessions($participantId: ID!) {
-        sessions(participantId: $participantId) {
-          id
-          participantId
-          sessionIndex
-          startTs
-          endTs
-          createdAt
-          updatedAt
-        }
-      }
-    `;
-
-    const variables = { participantId };
-
-    const data = await graphqlClient.request<{ sessions: any[] }>(query, variables);
+    const data = await getSessions(participantId);
     // Check if data is empty (API not available)
-    if (!data || Object.keys(data).length === 0) {
+    if (!data || !data.sessions || data.sessions.length === 0) {
       return [];
     }
-    return (data.sessions || []).map((s: any) => ({
+    return data.sessions.map((s) => ({
       id: s.id,
       participantId: s.participantId,
-      sessionType: `session-${s.sessionIndex}`,
-      startTime: s.startTs,
-      endTime: s.endTs,
+      sessionType: `session-${s.sessionIndex ?? 1}`,
+      startTime: s.startTs ? new Date(Number(s.startTs)).toISOString() : null,
+      endTime: s.endTs ? new Date(Number(s.endTs)).toISOString() : null,
       responseCount: 0, // Will be populated from responses
     }));
   } catch (error: any) {
@@ -123,7 +95,7 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
     // Handle DNS resolution errors (ENOTFOUND)
     if (errorCode === 'ENOTFOUND' || errorMessage.includes('ENOTFOUND') || 
         errorMessage.includes('getaddrinfo')) {
-      console.warn('[fetchSessions] DNS resolution failed. GraphQL service hostname cannot be resolved.');
+      console.warn('[fetchSessions] DNS resolution failed. gRPC service hostname cannot be resolved.');
       console.warn('[fetchSessions] Error details:', { message: errorMessage, code: errorCode });
       console.warn('[fetchSessions] Using empty data.');
       return [];
@@ -134,7 +106,7 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
         errorMessage.includes('fetch failed') || 
         errorMessage.includes('ECONNREFUSED') ||
         errorMessage.includes('ECONNRESET')) {
-      console.warn('[fetchSessions] GraphQL API is not available. Using empty data.');
+      console.warn('[fetchSessions] gRPC API is not available. Using empty data.');
       console.warn('[fetchSessions] Error details:', { message: errorMessage, code: errorCode });
       return [];
     }
@@ -148,54 +120,26 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
 }
 
 /**
- * Fetch analysis results from GraphQL API or fallback to visualizer API
+ * Fetch analysis results from gRPC API or fallback to visualizer API
  */
 export async function fetchAnalysisResults(participantId?: string): Promise<AnalysisResult[]> {
   try {
-    // Try GraphQL first
+    // Try gRPC first
     if (!participantId) {
       console.warn('fetchAnalysisResults: participantId is required');
       return [];
     }
 
-    const query = `
-      query GetTimeline($participantId: ID!) {
-        timeline(participantId: $participantId) {
-          time
-          participantId
-          sessionId
-          word
-          eventType
-          reactionValue
-          reactionTime
-          hasResponse
-          emotions {
-            name
-            score
-            fileType
-          }
-          physiological {
-            timestamp
-            value
-            metadata
-          }
-          metadata
-        }
-      }
-    `;
-
-    const variables = { participantId };
-
-    const data = await graphqlClient.request<{ timeline: any[] }>(query, variables);
+    const data = await getTimeline({ participantId });
     // Check if data is empty (API not available)
-    if (!data || Object.keys(data).length === 0) {
+    if (!data || !data.points || data.points.length === 0) {
       return [];
     }
-    const timeline = data.timeline || [];
+    const timeline = data.points;
 
     return timeline
-      .filter((point: any) => point.hasResponse)
-      .map((point: any, index: number) => {
+      .filter((point) => point.hasResponse)
+      .map((point, index: number) => {
         const primaryEmotion = Array.isArray(point.emotions) && point.emotions.length > 0
           ? point.emotions[0]
           : null;
@@ -203,7 +147,7 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
         // Extract emotion data
         const emotionData: Record<string, number> = {};
         if (Array.isArray(point.emotions)) {
-          point.emotions.forEach((emotion: any) => {
+          point.emotions.forEach((emotion) => {
             if (emotion.name && emotion.score !== undefined) {
               emotionData[emotion.name] = emotion.score;
             }
@@ -211,7 +155,9 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
         }
 
         // Extract physiological data
-        const physiologicalData = point.physiological || {};
+        const physiologicalValues = Array.isArray(point.physiological)
+          ? point.physiological.map(p => p.value).filter((v): v is number => v !== undefined)
+          : [];
 
         return {
           id: `${participantId}-${index}`,
@@ -219,14 +165,16 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
           experimentId: point.sessionId || 'default',
           stimulusWord: point.word || '',
           responseWord: point.word || '',
-          reactionTimeMs: point.reactionTime,
-          wordAssociationProbability: point.reactionValue || 0.5, // P(w_O | w_I)
+          reactionTimeMs: point.reactionTime ? Number(point.reactionTime) : 0,
+          wordAssociationProbability: point.reactionValue ?? 0.5, // P(w_O | w_I)
           word2vecComponent: 0, // Will be calculated
-          reactionTimeComponent: point.reactionTime ? 10 / (1 + point.reactionTime / 1000) : 0,
-          skinPotentialComponent: Array.isArray(physiologicalData) ? physiologicalData.reduce((sum: number, val: number) => sum + Math.abs(val), 0) / physiologicalData.length : 0,
+          reactionTimeComponent: point.reactionTime ? 10 / (1 + Number(point.reactionTime) / 1000) : 0,
+          skinPotentialComponent: physiologicalValues.length > 0
+            ? physiologicalValues.reduce((sum, val) => sum + Math.abs(val), 0) / physiologicalValues.length
+            : 0,
           emotionComponent: primaryEmotion?.score || 0,
           emotionData,
-          physiologicalData,
+          physiologicalData: physiologicalValues.length > 0 ? physiologicalValues : {},
           createdAt: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
         };
       });
@@ -237,7 +185,7 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
     // Handle DNS resolution errors (ENOTFOUND)
     if (errorCode === 'ENOTFOUND' || errorMessage.includes('ENOTFOUND') || 
         errorMessage.includes('getaddrinfo')) {
-      console.warn('[fetchAnalysisResults] DNS resolution failed. GraphQL service hostname cannot be resolved.');
+      console.warn('[fetchAnalysisResults] DNS resolution failed. gRPC service hostname cannot be resolved.');
       console.warn('[fetchAnalysisResults] Error details:', { message: errorMessage, code: errorCode });
       console.warn('[fetchAnalysisResults] Using empty data.');
       return [];
@@ -248,7 +196,7 @@ export async function fetchAnalysisResults(participantId?: string): Promise<Anal
         errorMessage.includes('fetch failed') || 
         errorMessage.includes('ECONNREFUSED') ||
         errorMessage.includes('ECONNRESET')) {
-      console.warn('[fetchAnalysisResults] GraphQL API is not available. Using empty data.');
+      console.warn('[fetchAnalysisResults] gRPC API is not available. Using empty data.');
       console.warn('[fetchAnalysisResults] Error details:', { message: errorMessage, code: errorCode });
       return [];
     }
