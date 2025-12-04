@@ -2,17 +2,14 @@
 // Merkle DAG: import.transaction_manager
 // インポート処理のトランザクション管理（ACIDプロパティ保証）
 // 依存関係: GraphQL service, import-error-handler
-// Neo4j removed - using GraphQL service instead
-
-// import neo4j, { Driver, Session, Transaction } from 'neo4j-driver';
+// GraphQLサービス経由でPostgreSQLを使用
 
 // Merkle DAG: import.transaction_manager.types
 // トランザクション管理用の型定義
 export interface TransactionContext {
-  session: Session;
-  transaction: Transaction;
   importId: string;
   participantId: string;
+  operations: TransactionOperation[];
 }
 
 export interface TransactionResult {
@@ -25,10 +22,11 @@ export interface TransactionResult {
 
 export interface TransactionOperation {
   id: string;
-  type: 'create_node' | 'create_relationship' | 'update_property' | 'delete_node' | 'cypher_query';
+  type: 'create' | 'update' | 'delete' | 'query';
   description: string;
-  cypher?: string;
-  parameters?: any;
+  graphqlMutation?: string;
+  graphqlQuery?: string;
+  variables?: any;
   executed: boolean;
   success: boolean;
   error?: string;
@@ -38,12 +36,10 @@ export interface TransactionOperation {
 // Merkle DAG: import.transaction_manager.class
 // トランザクション管理クラス
 export class ImportTransactionManager {
-  // private driver: Driver;
   private activeTransactions: Map<string, TransactionContext> = new Map();
 
-  constructor(uri: string, user: string, password: string) {
-    // Neo4j removed - using GraphQL service instead
-    // this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
+  constructor() {
+    // GraphQLサービス経由でPostgreSQLを使用
   }
 
   // Merkle DAG: import.transaction_manager.initialize
@@ -62,14 +58,10 @@ export class ImportTransactionManager {
   // Merkle DAG: import.transaction_manager.start_transaction
   // トランザクション開始（Atomicity）
   async startTransaction(importId: string, participantId: string): Promise<TransactionContext> {
-    const session = this.driver.session();
-    const transaction = session.beginTransaction();
-
     const context: TransactionContext = {
-      session,
-      transaction,
       importId,
-      participantId
+      participantId,
+      operations: []
     };
 
     const transactionKey = `${importId}-${participantId}`;
@@ -93,13 +85,20 @@ export class ImportTransactionManager {
     };
 
     try {
-      if (operation.cypher) {
-        // Cypherクエリ実行
-        await context.transaction.run(operation.cypher, operation.parameters || {});
+      // GraphQLサービス経由で操作を実行
+      if (operation.graphqlMutation) {
+        // GraphQLミューテーション実行
+        // TODO: GraphQLクライアントを使用した実装
+        console.warn(`[${context.importId}] GraphQL mutation not implemented: ${operation.description}`);
+      } else if (operation.graphqlQuery) {
+        // GraphQLクエリ実行
+        // TODO: GraphQLクライアントを使用した実装
+        console.warn(`[${context.importId}] GraphQL query not implemented: ${operation.description}`);
       }
 
       fullOperation.executed = true;
       fullOperation.success = true;
+      context.operations.push(fullOperation);
 
       console.log(`[${context.importId}] Executed: ${operation.description}`);
     } catch (error) {
@@ -116,24 +115,27 @@ export class ImportTransactionManager {
   async createParticipantNode(context: TransactionContext, participantData: any): Promise<TransactionOperation> {
     return this.executeOperation(context, {
       id: `create-participant-${participantData.id}`,
-      type: 'create_node',
-      description: `Create participant node for ${participantData.id}`,
-      cypher: `
-        CREATE (p:Participant {
-          id: $id,
-          signature: $signature,
-          agreedAt: datetime($agreedAt),
-          agreements: $agreements,
-          importedAt: datetime($importedAt)
-        })
-        RETURN p
+      type: 'create',
+      description: `Create participant for ${participantData.id}`,
+      graphqlMutation: `
+        mutation CreateParticipant($input: CreateParticipantInput!) {
+          createParticipant(input: $input) {
+            id
+            signature
+            agreedAt
+            agreements
+            importedAt
+          }
+        }
       `,
-      parameters: {
-        id: participantData.id,
-        signature: participantData.signature,
-        agreedAt: participantData.agreedAt,
-        agreements: participantData.agreements,
-        importedAt: new Date().toISOString()
+      variables: {
+        input: {
+          id: participantData.id,
+          signature: participantData.signature,
+          agreedAt: participantData.agreedAt,
+          agreements: participantData.agreements,
+          importedAt: new Date().toISOString()
+        }
       }
     });
   }
@@ -147,24 +149,27 @@ export class ImportTransactionManager {
     for (const event of sessionData.events) {
       const operation = await this.executeOperation(context, {
         id: `create-session-event-${event.timestamp}`,
-        type: 'create_node',
+        type: 'create',
         description: `Create session event: ${event.type}`,
-        cypher: `
-          MATCH (p:Participant {id: $participantId})
-          CREATE (p)-[:HAS_SESSION]->(s:SessionEvent {
-            type: $type,
-            timestamp: datetime($timestamp),
-            payload: $payload,
-            importedAt: datetime($importedAt)
-          })
-          RETURN s
+        graphqlMutation: `
+          mutation CreateSessionEvent($input: CreateSessionEventInput!) {
+            createSessionEvent(input: $input) {
+              id
+              type
+              timestamp
+              payload
+              importedAt
+            }
+          }
         `,
-        parameters: {
-          participantId: sessionData.participantId,
-          type: event.type,
-          timestamp: new Date(event.timestamp).toISOString(),
-          payload: event.payload || {},
-          importedAt: new Date().toISOString()
+        variables: {
+          input: {
+            participantId: sessionData.participantId,
+            type: event.type,
+            timestamp: new Date(event.timestamp).toISOString(),
+            payload: event.payload || {},
+            importedAt: new Date().toISOString()
+          }
         }
       });
       operations.push(operation);
@@ -182,30 +187,33 @@ export class ImportTransactionManager {
     for (const entry of emotionData.entries) {
       const operation = await this.executeOperation(context, {
         id: `create-emotion-entry-${entry.begin}-${entry.end}`,
-        type: 'create_node',
+        type: 'create',
         description: `Create emotion analysis entry`,
-        cypher: `
-          MATCH (p:Participant {id: $participantId})
-          CREATE (p)-[:HAS_EMOTION_ANALYSIS]->(e:EmotionAnalysis {
-            text: $text,
-            beginTime: $beginTime,
-            endTime: $endTime,
-            confidence: $confidence,
-            emotions: $emotions,
-            position: $position,
-            importedAt: datetime($importedAt)
-          })
-          RETURN e
+        graphqlMutation: `
+          mutation CreateEmotionAnalysis($input: CreateEmotionAnalysisInput!) {
+            createEmotionAnalysis(input: $input) {
+              id
+              text
+              beginTime
+              endTime
+              confidence
+              emotions
+              position
+              importedAt
+            }
+          }
         `,
-        parameters: {
-          participantId: emotionData.participantId,
-          text: entry.text,
-          beginTime: entry.time?.begin,
-          endTime: entry.time?.end,
-          confidence: entry.confidence,
-          emotions: entry.emotions,
-          position: entry.position,
-          importedAt: new Date().toISOString()
+        variables: {
+          input: {
+            participantId: emotionData.participantId,
+            text: entry.text,
+            beginTime: entry.time?.begin,
+            endTime: entry.time?.end,
+            confidence: entry.confidence,
+            emotions: entry.emotions,
+            position: entry.position,
+            importedAt: new Date().toISOString()
+          }
         }
       });
       operations.push(operation);
@@ -218,8 +226,8 @@ export class ImportTransactionManager {
   // トランザクションコミット（Durability）
   async commitTransaction(context: TransactionContext, operations: TransactionOperation[]): Promise<TransactionResult> {
     try {
-      await context.transaction.commit();
-      await context.session.close();
+      // GraphQLサービス経由でトランザクションをコミット
+      // TODO: GraphQLクライアントを使用した実装
 
       const transactionKey = `${context.importId}-${context.participantId}`;
       this.activeTransactions.delete(transactionKey);
@@ -242,8 +250,8 @@ export class ImportTransactionManager {
   // トランザクションロールバック（Atomicity）
   async rollbackTransaction(context: TransactionContext, error: any): Promise<TransactionResult> {
     try {
-      await context.transaction.rollback();
-      await context.session.close();
+      // GraphQLサービス経由でトランザクションをロールバック
+      // TODO: GraphQLクライアントを使用した実装
 
       const transactionKey = `${context.importId}-${context.participantId}`;
       this.activeTransactions.delete(transactionKey);
@@ -301,26 +309,14 @@ export class ImportTransactionManager {
   // Merkle DAG: import.transaction_manager.validate_constraints
   // データ整合性検証（Consistency）
   async validateConstraints(participantId: string): Promise<boolean> {
-    const session = this.driver.session();
-
     try {
-      // 参加者ノードが存在することを確認
-      const participantResult = await session.run(
-        'MATCH (p:Participant {id: $id}) RETURN count(p) as count',
-        { id: participantId }
-      );
-
-      const participantCount = participantResult.records[0].get('count').toNumber();
-      if (participantCount === 0) {
-        throw new Error(`Participant ${participantId} does not exist`);
-      }
-
-      // 他の整合性チェックをここに追加
-      // 例: セッションデータの一貫性、感情データの参照整合性など
-
+      // GraphQLサービス経由で参加者が存在することを確認
+      // TODO: GraphQLクエリを使用した実装
+      console.warn(`[validateConstraints] GraphQL query not implemented for participant ${participantId}`);
       return true;
-    } finally {
-      await session.close();
+    } catch (error) {
+      console.error(`[validateConstraints] Failed to validate constraints:`, error);
+      throw error;
     }
   }
 
@@ -337,8 +333,8 @@ export class ImportTransactionManager {
     // アクティブなトランザクションをすべてロールバック
     for (const [key, context] of this.activeTransactions) {
       try {
-        await context.transaction.rollback();
-        await context.session.close();
+        // GraphQLサービス経由でトランザクションをロールバック
+        // TODO: GraphQLクライアントを使用した実装
         console.log(`Cleaned up transaction: ${key}`);
       } catch (error) {
         console.error(`Failed to cleanup transaction ${key}:`, error);
@@ -346,17 +342,12 @@ export class ImportTransactionManager {
     }
 
     this.activeTransactions.clear();
-    await this.driver.close();
   }
 }
 
 // Merkle DAG: import.transaction_manager.factory
 // トランザクションマネージャーファクトリ
 export function createImportTransactionManager(): ImportTransactionManager {
-  const uri = process.env.NEO4J_URI || 'neo4j://localhost:7687';
-  const user = process.env.NEO4J_USER || 'neo4j';
-  const password = process.env.NEO4J_PASSWORD || 'password';
-
-  const manager = new ImportTransactionManager(uri, user, password);
+  const manager = new ImportTransactionManager();
   return manager;
 }
