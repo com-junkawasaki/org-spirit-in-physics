@@ -56,27 +56,36 @@ declare var SpeechRecognition: {
 };
 
 // Default UI components (can be overridden via props)
-type DefaultComponentProps = { children?: React.ReactNode; className?: string; [key: string]: any };
+type DefaultComponentProps = { 
+  children?: React.ReactNode; 
+  className?: string; 
+  [key: string]: any;
+};
 
-const DefaultButton: React.FC<DefaultComponentProps> = ({ children, ...props }) => (
-  <button {...props}>{children}</button>
-);
+const DefaultButton: React.FC<DefaultComponentProps> = (props: DefaultComponentProps) => {
+  const { children, ...restProps } = props;
+  return <button {...restProps}>{children}</button>;
+};
 
-const DefaultCard: React.FC<DefaultComponentProps> = ({ children, className, ...props }) => (
-  <div className={className} {...props}>{children}</div>
-);
+const DefaultCard: React.FC<DefaultComponentProps> = (props: DefaultComponentProps) => {
+  const { children, className, ...restProps } = props;
+  return <div className={className} {...restProps}>{children}</div>;
+};
 
-const DefaultCardHeader: React.FC<DefaultComponentProps> = ({ children, ...props }) => (
-  <div {...props}>{children}</div>
-);
+const DefaultCardHeader: React.FC<DefaultComponentProps> = (props: DefaultComponentProps) => {
+  const { children, ...restProps } = props;
+  return <div {...restProps}>{children}</div>;
+};
 
-const DefaultCardTitle: React.FC<DefaultComponentProps> = ({ children, ...props }) => (
-  <h3 {...props}>{children}</h3>
-);
+const DefaultCardTitle: React.FC<DefaultComponentProps> = (props: DefaultComponentProps) => {
+  const { children, ...restProps } = props;
+  return <h3 {...restProps}>{children}</h3>;
+};
 
-const DefaultCardContent: React.FC<DefaultComponentProps> = ({ children, className, ...props }) => (
-  <div className={className} {...props}>{children}</div>
-);
+const DefaultCardContent: React.FC<DefaultComponentProps> = (props: DefaultComponentProps) => {
+  const { children, className, ...restProps } = props;
+  return <div className={className} {...restProps}>{children}</div>;
+};
 
 // --- Memoized, Dumb Sub-components ---
 
@@ -91,12 +100,23 @@ const PreflightScreen = React.memo<{
   CardHeader: React.ComponentType<any>;
   CardTitle: React.ComponentType<any>;
   CardContent: React.ComponentType<any>;
-}>(({ videoPreviewRef, stream, deviceStatus, error, onStartSession, Button, Card, CardHeader, CardTitle, CardContent }) => {
+}>(({ videoPreviewRef, stream, deviceStatus, error, onStartSession, Button, Card, CardHeader, CardTitle, CardContent }: {
+  videoPreviewRef: MutableRefObject<HTMLVideoElement | null>;
+  stream: MediaStream | null;
+  deviceStatus: 'idle' | 'pending' | 'success' | 'error';
+  error: string | null;
+  onStartSession: () => void;
+  Button: React.ComponentType<any>;
+  Card: React.ComponentType<any>;
+  CardHeader: React.ComponentType<any>;
+  CardTitle: React.ComponentType<any>;
+  CardContent: React.ComponentType<any>;
+}) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
     if (stream && videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = stream;
-        videoPreviewRef.current.play().catch(e => {
+        videoPreviewRef.current.play().catch((e: Error) => {
             if (e.name !== 'AbortError') console.error("Video play error:", e);
         });
     }
@@ -159,23 +179,28 @@ const SessionScreen = React.memo<{
   currentWordIndex: number;
   stimulusWords: Word[];
   onResponse: (response: string, audioBlob: Blob) => void;
-}>((
-    {
-        videoPreviewRef,
-        stream,
-        currentSession,
-        currentWordIndex,
-        stimulusWords,
-        onResponse,
-    }
-) => {
+}>(({
+  videoPreviewRef,
+  stream,
+  currentSession,
+  currentWordIndex,
+  stimulusWords,
+  onResponse,
+}: {
+  videoPreviewRef: MutableRefObject<HTMLVideoElement | null>;
+  stream: MediaStream | null;
+  currentSession: 1 | 2;
+  currentWordIndex: number;
+  stimulusWords: Word[];
+  onResponse: (response: string, audioBlob: Blob) => void;
+}) => {
     const { logEvent } = useKawasakiStore();
     const [recognizedText, setRecognizedText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const stimulusAudioRef = useRef<HTMLAudioElement | null>(null);
-    const advanceOnSpeechTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const advanceOnSpeechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (stream && videoPreviewRef.current) {
@@ -189,7 +214,7 @@ const SessionScreen = React.memo<{
             const currentWord = stimulusWords[currentWordIndex];
             const audio = stimulusAudioRef.current;
             
-            let recognitionStartTimer: NodeJS.Timeout | null = null;
+            let recognitionStartTimer: ReturnType<typeof setTimeout> | null = null;
             let audioContext: AudioContext | null = null;
 
             const startRecognitionAndDetection = () => {
@@ -420,7 +445,7 @@ export default function JungVoiceTest({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoChunksRef = useRef<Blob[]>([]);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
-  const responseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const responseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordDisplayedTimeRef = useRef<number | null>(null);
   
   // onComplete callback effect

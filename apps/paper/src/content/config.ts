@@ -20,5 +20,5 @@ const papersCollection = defineCollection({
 
 export const collections = {
   papers: papersCollection,
-};
+} as const;
 
