@@ -5,7 +5,7 @@ import Plot from 'react-plotly.js'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
-import { RefreshCw, Download, ZoomIn } from 'lucide-react'
+import { RefreshCw, Download } from 'lucide-react'
 
 interface DashboardOverviewProps {
   className?: string

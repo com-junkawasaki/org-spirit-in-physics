@@ -26,6 +26,7 @@ export interface WordLink {
   source: number;
   target: number;
   weight: number;
+  color?: string;
   mode?: 'tension' | 'compression';
   L0?: number;
   k?: number;

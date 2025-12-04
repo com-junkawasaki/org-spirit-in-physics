@@ -5,8 +5,8 @@ import { match, P } from 'ts-pattern'
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { Force3DWordGraphTypeGPU } from '@spirit-in-physics/visualization-components'
 import type { WordNode, WordLink } from '@spirit-in-physics/visualization-components'
-// import type { WordEmotionData } from '../../types/demo/demo' // Unused
-import { JUNG_STIMULUS_WORDS } from '../../lib/demo/jung-words'
+import type { WordEmotionData } from '../../types/demo/demo'
+import { JUNG_STIMULUS_WORDS, type JungWord } from '../../lib/demo/jung-words'
 import { EMOTION_KEYS } from '@spirit-in-physics/visualization-components'
 import { useAtomValue } from 'jotai'
 import { wordEmotionDataAtom, wordEmotionDataLengthAtom, lastUpdateTimeAtom } from '../../lib/demo/store/demo-atoms'
@@ -58,7 +58,6 @@ export default function ComplexForce3D({
   }, [dataLength, lastUpdateTime, wordEmotionData.length])
   
   const [webGpuAvailable, setWebGpuAvailable] = useState<boolean | null>(null)
-  const [loadError, setLoadError] = useState<Error | null>(null)
 
   // Check WebGPU availability
   useEffect(() => {
@@ -187,7 +186,7 @@ export default function ComplexForce3D({
         
         // Create initial nodes for all words (without emotion data)
         // Use deterministic positioning to prevent position shifts
-        const initialNodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word, idx) => ({
+        const initialNodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word: JungWord, idx: number) => ({
           id: String(idx),
           label: word.japanese,
           scale: 1.0,
@@ -253,7 +252,7 @@ export default function ComplexForce3D({
     try {
       // Aggregate emotion vectors per word
       const wordEmotionSum: Record<string, number[]> = {}
-      JUNG_STIMULUS_WORDS.forEach(({ japanese }) => {
+      JUNG_STIMULUS_WORDS.forEach(({ japanese }: JungWord) => {
         wordEmotionSum[japanese] = new Array(EMOTION_KEYS.length).fill(0)
       })
 
@@ -275,7 +274,7 @@ export default function ComplexForce3D({
       }
 
       const normalizedEmotionVec: Record<string, number[]> = {}
-      JUNG_STIMULUS_WORDS.forEach(({ japanese }) => {
+      JUNG_STIMULUS_WORDS.forEach(({ japanese }: JungWord) => {
         normalizedEmotionVec[japanese] = normalize(wordEmotionSum[japanese] || new Array(EMOTION_KEYS.length).fill(0))
       })
 
@@ -317,10 +316,10 @@ export default function ComplexForce3D({
 
       // Create nodes (after anchor2d and toSphere are defined)
       console.log('[ComplexForce3D] Creating nodes, normalizedEmotionVec keys:', Object.keys(normalizedEmotionVec).length)
-      const nodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word, idx) => {
+      const nodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word: JungWord, idx: number) => {
         const emotionVec = normalizedEmotionVec[word.japanese] || new Array(EMOTION_KEYS.length).fill(0)
         const magnitude = Math.hypot(...emotionVec)
-        const count = wordEmotionData.filter(d => d.word === word.japanese).length
+        const count = wordEmotionData.filter((d: WordEmotionData) => d.word === word.japanese).length
 
         // Calculate initial position based on emotion vectors (weighted centroid of connected anchors)
         let initial: [number, number, number] | undefined
@@ -487,14 +486,13 @@ export default function ComplexForce3D({
   }
 
   // Use ts-pattern for conditional rendering
-  return match({ hasData: graphData.nodes.length > 0, webGpuAvailable, loadError })
+  const renderContent = match({ hasData: graphData.nodes.length > 0, webGpuAvailable })
     .with({ hasData: false }, () => (
       <div className="flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900" style={{ width, height }}>
         <p className="text-gray-500 dark:text-gray-400">データがありません</p>
       </div>
     ))
     .with({ webGpuAvailable: false }, () => <ErrorFallback error={null} />)
-    .with({ loadError: P.not(null) }, ({ loadError }) => <ErrorFallback error={loadError} />)
     .otherwise(() => (
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex items-center justify-center" style={{ width, height }}>
         <Force3DWordGraphTypeGPU
@@ -521,5 +519,7 @@ export default function ComplexForce3D({
         />
       </div>
     ))
+  
+  return renderContent
 }
 

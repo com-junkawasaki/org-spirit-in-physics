@@ -1,7 +1,7 @@
 // Merkle DAG: components.word_display
 // Word display component with audio playback
 
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { JungWord } from '../../lib/demo/jung-words'
 
 interface WordDisplayProps {

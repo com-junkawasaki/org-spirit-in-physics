@@ -1,5 +1,3 @@
-import React from 'react';
-
 const ResearchPlanContent = () => {
   return (
     <article className="prose prose-sm dark:prose-invert max-w-none p-4 font-sans">

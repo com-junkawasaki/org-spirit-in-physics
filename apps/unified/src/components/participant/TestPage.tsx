@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { JungVoiceTest } from '@spirit-in-physics/jung-voice-assessment';
 
 export default function TestPage() {

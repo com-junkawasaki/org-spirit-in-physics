@@ -79,7 +79,7 @@ export function ImportStatusOverview() {
           status: status.status as 'pending' | 'in_progress' | 'completed' | 'failed' | 'partial' | 'imported'
         }))
         setImportStatuses(statuses)
-        setSummary(data.data.summary || null)
+        setSummary((data.data.summary as ImportSummary) || null)
         setLastUpdate(data.timestamp)
         setLoading(false)
         setError(null)

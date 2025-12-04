@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import ConsentForm from '@/components/ConsentForm';
 import { useKawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
 

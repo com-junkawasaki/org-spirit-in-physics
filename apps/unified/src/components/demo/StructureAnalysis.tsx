@@ -1,7 +1,6 @@
 // Merkle DAG: components.structure_analysis
 // Structure analysis panel component
 
-import React from 'react'
 import type { GapArea, DensityRegion, DuplicateCandidate } from '@spirit-in-physics/visualization-components'
 
 interface StructureAnalysisProps {
@@ -100,7 +99,7 @@ export default function StructureAnalysis({
                 className="text-xs p-2 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700"
               >
                 <div className="font-medium text-gray-900 dark:text-white">
-                  {dup.word1} ↔ {dup.word2}
+                  {dup.labels[0]} ↔ {dup.labels[1]}
                 </div>
                 <div className="text-gray-600 dark:text-gray-400">
                   類似度: {(dup.similarity * 100).toFixed(0)}%

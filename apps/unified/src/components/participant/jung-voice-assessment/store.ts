@@ -191,7 +191,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
     },
 
     saveSessionData: async () => {
-        const { participantId, events, wordResponses, currentSession } = get();
+        const { participantId, events, currentSession } = get();
         
         // gRPCを使用してセッションデータを保存
         try {
@@ -200,9 +200,12 @@ export const useKawasakiStore = create<KawasakiStore>()(
             const startTs = sessionStartedEvent?.timestamp || Date.now();
             
             // セッションインデックスを取得（currentSessionから、またはeventsから）
-            const sessionIndex = currentSession || (sessionStartedEvent?.payload?.session as number | undefined) || 1;
+            const payloadSession = sessionStartedEvent?.payload && typeof sessionStartedEvent.payload === 'object' && 'session' in sessionStartedEvent.payload 
+                ? (sessionStartedEvent.payload as { session?: number }).session 
+                : undefined;
+            const sessionIndex = currentSession || payloadSession || 1;
             
-            const result = await createSession({
+            await createSession({
                 participantId: participantId!,
                 sessionIndex: sessionIndex,
                 startTs: startTs,

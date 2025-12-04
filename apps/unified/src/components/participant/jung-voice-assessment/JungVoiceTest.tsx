@@ -100,9 +100,10 @@ const SessionScreen = React.memo<{
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioChunksRef = useRef<Blob[]>([]);
     const stimulusAudioRef = useRef<HTMLAudioElement | null>(null);
     const advanceOnSpeechTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const animationFrameIdRef = useRef<number | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
 
     useEffect(() => {
         if (stream && videoPreviewRef.current) {
@@ -117,23 +118,21 @@ const SessionScreen = React.memo<{
             const audio = stimulusAudioRef.current;
             
             let recognitionStartTimer: NodeJS.Timeout | null = null;
-            let audioContext: AudioContext | null = null;
-            let animationFrameId: number;
 
             const startRecognitionAndDetection = () => {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
                 if (SpeechRecognition) {
-                    const recognition = new SpeechRecognition();
+                    const recognition = new SpeechRecognition() as any;
                     recognition.lang = 'ja-JP';
                     recognition.interimResults = true;
                     recognition.continuous = false;
-                    recognitionRef.current = recognition;
+                    recognitionRef.current = recognition as SpeechRecognition;
 
                     recognition.onstart = () => setIsListening(true);
                     recognition.onend = () => setIsListening(false);
 
-                    recognition.onresult = (event) => {
-                        const transcript = Array.from(event.results).map(result => result[0]).map(result => result.transcript).join('');
+                    recognition.onresult = (event: any) => {
+                        const transcript = Array.from(event.results).map((result: any) => result[0]).map((result: any) => result.transcript).join('');
                         setRecognizedText(transcript);
                         if (event.results[0].isFinal) {
                             onResponse(transcript, new Blob());
@@ -147,9 +146,9 @@ const SessionScreen = React.memo<{
                     recognition.start();
 
                     if (stream) {
-                        audioContext = new AudioContext();
-                        const source = audioContext.createMediaStreamSource(stream);
-                        const analyser = audioContext.createAnalyser();
+                        audioContextRef.current = new AudioContext();
+                        const source = audioContextRef.current.createMediaStreamSource(stream);
+                        const analyser = audioContextRef.current.createAnalyser();
                         const dataArray = new Uint8Array(analyser.fftSize);
                         source.connect(analyser);
                         let speechHasBeenDetected = false;
@@ -179,13 +178,18 @@ const SessionScreen = React.memo<{
                                     if (recognitionStartTimer) clearTimeout(recognitionStartTimer);
                                     if (recognitionRef.current && isListening) recognitionRef.current.stop();
                                     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") mediaRecorderRef.current.stop();
-                                    // animationFrameId cleanup handled in return function
-                                    if (audioContext && audioContext.state === 'running') audioContext.close();
+                                    if (animationFrameIdRef.current !== null) {
+                                        cancelAnimationFrame(animationFrameIdRef.current);
+                                        animationFrameIdRef.current = null;
+                                    }
+                                    if (audioContextRef.current && audioContextRef.current.state === 'running') {
+                                        audioContextRef.current.close();
+                                    }
                                     if (advanceOnSpeechTimerRef.current) clearTimeout(advanceOnSpeechTimerRef.current);
                                 }, 1000);
                             }
                             if (!speechHasBeenDetected) {
-                                animationFrameId = requestAnimationFrame(checkSpeaking);
+                                animationFrameIdRef.current = requestAnimationFrame(checkSpeaking);
                             }
                         };
                         checkSpeaking();
@@ -223,8 +227,14 @@ const SessionScreen = React.memo<{
             // Cleanup function - capture current values at cleanup time
             // eslint-disable-next-line react-hooks/exhaustive-deps
             const currentMediaRecorder = mediaRecorderRef.current;
-            // const currentAnimationFrameId = animationFrameId; // Cannot capture due to closure scope
-            // const currentAudioContext = audioContext; // Cannot capture due to closure scope
+            if (animationFrameIdRef.current !== null) {
+                cancelAnimationFrame(animationFrameIdRef.current);
+                animationFrameIdRef.current = null;
+            }
+            if (audioContextRef.current && audioContextRef.current.state === 'running') {
+                audioContextRef.current.close();
+                audioContextRef.current = null;
+            }
             const currentAdvanceTimer = advanceOnSpeechTimerRef.current;
             const currentRecognition = recognitionRef.current;
             const currentIsListening = isListening;
@@ -313,7 +323,6 @@ export default function JungVoiceTest({
     currentSession,
     advanceToNextWord,
     setMediaStatus,
-    startPreflight,
     completeSession,
     deviceStatus,
     setDeviceStatus,
@@ -429,8 +438,9 @@ export default function JungVoiceTest({
 
       return () => {
         if (responseTimerRef.current) clearTimeout(responseTimerRef.current);
-      }
+      };
     }
+    return undefined;
   }, [currentWordIndex, testStatus, stimulusWords, advanceToNextWord, logEvent, setMediaStatus, completeSession, currentSession]);
   
   // Stop recording when a session or the test completes

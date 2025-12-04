@@ -439,7 +439,6 @@ export default function JungVoiceTest({
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const responseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordDisplayedTimeRef = useRef<number | null>(null);
-  const animationFrameIdRef = useRef<number | null>(null);
   
   // onComplete callback effect
   useEffect(() => {

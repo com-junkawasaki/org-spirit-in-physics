@@ -53,7 +53,7 @@ export async function getAudioFromCache(text: string, voice: string): Promise<Bl
   try {
     const db = await openDatabase();
     
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const transaction = db.transaction(STORE_NAME, 'readonly');
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get([text, voice]);
@@ -90,7 +90,7 @@ export async function saveAudioToCache(text: string, voice: string, audioData: B
   try {
     const db = await openDatabase();
     
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
       
@@ -130,7 +130,7 @@ export async function clearAudioCache(olderThanDays?: number): Promise<boolean> 
   try {
     const db = await openDatabase();
     
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const transaction = db.transaction(STORE_NAME, 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
       
@@ -177,7 +177,7 @@ export async function getAudioCacheSize(): Promise<{ count: number, sizeBytes: n
   try {
     const db = await openDatabase();
     
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const transaction = db.transaction(STORE_NAME, 'readonly');
       const store = transaction.objectStore(STORE_NAME);
       const countRequest = store.count();

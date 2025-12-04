@@ -1,6 +1,6 @@
 'use client'
 
-import { Badge } from './ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import {
   CheckCircle,
@@ -8,9 +8,7 @@ import {
   AlertCircle,
   XCircle,
   Loader2,
-  Pause,
-  Play,
-  RotateCcw
+  Pause
 } from 'lucide-react'
 
 type StatusType =

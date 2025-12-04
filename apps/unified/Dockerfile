@@ -18,7 +18,6 @@ COPY packages/grpc-client ./packages/grpc-client
 # Fix the file: reference in package.json to match the container path
 RUN sed -i.bak 's|file:../../packages/jung-voice-assessment|file:./packages/jung-voice-assessment|g' package.json && \
     sed -i.bak 's|file:../../packages/visualization-components|file:./packages/visualization-components|g' package.json && \
-    sed -i.bak 's|file:../../packages/grpc-client|file:./packages/grpc-client|g' package.json && \
     sed -i.bak 's|"@spirit-in-physics/grpc-client": "\*"|"@spirit-in-physics/grpc-client": "file:./packages/grpc-client"|g' packages/jung-voice-assessment/package.json && \
     rm package.json.bak
 

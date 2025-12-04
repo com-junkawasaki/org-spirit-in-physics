@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { useSidebar } from '@/contexts/SidebarContext'
 
 // Merkle DAG: sidebar_layout -> navigation_menu_structure

@@ -5,16 +5,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Badge } from './ui/badge'
-import { Button } from './ui/button'
 import { 
   Users, 
   Calendar, 
   Activity, 
   TrendingUp, 
-  Clock,
-  ArrowRight,
-  RefreshCw
+  Clock
 } from 'lucide-react'
 // import Link from 'next/link' // Removed: Next.js specific
 
@@ -123,7 +119,6 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
     const interval = setInterval(fetchParticipants, 60000)
     return () => clearInterval(interval)
   }, [fetchParticipants])
-
 
   if (isLoading) {
     return (

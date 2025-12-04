@@ -1,11 +1,10 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
-import { Button } from './ui/button'
-import { Badge } from './ui/badge'
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Column<T> {

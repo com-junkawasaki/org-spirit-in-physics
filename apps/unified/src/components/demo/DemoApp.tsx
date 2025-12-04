@@ -18,7 +18,6 @@ import {
   batchQueueLengthAtom,
   wordEmotionDataAtom,
   addToBatchQueueAtom,
-  processBatchQueueAtom,
   clearBatchQueueAtom,
   addWordEmotionDataAtom,
   clearWordEmotionDataAtom,
