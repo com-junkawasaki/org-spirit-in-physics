@@ -43,5 +43,8 @@ ENV PORT=3000
 # Expose port 3000
 EXPOSE 3000
 
+# Build the application
+# RUN pnpm build
+
 # Start the application with explicit hostname and port binding
 CMD ["pnpm", "dev"]

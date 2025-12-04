@@ -1,9 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import DashboardPage from '../components/DashboardPage';
+import { redirect } from 'astro:actions';
 ---
 
 <Layout>
-  <DashboardPage client:load />
+  <script>
+    window.location.href = '/participants';
+  </script>
 </Layout>
 

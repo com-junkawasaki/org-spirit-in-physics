@@ -1,0 +1,39 @@
+import type { APIRoute } from 'astro';
+import { serve } from 'inngest';
+import {
+  fileImportWorkflow,
+  fileImportFailureWorkflow,
+  windowsGenerationWorkflow,
+  kernelFusionWorkflow,
+  kernelFusionFailureWorkflow,
+  inngest,
+} from '@/lib/workflows';
+
+const handler = serve({
+  client: inngest,
+  functions: [
+    // ファイルインポートワークフロー
+    fileImportWorkflow,
+    fileImportFailureWorkflow,
+    
+    // ウィンドウ生成ワークフロー
+    windowsGenerationWorkflow,
+    
+    // 核融合ワークフロー
+    kernelFusionWorkflow,
+    kernelFusionFailureWorkflow,
+  ],
+});
+
+export const GET: APIRoute = async ({ request }) => {
+  return handler(request);
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  return handler(request);
+};
+
+export const PUT: APIRoute = async ({ request }) => {
+  return handler(request);
+};
+

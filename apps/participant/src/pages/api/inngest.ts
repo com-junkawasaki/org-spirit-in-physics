@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { serve } from 'inngest';
-import { inngest } from '@/lib/adapters';
+import { inngest } from '@/lib/inngest';
 import {
   videoAnalysisWorkflow,
   videoAnalysisFailureWorkflow,

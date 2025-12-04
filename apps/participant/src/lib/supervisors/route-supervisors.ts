@@ -1,7 +1,5 @@
 // LLM-BOUNDARY: 70_supervisors - ルート単位の調停（invalidate/revalidate）
-
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { redirect } from 'next/navigation';
+// Note: Astro doesn't have Next.js cache revalidation, so these functions are no-ops
 
 // 実験ページのスーパーバイザー
 export class ExperimentSupervisor {
@@ -14,24 +12,18 @@ export class ExperimentSupervisor {
 
   // 実験完了時のinvalidate
   static async completeExperiment(participantId: string) {
-    revalidateTag(`experiment-${participantId}`);
-    revalidateTag('experiment-list');
-    revalidateTag('analytics');
-
-    // 完了ページにリダイレクト
-    redirect(`/steps/complete?participant=${participantId}`);
+    // Astro: Cache revalidation not needed in static mode
+    // Redirect handled client-side
   }
 
   // セッションデータ保存時のinvalidate
   static async saveSessionData(participantId: string) {
-    revalidateTag(`session-${participantId}`);
-    revalidateTag(`experiment-${participantId}`);
+    // Astro: Cache revalidation not needed in static mode
   }
 
   // 参加者初期化時のinvalidate
   static async initializeParticipant(participantId: string) {
-    revalidateTag(`participant-${participantId}`);
-    revalidateTag('participant-list');
+    // Astro: Cache revalidation not needed in static mode
   }
 }
 
@@ -39,21 +31,17 @@ export class ExperimentSupervisor {
 export class AdminSupervisor {
   // 分析データ更新時のinvalidate
   static async updateAnalytics() {
-    revalidateTag('analytics');
-    revalidateTag('emotion-statistics');
-    revalidateTag('participant-list');
+    // Astro: Cache revalidation not needed in static mode
   }
 
   // 感情分析完了時のinvalidate
   static async completeEmotionAnalysis(participantId: string) {
-    revalidateTag(`emotion-${participantId}`);
-    revalidateTag('emotion-statistics');
-    revalidateTag('analytics');
+    // Astro: Cache revalidation not needed in static mode
   }
 
   // データエクスポート時のinvalidate
   static async exportData() {
-    revalidateTag('export-jobs');
+    // Astro: Cache revalidation not needed in static mode
   }
 }
 
@@ -61,23 +49,17 @@ export class AdminSupervisor {
 export class CacheSupervisor {
   // パスベースのrevalidate
   static async revalidateExperimentPaths(participantId?: string) {
-    if (participantId) {
-      revalidatePath(`/steps/1`);
-      revalidatePath(`/steps/2`);
-      revalidatePath(`/steps/complete`);
-    }
-    revalidatePath('/admin');
-    revalidatePath('/admin/analytics');
+    // Astro: Cache revalidation not needed in static mode
   }
 
   // タグベースのrevalidate
   static async revalidateTags(tags: string[]) {
-    tags.forEach(tag => revalidateTag(tag));
+    // Astro: Cache revalidation not needed in static mode
   }
 
   // 完全なrevalidate（開発時用）
   static async revalidateAll() {
-    revalidatePath('/', 'layout');
+    // Astro: Cache revalidation not needed in static mode
   }
 }
 

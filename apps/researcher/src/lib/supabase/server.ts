@@ -1,21 +1,25 @@
 /**
  * Merkle DAG: supabase.server
- * Supabase server-side client configuration
+ * Supabase server-side client configuration for Astro
  */
 
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import type { AstroCookies } from 'astro';
 
-export async function createClient() {
-  const cookieStore = await cookies();
+export async function createClient(cookies?: AstroCookies) {
+  // For Astro API routes, cookies are passed from the context
+  const cookieStore = cookies || {
+    getAll: () => [],
+    set: () => {},
+  };
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       'Missing Supabase environment variables. ' +
-      'Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
+      'Please set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY'
     );
   }
 
@@ -29,13 +33,13 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              if (cookies) {
+                cookies.set(name, value, options);
+              }
+            });
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // Ignore errors in server context
           }
         },
       },

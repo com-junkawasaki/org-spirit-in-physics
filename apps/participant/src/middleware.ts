@@ -17,8 +17,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Supabase clientの作成
   const supabase = createServerClient(
-    import.meta.env.PUBLIC_SUPABASE_URL!,
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY!,
+    import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL!,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {

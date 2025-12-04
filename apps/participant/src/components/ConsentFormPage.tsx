@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import ConsentForm from '../../app/ConsentForm';
+import ConsentForm from '@/components/ConsentForm';
 import { useKawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
 
 export default function ConsentFormPage() {

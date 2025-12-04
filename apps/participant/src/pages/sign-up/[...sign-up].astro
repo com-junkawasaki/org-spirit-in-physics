@@ -1,11 +1,9 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { SignUp } from '@clerk/astro/react';
+import SignUpComponent from '../../components/SignUpComponent';
 ---
 
 <Layout>
-  <div class="min-h-screen flex items-center justify-center p-6">
-    <SignUp afterSignInUrl="/admin" afterSignUpUrl="/admin" client:load />
-  </div>
+  <SignUpComponent client:load />
 </Layout>
 
