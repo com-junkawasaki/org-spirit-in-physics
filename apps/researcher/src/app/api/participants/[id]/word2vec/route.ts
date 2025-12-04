@@ -31,8 +31,8 @@ export async function GET(
         spirit_probability: point.reactionValue || 0.5,
         timestamp: point.time,
         response_id: point.time, // タイムスタンプをIDとして使用
-        experiment_id: point.sessionId || point.session_id,
-        session_id: point.sessionId || point.session_id
+        experiment_id: point.sessionId,
+        session_id: point.sessionId
       }));
 
     console.log(`API: Found ${responses.length} responses for participant ${participantId}`);

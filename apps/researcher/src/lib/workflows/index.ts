@@ -10,7 +10,6 @@ export {
 // ウィンドウ生成ワークフロー
 export {
   windowsGenerationWorkflow,
-  windowsGenerationFailureWorkflow,
 } from './windows-generation-workflow';
 
 // 核融合ワークフロー

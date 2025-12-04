@@ -67,7 +67,8 @@
     "react-dom": "18.2.0",
     "tailwind-merge": "^3.3.1",
     "typegpu": "^0.7.1",
-    "valibot": "^1.2.0"
+    "valibot": "^1.2.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.2",

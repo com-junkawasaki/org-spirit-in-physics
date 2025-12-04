@@ -63,13 +63,13 @@ export function calculateWordDistances(results: WordResponseData[]): WordDistanc
 
   // Calculate statistics for normalization
   const reactionValues = results.map(r => r.wordAssociationProbability)
-  const reactionTimes = results.map(r => r.reactionTimeMs).filter(rt => rt > 0)
+  const reactionTimes = results.map(r => r.reactionTimeMs).filter((rt): rt is number => rt != null && rt > 0)
   const physiologicalValues = results.map(r => {
     if (Array.isArray(r.physiologicalData)) {
       return r.physiologicalData.reduce((sum, val) => sum + Math.abs(val), 0) / r.physiologicalData.length
     }
-    return r.skinPotentialComponent
-  })
+    return r.skinPotentialComponent ?? 0
+  }).filter((ph): ph is number => ph != null && !isNaN(ph))
 
   const rvMin = Math.min(...reactionValues)
   const rvMax = Math.max(...reactionValues)
@@ -107,11 +107,11 @@ export function calculateWordDistances(results: WordResponseData[]): WordDistanc
 
       const avgRt1 = results1
         .map(r => r.reactionTimeMs)
-        .filter(rt => rt > 0)
+        .filter((rt): rt is number => rt != null && rt > 0)
         .reduce((sum, rt, _, arr) => sum + rt / arr.length, 0)
       const avgRt2 = results2
         .map(r => r.reactionTimeMs)
-        .filter(rt => rt > 0)
+        .filter((rt): rt is number => rt != null && rt > 0)
         .reduce((sum, rt, _, arr) => sum + rt / arr.length, 0)
 
       const avgPh1 = results1.reduce((sum, r) => {

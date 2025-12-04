@@ -39,10 +39,13 @@ export async function POST(request: NextRequest) {
     const dataRootPath = '/app/public/dataset';
     const basePath = `${dataRootPath}/participants/${participantId}`;
     
-    // セッションデータの読み込み
-    const sessionData = await loadSessionDataFromFile(basePath);
-    const emotionData = await loadEmotionDataFromFile(basePath);
-    const physiologicalData = await loadPhysiologicalDataFromFile(basePath);
+    // セッションデータの読み込み（ファイルベースの読み込みは未実装）
+    // const sessionData = await loadSessionDataFromFile(basePath);
+    // const emotionData = await loadEmotionDataFromFile(basePath);
+    // const physiologicalData = await loadPhysiologicalDataFromFile(basePath);
+    const sessionData: any[] = [];
+    const emotionData: any[] = [];
+    const physiologicalData: any[] = [];
 
     if (!sessionData || sessionData.length === 0) {
       return NextResponse.json({

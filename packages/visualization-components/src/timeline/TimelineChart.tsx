@@ -150,8 +150,8 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'x-axis-overview')
       .attr('transform', `translate(0,${overviewHeight})`)
-      .call(d3.axisBottom(xScale)
-        .tickFormat(d3.timeFormat('%H:%M'))
+      .call(d3.axisBottom(xScale as any)
+        .tickFormat(d3.timeFormat('%H:%M') as any)
         .ticks(5)
       )
       .selectAll('text')
@@ -214,9 +214,12 @@ export default function TimelineChart({
       const currentSelection = d3.brushSelection(brushGroup.node() as any)
       
       // 選択範囲が異なる場合のみ更新（無限ループを防ぐ）
-      if (!currentSelection || 
-          Math.abs(currentSelection[0] - expectedX0) > 1 || 
-          Math.abs(currentSelection[1] - expectedX1) > 1) {
+      const sel0 = currentSelection?.[0]
+      const sel1 = currentSelection?.[1]
+      if (!currentSelection || currentSelection.length < 2 ||
+          typeof sel0 !== 'number' || typeof sel1 !== 'number' ||
+          Math.abs(sel0 - expectedX0) > 1 || 
+          Math.abs(sel1 - expectedX1) > 1) {
         isUpdatingBrushRef.current = true
         brushGroup.call(brush.move, [expectedX0, expectedX1])
         // 次のフレームでフラグをリセット
@@ -308,7 +311,7 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'grid')
       .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale)
+      .call(d3.axisBottom(xScale as any)
         .tickSize(-innerHeight)
         .tickFormat(() => '')
       )
@@ -317,7 +320,7 @@ export default function TimelineChart({
 
     g.append('g')
       .attr('class', 'grid')
-      .call(d3.axisLeft(yScale)
+      .call(d3.axisLeft(yScale as any)
         .tickSize(-innerWidth)
         .tickFormat(() => '')
       )
@@ -342,17 +345,17 @@ export default function TimelineChart({
       .range([axisHeight * 2.5, axisHeight * 2.1]);
 
     // 感情データをfileTypeで分類
-    const burstEmotions = filteredDataSorted.flatMap(d => 
-      d.emotions.filter(e => e.fileType === 'burst').map(e => e.score)
+    const burstEmotions = filteredDataSorted.flatMap(d =>
+      (d.emotions || []).filter(e => e.fileType === 'burst').map(e => e.score)
     );
-    const faceEmotions = filteredDataSorted.flatMap(d => 
-      d.emotions.filter(e => e.fileType === 'face').map(e => e.score)
+    const faceEmotions = filteredDataSorted.flatMap(d =>
+      (d.emotions || []).filter(e => e.fileType === 'face').map(e => e.score)
     );
-    const languageEmotions = filteredDataSorted.flatMap(d => 
-      d.emotions.filter(e => e.fileType === 'language').map(e => e.score)
+    const languageEmotions = filteredDataSorted.flatMap(d =>
+      (d.emotions || []).filter(e => e.fileType === 'language').map(e => e.score)
     );
-    const prosodyEmotions = filteredDataSorted.flatMap(d => 
-      d.emotions.filter(e => e.fileType === 'prosody').map(e => e.score)
+    const prosodyEmotions = filteredDataSorted.flatMap(d =>
+      (d.emotions || []).filter(e => e.fileType === 'prosody').map(e => e.score)
     );
 
     // domainの計算を統一（最小値と最大値の両方を考慮）
@@ -502,7 +505,7 @@ export default function TimelineChart({
       // Burst感情
       filteredDataSorted.forEach(d => {
         if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) return
-        d.emotions.filter(e => e.fileType === 'burst').forEach(emotion => {
+        (d.emotions || []).filter(e => e.fileType === 'burst').forEach(emotion => {
           const x = xScale(toDate(d.timestamp))
           if (x == null || isNaN(x)) return
           g.append('circle')
@@ -528,7 +531,7 @@ export default function TimelineChart({
       // Face感情
       filteredDataSorted.forEach(d => {
         if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) return
-        d.emotions.filter(e => e.fileType === 'face').forEach(emotion => {
+        (d.emotions || []).filter(e => e.fileType === 'face').forEach(emotion => {
           const x = xScale(toDate(d.timestamp))
           if (x == null || isNaN(x)) return
           g.append('circle')
@@ -554,7 +557,7 @@ export default function TimelineChart({
       // Language感情
       filteredDataSorted.forEach(d => {
         if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) return
-        d.emotions.filter(e => e.fileType === 'language').forEach(emotion => {
+        (d.emotions || []).filter(e => e.fileType === 'language').forEach(emotion => {
           const x = xScale(toDate(d.timestamp))
           if (x == null || isNaN(x)) return
           g.append('circle')
@@ -580,7 +583,7 @@ export default function TimelineChart({
       // Prosody感情
       filteredDataSorted.forEach(d => {
         if (d.timestamp == null || typeof d.timestamp !== 'number' || isNaN(d.timestamp)) return
-        d.emotions.filter(e => e.fileType === 'prosody').forEach(emotion => {
+        (d.emotions || []).filter(e => e.fileType === 'prosody').forEach(emotion => {
           const x = xScale(toDate(d.timestamp))
           if (x == null || isNaN(x)) return
           g.append('circle')
@@ -612,9 +615,9 @@ export default function TimelineChart({
           return
         }
         
-        if (d.emotions.length > 0) {
+        if (d.emotions && d.emotions.length > 0) {
           // 感情データポイントを個別に表示
-          d.emotions.forEach((emotion) => {
+          (d.emotions || []).forEach((emotion) => {
             // fileTypeに応じて適切なスケールを選択
             let emotionYScale: d3.ScaleLinear<number, number>;
             let baseColor: string;
@@ -750,8 +753,8 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'x-axis')
       .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale)
-        .tickFormat(timeFormat)
+      .call((d3.axisBottom(xScale as any) as any)
+        .tickFormat(timeFormat as any)
         .ticks(tickCount)
       )
       .selectAll('text')
@@ -767,7 +770,7 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'y-axis-reaction-value')
       .attr('transform', `translate(0,${axisHeight * 0.3})`)
-      .call(d3.axisLeft(reactionValueScale).ticks(3))
+      .call(d3.axisLeft(reactionValueScale as any).ticks(3))
       .selectAll('text')
       .style('font-size', '10px')
       .style('fill', '#333')
@@ -777,7 +780,7 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'y-axis-reaction-time')
       .attr('transform', `translate(0,${axisHeight * 1.3})`)
-      .call(d3.axisLeft(reactionTimeScale).ticks(3))
+      .call(d3.axisLeft(reactionTimeScale as any).ticks(3))
       .selectAll('text')
       .style('font-size', '10px')
       .style('fill', '#333')
@@ -787,7 +790,7 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'y-axis-physiological')
       .attr('transform', `translate(0,${axisHeight * 2.3})`)
-      .call(d3.axisLeft(physiologicalScale).ticks(3))
+      .call(d3.axisLeft(physiologicalScale as any).ticks(3))
       .selectAll('text')
       .style('font-size', '10px')
       .style('fill', '#333')
@@ -797,7 +800,7 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'y-axis-emotion-burst')
       .attr('transform', `translate(0,${axisHeight * 3.3})`)
-      .call(d3.axisLeft(burstEmotionScale).ticks(3))
+      .call(d3.axisLeft(burstEmotionScale as any).ticks(3))
       .selectAll('text')
       .style('font-size', '10px')
       .style('fill', '#9333ea')
@@ -807,7 +810,7 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'y-axis-emotion-face')
       .attr('transform', `translate(0,${axisHeight * 4.3})`)
-      .call(d3.axisLeft(faceEmotionScale).ticks(3))
+      .call(d3.axisLeft(faceEmotionScale as any).ticks(3))
       .selectAll('text')
       .style('font-size', '10px')
       .style('fill', '#ec4899')
@@ -817,7 +820,7 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'y-axis-emotion-language')
       .attr('transform', `translate(0,${axisHeight * 5.3})`)
-      .call(d3.axisLeft(languageEmotionScale).ticks(3))
+      .call(d3.axisLeft(languageEmotionScale as any).ticks(3))
       .selectAll('text')
       .style('font-size', '10px')
       .style('fill', '#10b981')
@@ -827,7 +830,7 @@ export default function TimelineChart({
     g.append('g')
       .attr('class', 'y-axis-emotion-prosody')
       .attr('transform', `translate(0,${axisHeight * 6.3})`)
-      .call(d3.axisLeft(prosodyEmotionScale).ticks(3))
+      .call(d3.axisLeft(prosodyEmotionScale as any).ticks(3))
       .selectAll('text')
       .style('font-size', '10px')
       .style('fill', '#f59e0b')

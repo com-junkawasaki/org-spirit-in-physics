@@ -49,7 +49,7 @@ export interface TimelineDataPoint {
   word: string
   reactionTime: number
   hasResponse: boolean
-  emotions: EmotionData[]
+  emotions?: EmotionData[]
   physiological: { average?: number; max?: number; min?: number } | unknown[]
   reactionValue: number
   eventType?: string
@@ -101,6 +101,7 @@ export interface EmotionVectorData {
   fearSum: number
   surpriseSum: number
   disgustSum: number
+  disinfectSum?: number // Alias for disgustSum (for backward compatibility)
   calmSum: number
   focusSum: number
   excitementSum: number

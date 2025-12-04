@@ -29,14 +29,15 @@ const nextConfig = {
     // Merkle DAG: Serverless Workflow SDK module resolution configuration
     config.resolve = {
       ...config.resolve,
+      symlinks: false, // Disable symlink resolution for pnpm workspaces
       alias: {
         ...config.resolve.alias,
         '@spirit-in-physics/visualization-components': resolve(__dirname, '../../packages/visualization-components/src/index.ts'),
       },
       modules: [
-        ...(config.resolve?.modules || []),
-        resolve(__dirname, '../../packages/visualization-components/node_modules'),
         resolve(__dirname, 'node_modules'),
+        'node_modules', // Default node_modules resolution
+        ...(config.resolve?.modules || []),
       ],
       fallback: {
         ...config.resolve?.fallback,

@@ -188,13 +188,21 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
         // 変換後のデータの統計情報
         console.log('=== Converted Data Statistics ===')
         const totalPoints = convertedData.length
-        const pointsWithEmotions = convertedData.filter(d => d.emotions && d.emotions.length > 0)
-        const pointsWithPhysiological = convertedData.filter(d => d.physiological && typeof d.physiological === 'object' && (d.physiological.average > 0 || d.physiological.max > 0))
-        const pointsWithReactionTime = convertedData.filter(d => d.reactionTime != null)
+        const pointsWithEmotions = convertedData.filter((d: TimelineDataPoint) => Array.isArray(d.emotions) && d.emotions.length > 0)
+        const pointsWithPhysiological = convertedData.filter((d: TimelineDataPoint) => {
+          const ph = d.physiological
+          if (!ph || Array.isArray(ph)) return false
+          const phObj = ph as { average?: number; max?: number; min?: number }
+          return (phObj.average ?? 0) > 0 || (phObj.max ?? 0) > 0
+        })
+        const pointsWithReactionTime = convertedData.filter((d: TimelineDataPoint) => d.reactionTime != null)
         
         // タイムスタンプ範囲を確認
-        const timestamps = convertedData.map(d => d.timestamp).filter((ts): ts is number => typeof ts === 'number')
-        const timeExtent = timestamps.length > 0 ? d3.extent(timestamps) as [number, number] : null
+        const timestamps = convertedData.map((d: TimelineDataPoint) => d.timestamp).filter((ts: number | undefined): ts is number => typeof ts === 'number')
+        const timeExtentRaw = timestamps.length > 0 ? d3.extent(timestamps) : null
+        const timeExtent = timeExtentRaw && timeExtentRaw[0] != null && timeExtentRaw[1] != null 
+          ? [timeExtentRaw[0] as unknown as number, timeExtentRaw[1] as unknown as number] as [number, number]
+          : null
         const startTime = timeExtent ? new Date(timeExtent[0]).toISOString() : 'N/A'
         const endTime = timeExtent ? new Date(timeExtent[1]).toISOString() : 'N/A'
         const durationHours = timeExtent ? (timeExtent[1] - timeExtent[0]) / (1000 * 60 * 60) : 0
@@ -214,18 +222,19 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
         if (pointsWithEmotions.length > 0) {
           console.log('=== Emotion Data Analysis ===')
           const emotionDataSample = pointsWithEmotions[0]
+          const sampleEmotions = emotionDataSample.emotions || []
           console.log('First point with emotions:', {
             word: emotionDataSample.word,
             timestamp: emotionDataSample.timestamp,
-            emotionsCount: emotionDataSample.emotions.length,
-            emotions: emotionDataSample.emotions,
-            allFileTypes: [...new Set(emotionDataSample.emotions.map((e: any) => e.fileType || 'unknown'))]
+            emotionsCount: sampleEmotions.length,
+            emotions: sampleEmotions,
+            allFileTypes: [...new Set(sampleEmotions.map((e: any) => e.fileType || 'unknown'))]
           })
           
           // 感情タイプ別の統計
           const emotionTypeCounts: Record<string, number> = {}
-          pointsWithEmotions.forEach(point => {
-            point.emotions.forEach((e: any) => {
+          pointsWithEmotions.forEach((point: TimelineDataPoint) => {
+            (point.emotions || []).forEach((e: any) => {
               const fileType = e.fileType || 'unknown'
               emotionTypeCounts[fileType] = (emotionTypeCounts[fileType] || 0) + 1
             })
@@ -234,8 +243,8 @@ export function useTimelineData({ participantId, sessionId }: Pick<TimelineVisua
           
           // 感情名の分布
           const emotionNameCounts: Record<string, number> = {}
-          pointsWithEmotions.forEach(point => {
-            point.emotions.forEach((e: any) => {
+          pointsWithEmotions.forEach((point: TimelineDataPoint) => {
+            (point.emotions || []).forEach((e: any) => {
               const name = e.name || 'unknown'
               emotionNameCounts[name] = (emotionNameCounts[name] || 0) + 1
             })

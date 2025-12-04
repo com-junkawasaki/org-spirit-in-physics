@@ -2,7 +2,7 @@
 // Debug endpoint for testing GraphQL service connectivity
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createGraphQLClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } from '@/lib/graphql/client'
+import { createGraphQLClient, getGraphQLApiUrl, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } from '@/lib/graphql/client'
 import type { GetParticipantsQueryResult, GetSessionsQueryResult, GetTimelineQueryResult } from '@/generated/graphql'
 
 export async function GET(request: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const graphqlClient = createGraphQLClient()
-    const url = graphqlClient['endpoint'] || 'unknown'
+    const url = getGraphQLApiUrl()
     results.graphqlUrl = url
 
     // Test 1: Get participants

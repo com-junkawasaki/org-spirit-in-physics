@@ -123,7 +123,7 @@ export default function TimelineVisualization({
   const lastInitialsRef = useRef<Map<string, [number, number, number]>>(new Map())
 
   // 表示モードの状態（forceModeが指定されている場合はそれに従う）
-  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words' | 'distance'>(
+  const [activeTab, setActiveTab] = useState<'timeline' | 'force3d' | 'words' | 'distance' | 'split'>(
     forceMode === 'force-3d-typegpu' ? 'force3d' : 'timeline'
   )
   // 単語選択（上位100をUIに表示）
@@ -308,7 +308,7 @@ export default function TimelineVisualization({
         vec.angerSum ?? 0,
         vec.fearSum ?? 0,
         vec.surpriseSum ?? 0,
-        vec.disinfectSum ?? 0, // disgustSum (mapped from GraphQL disgustSum field) - Note: typo in original, should be disgustSum
+        vec.disinfectSum ?? 0, // disgustSum - Note: EmotionVectorData has disgustSum, but using disinfectSum for compatibility
         vec.calmSum ?? 0,
         vec.focusSum ?? 0,
         vec.excitementSum ?? 0,
@@ -639,7 +639,7 @@ export default function TimelineVisualization({
       count: data.length,
       error: error || undefined,
       sample: timelineSample,
-      stats: emotionDataStats
+      stats: emotionDataStats || undefined
     })
     
     dataSources.push({
@@ -1709,7 +1709,7 @@ export default function TimelineVisualization({
                   tooltip.style.top = `${event.pageY - 10}px`
 
                   // 感情データの詳細表示
-                  const emotionDetails = point.emotions.length > 0
+                  const emotionDetails = point.emotions && point.emotions.length > 0
                     ? point.emotions.map(emotion =>
                         `<div class="text-xs">
                           <span class="font-medium">${emotion.name || 'unknown'}</span>:
@@ -2112,10 +2112,10 @@ export default function TimelineVisualization({
                   reactionTimeAvg: getAvg(arr, d => d.reactionTime || 0),
                   physioAvg: getAvg(arr, d => getPhysStat(d.physiological, 'average')),
                   reactionValueAvg: getAvg(arr, d => d.reactionValue || 0),
-                  prosodyAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('prosody'))?.score) || 0),
-                  burstAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('burst'))?.score) || 0),
-                  faceAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('face'))?.score) || 0),
-                  languageAvg: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('language'))?.score) || 0),
+                  prosodyAvg: getAvg(arr, d => ((d.emotions || []).find(e => String(e.fileType||'').toLowerCase().includes('prosody'))?.score) || 0),
+                  burstAvg: getAvg(arr, d => ((d.emotions || []).find(e => String(e.fileType||'').toLowerCase().includes('burst'))?.score) || 0),
+                  faceAvg: getAvg(arr, d => ((d.emotions || []).find(e => String(e.fileType||'').toLowerCase().includes('face'))?.score) || 0),
+                  languageAvg: getAvg(arr, d => ((d.emotions || []).find(e => String(e.fileType||'').toLowerCase().includes('language'))?.score) || 0),
                 })
                 const overall = avgObj(sections.overall)
                 const first = avgObj(sections.first)

@@ -23,8 +23,9 @@ export async function GET(
     return NextResponse.json(participant)
   } catch (error) {
     console.error('API: Failed to fetch participant:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to fetch participant', details: error.message },
+      { error: 'Failed to fetch participant', details: errorMessage },
       { status: 500 }
     )
   }

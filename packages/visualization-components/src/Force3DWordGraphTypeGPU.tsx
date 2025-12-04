@@ -22,19 +22,20 @@ declare global {
   interface Navigator {
     gpu: GPU
   }
-  
-  const GPUBufferUsage: {
-    STORAGE: number
-    COPY_DST: number
-    COPY_SRC: number
-    UNIFORM: number
-    MAP_READ: number
-  }
-  
-  const GPUMapMode: {
-    READ: number
-    WRITE: number
-  }
+}
+
+// GPUBufferUsageとGPUMapModeの型定義（既に定義されている場合はスキップ）
+declare const GPUBufferUsage: {
+  readonly STORAGE: number
+  readonly COPY_DST: number
+  readonly COPY_SRC: number
+  readonly UNIFORM: number
+  readonly MAP_READ: number
+}
+
+declare const GPUMapMode: {
+  readonly READ: number
+  readonly WRITE: number
 }
 
 // Merkle DAG: components.force3d_word_graph_typegpu
@@ -50,6 +51,7 @@ export interface WordNode {
   fixed?: boolean
   initial?: [number, number, number]
   color?: string
+  nodeType?: string // ノードタイプ
   // 感情スコア（0..1）。存在する場合は色合成に使用
   emotion?: Partial<Record<'joy' | 'sadness' | 'anger' | 'fear' | 'surprise' | 'disgust' | 'calm' | 'focus' | 'excitement' | 'confusion', number>>
 }
@@ -58,6 +60,7 @@ export interface WordLink {
   source: number // インデックス（ノード配列参照）
   target: number
   weight: number // 辺スケール（太さ）
+  color?: string // 辺の色
   // テンセグリティ拡張: 片側拘束の種別とパラメータ
   mode?: 'tension' | 'compression' // 省略時は従来の両側バネとして扱う
   L0?: number // 目標長さ（与えられない場合は weight から推定）

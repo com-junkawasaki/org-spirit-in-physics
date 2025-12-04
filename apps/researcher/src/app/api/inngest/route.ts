@@ -3,7 +3,6 @@ import {
   fileImportWorkflow,
   fileImportFailureWorkflow,
   windowsGenerationWorkflow,
-  windowsGenerationFailureWorkflow,
   kernelFusionWorkflow,
   kernelFusionFailureWorkflow,
   // neo4jPersistenceWorkflow, // Neo4j依存のため無効化
@@ -22,7 +21,6 @@ export const { GET, POST, PUT } = serve({
     
     // ウィンドウ生成ワークフロー
     windowsGenerationWorkflow,
-    windowsGenerationFailureWorkflow,
     
     // 核融合ワークフロー
     kernelFusionWorkflow,
