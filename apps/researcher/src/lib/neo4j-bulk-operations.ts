@@ -73,7 +73,7 @@ export class Neo4jBulkInserter {
         const batchTime = Date.now() - batchStartTime;
         console.log(`Batch ${batchesProcessed}: ${createdCount} nodes created in ${batchTime}ms`);
 
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Batch ${batchesProcessed + 1} failed:`, error);
         errorCount += batch.length;
         totalProcessed += batch.length;
@@ -81,7 +81,7 @@ export class Neo4jBulkInserter {
 
         errors.push({
           batchIndex: batchesProcessed,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           data: batch
         });
 
@@ -615,12 +615,12 @@ export class Neo4jBulkErrorHandler {
     suggestedAction: string;
     errorDetails: any;
   }> {
-    const errorMessage = error.message.toLowerCase();
+    const errorMessage = (error instanceof Error ? error.message : String(error)).toLowerCase();
     
     let recoverable = false;
     let suggestedAction = 'Manual intervention required';
     const errorDetails = {
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       batchSize: batchData.length,
       operationType,
       timestamp: new Date().toISOString()

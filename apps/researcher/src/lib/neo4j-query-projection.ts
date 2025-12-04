@@ -306,7 +306,7 @@ export class Neo4jSelectiveLoader {
   /**
    * データの統合
    */
-  private static integrateData(basicInfo: any[], relationshipData: any[]): any[] {
+  private static integrateData(basicInfo: any[], relationshipData: any[] | null): any[] {
     if (relationshipData && relationshipData.length > 0) {
       return basicInfo.map((basic, index) => ({
         ...basic,

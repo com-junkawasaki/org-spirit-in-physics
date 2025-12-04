@@ -30,20 +30,12 @@ class Neo4jClient {
 
   constructor(config: Neo4jConfig) {
     this.config = config
-    this.neogma = new Neogma(
-      {
-        url: this.config.uri,
-        username: this.config.user,
-        password: this.config.password,
-        database: this.config.database,
-      },
-      {
-        logger: console.log,
-      }
-    )
+    // Neogma機能は削除されました
+    // this.neogma = new Neogma(...) // Removed
+    this.neogma = null as any
 
     // Neogmaモデルを作成
-    const models = createNeogmaModels(this.neogma)
+    const models = createNeogmaModels(null as any)
 
     // モデルをクラスプロパティとして設定
     this.Participant = models.Participant
@@ -60,9 +52,9 @@ class Neo4jClient {
       const result = await this.neogma.queryRunner.run(cypherQuery, params || {})
       console.log('Neogma response records:', result.records?.length || 0)
 
-      const records = result.records?.map(record => {
+      const records = result.records?.map((record: any) => {
         const obj: any = {}
-        record.keys.forEach(key => {
+        record.keys.forEach((key: string) => {
           const value = record.get(key)
           // BigIntをNumber型に変換
           if (typeof value === 'bigint') {
@@ -280,11 +272,7 @@ const neo4jConfig: Neo4jConfig = {
 let clientInstance: Neo4jClient | null = null
 
 export function createNeo4jClient(): Neo4jClient {
-  throw new Error('この関数は使用できません。')
-  if (!clientInstance) {
-    clientInstance = new Neo4jClient(neo4jConfig)
-  }
-  return clientInstance
+  throw new Error('Neo4j機能は削除されました。この関数は使用できません。')
 }
 
 export function createArangoDBClient(): Neo4jClient {
@@ -588,7 +576,7 @@ export class Neo4jManager {
       `MATCH (s:ExperimentSession) WHERE s.participant_id = $participant_id RETURN s AS session`,
       { participant_id: participantId }
     )
-    return res.records?.map(r => r.get('session')) ?? []
+    return res.records?.map((r: any) => r.get('session')) ?? []
   }
 
   // Merkle DAG: methods.create_emotion_entries
@@ -639,7 +627,7 @@ export class Neo4jManager {
       `MATCH (e:EmotionEntry) WHERE e.participant_id = $participant_id RETURN e AS emotion`,
       { participant_id: participantId }
     )
-    return res.records?.map(r => r.get('emotion')) ?? []
+    return res.records?.map((r: any) => r.get('emotion')) ?? []
   }
 
   async close(): Promise<void> {

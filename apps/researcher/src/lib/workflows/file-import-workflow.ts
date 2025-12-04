@@ -97,7 +97,7 @@ export async function executeFileImportWorkflow(event: FileImportEvent) {
   });
 
   // ステップ2: コンテンツハッシュの検証（提供されている場合）
-  let hashVerification = { verified: true, computedHash: null };
+  let hashVerification: { verified: boolean; computedHash: string | null } = { verified: true, computedHash: null };
   if (contentHash) {
     const allFiles = [
       validationResults.sessionData.path,
