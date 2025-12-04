@@ -1,9 +1,10 @@
 // LLM-BOUNDARY: 80_app - scripts/src/lib/...（Serverロジック）
 // Merkle DAG: import.transaction_manager
 // インポート処理のトランザクション管理（ACIDプロパティ保証）
-// 依存関係: Neo4j, import-error-handler
+// 依存関係: GraphQL service, import-error-handler
+// Neo4j removed - using GraphQL service instead
 
-import neo4j, { Driver, Session, Transaction } from 'neo4j-driver';
+// import neo4j, { Driver, Session, Transaction } from 'neo4j-driver';
 
 // Merkle DAG: import.transaction_manager.types
 // トランザクション管理用の型定義
@@ -37,22 +38,25 @@ export interface TransactionOperation {
 // Merkle DAG: import.transaction_manager.class
 // トランザクション管理クラス
 export class ImportTransactionManager {
-  private driver: Driver;
+  // private driver: Driver;
   private activeTransactions: Map<string, TransactionContext> = new Map();
 
   constructor(uri: string, user: string, password: string) {
-    this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
+    // Neo4j removed - using GraphQL service instead
+    // this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
   }
 
   // Merkle DAG: import.transaction_manager.initialize
   // トランザクション管理初期化
   async initialize() {
-    try {
+    // GraphQLサービス経由でPostgreSQLを使用
+    console.warn('ImportTransactionManager: GraphQL経由での実装は未対応');
+    /* try {
       await this.driver.verifyConnectivity();
       console.log('Neo4j connection established for import transactions');
     } catch (error) {
       throw new Error(`Failed to connect to Neo4j: ${error}`);
-    }
+    } */
   }
 
   // Merkle DAG: import.transaction_manager.start_transaction

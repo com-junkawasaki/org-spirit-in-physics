@@ -134,13 +134,13 @@ export const kernelFusionWorkflow = inngest.createFunction(
       }
 
       // 重みの検証
-      const weightSum = weights.reduce((sum, w) => sum + w, 0);
+      const weightSum = weights.reduce((sum: number, w: number) => sum + w, 0);
       if (Math.abs(weightSum - 1.0) > 0.01) {
         logger.warn(`Weight sum is not 1.0: ${weightSum}`);
       }
 
       // 固有値の検証
-      const positiveEigenValues = eigenValues.filter(val => val > 0);
+      const positiveEigenValues = eigenValues.filter((val: number) => val > 0);
       if (positiveEigenValues.length < options.dimensions) {
         logger.warn(`Insufficient positive eigenvalues: ${positiveEigenValues.length} < ${options.dimensions}`);
       }
@@ -149,9 +149,9 @@ export const kernelFusionWorkflow = inngest.createFunction(
       const embeddingStats = {
         min: Math.min(...embedding.flat()),
         max: Math.max(...embedding.flat()),
-        mean: embedding.flat().reduce((sum, val) => sum + val, 0) / embedding.flat().length,
-        hasNaN: embedding.flat().some(val => Number.isNaN(val)),
-        hasInf: embedding.flat().some(val => !Number.isFinite(val)),
+        mean: embedding.flat().reduce((sum: number, val: number) => sum + val, 0) / embedding.flat().length,
+        hasNaN: embedding.flat().some((val: number) => Number.isNaN(val)),
+        hasInf: embedding.flat().some((val: number) => !Number.isFinite(val)),
       };
 
       if (embeddingStats.hasNaN || embeddingStats.hasInf) {

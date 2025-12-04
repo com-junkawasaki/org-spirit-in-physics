@@ -2,7 +2,7 @@
 
 import { StoragePort } from 'scripts/src/20_ports';
 import { ConsentData, SaveStructuredDataPayload, EmotionAnalysisResult, Participant, ParticipantWithFiles, SessionData } from 'scripts/src/00_schema';
-import { neo4jManager } from 'scripts/src/lib/database/neo4j-manager';
+// Neo4j removed - using GraphQL service instead
 
 export class StorageAdapter implements StoragePort {
   async saveStructuredData(payload: SaveStructuredDataPayload): Promise<void> {
@@ -10,28 +10,32 @@ export class StorageAdapter implements StoragePort {
     if (payload.type === "consent") {
       await this.saveConsentData(payload.data);
     } else if (payload.type === "session-data") {
-      await neo4jManager.saveSession({
+      // GraphQLサービス経由でセッションデータを保存（実装予定）
+      console.warn('saveStructuredData: GraphQL経由での実装は未対応');
+      /* await neo4jManager.saveSession({
         id: `${payload.data.participantId}_session`,
         participantId: payload.data.participantId,
         events: payload.data.events,
         createdAt: payload.data.events[0]?.timestamp || new Date().toISOString()
-      });
+      }); */
     }
   }
 
   async saveConsentData(data: ConsentData): Promise<void> {
-    // Neo4jデータベースに保存（一本化）
-    await neo4jManager.saveParticipant({
+    // GraphQLサービス経由でPostgreSQLに保存（実装予定）
+    console.warn('saveConsentData: GraphQL経由での実装は未対応');
+    /* await neo4jManager.saveParticipant({
       id: data.participantId,
       signature: data.signature,
       agreedAt: new Date(data.agreedAt),
       agreements: data.agreements
-    });
+    }); */
   }
 
   async saveEmotionAnalysis(participantId: string, result: EmotionAnalysisResult): Promise<void> {
-    // Neo4jデータベースに保存（一本化）
-    const analysis = {
+    // GraphQLサービス経由でPostgreSQLに保存（実装予定）
+    console.warn('saveEmotionAnalysis: GraphQL経由での実装は未対応');
+    /* const analysis = {
       id: `${result.participantId}_${result.videoFile}_${Date.now()}`,
       participantId: result.participantId,
       videoFileId: `${result.participantId}_${result.videoFile}`,
@@ -41,12 +45,14 @@ export class StorageAdapter implements StoragePort {
       emotions: result.emotions
     };
 
-    await neo4jManager.saveEmotionAnalysis(analysis);
+    await neo4jManager.saveEmotionAnalysis(analysis); */
   }
 
   async loadEmotionAnalysis(participantId: string): Promise<EmotionAnalysisResult[]> {
-    // Neo4jデータベースから読み込み（一本化）
-    try {
+    // GraphQLサービス経由でPostgreSQLから読み込み（実装予定）
+    console.warn('loadEmotionAnalysis: GraphQL経由での実装は未対応');
+    return [];
+    /* try {
       const neo4jResults = await neo4jManager.getEmotionAnalysis(participantId);
       return neo4jResults.map(sa => ({
         participantId: sa.participantId,
@@ -55,23 +61,25 @@ export class StorageAdapter implements StoragePort {
         emotions: sa.emotions,
         timestamp: sa.timestamp,
         processingTime: sa.processingTime
-      }));
-    } catch (error) {
+      })); */
+    /* } catch (error) {
       console.warn('Failed to load emotion analysis from Neo4j:', error);
       return [];
-    }
+    } */
   }
 
   async saveArtifact(participantId: string, type: string, filename: string, data: Buffer): Promise<string> {
     // アーティファクト保存は未実装（必要に応じて実装）
-      // 現在はURLを返すダミー実装
-      return `neo4j://artifacts/${participantId}/${filename}`;
+    // GraphQLサービス経由でPostgreSQLまたはBlobストレージに保存
+    return `graphql://artifacts/${participantId}/${filename}`;
   }
 
   // data-loader.ts から統合した追加メソッド
   async loadAllParticipants(): Promise<ParticipantWithFiles[]> {
-    // Neo4jデータベースから参加者データを取得（一本化）
-    try {
+    // GraphQLサービス経由でPostgreSQLから参加者データを取得（実装予定）
+    console.warn('loadAllParticipants: GraphQL経由での実装は未対応');
+    return [];
+    /* try {
       const neo4jParticipants = await neo4jManager.getAllParticipants();
       return neo4jParticipants.map(sp => ({
         id: sp.id,
@@ -85,16 +93,18 @@ export class StorageAdapter implements StoragePort {
         hasSessionData: false, // 後で更新
         hasVideoFiles: false, // 後で更新
         videoFiles: []
-      }));
-    } catch (error) {
+      })); */
+    /* } catch (error) {
       console.warn('Failed to load participants from Neo4j:', error);
       return [];
-    }
+    } */
   }
 
   async loadSessionData(participantId: string): Promise<SessionData | null> {
-    // Neo4jデータベースからセッションデータを取得（一本化）
-    try {
+    // GraphQLサービス経由でPostgreSQLからセッションデータを取得（実装予定）
+    console.warn('loadSessionData: GraphQL経由での実装は未対応');
+    return null;
+    /* try {
       // Neo4jManagerからセッションデータを取得
       // 現時点では仮の実装
       console.log(`Loading session data from Neo4j for ${participantId}`);
@@ -102,7 +112,7 @@ export class StorageAdapter implements StoragePort {
     } catch (error) {
       console.warn('Failed to load session data from Neo4j:', error);
       return null;
-    }
+    } */
   }
 }
 

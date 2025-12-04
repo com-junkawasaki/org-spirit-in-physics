@@ -1,7 +1,7 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { neo4jClient } from './neo4j.ts';
+// Neo4j removed - using GraphQL service instead
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;
@@ -239,7 +239,7 @@ export async function analyzeAllParticipantVideos(participantId: string): Promis
 /**
  * GraphQLサービス経由で感情分析の統計情報を取得
  */
-export async function getEmotionStatisticsFromNeo4j(): Promise<{
+export async function getEmotionStatisticsFromGraphQL(): Promise<{
   totalAnalyses: number;
   averageEmotions: Record<string, number>;
   dominantEmotions: Array<{ emotion: string; count: number }>;
@@ -250,7 +250,7 @@ export async function getEmotionStatisticsFromNeo4j(): Promise<{
 }> {
   // GraphQLサービス経由で実装予定
   // 現時点では空の統計を返す
-  console.warn('getEmotionStatisticsFromNeo4j: GraphQL経由での実装は未対応');
+  console.warn('getEmotionStatisticsFromGraphQL: GraphQL経由での実装は未対応');
   return {
     totalAnalyses: 0,
     averageEmotions: {},

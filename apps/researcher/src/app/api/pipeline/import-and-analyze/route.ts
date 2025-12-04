@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
             'distance_calculation',
             'kernel_fusion',
             'embedding_generation',
-            'neo4j_persistence',
+            // 'neo4j_persistence', // Neo4j removed - using GraphQL service with PostgreSQL instead
             'export',
           ],
           parameters: {
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
         distance_calculation: 'pending',
         kernel_fusion: 'pending',
         embedding_generation: 'pending',
-        neo4j_persistence: 'pending',
+        // neo4j_persistence: 'pending', // Neo4j removed - using GraphQL service with PostgreSQL instead
         export: 'pending',
       },
       progress: 25, // 25%完了

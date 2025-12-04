@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseWordResponsesFromEvents, getParticipantStatistics, loadAllSessionData } from "scripts/src/lib/data-loader";
-import { neo4jManager } from "scripts/src/lib/database/neo4j-manager";
+// Neo4j removed - using GraphQL service instead
+// import { neo4jManager } from "scripts/src/lib/database/neo4j-manager";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,10 +11,10 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'participants':
-        // Neo4jから参加者データを取得
-        const neo4jParticipants = await neo4jManager.getAllParticipants();
-
-        // Convert to data-loader Participant format
+        // GraphQLサービス経由でPostgreSQLから参加者データを取得（実装予定）
+        console.warn('participants: GraphQL経由での実装は未対応');
+        const participantsData: import("scripts/src/lib/data-loader").Participant[] = [];
+        /* const neo4jParticipants = await neo4jManager.getAllParticipants();
         const participantsData: import("scripts/src/lib/data-loader").Participant[] = neo4jParticipants.map(p => ({
           id: p.id,
           signature: p.signature || "unknown",
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
           hasSessionData: p.hasSessionData || false,
           hasVideoFiles: p.hasVideoFiles || false,
           videoFiles: p.videoFiles || []
-        }));
+        })); */
 
         const participantStats = getParticipantStatistics(participantsData);
 
@@ -54,15 +55,17 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
 
-        // Neo4jから参加者データを取得
-        const participant = await neo4jManager.getParticipant(participantId);
-
+        // GraphQLサービス経由でPostgreSQLから参加者データを取得（実装予定）
+        console.warn('participant: GraphQL経由での実装は未対応');
+        return NextResponse.json({
+          error: "Participant not found"
+        }, { status: 404 });
+        /* const participant = await neo4jManager.getParticipant(participantId);
         if (!participant) {
           return NextResponse.json({
             error: "Participant not found"
           }, { status: 404 });
         }
-
         return NextResponse.json({
           success: true,
           data: {
@@ -73,7 +76,7 @@ export async function GET(request: NextRequest) {
             hasVideoFiles: participant.hasVideoFiles || false,
             videoFiles: participant.videoFiles || []
           }
-        });
+        }); */
 
       case 'sessions':
         // Neo4jからセッションデータを取得
@@ -118,10 +121,10 @@ export async function GET(request: NextRequest) {
         });
 
       case 'analytics':
-        // Neo4jからデータを取得
-        const analyticsNeo4jParticipants = await neo4jManager.getAllParticipants();
-
-        // Convert to data-loader Participant format
+        // GraphQLサービス経由でPostgreSQLからデータを取得（実装予定）
+        console.warn('analytics: GraphQL経由での実装は未対応');
+        const participants: import("scripts/src/lib/data-loader").Participant[] = [];
+        /* const analyticsNeo4jParticipants = await neo4jManager.getAllParticipants();
         const participants: import("scripts/src/lib/data-loader").Participant[] = analyticsNeo4jParticipants.map(p => ({
           id: p.id,
           signature: p.signature || "unknown",
@@ -130,7 +133,7 @@ export async function GET(request: NextRequest) {
           hasSessionData: p.hasSessionData || false,
           hasVideoFiles: p.hasVideoFiles || false,
           videoFiles: p.videoFiles || []
-        }));
+        })); */
 
         const stats = getParticipantStatistics(participants);
 
@@ -150,12 +153,12 @@ export async function GET(request: NextRequest) {
 
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
-        // Neo4jから感情統計を取得
-        const emotionStats = await neo4jManager.getEmotionStatistics();
+        // GraphQLサービス経由でPostgreSQLから感情統計を取得（実装予定）
         const emotionDistribution: Record<string, number> = {};
+        /* const emotionStats = await neo4jManager.getEmotionStatistics();
         emotionStats.dominantEmotions.forEach((item: any) => {
           emotionDistribution[item.emotion] = item.count;
-        });
+        }); */
 
         const totalSessions = participants.reduce((acc: number, p: any) =>
           acc + (p.sessionCount || 0), 0);

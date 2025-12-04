@@ -8,7 +8,7 @@ import {
   getParticipantStatistics,
   initializeDatabase
 } from "@/lib/data-loader";
-import { loadEmotionAnalysisResults, getEmotionStatisticsFromNeo4j } from "@/lib/emotion-analysis";
+import { loadEmotionAnalysisResults, getEmotionStatisticsFromGraphQL } from "@/lib/emotion-analysis";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
         const averageReactionTime = totalResponses > 0 ? totalReactionTime / totalResponses : 0;
 
         // GraphQLサービス経由でPostgreSQL/TimescaleDBから感情統計を取得
-        const emotionStats = await getEmotionStatisticsFromNeo4j();
+        const emotionStats = await getEmotionStatisticsFromGraphQL();
         const emotionDistribution: Record<string, number> = {};
         emotionStats.dominantEmotions.forEach(item => {
           emotionDistribution[item.emotion] = item.count;
