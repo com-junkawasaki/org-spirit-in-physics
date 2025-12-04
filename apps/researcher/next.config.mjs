@@ -1,5 +1,6 @@
 import { fileURLToPath, pathToFileURL } from 'url'
 import { dirname, resolve } from 'path'
+import { existsSync } from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -8,7 +9,8 @@ const __dirname = dirname(__filename)
 const nextConfig = {
   // Configure `pageExtensions` to include MDX files
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-  output: 'standalone',
+  // Only use standalone output in production builds
+  ...(process.env.NODE_ENV === 'production' ? { output: 'standalone' } : {}),
   // Transpile monorepo packages
   transpilePackages: ['@spirit-in-physics/visualization-components'],
   // Enable experimental features for better performance
@@ -29,13 +31,14 @@ const nextConfig = {
     // Merkle DAG: Serverless Workflow SDK module resolution configuration
     config.resolve = {
       ...config.resolve,
-      symlinks: false, // Disable symlink resolution for pnpm workspaces
+      symlinks: dev !== false, // Enable symlink resolution in development, disable in production
       alias: {
         ...config.resolve.alias,
         '@spirit-in-physics/visualization-components': resolve(__dirname, '../../packages/visualization-components/src/index.ts'),
       },
       modules: [
         resolve(__dirname, 'node_modules'),
+        resolve(__dirname, '../../node_modules'), // Root node_modules for monorepo
         'node_modules', // Default node_modules resolution
         ...(config.resolve?.modules || []),
       ],
@@ -49,6 +52,20 @@ const nextConfig = {
     }
 
     // Merkle DAG: External modules configuration for server-side
+    // Ensure react-plotly.js is resolved correctly (check both local and root node_modules)
+    const reactPlotlyPath = resolve(__dirname, 'node_modules/react-plotly.js')
+    const rootReactPlotlyPath = resolve(__dirname, '../../node_modules/react-plotly.js')
+    // Try to resolve from local node_modules first, then root
+    // Always set alias to help webpack resolve the module
+    if (existsSync(reactPlotlyPath)) {
+      config.resolve.alias['react-plotly.js'] = reactPlotlyPath
+    } else if (existsSync(rootReactPlotlyPath)) {
+      config.resolve.alias['react-plotly.js'] = rootReactPlotlyPath
+    } else {
+      // If not found, still set alias to local path (will fail at runtime if not installed)
+      // This allows webpack to build successfully
+      config.resolve.alias['react-plotly.js'] = reactPlotlyPath
+    }
 
     return config
   },
