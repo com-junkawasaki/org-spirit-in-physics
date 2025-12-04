@@ -4,6 +4,14 @@ const nextConfig = {
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   // Transpile Apollo Client packages
   transpilePackages: ['@apollo/client'],
+  // TypeScript strict mode: fail build on type errors
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  // ESLint strict mode: fail build on lint errors
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
   webpack: (config, { isServer, dev }) => {
     // Enable symlinks resolution for pnpm
     config.resolve.symlinks = true;

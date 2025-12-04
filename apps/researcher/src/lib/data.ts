@@ -275,8 +275,9 @@ export async function getAllParticipants(): Promise<ParticipantData[]> {
           })
           
           // Get last activity timestamp
-          const lastActivity = timeline.length > 0
-            ? new Date(timeline[timeline.length - 1].time).getTime()
+          const lastTimelinePoint = timeline.length > 0 ? timeline[timeline.length - 1] : null
+          const lastActivity = lastTimelinePoint
+            ? new Date(lastTimelinePoint.time).getTime()
             : null
           
           return {
@@ -406,7 +407,7 @@ export async function getParticipantData(participantId: string): Promise<Partici
           ? point.emotions[0]
           : null
         
-        return {
+        const result: AnalysisResult = {
           id: `${participantId}-${index}`,
           stimulus_word: point.word || '',
           response_word: point.word || '',
@@ -418,8 +419,11 @@ export async function getParticipantData(participantId: string): Promise<Partici
           emotion_data: primaryEmotion ? { [primaryEmotion.name || 'unknown']: primaryEmotion.score || 0 } : {},
           physiological_data: {},
           created_at: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
-          reaction_time_ms: point.reactionTime || undefined,
         }
+        if (point.reactionTime != null) {
+          result.reaction_time_ms = point.reactionTime
+        }
+        return result
       })
     }]
 
@@ -500,20 +504,23 @@ export async function getAnalysisResults(participantId?: string): Promise<Analys
               ? point.emotions[0]
               : null
             
-            return {
-              id: `${participant.id}-${index}`,
-              stimulus_word: point.word || '',
-              response_word: point.word || '',
-              p_value: point.reactionValue || 0.5,
-              word2vec_component: 0,
-              reaction_time_component: point.reactionTime ? 10 / (1 + point.reactionTime / 1000) : 0,
-              skin_potential_component: 0,
-              emotion_component: primaryEmotion?.score || 0,
-              emotion_data: primaryEmotion ? { [primaryEmotion.name || 'unknown']: primaryEmotion.score || 0 } : {},
-              physiological_data: {},
-              created_at: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
-              reaction_time_ms: point.reactionTime || undefined,
-            }
+        const result: AnalysisResult = {
+          id: `${participant.id}-${index}`,
+          stimulus_word: point.word || '',
+          response_word: point.word || '',
+          p_value: point.reactionValue || 0.5,
+          word2vec_component: 0,
+          reaction_time_component: point.reactionTime ? 10 / (1 + point.reactionTime / 1000) : 0,
+          skin_potential_component: 0,
+          emotion_component: primaryEmotion?.score || 0,
+          emotion_data: primaryEmotion ? { [primaryEmotion.name || 'unknown']: primaryEmotion.score || 0 } : {},
+          physiological_data: {},
+          created_at: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
+        }
+        if (point.reactionTime != null) {
+          result.reaction_time_ms = point.reactionTime
+        }
+        return result
           })
         
         allResults.push(...participantResults)
@@ -548,7 +555,7 @@ export async function getAnalysisResultsForParticipant(participantId: string): P
           ? point.emotions[0]
           : null
         
-        return {
+        const result: AnalysisResult = {
           id: `${participantId}-${index}`,
           stimulus_word: point.word || '',
           response_word: point.word || '',
@@ -560,8 +567,11 @@ export async function getAnalysisResultsForParticipant(participantId: string): P
           emotion_data: primaryEmotion ? { [primaryEmotion.name || 'unknown']: primaryEmotion.score || 0 } : {},
           physiological_data: {},
           created_at: typeof point.time === 'string' ? point.time : new Date(point.time).toISOString(),
-          reaction_time_ms: point.reactionTime || undefined,
         }
+        if (point.reactionTime != null) {
+          result.reaction_time_ms = point.reactionTime
+        }
+        return result
       })
   } catch (error) {
     console.error('Failed to get analysis results for participant:', error)

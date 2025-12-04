@@ -47,9 +47,11 @@
   },
   "scripts": {
     "dev": "next dev -p 25250 -H 0.0.0.0",
+    "prebuild": "pnpm typecheck",
     "build": "paraglide-js compile && next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "generate-audio": "tsx src/scripts/generate-audio.ts",
     "migrate-artifacts": "tsx src/scripts/migrate-artifacts.ts",
     "paraglide": "paraglide-js compile",

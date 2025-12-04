@@ -13,6 +13,14 @@ const nextConfig = {
   ...(process.env.NODE_ENV === 'production' ? { output: 'standalone' } : {}),
   // Transpile monorepo packages
   transpilePackages: ['@spirit-in-physics/visualization-components'],
+  // TypeScript strict mode: fail build on type errors
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  // ESLint strict mode: fail build on lint errors
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
   // Enable experimental features for better performance
   experimental: {
     // optimizeCss: true, // Disabled: requires critters module which has issues in Docker

@@ -29,10 +29,11 @@
   },
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
-    "prebuild": "pnpm install && pnpm codegen",
+    "prebuild": "pnpm install && pnpm codegen && pnpm typecheck",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "codegen": "graphql-codegen --config codegen.yaml",
     "codegen:watch": "graphql-codegen --config codegen.yaml --watch"
   },

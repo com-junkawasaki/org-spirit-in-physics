@@ -5,9 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "astro dev --host 0.0.0.0 --port 4321 --watch",
+    "prebuild": "pnpm typecheck",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@spirit-in-physics/visualization-components": "file:../../packages/visualization-components",
