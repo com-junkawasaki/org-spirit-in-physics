@@ -5,7 +5,7 @@
  * Supabase サインインページ
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -15,10 +15,22 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  // Only create client on client-side to avoid build-time errors
+  const supabase = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return createClient();
+    } catch (e) {
+      return null;
+    }
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabase) {
+      setError('Supabase client not initialized');
+      return;
+    }
     setError(null);
     setLoading(true);
 

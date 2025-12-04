@@ -37,8 +37,12 @@ export function getGraphQLApiUrl(): string {
     const serverUrl = process.env.GRAPHQL_API_URL;
     if (serverUrl) {
       // In Docker: graphql-service resolves within the Docker network
-      // Outside Docker: use localhost (fallback)
+      // In production: use production GraphQL URL
       return serverUrl;
+    }
+    // Fallback: use production URL in production, localhost in development
+    if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+      return 'https://graphql.sip.junkawasaki.com/graphql';
     }
     // Fallback for server-side local development
     return 'http://localhost:8081/graphql';

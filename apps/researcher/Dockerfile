@@ -17,6 +17,8 @@ COPY packages/visualization-components ./packages/visualization-components
 RUN sed -i 's|file:../../packages/visualization-components|file:./packages/visualization-components|g' package.json
 
 # Install dependencies and wget for healthcheck
+# --no-frozen-lockfile ensures all dependencies in package.json are installed,
+# including react-plotly.js and other optional dependencies
 RUN pnpm install --no-frozen-lockfile && \
     apk add --no-cache wget
 
