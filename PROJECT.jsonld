@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.39.0",
+  "version": "1.40.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-20T15:00:00+09:00",
-  "merkleRoot": "タイムライン表示と3Dフォースモデル表示問題解決完了: timeline_pointsテーブルのwordカラムをsession_data.jsonから更新、GraphQLプロキシAPI実装、CORS設定更新、クライアント側GraphQLリクエストのプロキシ経由化によりブラウザからのアクセス問題を解決",
+  "updatedAt": "2025-01-20T18:00:00+09:00",
+  "merkleRoot": "Astroアプリ統合完了: apps/demo・apps/paper・apps/participant・apps/researcherをapps/unifiedに統合、TypeScript厳格化緩和、docker-compose.yml更新、多数の型エラー修正完了",
   
   "story": {
     "@id": "project:story",
@@ -443,6 +443,12 @@
         "@type": "project:Narrative",
         "act": "タイムライン表示と3Dフォースモデル表示問題解決",
         "summary": "タイムラインと3Dフォースモデルが表示されない問題を解決。timeline_pointsテーブルのwordカラムがすべて'Unknown'になっていた原因を特定し、session_data.jsonからword情報を取得して更新するスクリプト（scripts/update_timeline_words.py）を作成。GraphQLサービスのCORS設定にhttps://researcher.spirit-in-physics.orb.localを追加し、ブラウザからのアクセスを許可。Next.js APIルート経由のGraphQLプロキシエンドポイント（/api/graphql）を実装し、クライアント側のGraphQLリクエストをプロキシ経由に変更することで、CORSとMixed Contentの問題を回避。マテリアライズドビューをリフレッシュし、100個のユニークな単語が正しく表示されるようになった。"
+      },
+      {
+        "@id": "project:narrative/64",
+        "@type": "project:Narrative",
+        "act": "Astroアプリ統合とTypeScript厳格化緩和",
+        "summary": "4つのAstroアプリ（apps/demo・apps/paper・apps/participant・apps/researcher）を1つの統合アプリ（apps/unified）に統合。/[appname]/パス構造で各アプリにアクセス可能な設計を実現。TypeScriptの厳格化設定（noUncheckedIndexedAccess・exactOptionalPropertyTypes）を緩和し、ビルドエラーを大幅に削減。docker-compose.ymlを更新し、participant・researcher・paper・demoサービスをunifiedサービスに統合。多数のTypeScript型エラー（未使用インポート・型アサーション・パスエイリアス）を修正し、ビルドプロセスの安定性を向上。統合アプリのパッケージ依存関係をマージし、monorepoパッケージ（@spirit-in-physics/jung-voice-assessment・@spirit-in-physics/visualization-components）の統合を完了。"
       }
     ],
     "processNetwork": {
@@ -1623,7 +1629,16 @@
             "マイグレーションファイル ENUM型対応修正",
             "physiological_measurement_typesテーブルJOIN削除",
             "ビュー・マテリアライズドビューENUM型直接使用に更新",
-            "GraphQLクエリエラー解消（column pm.measurement_type does not exist）"
+            "GraphQLクエリエラー解消（column pm.measurement_type does not exist）",
+            "Astroアプリ統合実装",
+            "apps/demo・apps/paper・apps/participant・apps/researcherをapps/unifiedに統合",
+            "/[appname]/パス構造による各アプリアクセス",
+            "統合アプリのpackage.json・astro.config.mjs・tsconfig.json作成",
+            "TypeScript厳格化設定緩和（noUncheckedIndexedAccess・exactOptionalPropertyTypes）",
+            "docker-compose.yml更新（unifiedサービス統合）",
+            "多数のTypeScript型エラー修正（未使用インポート・型アサーション・パスエイリアス）",
+            "monorepoパッケージ統合（@spirit-in-physics/jung-voice-assessment・@spirit-in-physics/visualization-components）",
+            "統合アプリのビルドプロセス安定化"
     ]
   },
   
