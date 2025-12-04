@@ -395,9 +395,6 @@ export default function JungVoiceTest({
   numberOfWords = 100,
   className = '',
   onComplete,
-  apolloClient,
-  graphQLMutations,
-  graphQLCallbacks,
   Button = DefaultButton,
   Card = DefaultCard,
   CardHeader = DefaultCardHeader,
@@ -424,26 +421,10 @@ export default function JungVoiceTest({
     setStream,
     setError,
     recordWordResponse,
-    setGraphQLClient,
-    setGraphQLMutations,
-    setGraphQLCallbacks,
   } = useKawasakiStore();
 
-  // Initialize GraphQL client and mutations
-  useEffect(() => {
-    if (apolloClient) {
-      setGraphQLClient(apolloClient);
-    }
-    if (graphQLMutations) {
-      setGraphQLMutations(graphQLMutations);
-    }
-    if (graphQLCallbacks) {
-      setGraphQLCallbacks(graphQLCallbacks);
-    }
-  }, [apolloClient, graphQLMutations, graphQLCallbacks, setGraphQLClient, setGraphQLMutations, setGraphQLCallbacks]);
-
-  // Load stimulus words from GraphQL API
-  useStimulusWords(apolloClient);
+  // Load stimulus words from gRPC API
+  useStimulusWords();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoChunksRef = useRef<Blob[]>([]);

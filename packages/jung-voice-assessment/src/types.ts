@@ -35,30 +35,6 @@ export interface KawasakiStoreState {
   events: { timestamp: number; type: string; payload?: object }[];
   sessionVideoUrl: string | null;
   participantId: string | null;
-  graphQLClient: any | null; // ApolloClient type from @apollo/client
-  graphQLMutations: GraphQLMutations | null;
-  graphQLCallbacks: GraphQLCallbacks | null;
-}
-
-export interface GraphQLMutations {
-  createSession: any; // DocumentNode
-  uploadArtifact: any; // DocumentNode
-}
-
-export interface GraphQLCallbacks {
-  onSaveSession?: (data: {
-    participantId: string;
-    sessionIndex: number;
-    startTs: number;
-    events: Array<{ timestamp: number; type: string; payload?: object }>;
-  }) => Promise<void>;
-  onUploadArtifact?: (data: {
-    participantId: string;
-    fileName: string;
-    fileData: string;
-    contentType: string;
-    artifactType: string;
-  }) => Promise<string>;
 }
 
 export interface KawasakiStoreActions {
@@ -77,9 +53,6 @@ export interface KawasakiStoreActions {
   saveSessionVideo: (session: 1 | 2, blob: Blob) => void;
   initializeParticipant: () => void;
   setStimulusWords: (words: Word[]) => void;
-  setGraphQLClient: (client: any | null) => void;
-  setGraphQLMutations: (mutations: GraphQLMutations | null) => void;
-  setGraphQLCallbacks: (callbacks: GraphQLCallbacks | null) => void;
 }
 
 export type KawasakiStore = KawasakiStoreState & KawasakiStoreActions;
@@ -103,27 +76,6 @@ export interface JungVoiceTestProps {
   speechRecognitionLang?: string;
   className?: string;
   onComplete?: () => void;
-  // GraphQL client injection
-  apolloClient?: any; // ApolloClient type from @apollo/client
-  graphQLMutations?: {
-    createSession: any; // DocumentNode
-    uploadArtifact: any; // DocumentNode
-  };
-  graphQLCallbacks?: {
-    onSaveSession?: (data: {
-      participantId: string;
-      sessionIndex: number;
-      startTs: number;
-      events: Array<{ timestamp: number; type: string; payload?: object }>;
-    }) => Promise<void>;
-    onUploadArtifact?: (data: {
-      participantId: string;
-      fileName: string;
-      fileData: string;
-      contentType: string;
-      artifactType: string;
-    }) => Promise<string>;
-  };
   // UI component injection
   Button?: React.ComponentType<any>;
   Card?: React.ComponentType<any>;

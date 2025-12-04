@@ -1,4 +1,4 @@
-// Welcome message constant (can be moved to GraphQL API later if needed)
+// Welcome message constant
 export const JUNG_TEST_WELCOME_MESSAGE = `
   ユングの言語連想検査へようこそ。この検査は、あなたの「言葉」に対する心理的な連想を探るものです。私が単語を提示しますので、最初に思いついた単語で応答してください。１つの単語に対して、2秒以内を目安に回答してください。回答があった時点で次の単語が提示されます。10秒が過ぎた場合は次の単語が提示されます。セッションは２回行われ、一回のセッションで単語は100個提示されます。
 `;

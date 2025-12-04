@@ -4,10 +4,8 @@ import type { Word } from '../types';
 
 /**
  * Hook to fetch stimulus words from gRPC API
- * @deprecated apolloClient parameter is deprecated. Use gRPC client instead.
- * This hook now uses gRPC client internally.
  */
-export function useStimulusWords(apolloClient?: any) {
+export function useStimulusWords() {
   const { setStimulusWords, stimulusWords } = useKawasakiStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
@@ -18,19 +16,7 @@ export function useStimulusWords(apolloClient?: any) {
       return;
     }
 
-    // Use gRPC client if available, fallback to apolloClient for backward compatibility
-    if (apolloClient) {
-      // Legacy GraphQL support (deprecated)
-      console.warn('useStimulusWords: apolloClient is deprecated. Use gRPC client instead.');
-      setLoading(true);
-      // Try to use GraphQL as fallback (if still needed)
-      // This will be removed in future versions
-      setLoading(false);
-      setError(new Error('GraphQL support is deprecated. Please use gRPC client.'));
-      return;
-    }
-
-    // Use gRPC client (preferred)
+    // Use gRPC client
     setLoading(true);
     import('@spirit-in-physics/grpc-client')
       .then(({ getStimulusWords }) => {
@@ -51,7 +37,7 @@ export function useStimulusWords(apolloClient?: any) {
         setError(err);
         setLoading(false);
       });
-  }, [apolloClient, stimulusWords.length, setStimulusWords]);
+  }, [stimulusWords.length, setStimulusWords]);
 
   return { loading, error, words: stimulusWords };
 }

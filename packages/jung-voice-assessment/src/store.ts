@@ -24,21 +24,13 @@ const initialState: KawasakiStoreState = {
   events: [],
   sessionVideoUrl: null,
   participantId: null,
-  graphQLClient: null,
-  graphQLMutations: null,
-  graphQLCallbacks: null,
 };
 
 export const useKawasakiStore = create<KawasakiStore>()(
   immer((set, get) => ({
     ...initialState,
-    graphQLMutations: null,
-    graphQLCallbacks: null,
 
     setStimulusWords: (words) => set({ stimulusWords: words }),
-    setGraphQLClient: (client) => set({ graphQLClient: client }),
-    setGraphQLMutations: (mutations) => set({ graphQLMutations: mutations }),
-    setGraphQLCallbacks: (callbacks) => set({ graphQLCallbacks: callbacks }),
 
     initializeParticipant: () => {
         const participantId = uuidv4();
@@ -135,54 +127,8 @@ export const useKawasakiStore = create<KawasakiStore>()(
     },
 
     saveSessionData: async () => {
-        const { participantId, events, currentSession, graphQLClient, graphQLMutations, graphQLCallbacks } = get();
-        
-        if (graphQLCallbacks?.onSaveSession) {
-            try {
-                const sessionStartedEvent = events.find((e: any) => e.type === 'session_started');
-                const startTs = sessionStartedEvent?.timestamp || Date.now();
-                const sessionIndex = currentSession || (sessionStartedEvent?.payload?.session as number | undefined) || 1;
-                
-                await graphQLCallbacks.onSaveSession({
-                    participantId: participantId!,
-                    sessionIndex,
-                    startTs,
-                    events,
-                });
-                
-                get().logEvent('session_data_saved');
-            } catch (error) {
-                console.error('Error in saveSessionData:', error);
-                get().setError('セッションデータの保存に失敗しました。');
-            }
-        } else if (graphQLClient && graphQLMutations?.createSession) {
-            try {
-                const sessionStartedEvent = events.find((e: any) => e.type === 'session_started');
-                const startTs = sessionStartedEvent?.timestamp || Date.now();
-                const sessionIndex = currentSession || (sessionStartedEvent?.payload?.session as number | undefined) || 1;
-                
-                const result = await graphQLClient.mutate({
-                    mutation: graphQLMutations.createSession,
-                    variables: {
-                        input: {
-                            participantId: participantId!,
-                            sessionIndex: sessionIndex,
-                            startTs: startTs,
-                            events: events,
-                        },
-                    },
-                });
-
-                if (result.errors) {
-                    throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-                }
-
-                get().logEvent('session_data_saved');
-            } catch (error) {
-                console.error('Error in saveSessionData:', error);
-                get().setError('セッションデータの保存に失敗しました。');
-            }
-        }
+        // This method is now handled by the parent component using gRPC
+        // The actual implementation is in apps/unified/src/components/participant/jung-voice-assessment/store.ts
     },
 
     resetTest: () => {
@@ -191,71 +137,10 @@ export const useKawasakiStore = create<KawasakiStore>()(
     },
 
     saveSessionVideo: async (session, blob) => {
-        const { participantId, logEvent, setError, graphQLClient, graphQLMutations, graphQLCallbacks } = get();
-        if (!participantId) {
-            setError('Participant ID is not set, cannot save video.');
-            return;
-        }
-
-        console.log(`Attempting to save session video for session ${session}`);
-
-        try {
-            // Convert blob to base64
-            const reader = new FileReader();
-            const base64Promise = new Promise<string>((resolve, reject) => {
-                reader.onloadend = () => {
-                    const base64String = reader.result as string;
-                    const base64Data = base64String.split(',')[1] || base64String;
-                    resolve(base64Data);
-                };
-                reader.onerror = reject;
-            });
-            reader.readAsDataURL(blob);
-            const base64Data = await base64Promise;
-
-            const fileName = `session-${session}-video.webm`;
-
-            if (graphQLCallbacks?.onUploadArtifact) {
-                const publicUrl = await graphQLCallbacks.onUploadArtifact({
-                    participantId: participantId,
-                    fileName: fileName,
-                    fileData: base64Data,
-                    contentType: 'video/webm',
-                    artifactType: 'video',
-                });
-                set({ sessionVideoUrl: publicUrl });
-                logEvent(`session_${session}_video_saved`, { url: publicUrl });
-            } else if (graphQLClient && graphQLMutations?.uploadArtifact) {
-                const result = await graphQLClient.mutate({
-                    mutation: graphQLMutations.uploadArtifact,
-                    variables: {
-                        input: {
-                            participantId: participantId,
-                            fileName: fileName,
-                            fileData: base64Data,
-                            contentType: 'video/webm',
-                            artifactType: 'video',
-                        },
-                    },
-                });
-
-                if (result.errors) {
-                    throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
-                }
-
-                const publicUrl = result.data?.uploadArtifact;
-                if (!publicUrl) {
-                    throw new Error('No URL returned from upload_artifact mutation');
-                }
-
-                set({ sessionVideoUrl: publicUrl });
-                logEvent(`session_${session}_video_saved`, { url: publicUrl });
-            }
-
-        } catch (error) {
-            console.error('Error saving session video:', error);
-            setError('動画の保存に失敗しました。');
-        }
+        // This method is now handled by the parent component using gRPC
+        // The actual implementation is in apps/unified/src/components/participant/jung-voice-assessment/store.ts
+        const { logEvent } = get();
+        logEvent(`session_${session}_video_skipped`, { reason: 'handled_by_parent' });
     },
   }))
 );

@@ -6,11 +6,6 @@ import type { APIRoute } from 'astro';
 // Disable prerendering for dynamic API routes
 export const prerender = false;
 
-// Get GraphQL API URL from environment
-// function getGraphQLApiUrl(): string {
-//   return import.meta.env.GRAPHQL_API_URL || 'http://graphql-service:8081/graphql';
-// }
-
 export const GET: APIRoute = async ({ params }) => {
   const participantId = params.participantId;
   if (!participantId) {
@@ -21,8 +16,7 @@ export const GET: APIRoute = async ({ params }) => {
   }
 
   try {
-    // Note: analysisResults field doesn't exist in GraphQL schema
-    // Word2Vec embeddings are not currently available via GraphQL
+    // Word2Vec embeddings are not currently available via gRPC
     // Return empty array for now - this endpoint is called but embeddings are optional
     // In a real implementation, you would fetch embeddings from a separate endpoint or database
     

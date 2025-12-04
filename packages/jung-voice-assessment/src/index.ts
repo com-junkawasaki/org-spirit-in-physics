@@ -15,8 +15,6 @@ export type {
   KawasakiStoreState,
   KawasakiStoreActions,
   KawasakiStore,
-  GraphQLMutations,
-  GraphQLCallbacks,
   JungVoiceTestProps,
 } from './types';
 
