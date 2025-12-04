@@ -61,7 +61,7 @@ async function importParticipantsFromDataset() {
 
         // Merkle DAG: import.participants.create_participant
         // PostgreSQLに参加者データを作成
-        const _participantNode = await createParticipantNode({
+        await createParticipantNode({
           id: participantId,
           signature: consentData.signature,
           agreedAt: consentData.agreedAt,

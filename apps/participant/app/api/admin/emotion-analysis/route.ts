@@ -7,7 +7,7 @@ import {
   loadEmotionAnalysisResults,
   generateEmotionStatistics
 } from "scripts/src/lib/emotion-analysis";
-import { WorkflowService } from "scripts/src/lib/workflow-service";
+// import { WorkflowService } from "scripts/src/lib/workflow-service";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

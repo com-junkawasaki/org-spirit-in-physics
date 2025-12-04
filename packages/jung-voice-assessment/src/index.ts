@@ -6,7 +6,7 @@ export { default as AudioVisualizer } from './AudioVisualizer';
 export { useKawasakiStore } from './store';
 export { useStimulusWords } from './hooks/useStimulusWords';
 
-// Export types
+// Export types from types.ts
 export type {
   Word,
   WordResponse as WordResponseType,
@@ -20,6 +20,9 @@ export type {
   JungVoiceTestProps,
 } from './types';
 
+// Re-export WordResponse from types.ts with original name for backward compatibility
+export type { WordResponse as WordResponseFromTypes } from './types';
+
 export type { WordResponseWithExtras } from './WordResponse';
 
 // Export schemas
@@ -32,6 +35,7 @@ export {
   SaveStructuredDataPayloadSchema,
 } from './schema';
 
+// Export types from schema.ts (WordResponse from schema is the zod-inferred type)
 export type {
   Participant,
   WordStimulus,

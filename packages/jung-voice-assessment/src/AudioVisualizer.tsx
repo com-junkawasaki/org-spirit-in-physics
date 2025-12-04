@@ -10,7 +10,7 @@ interface AudioVisualizerProps {
  * A component that visualizes audio activity from a MediaStream.
  * It uses the Web Audio API to analyze frequency data and draws bars on a canvas.
  */
-const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ stream }) => {
+const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ stream }: AudioVisualizerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

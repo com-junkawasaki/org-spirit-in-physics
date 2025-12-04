@@ -236,7 +236,7 @@ async function processCSVFile(participantId: string, fileName: string, content: 
   const lines = content.split('\n');
   // ヘッダーをスキップしてデータを処理
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i]?.trim();
     if (line) {
       // CSV行を処理
       const csvRecord = {

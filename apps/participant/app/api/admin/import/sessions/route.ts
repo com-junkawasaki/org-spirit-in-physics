@@ -73,7 +73,7 @@ async function importSessionsFromDataset() {
 
         // Merkle DAG: import.sessions.create_session
         // セッションイベントを処理してPostgreSQLに格納
-        const _sessionResult = await processSessionEvents(participantId, sessionData.events);
+        await processSessionEvents(participantId, sessionData.events);
 
         // Merkle DAG: import.sessions.create_word_responses
         // 単語応答データを抽出して格納
@@ -123,7 +123,7 @@ async function importSessionsFromDataset() {
 
 // Merkle DAG: import.sessions.check_participant
 // 参加者存在チェック関数
-async function checkParticipantExists(participantId: string): Promise<boolean> {
+async function checkParticipantExists(_participantId: string): Promise<boolean> {
   // GraphQLサービス経由で参加者存在を確認
   // TODO: GraphQLクエリを使用した実装
   return true; // 仮実装
@@ -131,7 +131,7 @@ async function checkParticipantExists(participantId: string): Promise<boolean> {
 
 // Merkle DAG: import.sessions.check_existing_session
 // 既存セッション存在チェック関数
-async function checkExistingSession(participantId: string): Promise<boolean> {
+async function checkExistingSession(_participantId: string): Promise<boolean> {
   // GraphQLサービス経由で既存セッションを確認
   // TODO: GraphQLクエリを使用した実装
   return false; // 仮実装
@@ -139,7 +139,7 @@ async function checkExistingSession(participantId: string): Promise<boolean> {
 
 // Merkle DAG: import.sessions.process_events
 // セッションイベント処理関数
-async function processSessionEvents(participantId: string, events: any[]) {
+async function processSessionEvents(_participantId: string, events: any[]) {
   // イベントデータをPostgreSQLに格納
   // TODO: GraphQLミューテーションを使用した実装
   return { eventsProcessed: events.length };
@@ -167,7 +167,7 @@ async function extractWordResponses(events: any[]) {
 
 // Merkle DAG: import.sessions.store_responses
 // 単語応答格納関数
-async function storeWordResponses(participantId: string, responses: any[]) {
+async function storeWordResponses(_participantId: string, _responses: any[]) {
   // 単語応答をPostgreSQLに格納
   // TODO: GraphQLミューテーションを使用した実装
 }
@@ -203,7 +203,7 @@ async function calculateSessionStatistics(events: any[]) {
   };
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
 
   try {
     // Merkle DAG: import.sessions.execute

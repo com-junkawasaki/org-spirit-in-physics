@@ -56,23 +56,25 @@ declare var SpeechRecognition: {
 };
 
 // Default UI components (can be overridden via props)
-const DefaultButton: React.FC<any> = ({ children, ...props }) => (
+type DefaultComponentProps = { children?: React.ReactNode; className?: string; [key: string]: any };
+
+const DefaultButton: React.FC<DefaultComponentProps> = ({ children, ...props }) => (
   <button {...props}>{children}</button>
 );
 
-const DefaultCard: React.FC<any> = ({ children, className, ...props }) => (
+const DefaultCard: React.FC<DefaultComponentProps> = ({ children, className, ...props }) => (
   <div className={className} {...props}>{children}</div>
 );
 
-const DefaultCardHeader: React.FC<any> = ({ children, ...props }) => (
+const DefaultCardHeader: React.FC<DefaultComponentProps> = ({ children, ...props }) => (
   <div {...props}>{children}</div>
 );
 
-const DefaultCardTitle: React.FC<any> = ({ children, ...props }) => (
+const DefaultCardTitle: React.FC<DefaultComponentProps> = ({ children, ...props }) => (
   <h3 {...props}>{children}</h3>
 );
 
-const DefaultCardContent: React.FC<any> = ({ children, className, ...props }) => (
+const DefaultCardContent: React.FC<DefaultComponentProps> = ({ children, className, ...props }) => (
   <div className={className} {...props}>{children}</div>
 );
 
