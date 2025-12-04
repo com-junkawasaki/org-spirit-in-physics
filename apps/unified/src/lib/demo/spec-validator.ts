@@ -1,8 +1,8 @@
 // Merkle DAG: lib.spec_validator
 // JSON-LD specification validator based on SHACL constraints
 
-import type { AnalysisStep } from '../types/step'
-import type { WordEmotionData, EmotionData, ComplexSpaceData } from '../types/demo'
+import type { AnalysisStep } from '../../types/demo/step'
+import type { WordEmotionData, EmotionData, ComplexSpaceData } from '../../types/demo/demo'
 
 export interface ValidationError {
   path: string
@@ -153,7 +153,7 @@ export function validateWordEmotionData(data: WordEmotionData): ValidationResult
     })
   } else {
     // Validate each emotion
-    data.emotions.forEach((emotion, index) => {
+    data.emotions.forEach((emotion: any, index: number) => {
       const emotionResult = validateEmotionData(emotion)
       if (!emotionResult.valid) {
         emotionResult.errors.forEach(error => {

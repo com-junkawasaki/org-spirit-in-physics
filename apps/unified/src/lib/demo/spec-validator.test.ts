@@ -8,8 +8,8 @@ import {
   validateEmotionData,
   validateComplexSpaceData,
 } from './spec-validator'
-import type { AnalysisStep } from '../types/step'
-import type { WordEmotionData, EmotionData, ComplexSpaceData } from '../types/demo'
+import type { AnalysisStep } from '../../types/demo/step'
+import type { WordEmotionData, EmotionData, ComplexSpaceData } from '../../types/demo/demo'
 
 describe('validateAnalysisStep', () => {
   it('should validate a valid AnalysisStep', () => {
@@ -44,8 +44,9 @@ describe('validateAnalysisStep', () => {
     const result = validateAnalysisStep(step)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('stepType')
-    expect(result.errors[0].message).toContain('stepType must be one of the defined step types')
+    const firstError = result.errors[0];
+    expect(firstError?.path).toBe('stepType')
+    expect(firstError?.message).toContain('stepType must be one of the defined step types')
   })
 
   it('should reject AnalysisStep with invalid id format', () => {
@@ -61,8 +62,9 @@ describe('validateAnalysisStep', () => {
     const result = validateAnalysisStep(step)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('id')
-    expect(result.errors[0].message).toContain("id must be in format 'step-{timestamp}-{order}'")
+    const firstError = result.errors[0];
+    expect(firstError?.path).toBe('id')
+    expect(firstError?.message).toContain("id must be in format 'step-{timestamp}-{order}'")
   })
 
   it('should reject AnalysisStep with negative stepOrder', () => {
@@ -78,7 +80,7 @@ describe('validateAnalysisStep', () => {
     const result = validateAnalysisStep(step)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('stepOrder')
+    expect(result.errors[0]?.path).toBe('stepOrder')
   })
 
   it('should reject AnalysisStep with invalid status', () => {
@@ -94,7 +96,7 @@ describe('validateAnalysisStep', () => {
     const result = validateAnalysisStep(step)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('status')
+    expect(result.errors[0]?.path).toBe('status')
   })
 
   it('should reject AnalysisStep with missing name', () => {
@@ -110,7 +112,7 @@ describe('validateAnalysisStep', () => {
     const result = validateAnalysisStep(step)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('name')
+    expect(result.errors[0]?.path).toBe('name')
   })
 
   it('should reject AnalysisStep with invalid logs', () => {
@@ -127,7 +129,7 @@ describe('validateAnalysisStep', () => {
     const result = validateAnalysisStep(step)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('logs')
+    expect(result.errors[0]?.path).toBe('logs')
   })
 })
 
@@ -154,8 +156,9 @@ describe('validateEmotionData', () => {
     const result = validateEmotionData(emotion)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('score')
-    expect(result.errors[0].message).toContain('emotion score must be between 0 and 1')
+    const firstError = result.errors[0];
+    expect(firstError?.path).toBe('score')
+    expect(firstError?.message).toContain('emotion score must be between 0 and 1')
   })
 
   it('should reject EmotionData with score < 0', () => {
@@ -168,7 +171,7 @@ describe('validateEmotionData', () => {
     const result = validateEmotionData(emotion)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('score')
+    expect(result.errors[0]?.path).toBe('score')
   })
 
   it('should reject EmotionData with invalid fileType', () => {
@@ -181,7 +184,7 @@ describe('validateEmotionData', () => {
     const result = validateEmotionData(emotion)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('fileType')
+    expect(result.errors[0]?.path).toBe('fileType')
   })
 
   it('should accept EmotionData without fileType', () => {
@@ -227,8 +230,9 @@ describe('validateWordEmotionData', () => {
     const result = validateWordEmotionData(data)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('emotions')
-    expect(result.errors[0].message).toContain('emotions array is required and must not be empty')
+    const firstError = result.errors[0];
+    expect(firstError?.path).toBe('emotions')
+    expect(firstError?.message).toContain('emotions array is required and must not be empty')
   })
 
   it('should reject WordEmotionData with invalid reactionValue', () => {
@@ -247,7 +251,7 @@ describe('validateWordEmotionData', () => {
     const result = validateWordEmotionData(data)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('reactionValue')
+    expect(result.errors[0]?.path).toBe('reactionValue')
   })
 
   it('should validate nested EmotionData errors', () => {
@@ -266,7 +270,7 @@ describe('validateWordEmotionData', () => {
     const result = validateWordEmotionData(data)
     expect(result.valid).toBe(false)
     expect(result.errors.length).toBeGreaterThan(0)
-    expect(result.errors[0].path).toContain('emotions[0]')
+    expect(result.errors[0]?.path).toContain('emotions[0]')
   })
 })
 
@@ -295,8 +299,9 @@ describe('validateComplexSpaceData', () => {
     const result = validateComplexSpaceData(data)
     expect(result.valid).toBe(false)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].path).toBe('projected3D')
-    expect(result.errors[0].message).toContain('must have exactly 3 elements')
+    const firstError = result.errors[0];
+    expect(firstError?.path).toBe('projected3D')
+    expect(firstError?.message).toContain('must have exactly 3 elements')
   })
 
   it('should accept ComplexSpaceData without regions', () => {

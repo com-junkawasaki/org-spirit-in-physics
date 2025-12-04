@@ -4,7 +4,7 @@
 // JSON-LD Schema: pipeline:pattern/recommended
 
 import { match, P } from 'ts-pattern'
-import type { WordEmotionData, EmotionData, ComplexSpaceData } from '../../types/demo'
+import type { WordEmotionData, EmotionData, ComplexSpaceData } from '../../../types/demo/demo'
 import { analyzeEmotionRealtime, captureVideoFrame, captureAudioFrame } from '../hume-realtime'
 import { calculateComplexSpace } from '../complex-calculator'
 // Structure analysis functions are imported but not used in simplified implementation
@@ -147,7 +147,8 @@ export class EmotionProcessingPipeline {
       validate: (stream) => {
         if (!stream) return false
         const videoTracks = stream.getVideoTracks()
-        return videoTracks.length > 0 && videoTracks[0].readyState === 'live'
+        const firstTrack = videoTracks[0];
+        return videoTracks.length > 0 && firstTrack !== undefined && firstTrack.readyState === 'live'
       },
       execute: async (stream) => {
         const startTime = performance.now()
@@ -156,7 +157,6 @@ export class EmotionProcessingPipeline {
           const audioBlobRaw = stream.getAudioTracks().length > 0 
             ? await captureAudioFrame(stream, 1000) 
             : null
-          const audioBlob = audioBlobRaw || undefined
           
           if (this.config.enableMonitoring) {
             const latency = performance.now() - startTime
@@ -165,7 +165,10 @@ export class EmotionProcessingPipeline {
             this.captureStep.metrics!.totalCount++
           }
           
-          return { videoBlob, audioBlob }
+          return {
+            videoBlob,
+            ...(audioBlobRaw !== null && audioBlobRaw !== undefined && { audioBlob: audioBlobRaw })
+          }
         } catch (error) {
           if (this.config.enableMonitoring) {
             this.captureStep.metrics!.errorCount++
@@ -174,7 +177,7 @@ export class EmotionProcessingPipeline {
           throw error
         }
       },
-      onError: async (error, stream) => {
+      onError: async (error, _stream) => {
         console.error('[Pipeline] Capture step failed:', error)
         return null
       },
@@ -211,7 +214,7 @@ export class EmotionProcessingPipeline {
           throw error
         }
       },
-      onError: async (error, input) => {
+      onError: async (error, _input) => {
         console.error('[Pipeline] Analyze step failed:', error)
         return []
       },
@@ -301,7 +304,7 @@ export class EmotionProcessingPipeline {
       validate: (input) => {
         return input && input.complexData && input.wordEmotionData && input.wordEmotionData.length > 0
       },
-      execute: async (input) => {
+      execute: async (_input) => {
         const startTime = performance.now()
         try {
           // For now, return empty structure analysis results
@@ -368,11 +371,11 @@ export class EmotionProcessingPipeline {
         // Use provided blobs (batch processing)
         captureResult = {
           videoBlob: input.videoBlob,
-          audioBlob: input.audioBlob
+          ...(input.audioBlob !== undefined && { audioBlob: input.audioBlob })
         }
         
         // Validate provided blobs
-        if (!captureResult.videoBlob || captureResult.videoBlob.size === 0) {
+        if (!captureResult || !captureResult.videoBlob || captureResult.videoBlob.size === 0) {
           return this.createErrorResult(traceId, executionStartTime, 'Invalid video blob')
         }
         
@@ -724,7 +727,7 @@ export class EmotionProcessingPipeline {
   private createErrorResult(
     traceId: string, 
     startTime: number, 
-    reason: string, 
+    _reason: string, 
     status: PipelineStepStatus = 'failed'
   ): PipelineResult {
     return {

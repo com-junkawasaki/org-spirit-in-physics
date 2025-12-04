@@ -454,7 +454,10 @@ export default function TimelineVisualization({
 
                     const normalizedEmotionVec: Record<string, number[]> = {}
                     Object.keys(wordEmotionSum).forEach((w) => {
-                      normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
+                      const emotionArray = wordEmotionSum[w];
+                      if (emotionArray) {
+                        normalizedEmotionVec[w] = normalize(emotionArray)
+                      }
                     })
 
                     // 力学モードの係数を単語別に算出（強度+変動）
@@ -472,7 +475,7 @@ export default function TimelineVisualization({
                       const mean = series.length ? series.reduce((s, x) => s + x, 0) / series.length : 0
                       const variance = series.length ? series.reduce((s, x) => s + (x - mean) * (x - mean), 0) / series.length : 0
                       const physStd = Math.sqrt(Math.max(0, variance))
-                      const speed = c > 0 ? (1 / Math.max(1, g.sumReactionTime / c)) : 0
+                      const speed = c > 0 && g ? (1 / Math.max(1, g.sumReactionTime / c)) : 0
                       physByWord[japanese] = physAvg
                       physStdByWord[japanese] = physStd
                       speedByWord[japanese] = speed
@@ -604,7 +607,8 @@ export default function TimelineVisualization({
                       if (chosen.length > 0) {
                         let vx = 0, vy = 0, vz = 0, sw = 0
                         for (const c of chosen) {
-                          const p = anchorPos[c.ai]
+                          const p = anchorPos[c.ai];
+                          if (!p) continue;
                           vx += p[0] * c.w
                           vy += p[1] * c.w
                           vz += p[2] * c.w
@@ -620,14 +624,18 @@ export default function TimelineVisualization({
                             const prev = lastInitialsRef.current.get(label)
                             if (prev) init = [ prev[0] * 0.8 + init[0] * 0.2, prev[1] * 0.8 + init[1] * 0.2, prev[2] * 0.8 + init[2] * 0.2 ]
                           }
-                          nodes[wi].initial = init
+                          const node = nodes[wi];
+                          if (node) {
+                            node.initial = init
+                          }
                           lastInitialsRef.current.set(label, init)
                         }
                       }
 
                       // リンク生成（感情色を付与）
                       for (const c of chosen) {
-                        const a = anchorNodes[c.ai]
+                        const a = anchorNodes[c.ai];
+                        if (!a) continue;
                         const key = anchorToKey[a.label]
                         const base = key ? emotionColor[key] : undefined
                         const w = Math.max(0, Math.min(1, c.w * Math.max(0.1, factor)))
@@ -648,10 +656,13 @@ export default function TimelineVisualization({
                     if (selectedWord) {
                       const idx = nodes.findIndex(n => n.label === selectedWord)
                       if (idx >= 0) {
-                        nodes[idx].fixed = true
-                        nodes[idx].initial = [0, 0, 0]
-                        nodes[idx].scale = Math.max(nodes[idx].scale, 6)
-                        nodes[idx].color = '#111827'
+                        const node = nodes[idx];
+                        if (node) {
+                          node.fixed = true
+                          node.initial = [0, 0, 0]
+                          node.scale = Math.max(node.scale ?? 1, 6)
+                          node.color = '#111827'
+                        }
                       }
                     }
 
@@ -1007,7 +1018,7 @@ export default function TimelineVisualization({
                       l: getAvg(arr, d => (d.emotions.find(e => String(e.fileType||'').toLowerCase().includes('language'))?.score) || 0),
                     })
                     const o = avg(occ), a = avg(first), s = avg(second)
-                    const jungIndex = JUNG_STIMULUS_WORDS.findIndex(j => j.japanese === w)
+                    const jungIndex = JUNG_STIMULUS_WORDS.findIndex((j: any) => j.japanese === w)
                     return {
                       word: w,
                       id: jungIndex >= 0 ? jungIndex : -1,
@@ -1179,27 +1190,29 @@ export default function TimelineVisualization({
 
                       // 集約（ノード指標）。全語を初期化し、セッション実データで加算
                       const accum: Record<string, { count: number; sumReactionValue: number; sumReactionTime: number }> = {}
-                      jungWords.forEach(({ japanese }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
+                      jungWords.forEach(({ japanese }: { japanese: string }) => { accum[japanese] = { count: 0, sumReactionValue: 0, sumReactionTime: 0 } })
                         for (const d of data) {
-                          if (!accum[d.word]) continue // セッション語がユング語に無い場合は無視
-                          accum[d.word].count += 1
-                          accum[d.word].sumReactionValue += d.reactionValue
-                          accum[d.word].sumReactionTime += d.reactionTime
+                          const accumEntry = accum[d.word];
+                          if (!accumEntry) continue // セッション語がユング語に無い場合は無視
+                          accumEntry.count += 1
+                          accumEntry.sumReactionValue += d.reactionValue
+                          accumEntry.sumReactionTime += d.reactionTime
                         }
 
                         // 生スケール: 平均反応値 × log(1+回数)
-                        const nodeEntries = jungWords.map(({ japanese }) => {
-                          const g = accum[japanese]
+                        const nodeEntries = jungWords.map(({ japanese }: { japanese: string }) => {
+                          const g = accum[japanese];
+                          if (!g) return { japanese, count: 0, avgReactionValue: 0, raw: 0 };
                           const avgRV = g.count > 0 ? g.sumReactionValue / g.count : 0
                           const raw = avgRV * Math.log1p(g.count)
                           return { japanese, count: g.count, avgReactionValue: avgRV, raw }
                         })
 
-                        const rawMin = Math.min(...nodeEntries.map(n => n.raw))
-                        const rawMax = Math.max(...nodeEntries.map(n => n.raw))
+                        const rawMin = Math.min(...nodeEntries.map((n: any) => n.raw))
+                        const rawMax = Math.max(...nodeEntries.map((n: any) => n.raw))
                         const denom = rawMax - rawMin || 1
 
-                        const nodes: WordNode[] = nodeEntries.map((n, idx) => ({
+                        const nodes: WordNode[] = nodeEntries.map((n: any, idx: number) => ({
                           id: String(idx),
                           label: n.japanese,
                           // 0.5〜6.0程度に正規化（視認性のため）
@@ -1219,8 +1232,9 @@ export default function TimelineVisualization({
                             for (const e of dpt.emotions) {
                               const key = (e.name || 'unknown').toLowerCase()
                               const idx = emotionIndex[key]
-                              if (idx !== undefined) {
-                                wordEmotionSum[w][idx] += Number.isFinite(e.score) ? (e.score as number) : 0
+                              const emotionArray = wordEmotionSum[w];
+                              if (idx !== undefined && emotionArray && emotionArray[idx] !== undefined) {
+                                emotionArray[idx] += Number.isFinite(e.score) ? (e.score as number) : 0
                               }
                             }
                           }
@@ -1234,7 +1248,10 @@ export default function TimelineVisualization({
 
                         const normalizedEmotionVec: Record<string, number[]> = {}
                         Object.keys(wordEmotionSum).forEach((w) => {
-                          normalizedEmotionVec[w] = normalize(wordEmotionSum[w])
+                          const emotionArray = wordEmotionSum[w];
+                          if (emotionArray) {
+                            normalizedEmotionVec[w] = normalize(emotionArray)
+                          }
                         })
 
                         // 感情アンカー（2Dマップを球面へ射影）
@@ -1314,7 +1331,9 @@ export default function TimelineVisualization({
 
                         for (let wi = 0; wi < nodes.length; wi++) {
                           const wordIndex = baseOffset + wi
-                          const label = nodes[wi].label
+                          const node = nodes[wi];
+                          if (!node) continue;
+                          const label = node.label
                           const ei = normalizedEmotionVec[label] || new Array(10).fill(0)
 
                           const weights: Array<{ ai: number; w: number }> = anchorNodes.map((a, ai) => {
@@ -1332,7 +1351,8 @@ export default function TimelineVisualization({
                           if (chosen.length > 0) {
                             let vx = 0, vy = 0, vz = 0, sw = 0
                             for (const c of chosen) {
-                              const p = anchorPos[c.ai]
+                              const p = anchorPos[c.ai];
+                              if (!p) continue;
                               vx += p[0] * c.w
                               vy += p[1] * c.w
                               vz += p[2] * c.w
@@ -1343,18 +1363,30 @@ export default function TimelineVisualization({
                               const len = Math.hypot(vx, vy, vz) || 1
                               const r = shellRadius * 0.65
                               const j = 1 + (Math.random() - 0.5) * 0.1
-                              nodes[wi].initial = [ (vx/len) * r * j, (vy/len) * r * j, (vz/len) * r * j ]
+                              const node = nodes[wi];
+                              if (node) {
+                                node.initial = [ (vx/len) * r * j, (vy/len) * r * j, (vz/len) * r * j ]
+                              }
                             }
                           }
 
                           for (const c of chosen) {
-                            const a = anchorNodes[c.ai]
+                            const a = anchorNodes[c.ai];
+                            if (!a) continue;
                             const key = anchorToKey[a.label]
                             const color = key ? emotionColor[key] : undefined
                             const w = Math.max(0, Math.min(1, c.w))
                             const L0 = Math.max(20, restLength * (1 - 0.6 * w))
                             const k = springK * (0.3 + 0.7 * w)
-                            links.push({ source: c.ai, target: wordIndex, weight: w, mode: 'tension', L0, k, color })
+                            links.push({ 
+                              source: c.ai, 
+                              target: wordIndex, 
+                              weight: w, 
+                              mode: 'tension', 
+                              L0, 
+                              k, 
+                              ...(color !== undefined && { color })
+                            })
                           }
                         }
 

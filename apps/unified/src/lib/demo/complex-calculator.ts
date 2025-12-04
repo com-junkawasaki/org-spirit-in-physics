@@ -1,7 +1,7 @@
 // Merkle DAG: lib.complex_calculator
 // Complex space calculations: C = InformationSpace × BiologicalSpace
 
-import type { ComplexSpaceData, ComplexRegion, WordEmotionData } from '../types/demo'
+import type { ComplexSpaceData, ComplexRegion, WordEmotionData } from '../../types/demo/demo'
 import { EMOTION_KEYS } from './emotion-normalization'
 
 /**
@@ -52,21 +52,28 @@ function calculateInformationSpace(
       wordEmotionAggregate[data.word] = new Array(EMOTION_KEYS.length).fill(0)
     }
 
-    for (const emotion of data.emotions) {
-      const idx = EMOTION_KEYS.indexOf(emotion.name as any)
-      if (idx >= 0) {
-        wordEmotionAggregate[data.word][idx] += emotion.score
+    const aggregate = wordEmotionAggregate[data.word];
+    if (aggregate) {
+      for (const emotion of data.emotions) {
+        const idx = EMOTION_KEYS.indexOf(emotion.name as any)
+        if (idx >= 0 && aggregate[idx] !== undefined) {
+          aggregate[idx] += emotion.score
+        }
       }
     }
   }
 
   // Normalize emotion vectors
   for (const word in wordEmotionAggregate) {
-    const vec = wordEmotionAggregate[word]
+    const vec = wordEmotionAggregate[word];
+    if (!vec) continue;
     const norm = Math.hypot(...vec)
     if (norm > 0) {
       for (let i = 0; i < vec.length; i++) {
-        vec[i] /= norm
+        const val = vec[i];
+        if (val !== undefined) {
+          vec[i] = val / norm;
+        }
       }
     }
   }
@@ -96,13 +103,19 @@ function calculateInformationSpace(
   const words = Object.keys(wordEmotionAggregate)
   
   for (let i = 0; i < words.length; i++) {
-    const word = words[i]
-    const emotionVec = wordEmotionAggregate[word]
+    const word = words[i];
+    if (!word) continue;
+    const emotionVec = wordEmotionAggregate[word];
     const wordVec = simulatedWordVectors[word] || new Array(dimension - EMOTION_KEYS.length).fill(0)
 
     // Combine: first part is emotion vector, rest is word vector
-    for (let j = 0; j < EMOTION_KEYS.length; j++) {
-      infoSpace[j] += emotionVec[j] / words.length
+    if (emotionVec) {
+      for (let j = 0; j < EMOTION_KEYS.length; j++) {
+        const emotionVal = emotionVec[j];
+        if (emotionVal !== undefined) {
+          infoSpace[j] = (infoSpace[j] ?? 0) + emotionVal / words.length;
+        }
+      }
     }
     for (let j = 0; j < wordVec.length; j++) {
       infoSpace[EMOTION_KEYS.length + j] += wordVec[j] / words.length
@@ -125,7 +138,7 @@ function calculateBiologicalSpace(wordEmotionData: WordEmotionData[]): number[] 
   let totalIntensity = 0
   for (const data of wordEmotionData) {
     // Calculate emotion intensity
-    const intensity = data.emotions.reduce((sum, e) => sum + e.score, 0)
+    const intensity = data.emotions.reduce((sum: number, e: any) => sum + e.score, 0)
     totalIntensity += intensity
 
     // Simulate physiological response based on emotion intensity
@@ -185,7 +198,7 @@ function detectComplexRegions(
   const emotionGroups: Record<string, WordEmotionData[]> = {}
   for (const data of wordEmotionData) {
     const dominantEmotion = data.emotions.length > 0
-      ? data.emotions.reduce((max, e) => e.score > max.score ? e : max, data.emotions[0])
+      ? data.emotions.reduce((max: any, e: any) => e.score > max.score ? e : max, data.emotions[0])
       : null
 
     if (dominantEmotion && dominantEmotion.score > 0.3) {
@@ -209,7 +222,7 @@ function detectComplexRegions(
     ]
 
     const avgIntensity = group.reduce((sum, d) => {
-      return sum + d.emotions.reduce((s, e) => s + e.score, 0) / d.emotions.length
+      return sum + d.emotions.reduce((s: number, e: any) => s + e.score, 0) / d.emotions.length
     }, 0) / group.length
 
     const radius = Math.max(30, Math.min(100, avgIntensity * 100))
@@ -225,7 +238,10 @@ function detectComplexRegions(
     const total = Object.values(emotionProfile).reduce((sum, v) => sum + v, 0)
     if (total > 0) {
       for (const key in emotionProfile) {
-        emotionProfile[key] /= total
+        const value = emotionProfile[key];
+        if (value !== undefined) {
+          emotionProfile[key] = value / total;
+        }
       }
     }
 

@@ -7,8 +7,8 @@ import {
   validateEmotionData,
   validateComplexSpaceData,
 } from './spec-validator'
-import type { AnalysisStep } from '../types/step'
-import type { WordEmotionData, EmotionData, ComplexSpaceData } from '../types/demo'
+import type { AnalysisStep } from '../../types/demo/step'
+import type { WordEmotionData, EmotionData, ComplexSpaceData } from '../../types/demo/demo'
 
 /**
  * Example: Validate AnalysisStep before creating
@@ -27,7 +27,7 @@ export function createValidatedStep(
     stepOrder,
     status: 'running',
     name,
-    description,
+    ...(description !== undefined && { description }),
     createdAt: Date.now(),
   }
 

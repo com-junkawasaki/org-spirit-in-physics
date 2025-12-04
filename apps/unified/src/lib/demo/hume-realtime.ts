@@ -1,9 +1,9 @@
 // Merkle DAG: lib.hume_realtime
 // Real-time Hume AI emotion analysis integration
 
-import { match, P } from 'ts-pattern'
-import type { EmotionData } from '../types/demo'
-import { normalizeEmotionName, EMOTION_KEYS } from './emotion-normalization'
+import { match } from 'ts-pattern'
+import type { EmotionData } from '../../types/demo/demo'
+import { normalizeEmotionName } from './emotion-normalization'
 
 export interface HumeAnalysisResult {
   emotions: EmotionData[]
@@ -282,11 +282,14 @@ function processHumePredictions(predictions: any[]): EmotionData[] {
   // Convert map to array - aggregate scores for same emotion from different sources
   const aggregatedEmotions = new Map<string, { score: number; fileTypes: Set<string> }>()
   for (const [key, value] of emotionMap.entries()) {
-    const emotionName = key.split('_')[0]
+    const emotionNameParts = key.split('_');
+    const emotionName = emotionNameParts[0];
+    if (!emotionName) continue;
     const current = aggregatedEmotions.get(emotionName) || { score: 0, fileTypes: new Set<string>() }
+    const fileType = value.fileType ?? 'language';
     aggregatedEmotions.set(emotionName, {
       score: Math.max(current.score, value.score),
-      fileTypes: current.fileTypes.add(value.fileType || 'language'),
+      fileTypes: current.fileTypes.add(fileType),
     })
   }
 
@@ -332,7 +335,7 @@ export async function captureVideoFrame(stream: MediaStream, durationMs: number 
     return new Blob([], { type: 'video/webm' })
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     try {
     const mediaRecorder = new MediaRecorder(stream, {
         mimeType,

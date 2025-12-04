@@ -1,14 +1,14 @@
 // Merkle DAG: lib.classification
 // Spirit Type / Ghost Pattern classification algorithms
 
-import type { AnalysisResult, SpiritType, GhostPattern } from '../types/experimental';
+// Types imported from experimental.ts are not directly used in this file
 
 /**
  * Calculate cosine similarity between two vectors
  */
 export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length) return 0;
-  const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);
+  const dotProduct = a.reduce((sum, val, i) => sum + val * (b[i] ?? 0), 0);
   const magnitudeA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
   const magnitudeB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
   return dotProduct / (magnitudeA * magnitudeB || 1);
@@ -20,7 +20,7 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 export function euclideanDistance(a: number[], b: number[]): number {
   if (a.length !== b.length) return Infinity;
   return Math.sqrt(
-    a.reduce((sum, val, i) => sum + Math.pow(val - b[i], 2), 0)
+    a.reduce((sum, val, i) => sum + Math.pow(val - (b[i] ?? 0), 2), 0)
   );
 }
 
@@ -37,10 +37,15 @@ export function kMeansClustering(
 
   // Initialize centroids randomly
   const centroids: number[][] = [];
-  const dimension = vectors[0].length;
+  const firstVector = vectors[0];
+  if (!firstVector) return { clusters: [], labels: [] };
+  const dimension = firstVector.length;
   for (let i = 0; i < k; i++) {
     const randomIndex = Math.floor(Math.random() * vectors.length);
-    centroids.push([...vectors[randomIndex]]);
+    const randomVector = vectors[randomIndex];
+    if (randomVector) {
+      centroids.push([...randomVector]);
+    }
   }
 
   let labels: number[] = [];
@@ -67,10 +72,15 @@ export function kMeansClustering(
 
     vectors.forEach((vector, idx) => {
       const cluster = labels[idx];
-      clusterCounts[cluster]++;
-      vector.forEach((val, dim) => {
-        newCentroids[cluster][dim] += val;
-      });
+      if (cluster !== undefined) {
+        clusterCounts[cluster] = (clusterCounts[cluster] ?? 0) + 1;
+        const centroid = newCentroids[cluster];
+        if (centroid) {
+          vector.forEach((val, dim) => {
+            centroid[dim] = (centroid[dim] ?? 0) + val;
+          });
+        }
+      }
     });
 
     // Check convergence
@@ -80,7 +90,8 @@ export function kMeansClustering(
         centroid.forEach((val, dim) => {
           centroid[dim] = val / clusterCounts[idx];
         });
-        if (euclideanDistance(centroid, centroids[idx]) > 0.001) {
+        const oldCentroid = centroids[idx];
+        if (oldCentroid && euclideanDistance(centroid, oldCentroid) > 0.001) {
           converged = false;
         }
       }
@@ -117,7 +128,7 @@ export function detectGhostPatterns(
   // Sort distances and find threshold
   const sortedDistances = [...distances].sort((a, b) => a - b);
   const thresholdIndex = Math.floor(sortedDistances.length * (1 - contamination));
-  const threshold = sortedDistances[thresholdIndex] || sortedDistances[sortedDistances.length - 1];
+  const threshold = sortedDistances[thresholdIndex] ?? sortedDistances[sortedDistances.length - 1] ?? 0;
 
   // Mark as Ghost Pattern if distance exceeds threshold
   return distances.map(distance => distance > threshold);

@@ -49,10 +49,10 @@ export function normalizeEmotionName(name: string): EmotionKey | null {
 
   // Try exact match first
   return match(nameLower)
-    .when((n) => n in EMOTION_MAPPING, (n) => EMOTION_MAPPING[n])
+    .when((n) => n in EMOTION_MAPPING, (n) => EMOTION_MAPPING[n] ?? null)
     .when((n) => EMOTION_KEYS.includes(n as EmotionKey), (n) => n as EmotionKey)
     .when(
-      (n) => Object.entries(EMOTION_MAPPING).some(([key, value]) => n.includes(key) || key.includes(n)),
+      (n) => Object.entries(EMOTION_MAPPING).some(([key, _value]) => n.includes(key) || key.includes(n)),
       (n) => {
         // Find partial match
         const entry = Object.entries(EMOTION_MAPPING).find(([key]) => n.includes(key) || key.includes(n))
