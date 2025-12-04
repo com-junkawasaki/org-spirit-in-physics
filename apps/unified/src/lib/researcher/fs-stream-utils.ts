@@ -54,9 +54,10 @@ export function countLinesStream(filePath: string): Promise<number> {
     let count = 0;
     const stream = fs.createReadStream(filePath);
     stream.on('error', reject);
-    stream.on('data', (chunk: Buffer) => {
-      for (let i = 0; i < chunk.length; i++) {
-        if (chunk[i] === 0x0a /* \n */) count++;
+    stream.on('data', (chunk: Buffer | string) => {
+      const buffer = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+      for (let i = 0; i < buffer.length; i++) {
+        if (buffer[i] === 0x0a /* \n */) count++;
       }
     });
     stream.on('end', () => resolve(count));
@@ -75,15 +76,18 @@ export function withConcurrency<T>(concurrency: number, tasks: Array<() => Promi
       while (inFlight < concurrency && next < tasks.length) {
         const current = next++;
         inFlight++;
-        tasks[current]()
-          .then((res) => { results[current] = res; })
-          .catch(reject)
-          .finally(() => {
-            inFlight--;
-            finished++;
-            if (finished === tasks.length) return resolve(results);
-            launch();
-          });
+        const task = tasks[current];
+        if (task) {
+          task()
+            .then((res) => { results[current] = res; })
+            .catch(reject)
+            .finally(() => {
+              inFlight--;
+              finished++;
+              if (finished === tasks.length) return resolve(results);
+              launch();
+            });
+        }
       }
     };
 

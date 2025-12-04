@@ -27,58 +27,151 @@ function centeringMatrix(n: number): number[][] {
   const J = Array.from({ length: n }, () => Array(n).fill(0));
   const v = 1 / n;
   for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      J[i][j] = (i === j ? 1 : 0) - v;
+    const row = J[i];
+    if (row) {
+      for (let j = 0; j < n; j++) {
+        row[j] = (i === j ? 1 : 0) - v;
+      }
     }
   }
   return J;
 }
 
 function matMul(A: number[][], B: number[][]): number[][] {
-  const n = A.length, m = B[0].length, kdim = B.length;
+  const n = A.length;
+  const firstRowB = B[0];
+  if (!firstRowB) return [];
+  const m = firstRowB.length;
+  const kdim = B.length;
   const C = Array.from({ length: n }, () => Array(m).fill(0));
   for (let i = 0; i < n; i++) {
+    const aRow = A[i];
+    const cRow = C[i];
+    if (!aRow || !cRow) continue;
     for (let k = 0; k < kdim; k++) {
-      const aik = A[i][k];
-      for (let j = 0; j < m; j++) C[i][j] += aik * B[k][j];
+      const aik = aRow[k];
+      const bRow = B[k];
+      if (aik !== undefined && bRow) {
+        for (let j = 0; j < m; j++) {
+          const bValue = bRow[j];
+          if (bValue !== undefined) {
+            cRow[j] = (cRow[j] ?? 0) + aik * bValue;
+          }
+        }
+      }
     }
   }
   return C;
 }
 
 function matAdd(A: number[][], B: number[][], alpha = 1): number[][] {
-  const n = A.length, m = A[0].length;
+  const n = A.length;
+  const firstRowA = A[0];
+  if (!firstRowA) return [];
+  const m = firstRowA.length;
   const C = Array.from({ length: n }, () => Array(m).fill(0));
-  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) C[i][j] = A[i][j] + alpha * B[i][j];
+  for (let i = 0; i < n; i++) {
+    const aRow = A[i];
+    const bRow = B[i];
+    const cRow = C[i];
+    if (aRow && bRow && cRow) {
+      for (let j = 0; j < m; j++) {
+        const aValue = aRow[j];
+        const bValue = bRow[j];
+        if (aValue !== undefined && bValue !== undefined) {
+          cRow[j] = aValue + alpha * bValue;
+        }
+      }
+    }
+  }
   return C;
 }
 
 function hadamard(A: number[][], B: number[][]): number[][] {
-  const n = A.length, m = A[0].length;
+  const n = A.length;
+  const firstRowA = A[0];
+  if (!firstRowA) return [];
+  const m = firstRowA.length;
   const C = Array.from({ length: n }, () => Array(m).fill(0));
-  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) C[i][j] = A[i][j] * B[i][j];
+  for (let i = 0; i < n; i++) {
+    const aRow = A[i];
+    const bRow = B[i];
+    const cRow = C[i];
+    if (aRow && bRow && cRow) {
+      for (let j = 0; j < m; j++) {
+        const aValue = aRow[j];
+        const bValue = bRow[j];
+        if (aValue !== undefined && bValue !== undefined) {
+          cRow[j] = aValue * bValue;
+        }
+      }
+    }
+  }
   return C;
 }
 
+// @ts-expect-error - Unused function, kept for future use
 function transpose(A: number[][]): number[][] {
-  const n = A.length, m = A[0].length;
+  const n = A.length;
+  const firstRow = A[0];
+  if (!firstRow) return [];
+  const m = firstRow.length;
   const T = Array.from({ length: m }, () => Array(n).fill(0));
-  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) T[j][i] = A[i][j];
+  for (let i = 0; i < n; i++) {
+    const aRow = A[i];
+    if (aRow) {
+      for (let j = 0; j < m; j++) {
+        const tRow = T[j];
+        const aValue = aRow[j];
+        if (tRow && aValue !== undefined) {
+          tRow[i] = aValue;
+        }
+      }
+    }
+  }
   return T;
 }
 
+// @ts-expect-error - Unused function, kept for future use
 function identity(n: number): number[][] {
   const I = Array.from({ length: n }, () => Array(n).fill(0));
-  for (let i = 0; i < n; i++) I[i][i] = 1;
+  for (let i = 0; i < n; i++) {
+    const row = I[i];
+    if (row) {
+      row[i] = 1;
+    }
+  }
   return I;
 }
 
 function trace(A: number[][]): number {
-  let t = 0; for (let i = 0; i < A.length; i++) t += A[i][i]; return t;
+  let t = 0;
+  for (let i = 0; i < A.length; i++) {
+    const row = A[i];
+    const value = row?.[i];
+    if (value !== undefined) {
+      t += value;
+    }
+  }
+  return t;
 }
 
 function froNorm(A: number[][]): number {
-  let s = 0; for (let i = 0; i < A.length; i++) for (let j = 0; j < A[0].length; j++) s += A[i][j] * A[i][j];
+  let s = 0;
+  const firstRow = A[0];
+  if (!firstRow) return 0;
+  const m = firstRow.length;
+  for (let i = 0; i < A.length; i++) {
+    const row = A[i];
+    if (row) {
+      for (let j = 0; j < m; j++) {
+        const value = row[j];
+        if (value !== undefined) {
+          s += value * value;
+        }
+      }
+    }
+  }
   return Math.sqrt(s);
 }
 
@@ -113,10 +206,27 @@ export function kernelCKAMatrix(kernels: number[][][]): number[][] {
   for (let a = 0; a < M; a++) {
     for (let b = 0; b < M; b++) {
       let s = 0;
-      const Ka = kernels[a], Kb = kernels[b];
+      const Ka = kernels[a];
+      const Kb = kernels[b];
+      if (!Ka || !Kb) continue;
       const n = Ka.length;
-      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) s += Ka[i][j] * Kb[i][j];
-      G[a][b] = s;
+      for (let i = 0; i < n; i++) {
+        const kaRow = Ka[i];
+        const kbRow = Kb[i];
+        if (kaRow && kbRow) {
+          for (let j = 0; j < n; j++) {
+            const kaValue = kaRow[j];
+            const kbValue = kbRow[j];
+            if (kaValue !== undefined && kbValue !== undefined) {
+              s += kaValue * kbValue;
+            }
+          }
+        }
+      }
+      const gRow = G[a];
+      if (gRow) {
+        gRow[b] = s;
+      }
     }
   }
   return G;
@@ -128,7 +238,18 @@ export function topEigenvectorSym(A: number[][], nonNegative = true): number[] {
   let v = Array(n).fill(1 / Math.sqrt(n));
   for (let it = 0; it < 200; it++) {
     const Av = Array(n).fill(0);
-    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) Av[i] += A[i][j] * v[j];
+    for (let i = 0; i < n; i++) {
+      const aRow = A[i];
+      if (aRow) {
+        for (let j = 0; j < n; j++) {
+          const aValue = aRow[j];
+          const vValue = v[j];
+          if (aValue !== undefined && vValue !== undefined) {
+            Av[i] = (Av[i] ?? 0) + aValue * vValue;
+          }
+        }
+      }
+    }
     const norm = Math.sqrt(Av.reduce((s, x) => s + x * x, 0)) || 1;
     v = Av.map(x => x / norm);
   }
@@ -158,24 +279,74 @@ export function topEigenDecomposition(K: number[][], r: number): { vectors: numb
     // パワー反復
     for (let it = 0; it < 200; it++) {
       let Av = Array(n).fill(0);
-      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) Av[i] += R[i][j] * v[j];
+      for (let i = 0; i < n; i++) {
+        const rRow = R[i];
+        if (rRow) {
+          for (let j = 0; j < n; j++) {
+            const rValue = rRow[j];
+            const vValue = v[j];
+            if (rValue !== undefined && vValue !== undefined) {
+              Av[i] = (Av[i] ?? 0) + rValue * vValue;
+            }
+          }
+        }
+      }
       // 直交化
       for (let p = 0; p < d; p++) {
-        let dot = 0; for (let i = 0; i < n; i++) dot += Av[i] * V[i][p];
-        for (let i = 0; i < n; i++) Av[i] -= dot * V[i][p];
+        let dot = 0;
+        for (let i = 0; i < n; i++) {
+          const avValue = Av[i];
+          const vValue = V[i]?.[p];
+          if (avValue !== undefined && vValue !== undefined) {
+            dot += avValue * vValue;
+          }
+        }
+        for (let i = 0; i < n; i++) {
+          const avValue = Av[i];
+          const vValue = V[i]?.[p];
+          if (avValue !== undefined && vValue !== undefined) {
+            Av[i] = avValue - dot * vValue;
+          }
+        }
       }
       const norm = Math.sqrt(Av.reduce((s, x) => s + x * x, 0)) || 1;
       v = Av.map(x => x / norm);
     }
     // レイリー商で固有値近似
-    let lambda = 0; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) lambda += v[i] * K[i][j] * v[j];
+    let lambda = 0;
+    for (let i = 0; i < n; i++) {
+      const vi = v[i];
+      const kRow = K[i];
+      if (vi !== undefined && kRow) {
+        for (let j = 0; j < n; j++) {
+          const vj = v[j];
+          const kValue = kRow[j];
+          if (vj !== undefined && kValue !== undefined) {
+            lambda += vi * kValue * vj;
+          }
+        }
+      }
+    }
     // クリップ（負固有値→0）
     lambda = Math.max(0, lambda);
     // ベクトル保存
-    for (let i = 0; i < n; i++) V[i][d] = v[i];
+    for (let i = 0; i < n; i++) {
+      const row = V[i];
+      const vValue = v[i];
+      if (row && vValue !== undefined) {
+        row[d] = vValue;
+      }
+    }
     L[d] = lambda;
     // デフレーション（ランク1除去）
-    const outer = V.map((row, i) => row.map((_, j) => V[i][d] * V[j][d]));
+    const outer = V.map((row) => {
+      const vi = row[d];
+      if (vi === undefined) return row.map(() => 0);
+      return row.map((_, j) => {
+        const vj = V[j]?.[d];
+        return vj !== undefined ? vi * vj : 0;
+      });
+    });
     const scaledOuter = outer.map(row => row.map(vv => vv * lambda));
     R = matAdd(R, scaledOuter, -1);
   }
@@ -188,9 +359,15 @@ function buildTimeKernel(timestamps: number[], tau: number): number[][] {
   const n = timestamps.length;
   const Kt = Array.from({ length: n }, () => Array(n).fill(0));
   for (let i = 0; i < n; i++) {
+    const row = Kt[i];
+    const tsI = timestamps[i];
+    if (!row || tsI === undefined) continue;
     for (let j = 0; j < n; j++) {
-      const d = Math.abs(timestamps[i] - timestamps[j]);
-      Kt[i][j] = Math.exp(-d / Math.max(1e-6, tau));
+      const tsJ = timestamps[j];
+      if (tsJ !== undefined) {
+        const d = Math.abs(tsI - tsJ);
+        row[j] = Math.exp(-d / Math.max(1e-6, tau));
+      }
     }
   }
   // 中心化
@@ -203,7 +380,11 @@ export function fuseKernels(
   options: KernelFusionOptions = {}
 ): KernelFusionResult {
   if (inputs.length === 0) throw new Error('No inputs for kernel fusion');
-  const n = inputs[0].matrix.length;
+  const firstInput = inputs[0];
+  if (!firstInput) {
+    throw new Error('At least one input matrix is required');
+  }
+  const n = firstInput.matrix.length;
   const norm = options.normalization ?? 'trace';
   const r = Math.max(1, options.rank ?? 3);
 
@@ -227,8 +408,19 @@ export function fuseKernels(
   // 4) 統合カーネル K = Σ_m w_m K~(m)
   let Kf = Array.from({ length: n }, () => Array(n).fill(0));
   for (let m = 0; m < kernelsNorm.length; m++) {
+    const kernel = kernelsNorm[m];
+    const weight = w[m];
+    if (!kernel || weight === undefined) continue;
     for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) Kf[i][j] += w[m] * kernelsNorm[m][i][j];
+      const kfRow = Kf[i];
+      const kernelRow = kernel[i];
+      if (!kfRow || !kernelRow) continue;
+      for (let j = 0; j < n; j++) {
+        const kernelValue = kernelRow[j];
+        if (kernelValue !== undefined) {
+          kfRow[j] = (kfRow[j] ?? 0) + weight * kernelValue;
+        }
+      }
     }
   }
 
@@ -236,15 +428,33 @@ export function fuseKernels(
   if (options.timeKernel) {
     const Kt = buildTimeKernel(options.timeKernel.timestamps, options.timeKernel.tau);
     const wt = options.timeKernel.weight;
-    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) Kf[i][j] += wt * Kt[i][j];
+    for (let i = 0; i < n; i++) {
+      const kfRow = Kf[i];
+      const ktRow = Kt[i];
+      if (kfRow && ktRow) {
+        for (let j = 0; j < n; j++) {
+          const ktValue = ktRow[j];
+          if (ktValue !== undefined) {
+            kfRow[j] = (kfRow[j] ?? 0) + wt * ktValue;
+          }
+        }
+      }
+    }
   }
 
   // 6) 固有分解→埋め込み座標
   const { vectors: E, values: L } = topEigenDecomposition(Kf, r);
   const embedding = Array.from({ length: n }, () => Array(r).fill(0));
   for (let i = 0; i < n; i++) {
+    const row = embedding[i];
+    const eigenRow = E[i];
+    if (!row || !eigenRow) continue;
     for (let d = 0; d < r; d++) {
-      embedding[i][d] = E[i][d] * Math.sqrt(Math.max(0, L[d]));
+      const eigenValue = L[d];
+      const eigenVectorValue = eigenRow[d];
+      if (eigenValue !== undefined && eigenVectorValue !== undefined) {
+        row[d] = eigenVectorValue * Math.sqrt(Math.max(0, eigenValue));
+      }
     }
   }
 

@@ -2,8 +2,6 @@
 // 距離行列の出力と可視化システム
 // 依存: 距離行列、埋め込み結果、可視化コンポーネント
 
-import type { DistanceMatrix } from './emotion-distance-calculator';
-import type { TimeSeriesDistanceMatrix } from './soft-dtw-calculator';
 import type { EmbeddingResult } from './embedding-calculator';
 
 export interface VisualizationDataset {
@@ -58,16 +56,19 @@ export interface DistanceMatrixExport {
 // 距離行列の統計計算
 export function calculateDistanceMatrixStatistics(
   matrix: number[][],
-  words: string[]
+  _words: string[] // Reserved for future use
 ): DistanceMatrixExport['metadata'] {
   const n = matrix.length;
   const distances: number[] = [];
   
   // 上三角行列の距離を収集
   for (let i = 0; i < n; i++) {
+    const matrixRow = matrix[i];
+    if (!matrixRow) continue;
     for (let j = i + 1; j < n; j++) {
-      if (Number.isFinite(matrix[i][j])) {
-        distances.push(matrix[i][j]);
+      const val = matrixRow[j];
+      if (typeof val === 'number' && Number.isFinite(val)) {
+        distances.push(val);
       }
     }
   }
@@ -110,30 +111,33 @@ export function generateKNNGraph(
   
   // ノードの作成
   for (let i = 0; i < n; i++) {
-    nodes.push({
+    const node: any = {
       id: `node_${i}`,
       label: words[i] || `word_${i}`,
       x: 0, // 後で埋め込み結果で更新
       y: 0,
-      z: undefined,
       color: '#1e40af',
       size: 1,
       metadata: {
         word: words[i] || `word_${i}`,
         observationRatio: 1.0
       }
-    });
+    };
+    nodes.push(node);
   }
   
   // 各点についてk個の最近傍を検索
   for (let i = 0; i < n; i++) {
     const distances: Array<{index: number, distance: number}> = [];
+    const matrixRow = matrix[i];
+    if (!matrixRow) continue;
     
     for (let j = 0; j < n; j++) {
-      if (i !== j && Number.isFinite(matrix[i][j])) {
+      const val = matrixRow[j];
+      if (i !== j && val !== undefined && Number.isFinite(val)) {
         distances.push({
           index: j,
-          distance: matrix[i][j]
+          distance: val
         });
       }
     }
@@ -235,7 +239,7 @@ export function integrateEmbeddingResult(
     if (embeddingPoint) {
       node.x = embeddingPoint.x;
       node.y = embeddingPoint.y;
-      if (embedding.dimensions === 3) {
+      if (embedding.dimensions === 3 && embeddingPoint.z !== undefined) {
         node.z = embeddingPoint.z;
       }
     }
@@ -316,8 +320,12 @@ export function exportDistanceMatrixCSV(
   // データ行
   for (let i = 0; i < n; i++) {
     csv += `${words[i] || `word_${i}`}`;
-    for (let j = 0; j < n; j++) {
-      csv += `,${matrix[i][j].toFixed(6)}`;
+    const matrixRow = matrix[i];
+    if (matrixRow) {
+      for (let j = 0; j < n; j++) {
+        const val = matrixRow[j];
+        csv += `,${val !== undefined ? val.toFixed(6) : '0'}`;
+      }
     }
     csv += '\n';
   }

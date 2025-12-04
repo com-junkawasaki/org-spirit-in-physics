@@ -208,7 +208,8 @@ export function normalizeEmotionName(name: string): EmotionKey | null {
 
   // 完全一致を試す
   if (cleaned in mapping) {
-    return mapping[cleaned]
+    const result = mapping[cleaned];
+    return result ?? null;
   }
 
   // 部分一致を試す（contains）

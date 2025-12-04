@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-// @ts-expect-error - graphql-tag types are not available, but skipLibCheck handles this
 import { gql } from 'graphql-tag';
 import { useKawasakiStore } from '../store';
 import type { Word } from '../types';

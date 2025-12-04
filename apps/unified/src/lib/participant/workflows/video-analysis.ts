@@ -1,6 +1,6 @@
 import { inngest, events, VideoAnalysisEvent, AnalysisResultEvent } from '../inngest';
 import { analyzeVideoEmotions, saveEmotionAnalysisResult } from '../emotion-analysis';
-import { EmotionAnalysisResult } from '../../00_schema/emotion';
+import type { EmotionAnalysisResult } from '../schema/emotion';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
@@ -30,7 +30,7 @@ export const videoAnalysisWorkflow = inngest.createFunction(
     });
 
     // ステップ1: 動画ファイルの存在確認
-    const fileExists = await step.run('check-video-file', async () => {
+    await step.run('check-video-file', async () => {
       const videoPath = join(ARTIFACTS_CACHE_PATH, participantId, videoFile);
       const exists = existsSync(videoPath);
 
@@ -203,7 +203,7 @@ export const resultsProcessingWorkflow = inngest.createFunction(
     event: events.VIDEO_ANALYSIS_COMPLETED,
   },
   async ({ event, step, logger }) => {
-    const { participantId, videoFile, results } = event.data as AnalysisResultEvent;
+    const { participantId, videoFile, results: _results } = event.data as AnalysisResultEvent;
 
     logger.info(`Processing results for ${participantId}/${videoFile}`);
 

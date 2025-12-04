@@ -101,7 +101,7 @@ export function defineEmotionWindows(
       word: currentEvent.payload?.word || 'unknown',
       startTime,
       endTime,
-      reactionTimeMs,
+      reactionTimeMs: reactionTimeMs ?? 0,
       emotions: windowEmotions,
       physiological: windowPhysiological
     });
@@ -123,7 +123,8 @@ function aggregateEmotionsInWindow(
     // 時間範囲でマッチング
     if (emotion.beginTime >= startTime && emotion.endTime <= endTime) {
       const duration = emotion.endTime - emotion.beginTime;
-      const weight = duration / (endTime - startTime);
+      // Weight calculation reserved for future use
+      // const weight = duration / (endTime - startTime);
       
       if (emotion.emotions && Array.isArray(emotion.emotions)) {
         emotion.emotions.forEach((e: any) => {
@@ -279,31 +280,43 @@ export function createFeatureVectors(windows: EmotionWindow[]): FeatureVector[] 
 // コサイン距離の計算
 export function calculateCosineDistance(vectors: FeatureVector[]): DistanceMatrix {
   const n = vectors.length;
-  const matrix: number[][] = Array(n).fill(null).map(() => Array(n).fill(0));
+  const matrix: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
   
   for (let i = 0; i < n; i++) {
+    const row = matrix[i];
+    if (!row) continue;
+    
     for (let j = 0; j < n; j++) {
       if (i === j) {
-        matrix[i][j] = 0;
+        row[j] = 0;
         continue;
       }
       
       const v1 = vectors[i];
       const v2 = vectors[j];
       
+      if (!v1 || !v2) {
+        row[j] = 1;
+        continue;
+      }
+      
       // ベクトルを結合
       const vec1 = [...v1.burstEmotions, ...v1.faceEmotions, v1.reactionTimeZScore, v1.physiologicalAvg, v1.physiologicalMax, v1.physiologicalMin];
       const vec2 = [...v2.burstEmotions, ...v2.faceEmotions, v2.reactionTimeZScore, v2.physiologicalAvg, v2.physiologicalMax, v2.physiologicalMin];
       
       // コサイン類似度
-      const dotProduct = vec1.reduce((sum, val, idx) => sum + val * vec2[idx], 0);
+      const dotProduct = vec1.reduce((sum, val, idx) => {
+        const val2 = vec2[idx];
+        if (val2 === undefined) return sum;
+        return sum + val * val2;
+      }, 0);
       const norm1 = Math.sqrt(vec1.reduce((sum, val) => sum + val * val, 0));
       const norm2 = Math.sqrt(vec2.reduce((sum, val) => sum + val * val, 0));
       
       const cosineSimilarity = (norm1 > 0 && norm2 > 0) ? dotProduct / (norm1 * norm2) : 0;
       const cosineDistance = 1 - cosineSimilarity;
       
-      matrix[i][j] = cosineDistance;
+      row[j] = cosineDistance;
     }
   }
   
@@ -314,7 +327,7 @@ export function calculateCosineDistance(vectors: FeatureVector[]): DistanceMatri
     metadata: {
       totalWindows: n,
       averageObservationRatio: vectors.reduce((sum, v) => sum + v.observationRatio, 0) / n,
-      featureDimensions: vectors[0]?.burstEmotions.length + vectors[0]?.faceEmotions.length + 4 || 0
+      featureDimensions: vectors[0] ? ((vectors[0].burstEmotions?.length ?? 0) + (vectors[0].faceEmotions?.length ?? 0) + 4) : 0
     }
   };
 }
@@ -331,49 +344,61 @@ export function calculateWeightedCosineDistance(
   }
 ): DistanceMatrix {
   const n = vectors.length;
-  const matrix: number[][] = Array(n).fill(null).map(() => Array(n).fill(0));
+  const matrix: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
   
   for (let i = 0; i < n; i++) {
+    const row = matrix[i];
+    if (!row) continue;
+    
     for (let j = 0; j < n; j++) {
       if (i === j) {
-        matrix[i][j] = 0;
+        row[j] = 0;
         continue;
       }
       
       const v1 = vectors[i];
       const v2 = vectors[j];
       
+      if (!v1 || !v2) {
+        row[j] = 1;
+        continue;
+      }
+      
       // 加重ベクトル
       const vec1 = [
-        ...v1.burstEmotions.map(val => val * Math.sqrt(weights.burst)),
-        ...v1.faceEmotions.map(val => val * Math.sqrt(weights.face)),
-        v1.reactionTimeZScore * Math.sqrt(weights.reactionTime),
-        v1.physiologicalAvg * Math.sqrt(weights.physiological),
-        v1.physiologicalMax * Math.sqrt(weights.physiological),
-        v1.physiologicalMin * Math.sqrt(weights.physiological)
+        ...(v1.burstEmotions ?? []).map(val => val * Math.sqrt(weights.burst)),
+        ...(v1.faceEmotions ?? []).map(val => val * Math.sqrt(weights.face)),
+        (v1.reactionTimeZScore ?? 0) * Math.sqrt(weights.reactionTime),
+        (v1.physiologicalAvg ?? 0) * Math.sqrt(weights.physiological),
+        (v1.physiologicalMax ?? 0) * Math.sqrt(weights.physiological),
+        (v1.physiologicalMin ?? 0) * Math.sqrt(weights.physiological)
       ];
       
       const vec2 = [
-        ...v2.burstEmotions.map(val => val * Math.sqrt(weights.burst)),
-        ...v2.faceEmotions.map(val => val * Math.sqrt(weights.face)),
-        v2.reactionTimeZScore * Math.sqrt(weights.reactionTime),
-        v2.physiologicalAvg * Math.sqrt(weights.physiological),
-        v2.physiologicalMax * Math.sqrt(weights.physiological),
-        v2.physiologicalMin * Math.sqrt(weights.physiological)
+        ...(v2.burstEmotions ?? []).map(val => val * Math.sqrt(weights.burst)),
+        ...(v2.faceEmotions ?? []).map(val => val * Math.sqrt(weights.face)),
+        (v2.reactionTimeZScore ?? 0) * Math.sqrt(weights.reactionTime),
+        (v2.physiologicalAvg ?? 0) * Math.sqrt(weights.physiological),
+        (v2.physiologicalMax ?? 0) * Math.sqrt(weights.physiological),
+        (v2.physiologicalMin ?? 0) * Math.sqrt(weights.physiological)
       ];
       
       // コサイン距離
-      const dotProduct = vec1.reduce((sum, val, idx) => sum + val * vec2[idx], 0);
+      const dotProduct = vec1.reduce((sum, val, idx) => {
+        const vec2Val = vec2[idx];
+        return sum + val * (vec2Val ?? 0);
+      }, 0);
       const norm1 = Math.sqrt(vec1.reduce((sum, val) => sum + val * val, 0));
       const norm2 = Math.sqrt(vec2.reduce((sum, val) => sum + val * val, 0));
       
       const cosineSimilarity = (norm1 > 0 && norm2 > 0) ? dotProduct / (norm1 * norm2) : 0;
       const cosineDistance = 1 - cosineSimilarity;
       
-      matrix[i][j] = cosineDistance;
+      row[j] = cosineDistance;
     }
   }
   
+  const firstVector = vectors[0];
   return {
     matrix,
     words: [], // 後で設定
@@ -381,7 +406,7 @@ export function calculateWeightedCosineDistance(
     metadata: {
       totalWindows: n,
       averageObservationRatio: vectors.reduce((sum, v) => sum + v.observationRatio, 0) / n,
-      featureDimensions: vectors[0]?.burstEmotions.length + vectors[0]?.faceEmotions.length + 4 || 0
+      featureDimensions: firstVector ? ((firstVector.burstEmotions?.length ?? 0) + (firstVector.faceEmotions?.length ?? 0) + 4) : 0
     }
   };
 }
@@ -393,15 +418,19 @@ export function calculateGowerDistance(vectors: FeatureVector[]): DistanceMatrix
   const matrix: number[][] = Array(n).fill(null).map(() => Array(n).fill(0));
   
   // 各次元の範囲を計算
-  const dimensions = vectors[0]?.burstEmotions.length + vectors[0]?.faceEmotions.length + 4 || 0;
+  const firstVector = vectors[0];
+  const dimensions = firstVector
+    ? (firstVector.burstEmotions?.length ?? 0) + (firstVector.faceEmotions?.length ?? 0) + 4
+    : 0;
   const ranges: number[] = [];
   
   for (let d = 0; d < dimensions; d++) {
     const values: number[] = [];
     vectors.forEach(v => {
       const vec = [...v.burstEmotions, ...v.faceEmotions, v.reactionTimeZScore, v.physiologicalAvg, v.physiologicalMax, v.physiologicalMin];
-      if (vec[d] !== undefined) {
-        values.push(vec[d]);
+      const value = vec[d];
+      if (value !== undefined && !isNaN(value)) {
+        values.push(value);
       }
     });
     
@@ -411,14 +440,18 @@ export function calculateGowerDistance(vectors: FeatureVector[]): DistanceMatrix
   }
   
   for (let i = 0; i < n; i++) {
+    const row = matrix[i];
+    if (!row) continue;
     for (let j = 0; j < n; j++) {
       if (i === j) {
-        matrix[i][j] = 0;
+        row[j] = 0;
         continue;
       }
       
       const v1 = vectors[i];
       const v2 = vectors[j];
+      
+      if (!v1 || !v2) continue;
       
       const vec1 = [...v1.burstEmotions, ...v1.faceEmotions, v1.reactionTimeZScore, v1.physiologicalAvg, v1.physiologicalMax, v1.physiologicalMin];
       const vec2 = [...v2.burstEmotions, ...v2.faceEmotions, v2.reactionTimeZScore, v2.physiologicalAvg, v2.physiologicalMax, v2.physiologicalMin];
@@ -431,15 +464,16 @@ export function calculateGowerDistance(vectors: FeatureVector[]): DistanceMatrix
         const val2 = vec2[d];
         
         // 欠損値チェック
-        if (val1 !== undefined && val2 !== undefined && !isNaN(val1) && !isNaN(val2)) {
-          const delta = Math.abs(val1 - val2) / ranges[d];
+        const range = ranges[d];
+        if (val1 !== undefined && val2 !== undefined && range !== undefined && !isNaN(val1) && !isNaN(val2) && range > 0) {
+          const delta = Math.abs(val1 - val2) / range;
           gowerSum += delta;
           validDimensions++;
         }
       }
       
       const gowerDistance = validDimensions > 0 ? gowerSum / validDimensions : 1;
-      matrix[i][j] = gowerDistance;
+      row[j] = gowerDistance;
     }
   }
   

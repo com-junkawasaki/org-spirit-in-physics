@@ -246,23 +246,24 @@ const SessionScreen = React.memo<{
                     
                     recognition.start();
 
-                    if (stream) {
+                    if (stream && currentWord) {
                         audioContext = new AudioContext();
                         const source = audioContext.createMediaStreamSource(stream);
                         const analyser = audioContext.createAnalyser();
                         const dataArray = new Uint8Array(analyser.fftSize);
                         source.connect(analyser);
                         let speechHasBeenDetected = false;
+                        let _animationFrameId: number | null = null; // Reserved for animation frame tracking
                         const checkSpeaking = () => {
                             if (speechHasBeenDetected) return;
                             analyser.getByteTimeDomainData(dataArray);
                             let sum = 0;
                             for (let i = 0; i < dataArray.length; i++) {
-                                const val = (dataArray[i] - 128) / 128;
+                                const val = ((dataArray[i] ?? 0) - 128) / 128;
                                 sum += val * val;
                             }
                             const volume = Math.sqrt(sum / dataArray.length);
-                            if (volume > 0.05) {
+                            if (volume > 0.05 && currentWord) {
                                 speechHasBeenDetected = true;
                                 console.log("👄 発話あり");
                                 logEvent('speech_detected', { word: currentWord.word, key: currentWord.key });
@@ -283,7 +284,7 @@ const SessionScreen = React.memo<{
                                 }, 1000);
                             }
                             if (!speechHasBeenDetected) {
-                                animationFrameId = requestAnimationFrame(checkSpeaking);
+                                _animationFrameId = requestAnimationFrame(checkSpeaking);
                             }
                         };
                         checkSpeaking();
@@ -291,29 +292,31 @@ const SessionScreen = React.memo<{
                 }
             };
 
-            if (audio) {
-                const audioSrc = `/audio/jung-voice-assessment/${currentWord.key}.mp3`;
-                audio.src = audioSrc;
-                audio.play()
-                    .then(() => {
+            if (currentWord) {
+                if (audio) {
+                    const audioSrc = `/audio/jung-voice-assessment/${currentWord.key}.mp3`;
+                    audio.src = audioSrc;
+                    audio.play()
+                        .then(() => {
+                            recognitionStartTimer = setTimeout(startRecognitionAndDetection, 1000);
+                        })
+                        .catch(err => {
+                            if (err.name !== 'AbortError') {
+                                console.error(`Could not play audio ${audioSrc}, falling back to speech synthesis.`, err);
+                                const utterance = new SpeechSynthesisUtterance(currentWord.word);
+                                utterance.onstart = () => {
+                                    recognitionStartTimer = setTimeout(startRecognitionAndDetection, 1000);
+                                };
+                                speechSynthesis.speak(utterance);
+                            }
+                        });
+                } else {
+                    const utterance = new SpeechSynthesisUtterance(currentWord.word);
+                    utterance.onstart = () => {
                         recognitionStartTimer = setTimeout(startRecognitionAndDetection, 1000);
-                    })
-                    .catch(err => {
-                        if (err.name !== 'AbortError') {
-                            console.error(`Could not play audio ${audioSrc}, falling back to speech synthesis.`, err);
-                            const utterance = new SpeechSynthesisUtterance(currentWord.word);
-                            utterance.onstart = () => {
-                                recognitionStartTimer = setTimeout(startRecognitionAndDetection, 1000);
-                            };
-                            speechSynthesis.speak(utterance);
-                        }
-                    });
-            } else {
-                const utterance = new SpeechSynthesisUtterance(currentWord.word);
-                utterance.onstart = () => {
-                    recognitionStartTimer = setTimeout(startRecognitionAndDetection, 1000);
-                };
-                speechSynthesis.speak(utterance);
+                    };
+                    speechSynthesis.speak(utterance);
+                }
             }
         }
 
@@ -347,7 +350,7 @@ const SessionScreen = React.memo<{
               <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
           </div>
       </div>
-      <h2 className="text-6xl font-bold my-8 h-20 flex items-center justify-center">{stimulusWords[currentWordIndex].word}</h2>
+      <h2 className="text-6xl font-bold my-8 h-20 flex items-center justify-center">{stimulusWords[currentWordIndex]?.word ?? ''}</h2>
       <div className="h-24 w-full max-w-md">
         {stream && <AudioVisualizer stream={stream} />}
       </div>
@@ -412,7 +415,7 @@ export default function JungVoiceTest({
     currentSession,
     advanceToNextWord,
     setMediaStatus,
-    startPreflight,
+    // startPreflight, // Unused
     completeSession,
     deviceStatus,
     setDeviceStatus,
@@ -528,6 +531,8 @@ export default function JungVoiceTest({
   useEffect(() => {
     if (testStatus.includes('running') && currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
+      if (!word) return;
+      
       logEvent('word_displayed', { word: word.word, key: word.key });
       console.log(`[JungVoiceTest] Word Displayed: ${currentWordIndex + 1}/${stimulusWords.length} - ${word.word}`);
       wordDisplayedTimeRef.current = Date.now();

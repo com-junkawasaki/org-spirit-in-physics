@@ -1,17 +1,11 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
-import type { ApolloClient } from '@apollo/client';
 import type { 
   Word, 
   WordResponse, 
-  TestResult, 
-  MediaStatus, 
   KawasakiStoreState, 
-  KawasakiStoreActions, 
-  KawasakiStore,
-  GraphQLMutations,
-  GraphQLCallbacks
+  KawasakiStore
 } from './types';
 
 // Re-export Word for backward compatibility
@@ -141,7 +135,7 @@ export const useKawasakiStore = create<KawasakiStore>()(
     },
 
     saveSessionData: async () => {
-        const { participantId, events, wordResponses, currentSession, graphQLClient, graphQLMutations, graphQLCallbacks } = get();
+        const { participantId, events, currentSession, graphQLClient, graphQLMutations, graphQLCallbacks } = get();
         
         if (graphQLCallbacks?.onSaveSession) {
             try {

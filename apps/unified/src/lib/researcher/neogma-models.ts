@@ -6,7 +6,8 @@
 
 type Neogma = any
 // type ModelFactory = any // Unused
-type ModelRelatedNodesI<T = any, P = any> = any // Type parameters kept for API compatibility
+// @ts-expect-error - Type parameters unused but kept for API compatibility
+type ModelRelatedNodesI<T = any, P = any> = any
 
 // 共通の型定義 - ガイドライン: プロパティ設計は疎に／Map的フィールドは最後に
 interface BaseNode {

@@ -53,11 +53,16 @@ export function calculatePCA(
   const similarityMatrix: number[][] = Array(n).fill(null).map(() => Array(n).fill(0));
   
   for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      if (i === j) {
-        similarityMatrix[i][j] = 1;
-      } else {
-        similarityMatrix[i][j] = 1 - (distanceMatrix[i][j] / maxDistance);
+    const simRow = similarityMatrix[i];
+    const distRow = distanceMatrix[i];
+    if (simRow && distRow) {
+      for (let j = 0; j < n; j++) {
+        if (i === j) {
+          simRow[j] = 1;
+        } else {
+          const distVal = distRow[j];
+          simRow[j] = distVal !== undefined ? 1 - (distVal / maxDistance) : 0;
+        }
       }
     }
   }
@@ -67,24 +72,44 @@ export function calculatePCA(
   const rowMeans: number[] = Array(n).fill(0);
   
   for (let i = 0; i < n; i++) {
-    rowMeans[i] = similarityMatrix[i].reduce((sum, val) => sum + val, 0) / n;
+    const simRow = similarityMatrix[i];
+    if (simRow) {
+      rowMeans[i] = simRow.reduce((sum, val) => sum + val, 0) / n;
+    }
   }
   
   for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      centeredMatrix[i][j] = similarityMatrix[i][j] - rowMeans[i];
+    const centeredRow = centeredMatrix[i];
+    const simRow = similarityMatrix[i];
+    const rowMean = rowMeans[i];
+    if (centeredRow && simRow && rowMean !== undefined) {
+      for (let j = 0; j < n; j++) {
+        const simVal = simRow[j];
+        if (simVal !== undefined) {
+          centeredRow[j] = simVal - rowMean;
+        }
+      }
     }
   }
   
   // 共分散行列の計算
   const covarianceMatrix: number[][] = Array(n).fill(null).map(() => Array(n).fill(0));
   for (let i = 0; i < n; i++) {
+    const covRow = covarianceMatrix[i];
+    if (!covRow) continue;
     for (let j = 0; j < n; j++) {
       let sum = 0;
       for (let k = 0; k < n; k++) {
-        sum += centeredMatrix[k][i] * centeredMatrix[k][j];
+        const centeredRowK = centeredMatrix[k];
+        if (centeredRowK) {
+          const valI = centeredRowK[i];
+          const valJ = centeredRowK[j];
+          if (valI !== undefined && valJ !== undefined) {
+            sum += valI * valJ;
+          }
+        }
       }
-      covarianceMatrix[i][j] = sum / (n - 1);
+      covRow[j] = sum / (n - 1);
     }
   }
   
@@ -104,7 +129,15 @@ export function calculatePCA(
     for (let j = 0; j < dimensions; j++) {
       let projection = 0;
       for (let k = 0; k < n; k++) {
-        projection += centeredMatrix[i][k] * eigenVectors[k][j];
+        const matrixRow = centeredMatrix[i];
+        const vectorRow = eigenVectors[k];
+        if (matrixRow && vectorRow) {
+          const matrixVal = matrixRow[k];
+          const vectorVal = vectorRow[j];
+          if (matrixVal !== undefined && vectorVal !== undefined) {
+            projection += matrixVal * vectorVal;
+          }
+        }
       }
       
       if (j === 0) point.x = projection;
@@ -142,7 +175,17 @@ function calculateEigenVectors(matrix: number[][], dimensions: number): number[]
       
       for (let i = 0; i < n; i++) {
         for (let j = 0; j < n; j++) {
-          newVector[i] += matrix[i][j] * vector[j];
+          const matrixRow = matrix[i];
+          if (matrixRow) {
+            const matrixVal = matrixRow[j];
+            const vectorVal = vector[j];
+            if (matrixVal !== undefined && vectorVal !== undefined) {
+              const newVecVal = newVector[i];
+              if (newVecVal !== undefined) {
+                newVector[i] = newVecVal + matrixVal * vectorVal;
+              }
+            }
+          }
         }
       }
       
@@ -154,14 +197,27 @@ function calculateEigenVectors(matrix: number[][], dimensions: number): number[]
       
       // 収束チェック
       if (iter > 0) {
-        const change = Math.sqrt(vector.reduce((sum, val, i) => sum + Math.pow(val - eigenVectors[i][d], 2), 0));
+        const change = Math.sqrt(vector.reduce((sum, val, i) => {
+          const eigVecRow = eigenVectors[i];
+          if (eigVecRow) {
+            const eigVecVal = eigVecRow[d];
+            if (eigVecVal !== undefined) {
+              return sum + Math.pow(val - eigVecVal, 2);
+            }
+          }
+          return sum;
+        }, 0));
         if (change < 1e-6) break;
       }
     }
     
     // 固有ベクトルを保存
     for (let i = 0; i < n; i++) {
-        eigenVectors[i]![d] = vector[i]!;
+        const eigVecRow = eigenVectors[i];
+        const vecVal = vector[i];
+        if (eigVecRow && vecVal !== undefined) {
+          eigVecRow[d] = vecVal;
+        }
     }
     
     // 直交化（グラム・シュミット）
@@ -169,19 +225,47 @@ function calculateEigenVectors(matrix: number[][], dimensions: number): number[]
       for (let prev = 0; prev < d; prev++) {
         let dotProduct = 0;
         for (let i = 0; i < n; i++) {
-          dotProduct += eigenVectors[i][d] * eigenVectors[i][prev];
+          const eigVecRow = eigenVectors[i];
+          if (eigVecRow) {
+            const eigVecD = eigVecRow[d];
+            const eigVecPrev = eigVecRow[prev];
+            if (eigVecD !== undefined && eigVecPrev !== undefined) {
+              dotProduct += eigVecD * eigVecPrev;
+            }
+          }
         }
         
         for (let i = 0; i < n; i++) {
-          eigenVectors[i]![d] -= dotProduct * eigenVectors[i]![prev];
+          const eigVecRow = eigenVectors[i];
+          if (eigVecRow) {
+            const eigVecD = eigVecRow[d];
+            const eigVecPrev = eigVecRow[prev];
+            if (eigVecD !== undefined && eigVecPrev !== undefined) {
+              eigVecRow[d] = eigVecD - dotProduct * eigVecPrev;
+            }
+          }
         }
       }
       
       // 再正規化
-      const norm = Math.sqrt(eigenVectors.reduce((sum, _, i) => sum + eigenVectors[i][d] * eigenVectors[i][d], 0));
+      const norm = Math.sqrt(eigenVectors.reduce((sum, eigVecRow) => {
+        if (eigVecRow) {
+          const eigVecD = eigVecRow[d];
+          if (eigVecD !== undefined) {
+            return sum + eigVecD * eigVecD;
+          }
+        }
+        return sum;
+      }, 0));
       if (norm > 0) {
         for (let i = 0; i < n; i++) {
-          eigenVectors[i]![d] /= norm;
+          const eigVecRow = eigenVectors[i];
+          if (eigVecRow) {
+            const eigVecD = eigVecRow[d];
+            if (eigVecD !== undefined) {
+              eigVecRow[d] = eigVecD / norm;
+            }
+          }
         }
       }
     }
@@ -206,13 +290,16 @@ export function calculateUMAP(
   // 初期埋め込み（ランダム）
   const points: EmbeddingPoint[] = [];
   for (let i = 0; i < n; i++) {
-    points.push({
+    const point: EmbeddingPoint = {
       x: (Math.random() - 0.5) * 2,
       y: (Math.random() - 0.5) * 2,
-      z: dimensions === 3 ? (Math.random() - 0.5) * 2 : undefined,
       word: `word_${i}`,
       index: i
-    });
+    };
+    if (dimensions === 3) {
+      point.z = (Math.random() - 0.5) * 2;
+    }
+    points.push(point);
   }
   
   // 勾配降下による最適化
@@ -224,18 +311,24 @@ export function calculateUMAP(
     
     // 各点の勾配を計算
     for (let i = 0; i < n; i++) {
-      const neighbors = knnGraph.nodes[i].neighbors;
+      const nodeI = knnGraph.nodes[i];
+      if (!nodeI) continue;
+      const neighbors = nodeI.neighbors;
       
       for (const neighborIdx of neighbors) {
         const j = parseInt(neighborIdx);
         if (j >= n) continue;
         
+        const pointI = points[i];
+        const pointJ = points[j];
+        if (!pointI || !pointJ) continue;
+        
         // 現在の距離
-        const currentDist = calculateDistance(points[i], points[j]);
+        const currentDist = calculateDistance(pointI, pointJ);
         
         // 目標距離（k-NNグラフの重みに基づく）
         const targetDist = knnGraph.edges.find(e => 
-          e.source === knnGraph.nodes[i].id && e.target === knnGraph.nodes[j].id
+          e.source === nodeI.id && e.target === knnGraph.nodes[j]?.id
         )?.weight || 1;
         
         // 勾配の計算
@@ -251,20 +344,41 @@ export function calculateUMAP(
         
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
         
-        gradients[i][0] += gradient * dx / dist;
-        gradients[i][1] += gradient * dy / dist;
-        if (dimensions === 3) {
-          gradients[i][2] += gradient * dz / dist;
+        const gradI = gradients[i];
+        if (gradI) {
+          const g0 = gradI[0];
+          const g1 = gradI[1];
+          if (g0 !== undefined && g1 !== undefined) {
+            gradI[0] = g0 + gradient * dx / dist;
+            gradI[1] = g1 + gradient * dy / dist;
+          }
+          if (dimensions === 3) {
+            const g2 = gradI[2];
+            if (g2 !== undefined) {
+              gradI[2] = g2 + gradient * dz / dist;
+            }
+          }
         }
       }
     }
     
     // 位置の更新
     for (let i = 0; i < n; i++) {
-      points[i].x += gradients[i][0];
-      points[i].y += gradients[i][1];
-      if (dimensions === 3) {
-        points[i].z! += gradients[i][2];
+      const point = points[i];
+      const grad = gradients[i];
+      if (point && grad) {
+        const gx = grad[0];
+        const gy = grad[1];
+        if (gx !== undefined && gy !== undefined) {
+          point.x += gx;
+          point.y += gy;
+        }
+        if (dimensions === 3) {
+          const gz = grad[2];
+          if (point.z !== undefined && gz !== undefined) {
+            point.z += gz;
+          }
+        }
       }
     }
   }
@@ -302,12 +416,18 @@ function buildKNNGraph(distanceMatrix: number[][], k: number): KNNGraph {
   for (let i = 0; i < n; i++) {
     const distances: Array<{index: number, distance: number}> = [];
     
+    const row = distanceMatrix[i];
+    if (!row) continue;
+    
     for (let j = 0; j < n; j++) {
       if (i !== j) {
-        distances.push({
-          index: j,
-          distance: distanceMatrix[i][j]
-        });
+        const dist = row[j];
+        if (dist !== undefined) {
+          distances.push({
+            index: j,
+            distance: dist
+          });
+        }
       }
     }
     
@@ -321,7 +441,10 @@ function buildKNNGraph(distanceMatrix: number[][], k: number): KNNGraph {
       const j = neighbor.index;
       const weight = 1 / (1 + neighbor.distance); // 距離から重みを計算
       
-      nodes[i].neighbors.push(`node_${j}`);
+      const nodeI = nodes[i];
+      if (nodeI) {
+        nodeI.neighbors.push(`node_${j}`);
+      }
       
       // エッジの追加（重複回避）
       if (i < j) {
@@ -365,13 +488,16 @@ export function calculateForceLayoutEmbedding(
   // 初期位置（ランダム）
   const points: EmbeddingPoint[] = [];
   for (let i = 0; i < n; i++) {
-    points.push({
+    const point: EmbeddingPoint = {
       x: (Math.random() - 0.5) * 2,
       y: (Math.random() - 0.5) * 2,
-      z: dimensions === 3 ? (Math.random() - 0.5) * 2 : undefined,
       word: `word_${i}`,
       index: i
-    });
+    };
+    if (dimensions === 3) {
+      point.z = (Math.random() - 0.5) * 2;
+    }
+    points.push(point);
   }
   
   // フォースレイアウトの実行
@@ -396,10 +522,20 @@ export function calculateForceLayoutEmbedding(
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
         const repulsionForce = 1 / (distance * distance);
         
-        forces[i][0] -= repulsionForce * dx / distance;
-        forces[i][1] -= repulsionForce * dy / distance;
-        if (dimensions === 3) {
-          forces[i][2] -= repulsionForce * dz / distance;
+        const forceI = forces[i];
+        if (forceI) {
+          const fx = forceI[0];
+          const fy = forceI[1];
+          if (fx !== undefined && fy !== undefined) {
+            forceI[0] = fx - repulsionForce * dx / distance;
+            forceI[1] = fy - repulsionForce * dy / distance;
+          }
+          if (dimensions === 3) {
+            const fz = forceI[2];
+            if (fz !== undefined) {
+              forceI[2] = fz - repulsionForce * dz / distance;
+            }
+          }
         }
       }
     }
@@ -409,10 +545,14 @@ export function calculateForceLayoutEmbedding(
       for (let j = 0; j < n; j++) {
         if (i === j) continue;
         
-        const targetDistance = distanceMatrix[i][j];
-        const pi = points[i]
-        const pj = points[j]
-        if (!pi || !pj) continue
+        const targetDistanceRow = distanceMatrix[i];
+        if (!targetDistanceRow) continue;
+        const targetDistance = targetDistanceRow[j];
+        if (targetDistance === undefined) continue;
+        
+        const pi = points[i];
+        const pj = points[j];
+        if (!pi || !pj) continue;
         const dx = pj.x - pi.x;
         const dy = pj.y - pi.y;
         const dz = pj.z !== undefined && pi.z !== undefined ? pj.z - pi.z : 0;
@@ -420,20 +560,38 @@ export function calculateForceLayoutEmbedding(
         const currentDistance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.01;
         const attractionForce = (currentDistance - targetDistance) * 0.1;
         
-        forces[i][0] += attractionForce * dx / currentDistance;
-        forces[i][1] += attractionForce * dy / currentDistance;
-        if (dimensions === 3) {
-          forces[i][2] += attractionForce * dz / currentDistance;
+        const forceI = forces[i];
+        if (forceI) {
+          const fx = forceI[0];
+          const fy = forceI[1];
+          if (fx !== undefined && fy !== undefined) {
+            forceI[0] = fx + attractionForce * dx / currentDistance;
+            forceI[1] = fy + attractionForce * dy / currentDistance;
+          }
+          if (dimensions === 3) {
+            const fz = forceI[2];
+            if (fz !== undefined) {
+              forceI[2] = fz + attractionForce * dz / currentDistance;
+            }
+          }
         }
       }
     }
     
     // 位置の更新
     for (let i = 0; i < n; i++) {
-      points[i].x += forces[i][0] * temperature;
-      points[i].y += forces[i][1] * temperature;
-      if (dimensions === 3) {
-        points[i]!.z! += forces[i]![2]! * temperature;
+      const point = points[i];
+      const force = forces[i];
+      if (point && force) {
+        const forceX = force[0];
+        const forceY = force[1];
+        if (forceX !== undefined && forceY !== undefined) {
+          point.x += forceX * temperature;
+          point.y += forceY * temperature;
+        }
+        if (dimensions === 3 && point.z !== undefined && force[2] !== undefined) {
+          point.z += force[2] * temperature;
+        }
       }
     }
     
