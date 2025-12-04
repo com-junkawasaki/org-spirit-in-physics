@@ -9,6 +9,8 @@ const nextConfig = {
   // Configure `pageExtensions` to include MDX files
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   output: 'standalone',
+  // Transpile monorepo packages
+  transpilePackages: ['@spirit-in-physics/visualization-components'],
   // Enable experimental features for better performance
   experimental: {
     // optimizeCss: true, // Disabled: requires critters module which has issues in Docker
@@ -31,6 +33,11 @@ const nextConfig = {
         ...config.resolve.alias,
         '@spirit-in-physics/visualization-components': resolve(__dirname, '../../packages/visualization-components/src/index.ts'),
       },
+      modules: [
+        ...(config.resolve?.modules || []),
+        resolve(__dirname, '../../packages/visualization-components/node_modules'),
+        resolve(__dirname, 'node_modules'),
+      ],
       fallback: {
         ...config.resolve?.fallback,
         fs: false,
