@@ -6,7 +6,7 @@ import ResearchLayout from '../../layouts/ResearchLayout.astro';
 import ResearchPaper from '../../components/paper/ResearchPaper.astro';
 import AuthorInfo from '../../components/paper/AuthorInfo.astro';
 import ReferenceList from '../../components/paper/ReferenceList.astro';
-import TableOfContentsSheet from '../../components/paper/TableOfContentsSheet';
+import TableOfContentsSheet from '../../components/paper/TableOfContentsSheet.astro';
 import ResultsSection from '../../components/paper/ResultsSection.astro';
 import VisualizationResults from '../../components/paper/VisualizationResults.astro';
 import VisualizationSidebar from '../../components/paper/VisualizationSidebar.astro';
@@ -103,7 +103,7 @@ const references = [
   date={paper.data.date}
 >
   <!-- Table of Contents Sheet (Independent Sheet Component) -->
-  <TableOfContentsSheet client:load sections={sections} />
+  <TableOfContentsSheet sections={sections} />
   
   <!-- Main Content: 2 Columns (Paper Content + Visualization) -->
   <div class="flex flex-col md:flex-row md:items-start w-full gap-0 px-4 md:px-6 lg:px-8 md:pl-[max(24px,env(safe-area-inset-left,0px))] md:pr-[max(24px,env(safe-area-inset-right,0px))]">

@@ -3,7 +3,7 @@
 // Base layout for research papers
 
 import { getCombinedContext } from '../lib/paper/semantic/load-schemas';
-import ThemeToggle from '../components/paper/ThemeToggle';
+import ThemeToggle from '../components/paper/ThemeToggle.astro';
 
 interface Props {
   title: string;
@@ -59,7 +59,7 @@ const schemas = getCombinedContext();
     <header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
       <div class="container mx-auto px-4 py-3 flex items-center justify-end">
         <div class="flex items-center space-x-4">
-          <ThemeToggle client:load />
+          <ThemeToggle />
         </div>
       </div>
     </header>
