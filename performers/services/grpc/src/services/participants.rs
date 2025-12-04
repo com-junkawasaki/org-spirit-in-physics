@@ -129,7 +129,7 @@ impl ParticipantService for ParticipantServiceImpl {
         });
 
         Ok(Response::new(GetParticipantResponse {
-            participant: Some(participant),
+            participant,
         }))
     }
 
@@ -196,7 +196,7 @@ impl ParticipantService for ParticipantServiceImpl {
         };
 
         Ok(Response::new(CreateParticipantResponse {
-            participant,
+            participant: Some(participant),
         }))
     }
 }

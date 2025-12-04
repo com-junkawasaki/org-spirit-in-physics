@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
 import { JUNG_STIMULUS_WORDS } from './constants';
-import { createSession } from '@spirit-in-physics/grpc-client/services/sessions';
+import { createSession } from '@spirit-in-physics/grpc-client';
 
 // --- Type Definitions (from types.ts) ---
 

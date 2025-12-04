@@ -1,7 +1,7 @@
 // Merkle DAG: grpc.client
 // Connect protocol client factory
 
-import { createPromiseClient, type PromiseClient } from "@connectrpc/connect";
+import { createClient, type Client } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 
 // Determine gRPC API URL based on execution context
@@ -46,12 +46,12 @@ export function createGrpcTransport(baseUrl?: string) {
   });
 }
 
-// Create a promise client for a service
-export function createGrpcClient<T extends PromiseClient<any>>(
-  Service: new (transport: ReturnType<typeof createGrpcTransport>) => T,
+// Create a client for a service
+export function createGrpcClient<T extends Client<any>>(
+  Service: any,
   baseUrl?: string
 ): T {
   const transport = createGrpcTransport(baseUrl);
-  return new Service(transport);
+  return createClient(Service, transport) as T;
 }
 

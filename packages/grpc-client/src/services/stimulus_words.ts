@@ -1,10 +1,9 @@
 // Merkle DAG: grpc.client.services.stimulus_words
 // StimulusWord service client
 
-import { createPromiseClient } from "@connectrpc/connect";
+import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
 import { StimulusWordService } from "../generated/stimulus_words_connect.js";
-import type { StimulusWordService as StimulusWordServiceType } from "../generated/stimulus_words_pb.js";
 import {
   GetStimulusWordsRequestSchema,
   GetStimulusWordsResponse,
@@ -14,12 +13,12 @@ import {
 import { create } from "@bufbuild/protobuf";
 
 // Create client instance
-let clientInstance: ReturnType<typeof createPromiseClient<StimulusWordServiceType>> | null = null;
+let clientInstance: any = null;
 
 function getClient() {
   if (!clientInstance) {
     const transport = createGrpcTransport();
-    clientInstance = createPromiseClient(StimulusWordService, transport);
+    clientInstance = createClient(StimulusWordService as any, transport);
   }
   return clientInstance;
 }
@@ -27,11 +26,11 @@ function getClient() {
 export async function getStimulusWords(): Promise<GetStimulusWordsResponse> {
   const client = getClient();
   const request = create(GetStimulusWordsRequestSchema, {});
-  return await client.getStimulusWords(request);
+  return await client.getStimulusWords(request) as GetStimulusWordsResponse;
 }
 
 export async function getStimulusWord(id: number): Promise<GetStimulusWordResponse> {
   const client = getClient();
   const request = create(GetStimulusWordRequestSchema, { id });
-  return await client.getStimulusWord(request);
+  return await client.getStimulusWord(request) as GetStimulusWordResponse;
 }

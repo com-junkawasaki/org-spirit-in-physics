@@ -4,10 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { getParticipant, getSessions, createParticipant, createSession } from '@spirit-in-physics/grpc-client/services/participants';
-import { getSessions as getSessionsFromSessions, createSession as createSessionFromSessions } from '@spirit-in-physics/grpc-client/services/sessions';
-import type { GetParticipantResponse, CreateParticipantResponse } from '@spirit-in-physics/grpc-client/generated/participants_pb';
-import type { GetSessionsResponse, CreateSessionResponse } from '@spirit-in-physics/grpc-client/generated/sessions_pb';
+import { getParticipant, createParticipant, getSessions, createSession, type GetParticipantResponse, type CreateParticipantResponse, type GetSessionsResponse, type CreateSessionResponse } from '@spirit-in-physics/grpc-client';
 
 // Hook for creating a participant
 export function useCreateParticipant() {
@@ -55,7 +52,7 @@ export function useCreateSession() {
     setLoading(true);
     setError(null);
     try {
-      const result = await createSessionFromSessions(variables);
+      const result = await createSession(variables);
       setData(result);
       return result;
     } catch (err) {
@@ -103,7 +100,7 @@ export function useSessions(participantId: string) {
       return;
     }
     setLoading(true);
-    getSessionsFromSessions(participantId)
+    getSessions(participantId)
       .then(setData)
       .catch((err) => setError(err instanceof Error ? err : new Error(String(err))))
       .finally(() => setLoading(false));

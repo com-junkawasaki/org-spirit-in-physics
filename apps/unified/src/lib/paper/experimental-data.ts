@@ -11,9 +11,7 @@ import type {
   ClassificationResult,
   ComponentStats,
 } from '../../types/paper/experimental';
-import { getParticipants } from '@spirit-in-physics/grpc-client/services/participants';
-import { getSessions } from '@spirit-in-physics/grpc-client/services/sessions';
-import { getTimeline } from '@spirit-in-physics/grpc-client/services/timeline';
+import { getParticipants, getSessions, getTimeline } from '@spirit-in-physics/grpc-client';
 
 /**
  * Fetch participants data from gRPC API

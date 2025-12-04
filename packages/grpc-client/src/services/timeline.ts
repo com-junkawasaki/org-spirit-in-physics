@@ -1,10 +1,9 @@
 // Merkle DAG: grpc.client.services.timeline
 // Timeline service client
 
-import { createPromiseClient } from "@connectrpc/connect";
+import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
 import { TimelineService } from "../generated/timeline_connect.js";
-import type { TimelineService as TimelineServiceType } from "../generated/timeline_pb.js";
 import {
   GetTimelineRequestSchema,
   GetTimelineResponse,
@@ -15,15 +14,23 @@ import {
   GetWordStatisticsRequestSchema,
   GetWordStatisticsResponse,
 } from "../generated/timeline_pb.js";
+
+// Re-export types for hooks
+export type {
+  GetTimelineResponse,
+  GetWordAggregatesResponse,
+  GetEmotionVectorsResponse,
+  GetWordStatisticsResponse,
+} from "../generated/timeline_pb.js";
 import { create } from "@bufbuild/protobuf";
 
 // Create client instance
-let clientInstance: ReturnType<typeof createPromiseClient<TimelineServiceType>> | null = null;
+let clientInstance: any = null;
 
 function getClient() {
   if (!clientInstance) {
     const transport = createGrpcTransport();
-    clientInstance = createPromiseClient(TimelineService, transport);
+    clientInstance = createClient(TimelineService as any, transport);
   }
   return clientInstance;
 }
@@ -38,12 +45,12 @@ export async function getTimeline(params: {
   const client = getClient();
   const request = create(GetTimelineRequestSchema, {
     participantId: params.participantId,
-    sessionId: params.sessionId,
-    startTime: params.startTime,
-    endTime: params.endTime,
-    interval: params.interval,
+    ...(params.sessionId !== undefined && { sessionId: params.sessionId }),
+    ...(params.startTime !== undefined && { startTime: params.startTime }),
+    ...(params.endTime !== undefined && { endTime: params.endTime }),
+    ...(params.interval !== undefined && { interval: params.interval }),
   });
-  return await client.getTimeline(request);
+  return await client.getTimeline(request) as GetTimelineResponse;
 }
 
 export async function getWordAggregates(params: {
@@ -53,9 +60,9 @@ export async function getWordAggregates(params: {
   const client = getClient();
   const request = create(GetWordAggregatesRequestSchema, {
     participantId: params.participantId,
-    sessionId: params.sessionId,
+    ...(params.sessionId !== undefined && { sessionId: params.sessionId }),
   });
-  return await client.getWordAggregates(request);
+  return await client.getWordAggregates(request) as GetWordAggregatesResponse;
 }
 
 export async function getEmotionVectors(params: {
@@ -65,9 +72,9 @@ export async function getEmotionVectors(params: {
   const client = getClient();
   const request = create(GetEmotionVectorsRequestSchema, {
     participantId: params.participantId,
-    sessionId: params.sessionId,
+    ...(params.sessionId !== undefined && { sessionId: params.sessionId }),
   });
-  return await client.getEmotionVectors(request);
+  return await client.getEmotionVectors(request) as GetEmotionVectorsResponse;
 }
 
 export async function getWordStatistics(params: {
@@ -77,7 +84,7 @@ export async function getWordStatistics(params: {
   const client = getClient();
   const request = create(GetWordStatisticsRequestSchema, {
     participantId: params.participantId,
-    sessionId: params.sessionId,
+    ...(params.sessionId !== undefined && { sessionId: params.sessionId }),
   });
-  return await client.getWordStatistics(request);
+  return await client.getWordStatistics(request) as GetWordStatisticsResponse;
 }

@@ -4,5 +4,5 @@
  */
 
 export * from './client';
-export * from './hooks';
+export { useCreateParticipant, useCreateSession, useParticipant, useSessions } from './hooks';
 

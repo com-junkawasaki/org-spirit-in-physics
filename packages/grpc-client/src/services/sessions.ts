@@ -1,26 +1,28 @@
 // Merkle DAG: grpc.client.services.sessions
 // Session service client
 
-import { createPromiseClient } from "@connectrpc/connect";
+import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
 import { SessionService } from "../generated/sessions_connect.js";
-import type { SessionService as SessionServiceType } from "../generated/sessions_pb.js";
 import {
   GetSessionsRequestSchema,
   GetSessionsResponse,
   CreateSessionRequestSchema,
   CreateSessionResponse,
 } from "../generated/sessions_pb.js";
+
+// Re-export types for hooks
+export type { GetSessionsResponse, CreateSessionResponse } from "../generated/sessions_pb.js";
 import { JsonValueSchema } from "../generated/common_pb.js";
 import { create } from "@bufbuild/protobuf";
 
 // Create client instance
-let clientInstance: ReturnType<typeof createPromiseClient<SessionServiceType>> | null = null;
+let clientInstance: any = null;
 
 function getClient() {
   if (!clientInstance) {
     const transport = createGrpcTransport();
-    clientInstance = createPromiseClient(SessionService, transport);
+    clientInstance = createClient(SessionService as any, transport);
   }
   return clientInstance;
 }
@@ -41,9 +43,9 @@ export async function createSession(data: {
   const eventsJson = create(JsonValueSchema, { value: JSON.stringify(data.events) });
   const request = create(CreateSessionRequestSchema, {
     participantId: data.participantId,
-    sessionIndex: data.sessionIndex,
-    startTs: data.startTs,
+    ...(data.sessionIndex !== undefined && { sessionIndex: data.sessionIndex }),
+    startTs: BigInt(data.startTs),
     events: eventsJson,
   });
-  return await client.createSession(request);
+  return await client.createSession(request) as CreateSessionResponse;
 }

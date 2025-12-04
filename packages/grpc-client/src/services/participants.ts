@@ -1,16 +1,12 @@
 // Merkle DAG: grpc.client.services.participants
 // Participant service client
 
-import { createPromiseClient } from "@connectrpc/connect";
+import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
 import { ParticipantService } from "../generated/participants_connect.js";
-import type { ParticipantService as ParticipantServiceType } from "../generated/participants_pb.js";
 import {
-  GetParticipantsRequest,
   GetParticipantsResponse,
-  GetParticipantRequest,
   GetParticipantResponse,
-  CreateParticipantRequest,
   CreateParticipantResponse,
   GetParticipantsRequestSchema,
   GetParticipantRequestSchema,
@@ -19,13 +15,16 @@ import {
 import { JsonValueSchema } from "../generated/common_pb.js";
 import { create } from "@bufbuild/protobuf";
 
+// Re-export types for hooks
+export type { GetParticipantsResponse, GetParticipantResponse, CreateParticipantResponse } from "../generated/participants_pb.js";
+
 // Create client instance
-let clientInstance: ReturnType<typeof createPromiseClient<ParticipantServiceType>> | null = null;
+let clientInstance: any = null;
 
 function getClient() {
   if (!clientInstance) {
     const transport = createGrpcTransport();
-    clientInstance = createPromiseClient(ParticipantService, transport);
+    clientInstance = createClient(ParticipantService as any, transport);
   }
   return clientInstance;
 }
@@ -52,11 +51,11 @@ export async function createParticipant(data: {
   const client = getClient();
   const agreements = create(JsonValueSchema, { value: JSON.stringify(data.agreements) });
   const request = create(CreateParticipantRequestSchema, {
-    id: data.id,
+    ...(data.id !== undefined && { id: data.id }),
     signature: data.signature,
     agreements,
     agreedAt: data.agreedAt,
-    isPublic: data.isPublic,
+    ...(data.isPublic !== undefined && { isPublic: data.isPublic }),
   });
   return await client.createParticipant(request);
 }

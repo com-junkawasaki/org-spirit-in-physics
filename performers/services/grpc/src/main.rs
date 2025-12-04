@@ -2,33 +2,25 @@
 // gRPC service entry point using tonic + tonic-web
 // Supports Connect protocol for browser access
 
-mod lib;
-mod services;
-mod database;
-mod auth;
-mod error;
+use grpc_service::database::PostgresPool;
+use grpc_service::services::participants::ParticipantServiceImpl;
+use grpc_service::services::sessions::SessionServiceImpl;
+use grpc_service::services::timeline::TimelineServiceImpl;
+use grpc_service::services::stimulus_words::StimulusWordServiceImpl;
 
 use tonic::transport::Server;
 use tonic_web::GrpcWebLayer;
 use tower_http::cors::{CorsLayer, Any};
 use tower::ServiceBuilder;
 use http::{Request, Response, StatusCode};
-use hyper::body::Bytes;
-use hyper_util::rt::TokioIo;
 use tracing;
 use std::convert::Infallible;
 
-use database::PostgresPool;
-use services::participants::ParticipantServiceImpl;
-use services::sessions::SessionServiceImpl;
-use services::timeline::TimelineServiceImpl;
-use services::stimulus_words::StimulusWordServiceImpl;
-
 // Generated proto types
-use lib::generated::participants::v1::participant_service_server::ParticipantServiceServer;
-use lib::generated::sessions::v1::session_service_server::SessionServiceServer;
-use lib::generated::timeline::v1::timeline_service_server::TimelineServiceServer;
-use lib::generated::stimulus_words::v1::stimulus_word_service_server::StimulusWordServiceServer;
+use grpc_service::generated::participants::v1::participant_service_server::ParticipantServiceServer;
+use grpc_service::generated::sessions::v1::session_service_server::SessionServiceServer;
+use grpc_service::generated::timeline::v1::timeline_service_server::TimelineServiceServer;
+use grpc_service::generated::stimulus_words::v1::stimulus_word_service_server::StimulusWordServiceServer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -63,15 +55,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let timeline_service = TimelineServiceImpl::new(pool.pool().clone());
     let stimulus_word_service = StimulusWordServiceImpl::new(pool.pool().clone());
 
-    // Health check handler
-    async fn health_check(_req: Request<hyper::body::Incoming>) -> Result<Response<hyper::body::Body>, Infallible> {
-        Ok(Response::builder()
-            .status(StatusCode::OK)
-            .header("Content-Type", "application/json")
-            .body(hyper::body::Body::from(r#"{"status":"ok"}"#))
-            .unwrap())
-    }
-
     // Build gRPC server with tonic-web for Connect protocol support
     Server::builder()
         .accept_http1(true) // Enable HTTP/1.1 for Connect protocol
@@ -86,8 +69,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 )
                 .layer(GrpcWebLayer::new()) // Enable gRPC-Web / Connect protocol
         )
-        // Health check endpoint
-        .route("/health", tower::service_fn(health_check))
         .add_service(ParticipantServiceServer::new(participant_service))
         .add_service(SessionServiceServer::new(session_service))
         .add_service(TimelineServiceServer::new(timeline_service))
