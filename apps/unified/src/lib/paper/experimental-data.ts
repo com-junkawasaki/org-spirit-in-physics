@@ -84,8 +84,8 @@ export async function fetchSessions(participantId?: string): Promise<ExperimentS
       id: s.id,
       participantId: s.participantId,
       sessionType: `session-${s.sessionIndex ?? 1}`,
-      startTime: s.startTs ? new Date(Number(s.startTs)).toISOString() : null,
-      endTime: s.endTs ? new Date(Number(s.endTs)).toISOString() : null,
+      startTime: s.startTs ? new Date(Number(s.startTs)).toISOString() : '',
+      endTime: s.endTs ? new Date(Number(s.endTs)).toISOString() : '',
       responseCount: 0, // Will be populated from responses
     }));
   } catch (error: any) {

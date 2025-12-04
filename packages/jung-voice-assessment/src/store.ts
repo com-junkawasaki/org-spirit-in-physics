@@ -136,11 +136,11 @@ export const useKawasakiStore = create<KawasakiStore>()(
         get().logEvent('test_reset');
     },
 
-    saveSessionVideo: async (session, blob) => {
+    saveSessionVideo: async (_session, _blob) => {
         // This method is now handled by the parent component using gRPC
         // The actual implementation is in apps/unified/src/components/participant/jung-voice-assessment/store.ts
         const { logEvent } = get();
-        logEvent(`session_${session}_video_skipped`, { reason: 'handled_by_parent' });
+        logEvent(`session_${_session}_video_skipped`, { reason: 'handled_by_parent' });
     },
   }))
 );

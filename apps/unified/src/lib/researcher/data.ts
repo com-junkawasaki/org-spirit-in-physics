@@ -5,23 +5,13 @@
 import {
   getParticipants,
   getParticipant,
-} from '@spirit-in-physics/grpc-client/services/participants';
-import {
   getSessions,
-} from '@spirit-in-physics/grpc-client/services/sessions';
-import {
   getTimeline,
-} from '@spirit-in-physics/grpc-client/services/timeline';
-import type {
-  GetParticipantsResponse,
-  GetParticipantResponse,
-} from '@spirit-in-physics/grpc-client/generated/participants_pb';
-import type {
-  GetSessionsResponse,
-} from '@spirit-in-physics/grpc-client/generated/sessions_pb';
-import type {
-  GetTimelineResponse,
-} from '@spirit-in-physics/grpc-client/generated/timeline_pb';
+  type GetParticipantsResponse,
+  type GetParticipantResponse,
+  type GetSessionsResponse,
+  type GetTimelineResponse,
+} from '@spirit-in-physics/grpc-client';
 
 export interface AnalysisResult {
   id: string

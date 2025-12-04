@@ -201,6 +201,7 @@ const SessionScreen = React.memo<{
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const stimulusAudioRef = useRef<HTMLAudioElement | null>(null);
     const advanceOnSpeechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const animationFrameIdRef = useRef<number | null>(null);
 
     useEffect(() => {
         if (stream && videoPreviewRef.current) {
@@ -253,7 +254,6 @@ const SessionScreen = React.memo<{
                         const dataArray = new Uint8Array(analyser.fftSize);
                         source.connect(analyser);
                         let speechHasBeenDetected = false;
-                        let _animationFrameId: number | null = null; // Reserved for animation frame tracking
                         const checkSpeaking = () => {
                             if (speechHasBeenDetected) return;
                             analyser.getByteTimeDomainData(dataArray);
@@ -268,6 +268,10 @@ const SessionScreen = React.memo<{
                                 console.log("👄 発話あり");
                                 logEvent('speech_detected', { word: currentWord.word, key: currentWord.key });
                                 if (advanceOnSpeechTimerRef.current) clearTimeout(advanceOnSpeechTimerRef.current);
+                                if (animationFrameIdRef.current !== null) {
+                                    cancelAnimationFrame(animationFrameIdRef.current);
+                                    animationFrameIdRef.current = null;
+                                }
                                 advanceOnSpeechTimerRef.current = setTimeout(() => {
                                     console.log("1秒経過。認識を停止して次の単語へ。");
                                     if (recognitionRef.current) {
@@ -284,7 +288,7 @@ const SessionScreen = React.memo<{
                                 }, 1000);
                             }
                             if (!speechHasBeenDetected) {
-                                _animationFrameId = requestAnimationFrame(checkSpeaking);
+                                animationFrameIdRef.current = requestAnimationFrame(checkSpeaking);
                             }
                         };
                         checkSpeaking();
@@ -325,6 +329,10 @@ const SessionScreen = React.memo<{
             const currentAdvanceTimer = advanceOnSpeechTimerRef.current;
             const currentRecognition = recognitionRef.current;
             const currentIsListening = isListening;
+            if (animationFrameIdRef.current !== null) {
+                cancelAnimationFrame(animationFrameIdRef.current);
+                animationFrameIdRef.current = null;
+            }
 
             speechSynthesis.cancel();
             if (currentRecognition && currentIsListening) currentRecognition.stop();
@@ -431,6 +439,7 @@ export default function JungVoiceTest({
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
   const responseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wordDisplayedTimeRef = useRef<number | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
   
   // onComplete callback effect
   useEffect(() => {
@@ -512,7 +521,7 @@ export default function JungVoiceTest({
   useEffect(() => {
     if (testStatus.includes('running') && currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
-      if (!word) return;
+      if (!word) return undefined;
       
       logEvent('word_displayed', { word: word.word, key: word.key });
       console.log(`[JungVoiceTest] Word Displayed: ${currentWordIndex + 1}/${stimulusWords.length} - ${word.word}`);
@@ -533,8 +542,9 @@ export default function JungVoiceTest({
 
       return () => {
         if (responseTimerRef.current) clearTimeout(responseTimerRef.current);
-      }
+      };
     }
+    return undefined;
   }, [currentWordIndex, testStatus, stimulusWords, advanceToNextWord, logEvent, setMediaStatus, completeSession, currentSession]);
   
   // Stop recording when a session or the test completes
@@ -557,7 +567,7 @@ export default function JungVoiceTest({
       console.log('[JungVoiceTest] Starting Session 2');
       await startRecording(2);
       startSession(numberOfWords);
-  }
+  };
 
   const handleResponse = useCallback((response: string, audioBlob: Blob) => {
       const reactionTimeMs = wordDisplayedTimeRef.current ? Date.now() - wordDisplayedTimeRef.current : 0;

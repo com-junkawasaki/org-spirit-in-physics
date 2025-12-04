@@ -25,6 +25,9 @@ const visualizationComponentsPath = resolve(
 const isDev = process.argv.includes('dev') || process.argv.includes('--dev') || 
               process.env.NODE_ENV !== 'production';
 
+// Check if we should allow all hosts (for Docker/OrbStack)
+const allowAllHosts = process.env.VITE_ALLOWED_HOSTS === 'true' || isDev;
+
 // https://astro.build/config
 export default defineConfig(async () => {
   // Only try to load adapter if we're NOT in dev mode
@@ -60,10 +63,12 @@ export default defineConfig(async () => {
     server: {
       host: true,
       port: 3000,
+      // Allow all hosts in development (Docker/OrbStack environment)
       allowedHosts: [
         'unified.spirit-in-physics.orb.local',
         'localhost',
         '.orb.local',
+        '127.0.0.1',
       ],
     },
     markdown: {
@@ -94,14 +99,9 @@ export default defineConfig(async () => {
       server: {
         host: '0.0.0.0',
         port: 3000,
-        allowedHosts: isDev
-          ? (host) => true
-          : [
-              'unified.spirit-in-physics.orb.local',
-              'localhost',
-              '.orb.local',
-              '127.0.0.1',
-            ],
+        // Fix for Issue #13060: explicitly set allowedHosts in vite.server
+        // This is required for astro dev to respect the allowedHosts setting
+        allowedHosts: ['.orb.local', 'unified.spirit-in-physics.orb.local', 'localhost'],
         strictPort: false,
         hmr: {
           protocol: 'ws',

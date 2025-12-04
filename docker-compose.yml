@@ -45,6 +45,10 @@ services:
       - WATCHPACK_POLLING_INTERVAL=1000
       # Astro HMR settings
       - ASTRO_TELEMETRY_DISABLED=1
+      # Vite allowedHosts - allow all hosts in development
+      - VITE_ALLOWED_HOSTS=true
+      # Vite additional allowed hosts (environment variable)
+      - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=unified.spirit-in-physics.orb.local,.orb.local
       # GraphQL API URL (hardcoded for development)
       # Client-side: use localhost for browser access
       - PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
