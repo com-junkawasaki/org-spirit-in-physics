@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseWordResponsesFromEvents, getParticipantStatistics, loadAllSessionData } from "scripts/src/lib/data-loader";
-// Neo4j removed - using GraphQL service instead
-// import { neo4jManager } from "scripts/src/lib/database/neo4j-manager";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -14,16 +12,6 @@ export async function GET(request: NextRequest) {
         // GraphQLサービス経由でPostgreSQLから参加者データを取得（実装予定）
         console.warn('participants: GraphQL経由での実装は未対応');
         const participantsData: import("scripts/src/lib/data-loader").Participant[] = [];
-        /* const neo4jParticipants = await neo4jManager.getAllParticipants();
-        const participantsData: import("scripts/src/lib/data-loader").Participant[] = neo4jParticipants.map(p => ({
-          id: p.id,
-          signature: p.signature || "unknown",
-          agreedAt: p.agreedAt || new Date(),
-          agreements: p.agreements || {},
-          hasSessionData: p.hasSessionData || false,
-          hasVideoFiles: p.hasVideoFiles || false,
-          videoFiles: p.videoFiles || []
-        })); */
 
         const participantStats = getParticipantStatistics(participantsData);
 
@@ -60,23 +48,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           error: "Participant not found"
         }, { status: 404 });
-        /* const participant = await neo4jManager.getParticipant(participantId);
-        if (!participant) {
-          return NextResponse.json({
-            error: "Participant not found"
-          }, { status: 404 });
-        }
-        return NextResponse.json({
-          success: true,
-          data: {
-            id: participantId,
-            signature: participant.signature || "unknown",
-            agreedAt: participant.agreedAt || new Date().toISOString(),
-            hasSessionData: participant.hasSessionData || false,
-            hasVideoFiles: participant.hasVideoFiles || false,
-            videoFiles: participant.videoFiles || []
-          }
-        }); */
 
       case 'sessions':
         // PostgreSQLからセッションデータを取得
@@ -124,16 +95,6 @@ export async function GET(request: NextRequest) {
         // GraphQLサービス経由でPostgreSQLからデータを取得（実装予定）
         console.warn('analytics: GraphQL経由での実装は未対応');
         const participants: import("scripts/src/lib/data-loader").Participant[] = [];
-        /* const analyticsNeo4jParticipants = await neo4jManager.getAllParticipants();
-        const participants: import("scripts/src/lib/data-loader").Participant[] = analyticsNeo4jParticipants.map(p => ({
-          id: p.id,
-          signature: p.signature || "unknown",
-          agreedAt: p.agreedAt || new Date(),
-          agreements: p.agreements || {},
-          hasSessionData: p.hasSessionData || false,
-          hasVideoFiles: p.hasVideoFiles || false,
-          videoFiles: p.videoFiles || []
-        })); */
 
         const stats = getParticipantStatistics(participants);
 
@@ -155,10 +116,6 @@ export async function GET(request: NextRequest) {
 
         // GraphQLサービス経由でPostgreSQLから感情統計を取得（実装予定）
         const emotionDistribution: Record<string, number> = {};
-        /* const emotionStats = await neo4jManager.getEmotionStatistics();
-        emotionStats.dominantEmotions.forEach((item: any) => {
-          emotionDistribution[item.emotion] = item.count;
-        }); */
 
         const totalSessions = participants.reduce((acc: number, p: any) =>
           acc + (p.sessionCount || 0), 0);

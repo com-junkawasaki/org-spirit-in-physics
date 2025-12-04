@@ -50,7 +50,6 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
             message: `${service.name}サービスが${service.status === 'healthy' ? '正常' : '異常'}です`,
             responseTime: service.responseTime,
             details: {
-              database: undefined, // Neo4j removed - using GraphQL service with PostgreSQL instead
               server: service.name === 'Workflow' ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/workflows` : undefined,
               endpoint: service.name === 'Hume AI' ? 'https://api.hume.ai/v0/face' : undefined
             }
@@ -183,7 +182,6 @@ export function SystemStatusCard({ className = '' }: SystemStatusCardProps) {
                 {getStatusBadge(service.status)}
                 {service.details && Object.keys(service.details).length > 0 && (
                   <div className="mt-2 text-xs text-muted-foreground">
-                    {/* Neo4j removed - using GraphQL service with PostgreSQL instead */}
                     {service.service === 'Workflow' && 'server' in service.details && Boolean((service.details as Record<string, unknown>).server) && (
                       <p>Server: {String((service.details as Record<string, unknown>).server)}</p>
                     )}

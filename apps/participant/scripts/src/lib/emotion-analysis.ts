@@ -1,7 +1,6 @@
 import { HumeClient } from 'hume';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-// Neo4j removed - using GraphQL service instead
 
 // サーバーサイドでのみインポート
 let blobStorage: any = null;

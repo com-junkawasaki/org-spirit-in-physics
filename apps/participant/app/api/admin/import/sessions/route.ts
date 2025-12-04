@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from 'fs';
 import path from 'path';
-// GraphQLサービス経由でPostgreSQLを使用（initializeNeo4jDatabaseは削除済み）
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +30,6 @@ async function importSessionsFromDataset() {
 
     // Merkle DAG: import.sessions.initialize_db
     // GraphQLサービス経由でPostgreSQLを使用（データベース初期化は不要）
-    // await initializeNeo4jDatabase();
 
     for (const dirEntry of participantDirs) {
       const participantId = dirEntry.name;
