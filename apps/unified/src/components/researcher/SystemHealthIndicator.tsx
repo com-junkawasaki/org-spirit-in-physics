@@ -7,15 +7,15 @@
 // Interface Segregation: Focused on health status display only
 // Dependency Inversion: Depends on health interface, not concrete implementation
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Badge } from './ui/badge'
 import { 
   CheckCircle, 
   XCircle, 
   AlertCircle, 
   Clock,
   Activity,
-  Database,
+  // Database,
   Brain,
   Server
 } from 'lucide-react'

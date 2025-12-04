@@ -4,7 +4,6 @@
 
 'use client'
 
-import React from 'react'
 
 export interface PipelineStep {
   id: string

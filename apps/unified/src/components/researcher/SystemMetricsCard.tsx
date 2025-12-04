@@ -7,8 +7,8 @@
 // Interface Segregation: Focused on metrics display only
 // Dependency Inversion: Depends on metrics interface, not concrete implementation
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Badge } from './ui/badge'
 import { 
   Activity, 
   TrendingUp,

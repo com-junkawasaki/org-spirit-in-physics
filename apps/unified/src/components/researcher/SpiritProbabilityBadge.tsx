@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge'
+import { Badge } from './ui/badge'
 import { Target } from 'lucide-react'
 
 export function getSpiritProbabilityColor(probability: number): string {

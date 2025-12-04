@@ -175,7 +175,8 @@ export default function DumbbellChart({ data, width }: DumbbellChartProps) {
       .attr('y', 45)
       .style('font-size', '12px')
       .text('後半（悪化）')
-
+    
+    return undefined
   }, [prepareDumbbellData, width])
 
   React.useEffect(() => {

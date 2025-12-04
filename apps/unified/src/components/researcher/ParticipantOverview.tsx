@@ -4,9 +4,9 @@
 // Participant overview component for dashboard
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
 import { 
   Users, 
   Calendar, 
@@ -124,17 +124,6 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
     return () => clearInterval(interval)
   }, [fetchParticipants])
 
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    } catch {
-      return 'N/A'
-    }
-  }
 
   if (isLoading) {
     return (

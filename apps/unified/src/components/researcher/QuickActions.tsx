@@ -1,6 +1,6 @@
 'use client'
 
-import { Card } from '@/components/ui/card'
+import { Card } from './ui/card'
 // import Link from 'next/link' // Removed: Next.js specific
 
 interface QuickAction {

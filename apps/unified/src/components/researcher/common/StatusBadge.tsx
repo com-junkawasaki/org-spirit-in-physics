@@ -1,6 +1,6 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils'
 import {
   CheckCircle,

@@ -7,60 +7,14 @@ use uuid::Uuid;
 use crate::auth::interceptor::extract_auth_context;
 use crate::error::{from_sqlx_error, from_uuid_parse_error, from_json_error};
 
-// Temporary placeholder - will be replaced with generated types
-pub mod proto {
-    pub mod sessions {
-        pub mod v1 {
-            pub mod session_service_server {
-                use tonic::Request;
-                pub trait SessionService: Send + Sync + 'static {
-                    async fn get_sessions(
-                        &self,
-                        request: Request<super::super::GetSessionsRequest>,
-                    ) -> Result<tonic::Response<super::super::GetSessionsResponse>, tonic::Status>;
-                    
-                    async fn create_session(
-                        &self,
-                        request: Request<super::super::CreateSessionRequest>,
-                    ) -> Result<tonic::Response<super::super::CreateSessionResponse>, tonic::Status>;
-                }
-            }
-            
-            pub struct GetSessionsRequest {
-                pub participant_id: String,
-            }
-            
-            pub struct GetSessionsResponse {
-                pub sessions: Vec<Session>,
-            }
-            
-            pub struct CreateSessionRequest {
-                pub participant_id: String,
-                pub session_index: Option<i32>,
-                pub start_ts: i64,
-                pub events: crate::services::common::common::v1::JsonValue,
-            }
-            
-            pub struct CreateSessionResponse {
-                pub session: Session,
-            }
-            
-            pub struct Session {
-                pub id: String,
-                pub participant_id: String,
-                pub session_index: Option<i32>,
-                pub start_ts: i64,
-                pub end_ts: Option<i64>,
-                pub events: Vec<crate::services::common::common::v1::JsonValue>,
-                pub created_at: String,
-                pub updated_at: String,
-            }
-        }
-    }
-}
-
-use proto::sessions::v1::session_service_server::SessionService as SessionServiceTrait;
-use proto::sessions::v1::*;
+// Generated proto types
+use crate::generated::sessions::v1::{
+    session_service_server::SessionService,
+    GetSessionsRequest, GetSessionsResponse,
+    CreateSessionRequest, CreateSessionResponse,
+    Session,
+};
+use crate::generated::common::v1::JsonValue;
 
 pub struct SessionServiceImpl {
     pool: Pool<Postgres>,
@@ -73,15 +27,17 @@ impl SessionServiceImpl {
 }
 
 #[tonic::async_trait]
-impl SessionServiceTrait for SessionServiceImpl {
+impl SessionService for SessionServiceImpl {
     async fn get_sessions(
         &self,
         request: Request<GetSessionsRequest>,
     ) -> Result<Response<GetSessionsResponse>, Status> {
-        let auth_context = extract_auth_context(&request.map(|_| ())).await?;
+        let participant_id = request.get_ref().participant_id.clone();
+        let auth_request = request.map(|_| ());
+        let auth_context = extract_auth_context(&auth_request).await?;
         let is_authenticated = auth_context.is_some();
         
-        let participant_uuid = Uuid::parse_str(&request.get_ref().participant_id)
+        let participant_uuid = Uuid::parse_str(&participant_id)
             .map_err(from_uuid_parse_error)?;
 
         let query = if is_authenticated {
@@ -160,8 +116,8 @@ impl SessionServiceTrait for SessionServiceImpl {
             let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").ok()?;
 
             let events: Vec<serde_json::Value> = serde_json::from_value(events_json).ok()?;
-            let events_proto: Vec<crate::services::common::common::v1::JsonValue> = events.into_iter().map(|e| {
-                crate::services::common::common::v1::JsonValue {
+            let events_proto: Vec<JsonValue> = events.into_iter().map(|e| {
+                JsonValue {
                     value: serde_json::to_string(&e).unwrap_or_default(),
                 }
             }).collect();
@@ -186,6 +142,7 @@ impl SessionServiceTrait for SessionServiceImpl {
         request: Request<CreateSessionRequest>,
     ) -> Result<Response<CreateSessionResponse>, Status> {
         let req = request.get_ref();
+        // Note: No auth check for create_session - can be added if needed
         
         let participant_uuid = Uuid::parse_str(&req.participant_id)
             .map_err(from_uuid_parse_error)?;
@@ -193,9 +150,13 @@ impl SessionServiceTrait for SessionServiceImpl {
         let session_id = Uuid::new_v4();
         let now = chrono::Utc::now();
 
-        // Parse events JSON
-        let events_json: serde_json::Value = serde_json::from_str(&req.events.value)
-            .map_err(from_json_error)?;
+        // Parse events JSON - events is Option<JsonValue>
+        let events_json: serde_json::Value = if let Some(events_val) = &req.events {
+            serde_json::from_str(&events_val.value)
+                .map_err(from_json_error)?
+        } else {
+            serde_json::json!([])
+        };
         let events: Vec<serde_json::Value> = serde_json::from_value(events_json)
             .map_err(from_json_error)?;
 
@@ -301,8 +262,8 @@ impl SessionServiceTrait for SessionServiceImpl {
 
         let events: Vec<serde_json::Value> = serde_json::from_value(events_json)
             .map_err(from_json_error)?;
-        let events_proto: Vec<crate::services::common::common::v1::JsonValue> = events.into_iter().map(|e| {
-            crate::services::common::common::v1::JsonValue {
+        let events_proto: Vec<JsonValue> = events.into_iter().map(|e| {
+            JsonValue {
                 value: serde_json::to_string(&e).unwrap_or_default(),
             }
         }).collect();
@@ -318,7 +279,7 @@ impl SessionServiceTrait for SessionServiceImpl {
             updated_at: updated_at.to_rfc3339(),
         };
 
-        Ok(Response::new(CreateSessionResponse { session }))
+        Ok(Response::new(CreateSessionResponse { session: Some(session) }))
     }
 }
 

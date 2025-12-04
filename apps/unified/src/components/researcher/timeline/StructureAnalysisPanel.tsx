@@ -1,7 +1,6 @@
 'use client'
 
-import React from 'react'
-import type { GapArea, DensityRegion, DuplicateCandidate, CommonFeatures } from '@/lib/structure-analysis'
+import type { GapArea, DensityRegion, DuplicateCandidate } from '../../../lib/researcher/structure-analysis'
 
 // Merkle DAG: timeline.components.structure_analysis_panel
 // 構造分析結果の表示パネルコンポーネント
@@ -66,7 +65,7 @@ export default function StructureAnalysisPanel({
                 </div>
                 {gap.nearbyNodes.length > 0 && (
                   <div className="text-xs text-gray-500 mb-1">
-                    例: {gap.nearbyNodes.slice(0, 3).map(n => n.label).join(', ')}
+                    例: {gap.nearbyNodes.slice(0, 3).map((n: { label: string }) => n.label).join(', ')}
                   </div>
                 )}
                 {gap.commonEmotionProfile && (
@@ -124,7 +123,7 @@ export default function StructureAnalysisPanel({
                   )}
                   {region.nodes.length > 0 && (
                     <div className="text-xs text-gray-500 mt-1">
-                      例: {region.nodes.slice(0, 3).map(n => n.label).join(', ')}
+                      例: {region.nodes.slice(0, 3).map((n: { label: string }) => n.label).join(', ')}
                     </div>
                   )}
                 </button>
@@ -163,7 +162,7 @@ export default function StructureAnalysisPanel({
                   </div>
                   {region.nodes.length > 0 && (
                     <div className="text-xs text-gray-500 mt-1">
-                      例: {region.nodes.slice(0, 3).map(n => n.label).join(', ')}
+                      例: {region.nodes.slice(0, 3).map((n: { label: string }) => n.label).join(', ')}
                     </div>
                   )}
                 </button>

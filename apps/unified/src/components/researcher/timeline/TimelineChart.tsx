@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import type { TimelineDataPoint, FilterSettings, TimeRange } from './types'
 import { getEmotionColor } from '@/lib/utils'

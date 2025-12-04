@@ -2,75 +2,61 @@
 // Participant service client
 
 import { createPromiseClient } from "@connectrpc/connect";
-import { createGrpcTransport } from "../client";
+import { createGrpcTransport } from "../client.js";
+import { ParticipantService } from "../generated/participants_connect.js";
+import type { ParticipantService as ParticipantServiceType } from "../generated/participants_pb.js";
+import {
+  GetParticipantsRequest,
+  GetParticipantsResponse,
+  GetParticipantRequest,
+  GetParticipantResponse,
+  CreateParticipantRequest,
+  CreateParticipantResponse,
+  GetParticipantsRequestSchema,
+  GetParticipantRequestSchema,
+  CreateParticipantRequestSchema,
+} from "../generated/participants_pb.js";
+import { JsonValueSchema } from "../generated/common_pb.js";
+import { create } from "@bufbuild/protobuf";
 
-// Generated types will be imported from src/generated after proto compilation
-// import { ParticipantService } from "../generated/spirit_in_physics/participants/v1/participant_service_connect";
-// import {
-//   GetParticipantsRequest,
-//   GetParticipantsResponse,
-//   GetParticipantRequest,
-//   GetParticipantResponse,
-//   CreateParticipantRequest,
-//   CreateParticipantResponse,
-// } from "../generated/spirit_in_physics/participants/v1/participants_pb";
+// Create client instance
+let clientInstance: ReturnType<typeof createPromiseClient<ParticipantServiceType>> | null = null;
 
-// Temporary placeholder - will be replaced with generated types
-export interface Participant {
-  id: string;
-  age?: number;
-  gender?: string;
-  handedness?: string;
-  isPublic: boolean;
-  createdAt: string;
-  updatedAt: string;
+function getClient() {
+  if (!clientInstance) {
+    const transport = createGrpcTransport();
+    clientInstance = createPromiseClient(ParticipantService, transport);
+  }
+  return clientInstance;
 }
 
-export interface GetParticipantsRequest {}
-export interface GetParticipantsResponse {
-  participants: Participant[];
+export async function getParticipants(): Promise<GetParticipantsResponse> {
+  const client = getClient();
+  const request = create(GetParticipantsRequestSchema, {});
+  return await client.getParticipants(request);
 }
 
-export interface GetParticipantRequest {
-  id: string;
-}
-export interface GetParticipantResponse {
-  participant?: Participant;
+export async function getParticipant(id: string): Promise<GetParticipantResponse> {
+  const client = getClient();
+  const request = create(GetParticipantRequestSchema, { id });
+  return await client.getParticipant(request);
 }
 
-export interface CreateParticipantRequest {
+export async function createParticipant(data: {
   id?: string;
   signature: string;
-  agreements: any; // JSON value
+  agreements: any;
   agreedAt: string;
   isPublic?: boolean;
+}): Promise<CreateParticipantResponse> {
+  const client = getClient();
+  const agreements = create(JsonValueSchema, { value: JSON.stringify(data.agreements) });
+  const request = create(CreateParticipantRequestSchema, {
+    id: data.id,
+    signature: data.signature,
+    agreements,
+    agreedAt: data.agreedAt,
+    isPublic: data.isPublic,
+  });
+  return await client.createParticipant(request);
 }
-export interface CreateParticipantResponse {
-  participant: Participant;
-}
-
-// Client wrapper
-export class ParticipantServiceClient {
-  // private client: ReturnType<typeof createPromiseClient<typeof ParticipantService>>;
-  
-  constructor(baseUrl?: string) {
-    // const transport = createGrpcTransport(baseUrl);
-    // this.client = createPromiseClient(ParticipantService, transport);
-  }
-
-  async getParticipants(): Promise<GetParticipantsResponse> {
-    // return await this.client.getParticipants({});
-    throw new Error("Not implemented - waiting for proto generation");
-  }
-
-  async getParticipant(id: string): Promise<GetParticipantResponse> {
-    // return await this.client.getParticipant({ id });
-    throw new Error("Not implemented - waiting for proto generation");
-  }
-
-  async createParticipant(request: CreateParticipantRequest): Promise<CreateParticipantResponse> {
-    // return await this.client.createParticipant(request);
-    throw new Error("Not implemented - waiting for proto generation");
-  }
-}
-

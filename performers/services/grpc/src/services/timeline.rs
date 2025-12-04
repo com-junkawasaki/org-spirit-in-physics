@@ -7,163 +7,17 @@ use uuid::Uuid;
 use crate::auth::interceptor::extract_auth_context;
 use crate::error::{from_sqlx_error, from_uuid_parse_error};
 
-// Temporary placeholder - will be replaced with generated types
-// This is a simplified version - full implementation will follow GraphQL resolver logic
-pub mod proto {
-    pub mod timeline {
-        pub mod v1 {
-            pub mod timeline_service_server {
-                use tonic::Request;
-                pub trait TimelineService: Send + Sync + 'static {
-                    async fn get_timeline(
-                        &self,
-                        request: Request<super::super::GetTimelineRequest>,
-                    ) -> Result<tonic::Response<super::super::GetTimelineResponse>, tonic::Status>;
-                    
-                    async fn get_word_aggregates(
-                        &self,
-                        request: Request<super::super::GetWordAggregatesRequest>,
-                    ) -> Result<tonic::Response<super::super::GetWordAggregatesResponse>, tonic::Status>;
-                    
-                    async fn get_emotion_vectors(
-                        &self,
-                        request: Request<super::super::GetEmotionVectorsRequest>,
-                    ) -> Result<tonic::Response<super::super::GetEmotionVectorsResponse>, tonic::Status>;
-                    
-                    async fn get_word_statistics(
-                        &self,
-                        request: Request<super::super::GetWordStatisticsRequest>,
-                    ) -> Result<tonic::Response<super::super::GetWordStatisticsResponse>, tonic::Status>;
-                }
-            }
-            
-            // Placeholder types - will be replaced with generated proto types
-            pub struct GetTimelineRequest {
-                pub participant_id: String,
-                pub session_id: Option<String>,
-                pub start_time: Option<String>,
-                pub end_time: Option<String>,
-                pub interval: Option<String>,
-            }
-            
-            pub struct GetTimelineResponse {
-                pub points: Vec<TimelinePoint>,
-            }
-            
-            pub struct TimelinePoint {
-                pub time: String,
-                pub participant_id: String,
-                pub session_id: String,
-                pub word: Option<String>,
-                pub event_type: Option<String>,
-                pub reaction_value: Option<f64>,
-                pub reaction_time: Option<f64>,
-                pub has_response: bool,
-                pub emotions: Vec<EmotionData>,
-                pub physiological: Vec<PhysiologicalData>,
-                pub metadata: crate::services::common::common::v1::JsonValue,
-            }
-            
-            pub struct EmotionData {
-                pub name: String,
-                pub score: f64,
-                pub file_type: String,
-                pub color: Option<String>,
-            }
-            
-            pub struct PhysiologicalData {
-                pub timestamp: Option<String>,
-                pub value: Option<f64>,
-                pub metadata: Option<crate::services::common::common::v1::JsonValue>,
-            }
-            
-            pub struct GetWordAggregatesRequest {
-                pub participant_id: String,
-                pub session_id: Option<String>,
-            }
-            
-            pub struct GetWordAggregatesResponse {
-                pub aggregates: Vec<WordAggregate>,
-            }
-            
-            pub struct WordAggregate {
-                pub participant_id: String,
-                pub session_id: String,
-                pub word: String,
-                pub count: i64,
-                pub avg_reaction_value: Option<f64>,
-                pub sum_reaction_value: Option<f64>,
-                pub avg_reaction_time: Option<f64>,
-                pub sum_reaction_time: Option<f64>,
-                pub avg_physiological: Option<f64>,
-                pub sum_phys_abs: Option<f64>,
-                pub phys_series: Vec<f64>,
-                pub rt_series: Vec<f64>,
-                pub rv_series: Vec<f64>,
-                pub first_time: String,
-                pub last_time: String,
-            }
-            
-            pub struct GetEmotionVectorsRequest {
-                pub participant_id: String,
-                pub session_id: Option<String>,
-            }
-            
-            pub struct GetEmotionVectorsResponse {
-                pub vectors: Vec<EmotionVector>,
-            }
-            
-            pub struct EmotionVector {
-                pub participant_id: String,
-                pub session_id: String,
-                pub word: String,
-                pub joy_sum: Option<f64>,
-                pub sadness_sum: Option<f64>,
-                pub anger_sum: Option<f64>,
-                pub fear_sum: Option<f64>,
-                pub surprise_sum: Option<f64>,
-                pub disgust_sum: Option<f64>,
-                pub calm_sum: Option<f64>,
-                pub focus_sum: Option<f64>,
-                pub excitement_sum: Option<f64>,
-                pub confusion_sum: Option<f64>,
-                pub emotion_entry_count: i64,
-                pub emotion_by_modality: Option<crate::services::common::common::v1::JsonValue>,
-            }
-            
-            pub struct GetWordStatisticsRequest {
-                pub participant_id: String,
-                pub session_id: Option<String>,
-            }
-            
-            pub struct GetWordStatisticsResponse {
-                pub statistics: Vec<WordStatistics>,
-            }
-            
-            pub struct WordStatistics {
-                pub participant_id: String,
-                pub session_id: String,
-                pub word: String,
-                pub count: i64,
-                pub avg_reaction_time: Option<f64>,
-                pub std_reaction_time: Option<f64>,
-                pub var_reaction_time: Option<f64>,
-                pub avg_reaction_value: Option<f64>,
-                pub std_reaction_value: Option<f64>,
-                pub var_reaction_value: Option<f64>,
-                pub avg_physiological: Option<f64>,
-                pub std_physiological: Option<f64>,
-                pub var_physiological: Option<f64>,
-                pub speed_index: Option<f64>,
-                pub phys_series: Vec<f64>,
-                pub rt_series: Vec<f64>,
-            }
-        }
-    }
-}
-
-use proto::timeline::v1::timeline_service_server::TimelineService as TimelineServiceTrait;
-use proto::timeline::v1::*;
+// Generated proto types
+use crate::generated::timeline::v1::{
+    timeline_service_server::TimelineService,
+    GetTimelineRequest, GetTimelineResponse,
+    GetWordAggregatesRequest, GetWordAggregatesResponse,
+    GetEmotionVectorsRequest, GetEmotionVectorsResponse,
+    GetWordStatisticsRequest, GetWordStatisticsResponse,
+    TimelinePoint, EmotionData, PhysiologicalData,
+    WordAggregate, EmotionVector, WordStatistics,
+};
+use crate::generated::common::v1::JsonValue;
 
 pub struct TimelineServiceImpl {
     pool: Pool<Postgres>,
@@ -176,7 +30,7 @@ impl TimelineServiceImpl {
 }
 
 #[tonic::async_trait]
-impl TimelineServiceTrait for TimelineServiceImpl {
+impl TimelineService for TimelineServiceImpl {
     async fn get_timeline(
         &self,
         request: Request<GetTimelineRequest>,
@@ -290,7 +144,7 @@ impl TimelineServiceTrait for TimelineServiceImpl {
                 emotion_entry_count: row.try_get("emotion_entry_count").ok()?,
                 emotion_by_modality: row.try_get::<Option<serde_json::Value>, _>("emotion_by_modality").ok()
                     .flatten()
-                    .map(|v| crate::services::common::common::v1::JsonValue {
+                    .map(|v| JsonValue {
                         value: serde_json::to_string(&v).unwrap_or_default(),
                     }),
             })

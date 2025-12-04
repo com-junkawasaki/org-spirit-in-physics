@@ -1,7 +1,7 @@
 // Merkle DAG: grpc.client
 // Connect protocol client factory
 
-import { createPromiseClient, PromiseClient } from "@connectrpc/connect";
+import { createPromiseClient, type PromiseClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 
 // Determine gRPC API URL based on execution context

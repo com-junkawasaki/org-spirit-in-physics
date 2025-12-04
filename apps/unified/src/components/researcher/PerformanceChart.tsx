@@ -7,7 +7,7 @@
 // Interface Segregation: Focused on performance visualization only
 // Dependency Inversion: Depends on chart interface, not concrete implementation
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { 
   BarChart3, 
   TrendingUp, 

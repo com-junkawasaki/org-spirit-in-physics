@@ -22,19 +22,20 @@ services:
       retries: 5
       start_period: 10s
 
-  # Participant app (Next.js)
-  participant:
+  # Unified app (Astro) - replaces participant, researcher, demo, and paper apps
+  unified:
     build:
-      context: ./apps/participant
+      context: ./apps/unified
       dockerfile: Dockerfile
-    container_name: spirit-participant
+    container_name: spirit-unified
     ports:
-      - "25250:25250"
+      - "3000:3000"
     volumes:
-      - ./apps/participant:/app
+      - ./apps/unified:/app
+      - ./packages/jung-voice-assessment:/app/packages/jung-voice-assessment
+      - ./packages/visualization-components:/app/packages/visualization-components
       - ./apps/researcher/public/dataset:/app/dataset:cached
-      - /app/node_modules
-      - /app/.next
+      - unified_node_modules:/app/node_modules
     environment:
       - NODE_ENV=development
       # HMR and file watching settings for Docker
@@ -42,62 +43,34 @@ services:
       - CHOKIDAR_INTERVAL=1000
       - WATCHPACK_POLLING=true
       - WATCHPACK_POLLING_INTERVAL=1000
-      # Next.js HMR settings
-      - NEXT_TELEMETRY_DISABLED=1
+      # Astro HMR settings
+      - ASTRO_TELEMETRY_DISABLED=1
       # GraphQL API URL (hardcoded for development)
       # Client-side: use localhost for browser access
-      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      - PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
       # Server-side: use container name for server-to-server communication
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      # gRPC API URL
+      - GRPC_API_URL=http://grpc-service:8083
+      - PUBLIC_GRPC_API_URL=http://localhost:8083
       # Supabase Authentication (hardcoded for development)
-      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
-    depends_on:
-      postgres:
-        condition: service_healthy
-      graphql-service:
-        condition: service_healthy
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:25250" ]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
-
-  # Researcher app (Next.js)
-  researcher:
-    build:
-      context: ./apps/researcher
-      dockerfile: Dockerfile
-    container_name: spirit-researcher
-    ports:
-      - "25260:3000"
-    volumes:
-      - ./apps/researcher:/app
-      - ./packages/visualization-components:/app/packages/visualization-components
-      - /app/node_modules
-      - ./dataset:/app/dataset:cached
-    command: sh -c "pnpm install && pnpm run dev"
-    env_file:
-      - ./apps/researcher/env.docker
-    environment:
-      - NODE_ENV=development
+      - PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
+      - PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
+      # Clerk Authentication (for participant app)
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY:-}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
+      # Inngest Configuration
       - INNGEST_EVENT_KEY=local_dev_key
       - INNGEST_SIGNING_KEY=local_dev_signing_key
-      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
-      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
-      - GRPC_API_URL=http://grpc-service:8083
-      - NEXT_PUBLIC_GRPC_API_URL=http://localhost:8083
-      # Supabase Configuration (hardcoded for development)
-      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
+      # Hume AI API Configuration (for demo app)
+      - HUME_API_KEY=${HUME_API_KEY:-LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s}
+      - HUME_API=${HUME_API:-q0nGzfOSBZB4D0HbdZorGxek3wXz5O4XpTG8IkEJ0gY8Wlet}
     depends_on:
       postgres:
         condition: service_healthy
       graphql-service:
+        condition: service_healthy
+      grpc-service:
         condition: service_healthy
     networks:
       - spirit-network
@@ -106,24 +79,25 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 40s
 
-  # Participant app for cloud (Aura) profile
-  participant-cloud:
+  # Unified app for cloud (Aura) profile
+  unified-cloud:
     profiles: ["cloud"]
     build:
-      context: ./apps/participant
+      context: ./apps/unified
       dockerfile: Dockerfile
-    container_name: spirit-participant-cloud
+    container_name: spirit-unified-cloud
     ports:
-      - "25251:25250"
+      - "3001:3000"
     volumes:
-      - ./apps/participant:/app
+      - ./apps/unified:/app
+      - ./packages/jung-voice-assessment:/app/packages/jung-voice-assessment
+      - ./packages/visualization-components:/app/packages/visualization-components
       - ./apps/researcher/public/dataset:/app/dataset:cached
-      - /app/node_modules
-      - /app/.next
+      - unified_cloud_node_modules:/app/node_modules
     env_file:
-      - ./apps/participant/env.docker
+      - ./apps/unified/env.docker
     environment:
       - NODE_ENV=development
       # HMR and file watching settings for Docker
@@ -131,19 +105,19 @@ services:
       - CHOKIDAR_INTERVAL=1000
       - WATCHPACK_POLLING=true
       - WATCHPACK_POLLING_INTERVAL=1000
-      # Next.js HMR settings
-      - NEXT_TELEMETRY_DISABLED=1
+      # Astro HMR settings
+      - ASTRO_TELEMETRY_DISABLED=1
       # Supabase Authentication (hardcoded for development)
-      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
+      - PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
+      - PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
     networks:
       - spirit-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:25250" ]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 40s
     command: sh -lc "rm -f .env.local && pnpm dev"
 
   # Python import service
@@ -239,74 +213,6 @@ services:
       retries: 5
       start_period: 10s
 
-  # Paper app (Astro)
-  paper:
-    build:
-      context: ./apps/paper
-      dockerfile: Dockerfile
-    container_name: spirit-paper
-    ports:
-      - "25270:4321"
-    volumes:
-      - ./apps/paper:/app
-      - ./packages/visualization-components:/app/packages/visualization-components
-      - paper_node_modules:/app/node_modules
-    environment:
-      - NODE_ENV=development
-      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
-      - GRPC_API_URL=http://grpc-service:8083
-      - NEXT_PUBLIC_GRPC_API_URL=http://localhost:8083
-      # HMR and file watching settings for Docker
-      - CHOKIDAR_USEPOLLING=true
-      - CHOKIDAR_INTERVAL=1000
-      - WATCHPACK_POLLING=true
-      - WATCHPACK_POLLING_INTERVAL=1000
-      # Astro HMR settings
-      - ASTRO_TELEMETRY_DISABLED=1
-    depends_on:
-      graphql-service:
-        condition: service_healthy
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:4321/ || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
-
-  # Demo app (Astro)
-  demo:
-    build:
-      context: ./apps/demo
-      dockerfile: Dockerfile
-    container_name: spirit-demo
-    ports:
-      - "25271:4322"
-    volumes:
-      - ./apps/demo:/app
-      - ./packages/visualization-components:/app/packages/visualization-components
-      - demo_node_modules:/app/node_modules
-    environment:
-      - NODE_ENV=development
-      # HMR and file watching settings for Docker
-      - CHOKIDAR_USEPOLLING=true
-      - CHOKIDAR_INTERVAL=1000
-      - WATCHPACK_POLLING=true
-      - WATCHPACK_POLLING_INTERVAL=1000
-      # Astro HMR settings
-      - ASTRO_TELEMETRY_DISABLED=1
-      # Hume AI API Configuration (hardcoded for development)
-      - HUME_API_KEY=LYSOLhalcwGNDdqxtlZOE4172bXGTzg0VxV30BatjXJPUtAULQ6ZoZmyBVTQE19s
-      - HUME_API=q0nGzfOSBZB4D0HbdZorGxek3wXz5O4XpTG8IkEJ0gY8Wlet
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:4322 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
 
   # One-shot importer to push dataset into PostgreSQL via Rust import service
   import-service-runner:
@@ -347,22 +253,22 @@ services:
   #       restart: "no"
 
   # One-shot importer for cloud (Aura)
-  participant-cloud-importer:
+  unified-cloud-importer:
     profiles: ["cloud"]
     image: curlimages/curl:8.9.1
-    container_name: spirit-participant-cloud-importer
+    container_name: spirit-unified-cloud-importer
     depends_on:
-      participant-cloud:
+      unified-cloud:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-lc"]
     command: >-
       'set -euo pipefail;
        echo "Triggering participants import (cloud)";
-       curl -sS -X POST http://participant-cloud:25250/api/admin/import/participants || exit 1;
+       curl -sS -X POST http://unified-cloud:3000/participant/api/admin/import/participants || exit 1;
        echo "Triggering sessions import (cloud)";
-       curl -sS -X POST http://participant-cloud:25250/api/admin/import/sessions || exit 1;
+       curl -sS -X POST http://unified-cloud:3000/participant/api/admin/import/sessions || exit 1;
        echo "Triggering emotions import (cloud)";
-       curl -sS -X POST http://participant-cloud:25250/api/admin/import/emotions || exit 1;
+       curl -sS -X POST http://unified-cloud:3000/participant/api/admin/import/emotions || exit 1;
        echo "Cloud imports completed";'
     networks:
       - spirit-network
@@ -370,8 +276,8 @@ services:
 
 volumes:
   postgres_data:
-  paper_node_modules:
-  demo_node_modules:
+  unified_node_modules:
+  unified_cloud_node_modules:
 
 networks:
   spirit-network:

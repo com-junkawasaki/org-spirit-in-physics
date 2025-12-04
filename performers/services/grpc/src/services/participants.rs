@@ -7,79 +7,14 @@ use uuid::Uuid;
 use crate::auth::interceptor::extract_auth_context;
 use crate::error::{from_sqlx_error, from_uuid_parse_error, from_chrono_parse_error};
 
-// Generated proto types (will be available after build)
-// use spirit_in_physics::participants::v1::{
-//     participant_service_server::ParticipantService,
-//     GetParticipantsRequest, GetParticipantsResponse,
-//     GetParticipantRequest, GetParticipantResponse,
-//     CreateParticipantRequest, CreateParticipantResponse,
-//     Participant,
-// };
-
-// Temporary placeholder - will be replaced with generated types
-pub mod proto {
-    pub mod participants {
-        pub mod v1 {
-            pub mod participant_service_server {
-                use tonic::Request;
-                pub trait ParticipantService: Send + Sync + 'static {
-                    async fn get_participants(
-                        &self,
-                        request: Request<super::super::GetParticipantsRequest>,
-                    ) -> Result<tonic::Response<super::super::GetParticipantsResponse>, tonic::Status>;
-                    
-                    async fn get_participant(
-                        &self,
-                        request: Request<super::super::GetParticipantRequest>,
-                    ) -> Result<tonic::Response<super::super::GetParticipantResponse>, tonic::Status>;
-                    
-                    async fn create_participant(
-                        &self,
-                        request: Request<super::super::CreateParticipantRequest>,
-                    ) -> Result<tonic::Response<super::super::CreateParticipantResponse>, tonic::Status>;
-                }
-            }
-            
-            pub struct GetParticipantsRequest {}
-            pub struct GetParticipantsResponse {
-                pub participants: Vec<Participant>,
-            }
-            
-            pub struct GetParticipantRequest {
-                pub id: String,
-            }
-            
-            pub struct GetParticipantResponse {
-                pub participant: Option<Participant>,
-            }
-            
-            pub struct CreateParticipantRequest {
-                pub id: Option<String>,
-                pub signature: String,
-                pub agreements: crate::services::common::common::v1::JsonValue,
-                pub agreed_at: String,
-                pub is_public: Option<bool>,
-            }
-            
-            pub struct CreateParticipantResponse {
-                pub participant: Participant,
-            }
-            
-            pub struct Participant {
-                pub id: String,
-                pub age: Option<i32>,
-                pub gender: Option<String>,
-                pub handedness: Option<String>,
-                pub is_public: bool,
-                pub created_at: String,
-                pub updated_at: String,
-            }
-        }
-    }
-}
-
-use proto::participants::v1::participant_service_server::ParticipantService as ParticipantServiceTrait;
-use proto::participants::v1::*;
+// Generated proto types
+use crate::generated::participants::v1::{
+    participant_service_server::ParticipantService,
+    GetParticipantsRequest, GetParticipantsResponse,
+    GetParticipantRequest, GetParticipantResponse,
+    CreateParticipantRequest, CreateParticipantResponse,
+    Participant,
+};
 
 pub struct ParticipantServiceImpl {
     pool: Pool<Postgres>,
@@ -92,12 +27,14 @@ impl ParticipantServiceImpl {
 }
 
 #[tonic::async_trait]
-impl ParticipantServiceTrait for ParticipantServiceImpl {
+impl ParticipantService for ParticipantServiceImpl {
     async fn get_participants(
         &self,
         request: Request<GetParticipantsRequest>,
     ) -> Result<Response<GetParticipantsResponse>, Status> {
-        let auth_context = extract_auth_context(&request.map(|_| ())).await?;
+        let _req_ref = request.get_ref();
+        let auth_request = request.map(|_| ());
+        let auth_context = extract_auth_context(&auth_request).await?;
         let is_authenticated = auth_context.is_some();
         
         let query = if is_authenticated {
@@ -140,17 +77,21 @@ impl ParticipantServiceTrait for ParticipantServiceImpl {
             }
         }).collect();
 
-        Ok(Response::new(GetParticipantsResponse { participants }))
+        Ok(Response::new(GetParticipantsResponse {
+            participants,
+        }))
     }
 
     async fn get_participant(
         &self,
         request: Request<GetParticipantRequest>,
     ) -> Result<Response<GetParticipantResponse>, Status> {
-        let auth_context = extract_auth_context(&request.map(|_| ())).await?;
+        let id = request.get_ref().id.clone();
+        let auth_request = request.map(|_| ());
+        let auth_context = extract_auth_context(&auth_request).await?;
         let is_authenticated = auth_context.is_some();
         
-        let uuid = Uuid::parse_str(&request.get_ref().id)
+        let uuid = Uuid::parse_str(&id)
             .map_err(from_uuid_parse_error)?;
 
         let query = if is_authenticated {
@@ -187,7 +128,9 @@ impl ParticipantServiceTrait for ParticipantServiceImpl {
             }
         });
 
-        Ok(Response::new(GetParticipantResponse { participant }))
+        Ok(Response::new(GetParticipantResponse {
+            participant: Some(participant),
+        }))
     }
 
     async fn create_participant(
@@ -252,7 +195,9 @@ impl ParticipantServiceTrait for ParticipantServiceImpl {
             updated_at: updated_at.to_rfc3339(),
         };
 
-        Ok(Response::new(CreateParticipantResponse { participant }))
+        Ok(Response::new(CreateParticipantResponse {
+            participant,
+        }))
     }
 }
 
