@@ -44,8 +44,8 @@ declare global {
 // 依存: React, TypeGPU (WebGPU)
 // BPMN: Force3DWordGraphTypeGPU
 
-// Types are exported from ../types to avoid duplication
-import type { WordNode, WordLink } from '../types'
+// Types are exported from @/types/paper/experimental to avoid duplication
+import type { WordNode, WordLink } from '@/lib/paper/visualization-data'
 
 interface Force3DWordGraphTypeGPUProps {
   nodes: WordNode[]

@@ -6,9 +6,9 @@ import { createGrpcTransport } from "../client.js";
 import { SessionService } from "../generated/sessions_connect.js";
 import {
   GetSessionsRequestSchema,
-  GetSessionsResponse,
+  type GetSessionsResponse,
   CreateSessionRequestSchema,
-  CreateSessionResponse,
+  type CreateSessionResponse,
 } from "../generated/sessions_pb.js";
 
 // Re-export types for hooks

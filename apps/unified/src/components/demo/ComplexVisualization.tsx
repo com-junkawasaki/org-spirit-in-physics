@@ -1,8 +1,8 @@
 // Merkle DAG: components.complex_visualization
 // Complex space visualization: "Your Complex is here"
 
-import React, { useMemo } from 'react'
-import type { ComplexSpaceData, ComplexRegion } from '../types/demo'
+import { useMemo } from 'react'
+import type { ComplexSpaceData, ComplexRegion } from '@/types/demo/demo'
 
 interface ComplexVisualizationProps {
   complexData: ComplexSpaceData | null
@@ -55,8 +55,8 @@ export default function ComplexVisualization({
             </defs>
 
             {/* Project Complex regions to 2D (x, y projection) */}
-            {regions.map((region) => {
-              const [x, y, z] = region.center
+            {regions.map((region: ComplexRegion) => {
+              const [x, y] = region.center
               // Project to 2D (ignore z for now, or use it for size)
               const screenX = (x + 200) * (width / 400)
               const screenY = (y + 200) * (height / 400)
@@ -136,7 +136,7 @@ export default function ComplexVisualization({
           <div className="mt-4 space-y-2">
             <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Complex領域の詳細</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-auto">
-              {regions.map((region) => (
+              {regions.map((region: ComplexSpaceData['regions'][number]) => (
                 <div
                   key={region.id}
                   className="border border-gray-200 dark:border-gray-700 rounded p-2 bg-gray-50 dark:bg-gray-900"
@@ -149,9 +149,9 @@ export default function ComplexVisualization({
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500">
                     感情: {Object.entries(region.emotionProfile)
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 3)
-                      .map(([emotion, score]) => `${emotion}(${(score * 100).toFixed(0)}%)`)
+                    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([emotion, score]: [string, number]) => `${emotion}(${(score * 100).toFixed(0)}%)`)
                       .join(', ')}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">

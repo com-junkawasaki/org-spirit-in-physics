@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, MutableRefObject, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { useKawasakiStore, JungVoiceTestProps, Word } from './store';
+import { useKawasakiStore } from './store';
+import type { JungVoiceTestProps, Word } from './store';
 import AudioVisualizer from './AudioVisualizer';
 import { JUNG_TEST_WELCOME_MESSAGE } from './constants';
 

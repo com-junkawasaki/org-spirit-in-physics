@@ -5,9 +5,9 @@ import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
 import { ParticipantService } from "../generated/participants_connect.js";
 import {
-  GetParticipantsResponse,
-  GetParticipantResponse,
-  CreateParticipantResponse,
+  type GetParticipantsResponse,
+  type GetParticipantResponse,
+  type CreateParticipantResponse,
   GetParticipantsRequestSchema,
   GetParticipantRequestSchema,
   CreateParticipantRequestSchema,

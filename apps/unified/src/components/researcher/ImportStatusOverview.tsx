@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { RefreshCw, CheckCircle, Clock, AlertCircle, XCircle, Wifi, WifiOff } from 'lucide-react'
-import { getWebSocketClient, ImportStatusUpdate } from '@/lib/websocket'
+import { getWebSocketClient } from '@/lib/websocket'
+import type { ImportStatusUpdate } from '@/lib/websocket'
 
 interface ImportStatus {
   participant_id: string

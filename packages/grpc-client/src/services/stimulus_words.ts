@@ -6,9 +6,9 @@ import { createGrpcTransport } from "../client.js";
 import { StimulusWordService } from "../generated/stimulus_words_connect.js";
 import {
   GetStimulusWordsRequestSchema,
-  GetStimulusWordsResponse,
+  type GetStimulusWordsResponse,
   GetStimulusWordRequestSchema,
-  GetStimulusWordResponse,
+  type GetStimulusWordResponse,
 } from "../generated/stimulus_words_pb.js";
 import { create } from "@bufbuild/protobuf";
 

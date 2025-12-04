@@ -6,13 +6,13 @@ import { createGrpcTransport } from "../client.js";
 import { TimelineService } from "../generated/timeline_connect.js";
 import {
   GetTimelineRequestSchema,
-  GetTimelineResponse,
+  type GetTimelineResponse,
   GetWordAggregatesRequestSchema,
-  GetWordAggregatesResponse,
+  type GetWordAggregatesResponse,
   GetEmotionVectorsRequestSchema,
-  GetEmotionVectorsResponse,
+  type GetEmotionVectorsResponse,
   GetWordStatisticsRequestSchema,
-  GetWordStatisticsResponse,
+  type GetWordStatisticsResponse,
 } from "../generated/timeline_pb.js";
 
 // Re-export types for hooks

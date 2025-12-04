@@ -5,14 +5,12 @@ import { match, P } from 'ts-pattern'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import WordDisplay from './WordDisplay'
 import ComplexForce3D from './ComplexForce3D'
-import ComplexVisualization from './ComplexVisualization'
 import StructureAnalysis from './StructureAnalysis'
 import { JUNG_STIMULUS_WORDS } from '../../lib/demo/jung-words'
-import { analyzeEmotionRealtime, captureVideoFrame, captureAudioFrame } from '../../lib/demo/hume-realtime'
-import { calculateComplexSpace } from '../../lib/demo/complex-calculator'
+import { captureVideoFrame, captureAudioFrame } from '../../lib/demo/hume-realtime'
 import { EmotionProcessingPipeline } from '../../lib/demo/pipelines/emotion-pipeline'
-import type { WordEmotionData, ComplexSpaceData } from '../../types/demo/demo'
-import type { AnalysisStep, StepType, StepStatus, StepMetadata } from '../../types/demo/step'
+import type { ComplexSpaceData } from '../../types/demo/demo'
+import type { AnalysisStep, StepType, StepMetadata } from '../../types/demo/step'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useAtomCallback } from 'jotai/utils'
 import {
@@ -25,7 +23,7 @@ import {
   addWordEmotionDataAtom,
   clearWordEmotionDataAtom,
   type BatchQueueItem,
-} from '../../../lib/demo/store/demo-atoms'
+} from '@/lib/demo/store/demo-atoms'
 
 // BPM 85 = 85 beats per minute = 60000ms / 85 = ~706ms per beat
 const BPM_85_INTERVAL_MS = Math.round(60000 / 85) // ~706ms
@@ -86,7 +84,7 @@ export default function DemoApp() {
   // Use useAtomCallback to get return value from processBatchQueueAtom
   const processBatchQueue = useAtomCallback(
     (get, set) => {
-      const currentQueue = get(batchQueueAtom)
+      const currentQueue = get(batchQueueAtom) as BatchQueueItem[]
       if (currentQueue.length === 0) {
         console.log('[DemoStore] Batch queue is empty, nothing to process')
         return [] as BatchQueueItem[]
