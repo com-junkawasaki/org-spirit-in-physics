@@ -3,7 +3,7 @@
 
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
-import { ParticipantService } from "../generated/participants_connect.js";
+import { ParticipantService } from "../generated/participants_pb.js";
 import {
   type GetParticipantsResponse,
   type GetParticipantResponse,

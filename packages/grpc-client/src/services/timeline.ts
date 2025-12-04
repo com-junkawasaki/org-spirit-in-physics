@@ -3,7 +3,7 @@
 
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
-import { TimelineService } from "../generated/timeline_connect.js";
+import { TimelineService } from "../generated/timeline_pb.js";
 import {
   GetTimelineRequestSchema,
   type GetTimelineResponse,

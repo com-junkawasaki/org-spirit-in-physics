@@ -3,7 +3,7 @@
 
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
-import { StimulusWordService } from "../generated/stimulus_words_connect.js";
+import { StimulusWordService } from "../generated/stimulus_words_pb.js";
 import {
   GetStimulusWordsRequestSchema,
   type GetStimulusWordsResponse,

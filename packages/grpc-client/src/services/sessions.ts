@@ -3,7 +3,7 @@
 
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "../client.js";
-import { SessionService } from "../generated/sessions_connect.js";
+import { SessionService } from "../generated/sessions_pb.js";
 import {
   GetSessionsRequestSchema,
   type GetSessionsResponse,
