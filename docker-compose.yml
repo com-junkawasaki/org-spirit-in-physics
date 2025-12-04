@@ -34,8 +34,10 @@ services:
       - ./apps/unified:/app
       - ./packages/jung-voice-assessment:/app/packages/jung-voice-assessment
       - ./packages/visualization-components:/app/packages/visualization-components
+      - ./packages/grpc-client:/app/packages/grpc-client
       - ./apps/researcher/public/dataset:/app/dataset:cached
       - unified_node_modules:/app/node_modules
+    command: sh -c "sed -i.bak 's|file:../../packages/jung-voice-assessment|file:./packages/jung-voice-assessment|g' /app/package.json && sed -i.bak 's|file:../../packages/visualization-components|file:./packages/visualization-components|g' /app/package.json && sed -i.bak 's|file:../../packages/grpc-client|file:./packages/grpc-client|g' /app/package.json && rm -f /app/package.json.bak && CI=true pnpm install --no-frozen-lockfile && pnpm dev"
     environment:
       - NODE_ENV=development
       # HMR and file watching settings for Docker

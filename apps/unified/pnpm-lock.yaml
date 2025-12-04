@@ -60,14 +60,14 @@ importers:
         specifier: ^10.0.3
         version: 10.0.3(@react-three/fiber@9.4.2(@types/react@19.2.7)(immer@10.2.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(three@0.180.0))(react@18.2.0)(three@0.180.0)
       '@spirit-in-physics/grpc-client':
-        specifier: file:../../packages/grpc-client
-        version: file:../../packages/grpc-client(react@18.2.0)
+        specifier: file:./packages/grpc-client
+        version: file:packages/grpc-client(react@18.2.0)
       '@spirit-in-physics/jung-voice-assessment':
-        specifier: file:../../packages/jung-voice-assessment
-        version: file:../../packages/jung-voice-assessment(@spirit-in-physics/grpc-client@file:../../packages/grpc-client(react@18.2.0))(@types/react@19.2.7)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))
+        specifier: file:./packages/jung-voice-assessment
+        version: file:packages/jung-voice-assessment(@spirit-in-physics/grpc-client@file:packages/grpc-client(react@18.2.0))(@types/react@19.2.7)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))
       '@spirit-in-physics/visualization-components':
-        specifier: file:../../packages/visualization-components
-        version: file:../../packages/visualization-components(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        specifier: file:./packages/visualization-components
+        version: file:packages/visualization-components(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@supabase/ssr':
         specifier: ^0.5.2
         version: 0.5.2(@supabase/supabase-js@2.86.0)
@@ -2194,20 +2194,20 @@ packages:
   '@sinclair/typebox@0.31.28':
     resolution: {integrity: sha512-/s55Jujywdw/Jpan+vsy6JZs1z2ZTGxTmbZTPiuSL2wz9mfzA2gN1zzaqmvfi4pq+uOt7Du85fkiwv5ymW84aQ==}
 
-  '@spirit-in-physics/grpc-client@file:../../packages/grpc-client':
-    resolution: {directory: ../../packages/grpc-client, type: directory}
+  '@spirit-in-physics/grpc-client@file:packages/grpc-client':
+    resolution: {directory: packages/grpc-client, type: directory}
     peerDependencies:
       react: ^18.0.0
 
-  '@spirit-in-physics/jung-voice-assessment@file:../../packages/jung-voice-assessment':
-    resolution: {directory: ../../packages/jung-voice-assessment, type: directory}
+  '@spirit-in-physics/jung-voice-assessment@file:packages/jung-voice-assessment':
+    resolution: {directory: packages/jung-voice-assessment, type: directory}
     peerDependencies:
       '@spirit-in-physics/grpc-client': '*'
       react: ^18.2.0
       react-dom: ^18.2.0
 
-  '@spirit-in-physics/visualization-components@file:../../packages/visualization-components':
-    resolution: {directory: ../../packages/visualization-components, type: directory}
+  '@spirit-in-physics/visualization-components@file:packages/visualization-components':
+    resolution: {directory: packages/visualization-components, type: directory}
     peerDependencies:
       react: ^18.2.0
       react-dom: ^18.2.0
@@ -8711,16 +8711,16 @@ snapshots:
 
   '@sinclair/typebox@0.31.28': {}
 
-  '@spirit-in-physics/grpc-client@file:../../packages/grpc-client(react@18.2.0)':
+  '@spirit-in-physics/grpc-client@file:packages/grpc-client(react@18.2.0)':
     dependencies:
       '@bufbuild/protobuf': 1.10.1
       '@connectrpc/connect': 1.7.0(@bufbuild/protobuf@1.10.1)
       '@connectrpc/connect-web': 1.7.0(@bufbuild/protobuf@1.10.1)(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))
       react: 18.2.0
 
-  '@spirit-in-physics/jung-voice-assessment@file:../../packages/jung-voice-assessment(@spirit-in-physics/grpc-client@file:../../packages/grpc-client(react@18.2.0))(@types/react@19.2.7)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))':
+  '@spirit-in-physics/jung-voice-assessment@file:packages/jung-voice-assessment(@spirit-in-physics/grpc-client@file:packages/grpc-client(react@18.2.0))(@types/react@19.2.7)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))':
     dependencies:
-      '@spirit-in-physics/grpc-client': file:../../packages/grpc-client(react@18.2.0)
+      '@spirit-in-physics/grpc-client': file:packages/grpc-client(react@18.2.0)
       immer: 10.2.0
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
@@ -8731,7 +8731,7 @@ snapshots:
       - '@types/react'
       - use-sync-external-store
 
-  '@spirit-in-physics/visualization-components@file:../../packages/visualization-components(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+  '@spirit-in-physics/visualization-components@file:packages/visualization-components(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
       d3: 7.9.0
       react: 18.2.0
