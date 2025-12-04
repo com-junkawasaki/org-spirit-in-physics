@@ -48,7 +48,7 @@ export default function SessionsListPage() {
 
   const formatDate = (timestamp?: number | string | null): string => {
     if (!timestamp) return 'N/A'
-    // Neo4j Integer型のオブジェクトが来た場合の処理
+    // Integer型のオブジェクトが来た場合の処理
     if (typeof timestamp === 'object' && timestamp !== null && 'low' in timestamp) {
       const num = (timestamp as any).low
       const date = new Date(num)
@@ -60,7 +60,7 @@ export default function SessionsListPage() {
 
   const formatDuration = (startTs?: number, endTs?: number | null): string => {
     if (!startTs || !endTs) return 'N/A'
-    // Neo4j Integer型のオブジェクトが来た場合の処理（念のため）
+    // Integer型のオブジェクトが来た場合の処理（念のため）
     let start = startTs
     let end = endTs
     if (typeof startTs === 'object' && startTs !== null && 'low' in startTs) {

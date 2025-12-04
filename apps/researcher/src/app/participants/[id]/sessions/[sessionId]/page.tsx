@@ -166,7 +166,7 @@ export default function SessionTimelinePage() {
                 <span className="text-muted-foreground">
                   {debugInfo.checks?.session?.exists ? '存在' : '不存在'}
                   {debugInfo.checks?.session?.eventsInfo && (() => {
-                    // Neo4j Integer型を数値に変換
+                    // Integer型を数値に変換
                     const totalRaw = debugInfo.checks.session.eventsInfo.total || 0
                     const total = typeof totalRaw === 'object' && totalRaw !== null && 'low' in totalRaw 
                       ? totalRaw.low 
@@ -240,7 +240,7 @@ export default function SessionTimelinePage() {
                 </span>
                 <span className="text-muted-foreground">
                   {debugInfo.checks?.physiological?.exists ? (() => {
-                    // Neo4j Integer型を数値に変換
+                    // Integer型を数値に変換
                     const countRaw = debugInfo.checks.physiological.count || 0
                     const count = typeof countRaw === 'object' && countRaw !== null && 'low' in countRaw 
                       ? countRaw.low 
