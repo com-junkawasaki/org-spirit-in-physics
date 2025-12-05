@@ -13,9 +13,14 @@ export default function ConsentFormPage() {
   useEffect(() => {
     // コンポーネントがマウントされたときに参加者IDを初期化
     if (!participantId) {
-      initializeParticipant();
+      try {
+        initializeParticipant();
+      } catch (error) {
+        console.error('参加者IDの初期化に失敗しました:', error);
+      }
     }
-  }, [initializeParticipant, participantId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participantId]);
 
   const handleConsent = async (participantId: string, signature: string, agreements: any) => {
     try {

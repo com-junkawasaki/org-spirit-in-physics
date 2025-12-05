@@ -1,27 +1,39 @@
 // Merkle DAG: pages.spirit_in_physics
-// Main research paper page
-// Note: This is a placeholder. Full implementation requires:
-// 1. Converting Astro components (ResearchPaper, ReferenceList, etc.) to React
-// 2. Loading MDX content with frontmatter parsing
-// 3. Converting ResearchLayout to Next.js layout
+// Main research paper page with MDX support
 
 import ResearchLayout from '@/app/researcher/layout';
+import ResearchPaper from '@/components/paper/ResearchPaper';
+import { loadMDX } from '@/lib/paper/load-mdx';
+import { evaluate } from '@mdx-js/mdx';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import * as runtime from 'react/jsx-runtime';
 
-export default function SpiritInPhysicsPage() {
-  // TODO: Load MDX content and frontmatter
-  // TODO: Convert Astro components to React
-  // TODO: Load experimental data
+export default async function SpiritInPhysicsPage() {
+  // Load MDX content with frontmatter
+  const { frontmatter, content } = loadMDX('content/paper/papers/spirit-in-physics.mdx');
+  
+  // Evaluate MDX content to get the component
+  const { default: MDXContent } = await evaluate(content, {
+    ...runtime,
+    remarkPlugins: [remarkMath, remarkGfm],
+    rehypePlugins: [rehypeKatex],
+  });
   
   return (
     <ResearchLayout>
-      <div className="p-8">
-        <h1 className="text-3xl font-bold mb-4">Spirit in Physics</h1>
-        <p className="text-muted-foreground">
-          This page is under construction. The full implementation requires converting Astro components to React.
-        </p>
-        <p className="mt-4">
-          MDX content should be loaded from: <code>src/content/paper/papers/spirit-in-physics.mdx</code>
-        </p>
+      <div className="p-8 max-w-5xl mx-auto">
+        <ResearchPaper
+          title={frontmatter.title}
+          description={frontmatter.description}
+          authors={frontmatter.authors}
+          date={frontmatter.date}
+          affiliations={frontmatter.affiliations}
+          {...(frontmatter.schemaId !== undefined ? { schemaId: frontmatter.schemaId } : {})}
+        >
+          <MDXContent />
+        </ResearchPaper>
       </div>
     </ResearchLayout>
   );
