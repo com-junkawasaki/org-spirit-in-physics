@@ -24,6 +24,27 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "@spirit-in-physics/jung-voice-assessment": [
+        "../../packages/jung-voice-assessment/dist/index.d.ts",
+        "../../packages/jung-voice-assessment/src/index.ts"
+      ],
+      "@spirit-in-physics/jung-voice-assessment/*": [
+        "../../packages/jung-voice-assessment/src/*"
+      ],
+      "@spirit-in-physics/visualization-components": [
+        "../../packages/visualization-components/dist/index.d.ts",
+        "../../packages/visualization-components/src/index.ts"
+      ],
+      "@spirit-in-physics/visualization-components/*": [
+        "../../packages/visualization-components/src/*"
+      ],
+      "@spirit-in-physics/grpc-client": [
+        "../../packages/grpc-client/dist/index.d.ts",
+        "../../packages/grpc-client/src/index.ts"
+      ],
+      "@spirit-in-physics/grpc-client/*": [
+        "../../packages/grpc-client/src/*"
       ]
     },
     "noUnusedLocals": true,

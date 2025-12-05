@@ -1,7 +1,7 @@
 // Merkle DAG: grpc.client.test
 // TDD tests for gRPC client factory functions
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createGrpcTransport, getGrpcApiUrl } from './client.js'
 
 describe('getGrpcApiUrl', () => {

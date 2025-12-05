@@ -5,7 +5,11 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
-    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "node",
@@ -23,5 +27,5 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "src/generated"]
+  "exclude": ["node_modules", "src/generated", "dist"]
 }
