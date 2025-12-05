@@ -4,10 +4,10 @@
 export {
   useParticipants,
   useParticipant,
-} from "./useParticipants.js";
+} from "./useParticipants";
 export {
   useSessions,
-} from "./useSessions.js";
+} from "./useSessions";
 export {
   useTimeline,
-} from "./useTimeline.js";
+} from "./useTimeline";

@@ -30,7 +30,12 @@ describe('getGrpcApiUrl', () => {
 
   it('should return production URL in production environment', () => {
     delete process.env.GRPC_API_URL
-    process.env.NODE_ENV = 'production'
+    // Use Object.defineProperty to override read-only NODE_ENV in strict mode
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'production',
+      writable: true,
+      configurable: true,
+    })
     // @ts-ignore
     globalThis.window = undefined
     
@@ -40,7 +45,12 @@ describe('getGrpcApiUrl', () => {
 
   it('should return localhost for server-side development', () => {
     delete process.env.GRPC_API_URL
-    process.env.NODE_ENV = 'development'
+    // Use Object.defineProperty to override read-only NODE_ENV in strict mode
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'development',
+      writable: true,
+      configurable: true,
+    })
     // @ts-ignore
     globalThis.window = undefined
     
@@ -61,7 +71,12 @@ describe('createGrpcTransport', () => {
   it('should create a transport with default URL', () => {
     // @ts-ignore
     globalThis.window = undefined
-    process.env.NODE_ENV = 'test'
+    // Use Object.defineProperty to override read-only NODE_ENV in strict mode
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'test',
+      writable: true,
+      configurable: true,
+    })
     delete process.env.GRPC_API_URL
     
     const transport = createGrpcTransport()

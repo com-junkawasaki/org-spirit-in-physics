@@ -1,8 +1,10 @@
+'use client'
+
 // Merkle DAG: grpc.client.hooks.useSessions
 // React hook for session service
 
 import { useState, useEffect } from "react";
-import { getSessions, type GetSessionsResponse } from "../services/sessions.js";
+import { getSessions, type GetSessionsResponse } from "../services/sessions";
 
 export function useSessions(participantId: string) {
   const [data, setData] = useState<GetSessionsResponse | null>(null);

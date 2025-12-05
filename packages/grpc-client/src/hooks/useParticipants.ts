@@ -1,8 +1,10 @@
+'use client'
+
 // Merkle DAG: grpc.client.hooks.useParticipants
 // React hook for participant service
 
 import { useState, useEffect } from "react";
-import { getParticipants, getParticipant, type GetParticipantsResponse, type GetParticipantResponse } from "../services/participants.js";
+import { getParticipants, getParticipant, type GetParticipantsResponse, type GetParticipantResponse } from "../services/participants";
 
 export function useParticipants() {
   const [data, setData] = useState<GetParticipantsResponse | null>(null);

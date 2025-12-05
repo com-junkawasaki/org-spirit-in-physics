@@ -2,14 +2,14 @@
 // StimulusWord service client
 
 import { createClient } from "@connectrpc/connect";
-import { createGrpcTransport } from "../client.js";
-import { StimulusWordService } from "../generated/stimulus_words_connect.js";
+import { createGrpcTransport } from "../client";
+import { StimulusWordService } from "../generated/stimulus_words_connect";
 import {
   GetStimulusWordsRequest,
   type GetStimulusWordsResponse,
   GetStimulusWordRequest,
   type GetStimulusWordResponse,
-} from "../generated/stimulus_words_pb.js";
+} from "../generated/stimulus_words_pb";
 
 // Create client instance
 let clientInstance: any = null;

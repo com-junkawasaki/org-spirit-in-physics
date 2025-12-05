@@ -1,3 +1,5 @@
+'use client'
+
 // Merkle DAG: components.demo_app
 // Main demo app component
 

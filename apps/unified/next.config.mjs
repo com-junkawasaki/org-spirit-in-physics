@@ -38,6 +38,23 @@ const nextConfig = {
       '@spirit-in-physics/grpc-client': grpcClientPath,
     };
 
+    // Resolve modules from unified app's node_modules for workspace packages
+    config.resolve.modules = [
+      ...(config.resolve.modules || []),
+      resolve(__dirname, './node_modules'),
+    ];
+
+    // Resolve .js imports to .ts files when they exist (for generated protobuf files)
+    // Prioritize .ts extensions before .js
+    const originalExtensions = config.resolve.extensions || ['.js', '.json'];
+    config.resolve.extensions = ['.ts', '.tsx', ...originalExtensions];
+    
+    // Also add extensionAlias as fallback
+    config.resolve.extensionAlias = {
+      '.js': ['.ts', '.tsx', '.js', '.jsx'],
+      '.jsx': ['.tsx', '.jsx'],
+    };
+
     // Exclude these packages from optimization
     if (!isServer) {
       config.resolve.fallback = {
@@ -47,6 +64,13 @@ const nextConfig = {
         tls: false,
       };
     }
+
+    // Handle .jsonld files with ?raw query as raw text
+    config.module.rules.push({
+      test: /\.jsonld$/,
+      resourceQuery: /raw/,
+      type: 'asset/source',
+    });
 
     return config;
   },

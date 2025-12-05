@@ -1,3 +1,5 @@
+'use client'
+
 // Merkle DAG: grpc.client.hooks.useTimeline
 // React hook for timeline service
 
@@ -11,7 +13,7 @@ import {
   type GetWordAggregatesResponse,
   type GetEmotionVectorsResponse,
   type GetWordStatisticsResponse,
-} from "../services/timeline.js";
+} from "../services/timeline";
 
 export function useTimeline(params: {
   participantId: string;

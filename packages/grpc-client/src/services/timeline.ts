@@ -2,8 +2,8 @@
 // Timeline service client
 
 import { createClient } from "@connectrpc/connect";
-import { createGrpcTransport } from "../client.js";
-import { TimelineService } from "../generated/timeline_connect.js";
+import { createGrpcTransport } from "../client";
+import { TimelineService } from "../generated/timeline_connect";
 import {
   GetTimelineRequest,
   type GetTimelineResponse,
@@ -13,7 +13,7 @@ import {
   type GetEmotionVectorsResponse,
   GetWordStatisticsRequest,
   type GetWordStatisticsResponse,
-} from "../generated/timeline_pb.js";
+} from "../generated/timeline_pb";
 
 // Re-export types for hooks
 export type {
@@ -21,7 +21,7 @@ export type {
   GetWordAggregatesResponse,
   GetEmotionVectorsResponse,
   GetWordStatisticsResponse,
-} from "../generated/timeline_pb.js";
+} from "../generated/timeline_pb";
 
 // Create client instance
 let clientInstance: any = null;

@@ -2,8 +2,8 @@
 // Participant service client
 
 import { createClient } from "@connectrpc/connect";
-import { createGrpcTransport } from "../client.js";
-import { ParticipantService } from "../generated/participants_connect.js";
+import { createGrpcTransport } from "../client";
+import { ParticipantService } from "../generated/participants_connect";
 import {
   type GetParticipantsResponse,
   type GetParticipantResponse,
@@ -11,11 +11,11 @@ import {
   GetParticipantsRequest,
   GetParticipantRequest,
   CreateParticipantRequest,
-} from "../generated/participants_pb.js";
-import { JsonValue } from "../generated/common_pb.js";
+} from "../generated/participants_pb";
+import { JsonValue } from "../generated/common_pb";
 
 // Re-export types for hooks
-export type { GetParticipantsResponse, GetParticipantResponse, CreateParticipantResponse } from "../generated/participants_pb.js";
+export type { GetParticipantsResponse, GetParticipantResponse, CreateParticipantResponse } from "../generated/participants_pb";
 
 // Create client instance
 let clientInstance: any = null;

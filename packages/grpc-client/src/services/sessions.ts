@@ -2,18 +2,18 @@
 // Session service client
 
 import { createClient } from "@connectrpc/connect";
-import { createGrpcTransport } from "../client.js";
-import { SessionService } from "../generated/sessions_connect.js";
+import { createGrpcTransport } from "../client";
+import { SessionService } from "../generated/sessions_connect";
 import {
   GetSessionsRequest,
   type GetSessionsResponse,
   CreateSessionRequest,
   type CreateSessionResponse,
-} from "../generated/sessions_pb.js";
+} from "../generated/sessions_pb";
 
 // Re-export types for hooks
-export type { GetSessionsResponse, CreateSessionResponse } from "../generated/sessions_pb.js";
-import { JsonValue } from "../generated/common_pb.js";
+export type { GetSessionsResponse, CreateSessionResponse } from "../generated/sessions_pb";
+import { JsonValue } from "../generated/common_pb";
 
 // Create client instance
 let clientInstance: any = null;

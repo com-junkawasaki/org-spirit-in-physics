@@ -14,3 +14,9 @@ declare namespace NodeJS {
   }
 }
 
+// Type declarations for .jsonld?raw imports (webpack asset/source)
+declare module '*.jsonld?raw' {
+  const content: string;
+  export default content;
+}
+

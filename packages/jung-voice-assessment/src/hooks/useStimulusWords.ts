@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from 'react';
 import { useKawasakiStore } from '../store';
 import type { Word } from '../types';
