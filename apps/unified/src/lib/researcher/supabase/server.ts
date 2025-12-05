@@ -1,21 +1,23 @@
 /**
  * Merkle DAG: supabase.server
- * Supabase server-side client configuration for Astro
+ * Supabase server-side client configuration for Next.js
  */
 
 import { createServerClient } from '@supabase/ssr';
-import type { AstroCookies } from 'astro';
+import { cookies } from 'next/headers';
 
-export async function createClient(cookies?: AstroCookies) {
-  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
+export async function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       'Missing Supabase environment variables. ' +
-      'Please set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY'
+      'Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
     );
   }
+
+  const cookieStore = await cookies();
 
   return createServerClient(
     supabaseUrl,
@@ -23,22 +25,12 @@ export async function createClient(cookies?: AstroCookies) {
     {
       cookies: {
         getAll() {
-          // Convert Astro cookies to array format expected by Supabase
-          if (!cookies) return [];
-          const cookieArray: { name: string; value: string }[] = [];
-          // AstroCookies is iterable, but TypeScript doesn't recognize it
-          const cookieEntries = Array.from(cookies as any) as Array<[string, { value: string }]>;
-          for (const cookie of cookieEntries) {
-            cookieArray.push({ name: cookie[0], value: cookie[1]?.value ?? '' });
-          }
-          return cookieArray;
+          return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              if (cookies) {
-                cookies.set(name, value, options as any);
-              }
+              cookieStore.set(name, value, options);
             });
           } catch {
             // Ignore errors in server context

@@ -1,22 +1,17 @@
 /**
  * Merkle DAG: supabase.server
- * Supabase server-side client configuration for Astro
+ * Supabase server-side client configuration for Next.js
  */
 
-// @ts-nocheck
 import { createServerClient } from '@supabase/ssr';
-import type { AstroCookies } from 'astro';
+import { cookies } from 'next/headers';
 
-export async function createClient(cookies?: AstroCookies) {
-  // For Astro API routes, cookies are passed from the context
-  const cookieStore = cookies || {
-    getAll: () => [],
-    set: () => {},
-  };
+export async function createClient() {
+  const cookieStore = await cookies();
 
   return createServerClient(
-    import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL!,
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -25,10 +20,7 @@ export async function createClient(cookies?: AstroCookies) {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
-              if (cookies) {
-                const cookieOptions: any = options;
-                cookies.set(name, value, cookieOptions);
-              }
+              cookieStore.set(name, value, options);
             });
           } catch {
             // Ignore errors in server context

@@ -1,5 +1,4 @@
 {
-  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "target": "ES2017",
     "lib": [
@@ -11,7 +10,6 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-    "allowImportingTsExtensions": true,
     "incremental": true,
     "module": "ESNext",
     "esModuleInterop": true,
@@ -19,7 +17,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "react",
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -53,22 +50,28 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
-    ".astro/types.d.ts",
-    "src/**/*",
+    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "**/*.astro",
+    "**/*.mdx",
+    ".next/types/**/*.ts",
     "../../packages/**/*.ts",
     "../../packages/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
+    ".next",
     "dist",
-    ".astro",
-    "../../packages/jung-voice-assessment/src"
+    "../../packages/jung-voice-assessment/src",
+    "src/content/**/*.ts"
   ]
 }
 

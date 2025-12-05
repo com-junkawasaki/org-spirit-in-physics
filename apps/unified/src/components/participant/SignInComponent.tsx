@@ -1,6 +1,6 @@
 'use client';
 
-import { SignIn } from '@clerk/astro/react';
+import { SignIn } from '@clerk/nextjs';
 
 export default function SignInComponent() {
   return (

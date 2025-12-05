@@ -1,0 +1,140 @@
+'use client';
+
+// Merkle DAG: components.word_network_graph
+// Network graph visualization for word associations
+
+import { useMemo } from 'react';
+import type { SpiritType, GhostPattern } from '../../types/paper/experimental';
+
+interface WordNetworkGraphProps {
+  spiritTypes: SpiritType[];
+  ghostPatterns: GhostPattern[];
+  width?: number;
+  height?: number;
+  minWeight?: number;
+}
+
+export default function WordNetworkGraph({
+  spiritTypes = [],
+  ghostPatterns = [],
+  width = 800,
+  height = 600,
+  minWeight = 0.1,
+}: WordNetworkGraphProps) {
+  const graphData = useMemo(() => {
+    // Extract unique words
+    const wordSet = new Set<string>();
+    [...spiritTypes, ...ghostPatterns].forEach((item) => {
+      item.wordPairs.forEach((wp) => {
+        wordSet.add(wp.stimulusWord);
+        wordSet.add(wp.responseWord);
+      });
+    });
+    const words = Array.from(wordSet);
+
+    // Create word nodes
+    const wordNodes = words.map((word) => {
+      // Count occurrences
+      let spiritTypeCount = 0;
+      let ghostPatternCount = 0;
+      let totalWeight = 0;
+
+      [...spiritTypes, ...ghostPatterns].forEach((item) => {
+        item.wordPairs.forEach((wp) => {
+          if (wp.stimulusWord === word || wp.responseWord === word) {
+            if (spiritTypes.includes(item as SpiritType)) {
+              spiritTypeCount++;
+            } else {
+              ghostPatternCount++;
+            }
+            totalWeight += wp.wordAssociationProbability;
+          }
+        });
+      });
+
+      const classificationType =
+        spiritTypeCount > ghostPatternCount ? 'spirit-type' : 'ghost-pattern';
+      const color = classificationType === 'spirit-type' ? '#4A90E2' : '#E74C3C';
+
+      return {
+        id: word,
+        label: word,
+        size: Math.max(5, Math.min(20, totalWeight * 50)),
+        color,
+        spiritTypeCount,
+        ghostPatternCount,
+        totalWeight,
+      };
+    });
+
+    // Create edges based on word associations
+    const edges: Array<{ source: string; target: string; weight: number }> = [];
+    const wordMap = new Map<string, number>();
+    wordNodes.forEach((node, index) => {
+      wordMap.set(node.id, index);
+    });
+
+    [...spiritTypes, ...ghostPatterns].forEach((item) => {
+      item.wordPairs.forEach((wp) => {
+        const sourceIdx = wordMap.get(wp.stimulusWord);
+        const targetIdx = wordMap.get(wp.responseWord);
+        if (
+          sourceIdx !== undefined &&
+          targetIdx !== undefined &&
+          wp.wordAssociationProbability >= minWeight
+        ) {
+          edges.push({
+            source: wp.stimulusWord,
+            target: wp.responseWord,
+            weight: wp.wordAssociationProbability,
+          });
+        }
+      });
+    });
+
+    return {
+      nodes: wordNodes,
+      edges,
+      width,
+      height,
+    };
+  }, [spiritTypes, ghostPatterns, minWeight, width, height]);
+
+  return (
+    <div className="word-network-graph w-full flex flex-col">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold mb-2">Word Network Graph</h3>
+        <p className="text-sm text-gray-600">
+          Nodes: {graphData.nodes.length} | Edges: {graphData.edges.length} | Spirit Types:{' '}
+          {spiritTypes.length} | Ghost Patterns: {ghostPatterns.length}
+        </p>
+      </div>
+
+      <div
+        id="network-graph-container"
+        style={{ width: `${width}px`, height: `${height}px` }}
+        className="border border-gray-300 rounded-lg bg-white relative"
+      >
+        {/* Network graph will be rendered here */}
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <p className="mb-2">Word Network Graph</p>
+            <p className="text-xs">Integration with D3.js/vis.js required for rendering</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 text-xs text-gray-500">
+        <p>
+          <strong>Blue nodes:</strong> Spirit Type (typical patterns)
+        </p>
+        <p>
+          <strong>Red nodes:</strong> Ghost Pattern (hidden patterns)
+        </p>
+        <p>
+          <strong>Edge thickness:</strong> Word association probability (P(w_O | w_I))
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -6,8 +6,8 @@
 import { createBrowserClient } from '@supabase/ssr';
 
 export function createClient() {
-  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     // In build time, return a mock client to avoid errors
@@ -23,7 +23,7 @@ export function createClient() {
     }
     throw new Error(
       'Missing Supabase environment variables. ' +
-      'Please set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY'
+      'Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
     );
   }
 
