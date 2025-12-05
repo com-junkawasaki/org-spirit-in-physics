@@ -169,10 +169,11 @@ export default function DemoApp() {
     setAnalysisSteps(prev => prev.map(step => {
       if (step.id !== stepId) return step;
       
+      const completedAtValue = updates.status === 'completed' || updates.status === 'error' ? Date.now() : step.completedAt;
       const updatedStep: AnalysisStep = {
         ...step,
         ...updates,
-        completedAt: updates.status === 'completed' || updates.status === 'error' ? Date.now() : step.completedAt,
+        ...(completedAtValue !== undefined ? { completedAt: completedAtValue } : {}),
         ...(updates.logs !== undefined ? {
           logs: [...(step.logs ?? []), ...(Array.isArray(updates.logs) ? updates.logs : [updates.logs])]
         } : step.logs !== undefined ? { logs: step.logs } : {}),

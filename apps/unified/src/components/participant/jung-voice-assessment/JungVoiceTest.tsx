@@ -160,7 +160,7 @@ const SessionScreen = React.memo<{
                             analyser.getByteTimeDomainData(dataArray);
                             let sum = 0;
                             for (let i = 0; i < dataArray.length; i++) {
-                                const val = (dataArray[i] - 128) / 128;
+                                const val = ((dataArray[i] ?? 128) - 128) / 128;
                                 sum += val * val;
                             }
                             const volume = Math.sqrt(sum / dataArray.length);

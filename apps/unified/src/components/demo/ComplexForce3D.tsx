@@ -186,13 +186,15 @@ export default function ComplexForce3D({
         
         // Create initial nodes for all words (without emotion data)
         // Use deterministic positioning to prevent position shifts
-        const initialNodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word: JungWord, idx: number) => ({
-          id: String(idx),
-          label: word.japanese,
-          scale: 1.0,
-          nodeType: 'word',
-          initial: undefined, // Will be positioned by force simulation
-        }))
+        const initialNodes: WordNode[] = JUNG_STIMULUS_WORDS.map((word: JungWord, idx: number) => {
+          return {
+            id: String(idx),
+            label: word.japanese,
+            scale: 1.0,
+            nodeType: 'word',
+            // initial is optional, will be positioned by force simulation
+          }
+        })
         
         // Create anchor nodes
         const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
@@ -381,7 +383,7 @@ export default function ComplexForce3D({
           label: word.japanese,
           scale: Math.max(0.5, Math.min(6, 0.5 + magnitude * 5 + count * 0.1)),
           nodeType: 'word',
-          initial,
+          ...(initial !== undefined ? { initial } : {}),
         }
       })
 
@@ -405,7 +407,9 @@ export default function ComplexForce3D({
 
       for (let wi = 0; wi < nodes.length; wi++) {
         const wordIndex = baseOffset + wi
-        const label = nodes[wi].label
+        const node = nodes[wi]
+        if (!node) continue
+        const label = node.label
         const ei = normalizedEmotionVec[label] || new Array(10).fill(0)
 
         // Calculate weights for each anchor
@@ -428,6 +432,7 @@ export default function ComplexForce3D({
           const k = springK * (0.3 + 0.7 * w)
           const alpha = Math.max(0.12, Math.min(0.95, 0.12 + 0.88 * w))
           const anchor = anchorNodes[c.ai]
+          if (!anchor) continue
           const color = anchor.color ? `rgba(${parseInt(anchor.color.slice(1,3),16)}, ${parseInt(anchor.color.slice(3,5),16)}, ${parseInt(anchor.color.slice(5,7),16)}, ${alpha.toFixed(3)})` : undefined
 
           links.push({
@@ -437,7 +442,7 @@ export default function ComplexForce3D({
             mode: 'tension',
             L0,
             k,
-            color,
+            ...(color !== undefined ? { color } : {}),
           })
         }
       }

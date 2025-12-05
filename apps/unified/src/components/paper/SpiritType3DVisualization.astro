@@ -46,14 +46,14 @@ const sessionId = data.sessions.length > 0 && data.sessions[0] ? data.sessions[0
           window.React = React;
         }
         const container = document.getElementById('spirit-type-3d-visualization-container');
-        if (container) {
+        if (container && container.dataset.participantId) {
           const root = createRoot(container);
           root.render(React.createElement(TimelineVisualization, {
             participantId: container.dataset.participantId,
             sessionId: container.dataset.sessionId || undefined,
             width: parseInt(container.dataset.width || '1000'),
             height: parseInt(container.dataset.height || '600'),
-            forceMode: container.dataset.forceMode || 'force-3d-typegpu',
+            forceMode: (container.dataset.forceMode || 'force-3d-typegpu') as 'force-3d-typegpu' | 'force-3d-cpu' | 'force-2d' | undefined,
             hideFilters: true
           }));
         }

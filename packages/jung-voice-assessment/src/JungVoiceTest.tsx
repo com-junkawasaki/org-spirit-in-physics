@@ -304,8 +304,8 @@ const SessionScreen = React.memo<{
                         .then(() => {
                             recognitionStartTimer = setTimeout(startRecognitionAndDetection, 1000);
                         })
-                        .catch(err => {
-                            if (err.name !== 'AbortError') {
+                        .catch((err: unknown) => {
+                            if (err instanceof Error && err.name !== 'AbortError') {
                                 console.error(`Could not play audio ${audioSrc}, falling back to speech synthesis.`, err);
                                 const utterance = new SpeechSynthesisUtterance(currentWord.word);
                                 utterance.onstart = () => {
@@ -372,22 +372,24 @@ const SessionScreen = React.memo<{
 SessionScreen.displayName = 'SessionScreen';
 
 
-const BreakScreen = React.memo<{ 
+interface BreakScreenProps {
   onStartNextSession: () => void;
-  Button: React.ComponentType<any>;
-}>(({ onStartNextSession, Button }) => (
+  Button: React.ComponentType<{ onClick: () => void; size?: string }>;
+}
+const BreakScreen: React.FC<BreakScreenProps> = ({ onStartNextSession, Button }) => (
   <div className="space-y-4">
     <h2 className="text-2xl font-bold">セッション1が完了しました</h2>
     <p>短い休憩を取ってください。準備ができたら、セッション2を開始してください。</p>
     <Button onClick={onStartNextSession} size="lg">セッション2を開始</Button>
   </div>
-));
+);
 BreakScreen.displayName = 'BreakScreen';
 
-const CompletionScreen = React.memo<{ 
+interface CompletionScreenProps {
   onReset: () => void;
-  Button: React.ComponentType<any>;
-}>(({ onReset, Button }) => (
+  Button: React.ComponentType<{ onClick: () => void }>;
+}
+const CompletionScreen: React.FC<CompletionScreenProps> = ({ onReset, Button }) => (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">検査完了</h2>
       <p>ご協力ありがとうございました。データは保存されました。</p>
@@ -472,7 +474,7 @@ export default function JungVoiceTest({
     
     // Cleanup stream when the test is fully completed or reset
     if ((testStatus === 'completed' || testStatus === 'idle') && stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
         setStream(null);
     }
 

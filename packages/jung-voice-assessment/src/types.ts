@@ -77,10 +77,10 @@ export interface JungVoiceTestProps {
   className?: string;
   onComplete?: () => void;
   // UI component injection
-  Button?: React.ComponentType<any>;
-  Card?: React.ComponentType<any>;
-  CardHeader?: React.ComponentType<any>;
-  CardTitle?: React.ComponentType<any>;
-  CardContent?: React.ComponentType<any>;
+  Button?: React.ComponentType<{ onClick: () => void; size?: string; className?: string }>;
+  Card?: React.ComponentType<{ className?: string; children?: React.ReactNode }>;
+  CardHeader?: React.ComponentType<{ children?: React.ReactNode }>;
+  CardTitle?: React.ComponentType<{ children?: React.ReactNode }>;
+  CardContent?: React.ComponentType<{ className?: string; children?: React.ReactNode }>;
 }
 

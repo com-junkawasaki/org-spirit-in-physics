@@ -37,7 +37,7 @@ const sessionId = data.sessions.length > 0 && data.sessions[0] ? data.sessions[0
           window.React = React;
         }
         const container = document.getElementById('timeline-visualization-container');
-        if (container) {
+        if (container && container.dataset.participantId) {
           const root = createRoot(container);
           root.render(React.createElement(TimelineVisualization, {
             participantId: container.dataset.participantId,

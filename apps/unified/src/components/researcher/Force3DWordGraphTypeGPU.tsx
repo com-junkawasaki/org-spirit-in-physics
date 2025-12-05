@@ -538,6 +538,7 @@ export default function Force3DWordGraphTypeGPU({
           const linkData = new Float32Array(l * 6) // src(1) + dst(1) + weight(1) + mode(1) + L0(1) + k(1)
           for (let k = 0; k < l; k++) {
             const link = linksRef.current[k]
+            if (!link) continue
             linkData[k * 6] = link.source
             linkData[k * 6 + 1] = link.target
             linkData[k * 6 + 2] = link.weight
@@ -597,12 +598,12 @@ export default function Force3DWordGraphTypeGPU({
                 vel[ix + 1] = 0
                 vel[ix + 2] = 0
               } else {
-                pos[ix] = result[i * 8]
-                pos[ix + 1] = result[i * 8 + 1]
-                pos[ix + 2] = result[i * 8 + 2]
-                vel[ix] = result[i * 8 + 3]
-                vel[ix + 1] = result[i * 8 + 4]
-                vel[ix + 2] = result[i * 8 + 5]
+                pos[ix] = result[i * 8] ?? 0
+                pos[ix + 1] = result[i * 8 + 1] ?? 0
+                pos[ix + 2] = result[i * 8 + 2] ?? 0
+                vel[ix] = result[i * 8 + 3] ?? 0
+                vel[ix + 1] = result[i * 8 + 4] ?? 0
+                vel[ix + 2] = result[i * 8 + 5] ?? 0
               }
             }
             
@@ -708,11 +709,17 @@ export default function Force3DWordGraphTypeGPU({
                 if (d !== undefined) deg[link.target] = d + w
               }
             }
-            for (let i = 0; i < n; i++) maxDeg = Math.max(maxDeg, deg[i])
+            for (let i = 0; i < n; i++) {
+              const d = deg[i]
+              if (d !== undefined) maxDeg = Math.max(maxDeg, d)
+            }
             const conn = connectivityRef.current && connectivityRef.current.length === n
               ? connectivityRef.current
               : new Float32Array(n)
-            for (let i = 0; i < n; i++) conn[i] = maxDeg > 0 ? deg[i] / maxDeg : 0
+            for (let i = 0; i < n; i++) {
+              const d = deg[i]
+              conn[i] = maxDeg > 0 && d !== undefined ? d / maxDeg : 0
+            }
             connectivityRef.current = conn
           }
 
@@ -817,9 +824,6 @@ export default function Force3DWordGraphTypeGPU({
                 const sinY = Math.sin(camera.rotationY)
                 const cosX = Math.cos(camera.rotationX)
                 const sinX = Math.sin(camera.rotationX)
-                
-                const link = linksRef.current[k]
-                if (!link) continue
                 
                 // ソースノードのカメラ変換
                 const swx = sx - camera.centerX
