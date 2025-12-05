@@ -61,13 +61,13 @@ importers:
         version: 10.0.3(@react-three/fiber@9.4.2(@types/react@19.2.7)(immer@10.2.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(three@0.180.0))(react@18.2.0)(three@0.180.0)
       '@spirit-in-physics/grpc-client':
         specifier: file:./packages/grpc-client
-        version: grpc-client@file:packages/grpc-client
+        version: file:packages/grpc-client(react@18.2.0)
       '@spirit-in-physics/jung-voice-assessment':
         specifier: file:./packages/jung-voice-assessment
-        version: jung-voice-assessment@file:packages/jung-voice-assessment
+        version: file:packages/jung-voice-assessment(@spirit-in-physics/grpc-client@file:packages/grpc-client(react@18.2.0))(@types/react@19.2.7)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))
       '@spirit-in-physics/visualization-components':
         specifier: file:./packages/visualization-components
-        version: visualization-components@file:packages/visualization-components
+        version: file:packages/visualization-components(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       '@supabase/ssr':
         specifier: ^0.5.2
         version: 0.5.2(@supabase/supabase-js@2.86.0)
@@ -176,12 +176,6 @@ importers:
       zustand:
         specifier: ^5.0.6
         version: 5.0.9(@types/react@19.2.7)(immer@10.2.0)(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))
-    optionalDependencies:
-      '@astrojs/check':
-        specifier: ^0.9.6
-        version: 0.9.6(prettier@3.7.4)(typescript@5.8.3)
-      '@humeai/sdk':
-        specifier: ^0.10.0
     devDependencies:
       '@playwright/test':
         specifier: ^1.54.1
@@ -255,6 +249,10 @@ importers:
       vitest:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@24.1.0)(@vitest/ui@2.1.9)(terser@5.44.1)
+    optionalDependencies:
+      '@astrojs/check':
+        specifier: ^0.9.6
+        version: 0.9.6(prettier@3.7.4)(typescript@5.8.3)
 
 packages:
 
@@ -452,6 +450,17 @@ packages:
   '@clerk/types@4.39.0':
     resolution: {integrity: sha512-WWEoXmcob6X80cZZZGobN8aKjHAjAoL0cgVyLX8UeQ+JW4kl1IfUmZQgDBFOafGEm2yUoKlKAP22bWPDqmbTJw==}
     engines: {node: '>=18.17.0'}
+
+  '@connectrpc/connect-web@1.7.0':
+    resolution: {integrity: sha512-qyP0YOnUPRWwCc/VfsoydMJvkb7EyUPr2q9sHgBuJzbADjiqck1gKH5V5ZPzPhTLBvmz5UvG+wiZ5sMRQHU1MQ==}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.10.1
+      '@connectrpc/connect': 1.7.0
+
+  '@connectrpc/connect@1.7.0':
+    resolution: {integrity: sha512-iNKdJRi69YP3mq6AePRT8F/HrxWCewrhxnLMNm0vpqXAR8biwzRtO6Hjx80C6UvtKJ5sFmffQT7I4Baecz389w==}
+    peerDependencies:
+      '@bufbuild/protobuf': ^1.10.1
 
   '@digitalbazaar/http-client@3.4.1':
     resolution: {integrity: sha512-Ahk1N+s7urkgj7WvvUND5f8GiWEPfUw0D41hdElaqLgu8wZScI8gdI0q+qWw5N1d35x7GCRH2uk9mi+Uzo9M3g==}
@@ -2230,6 +2239,24 @@ packages:
 
   '@sinclair/typebox@0.31.28':
     resolution: {integrity: sha512-/s55Jujywdw/Jpan+vsy6JZs1z2ZTGxTmbZTPiuSL2wz9mfzA2gN1zzaqmvfi4pq+uOt7Du85fkiwv5ymW84aQ==}
+
+  '@spirit-in-physics/grpc-client@file:packages/grpc-client':
+    resolution: {directory: packages/grpc-client, type: directory}
+    peerDependencies:
+      react: ^18.0.0
+
+  '@spirit-in-physics/jung-voice-assessment@file:packages/jung-voice-assessment':
+    resolution: {directory: packages/jung-voice-assessment, type: directory}
+    peerDependencies:
+      '@spirit-in-physics/grpc-client': '*'
+      react: ^18.2.0
+      react-dom: ^18.2.0
+
+  '@spirit-in-physics/visualization-components@file:packages/visualization-components':
+    resolution: {directory: packages/visualization-components, type: directory}
+    peerDependencies:
+      react: ^18.2.0
+      react-dom: ^18.2.0
 
   '@sqlite.org/sqlite-wasm@3.48.0-build4':
     resolution: {integrity: sha512-hI6twvUkzOmyGZhQMza1gpfqErZxXRw6JEsiVjUbo7tFanVD+8Oil0Ih3l2nGzHdxPI41zFmfUQG7GHqhciKZQ==}
@@ -4123,9 +4150,6 @@ packages:
   grid-index@1.1.0:
     resolution: {integrity: sha512-HZRwumpOGUrHyxO5bqKZL0B0GlUpwtCAzZ42sgxUPniu33R1LSFH5yrIcBCHjkctCAh3mtWKcKd9J4vDDdeVHA==}
 
-  grpc-client@file:packages/grpc-client:
-    resolution: {directory: packages/grpc-client, type: directory}
-
   h3@1.15.4:
     resolution: {integrity: sha512-z5cFQWDffyOe4vQ9xIqNfCZdV4p//vy6fBnr8Q1AWnVZ0teurKMG66rLj++TKwKPUP3u7iMUvrvKaEUiQw2QWQ==}
 
@@ -4534,9 +4558,6 @@ packages:
   jsonld@8.3.3:
     resolution: {integrity: sha512-9YcilrF+dLfg9NTEof/mJLMtbdX1RJ8dbWtJgE00cMOIohb1lIyJl710vFiTaiHTl6ZYODJuBd32xFvUhmv3kg==}
     engines: {node: '>=14'}
-
-  jung-voice-assessment@file:packages/jung-voice-assessment:
-    resolution: {directory: packages/jung-voice-assessment, type: directory}
 
   katex@0.16.25:
     resolution: {integrity: sha512-woHRUZ/iF23GBP1dkDQMh1QBad9dmr8/PAwNA54VrSOVYgI12MAcE14TqnDdQOdzyEonGzMepYnqBMYdsoAr8Q==}
@@ -6362,9 +6383,6 @@ packages:
   victory-vendor@36.9.2:
     resolution: {integrity: sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==}
 
-  visualization-components@file:packages/visualization-components:
-    resolution: {directory: packages/visualization-components, type: directory}
-
   vite-node@2.1.9:
     resolution: {integrity: sha512-AM9aQ/IPrW/6ENLQg3AGY4K1N2TGZdR5e4gu/MmmR2xR3Ll1+dib+nook92g4TV3PXVyeyxdWwtaCAiUL0hMxA==}
     engines: {node: ^18.0.0 || >=20.0.0}
@@ -7118,6 +7136,15 @@ snapshots:
   '@clerk/types@4.39.0':
     dependencies:
       csstype: 3.1.1
+
+  '@connectrpc/connect-web@1.7.0(@bufbuild/protobuf@1.10.1)(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))':
+    dependencies:
+      '@bufbuild/protobuf': 1.10.1
+      '@connectrpc/connect': 1.7.0(@bufbuild/protobuf@1.10.1)
+
+  '@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1)':
+    dependencies:
+      '@bufbuild/protobuf': 1.10.1
 
   '@digitalbazaar/http-client@3.4.1(web-streams-polyfill@3.3.3)':
     dependencies:
@@ -8973,6 +9000,33 @@ snapshots:
   '@shikijs/vscode-textmate@10.0.2': {}
 
   '@sinclair/typebox@0.31.28': {}
+
+  '@spirit-in-physics/grpc-client@file:packages/grpc-client(react@18.2.0)':
+    dependencies:
+      '@bufbuild/protobuf': 1.10.1
+      '@connectrpc/connect': 1.7.0(@bufbuild/protobuf@1.10.1)
+      '@connectrpc/connect-web': 1.7.0(@bufbuild/protobuf@1.10.1)(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))
+      react: 18.2.0
+
+  '@spirit-in-physics/jung-voice-assessment@file:packages/jung-voice-assessment(@spirit-in-physics/grpc-client@file:packages/grpc-client(react@18.2.0))(@types/react@19.2.7)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))':
+    dependencies:
+      '@spirit-in-physics/grpc-client': file:packages/grpc-client(react@18.2.0)
+      immer: 10.2.0
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      uuid: 11.1.0
+      zod: 4.1.13
+      zustand: 5.0.9(@types/react@19.2.7)(immer@10.2.0)(react@18.2.0)(use-sync-external-store@1.6.0(react@18.2.0))
+    transitivePeerDependencies:
+      - '@types/react'
+      - use-sync-external-store
+
+  '@spirit-in-physics/visualization-components@file:packages/visualization-components(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
+    dependencies:
+      d3: 7.9.0
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      typegpu: 0.7.1
 
   '@sqlite.org/sqlite-wasm@3.48.0-build4': {}
 
@@ -11241,8 +11295,6 @@ snapshots:
 
   grid-index@1.1.0: {}
 
-  grpc-client@file:packages/grpc-client: {}
-
   h3@1.15.4:
     dependencies:
       cookie-es: 1.2.2
@@ -11694,8 +11746,6 @@ snapshots:
       rdf-canonize: 3.4.0
     transitivePeerDependencies:
       - web-streams-polyfill
-
-  jung-voice-assessment@file:packages/jung-voice-assessment: {}
 
   katex@0.16.25:
     dependencies:
@@ -14013,8 +14063,6 @@ snapshots:
       d3-shape: 3.2.0
       d3-time: 3.1.0
       d3-timer: 3.0.1
-
-  visualization-components@file:packages/visualization-components: {}
 
   vite-node@2.1.9(@types/node@24.1.0)(terser@5.44.1):
     dependencies:

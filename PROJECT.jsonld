@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.40.0",
+  "version": "1.41.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-20T18:00:00+09:00",
-  "merkleRoot": "Astroアプリ統合完了: apps/demo・apps/paper・apps/participant・apps/researcherをapps/unifiedに統合、TypeScript厳格化緩和、docker-compose.yml更新、多数の型エラー修正完了",
+  "updatedAt": "2025-01-20T20:00:00+09:00",
+  "merkleRoot": "Paraglide多言語対応完全実装完了: messages/ja.json・en.json拡張、Sidebar・Breadcrumb・JungVoiceTest・ParticipantOverview多言語対応、Layout.astro言語設定管理、LanguageSwitcherコンポーネント作成、Cookieベース言語管理実装",
   
   "story": {
     "@id": "project:story",
@@ -1638,7 +1638,20 @@
             "docker-compose.yml更新（unifiedサービス統合）",
             "多数のTypeScript型エラー修正（未使用インポート・型アサーション・パスエイリアス）",
             "monorepoパッケージ統合（@spirit-in-physics/jung-voice-assessment・@spirit-in-physics/visualization-components）",
-            "統合アプリのビルドプロセス安定化"
+            "統合アプリのビルドプロセス安定化",
+            "Paraglide多言語対応完全実装",
+            "messages/ja.json・messages/en.json拡張（researcher・participant・共通UIメッセージ追加）",
+            "Sidebar.tsx多言語対応（メニュー項目・説明をParaglideメッセージに置き換え）",
+            "Breadcrumb.tsx多言語対応（パンくずリストラベルをParaglideメッセージに置き換え）",
+            "JungVoiceTest.tsx多言語対応（デバイスチェック・セッション・エラーメッセージをParaglideメッセージに置き換え）",
+            "ParticipantOverview.tsx多言語対応（統計ラベル・タイトルをParaglideメッセージに置き換え）",
+            "Layout.astro言語設定管理実装（Cookieベースで言語取得・html lang属性設定）",
+            "extractLocaleFromRequest使用によるサーバー側言語取得",
+            "LanguageSwitcher.tsxコンポーネント作成（ユーザー言語切り替えUI）",
+            "Paraglide Cookieベース言語管理（PARAGLIDE_LOCALE）",
+            "Cookie → GlobalVariable → BaseLocale 言語解決戦略",
+            "日本語（ja）・英語（en）完全対応",
+            "主要コンポーネントのハードコードテキストをParaglideメッセージに完全置き換え"
     ]
   },
   
