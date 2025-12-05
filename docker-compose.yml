@@ -51,6 +51,9 @@ services:
       - VITE_ALLOWED_HOSTS=true
       # Vite additional allowed hosts (environment variable)
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=unified.spirit-in-physics.orb.local,.orb.local
+      # HMR host configuration (leave undefined for auto-detect, or set to specific hostname)
+      # - VITE_HMR_HOST=localhost  # Uncomment if HMR doesn't work with auto-detect
+      # - VITE_HMR_CLIENT_PORT=3000  # Uncomment if client port differs from server port
       # gRPC API URL
       - GRPC_API_URL=http://grpc-service:8083
       - PUBLIC_GRPC_API_URL=http://localhost:8083

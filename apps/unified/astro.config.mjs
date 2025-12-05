@@ -112,9 +112,12 @@ export default defineConfig(async () => {
         strictPort: false,
         hmr: {
           protocol: 'ws',
-          host: 'localhost',
+          // HMR host: use environment variable or auto-detect
+          // In Docker/OrbStack, the browser connects from outside the container,
+          // so we need to use the actual hostname or let Vite auto-detect it
+          host: process.env.VITE_HMR_HOST || undefined, // undefined = auto-detect
           port: 3000,
-          clientPort: 3000,
+          clientPort: process.env.VITE_HMR_CLIENT_PORT ? parseInt(process.env.VITE_HMR_CLIENT_PORT) : undefined, // undefined = use same as port
         },
         watch: {
           usePolling: true,
