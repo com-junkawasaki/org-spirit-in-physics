@@ -1,64 +1,35 @@
 // Merkle DAG: graphql.service.resolvers.mutation
 // GraphQL Mutation resolvers
 
-use async_graphql::*;
+use juniper::FieldError;
 use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
 use serde_json::Value;
 use chrono::Utc;
 use base64::{Engine as _, engine::general_purpose};
 
-use crate::types::{Participant, Session};
+use crate::schema::{Context, Participant, Session, CreateParticipantInput, CreateSessionInput, UploadArtifactInput};
 use crate::storage::SupabaseStorage;
 
-#[derive(InputObject)]
-pub struct CreateParticipantInput {
-    pub id: Option<ID>,
-    pub signature: String,
-    pub agreements: Value,
-    pub agreed_at: String,
-    pub is_public: Option<bool>, // Optional: defaults to true if not provided
-}
-
-#[derive(InputObject)]
-pub struct CreateSessionInput {
-    pub participant_id: ID,
-    pub session_index: Option<i32>,
-    pub start_ts: i64,
-    pub events: Value,
-}
-
-#[derive(InputObject)]
-pub struct UploadArtifactInput {
-    pub participant_id: ID,
-    pub file_name: String,
-    pub file_data: String, // Base64 encoded file data
-    pub content_type: String, // MIME type (e.g., "video/webm")
-    pub artifact_type: String, // "video", "audio", "consent", "session_data"
-}
-
-#[derive(Default)]
 pub struct ParticipantMutation;
 
-#[Object]
 impl ParticipantMutation {
     /// Create a new participant with consent data
-    async fn create_participant(
-        &self,
-        ctx: &Context<'_>,
+    pub async fn create_participant(
+        ctx: &Context,
         input: CreateParticipantInput,
-    ) -> Result<Participant> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
+    ) -> Result<Participant, FieldError> {
+        let pool = &ctx.pool;
         
         let participant_id = if let Some(id) = input.id {
-            Uuid::parse_str(id.as_str())
-                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?
+            Uuid::parse_str(id.to_string().as_str())
+                .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?
         } else {
             Uuid::new_v4()
         };
 
         let agreed_at = chrono::DateTime::parse_from_rfc3339(&input.agreed_at)
-            .map_err(|e| Error::from(format!("Invalid date format: {}", e)))?
+            .map_err(|e| FieldError::new(format!("Invalid date format: {}", e), juniper::Value::Null))?
             .with_timezone(&Utc);
 
         // Default is_public to true if not provided
@@ -77,10 +48,8 @@ impl ParticipantMutation {
         .bind(agreed_at)
         .bind(Utc::now())
         .execute(pool)
-        .await?;
-
-        // Store consent data in a separate table or JSONB column if needed
-        // For now, we'll just return the participant
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
         // Fetch the created participant
         let row = sqlx::query_as::<_, (Uuid, Option<i32>, Option<String>, Option<crate::types::HandednessType>, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)>(
@@ -88,10 +57,11 @@ impl ParticipantMutation {
         )
         .bind(participant_id)
         .fetch_one(pool)
-        .await?;
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
         Ok(Participant {
-            id: ID::from(row.0.to_string()),
+            id: juniper::ID::from(row.0.to_string()),
             age: row.1,
             gender: row.2,
             handedness: row.3.map(|h| h.to_string()),
@@ -102,22 +72,21 @@ impl ParticipantMutation {
     }
 
     /// Create a new session for a participant
-    async fn create_session(
-        &self,
-        ctx: &Context<'_>,
+    pub async fn create_session(
+        ctx: &Context,
         input: CreateSessionInput,
-    ) -> Result<Session> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
+    ) -> Result<Session, FieldError> {
+        let pool = &ctx.pool;
         
-        let participant_uuid = Uuid::parse_str(input.participant_id.as_str())
-            .map_err(|e| Error::from(format!("Invalid participant UUID: {}", e)))?;
+        let participant_uuid = Uuid::parse_str(input.participant_id.to_string().as_str())
+            .map_err(|e| FieldError::new(format!("Invalid participant UUID: {}", e), juniper::Value::Null))?;
 
         let session_id = Uuid::new_v4();
         let now = Utc::now();
 
         // Parse events JSON
         let events: Vec<Value> = serde_json::from_value(input.events.clone())
-            .map_err(|e| Error::from(format!("Invalid events format: {}", e)))?;
+            .map_err(|e| FieldError::new(format!("Invalid events format: {}", e), juniper::Value::Null))?;
 
         // Insert session into database (without events JSONB column)
         sqlx::query(
@@ -134,17 +103,15 @@ impl ParticipantMutation {
         .bind(now)
         .bind(now)
         .execute(pool)
-        .await?;
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
         // Insert events into session_events table
         for event in events {
             let event_type_str = event.get("type")
                 .and_then(|v| v.as_str())
-                .ok_or_else(|| Error::from("Event missing 'type' field"))?;
+                .ok_or_else(|| FieldError::new("Event missing 'type' field", juniper::Value::Null))?;
             
-                   // Cast event type string to session_event_type_enum (no master table lookup)
-                   let _event_type: String = event_type_str.to_string();
-
             let event_timestamp = event.get("timestamp")
                 .and_then(|v| v.as_i64())
                 .unwrap_or(input.start_ts);
@@ -174,7 +141,8 @@ impl ParticipantMutation {
             .bind(word_id)
             .bind(reaction_time_ms)
             .execute(pool)
-            .await?;
+            .await
+            .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
         }
 
         // Fetch the created session with events
@@ -208,20 +176,21 @@ impl ParticipantMutation {
         )
         .bind(session_id)
         .fetch_one(pool)
-        .await?;
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
-        let id: Uuid = row.try_get("id").map_err(|e| Error::from(format!("Failed to get id: {}", e)))?;
-        let participant_id: Uuid = row.try_get("participant_id").map_err(|e| Error::from(format!("Failed to get participant_id: {}", e)))?;
+        let id: Uuid = row.try_get("id").map_err(|e| FieldError::new(format!("Failed to get id: {}", e), juniper::Value::Null))?;
+        let participant_id: Uuid = row.try_get("participant_id").map_err(|e| FieldError::new(format!("Failed to get participant_id: {}", e), juniper::Value::Null))?;
         let session_index: Option<i32> = row.try_get("session_index").ok();
-        let start_ts: i64 = row.try_get("start_ts").map_err(|e| Error::from(format!("Failed to get start_ts: {}", e)))?;
+        let start_ts: i64 = row.try_get("start_ts").map_err(|e| FieldError::new(format!("Failed to get start_ts: {}", e), juniper::Value::Null))?;
         let end_ts: Option<i64> = row.try_get("end_ts").ok();
         let events_json: serde_json::Value = row.try_get("events").ok().unwrap_or_else(|| serde_json::json!([]));
-        let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").map_err(|e| Error::from(format!("Failed to get created_at: {}", e)))?;
-        let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").map_err(|e| Error::from(format!("Failed to get updated_at: {}", e)))?;
+        let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").map_err(|e| FieldError::new(format!("Failed to get created_at: {}", e), juniper::Value::Null))?;
+        let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").map_err(|e| FieldError::new(format!("Failed to get updated_at: {}", e), juniper::Value::Null))?;
 
         Ok(Session {
-            id: ID::from(id.to_string()),
-            participant_id: ID::from(participant_id.to_string()),
+            id: juniper::ID::from(id.to_string()),
+            participant_id: juniper::ID::from(participant_id.to_string()),
             session_index,
             start_ts,
             end_ts,
@@ -232,32 +201,30 @@ impl ParticipantMutation {
     }
 
     /// Upload an artifact (video, audio, etc.) to Supabase Storage
-    async fn upload_artifact(
-        &self,
-        _ctx: &Context<'_>,
+    pub async fn upload_artifact(
+        _ctx: &Context,
         input: UploadArtifactInput,
-    ) -> Result<String> {
+    ) -> Result<String, FieldError> {
         // Decode base64 file data
         let file_data = general_purpose::STANDARD
             .decode(&input.file_data)
-            .map_err(|e| Error::from(format!("Invalid base64 file data: {}", e)))?;
+            .map_err(|e| FieldError::new(format!("Invalid base64 file data: {}", e), juniper::Value::Null))?;
 
         // Initialize Supabase Storage client
         let storage = SupabaseStorage::new()
-            .map_err(|e| Error::from(format!("Failed to initialize storage: {}", e)))?;
+            .map_err(|e| FieldError::new(format!("Failed to initialize storage: {}", e), juniper::Value::Null))?;
 
         // Upload file to Supabase Storage
         let public_url = storage
             .upload_file(
-                input.participant_id.as_str(),
+                input.participant_id.to_string().as_str(),
                 &input.file_name,
                 &file_data,
                 &input.content_type,
             )
             .await
-            .map_err(|e| Error::from(format!("Failed to upload artifact: {}", e)))?;
+            .map_err(|e| FieldError::new(format!("Failed to upload artifact: {}", e), juniper::Value::Null))?;
 
         Ok(public_url)
     }
 }
-

@@ -1,5 +1,5 @@
 // Merkle DAG: graphql.service.main
-// GraphQL service entry point using async-graphql + Poem
+// GraphQL service entry point using Juniper + Poem
 // Supports both Vercel Serverless Functions and standalone HTTP server
 
 mod schema;
@@ -9,14 +9,10 @@ mod database;
 mod storage;
 mod auth;
 
-use async_graphql::{
-    http::{playground_source, GraphQLPlaygroundConfig},
-    Schema,
-};
 use tracing;
-
 use database::PostgresPool;
-use schema::create_schema;
+use schema::{create_schema, Schema, Context};
+use crate::auth::{verify_supabase_token, AuthContext};
 
 #[cfg(not(feature = "vercel"))]
 use poem::{
@@ -25,16 +21,13 @@ use poem::{
     listener::TcpListener,
     middleware::Cors,
     web::{Data, Html, Json},
-    EndpointExt, Route, Server, Request, Endpoint,
+    EndpointExt, Route, Server, Request,
 };
 #[cfg(not(feature = "vercel"))]
-use async_graphql_poem::GraphQL;
-#[cfg(not(feature = "vercel"))]
-use async_graphql::Request as GraphQLRequest;
-#[cfg(not(feature = "vercel"))]
-use auth::verify_supabase_token;
+use juniper::http::GraphQLRequest;
 #[cfg(not(feature = "vercel"))]
 use tracing::{warn, error};
+use std::sync::Arc;
 
 #[cfg(feature = "vercel")]
 mod vercel_handler;
@@ -100,7 +93,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn graphql_handler(
     req: &Request,
     body: Result<Json<serde_json::Value>, poem::Error>,
-    Data(schema): Data<&Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
+    Data(schema): Data<&Arc<Schema>>,
+    Data(pool): Data<&sqlx::Pool<sqlx::Postgres>>,
 ) -> poem::Result<Json<serde_json::Value>> {
     tracing::info!("GraphQL request received from: {}", req.remote_addr());
     
@@ -124,7 +118,7 @@ async fn graphql_handler(
     }
     
     // Parse GraphQL request
-    let mut graphql_request: GraphQLRequest = match serde_json::from_value(body_json) {
+    let graphql_request: GraphQLRequest = match serde_json::from_value(body_json.clone()) {
         Ok(req) => req,
         Err(e) => {
             warn!("Failed to parse GraphQL request: {}", e);
@@ -138,21 +132,19 @@ async fn graphql_handler(
     let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
     let supabase_url = std::env::var("SUPABASE_URL").ok();
     
-    // Verify token and add auth context to request
-    if let Ok(auth_context) = verify_supabase_token(auth_header, supabase_url).await {
-        graphql_request = graphql_request.data(auth_context);
-        tracing::info!("Auth context added to GraphQL request");
-    } else {
-        warn!("Failed to verify auth token, continuing without auth context");
-    }
+    // Create context with auth
+    let auth_context = verify_supabase_token(auth_header, supabase_url).await.ok();
+    let context = Context {
+        pool: pool.clone(),
+        auth: auth_context,
+    };
     
     // Execute GraphQL request
     tracing::info!("Executing GraphQL request");
-    let response = schema.execute(graphql_request).await;
-    let graphql_response = async_graphql::Response::from(response);
+    let response = graphql_request.execute(schema, &context).await;
     
     tracing::info!("GraphQL request completed successfully");
-    Ok(Json(serde_json::to_value(graphql_response).unwrap_or_else(|e| {
+    Ok(Json(serde_json::to_value(response).unwrap_or_else(|e| {
         error!("Failed to serialize GraphQL response: {}", e);
         serde_json::json!({
             "errors": [{"message": "Failed to serialize response"}]
@@ -160,19 +152,50 @@ async fn graphql_handler(
     })))
 }
 
-
 #[cfg(not(feature = "vercel"))]
 #[handler]
 async fn graphql_playground() -> Html<String> {
-    Html(playground_source(GraphQLPlaygroundConfig::new("/graphql")))
+    let html = r#"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GraphQL Playground</title>
+    <link rel="stylesheet" href="https://unpkg.com/graphql-playground-react/build/static/css/index.css" />
+    <link rel="shortcut icon" href="https://unpkg.com/graphql-playground-react/build/favicon.png" />
+    <script src="https://unpkg.com/graphql-playground-react/build/static/js/middleware.js"></script>
+</head>
+<body>
+    <div id="root">
+        <style>
+            body {
+                margin: 0;
+                overflow: hidden;
+            }
+            #root {
+                width: 100vw;
+                height: 100vh;
+            }
+        </style>
+    </div>
+    <script>
+        window.addEventListener('load', function (event) {
+            GraphQLPlayground.init(document.getElementById('root'), {
+                endpoint: '/graphql'
+            })
+        })
+    </script>
+</body>
+</html>
+    "#;
+    Html(html.to_string())
 }
 
 #[cfg(not(feature = "vercel"))]
 #[handler]
 async fn schema_handler(
-    Data(schema): Data<&Schema<schema::Query, schema::Mutation, async_graphql::EmptySubscription>>,
+    Data(schema): Data<&Arc<Schema>>,
 ) -> String {
-    schema.sdl()
+    schema.as_schema_language()
 }
 
 #[cfg(not(feature = "vercel"))]
@@ -203,10 +226,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("PostgreSQL connection pool initialized");
 
     // Create GraphQL schema
-    let schema = create_schema(pool.pool().clone()).await?;
+    let schema = Arc::new(create_schema(pool.pool().clone()));
 
     // Configure CORS
-    // When credentials: 'include' is used, we must specify exact origins (not wildcard)
     let allowed_origins = get_allowed_origins();
     
     let cors = Cors::new()
@@ -222,6 +244,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .at("/graphql/schema", schema_handler)
         .at("/health", health_check)
         .data(schema)
+        .data(pool.pool().clone())
         .with(cors);
 
     // Get port from environment or use default

@@ -1,29 +1,25 @@
 // Merkle DAG: graphql.service.resolvers.timeline
 // Timeline resolvers using SQLx + TimescaleDB
 
-use async_graphql::*;
+use juniper::FieldError;
 use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
-use std::collections::HashMap;
-use crate::types::{TimelinePoint, Session, EmotionData, WordAggregate, EmotionVector, WordStatistics, PhysiologicalData};
+use crate::schema::{Context, Session, TimelinePoint, WordAggregate, EmotionVector, WordStatistics, EmotionData, PhysiologicalData};
 use crate::auth::get_auth;
 
-#[derive(Default)]
 pub struct TimelineQuery;
 
-#[Object]
 impl TimelineQuery {
     /// Get sessions for a participant
     /// - Authenticated users: get all sessions for the participant
     /// - Unauthenticated users: get sessions only for public participants (is_public = true)
-    async fn sessions(
-        &self,
-        ctx: &Context<'_>,
-        participant_id: ID,
-    ) -> Result<Vec<Session>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
-        let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+    pub async fn sessions(
+        ctx: &Context,
+        participant_id: juniper::ID,
+    ) -> Result<Vec<Session>, FieldError> {
+        let pool = &ctx.pool;
+        let participant_uuid = Uuid::parse_str(participant_id.to_string().as_str())
+            .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?;
         let is_authenticated = get_auth(ctx).is_some();
 
         // Build query based on authentication status
@@ -89,7 +85,8 @@ impl TimelineQuery {
         let rows = sqlx::query(query)
         .bind(participant_uuid)
         .fetch_all(pool)
-        .await?;
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
         Ok(rows.into_iter().filter_map(|row| {
             let id: Uuid = row.try_get("id").ok()?;
@@ -102,8 +99,8 @@ impl TimelineQuery {
             let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").ok()?;
 
             Some(Session {
-                id: ID::from(id.to_string()),
-                participant_id: ID::from(participant_id.to_string()),
+                id: juniper::ID::from(id.to_string()),
+                participant_id: juniper::ID::from(participant_id.to_string()),
                 session_index,
                 start_ts,
                 end_ts,
@@ -117,23 +114,22 @@ impl TimelineQuery {
     /// Get timeline data for a participant and optional session
     /// - Authenticated users: get all timeline data for the participant
     /// - Unauthenticated users: get timeline data only for public participants (is_public = true)
-    async fn timeline(
-        &self,
-        ctx: &Context<'_>,
-        participant_id: ID,
-        session_id: Option<ID>,
+    pub async fn timeline(
+        ctx: &Context,
+        participant_id: juniper::ID,
+        session_id: Option<juniper::ID>,
         start_time: Option<String>,
         end_time: Option<String>,
-        interval: Option<String>, // e.g., "1 hour", "1 day"
-    ) -> Result<Vec<TimelinePoint>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
-        let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+        interval: Option<String>,
+    ) -> Result<Vec<TimelinePoint>, FieldError> {
+        let pool = &ctx.pool;
+        let participant_uuid = Uuid::parse_str(participant_id.to_string().as_str())
+            .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?;
         let is_authenticated = get_auth(ctx).is_some();
 
         let session_uuid = if let Some(sid) = session_id {
-            Some(Uuid::parse_str(sid.as_str())
-                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?)
+            Some(Uuid::parse_str(sid.to_string().as_str())
+                .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?)
         } else {
             None
         };
@@ -201,10 +197,11 @@ impl TimelineQuery {
 
             let rows = query_builder.build()
                 .fetch_all(pool)
-                .await?;
+                .await
+                .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
             // Convert aggregated rows to TimelinePoint
-            rows.into_iter().filter_map(|row| {
+            Ok(rows.into_iter().filter_map(|row| {
                 let bucket_time: chrono::DateTime<chrono::Utc> = row.try_get("bucket_time").ok()?;
                 let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
                 let session_id_val: Uuid = row.try_get("session_id").ok()?;
@@ -213,8 +210,8 @@ impl TimelineQuery {
 
                 Some(TimelinePoint {
                     time: bucket_time.to_rfc3339(),
-                    participant_id: ID::from(participant_id_val.to_string()),
-                    session_id: ID::from(session_id_val.to_string()),
+                    participant_id: juniper::ID::from(participant_id_val.to_string()),
+                    session_id: juniper::ID::from(session_id_val.to_string()),
                     word: None,
                     event_type: Some("aggregated".to_string()),
                     reaction_value: avg_reaction_value,
@@ -224,7 +221,7 @@ impl TimelineQuery {
                     physiological: Vec::new(),
                     metadata: serde_json::json!({}),
                 })
-            }).collect()
+            }).collect())
         } else {
             // Return raw timeline points - use parameterized query for better performance
             // Join with normalized emotion and physiological tables
@@ -346,10 +343,11 @@ impl TimelineQuery {
 
             let rows = query_builder.build()
                 .fetch_all(pool)
-                .await?;
+                .await
+                .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
             // Convert rows to TimelinePoint
-            rows.into_iter().filter_map(|row| {
+            Ok(rows.into_iter().filter_map(|row| {
                 let time: chrono::DateTime<chrono::Utc> = row.try_get("time").ok()?;
                 let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
                 let session_id_val: Uuid = row.try_get("session_id").ok()?;
@@ -360,7 +358,6 @@ impl TimelineQuery {
                 let has_response: bool = row.try_get("has_response").ok().unwrap_or(false);
                 let emotions_json: serde_json::Value = row.try_get("emotions").ok().unwrap_or_else(|| serde_json::json!([]));
                 let physiological_json: serde_json::Value = row.try_get("physiological").ok().unwrap_or_else(|| serde_json::json!([]));
-                // metadataカラムはSupabaseに存在しないため、デフォルト値を返す
                 let metadata_json: serde_json::Value = serde_json::json!({});
 
                 // Parse emotions array (already aggregated as JSON array)
@@ -392,8 +389,8 @@ impl TimelineQuery {
 
                 Some(TimelinePoint {
                     time: time.to_rfc3339(),
-                    participant_id: ID::from(participant_id_val.to_string()),
-                    session_id: ID::from(session_id_val.to_string()),
+                    participant_id: juniper::ID::from(participant_id_val.to_string()),
+                    session_id: juniper::ID::from(session_id_val.to_string()),
                     word,
                     event_type,
                     reaction_value,
@@ -403,27 +400,23 @@ impl TimelineQuery {
                     physiological,
                     metadata: metadata_json,
                 })
-            }).collect()
-        };
-
-        Ok(points)
+            }).collect())
+        }
     }
 
     /// Get word aggregates by session (from materialized view)
-    /// This provides pre-aggregated data for efficient client-side processing
-    async fn word_aggregates(
-        &self,
-        ctx: &Context<'_>,
-        participant_id: ID,
-        session_id: Option<ID>,
-    ) -> Result<Vec<WordAggregate>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
-        let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+    pub async fn word_aggregates(
+        ctx: &Context,
+        participant_id: juniper::ID,
+        session_id: Option<juniper::ID>,
+    ) -> Result<Vec<WordAggregate>, FieldError> {
+        let pool = &ctx.pool;
+        let participant_uuid = Uuid::parse_str(participant_id.to_string().as_str())
+            .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?;
 
         let session_uuid = if let Some(sid) = session_id {
-            Some(Uuid::parse_str(sid.as_str())
-                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?)
+            Some(Uuid::parse_str(sid.to_string().as_str())
+                .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?)
         } else {
             None
         };
@@ -461,9 +454,10 @@ impl TimelineQuery {
 
         let rows = query_builder.build()
             .fetch_all(pool)
-            .await?;
+            .await
+            .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
-        let aggregates: Vec<WordAggregate> = rows.into_iter().filter_map(|row| {
+        Ok(rows.into_iter().filter_map(|row| {
             let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
             let session_id_val: Uuid = row.try_get("session_id").ok()?;
             let word: String = row.try_get("word").ok()?;
@@ -475,8 +469,6 @@ impl TimelineQuery {
             let avg_physiological: Option<f64> = row.try_get("avg_physiological").ok();
             let sum_phys_abs: Option<f64> = row.try_get("sum_phys_abs").ok();
             
-            // Parse array columns (PostgreSQL arrays)
-            // PostgreSQL arrays: try_get returns Option<T>, so we need to handle Option<Vec<Option<f64>>>
             let phys_series: Option<Vec<Option<f64>>> = match row.try_get::<Option<Vec<Option<f64>>>, _>("phys_series") {
                 Ok(Some(v)) => Some(v),
                 Ok(None) => None,
@@ -497,8 +489,8 @@ impl TimelineQuery {
             let last_time: chrono::DateTime<chrono::Utc> = row.try_get("last_time").ok()?;
 
             Some(WordAggregate {
-                participant_id: ID::from(participant_id_val.to_string()),
-                session_id: ID::from(session_id_val.to_string()),
+                participant_id: juniper::ID::from(participant_id_val.to_string()),
+                session_id: juniper::ID::from(session_id_val.to_string()),
                 word,
                 count,
                 avg_reaction_value,
@@ -513,26 +505,22 @@ impl TimelineQuery {
                 first_time: first_time.to_rfc3339(),
                 last_time: last_time.to_rfc3339(),
             })
-        }).collect();
-
-        Ok(aggregates)
+        }).collect())
     }
 
     /// Get emotion vectors by word (from materialized view)
-    /// This provides pre-aggregated emotion data for efficient vector operations
-    async fn emotion_vectors(
-        &self,
-        ctx: &Context<'_>,
-        participant_id: ID,
-        session_id: Option<ID>,
-    ) -> Result<Vec<EmotionVector>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
-        let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+    pub async fn emotion_vectors(
+        ctx: &Context,
+        participant_id: juniper::ID,
+        session_id: Option<juniper::ID>,
+    ) -> Result<Vec<EmotionVector>, FieldError> {
+        let pool = &ctx.pool;
+        let participant_uuid = Uuid::parse_str(participant_id.to_string().as_str())
+            .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?;
 
         let session_uuid = if let Some(sid) = session_id {
-            Some(Uuid::parse_str(sid.as_str())
-                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?)
+            Some(Uuid::parse_str(sid.to_string().as_str())
+                .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?)
         } else {
             None
         };
@@ -570,9 +558,10 @@ impl TimelineQuery {
 
         let rows = query_builder.build()
             .fetch_all(pool)
-            .await?;
+            .await
+            .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
-        let vectors: Vec<EmotionVector> = rows.into_iter().filter_map(|row| {
+        Ok(rows.into_iter().filter_map(|row| {
             let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
             let session_id_val: Uuid = row.try_get("session_id").ok()?;
             let word: String = row.try_get("word").ok()?;
@@ -590,8 +579,8 @@ impl TimelineQuery {
             let emotion_by_modality: Option<serde_json::Value> = row.try_get("emotion_by_modality").ok();
 
             Some(EmotionVector {
-                participant_id: ID::from(participant_id_val.to_string()),
-                session_id: ID::from(session_id_val.to_string()),
+                participant_id: juniper::ID::from(participant_id_val.to_string()),
+                session_id: juniper::ID::from(session_id_val.to_string()),
                 word,
                 joy_sum,
                 sadness_sum,
@@ -606,26 +595,22 @@ impl TimelineQuery {
                 emotion_entry_count,
                 emotion_by_modality,
             })
-        }).collect();
-
-        Ok(vectors)
+        }).collect())
     }
 
     /// Get word statistics by session (from materialized view)
-    /// This provides pre-calculated statistics for efficient client-side processing
-    async fn word_statistics(
-        &self,
-        ctx: &Context<'_>,
-        participant_id: ID,
-        session_id: Option<ID>,
-    ) -> Result<Vec<WordStatistics>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
-        let participant_uuid = Uuid::parse_str(participant_id.as_str())
-            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+    pub async fn word_statistics(
+        ctx: &Context,
+        participant_id: juniper::ID,
+        session_id: Option<juniper::ID>,
+    ) -> Result<Vec<WordStatistics>, FieldError> {
+        let pool = &ctx.pool;
+        let participant_uuid = Uuid::parse_str(participant_id.to_string().as_str())
+            .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?;
 
         let session_uuid = if let Some(sid) = session_id {
-            Some(Uuid::parse_str(sid.as_str())
-                .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?)
+            Some(Uuid::parse_str(sid.to_string().as_str())
+                .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?)
         } else {
             None
         };
@@ -664,9 +649,10 @@ impl TimelineQuery {
 
         let rows = query_builder.build()
             .fetch_all(pool)
-            .await?;
+            .await
+            .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
-        let statistics: Vec<WordStatistics> = rows.into_iter().filter_map(|row| {
+        Ok(rows.into_iter().filter_map(|row| {
             let participant_id_val: Uuid = row.try_get("participant_id").ok()?;
             let session_id_val: Uuid = row.try_get("session_id").ok()?;
             let word: String = row.try_get("word").ok()?;
@@ -682,8 +668,6 @@ impl TimelineQuery {
             let var_physiological: Option<f64> = row.try_get("var_physiological").ok();
             let speed_index: Option<f64> = row.try_get("speed_index").ok();
             
-            // Parse array columns (PostgreSQL arrays)
-            // PostgreSQL arrays: try_get returns Option<T>, so we need to handle Option<Vec<Option<f64>>>
             let phys_series: Option<Vec<Option<f64>>> = match row.try_get::<Option<Vec<Option<f64>>>, _>("phys_series") {
                 Ok(Some(v)) => Some(v),
                 Ok(None) => None,
@@ -696,8 +680,8 @@ impl TimelineQuery {
             };
 
             Some(WordStatistics {
-                participant_id: ID::from(participant_id_val.to_string()),
-                session_id: ID::from(session_id_val.to_string()),
+                participant_id: juniper::ID::from(participant_id_val.to_string()),
+                session_id: juniper::ID::from(session_id_val.to_string()),
                 word,
                 count,
                 avg_reaction_time,
@@ -713,8 +697,6 @@ impl TimelineQuery {
                 phys_series,
                 rt_series,
             })
-        }).collect();
-
-        Ok(statistics)
+        }).collect())
     }
 }

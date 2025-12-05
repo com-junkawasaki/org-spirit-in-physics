@@ -3,37 +3,39 @@
 // This file is the entry point for /api/graphql route
 
 // Import from the library crate
-use graphql_service::{PostgresPool, create_schema, Query, Mutation, get_allowed_origins};
+use graphql_service::{PostgresPool, create_schema, get_allowed_origins};
 use graphql_service::auth::verify_supabase_token;
+use graphql_service::schema::{Schema, Context};
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
-use async_graphql::Schema;
+use juniper::http::GraphQLRequest;
 use serde_json::json;
 use tracing::info;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 // Global schema instance (initialized once per Serverless Function instance)
-static SCHEMA: OnceLock<tokio::sync::Mutex<Option<Schema<Query, Mutation, async_graphql::EmptySubscription>>>> = OnceLock::new();
+static SCHEMA: OnceLock<Arc<Schema>> = OnceLock::new();
+static POOL: OnceLock<sqlx::Pool<sqlx::Postgres>> = OnceLock::new();
 
-async fn get_or_initialize_schema() -> Result<&'static tokio::sync::Mutex<Option<Schema<Query, Mutation, async_graphql::EmptySubscription>>>, Error> {
-    let schema_mutex = SCHEMA.get_or_init(|| tokio::sync::Mutex::new(None));
-    
-    let mut schema_guard = schema_mutex.lock().await;
-    if schema_guard.is_none() {
-        let database_url = std::env::var("DATABASE_URL")
-            .map_err(|_| Error::from("DATABASE_URL environment variable is required"))?;
-        
-        let pool = PostgresPool::new(&database_url).await
-            .map_err(|e| Error::from(format!("Failed to connect to database: {}", e)))?;
-        info!("PostgreSQL connection pool initialized");
-        
-        let schema = create_schema(pool.pool().clone()).await
-            .map_err(|e| Error::from(format!("Failed to create schema: {}", e)))?;
-        
-        *schema_guard = Some(schema);
+async fn get_or_initialize_schema() -> Result<(), Error> {
+    if SCHEMA.get().is_some() {
+        return Ok(());
     }
+
+    let database_url = std::env::var("DATABASE_URL")
+        .map_err(|_| Error::from("DATABASE_URL environment variable is required"))?;
     
-    Ok(schema_mutex)
+    let pool_wrapper = PostgresPool::new(&database_url).await
+        .map_err(|e| Error::from(format!("Failed to connect to database: {}", e)))?;
+    info!("PostgreSQL connection pool initialized");
+    
+    let pool = pool_wrapper.pool().clone();
+    POOL.set(pool.clone()).map_err(|_| Error::from("Failed to set pool"))?;
+    
+    let schema = Arc::new(create_schema(pool));
+    SCHEMA.set(schema).map_err(|_| Error::from("Failed to set schema"))?;
+    
+    Ok(())
 }
 
 fn is_allowed_origin(origin: &str) -> bool {
@@ -83,66 +85,10 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     }
 
     // Initialize schema if not already initialized
-    let schema_mutex_result = get_or_initialize_schema().await;
+    get_or_initialize_schema().await?;
     
-    // Handle routes that don't require schema first
-    match path {
-        "/api/health" | "/health" => {
-            // Health check - doesn't require schema
-            let health_response = json!({
-                "status": "ok",
-                "service": "graphql-service",
-                "runtime": "vercel"
-            });
-
-            let response = Response::builder()
-                .status(StatusCode::OK)
-                .header("Content-Type", "application/json")
-                .body(Body::Text(serde_json::to_string(&health_response)?))?;
-            return build_cors_response(response, origin);
-        }
-        _ => {}
-    }
-    
-    // For other routes, schema is required
-    let schema_mutex = match schema_mutex_result {
-        Ok(mutex) => mutex,
-        Err(e) => {
-            let error_response = json!({
-                "errors": [{
-                    "message": format!("Failed to initialize schema: {}", e),
-                    "extensions": {
-                        "code": "SCHEMA_INIT_ERROR"
-                    }
-                }]
-            });
-            let response = Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .header("Content-Type", "application/json")
-                .body(Body::Text(serde_json::to_string(&error_response)?))?;
-            return Ok(response);
-        }
-    };
-    
-    let schema_guard = schema_mutex.lock().await;
-    let schema = match schema_guard.as_ref() {
-        Some(s) => s,
-        None => {
-            let error_response = json!({
-                "errors": [{
-                    "message": "Schema not initialized",
-                    "extensions": {
-                        "code": "SCHEMA_NOT_INITIALIZED"
-                    }
-                }]
-            });
-            let response = Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .header("Content-Type", "application/json")
-                .body(Body::Text(serde_json::to_string(&error_response)?))?;
-            return Ok(response);
-        }
-    };
+    let schema = SCHEMA.get().ok_or_else(|| Error::from("Schema not initialized"))?;
+    let pool = POOL.get().ok_or_else(|| Error::from("Pool not initialized"))?;
 
     // Route handling
     match path {
@@ -156,41 +102,22 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
             };
 
             // Parse GraphQL request from JSON
-            let request_json: serde_json::Value = serde_json::from_str(&body_str)
-                .unwrap_or_else(|_| json!({ "query": "query { __typename }" }));
-            
-            let query = request_json.get("query")
-                .and_then(|v| v.as_str())
-                .unwrap_or("query { __typename }");
-            let variables = request_json.get("variables").cloned();
-            let operation_name = request_json.get("operationName")
-                .and_then(|v| v.as_str())
-                .map(|s| s.to_string());
-
-            // Create GraphQL request
-            let mut request = async_graphql::Request::new(query);
-            if let Some(vars) = variables {
-                if let Ok(vars_value) = serde_json::from_value::<async_graphql::Variables>(vars) {
-                    request = request.variables(vars_value);
-                }
-            }
-            if let Some(op_name) = operation_name {
-                request = request.operation_name(op_name);
-            }
+            let graphql_request: GraphQLRequest = serde_json::from_str(&body_str)
+                .unwrap_or_else(|_| GraphQLRequest::new("query { __typename }"));
 
             // Extract and verify JWT token from Authorization header
             let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
             let supabase_url = std::env::var("SUPABASE_URL").ok();
             
-            // Verify token and add auth context to request
-            if let Ok(auth_context) = verify_supabase_token(auth_header, supabase_url).await {
-                request = request.data(auth_context);
-            }
-            // If token verification fails, continue without auth context
-            // Individual resolvers will check for auth if needed
+            // Create context with auth
+            let auth_context = verify_supabase_token(auth_header, supabase_url).await.ok();
+            let context = Context {
+                pool: pool.clone(),
+                auth: auth_context,
+            };
 
             // Execute GraphQL query
-            let response = schema.execute(request).await;
+            let response = graphql_request.execute(schema, &context).await;
 
             // Convert response to JSON
             let response_body = serde_json::to_string(&response)
@@ -204,7 +131,7 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
         }
         "/api/graphql/schema" | "/graphql/schema" => {
             // GraphQL Schema SDL
-            let sdl = schema.sdl();
+            let sdl = schema.as_schema_language();
 
             let response = Response::builder()
                 .status(StatusCode::OK)

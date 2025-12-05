@@ -2,35 +2,31 @@
 // Vercel Serverless Function entry point for GraphQL schema endpoint
 // This file is the entry point for /api/graphql/schema route
 
-use graphql_service::{PostgresPool, create_schema, Query, Mutation, get_allowed_origins};
+use graphql_service::{PostgresPool, create_schema, get_allowed_origins};
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
-use async_graphql::Schema;
-use tracing::info;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
+use graphql_service::schema::Schema;
 
 // Global schema instance (initialized once per Serverless Function instance)
-static SCHEMA: OnceLock<tokio::sync::Mutex<Option<Schema<Query, Mutation, async_graphql::EmptySubscription>>>> = OnceLock::new();
+static SCHEMA: OnceLock<Arc<Schema>> = OnceLock::new();
 
-async fn get_or_initialize_schema() -> Result<&'static tokio::sync::Mutex<Option<Schema<Query, Mutation, async_graphql::EmptySubscription>>>, Error> {
-    let schema_mutex = SCHEMA.get_or_init(|| tokio::sync::Mutex::new(None));
-    
-    let mut schema_guard = schema_mutex.lock().await;
-    if schema_guard.is_none() {
-        let database_url = std::env::var("DATABASE_URL")
-            .map_err(|_| Error::from("DATABASE_URL environment variable is required"))?;
-        
-        let pool = PostgresPool::new(&database_url).await
-            .map_err(|e| Error::from(format!("Failed to connect to database: {}", e)))?;
-        info!("PostgreSQL connection pool initialized");
-        
-        let schema = create_schema(pool.pool().clone()).await
-            .map_err(|e| Error::from(format!("Failed to create schema: {}", e)))?;
-        
-        *schema_guard = Some(schema);
+async fn get_or_initialize_schema() -> Result<(), Error> {
+    if SCHEMA.get().is_some() {
+        return Ok(());
     }
+
+    let database_url = std::env::var("DATABASE_URL")
+        .map_err(|_| Error::from("DATABASE_URL environment variable is required"))?;
     
-    Ok(schema_mutex)
+    let pool = PostgresPool::new(&database_url).await
+        .map_err(|e| Error::from(format!("Failed to connect to database: {}", e)))?;
+    tracing::info!("PostgreSQL connection pool initialized");
+    
+    let schema = Arc::new(create_schema(pool.pool().clone()));
+    SCHEMA.set(schema).map_err(|_| Error::from("Failed to set schema"))?;
+    
+    Ok(())
 }
 
 fn is_allowed_origin(origin: &str) -> bool {
@@ -79,12 +75,11 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     }
 
     // Initialize schema if not already initialized
-    let schema_mutex = get_or_initialize_schema().await?;
-    let schema_guard = schema_mutex.lock().await;
-    let schema = schema_guard.as_ref().ok_or_else(|| Error::from("Schema not initialized"))?;
+    get_or_initialize_schema().await?;
+    let schema = SCHEMA.get().ok_or_else(|| Error::from("Schema not initialized"))?;
 
     // Return GraphQL Schema SDL
-    let sdl = schema.sdl();
+    let sdl = schema.as_schema_language();
 
     let response = Response::builder()
         .status(StatusCode::OK)
@@ -99,7 +94,6 @@ async fn main() -> Result<(), Error> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    info!("Starting GraphQL schema endpoint on Vercel...");
+    tracing::info!("Starting GraphQL schema endpoint on Vercel...");
     run(handler).await
 }
-

@@ -2,36 +2,42 @@
 // Vercel Serverless Functions handler for GraphQL API
 
 use vercel_runtime::{run, Body, Error, Request, Response, StatusCode};
-use async_graphql::{
-    http::{GraphQLRequest, GraphQLResponse},
-    Schema,
-};
+use juniper::http::GraphQLRequest;
 use serde_json::json;
 use tracing::{error, info};
+use std::sync::Arc;
 
 use crate::database::PostgresPool;
-use crate::schema::{create_schema, Query, Mutation};
+use crate::schema::{create_schema, Schema, Context};
 use crate::get_allowed_origins;
 use crate::auth::{verify_supabase_token, AuthContext};
 
 // Global schema instance (initialized once)
-static SCHEMA: tokio::sync::OnceCell<Schema<Query, Mutation, async_graphql::EmptySubscription>> = tokio::sync::OnceCell::const_new();
+static SCHEMA: tokio::sync::OnceCell<Arc<Schema>> = tokio::sync::OnceCell::const_new();
+static POOL: tokio::sync::OnceCell<sqlx::Pool<sqlx::Postgres>> = tokio::sync::OnceCell::const_new();
 
 async fn initialize_schema() -> Result<(), Box<dyn std::error::Error>> {
     let database_url = std::env::var("DATABASE_URL")
         .map_err(|_| "DATABASE_URL environment variable is required")?;
 
-    let pool = PostgresPool::new(&database_url).await?;
+    let pool_wrapper = PostgresPool::new(&database_url).await?;
     info!("PostgreSQL connection pool initialized");
 
-    let schema = create_schema(pool.pool().clone()).await?;
+    let pool = pool_wrapper.pool().clone();
+    POOL.set(pool.clone()).map_err(|_| "Failed to set pool")?;
+
+    let schema = Arc::new(create_schema(pool));
     SCHEMA.set(schema).map_err(|_| "Failed to set schema")?;
 
     Ok(())
 }
 
-fn get_schema() -> &'static Schema<Query, Mutation, async_graphql::EmptySubscription> {
+fn get_schema() -> &'static Arc<Schema> {
     SCHEMA.get().expect("Schema not initialized")
+}
+
+fn get_pool() -> &'static sqlx::Pool<sqlx::Postgres> {
+    POOL.get().expect("Pool not initialized")
 }
 
 fn is_allowed_origin(origin: &str) -> bool {
@@ -89,6 +95,7 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
     }
 
     let schema = get_schema();
+    let pool = get_pool();
 
     // Route handling
     match path {
@@ -101,24 +108,23 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
                 Body::Empty => "{}".to_string(),
             };
 
-            let mut graphql_request: GraphQLRequest = serde_json::from_str(&body_str)
+            let graphql_request: GraphQLRequest = serde_json::from_str(&body_str)
                 .unwrap_or_else(|_| GraphQLRequest::new("query { __typename }"));
 
             // Extract and verify JWT token from Authorization header
             let auth_header = req.headers().get("authorization").and_then(|v| v.to_str().ok());
             let supabase_url = std::env::var("SUPABASE_URL").ok();
             
-            // Verify token and add auth context to request
-            if let Ok(auth_context) = verify_supabase_token(auth_header, supabase_url).await {
-                graphql_request = graphql_request.data(auth_context);
-            }
-            // If token verification fails, continue without auth context
-            // Individual resolvers will check for auth if needed
+            // Create context with auth
+            let auth_context = verify_supabase_token(auth_header, supabase_url).await.ok();
+            let context = Context {
+                pool: pool.clone(),
+                auth: auth_context,
+            };
 
-            let response = schema.execute(graphql_request.into_inner()).await;
-            let graphql_response = GraphQLResponse::from(response);
+            let response = graphql_request.execute(schema, &context).await;
 
-            let response_body = serde_json::to_string(&graphql_response)
+            let response_body = serde_json::to_string(&response)
                 .map_err(|e| Error::from(format!("Failed to serialize response: {}", e)))?;
 
             let response = Response::builder()
@@ -129,19 +135,48 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
         }
         "/api/graphql/playground" | "/graphql/playground" => {
             // GraphQL Playground
-            let playground_html = async_graphql::http::playground_source(
-                async_graphql::http::GraphQLPlaygroundConfig::new("/api/graphql")
-            );
+            let playground_html = r#"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GraphQL Playground</title>
+    <link rel="stylesheet" href="https://unpkg.com/graphql-playground-react/build/static/css/index.css" />
+    <link rel="shortcut icon" href="https://unpkg.com/graphql-playground-react/build/favicon.png" />
+    <script src="https://unpkg.com/graphql-playground-react/build/static/js/middleware.js"></script>
+</head>
+<body>
+    <div id="root">
+        <style>
+            body {
+                margin: 0;
+                overflow: hidden;
+            }
+            #root {
+                width: 100vw;
+                height: 100vh;
+            }
+        </style>
+    </div>
+    <script>
+        window.addEventListener('load', function (event) {
+            GraphQLPlayground.init(document.getElementById('root'), {
+                endpoint: '/api/graphql'
+            })
+        })
+    </script>
+</body>
+</html>
+            "#;
 
             let response = Response::builder()
                 .status(StatusCode::OK)
                 .header("Content-Type", "text/html")
-                .body(Body::Text(playground_html))?;
+                .body(Body::Text(playground_html.to_string()))?;
             build_cors_response(response, origin)
         }
         "/api/graphql/schema" | "/graphql/schema" => {
             // GraphQL Schema SDL
-            let sdl = schema.sdl();
+            let sdl = schema.as_schema_language();
 
             let response = Response::builder()
                 .status(StatusCode::OK)
@@ -180,4 +215,3 @@ pub async fn run() -> Result<(), Error> {
     info!("Starting GraphQL service on Vercel...");
     run(handler).await
 }
-

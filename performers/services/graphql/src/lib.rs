@@ -10,7 +10,7 @@ pub mod storage;
 pub mod auth;
 
 pub use database::PostgresPool;
-pub use schema::{create_schema, Query, Mutation};
+pub use schema::{create_schema, Query, Mutation, Schema, Context};
 
 // Re-export get_allowed_origins from main.rs logic
 pub fn get_allowed_origins() -> Vec<String> {

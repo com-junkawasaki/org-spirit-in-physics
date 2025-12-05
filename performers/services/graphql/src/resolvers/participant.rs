@@ -1,22 +1,20 @@
 // Merkle DAG: graphql.service.resolvers.participant
 // Participant resolvers using SQLx
 
-use async_graphql::*;
+use juniper::FieldError;
 use sqlx::{PgPool, Pool, Postgres};
 use uuid::Uuid;
-use crate::types::{Participant, StimulusWord};
+use crate::schema::{Context, Participant, StimulusWord};
 use crate::auth::{require_auth, get_auth};
 
-#[derive(Default)]
 pub struct ParticipantQuery;
 
-#[Object]
 impl ParticipantQuery {
     /// Get all participants
     /// - Authenticated users: get all participants
     /// - Unauthenticated users: get only public participants (is_public = true)
-    async fn participants(&self, ctx: &Context<'_>) -> Result<Vec<Participant>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
+    pub async fn participants(ctx: &Context) -> Result<Vec<Participant>, FieldError> {
+        let pool = &ctx.pool;
         let is_authenticated = get_auth(ctx).is_some();
         
         // Build query based on authentication status
@@ -30,11 +28,12 @@ impl ParticipantQuery {
             query
         )
         .fetch_all(pool)
-        .await?;
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
         Ok(rows.into_iter().map(|(id, age, gender, handedness, is_public, created_at, updated_at)| {
             Participant {
-                id: ID::from(id.to_string()),
+                id: juniper::ID::from(id.to_string()),
                 age,
                 gender,
                 handedness: handedness.map(|h| h.to_string()),
@@ -48,10 +47,10 @@ impl ParticipantQuery {
     /// Get a participant by ID
     /// - Authenticated users: can get any participant
     /// - Unauthenticated users: can only get public participants (is_public = true)
-    async fn participant(&self, ctx: &Context<'_>, id: ID) -> Result<Option<Participant>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
-        let uuid = Uuid::parse_str(id.as_str())
-            .map_err(|e| Error::from(format!("Invalid UUID: {}", e)))?;
+    pub async fn participant(ctx: &Context, id: juniper::ID) -> Result<Option<Participant>, FieldError> {
+        let pool = &ctx.pool;
+        let uuid = Uuid::parse_str(id.to_string().as_str())
+            .map_err(|e| FieldError::new(format!("Invalid UUID: {}", e), juniper::Value::Null))?;
         let is_authenticated = get_auth(ctx).is_some();
 
         // Build query based on authentication status
@@ -66,11 +65,12 @@ impl ParticipantQuery {
         )
         .bind(uuid)
         .fetch_optional(pool)
-        .await?;
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
         Ok(row.map(|(id, age, gender, handedness, is_public, created_at, updated_at)| {
             Participant {
-                id: ID::from(id.to_string()),
+                id: juniper::ID::from(id.to_string()),
                 age,
                 gender,
                 handedness: handedness.map(|h| h.to_string()),
@@ -82,14 +82,15 @@ impl ParticipantQuery {
     }
 
     /// Get all stimulus words for Jung word association test
-    async fn stimulus_words(&self, ctx: &Context<'_>) -> Result<Vec<StimulusWord>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
+    pub async fn stimulus_words(ctx: &Context) -> Result<Vec<StimulusWord>, FieldError> {
+        let pool = &ctx.pool;
         
         let rows = sqlx::query_as::<_, (i32, String, String, String)>(
             "SELECT id, japanese, english, pronunciation FROM stimulus_words ORDER BY id"
         )
         .fetch_all(pool)
-        .await?;
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
         Ok(rows.into_iter().map(|(id, japanese, english, pronunciation)| {
             StimulusWord {
@@ -102,15 +103,16 @@ impl ParticipantQuery {
     }
 
     /// Get a stimulus word by ID
-    async fn stimulus_word(&self, ctx: &Context<'_>, id: i32) -> Result<Option<StimulusWord>> {
-        let pool = ctx.data::<Pool<Postgres>>()?;
+    pub async fn stimulus_word(ctx: &Context, id: i32) -> Result<Option<StimulusWord>, FieldError> {
+        let pool = &ctx.pool;
 
         let row = sqlx::query_as::<_, (i32, String, String, String)>(
             "SELECT id, japanese, english, pronunciation FROM stimulus_words WHERE id = $1"
         )
         .bind(id)
         .fetch_optional(pool)
-        .await?;
+        .await
+        .map_err(|e| FieldError::new(format!("Database error: {}", e), juniper::Value::Null))?;
 
         Ok(row.map(|(id, japanese, english, pronunciation)| {
             StimulusWord {
@@ -122,4 +124,3 @@ impl ParticipantQuery {
         }))
     }
 }
-
