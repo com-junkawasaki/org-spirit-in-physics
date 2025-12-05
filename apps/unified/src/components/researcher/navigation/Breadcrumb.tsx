@@ -104,3 +104,6 @@ export function ParticipantsBreadcrumb({ participantId }: { participantId?: stri
 
   return <Breadcrumb items={items} />
 }
+
+// Default export for Astro compatibility
+export default ParticipantsBreadcrumb;
