@@ -55,12 +55,6 @@ const nextConfig = {
   experimental: {
     mdxRs: false, // Use JavaScript MDX compiler for now
   },
-
-  // Server configuration
-  server: {
-    host: '0.0.0.0',
-    port: 3000,
-  },
 };
 
 const withMDX = createMDX({

@@ -12,18 +12,25 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <ClerkProvider>
-      <html lang="ja">
-        <head>
-          <meta charSet="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        </head>
-        <body>
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || process.env.CLERK_PUBLISHABLE_KEY;
+  
+  const content = (
+    <html lang="ja">
+      <head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      </head>
+      <body>
+        {children}
+      </body>
+    </html>
   );
+  
+  // Only wrap with ClerkProvider if publishableKey is provided
+  if (publishableKey && publishableKey.trim() !== '') {
+    return <ClerkProvider publishableKey={publishableKey}>{content}</ClerkProvider>;
+  }
+  
+  return content;
 }
