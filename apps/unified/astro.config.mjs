@@ -32,7 +32,24 @@ const grpcClientPath = resolve(
 const isDev = process.argv.includes('dev') || process.argv.includes('--dev');
 
 // Check if we should allow all hosts (for Docker/OrbStack)
+// Docker環境ではVITE_ALLOWED_HOSTS=trueが設定されているため、常にtrueを設定
 const allowAllHosts = process.env.VITE_ALLOWED_HOSTS === 'true' || isDev;
+
+// Get additional allowed hosts from environment variable (for OrbStack)
+const additionalHosts = process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+  ? process.env.__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS.split(',').map(h => h.trim())
+  : [];
+
+// Build allowedHosts configuration
+// Vite 6ではallowedHostsは配列またはtrueを直接指定します
+// 開発モードまたはVITE_ALLOWED_HOSTS=trueの場合はすべてのホストを許可
+// それ以外の場合は、追加ホストを含む配列を指定
+// Docker/OrbStack環境では常にtrueを設定してすべてのホストを許可
+const viteAllowedHosts = allowAllHosts 
+  ? true 
+  : additionalHosts.length > 0
+    ? ['localhost', '127.0.0.1', ...additionalHosts]
+    : ['localhost', '127.0.0.1'];
 
 // https://astro.build/config
 export default defineConfig({
@@ -98,7 +115,9 @@ export default defineConfig({
         // Vite 6ではallowedHostsは配列またはtrueを直接指定します。関数形式は非対応です。
         // Docker/OrbStack環境では常にtrueを設定してすべてのホストを許可
         // docker-compose.ymlでVITE_ALLOWED_HOSTS=trueが設定されているため、常にtrueを設定
-        allowedHosts: true,
+        // または、環境変数__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTSから追加ホストを読み込む
+        // 開発モードでは常にtrueを設定（isDevまたはVITE_ALLOWED_HOSTS=trueの場合）
+        allowedHosts: isDev || process.env.VITE_ALLOWED_HOSTS === 'true' ? true : viteAllowedHosts,
         strictPort: false,
         hmr: {
           protocol: 'ws',
