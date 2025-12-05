@@ -376,7 +376,7 @@ interface BreakScreenProps {
   onStartNextSession: () => void;
   Button: React.ComponentType<{ onClick: () => void; size?: string }>;
 }
-const BreakScreen: React.FC<BreakScreenProps> = ({ onStartNextSession, Button }) => (
+const BreakScreen: React.FC<BreakScreenProps> = ({ onStartNextSession, Button }: BreakScreenProps) => (
   <div className="space-y-4">
     <h2 className="text-2xl font-bold">セッション1が完了しました</h2>
     <p>短い休憩を取ってください。準備ができたら、セッション2を開始してください。</p>
@@ -389,13 +389,13 @@ interface CompletionScreenProps {
   onReset: () => void;
   Button: React.ComponentType<{ onClick: () => void }>;
 }
-const CompletionScreen: React.FC<CompletionScreenProps> = ({ onReset, Button }) => (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">検査完了</h2>
-      <p>ご協力ありがとうございました。データは保存されました。</p>
-      <Button onClick={onReset}>新しいセッションを開始する</Button>
-    </div>
-));
+const CompletionScreen: React.FC<CompletionScreenProps> = ({ onReset, Button }: CompletionScreenProps) => (
+  <div className="space-y-4">
+    <h2 className="text-2xl font-bold">検査完了</h2>
+    <p>ご協力ありがとうございました。データは保存されました。</p>
+    <Button onClick={onReset}>新しいセッションを開始する</Button>
+  </div>
+);
 CompletionScreen.displayName = 'CompletionScreen';
 
 

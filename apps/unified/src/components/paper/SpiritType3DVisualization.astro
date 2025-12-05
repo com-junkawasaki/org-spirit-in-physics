@@ -48,14 +48,20 @@ const sessionId = data.sessions.length > 0 && data.sessions[0] ? data.sessions[0
         const container = document.getElementById('spirit-type-3d-visualization-container');
         if (container && container.dataset.participantId) {
           const root = createRoot(container);
-          root.render(React.createElement(TimelineVisualization, {
+          const forceModeValue = container.dataset.forceMode || 'force-3d-typegpu';
+          const props: any = {
             participantId: container.dataset.participantId,
-            sessionId: container.dataset.sessionId || undefined,
             width: parseInt(container.dataset.width || '1000'),
             height: parseInt(container.dataset.height || '600'),
-            forceMode: (container.dataset.forceMode || 'force-3d-typegpu') as 'force-3d-typegpu' | 'force-3d-cpu' | 'force-2d' | undefined,
             hideFilters: true
-          }));
+          };
+          if (container.dataset.sessionId) {
+            props.sessionId = container.dataset.sessionId;
+          }
+          if (forceModeValue) {
+            props.forceMode = forceModeValue as 'force-3d-typegpu' | 'force-3d-cpu' | 'force-2d';
+          }
+          root.render(React.createElement(TimelineVisualization, props));
         }
       } catch (error) {
         console.error('Failed to load TimelineVisualization:', error);

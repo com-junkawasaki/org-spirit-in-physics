@@ -76,8 +76,8 @@ function MetricItem({ metric }: { metric: SystemMetric }) {
           <span className="text-sm font-medium text-gray-700">{metric.label}</span>
         </div>
         <div className="flex items-center gap-1">
-          <TrendIcon trend={metric.trend} />
-          <StatusBadge status={metric.status} />
+          {metric.trend !== undefined && <TrendIcon trend={metric.trend} />}
+          {metric.status !== undefined && <StatusBadge status={metric.status} />}
         </div>
       </div>
       

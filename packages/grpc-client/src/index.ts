@@ -6,15 +6,10 @@ export {
   getParticipants,
   getParticipant,
   createParticipant,
-  type GetParticipantsResponse,
-  type GetParticipantResponse,
-  type CreateParticipantResponse,
 } from "./services/participants";
 export {
   getSessions,
   createSession,
-  type GetSessionsResponse,
-  type CreateSessionResponse,
 } from "./services/sessions";
 export {
   getTimeline,
@@ -34,12 +29,10 @@ export {
 } from "./services/stimulus_words";
 export {
   useParticipants,
-  useCreateParticipant,
   useParticipant,
 } from "./hooks/useParticipants.js";
 export {
   useSessions,
-  useCreateSession,
 } from "./hooks/useSessions.js";
 export {
   useTimeline,

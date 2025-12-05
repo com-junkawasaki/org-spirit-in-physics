@@ -68,7 +68,7 @@ function MetricSummary({ metric }: { metric: PerformanceMetric }) {
           {metric.icon}
           <span className="text-sm font-medium">{metric.name}</span>
         </div>
-        <TrendIcon trend={metric.trend} />
+        {metric.trend !== undefined && <TrendIcon trend={metric.trend} />}
       </div>
       
       <div className="space-y-1">

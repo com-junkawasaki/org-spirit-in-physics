@@ -39,13 +39,16 @@ const sessionId = data.sessions.length > 0 && data.sessions[0] ? data.sessions[0
         const container = document.getElementById('timeline-visualization-container');
         if (container && container.dataset.participantId) {
           const root = createRoot(container);
-          root.render(React.createElement(TimelineVisualization, {
+          const props: any = {
             participantId: container.dataset.participantId,
-            sessionId: container.dataset.sessionId || undefined,
             width: parseInt(container.dataset.width || '1000'),
             height: parseInt(container.dataset.height || '400'),
             hideFilters: true
-          }));
+          };
+          if (container.dataset.sessionId) {
+            props.sessionId = container.dataset.sessionId;
+          }
+          root.render(React.createElement(TimelineVisualization, props));
         }
       } catch (error) {
         console.error('Failed to load TimelineVisualization:', error);

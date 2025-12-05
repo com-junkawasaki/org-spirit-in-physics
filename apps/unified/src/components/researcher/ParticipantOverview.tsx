@@ -98,13 +98,15 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
       // For individual participant view, calculate summary from single participant data
       if (participantId && participants.length > 0) {
         const currentParticipant = participants[0]
-        setSummary({
-          totalParticipants: 1,
-          totalSessions: currentParticipant.sessionCount,
-          totalResponses: currentParticipant.responseCount,
-          averageSpiritProbability: currentParticipant.averageSpiritProbability,
-          activeParticipants: 1 // Individual participant is always "active" in their own view
-        })
+        if (currentParticipant) {
+          setSummary({
+            totalParticipants: 1,
+            totalSessions: currentParticipant.sessionCount ?? 0,
+            totalResponses: currentParticipant.responseCount ?? 0,
+            averageSpiritProbability: currentParticipant.averageSpiritProbability ?? 0,
+            activeParticipants: 1 // Individual participant is always "active" in their own view
+          })
+        }
       }
     } catch (error) {
       console.error('Failed to fetch participants:', error)

@@ -184,9 +184,12 @@ export default function Force3DWordGraphTypeGPU({
     if (nodes.length > 0) {
       let maxDistance = 0
       for (let i = 0; i < nodes.length; i++) {
-        const dx = nodes[i].initial?.[0] || 0 - cameraRef.current.centerX
-        const dy = nodes[i].initial?.[1] || 0 - cameraRef.current.centerY
-        const dz = nodes[i].initial?.[2] || 0 - cameraRef.current.centerZ
+        const node = nodes[i];
+        if (!node) continue;
+        const initial = node.initial;
+        const dx = (initial?.[0] ?? 0) - (cameraRef.current?.centerX ?? 0)
+        const dy = (initial?.[1] ?? 0) - (cameraRef.current?.centerY ?? 0)
+        const dz = (initial?.[2] ?? 0) - (cameraRef.current?.centerZ ?? 0)
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
         maxDistance = Math.max(maxDistance, distance)
       }
@@ -293,9 +296,14 @@ export default function Force3DWordGraphTypeGPU({
             pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
             pos[i * 3 + 2] = r * Math.cos(phi)
           }
-          centerX += pos[i * 3]
-          centerY += pos[i * 3 + 1]
-          centerZ += pos[i * 3 + 2]
+          const px = pos[i * 3];
+          const py = pos[i * 3 + 1];
+          const pz = pos[i * 3 + 2];
+          if (px !== undefined && py !== undefined && pz !== undefined) {
+            centerX += px;
+            centerY += py;
+            centerZ += pz;
+          }
           vel[i * 3] = 0
           vel[i * 3 + 1] = 0
           vel[i * 3 + 2] = 0
@@ -310,9 +318,13 @@ export default function Force3DWordGraphTypeGPU({
           // ノード群のサイズに基づいてカメラ距離を調整
           let maxDistance = 0
           for (let i = 0; i < N; i++) {
-            const dx = pos[i * 3] - cameraRef.current.centerX
-            const dy = pos[i * 3 + 1] - cameraRef.current.centerY
-            const dz = pos[i * 3 + 2] - cameraRef.current.centerZ
+            const px = pos[i * 3];
+            const py = pos[i * 3 + 1];
+            const pz = pos[i * 3 + 2];
+            if (px === undefined || py === undefined || pz === undefined || !cameraRef.current) continue;
+            const dx = px - cameraRef.current.centerX;
+            const dy = py - cameraRef.current.centerY;
+            const dz = pz - cameraRef.current.centerZ;
             const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
             maxDistance = Math.max(maxDistance, distance)
           }
@@ -521,16 +533,23 @@ export default function Force3DWordGraphTypeGPU({
             const node = nodesRef.current[i]
             const pos = positionsRef.current
             const vel = velocitiesRef.current
-            if (!pos || !vel) continue
+            if (!pos || !vel || !node) continue
             const ix = i * 3
             
-            nodeData[i * 8] = pos[ix]
-            nodeData[i * 8 + 1] = pos[ix + 1]
-            nodeData[i * 8 + 2] = pos[ix + 2]
-            nodeData[i * 8 + 3] = vel[ix]
-            nodeData[i * 8 + 4] = vel[ix + 1]
-            nodeData[i * 8 + 5] = vel[ix + 2]
-            nodeData[i * 8 + 6] = node.scale
+            const px = pos[ix] ?? 0;
+            const py = pos[ix + 1] ?? 0;
+            const pz = pos[ix + 2] ?? 0;
+            const vx = vel[ix] ?? 0;
+            const vy = vel[ix + 1] ?? 0;
+            const vz = vel[ix + 2] ?? 0;
+            
+            nodeData[i * 8] = px;
+            nodeData[i * 8 + 1] = py;
+            nodeData[i * 8 + 2] = pz;
+            nodeData[i * 8 + 3] = vx;
+            nodeData[i * 8 + 4] = vy;
+            nodeData[i * 8 + 5] = vz;
+            nodeData[i * 8 + 6] = node.scale ?? 1;
             nodeData[i * 8 + 7] = node.fixed ? 1 : 0
           }
           

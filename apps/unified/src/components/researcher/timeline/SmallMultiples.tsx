@@ -16,8 +16,13 @@ export default function SmallMultiples({ data }: SmallMultiplesProps) {
 
     // 単語ごとにグループ化して時系列データを作成
     const wordGroups = data.reduce((acc, d) => {
-      if (!acc[d.word]) acc[d.word] = []
-      acc[d.word].push(d)
+      const word = d.word;
+      if (!word) return acc;
+      if (!acc[word]) acc[word] = []
+      const group = acc[word];
+      if (group) {
+        group.push(d);
+      }
       return acc
     }, {} as Record<string, TimelineDataPoint[]>)
 

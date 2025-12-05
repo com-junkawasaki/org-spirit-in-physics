@@ -18,10 +18,6 @@ export {
   getStimulusWords,
   getStimulusWord,
   useParticipants,
-  useCreateParticipant,
-  useParticipant,
-  useSessions,
-  useCreateSession,
   useTimeline,
   type GetParticipantsResponse,
   type GetParticipantResponse,
@@ -35,5 +31,5 @@ export {
   type GetStimulusWordsResponse,
   type GetStimulusWordResponse,
 } from './client';
-export { useCreateParticipant, useCreateSession, useParticipant, useSessions } from './hooks';
+export { useParticipant, useSessions, useCreateParticipant, useCreateSession } from './hooks';
 

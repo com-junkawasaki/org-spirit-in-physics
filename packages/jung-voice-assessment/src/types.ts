@@ -1,5 +1,7 @@
 // Type definitions for Jung Voice Assessment
 
+import type React from 'react';
+
 export type Word = {
   word: string;
   key: string;

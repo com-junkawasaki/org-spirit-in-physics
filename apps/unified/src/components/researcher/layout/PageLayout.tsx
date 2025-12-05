@@ -29,7 +29,7 @@ interface PageLayoutProps {
   compact?: boolean
 }
 
-function PageHeader({ header, onRefresh, compact = false }: { header: PageHeaderProps; onRefresh?: () => void; compact?: boolean }) {
+function PageHeader({ header, onRefresh, compact = false }: { header: PageHeaderProps; onRefresh?: (() => void) | undefined; compact?: boolean }) {
   return (
     <div className={compact ? 'mb-4 md:mb-6' : 'mb-6 md:mb-8'}>
       <div className="flex items-center justify-between">
@@ -76,9 +76,13 @@ function PageHeader({ header, onRefresh, compact = false }: { header: PageHeader
 }
 
 export function PageLayout({ children, header, className = '', isLoading = false, onRefresh, compact = false }: PageLayoutProps) {
+  const headerProps: any = { header, compact };
+  if (onRefresh !== undefined) {
+    headerProps.onRefresh = onRefresh;
+  }
   return (
     <div className={`container container-ipad mx-auto px-3 md:px-4 py-4 md:py-6 ${className}`}>
-      <PageHeader header={header} onRefresh={onRefresh} compact={compact} />
+      <PageHeader {...headerProps} />
 
       {isLoading ? (
         <Card className="p-6 md:p-8">
@@ -98,39 +102,48 @@ export function PageLayout({ children, header, className = '', isLoading = false
 
 // 特定のページタイプ用のレイアウト
 export function DashboardLayout({ children, header, onRefresh, compact }: Omit<PageLayoutProps, 'className'>) {
+  const props: any = {
+    header,
+    compact,
+    className: "max-w-6xl md:max-w-7xl"
+  };
+  if (onRefresh !== undefined) {
+    props.onRefresh = onRefresh;
+  }
   return (
-    <PageLayout
-      header={header}
-      onRefresh={onRefresh}
-      compact={compact}
-      className="max-w-6xl md:max-w-7xl"
-    >
+    <PageLayout {...props}>
       {children}
     </PageLayout>
   )
 }
 
 export function DataManagementLayout({ children, header, onRefresh, compact }: Omit<PageLayoutProps, 'className'>) {
+  const props: any = {
+    header,
+    compact,
+    className: "max-w-5xl md:max-w-6xl"
+  };
+  if (onRefresh !== undefined) {
+    props.onRefresh = onRefresh;
+  }
   return (
-    <PageLayout
-      header={header}
-      onRefresh={onRefresh}
-      compact={compact}
-      className="max-w-5xl md:max-w-6xl"
-    >
+    <PageLayout {...props}>
       {children}
     </PageLayout>
   )
 }
 
 export function AnalysisLayout({ children, header, onRefresh, compact }: Omit<PageLayoutProps, 'className'>) {
+  const props: any = {
+    header,
+    compact,
+    className: "max-w-4xl md:max-w-5xl"
+  };
+  if (onRefresh !== undefined) {
+    props.onRefresh = onRefresh;
+  }
   return (
-    <PageLayout
-      header={header}
-      onRefresh={onRefresh}
-      compact={compact}
-      className="max-w-4xl md:max-w-5xl"
-    >
+    <PageLayout {...props}>
       {children}
     </PageLayout>
   )

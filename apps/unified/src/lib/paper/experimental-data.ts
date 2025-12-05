@@ -24,15 +24,24 @@ export async function fetchParticipants(): Promise<ParticipantSummary[]> {
       console.warn('gRPC API returned empty data. Service may not be available.');
       return [];
     }
-    return data.participants.map((p) => ({
-      id: p.id,
-      name: `Participant ${p.id.slice(0, 8)}`,
-      age: p.age ?? undefined,
-      gender: p.gender ?? undefined,
-      handedness: p.handedness ?? undefined,
-      sessionCount: 0, // Will be populated from sessions
-      responseCount: 0, // Will be populated from responses
-    }));
+    return data.participants.map((p) => {
+      const result: ParticipantSummary = {
+        id: p.id,
+        name: `Participant ${p.id.slice(0, 8)}`,
+        sessionCount: 0, // Will be populated from sessions
+        responseCount: 0, // Will be populated from responses
+      };
+      if (p.age !== undefined) {
+        result.age = p.age;
+      }
+      if (p.gender !== undefined) {
+        result.gender = p.gender;
+      }
+      if (p.handedness !== undefined) {
+        result.handedness = p.handedness;
+      }
+      return result;
+    });
   } catch (error: any) {
     const errorMessage = error?.message || String(error);
     const errorCode = error?.code;

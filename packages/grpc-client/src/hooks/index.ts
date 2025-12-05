@@ -3,12 +3,10 @@
 
 export {
   useParticipants,
-  useCreateParticipant,
   useParticipant,
 } from "./useParticipants.js";
 export {
   useSessions,
-  useCreateSession,
 } from "./useSessions.js";
 export {
   useTimeline,
