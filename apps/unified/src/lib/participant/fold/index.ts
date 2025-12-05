@@ -2,5 +2,11 @@
 
 // 再エクスポート順: 00→80 の順で固定
 
-export * from './merkle-dag';
-export * from './emotion-fold';
+export {
+  type MerkleDAG,
+  initialState,
+  foldMerkleDAG,
+} from './merkle-dag';
+export {
+  foldEmotionStatistics,
+} from './emotion-fold';

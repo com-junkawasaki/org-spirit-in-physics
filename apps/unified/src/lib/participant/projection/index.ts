@@ -2,5 +2,14 @@
 
 // 再エクスポート順: 00→80 の順で固定
 
-export * from './view-models';
-export * from './selectors';
+export {
+  type JungTestViewModel,
+  type EmotionAnalysisViewModel,
+  type AdminAnalyticsViewModel,
+} from './view-models';
+export {
+  selectJungTestViewModel,
+  selectEmotionAnalysisViewModel,
+  selectAdminAnalyticsViewModel,
+  selectFromMerkleDAG,
+} from './selectors';

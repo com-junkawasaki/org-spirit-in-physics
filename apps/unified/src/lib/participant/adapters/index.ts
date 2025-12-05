@@ -2,12 +2,30 @@
 
 // 再エクスポート順: 00→80 の順で固定
 
-export * from './storage-adapter';
-export * from './emotion-analysis-adapter';
-export * from './media-adapter';
-export * from './event-bus-adapter';
-export * from './external-api-adapter';
-
-// lib/ から統合された機能
-export { inngest, events } from './event-bus-adapter';
-export type { VideoAnalysisEvent, BatchAnalysisEvent, AnalysisResultEvent, VideoAnalysisWorkflow, BatchAnalysisWorkflow } from './event-bus-adapter';
+export {
+  StorageAdapter,
+  storageAdapter,
+} from './storage-adapter';
+export {
+  EmotionAnalysisAdapter,
+  emotionAnalysisAdapter,
+} from './emotion-analysis-adapter';
+export {
+  MediaAdapter,
+  mediaAdapter,
+} from './media-adapter';
+export {
+  EventBusAdapter,
+  eventBusAdapter,
+  inngest,
+  events,
+  type VideoAnalysisEvent,
+  type BatchAnalysisEvent,
+  type AnalysisResultEvent,
+  type VideoAnalysisWorkflow,
+  type BatchAnalysisWorkflow,
+} from './event-bus-adapter';
+export {
+  ExternalApiAdapter,
+  externalApiAdapter,
+} from './external-api-adapter';

@@ -2,8 +2,20 @@
 
 // 再エクスポート順: 00→80 の順で固定
 
-export * from './storage';
-export * from './emotion-analysis';
-export * from './media';
-export * from './event-bus';
-export * from './external-api';
+export {
+  type StoragePort,
+} from './storage';
+export {
+  type EmotionAnalysisPort,
+} from './emotion-analysis';
+export {
+  type MediaPort,
+} from './media';
+export {
+  type DomainEvent,
+  type EventBusPort,
+} from './event-bus';
+export {
+  type HumeApiPort,
+  type ExternalApiPort,
+} from './external-api';

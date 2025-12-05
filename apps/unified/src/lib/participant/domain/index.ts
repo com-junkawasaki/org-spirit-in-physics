@@ -2,5 +2,15 @@
 
 // 再エクスポート順: 00→80 の順で固定
 
-export * from './jung-test-machine';
-export * from './emotion-analysis-machine';
+export {
+  jungTestMachine,
+  type JungTestContext,
+  type JungTestEvent,
+  type JungTestActor,
+} from './jung-test-machine';
+export {
+  emotionAnalysisMachine,
+  type EmotionAnalysisContext,
+  type EmotionAnalysisEvent,
+  type EmotionAnalysisActor,
+} from './emotion-analysis-machine';
