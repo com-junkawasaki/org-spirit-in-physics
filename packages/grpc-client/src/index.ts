@@ -16,16 +16,10 @@ export {
   getWordAggregates,
   getEmotionVectors,
   getWordStatistics,
-  type GetTimelineResponse,
-  type GetWordAggregatesResponse,
-  type GetEmotionVectorsResponse,
-  type GetWordStatisticsResponse,
 } from "./services/timeline";
 export {
   getStimulusWords,
   getStimulusWord,
-  type GetStimulusWordsResponse,
-  type GetStimulusWordResponse,
 } from "./services/stimulus_words";
 export {
   useParticipants,

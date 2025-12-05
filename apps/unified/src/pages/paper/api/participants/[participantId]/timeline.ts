@@ -16,14 +16,17 @@ export const GET: APIRoute = async ({ params, url }) => {
     });
   }
 
-  const sessionId = url.searchParams.get('sessionId') || undefined;
+  const sessionIdParam = url.searchParams.get('sessionId');
 
   try {
     // Fetch timeline data from gRPC
-    const data = await getTimeline({
+    const params: { participantId: string; sessionId?: string } = {
       participantId,
-      sessionId,
-    });
+    };
+    if (sessionIdParam) {
+      params.sessionId = sessionIdParam;
+    }
+    const data = await getTimeline(params);
 
     const timelinePoints = data.points || [];
     
