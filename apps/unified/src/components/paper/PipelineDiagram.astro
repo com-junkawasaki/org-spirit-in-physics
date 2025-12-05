@@ -89,7 +89,7 @@ const pipelineSteps: PipelineStep[] = [
   
   <div class="space-y-6">
     {pipelineSteps.map((step, index) => (
-      <div key={step.id} class="border rounded-lg p-4 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <div class="border rounded-lg p-4 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <div class="flex items-start gap-4">
           <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 dark:bg-blue-600 text-white flex items-center justify-center font-semibold">
             {index + 1}
@@ -103,7 +103,7 @@ const pipelineSteps: PipelineStep[] = [
                 <h5 class="font-medium mb-1 text-gray-700 dark:text-gray-300">Inputs:</h5>
                 <ul class="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
                   {step.inputs.map(input => (
-                    <li key={input}>{input}</li>
+                    <li>{input}</li>
                   ))}
                 </ul>
               </div>
@@ -112,7 +112,7 @@ const pipelineSteps: PipelineStep[] = [
                 <h5 class="font-medium mb-1 text-gray-700 dark:text-gray-300">Outputs:</h5>
                 <ul class="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
                   {step.outputs.map(output => (
-                    <li key={output}>{output}</li>
+                    <li>{output}</li>
                   ))}
                 </ul>
               </div>
@@ -130,7 +130,7 @@ const pipelineSteps: PipelineStep[] = [
                 <h5 class="font-medium mb-1 text-gray-700 dark:text-gray-300">Parameters:</h5>
                 <ul class="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
                   {Object.entries(step.parameters).map(([key, value]) => (
-                    <li key={key}>
+                    <li>
                       <strong>{key}:</strong> {String(value)}
                     </li>
                   ))}

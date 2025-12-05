@@ -46,7 +46,7 @@ const indicatorCounts = problematicIndicators.reduce((acc, indicator) => {
     <h4>Problematic Indicators</h4>
     <ul class="list-disc list-inside">
       {Object.entries(indicatorCounts).map(([indicator, count]) => (
-        <li key={indicator}>
+        <li>
           <strong>{indicator}</strong>: {count} occurrences
         </li>
       ))}

@@ -2,9 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 import { useKawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
+import type { KawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
 
 export default function CompletionPage() {
-  const resetTest = useKawasakiStore((state) => state.resetTest);
+  const resetTest = useKawasakiStore((state: KawasakiStore) => state.resetTest);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 md:p-24">

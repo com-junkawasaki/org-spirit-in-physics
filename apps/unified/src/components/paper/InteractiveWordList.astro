@@ -14,7 +14,7 @@ const { spiritTypes = [], ghostPatterns = [] } = Astro.props;
 // Extract all word pairs
 const allWordPairs: Array<WordPair & { classificationType: 'spirit-type' | 'ghost-pattern'; id: string }> = [];
 
-spiritTypes.forEach((st, stIndex) => {
+spiritTypes.forEach((st) => {
   st.wordPairs.forEach((wp, wpIndex) => {
     allWordPairs.push({
       ...wp,
@@ -24,7 +24,7 @@ spiritTypes.forEach((st, stIndex) => {
   });
 });
 
-ghostPatterns.forEach((gp, gpIndex) => {
+ghostPatterns.forEach((gp) => {
   gp.wordPairs.forEach((wp, wpIndex) => {
     allWordPairs.push({
       ...wp,
@@ -63,7 +63,6 @@ const wordListData = {
     <div class="space-y-2 max-h-96 overflow-y-auto">
       {allWordPairs.slice(0, 20).map(wp => (
         <div 
-          key={wp.id}
           class={`p-2 rounded text-sm ${
             wp.classificationType === 'spirit-type' 
               ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800' 

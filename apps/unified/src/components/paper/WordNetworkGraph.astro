@@ -2,7 +2,7 @@
 // Merkle DAG: components.word_network_graph
 // Network graph visualization for word associations
 
-import type { SpiritType, GhostPattern, WordPair } from '../../types/paper/experimental';
+import type { SpiritType, GhostPattern } from '../../types/paper/experimental';
 
 interface Props {
   spiritTypes: SpiritType[];
@@ -31,7 +31,7 @@ const wordSet = new Set<string>();
 const words = Array.from(wordSet);
 
 // Create word nodes
-const wordNodes = words.map((word, index) => {
+const wordNodes = words.map((word) => {
   // Count occurrences
   let spiritTypeCount = 0;
   let ghostPatternCount = 0;

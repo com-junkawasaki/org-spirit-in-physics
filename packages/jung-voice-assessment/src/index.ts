@@ -4,6 +4,7 @@
 export { default as JungVoiceTest } from './JungVoiceTest';
 export { default as AudioVisualizer } from './AudioVisualizer';
 export { useKawasakiStore } from './store';
+export type { KawasakiStore, KawasakiStoreState, KawasakiStoreActions, Word, WordResponse, TestResult, MediaStatus, JungVoiceTestProps } from './types';
 export { useStimulusWords } from './hooks/useStimulusWords';
 
 // Export types from types.ts

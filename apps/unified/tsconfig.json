@@ -30,8 +30,8 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": false,
-    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": [
@@ -39,7 +39,9 @@
     "src/**/*",
     "**/*.ts",
     "**/*.tsx",
-    "**/*.astro"
+    "**/*.astro",
+    "../../packages/**/*.ts",
+    "../../packages/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

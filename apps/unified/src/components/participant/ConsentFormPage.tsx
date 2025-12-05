@@ -3,11 +3,12 @@
 import { useEffect } from 'react';
 import ConsentForm from '@/components/ConsentForm';
 import { useKawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
+import type { KawasakiStore } from '@spirit-in-physics/jung-voice-assessment';
 
 export default function ConsentFormPage() {
-  const initializeParticipant = useKawasakiStore((state) => state.initializeParticipant);
-  const startPreflight = useKawasakiStore((state) => state.startPreflight);
-  const participantId = useKawasakiStore((state) => state.participantId);
+  const initializeParticipant = useKawasakiStore((state: KawasakiStore) => state.initializeParticipant);
+  const startPreflight = useKawasakiStore((state: KawasakiStore) => state.startPreflight);
+  const participantId = useKawasakiStore((state: KawasakiStore) => state.participantId);
 
   useEffect(() => {
     // コンポーネントがマウントされたときに参加者IDを初期化

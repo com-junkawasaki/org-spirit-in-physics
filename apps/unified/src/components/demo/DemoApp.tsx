@@ -171,7 +171,7 @@ export default function DemoApp() {
         ? { 
             ...step, 
             ...updates, 
-            completedAt: updates.status === 'completed' || updates.status === 'error' ? Date.now() : step.completedAt,
+            completedAt: updates.status === 'completed' || updates.status === 'error' ? Date.now() : (step.completedAt ?? undefined),
             logs: updates.logs ? [...(step.logs || []), ...(Array.isArray(updates.logs) ? updates.logs : [updates.logs])] : step.logs,
           }
         : step
@@ -196,6 +196,8 @@ export default function DemoApp() {
     if (!stream || !isRunning) return
 
     const currentWord = JUNG_STIMULUS_WORDS[currentWordIndex]
+    if (!currentWord) return
+    
     const timestamp = Date.now()
     const stepOrder = stepOrderCounter
 
@@ -281,7 +283,7 @@ export default function DemoApp() {
         wordIndex: currentWordIndex,
         timestamp,
         videoBlob,
-        audioBlob,
+        ...(audioBlob !== undefined ? { audioBlob } : {}),
         stepOrder,
       })
       addStepLog(videoStep.id, `Added to batch queue (BPM 85: ${BPM_85_INTERVAL_MS}ms interval). Queue size: ${batchQueueLength + 1}`)
@@ -332,7 +334,10 @@ export default function DemoApp() {
             }
             
             const result = await pipelineRef.current.execute(
-              { videoBlob: item.videoBlob, audioBlob: item.audioBlob },
+              { 
+                videoBlob: item.videoBlob, 
+                ...(item.audioBlob !== undefined ? { audioBlob: item.audioBlob } : {})
+              },
               item.word,
               item.timestamp
             )

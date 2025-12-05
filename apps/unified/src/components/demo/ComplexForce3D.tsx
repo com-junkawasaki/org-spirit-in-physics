@@ -257,11 +257,12 @@ export default function ComplexForce3D({
       })
 
       for (const data of wordEmotionData) {
-        if (!wordEmotionSum[data.word]) continue
+        const wordSum = wordEmotionSum[data.word]
+        if (!wordSum) continue
         for (const emotion of data.emotions) {
           const idx = EMOTION_KEYS.indexOf(emotion.name as any)
-          if (idx >= 0) {
-            wordEmotionSum[data.word][idx] += emotion.score
+          if (idx >= 0 && wordSum[idx] !== undefined) {
+            wordSum[idx] += emotion.score
           }
         }
       }
@@ -356,10 +357,12 @@ export default function ComplexForce3D({
               const anchorIdx = emotionToAnchorMap[emotionIdx] ?? 0
               if (anchorIdx < anchorPositions.length) {
                 const pos = anchorPositions[anchorIdx]
-                sumX += pos[0] * val
-                sumY += pos[1] * val
-                sumZ += pos[2] * val
-                sumW += val
+                if (pos) {
+                  sumX += pos[0] * val
+                  sumY += pos[1] * val
+                  sumZ += pos[2] * val
+                  sumW += val
+                }
               }
             }
 

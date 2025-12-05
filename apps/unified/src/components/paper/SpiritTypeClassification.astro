@@ -29,7 +29,7 @@ const archetypeCounts = uniqueArchetypes.map(arch => ({
     <h4>Archetype Distribution</h4>
     <ul class="list-disc list-inside">
       {archetypeCounts.map(({ archetype, count }) => (
-        <li key={archetype}>
+        <li>
           <strong>{archetype}</strong>: {count} responses
         </li>
       ))}

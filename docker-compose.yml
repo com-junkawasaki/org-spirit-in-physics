@@ -51,11 +51,6 @@ services:
       - VITE_ALLOWED_HOSTS=true
       # Vite additional allowed hosts (environment variable)
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS=unified.spirit-in-physics.orb.local,.orb.local
-      # GraphQL API URL (hardcoded for development)
-      # Client-side: use localhost for browser access
-      - PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
-      # Server-side: use container name for server-to-server communication
-      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
       # gRPC API URL
       - GRPC_API_URL=http://grpc-service:8083
       - PUBLIC_GRPC_API_URL=http://localhost:8083
@@ -73,8 +68,6 @@ services:
       - HUME_API=${HUME_API:-q0nGzfOSBZB4D0HbdZorGxek3wXz5O4XpTG8IkEJ0gY8Wlet}
     depends_on:
       postgres:
-        condition: service_healthy
-      graphql-service:
         condition: service_healthy
       grpc-service:
         condition: service_healthy
@@ -151,40 +144,6 @@ services:
       - spirit-network
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8082/import/status')\" || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  # GraphQL service (Rust + async-graphql) - DEPRECATED
-  graphql-service:
-    build:
-      context: ./performers/services/graphql
-      dockerfile: Dockerfile
-    container_name: spirit-graphql-service
-    ports:
-      - "8081:8081"
-    environment:
-      # Production Supabase Database URL (Connection pooler - IPv4 compatible)
-      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
-      # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
-      # Note: Using pooler to avoid IPv6 connectivity issues in Docker
-      # For local development, use local PostgreSQL container (override .envrc)
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
-      - RUST_LOG=info
-      # Production Supabase Configuration
-      - SUPABASE_URL=${SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
-      # Production Supabase Service Role Key
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDUxNjk3MiwiZXhwIjoyMDY2MDkyOTcyfQ.7KSDYa5pxYCiA_ZtTe_8KPGBKELdj0buxba2nG7EnJc}
-      # Storage bucket name (from supabase/migrations/20241004000003_storage_policies.sql)
-      - SUPABASE_STORAGE_BUCKET=spirit-in-physics
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8081/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
