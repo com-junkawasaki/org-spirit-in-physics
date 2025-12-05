@@ -116,6 +116,8 @@ const SessionScreen = React.memo<{
     useEffect(() => {
         if (currentWordIndex < stimulusWords.length) {
             const currentWord = stimulusWords[currentWordIndex];
+            if (!currentWord) return;
+            
             const audio = stimulusAudioRef.current;
             
             let recognitionStartTimer: NodeJS.Timeout | null = null;
@@ -135,7 +137,7 @@ const SessionScreen = React.memo<{
                     recognition.onresult = (event: any) => {
                         const transcript = Array.from(event.results).map((result: any) => result[0]).map((result: any) => result.transcript).join('');
                         setRecognizedText(transcript);
-                        if (event.results[0].isFinal) {
+                        if (event.results[0] && event.results[0].isFinal) {
                             onResponse(transcript, new Blob());
                             if (recognitionRef.current) {
                                 recognitionRef.current.stop();
@@ -162,7 +164,7 @@ const SessionScreen = React.memo<{
                                 sum += val * val;
                             }
                             const volume = Math.sqrt(sum / dataArray.length);
-                            if (volume > 0.05) {
+                            if (volume > 0.05 && currentWord) {
                                 speechHasBeenDetected = true;
                                 console.log("👄 発話あり");
                                 logEvent('speech_detected', { word: currentWord.word, key: currentWord.key });
@@ -198,6 +200,8 @@ const SessionScreen = React.memo<{
                 }
             };
 
+            if (!currentWord) return;
+            
             if (audio) {
                 const audioSrc = `/audio/jung-voice-assessment/${currentWord.key}.mp3`;
                 audio.src = audioSrc;
@@ -273,7 +277,7 @@ const SessionScreen = React.memo<{
               <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
           </div>
       </div>
-      <h2 className="text-6xl font-bold my-8 h-20 flex items-center justify-center">{stimulusWords[currentWordIndex].word}</h2>
+      <h2 className="text-6xl font-bold my-8 h-20 flex items-center justify-center">{stimulusWords[currentWordIndex]?.word ?? ''}</h2>
       <div className="h-24 w-full max-w-md">
         {stream && <AudioVisualizer stream={stream} />}
       </div>
@@ -420,6 +424,8 @@ export default function JungVoiceTest({
   useEffect(() => {
     if (testStatus.includes('running') && currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
       const word = stimulusWords[currentWordIndex];
+      if (!word) return;
+      
       logEvent('word_displayed', { word: word.word, key: word.key });
       console.log(`[JungVoiceTest] Word Displayed: ${currentWordIndex + 1}/${stimulusWords.length} - ${word.word}`);
       wordDisplayedTimeRef.current = Date.now();

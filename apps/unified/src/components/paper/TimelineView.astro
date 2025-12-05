@@ -18,7 +18,7 @@ const DEFAULT_PARTICIPANT_ID = '15592cdb-86cf-4baf-86f5-66184169ee39';
 // Get participantId and sessionId from data
 // Priority: data.participants[0]?.id > hardcoded ID
 const participantId = data.participants[0]?.id || DEFAULT_PARTICIPANT_ID;
-const sessionId = data.sessions.length > 0 ? data.sessions[0].id : undefined;
+const sessionId = data.sessions.length > 0 && data.sessions[0] ? data.sessions[0].id : undefined;
 ---
 
 <div class="timeline-view">

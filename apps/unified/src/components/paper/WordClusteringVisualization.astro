@@ -41,9 +41,9 @@ ghostPatterns.forEach(gp => {
 // Calculate cluster centers
 const spiritTypeClusters = Array.from(archetypeGroups.entries()).map(([archetype, items]) => {
   const center = {
-    gene: items.reduce((sum, item) => sum + item.geneComponent[0], 0) / items.length,
-    meme: items.reduce((sum, item) => sum + item.memeComponent[0], 0) / items.length,
-    field: items.reduce((sum, item) => sum + item.fieldComponent[0], 0) / items.length,
+    gene: items.reduce((sum, item) => sum + (item.geneComponent[0] ?? 0), 0) / items.length,
+    meme: items.reduce((sum, item) => sum + (item.memeComponent[0] ?? 0), 0) / items.length,
+    field: items.reduce((sum, item) => sum + (item.fieldComponent[0] ?? 0), 0) / items.length,
   };
   return {
     id: `spirit-type-${archetype}`,
@@ -56,8 +56,8 @@ const spiritTypeClusters = Array.from(archetypeGroups.entries()).map(([archetype
 
 const ghostPatternClusters = Array.from(shadowGroups.entries()).map(([shadowType, items]) => {
   const center = {
-    meme: items.reduce((sum, item) => sum + item.memeComponent[0], 0) / items.length,
-    field: items.reduce((sum, item) => sum + item.fieldComponent[0], 0) / items.length,
+    meme: items.reduce((sum, item) => sum + (item.memeComponent[0] ?? 0), 0) / items.length,
+    field: items.reduce((sum, item) => sum + (item.fieldComponent[0] ?? 0), 0) / items.length,
   };
   return {
     id: `ghost-pattern-${shadowType}`,

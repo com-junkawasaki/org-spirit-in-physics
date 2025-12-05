@@ -167,6 +167,10 @@ export const useKawasakiStore = create<KawasakiStore>()(
     recordWordResponse: ({ responseWord, reactionTimeMs, audioBlob }) => {
         const { currentWordIndex, stimulusWords, advanceToNextWord, logEvent } = get();
         const stimulusWord = stimulusWords[currentWordIndex];
+        if (!stimulusWord) {
+            get().setError('Stimulus word not found');
+            return;
+        }
 
         const response: WordResponse = {
             stimulusWord,

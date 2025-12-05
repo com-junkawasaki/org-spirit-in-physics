@@ -38,6 +38,13 @@ const visualizationData = {
     const item = index < spiritTypes.length
       ? spiritTypes[index]
       : ghostPatterns[index - spiritTypes.length];
+    if (!item) {
+      return {
+        id: `unknown-${index}`,
+        position: coord,
+        type: 'unknown' as const,
+      };
+    }
     const isSpiritType = index < spiritTypes.length;
     
     return {

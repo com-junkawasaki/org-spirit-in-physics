@@ -159,23 +159,26 @@ export default function DemoApp() {
       stepOrder,
       status: 'running',
       name,
-      description,
-      metadata,
+      ...(description !== undefined ? { description } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
       createdAt: Date.now(),
     }
   }, [])
 
   const updateStep = useCallback((stepId: string, updates: Partial<AnalysisStep>) => {
-    setAnalysisSteps(prev => prev.map(step => 
-      step.id === stepId 
-        ? { 
-            ...step, 
-            ...updates, 
-            completedAt: updates.status === 'completed' || updates.status === 'error' ? Date.now() : (step.completedAt ?? undefined),
-            logs: updates.logs ? [...(step.logs || []), ...(Array.isArray(updates.logs) ? updates.logs : [updates.logs])] : step.logs,
-          }
-        : step
-    ))
+    setAnalysisSteps(prev => prev.map(step => {
+      if (step.id !== stepId) return step;
+      
+      const updatedStep: AnalysisStep = {
+        ...step,
+        ...updates,
+        completedAt: updates.status === 'completed' || updates.status === 'error' ? Date.now() : step.completedAt,
+        ...(updates.logs !== undefined ? {
+          logs: [...(step.logs ?? []), ...(Array.isArray(updates.logs) ? updates.logs : [updates.logs])]
+        } : step.logs !== undefined ? { logs: step.logs } : {}),
+      };
+      return updatedStep;
+    }))
   }, [])
 
   const addStepLog = useCallback((stepId: string, logMessage: string) => {

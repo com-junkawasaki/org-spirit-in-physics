@@ -45,8 +45,8 @@ const ghostPatternPercentage = totalResponses > 0
         <tr class="dark:bg-gray-900/50">
           <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">Mean Age (years)</td>
           <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">
-            {participants.length > 0 && participants[0].age
-              ? participants.reduce((sum, p) => sum + (p.age || 0), 0) / participants.length
+            {participants.length > 0 && participants[0]?.age
+              ? participants.reduce((sum, p) => sum + (p.age ?? 0), 0) / participants.length
               : 'N/A'}
           </td>
         </tr>

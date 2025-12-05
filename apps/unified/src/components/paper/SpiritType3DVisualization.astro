@@ -19,8 +19,8 @@ const {
 } = Astro.props;
 
 // Get participantId and sessionId from data
-const participantId = data.participants.length > 0 ? data.participants[0].id : '';
-const sessionId = data.sessions.length > 0 ? data.sessions[0].id : undefined;
+const participantId = data.participants.length > 0 && data.participants[0] ? data.participants[0].id : '';
+const sessionId = data.sessions.length > 0 && data.sessions[0] ? data.sessions[0].id : undefined;
 ---
 
 <div class="spirit-type-3d-visualization">
