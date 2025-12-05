@@ -1,8 +1,7 @@
 // @ts-nocheck
 import { inngest, events } from '../../inngest';
 import type { VideoAnalysisEvent, AnalysisResultEvent } from '../../inngest';
-import { emotionAnalysisAdapter } from '../../adapters/emotion-analysis-adapter';
-import { storageAdapter } from '../../adapters/emotion-analysis-adapter';
+import { emotionAnalysisAdapter, storageAdapter } from '../../adapters';
 import type { EmotionAnalysisResult } from '../../schema/emotion';
 import { existsSync } from 'fs';
 import { join } from 'path';
