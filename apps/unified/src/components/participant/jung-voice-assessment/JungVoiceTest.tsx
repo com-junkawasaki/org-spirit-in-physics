@@ -8,6 +8,7 @@ import { useKawasakiStore } from './store';
 import type { JungVoiceTestProps, Word } from './store';
 import AudioVisualizer from './AudioVisualizer';
 import { JUNG_TEST_WELCOME_MESSAGE } from './constants';
+import * as m from '@/paraglide/messages';
 
 // --- Memoized, Dumb Sub-components ---
 
@@ -36,17 +37,17 @@ const PreflightScreen = React.memo<{
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">デバイスチェック</h2>
+      <h2 className="text-2xl font-bold">{m.device_check()}</h2>
 
       <Card className="p-4">
         <CardHeader>
-            <CardTitle>ようこそ</CardTitle>
+            <CardTitle>{m.welcome()}</CardTitle>
         </CardHeader>
         <CardContent className="text-left">
           <p className="whitespace-pre-wrap">{JUNG_TEST_WELCOME_MESSAGE}</p>
           <audio ref={audioRef} src="/audio/jung-voice-assessment/welcome_message.mp3" autoPlay />
           <Button onClick={playWelcomeAudio} className="mt-4">
-            説明をもう一度聞く
+            {m.listen_again()}
           </Button>
         </CardContent>
       </Card>
@@ -56,21 +57,21 @@ const PreflightScreen = React.memo<{
         {deviceStatus !== 'success' && (
           <div className="absolute inset-0 flex items-center justify-center text-center p-4">
             <p className="text-white/80 text-lg">
-              {deviceStatus === 'pending' && 'カメラとマイクを準備しています...'}
-              {deviceStatus === 'error' && 'デバイスにアクセスできませんでした。'}
+              {deviceStatus === 'pending' && m.preparing_devices()}
+              {deviceStatus === 'error' && m.device_access_error()}
             </p>
           </div>
         )}
       </div>
       {deviceStatus === 'success' && stream && (
         <div className="space-y-3 text-center">
-          <p className="text-green-500">カメラとマイクの準備ができました。</p>
+          <p className="text-green-500">{m.devices_ready()}</p>
           <AudioVisualizer stream={stream} />
         </div>
       )}
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <Button onClick={onStartSession} size="lg" disabled={!stream}>
-        セッションを開始
+        {m.start_session()}
       </Button>
     </div>
   );
@@ -253,7 +254,7 @@ const SessionScreen = React.memo<{
     }, [currentWordIndex, stimulusWords, onResponse, stream, isListening, logEvent, currentSession]);
   
   if (currentWordIndex >= stimulusWords.length) {
-    return <div>次の単語を読み込み中...</div>;
+    return <div>{m.loading_next_word()}</div>;
   }
 
   const progress = ((currentWordIndex + 1) / stimulusWords.length) * 100;
@@ -266,7 +267,7 @@ const SessionScreen = React.memo<{
       <audio ref={stimulusAudioRef} />
        <div className="w-full max-w-md">
           <p className="text-sm text-gray-500 mb-1">
-              セッション {currentSession} - 単語 {currentWordIndex + 1} / {stimulusWords.length}
+              {m.session()} {currentSession} - {m.word()} {currentWordIndex + 1} / {stimulusWords.length}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
@@ -277,8 +278,8 @@ const SessionScreen = React.memo<{
         {stream && <AudioVisualizer stream={stream} />}
       </div>
       <div className="h-8 text-xl text-gray-600">
-        {isListening ? '聞き取り中...' : ''}
-        {recognizedText && `認識結果: ${recognizedText}`}
+        {isListening ? m.listening() : ''}
+        {recognizedText && `${m.recognition_result()}: ${recognizedText}`}
       </div>
     </div>
   );
@@ -288,18 +289,18 @@ SessionScreen.displayName = 'SessionScreen';
 
 const BreakScreen = React.memo<{ onStartNextSession: () => void; }>(({ onStartNextSession }) => (
   <div className="space-y-4">
-    <h2 className="text-2xl font-bold">セッション1が完了しました</h2>
-    <p>短い休憩を取ってください。準備ができたら、セッション2を開始してください。</p>
-    <Button onClick={onStartNextSession} size="lg">セッション2を開始</Button>
+    <h2 className="text-2xl font-bold">{m.session_completed()}</h2>
+    <p>{m.take_break()}</p>
+    <Button onClick={onStartNextSession} size="lg">{m.start_session_2()}</Button>
   </div>
 ));
 BreakScreen.displayName = 'BreakScreen';
 
 const CompletionScreen = React.memo<{ onReset: () => void; }>(({ onReset }) => (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">検査完了</h2>
-      <p>ご協力ありがとうございました。データは保存されました。</p>
-      <Button onClick={onReset}>新しいセッションを開始する</Button>
+      <h2 className="text-2xl font-bold">{m.test_completed()}</h2>
+      <p>{m.data_saved()}</p>
+      <Button onClick={onReset}>{m.start_new_session()}</Button>
     </div>
 ));
 CompletionScreen.displayName = 'CompletionScreen';
@@ -360,7 +361,7 @@ export default function JungVoiceTest({
         logEvent('preflight_devices_acquired');
       } catch (err) {
         setDeviceStatus('error');
-        setError("カメラまたはマイクへのアクセスに失敗しました。ブラウザの権限設定を確認してください。");
+        setError(m.camera_mic_access_failed());
         logEvent('preflight_devices_failed', { error: (err as Error).message });
       }
     };
@@ -387,7 +388,7 @@ export default function JungVoiceTest({
   const startRecording = useCallback(async (session: 1 | 2) => {
     if (!stream) {
       logEvent('recording_start_failed', { reason: 'No media stream available.' });
-      setError("録画を開始できません。メディアストリームが利用できません。");
+      setError(m.recording_start_failed());
       return;
     }
   

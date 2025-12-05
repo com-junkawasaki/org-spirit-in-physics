@@ -1,6 +1,7 @@
 'use client'
 
 import { useSidebar } from '@/contexts/SidebarContext'
+import * as m from '@/paraglide/messages'
 
 // Merkle DAG: sidebar_layout -> navigation_menu_structure
 interface MenuItem {
@@ -14,17 +15,17 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
     {
         id: 'dashboard',
-        label: 'ダッシュボード',
+        label: m.dashboard(),
         href: '/researcher',
         icon: '📊',
-        description: 'システム概要と統計'
+        description: m.system_overview_stats()
     },
     {
         id: 'participants',
-        label: '被験者一覧',
+        label: m.participant_list(),
         href: '/researcher/participants',
         icon: '👥',
-        description: '参加者データ管理'
+        description: m.participant_data_management()
     }
 ]
 
@@ -53,7 +54,7 @@ export function Sidebar() {
                     type="button"
                     onClick={() => setSidebarOpen(!sidebarOpen)}
                     className="p-2 rounded-md hover:bg-muted transition-colors"
-                    aria-label={sidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+                    aria-label={sidebarOpen ? m.sidebar_close() : m.sidebar_open()}
                 >
                     <span className="text-lg">
                         {sidebarOpen ? '◀' : '▶'}

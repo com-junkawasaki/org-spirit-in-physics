@@ -13,6 +13,7 @@ import {
   Clock
 } from 'lucide-react'
 // import Link from 'next/link' // Removed: Next.js specific
+import * as m from '@/paraglide/messages'
 
 // Merkle DAG: participant_overview -> participant_data_interface
 interface ParticipantSummary {
@@ -55,7 +56,7 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
           const data = await response.json()
           setParticipants([{
             id: data.id,
-            name: data.name || `参加者 ${data.id.slice(0, 8)}`,
+            name: data.name || `${m.participants()} ${data.id.slice(0, 8)}`,
             sessionCount: data.sessionCount || 0,
             responseCount: data.responseCount || 0,
             averageSpiritProbability: data.averageSpiritProbability || 0,
@@ -160,7 +161,7 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
             <div className="flex items-center">
               <Users className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">総参加者数</p>
+                <p className="text-sm font-medium text-muted-foreground">{m.total_participants()}</p>
                 <p className="text-2xl font-bold">{summary.totalParticipants}</p>
               </div>
             </div>
@@ -172,7 +173,7 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
             <div className="flex items-center">
               <Calendar className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">総セッション数</p>
+                <p className="text-sm font-medium text-muted-foreground">{m.total_sessions()}</p>
                 <p className="text-2xl font-bold">{summary.totalSessions}</p>
               </div>
             </div>
@@ -184,7 +185,7 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
             <div className="flex items-center">
               <Activity className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">総応答数</p>
+                <p className="text-sm font-medium text-muted-foreground">{m.total_responses()}</p>
                 <p className="text-2xl font-bold">{summary.totalResponses}</p>
               </div>
             </div>
@@ -196,7 +197,7 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
             <div className="flex items-center">
               <TrendingUp className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">平均Spirit確率</p>
+                <p className="text-sm font-medium text-muted-foreground">{m.average_spirit_probability()}</p>
                 <p className="text-2xl font-bold">
                   {(summary.averageSpiritProbability * 100).toFixed(1)}%
                 </p>
@@ -210,7 +211,7 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
             <div className="flex items-center">
               <Clock className="h-8 w-8 text-red-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">アクティブ参加者</p>
+                <p className="text-sm font-medium text-muted-foreground">{m.active_participants()}</p>
                 <p className="text-2xl font-bold">{summary.activeParticipants}</p>
               </div>
             </div>
@@ -221,7 +222,7 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
       {/* Individual Participant Details - Only show current participant info */}
       <Card>
         <CardHeader>
-          <CardTitle>参加者詳細情報</CardTitle>
+          <CardTitle>{m.participant_detail()}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

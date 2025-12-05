@@ -3,6 +3,7 @@
 import { ChevronRight, Home } from 'lucide-react'
 // import Link from 'next/link' // Removed: Next.js specific
 import { cn } from '../../../lib/utils'
+import * as m from '@/paraglide/messages'
 
 interface BreadcrumbItem {
   label: string
@@ -26,7 +27,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
         className="flex items-center hover:text-foreground transition-colors"
       >
         <Home className="h-4 w-4 mr-1" />
-        <span className="sr-only">ホーム</span>
+        <span className="sr-only">{m.home()}</span>
       </a>
 
       {items.map((item, index) => (
@@ -63,19 +64,19 @@ export function DashboardBreadcrumb() {
 export function DataManagementBreadcrumb() {
   return (
     <Breadcrumb items={[
-      { label: 'データ管理', icon: <span className="text-primary">📊</span> }
+      { label: m.data_management(), icon: <span className="text-primary">📊</span> }
     ]} />
   )
 }
 
 export function AnalysisBreadcrumb({ runId }: { runId?: string }) {
   const items: BreadcrumbItem[] = [
-    { label: '分析', icon: <span className="text-purple-500">📈</span> }
+    { label: m.analysis(), icon: <span className="text-purple-500">📈</span> }
   ]
 
   if (runId) {
-    items.push({ label: `実行 ${runId}`, href: `/analysis/${runId}` })
-    items.push({ label: 'パイプライン' })
+    items.push({ label: `${m.run()} ${runId}`, href: `/analysis/${runId}` })
+    items.push({ label: m.pipeline() })
   }
 
   return <Breadcrumb items={items} />
@@ -83,11 +84,11 @@ export function AnalysisBreadcrumb({ runId }: { runId?: string }) {
 
 export function ImportBreadcrumb({ jobId }: { jobId?: string }) {
   const items: BreadcrumbItem[] = [
-    { label: 'インポート', icon: <span className="text-green-500">📥</span> }
+    { label: m.import(), icon: <span className="text-green-500">📥</span> }
   ]
 
   if (jobId) {
-    items.push({ label: `ジョブ ${jobId}` })
+    items.push({ label: `${m.job()} ${jobId}` })
   }
 
   return <Breadcrumb items={items} />
@@ -95,11 +96,11 @@ export function ImportBreadcrumb({ jobId }: { jobId?: string }) {
 
 export function ParticipantsBreadcrumb({ participantId }: { participantId?: string }) {
   const items: BreadcrumbItem[] = [
-    { label: '参加者', icon: <span className="text-blue-500">👥</span> }
+    { label: m.participants(), icon: <span className="text-blue-500">👥</span> }
   ]
 
   if (participantId) {
-    items.push({ label: `参加者 ${participantId}` })
+    items.push({ label: `${m.participants()} ${participantId}` })
   }
 
   return <Breadcrumb items={items} />

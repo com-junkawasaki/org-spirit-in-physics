@@ -1,6 +1,7 @@
 ---
 import '../styles/globals.css';
 import ClientClerkProvider from '../components/participant/ClientClerkProvider';
+import { extractLocaleFromRequest } from '../paraglide/runtime.js';
 
 interface Props {
   title?: string;
@@ -13,10 +14,19 @@ const {
   description = "Extended evaluation of human illusion by Jungian psychology and computational models.",
   requireClerk = false,
 } = Astro.props;
+
+// Extract locale from request (cookie-based)
+let locale = 'ja';
+try {
+  locale = extractLocaleFromRequest(Astro.request);
+} catch {
+  // Fallback to default locale if extraction fails
+  locale = 'ja';
+}
 ---
 
 <!doctype html>
-<html lang="ja">
+<html lang={locale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
