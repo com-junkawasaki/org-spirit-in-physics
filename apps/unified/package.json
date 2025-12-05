@@ -81,10 +81,10 @@
     "zustand": "^5.0.6"
   },
   "optionalDependencies": {
+    "@astrojs/check": "^0.9.6",
     "@humeai/sdk": "^0.10.0"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.6",
     "@inlang/paraglide-js": "^2.4.0",
     "@playwright/test": "^1.54.1",
     "@tailwindcss/typography": "^0.5.16",
