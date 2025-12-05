@@ -28,7 +28,8 @@ const grpcClientPath = resolve(
 
 // Check if we're in dev mode BEFORE any adapter imports
 const isDev = process.argv.includes('dev') || process.argv.includes('--dev') || 
-              process.env.NODE_ENV !== 'production';
+              process.env.NODE_ENV !== 'production' ||
+              process.env.NODE_ENV === undefined; // Docker環境ではNODE_ENVが未設定の場合がある
 
 // Check if we should allow all hosts (for Docker/OrbStack)
 const allowAllHosts = process.env.VITE_ALLOWED_HOSTS === 'true' || isDev;
@@ -69,12 +70,8 @@ export default defineConfig(async () => {
       host: true,
       port: 3000,
       // Allow all hosts in development (Docker/OrbStack environment)
-      allowedHosts: [
-        'unified.spirit-in-physics.orb.local',
-        'localhost',
-        '.orb.local',
-        '127.0.0.1',
-      ],
+      // Vite 6ではallowedHostsは配列またはtrueを直接指定します
+      allowedHosts: true,
     },
     markdown: {
       remarkPlugins: [remarkMath, remarkGfm],
@@ -108,8 +105,10 @@ export default defineConfig(async () => {
         host: '0.0.0.0',
         port: 3000,
         // Fix for Issue #13060: explicitly set allowedHosts in vite.server
-        // This is required for astro dev to respect the allowedHosts setting
-        allowedHosts: ['.orb.local', 'unified.spirit-in-physics.orb.local', 'localhost'],
+        // Vite 6ではallowedHostsは配列またはtrueを直接指定します。関数形式は非対応です。
+        // Docker/OrbStack環境では常にtrueを設定してすべてのホストを許可
+        // docker-compose.ymlでVITE_ALLOWED_HOSTS=trueが設定されているため、常にtrueを設定
+        allowedHosts: true,
         strictPort: false,
         hmr: {
           protocol: 'ws',
