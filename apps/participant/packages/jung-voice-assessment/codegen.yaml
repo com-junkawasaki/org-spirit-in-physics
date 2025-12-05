@@ -1,4 +1,12 @@
-schema: ${GRAPHQL_API_URL:-http://localhost:8081/graphql}
+# GraphQL Code Generator configuration
+# Schema-first approach: Uses SDL file from server
+# Generates TypeScript types and operations from GraphQL SDL
+
+schema:
+  - ../../../performers/services/graphql/schema.graphql
+  # Alternative: Use introspection endpoint (uncomment to use live schema)
+  # - ${GRAPHQL_API_URL:-http://localhost:8081/graphql}
+
 documents: 'src/**/*.{ts,tsx,graphql,gql}'
 generates:
   src/generated/graphql.ts:
@@ -10,4 +18,7 @@ generates:
       useIndexSignature: true
       skipTypename: false
       enumsAsTypes: true
-
+      scalars:
+        ID: string
+        DateTime: string
+        JSON: any

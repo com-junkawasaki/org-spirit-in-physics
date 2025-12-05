@@ -1,3 +1,64 @@
+scalar DateTime
+scalar JSON
+
+type Query {
+  participants: [Participant!]!
+  participant(id: ID!): Participant
+  stimulusWords: [StimulusWord!]!
+  stimulusWord(id: Int!): StimulusWord
+  sessions(participantId: ID!): [Session!]!
+  timeline(
+    participantId: ID!
+    sessionId: ID
+    startTime: String
+    endTime: String
+    interval: String
+  ): [TimelinePoint!]!
+  wordAggregates(participantId: ID!, sessionId: ID): [WordAggregate!]!
+  emotionVectors(participantId: ID!, sessionId: ID): [EmotionVector!]!
+  wordStatistics(participantId: ID!, sessionId: ID): [WordStatistics!]!
+}
+
+type Mutation {
+  createParticipant(input: CreateParticipantInput!): Participant!
+  createSession(input: CreateSessionInput!): Session!
+  uploadArtifact(input: UploadArtifactInput!): String!
+}
+
+type Participant {
+  id: ID!
+  age: Int
+  gender: String
+  handedness: String
+  isPublic: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Session {
+  id: ID!
+  participantId: ID!
+  sessionIndex: Int
+  startTs: Int!
+  endTs: Int
+  events: [JSON!]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type TimelinePoint {
+  time: String!
+  participantId: ID!
+  sessionId: ID!
+  word: String
+  eventType: String
+  reactionValue: Float
+  reactionTime: Float
+  hasResponse: Boolean!
+  emotions: [EmotionData!]!
+  physiological: [PhysiologicalData!]!
+  metadata: JSON!
+}
 
 type EmotionData {
   name: String!
@@ -12,146 +73,87 @@ type PhysiologicalData {
   metadata: JSON
 }
 
-type EmotionVector {
-	participantId: ID!
-	sessionId: ID!
-	word: String!
-	joySum: Float
-	sadnessSum: Float
-	angerSum: Float
-	fearSum: Float
-	surpriseSum: Float
-	disgustSum: Float
-	calmSum: Float
-	focusSum: Float
-	excitementSum: Float
-	confusionSum: Float
-	emotionEntryCount: Int!
-	emotionByModality: JSON
-}
-
-
-
-
-"""
-A scalar that can represent any JSON value.
-"""
-scalar JSON
-
-type Mutation {
-	"""
-	Create a new participant
-	"""
-	createParticipant: String!
-}
-
-type Participant {
-	id: ID!
-	age: Int
-	gender: String
-	handedness: String
-	createdAt: String!
-	updatedAt: String!
-}
-
-type Query {
-	"""
-	Get all participants
-	"""
-	participants: [Participant!]!
-	"""
-	Get a participant by ID
-	"""
-	participant(id: ID!): Participant
-	"""
-	Get sessions for a participant
-	"""
-	sessions(participantId: ID!): [Session!]!
-	"""
-	Get timeline data for a participant and optional session
-	"""
-	timeline(participantId: ID!, sessionId: ID, startTime: String, endTime: String, interval: String): [TimelinePoint!]!
-	"""
-	Get word aggregates by session (from materialized view)
-	This provides pre-aggregated data for efficient client-side processing
-	"""
-	wordAggregates(participantId: ID!, sessionId: ID): [WordAggregate!]!
-	"""
-	Get emotion vectors by word (from materialized view)
-	This provides pre-aggregated emotion data for efficient vector operations
-	"""
-	emotionVectors(participantId: ID!, sessionId: ID): [EmotionVector!]!
-	"""
-	Get word statistics by session (from materialized view)
-	This provides pre-calculated statistics for efficient client-side processing
-	"""
-	wordStatistics(participantId: ID!, sessionId: ID): [WordStatistics!]!
-}
-
-type Session {
-	id: ID!
-	participantId: ID!
-	sessionIndex: Int
-	startTs: Int!
-	endTs: Int
-	events: [JSON!]!
-	createdAt: String!
-	updatedAt: String!
-}
-
-
-type TimelinePoint {
-	time: String!
-	participantId: ID!
-	sessionId: ID!
-	word: String
-	eventType: String
-	reactionValue: Float
-	reactionTime: Float
-	hasResponse: Boolean!
-	emotions: [EmotionData!]!
-  physiological: [PhysiologicalData!]!
-	metadata: JSON!
+type StimulusWord {
+  id: Int!
+  japanese: String!
+  english: String!
+  pronunciation: String!
 }
 
 type WordAggregate {
-	participantId: ID!
-	sessionId: ID!
-	word: String!
-	count: Int!
-	avgReactionValue: Float
-	sumReactionValue: Float
-	avgReactionTime: Float
-	sumReactionTime: Float
-	avgPhysiological: Float
-	sumPhysAbs: Float
-	physSeries: [Float]
-	rtSeries: [Float]
-	rvSeries: [Float]
-	firstTime: String!
-	lastTime: String!
+  participantId: ID!
+  sessionId: ID!
+  word: String!
+  count: Int!
+  avgReactionValue: Float
+  sumReactionValue: Float
+  avgReactionTime: Float
+  sumReactionTime: Float
+  avgPhysiological: Float
+  sumPhysAbs: Float
+  physSeries: [Float]
+  rtSeries: [Float]
+  rvSeries: [Float]
+  firstTime: String!
+  lastTime: String!
+}
+
+type EmotionVector {
+  participantId: ID!
+  sessionId: ID!
+  word: String!
+  joySum: Float
+  sadnessSum: Float
+  angerSum: Float
+  fearSum: Float
+  surpriseSum: Float
+  disgustSum: Float
+  calmSum: Float
+  focusSum: Float
+  excitementSum: Float
+  confusionSum: Float
+  emotionEntryCount: Int!
+  emotionByModality: JSON
 }
 
 type WordStatistics {
-	participantId: ID!
-	sessionId: ID!
-	word: String!
-	count: Int!
-	avgReactionTime: Float
-	stdReactionTime: Float
-	varReactionTime: Float
-	avgReactionValue: Float
-	stdReactionValue: Float
-	varReactionValue: Float
-	avgPhysiological: Float
-	stdPhysiological: Float
-	varPhysiological: Float
-	speedIndex: Float
-	physSeries: [Float]
-	rtSeries: [Float]
+  participantId: ID!
+  sessionId: ID!
+  word: String!
+  count: Int!
+  avgReactionTime: Float
+  stdReactionTime: Float
+  varReactionTime: Float
+  avgReactionValue: Float
+  stdReactionValue: Float
+  varReactionValue: Float
+  avgPhysiological: Float
+  stdPhysiological: Float
+  varPhysiological: Float
+  speedIndex: Float
+  physSeries: [Float]
+  rtSeries: [Float]
 }
 
-schema {
-	query: Query
-	mutation: Mutation
+input CreateParticipantInput {
+  id: ID
+  signature: String!
+  agreements: JSON!
+  agreedAt: String!
+  isPublic: Boolean
+}
+
+input CreateSessionInput {
+  participantId: ID!
+  sessionIndex: Int
+  startTs: Int!
+  events: JSON!
+}
+
+input UploadArtifactInput {
+  participantId: ID!
+  fileName: String!
+  fileData: String!
+  contentType: String!
+  artifactType: String!
 }
