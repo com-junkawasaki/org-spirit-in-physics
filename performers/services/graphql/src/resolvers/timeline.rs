@@ -98,13 +98,19 @@ impl TimelineQuery {
             let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").ok()?;
             let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").ok()?;
 
+            // Convert serde_json::Value to Vec<JSON> (JSON is String wrapper)
+            let events_vec: Vec<serde_json::Value> = serde_json::from_value(events_json).unwrap_or_default();
+            let events: Vec<crate::schema::JSON> = events_vec.into_iter()
+                .map(|v| crate::schema::JSON(serde_json::to_string(&v).unwrap_or_else(|_| "null".to_string())))
+                .collect();
+
             Some(Session {
                 id: juniper::ID::from(id.to_string()),
                 participant_id: juniper::ID::from(participant_id.to_string()),
                 session_index,
                 start_ts,
                 end_ts,
-                events: serde_json::from_value(events_json).unwrap_or_default(),
+                events,
                 created_at: created_at.to_rfc3339(),
                 updated_at: updated_at.to_rfc3339(),
             })
@@ -380,7 +386,10 @@ impl TimelineQuery {
                         Some(PhysiologicalData {
                             timestamp: p.get("timestamp").and_then(|v| v.as_str()).map(|s| s.to_string()),
                             value: p.get("value").and_then(|v| v.as_f64()),
-                            metadata: p.get("metadata").cloned(),
+                            metadata: p.get("metadata").and_then(|v| {
+                                // Convert serde_json::Value to JSON (String wrapper)
+                                Some(crate::schema::JSON(serde_json::to_string(v).unwrap_or_else(|_| "null".to_string())))
+                            }),
                         })
                     }).collect()
                 } else {
@@ -398,7 +407,7 @@ impl TimelineQuery {
                     has_response,
                     emotions,
                     physiological,
-                    metadata: metadata_json,
+                    metadata: crate::schema::JSON(serde_json::to_string(&metadata_json).unwrap_or_else(|_| "{}".to_string())),
                 })
             }).collect())
         }
@@ -593,7 +602,9 @@ impl TimelineQuery {
                 excitement_sum,
                 confusion_sum,
                 emotion_entry_count,
-                emotion_by_modality,
+                emotion_by_modality: emotion_by_modality.map(|v| {
+                    crate::schema::JSON(serde_json::to_string(&v).unwrap_or_else(|_| "null".to_string()))
+                }),
             })
         }).collect())
     }

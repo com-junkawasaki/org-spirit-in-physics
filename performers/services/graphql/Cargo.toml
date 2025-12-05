@@ -24,8 +24,8 @@ name = "graphql-service"
 path = "src/main.rs"
 
 [dependencies]
-juniper = "0.17"
-juniper-from-schema = { git = "https://github.com/davidpdrsn/juniper-from-schema.git" }
+juniper = "0.14"
+juniper-from-schema = "0.5.2"
 poem = { version = "1.3", features = ["multipart", "websocket"] }
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json"] }
 tokio = { version = "1", features = ["full"] }

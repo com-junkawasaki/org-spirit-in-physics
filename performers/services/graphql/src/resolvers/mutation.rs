@@ -85,7 +85,10 @@ impl ParticipantMutation {
         let now = Utc::now();
 
         // Parse events JSON
-        let events: Vec<Value> = serde_json::from_value(input.events.clone())
+        // input.events is JSON (String wrapper), convert to serde_json::Value first
+        let events_json_value: serde_json::Value = serde_json::from_str(&input.events.0)
+            .map_err(|e| FieldError::new(format!("Invalid events JSON format: {}", e), juniper::Value::Null))?;
+        let events: Vec<Value> = serde_json::from_value(events_json_value)
             .map_err(|e| FieldError::new(format!("Invalid events format: {}", e), juniper::Value::Null))?;
 
         // Insert session into database (without events JSONB column)
@@ -188,13 +191,19 @@ impl ParticipantMutation {
         let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at").map_err(|e| FieldError::new(format!("Failed to get created_at: {}", e), juniper::Value::Null))?;
         let updated_at: chrono::DateTime<chrono::Utc> = row.try_get("updated_at").map_err(|e| FieldError::new(format!("Failed to get updated_at: {}", e), juniper::Value::Null))?;
 
+        // Convert serde_json::Value to Vec<JSON> (JSON is String wrapper)
+        let events_vec: Vec<serde_json::Value> = serde_json::from_value(events_json).unwrap_or_default();
+        let events: Vec<crate::schema::JSON> = events_vec.into_iter()
+            .map(|v| crate::schema::JSON(serde_json::to_string(&v).unwrap_or_else(|_| "null".to_string())))
+            .collect();
+
         Ok(Session {
             id: juniper::ID::from(id.to_string()),
             participant_id: juniper::ID::from(participant_id.to_string()),
             session_index,
             start_ts,
             end_ts,
-            events: serde_json::from_value(events_json).unwrap_or_default(),
+            events,
             created_at: created_at.to_rfc3339(),
             updated_at: updated_at.to_rfc3339(),
         })

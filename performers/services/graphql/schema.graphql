@@ -1,28 +1,33 @@
 scalar DateTime
 scalar JSON
 
+schema {
+  query: Query
+  mutation: Mutation
+}
+
 type Query {
-  participants: [Participant!]!
-  participant(id: ID!): Participant
-  stimulusWords: [StimulusWord!]!
-  stimulusWord(id: Int!): StimulusWord
-  sessions(participantId: ID!): [Session!]!
+  participants: [Participant!]! @juniper(ownership: "owned")
+  participant(id: ID!): Participant @juniper(ownership: "owned")
+  stimulusWords: [StimulusWord!]! @juniper(ownership: "owned")
+  stimulusWord(id: Int!): StimulusWord @juniper(ownership: "owned")
+  sessions(participantId: ID!): [Session!]! @juniper(ownership: "owned")
   timeline(
     participantId: ID!
     sessionId: ID
     startTime: String
     endTime: String
     interval: String
-  ): [TimelinePoint!]!
-  wordAggregates(participantId: ID!, sessionId: ID): [WordAggregate!]!
-  emotionVectors(participantId: ID!, sessionId: ID): [EmotionVector!]!
-  wordStatistics(participantId: ID!, sessionId: ID): [WordStatistics!]!
+  ): [TimelinePoint!]! @juniper(ownership: "owned")
+  wordAggregates(participantId: ID!, sessionId: ID): [WordAggregate!]! @juniper(ownership: "owned")
+  emotionVectors(participantId: ID!, sessionId: ID): [EmotionVector!]! @juniper(ownership: "owned")
+  wordStatistics(participantId: ID!, sessionId: ID): [WordStatistics!]! @juniper(ownership: "owned")
 }
 
 type Mutation {
-  createParticipant(input: CreateParticipantInput!): Participant!
-  createSession(input: CreateSessionInput!): Session!
-  uploadArtifact(input: UploadArtifactInput!): String!
+  createParticipant(input: CreateParticipantInput!): Participant! @juniper(ownership: "owned")
+  createSession(input: CreateSessionInput!): Session! @juniper(ownership: "owned")
+  uploadArtifact(input: UploadArtifactInput!): String! @juniper(ownership: "owned")
 }
 
 type Participant {
