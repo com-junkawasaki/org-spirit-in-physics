@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { inngest, events } from '../../inngest';
 import type { BatchAnalysisEvent } from '../../inngest';
-import { emotionAnalysisAdapter } from '@/lib/adapters';
-import { storageAdapter } from '@/lib/adapters';
+import { emotionAnalysisAdapter } from '@/lib/participant/adapters';
+import { storageAdapter } from '@/lib/participant/adapters';
 import { readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 

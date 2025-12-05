@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
+import node from '@astrojs/node';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -27,57 +28,46 @@ const grpcClientPath = resolve(
 );
 
 // Check if we're in dev mode BEFORE any adapter imports
-const isDev = process.argv.includes('dev') || process.argv.includes('--dev') || 
-              process.env.NODE_ENV !== 'production' ||
-              process.env.NODE_ENV === undefined; // Docker環境ではNODE_ENVが未設定の場合がある
+// For build command, always use adapter (even if NODE_ENV is not production)
+const isDev = process.argv.includes('dev') || process.argv.includes('--dev');
 
 // Check if we should allow all hosts (for Docker/OrbStack)
 const allowAllHosts = process.env.VITE_ALLOWED_HOSTS === 'true' || isDev;
 
 // https://astro.build/config
-export default defineConfig(async () => {
-  // Only try to load adapter if we're NOT in dev mode
-  let vercelAdapter = undefined;
-  if (!isDev) {
-    try {
-      const basePath = '@astrojs';
-      const adapterPath = basePath + '/vercel/server';
-      const vercelModule = await import(adapterPath);
-      vercelAdapter = vercelModule.default({
-        webStaticCacheHeader: 'Cache-Control: public, max-age=31536000, immutable',
-        functionPerRoute: true,
-      });
-    } catch (error) {
-      // Silently ignore if adapter is not available (common in Docker dev environments)
-    }
-  }
+export default defineConfig({
+  // Use Node.js adapter for builds (Docker/Node.js environments)
+  // In dev mode, Astro's built-in dev server handles SSR without an adapter
+  // For 'hybrid' output mode, adapter is required for build
+  // Always set adapter for hybrid output (required for SSR)
+  adapter: node({
+    mode: 'standalone',
+  }),
   
-  return {
-    integrations: [
-      mdx({
-        remarkPlugins: [remarkMath, remarkGfm],
-        rehypePlugins: [rehypeKatex],
-      }),
-      tailwind({
-        applyBaseStyles: true,
-        configFile: './tailwind.config.mjs',
-      }),
-      react(),
-    ],
-    output: 'hybrid', // Hybrid output: static pages + SSR for API routes
-    ...(vercelAdapter && { adapter: vercelAdapter }),
-    server: {
-      host: true,
-      port: 3000,
-      // Allow all hosts in development (Docker/OrbStack environment)
-      // Vite 6ではallowedHostsは配列またはtrueを直接指定します
-      allowedHosts: true,
-    },
-    markdown: {
+  integrations: [
+    mdx({
       remarkPlugins: [remarkMath, remarkGfm],
       rehypePlugins: [rehypeKatex],
-    },
-    vite: {
+    }),
+    tailwind({
+      applyBaseStyles: true,
+      configFile: './tailwind.config.mjs',
+    }),
+    react(),
+  ],
+  output: 'server', // Server-side rendering for API routes and dynamic pages
+  server: {
+    host: true,
+    port: 3000,
+    // Allow all hosts in development (Docker/OrbStack environment)
+    // Vite 6ではallowedHostsは配列またはtrueを直接指定します
+    allowedHosts: true,
+  },
+  markdown: {
+    remarkPlugins: [remarkMath, remarkGfm],
+    rehypePlugins: [rehypeKatex],
+  },
+  vite: {
       resolve: {
         alias: {
           '@': resolve(__dirname, './src'),
@@ -123,8 +113,7 @@ export default defineConfig(async () => {
           usePolling: true,
           interval: 1000,
         },
-      },
     },
-  };
+  },
 });
 

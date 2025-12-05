@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.10",
+    "@astrojs/node": "^9.5.1",
     "@astrojs/react": "^3.6.2",
     "@astrojs/tailwind": "^5.1.4",
     "@astrojs/vercel": "^8.0.0",
