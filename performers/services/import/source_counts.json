@@ -1,0 +1,200 @@
+{
+  "25111604-c7db-4bfd-8662-e55060e332d6": {
+    "burst": {
+      "csv": 41,
+      "json": 23
+    },
+    "language": {
+      "csv": 484,
+      "json": 242
+    },
+    "prosody": {
+      "csv": 196,
+      "json": 96
+    },
+    "face": {
+      "csv": 3563,
+      "json": 1802
+    }
+  },
+  "a4e1b8f4-e267-41a7-acfc-07fe1b7c06fb": {
+    "burst": {
+      "csv": 49,
+      "json": 38
+    },
+    "language": {
+      "csv": 442,
+      "json": 219
+    },
+    "prosody": {
+      "csv": 194,
+      "json": 95
+    },
+    "face": {
+      "csv": 3614,
+      "json": 1802
+    }
+  },
+  "4512513e-9132-4556-9858-bac08f28037f": {
+    "burst": {
+      "csv": 0,
+      "json": 0
+    },
+    "language": {
+      "csv": 0,
+      "json": 0
+    },
+    "prosody": {
+      "csv": 0,
+      "json": 0
+    },
+    "face": {
+      "csv": 0,
+      "json": 0
+    }
+  },
+  "5346d514-e501-457a-aff1-55c92074a6f2": {
+    "burst": {
+      "csv": 82,
+      "json": 38
+    },
+    "language": {
+      "csv": 437,
+      "json": 184
+    },
+    "prosody": {
+      "csv": 189,
+      "json": 85
+    },
+    "face": {
+      "csv": 3607,
+      "json": 1803
+    }
+  },
+  "5ac869a3-b8db-49c3-9362-3e149a5415e9": {
+    "burst": {
+      "csv": 16,
+      "json": 9
+    },
+    "language": {
+      "csv": 439,
+      "json": 217
+    },
+    "prosody": {
+      "csv": 194,
+      "json": 97
+    },
+    "face": {
+      "csv": 3606,
+      "json": 1802
+    }
+  },
+  "7dda0261-a6f4-4208-bd61-4244380d277f": {
+    "burst": {
+      "csv": 39,
+      "json": 20
+    },
+    "language": {
+      "csv": 429,
+      "json": 219
+    },
+    "prosody": {
+      "csv": 189,
+      "json": 91
+    },
+    "face": {
+      "csv": 3604,
+      "json": 1802
+    }
+  },
+  "ad96101f-a7a8-4d71-8d82-c0478975c40b": {
+    "burst": {
+      "csv": 110,
+      "json": 51
+    },
+    "language": {
+      "csv": 506,
+      "json": 260
+    },
+    "prosody": {
+      "csv": 191,
+      "json": 96
+    },
+    "face": {
+      "csv": 3611,
+      "json": 1807
+    }
+  },
+  "2a0d7a69-f953-4c29-87a5-8a8e4e8bd413": {
+    "burst": {
+      "csv": 23,
+      "json": 13
+    },
+    "language": {
+      "csv": 367,
+      "json": 184
+    },
+    "prosody": {
+      "csv": 196,
+      "json": 99
+    },
+    "face": {
+      "csv": 1094,
+      "json": 914
+    }
+  },
+  "e41a9cd2-d803-49a8-9020-0260e55cd03e": {
+    "burst": {
+      "csv": 115,
+      "json": 60
+    },
+    "language": {
+      "csv": 489,
+      "json": 251
+    },
+    "prosody": {
+      "csv": 192,
+      "json": 96
+    },
+    "face": {
+      "csv": 3486,
+      "json": 1770
+    }
+  },
+  "15592cdb-86cf-4baf-86f5-66184169ee39": {
+    "burst": {
+      "csv": 29,
+      "json": 14
+    },
+    "language": {
+      "csv": 384,
+      "json": 191
+    },
+    "prosody": {
+      "csv": 197,
+      "json": 97
+    },
+    "face": {
+      "csv": 3604,
+      "json": 1802
+    }
+  },
+  "144b325f-5966-4d59-a629-f2ca421388cc": {
+    "burst": {
+      "csv": 27,
+      "json": 13
+    },
+    "language": {
+      "csv": 447,
+      "json": 221
+    },
+    "prosody": {
+      "csv": 186,
+      "json": 93
+    },
+    "face": {
+      "csv": 3605,
+      "json": 1803
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "source_totals": {
+    "csv": {
+      "burst": 531,
+      "language": 4424,
+      "prosody": 1924,
+      "face": 33394
+    },
+    "json": {
+      "burst": 279,
+      "language": 2188,
+      "prosody": 945,
+      "face": 17107
+    },
+    "total": {
+      "burst": 810,
+      "language": 6612,
+      "prosody": 2869,
+      "face": 50501
+    }
+  },
+  "postgres_totals": {
+    "burst": 531,
+    "language": 4424,
+    "prosody": 1924,
+    "face": 33394
+  },
+  "comparison": {
+    "burst": {
+      "csv": 531,
+      "postgres": 531,
+      "difference": 0,
+      "status": "\u2713 MATCH"
+    },
+    "language": {
+      "csv": 4424,
+      "postgres": 4424,
+      "difference": 0,
+      "status": "\u2713 MATCH"
+    },
+    "prosody": {
+      "csv": 1924,
+      "postgres": 1924,
+      "difference": 0,
+      "status": "\u2713 MATCH"
+    },
+    "face": {
+      "csv": 33394,
+      "postgres": 33394,
+      "difference": 0,
+      "status": "\u2713 MATCH"
+    }
+  },
+  "parquet_status": "not_found",
+  "validation_status": "all_match"
+}
