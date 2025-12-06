@@ -70,6 +70,7 @@ export interface WordNode {
 	axis?: [number, number, number];
 	fixed?: boolean;
 	initial?: [number, number, number];
+	position?: [number, number, number];
 	color?: string;
 	nodeType?: string;
 	emotion?: Partial<

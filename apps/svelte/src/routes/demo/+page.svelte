@@ -22,7 +22,7 @@
 		delta: 0.016
 	};
 
-	onMount(async () => {
+	onMount(() => {
 		// デモデータの生成
 		// 実際の実装ではGraphQLからデータを取得
 		nodes = [

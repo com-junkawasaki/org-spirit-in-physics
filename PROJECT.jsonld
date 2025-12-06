@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.39.0",
+  "version": "1.40.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-20T15:00:00+09:00",
-  "merkleRoot": "タイムライン表示と3Dフォースモデル表示問題解決完了: timeline_pointsテーブルのwordカラムをsession_data.jsonから更新、GraphQLプロキシAPI実装、CORS設定更新、クライアント側GraphQLリクエストのプロキシ経由化によりブラウザからのアクセス問題を解決",
+  "updatedAt": "2025-12-06T07:58:54+09:00",
+  "merkleRoot": "SvelteKitアプリケーションのClerk認証統合完了: @clerk/sveltekitからsvelte-clerkへの移行、SSR対応によるuseUserエラー修正、500エラー解決、Docker Composeでのsvelteサービス起動設定完了",
   
   "story": {
     "@id": "project:story",
@@ -1623,7 +1623,21 @@
             "マイグレーションファイル ENUM型対応修正",
             "physiological_measurement_typesテーブルJOIN削除",
             "ビュー・マテリアライズドビューENUM型直接使用に更新",
-            "GraphQLクエリエラー解消（column pm.measurement_type does not exist）"
+            "GraphQLクエリエラー解消（column pm.measurement_type does not exist）",
+            "SvelteKitアプリケーションのClerk認証統合",
+            "@clerk/sveltekitからsvelte-clerkへの移行",
+            "svelte-clerkパッケージの追加（^0.3.0）",
+            "hooks.client.tsでのinitializeClerk実装",
+            "hooks.server.tsでのSSR対応（clerkPlugin削除）",
+            "+layout.svelteでのClerkProvider統合",
+            "useUserのSSR対応（browserチェック追加）",
+            "sign-in/sign-up/sign-outページのsvelte-clerk対応",
+            "Docker Composeでのsvelteサービス設定",
+            "svelteサービスのDockerfile.dev作成",
+            "svelte_node_modulesボリューム設定",
+            "HMRとファイル監視のDocker環境変数設定",
+            "500エラー解決（useUser is not a function）",
+            "SSRでのuseUser使用エラー修正"
     ]
   },
   

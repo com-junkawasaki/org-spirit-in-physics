@@ -256,9 +256,7 @@
 				}
 			});
 
-			// Initialize buffers
-			initializeBuffers();
-
+			// Buffers will be initialized by reactive statement when nodes/links are available
 			// Start animation
 			animate();
 		} catch (error) {
@@ -268,7 +266,7 @@
 	}
 
 	function initializeBuffers() {
-		if (!device || nodes.length === 0) return;
+		if (!device || nodes.length === 0 || links.length === 0) return;
 
 		const nodeData = createNodeData(nodes);
 		const linkData = createLinkData(links);
@@ -393,7 +391,7 @@
 			return;
 		}
 
-		if (device && computePipeline && bindGroup && nodeBuffer && nodes.length > 0) {
+		if (device && computePipeline && bindGroup && nodeBuffer && nodes.length > 0 && links.length > 0) {
 			// Run compute shader
 			const commandEncoder = device.createCommandEncoder();
 			const computePass = commandEncoder.beginComputePass();
@@ -406,6 +404,9 @@
 			render();
 
 			device.queue.submit([commandEncoder.finish()]);
+		} else if (nodes.length > 0 && links.length > 0) {
+			// Fallback to Canvas 2D rendering if WebGPU is not ready
+			render();
 		}
 
 		animationFrameId = requestAnimationFrame(animate);
@@ -415,7 +416,7 @@
 		// Simplified rendering - in a full implementation, this would
 		// read node positions from GPU buffer and render spheres/links
 		// For now, we'll use Canvas 2D as fallback
-		if (!canvas || !context) return;
+		if (!canvas) return;
 
 		const ctx = canvas.getContext('2d');
 		if (!ctx) return;
@@ -424,10 +425,25 @@
 		ctx.fillStyle = background;
 		ctx.fillRect(0, 0, width, height);
 
+		if (nodes.length === 0 || links.length === 0) return;
+
 		// Project 3D nodes to 2D (simplified)
 		const centerX = width / 2;
 		const centerY = height / 2;
 		const scale = 2.0;
+
+		// Initialize positions if not set
+		for (let i = 0; i < nodes.length; i++) {
+			if (!nodes[i].position) {
+				// Use initial position or random position
+				const initial = nodes[i].initial || [
+					(Math.random() - 0.5) * 200,
+					(Math.random() - 0.5) * 200,
+					(Math.random() - 0.5) * 200
+				];
+				nodes[i].position = initial;
+			}
+		}
 
 		// Draw links
 		ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
@@ -435,13 +451,13 @@
 		for (const link of links) {
 			const source = nodes[link.source];
 			const target = nodes[link.target];
-			if (!source || !target) continue;
+			if (!source || !target || !source.position || !target.position) continue;
 
 			// Simplified 2D projection
-			const x1 = centerX + (source.position?.[0] || 0) * scale;
-			const y1 = centerY + (source.position?.[1] || 0) * scale;
-			const x2 = centerX + (target.position?.[0] || 0) * scale;
-			const y2 = centerY + (target.position?.[1] || 0) * scale;
+			const x1 = centerX + source.position[0] * scale;
+			const y1 = centerY + source.position[1] * scale;
+			const x2 = centerX + target.position[0] * scale;
+			const y2 = centerY + target.position[1] * scale;
 
 			ctx.beginPath();
 			ctx.moveTo(x1, y1);
@@ -451,8 +467,9 @@
 
 		// Draw nodes
 		for (const node of nodes) {
-			const x = centerX + (node.position?.[0] || 0) * scale;
-			const y = centerY + (node.position?.[1] || 0) * scale;
+			if (!node.position) continue;
+			const x = centerX + node.position[0] * scale;
+			const y = centerY + node.position[1] * scale;
 			const radius = (node.scale || 1) * 5;
 
 			ctx.fillStyle = node.color || '#3b82f6';

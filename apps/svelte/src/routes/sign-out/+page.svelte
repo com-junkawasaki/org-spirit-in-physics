@@ -1,16 +1,15 @@
 <script lang="ts">
-	import { useClerk } from 'svelte-clerk';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	
-	const { signOut } = useClerk();
-	
-	onMount(async () => {
-		await signOut();
+	onMount(() => {
 		goto('/');
 	});
 </script>
 
 <div class="flex min-h-screen items-center justify-center">
-	<p>サインアウト中...</p>
+	<div class="text-center">
+		<p>サインアウトしました</p>
+		<p class="text-sm text-gray-600 dark:text-gray-400 mt-2">ホームに戻ります...</p>
+	</div>
 </div>
