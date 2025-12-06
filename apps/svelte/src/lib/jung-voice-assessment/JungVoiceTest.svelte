@@ -3,8 +3,10 @@
 	import { kawasakiStore } from './store';
 	import { get } from 'svelte/store';
 	import AudioVisualizer from './AudioVisualizer.svelte';
+	import SpeechRecognition from './SpeechRecognition.svelte';
 	import { JUNG_TEST_WELCOME_MESSAGE } from './constants';
 	import { useStimulusWords } from './hooks/useStimulusWords';
+	import { useSaveSession } from './hooks/useSaveSession';
 	import type { JungVoiceTestProps } from './types';
 
 	export let numberOfWords: number = 10;
@@ -13,7 +15,11 @@
 	export let graphQLCallbacks: JungVoiceTestProps['graphQLCallbacks'] = undefined;
 
 	let videoPreview: HTMLVideoElement;
+	let speechRecognition: SpeechRecognition;
 	let localStream: MediaStream | null = null;
+	let reactionStartTime: number | null = null;
+	let currentTranscript: string = '';
+	
 	// Use reactive statements instead of runes for compatibility
 	let store = $state(get(kawasakiStore));
 	
@@ -29,6 +35,8 @@
 	let stimulusWords = $derived(store.stimulusWords);
 	let currentWord = $derived(stimulusWords[currentWordIndex] || null);
 	let currentSession = $derived(store.currentSession);
+	let deviceStatus = $derived(store.deviceStatus);
+	let error = $derived(store.error);
 
 	onMount(async () => {
 		kawasakiStore.initializeParticipant();
@@ -68,6 +76,63 @@
 
 	function startSession() {
 		kawasakiStore.startSession(numberOfWords);
+		// Start showing the first word
+		if (stimulusWords.length > 0) {
+			showNextWord();
+		}
+	}
+
+	function showNextWord() {
+		if (currentWordIndex >= 0 && currentWordIndex < stimulusWords.length) {
+			reactionStartTime = Date.now();
+			currentTranscript = '';
+			// Start speech recognition
+			if (speechRecognition) {
+				speechRecognition.start();
+			}
+		}
+	}
+
+	function handleSpeechResult(transcript: string, isFinal: boolean) {
+		currentTranscript = transcript;
+		
+		if (isFinal && reactionStartTime) {
+			const reactionTimeMs = Date.now() - reactionStartTime;
+			recordResponse(transcript.trim(), reactionTimeMs);
+			
+			// Stop speech recognition
+			if (speechRecognition) {
+				speechRecognition.stop();
+			}
+			
+			// Move to next word or complete session
+			if (currentWordIndex + 1 < stimulusWords.length) {
+				kawasakiStore.advanceToNextWord();
+				setTimeout(() => {
+					showNextWord();
+				}, 1000); // 1 second pause between words
+			} else {
+				kawasakiStore.completeSession();
+				
+				// Save session data
+				try {
+					await useSaveSession({
+						onSaveSession: graphQLCallbacks?.onSaveSession
+					});
+				} catch (err) {
+					console.error('Failed to save session:', err);
+				}
+				
+				if (onTestComplete) {
+					const results = {
+						participantId: store.participantId,
+						session: currentSession,
+						responses: store.wordResponses
+					};
+					onTestComplete(results);
+				}
+			}
+		}
 	}
 
 	function recordResponse(responseWord: string, reactionTimeMs: number) {
@@ -122,6 +187,13 @@
 		</div>
 	{:else if testStatus === 'session-1-running' || testStatus === 'session-2-running'}
 		<div class="test-session p-4">
+			<SpeechRecognition
+				bind:this={speechRecognition}
+				onResult={handleSpeechResult}
+				language="ja-JP"
+				continuous={true}
+				interimResults={true}
+			/>
 			<div class="mb-4">
 				<AudioVisualizer stream={localStream || store.stream} />
 			</div>
@@ -131,6 +203,11 @@
 					<p class="text-gray-600 dark:text-gray-400 mb-4">
 						セッション {currentSession} / 単語 {currentWordIndex + 1} / {stimulusWords.length}
 					</p>
+					{#if currentTranscript}
+						<div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded">
+							<p class="text-lg">{currentTranscript}</p>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>

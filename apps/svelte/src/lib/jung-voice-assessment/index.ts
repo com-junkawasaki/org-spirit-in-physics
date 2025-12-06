@@ -18,6 +18,7 @@ export { default as AudioVisualizer } from './AudioVisualizer.svelte';
 
 // Export hooks
 export { useStimulusWords } from './hooks/useStimulusWords';
+export { useSaveSession } from './hooks/useSaveSession';
 
 // Export constants
 export { JUNG_TEST_WELCOME_MESSAGE } from './constants';

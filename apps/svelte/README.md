@@ -11,10 +11,12 @@
 - **Houdini 2.x** - GraphQLクライアント
 - **Clerk** - 認証
 - **mdsvex** - MDXサポート
+- **KaTeX** - 数式レンダリング
+- **Vitest** - テストフレームワーク
 
 ## ルーティング構造
 
-- `/demo` - デモアプリケーション
+- `/demo` - デモアプリケーション（3D Force Graph可視化）
 - `/paper` - 研究論文表示（MDX）
 - `/participant` - 参加者向けアプリ（認証、テスト）
 - `/researcher` - 研究者向けダッシュボード
@@ -33,6 +35,15 @@ pnpm build
 
 # プレビュー
 pnpm preview
+
+# テスト実行
+pnpm test
+
+# テスト（UI）
+pnpm test:ui
+
+# テスト（カバレッジ）
+pnpm test:coverage
 ```
 
 ## 環境変数
@@ -65,52 +76,68 @@ apps/svelte/
 │   ├── lib/
 │   │   ├── jung-voice-assessment/      # ユング音声評価コンポーネント
 │   │   ├── visualization-components/   # 可視化コンポーネント
+│   │   ├── researcher/                 # 研究者向けユーティリティ
+│   │   ├── paper/                      # 論文関連ユーティリティ
 │   │   ├── graphql/                    # GraphQLクライアント
 │   │   └── auth/                       # 認証ヘルパー
+│   ├── test/                           # テストユーティリティ
 │   └── hooks.server.ts                 # サーバーフック（Clerk）
 ├── svelte.config.js
 ├── vite.config.ts
-├── tailwind.config.js
-├── houdini.config.js
-└── package.json
+└── vitest.config.ts
 ```
 
-## 移行状況
+## 実装済み機能
 
-- ✅ SvelteKitプロジェクト初期化
-- ✅ Tailwind CSS統合
-- ✅ Houdini 2.x設定（GraphQLクライアント）
-- ✅ Clerk認証統合（サーバー/クライアントフック）
-- ✅ ルーティング構造作成（/demo, /paper, /participant, /researcher）
-- ✅ jung-voice-assessmentパッケージ移植（基本構造・ストア）
-- ✅ visualization-componentsパッケージ移植（基本構造・型定義）
-- ✅ 各機能の基本ページ作成
-- ✅ Supabaseクライアント設定
-- ✅ GraphQL APIプロキシエンドポイント
-- ✅ 既存Astroアプリのアーカイブ（apps/_archive/）
+### demo機能
+- ✅ 3D Force Graph基本構造
+- ⏳ WebGPU実装（進行中）
+- ⏳ 物理シミュレーション
+- ⏳ インタラクティブコントロール
 
-## 実装完了項目
+### paper機能
+- ✅ MDXコンテンツ読み込み
+- ✅ KaTeX数式レンダリング
+- ✅ 動的コンテンツ読み込み
+- ✅ 複数論文のサポート
 
-1. **プロジェクト構造**: SvelteKit 2.x + Svelte 5.xの基本構造
-2. **認証**: Clerk認証の統合（サインイン/サインアップ/サインアウト）
-3. **GraphQL**: Houdini 2.xによるGraphQLクライアント設定
-4. **スタイリング**: Tailwind CSS統合とカスタムテーマ
-5. **型安全性**: TypeScript strict mode設定
-6. **パッケージ移植**: Reactコンポーネントの基本構造をSvelteに移植
+### participant機能
+- ✅ ユング音声評価テスト基本実装
+- ✅ 音声認識統合
+- ✅ リアクションタイム測定
+- ✅ データ保存とGraphQL統合
+
+### researcher機能
+- ✅ GraphQLクエリ実装
+- ✅ ダッシュボードUI
+- ✅ TimelineVisualization実装
+- ✅ Force3DWordGraph実装
+- ⏳ フィルタリング機能
+- ⏳ エクスポート機能
+
+## テスト
+
+テストはVitest + jsdomを使用しています。
+
+```bash
+# すべてのテストを実行
+pnpm test
+
+# ウォッチモード
+pnpm test --watch
+
+# UIモード
+pnpm test:ui
+
+# カバレッジレポート
+pnpm test:coverage
+```
+
+テストファイルは`*.test.ts`または`*.spec.ts`の命名規則に従います。
 
 ## 次のステップ
 
-各機能の詳細な実装が必要です：
-
-1. **demo機能**: 3D Force Graph可視化の完全実装
-2. **paper機能**: MDXコンテンツの読み込みと表示、KaTeX統合
-3. **participant機能**: ユング音声評価テストの完全実装
-4. **researcher機能**: GraphQLクエリ実装、ダッシュボードUI完成
-
-## 既存アプリのアーカイブ
-
-既存のAstroアプリは`apps/_archive/`に移動されています：
-- `apps/_archive/demo`
-- `apps/_archive/paper`
-- `apps/_archive/participant`
-- `apps/_archive/researcher`
+1. WebGPU完全実装と物理シミュレーション
+2. インタラクティブコントロールの実装
+3. フィルタリングとエクスポート機能の追加
+4. E2Eテストの実装

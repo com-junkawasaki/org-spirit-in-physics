@@ -1,23 +1,24 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { loadPaper, listPapers, type PaperMetadata } from '$lib/paper/utils';
+	import { loadPaper, type PaperMetadata } from '$lib/paper/utils';
 	import type { ComponentType } from 'svelte';
 
 	let loading = true;
 	let error: string | null = null;
 	let metadata: PaperMetadata | null = null;
 	let PaperComponent: ComponentType | null = null;
-	let papers: PaperMetadata[] = [];
 
-	$: slug = $page.params.slug || 'spirit-in-physics';
+	$: slug = $page.params.slug;
 
 	onMount(async () => {
+		if (!slug) {
+			error = '論文のスラッグが指定されていません';
+			loading = false;
+			return;
+		}
+
 		try {
-			// Load paper list
-			papers = await listPapers();
-			
-			// Load current paper
 			const paper = await loadPaper(slug);
 			metadata = paper.metadata;
 			PaperComponent = paper.component;
@@ -27,20 +28,6 @@
 			loading = false;
 		}
 	});
-
-	async function loadPaperBySlug(newSlug: string) {
-		loading = true;
-		error = null;
-		try {
-			const paper = await loadPaper(newSlug);
-			metadata = paper.metadata;
-			PaperComponent = paper.component;
-			loading = false;
-		} catch (err) {
-			error = err instanceof Error ? err.message : '論文の読み込みに失敗しました';
-			loading = false;
-		}
-	}
 </script>
 
 <svelte:head>
@@ -61,26 +48,6 @@
 			{error}
 		</div>
 	{:else if metadata && PaperComponent}
-		<!-- Paper Navigation -->
-		{#if papers.length > 1}
-			<div class="mb-8 bg-white dark:bg-gray-800 p-4 rounded shadow">
-				<h2 class="text-lg font-semibold mb-2">論文一覧</h2>
-				<ul class="space-y-2">
-					{#each papers as paper}
-						<li>
-							<button
-								onclick={() => loadPaperBySlug(paper.slug)}
-								class="text-left w-full px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 {paper.slug === slug ? 'bg-blue-100 dark:bg-blue-900' : ''}"
-							>
-								{paper.title}
-							</button>
-						</li>
-					{/each}
-				</ul>
-			</div>
-		{/if}
-
-		<!-- Paper Content -->
 		<article class="prose prose-lg dark:prose-invert max-w-none">
 			<PaperComponent />
 		</article>
