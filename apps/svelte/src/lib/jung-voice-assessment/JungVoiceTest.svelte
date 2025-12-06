@@ -9,34 +9,70 @@
 	import { useSaveSession } from './hooks/useSaveSession';
 	import type { JungVoiceTestProps } from './types';
 
-	export let numberOfWords: number = 10;
-	export let onTestComplete: ((results: any) => void) | undefined = undefined;
-	export let onComplete: (() => void) | undefined = undefined;
-	export let graphQLCallbacks: JungVoiceTestProps['graphQLCallbacks'] = undefined;
+	const {
+		numberOfWords = 10,
+		onTestComplete = undefined,
+		onComplete = undefined,
+		graphQLCallbacks = undefined
+	}: {
+		numberOfWords?: number;
+		onTestComplete?: ((results: any) => void) | undefined;
+		onComplete?: (() => void) | undefined;
+		graphQLCallbacks?: JungVoiceTestProps['graphQLCallbacks'];
+	} = $props();
 
 	let videoPreview: HTMLVideoElement;
-	let speechRecognition: SpeechRecognition;
+	let speechRecognition: { start: () => void; stop: () => void } | null = null;
 	let localStream: MediaStream | null = null;
 	let reactionStartTime: number | null = null;
 	let currentTranscript: string = '';
 	
-	// Use reactive statements instead of runes for compatibility
-	let store = $state(get(kawasakiStore));
+	// Use Svelte store subscription with runes
+	// Initialize with default state, then subscribe to store updates
+	const defaultState = {
+		testStatus: 'idle' as const,
+		deviceStatus: 'idle' as const,
+		stream: null,
+		error: null,
+		stimulusWords: [],
+		currentSession: 1 as const,
+		currentWordIndex: -1,
+		wordResponses: [],
+		mediaStatus: 'idle' as const,
+		events: [],
+		sessionVideoUrl: null,
+		participantId: null
+	};
+	
+	let store = $state(defaultState);
 	
 	$effect(() => {
+		// Try to get initial value safely
+		try {
+			const initialValue = get(kawasakiStore);
+			if (initialValue) {
+				store = initialValue;
+			}
+		} catch (e) {
+			console.warn('Failed to get initial store value:', e);
+		}
+		
+		// Subscribe to store updates
 		const unsubscribe = kawasakiStore.subscribe((value) => {
-			store = value;
+			if (value) {
+				store = value;
+			}
 		});
 		return unsubscribe;
 	});
 	
-	let testStatus = $derived(store.testStatus);
-	let currentWordIndex = $derived(store.currentWordIndex);
-	let stimulusWords = $derived(store.stimulusWords);
+	let testStatus = $derived(store?.testStatus ?? 'idle');
+	let currentWordIndex = $derived(store?.currentWordIndex ?? -1);
+	let stimulusWords = $derived(store?.stimulusWords ?? []);
 	let currentWord = $derived(stimulusWords[currentWordIndex] || null);
-	let currentSession = $derived(store.currentSession);
-	let deviceStatus = $derived(store.deviceStatus);
-	let error = $derived(store.error);
+	let currentSession = $derived(store?.currentSession ?? 1);
+	let deviceStatus = $derived(store?.deviceStatus ?? 'idle');
+	let error = $derived(store?.error ?? null);
 
 	onMount(async () => {
 		kawasakiStore.initializeParticipant();
@@ -87,7 +123,7 @@
 			reactionStartTime = Date.now();
 			currentTranscript = '';
 			// Start speech recognition
-			if (speechRecognition) {
+			if (speechRecognition?.start) {
 				speechRecognition.start();
 			}
 		}
@@ -101,7 +137,7 @@
 			recordResponse(transcript.trim(), reactionTimeMs);
 			
 			// Stop speech recognition
-			if (speechRecognition) {
+			if (speechRecognition?.stop) {
 				speechRecognition.stop();
 			}
 			
@@ -188,7 +224,7 @@
 	{:else if testStatus === 'session-1-running' || testStatus === 'session-2-running'}
 		<div class="test-session p-4">
 			<SpeechRecognition
-				bind:this={speechRecognition}
+				bind:api={speechRecognition}
 				onResult={handleSpeechResult}
 				language="ja-JP"
 				continuous={true}

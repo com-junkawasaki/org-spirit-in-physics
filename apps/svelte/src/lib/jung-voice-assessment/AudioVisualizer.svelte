@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 
-	export let stream: MediaStream | null = null;
+	const { stream = null }: { stream?: MediaStream | null } = $props();
 
 	let canvas: HTMLCanvasElement;
 	let animationFrameId: number | null = null;
