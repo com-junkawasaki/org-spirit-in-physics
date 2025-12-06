@@ -411,12 +411,18 @@
 			});
 
 			// Create bind group for rendering using WebGPU API
-			// TypeGPU buffers provide the underlying GPUBuffer via .buffer property
+			// TypeGPU buffers need to be unwrapped to get the underlying GPUBuffer
+			if (!root) {
+				throw new Error('TypeGPU root not initialized');
+			}
+			const cameraBuffer = root.unwrap(cameraUniformBuffer);
+			const lightBuffer = root.unwrap(lightUniformBuffer);
+			
 			renderBindGroup = device.createBindGroup({
 				layout: renderBindGroupLayout,
 				entries: [
-					{ binding: 0, resource: { buffer: cameraUniformBuffer.buffer } },
-					{ binding: 1, resource: { buffer: lightUniformBuffer.buffer } }
+					{ binding: 0, resource: { buffer: cameraBuffer } },
+					{ binding: 1, resource: { buffer: lightBuffer } }
 				]
 			});
 
@@ -600,12 +606,20 @@
 		// Params buffer is already initialized with TypeGPU
 
 		// Create bind group using WebGPU API (for compatibility with existing compute pipeline)
+		// TypeGPU buffers need to be unwrapped to get the underlying GPUBuffer
+		if (!root) {
+			throw new Error('TypeGPU root not initialized');
+		}
+		const nodeGpuBuffer = root.unwrap(nodeBuffer);
+		const linkGpuBuffer = root.unwrap(linkBuffer);
+		const paramsGpuBuffer = root.unwrap(paramsBuffer);
+		
 		bindGroup = device.createBindGroup({
 			layout: computePipeline!.getBindGroupLayout(0),
 			entries: [
-				{ binding: 0, resource: { buffer: nodeBuffer.buffer } },
-				{ binding: 1, resource: { buffer: linkBuffer.buffer } },
-				{ binding: 2, resource: { buffer: paramsBuffer.buffer } }
+				{ binding: 0, resource: { buffer: nodeGpuBuffer } },
+				{ binding: 1, resource: { buffer: linkGpuBuffer } },
+				{ binding: 2, resource: { buffer: paramsGpuBuffer } }
 			]
 		});
 
@@ -1074,19 +1088,23 @@
 				renderPass.setBindGroup(0, renderBindGroup);
 				
 				// Render links (edges) first (so they appear behind nodes)
-				if (linkVertexBuffer && linkIndexBuffer) {
-					renderPass.setVertexBuffer(0, linkVertexBuffer.buffer);
-					renderPass.setIndexBuffer(linkIndexBuffer.buffer, 'uint16');
-					const linkIndexCount = linkIndexBuffer.buffer.size / 2; // uint16 = 2 bytes
+				if (linkVertexBuffer && linkIndexBuffer && root) {
+					const linkVertexGpuBuffer = root.unwrap(linkVertexBuffer);
+					const linkIndexGpuBuffer = root.unwrap(linkIndexBuffer);
+					renderPass.setVertexBuffer(0, linkVertexGpuBuffer);
+					renderPass.setIndexBuffer(linkIndexGpuBuffer, 'uint16');
+					const linkIndexCount = linkIndexGpuBuffer.size / 2; // uint16 = 2 bytes
 					renderPass.drawIndexed(linkIndexCount);
 					renderState.linksRendered = links.length;
 				}
 				
 				// Render nodes (spheres)
-				if (vertexBuffer && indexBuffer) {
-					renderPass.setVertexBuffer(0, vertexBuffer.buffer);
-					renderPass.setIndexBuffer(indexBuffer.buffer, 'uint16');
-					const indexCount = indexBuffer.buffer.size / 2; // uint16 = 2 bytes
+				if (vertexBuffer && indexBuffer && root) {
+					const vertexGpuBuffer = root.unwrap(vertexBuffer);
+					const indexGpuBuffer = root.unwrap(indexBuffer);
+					renderPass.setVertexBuffer(0, vertexGpuBuffer);
+					renderPass.setIndexBuffer(indexGpuBuffer, 'uint16');
+					const indexCount = indexGpuBuffer.size / 2; // uint16 = 2 bytes
 					renderPass.drawIndexed(indexCount);
 					renderState.nodesRendered = nodes.length;
 				}

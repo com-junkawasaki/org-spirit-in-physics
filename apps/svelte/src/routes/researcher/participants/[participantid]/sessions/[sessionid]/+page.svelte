@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import Breadcrumb from '$lib/researcher/components/Breadcrumb.svelte';
 	import TimelineVisualizationEnhanced from '$lib/visualization-components/TimelineVisualizationEnhanced.svelte';
 	import KPICards from '$lib/visualization-components/KPICards.svelte';
@@ -101,6 +102,9 @@
 	}
 	
 	onMount(async () => {
+		// SSR回避: ブラウザでのみ実行
+		if (!browser) return;
+		
 		if (!participantId || !sessionId) {
 			error = '参加者IDまたはセッションIDが指定されていません';
 			loading = false;

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import DashboardOverview from '$lib/researcher/components/DashboardOverview.svelte';
 	import ParticipantTable from '$lib/researcher/components/ParticipantTable.svelte';
 	import Breadcrumb from '$lib/researcher/components/Breadcrumb.svelte';
@@ -87,34 +89,37 @@
 			applyFilters();
 			
 			// 既存のURLパラメータベースのリンクをリダイレクト
-			const urlParams = new URLSearchParams(window.location.search);
-			const tab = urlParams.get('tab');
-			const participantId = urlParams.get('participantId');
-			const sessionId = urlParams.get('sessionId');
+			// browser check for SSR compatibility
+			if (browser) {
+				const urlParams = new URLSearchParams($page.url.search);
+				const tab = urlParams.get('tab');
+				const participantId = urlParams.get('participantId');
+				const sessionId = urlParams.get('sessionId');
 			
-			if (tab === 'analysis' && participantId) {
-				// 分析ページにリダイレクト
-				if (sessionId) {
-					// セッションIDが指定されている場合はそのセッションにリダイレクト
-					goto(`/researcher/participants/${participantId}/sessions/${sessionId}`, { replaceState: true });
-					return;
-				} else {
-					// セッションIDが指定されていない場合は、その参加者の最初のセッションを探す
-					const participantSessions = participantSessionsMap.get(participantId) || [];
-					if (participantSessions.length > 0) {
-						const firstSession = participantSessions[0];
-						goto(`/researcher/participants/${participantId}/sessions/${firstSession.id}`, { replaceState: true });
+				if (tab === 'analysis' && participantId) {
+					// 分析ページにリダイレクト
+					if (sessionId) {
+						// セッションIDが指定されている場合はそのセッションにリダイレクト
+						goto(`/researcher/participants/${participantId}/sessions/${sessionId}`, { replaceState: true });
 						return;
 					} else {
-						// セッションがない場合はセッション一覧ページにリダイレクト
-						goto(`/researcher/participants/${participantId}`, { replaceState: true });
-						return;
+						// セッションIDが指定されていない場合は、その参加者の最初のセッションを探す
+						const participantSessions = participantSessionsMap.get(participantId) || [];
+						if (participantSessions.length > 0) {
+							const firstSession = participantSessions[0];
+							goto(`/researcher/participants/${participantId}/sessions/${firstSession.id}`, { replaceState: true });
+							return;
+						} else {
+							// セッションがない場合はセッション一覧ページにリダイレクト
+							goto(`/researcher/participants/${participantId}`, { replaceState: true });
+							return;
+						}
 					}
+				} else if (participantId && !tab) {
+					// セッション一覧ページにリダイレクト
+					goto(`/researcher/participants/${participantId}`, { replaceState: true });
+					return;
 				}
-			} else if (participantId && !tab) {
-				// セッション一覧ページにリダイレクト
-				goto(`/researcher/participants/${participantId}`, { replaceState: true });
-				return;
 			}
 			
 			loading = false;
