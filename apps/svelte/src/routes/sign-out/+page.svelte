@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { signOut } from '@clerk/sveltekit/client';
+	import { useClerk } from 'svelte-clerk';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	
-	onMount(() => {
-		signOut(() => {
-			goto('/');
-		});
+	const { signOut } = useClerk();
+	
+	onMount(async () => {
+		await signOut();
+		goto('/');
 	});
 </script>
 
