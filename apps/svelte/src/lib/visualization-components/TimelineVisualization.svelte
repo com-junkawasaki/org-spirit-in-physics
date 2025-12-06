@@ -2,11 +2,19 @@
 	import { onMount } from 'svelte';
 	import type { TimelinePoint, EmotionData, PhysiologicalData } from './types';
 
-	export let timelinePoints: TimelinePoint[] = [];
-	export let participantId: string = '';
-	export let sessionId: string = '';
-	export let width: number = 800;
-	export let height: number = 400;
+	const {
+		timelinePoints = [],
+		participantId = '',
+		sessionId = '',
+		width = 800,
+		height = 400
+	}: {
+		timelinePoints?: TimelinePoint[];
+		participantId?: string;
+		sessionId?: string;
+		width?: number;
+		height?: number;
+	} = $props();
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D | null = null;
@@ -18,9 +26,11 @@
 		}
 	});
 
-	$: if (timelinePoints.length > 0 && ctx) {
-		drawTimeline();
-	}
+	$effect(() => {
+		if (timelinePoints.length > 0 && ctx) {
+			drawTimeline();
+		}
+	});
 
 	function drawTimeline() {
 		if (!ctx || !canvas || timelinePoints.length === 0) return;

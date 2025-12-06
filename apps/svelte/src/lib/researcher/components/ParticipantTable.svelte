@@ -1,6 +1,11 @@
 <script lang="ts">
-	export let participants: any[] = [];
-	export let onSelectParticipant: ((id: string) => void) | undefined = undefined;
+	const {
+		participants = [],
+		onSelectParticipant = undefined
+	}: {
+		participants?: any[];
+		onSelectParticipant?: ((id: string) => void) | undefined;
+	} = $props();
 </script>
 
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">

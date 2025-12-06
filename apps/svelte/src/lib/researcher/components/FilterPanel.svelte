@@ -1,12 +1,33 @@
 <script lang="ts">
 	import type { ParticipantFilter, SessionFilter, DataFilter } from '../filters';
 
-	export let participantFilter: ParticipantFilter = {};
-	export let sessionFilter: SessionFilter = {};
-	export let dataFilter: DataFilter = {};
-	export let onParticipantFilterChange: ((filter: ParticipantFilter) => void) | undefined = undefined;
-	export let onSessionFilterChange: ((filter: SessionFilter) => void) | undefined = undefined;
-	export let onDataFilterChange: ((filter: DataFilter) => void) | undefined = undefined;
+	const {
+		participantFilter = {},
+		sessionFilter = {},
+		dataFilter = {},
+		onParticipantFilterChange = undefined,
+		onSessionFilterChange = undefined,
+		onDataFilterChange = undefined
+	}: {
+		participantFilter?: ParticipantFilter;
+		sessionFilter?: SessionFilter;
+		dataFilter?: DataFilter;
+		onParticipantFilterChange?: ((filter: ParticipantFilter) => void) | undefined;
+		onSessionFilterChange?: ((filter: SessionFilter) => void) | undefined;
+		onDataFilterChange?: ((filter: DataFilter) => void) | undefined;
+	} = $props();
+	
+	// Create local copies for binding
+	let localParticipantFilter = $state({ ...participantFilter });
+	let localSessionFilter = $state({ ...sessionFilter });
+	let localDataFilter = $state({ ...dataFilter });
+	
+	// Sync with props changes
+	$effect(() => {
+		localParticipantFilter = { ...participantFilter };
+		localSessionFilter = { ...sessionFilter };
+		localDataFilter = { ...dataFilter };
+	});
 
 	let showFilters = false;
 </script>
@@ -30,8 +51,8 @@
 						<label class="block text-sm mb-1">年齢（最小）</label>
 						<input
 							type="number"
-							bind:value={participantFilter.ageMin}
-							oninput={() => onParticipantFilterChange?.(participantFilter)}
+							bind:value={localParticipantFilter.ageMin}
+							oninput={() => onParticipantFilterChange?.(localParticipantFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 							placeholder="最小年齢"
 						/>
@@ -40,8 +61,8 @@
 						<label class="block text-sm mb-1">年齢（最大）</label>
 						<input
 							type="number"
-							bind:value={participantFilter.ageMax}
-							oninput={() => onParticipantFilterChange?.(participantFilter)}
+							bind:value={localParticipantFilter.ageMax}
+							oninput={() => onParticipantFilterChange?.(localParticipantFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 							placeholder="最大年齢"
 						/>
@@ -49,8 +70,8 @@
 					<div>
 						<label class="block text-sm mb-1">性別</label>
 						<select
-							bind:value={participantFilter.gender}
-							onchange={() => onParticipantFilterChange?.(participantFilter)}
+							bind:value={localParticipantFilter.gender}
+							onchange={() => onParticipantFilterChange?.(localParticipantFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 						>
 							<option value="">すべて</option>
@@ -62,8 +83,8 @@
 					<div>
 						<label class="block text-sm mb-1">利き手</label>
 						<select
-							bind:value={participantFilter.handedness}
-							onchange={() => onParticipantFilterChange?.(participantFilter)}
+							bind:value={localParticipantFilter.handedness}
+							onchange={() => onParticipantFilterChange?.(localParticipantFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 						>
 							<option value="">すべて</option>
@@ -83,8 +104,8 @@
 						<label class="block text-sm mb-1">セッション番号</label>
 						<input
 							type="number"
-							bind:value={sessionFilter.sessionIndex}
-							oninput={() => onSessionFilterChange?.(sessionFilter)}
+							bind:value={localSessionFilter.sessionIndex}
+							oninput={() => onSessionFilterChange?.(localSessionFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 							placeholder="1 or 2"
 						/>
@@ -93,8 +114,8 @@
 						<label class="block text-sm mb-1">最小応答数</label>
 						<input
 							type="number"
-							bind:value={sessionFilter.minResponses}
-							oninput={() => onSessionFilterChange?.(sessionFilter)}
+							bind:value={localSessionFilter.minResponses}
+							oninput={() => onSessionFilterChange?.(localSessionFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 							placeholder="最小応答数"
 						/>
@@ -110,8 +131,8 @@
 						<label class="block text-sm mb-1">単語</label>
 						<input
 							type="text"
-							bind:value={dataFilter.word}
-							oninput={() => onDataFilterChange?.(dataFilter)}
+							bind:value={localDataFilter.word}
+							oninput={() => onDataFilterChange?.(localDataFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 							placeholder="単語でフィルター"
 						/>
@@ -119,8 +140,8 @@
 					<div>
 						<label class="block text-sm mb-1">感情</label>
 						<select
-							bind:value={dataFilter.emotion}
-							onchange={() => onDataFilterChange?.(dataFilter)}
+							bind:value={localDataFilter.emotion}
+							onchange={() => onDataFilterChange?.(localDataFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 						>
 							<option value="">すべて</option>
@@ -140,8 +161,8 @@
 						<label class="block text-sm mb-1">リアクション値（最小）</label>
 						<input
 							type="number"
-							bind:value={dataFilter.minReactionValue}
-							oninput={() => onDataFilterChange?.(dataFilter)}
+							bind:value={localDataFilter.minReactionValue}
+							oninput={() => onDataFilterChange?.(localDataFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 							placeholder="最小値"
 						/>
@@ -150,8 +171,8 @@
 						<label class="block text-sm mb-1">リアクション値（最大）</label>
 						<input
 							type="number"
-							bind:value={dataFilter.maxReactionValue}
-							oninput={() => onDataFilterChange?.(dataFilter)}
+							bind:value={localDataFilter.maxReactionValue}
+							oninput={() => onDataFilterChange?.(localDataFilter)}
 							class="w-full p-2 border rounded dark:bg-gray-700"
 							placeholder="最大値"
 						/>
@@ -161,12 +182,12 @@
 
 			<button
 				onclick={() => {
-					participantFilter = {};
-					sessionFilter = {};
-					dataFilter = {};
-					onParticipantFilterChange?.(participantFilter);
-					onSessionFilterChange?.(sessionFilter);
-					onDataFilterChange?.(dataFilter);
+					localParticipantFilter = {};
+					localSessionFilter = {};
+					localDataFilter = {};
+					onParticipantFilterChange?.(localParticipantFilter);
+					onSessionFilterChange?.(localSessionFilter);
+					onDataFilterChange?.(localDataFilter);
 				}}
 				class="w-full bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
 			>

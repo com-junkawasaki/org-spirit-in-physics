@@ -1,7 +1,13 @@
 <script lang="ts">
-	export let participants: any[] = [];
-	export let totalSessions: number = 0;
-	export let totalResponses: number = 0;
+	const {
+		participants = [],
+		totalSessions = 0,
+		totalResponses = 0
+	}: {
+		participants?: any[];
+		totalSessions?: number;
+		totalResponses?: number;
+	} = $props();
 </script>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

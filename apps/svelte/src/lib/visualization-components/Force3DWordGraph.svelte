@@ -4,16 +4,16 @@
 	import type { WordAggregate, EmotionVector, WordNode, WordLink } from './types';
 	import { normalizeEmotionName } from './lib/emotion-normalization';
 
-	export let wordAggregates: WordAggregate[] = [];
-	export let emotionVectors: EmotionVector[] = [];
+	const {
+		wordAggregates = [],
+		emotionVectors = []
+	}: {
+		wordAggregates?: WordAggregate[];
+		emotionVectors?: EmotionVector[];
+	} = $props();
 
-	let nodes: WordNode[] = [];
-	let links: WordLink[] = [];
-
-	$: {
-		nodes = convertToNodes(wordAggregates, emotionVectors);
-		links = generateLinks(nodes);
-	}
+	let nodes: WordNode[] = $derived(convertToNodes(wordAggregates, emotionVectors));
+	let links: WordLink[] = $derived(generateLinks(nodes));
 
 	function convertToNodes(
 		aggregates: WordAggregate[],

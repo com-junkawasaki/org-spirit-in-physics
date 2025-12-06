@@ -8,21 +8,31 @@
 		type ExportOptions
 	} from '../export';
 
-	export let participants: any[] = [];
-	export let sessions: any[] = [];
-	export let timelineData: any[] = [];
-	export let wordAggregates: any[] = [];
-	export let emotionVectors: any[] = [];
+	const {
+		participants = [],
+		sessions = [],
+		timelineData = [],
+		wordAggregates = [],
+		emotionVectors = []
+	}: {
+		participants?: any[];
+		sessions?: any[];
+		timelineData?: any[];
+		wordAggregates?: any[];
+		emotionVectors?: any[];
+	} = $props();
 
 	let exportFormat: 'csv' | 'json' = 'csv';
-	let exportOptions: ExportOptions = {
+	let exportOptions: ExportOptions = $state({
 		format: 'csv',
 		includeEmotions: true,
 		includePhysiological: true,
 		includeMetadata: false
-	};
+	});
 
-	$: exportOptions.format = exportFormat;
+	$effect(() => {
+		exportOptions.format = exportFormat;
+	});
 </script>
 
 <div class="export-panel bg-white dark:bg-gray-800 rounded-lg shadow p-4">

@@ -4,48 +4,57 @@
 	import { COMPUTE_SHADER, createNodeData, createLinkData, type NodeData, type LinkData, type PhysicsParams } from './lib/webgpu-physics';
 	import { VERTEX_SHADER, FRAGMENT_SHADER, createCameraMatrix } from './lib/webgpu-renderer';
 
-	export let nodes: WordNode[] = [];
-	export let links: WordLink[] = [];
-	export let width: number = 1000;
-	export let height: number = 600;
-	export let background: string = '#ffffff';
-	export let maxFps: number = 0; // 0 = unlimited
-
-	interface PhysicsParamsConfig {
-		springK?: number;
-		repulsionK?: number;
-		damping?: number;
-		restLength?: number;
-		maxSpeed?: number;
-		shellRadius?: number;
-		shellK?: number;
-		radialOutK?: number;
-		constraintIters?: number;
-		constraintStiffness?: number;
-		minSep?: number;
-		sepK?: number;
-	}
-
-	export let physics: Partial<PhysicsParamsConfig> = {
-		springK: 2.0,
-		repulsionK: 2000.0,
-		damping: 0.92,
-		restLength: 80,
-		maxSpeed: 100,
-		shellRadius: 300,
-		shellK: 1.5,
-		radialOutK: 120,
-		constraintIters: 2,
-		constraintStiffness: 0.5,
-		minSep: 80,
-		sepK: 8000
-	};
-
-	// Camera controls
-	export let cameraPosition: [number, number, number] = [0, 0, 500];
-	export let cameraTarget: [number, number, number] = [0, 0, 0];
-	export let cameraRotation: [number, number] = [0, 0]; // [theta, phi]
-	export let zoom: number = 1.0;
+	const {
+		nodes = [],
+		links = [],
+		width = 1000,
+		height = 600,
+		background = '#ffffff',
+		maxFps = 0, // 0 = unlimited
+		physics = {
+			springK: 2.0,
+			repulsionK: 2000.0,
+			damping: 0.92,
+			restLength: 80,
+			maxSpeed: 100,
+			shellRadius: 300,
+			shellK: 1.5,
+			radialOutK: 120,
+			constraintIters: 2,
+			constraintStiffness: 0.5,
+			minSep: 80,
+			sepK: 8000
+		},
+		cameraPosition = [0, 0, 500] as [number, number, number],
+		cameraTarget = [0, 0, 0] as [number, number, number],
+		cameraRotation = [0, 0] as [number, number],
+		zoom = 1.0
+	}: {
+		nodes?: WordNode[];
+		links?: WordLink[];
+		width?: number;
+		height?: number;
+		background?: string;
+		maxFps?: number;
+		physics?: Partial<{
+			springK: number;
+			repulsionK: number;
+			damping: number;
+			restLength: number;
+			maxSpeed: number;
+			shellRadius: number;
+			shellK: number;
+			radialOutK: number;
+			constraintIters: number;
+			constraintStiffness: number;
+			minSep: number;
+			sepK: number;
+		}>;
+		cameraPosition?: [number, number, number];
+		cameraTarget?: [number, number, number];
+		cameraRotation?: [number, number];
+		zoom?: number;
+	} = $props();
 
 	let canvas: HTMLCanvasElement;
 	let container: HTMLDivElement;
@@ -64,11 +73,12 @@
 	let lastFrameTime = 0;
 
 	// Interaction state
-	let isDragging = false;
-	let lastMousePos: [number, number] = [0, 0];
-	let cameraTheta = 0;
-	let cameraPhi = 0;
-	let cameraDistance = 500;
+	let isDragging = $state(false);
+	let lastMousePos = $state<[number, number]>([0, 0]);
+	let cameraTheta = $state(0);
+	let cameraPhi = $state(0);
+	let cameraDistance = $state(500);
+	let localCameraPosition = $state<[number, number, number]>([...cameraPosition]);
 
 	onMount(() => {
 		if (!canvas || !container) return;
@@ -168,12 +178,17 @@
 	}
 
 	function updateCameraPosition() {
-		cameraPosition = [
+		localCameraPosition = [
 			cameraDistance * Math.sin(cameraPhi) * Math.cos(cameraTheta),
 			cameraDistance * Math.cos(cameraPhi),
 			cameraDistance * Math.sin(cameraPhi) * Math.sin(cameraTheta)
 		];
 	}
+	
+	// Initialize camera position
+	$effect(() => {
+		localCameraPosition = [...cameraPosition];
+	});
 
 	async function initWebGPU() {
 		if (!navigator.gpu) {

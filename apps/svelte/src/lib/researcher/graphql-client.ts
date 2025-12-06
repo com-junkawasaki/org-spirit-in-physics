@@ -1,4 +1,5 @@
 import { client } from '$lib/graphql/client';
+import { gql } from 'graphql-request';
 import {
 	PARTICIPANTS_QUERY,
 	PARTICIPANT_QUERY,
@@ -10,31 +11,50 @@ import {
 
 export async function fetchParticipants() {
 	try {
-		const response = await fetch('/api/graphql', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ query: PARTICIPANTS_QUERY })
-		});
-		const result = await response.json();
-		return result.data?.participants || [];
-	} catch (error) {
+		const data = await client.request<{ participants: any[] }>(gql`
+			query GetParticipants {
+				participants {
+					id
+					age
+					gender
+					handedness
+					createdAt
+					updatedAt
+				}
+			}
+		`);
+		console.log('Fetched participants:', JSON.stringify(data, null, 2));
+		return data.participants || [];
+	} catch (error: any) {
 		console.error('Error fetching participants:', error);
+		if (error.response) {
+			console.error('GraphQL response error:', await error.response.text());
+		}
+		if (error.request) {
+			console.error('GraphQL request:', error.request);
+		}
 		return [];
 	}
 }
 
 export async function fetchParticipant(id: string) {
 	try {
-		const response = await fetch('/api/graphql', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				query: PARTICIPANT_QUERY,
-				variables: { id }
-			})
-		});
-		const result = await response.json();
-		return result.data?.participant || null;
+		const data = await client.request<{ participant: any }>(
+			gql`
+				query GetParticipant($id: ID!) {
+					participant(id: $id) {
+						id
+						age
+						gender
+						handedness
+						createdAt
+						updatedAt
+					}
+				}
+			`,
+			{ id }
+		);
+		return data.participant || null;
 	} catch (error) {
 		console.error('Error fetching participant:', error);
 		return null;
@@ -43,16 +63,24 @@ export async function fetchParticipant(id: string) {
 
 export async function fetchSessions(participantId: string) {
 	try {
-		const response = await fetch('/api/graphql', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				query: SESSIONS_QUERY,
-				variables: { participantId }
-			})
-		});
-		const result = await response.json();
-		return result.data?.sessions || [];
+		const data = await client.request<{ sessions: any[] }>(
+			gql`
+				query GetSessions($participantId: ID!) {
+					sessions(participantId: $participantId) {
+						id
+						participantId
+						sessionIndex
+						startTs
+						endTs
+						events
+						createdAt
+						updatedAt
+					}
+				}
+			`,
+			{ participantId }
+		);
+		return data.sessions || [];
 	} catch (error) {
 		console.error('Error fetching sessions:', error);
 		return [];
@@ -67,16 +95,36 @@ export async function fetchTimeline(
 	interval?: string
 ) {
 	try {
-		const response = await fetch('/api/graphql', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				query: TIMELINE_QUERY,
-				variables: { participantId, sessionId, startTime, endTime, interval }
-			})
-		});
-		const result = await response.json();
-		return result.data?.timeline || [];
+		const data = await client.request<{ timeline: any[] }>(
+			gql`
+				query GetTimeline($participantId: ID!, $sessionId: ID, $startTime: String, $endTime: String, $interval: String) {
+					timeline(participantId: $participantId, sessionId: $sessionId, startTime: $startTime, endTime: $endTime, interval: $interval) {
+						time
+						participantId
+						sessionId
+						word
+						eventType
+						reactionValue
+						reactionTime
+						hasResponse
+						emotions {
+							name
+							score
+							fileType
+							color
+						}
+						physiological {
+							timestamp
+							value
+							metadata
+						}
+						metadata
+					}
+				}
+			`,
+			{ participantId, sessionId, startTime, endTime, interval }
+		);
+		return data.timeline || [];
 	} catch (error) {
 		console.error('Error fetching timeline:', error);
 		return [];
@@ -85,16 +133,31 @@ export async function fetchTimeline(
 
 export async function fetchWordAggregates(participantId: string, sessionId: string) {
 	try {
-		const response = await fetch('/api/graphql', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				query: WORD_AGGREGATES_QUERY,
-				variables: { participantId, sessionId }
-			})
-		});
-		const result = await response.json();
-		return result.data?.wordAggregates || [];
+		const data = await client.request<{ wordAggregates: any[] }>(
+			gql`
+				query GetWordAggregates($participantId: ID!, $sessionId: ID!) {
+					wordAggregates(participantId: $participantId, sessionId: $sessionId) {
+						participantId
+						sessionId
+						word
+						count
+						avgReactionValue
+						sumReactionValue
+						avgReactionTime
+						sumReactionTime
+						avgPhysiological
+						sumPhysAbs
+						physSeries
+						rtSeries
+						rvSeries
+						firstTime
+						lastTime
+					}
+				}
+			`,
+			{ participantId, sessionId }
+		);
+		return data.wordAggregates || [];
 	} catch (error) {
 		console.error('Error fetching word aggregates:', error);
 		return [];
@@ -103,16 +166,31 @@ export async function fetchWordAggregates(participantId: string, sessionId: stri
 
 export async function fetchEmotionVectors(participantId: string, sessionId: string) {
 	try {
-		const response = await fetch('/api/graphql', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				query: EMOTION_VECTORS_QUERY,
-				variables: { participantId, sessionId }
-			})
-		});
-		const result = await response.json();
-		return result.data?.emotionVectors || [];
+		const data = await client.request<{ emotionVectors: any[] }>(
+			gql`
+				query GetEmotionVectors($participantId: ID!, $sessionId: ID!) {
+					emotionVectors(participantId: $participantId, sessionId: $sessionId) {
+						participantId
+						sessionId
+						word
+						joySum
+						sadnessSum
+						angerSum
+						fearSum
+						surpriseSum
+						disgustSum
+						calmSum
+						focusSum
+						excitementSum
+						confusionSum
+						emotionEntryCount
+						emotionByModality
+					}
+				}
+			`,
+			{ participantId, sessionId }
+		);
+		return data.emotionVectors || [];
 	} catch (error) {
 		console.error('Error fetching emotion vectors:', error);
 		return [];

@@ -212,18 +212,32 @@
 						<!-- Visualizations -->
 						{#if selectedParticipant && selectedSession}
 							<div class="space-y-4">
+								<!-- Timeline Visualization -->
 								<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
 									<h2 class="text-2xl font-bold mb-4">タイムライン可視化</h2>
-									<TimelineVisualization
-										timelinePoints={timelineData}
-										participantId={selectedParticipant}
-										sessionId={selectedSession}
-									/>
+									<div class="w-full" style="min-height: 400px;">
+										<TimelineVisualization
+											timelinePoints={timelineData}
+											participantId={selectedParticipant}
+											sessionId={selectedSession}
+											width={800}
+											height={400}
+										/>
+									</div>
 								</div>
 								
+								<!-- 3D Force Graph Visualization -->
 								<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
-									<h2 class="text-2xl font-bold mb-4">3D Force Graph</h2>
-									<Force3DWordGraph {wordAggregates} {emotionVectors} />
+									<h2 class="text-2xl font-bold mb-4">3D Force Graph - 単語構造分析</h2>
+									<div class="w-full" style="min-height: 600px;">
+										{#if wordAggregates.length > 0 && emotionVectors.length > 0}
+											<Force3DWordGraph {wordAggregates} {emotionVectors} />
+										{:else}
+											<div class="flex items-center justify-center p-8 text-gray-500">
+												<p>データを読み込み中...</p>
+											</div>
+										{/if}
+									</div>
 								</div>
 							</div>
 						{:else}

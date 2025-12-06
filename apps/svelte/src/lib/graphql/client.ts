@@ -3,11 +3,15 @@ import { GraphQLClient } from 'graphql-request';
 
 // GraphQL client (using graphql-request instead of Houdini for now)
 // Houdini can be integrated later when properly configured
-const graphqlUrl = browser
-	? '/api/graphql'
-	: process.env.GRAPHQL_API_URL || 'http://graphql-service:8081/graphql';
+function getGraphQLUrl(): string {
+	if (browser) {
+		// In browser, use absolute URL
+		return `${window.location.origin}/api/graphql`;
+	}
+	return process.env.GRAPHQL_API_URL || 'http://graphql-service:8081/graphql';
+}
 
-export const client = new GraphQLClient(graphqlUrl, {
+export const client = new GraphQLClient(getGraphQLUrl(), {
 	headers: {
 		'Content-Type': 'application/json'
 	}
