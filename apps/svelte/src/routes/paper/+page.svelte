@@ -1,18 +1,38 @@
 <script lang="ts">
-	// Paper app page - Research paper display with MDX support
+	import { onMount } from 'svelte';
+	import PaperContent from '$lib/paper/content/spirit-in-physics.mdx';
+
+	let loading = true;
+
+	onMount(() => {
+		loading = false;
+	});
 </script>
 
-<div class="container mx-auto p-8">
-	<h1 class="text-4xl font-bold mb-8">研究論文</h1>
-	<p class="text-lg mb-4">研究論文ページ（MDX統合準備中）</p>
-	<div class="bg-gray-100 dark:bg-gray-800 p-4 rounded">
-		<p>実装予定の機能:</p>
-		<ul class="list-disc list-inside mt-2">
-			<li>MDXコンテンツ表示</li>
-			<li>KaTeX数式レンダリング</li>
-			<li>JSON-LDスキーマ</li>
-			<li>目次ナビゲーション</li>
-			<li>可視化サイドバー</li>
-		</ul>
-	</div>
+<svelte:head>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
+</svelte:head>
+
+<div class="container mx-auto p-8 max-w-4xl">
+	{#if loading}
+		<div class="flex items-center justify-center p-8">
+			<p>読み込み中...</p>
+		</div>
+	{:else}
+		<article class="prose prose-lg dark:prose-invert max-w-none">
+			<PaperContent />
+		</article>
+	{/if}
 </div>
+
+<style>
+	:global(.katex-display) {
+		margin: 1.5em 0;
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+
+	:global(.katex-inline) {
+		margin: 0 0.2em;
+	}
+</style>

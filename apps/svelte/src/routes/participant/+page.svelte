@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { kawasakiStore } from '$lib/jung-voice-assessment';
 	import { onMount } from 'svelte';
+	import JungVoiceTest from '$lib/jung-voice-assessment/JungVoiceTest.svelte';
+	import { kawasakiStore } from '$lib/jung-voice-assessment';
 	
 	let initialized = false;
 	
@@ -8,22 +9,23 @@
 		kawasakiStore.initializeParticipant();
 		initialized = true;
 	});
+
+	function handleTestComplete(results: any) {
+		console.log('Test completed:', results);
+		// Handle test completion
+	}
 </script>
 
 <div class="container mx-auto p-8">
-	<h1 class="text-4xl font-bold mb-8">参加者アプリ</h1>
+	<h1 class="text-4xl font-bold mb-8">参加者アプリ - ユング音声評価テスト</h1>
+	
 	{#if initialized}
-		<div class="bg-gray-100 dark:bg-gray-800 p-4 rounded">
-			<p>ユング音声評価テスト</p>
-			<p>実装予定の機能:</p>
-			<ul class="list-disc list-inside mt-2">
-				<li>Clerk認証統合</li>
-				<li>ユング音声評価テスト</li>
-				<li>セッション管理</li>
-				<li>データ保存</li>
-			</ul>
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+			<JungVoiceTest numberOfWords={10} onTestComplete={handleTestComplete} />
 		</div>
 	{:else}
-		<p>初期化中...</p>
+		<div class="flex items-center justify-center p-8">
+			<p>初期化中...</p>
+		</div>
 	{/if}
 </div>

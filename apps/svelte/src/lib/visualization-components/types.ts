@@ -62,3 +62,39 @@ export interface EmotionVector {
 	emotionEntryCount: number;
 	emotionByModality?: Record<string, any>;
 }
+
+export interface WordNode {
+	id: string;
+	label: string;
+	scale: number;
+	axis?: [number, number, number];
+	fixed?: boolean;
+	initial?: [number, number, number];
+	color?: string;
+	nodeType?: string;
+	emotion?: Partial<
+		Record<
+			| 'joy'
+			| 'sadness'
+			| 'anger'
+			| 'fear'
+			| 'surprise'
+			| 'disgust'
+			| 'calm'
+			| 'focus'
+			| 'excitement'
+			| 'confusion',
+			number
+		>
+	>;
+}
+
+export interface WordLink {
+	source: number;
+	target: number;
+	weight: number;
+	color?: string;
+	mode?: 'tension' | 'compression';
+	L0?: number;
+	k?: number;
+}

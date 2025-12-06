@@ -2,8 +2,6 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { user } from '@clerk/sveltekit/client';
-	
-	$: currentUser = $user;
 </script>
 
 <nav class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -17,7 +15,7 @@
 				<a href="/paper" class="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">論文</a>
 				<a href="/participant" class="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">参加者</a>
 				<a href="/researcher" class="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">研究者</a>
-				{#if currentUser}
+				{#if $user}
 					<a href="/sign-out" class="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">サインアウト</a>
 				{:else}
 					<a href="/sign-in" class="px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">サインイン</a>

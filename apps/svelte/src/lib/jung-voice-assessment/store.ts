@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { get } from 'svelte/store';
 import type { Word, WordResponse, KawasakiStoreState, TestStatus, DeviceStatus, MediaStatus } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -139,24 +140,21 @@ function createKawasakiStore() {
 			});
 		},
 		saveSessionData: async (callbacks?: { onSaveSession?: (data: any) => Promise<void> }) => {
-			let state: KawasakiStoreState;
-			subscribe((s) => {
-				state = s;
-			})();
+			const state = get(kawasakiStore);
 			
-			if (!state!.participantId) return;
+			if (!state.participantId) return;
 
 			if (callbacks?.onSaveSession) {
 				try {
-					const sessionStartedEvent = state!.events.find((e) => e.type === 'session_started');
+					const sessionStartedEvent = state.events.find((e) => e.type === 'session_started');
 					const startTs = sessionStartedEvent?.timestamp || Date.now();
-					const sessionIndex = state!.currentSession || (sessionStartedEvent?.payload?.session as number | undefined) || 1;
+					const sessionIndex = state.currentSession || (sessionStartedEvent?.payload?.session as number | undefined) || 1;
 
 					await callbacks.onSaveSession({
-						participantId: state!.participantId!,
+						participantId: state.participantId!,
 						sessionIndex,
 						startTs,
-						events: state!.events
+						events: state.events
 					});
 
 					update((s) => ({
@@ -170,19 +168,16 @@ function createKawasakiStore() {
 			}
 		},
 		resetTest: () => {
-			set(initialState);
-			update((state) => ({
-				...state,
-				events: [...state.events, { timestamp: Date.now(), type: 'test_reset' }]
-			}));
+			const resetState = {
+				...initialState,
+				events: [{ timestamp: Date.now(), type: 'test_reset' }]
+			};
+			set(resetState);
 		},
 		saveSessionVideo: async (session: 1 | 2, blob: Blob, callbacks?: { onUploadArtifact?: (data: any) => Promise<string> }) => {
-			let state: KawasakiStoreState;
-			subscribe((s) => {
-				state = s;
-			})();
+			const state = get(kawasakiStore);
 
-			if (!state!.participantId) {
+			if (!state.participantId) {
 				update((s) => ({ ...s, error: 'Participant ID is not set, cannot save video.' }));
 				return;
 			}
@@ -204,14 +199,14 @@ function createKawasakiStore() {
 
 				if (callbacks?.onUploadArtifact) {
 					const publicUrl = await callbacks.onUploadArtifact({
-						participantId: state!.participantId,
+						participantId: state.participantId,
 						fileName: fileName,
 						fileData: base64Data,
 						contentType: 'video/webm',
 						artifactType: 'video'
 					});
 					update((s) => ({
-						...state!,
+						...s,
 						sessionVideoUrl: publicUrl,
 						events: [
 							...s.events,
