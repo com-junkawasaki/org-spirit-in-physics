@@ -5,6 +5,8 @@
 	import Force3DControls from './Force3DControls.svelte';
 	import StructureAnalysisPanel from './StructureAnalysisPanel.svelte';
 	import Force3DWordGraph from './Force3DWordGraph.svelte';
+	import DumbbellChart from './DumbbellChart.svelte';
+	import SmallMultiples from './SmallMultiples.svelte';
 	import { convertTimelinePointToDataPoint } from './types';
 	import { detectGapAreas, analyzeDensity, detectDuplicates } from './lib/structure-analysis';
 	import type {
@@ -237,6 +239,28 @@
 				>
 					3D Force Graph
 				</button>
+				<button
+					type="button"
+					onclick={() => (visualizationMode = 'dumbbell')}
+					class="px-4 py-2 border-b-2 {
+						visualizationMode === 'dumbbell'
+							? 'border-blue-500 text-blue-600 dark:text-blue-400'
+							: 'border-transparent text-gray-500 dark:text-gray-400'
+					}"
+				>
+					ダンベルチャート
+				</button>
+				<button
+					type="button"
+					onclick={() => (visualizationMode = 'small-multiples')}
+					class="px-4 py-2 border-b-2 {
+						visualizationMode === 'small-multiples'
+							? 'border-blue-500 text-blue-600 dark:text-blue-400'
+							: 'border-transparent text-gray-500 dark:text-gray-400'
+					}"
+				>
+					スモールマルチプル
+				</button>
 			</nav>
 		</div>
 	{/if}
@@ -326,6 +350,26 @@
 					</p>
 				</div>
 			{/if}
+		</div>
+	{/if}
+
+	<!-- Dumbbell Chartモード -->
+	{#if visualizationMode === 'dumbbell'}
+		<div class="space-y-4">
+			<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+				<h3 class="text-xl font-bold mb-4">ダンベルチャート</h3>
+				<DumbbellChart data={timelineDataPoints} {width} />
+			</div>
+		</div>
+	{/if}
+
+	<!-- Small Multiplesモード -->
+	{#if visualizationMode === 'small-multiples'}
+		<div class="space-y-4">
+			<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+				<h3 class="text-xl font-bold mb-4">スモールマルチプル</h3>
+				<SmallMultiples data={timelineDataPoints} />
+			</div>
 		</div>
 	{/if}
 </div>
