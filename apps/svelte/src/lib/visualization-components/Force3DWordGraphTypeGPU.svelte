@@ -77,6 +77,13 @@
 	let computePipeline: any = null; // TypeGPU compute pipeline
 	let renderPipeline: any = null; // TypeGPU render pipeline
 	let bindGroup: any = null; // TypeGPU bind group
+	let cameraUniformBuffer: any = null; // TypeGPU uniform buffer for camera
+	let lightUniformBuffer: any = null; // TypeGPU uniform buffer for light
+	let vertexBuffer: any = null; // TypeGPU vertex buffer for nodes
+	let indexBuffer: any = null; // TypeGPU index buffer for nodes
+	let linkVertexBuffer: any = null; // TypeGPU vertex buffer for links (edges)
+	let linkIndexBuffer: any = null; // TypeGPU index buffer for links (edges)
+	let renderBindGroup: any = null; // TypeGPU bind group for rendering
 	let lastFrameTime = 0;
 	
 	// レンダリング状態の追跡
@@ -354,7 +361,68 @@
 				}
 			});
 
-			// Create render pipeline
+			// Define render pipeline data schemas using TypeGPU
+			const CameraSchema = d.struct({
+				view: d.mat4x4f,
+				proj: d.mat4x4f
+			});
+
+			const LightSchema = d.struct({
+				direction: d.vec3f,
+				color: d.vec3f
+			});
+
+			const VertexSchema = d.struct({
+				position: d.vec3f,
+				color: d.vec3f,
+				normal: d.vec3f
+			});
+
+			// Create uniform buffers for camera and light using TypeGPU
+			const initialCamera = {
+				view: new Float32Array(16).fill(0),
+				proj: new Float32Array(16).fill(0)
+			};
+			cameraUniformBuffer = root.createUniform(CameraSchema, initialCamera);
+
+			const initialLight = {
+				direction: [0, -1, 0] as [number, number, number],
+				color: [1, 1, 1] as [number, number, number]
+			};
+			lightUniformBuffer = root.createUniform(LightSchema, initialLight);
+
+			// Create bind group layout for rendering
+			// Note: We use WebGPU API directly to match existing WGSL shader bindings
+			// TypeGPU buffers are used for data management, but bind groups use WebGPU API
+			// This ensures compatibility with existing shader code that uses @binding(0) and @binding(1)
+			const renderBindGroupLayout = device.createBindGroupLayout({
+				entries: [
+					{
+						binding: 0,
+						visibility: GPUShaderStage.VERTEX,
+						buffer: { type: 'uniform' }
+					},
+					{
+						binding: 1,
+						visibility: GPUShaderStage.FRAGMENT,
+						buffer: { type: 'uniform' }
+					}
+				]
+			});
+
+			// Create bind group for rendering using WebGPU API
+			// TypeGPU buffers provide the underlying GPUBuffer via .buffer property
+			renderBindGroup = device.createBindGroup({
+				layout: renderBindGroupLayout,
+				entries: [
+					{ binding: 0, resource: { buffer: cameraUniformBuffer.buffer } },
+					{ binding: 1, resource: { buffer: lightUniformBuffer.buffer } }
+				]
+			});
+
+			// Create render pipeline using existing WGSL code
+			// Note: TypeGPU's withVertex/withFragment requires 'use gpu' functions,
+			// but we can use the existing WGSL code with WebGPU API directly
 			const vertexShaderModule = device.createShaderModule({
 				code: VERTEX_SHADER
 			});
@@ -363,8 +431,14 @@
 				code: FRAGMENT_SHADER
 			});
 
+			// Create pipeline layout that matches our bind group layout
+			const pipelineLayout = device.createPipelineLayout({
+				bindGroupLayouts: [renderBindGroupLayout]
+			});
+
+			// Create render pipeline with explicit layout
 			renderPipeline = device.createRenderPipeline({
-				layout: 'auto',
+				layout: pipelineLayout,
 				vertex: {
 					module: vertexShaderModule,
 					entryPoint: 'vs_main',
@@ -534,6 +608,333 @@
 				{ binding: 2, resource: { buffer: paramsBuffer.buffer } }
 			]
 		});
+
+		// Initialize vertex and index buffers (will be updated during rendering)
+		// Vertex buffer will be created dynamically based on node positions
+		vertexBufferDirty = true;
+		updateVertexBuffers();
+		updateLinkBuffers();
+	}
+
+	function updateLinkBuffers(nodePositions?: Float32Array) {
+		if (!root || !device || links.length === 0) return;
+
+		// Define vertex schema for links (cylinders)
+		const LinkVertexSchema = d.struct({
+			position: d.vec3f,
+			color: d.vec3f,
+			normal: d.vec3f
+		});
+
+		const vertexData: any[] = [];
+		const indexData: number[] = [];
+		let vertexIndex = 0;
+
+		// Generate cylinder vertices for each link
+		// Each link is represented as a cylinder with 8 sides
+		const cylinderSides = 8;
+		const cylinderRadius = 0.5;
+
+		for (const link of links) {
+			const sourceNode = nodes[link.source];
+			const targetNode = nodes[link.target];
+			
+			if (!sourceNode || !targetNode) continue;
+
+			// Get node positions from compute shader results or initial positions
+			let sourcePos: [number, number, number];
+			let targetPos: [number, number, number];
+			
+			if (nodePositions && link.source < nodes.length && link.target < nodes.length) {
+				// Use positions from compute shader
+				const sourceIdx = link.source * 3;
+				const targetIdx = link.target * 3;
+				sourcePos = [
+					nodePositions[sourceIdx] || 0,
+					nodePositions[sourceIdx + 1] || 0,
+					nodePositions[sourceIdx + 2] || 0
+				];
+				targetPos = [
+					nodePositions[targetIdx] || 0,
+					nodePositions[targetIdx + 1] || 0,
+					nodePositions[targetIdx + 2] || 0
+				];
+			} else {
+				// Fallback to initial positions
+				sourcePos = sourceNode.initial || [0, 0, 0];
+				targetPos = targetNode.initial || [0, 0, 0];
+			}
+
+			const direction = [
+				targetPos[0] - sourcePos[0],
+				targetPos[1] - sourcePos[1],
+				targetPos[2] - sourcePos[2]
+			];
+			const length = Math.sqrt(direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2);
+			if (length < 0.001) continue;
+
+			const dir = [direction[0] / length, direction[1] / length, direction[2] / length] as [number, number, number];
+			
+			// Find perpendicular vector for cylinder cross-section
+			const perp = Math.abs(dir[0]) < 0.9 
+				? [1, 0, 0] as [number, number, number]
+				: [0, 1, 0] as [number, number, number];
+			const cross1 = [
+				dir[1] * perp[2] - dir[2] * perp[1],
+				dir[2] * perp[0] - dir[0] * perp[2],
+				dir[0] * perp[1] - dir[1] * perp[0]
+			];
+			const crossLen = Math.sqrt(cross1[0] ** 2 + cross1[1] ** 2 + cross1[2] ** 2);
+			const u = [cross1[0] / crossLen, cross1[1] / crossLen, cross1[2] / crossLen] as [number, number, number];
+			
+			const v = [
+				dir[1] * u[2] - dir[2] * u[1],
+				dir[2] * u[0] - dir[0] * u[2],
+				dir[0] * u[1] - dir[1] * u[0]
+			] as [number, number, number];
+
+			// Generate cylinder vertices
+			const linkColor = link.color ? parseColor(link.color) : [0.3, 0.3, 0.8];
+			
+			for (let i = 0; i <= cylinderSides; i++) {
+				const angle = (i / cylinderSides) * Math.PI * 2;
+				const cosAngle = Math.cos(angle);
+				const sinAngle = Math.sin(angle);
+				
+				const offset = [
+					u[0] * cosAngle + v[0] * sinAngle,
+					u[1] * cosAngle + v[1] * sinAngle,
+					u[2] * cosAngle + v[2] * sinAngle
+				];
+				
+				const normal = [offset[0], offset[1], offset[2]] as [number, number, number];
+				
+				// Start cap
+				vertexData.push({
+					position: [
+						sourcePos[0] + offset[0] * cylinderRadius,
+						sourcePos[1] + offset[1] * cylinderRadius,
+						sourcePos[2] + offset[2] * cylinderRadius
+					] as [number, number, number],
+					color: linkColor,
+					normal
+				});
+				
+				// End cap
+				vertexData.push({
+					position: [
+						targetPos[0] + offset[0] * cylinderRadius,
+						targetPos[1] + offset[1] * cylinderRadius,
+						targetPos[2] + offset[2] * cylinderRadius
+					] as [number, number, number],
+					color: linkColor,
+					normal
+				});
+			}
+
+			// Generate indices for cylinder
+			for (let i = 0; i < cylinderSides; i++) {
+				const base = vertexIndex + i * 2;
+				// First triangle
+				indexData.push(base);
+				indexData.push(base + 1);
+				indexData.push(base + 2);
+				// Second triangle
+				indexData.push(base + 1);
+				indexData.push(base + 3);
+				indexData.push(base + 2);
+			}
+
+			vertexIndex += (cylinderSides + 1) * 2;
+		}
+
+		// Create or update link vertex buffer using TypeGPU
+		if (vertexData.length > 0) {
+			const LinkVertexArraySchema = d.arrayOf(LinkVertexSchema, vertexData.length);
+			if (!linkVertexBuffer) {
+				linkVertexBuffer = root.createBuffer(LinkVertexArraySchema).$usage('vertex');
+				linkVertexBuffer.compileWriter();
+			}
+			linkVertexBuffer.write(vertexData);
+		}
+
+		// Create or update link index buffer using TypeGPU
+		if (indexData.length > 0) {
+			const LinkIndexArraySchema = d.arrayOf(d.u16, indexData.length);
+			if (!linkIndexBuffer) {
+				linkIndexBuffer = root.createBuffer(LinkIndexArraySchema).$usage('index');
+				linkIndexBuffer.compileWriter();
+			}
+			linkIndexBuffer.write(indexData);
+		}
+	}
+
+	// Generate icosphere mesh (more detailed sphere)
+	function generateIcosphere(subdivisions: number = 2): { vertices: Array<[number, number, number]>, indices: number[] } {
+		// Initial icosahedron vertices
+		const t = (1.0 + Math.sqrt(5.0)) / 2.0;
+		const vertices: Array<[number, number, number]> = [
+			[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
+			[0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
+			[t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]
+		];
+
+		// Normalize vertices to unit sphere
+		const normalizedVertices = vertices.map(v => {
+			const len = Math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2);
+			return [v[0] / len, v[1] / len, v[2] / len] as [number, number, number];
+		});
+
+		// Initial icosahedron faces
+		const faces: [number, number, number][] = [
+			[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+			[1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+			[3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+			[4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+		];
+
+		// Subdivide faces
+		let currentVertices = normalizedVertices;
+		let currentFaces = faces;
+		const vertexMap = new Map<string, number>();
+
+		function getMidpoint(v1: [number, number, number], v2: [number, number, number]): [number, number, number] {
+			const mid = [
+				(v1[0] + v2[0]) / 2,
+				(v1[1] + v2[1]) / 2,
+				(v1[2] + v2[2]) / 2
+			] as [number, number, number];
+			const len = Math.sqrt(mid[0] ** 2 + mid[1] ** 2 + mid[2] ** 2);
+			return [mid[0] / len, mid[1] / len, mid[2] / len] as [number, number, number];
+		}
+
+		function getVertexIndex(v: [number, number, number]): number {
+			const key = `${v[0].toFixed(6)},${v[1].toFixed(6)},${v[2].toFixed(6)}`;
+			if (!vertexMap.has(key)) {
+				vertexMap.set(key, currentVertices.length);
+				currentVertices.push(v);
+			}
+			return vertexMap.get(key)!;
+		}
+
+		for (let sub = 0; sub < subdivisions; sub++) {
+			const newFaces: [number, number, number][] = [];
+			vertexMap.clear();
+
+			for (const face of currentFaces) {
+				const v1 = currentVertices[face[0]];
+				const v2 = currentVertices[face[1]];
+				const v3 = currentVertices[face[2]];
+
+				const m12 = getVertexIndex(getMidpoint(v1, v2));
+				const m23 = getVertexIndex(getMidpoint(v2, v3));
+				const m31 = getVertexIndex(getMidpoint(v3, v1));
+
+				newFaces.push([face[0], m12, m31]);
+				newFaces.push([face[1], m23, m12]);
+				newFaces.push([face[2], m31, m23]);
+				newFaces.push([m12, m23, m31]);
+			}
+
+			currentFaces = newFaces;
+		}
+
+		return {
+			vertices: currentVertices,
+			indices: currentFaces.flat()
+		};
+	}
+
+	// Track last update to optimize buffer updates
+	let lastNodePositions: Float32Array | null = null;
+	let lastNodeCount = 0;
+	let vertexBufferDirty = true;
+
+	function updateVertexBuffers() {
+		if (!root || !device || nodes.length === 0) return;
+
+		// Check if we need to update vertex buffers
+		const nodeCountChanged = nodes.length !== lastNodeCount;
+		if (!nodeCountChanged && !vertexBufferDirty) {
+			return; // Skip update if nothing changed
+		}
+
+		// Define vertex schema
+		const VertexSchema = d.struct({
+			position: d.vec3f,
+			color: d.vec3f,
+			normal: d.vec3f
+		});
+
+		// Generate icosphere template (reuse for all nodes)
+		const icosphere = generateIcosphere(2); // 2 subdivisions = ~80 vertices per sphere
+		const sphereVertexCount = icosphere.vertices.length;
+		const sphereIndexCount = icosphere.indices.length;
+
+		const vertexData: any[] = [];
+		const indexData: number[] = [];
+		let vertexIndex = 0;
+
+		// Generate vertex data for each node
+		for (let i = 0; i < nodes.length; i++) {
+			const node = nodes[i];
+			const radius = Math.max(1, Math.min(10, 2 + node.scale));
+			const baseColor = node.color ? parseColor(node.color) : [0.5, 0.5, 0.5];
+			
+			// Use icosphere template and scale by radius
+			for (const vertex of icosphere.vertices) {
+				vertexData.push({
+					position: [
+						vertex[0] * radius,
+						vertex[1] * radius,
+						vertex[2] * radius
+					] as [number, number, number],
+					color: baseColor,
+					normal: vertex // Normal is the same as vertex position (normalized)
+				});
+			}
+
+			// Add indices offset by current vertex index
+			for (const index of icosphere.indices) {
+				indexData.push(vertexIndex + index);
+			}
+
+			vertexIndex += sphereVertexCount;
+		}
+
+		// Create or update vertex buffer using TypeGPU
+		if (vertexData.length > 0) {
+			const VertexArraySchema = d.arrayOf(VertexSchema, vertexData.length);
+			if (!vertexBuffer || nodeCountChanged) {
+				vertexBuffer = root.createBuffer(VertexArraySchema).$usage('vertex');
+				vertexBuffer.compileWriter();
+			}
+			vertexBuffer.write(vertexData);
+		}
+
+		// Create or update index buffer using TypeGPU
+		if (indexData.length > 0) {
+			const IndexArraySchema = d.arrayOf(d.u16, indexData.length);
+			if (!indexBuffer || nodeCountChanged) {
+				indexBuffer = root.createBuffer(IndexArraySchema).$usage('index');
+				indexBuffer.compileWriter();
+			}
+			indexBuffer.write(indexData);
+		}
+
+		lastNodeCount = nodes.length;
+		vertexBufferDirty = false;
+	}
+
+	function parseColor(color: string): [number, number, number] {
+		// Simple color parser (handles hex colors like #RRGGBB)
+		if (color.startsWith('#')) {
+			const r = parseInt(color.slice(1, 3), 16) / 255;
+			const g = parseInt(color.slice(3, 5), 16) / 255;
+			const b = parseInt(color.slice(5, 7), 16) / 255;
+			return [r, g, b];
+		}
+		return [0.5, 0.5, 0.5]; // Default gray
 	}
 
 	function uploadNodeData(nodeData: NodeData[]) {
@@ -547,6 +948,10 @@
 		}));
 		// Use TypeGPU write method
 		nodeBuffer.write(nodeArrayData);
+		
+		// Mark vertex buffer as dirty when node data changes
+		// This will trigger vertex buffer update in next render cycle
+		vertexBufferDirty = true;
 	}
 
 	function uploadLinkData(linkData: LinkData[]) {
@@ -568,6 +973,34 @@
 		if (!paramsBuffer) return;
 		// TypeGPU uniform buffer can be written using the write method
 		paramsBuffer.write(params);
+	}
+
+	function updateCameraUniforms() {
+		if (!cameraUniformBuffer || !context) return;
+		
+		const aspect = width / height;
+		const fov = 45;
+		const { view, proj } = createCameraMatrix(
+			localCameraPosition,
+			cameraTarget,
+			fov,
+			aspect
+		);
+		
+		cameraUniformBuffer.write({
+			view,
+			proj
+		});
+	}
+
+	function updateLightUniforms() {
+		if (!lightUniformBuffer) return;
+		
+		// Default light direction and color
+		lightUniformBuffer.write({
+			direction: [0, -1, 0] as [number, number, number],
+			color: [1, 1, 1] as [number, number, number]
+		});
 	}
 
 	function animate() {
@@ -596,11 +1029,70 @@
 			computePass.dispatchWorkgroups(Math.ceil(nodes.length / 64));
 			computePass.end();
 
-			// Render (simplified - would need proper 3D rendering setup)
+			// Update camera and light uniforms (only when camera changes)
+			updateCameraUniforms();
+			updateLightUniforms();
+
+			// Update vertex buffers only when node positions change significantly
+			// Performance optimization: Only update buffers when necessary
+			// - When node count changes
+			// - When vertex buffer is marked as dirty
+			// - Periodically (every N frames) to sync with compute shader results
+			const shouldUpdateBuffers = vertexBufferDirty || nodes.length !== lastNodeCount;
+			const updateInterval = 10; // Update every 10 frames
+			const shouldPeriodicUpdate = renderState.renderCount % updateInterval === 0;
+			
+			if (shouldUpdateBuffers) {
+				updateVertexBuffers();
+				updateLinkBuffers();
+			} else if (shouldPeriodicUpdate && nodeBuffer) {
+				// Periodically update link buffers with latest node positions
+				// Note: Reading from GPU is async, so we'll update based on last known positions
+				// For full sync, we'd need to read from nodeBuffer asynchronously
+				updateLinkBuffers();
+			}
+
+			// Render using WebGPU render pipeline
 			renderState.isRendering = true;
 			renderState.renderCount++;
 			renderState.lastRenderTime = Date.now();
-			// TODO: Implement proper WebGPU rendering here
+			
+			// Create render pass
+			const renderPass = commandEncoder.beginRenderPass({
+				colorAttachments: [{
+					view: context.getCurrentTexture().createView(),
+					loadOp: 'clear',
+					clearValue: { r: 1.0, g: 1.0, b: 1.0, a: 1.0 },
+					storeOp: 'store'
+				}]
+			});
+
+			// Set render pipeline and bind groups
+			if (renderPipeline && renderBindGroup) {
+				renderPass.setPipeline(renderPipeline);
+				// Use WebGPU bind group directly (created with WebGPU API)
+				renderPass.setBindGroup(0, renderBindGroup);
+				
+				// Render links (edges) first (so they appear behind nodes)
+				if (linkVertexBuffer && linkIndexBuffer) {
+					renderPass.setVertexBuffer(0, linkVertexBuffer.buffer);
+					renderPass.setIndexBuffer(linkIndexBuffer.buffer, 'uint16');
+					const linkIndexCount = linkIndexBuffer.buffer.size / 2; // uint16 = 2 bytes
+					renderPass.drawIndexed(linkIndexCount);
+					renderState.linksRendered = links.length;
+				}
+				
+				// Render nodes (spheres)
+				if (vertexBuffer && indexBuffer) {
+					renderPass.setVertexBuffer(0, vertexBuffer.buffer);
+					renderPass.setIndexBuffer(indexBuffer.buffer, 'uint16');
+					const indexCount = indexBuffer.buffer.size / 2; // uint16 = 2 bytes
+					renderPass.drawIndexed(indexCount);
+					renderState.nodesRendered = nodes.length;
+				}
+			}
+
+			renderPass.end();
 			renderState.isRendering = false;
 
 			device.queue.submit([commandEncoder.finish()]);
