@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 """
-Import Service - Python implementation
+Import Service - Prefect Workflow Implementation
 Merkle DAG: import.service.main
-Import service HTTP server using FastAPI + PostgreSQL
+Prefect-based data import pipeline for spirit-in-physics
 """
 import os
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from typing import Optional
 
-import uvicorn
-from fastapi import FastAPI, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from prefect import serve
+from prefect.server.server import create_app
 
 from app.database import get_db_pool, init_db_pool, close_db_pool
-from app.routers import participants, sessions, emotions, timeline
+from app.workflows import process_emotions_workflow, process_all_participants_workflow
 
 # Configure logging
 logging.basicConfig(
@@ -25,12 +24,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan manager"""
-    # Startup
-    logger.info("Starting import service...")
-    
+async def init_database():
+    """Initialize database connection pool"""
     database_url = os.getenv(
         'DATABASE_URL',
         'postgresql://postgres:postgres@postgres:5432/spirit_in_physics'
@@ -39,102 +34,60 @@ async def lifespan(app: FastAPI):
     
     await init_db_pool(database_url)
     logger.info("PostgreSQL connection pool initialized")
-    
-    yield
-    
-    # Shutdown
+
+
+async def cleanup_database():
+    """Close database connection pool"""
     logger.info("Shutting down import service...")
     await close_db_pool()
     logger.info("Database connection pool closed")
 
 
-app = FastAPI(
-    title="Import Service",
-    description="Data import service for spirit-in-physics",
-    version="2.0.0",
-    lifespan=lifespan
-)
-
-# Exception handler
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"}
-    )
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Include routers
-app.include_router(participants.router, prefix="/import", tags=["participants"])
-app.include_router(sessions.router, prefix="/import", tags=["sessions"])
-app.include_router(emotions.router, prefix="/import", tags=["emotions"])
-app.include_router(timeline.router, prefix="/import", tags=["timeline"])
-
-
-@app.get("/import/status")
-async def get_status():
-    """Health check endpoint"""
-    try:
-        pool = await get_db_pool()
-        async with pool.acquire() as conn:
-            await conn.execute("SELECT 1")
-        return {
-            "status": "ok",
-            "service": "import-service",
-            "version": "2.0.0"
-        }
-    except Exception as e:
-        logger.error(f"Status check failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Service unavailable: {str(e)}"
-        )
-
-
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {
-        "service": "import-service",
-        "version": "2.0.0",
-        "endpoints": [
-            "/import/status",
-            "/import/participants",
-            "/import/sessions",
-            "/import/emotions",
-            "/import/timeline"
-        ]
-    }
-
-
 if __name__ == "__main__":
-    import asyncio
+    import sys
     
-    port = int(os.getenv("PORT", "8082"))
-    timeout_keep_alive = int(os.getenv("TIMEOUT_KEEP_ALIVE", "300"))
-    timeout_graceful_shutdown = int(os.getenv("TIMEOUT_GRACEFUL_SHUTDOWN", "30"))
+    # Initialize database
+    asyncio.run(init_database())
     
-    config = uvicorn.Config(
-        "main:app",
-        host="0.0.0.0",
-        port=port,
-        log_level="info",
-        reload=False,
-        timeout_keep_alive=timeout_keep_alive,
-        timeout_graceful_shutdown=timeout_graceful_shutdown,
-        limit_concurrency=10,
-        limit_max_requests=1000,
-        access_log=True,
-    )
-    server = uvicorn.Server(config)
-    asyncio.run(server.serve())
-
+    # Check if running as Prefect server or workflow execution
+    if len(sys.argv) > 1 and sys.argv[1] == "server":
+        # Start Prefect server
+        logger.info("Starting Prefect server...")
+        from prefect.server.server import create_app
+        import uvicorn
+        
+        app = create_app()
+        port = int(os.getenv("PREFECT_SERVER_PORT", "4200"))
+        
+        uvicorn.run(
+            app,
+            host="0.0.0.0",
+            port=port,
+            log_level="info"
+        )
+    elif len(sys.argv) > 1 and sys.argv[1] == "workflow":
+        # Run workflow directly
+        participant_id = sys.argv[2] if len(sys.argv) > 2 else None
+        
+        if participant_id:
+            logger.info(f"Running emotion workflow for participant {participant_id}")
+            result = asyncio.run(process_emotions_workflow(participant_id))
+            logger.info(f"Workflow completed: {result}")
+        else:
+            logger.info("Running emotion workflow for all participants")
+            result = asyncio.run(process_all_participants_workflow())
+            logger.info(f"Workflow completed: {result}")
+        
+        # Cleanup
+        asyncio.run(cleanup_database())
+    else:
+        # Default: serve workflows using Prefect serve
+        logger.info("Serving Prefect workflows...")
+        logger.info("Use 'python main.py server' to start Prefect server")
+        logger.info("Use 'python main.py workflow [participant_id]' to run workflow directly")
+        logger.info("Or use Prefect CLI: 'prefect deploy' to deploy workflows")
+        
+        # Note: For Prefect 2.x, workflows are typically deployed using:
+        # prefect deploy app/workflows/emotions.py:process_emotions_workflow
+        # prefect deploy app/workflows/participants.py:process_all_participants_workflow
+        # Then run with: prefect run flow 'process-emotions' --param participant_id=<id>
