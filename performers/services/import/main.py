@@ -55,6 +55,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"}
+    )
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -108,12 +117,24 @@ async def root():
 
 
 if __name__ == "__main__":
+    import asyncio
+    
     port = int(os.getenv("PORT", "8082"))
-    uvicorn.run(
+    timeout_keep_alive = int(os.getenv("TIMEOUT_KEEP_ALIVE", "300"))
+    timeout_graceful_shutdown = int(os.getenv("TIMEOUT_GRACEFUL_SHUTDOWN", "30"))
+    
+    config = uvicorn.Config(
         "main:app",
         host="0.0.0.0",
         port=port,
         log_level="info",
-        reload=False
+        reload=False,
+        timeout_keep_alive=timeout_keep_alive,
+        timeout_graceful_shutdown=timeout_graceful_shutdown,
+        limit_concurrency=10,
+        limit_max_requests=1000,
+        access_log=True,
     )
+    server = uvicorn.Server(config)
+    asyncio.run(server.serve())
 
