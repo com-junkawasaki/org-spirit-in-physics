@@ -1,41 +1,19 @@
 import { browser } from '$app/environment';
+import { GraphQLClient } from 'graphql-request';
 
-// Houdini client (lazy initialization)
-// Note: Houdini is optional and will be initialized when needed
-let houdiniClient: any = null;
+// GraphQL client (using graphql-request instead of Houdini for now)
+// Houdini can be integrated later when properly configured
+const graphqlUrl = browser
+	? '/api/graphql'
+	: process.env.GRAPHQL_API_URL || 'http://graphql-service:8081/graphql';
 
-export async function getClient() {
-	if (!houdiniClient) {
-		try {
-			// Try to import Houdini (may not be available if not configured)
-			const houdiniModule = await import('$houdini').catch(() => null);
-			if (houdiniModule && houdiniModule.HoudiniClient) {
-				houdiniClient = new houdiniModule.HoudiniClient({
-					url: browser
-						? '/api/graphql'
-						: process.env.GRAPHQL_API_URL || 'http://graphql-service:8080/api/graphql',
-					fetchParams({ session }) {
-						return {
-							headers: {
-								'Content-Type': 'application/json',
-								...(session?.token && { Authorization: `Bearer ${session.token}` })
-							}
-						};
-					}
-				});
-			} else {
-				console.warn('Houdini is not configured. GraphQL features may be limited.');
-				return null;
-			}
-		} catch (error) {
-			console.warn('Houdini client not available:', error);
-			return null;
-		}
+export const client = new GraphQLClient(graphqlUrl, {
+	headers: {
+		'Content-Type': 'application/json'
 	}
-	return houdiniClient;
-}
+});
 
-// For backward compatibility - returns a promise that resolves to the client
-export const client = {
-	get: getClient
-};
+// For backward compatibility with Houdini-style API
+export async function getClient() {
+	return client;
+}

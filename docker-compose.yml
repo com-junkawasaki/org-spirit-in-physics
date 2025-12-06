@@ -232,7 +232,7 @@ services:
       # Supabase Configuration
       - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
       - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs}
-    command: sh -c "pnpm install && pnpm dev"
+    command: sh -c "rm -rf .svelte-kit && pnpm install && pnpm svelte-kit sync && pnpm dev"
     depends_on:
       postgres:
         condition: service_healthy
