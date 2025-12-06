@@ -33,9 +33,13 @@
 	let timelineData: any[] = [];
 	let wordAggregates: WordAggregate[] = [];
 	let emotionVectors: EmotionVector[] = [];
-	let loading = true;
-	let error: string | null = null;
-	let activeTab: 'overview' | 'participants' | 'analysis' = 'overview';
+	let loading = $state(true);
+	let error = $state<string | null>(null);
+	let activeTab = $state<'overview' | 'participants' | 'analysis'>('overview');
+	
+	// 統計情報
+	let totalSessionsCount = $state(0);
+	let totalResponsesCount = $state(0);
 	
 	let participantFilter: ParticipantFilter = {};
 	let sessionFilter: SessionFilter = {};
@@ -44,6 +48,7 @@
 	onMount(async () => {
 		try {
 			allParticipants = await fetchParticipants();
+			await loadAllSessions();
 			applyFilters();
 			if (participants.length > 0) {
 				selectedParticipant = participants[0].id;
@@ -55,6 +60,26 @@
 			loading = false;
 		}
 	});
+	
+	async function loadAllSessions() {
+		try {
+			// すべての参加者のセッションを取得
+			const sessionPromises = allParticipants.map((p) => fetchSessions(p.id));
+			const sessionArrays = await Promise.all(sessionPromises);
+			allSessions = sessionArrays.flat();
+			
+			// 総セッション数を計算
+			totalSessionsCount = allSessions.length;
+			
+			// 総応答数を計算（各セッションのイベント数を合計）
+			totalResponsesCount = allSessions.reduce((sum, session) => {
+				const responseCount = session.events?.filter((e: any) => e.type === 'word_response' || e.type === 'response').length || 0;
+				return sum + responseCount;
+			}, 0);
+		} catch (err) {
+			console.error('Error loading all sessions:', err);
+		}
+	}
 	
 	async function loadSessions() {
 		if (!selectedParticipant) return;
@@ -150,8 +175,8 @@
 			{#if activeTab === 'overview'}
 				<DashboardOverview
 					{participants}
-					totalSessions={sessions.length}
-					totalResponses={wordAggregates.reduce((sum, w) => sum + w.count, 0)}
+					totalSessions={totalSessionsCount}
+					totalResponses={totalResponsesCount}
 				/>
 			{/if}
 			
@@ -206,8 +231,55 @@
 										</option>
 									{/each}
 								</select>
+								<div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+									<p>選択中の参加者のセッション数: {sessions.length}</p>
+								</div>
 							</div>
 						{/if}
+						
+						<!-- Statistics Cards -->
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+								<h3 class="text-lg font-semibold mb-2">セッション回数</h3>
+								<p class="text-3xl font-bold">
+									{#if selectedParticipant}
+										{sessions.length}
+										<span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+											(選択中の参加者)
+										</span>
+									{:else}
+										{totalSessionsCount}
+										<span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+											(全体)
+										</span>
+									{/if}
+								</p>
+							</div>
+							<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+								<h3 class="text-lg font-semibold mb-2">反応回数</h3>
+								<p class="text-3xl font-bold">
+									{#if selectedSession && wordAggregates.length > 0}
+										{wordAggregates.reduce((sum, w) => sum + w.count, 0)}
+										<span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+											(選択中のセッション)
+										</span>
+									{:else if selectedParticipant}
+										{sessions.reduce((sum, s) => {
+											const responseCount = s.events?.filter((e: any) => e.type === 'word_response' || e.type === 'response').length || 0;
+											return sum + responseCount;
+										}, 0)}
+										<span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+											(選択中の参加者)
+										</span>
+									{:else}
+										{totalResponsesCount}
+										<span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+											(全体)
+										</span>
+									{/if}
+								</p>
+							</div>
+						</div>
 						
 						<!-- Visualizations -->
 						{#if selectedParticipant && selectedSession}

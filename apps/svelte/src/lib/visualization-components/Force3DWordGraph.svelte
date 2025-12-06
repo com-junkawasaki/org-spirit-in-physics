@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import Force3DWordGraphTypeGPU from './Force3DWordGraphTypeGPU.svelte';
 	import type { WordAggregate, EmotionVector, WordNode, WordLink } from './types';
 	import { normalizeEmotionName } from './lib/emotion-normalization';
@@ -12,8 +13,8 @@
 		emotionVectors?: EmotionVector[];
 	} = $props();
 
-	let nodes: WordNode[] = $derived(convertToNodes(wordAggregates, emotionVectors));
-	let links: WordLink[] = $derived(generateLinks(nodes));
+	let nodes: WordNode[] = $derived(browser ? convertToNodes(wordAggregates, emotionVectors) : []);
+	let links: WordLink[] = $derived(browser ? generateLinks(nodes) : []);
 
 	function convertToNodes(
 		aggregates: WordAggregate[],

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
 	import type { WordNode, WordLink } from './types';
 	import { COMPUTE_SHADER, createNodeData, createLinkData, type NodeData, type LinkData, type PhysicsParams } from './lib/webgpu-physics';
 	import { VERTEX_SHADER, FRAGMENT_SHADER, createCameraMatrix } from './lib/webgpu-renderer';
@@ -78,10 +79,15 @@
 	let cameraTheta = $state(0);
 	let cameraPhi = $state(0);
 	let cameraDistance = $state(500);
-	let localCameraPosition = $state<[number, number, number]>([...cameraPosition]);
+	let localCameraPosition = $state<[number, number, number]>([0, 0, 500]);
+	
+	// Sync cameraPosition prop with local state
+	$effect(() => {
+		localCameraPosition = [...cameraPosition];
+	});
 
 	onMount(() => {
-		if (!canvas || !container) return;
+		if (!browser || !canvas || !container) return;
 
 		// Intersection Observer for performance optimization
 		const observer = new IntersectionObserver(
@@ -93,8 +99,8 @@
 
 		observer.observe(container);
 
-		// Initialize WebGPU
-		initWebGPU();
+	// Initialize WebGPU
+	initWebGPU();
 
 		// Setup mouse controls
 		setupControls();
@@ -515,9 +521,11 @@
 	}
 
 	// Update buffers when nodes/links change
-	$: if (device && nodes.length > 0 && links.length > 0) {
-		initializeBuffers();
-	}
+	$effect(() => {
+		if (browser && device && nodes.length > 0 && links.length > 0) {
+			initializeBuffers();
+		}
+	});
 </script>
 
 <div bind:this={container} class="force-3d-graph-container" style="width: {width}px; height: {height}px;">

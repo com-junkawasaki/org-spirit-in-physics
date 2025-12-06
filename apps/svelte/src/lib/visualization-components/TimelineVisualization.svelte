@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import type { TimelinePoint, EmotionData, PhysiologicalData } from './types';
 
 	const {
@@ -27,7 +28,7 @@
 	});
 
 	$effect(() => {
-		if (timelinePoints.length > 0 && ctx) {
+		if (browser && timelinePoints.length > 0 && ctx) {
 			drawTimeline();
 		}
 	});
