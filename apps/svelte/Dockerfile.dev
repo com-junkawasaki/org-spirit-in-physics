@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files (dependencies will be installed at runtime via docker-compose command)
+COPY package.json ./
+
+# Copy source code (will be overridden by volume mount in docker-compose)
+COPY . .
+
+EXPOSE 3000
+
+# Default command (can be overridden in docker-compose)
+# Dependencies will be installed by docker-compose command before running dev
+CMD ["pnpm", "dev"]

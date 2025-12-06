@@ -208,6 +208,49 @@ services:
       retries: 5
       start_period: 10s
 
+  # SvelteKit app (unified app)
+  svelte:
+    build:
+      context: ./apps/svelte
+      dockerfile: Dockerfile.dev
+    container_name: spirit-svelte
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/svelte:/app
+      - ./packages:/app/../packages
+      - svelte_node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      # HMR and file watching settings for Docker
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - WATCHPACK_POLLING=true
+      - WATCHPACK_POLLING_INTERVAL=1000
+      # GraphQL API URL
+      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
+      - PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      # Clerk Authentication
+      - PUBLIC_CLERK_PUBLISHABLE_KEY=${PUBLIC_CLERK_PUBLISHABLE_KEY:-}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
+      # Supabase Configuration
+      - PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
+      - PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs}
+    command: sh -c "pnpm install && pnpm dev"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      graphql-service:
+        condition: service_healthy
+    networks:
+      - spirit-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   # Paper app (Astro)
   paper:
     build:
@@ -339,6 +382,7 @@ volumes:
   postgres_data:
   paper_node_modules:
   demo_node_modules:
+  svelte_node_modules:
 
 networks:
   spirit-network:

@@ -121,14 +121,14 @@ export function createCameraMatrix(
 
 	// Projection matrix
 	const fovRad = (fov * Math.PI) / 180;
-	const f = 1.0 / Math.tan(fovRad / 2);
+	const focalLength = 1.0 / Math.tan(fovRad / 2);
 	const proj = new Float32Array([
-		f / aspect,
+		focalLength / aspect,
 		0,
 		0,
 		0,
 		0,
-		f,
+		focalLength,
 		0,
 		0,
 		0,

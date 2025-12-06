@@ -93,7 +93,7 @@
 		}
 	}
 
-	function handleSpeechResult(transcript: string, isFinal: boolean) {
+	async function handleSpeechResult(transcript: string, isFinal: boolean) {
 		currentTranscript = transcript;
 		
 		if (isFinal && reactionStartTime) {
