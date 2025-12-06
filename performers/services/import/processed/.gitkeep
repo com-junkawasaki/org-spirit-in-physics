@@ -1,0 +1,3 @@
+# This directory stores processed Parquet files
+# Versioned subdirectories (v1, v2, etc.) contain the actual data
+

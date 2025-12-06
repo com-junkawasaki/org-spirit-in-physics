@@ -8,6 +8,11 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import pandas as pd
 
+from app.schemas.burst import BURST_EMOTION_NAMES
+from app.schemas.language import LANGUAGE_EMOTION_NAMES
+from app.schemas.prosody import PROSODY_EMOTION_NAMES
+from app.schemas.face import FACE_EMOTION_NAMES
+
 logger = logging.getLogger(__name__)
 
 
@@ -156,8 +161,14 @@ def convert_json_to_dataframe(
     df = pd.DataFrame(records)
     
     # Ensure all emotion columns are present (fill with NaN if missing)
-    from app.schemas.burst import VALID_EMOTION_NAMES
-    for emotion_name in VALID_EMOTION_NAMES:
+    emotion_name_map = {
+        "burst": BURST_EMOTION_NAMES,
+        "language": LANGUAGE_EMOTION_NAMES,
+        "prosody": PROSODY_EMOTION_NAMES,
+        "face": FACE_EMOTION_NAMES,
+    }
+    emotion_names = emotion_name_map.get(model_type, [])
+    for emotion_name in emotion_names:
         if emotion_name not in df.columns:
             df[emotion_name] = None
     

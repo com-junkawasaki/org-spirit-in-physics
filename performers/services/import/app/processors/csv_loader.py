@@ -8,7 +8,10 @@ from typing import Optional, Dict, Any
 import pandas as pd
 import polars as pl
 
-from app.schemas.burst import VALID_EMOTION_NAMES
+from app.schemas.burst import BURST_EMOTION_NAMES
+from app.schemas.language import LANGUAGE_EMOTION_NAMES
+from app.schemas.prosody import PROSODY_EMOTION_NAMES
+from app.schemas.face import FACE_EMOTION_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +56,15 @@ def load_csv_with_dtypes(
         base_dtypes["probability"] = "float64"
         base_dtypes["prob"] = "float64"
     
-    # Add emotion columns as float64
-    emotion_dtypes = {emotion: "float64" for emotion in VALID_EMOTION_NAMES}
+    # Add emotion columns as float64 based on modality
+    emotion_name_map = {
+        "burst": BURST_EMOTION_NAMES,
+        "language": LANGUAGE_EMOTION_NAMES,
+        "prosody": PROSODY_EMOTION_NAMES,
+        "face": FACE_EMOTION_NAMES,
+    }
+    emotion_names = emotion_name_map.get(modality, [])
+    emotion_dtypes = {emotion: "float64" for emotion in emotion_names}
     base_dtypes.update(emotion_dtypes)
     
     # Apply overrides

@@ -8,37 +8,24 @@ from pydantic import BaseModel, Field
 from typing import Dict, Optional
 import pandas as pd
 
-# Valid emotion names from emotion_name_enum (82 types)
-VALID_EMOTION_NAMES = [
-    # Basic emotions
-    'Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger',
-    'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness',
-    'Concentration', 'Contemplation', 'Confusion', 'Contempt', 'Contentment',
-    'Craving', 'Determination', 'Disappointment', 'Disgust', 'Distress',
-    'Doubt', 'Ecstasy', 'Embarrassment', 'Empathic Pain', 'Entrancement',
-    'Envy', 'Excitement', 'Fear', 'Guilt', 'Horror',
-    'Interest', 'Joy', 'Love', 'Nostalgia', 'Pain',
-    'Pride', 'Realization', 'Relief', 'Romance', 'Sadness',
-    'Satisfaction', 'Desire', 'Shame', 'Surprise (negative)', 'Surprise (positive)',
-    'Surprise', 'Sympathy', 'Tiredness', 'Triumph',
-    # Vocal expressions (burst emotions)
-    'Cackle', 'Cheer', 'Chuckle', 'Cry', 'Gasp',
-    'Giggle', 'Groan', 'Growl', 'Grunt', 'Hiss',
-    'Hoot', 'Howl', 'Laugh', 'Moan', 'Pant',
-    'Roar', 'Scream', 'Screech', 'Shout', 'Shriek',
-    'Sigh', 'Snicker', 'Snort', 'Sob', 'Squeal',
-    'Wail', 'Wheep', 'Whee', 'Whew', 'Yawn',
-    'Yelp', 'Yuck',
-    # Neutral/Metadata
-    'Neutral',
-    # Additional vocal expressions from CSV
-    'Ah', 'Aha', 'Ahh', 'Argh', 'Aww',
-    'Eek', 'Eww', 'Grr', 'Ha', 'Hah',
-    'Haha', 'Hehe', 'Hmm', 'Huh', 'Hurray',
-    'Mhm', 'Mmm', 'Oh', 'Ohh', 'Ooh',
-    'Ooph', 'Ouch', 'Oww', 'Pff', 'Phew',
-    'Tsk', 'Ugh', 'Uh', 'Uh-huh', 'Umm',
-    'Woah', 'Wow', 'Yay', 'Yippee'
+# Valid emotion names from actual CSV files (115 emotions for burst)
+BURST_EMOTION_NAMES = [
+    'Admiration', 'Adoration', 'Aesthetic Appreciation', 'Ah', 'Aha', 'Ahh',
+    'Amusement', 'Anger', 'Anxiety', 'Argh', 'Awe', 'Awkwardness', 'Aww',
+    'Boredom', 'Cackle', 'Calmness', 'Cheer', 'Chuckle', 'Concentration',
+    'Confusion', 'Contemplation', 'Contempt', 'Contentment', 'Craving', 'Cry',
+    'Desire', 'Determination', 'Disappointment', 'Disgust', 'Distress', 'Doubt',
+    'Ecstasy', 'Eek', 'Embarrassment', 'Empathic Pain', 'Entrancement', 'Envy',
+    'Eww', 'Excitement', 'Fear', 'Gasp', 'Giggle', 'Groan', 'Growl', 'Grr',
+    'Grunt', 'Guilt', 'Ha', 'Hah', 'Haha', 'Hehe', 'Hiss', 'Hmm', 'Hoot',
+    'Horror', 'Howl', 'Huh', 'Hurray', 'Interest', 'Joy', 'Laugh', 'Love',
+    'Mhm', 'Mmm', 'Moan', 'Nostalgia', 'Oh', 'Ohh', 'Ooh', 'Ooph', 'Ouch',
+    'Oww', 'Pain', 'Pant', 'Pff', 'Phew', 'Pride', 'Realization', 'Relief',
+    'Roar', 'Romance', 'Sadness', 'Satisfaction', 'Scream', 'Screech', 'Shame',
+    'Shout', 'Shriek', 'Sigh', 'Snicker', 'Snort', 'Sob', 'Squeal',
+    'Surprise (negative)', 'Surprise (positive)', 'Sympathy', 'Tiredness',
+    'Triumph', 'Tsk', 'Ugh', 'Uh', 'Uh-huh', 'Umm', 'Wail', 'Whee', 'Wheep',
+    'Whew', 'Whimper', 'Woah', 'Wow', 'Yawn', 'Yay', 'Yelp', 'Yippee', 'Yuck',
 ]
 
 
@@ -51,8 +38,8 @@ def create_burst_schema() -> pa.DataFrameSchema:
         "EndTime": pa.Column(float, checks=pa.Check.ge(0), nullable=False),
     }
     
-    # Add emotion columns dynamically
-    for emotion_name in VALID_EMOTION_NAMES:
+    # Add emotion columns from actual CSV files
+    for emotion_name in BURST_EMOTION_NAMES:
         columns[emotion_name] = pa.Column(
             float,
             checks=pa.Check.ge(0) & pa.Check.le(1),
@@ -89,7 +76,7 @@ class BurstEmotionRecord(BaseModel):
         excluded_fields = {"Id", "BeginTime", "EndTime", "BeginPosition", "EndPosition", "FrameNumber", "Time", "Confidence"}
         
         for key, value in data.items():
-            if key not in excluded_fields and key in VALID_EMOTION_NAMES:
+            if key not in excluded_fields and key in BURST_EMOTION_NAMES:
                 try:
                     score = float(value)
                     if score > 0:
@@ -101,4 +88,3 @@ class BurstEmotionRecord(BaseModel):
         data["emotions"] = emotion_scores
         
         super().__init__(**data)
-

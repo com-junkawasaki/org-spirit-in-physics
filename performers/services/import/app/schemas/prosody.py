@@ -6,7 +6,19 @@ import pandera as pa
 from pandera.typing import DataFrame
 from pydantic import BaseModel, Field
 from typing import Dict, Optional
-from .burst import VALID_EMOTION_NAMES
+
+# Valid emotion names from actual CSV files (48 emotions for prosody)
+PROSODY_EMOTION_NAMES = [
+    'Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger',
+    'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness', 'Concentration',
+    'Confusion', 'Contemplation', 'Contempt', 'Contentment', 'Craving', 'Desire',
+    'Determination', 'Disappointment', 'Disgust', 'Distress', 'Doubt', 'Ecstasy',
+    'Embarrassment', 'Empathic Pain', 'Entrancement', 'Envy', 'Excitement',
+    'Fear', 'Guilt', 'Horror', 'Interest', 'Joy', 'Love', 'Nostalgia', 'Pain',
+    'Pride', 'Realization', 'Relief', 'Romance', 'Sadness', 'Satisfaction',
+    'Shame', 'Surprise (negative)', 'Surprise (positive)', 'Sympathy',
+    'Tiredness', 'Triumph',
+]
 
 
 def create_prosody_schema() -> pa.DataFrameSchema:
@@ -19,8 +31,8 @@ def create_prosody_schema() -> pa.DataFrameSchema:
         "Confidence": pa.Column(float, checks=pa.Check.ge(0) & pa.Check.le(1), nullable=True, required=False),
     }
     
-    # Add emotion columns dynamically
-    for emotion_name in VALID_EMOTION_NAMES:
+    # Add emotion columns from actual CSV files
+    for emotion_name in PROSODY_EMOTION_NAMES:
         columns[emotion_name] = pa.Column(
             float,
             checks=pa.Check.ge(0) & pa.Check.le(1),
@@ -58,7 +70,7 @@ class ProsodyEmotionRecord(BaseModel):
         excluded_fields = {"Id", "BeginTime", "EndTime", "BeginPosition", "EndPosition", "FrameNumber", "Time", "Confidence"}
         
         for key, value in data.items():
-            if key not in excluded_fields and key in VALID_EMOTION_NAMES:
+            if key not in excluded_fields and key in PROSODY_EMOTION_NAMES:
                 try:
                     score = float(value)
                     if score > 0:
@@ -70,4 +82,3 @@ class ProsodyEmotionRecord(BaseModel):
         data["emotions"] = emotion_scores
         
         super().__init__(**data)
-

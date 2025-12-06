@@ -10,7 +10,10 @@ import pyarrow.parquet as pq
 import asyncpg
 
 from app.database import get_db_pool
-from app.schemas.burst import VALID_EMOTION_NAMES
+from app.schemas.burst import BURST_EMOTION_NAMES
+from app.schemas.language import LANGUAGE_EMOTION_NAMES
+from app.schemas.prosody import PROSODY_EMOTION_NAMES
+from app.schemas.face import FACE_EMOTION_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +56,23 @@ async def import_parquet_to_db(
     emotions_count = 0
     
     async with pool.acquire() as conn:
-        # Get valid emotion names from ENUM type
-        valid_emotion_names = await conn.fetch(
+        # Get valid emotion names based on modality
+        emotion_name_map = {
+            "burst": BURST_EMOTION_NAMES,
+            "language": LANGUAGE_EMOTION_NAMES,
+            "prosody": PROSODY_EMOTION_NAMES,
+            "face": FACE_EMOTION_NAMES,
+        }
+        valid_emotion_set = set(emotion_name_map.get(modality, []))
+        
+        # Also check against database ENUM for validation
+        db_emotion_names = await conn.fetch(
             "SELECT unnest(enum_range(NULL::emotion_name_enum))::text as emotion_name"
         )
-        valid_emotion_set = {row['emotion_name'] for row in valid_emotion_names}
+        db_emotion_set = {row['emotion_name'] for row in db_emotion_names}
+        
+        # Use intersection to ensure we only use emotions that exist in both
+        valid_emotion_set = valid_emotion_set & db_emotion_set
         
         # Process each row
         for _, row in df.iterrows():

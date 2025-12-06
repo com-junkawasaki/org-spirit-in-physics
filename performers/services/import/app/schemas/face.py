@@ -6,7 +6,25 @@ import pandera as pa
 from pandera.typing import DataFrame
 from pydantic import BaseModel, Field
 from typing import Dict, Optional
-from .burst import VALID_EMOTION_NAMES
+
+# Valid emotion names from actual CSV files (80 emotions for face)
+FACE_EMOTION_NAMES = [
+    'Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger',
+    'Anxiety', 'Awe', 'Awkwardness', 'Beaming', 'Biting lip', 'Boredom',
+    'Calmness', 'Cheering', 'Concentration', 'Confusion', 'Contemplation',
+    'Contempt', 'Contentment', 'Craving', 'Cringe', 'Cry', 'Desire',
+    'Determination', 'Disappointment', 'Disgust', 'Distress', 'Doubt', 'Ecstasy',
+    'Embarrassment', 'Empathic Pain', 'Entrancement', 'Envy', 'Excitement',
+    'Eyes closed', 'Face in hands', 'Fear', 'Frown', 'Gasp', 'Glare', 'Glaring',
+    'Grimace', 'Grin', 'Guilt', 'Hand over Eyes', 'Hand over Face',
+    'Hand over Forehead', 'Hand over Mouth', 'Hand touching Face / Head',
+    'Horror', 'Interest', 'Jaw drop', 'Joy', 'Laugh', 'Licking lip', 'Love',
+    'Nostalgia', 'Pain', 'Pout', 'Pride', 'Realization', 'Relief', 'Romance',
+    'Sadness', 'Satisfaction', 'Scowl', 'Shame', 'Smile', 'Smirk', 'Snarl',
+    'Squint', 'Sulking', 'Surprise (negative)', 'Surprise (positive)',
+    'Sympathy', 'Tiredness', 'Tongue out', 'Triumph', 'Wide-eyed', 'Wince',
+    'Wrinkled nose',
+]
 
 
 def create_face_schema() -> pa.DataFrameSchema:
@@ -21,8 +39,8 @@ def create_face_schema() -> pa.DataFrameSchema:
         "prob": pa.Column(float, checks=pa.Check.ge(0) & pa.Check.le(1), nullable=True, required=False),
     }
     
-    # Add emotion columns dynamically
-    for emotion_name in VALID_EMOTION_NAMES:
+    # Add emotion columns from actual CSV files
+    for emotion_name in FACE_EMOTION_NAMES:
         columns[emotion_name] = pa.Column(
             float,
             checks=pa.Check.ge(0) & pa.Check.le(1),
@@ -32,7 +50,7 @@ def create_face_schema() -> pa.DataFrameSchema:
     
     return pa.DataFrameSchema(
         columns=columns,
-        strict=False,  # Allow additional columns
+        strict=False,  # Allow additional columns (AU columns, etc.)
         coerce=True,   # Coerce types
     )
 
@@ -53,7 +71,7 @@ class FaceEmotionRecord(BaseModel):
     
     class Config:
         populate_by_name = True
-        extra = "allow"  # Allow additional emotion fields
+        extra = "allow"  # Allow additional emotion fields (AU columns, etc.)
     
     def __init__(self, **data):
         # Extract emotion scores from data
@@ -61,7 +79,7 @@ class FaceEmotionRecord(BaseModel):
         excluded_fields = {"Id", "BeginTime", "EndTime", "BeginPosition", "EndPosition", "FrameNumber", "Time", "Confidence", "probability", "prob"}
         
         for key, value in data.items():
-            if key not in excluded_fields and key in VALID_EMOTION_NAMES:
+            if key not in excluded_fields and key in FACE_EMOTION_NAMES:
                 try:
                     score = float(value)
                     if score > 0:
@@ -77,4 +95,3 @@ class FaceEmotionRecord(BaseModel):
         data["emotions"] = emotion_scores
         
         super().__init__(**data)
-

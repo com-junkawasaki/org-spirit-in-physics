@@ -6,7 +6,20 @@ import pandera as pa
 from pandera.typing import DataFrame
 from pydantic import BaseModel, Field
 from typing import Dict, Optional
-from .burst import VALID_EMOTION_NAMES
+
+# Valid emotion names from actual CSV files (53 emotions for language)
+LANGUAGE_EMOTION_NAMES = [
+    'Admiration', 'Adoration', 'Aesthetic Appreciation', 'Amusement', 'Anger',
+    'Annoyance', 'Anxiety', 'Awe', 'Awkwardness', 'Boredom', 'Calmness',
+    'Concentration', 'Confusion', 'Contemplation', 'Contempt', 'Contentment',
+    'Craving', 'Desire', 'Determination', 'Disappointment', 'Disapproval',
+    'Disgust', 'Distress', 'Doubt', 'Ecstasy', 'Embarrassment', 'Empathic Pain',
+    'Enthusiasm', 'Entrancement', 'Envy', 'Excitement', 'Fear', 'Gratitude',
+    'Guilt', 'Horror', 'Interest', 'Joy', 'Love', 'Nostalgia', 'Pain', 'Pride',
+    'Realization', 'Relief', 'Romance', 'Sadness', 'Sarcasm', 'Satisfaction',
+    'Shame', 'Surprise (negative)', 'Surprise (positive)', 'Sympathy',
+    'Tiredness', 'Triumph',
+]
 
 
 def create_language_schema() -> pa.DataFrameSchema:
@@ -21,8 +34,8 @@ def create_language_schema() -> pa.DataFrameSchema:
         "Confidence": pa.Column(float, checks=pa.Check.ge(0) & pa.Check.le(1), nullable=True, required=False),
     }
     
-    # Add emotion columns dynamically
-    for emotion_name in VALID_EMOTION_NAMES:
+    # Add emotion columns from actual CSV files
+    for emotion_name in LANGUAGE_EMOTION_NAMES:
         columns[emotion_name] = pa.Column(
             float,
             checks=pa.Check.ge(0) & pa.Check.le(1),
@@ -61,7 +74,7 @@ class LanguageEmotionRecord(BaseModel):
         excluded_fields = {"Id", "BeginTime", "EndTime", "BeginPosition", "EndPosition", "FrameNumber", "Time", "Confidence", "text", "Text"}
         
         for key, value in data.items():
-            if key not in excluded_fields and key in VALID_EMOTION_NAMES:
+            if key not in excluded_fields and key in LANGUAGE_EMOTION_NAMES:
                 try:
                     score = float(value)
                     if score > 0:
@@ -77,4 +90,3 @@ class LanguageEmotionRecord(BaseModel):
         data["emotions"] = emotion_scores
         
         super().__init__(**data)
-
