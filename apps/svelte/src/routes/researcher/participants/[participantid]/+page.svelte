@@ -9,8 +9,8 @@
 	} from '$lib/researcher/graphql-client';
 	
 	let participantId = $derived($page.params.participantid);
-	let participant: any = null;
-	let sessions: any[] = [];
+	let participant = $state<any>(null);
+	let sessions = $state<any[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	
@@ -114,18 +114,18 @@
 				<h2 class="text-2xl font-bold mb-4">参加者情報</h2>
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 					<div>
-						<label class="text-sm font-semibold text-gray-600 dark:text-gray-400">ID</label>
+						<span class="text-sm font-semibold text-gray-600 dark:text-gray-400">ID</span>
 						<p class="text-lg">{participant.id}</p>
 					</div>
 					{#if participant.age}
 						<div>
-							<label class="text-sm font-semibold text-gray-600 dark:text-gray-400">年齢</label>
+							<span class="text-sm font-semibold text-gray-600 dark:text-gray-400">年齢</span>
 							<p class="text-lg">{participant.age}歳</p>
 						</div>
 					{/if}
 					{#if participant.gender}
 						<div>
-							<label class="text-sm font-semibold text-gray-600 dark:text-gray-400">性別</label>
+							<span class="text-sm font-semibold text-gray-600 dark:text-gray-400">性別</span>
 							<p class="text-lg">{participant.gender}</p>
 						</div>
 					{/if}

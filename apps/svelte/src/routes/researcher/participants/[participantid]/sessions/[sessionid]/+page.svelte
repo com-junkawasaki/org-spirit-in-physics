@@ -16,11 +16,11 @@
 	
 	let participantId = $derived($page.params.participantid);
 	let sessionId = $derived($page.params.sessionid);
-	let participant: any = null;
-	let session: any = null;
-	let timelineData: any[] = [];
-	let wordAggregates: WordAggregate[] = [];
-	let emotionVectors: EmotionVector[] = [];
+	let participant = $state<any>(null);
+	let session = $state<any>(null);
+	let timelineData = $state<any[]>([]);
+	let wordAggregates = $state<WordAggregate[]>([]);
+	let emotionVectors = $state<EmotionVector[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	
@@ -246,11 +246,11 @@
 					<h2 class="text-2xl font-bold mb-4">セッション情報</h2>
 					<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 						<div>
-							<label class="text-sm font-semibold text-gray-600 dark:text-gray-400">セッション番号</label>
+							<span class="text-sm font-semibold text-gray-600 dark:text-gray-400">セッション番号</span>
 							<p class="text-lg">{session.sessionIndex ?? '-'}</p>
 						</div>
 						<div>
-							<label class="text-sm font-semibold text-gray-600 dark:text-gray-400">開始時刻</label>
+							<span class="text-sm font-semibold text-gray-600 dark:text-gray-400">開始時刻</span>
 							<p class="text-lg">
 								{#if session.startTs}
 									{new Date(session.startTs).toLocaleString()}
@@ -260,7 +260,7 @@
 							</p>
 						</div>
 						<div>
-							<label class="text-sm font-semibold text-gray-600 dark:text-gray-400">終了時刻</label>
+							<span class="text-sm font-semibold text-gray-600 dark:text-gray-400">終了時刻</span>
 							<p class="text-lg">
 								{#if session.endTs}
 									{new Date(session.endTs).toLocaleString()}
@@ -352,7 +352,7 @@
 						
 						<!-- Word Aggregates Status -->
 						<div class="border-b pb-2">
-							<div class="flex items-center justify-between mb-1 cursor-pointer" onclick={() => toggleSection('wordAggregates')}>
+							<button type="button" class="flex items-center justify-between mb-1 cursor-pointer w-full text-left" onclick={() => toggleSection('wordAggregates')} onkeydown={(e) => e.key === 'Enter' && toggleSection('wordAggregates')} role="button" tabindex="0">
 								<span class="font-semibold">単語集計</span>
 								<div class="flex items-center gap-2">
 									<span class="px-2 py-1 rounded text-xs {
@@ -367,7 +367,7 @@
 									</span>
 									<span class="text-xs">{expandedSections.has('wordAggregates') ? '▼' : '▶'}</span>
 								</div>
-							</div>
+							</button>
 							<div class="text-xs text-gray-600 dark:text-gray-400">
 								{debugState.wordAggregates.message || '待機中'}
 							</div>
@@ -385,7 +385,7 @@
 						
 						<!-- Emotion Vectors Status -->
 						<div class="border-b pb-2">
-							<div class="flex items-center justify-between mb-1 cursor-pointer" onclick={() => toggleSection('emotionVectors')}>
+							<button type="button" class="flex items-center justify-between mb-1 cursor-pointer w-full text-left" onclick={() => toggleSection('emotionVectors')} onkeydown={(e) => e.key === 'Enter' && toggleSection('emotionVectors')} role="button" tabindex="0">
 								<span class="font-semibold">感情ベクトル</span>
 								<div class="flex items-center gap-2">
 									<span class="px-2 py-1 rounded text-xs {
@@ -400,7 +400,7 @@
 									</span>
 									<span class="text-xs">{expandedSections.has('emotionVectors') ? '▼' : '▶'}</span>
 								</div>
-							</div>
+							</button>
 							<div class="text-xs text-gray-600 dark:text-gray-400">
 								{debugState.emotionVectors.message || '待機中'}
 							</div>
@@ -418,7 +418,7 @@
 						
 						<!-- Timeline Status -->
 						<div>
-							<div class="flex items-center justify-between mb-1 cursor-pointer" onclick={() => toggleSection('timeline')}>
+							<button type="button" class="flex items-center justify-between mb-1 cursor-pointer w-full text-left" onclick={() => toggleSection('timeline')} onkeydown={(e) => e.key === 'Enter' && toggleSection('timeline')} role="button" tabindex="0">
 								<span class="font-semibold">タイムライン</span>
 								<div class="flex items-center gap-2">
 									<span class="px-2 py-1 rounded text-xs {
@@ -433,7 +433,7 @@
 									</span>
 									<span class="text-xs">{expandedSections.has('timeline') ? '▼' : '▶'}</span>
 								</div>
-							</div>
+							</button>
 							<div class="text-xs text-gray-600 dark:text-gray-400">
 								{debugState.timeline.message || '待機中'}
 							</div>

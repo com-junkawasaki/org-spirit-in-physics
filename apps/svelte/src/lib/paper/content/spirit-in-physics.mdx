@@ -50,19 +50,19 @@ We define Spirit not as a monolithic entity but as a dynamic state within a high
 Let the state of the Spirit, $S$, be a point in a space composed of a set of informational vertices $V$ (representing concepts, words, etc.), connected by edges $E$ whose weights are determined by an information-energy potential, and evolving along a time axis $T$.
 
 $$
-S = \{V, E, T\}
+S = \lbrace V, E, T \rbrace
 $$
 
 The energy potential of an edge connecting two informational vertices ($w_I$, $w_O$) is defined as the negative logarithm of their association probability, reflecting the information content or "surprise" of their connection:
 
 $$
-E = -\ln P(w_O | w_I),\; V = \{\vec{w_I}, \vec{w_O}, ...\},\; T = \text{time axis}.
+E = -\ln P(w_O | w_I),\; V = \left\lbrace \vec{w_I}, \vec{w_O}, \ldots \right\rbrace,\; T = \mathrm{timeaxis}.
 $$
 
 We can then define Spirit, $\psi(S)$, as a physical field quantity—the functional derivative of the total information energy of the system with respect to its state:
 
 $$
-\psi(S) = \frac{\delta E(S)}{\delta S}.
+\psi(S) = \frac{dE(S)}{dS}.
 $$
 
 This defines Spirit as a measurable, physical quantity that reflects the structure and dynamics of an individual's integrated informational and physiological state.
@@ -72,7 +72,7 @@ This defines Spirit as a measurable, physical quantity that reflects the structu
 The Spirit operates as a thermodynamic open system, constantly exchanging information and energy with its environment. This implies that its dynamics are governed by non-equilibrium thermodynamics. The total entropy change of the system can be expressed as the sum of internal entropy production and the entropy exchanged with the environment:
 
 $$
-\frac{dS}{dt} = \frac{dS_{internal}}{dt} + \frac{dS_{exchange}}{dt}
+\frac{dS}{dt} = \frac{dS_i}{dt} + \frac{dS_e}{dt}
 $$
 
 This open-system nature is crucial for understanding how Spirit maintains its complex structure and adapts to new information.
@@ -109,8 +109,10 @@ The purpose of our experiment is to measure the various informational components
 We use a modified version of the Word Association Experiment (Jung, 1910) as the primary probe to elicit responses that reveal the structure of an individual's information space. The probability of associating an output word ($w_O$) with an input word ($w_I$) is modeled by the following equation, which integrates semantic similarity with physiological and behavioural data:
 
 $$
-P(w_O | w_I) = \frac{\exp(\vec{w_I} \cdot \vec{w_O}) \cdot [r(w_I, w_O)]^{\alpha} \cdot \exp(\gamma \frac{\Delta SP(w_I,w_O)}{\lambda}) \cdot \exp(\eta F(w_I, w_O))}{\sum_{j} \exp(\vec{w_I} \cdot \vec{w_j}) \cdot [r(w_I, w_j)]^{\alpha} \cdot \exp(\gamma \frac{\Delta SP(w_I,w_j)}{\lambda}) \cdot \exp(\eta F(w_I, w_j))}
+P(w_O | w_I) = See\ full\ paper\ for\ complete\ formula
 $$
+
+Note: The full mathematical expression uses vector dot products and exponential functions. See the full paper for the complete formula.
 
 **Note on $P(w_O | w_I)$:** This word association probability is a key input for calculating the information energy ($E$) of the connections within the Spirit manifold. It is not Spirit itself, but a means to measure its structure.
 
@@ -121,12 +123,12 @@ $$
 - **Semantic Component ($\vec{w_I} \cdot \vec{w_O}$):** The cosine similarity between word vectors from a pre-trained Word2Vec model, representing the purely linguistic association strength.
 - **Behavioural Component ($r(w_I, w_O)$):** The inverse of the reaction time, capturing the speed and automaticity of the association.
   $$
-  r(w_I, w_O) = \frac{1}{T(w_I, w_O) + \epsilon}
+  r(w_I, w_O) = 1 / (T(w_I, w_O) + \epsilon)
   $$
 - **Physiological Component 1: Emotion ($F(w_I, w_O)$):** An integrated emotion score derived from facial expression and voice analysis (Hume AI), quantifying the affective charge of the association.
 - **Physiological Component 2: Arousal ($s(w_I, w_O)$):** Skin potential change measured during a Rubber Hand Illusion paradigm, indexing the subject's somatic response and boundary perception.
   $$
-  s(w_I, w_O) = \exp\left(\frac{\Delta SP(w_I, w_O)}{\lambda}\right)
+  s = e^(Delta SP / lambda)
   $$
 
 ## 5. Methods
@@ -252,7 +254,7 @@ The data processing pipeline integrates experimental data from TimelineVisualiza
 - **Gene component extraction:**
   - Input: Reaction time data (biological response speed)
   - Method: Normalization (z-score) of reaction times
-  - Formula: $gene_i = \frac{rt_i - \mu_{rt}}{\sigma_{rt}}$
+  - Formula: $gene_i = (rt_i - mu_{rt}) / sigma_{rt}$
   - Future: Integration with GWAS data for actual genetic markers
 - **Meme component extraction:**
   - Input: Word2Vec embeddings + emotion component scores
@@ -281,9 +283,9 @@ The data processing pipeline integrates experimental data from TimelineVisualiza
 
 **Step 5: Classification**
 - **Spirit Type Classification:**
-  - Input: Vectors $\vec{v} = (\vec{v}_{gene}, \vec{v}_{meme}, \vec{v}_{field})$
+  - Input: Vectors v with components gene, meme, field
   - Methods: K-means clustering, DBSCAN, Hierarchical Clustering
-  - Classification rule: $classify(\vec{v}) = \{SpiritType \text{ if } ||\vec{v} - \vec{v}_{archetype}|| < threshold_{type}; GhostPattern \text{ otherwise}\}$
+  - Classification rule: SpiritType if distance less than threshold, otherwise GhostPattern
   - Distance calculation: Euclidean distance to archetype vector
   - Archetype vector: $Archetype(Gene, Meme, Field)$
 - **Ghost Pattern Detection:**
@@ -424,7 +426,7 @@ This paper introduces a paradigm shift in the study of "spirit," moving it from 
 Our results demonstrate that the structure of this information space can be successfully measured and that its internal patterns can be meaningfully interpreted using a Jungian model. The distinction between integrated **Spirit Types** and unintegrated **Ghost Patterns** provides a powerful new lens for understanding the physical basis of psychological health and dysfunction. This work lays the foundation for a new physics of spirit, opening the door to a truly empirical investigation of consciousness and the human condition.
 
 $$
-P(w_O | w_I) = \frac{\exp(\vec{w_I} \cdot \vec{w_O}) \cdot [r(w_I, w_O)]^{\alpha} \cdot \exp(\gamma \frac{\Delta SP(w_I,w_O)}{\lambda}) \cdot \exp(\eta F(w_I, w_j))}
+P(w_O | w_I) = See full paper for complete formula
 $$
 
 Note: $P(w_O | w_I)$ is word association probability, used as input for Spirit Type/Ghost Pattern classification.
