@@ -1,11 +1,25 @@
 <script lang="ts">
 	const {
 		participants = [],
+		participantSessions = [],
 		onSelectParticipant = undefined
 	}: {
 		participants?: any[];
+		participantSessions?: Map<string, any[]>;
 		onSelectParticipant?: ((id: string) => void) | undefined;
 	} = $props();
+
+	function getSessionCount(participantId: string): number {
+		return participantSessions?.get(participantId)?.length || 0;
+	}
+
+	function getResponseCount(participantId: string): number {
+		const sessions = participantSessions?.get(participantId) || [];
+		return sessions.reduce((sum, session) => {
+			const responseCount = session.events?.filter((e: any) => e.type === 'word_response' || e.type === 'response').length || 0;
+			return sum + responseCount;
+		}, 0);
+	}
 </script>
 
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -16,6 +30,8 @@
 				<th class="px-4 py-2 text-left">年齢</th>
 				<th class="px-4 py-2 text-left">性別</th>
 				<th class="px-4 py-2 text-left">利き手</th>
+				<th class="px-4 py-2 text-left">セッション回数</th>
+				<th class="px-4 py-2 text-left">反応回数</th>
 				<th class="px-4 py-2 text-left">作成日</th>
 			</tr>
 		</thead>
@@ -29,6 +45,8 @@
 					<td class="px-4 py-2">{participant.age || '-'}</td>
 					<td class="px-4 py-2">{participant.gender || '-'}</td>
 					<td class="px-4 py-2">{participant.handedness || '-'}</td>
+					<td class="px-4 py-2">{getSessionCount(participant.id)}</td>
+					<td class="px-4 py-2">{getResponseCount(participant.id)}</td>
 					<td class="px-4 py-2">{participant.createdAt ? new Date(participant.createdAt).toLocaleDateString() : '-'}</td>
 				</tr>
 			{/each}

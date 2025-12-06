@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import TimelineVisualization from '$lib/visualization-components/TimelineVisualization.svelte';
 	import Force3DWordGraph from '$lib/visualization-components/Force3DWordGraph.svelte';
 	import DashboardOverview from '$lib/researcher/components/DashboardOverview.svelte';
@@ -35,15 +37,26 @@
 	let emotionVectors: EmotionVector[] = [];
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-	let activeTab = $state<'overview' | 'participants' | 'analysis'>('overview');
+	
+	// URLパラメータからタブを取得
+	let activeTab = $derived(($page.url.searchParams.get('tab') || 'overview') as 'overview' | 'participants' | 'analysis');
 	
 	// 統計情報
 	let totalSessionsCount = $state(0);
 	let totalResponsesCount = $state(0);
 	
+	// 参加者ごとのセッション情報を保持
+	let participantSessionsMap = $state<Map<string, any[]>>(new Map());
+	
 	let participantFilter: ParticipantFilter = {};
 	let sessionFilter: SessionFilter = {};
 	let dataFilter: DataFilter = {};
+	
+	function navigateToTab(tab: 'overview' | 'participants' | 'analysis') {
+		const url = new URL($page.url);
+		url.searchParams.set('tab', tab);
+		goto(url.toString(), { replaceState: true, noScroll: true });
+	}
 	
 	onMount(async () => {
 		try {
@@ -67,6 +80,13 @@
 			const sessionPromises = allParticipants.map((p) => fetchSessions(p.id));
 			const sessionArrays = await Promise.all(sessionPromises);
 			allSessions = sessionArrays.flat();
+			
+			// 参加者ごとのセッション情報をMapに格納
+			const newMap = new Map<string, any[]>();
+			allParticipants.forEach((participant, index) => {
+				newMap.set(participant.id, sessionArrays[index] || []);
+			});
+			participantSessionsMap = newMap;
 			
 			// 総セッション数を計算
 			totalSessionsCount = allSessions.length;
@@ -150,24 +170,36 @@
 			<!-- Tabs -->
 			<div class="border-b border-gray-200 dark:border-gray-700">
 				<nav class="flex space-x-8">
-					<button
-						class="px-4 py-2 border-b-2 {activeTab === 'overview' ? 'border-primary' : 'border-transparent'}"
-						onclick={() => (activeTab = 'overview')}
+					<a
+						href="/researcher?tab=overview"
+						class="px-4 py-2 border-b-2 {activeTab === 'overview' ? 'border-blue-500' : 'border-transparent'}"
+						onclick={(e) => {
+							e.preventDefault();
+							navigateToTab('overview');
+						}}
 					>
 						概要
-					</button>
-					<button
-						class="px-4 py-2 border-b-2 {activeTab === 'participants' ? 'border-primary' : 'border-transparent'}"
-						onclick={() => (activeTab = 'participants')}
+					</a>
+					<a
+						href="/researcher?tab=participants"
+						class="px-4 py-2 border-b-2 {activeTab === 'participants' ? 'border-blue-500' : 'border-transparent'}"
+						onclick={(e) => {
+							e.preventDefault();
+							navigateToTab('participants');
+						}}
 					>
 						参加者
-					</button>
-					<button
-						class="px-4 py-2 border-b-2 {activeTab === 'analysis' ? 'border-primary' : 'border-transparent'}"
-						onclick={() => (activeTab = 'analysis')}
+					</a>
+					<a
+						href="/researcher?tab=analysis"
+						class="px-4 py-2 border-b-2 {activeTab === 'analysis' ? 'border-blue-500' : 'border-transparent'}"
+						onclick={(e) => {
+							e.preventDefault();
+							navigateToTab('analysis');
+						}}
 					>
 						分析
-					</button>
+					</a>
 				</nav>
 			</div>
 			
@@ -185,10 +217,11 @@
 				<div class="space-y-4">
 					<ParticipantTable
 						{participants}
+						participantSessions={participantSessionsMap}
 						onSelectParticipant={(id) => {
 							selectedParticipant = id;
 							loadSessions();
-							activeTab = 'analysis';
+							navigateToTab('analysis');
 						}}
 					/>
 				</div>

@@ -204,6 +204,21 @@ services:
       retries: 5
       start_period: 10s
 
+  # pgweb - PostgreSQL Web Management Interface
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: spirit-pgweb
+    ports:
+      - "8083:8081"
+    environment:
+      - PGWEB_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - spirit-network
+    restart: unless-stopped
+
   # SvelteKit app (unified app)
   svelte:
     build:
