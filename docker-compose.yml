@@ -149,7 +149,7 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ./apps/researcher/public/dataset:/app/dataset:cached
+      - ./apps/researcher/participants:/app/dataset/participants:cached
     environment:
       # Production Supabase Database URL
       # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres

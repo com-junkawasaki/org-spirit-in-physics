@@ -6,18 +6,18 @@ const GRAPHQL_API_URL =
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		const body = await request.json();
+	const body = await request.json();
 		
 		// Create new headers without host and other problematic headers
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json'
 		};
 
-		const response = await fetch(GRAPHQL_API_URL, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify(body)
-		});
+	const response = await fetch(GRAPHQL_API_URL, {
+		method: 'POST',
+		headers,
+		body: JSON.stringify(body)
+	});
 
 		if (!response.ok) {
 			console.error('GraphQL API error:', response.status, response.statusText);
@@ -26,8 +26,8 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ errors: [{ message: `GraphQL API error: ${response.status} ${response.statusText}` }] }, { status: response.status });
 		}
 
-		const data = await response.json();
-		return json(data);
+	const data = await response.json();
+	return json(data);
 	} catch (error: any) {
 		console.error('Error in GraphQL proxy:', error);
 		return json({ errors: [{ message: error.message || 'Unknown error' }] }, { status: 500 });

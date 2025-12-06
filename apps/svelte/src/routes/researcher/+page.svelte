@@ -195,7 +195,7 @@
 				if (participant) {
 					selectedParticipant = participantIdFromUrl;
 					console.log('onMount: Loading sessions for participant', participantIdFromUrl);
-					await loadSessions();
+				await loadSessions();
 				} else {
 					console.warn('onMount: Participant not found in allParticipants', participantIdFromUrl);
 					debugState.participants = {
@@ -274,13 +274,13 @@
 				requestParams: { participantId: selectedParticipant },
 				lastUpdated: new Date()
 			};
-			allSessions = await fetchSessions(selectedParticipant);
+		allSessions = await fetchSessions(selectedParticipant);
 			const requestTime = Date.now() - startTime;
 			console.log('loadSessions: Sessions fetched', allSessions.length, allSessions);
-			applyFilters();
+		applyFilters();
 			console.log('loadSessions: Filters applied', { sessionsLength: sessions.length, allSessionsLength: allSessions.length });
-			if (sessions.length > 0) {
-				selectedSession = sessions[0].id;
+		if (sessions.length > 0) {
+			selectedSession = sessions[0].id;
 				debugState.sessions = {
 					status: 'success',
 					message: 'セッションの読み込み完了',
@@ -302,7 +302,7 @@
 					lastUpdated: new Date()
 				};
 				console.log('loadSessions: Selected session', selectedSession, 'Loading data...');
-				await loadData();
+			await loadData();
 			} else {
 				console.log('loadSessions: No sessions found after filtering');
 				debugState.sessions = {
@@ -712,23 +712,23 @@
 									<h2 class="text-2xl font-bold mb-4">可視化分析</h2>
 									<div class="w-full" style="min-height: 600px;">
 										<TimelineVisualizationEnhanced
-											timelinePoints={timelineData}
-											participantId={selectedParticipant}
-											sessionId={selectedSession}
+										timelinePoints={timelineData}
+										participantId={selectedParticipant}
+										sessionId={selectedSession}
 											wordAggregates={wordAggregates}
 											emotionVectors={emotionVectors}
 											width={1200}
 											height={600}
-										/>
+									/>
 									</div>
 								</div>
 								
 								<!-- KPI Cards (separate section) -->
 								{#if timelineData.length > 0}
-									<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+								<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
 										<h2 class="text-2xl font-bold mb-4">KPI サマリー</h2>
 										<KPICards data={timelineData.map(convertTimelinePointToDataPoint)} />
-									</div>
+								</div>
 								{/if}
 							</div>
 						{:else}

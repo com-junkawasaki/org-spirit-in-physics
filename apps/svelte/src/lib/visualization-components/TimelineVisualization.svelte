@@ -81,7 +81,7 @@
 	$effect(() => {
 		if (browser && timelinePoints.length > 0 && ctx) {
 			console.log('[TimelineVisualization] Drawing timeline with', timelinePoints.length, 'points');
-			drawTimeline();
+		drawTimeline();
 		} else {
 			if (!browser) {
 				console.log('[TimelineVisualization] Not in browser, skipping draw');

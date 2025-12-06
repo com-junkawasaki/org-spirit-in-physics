@@ -12,7 +12,7 @@ function getGraphQLUrl(): string {
 }
 
 export const client = new GraphQLClient(getGraphQLUrl(), {
-	headers: {
+			headers: {
 		'Content-Type': 'application/json'
 	}
 });

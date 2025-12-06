@@ -60,7 +60,7 @@
 		// Subscribe to store updates
 		const unsubscribe = kawasakiStore.subscribe((value) => {
 			if (value) {
-				store = value;
+			store = value;
 			}
 		});
 		return unsubscribe;

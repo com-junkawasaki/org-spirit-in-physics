@@ -13,18 +13,18 @@
 		background = '#ffffff',
 		maxFps = 0, // 0 = unlimited
 		physics = {
-			springK: 2.0,
-			repulsionK: 2000.0,
-			damping: 0.92,
-			restLength: 80,
-			maxSpeed: 100,
-			shellRadius: 300,
-			shellK: 1.5,
-			radialOutK: 120,
-			constraintIters: 2,
-			constraintStiffness: 0.5,
-			minSep: 80,
-			sepK: 8000
+		springK: 2.0,
+		repulsionK: 2000.0,
+		damping: 0.92,
+		restLength: 80,
+		maxSpeed: 100,
+		shellRadius: 300,
+		shellK: 1.5,
+		radialOutK: 120,
+		constraintIters: 2,
+		constraintStiffness: 0.5,
+		minSep: 80,
+		sepK: 8000
 		},
 		cameraPosition = [0, 0, 500] as [number, number, number],
 		cameraTarget = [0, 0, 0] as [number, number, number],
@@ -99,8 +99,8 @@
 
 		observer.observe(container);
 
-	// Initialize WebGPU
-	initWebGPU();
+		// Initialize WebGPU
+		initWebGPU();
 
 		// Setup mouse controls
 		setupControls();
@@ -552,8 +552,8 @@
 	// Update buffers when nodes/links change
 	$effect(() => {
 		if (browser && device && nodes.length > 0 && links.length > 0) {
-			initializeBuffers();
-		}
+		initializeBuffers();
+	}
 	});
 </script>
 

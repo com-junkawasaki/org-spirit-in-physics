@@ -215,153 +215,153 @@ async def process_session(conn, participant_id: str, participant_path: Path):
             continue
         
         logger.info(f"Processing session {session_num} (index {session_index}) for participant {participant_id}: {len(events)} events")
-        
-        # Calculate session times
-        start_ts = events[0].get('timestamp') if events else None
+    
+    # Calculate session times
+    start_ts = events[0].get('timestamp') if events else None
         # Find the last response_window_closed or session completion event
-        end_event = next(
+    end_event = next(
             (e for e in reversed(events) if e.get('type') in ('response_window_closed', 'session_1_completed', 'session_2_completed')),
-            None
-        )
-        end_ts = end_event.get('timestamp') if end_event else (events[-1].get('timestamp') if events else None)
-        
-        if not start_ts:
+        None
+    )
+    end_ts = end_event.get('timestamp') if end_event else (events[-1].get('timestamp') if events else None)
+    
+    if not start_ts:
             logger.warning(f"No start timestamp found for session {session_num} of participant {participant_id}")
             continue
-        
-        # Build a list of word_displayed events for reaction time calculation
-        word_displayed_events_list = []
-        for event in events:
-            if event.get('type') == 'word_displayed':
-                payload = event.get('payload', {})
-                word = payload.get('word')
-                if word:
-                    word_displayed_events_list.append((word, event.get('timestamp')))
-        
-        # Calculate statistics
-        word_responses = [
-            e for e in events
-            if e.get('type') == 'word_displayed' and any(
-                later.get('type') == 'speech_detected' and later.get('timestamp', 0) > e.get('timestamp', 0)
-                for later in events
-            )
-        ]
-        
-        reaction_times = []
-        for word_event in word_responses:
-            word_ts = word_event.get('timestamp')
-            speech_event = next(
-                (e for e in events if e.get('type') == 'speech_detected' and e.get('timestamp', 0) > word_ts),
-                None
-            )
-            if speech_event:
-                reaction_times.append(speech_event.get('timestamp', 0) - word_ts)
-        
-        avg_reaction_time = sum(reaction_times) / len(reaction_times) if reaction_times else None
-        session_duration = (end_ts - start_ts) if end_ts and start_ts else None
-        
-        # Insert or update session
-        session_id = await conn.fetchval(
-            """
-            INSERT INTO sessions (id, participant_id, session_index, start_ts, end_ts, created_at, updated_at)
-            VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, NOW(), NOW())
-            ON CONFLICT (participant_id, session_index) DO UPDATE SET
-                start_ts = EXCLUDED.start_ts,
-                end_ts = EXCLUDED.end_ts,
-                updated_at = NOW()
-            RETURNING id
-            """,
-            participant_id,
-            session_index,
-            start_ts,
-            end_ts
-        )
-        
-        # Delete existing session events
-        await conn.execute(
-            "DELETE FROM session_events WHERE session_id = $1::uuid",
-            session_id
-        )
-        
-        # Insert events into session_events table
-        inserted_count = 0
-        skipped_count = 0
-        
-        for event in events:
-            event_type_str = event.get('type')
-            if not event_type_str:
-                skipped_count += 1
-                continue
-            
-            # Validate event type against session_event_type_enum
-            if event_type_str not in VALID_EVENT_TYPES:
-                logger.warning(
-                    f"Skipping invalid event type '{event_type_str}' for participant {participant_id}. "
-                    f"Valid types: {', '.join(sorted(VALID_EVENT_TYPES))}"
-                )
-                skipped_count += 1
-                continue
-            
-            # Extract event data from payload
+    
+    # Build a list of word_displayed events for reaction time calculation
+    word_displayed_events_list = []
+    for event in events:
+        if event.get('type') == 'word_displayed':
             payload = event.get('payload', {})
-            event_timestamp = event.get('timestamp', start_ts)
-            
-            # Convert payload to JSON string for event_data
-            # Only store non-empty payloads
-            event_data = json.dumps(payload) if payload and len(payload) > 0 else None
-            
-            # Extract word from payload (for future use with stimulus_words table)
-            # Currently word_id is NULL as stimulus_words table integration is pending
-            word_id = None  # payload.get('word') would be text, not ID
-            
-            # Calculate reaction_time_ms for speech_detected events
-            reaction_time_ms = None
-            if event_type_str == 'speech_detected':
-                # Use the payload already extracted above
-                word = payload.get('word') if payload else None
-                if word:
-                    # Find the most recent word_displayed event for this word before speech_detected
-                    matching_word_events = [
-                        ts for w, ts in word_displayed_events_list
-                        if w == word and ts < event_timestamp
-                    ]
-                    if matching_word_events:
-                        # Use the most recent word_displayed timestamp
-                        word_displayed_ts = max(matching_word_events)
-                        reaction_time_ms = int(event_timestamp - word_displayed_ts)
-                    else:
-                        logger.debug(
-                            f"No matching word_displayed event found for word '{word}' "
-                            f"at timestamp {event_timestamp} for participant {participant_id}"
-                        )
-            
-            try:
-                await conn.execute(
-                    """
-                    INSERT INTO session_events (
-                        session_id, event_type, event_timestamp, event_data, word_id, reaction_time_ms
-                    )
-                    VALUES ($1::uuid, $2::session_event_type_enum, $3, $4, $5, $6)
-                    ON CONFLICT DO NOTHING
-                    """,
-                    session_id,
-                    event_type_str,
-                    event_timestamp,
-                    event_data,
-                    word_id,
-                    reaction_time_ms
-                )
-                inserted_count += 1
-            except Exception as e:
-                logger.error(
-                    f"Error inserting event {event_type_str} for participant {participant_id}: {e}"
-                )
-                skipped_count += 1
-        
-        logger.info(
-            f"Imported session {session_num} (index {session_index}) {session_id} for participant {participant_id}: "
-            f"{inserted_count} events inserted, {skipped_count} events skipped"
+            word = payload.get('word')
+            if word:
+                word_displayed_events_list.append((word, event.get('timestamp')))
+    
+    # Calculate statistics
+    word_responses = [
+        e for e in events
+        if e.get('type') == 'word_displayed' and any(
+            later.get('type') == 'speech_detected' and later.get('timestamp', 0) > e.get('timestamp', 0)
+            for later in events
         )
+    ]
+    
+    reaction_times = []
+    for word_event in word_responses:
+        word_ts = word_event.get('timestamp')
+        speech_event = next(
+            (e for e in events if e.get('type') == 'speech_detected' and e.get('timestamp', 0) > word_ts),
+            None
+        )
+        if speech_event:
+            reaction_times.append(speech_event.get('timestamp', 0) - word_ts)
+    
+    avg_reaction_time = sum(reaction_times) / len(reaction_times) if reaction_times else None
+    session_duration = (end_ts - start_ts) if end_ts and start_ts else None
+    
+        # Insert or update session
+    session_id = await conn.fetchval(
+        """
+        INSERT INTO sessions (id, participant_id, session_index, start_ts, end_ts, created_at, updated_at)
+        VALUES (gen_random_uuid(), $1::uuid, $2, $3, $4, NOW(), NOW())
+        ON CONFLICT (participant_id, session_index) DO UPDATE SET
+            start_ts = EXCLUDED.start_ts,
+            end_ts = EXCLUDED.end_ts,
+            updated_at = NOW()
+        RETURNING id
+        """,
+        participant_id,
+            session_index,
+        start_ts,
+        end_ts
+    )
+    
+    # Delete existing session events
+    await conn.execute(
+        "DELETE FROM session_events WHERE session_id = $1::uuid",
+        session_id
+    )
+    
+    # Insert events into session_events table
+    inserted_count = 0
+    skipped_count = 0
+    
+    for event in events:
+        event_type_str = event.get('type')
+        if not event_type_str:
+            skipped_count += 1
+            continue
+        
+        # Validate event type against session_event_type_enum
+        if event_type_str not in VALID_EVENT_TYPES:
+            logger.warning(
+                f"Skipping invalid event type '{event_type_str}' for participant {participant_id}. "
+                f"Valid types: {', '.join(sorted(VALID_EVENT_TYPES))}"
+            )
+            skipped_count += 1
+            continue
+        
+        # Extract event data from payload
+        payload = event.get('payload', {})
+        event_timestamp = event.get('timestamp', start_ts)
+        
+        # Convert payload to JSON string for event_data
+        # Only store non-empty payloads
+        event_data = json.dumps(payload) if payload and len(payload) > 0 else None
+        
+        # Extract word from payload (for future use with stimulus_words table)
+        # Currently word_id is NULL as stimulus_words table integration is pending
+        word_id = None  # payload.get('word') would be text, not ID
+        
+        # Calculate reaction_time_ms for speech_detected events
+        reaction_time_ms = None
+        if event_type_str == 'speech_detected':
+            # Use the payload already extracted above
+            word = payload.get('word') if payload else None
+            if word:
+                # Find the most recent word_displayed event for this word before speech_detected
+                matching_word_events = [
+                    ts for w, ts in word_displayed_events_list
+                    if w == word and ts < event_timestamp
+                ]
+                if matching_word_events:
+                    # Use the most recent word_displayed timestamp
+                    word_displayed_ts = max(matching_word_events)
+                    reaction_time_ms = int(event_timestamp - word_displayed_ts)
+                else:
+                    logger.debug(
+                        f"No matching word_displayed event found for word '{word}' "
+                        f"at timestamp {event_timestamp} for participant {participant_id}"
+                    )
+        
+        try:
+            await conn.execute(
+                """
+                INSERT INTO session_events (
+                    session_id, event_type, event_timestamp, event_data, word_id, reaction_time_ms
+                )
+                VALUES ($1::uuid, $2::session_event_type_enum, $3, $4, $5, $6)
+                ON CONFLICT DO NOTHING
+                """,
+                session_id,
+                event_type_str,
+                event_timestamp,
+                event_data,
+                word_id,
+                reaction_time_ms
+            )
+            inserted_count += 1
+        except Exception as e:
+            logger.error(
+                f"Error inserting event {event_type_str} for participant {participant_id}: {e}"
+            )
+            skipped_count += 1
+    
+    logger.info(
+            f"Imported session {session_num} (index {session_index}) {session_id} for participant {participant_id}: "
+        f"{inserted_count} events inserted, {skipped_count} events skipped"
+    )
         
         total_inserted += inserted_count
         total_skipped += skipped_count
