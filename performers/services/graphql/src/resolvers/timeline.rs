@@ -225,7 +225,7 @@ impl TimelineQuery {
                     has_response: event_count > 0,
                     emotions: Vec::new(),
                     physiological: Vec::new(),
-                    metadata: serde_json::json!({}),
+                    metadata: crate::schema::JSON(serde_json::to_string(&serde_json::json!({})).unwrap_or_else(|_| "{}".to_string())),
                 })
             }).collect())
         } else {

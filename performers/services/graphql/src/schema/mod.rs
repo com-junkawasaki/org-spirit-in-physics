@@ -1,7 +1,7 @@
 // Merkle DAG: graphql.service.schema
 // GraphQL schema definition using juniper-from-schema
 
-use juniper::{RootNode, EmptyMutation};
+use juniper::{RootNode, EmptyMutation, EmptySubscription};
 use sqlx::Pool;
 use sqlx::Postgres;
 use crate::resolvers::{ParticipantQuery, TimelineQuery, ParticipantMutation};
@@ -9,7 +9,7 @@ use crate::auth::context::AuthContext;
 use serde_json;
 
 // Generate schema from GraphQL SDL file
-// This macro generates types and traits based on the schema
+// This macro generates types and traits directly in the current module scope
 // The path is relative to the crate root (performers/services/graphql/)
 juniper_from_schema::graphql_schema_from_file!(
     "schema.graphql"
@@ -54,9 +54,9 @@ pub struct Context {
 
 impl juniper::Context for Context {}
 
-// Schema type - juniper 0.14 RootNode takes Query, Mutation, and ScalarValue
-// Note: juniper 0.14 doesn't support subscriptions, so we use DefaultScalarValue
-pub type GraphQLSchema = RootNode<'static, Query, Mutation>;
+// Schema type - juniper-from-schema generates a Schema type
+// We use the generated Schema type instead of defining our own
+// Note: The generated Schema type is based on RootNode<Query, Mutation, EmptySubscription>
 
 pub struct Query;
 
@@ -64,7 +64,7 @@ pub struct Query;
 impl QueryFields for Query {
     fn field_participants(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         _trail: &QueryTrail<'_, Participant, Walked>,
     ) -> juniper::FieldResult<Vec<Participant>> {
         let context = executor.context();
@@ -77,7 +77,7 @@ impl QueryFields for Query {
 
     fn field_participant(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         id: juniper::ID,
         _trail: &QueryTrail<'_, Participant, Walked>,
     ) -> juniper::FieldResult<Option<Participant>> {
@@ -89,7 +89,7 @@ impl QueryFields for Query {
 
     fn field_stimulus_words(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         _trail: &QueryTrail<'_, StimulusWord, Walked>,
     ) -> juniper::FieldResult<Vec<StimulusWord>> {
         let context = executor.context();
@@ -100,7 +100,7 @@ impl QueryFields for Query {
 
     fn field_stimulus_word(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         id: i32,
         _trail: &QueryTrail<'_, StimulusWord, Walked>,
     ) -> juniper::FieldResult<Option<StimulusWord>> {
@@ -112,7 +112,7 @@ impl QueryFields for Query {
 
     fn field_sessions(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         participant_id: juniper::ID,
         _trail: &QueryTrail<'_, Session, Walked>,
     ) -> juniper::FieldResult<Vec<Session>> {
@@ -124,7 +124,7 @@ impl QueryFields for Query {
 
     fn field_timeline(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         participant_id: juniper::ID,
         session_id: Option<juniper::ID>,
         start_time: Option<String>,
@@ -140,7 +140,7 @@ impl QueryFields for Query {
 
     fn field_word_aggregates(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         participant_id: juniper::ID,
         session_id: Option<juniper::ID>,
         _trail: &QueryTrail<'_, WordAggregate, Walked>,
@@ -153,7 +153,7 @@ impl QueryFields for Query {
 
     fn field_emotion_vectors(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         participant_id: juniper::ID,
         session_id: Option<juniper::ID>,
         _trail: &QueryTrail<'_, EmotionVector, Walked>,
@@ -166,7 +166,7 @@ impl QueryFields for Query {
 
     fn field_word_statistics(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         participant_id: juniper::ID,
         session_id: Option<juniper::ID>,
         _trail: &QueryTrail<'_, WordStatistics, Walked>,
@@ -184,7 +184,7 @@ pub struct Mutation;
 impl MutationFields for Mutation {
     fn field_create_participant(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         input: CreateParticipantInput,
         _trail: &QueryTrail<'_, Participant, Walked>,
     ) -> juniper::FieldResult<Participant> {
@@ -196,7 +196,7 @@ impl MutationFields for Mutation {
 
     fn field_create_session(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         input: CreateSessionInput,
         _trail: &QueryTrail<'_, Session, Walked>,
     ) -> juniper::FieldResult<Session> {
@@ -208,7 +208,7 @@ impl MutationFields for Mutation {
 
     fn field_upload_artifact(
         &self,
-        executor: &juniper::Executor<'_, Context>,
+        executor: &juniper::Executor<'_, '_, Context>,
         input: UploadArtifactInput,
     ) -> juniper::FieldResult<String> {
         let context = executor.context();
@@ -218,20 +218,20 @@ impl MutationFields for Mutation {
     }
 }
 
-pub fn create_schema(_pool: Pool<Postgres>) -> GraphQLSchema {
-    GraphQLSchema::new(Query, Mutation)
+pub fn create_schema(_pool: Pool<Postgres>) -> Schema {
+    Schema::new(Query, Mutation, EmptySubscription::default())
 }
 
-// Export GraphQLSchema as Schema for external use
-// Note: juniper-from-schema may generate a Schema type, so we use GraphQLSchema to avoid conflicts
-pub use GraphQLSchema as Schema;
+// Note: juniper-from-schema generates types directly in this module's scope as `pub`
+// These types are accessible from other modules via `crate::schema::TypeName`
+// The generated types include:
+// - Participant, StimulusWord, Session, TimelinePoint, WordAggregate, etc.
+// - CreateParticipantInput, CreateSessionInput, UploadArtifactInput
+// - QueryFields, MutationFields, QueryTrail, Walked traits
+//
+// Since the module is declared as `pub mod schema` in lib.rs,
+// and juniper-from-schema generates types as `pub`, they should be accessible directly.
+// If they're not accessible, it may be because the macro hasn't generated them yet or there's a compilation error.
 
-// Re-export types generated by juniper-from-schema for use in resolvers
-// These types are generated by the macro above and are available in the current scope
-// We need to re-export them so they can be used in other modules
-// Note: If there are conflicts, it means juniper-from-schema already exports them
-pub use {
-    Participant, StimulusWord, Session, TimelinePoint, WordAggregate,
-    EmotionVector, WordStatistics, EmotionData, PhysiologicalData,
-    CreateParticipantInput, CreateSessionInput, UploadArtifactInput,
-};
+// Note: juniper-from-schema generates a Schema type, so we don't need to re-export GraphQLSchema as Schema
+// The generated Schema type should be used instead

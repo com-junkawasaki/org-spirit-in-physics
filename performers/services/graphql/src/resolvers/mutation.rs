@@ -117,7 +117,7 @@ impl ParticipantMutation {
             
             let event_timestamp = event.get("timestamp")
                 .and_then(|v| v.as_i64())
-                .unwrap_or(input.start_ts);
+                .unwrap_or(input.start_ts.into());
             
             let event_data = event.get("data")
                 .map(|v| serde_json::to_string(v).unwrap_or_default());
