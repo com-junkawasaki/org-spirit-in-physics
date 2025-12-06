@@ -378,23 +378,23 @@
 				normal: d.vec3f
 			});
 
-			// Create uniform buffers for camera and light using TypeGPU
-			const initialCamera = {
-				view: new Float32Array(16).fill(0),
-				proj: new Float32Array(16).fill(0)
-			};
-			cameraUniformBuffer = root.createUniform(CameraSchema, initialCamera);
+			// Create uniform buffers for camera and light using WebGPU API directly
+			// TypeGPU's createUniform may not work correctly for bind groups, so we use WebGPU API
+			const cameraBufferSize = 16 * 4 * 2; // 2 mat4x4 (view + proj) = 16 floats * 4 bytes * 2
+			const cameraBuffer = device.createBuffer({
+				size: cameraBufferSize,
+				usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+			});
+			cameraUniformBuffer = cameraBuffer; // Store as GPUBuffer for compatibility
 
-			const initialLight = {
-				direction: [0, -1, 0] as [number, number, number],
-				color: [1, 1, 1] as [number, number, number]
-			};
-			lightUniformBuffer = root.createUniform(LightSchema, initialLight);
+			const lightBufferSize = 3 * 4 * 2; // 2 vec3 (direction + color) = 3 floats * 4 bytes * 2
+			const lightBuffer = device.createBuffer({
+				size: lightBufferSize,
+				usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+			});
+			lightUniformBuffer = lightBuffer; // Store as GPUBuffer for compatibility
 
 			// Create bind group layout for rendering
-			// Note: We use WebGPU API directly to match existing WGSL shader bindings
-			// TypeGPU buffers are used for data management, but bind groups use WebGPU API
-			// This ensures compatibility with existing shader code that uses @binding(0) and @binding(1)
 			const renderBindGroupLayout = device.createBindGroupLayout({
 				entries: [
 					{
@@ -411,13 +411,6 @@
 			});
 
 			// Create bind group for rendering using WebGPU API
-			// TypeGPU buffers need to be unwrapped to get the underlying GPUBuffer
-			if (!root) {
-				throw new Error('TypeGPU root not initialized');
-			}
-			const cameraBuffer = root.unwrap(cameraUniformBuffer);
-			const lightBuffer = root.unwrap(lightUniformBuffer);
-			
 			renderBindGroup = device.createBindGroup({
 				layout: renderBindGroupLayout,
 				entries: [
@@ -479,11 +472,16 @@
 			renderState.webgpuInitialized = true;
 			renderState.canvas2dFallback = false;
 			
-			// Start animation only if we have data
-			if (nodes.length > 0 && links.length > 0) {
+			// Start animation only if we have data and render pipeline is ready
+			if (nodes.length > 0 && links.length > 0 && renderPipeline && renderBindGroup) {
 				animate();
 			} else {
-				console.log('[Force3DWordGraphTypeGPU] Waiting for nodes/links data before starting animation');
+				console.log('[Force3DWordGraphTypeGPU] Waiting for nodes/links data or render pipeline before starting animation:', {
+					nodesLength: nodes.length,
+					linksLength: links.length,
+					hasRenderPipeline: !!renderPipeline,
+					hasRenderBindGroup: !!renderBindGroup
+				});
 			}
 		} catch (error) {
 			console.error('[Force3DWordGraphTypeGPU] WebGPU initialization failed:', error);
@@ -631,7 +629,16 @@
 	}
 
 	function updateLinkBuffers(nodePositions?: Float32Array) {
-		if (!root || !device || links.length === 0) return;
+		if (!root || !device || links.length === 0) {
+			console.log('[Force3DWordGraphTypeGPU] updateLinkBuffers: skipping', {
+				hasRoot: !!root,
+				hasDevice: !!device,
+				linksLength: links.length
+			});
+			return;
+		}
+		
+		console.log('[Force3DWordGraphTypeGPU] updateLinkBuffers: updating', { linksLength: links.length });
 
 		// Define vertex schema for links (cylinders)
 		const LinkVertexSchema = d.struct({
@@ -766,20 +773,28 @@
 		if (vertexData.length > 0) {
 			const LinkVertexArraySchema = d.arrayOf(LinkVertexSchema, vertexData.length);
 			if (!linkVertexBuffer) {
+				console.log('[Force3DWordGraphTypeGPU] Creating link vertex buffer', { vertexDataLength: vertexData.length });
 				linkVertexBuffer = root.createBuffer(LinkVertexArraySchema).$usage('vertex');
 				linkVertexBuffer.compileWriter();
 			}
 			linkVertexBuffer.write(vertexData);
+			console.log('[Force3DWordGraphTypeGPU] Link vertex buffer updated', { hasLinkVertexBuffer: !!linkVertexBuffer });
+		} else {
+			console.warn('[Force3DWordGraphTypeGPU] No link vertex data to create buffer');
 		}
 
 		// Create or update link index buffer using TypeGPU
 		if (indexData.length > 0) {
 			const LinkIndexArraySchema = d.arrayOf(d.u16, indexData.length);
 			if (!linkIndexBuffer) {
+				console.log('[Force3DWordGraphTypeGPU] Creating link index buffer', { indexDataLength: indexData.length });
 				linkIndexBuffer = root.createBuffer(LinkIndexArraySchema).$usage('index');
 				linkIndexBuffer.compileWriter();
 			}
 			linkIndexBuffer.write(indexData);
+			console.log('[Force3DWordGraphTypeGPU] Link index buffer updated', { hasLinkIndexBuffer: !!linkIndexBuffer });
+		} else {
+			console.warn('[Force3DWordGraphTypeGPU] No link index data to create buffer');
 		}
 	}
 
@@ -865,13 +880,26 @@
 	let vertexBufferDirty = true;
 
 	function updateVertexBuffers() {
-		if (!root || !device || nodes.length === 0) return;
+		if (!root || !device || nodes.length === 0) {
+			console.log('[Force3DWordGraphTypeGPU] updateVertexBuffers: skipping', {
+				hasRoot: !!root,
+				hasDevice: !!device,
+				nodesLength: nodes.length
+			});
+			return;
+		}
 
 		// Check if we need to update vertex buffers
 		const nodeCountChanged = nodes.length !== lastNodeCount;
 		if (!nodeCountChanged && !vertexBufferDirty) {
 			return; // Skip update if nothing changed
 		}
+		
+		console.log('[Force3DWordGraphTypeGPU] updateVertexBuffers: updating', {
+			nodeCountChanged,
+			vertexBufferDirty,
+			nodesLength: nodes.length
+		});
 
 		// Define vertex schema
 		const VertexSchema = d.struct({
@@ -990,7 +1018,7 @@
 	}
 
 	function updateCameraUniforms() {
-		if (!cameraUniformBuffer || !context) return;
+		if (!cameraUniformBuffer || !context || !device) return;
 		
 		const aspect = width / height;
 		const fov = 45;
@@ -1001,20 +1029,29 @@
 			aspect
 		);
 		
-		cameraUniformBuffer.write({
-			view,
-			proj
-		});
+		// Write camera matrices to buffer using WebGPU API
+		const buffer = cameraUniformBuffer as GPUBuffer;
+		const viewArray = new Float32Array(view);
+		const projArray = new Float32Array(proj);
+		const combinedArray = new Float32Array(32); // 16 floats * 2 matrices
+		combinedArray.set(viewArray, 0);
+		combinedArray.set(projArray, 16);
+		
+		device.queue.writeBuffer(buffer, 0, combinedArray);
 	}
 
 	function updateLightUniforms() {
-		if (!lightUniformBuffer) return;
+		if (!lightUniformBuffer || !device) return;
 		
 		// Default light direction and color
-		lightUniformBuffer.write({
-			direction: [0, -1, 0] as [number, number, number],
-			color: [1, 1, 1] as [number, number, number]
-		});
+		const buffer = lightUniformBuffer as GPUBuffer;
+		const direction = new Float32Array([0, -1, 0]);
+		const color = new Float32Array([1, 1, 1]);
+		const combinedArray = new Float32Array(6); // 3 floats * 2 vectors
+		combinedArray.set(direction, 0);
+		combinedArray.set(color, 3);
+		
+		device.queue.writeBuffer(buffer, 0, combinedArray);
 	}
 
 	function animate() {
@@ -1032,9 +1069,16 @@
 			return;
 		}
 
-		// Only render if WebGPU is fully ready
-		if (device && computePipeline && bindGroup && nodeBuffer && context && nodes.length > 0 && links.length > 0) {
-			console.log('[Force3DWordGraphTypeGPU] animate: using WebGPU path');
+		// Only render if WebGPU is fully ready (including render pipeline)
+		if (device && computePipeline && bindGroup && nodeBuffer && context && renderPipeline && renderBindGroup && nodes.length > 0 && links.length > 0) {
+			console.log('[Force3DWordGraphTypeGPU] animate: using WebGPU path', {
+				hasRenderPipeline: !!renderPipeline,
+				hasRenderBindGroup: !!renderBindGroup,
+				hasVertexBuffer: !!vertexBuffer,
+				hasIndexBuffer: !!indexBuffer,
+				hasLinkVertexBuffer: !!linkVertexBuffer,
+				hasLinkIndexBuffer: !!linkIndexBuffer
+			});
 			// Run compute shader
 			const commandEncoder = device.createCommandEncoder();
 			const computePass = commandEncoder.beginComputePass();
@@ -1123,6 +1167,12 @@
 					hasComputePipeline: !!computePipeline,
 					hasBindGroup: !!bindGroup,
 					hasNodeBuffer: !!nodeBuffer,
+					hasRenderPipeline: !!renderPipeline,
+					hasRenderBindGroup: !!renderBindGroup,
+					hasVertexBuffer: !!vertexBuffer,
+					hasIndexBuffer: !!indexBuffer,
+					hasLinkVertexBuffer: !!linkVertexBuffer,
+					hasLinkIndexBuffer: !!linkIndexBuffer,
 					nodesLength: nodes.length,
 					linksLength: links.length
 				});
@@ -1184,8 +1234,23 @@
 		});
 		
 		if (browser && device && nodes.length > 0 && links.length > 0) {
-			console.log('[Force3DWordGraphTypeGPU] Initializing buffers...');
+			console.log('[Force3DWordGraphTypeGPU] Initializing buffers...', {
+				hasRenderPipeline: !!renderPipeline,
+				hasRenderBindGroup: !!renderBindGroup,
+				hasAnimationFrameId: !!animationFrameId
+			});
 			initializeBuffers();
+			// Start animation if render pipeline is ready and animation hasn't started yet
+			if (renderPipeline && renderBindGroup && !animationFrameId) {
+				console.log('[Force3DWordGraphTypeGPU] Starting animation after buffer initialization');
+				animate();
+			} else {
+				console.log('[Force3DWordGraphTypeGPU] Cannot start animation:', {
+					hasRenderPipeline: !!renderPipeline,
+					hasRenderBindGroup: !!renderBindGroup,
+					hasAnimationFrameId: !!animationFrameId
+				});
+			}
 		} else {
 			console.log('[Force3DWordGraphTypeGPU] Skipping buffer initialization:', {
 				browser,

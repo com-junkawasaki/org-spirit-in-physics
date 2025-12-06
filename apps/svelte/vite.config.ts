@@ -7,7 +7,9 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			$lib: fileURLToPath(new URL('./src/lib', import.meta.url))
-		}
+		},
+		// pnpmのシンボリックリンク構造に対応
+		preserveSymlinks: false
 	},
 	server: {
 		host: '0.0.0.0',
@@ -26,10 +28,6 @@ export default defineConfig({
 		watch: {
 			usePolling: true,
 			interval: 1000
-		},
-		fs: {
-			// Dockerコンテナ内でのファイルシステムアクセスを許可
-			allow: ['..', '../node_modules']
 		}
 	},
 	optimizeDeps: {
@@ -37,7 +35,12 @@ export default defineConfig({
 	},
 	ssr: {
 		external: ['d3'], // SSRではD3を外部依存として扱う（ブラウザでのみ使用）
-		noExternal: ['typegpu'] // TypeGPUはSSRでも使用可能にする
-		// SvelteKitはデフォルトで適切に処理されるため、明示的な設定は不要
+		noExternal: ['typegpu'], // TypeGPUはSSRでも使用可能にする
+		// SvelteKitのクライアントモジュールはSvelteKitプラグインが自動的に処理する
+		// 明示的な設定は不要（SvelteKitプラグインが適切に処理）
+		resolve: {
+			conditions: ['import', 'module', 'default'],
+			externalConditions: ['import', 'module', 'default']
+		}
 	}
 });

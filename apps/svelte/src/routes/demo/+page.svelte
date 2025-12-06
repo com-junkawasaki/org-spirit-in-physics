@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import Force3DWordGraphTypeGPU from '$lib/visualization-components/Force3DWordGraphTypeGPU.svelte';
 	import PhysicsControls from '$lib/visualization-components/PhysicsControls.svelte';
 	import type { WordNode, WordLink } from '$lib/visualization-components/types';
@@ -23,6 +24,9 @@
 	};
 
 	onMount(() => {
+		// SSR回避: ブラウザでのみ実行
+		if (!browser) return;
+		
 		// デモデータの生成
 		// 実際の実装ではGraphQLからデータを取得
 		nodes = [
