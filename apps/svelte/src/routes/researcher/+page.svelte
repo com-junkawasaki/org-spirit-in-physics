@@ -4,6 +4,8 @@
 	import Force3DWordGraph from '$lib/visualization-components/Force3DWordGraph.svelte';
 	import DashboardOverview from '$lib/researcher/components/DashboardOverview.svelte';
 	import ParticipantTable from '$lib/researcher/components/ParticipantTable.svelte';
+	import FilterPanel from '$lib/researcher/components/FilterPanel.svelte';
+	import ExportPanel from '$lib/researcher/components/ExportPanel.svelte';
 	import {
 		fetchParticipants,
 		fetchSessions,
@@ -11,12 +13,23 @@
 		fetchEmotionVectors,
 		fetchTimeline
 	} from '$lib/researcher/graphql-client';
+	import {
+		filterParticipants,
+		filterSessions,
+		filterTimelineData,
+		type ParticipantFilter,
+		type SessionFilter,
+		type DataFilter
+	} from '$lib/researcher/filters';
 	import type { WordAggregate, EmotionVector } from '$lib/visualization-components/types';
 	
+	let allParticipants: any[] = [];
 	let participants: any[] = [];
 	let selectedParticipant: string = '';
 	let selectedSession: string = '';
+	let allSessions: any[] = [];
 	let sessions: any[] = [];
+	let allTimelineData: any[] = [];
 	let timelineData: any[] = [];
 	let wordAggregates: WordAggregate[] = [];
 	let emotionVectors: EmotionVector[] = [];
@@ -24,9 +37,14 @@
 	let error: string | null = null;
 	let activeTab: 'overview' | 'participants' | 'analysis' = 'overview';
 	
+	let participantFilter: ParticipantFilter = {};
+	let sessionFilter: SessionFilter = {};
+	let dataFilter: DataFilter = {};
+	
 	onMount(async () => {
 		try {
-			participants = await fetchParticipants();
+			allParticipants = await fetchParticipants();
+			applyFilters();
 			if (participants.length > 0) {
 				selectedParticipant = participants[0].id;
 				await loadSessions();
@@ -40,7 +58,8 @@
 	
 	async function loadSessions() {
 		if (!selectedParticipant) return;
-		sessions = await fetchSessions(selectedParticipant);
+		allSessions = await fetchSessions(selectedParticipant);
+		applyFilters();
 		if (sessions.length > 0) {
 			selectedSession = sessions[0].id;
 			await loadData();
@@ -53,10 +72,40 @@
 		try {
 			wordAggregates = await fetchWordAggregates(selectedParticipant, selectedSession);
 			emotionVectors = await fetchEmotionVectors(selectedParticipant, selectedSession);
-			timelineData = await fetchTimeline(selectedParticipant, selectedSession);
+			allTimelineData = await fetchTimeline(selectedParticipant, selectedSession);
+			applyFilters();
 		} catch (err) {
 			console.error('Error loading data:', err);
 		}
+	}
+	
+	function applyFilters() {
+		participants = filterParticipants(allParticipants, participantFilter);
+		sessions = filterSessions(allSessions, sessionFilter);
+		timelineData = filterTimelineData(allTimelineData, dataFilter);
+	}
+	
+	function handleParticipantFilterChange(filter: ParticipantFilter) {
+		participantFilter = filter;
+		applyFilters();
+		if (participants.length > 0 && !participants.find((p) => p.id === selectedParticipant)) {
+			selectedParticipant = participants[0].id;
+			loadSessions();
+		}
+	}
+	
+	function handleSessionFilterChange(filter: SessionFilter) {
+		sessionFilter = filter;
+		applyFilters();
+		if (sessions.length > 0 && !sessions.find((s) => s.id === selectedSession)) {
+			selectedSession = sessions[0].id;
+			loadData();
+		}
+	}
+	
+	function handleDataFilterChange(filter: DataFilter) {
+		dataFilter = filter;
+		applyFilters();
 	}
 </script>
 
@@ -122,67 +171,87 @@
 			
 			<!-- Analysis Tab -->
 			{#if activeTab === 'analysis'}
-				<div class="space-y-4">
-					<!-- Participant Selection -->
-					<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
-						<label class="block mb-2 font-semibold">参加者を選択</label>
-						<select
-							bind:value={selectedParticipant}
-							onchange={loadSessions}
-							class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
-						>
-							<option value="">選択してください</option>
-							{#each participants as participant}
-								<option value={participant.id}>
-									{participant.id} {participant.age ? `(${participant.age}歳)` : ''}
-								</option>
-							{/each}
-						</select>
-					</div>
-					
-					<!-- Session Selection -->
-					{#if sessions.length > 0}
+				<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+					<div class="lg:col-span-3 space-y-4">
+						<!-- Participant Selection -->
 						<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
-							<label class="block mb-2 font-semibold">セッションを選択</label>
+							<label class="block mb-2 font-semibold">参加者を選択</label>
 							<select
-								bind:value={selectedSession}
-								onchange={loadData}
+								bind:value={selectedParticipant}
+								onchange={loadSessions}
 								class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
 							>
 								<option value="">選択してください</option>
-								{#each sessions as session}
-									<option value={session.id}>
-										セッション {session.sessionIndex || session.id}
+								{#each participants as participant}
+									<option value={participant.id}>
+										{participant.id} {participant.age ? `(${participant.age}歳)` : ''}
 									</option>
 								{/each}
 							</select>
 						</div>
-					{/if}
+						
+						<!-- Session Selection -->
+						{#if sessions.length > 0}
+							<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+								<label class="block mb-2 font-semibold">セッションを選択</label>
+								<select
+									bind:value={selectedSession}
+									onchange={loadData}
+									class="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+								>
+									<option value="">選択してください</option>
+									{#each sessions as session}
+										<option value={session.id}>
+											セッション {session.sessionIndex || session.id}
+										</option>
+									{/each}
+								</select>
+							</div>
+						{/if}
+						
+						<!-- Visualizations -->
+						{#if selectedParticipant && selectedSession}
+							<div class="space-y-4">
+								<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+									<h2 class="text-2xl font-bold mb-4">タイムライン可視化</h2>
+									<TimelineVisualization
+										timelinePoints={timelineData}
+										participantId={selectedParticipant}
+										sessionId={selectedSession}
+									/>
+								</div>
+								
+								<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+									<h2 class="text-2xl font-bold mb-4">3D Force Graph</h2>
+									<Force3DWordGraph {wordAggregates} {emotionVectors} />
+								</div>
+							</div>
+						{:else}
+							<div class="bg-gray-100 dark:bg-gray-800 p-8 rounded text-center">
+								<p class="text-gray-600 dark:text-gray-400">
+									参加者とセッションを選択して分析を開始してください
+								</p>
+							</div>
+						{/if}
+					</div>
 					
-					<!-- Visualizations -->
-					{#if selectedParticipant && selectedSession}
-						<div class="space-y-4">
-							<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
-								<h2 class="text-2xl font-bold mb-4">タイムライン可視化</h2>
-								<TimelineVisualization
-									timelinePoints={timelineData}
-									participantId={selectedParticipant}
-									sessionId={selectedSession}
-								/>
-							</div>
-							
-							<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
-								<h2 class="text-2xl font-bold mb-4">3D Force Graph</h2>
-								<Force3DWordGraph {wordAggregates} {emotionVectors} />
-							</div>
-						</div>
-					{:else}
-						<div class="bg-gray-100 dark:bg-gray-800 p-8 rounded text-center">
-							<p class="text-gray-600 dark:text-gray-400">
-								参加者とセッションを選択して分析を開始してください
-							</p>
-						</div>
-					{/if}
+					<div class="lg:col-span-1 space-y-4">
+						<FilterPanel
+							{participantFilter}
+							{sessionFilter}
+							{dataFilter}
+							onParticipantFilterChange={handleParticipantFilterChange}
+							onSessionFilterChange={handleSessionFilterChange}
+							onDataFilterChange={handleDataFilterChange}
+						/>
+						<ExportPanel
+							{participants}
+							{sessions}
+							{timelineData}
+							{wordAggregates}
+							{emotionVectors}
+						/>
+					</div>
 				</div>
 			{/if}
 		</div>
