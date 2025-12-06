@@ -91,11 +91,25 @@
 			// 総セッション数を計算
 			totalSessionsCount = allSessions.length;
 			
-			// 総応答数を計算（各セッションのイベント数を合計）
+			// デバッグ: イベントタイプを確認
+			const allEventTypes = new Set<string>();
+			allSessions.forEach((session) => {
+				session.events?.forEach((e: any) => {
+					if (e.type) allEventTypes.add(e.type);
+				});
+			});
+			console.log('All event types found:', Array.from(allEventTypes).sort());
+			
+			// 総応答数を計算
+			// speech_detectedイベントを反応としてカウント（word_displayedの後にspeech_detectedがある場合）
 			totalResponsesCount = allSessions.reduce((sum, session) => {
-				const responseCount = session.events?.filter((e: any) => e.type === 'word_response' || e.type === 'response').length || 0;
+				const events = session.events || [];
+				// speech_detectedイベントを反応としてカウント
+				const responseCount = events.filter((e: any) => e.type === 'speech_detected').length || 0;
 				return sum + responseCount;
 			}, 0);
+			
+			console.log('Total responses count:', totalResponsesCount);
 		} catch (err) {
 			console.error('Error loading all sessions:', err);
 		}
@@ -298,7 +312,8 @@
 										</span>
 									{:else if selectedParticipant}
 										{sessions.reduce((sum, s) => {
-											const responseCount = s.events?.filter((e: any) => e.type === 'word_response' || e.type === 'response').length || 0;
+											const events = s.events || [];
+											const responseCount = events.filter((e: any) => e.type === 'speech_detected').length || 0;
 											return sum + responseCount;
 										}, 0)}
 										<span class="text-sm font-normal text-gray-500 dark:text-gray-400">

@@ -16,7 +16,9 @@
 	function getResponseCount(participantId: string): number {
 		const sessions = participantSessions?.get(participantId) || [];
 		return sessions.reduce((sum, session) => {
-			const responseCount = session.events?.filter((e: any) => e.type === 'word_response' || e.type === 'response').length || 0;
+			const events = session.events || [];
+			// speech_detectedイベントを反応としてカウント
+			const responseCount = events.filter((e: any) => e.type === 'speech_detected').length || 0;
 			return sum + responseCount;
 		}, 0);
 	}
