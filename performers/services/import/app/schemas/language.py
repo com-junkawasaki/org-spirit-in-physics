@@ -31,14 +31,14 @@ def create_language_schema() -> pa.DataFrameSchema:
         "EndTime": pa.Column(float, checks=pa.Check.ge(0), nullable=False),
         "text": pa.Column(str, nullable=True, required=False),
         "Text": pa.Column(str, nullable=True, required=False),  # Alternative column name
-        "Confidence": pa.Column(float, checks=pa.Check.ge(0) & pa.Check.le(1), nullable=True, required=False),
+        "Confidence": pa.Column(float, checks=[pa.Check.ge(0), pa.Check.le(1)], nullable=True, required=False),
     }
     
     # Add emotion columns from actual CSV files
     for emotion_name in LANGUAGE_EMOTION_NAMES:
         columns[emotion_name] = pa.Column(
             float,
-            checks=pa.Check.ge(0) & pa.Check.le(1),
+            checks=[pa.Check.ge(0), pa.Check.le(1)],
             nullable=True,
             required=False
         )

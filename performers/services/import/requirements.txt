@@ -1,10 +1,10 @@
-fastapi==0.115.0
-uvicorn[standard]==0.32.0
 asyncpg==0.30.0
-pydantic==2.9.2
+pydantic>=2.9.0,<3.0.0
+pydantic-core>=2.23.0,<3.0.0
 pandas>=2.0.0
 polars>=1.0.0
 pandera>=0.18.0
 pyarrow>=14.0.0
 prefect>=2.14.0
+uvicorn[standard]==0.32.0
 

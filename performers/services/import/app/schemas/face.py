@@ -34,16 +34,16 @@ def create_face_schema() -> pa.DataFrameSchema:
         "Id": pa.Column(str, nullable=True),
         "BeginTime": pa.Column(float, checks=pa.Check.ge(0), nullable=False),
         "FrameNumber": pa.Column(int, nullable=True, required=False),
-        "Confidence": pa.Column(float, checks=pa.Check.ge(0) & pa.Check.le(1), nullable=True, required=False),
-        "probability": pa.Column(float, checks=pa.Check.ge(0) & pa.Check.le(1), nullable=True, required=False),
-        "prob": pa.Column(float, checks=pa.Check.ge(0) & pa.Check.le(1), nullable=True, required=False),
+        "Confidence": pa.Column(float, checks=[pa.Check.ge(0), pa.Check.le(1)], nullable=True, required=False),
+        "probability": pa.Column(float, checks=[pa.Check.ge(0), pa.Check.le(1)], nullable=True, required=False),
+        "prob": pa.Column(float, checks=[pa.Check.ge(0), pa.Check.le(1)], nullable=True, required=False),
     }
     
     # Add emotion columns from actual CSV files
     for emotion_name in FACE_EMOTION_NAMES:
         columns[emotion_name] = pa.Column(
             float,
-            checks=pa.Check.ge(0) & pa.Check.le(1),
+            checks=[pa.Check.ge(0), pa.Check.le(1)],
             nullable=True,
             required=False
         )

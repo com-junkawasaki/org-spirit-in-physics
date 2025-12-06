@@ -42,7 +42,7 @@ def create_burst_schema() -> pa.DataFrameSchema:
     for emotion_name in BURST_EMOTION_NAMES:
         columns[emotion_name] = pa.Column(
             float,
-            checks=pa.Check.ge(0) & pa.Check.le(1),
+            checks=[pa.Check.ge(0), pa.Check.le(1)],
             nullable=True,
             required=False
         )
