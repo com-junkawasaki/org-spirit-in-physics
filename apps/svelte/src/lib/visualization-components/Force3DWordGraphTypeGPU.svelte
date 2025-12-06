@@ -121,22 +121,32 @@
 	function setupControls() {
 		if (!canvas) return;
 
-		canvas.addEventListener('mousedown', handleMouseDown);
-		canvas.addEventListener('mousemove', handleMouseMove);
-		canvas.addEventListener('mouseup', handleMouseUp);
+		// Pointer eventsを使用（マウスとタッチの両方に対応）
+		canvas.addEventListener('pointerdown', handlePointerDown);
+		canvas.addEventListener('pointermove', handlePointerMove);
+		canvas.addEventListener('pointerup', handlePointerUp);
+		canvas.addEventListener('pointercancel', handlePointerUp);
 		canvas.addEventListener('wheel', handleWheel);
 		canvas.addEventListener('touchstart', handleTouchStart);
 		canvas.addEventListener('touchmove', handleTouchMove);
 		canvas.addEventListener('touchend', handleTouchEnd);
 	}
 
-	function handleMouseDown(e: MouseEvent) {
+	function handlePointerDown(e: PointerEvent) {
 		isDragging = true;
 		lastMousePos = [e.clientX, e.clientY];
-		canvas?.setPointerCapture(e.pointerId);
+		// setPointerCaptureはPointerEventでのみ動作
+		if (canvas && e.pointerId !== undefined) {
+			try {
+				canvas.setPointerCapture(e.pointerId);
+			} catch (error) {
+				// ポインターが既にキャプチャされているか、無効な場合は無視
+				console.warn('Failed to capture pointer:', error);
+			}
+		}
 	}
 
-	function handleMouseMove(e: MouseEvent) {
+	function handlePointerMove(e: PointerEvent) {
 		if (!isDragging) return;
 
 		const dx = e.clientX - lastMousePos[0];
@@ -150,8 +160,16 @@
 		lastMousePos = [e.clientX, e.clientY];
 	}
 
-	function handleMouseUp() {
+	function handlePointerUp(e: PointerEvent) {
 		isDragging = false;
+		// ポインターキャプチャを解放
+		if (canvas && e.pointerId !== undefined) {
+			try {
+				canvas.releasePointerCapture(e.pointerId);
+			} catch (error) {
+				// エラーは無視（既に解放されている可能性がある）
+			}
+		}
 	}
 
 	function handleWheel(e: WheelEvent) {
@@ -516,6 +534,17 @@
 		if (animationFrameId !== null) {
 			cancelAnimationFrame(animationFrameId);
 			animationFrameId = null;
+		}
+		// イベントリスナーを削除
+		if (canvas) {
+			canvas.removeEventListener('pointerdown', handlePointerDown);
+			canvas.removeEventListener('pointermove', handlePointerMove);
+			canvas.removeEventListener('pointerup', handlePointerUp);
+			canvas.removeEventListener('pointercancel', handlePointerUp);
+			canvas.removeEventListener('wheel', handleWheel);
+			canvas.removeEventListener('touchstart', handleTouchStart);
+			canvas.removeEventListener('touchmove', handleTouchMove);
+			canvas.removeEventListener('touchend', handleTouchEnd);
 		}
 		// GPU resources are automatically cleaned up when device is destroyed
 	}

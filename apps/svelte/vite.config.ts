@@ -21,5 +21,11 @@ export default defineConfig({
 			usePolling: true,
 			interval: 1000
 		}
+	},
+	optimizeDeps: {
+		include: ['d3'] // D3を事前バンドルに含める
+	},
+	ssr: {
+		external: ['d3'] // SSRではD3を外部依存として扱う（ブラウザでのみ使用）
 	}
 });

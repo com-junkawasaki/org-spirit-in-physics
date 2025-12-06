@@ -3,7 +3,10 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import TimelineVisualization from '$lib/visualization-components/TimelineVisualization.svelte';
+	import TimelineVisualizationEnhanced from '$lib/visualization-components/TimelineVisualizationEnhanced.svelte';
 	import Force3DWordGraph from '$lib/visualization-components/Force3DWordGraph.svelte';
+	import KPICards from '$lib/visualization-components/KPICards.svelte';
+	import { convertTimelinePointToDataPoint } from '$lib/visualization-components/types';
 	import DashboardOverview from '$lib/researcher/components/DashboardOverview.svelte';
 	import ParticipantTable from '$lib/researcher/components/ParticipantTable.svelte';
 	import FilterPanel from '$lib/researcher/components/FilterPanel.svelte';
@@ -704,33 +707,29 @@
 						<!-- Visualizations -->
 						{#if selectedParticipant && selectedSession}
 							<div class="space-y-4">
-								<!-- Timeline Visualization -->
+								<!-- Enhanced Timeline Visualization with multiple modes -->
 								<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
-									<h2 class="text-2xl font-bold mb-4">タイムライン可視化</h2>
-									<div class="w-full" style="min-height: 400px;">
-										<TimelineVisualization
+									<h2 class="text-2xl font-bold mb-4">可視化分析</h2>
+									<div class="w-full" style="min-height: 600px;">
+										<TimelineVisualizationEnhanced
 											timelinePoints={timelineData}
 											participantId={selectedParticipant}
 											sessionId={selectedSession}
-											width={800}
-											height={400}
+											wordAggregates={wordAggregates}
+											emotionVectors={emotionVectors}
+											width={1200}
+											height={600}
 										/>
 									</div>
 								</div>
 								
-								<!-- 3D Force Graph Visualization -->
-								<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
-									<h2 class="text-2xl font-bold mb-4">3D Force Graph - 単語構造分析</h2>
-									<div class="w-full" style="min-height: 600px;">
-										{#if wordAggregates.length > 0 && emotionVectors.length > 0}
-											<Force3DWordGraph {wordAggregates} {emotionVectors} />
-										{:else}
-											<div class="flex items-center justify-center p-8 text-gray-500">
-												<p>データを読み込み中...</p>
-											</div>
-										{/if}
+								<!-- KPI Cards (separate section) -->
+								{#if timelineData.length > 0}
+									<div class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+										<h2 class="text-2xl font-bold mb-4">KPI サマリー</h2>
+										<KPICards data={timelineData.map(convertTimelinePointToDataPoint)} />
 									</div>
-								</div>
+								{/if}
 							</div>
 						{:else}
 							<div class="bg-gray-100 dark:bg-gray-800 p-8 rounded text-center">
