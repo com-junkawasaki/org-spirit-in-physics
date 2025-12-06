@@ -27,6 +27,7 @@
     "graphql-request": "^7.3.3",
     "graphql-tag": "^2.12.6",
     "svelte-clerk": "^0.3.0",
+    "typegpu": "^0.7.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

@@ -32,6 +32,9 @@ importers:
       svelte-clerk:
         specifier: ^0.3.0
         version: 0.3.8(react@19.2.1)(svelte@5.45.6)
+      typegpu:
+        specifier: ^0.7.1
+        version: 0.7.1
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -4472,6 +4475,10 @@ packages:
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
 
+  tinyest@0.1.2:
+    resolution: {integrity: sha512-aHRmouyowIq1P5jrTF+YK6pGX+WuvFtSCLbqk91yHnU3SWQRIcNIamZLM5XF6lLqB13AWz0PGPXRff2QGDsxIg==}
+    engines: {node: '>=12.20.0'}
+
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
@@ -4556,6 +4563,13 @@ packages:
   type-fest@4.41.0:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
     engines: {node: '>=16'}
+
+  typed-binary@4.3.2:
+    resolution: {integrity: sha512-HT3pIBM2njCZUmeczDaQUUErGiM6GXFCqMsHegE12HCoBtvHCkfR10JJni0TeGOTnLilTd6YFyj+YhflqQDrDQ==}
+
+  typegpu@0.7.1:
+    resolution: {integrity: sha512-PyP/ZRsX8lCX27fNzBE5TjwxC8Vj88RcLlCv4VXg5sVd6gBuiPZTJQoC5HR15hjTJoRAfayT/TXQ4phWOkA/aA==}
+    engines: {node: '>=12.20.0'}
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -10071,6 +10085,8 @@ snapshots:
 
   tinybench@2.9.0: {}
 
+  tinyest@0.1.2: {}
+
   tinyglobby@0.2.15:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.3)
@@ -10144,6 +10160,13 @@ snapshots:
   type-fest@0.21.3: {}
 
   type-fest@4.41.0: {}
+
+  typed-binary@4.3.2: {}
+
+  typegpu@0.7.1:
+    dependencies:
+      tinyest: 0.1.2
+      typed-binary: 4.3.2
 
   typescript@5.9.3: {}
 

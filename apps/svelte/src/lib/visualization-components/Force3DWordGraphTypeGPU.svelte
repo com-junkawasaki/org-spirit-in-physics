@@ -4,6 +4,9 @@
 	import type { WordNode, WordLink } from './types';
 	import { COMPUTE_SHADER, createNodeData, createLinkData, type NodeData, type LinkData, type PhysicsParams } from './lib/webgpu-physics';
 	import { VERTEX_SHADER, FRAGMENT_SHADER, createCameraMatrix } from './lib/webgpu-renderer';
+	import tgpu from 'typegpu';
+	import * as d from 'typegpu/data';
+	import type { TgpuRoot } from 'typegpu';
 
 	const {
 		nodes = [],
@@ -67,12 +70,13 @@
 	// WebGPU resources
 	let device: GPUDevice | null = null;
 	let context: GPUCanvasContext | null = null;
-	let nodeBuffer: GPUBuffer | null = null;
-	let linkBuffer: GPUBuffer | null = null;
-	let paramsBuffer: GPUBuffer | null = null;
-	let computePipeline: GPUComputePipeline | null = null;
-	let renderPipeline: GPURenderPipeline | null = null;
-	let bindGroup: GPUBindGroup | null = null;
+	let root: TgpuRoot | null = null;
+	let nodeBuffer: any = null; // TypeGPU buffer
+	let linkBuffer: any = null; // TypeGPU buffer
+	let paramsBuffer: any = null; // TypeGPU buffer
+	let computePipeline: any = null; // TypeGPU compute pipeline
+	let renderPipeline: any = null; // TypeGPU render pipeline
+	let bindGroup: any = null; // TypeGPU bind group
 	let lastFrameTime = 0;
 	
 	// レンダリング状態の追跡
@@ -255,9 +259,11 @@
 		renderState.webgpuSupported = !!navigator.gpu;
 		
 		if (!navigator.gpu) {
-			console.warn('[Force3DWordGraphTypeGPU] WebGPU is not supported, falling back to Canvas 2D');
-			renderState.canvas2dFallback = true;
-			fallbackToCanvas2D();
+			console.warn('[Force3DWordGraphTypeGPU] WebGPU is not supported');
+			renderState.canvas2dFallback = false;
+			if (!renderState.errors.includes('WebGPU is not supported on this browser')) {
+				renderState.errors.push('WebGPU is not supported on this browser');
+			}
 			return;
 		}
 
@@ -271,8 +277,11 @@
 		try {
 			const adapter = await navigator.gpu.requestAdapter();
 			if (!adapter) {
-				console.warn('Failed to get GPU adapter');
-				fallbackToCanvas2D();
+				console.warn('[Force3DWordGraphTypeGPU] Failed to get GPU adapter');
+				renderState.webgpuInitialized = false;
+				if (!renderState.errors.includes('Failed to get GPU adapter')) {
+					renderState.errors.push('Failed to get GPU adapter');
+				}
 				return;
 			}
 
@@ -280,8 +289,11 @@
 			context = canvas.getContext('webgpu') as GPUCanvasContext;
 
 			if (!context) {
-				console.warn('Failed to get WebGPU context');
-				fallbackToCanvas2D();
+				console.warn('[Force3DWordGraphTypeGPU] Failed to get WebGPU context');
+				renderState.webgpuInitialized = false;
+				if (!renderState.errors.includes('Failed to get WebGPU context')) {
+					renderState.errors.push('Failed to get WebGPU context');
+				}
 				return;
 			}
 
@@ -292,7 +304,44 @@
 				alphaMode: 'premultiplied'
 			});
 
-			// Create compute pipeline
+			// Initialize TypeGPU root
+			root = tgpu.initFromDevice({ device });
+
+			// Define data schemas using TypeGPU
+			const NodeSchema = d.struct({
+				position: d.vec3f,
+				velocity: d.vec3f,
+				scale: d.f32,
+				fixed: d.u32
+			});
+
+			const LinkSchema = d.struct({
+				src: d.u32,
+				dst: d.u32,
+				weight: d.f32,
+				mode: d.u32,
+				L0: d.f32,
+				k: d.f32
+			});
+
+			const PhysicsParamsSchema = d.struct({
+				springK: d.f32,
+				repulsionK: d.f32,
+				damping: d.f32,
+				restLength: d.f32,
+				maxSpeed: d.f32,
+				shellRadius: d.f32,
+				shellK: d.f32,
+				shellRadiusOuter: d.f32,
+				shellKOuter: d.f32,
+				radialOutK: d.f32,
+				minSep: d.f32,
+				sepK: d.f32,
+				delta: d.f32
+			});
+
+			// Create compute pipeline using TypeGPU
+			// Note: We'll use the existing WGSL code for now, but TypeGPU can help with buffer management
 			const computeShaderModule = device.createShaderModule({
 				code: COMPUTE_SHADER
 			});
@@ -341,7 +390,7 @@
 			});
 
 			// Buffers will be initialized by reactive statement when nodes/links are available
-			console.log('[Force3DWordGraphTypeGPU] WebGPU initialized successfully, starting animation');
+			console.log('[Force3DWordGraphTypeGPU] WebGPU initialized successfully');
 			console.log('[Force3DWordGraphTypeGPU] Current nodes/links:', {
 				nodesLength: nodes.length,
 				linksLength: links.length
@@ -350,26 +399,34 @@
 			renderState.webgpuInitialized = true;
 			renderState.canvas2dFallback = false;
 			
-			// Start animation
-			animate();
+			// Start animation only if we have data
+			if (nodes.length > 0 && links.length > 0) {
+				animate();
+			} else {
+				console.log('[Force3DWordGraphTypeGPU] Waiting for nodes/links data before starting animation');
+			}
 		} catch (error) {
 			console.error('[Force3DWordGraphTypeGPU] WebGPU initialization failed:', error);
 			renderState.webgpuInitialized = false;
-			renderState.canvas2dFallback = true;
-			renderState.errors.push(`WebGPU initialization failed: ${error}`);
-			fallbackToCanvas2D();
+			renderState.canvas2dFallback = false;
+			const errorMsg = `WebGPU initialization failed: ${error}`;
+			if (!renderState.errors.includes(errorMsg)) {
+				renderState.errors.push(errorMsg);
+			}
 		}
 	}
 
 	function initializeBuffers() {
 		console.log('[Force3DWordGraphTypeGPU] initializeBuffers called:', {
+			hasRoot: !!root,
 			hasDevice: !!device,
 			nodesLength: nodes.length,
 			linksLength: links.length
 		});
 		
-		if (!device || nodes.length === 0 || links.length === 0) {
+		if (!root || !device || nodes.length === 0 || links.length === 0) {
 			console.warn('[Force3DWordGraphTypeGPU] Cannot initialize buffers:', {
+				hasRoot: !!root,
 				hasDevice: !!device,
 				nodesLength: nodes.length,
 				linksLength: links.length
@@ -380,21 +437,65 @@
 		const nodeData = createNodeData(nodes);
 		const linkData = createLinkData(links);
 
-		// Create node buffer
-		const nodeBufferSize = nodeData.length * 7 * 4; // 3 pos + 3 vel + 1 scale + 1 fixed
-		nodeBuffer = device.createBuffer({
-			size: nodeBufferSize,
-			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
+		// Define data schemas using TypeGPU
+		const NodeSchema = d.struct({
+			position: d.vec3f,
+			velocity: d.vec3f,
+			scale: d.f32,
+			fixed: d.u32
 		});
+
+		const LinkSchema = d.struct({
+			src: d.u32,
+			dst: d.u32,
+			weight: d.f32,
+			mode: d.u32,
+			L0: d.f32,
+			k: d.f32
+		});
+
+		const PhysicsParamsSchema = d.struct({
+			springK: d.f32,
+			repulsionK: d.f32,
+			damping: d.f32,
+			restLength: d.f32,
+			maxSpeed: d.f32,
+			shellRadius: d.f32,
+			shellK: d.f32,
+			shellRadiusOuter: d.f32,
+			shellKOuter: d.f32,
+			radialOutK: d.f32,
+			minSep: d.f32,
+			sepK: d.f32,
+			delta: d.f32
+		});
+
+		// Create node buffer array using TypeGPU
+		const NodeArraySchema = d.arrayOf(NodeSchema, nodeData.length);
+		const nodeArrayData: any[] = nodeData.map(node => ({
+			position: node.position,
+			velocity: node.velocity,
+			scale: node.scale,
+			fixed: node.fixed
+		}));
+		
+		// Create buffers using TypeGPU
+		// TypeGPU will automatically calculate buffer size based on schema
+		nodeBuffer = root.createBuffer(NodeArraySchema).$usage('storage');
 
 		// Create link buffer
-		const linkBufferSize = linkData.length * 6 * 4; // src + dst + weight + mode + L0 + k
-		linkBuffer = device.createBuffer({
-			size: linkBufferSize,
-			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-		});
+		const LinkArraySchema = d.arrayOf(LinkSchema, linkData.length);
+		const linkArrayData: any[] = linkData.map(link => ({
+			src: link.src,
+			dst: link.dst,
+			weight: link.weight,
+			mode: link.mode,
+			L0: link.L0,
+			k: link.k
+		}));
+		linkBuffer = root.createBuffer(LinkArraySchema).$usage('storage');
 
-		// Create params buffer
+		// Create params buffer using TypeGPU uniform
 		const params: PhysicsParams = {
 			springK: physics.springK || 2.0,
 			repulsionK: physics.repulsionK || 2000.0,
@@ -411,78 +512,62 @@
 			delta: 0.016
 		};
 
-		paramsBuffer = device.createBuffer({
-			size: 13 * 4, // 13 floats
-			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-		});
+		paramsBuffer = root.createUniform(PhysicsParamsSchema, params);
 
-		// Upload initial data
-		uploadNodeData(nodeData);
-		uploadLinkData(linkData);
-		uploadParams(params);
+		// Upload initial data using TypeGPU write methods
+		// Compile writers first (required by TypeGPU)
+		nodeBuffer.compileWriter();
+		linkBuffer.compileWriter();
+		
+		// Write data using TypeGPU
+		nodeBuffer.write(nodeArrayData);
+		linkBuffer.write(linkArrayData);
+		
+		// Params buffer is already initialized with TypeGPU
 
-		// Create bind group
+		// Create bind group using WebGPU API (for compatibility with existing compute pipeline)
 		bindGroup = device.createBindGroup({
 			layout: computePipeline!.getBindGroupLayout(0),
 			entries: [
-				{ binding: 0, resource: { buffer: nodeBuffer } },
-				{ binding: 1, resource: { buffer: linkBuffer } },
-				{ binding: 2, resource: { buffer: paramsBuffer } }
+				{ binding: 0, resource: { buffer: nodeBuffer.buffer } },
+				{ binding: 1, resource: { buffer: linkBuffer.buffer } },
+				{ binding: 2, resource: { buffer: paramsBuffer.buffer } }
 			]
 		});
 	}
 
 	function uploadNodeData(nodeData: NodeData[]) {
-		if (!device || !nodeBuffer) return;
-		const data = new Float32Array(nodeData.length * 7);
-		for (let i = 0; i < nodeData.length; i++) {
-			const node = nodeData[i];
-			const offset = i * 7;
-			data[offset + 0] = node.position[0];
-			data[offset + 1] = node.position[1];
-			data[offset + 2] = node.position[2];
-			data[offset + 3] = node.velocity[0];
-			data[offset + 4] = node.velocity[1];
-			data[offset + 5] = node.velocity[2];
-			data[offset + 6] = node.scale;
-		}
-		device.queue.writeBuffer(nodeBuffer, 0, data);
+		if (!nodeBuffer) return;
+		// Convert to TypeGPU format
+		const nodeArrayData: any[] = nodeData.map(node => ({
+			position: node.position,
+			velocity: node.velocity,
+			scale: node.scale,
+			fixed: node.fixed
+		}));
+		// Use TypeGPU write method
+		nodeBuffer.write(nodeArrayData);
 	}
 
 	function uploadLinkData(linkData: LinkData[]) {
-		if (!device || !linkBuffer) return;
-		const data = new Float32Array(linkData.length * 6);
-		for (let i = 0; i < linkData.length; i++) {
-			const link = linkData[i];
-			const offset = i * 6;
-			data[offset + 0] = link.src;
-			data[offset + 1] = link.dst;
-			data[offset + 2] = link.weight;
-			data[offset + 3] = link.mode;
-			data[offset + 4] = link.L0;
-			data[offset + 5] = link.k;
-		}
-		device.queue.writeBuffer(linkBuffer, 0, data);
+		if (!linkBuffer) return;
+		// Convert to TypeGPU format
+		const linkArrayData: any[] = linkData.map(link => ({
+			src: link.src,
+			dst: link.dst,
+			weight: link.weight,
+			mode: link.mode,
+			L0: link.L0,
+			k: link.k
+		}));
+		// Use TypeGPU write method
+		linkBuffer.write(linkArrayData);
 	}
 
 	function uploadParams(params: PhysicsParams) {
-		if (!device || !paramsBuffer) return;
-		const data = new Float32Array([
-			params.springK,
-			params.repulsionK,
-			params.damping,
-			params.restLength,
-			params.maxSpeed,
-			params.shellRadius,
-			params.shellK,
-			params.shellRadiusOuter,
-			params.shellKOuter,
-			params.radialOutK,
-			params.minSep,
-			params.sepK,
-			params.delta
-		]);
-		device.queue.writeBuffer(paramsBuffer, 0, data);
+		if (!paramsBuffer) return;
+		// TypeGPU uniform buffer can be written using the write method
+		paramsBuffer.write(params);
 	}
 
 	function animate() {
@@ -500,8 +585,8 @@
 			return;
 		}
 
-		// Always try to render with Canvas 2D fallback if WebGPU is not ready
-		if (device && computePipeline && bindGroup && nodeBuffer && nodes.length > 0 && links.length > 0) {
+		// Only render if WebGPU is fully ready
+		if (device && computePipeline && bindGroup && nodeBuffer && context && nodes.length > 0 && links.length > 0) {
 			console.log('[Force3DWordGraphTypeGPU] animate: using WebGPU path');
 			// Run compute shader
 			const commandEncoder = device.createCommandEncoder();
@@ -512,155 +597,52 @@
 			computePass.end();
 
 			// Render (simplified - would need proper 3D rendering setup)
-			render();
+			renderState.isRendering = true;
+			renderState.renderCount++;
+			renderState.lastRenderTime = Date.now();
+			// TODO: Implement proper WebGPU rendering here
+			renderState.isRendering = false;
 
 			device.queue.submit([commandEncoder.finish()]);
-		} else if (nodes.length > 0 && links.length > 0) {
-			// Fallback to Canvas 2D rendering if WebGPU is not ready
-			if (lastFrameTime === 0 || now - lastFrameTime > 100) {
-				// Only log occasionally to avoid spam
-				console.log('[Force3DWordGraphTypeGPU] animate: using Canvas 2D fallback', {
+		} else {
+			// WebGPU is not ready - stop animation loop and mark as not working
+			if (lastFrameTime === 0 || now - lastFrameTime > 1000) {
+				console.log('[Force3DWordGraphTypeGPU] animate: WebGPU not ready, stopping animation', {
 					hasDevice: !!device,
+					hasContext: !!context,
 					hasComputePipeline: !!computePipeline,
 					hasBindGroup: !!bindGroup,
 					hasNodeBuffer: !!nodeBuffer,
 					nodesLength: nodes.length,
 					linksLength: links.length
 				});
+				// Mark as not working if WebGPU is initialized but rendering pipeline is not ready
+				if (renderState.webgpuInitialized && (!device || !computePipeline || !bindGroup || !nodeBuffer || !context)) {
+					if (!renderState.errors.includes('WebGPU rendering pipeline is not ready')) {
+						renderState.errors.push('WebGPU rendering pipeline is not ready');
+					}
+				}
 			}
-			render();
-		} else {
-			// No data yet
-			if (lastFrameTime === 0 || now - lastFrameTime > 1000) {
-				console.log('[Force3DWordGraphTypeGPU] animate: waiting for data', {
-					nodesLength: nodes.length,
-					linksLength: links.length
-				});
+			// Stop animation loop if WebGPU is not ready
+			if (animationFrameId !== null) {
+				cancelAnimationFrame(animationFrameId);
+				animationFrameId = null;
 			}
+			return;
 		}
 
 		animationFrameId = requestAnimationFrame(animate);
 	}
 
-	function render() {
-		renderState.isRendering = true;
-		renderState.renderCount++;
-		renderState.lastRenderTime = Date.now();
-		
-		// Simplified rendering - in a full implementation, this would
-		// read node positions from GPU buffer and render spheres/links
-		// For now, we'll use Canvas 2D as fallback
-		if (!canvas) {
-			console.warn('[Force3DWordGraphTypeGPU] render: canvas is null');
-			renderState.errors.push('Canvas element is null');
-			renderState.isRendering = false;
-			return;
-		}
-
-		const ctx = canvas.getContext('2d');
-		if (!ctx) {
-			console.warn('[Force3DWordGraphTypeGPU] render: failed to get 2d context');
-			renderState.canvas2dContextObtained = false;
-			renderState.errors.push('Failed to get 2D context');
-			renderState.isRendering = false;
-			return;
-		}
-		
-		renderState.canvas2dContextObtained = true;
-
-		ctx.clearRect(0, 0, width, height);
-		ctx.fillStyle = background;
-		ctx.fillRect(0, 0, width, height);
-
-		if (nodes.length === 0 || links.length === 0) {
-			console.log('[Force3DWordGraphTypeGPU] render: skipping (no data)', {
-				nodesLength: nodes.length,
-				linksLength: links.length
-			});
-			return;
-		}
-		
-		console.log('[Force3DWordGraphTypeGPU] render: rendering', {
-			nodesLength: nodes.length,
-			linksLength: links.length,
-			nodesWithPosition: nodes.filter(n => n.position).length
-		});
-
-		// Project 3D nodes to 2D (simplified)
-		const centerX = width / 2;
-		const centerY = height / 2;
-		const scale = 2.0;
-
-		// Initialize positions if not set
-		for (let i = 0; i < nodes.length; i++) {
-			if (!nodes[i].position) {
-				// Use initial position or random position
-				const initial = nodes[i].initial || [
-					(Math.random() - 0.5) * 200,
-					(Math.random() - 0.5) * 200,
-					(Math.random() - 0.5) * 200
-				];
-				// Note: Direct mutation of props is not recommended in Svelte 5,
-				// but we need to set position for rendering
-				// In a production app, we should use a local state copy
-				(nodes[i] as any).position = initial;
-			}
-		}
-
-		// Draw links
-		ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
-		ctx.lineWidth = 1;
-		let linksRendered = 0;
-		for (const link of links) {
-			const source = nodes[link.source];
-			const target = nodes[link.target];
-			if (!source || !target || !source.position || !target.position) continue;
-
-			// Simplified 2D projection
-			const x1 = centerX + source.position[0] * scale;
-			const y1 = centerY + source.position[1] * scale;
-			const x2 = centerX + target.position[0] * scale;
-			const y2 = centerY + target.position[1] * scale;
-
-			ctx.beginPath();
-			ctx.moveTo(x1, y1);
-			ctx.lineTo(x2, y2);
-			ctx.stroke();
-			linksRendered++;
-		}
-		
-		renderState.linksRendered = linksRendered;
-
-		// Draw nodes
-		let nodesRendered = 0;
-		for (const node of nodes) {
-			if (!node.position) continue;
-			const x = centerX + node.position[0] * scale;
-			const y = centerY + node.position[1] * scale;
-			const radius = (node.scale || 1) * 5;
-
-			ctx.fillStyle = node.color || '#3b82f6';
-			nodesRendered++;
-		}
-		
-		renderState.nodesRendered = nodesRendered;
-		renderState.isRendering = false;
-			ctx.beginPath();
-			ctx.arc(x, y, radius, 0, Math.PI * 2);
-			ctx.fill();
-
-			// Draw label
-			ctx.fillStyle = '#000';
-			ctx.font = '12px sans-serif';
-			ctx.textAlign = 'center';
-			ctx.fillText(node.label, x, y + radius + 15);
-		}
-	}
+	// Render function removed - WebGPU only, no Canvas 2D fallback
 
 	function fallbackToCanvas2D() {
-		console.log('Falling back to Canvas 2D rendering');
-		// Use Canvas 2D for rendering
-		animate();
+		// WebGPU not supported - show message instead of fallback
+		console.log('[Force3DWordGraphTypeGPU] WebGPU not supported - not implementing fallback');
+		renderState.canvas2dFallback = false;
+		if (!renderState.errors.includes('WebGPU is not supported on this browser')) {
+			renderState.errors.push('WebGPU is not supported on this browser');
+		}
 	}
 
 	function cleanup() {
@@ -710,6 +692,29 @@
 	{#if nodes.length === 0}
 		<div class="absolute inset-0 flex items-center justify-center text-gray-500">
 			<p>ノードデータがありません</p>
+		</div>
+	{:else if !renderState.webgpuSupported || !renderState.webgpuInitialized || renderState.errors.length > 0 || (renderState.webgpuInitialized && renderState.renderCount === 0 && renderState.lastRenderTime === null)}
+		<div class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+			<div class="text-center p-8">
+				<p class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">3D Force Graph は対応していません</p>
+				{#if renderState.errors.length > 0}
+					<p class="text-sm text-gray-500 dark:text-gray-400">
+						{renderState.errors[0]}
+					</p>
+				{:else if !renderState.webgpuSupported}
+					<p class="text-sm text-gray-500 dark:text-gray-400">
+						WebGPUがこのブラウザでサポートされていません
+					</p>
+				{:else if renderState.webgpuInitialized && renderState.renderCount === 0}
+					<p class="text-sm text-gray-500 dark:text-gray-400">
+						WebGPUのレンダリングパイプラインが準備できていません
+					</p>
+				{:else}
+					<p class="text-sm text-gray-500 dark:text-gray-400">
+						WebGPUの初期化に失敗しました
+					</p>
+				{/if}
+			</div>
 		</div>
 	{/if}
 </div>
