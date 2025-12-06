@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { TimelineVisualization } from '$lib/visualization-components';
-	import { Force3DWordGraph } from '$lib/visualization-components';
+	import TimelineVisualization from '$lib/visualization-components/TimelineVisualization.svelte';
+	import Force3DWordGraph from '$lib/visualization-components/Force3DWordGraph.svelte';
 	
 	let timelineData: any[] = [];
 	let wordAggregates: any[] = [];

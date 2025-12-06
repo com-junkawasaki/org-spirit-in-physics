@@ -79,13 +79,24 @@ apps/svelte/
 
 - ✅ SvelteKitプロジェクト初期化
 - ✅ Tailwind CSS統合
-- ✅ Houdini 2.x設定
-- ✅ Clerk認証統合
-- ✅ ルーティング構造作成
-- ✅ jung-voice-assessmentパッケージ移植（基本構造）
-- ✅ visualization-componentsパッケージ移植（基本構造）
+- ✅ Houdini 2.x設定（GraphQLクライアント）
+- ✅ Clerk認証統合（サーバー/クライアントフック）
+- ✅ ルーティング構造作成（/demo, /paper, /participant, /researcher）
+- ✅ jung-voice-assessmentパッケージ移植（基本構造・ストア）
+- ✅ visualization-componentsパッケージ移植（基本構造・型定義）
 - ✅ 各機能の基本ページ作成
-- ✅ 既存Astroアプリのアーカイブ
+- ✅ Supabaseクライアント設定
+- ✅ GraphQL APIプロキシエンドポイント
+- ✅ 既存Astroアプリのアーカイブ（apps/_archive/）
+
+## 実装完了項目
+
+1. **プロジェクト構造**: SvelteKit 2.x + Svelte 5.xの基本構造
+2. **認証**: Clerk認証の統合（サインイン/サインアップ/サインアウト）
+3. **GraphQL**: Houdini 2.xによるGraphQLクライアント設定
+4. **スタイリング**: Tailwind CSS統合とカスタムテーマ
+5. **型安全性**: TypeScript strict mode設定
+6. **パッケージ移植**: Reactコンポーネントの基本構造をSvelteに移植
 
 ## 次のステップ
 

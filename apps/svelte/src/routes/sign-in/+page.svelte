@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { SignIn } from '@clerk/sveltekit';
+	import SignIn from '@clerk/sveltekit/client/SignIn.svelte';
 </script>
 
 <div class="flex min-h-screen items-center justify-center">
-	<SignIn />
+	<SignIn redirectUrl="/" />
 </div>
