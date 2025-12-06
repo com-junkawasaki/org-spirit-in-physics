@@ -7,10 +7,12 @@
 
 	const {
 		wordAggregates = [],
-		emotionVectors = []
+		emotionVectors = [],
+		onRenderStateChange = undefined
 	}: {
 		wordAggregates?: WordAggregate[];
 		emotionVectors?: EmotionVector[];
+		onRenderStateChange?: (state: any) => void;
 	} = $props();
 
 	// デバッグ情報
@@ -21,6 +23,20 @@
 		nodesCreated: 0,
 		linksCreated: 0,
 		errors: [] as string[]
+	});
+	
+	// レンダリング状態（Force3DWordGraphTypeGPUから取得）
+	let renderState = $state({
+		webgpuSupported: false,
+		webgpuInitialized: false,
+		canvas2dFallback: false,
+		canvas2dContextObtained: false,
+		renderCount: 0,
+		lastRenderTime: null as number | null,
+		errors: [] as string[],
+		nodesRendered: 0,
+		linksRendered: 0,
+		isRendering: false
 	});
 
 	let nodes: WordNode[] = $derived(browser ? convertToNodes(wordAggregates, emotionVectors) : []);
@@ -42,6 +58,11 @@
 		).length;
 		debugInfo.nodesCreated = nodes.length;
 		debugInfo.linksCreated = links.length;
+		
+		// レンダリング状態を親に通知
+		if (onRenderStateChange) {
+			onRenderStateChange(renderState);
+		}
 
 		console.log('[Force3DWordGraph] Debug info:', debugInfo);
 		if (wordAggregates.length > 0) {
@@ -180,7 +201,7 @@
 
 <div class="force-3d-word-graph">
 	{#if nodes.length > 0}
-		<Force3DWordGraphTypeGPU {nodes} {links} width={1000} height={600} />
+		<Force3DWordGraphTypeGPU {nodes} {links} width={1000} height={600} renderState={renderState} />
 	{:else}
 		<div class="flex items-center justify-center p-8 text-gray-500">
 			<p>データがありません。単語集計データを読み込んでください。</p>

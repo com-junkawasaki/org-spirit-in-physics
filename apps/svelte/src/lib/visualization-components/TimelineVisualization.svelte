@@ -8,13 +8,15 @@
 		participantId = '',
 		sessionId = '',
 		width = 800,
-		height = 400
+		height = 400,
+		onRenderStateChange = undefined
 	}: {
 		timelinePoints?: TimelinePoint[];
 		participantId?: string;
 		sessionId?: string;
 		width?: number;
 		height?: number;
+		onRenderStateChange?: (state: any) => void;
 	} = $props();
 
 	let canvas: HTMLCanvasElement;
@@ -71,10 +73,37 @@
 		if (canvas) {
 			ctx = canvas.getContext('2d');
 			console.log('[TimelineVisualization] Canvas context:', ctx ? 'obtained' : 'failed');
+			if (ctx) {
+				if (onRenderStateChange) {
+					onRenderStateChange({
+						canvasContextObtained: true,
+						pointsRendered: 0,
+						lastRenderTime: Date.now(),
+						errors: []
+					});
+				}
+			} else {
+				if (onRenderStateChange) {
+					onRenderStateChange({
+						canvasContextObtained: false,
+						pointsRendered: 0,
+						lastRenderTime: null,
+						errors: ['Failed to get canvas context']
+					});
+				}
+			}
 			drawTimeline();
 		} else {
 			console.error('[TimelineVisualization] Canvas element not found');
 			debugInfo.errors.push('Canvas element not found');
+			if (onRenderStateChange) {
+				onRenderStateChange({
+					canvasContextObtained: false,
+					pointsRendered: 0,
+					lastRenderTime: null,
+					errors: ['Canvas element not found']
+				});
+			}
 		}
 	});
 
@@ -122,6 +151,7 @@
 		const xScale = (width - 100) / timeRange;
 		const yScale = (height - 100) / 100; // Assuming max value of 100
 
+		let pointsRendered = 0;
 		timelinePoints.forEach((point, index) => {
 			const x = 50 + (new Date(point.time).getTime() - timeRange) * xScale;
 			const y = height - 50 - (point.reactionValue || 0) * yScale;
@@ -131,6 +161,7 @@
 			ctx.beginPath();
 			ctx.arc(x, y, 4, 0, Math.PI * 2);
 			ctx.fill();
+			pointsRendered++;
 
 			// Draw line to next point
 			if (index < timelinePoints.length - 1) {
@@ -146,6 +177,16 @@
 				ctx.stroke();
 			}
 		});
+		
+		// レンダリング状態を親に通知
+		if (onRenderStateChange) {
+			onRenderStateChange({
+				canvasContextObtained: !!ctx,
+				pointsRendered,
+				lastRenderTime: Date.now(),
+				errors: [...debugInfo.errors]
+			});
+		}
 	}
 
 	function getTimeRange(): number {

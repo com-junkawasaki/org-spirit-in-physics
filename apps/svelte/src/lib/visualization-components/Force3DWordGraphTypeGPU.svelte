@@ -29,7 +29,8 @@
 		cameraPosition = [0, 0, 500] as [number, number, number],
 		cameraTarget = [0, 0, 0] as [number, number, number],
 		cameraRotation = [0, 0] as [number, number],
-		zoom = 1.0
+		zoom = 1.0,
+		renderState: renderStateProp = undefined
 	}: {
 		nodes?: WordNode[];
 		links?: WordLink[];
@@ -55,6 +56,7 @@
 		cameraTarget?: [number, number, number];
 		cameraRotation?: [number, number];
 		zoom?: number;
+		renderState?: any;
 	} = $props();
 
 	let canvas: HTMLCanvasElement;
@@ -72,6 +74,39 @@
 	let renderPipeline: GPURenderPipeline | null = null;
 	let bindGroup: GPUBindGroup | null = null;
 	let lastFrameTime = 0;
+	
+	// レンダリング状態の追跡
+	let renderState = $state({
+		webgpuSupported: false,
+		webgpuInitialized: false,
+		canvas2dFallback: false,
+		canvas2dContextObtained: false,
+		renderCount: 0,
+		lastRenderTime: null as number | null,
+		errors: [] as string[],
+		nodesRendered: 0,
+		linksRendered: 0,
+		isRendering: false
+	});
+	
+	// 親コンポーネントに状態をバインド
+	$effect(() => {
+		if (renderStateProp) {
+			// オブジェクトのプロパティを更新
+			Object.assign(renderStateProp, {
+				webgpuSupported: renderState.webgpuSupported,
+				webgpuInitialized: renderState.webgpuInitialized,
+				canvas2dFallback: renderState.canvas2dFallback,
+				canvas2dContextObtained: renderState.canvas2dContextObtained,
+				renderCount: renderState.renderCount,
+				lastRenderTime: renderState.lastRenderTime,
+				errors: [...renderState.errors], // 配列のコピー
+				nodesRendered: renderState.nodesRendered,
+				linksRendered: renderState.linksRendered,
+				isRendering: renderState.isRendering
+			});
+		}
+	});
 
 	// Interaction state
 	let isDragging = $state(false);
@@ -215,13 +250,23 @@
 	});
 
 	async function initWebGPU() {
+		console.log('[Force3DWordGraphTypeGPU] initWebGPU called');
+		
+		renderState.webgpuSupported = !!navigator.gpu;
+		
 		if (!navigator.gpu) {
-			console.warn('WebGPU is not supported');
+			console.warn('[Force3DWordGraphTypeGPU] WebGPU is not supported, falling back to Canvas 2D');
+			renderState.canvas2dFallback = true;
 			fallbackToCanvas2D();
 			return;
 		}
 
-		if (!canvas) return;
+		if (!canvas) {
+			console.warn('[Force3DWordGraphTypeGPU] initWebGPU: canvas is null');
+			return;
+		}
+		
+		console.log('[Force3DWordGraphTypeGPU] initWebGPU: canvas found, requesting adapter...');
 
 		try {
 			const adapter = await navigator.gpu.requestAdapter();
@@ -296,16 +341,41 @@
 			});
 
 			// Buffers will be initialized by reactive statement when nodes/links are available
+			console.log('[Force3DWordGraphTypeGPU] WebGPU initialized successfully, starting animation');
+			console.log('[Force3DWordGraphTypeGPU] Current nodes/links:', {
+				nodesLength: nodes.length,
+				linksLength: links.length
+			});
+			
+			renderState.webgpuInitialized = true;
+			renderState.canvas2dFallback = false;
+			
 			// Start animation
 			animate();
 		} catch (error) {
-			console.error('WebGPU initialization failed:', error);
+			console.error('[Force3DWordGraphTypeGPU] WebGPU initialization failed:', error);
+			renderState.webgpuInitialized = false;
+			renderState.canvas2dFallback = true;
+			renderState.errors.push(`WebGPU initialization failed: ${error}`);
 			fallbackToCanvas2D();
 		}
 	}
 
 	function initializeBuffers() {
-		if (!device || nodes.length === 0 || links.length === 0) return;
+		console.log('[Force3DWordGraphTypeGPU] initializeBuffers called:', {
+			hasDevice: !!device,
+			nodesLength: nodes.length,
+			linksLength: links.length
+		});
+		
+		if (!device || nodes.length === 0 || links.length === 0) {
+			console.warn('[Force3DWordGraphTypeGPU] Cannot initialize buffers:', {
+				hasDevice: !!device,
+				nodesLength: nodes.length,
+				linksLength: links.length
+			});
+			return;
+		}
 
 		const nodeData = createNodeData(nodes);
 		const linkData = createLinkData(links);
@@ -430,7 +500,9 @@
 			return;
 		}
 
+		// Always try to render with Canvas 2D fallback if WebGPU is not ready
 		if (device && computePipeline && bindGroup && nodeBuffer && nodes.length > 0 && links.length > 0) {
+			console.log('[Force3DWordGraphTypeGPU] animate: using WebGPU path');
 			// Run compute shader
 			const commandEncoder = device.createCommandEncoder();
 			const computePass = commandEncoder.beginComputePass();
@@ -445,26 +517,74 @@
 			device.queue.submit([commandEncoder.finish()]);
 		} else if (nodes.length > 0 && links.length > 0) {
 			// Fallback to Canvas 2D rendering if WebGPU is not ready
+			if (lastFrameTime === 0 || now - lastFrameTime > 100) {
+				// Only log occasionally to avoid spam
+				console.log('[Force3DWordGraphTypeGPU] animate: using Canvas 2D fallback', {
+					hasDevice: !!device,
+					hasComputePipeline: !!computePipeline,
+					hasBindGroup: !!bindGroup,
+					hasNodeBuffer: !!nodeBuffer,
+					nodesLength: nodes.length,
+					linksLength: links.length
+				});
+			}
 			render();
+		} else {
+			// No data yet
+			if (lastFrameTime === 0 || now - lastFrameTime > 1000) {
+				console.log('[Force3DWordGraphTypeGPU] animate: waiting for data', {
+					nodesLength: nodes.length,
+					linksLength: links.length
+				});
+			}
 		}
 
 		animationFrameId = requestAnimationFrame(animate);
 	}
 
 	function render() {
+		renderState.isRendering = true;
+		renderState.renderCount++;
+		renderState.lastRenderTime = Date.now();
+		
 		// Simplified rendering - in a full implementation, this would
 		// read node positions from GPU buffer and render spheres/links
 		// For now, we'll use Canvas 2D as fallback
-		if (!canvas) return;
+		if (!canvas) {
+			console.warn('[Force3DWordGraphTypeGPU] render: canvas is null');
+			renderState.errors.push('Canvas element is null');
+			renderState.isRendering = false;
+			return;
+		}
 
 		const ctx = canvas.getContext('2d');
-		if (!ctx) return;
+		if (!ctx) {
+			console.warn('[Force3DWordGraphTypeGPU] render: failed to get 2d context');
+			renderState.canvas2dContextObtained = false;
+			renderState.errors.push('Failed to get 2D context');
+			renderState.isRendering = false;
+			return;
+		}
+		
+		renderState.canvas2dContextObtained = true;
 
 		ctx.clearRect(0, 0, width, height);
 		ctx.fillStyle = background;
 		ctx.fillRect(0, 0, width, height);
 
-		if (nodes.length === 0 || links.length === 0) return;
+		if (nodes.length === 0 || links.length === 0) {
+			console.log('[Force3DWordGraphTypeGPU] render: skipping (no data)', {
+				nodesLength: nodes.length,
+				linksLength: links.length
+			});
+			return;
+		}
+		
+		console.log('[Force3DWordGraphTypeGPU] render: rendering', {
+			nodesLength: nodes.length,
+			linksLength: links.length,
+			nodesWithPosition: nodes.filter(n => n.position).length
+		});
 
 		// Project 3D nodes to 2D (simplified)
 		const centerX = width / 2;
@@ -480,13 +600,17 @@
 					(Math.random() - 0.5) * 200,
 					(Math.random() - 0.5) * 200
 				];
-				nodes[i].position = initial;
+				// Note: Direct mutation of props is not recommended in Svelte 5,
+				// but we need to set position for rendering
+				// In a production app, we should use a local state copy
+				(nodes[i] as any).position = initial;
 			}
 		}
 
 		// Draw links
 		ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
 		ctx.lineWidth = 1;
+		let linksRendered = 0;
 		for (const link of links) {
 			const source = nodes[link.source];
 			const target = nodes[link.target];
@@ -502,9 +626,13 @@
 			ctx.moveTo(x1, y1);
 			ctx.lineTo(x2, y2);
 			ctx.stroke();
+			linksRendered++;
 		}
+		
+		renderState.linksRendered = linksRendered;
 
 		// Draw nodes
+		let nodesRendered = 0;
 		for (const node of nodes) {
 			if (!node.position) continue;
 			const x = centerX + node.position[0] * scale;
@@ -512,6 +640,11 @@
 			const radius = (node.scale || 1) * 5;
 
 			ctx.fillStyle = node.color || '#3b82f6';
+			nodesRendered++;
+		}
+		
+		renderState.nodesRendered = nodesRendered;
+		renderState.isRendering = false;
 			ctx.beginPath();
 			ctx.arc(x, y, radius, 0, Math.PI * 2);
 			ctx.fill();
@@ -551,9 +684,24 @@
 
 	// Update buffers when nodes/links change
 	$effect(() => {
+		console.log('[Force3DWordGraphTypeGPU] $effect triggered:', {
+			browser,
+			hasDevice: !!device,
+			nodesLength: nodes.length,
+			linksLength: links.length
+		});
+		
 		if (browser && device && nodes.length > 0 && links.length > 0) {
-		initializeBuffers();
-	}
+			console.log('[Force3DWordGraphTypeGPU] Initializing buffers...');
+			initializeBuffers();
+		} else {
+			console.log('[Force3DWordGraphTypeGPU] Skipping buffer initialization:', {
+				browser,
+				hasDevice: !!device,
+				nodesLength: nodes.length,
+				linksLength: links.length
+			});
+		}
 	});
 </script>
 

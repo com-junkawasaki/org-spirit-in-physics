@@ -28,7 +28,8 @@
 		onDataPointSelect = undefined as ((point: TimelineDataPoint | null) => void) | undefined,
 		onTooltipShow = undefined as ((event: MouseEvent, point: TimelineDataPoint) => void) | undefined,
 		onTooltipHide = undefined as (() => void) | undefined,
-		onTimeRangeChange = undefined as ((range: TimeRange | null) => void) | undefined
+		onTimeRangeChange = undefined as ((range: TimeRange | null) => void) | undefined,
+		onRenderStateChange = undefined as ((state: any) => void) | undefined
 	}: {
 		data?: TimelineDataPoint[];
 		filters?: FilterSettings;
@@ -39,6 +40,7 @@
 		onTooltipShow?: ((event: MouseEvent, point: TimelineDataPoint) => void) | undefined;
 		onTooltipHide?: (() => void) | undefined;
 		onTimeRangeChange?: ((range: TimeRange | null) => void) | undefined;
+		onRenderStateChange?: ((state: any) => void) | undefined;
 	} = $props();
 
 	let svgRef: SVGSVGElement;
@@ -215,7 +217,17 @@
 	}
 
 	function renderTimeline() {
-		if (!browser || !svgRef || !d3 || data.length === 0) return;
+		if (!browser || !svgRef || !d3 || data.length === 0) {
+			if (onRenderStateChange) {
+				onRenderStateChange({
+					canvasContextObtained: false,
+					pointsRendered: 0,
+					lastRenderTime: null,
+					errors: ['Cannot render: missing browser, svgRef, d3, or data']
+				});
+			}
+			return;
+		}
 
 		const svg = d3.select(svgRef);
 		svg.selectAll('*').remove();
@@ -371,12 +383,33 @@
 			.style('font-size', '14px')
 			.style('fill', '#666')
 			.text('反応値');
+		
+		// レンダリング状態を通知
+		if (onRenderStateChange) {
+			onRenderStateChange({
+				canvasContextObtained: true,
+				pointsRendered: filteredDataSorted.length,
+				lastRenderTime: Date.now(),
+				errors: []
+			});
+		}
 	}
 
 	$effect(() => {
 		if (browser && data.length > 0 && d3) {
 			renderOverviewChart();
 			renderTimeline();
+		} else if (onRenderStateChange) {
+			onRenderStateChange({
+				canvasContextObtained: false,
+				pointsRendered: 0,
+				lastRenderTime: null,
+				errors: [
+					!browser ? 'Not in browser' : '',
+					data.length === 0 ? 'No data' : '',
+					!d3 ? 'D3 not loaded' : ''
+				].filter(Boolean)
+			});
 		}
 	});
 
@@ -387,9 +420,45 @@
 				if (d3) {
 					renderOverviewChart();
 					renderTimeline();
+					
+					// レンダリング状態を通知
+					if (onRenderStateChange) {
+						onRenderStateChange({
+							canvasContextObtained: true,
+							pointsRendered: data.length,
+							lastRenderTime: Date.now(),
+							errors: []
+						});
+					}
+				} else {
+					if (onRenderStateChange) {
+						onRenderStateChange({
+							canvasContextObtained: false,
+							pointsRendered: 0,
+							lastRenderTime: null,
+							errors: ['D3 import returned null']
+						});
+					}
 				}
 			} catch (error) {
 				console.error('Failed to load d3:', error);
+				if (onRenderStateChange) {
+					onRenderStateChange({
+						canvasContextObtained: false,
+						pointsRendered: 0,
+						lastRenderTime: null,
+						errors: [`Failed to load D3: ${error}`]
+					});
+				}
+			}
+		} else {
+			if (onRenderStateChange) {
+				onRenderStateChange({
+					canvasContextObtained: false,
+					pointsRendered: 0,
+					lastRenderTime: null,
+					errors: ['Not in browser environment']
+				});
 			}
 		}
 	});

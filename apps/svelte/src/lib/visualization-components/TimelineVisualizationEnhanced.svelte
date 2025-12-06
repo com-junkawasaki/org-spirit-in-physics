@@ -28,7 +28,9 @@
 		width = 1200,
 		height = 600,
 		forceMode = undefined as VisualizationMode | undefined,
-		hideFilters = false
+		hideFilters = false,
+		onForce3DRenderStateChange = undefined,
+		onTimelineRenderStateChange = undefined
 	}: {
 		participantId?: string;
 		sessionId?: string;
@@ -39,6 +41,8 @@
 		height?: number;
 		forceMode?: VisualizationMode;
 		hideFilters?: boolean;
+		onForce3DRenderStateChange?: (state: any) => void;
+		onTimelineRenderStateChange?: (state: any) => void;
 	} = $props();
 
 	// 可視化モード
@@ -247,6 +251,7 @@
 				height={height - 100}
 				{timeRange}
 				onTimeRangeChange={handleTimeRangeChange}
+				onRenderStateChange={onTimelineRenderStateChange}
 			/>
 		</div>
 	{/if}
@@ -300,6 +305,7 @@
 					<Force3DWordGraph
 						wordAggregates={wordAggregatesProp}
 						emotionVectors={emotionVectorsProp}
+						onRenderStateChange={onForce3DRenderStateChange}
 					/>
 				</div>
 

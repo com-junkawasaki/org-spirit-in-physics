@@ -43,12 +43,48 @@
 		wordAggregates: DebugState;
 		emotionVectors: DebugState;
 		timeline: DebugState;
+		force3dRender: {
+			webgpuSupported: boolean;
+			webgpuInitialized: boolean;
+			canvas2dFallback: boolean;
+			canvas2dContextObtained: boolean;
+			renderCount: number;
+			lastRenderTime: number | null;
+			errors: string[];
+			nodesRendered: number;
+			linksRendered: number;
+			isRendering: boolean;
+		};
+		timelineRender: {
+			canvasContextObtained: boolean;
+			pointsRendered: number;
+			lastRenderTime: number | null;
+			errors: string[];
+		};
 	}>({
 		participant: { status: 'idle' },
 		session: { status: 'idle' },
 		wordAggregates: { status: 'idle' },
 		emotionVectors: { status: 'idle' },
-		timeline: { status: 'idle' }
+		timeline: { status: 'idle' },
+		force3dRender: {
+			webgpuSupported: false,
+			webgpuInitialized: false,
+			canvas2dFallback: false,
+			canvas2dContextObtained: false,
+			renderCount: 0,
+			lastRenderTime: null,
+			errors: [],
+			nodesRendered: 0,
+			linksRendered: 0,
+			isRendering: false
+		},
+		timelineRender: {
+			canvasContextObtained: false,
+			pointsRendered: 0,
+			lastRenderTime: null,
+			errors: []
+		}
 	});
 	
 	// 展開状態
@@ -285,6 +321,12 @@
 								emotionVectors={emotionVectors}
 								width={1200}
 								height={600}
+								onForce3DRenderStateChange={(state) => {
+									debugState.force3dRender = { ...state };
+								}}
+								onTimelineRenderStateChange={(state) => {
+									debugState.timelineRender = { ...state };
+								}}
 							/>
 						</div>
 					</div>
@@ -447,6 +489,66 @@
 									<pre class="p-1 bg-gray-100 dark:bg-gray-700 rounded overflow-x-auto">{JSON.stringify(debugState.timeline.responseData, null, 2)}</pre>
 								</div>
 							{/if}
+						</div>
+						
+						<!-- 3D Force Graph Rendering Status -->
+						<div class="border-b pb-2">
+							<button type="button" class="flex items-center justify-between mb-1 cursor-pointer w-full text-left" onclick={() => toggleSection('force3dRender')} onkeydown={(e) => e.key === 'Enter' && toggleSection('force3dRender')} role="button" tabindex="0">
+								<span class="font-semibold">3D Force Graph レンダリング</span>
+								<div class="flex items-center gap-2">
+									<span class="px-2 py-1 rounded text-xs {
+										debugState.force3dRender.canvas2dContextObtained && debugState.force3dRender.renderCount > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+										debugState.force3dRender.errors.length > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+										'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+									}">
+										{debugState.force3dRender.canvas2dContextObtained && debugState.force3dRender.renderCount > 0 ? '✓' :
+										 debugState.force3dRender.errors.length > 0 ? '✗' : '○'}
+									</span>
+									<span class="text-xs">{expandedSections.has('force3dRender') ? '▼' : '▶'}</span>
+								</div>
+							</button>
+							<div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+								<div>WebGPU対応: {debugState.force3dRender.webgpuSupported ? '✓' : '✗'}</div>
+								<div>WebGPU初期化: {debugState.force3dRender.webgpuInitialized ? '✓' : '✗'}</div>
+								<div>Canvas 2D フォールバック: {debugState.force3dRender.canvas2dFallback ? '✓' : '✗'}</div>
+								<div>Canvas 2D コンテキスト取得: {debugState.force3dRender.canvas2dContextObtained ? '✓' : '✗'}</div>
+								<div>レンダリング回数: {debugState.force3dRender.renderCount}</div>
+								<div>レンダリング中: {debugState.force3dRender.isRendering ? 'はい' : 'いいえ'}</div>
+								<div>ノード描画数: {debugState.force3dRender.nodesRendered}</div>
+								<div>リンク描画数: {debugState.force3dRender.linksRendered}</div>
+								{#if debugState.force3dRender.errors.length > 0}
+									<div class="text-red-600 dark:text-red-400">
+										エラー: {debugState.force3dRender.errors.slice(-3).join(', ')}
+									</div>
+								{/if}
+							</div>
+						</div>
+						
+						<!-- Timeline Rendering Status -->
+						<div>
+							<button type="button" class="flex items-center justify-between mb-1 cursor-pointer w-full text-left" onclick={() => toggleSection('timelineRender')} onkeydown={(e) => e.key === 'Enter' && toggleSection('timelineRender')} role="button" tabindex="0">
+								<span class="font-semibold">Timeline レンダリング</span>
+								<div class="flex items-center gap-2">
+									<span class="px-2 py-1 rounded text-xs {
+										debugState.timelineRender.canvasContextObtained && debugState.timelineRender.pointsRendered > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+										debugState.timelineRender.errors.length > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+										'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+									}">
+										{debugState.timelineRender.canvasContextObtained && debugState.timelineRender.pointsRendered > 0 ? '✓' :
+										 debugState.timelineRender.errors.length > 0 ? '✗' : '○'}
+									</span>
+									<span class="text-xs">{expandedSections.has('timelineRender') ? '▼' : '▶'}</span>
+								</div>
+							</button>
+							<div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+								<div>Canvas コンテキスト取得: {debugState.timelineRender.canvasContextObtained ? '✓' : '✗'}</div>
+								<div>ポイント描画数: {debugState.timelineRender.pointsRendered}</div>
+								{#if debugState.timelineRender.errors.length > 0}
+									<div class="text-red-600 dark:text-red-400">
+										エラー: {debugState.timelineRender.errors.slice(-3).join(', ')}
+									</div>
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>
