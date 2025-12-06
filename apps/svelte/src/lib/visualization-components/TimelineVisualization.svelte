@@ -56,7 +56,7 @@
 		}
 
 		console.log('[TimelineVisualization] Debug info:', debugInfo);
-		console.log('[TimelineVisualization] Sample points (first 3):', timelinePoints.slice(0, 3).map(p => ({
+		console.log('[TimelineVisualization] All Points:', timelinePoints.map(p => ({
 			time: p.time,
 			word: p.word,
 			reactionValue: p.reactionValue,

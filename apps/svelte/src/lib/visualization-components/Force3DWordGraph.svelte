@@ -29,7 +29,9 @@
 	$effect(() => {
 		console.log('[Force3DWordGraph] Props changed:', {
 			wordAggregatesLength: wordAggregates.length,
-			emotionVectorsLength: emotionVectors.length
+			emotionVectorsLength: emotionVectors.length,
+			wordAggregates: wordAggregates,
+			emotionVectors: emotionVectors
 		});
 
 		// デバッグ情報を更新
@@ -42,17 +44,21 @@
 		debugInfo.linksCreated = links.length;
 
 		console.log('[Force3DWordGraph] Debug info:', debugInfo);
-		console.log('[Force3DWordGraph] Sample aggregates (first 3):', wordAggregates.slice(0, 3).map(agg => ({
-			word: agg.word,
-			count: agg.count,
-			hasEmotionVector: emotionVectors.some(v => v.word === agg.word)
-		})));
-		console.log('[Force3DWordGraph] Sample vectors (first 3):', emotionVectors.slice(0, 3).map(v => ({
-			word: v.word,
-			emotionEntryCount: v.emotionEntryCount,
-			hasJoy: v.joySum > 0
-		})));
-		console.log('[Force3DWordGraph] Nodes created:', nodes.length, nodes.slice(0, 3));
+		if (wordAggregates.length > 0) {
+			console.log('[Force3DWordGraph] All Aggregates:', wordAggregates.map(agg => ({
+				word: agg.word,
+				count: agg.count,
+				hasEmotionVector: emotionVectors.some(v => v.word === agg.word)
+			})));
+		}
+		if (emotionVectors.length > 0) {
+			console.log('[Force3DWordGraph] All Vectors:', emotionVectors.map(v => ({
+				word: v.word,
+				emotionEntryCount: v.emotionEntryCount,
+				hasJoy: v.joySum > 0
+			})));
+		}
+		console.log('[Force3DWordGraph] All Nodes created:', nodes.length, nodes);
 		console.log('[Force3DWordGraph] Links created:', links.length);
 	});
 
@@ -73,15 +79,13 @@
 			const vector = vectors.find((v) => v.word === agg.word);
 			const scale = Math.sqrt(agg.count || 1);
 
-			if (index < 3) {
-				console.log(`[Force3DWordGraph] convertToNodes: Processing aggregate ${index}:`, {
-					word: agg.word,
-					count: agg.count,
-					hasVector: !!vector,
-					vectorWord: vector?.word,
-					emotionEntryCount: vector?.emotionEntryCount
-				});
-			}
+			console.log(`[Force3DWordGraph] convertToNodes: Processing aggregate ${index}:`, {
+				word: agg.word,
+				count: agg.count,
+				hasVector: !!vector,
+				vectorWord: vector?.word,
+				emotionEntryCount: vector?.emotionEntryCount
+			});
 
 			const emotion: WordNode['emotion'] = vector
 				? {

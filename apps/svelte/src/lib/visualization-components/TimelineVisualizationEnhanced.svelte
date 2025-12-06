@@ -153,7 +153,7 @@
 
 	// 構造分析の実行
 	$effect(() => {
-		if (browser && wordAggregatesProp.length > 0 && emotionVectorsProp.length > 0) {
+		if (browser && wordAggregatesProp && wordAggregatesProp.length > 0 && emotionVectorsProp && emotionVectorsProp.length > 0) {
 			// ノードとリンクを生成（簡易版）
 			const nodes: WordNode[] = wordAggregatesProp.map((agg, idx) => ({
 				id: String(idx),
@@ -261,7 +261,7 @@
 	<!-- 3D Force Graphモード -->
 	{#if visualizationMode === 'force-3d-typegpu'}
 		<div class="space-y-4">
-			{#if wordAggregatesProp.length > 0 && emotionVectorsProp.length > 0}
+			{#if wordAggregatesProp && wordAggregatesProp.length > 0 && emotionVectorsProp && emotionVectorsProp.length > 0}
 				<!-- 3D Force Graph Controls -->
 				<Force3DControls
 					{forcePresets}

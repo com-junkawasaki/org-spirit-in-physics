@@ -131,7 +131,7 @@ export async function fetchTimeline(
 		
 		// デバッグ: データの詳細を確認
 		if (result.length > 0) {
-			console.log('fetchTimeline: First 5 items:', result.slice(0, 5).map(item => ({
+			console.log('fetchTimeline: All items:', result.map(item => ({
 				time: item.time,
 				word: item.word,
 				eventType: item.eventType,
@@ -198,7 +198,7 @@ export async function fetchWordAggregates(participantId: string, sessionId: stri
 		
 		// デバッグ: データの詳細を確認
 		if (result.length > 0) {
-			console.log('fetchWordAggregates: First 5 items:', result.slice(0, 5).map(item => ({
+			console.log('fetchWordAggregates: All items:', result.map(item => ({
 				word: item.word,
 				count: item.count,
 				participantId: item.participantId,
@@ -256,7 +256,7 @@ export async function fetchEmotionVectors(participantId: string, sessionId: stri
 		
 		// デバッグ: データの詳細を確認
 		if (result.length > 0) {
-			console.log('fetchEmotionVectors: First 5 items:', result.slice(0, 5).map(item => ({
+			console.log('fetchEmotionVectors: All items:', result.map(item => ({
 				word: item.word,
 				emotionEntryCount: item.emotionEntryCount,
 				participantId: item.participantId,

@@ -32,7 +32,7 @@
 		count?: number;
 		error?: string;
 		requestTime?: number;
-		responseSample?: any[];
+		responseData?: any[];
 		details?: Record<string, any>;
 		lastUpdated?: Date;
 	}
@@ -155,7 +155,7 @@
 					: '単語集計データが取得できませんでした',
 				count: wordAggregates.length,
 				requestTime: waRequestTime,
-				responseSample: wordAggregates.slice(0, 3),
+				responseData: wordAggregates,
 				lastUpdated: new Date()
 			};
 			
@@ -176,7 +176,7 @@
 					: '感情ベクトルデータが取得できませんでした',
 				count: emotionVectors.length,
 				requestTime: evRequestTime,
-				responseSample: emotionVectors.slice(0, 3),
+				responseData: emotionVectors,
 				lastUpdated: new Date()
 			};
 			
@@ -197,7 +197,7 @@
 					: 'タイムラインデータが取得できませんでした',
 				count: timelineData.length,
 				requestTime: tlRequestTime,
-				responseSample: timelineData.slice(0, 3),
+				responseData: timelineData,
 				lastUpdated: new Date()
 			};
 		} catch (err: any) {
@@ -376,9 +376,9 @@
 									数: {debugState.wordAggregates.count}
 								</div>
 							{/if}
-							{#if expandedSections.has('wordAggregates') && debugState.wordAggregates.responseSample}
+							{#if expandedSections.has('wordAggregates') && debugState.wordAggregates.responseData}
 								<div class="mt-2 pl-2 border-l-2 border-gray-300 dark:border-gray-600 text-xs">
-									<pre class="p-1 bg-gray-100 dark:bg-gray-700 rounded overflow-x-auto">{JSON.stringify(debugState.wordAggregates.responseSample, null, 2)}</pre>
+									<pre class="p-1 bg-gray-100 dark:bg-gray-700 rounded overflow-x-auto">{JSON.stringify(debugState.wordAggregates.responseData, null, 2)}</pre>
 								</div>
 							{/if}
 						</div>
@@ -409,9 +409,9 @@
 									数: {debugState.emotionVectors.count}
 								</div>
 							{/if}
-							{#if expandedSections.has('emotionVectors') && debugState.emotionVectors.responseSample}
+							{#if expandedSections.has('emotionVectors') && debugState.emotionVectors.responseData}
 								<div class="mt-2 pl-2 border-l-2 border-gray-300 dark:border-gray-600 text-xs">
-									<pre class="p-1 bg-gray-100 dark:bg-gray-700 rounded overflow-x-auto">{JSON.stringify(debugState.emotionVectors.responseSample, null, 2)}</pre>
+									<pre class="p-1 bg-gray-100 dark:bg-gray-700 rounded overflow-x-auto">{JSON.stringify(debugState.emotionVectors.responseData, null, 2)}</pre>
 								</div>
 							{/if}
 						</div>
@@ -442,9 +442,9 @@
 									数: {debugState.timeline.count}
 								</div>
 							{/if}
-							{#if expandedSections.has('timeline') && debugState.timeline.responseSample}
+							{#if expandedSections.has('timeline') && debugState.timeline.responseData}
 								<div class="mt-2 pl-2 border-l-2 border-gray-300 dark:border-gray-600 text-xs">
-									<pre class="p-1 bg-gray-100 dark:bg-gray-700 rounded overflow-x-auto">{JSON.stringify(debugState.timeline.responseSample, null, 2)}</pre>
+									<pre class="p-1 bg-gray-100 dark:bg-gray-700 rounded overflow-x-auto">{JSON.stringify(debugState.timeline.responseData, null, 2)}</pre>
 								</div>
 							{/if}
 						</div>
