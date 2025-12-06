@@ -95,6 +95,7 @@ export async function fetchTimeline(
 	interval?: string
 ) {
 	try {
+		console.log('fetchTimeline: Requesting', { participantId, sessionId, startTime, endTime, interval });
 		const data = await client.request<{ timeline: any[] }>(
 			gql`
 				query GetTimeline($participantId: ID!, $sessionId: ID, $startTime: String, $endTime: String, $interval: String) {
@@ -124,15 +125,49 @@ export async function fetchTimeline(
 			`,
 			{ participantId, sessionId, startTime, endTime, interval }
 		);
-		return data.timeline || [];
-	} catch (error) {
+		console.log('fetchTimeline: Response', JSON.stringify(data, null, 2));
+		const result = data.timeline || [];
+		console.log('fetchTimeline: Result count', result.length);
+		
+		// デバッグ: データの詳細を確認
+		if (result.length > 0) {
+			console.log('fetchTimeline: First 5 items:', result.slice(0, 5).map(item => ({
+				time: item.time,
+				word: item.word,
+				eventType: item.eventType,
+				hasResponse: item.hasResponse,
+				emotionsCount: item.emotions?.length || 0,
+				participantId: item.participantId,
+				sessionId: item.sessionId
+			})));
+			console.log('fetchTimeline: Time range:', {
+				first: result[0]?.time,
+				last: result[result.length - 1]?.time,
+				total: result.length
+			});
+			console.log('fetchTimeline: Unique words:', [...new Set(result.map(item => item.word))]);
+			console.log('fetchTimeline: Event types:', [...new Set(result.map(item => item.eventType))]);
+		} else {
+			console.warn('fetchTimeline: ⚠️ No data returned!');
+			console.warn('fetchTimeline: Full response:', JSON.stringify(data, null, 2));
+		}
+		
+		return result;
+	} catch (error: any) {
 		console.error('Error fetching timeline:', error);
+		if (error.response) {
+			console.error('GraphQL response error:', await error.response.text());
+		}
+		if (error.request) {
+			console.error('GraphQL request:', error.request);
+		}
 		return [];
 	}
 }
 
 export async function fetchWordAggregates(participantId: string, sessionId: string) {
 	try {
+		console.log('fetchWordAggregates: Requesting', { participantId, sessionId });
 		const data = await client.request<{ wordAggregates: any[] }>(
 			gql`
 				query GetWordAggregates($participantId: ID!, $sessionId: ID!) {
@@ -157,15 +192,40 @@ export async function fetchWordAggregates(participantId: string, sessionId: stri
 			`,
 			{ participantId, sessionId }
 		);
-		return data.wordAggregates || [];
-	} catch (error) {
+		console.log('fetchWordAggregates: Response', JSON.stringify(data, null, 2));
+		const result = data.wordAggregates || [];
+		console.log('fetchWordAggregates: Result count', result.length);
+		
+		// デバッグ: データの詳細を確認
+		if (result.length > 0) {
+			console.log('fetchWordAggregates: First 5 items:', result.slice(0, 5).map(item => ({
+				word: item.word,
+				count: item.count,
+				participantId: item.participantId,
+				sessionId: item.sessionId
+			})));
+			console.log('fetchWordAggregates: All words:', result.map(item => item.word));
+		} else {
+			console.warn('fetchWordAggregates: ⚠️ No data returned!');
+			console.warn('fetchWordAggregates: Full response:', JSON.stringify(data, null, 2));
+		}
+		
+		return result;
+	} catch (error: any) {
 		console.error('Error fetching word aggregates:', error);
+		if (error.response) {
+			console.error('GraphQL response error:', await error.response.text());
+		}
+		if (error.request) {
+			console.error('GraphQL request:', error.request);
+		}
 		return [];
 	}
 }
 
 export async function fetchEmotionVectors(participantId: string, sessionId: string) {
 	try {
+		console.log('fetchEmotionVectors: Requesting', { participantId, sessionId });
 		const data = await client.request<{ emotionVectors: any[] }>(
 			gql`
 				query GetEmotionVectors($participantId: ID!, $sessionId: ID!) {
@@ -190,9 +250,34 @@ export async function fetchEmotionVectors(participantId: string, sessionId: stri
 			`,
 			{ participantId, sessionId }
 		);
-		return data.emotionVectors || [];
-	} catch (error) {
+		console.log('fetchEmotionVectors: Response', JSON.stringify(data, null, 2));
+		const result = data.emotionVectors || [];
+		console.log('fetchEmotionVectors: Result count', result.length);
+		
+		// デバッグ: データの詳細を確認
+		if (result.length > 0) {
+			console.log('fetchEmotionVectors: First 5 items:', result.slice(0, 5).map(item => ({
+				word: item.word,
+				emotionEntryCount: item.emotionEntryCount,
+				participantId: item.participantId,
+				sessionId: item.sessionId,
+				hasJoy: item.joySum > 0
+			})));
+			console.log('fetchEmotionVectors: All words:', result.map(item => item.word));
+		} else {
+			console.warn('fetchEmotionVectors: ⚠️ No data returned!');
+			console.warn('fetchEmotionVectors: Full response:', JSON.stringify(data, null, 2));
+		}
+		
+		return result;
+	} catch (error: any) {
 		console.error('Error fetching emotion vectors:', error);
+		if (error.response) {
+			console.error('GraphQL response error:', await error.response.text());
+		}
+		if (error.request) {
+			console.error('GraphQL request:', error.request);
+		}
 		return [];
 	}
 }

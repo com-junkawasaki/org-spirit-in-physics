@@ -13,18 +13,75 @@
 		emotionVectors?: EmotionVector[];
 	} = $props();
 
+	// デバッグ情報
+	let debugInfo = $state({
+		receivedAggregates: 0,
+		receivedVectors: 0,
+		matchedVectors: 0,
+		nodesCreated: 0,
+		linksCreated: 0,
+		errors: [] as string[]
+	});
+
 	let nodes: WordNode[] = $derived(browser ? convertToNodes(wordAggregates, emotionVectors) : []);
 	let links: WordLink[] = $derived(browser ? generateLinks(nodes) : []);
+
+	$effect(() => {
+		console.log('[Force3DWordGraph] Props changed:', {
+			wordAggregatesLength: wordAggregates.length,
+			emotionVectorsLength: emotionVectors.length
+		});
+
+		// デバッグ情報を更新
+		debugInfo.receivedAggregates = wordAggregates.length;
+		debugInfo.receivedVectors = emotionVectors.length;
+		debugInfo.matchedVectors = wordAggregates.filter(agg => 
+			emotionVectors.some(v => v.word === agg.word)
+		).length;
+		debugInfo.nodesCreated = nodes.length;
+		debugInfo.linksCreated = links.length;
+
+		console.log('[Force3DWordGraph] Debug info:', debugInfo);
+		console.log('[Force3DWordGraph] Sample aggregates (first 3):', wordAggregates.slice(0, 3).map(agg => ({
+			word: agg.word,
+			count: agg.count,
+			hasEmotionVector: emotionVectors.some(v => v.word === agg.word)
+		})));
+		console.log('[Force3DWordGraph] Sample vectors (first 3):', emotionVectors.slice(0, 3).map(v => ({
+			word: v.word,
+			emotionEntryCount: v.emotionEntryCount,
+			hasJoy: v.joySum > 0
+		})));
+		console.log('[Force3DWordGraph] Nodes created:', nodes.length, nodes.slice(0, 3));
+		console.log('[Force3DWordGraph] Links created:', links.length);
+	});
 
 	function convertToNodes(
 		aggregates: WordAggregate[],
 		vectors: EmotionVector[]
 	): WordNode[] {
-		const nodeMap = new Map<string, WordNode>();
+		console.log('[Force3DWordGraph] convertToNodes: Starting conversion', {
+			aggregatesCount: aggregates.length,
+			vectorsCount: vectors.length
+		});
 
-		aggregates.forEach((agg) => {
+		const nodeMap = new Map<string, WordNode>();
+		let matchedCount = 0;
+		let unmatchedCount = 0;
+
+		aggregates.forEach((agg, index) => {
 			const vector = vectors.find((v) => v.word === agg.word);
 			const scale = Math.sqrt(agg.count || 1);
+
+			if (index < 3) {
+				console.log(`[Force3DWordGraph] convertToNodes: Processing aggregate ${index}:`, {
+					word: agg.word,
+					count: agg.count,
+					hasVector: !!vector,
+					vectorWord: vector?.word,
+					emotionEntryCount: vector?.emotionEntryCount
+				});
+			}
 
 			const emotion: WordNode['emotion'] = vector
 				? {
@@ -41,6 +98,9 @@
 				  }
 				: undefined;
 
+			if (vector) matchedCount++;
+			else unmatchedCount++;
+
 			nodeMap.set(agg.word, {
 				id: agg.word,
 				label: agg.word,
@@ -48,6 +108,12 @@
 				color: getColorFromEmotion(emotion),
 				emotion
 			});
+		});
+
+		console.log('[Force3DWordGraph] convertToNodes: Conversion complete', {
+			totalNodes: nodeMap.size,
+			matchedVectors: matchedCount,
+			unmatchedVectors: unmatchedCount
 		});
 
 		return Array.from(nodeMap.values());
@@ -114,6 +180,24 @@
 	{:else}
 		<div class="flex items-center justify-center p-8 text-gray-500">
 			<p>データがありません。単語集計データを読み込んでください。</p>
+			{#if debugInfo.errors.length > 0}
+				<div class="mt-2 text-xs text-red-600">
+					<p>エラー:</p>
+					<ul class="list-disc list-inside">
+						{#each debugInfo.errors as error}
+							<li>{error}</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
 		</div>
 	{/if}
+	<!-- デバッグ情報表示 -->
+	<div class="mt-2 text-xs text-gray-500 space-y-1">
+		<div>受信単語集計: {debugInfo.receivedAggregates}</div>
+		<div>受信感情ベクトル: {debugInfo.receivedVectors}</div>
+		<div>マッチしたベクトル: {debugInfo.matchedVectors}</div>
+		<div>作成されたノード: {debugInfo.nodesCreated}</div>
+		<div>作成されたリンク: {debugInfo.linksCreated}</div>
+	</div>
 </div>
