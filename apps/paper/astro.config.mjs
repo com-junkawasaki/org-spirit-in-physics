@@ -3,7 +3,8 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
-import vercel from '@astrojs/vercel/static';
+// Vercel adapter - commented out for local development
+// Uncomment for deployment: import vercel from '@astrojs/vercel/static';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -32,7 +33,7 @@ export default defineConfig({
     react(),
   ],
   output: 'static', // Static site generation for research paper pages
-  adapter: vercel(), // Vercel adapter for deployment
+  // adapter: vercel(), // Vercel adapter for deployment - uncomment when deploying
   server: {
     host: true,
     port: 4321,
