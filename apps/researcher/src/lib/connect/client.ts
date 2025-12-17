@@ -4,8 +4,10 @@
 
 import { createPromiseClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import type { ParticipantService } from '@spirit-in-physics/services/grpc/gen/proto/participant/v1/participant_connect';
-import type { SessionService } from '@spirit-in-physics/services/grpc/gen/proto/session/v1/session_connect';
+// Generated types from protobuf
+import { ParticipantService } from '@/generated/proto/participant/v1/participant_connect';
+import { SessionService } from '@/generated/proto/session/v1/session_connect';
+import { TimelineService } from '@/generated/proto/timeline/v1/timeline_connect';
 
 // Determine Connect API URL based on execution context
 // Server-side: Use GRPC_API_URL (for Docker internal communication)
@@ -53,13 +55,18 @@ export function createConnectTransportInstance() {
 // Create Connect clients
 const transport = createConnectTransportInstance();
 
-export const participantClient = createPromiseClient<ParticipantService>(
+export const participantClient = createPromiseClient(
   ParticipantService,
   transport
 );
 
-export const sessionClient = createPromiseClient<SessionService>(
+export const sessionClient = createPromiseClient(
   SessionService,
+  transport
+);
+
+export const timelineClient = createPromiseClient(
+  TimelineService,
   transport
 );
 

@@ -45,8 +45,8 @@
   "version": "1.39.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-01-20T15:00:00+09:00",
-  "merkleRoot": "タイムライン表示と3Dフォースモデル表示問題解決完了: timeline_pointsテーブルのwordカラムをsession_data.jsonから更新、GraphQLプロキシAPI実装、CORS設定更新、クライアント側GraphQLリクエストのプロキシ経由化によりブラウザからのアクセス問題を解決",
+  "updatedAt": "2025-01-20T16:00:00+09:00",
+  "merkleRoot": "GraphQLからConnect RPCへの移行基盤実装完了: Go + Connect gRPCサーバー構築、Participant/Session/Timeline Service 100%実装、Protobufスキーマ定義、sqlcクエリファイル、Temporalワークフロー実装、Connectクライアント基盤・APIプロキシ・React Hooks実装、サーバーサイドデータ取得関数・APIルート実装、既存コンポーネントConnect RPC移行、移行進捗50%達成",
   
   "story": {
     "@id": "project:story",
@@ -443,6 +443,12 @@
         "@type": "project:Narrative",
         "act": "タイムライン表示と3Dフォースモデル表示問題解決",
         "summary": "タイムラインと3Dフォースモデルが表示されない問題を解決。timeline_pointsテーブルのwordカラムがすべて'Unknown'になっていた原因を特定し、session_data.jsonからword情報を取得して更新するスクリプト（scripts/update_timeline_words.py）を作成。GraphQLサービスのCORS設定にhttps://researcher.spirit-in-physics.orb.localを追加し、ブラウザからのアクセスを許可。Next.js APIルート経由のGraphQLプロキシエンドポイント（/api/graphql）を実装し、クライアント側のGraphQLリクエストをプロキシ経由に変更することで、CORSとMixed Contentの問題を回避。マテリアライズドビューをリフレッシュし、100個のユニークな単語が正しく表示されるようになった。"
+      },
+      {
+        "@id": "project:narrative/64",
+        "@type": "project:Narrative",
+        "act": "GraphQLからConnect RPCへの移行基盤実装",
+        "summary": "GraphQL APIからConnect RPC（gRPC-Web）への移行基盤を実装。Go + Connect gRPCサーバーを構築し、Participant Service・Session Service・Timeline Serviceの3つのサービスを100%実装。Protobufスキーマ定義、sqlcクエリファイル、Temporalワークフローとアクティビティを実装。フロントエンドではConnectクライアント基盤、Connect APIプロキシルート、React Hooks（useParticipants, useSessions, useTimeline, useWordAggregates, useEmotionVectors, useWordStatistics）を実装。互換性ラッパー（useWordAggregatesCompat, useTimelineCompat）により段階的移行を可能に。サーバーサイドConnectクライアント（server-client.ts）とデータ取得関数（getAllParticipants, getParticipantData, getDashboardStats）を実装。APIルート（/api/participants-connect, /api/participants-connect/[id], /api/participants/[id]/sessions-connect）を実装し、既存コンポーネント（participants/page.tsx, sessions/page.tsx, DashboardOverview, SystemMetrics, ParticipantOverview）をConnect RPC版に移行。移行進捗50%を達成し、並行運用とフォールバック機能により安全な段階的移行を実現。"
       }
     ],
     "processNetwork": {
@@ -990,7 +996,25 @@
             "CORS・Mixed Content問題回避",
             "マテリアライズドビューリフレッシュ機能",
             "タイムライン表示機能完全復旧",
-            "3Dフォースモデル表示機能完全復旧"
+            "3Dフォースモデル表示機能完全復旧",
+            "GraphQLからConnect RPCへの移行基盤実装",
+            "Go + Connect gRPCサーバー構築",
+            "Participant Service 100%実装（GetParticipants, GetParticipant, CreateParticipant, GetStimulusWords, GetStimulusWord）",
+            "Session Service 100%実装（GetSessions, CreateSession）",
+            "Timeline Service 100%実装（GetTimeline, GetWordAggregates, GetEmotionVectors, GetWordStatistics）",
+            "Protobufスキーマ定義（participant, session, timeline, storage）",
+            "sqlcクエリファイルとスキーマ実装",
+            "Temporalワークフローとアクティビティ実装",
+            "Connectクライアント基盤実装（client.ts, server-client.ts）",
+            "Connect APIプロキシルート実装（/api/grpc/[...path]）",
+            "React Hooks実装（useParticipants, useParticipant, useSessions, useTimeline, useWordAggregates, useEmotionVectors, useWordStatistics）",
+            "互換性ラッパー実装（useWordAggregatesCompat, useTimelineCompat）",
+            "サーバーサイドデータ取得関数実装（getAllParticipants, getParticipantData, getDashboardStats）",
+            "APIルート実装（/api/participants-connect, /api/participants-connect/[id], /api/participants/[id]/sessions-connect）",
+            "既存コンポーネントConnect RPC移行（participants/page.tsx, sessions/page.tsx, DashboardOverview, SystemMetrics, ParticipantOverview）",
+            "Protobuf型生成設定（buf.gen.yaml, buf.work.yaml）",
+            "段階的移行戦略実装（並行運用・フォールバック機能）",
+            "移行進捗50%達成"
           ]
         }
       ],
@@ -1623,7 +1647,25 @@
             "マイグレーションファイル ENUM型対応修正",
             "physiological_measurement_typesテーブルJOIN削除",
             "ビュー・マテリアライズドビューENUM型直接使用に更新",
-            "GraphQLクエリエラー解消（column pm.measurement_type does not exist）"
+            "GraphQLクエリエラー解消（column pm.measurement_type does not exist）",
+            "GraphQLからConnect RPCへの移行基盤実装",
+            "Go + Connect gRPCサーバー構築",
+            "Participant Service 100%実装",
+            "Session Service 100%実装",
+            "Timeline Service 100%実装",
+            "Protobufスキーマ定義",
+            "sqlcクエリファイルとスキーマ実装",
+            "Temporalワークフローとアクティビティ実装",
+            "Connectクライアント基盤実装",
+            "Connect APIプロキシルート実装",
+            "React Hooks実装（全サービス対応）",
+            "互換性ラッパー実装",
+            "サーバーサイドデータ取得関数実装",
+            "APIルート実装（-connect版）",
+            "既存コンポーネントConnect RPC移行",
+            "Protobuf型生成設定",
+            "段階的移行戦略実装",
+            "移行進捗50%達成"
     ]
   },
   

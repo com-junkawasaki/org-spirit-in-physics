@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1/participantv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1/sessionv1connect"
+	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1/timelinev1connect"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"github.com/spirit-in-physics/services/grpc/internal/handlers"
 )
@@ -39,6 +40,7 @@ func main() {
 	// Create handlers
 	participantHandler := handlers.NewParticipantHandler(queries)
 	sessionHandler := handlers.NewSessionHandler(queries)
+	timelineHandler := handlers.NewTimelineHandler(queries)
 
 	// Create HTTP mux
 	mux := http.NewServeMux()
@@ -49,6 +51,9 @@ func main() {
 
 	sessionPath, sessionHandler := sessionv1connect.NewSessionServiceHandler(sessionHandler)
 	mux.Handle(sessionPath, sessionHandler)
+
+	timelinePath, timelineHandler := timelinev1connect.NewTimelineServiceHandler(timelineHandler)
+	mux.Handle(timelinePath, timelineHandler)
 
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

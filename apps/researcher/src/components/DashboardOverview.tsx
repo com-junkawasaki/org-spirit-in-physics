@@ -24,7 +24,10 @@ export function DashboardOverview({ className = '' }: DashboardOverviewProps) {
       try {
         // Fetch real data from Neo4j
         const [participantsData, analysisResults, dashboardStats] = await Promise.all([
-          fetch('/api/participants').then(res => res.json()),
+          // Use Connect RPC endpoint (fallback to GraphQL if needed)
+          fetch('/api/participants-connect').then(res => res.json()).catch(() => 
+            fetch('/api/participants').then(res => res.json())
+          ),
           fetch('/api/analysis-results').then(res => res.json()),
           fetch('/api/dashboard-stats').then(res => res.json())
         ])

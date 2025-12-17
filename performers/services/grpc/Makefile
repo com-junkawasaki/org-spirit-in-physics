@@ -4,6 +4,11 @@
 generate:
 	buf generate
 	sqlc generate
+	@echo "Generated code from protobuf and sqlc"
+
+# Copy TypeScript types to frontend apps
+copy-types: generate
+	@./scripts/copy-proto-types.sh
 
 # Build the application
 build: generate

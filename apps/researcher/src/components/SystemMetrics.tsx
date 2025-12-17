@@ -33,7 +33,8 @@ export function SystemMetrics() {
     setIsLoading(true)
     try {
       const [participantsResponse, dashboardStatsResponse, importStatusResponse] = await Promise.all([
-        fetch('/api/participants'),
+        // Use Connect RPC endpoint (fallback to GraphQL if needed)
+        fetch('/api/participants-connect').catch(() => fetch('/api/participants')),
         fetch('/api/dashboard-stats'),
         fetch('/api/imports/status')
       ])

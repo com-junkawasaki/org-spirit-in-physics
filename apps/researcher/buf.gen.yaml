@@ -1,20 +1,14 @@
 version: v2
 plugins:
-  # Go code generation
-  - remote: buf.build/connectrpc/go
-    out: gen/proto
-    opt:
-      - module=github.com/spirit-in-physics/services/grpc
-  
   # TypeScript code generation (Protobuf-ES)
   - remote: buf.build/bufbuild/es
-    out: gen/proto-ts
+    out: src/generated/proto
     opt:
       - import_extension=none
       - target=ts
   
   # Connect-ES code generation (for Connect RPC clients)
   - remote: buf.build/connectrpc/es
-    out: gen/proto-ts
+    out: src/generated/proto
     opt:
       - target=ts

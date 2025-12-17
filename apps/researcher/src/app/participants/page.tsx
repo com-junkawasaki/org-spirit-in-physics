@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Users, Activity, Brain, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getAllParticipants } from '@/lib/data'
+// Use Connect RPC version (can fallback to GraphQL if needed)
+import { getAllParticipants } from '@/lib/connect/data'
 import { getSpiritProbabilityColor } from '@/components/SpiritProbabilityBadge'
 
 interface Participant {
