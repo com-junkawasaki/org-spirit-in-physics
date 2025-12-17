@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate participant exists via GraphQL
+    // Validate participant exists via Connect RPC
     if (participantId) {
       const participants = await getAllParticipants()
       const participant = participants.find(p => p.id === participantId)
@@ -72,15 +72,15 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Note: GraphQL service doesn't have analysis results storage yet
+    // Note: Connect RPC service doesn't have analysis results storage yet
     // This is a placeholder for future implementation
-    console.log(`Would import ${validatedResults.length} analysis results via GraphQL`)
+    console.log(`Would import ${validatedResults.length} analysis results via Connect RPC`)
 
     return NextResponse.json({
-      message: `Analysis results import prepared for ${validatedResults.length} results (GraphQL storage not yet implemented)`,
+      message: `Analysis results import prepared for ${validatedResults.length} results (Connect RPC storage not yet implemented)`,
       count: validatedResults.length,
       results: validatedResults.map(r => ({ ...r, id: `mock-${Date.now()}` })),
-      note: 'GraphQL analysis results storage will be implemented in future updates'
+      note: 'Connect RPC analysis results storage will be implemented in future updates'
     })
 
   } catch (error) {

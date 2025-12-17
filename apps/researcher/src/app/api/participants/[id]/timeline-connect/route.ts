@@ -1,6 +1,6 @@
 // Merkle DAG: participants.timeline.connect.endpoint
 // Timeline data API endpoint using Connect RPC
-// This is a new endpoint that uses Connect RPC instead of GraphQL
+// Connect RPC経由でタイムラインデータを取得
 
 import { NextRequest, NextResponse } from 'next/server';
 import { timelineClient } from '@/lib/connect/client';

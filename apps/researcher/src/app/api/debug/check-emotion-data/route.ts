@@ -1,9 +1,10 @@
 // Merkle DAG: debug.check_emotion_data
-// GraphQLデータ確認用のデバッグAPIエンドポイント
+// Connect RPCデータ確認用のデバッグAPIエンドポイント
 
 import { NextRequest, NextResponse } from "next/server";
-import { graphqlClient, GetParticipantsDocument, GetSessionsDocument, GetTimelineDocument } from '@/lib/graphql/client';
-import type { GetParticipantsQueryResult, GetSessionsQueryResult, GetTimelineQueryResult } from '@/generated/graphql';
+import { serverParticipantClient, serverSessionClient, serverTimelineClient } from '@/lib/connect/server-client';
+import type { GetTimelineRequest } from '@/generated/proto/timeline/v1/timeline';
+import type { GetSessionsRequest } from '@/generated/proto/session/v1/session';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,17 +16,17 @@ export async function GET(request: NextRequest) {
       participantId,
       sessionId,
       checks: {},
-      dataSource: 'graphql'
+      dataSource: 'connect-rpc'
     };
 
     // 1. 参加者の存在確認
     try {
-      const participantsData = await graphqlClient.request<GetParticipantsQueryResult>(GetParticipantsDocument);
-      const participant = participantsData.participants?.find(p => p.id === participantId);
+      const participantsResponse = await serverParticipantClient.getParticipants({});
+      const participant = participantsResponse.participants?.find(p => p.id === participantId);
       results.checks.participantExists = !!participant;
       results.checks.participantData = participant ? {
         id: participant.id,
-        createdAt: participant.createdAt
+        createdAt: participant.createdAt?.seconds ? new Date(participant.createdAt.seconds * 1000).toISOString() : null
       } : null;
     } catch (error) {
       results.checks.participantExists = false;
@@ -34,12 +35,13 @@ export async function GET(request: NextRequest) {
 
     // 2. セッションの存在確認
     try {
-      const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId });
-      const session = sessionsData.sessions?.find(s => s.id === sessionId);
+      const sessionsRequest: GetSessionsRequest = { participantId };
+      const sessionsResponse = await serverSessionClient.getSessions(sessionsRequest);
+      const session = sessionsResponse.sessions?.find(s => s.id === sessionId);
       results.checks.sessionExists = !!session;
       results.checks.sessionData = session ? {
         id: session.id,
-        createdAt: session.createdAt,
+        createdAt: session.createdAt?.seconds ? new Date(session.createdAt.seconds * 1000).toISOString() : null,
         sessionIndex: session.sessionIndex
       } : null;
     } catch (error) {
@@ -49,19 +51,20 @@ export async function GET(request: NextRequest) {
 
     // 3-6. 感情データの確認（タイムラインデータから）
     try {
-      const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, {
+      const timelineRequest: GetTimelineRequest = {
         participantId,
         sessionId: sessionId || undefined
-      });
-      const timeline = timelineData.timeline || [];
+      };
+      const timelineResponse = await serverTimelineClient.getTimeline(timelineRequest);
+      const timelinePoints = timelineResponse.points || [];
       
       const emotionTypeCounts: Record<string, number> = { burst: 0, face: 0, language: 0, prosody: 0 };
       const sampleIds: Record<string, string[]> = { burst: [], face: [], language: [], prosody: [] };
       
-      timeline.forEach((point: any) => {
-        if (Array.isArray(point.emotions)) {
-          point.emotions.forEach((emotion: any) => {
-            const fileType = (emotion.fileType || emotion.file_type || '').toLowerCase();
+      timelinePoints.forEach((point) => {
+        if (point.emotions && point.emotions.length > 0) {
+          point.emotions.forEach((emotion) => {
+            const fileType = (emotion.fileType || '').toLowerCase();
             if (fileType.includes('burst')) {
               emotionTypeCounts.burst++;
               if (sampleIds.burst.length < 5) sampleIds.burst.push(emotion.name || 'unknown');
@@ -104,33 +107,38 @@ export async function GET(request: NextRequest) {
     };
 
       // 7. サンプルデータの詳細確認
-      if (timeline.length > 0 && Array.isArray(timeline[0].emotions) && timeline[0].emotions.length > 0) {
-        const firstEmotion = timeline[0].emotions[0];
+      if (timelinePoints.length > 0 && timelinePoints[0].emotions && timelinePoints[0].emotions.length > 0) {
+        const firstEmotion = timelinePoints[0].emotions[0];
+        const firstPointTime = timelinePoints[0].time?.seconds 
+          ? new Date(timelinePoints[0].time.seconds * 1000).toISOString() 
+          : null;
         results.checks.sampleBurstData = {
           id: firstEmotion.name || 'unknown',
-          recordId: timeline[0].time || null,
-          beginTime: timeline[0].time || null,
-          endTime: timeline[0].time || null,
+          recordId: firstPointTime,
+          beginTime: firstPointTime,
+          endTime: firstPointTime,
           emotionScores: { [firstEmotion.name || 'unknown']: firstEmotion.score || 0 },
           vocalTypes: []
         };
     }
 
     // 8. 全セッションの感情データ数確認
-      const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId });
-      const sessions = sessionsData.sessions || [];
+      const sessionsRequest: GetSessionsRequest = { participantId };
+      const sessionsResponse = await serverSessionClient.getSessions(sessionsRequest);
+      const sessions = sessionsResponse.sessions || [];
       results.checks.allSessionsEmotionData = await Promise.all(
-        sessions.map(async (s: any) => {
-          const sessionTimelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, {
+        sessions.map(async (s) => {
+          const sessionTimelineRequest: GetTimelineRequest = {
             participantId,
             sessionId: s.id
-          });
-          const sessionTimeline = sessionTimelineData.timeline || [];
+          };
+          const sessionTimelineResponse = await serverTimelineClient.getTimeline(sessionTimelineRequest);
+          const sessionTimelinePoints = sessionTimelineResponse.points || [];
           const counts = { burst: 0, face: 0, language: 0, prosody: 0 };
-          sessionTimeline.forEach((point: any) => {
-            if (Array.isArray(point.emotions)) {
-              point.emotions.forEach((emotion: any) => {
-                const fileType = (emotion.fileType || emotion.file_type || '').toLowerCase();
+          sessionTimelinePoints.forEach((point) => {
+            if (point.emotions && point.emotions.length > 0) {
+              point.emotions.forEach((emotion) => {
+                const fileType = (emotion.fileType || '').toLowerCase();
                 if (fileType.includes('burst')) counts.burst++;
                 if (fileType.includes('face')) counts.face++;
                 if (fileType.includes('language')) counts.language++;

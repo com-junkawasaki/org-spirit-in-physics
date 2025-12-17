@@ -1,13 +1,17 @@
+// Merkle DAG: api.analysis-report.endpoint
+// 分析レポート生成APIエンドポイント（Connect RPC版）
+// Connect RPC経由でデータを取得
+
 import { NextResponse } from 'next/server'
 import { getAllParticipants, getAnalysisResults } from '@/lib/data'
-import type { GetTimelineQueryResult } from '@/generated/graphql'
-import { graphqlClient, GetTimelineDocument } from '@/lib/graphql/client'
+import { serverTimelineClient } from '@/lib/connect/server-client'
+import type { GetTimelineRequest } from '@/generated/proto/timeline/v1/timeline'
 
 export async function GET() {
   try {
-    console.log('API: Generating analysis report from GraphQL...')
+    console.log('API: Generating analysis report from Connect RPC...')
 
-    // GraphQL経由で参加者データを取得
+    // Connect RPC経由で参加者データを取得
     const participants = await getAllParticipants()
     console.log('API: Raw participants data:', participants?.length || 0, 'participants')
 
@@ -46,19 +50,20 @@ export async function GET() {
 
       const stats = participantStats.get(participantId)
 
-      // タイムラインデータから感情データを集計
+      // タイムラインデータから感情データを集計（Connect RPC経由）
       try {
-        const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, { participantId })
-        const timeline = timelineData.timeline || []
+        const timelineRequest: GetTimelineRequest = { participantId }
+        const timelineResponse = await serverTimelineClient.getTimeline(timelineRequest)
+        const timelinePoints = timelineResponse.points || []
         
-        timeline.forEach((point: any) => {
-          if (Array.isArray(point.emotions)) {
-            point.emotions.forEach((emotion: any) => {
-              const fileType = emotion.fileType || emotion.file_type || ''
+        timelinePoints.forEach((point) => {
+          if (point.emotions && point.emotions.length > 0) {
+            point.emotions.forEach((emotion) => {
+              const fileType = emotion.fileType || ''
               if (fileType.includes('face')) emotionStats.totalFaceDataPoints++
               if (fileType.includes('prosody')) emotionStats.totalProsodyDataPoints++
               if (fileType.includes('language')) emotionStats.totalLanguageDataPoints++
-              emotionStats.emotionSources.add('graphql')
+              emotionStats.emotionSources.add('connect-rpc')
             })
           }
         })

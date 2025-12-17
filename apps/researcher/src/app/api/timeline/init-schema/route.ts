@@ -1,21 +1,21 @@
 // Merkle DAG: api.timeline.init_schema -> schema_initialization_endpoint
 // TimelineIntegrationPointスキーマ初期化APIエンドポイント
-// GraphQL経由でスキーマ初期化（GraphQLサービス側で実装が必要）
+// Connect RPC経由でスキーマ初期化（Connect RPCサービス側で実装が必要）
 
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[SCHEMA INIT] Schema initialization via GraphQL (not yet implemented)');
+    console.log('[SCHEMA INIT] Schema initialization via Connect RPC (not yet implemented)');
 
-    // GraphQLサービス側でスキーマ初期化を実装する必要があります
-    // 現時点では、GraphQLサービス側でスキーマが自動的に管理されていると仮定します
+    // Connect RPCサービス側でスキーマ初期化を実装する必要があります
+    // 現時点では、Connect RPCサービス側でスキーマが自動的に管理されていると仮定します
 
     return NextResponse.json({
       success: true,
-      message: 'Schema initialization is handled by GraphQL service',
+      message: 'Schema initialization is handled by Connect RPC service',
       results: [],
-      note: 'GraphQL service manages schema automatically. No manual initialization needed.'
+      note: 'Connect RPC service manages schema automatically. No manual initialization needed.'
     });
   } catch (error) {
     console.error('[SCHEMA INIT] ✗ Schema initialization failed:', error);

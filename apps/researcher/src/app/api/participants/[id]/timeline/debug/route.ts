@@ -1,17 +1,19 @@
 // Merkle DAG: participants.timeline.debug.endpoint
-// タイムラインデータのデバッグ情報取得APIエンドポイント
-// GraphQL経由でデータを取得
+// タイムラインデータのデバッグ情報取得APIエンドポイント（Connect RPC版）
+// Connect RPC経由でデータを取得
 
 import { NextRequest, NextResponse } from "next/server";
-import { graphqlClient, GetTimelineDocument, GetSessionsDocument } from '@/lib/graphql/client';
-import type { GetTimelineQueryResult, GetSessionsQueryResult } from '@/generated/graphql';
+import { serverSessionClient, serverTimelineClient } from '@/lib/connect/server-client';
+import type { GetTimelineRequest } from '@/generated/proto/timeline/v1/timeline';
+import type { GetSessionsRequest } from '@/generated/proto/session/v1/session';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const { id: participantId } = params;
+    const resolvedParams = await Promise.resolve(params);
+    const { id: participantId } = resolvedParams;
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
     
@@ -20,15 +22,16 @@ export async function GET(
       sessionId: sessionId || null,
       timestamp: new Date().toISOString(),
       checks: {},
-      dataSource: 'graphql'
+      dataSource: 'connect-rpc'
     };
     
     // 1. Sessionデータの存在確認
     try {
-            const sessionsData = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId });
-      const sessions = sessionsData.sessions || [];
+      const sessionsRequest: GetSessionsRequest = { participantId };
+      const sessionsResponse = await serverSessionClient.getSessions(sessionsRequest);
+      const sessions = sessionsResponse.sessions || [];
       const targetSession = sessionId 
-        ? sessions.find((s: any) => s.id === sessionId)
+        ? sessions.find((s) => s.id === sessionId)
         : sessions[0] || null;
       
       debugInfo.checks.session = {
@@ -39,78 +42,86 @@ export async function GET(
           sessionIndex: targetSession.sessionIndex,
           startTs: targetSession.startTs,
           endTs: targetSession.endTs,
-          hasEvents: !!targetSession.events && Array.isArray(targetSession.events) && targetSession.events.length > 0,
-          eventsCount: Array.isArray(targetSession.events) ? targetSession.events.length : 0
+          hasEvents: false, // Connect RPCではeventsは別途取得
+          eventsCount: 0
         } : null
       };
-    } catch (error: any) {
-      debugInfo.checks.session = { error: error.message };
+    } catch (error: unknown) {
+      debugInfo.checks.session = { error: error instanceof Error ? error.message : 'Unknown error' };
     }
     
     // 2. Timelineデータの存在確認
     try {
-            const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, {
+      const timelineRequest: GetTimelineRequest = {
         participantId,
         sessionId: sessionId || undefined
-      });
+      };
+      const timelineResponse = await serverTimelineClient.getTimeline(timelineRequest);
       
-      const timeline = timelineData.timeline || [];
-      const emotionsCount = timeline.reduce((acc: number, point: any) => {
-        return acc + (Array.isArray(point.emotions) ? point.emotions.length : 0);
+      const timelinePoints = timelineResponse.points || [];
+      const emotionsCount = timelinePoints.reduce((acc: number, point) => {
+        return acc + (point.emotions ? point.emotions.length : 0);
       }, 0);
       
       const emotionTypes = new Set<string>();
-      timeline.forEach((point: any) => {
-        if (Array.isArray(point.emotions)) {
-          point.emotions.forEach((e: any) => {
-            if (e.file_type) emotionTypes.add(e.file_type);
+      timelinePoints.forEach((point) => {
+        if (point.emotions) {
+          point.emotions.forEach((e) => {
+            if (e.fileType) emotionTypes.add(e.fileType);
           });
         }
       });
       
+      const firstPointTime = timelinePoints[0]?.time?.seconds 
+        ? new Date(timelinePoints[0].time.seconds * 1000).toISOString() 
+        : null;
+      const lastPointTime = timelinePoints.length > 1 && timelinePoints[timelinePoints.length - 1]?.time?.seconds
+        ? new Date(timelinePoints[timelinePoints.length - 1].time.seconds * 1000).toISOString()
+        : null;
+      
       debugInfo.checks.timeline = {
-        exists: timeline.length > 0,
-        count: timeline.length,
+        exists: timelinePoints.length > 0,
+        count: timelinePoints.length,
         emotionsCount,
         emotionTypes: Array.from(emotionTypes),
-        hasPhysiological: timeline.some((p: any) => p.physiological && typeof p.physiological === 'object'),
-        sample: timeline.length > 0 ? {
+        hasPhysiological: timelinePoints.some((p) => p.physiological && p.physiological.length > 0),
+        sample: timelinePoints.length > 0 ? {
           firstPoint: {
-            time: timeline[0].time,
-            hasWord: !!timeline[0].word,
-                  hasReaction: timeline[0].hasResponse || false,
-            emotionsCount: Array.isArray(timeline[0].emotions) ? timeline[0].emotions.length : 0
+            time: firstPointTime,
+            hasWord: !!timelinePoints[0].word,
+            hasReaction: timelinePoints[0].hasResponse || false,
+            emotionsCount: timelinePoints[0].emotions ? timelinePoints[0].emotions.length : 0
           },
-          lastPoint: timeline.length > 1 ? {
-            time: timeline[timeline.length - 1].time,
-            hasWord: !!timeline[timeline.length - 1].word,
-                  hasReaction: timeline[timeline.length - 1].hasResponse || false,
-            emotionsCount: Array.isArray(timeline[timeline.length - 1].emotions) ? timeline[timeline.length - 1].emotions.length : 0
+          lastPoint: timelinePoints.length > 1 ? {
+            time: lastPointTime,
+            hasWord: !!timelinePoints[timelinePoints.length - 1].word,
+            hasReaction: timelinePoints[timelinePoints.length - 1].hasResponse || false,
+            emotionsCount: timelinePoints[timelinePoints.length - 1].emotions ? timelinePoints[timelinePoints.length - 1].emotions.length : 0
           } : null
-          } : null
-        };
+        } : null
+      };
         
       // 感情データの種類別カウント
       const emotionTypeCounts: Record<string, number> = {};
-      timeline.forEach((point: any) => {
-        if (Array.isArray(point.emotions)) {
-          point.emotions.forEach((e: any) => {
-            const type = e.file_type || 'unknown';
+      timelinePoints.forEach((point) => {
+        if (point.emotions) {
+          point.emotions.forEach((e) => {
+            const type = e.fileType || 'unknown';
             emotionTypeCounts[type] = (emotionTypeCounts[type] || 0) + 1;
           });
         }
       });
       
       debugInfo.checks.emotions = {
-        burst: { exists: emotionTypeCounts.burst > 0, count: emotionTypeCounts.burst || 0 },
-        face: { exists: emotionTypeCounts.face > 0, count: emotionTypeCounts.face || 0 },
-        language: { exists: emotionTypeCounts.language > 0, count: emotionTypeCounts.language || 0 },
-        prosody: { exists: emotionTypeCounts.prosody > 0, count: emotionTypeCounts.prosody || 0 }
+        burst: { exists: (emotionTypeCounts.burst || 0) > 0, count: emotionTypeCounts.burst || 0 },
+        face: { exists: (emotionTypeCounts.face || 0) > 0, count: emotionTypeCounts.face || 0 },
+        language: { exists: (emotionTypeCounts.language || 0) > 0, count: emotionTypeCounts.language || 0 },
+        prosody: { exists: (emotionTypeCounts.prosody || 0) > 0, count: emotionTypeCounts.prosody || 0 }
       };
       
       debugInfo.checks.physiological = {
-        exists: timeline.some((p: any) => p.physiological && typeof p.physiological === 'object'),
-        count: timeline.filter((p: any) => p.physiological && typeof p.physiological === 'object').length
+        exists: timelinePoints.some((p) => p.physiological && p.physiological.length > 0),
+        count: timelinePoints.filter((p) => p.physiological && p.physiological.length > 0).length
       };
     } catch (error: any) {
       debugInfo.checks.timeline = { error: error.message };
