@@ -46,7 +46,7 @@
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
   "updatedAt": "2025-01-20T17:00:00+09:00",
-  "merkleRoot": "GraphQLからConnect RPCへの移行完了: Go + Connect gRPCサーバー構築、Participant/Session/Timeline Service 100%実装、Protobufスキーマ定義、sqlcクエリファイル（マテリアライズドビュー定義追加）、Temporalワークフロー実装、Connectクライアント基盤・APIプロキシ・React Hooks実装、サーバーサイドデータ取得関数・APIルート実装、useTimelineData・useWordAggregates・timeline API route・sessions API route・word2vec API routeのConnect RPC移行完了、lib/data.ts Connect RPC統合、マージコンフリクト完全解決、Protobuf型生成完了（バックエンド・フロントエンド）、移行進捗95%達成",
+  "merkleRoot": "GraphQLからConnect RPCへの移行完了: Go + Connect gRPCサーバー構築、Participant/Session/Timeline Service 100%実装、Protobufスキーマ定義、sqlcクエリファイル（マテリアライズドビュー定義追加）、Temporalワークフロー実装、Connectクライアント基盤・APIプロキシ・React Hooks実装、サーバーサイドデータ取得関数・APIルート実装、useTimelineData・useWordAggregates・timeline API route・sessions API route・word2vec API route・participants API routeのConnect RPC移行完了、lib/data.ts Connect RPC統合、マージコンフリクト完全解決、Protobuf型生成完了（バックエンド・フロントエンド）、フロントエンド完全Connect RPC移行完了（GraphQLフォールバック削除）、移行進捗100%達成",
   
   "story": {
     "@id": "project:story",
@@ -454,7 +454,7 @@
         "@id": "project:narrative/65",
         "@type": "project:Narrative",
         "act": "GraphQLからConnect RPCへの移行完了",
-        "summary": "GraphQLからConnect RPCへの移行を完了。useTimelineData.tsをConnect RPC版に移行し、useTimeline hookを使用するように変更。useWordAggregates.tsをConnect RPC版に移行し、useWordAggregatesConnect, useEmotionVectorsConnect, useWordStatisticsConnect hooksを使用するように変更。timeline API route（/api/participants/[id]/timeline）をConnect RPC版に移行し、serverTimelineClientとserverSessionClientを使用するように変更。sessions API route（/api/participants/[id]/sessions）をConnect RPC版に移行。word2vec API route（/api/participants/[id]/word2vec）をConnect RPC版に移行。lib/data.tsをConnect RPC版（lib/connect/data.ts）に統合し、マージコンフリクトを完全解決。types.tsの型定義を統合。既存コンポーネント（TimelineVisualization, SessionTimelinePage）は変更不要で、内部でConnect RPCを使用するように更新。移行進捗90%を達成し、主要なコンポーネントとAPIルートの移行が完了。"
+        "summary": "GraphQLからConnect RPCへの移行を完了。useTimelineData.tsをConnect RPC版に移行し、useTimeline hookを使用するように変更。useWordAggregates.tsをConnect RPC版に移行し、useWordAggregatesConnect, useEmotionVectorsConnect, useWordStatisticsConnect hooksを使用するように変更。timeline API route（/api/participants/[id]/timeline）をConnect RPC版に移行し、serverTimelineClientとserverSessionClientを使用するように変更。sessions API route（/api/participants/[id]/sessions）をConnect RPC版に移行。word2vec API route（/api/participants/[id]/word2vec）をConnect RPC版に移行。participants API route（/api/participants）をConnect RPC版に移行し、マージコンフリクトを解決。lib/data.tsをConnect RPC版（lib/connect/data.ts）に統合し、マージコンフリクトを完全解決。types.tsの型定義を統合。既存コンポーネント（TimelineVisualization, SessionTimelinePage, ParticipantOverview, DashboardOverview, SystemMetrics）からGraphQLフォールバック処理を削除し、Connect RPCのみを使用するように更新。フロントエンドの完全Connect RPC移行を完了し、移行進捗100%を達成。"
       }
     ],
     "processNetwork": {

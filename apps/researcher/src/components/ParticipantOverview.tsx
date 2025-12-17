@@ -54,10 +54,8 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
 
       if (participantId) {
         // For individual participant view - show only that participant's data
-        // Use Connect RPC endpoint (fallback to GraphQL if needed)
-        const response = await fetch(`/api/participants-connect/${participantId}`).catch(() => 
-          fetch(`/api/participants/${participantId}`)
-        )
+        // Use Connect RPC endpoint
+        const response = await fetch(`/api/participants-connect/${participantId}`)
         if (response.ok) {
           const data = await response.json()
           setParticipants([{
@@ -74,10 +72,8 @@ export function ParticipantOverview({ participantId }: ParticipantOverviewProps)
         }
       } else {
         // For overview/dashboard view - show all participants
-        // Use Connect RPC endpoint (fallback to GraphQL if needed)
-        const response = await fetch('/api/participants-connect').catch(() => 
-          fetch('/api/participants')
-        )
+        // Use Connect RPC endpoint
+        const response = await fetch('/api/participants-connect')
         if (response.ok) {
           const data = await response.json()
           setParticipants(data)

@@ -18,6 +18,10 @@ build: generate
 test:
 	go test ./...
 
+# Run integration tests (requires database)
+test-integration:
+	go test -tags=integration ./internal/handlers/...
+
 # Run the server
 run: generate
 	go run ./cmd/server

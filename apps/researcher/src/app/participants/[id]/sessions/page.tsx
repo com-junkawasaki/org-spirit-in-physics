@@ -28,8 +28,8 @@ export default function SessionsListPage() {
     async function fetchSessions() {
       try {
         setLoading(true)
-        // Use Connect RPC endpoint (fallback to GraphQL if needed)
-        const response = await fetch(`/api/participants/${participantId}/sessions-connect`)
+        // Use Connect RPC endpoint
+        const response = await fetch(`/api/participants/${participantId}/sessions`)
         if (!response.ok) {
           throw new Error('Failed to fetch sessions')
         }

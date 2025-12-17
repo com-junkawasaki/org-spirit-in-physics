@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	connectrpc.com/connect v1.16.2
-	github.com/clerkinc/clerk-sdk-go/clerk v2.0.0
+	github.com/clerkinc/clerk-sdk-go/clerk v1.48.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/joho/godotenv v1.5.1
