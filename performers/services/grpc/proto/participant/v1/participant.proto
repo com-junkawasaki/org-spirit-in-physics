@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package participant.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1;participantv1";
+
+// Participant service
+service ParticipantService {
+  // Get all participants
+  rpc GetParticipants(GetParticipantsRequest) returns (GetParticipantsResponse);
+  
+  // Get a participant by ID
+  rpc GetParticipant(GetParticipantRequest) returns (GetParticipantResponse);
+  
+  // Create a new participant
+  rpc CreateParticipant(CreateParticipantRequest) returns (CreateParticipantResponse);
+  
+  // Get all stimulus words
+  rpc GetStimulusWords(GetStimulusWordsRequest) returns (GetStimulusWordsResponse);
+  
+  // Get a stimulus word by ID
+  rpc GetStimulusWord(GetStimulusWordRequest) returns (GetStimulusWordResponse);
+}
+
+message GetParticipantsRequest {
+  // Optional: filter by is_public (for unauthenticated users)
+  optional bool is_public = 1;
+}
+
+message GetParticipantsResponse {
+  repeated Participant participants = 1;
+}
+
+message GetParticipantRequest {
+  string id = 1;
+}
+
+message GetParticipantResponse {
+  Participant participant = 1;
+}
+
+message CreateParticipantRequest {
+  optional string id = 1;
+  string signature = 2;
+  google.protobuf.Struct agreements = 3;
+  google.protobuf.Timestamp agreed_at = 4;
+  optional bool is_public = 5;
+}
+
+message CreateParticipantResponse {
+  Participant participant = 1;
+}
+
+message GetStimulusWordsRequest {}
+
+message GetStimulusWordsResponse {
+  repeated StimulusWord words = 1;
+}
+
+message GetStimulusWordRequest {
+  int32 id = 1;
+}
+
+message GetStimulusWordResponse {
+  StimulusWord word = 1;
+}
+
+message Participant {
+  string id = 1;
+  optional int32 age = 2;
+  optional string gender = 3;
+  optional string handedness = 4;
+  bool is_public = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message StimulusWord {
+  int32 id = 1;
+  string japanese = 2;
+  string english = 3;
+  string pronunciation = 4;
+}

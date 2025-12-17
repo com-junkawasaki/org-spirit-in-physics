@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package timeline.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1;timelinev1";
+
+// Timeline service
+service TimelineService {
+  // Get timeline data for a participant
+  rpc GetTimeline(GetTimelineRequest) returns (GetTimelineResponse);
+  
+  // Get word aggregates by session
+  rpc GetWordAggregates(GetWordAggregatesRequest) returns (GetWordAggregatesResponse);
+  
+  // Get emotion vectors by word
+  rpc GetEmotionVectors(GetEmotionVectorsRequest) returns (GetEmotionVectorsResponse);
+  
+  // Get word statistics by session
+  rpc GetWordStatistics(GetWordStatisticsRequest) returns (GetWordStatisticsResponse);
+}
+
+message GetTimelineRequest {
+  string participant_id = 1;
+  optional string session_id = 2;
+  optional google.protobuf.Timestamp start_time = 3;
+  optional google.protobuf.Timestamp end_time = 4;
+  optional string interval = 5; // e.g., "1 hour", "1 day"
+}
+
+message GetTimelineResponse {
+  repeated TimelinePoint points = 1;
+}
+
+message GetWordAggregatesRequest {
+  string participant_id = 1;
+  optional string session_id = 2;
+}
+
+message GetWordAggregatesResponse {
+  repeated WordAggregate aggregates = 1;
+}
+
+message GetEmotionVectorsRequest {
+  string participant_id = 1;
+  optional string session_id = 2;
+}
+
+message GetEmotionVectorsResponse {
+  repeated EmotionVector vectors = 1;
+}
+
+message GetWordStatisticsRequest {
+  string participant_id = 1;
+  optional string session_id = 2;
+}
+
+message GetWordStatisticsResponse {
+  repeated WordStatistics statistics = 1;
+}
+
+message TimelinePoint {
+  google.protobuf.Timestamp time = 1;
+  string participant_id = 2;
+  string session_id = 3;
+  optional string word = 4;
+  optional string event_type = 5;
+  optional double reaction_value = 6;
+  optional double reaction_time = 7;
+  bool has_response = 8;
+  repeated EmotionData emotions = 9;
+  repeated PhysiologicalData physiological = 10;
+  google.protobuf.Struct metadata = 11;
+}
+
+message EmotionData {
+  string name = 1;
+  double score = 2;
+  string file_type = 3;
+  optional string color = 4;
+}
+
+message PhysiologicalData {
+  optional google.protobuf.Timestamp timestamp = 1;
+  optional double value = 2;
+  optional google.protobuf.Struct metadata = 3;
+}
+
+message WordAggregate {
+  string participant_id = 1;
+  string session_id = 2;
+  string word = 3;
+  int64 count = 4;
+  optional double avg_reaction_value = 5;
+  optional double sum_reaction_value = 6;
+  optional double avg_reaction_time = 7;
+  optional double sum_reaction_time = 8;
+  optional double avg_physiological = 9;
+  optional double sum_phys_abs = 10;
+  repeated double phys_series = 11;
+  repeated double rt_series = 12;
+  repeated double rv_series = 13;
+  google.protobuf.Timestamp first_time = 14;
+  google.protobuf.Timestamp last_time = 15;
+}
+
+message EmotionVector {
+  string participant_id = 1;
+  string session_id = 2;
+  string word = 3;
+  optional double joy_sum = 4;
+  optional double sadness_sum = 5;
+  optional double anger_sum = 6;
+  optional double fear_sum = 7;
+  optional double surprise_sum = 8;
+  optional double disgust_sum = 9;
+  optional double calm_sum = 10;
+  optional double focus_sum = 11;
+  optional double excitement_sum = 12;
+  optional double confusion_sum = 13;
+  int64 emotion_entry_count = 14;
+  optional google.protobuf.Struct emotion_by_modality = 15;
+}
+
+message WordStatistics {
+  string participant_id = 1;
+  string session_id = 2;
+  string word = 3;
+  int64 count = 4;
+  optional double avg_reaction_time = 5;
+  optional double std_reaction_time = 6;
+  optional double var_reaction_time = 7;
+  optional double avg_reaction_value = 8;
+  optional double std_reaction_value = 9;
+  optional double var_reaction_value = 10;
+  optional double avg_physiological = 11;
+  optional double std_physiological = 12;
+  optional double var_physiological = 13;
+  optional double speed_index = 14;
+  repeated double phys_series = 15;
+  repeated double rt_series = 16;
+}

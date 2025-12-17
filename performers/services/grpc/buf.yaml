@@ -1,0 +1,14 @@
+version: v2
+modules:
+  - path: proto
+lint:
+  use:
+    - DEFAULT
+breaking:
+  use:
+    - FILE
+plugins:
+  - remote: buf.build/connectrpc/go
+    out: gen/proto
+    opt:
+      - module=github.com/spirit-in-physics/services/grpc
