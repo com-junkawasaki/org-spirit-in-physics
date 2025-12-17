@@ -1,25 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { graphqlClient, GetTimelineDocument } from '@/lib/graphql/client';
-import type { GetTimelineQueryResult } from '@/generated/graphql';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { serverTimelineClient } from '@/lib/connect/server-client';
+import type { GetTimelineRequest } from '@/generated/proto/timeline/v1/timeline';
 
 // Merkle DAG: api.participants.word2vec -> word2vec_data_fetch
-// 参加者のWord2Vecデータ取得API
-// GraphQL経由でデータを取得
+// 参加者のWord2Vecデータ取得API（Connect RPC版）
+// Connect RPC経由でデータを取得
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const { id: participantId } = params;
+    const resolvedParams = await Promise.resolve(params);
+    const { id: participantId } = resolvedParams;
     console.log(`API: Fetching Word2Vec data for participant ${participantId}`);
 
-          // GraphQL経由でタイムラインデータを取得
-          const timelineData = await graphqlClient.request<GetTimelineQueryResult>(GetTimelineDocument, {
-            participantId
-          });
-
-    const timeline = timelineData.timeline || [];
+    // Connect RPC経由でタイムラインデータを取得
+    const rpcRequest: GetTimelineRequest = { participantId };
+    const timelineResponse = await serverTimelineClient.getTimeline(rpcRequest);
+    const timelinePoints = timelineResponse.points || [];
+    
+    // Transform to timeline format
+    const timeline = timelinePoints.map((point) => ({
+      time: point.time?.seconds ? new Date(point.time.seconds * 1000).toISOString() : null,
+      word: point.word || null,
+      hasResponse: point.hasResponse,
+      reactionTime: point.reactionTime || null,
+      reactionValue: point.reactionValue || null,
+      sessionId: point.sessionId || null,
+    }));
     
     // タイムラインデータから単語データを抽出
     const responses = timeline
@@ -48,7 +58,7 @@ export async function GET(
 
     // Merkle DAG: api.participants.word2vec.generate_embeddings
     // 簡易Word2Vec埋め込み生成（実際の実装では事前学習済みモデルを使用）
-    const wordData = responses.map((response: any, index: number) => {
+    const wordData = responses.map((response: { stimulus_word: string; response_word: string; spirit_probability?: number; reaction_time_ms?: number | null; timestamp: string | null; response_id: string | null; experiment_id?: string | null; session_id?: string | null }, index: number) => {
       // 簡易埋め込み生成（実際の実装ではWord2Vecモデルを使用）
       const embedding = generateSimpleEmbedding(response.stimulus_word, response.response_word, index);
       

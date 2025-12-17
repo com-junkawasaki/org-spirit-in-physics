@@ -32,7 +32,7 @@ export interface EmotionVectorData {
   excitementSum: number;
   confusionSum: number;
   emotionEntryCount: number;
-  emotionByModality?: any;
+  emotionByModality?: Record<string, unknown>;
 }
 
 export interface WordStatisticsData {

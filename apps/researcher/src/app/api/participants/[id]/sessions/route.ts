@@ -1,13 +1,14 @@
 // Merkle DAG: participants.sessions.endpoint
-// 参加者のセッション一覧取得APIエンドポイント
-// GraphQL経由でデータを取得
+// 参加者のセッション一覧取得APIエンドポイント（Connect RPC版）
+// Connect RPC経由でデータを取得
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createGraphQLClient, GetSessionsDocument } from '@/lib/graphql/client'
-import type { GetSessionsQueryResult } from '@/generated/graphql'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { serverSessionClient } from '@/lib/connect/server-client'
+import type { GetSessionsRequest } from '@/generated/proto/session/v1/session'
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
@@ -24,38 +25,27 @@ export async function GET(
     }
 
     console.log(`[SESSIONS API] Fetching sessions for participant: ${participantId}`)
-    console.log(`[SESSIONS API] GraphQL API URL: ${process.env.GRAPHQL_API_URL || 'not set'}`)
 
-    // Create GraphQL client with server-side URL (graphql-service in Docker)
-    const graphqlClient = createGraphQLClient()
+    // Call Connect RPC service
+    const rpcRequest: GetSessionsRequest = { participantId }
+    const response = await serverSessionClient.getSessions(rpcRequest)
 
-    // Query GraphQL service for sessions
-    let data: GetSessionsQueryResult
-    try {
-      data = await graphqlClient.request<GetSessionsQueryResult>(GetSessionsDocument, { participantId })
-    } catch (graphqlError: any) {
-      console.error('[SESSIONS API] GraphQL request failed:', graphqlError)
-      // Re-throw to be caught by outer catch block
-      throw graphqlError
-    }
+    console.log(`[SESSIONS API] Connect RPC query completed, sessions count: ${response.sessions?.length || 0}`)
 
-    console.log(`[SESSIONS API] GraphQL query completed, sessions count: ${data.sessions?.length || 0}`)
-    console.log(`[SESSIONS API] Raw data:`, JSON.stringify(data, null, 2))
-
-    // Transform GraphQL response to API response format
-    const sessions = (data.sessions || []).map((session: any) => {
+    // Transform Connect RPC response to API response format
+    const sessions = (response.sessions || []).map((session) => {
       // Parse createdAt timestamp
-      const createdAt = session.createdAt || session.created_at
-        ? new Date(session.createdAt || session.created_at).toISOString()
+      const createdAt = session.createdAt?.seconds
+        ? new Date(session.createdAt.seconds * 1000).toISOString()
         : null
 
       // startTs and endTs are already in milliseconds (BIGINT)
-      const startTs = session.startTs ?? session.start_ts ?? null
-      const endTs = session.endTs ?? session.end_ts ?? null
+      const startTs = session.startTs ?? null
+      const endTs = session.endTs ?? null
 
       return {
         id: session.id || '',
-        sessionIndex: session.sessionIndex ?? session.session_index ?? null,
+        sessionIndex: session.sessionIndex ?? null,
         createdAt,
         startTs,
         endTs,
@@ -63,7 +53,7 @@ export async function GET(
     })
 
     // Sort by created_at DESC (most recent first)
-    sessions.sort((a: any, b: any) => {
+    sessions.sort((a, b) => {
       if (!a.createdAt && !b.createdAt) return 0
       if (!a.createdAt) return 1
       if (!b.createdAt) return -1
@@ -73,29 +63,12 @@ export async function GET(
     console.log(`[SESSIONS API] Returning ${sessions.length} sessions`)
 
     return NextResponse.json({ sessions })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SESSIONS API] Error fetching sessions:', error)
-    console.error('[SESSIONS API] Error stack:', error.stack)
-    console.error('[SESSIONS API] Error details:', {
-      message: error.message,
-      response: error.response,
-      request: error.request,
-    })
-    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     
-    // GraphQL error details
-    if (error.response?.errors) {
-      const graphqlErrors = error.response.errors.map((e: any) => e.message).join('; ')
-      console.error('[SESSIONS API] GraphQL errors:', graphqlErrors)
-      return NextResponse.json(
-        { error: `GraphQL query failed: ${graphqlErrors}`, details: errorMessage },
-        { status: 500 }
-      )
-    }
-
     return NextResponse.json(
-      { error: `Failed to fetch sessions: ${errorMessage}`, details: error.stack },
+      { error: `Failed to fetch sessions: ${errorMessage}`, details: error instanceof Error ? error.stack : undefined },
       { status: 500 }
     )
   }

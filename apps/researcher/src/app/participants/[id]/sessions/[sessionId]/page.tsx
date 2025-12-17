@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/PageLayout'
 import { TimelineVisualization } from '@spirit-in-physics/visualization-components'
-import { useWordAggregates } from '@/hooks/useWordAggregates'
+// Use Connect RPC version (fallback to GraphQL if needed)
+import { useWordAggregates } from '@/hooks/useWordAggregates' // Now uses Connect RPC internally
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, CheckCircle, XCircle } from 'lucide-react'
