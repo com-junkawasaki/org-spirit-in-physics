@@ -63,21 +63,42 @@
   async function startRecording(session: 1 | 2) {
     if (!kawasakiStore.stream) return;
 
+    // Take a snapshot at the start of recording
+    captureSnapshot(session);
+
     videoChunks = [];
     try {
       mediaRecorder = new MediaRecorder(kawasakiStore.stream, { mimeType: 'video/webm; codecs=vp9' });
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) videoChunks.push(e.data);
       };
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(videoChunks, { type: 'video/webm' });
-        // Handle saving blob if needed
         kawasakiStore.logEvent('recording_stopped', { session });
+        // Upload the video
+        await kawasakiStore.uploadArtifact(blob, 'video', session);
       };
       mediaRecorder.start();
       kawasakiStore.logEvent('recording_started', { session });
     } catch (e) {
       console.error("Failed to start MediaRecorder", e);
+    }
+  }
+
+  function captureSnapshot(sessionIndex: number) {
+    if (!videoPreview) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = videoPreview.videoWidth;
+    canvas.height = videoPreview.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(videoPreview, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          await kawasakiStore.uploadArtifact(blob, 'image', sessionIndex);
+        }
+      }, 'image/jpeg', 0.8);
     }
   }
 

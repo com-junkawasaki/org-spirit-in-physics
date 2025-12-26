@@ -13,6 +13,7 @@ import (
 	"github.com/spirit-in-physics/services/grpc/gen/proto/import/v1/importv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1/participantv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1/sessionv1connect"
+	"github.com/spirit-in-physics/services/grpc/gen/proto/storage/v1/storagev1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1/timelinev1connect"
 	"github.com/spirit-in-physics/services/grpc/internal/activities"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
@@ -75,6 +76,7 @@ func main() {
 	sessionHandler := handlers.NewSessionHandler(queries)
 	timelineHandler := handlers.NewTimelineHandler(queries)
 	importHandler := handlers.NewImportHandler(queries)
+	storageHandler := handlers.NewStorageHandler()
 
 	mux := http.NewServeMux()
 
@@ -88,6 +90,9 @@ func main() {
 	mux.Handle(path, handler)
 
 	path, handler = timelinev1connect.NewTimelineServiceHandler(timelineHandler)
+	mux.Handle(path, handler)
+
+	path, handler = storagev1connect.NewStorageServiceHandler(storageHandler)
 	mux.Handle(path, handler)
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

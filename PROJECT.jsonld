@@ -77,7 +77,12 @@
       "Timoni Bundle の Tilt 連携",
       "BDD テストの Tilt リソース化",
       "gRPC Service Dockerfile のクリーンアップ",
-      "リソースのラベルグルーピング (infra, backend, frontend, test)"
+      "リソースのラベルグルーピング (infra, backend, frontend, test)",
+      "WebM 音声・映像保存機能の設計と実装",
+      "画像（スナップショット）保存機能の実装",
+      "Storage Service (gRPC) との連携実装",
+      "MinIO の Kubernetes クラスターへの統合",
+      "MinIO Go SDK を使用したストレージハンドラーの実装"
     ]
   }
 }

@@ -22,6 +22,13 @@ bundle: {
 						tag:        "latest"
 					}
 				}
+				minio: {
+					enabled: true
+					image: {
+						repository: "minio/minio"
+						tag:        "latest"
+					}
+				}
 				gateway: hostname: "127.0.0.1.nip.io"
 			}
 		}
@@ -47,6 +54,9 @@ bundle: {
 				env: [
 					{name: "DATABASE_URL", value: "postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics"},
 					{name: "TEMPORAL_ADDRESS", value: "infra-temporal:7233"},
+					{name: "MINIO_ENDPOINT", value: "infra-minio:9000"},
+					{name: "MINIO_ROOT_USER", value: "minioadmin"},
+					{name: "MINIO_ROOT_PASSWORD", value: "minioadmin"},
 				]
 			}
 		}

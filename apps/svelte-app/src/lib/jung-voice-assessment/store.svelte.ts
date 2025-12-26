@@ -1,4 +1,4 @@
-import { participantClient } from "$lib/connect";
+import { participantClient, storageClient } from "$lib/connect";
 import type { StimulusWord } from "@/generated/proto/participant/v1/participant_pb";
 
 export type TestStatus = 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
@@ -112,6 +112,32 @@ class KawasakiStore {
     });
 
     this.advanceToNextWord();
+  }
+
+  async uploadArtifact(blob: Blob, type: 'video' | 'image' | 'audio', sessionIndex: number) {
+    if (!this.participantId) return;
+
+    const fileName = `session-${sessionIndex}-${type}-${Date.now()}.${type === 'video' ? 'webm' : type === 'image' ? 'jpg' : 'webm'}`;
+    const contentType = type === 'video' ? 'video/webm' : type === 'image' ? 'image/jpeg' : 'audio/webm';
+
+    try {
+      const buffer = await blob.arrayBuffer();
+      const fileData = new Uint8Array(buffer);
+
+      const response = await storageClient.uploadArtifact({
+        participantId: this.participantId,
+        fileName,
+        fileData,
+        contentType,
+        artifactType: type
+      });
+
+      this.logEvent('artifact_uploaded', { type, url: response.publicUrl, session: sessionIndex });
+      return response.publicUrl;
+    } catch (e) {
+      console.error(`Failed to upload ${type}:`, e);
+      this.logEvent('artifact_upload_failed', { type, error: String(e), session: sessionIndex });
+    }
   }
 
   resetTest() {

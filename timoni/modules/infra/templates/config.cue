@@ -50,6 +50,22 @@ import (
 		uiPort: *8088 | int
 	}
 
+	// MinIO settings
+	minio: {
+		enabled: *true | bool
+		image: {
+			repository: *"minio/minio" | string
+			tag:        *"latest" | string
+			digest:     *"" | string
+			reference:  "\(repository):\(tag)"
+		}
+		rootUser:     *"minioadmin" | string
+		rootPassword: *"minioadmin" | string
+		port:         *9000 | int
+		consolePort:  *9001 | int
+		storage:      *"10Gi" | string
+	}
+
 	// Gateway settings
 	gateway: {
 		enabled: *true | bool
@@ -74,6 +90,10 @@ import (
 		if config.temporal.enabled {
 			temporal_svc: #TemporalService & {#config: config}
 			temporal_deploy: #TemporalDeployment & {#config: config}
+		}
+		if config.minio.enabled {
+			minio_svc: #MinIOService & {#config: config}
+			minio_sts: #MinIOStatefulSet & {#config: config}
 		}
 		if config.gateway.enabled {
 			gateway: #Gateway & {#config: config}
