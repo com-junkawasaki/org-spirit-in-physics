@@ -12,15 +12,17 @@ import (
 	moduleVersion!: string
 	metadata: timoniv1.#Metadata & {#Version: moduleVersion}
 	metadata: labels: timoniv1.#Labels
-	metadata: annotations?: timoniv1.#Annotations
+	metadata: annotations: *{} | timoniv1.#Annotations
 	selector: timoniv1.#Selector & {#Name: metadata.name}
 
 	// TimescaleDB settings
 	timescaledb: {
 		enabled: *true | bool
-		image: timoniv1.#Image & {
+		image: {
 			repository: *"timescale/timescaledb" | string
 			tag:        *"latest-pg15" | string
+			digest:     *"" | string
+			reference:  "\(repository):\(tag)"
 		}
 		user:     *"postgres" | string
 		password: *"postgres" | string // In production, use secrets
@@ -38,9 +40,11 @@ import (
 	// Temporal settings
 	temporal: {
 		enabled: *true | bool
-		image: timoniv1.#Image & {
+		image: {
 			repository: *"temporalio/auto-setup" | string
 			tag:        *"latest" | string
+			digest:     *"" | string
+			reference:  "\(repository):\(tag)"
 		}
 		port: *7233 | int
 		uiPort: *8088 | int

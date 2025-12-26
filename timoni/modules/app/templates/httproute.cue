@@ -4,8 +4,11 @@ package templates
 	#config: #Config
 	apiVersion: "gateway.networking.k8s.io/v1"
 	kind:       "HTTPRoute"
-	metadata:   #config.metadata & {
-		name: "\(#config.metadata.name)-route"
+	metadata: {
+		labels:      #config.metadata.labels
+		annotations: #config.metadata.annotations
+		namespace:   #config.metadata.namespace
+		name:        "\(#config.metadata.name)-route"
 	}
 	spec: {
 		parentRefs: [{

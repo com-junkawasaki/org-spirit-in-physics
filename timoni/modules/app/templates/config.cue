@@ -29,7 +29,7 @@ import (
 	metadata: labels: timoniv1.#Labels
 
 	// The annotations allows adding `metadata.annotations` to all resources.
-	metadata: annotations?: timoniv1.#Annotations
+	metadata: annotations: *{} | timoniv1.#Annotations
 
 	// The selector allows adding label selectors to Deployments and Services.
 	// The `app.kubernetes.io/name` label selector is automatically generated
@@ -39,7 +39,13 @@ import (
 	// The image allows setting the container image repository,
 	// tag, digest and pull policy.
 	// The default image repository and tag is set in `values.cue`.
-	image!: timoniv1.#Image
+	image: {
+		repository: string
+		tag:        *"latest" | string
+		digest:     *"" | string
+		pullPolicy: *"IfNotPresent" | string
+		reference:  "\(repository):\(tag)"
+	}
 
 	// The resources allows setting the container resource requirements.
 	// By default, the container requests 10m CPU and 32Mi memory.
@@ -72,7 +78,7 @@ import (
 	// The service allows setting the Kubernetes Service annotations and port.
 	// By default, the HTTP port is 80.
 	service: {
-		annotations?: timoniv1.#Annotations
+		annotations: *{} | timoniv1.#Annotations
 
 		port: *80 | int & >0 & <=65535
 	}
@@ -85,21 +91,12 @@ import (
 	affinity?: corev1.#Affinity
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
-	// Test Job disabled by default.
-	test: {
-		enabled: *false | bool
-		image!:  timoniv1.#Image
-	}
-
-	// App settings.
-	message!: string
-
 	// Routing settings
 	routing: {
 		enabled: *false | bool
-		hostname: string
-		gatewayName: string
-		gatewayNamespace: string
+		hostname: *"" | string
+		gatewayName: *"" | string
+		gatewayNamespace: *"" | string
 		path: *"/" | string
 	}
 }

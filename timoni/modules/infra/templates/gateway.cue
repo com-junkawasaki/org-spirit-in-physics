@@ -4,9 +4,11 @@ package templates
 	#config: #Config
 	apiVersion: "gateway.networking.k8s.io/v1"
 	kind:       "Gateway"
-	metadata:   #config.metadata & {
-		name: "\(#config.metadata.name)-gateway"
-		annotations: {
+	metadata: {
+		labels:      #config.metadata.labels
+		namespace:   #config.metadata.namespace
+		name:        "\(#config.metadata.name)-gateway"
+		annotations: #config.metadata.annotations & {
 			"cert-manager.io/cluster-issuer": #config.gateway.issuerName
 		}
 	}

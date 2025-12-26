@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.40.0",
+  "version": "1.41.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-26T16:00:00+09:00",
-  "merkleRoot": "GraphQLからConnect RPCへの移行完了: Go + Connect gRPCサーバー構築、Participant/Session/Timeline Service 100%実装、Protobufスキーマ定義、sqlcクエリファイル（マテリアライズドビュー定義追加）、Temporalワークフロー実装、Connectクライアント基盤・APIプロキシ・React Hooks実装、サーバーサイドデータ取得関数・APIルート実装、useTimelineData・useWordAggregates・timeline API route・sessions API route・word2vec API route・participants API route・analysis-report API route・debug API routesのConnect RPC移行完了、lib/data.ts Connect RPC統合、マージコンフリクト完全解決、Protobuf型生成完了（バックエンド・フロントエンド）、フロントエンド完全Connect RPC移行完了（GraphQLフォールバック削除）、GraphQL関連コード完全削除（/api/graphql、/lib/graphql、codegen.yaml、GraphQL Code Generator設定）、後方互換性コード完全削除、移行進捗100%達成; GKE/K8sデプロイ基盤構築: Timoni (CUE) によるモジュール化されたデプロイ設定実装、TimescaleDB StatefulSet、NGINX Gateway Fabric、Temporal、各種マイクロサービス・フロントエンドアプリのオーケストレーション(bundle.cue)完了",
+  "updatedAt": "2025-12-26T17:00:00+09:00",
+  "merkleRoot": "GraphQLからConnect RPCへの移行完了: Go + Connect gRPCサーバー構築、Participant/Session/Timeline Service 100%実装、Protobufスキーマ定義、sqlcクエリファイル（マテリアライズドビュー定義追加）、Temporalワークフロー実装、Connectクライアント基盤・APIプロキシ・React Hooks実装、サーバーサイドデータ取得関数・APIルート実装、useTimelineData・useWordAggregates・timeline API route・sessions API route・word2vec API route・participants API route・analysis-report API route・debug API routesのConnect RPC移行完了、lib/data.ts Connect RPC統合、マージコンフリクト完全解決、Protobuf型生成完了（バックエンド・フロントエンド）、フロントエンド完全Connect RPC移行完了（GraphQLフォールバック削除）、GraphQL関連コード完全削除（/api/graphql、/lib/graphql、codegen.yaml、GraphQL Code Generator設定）、後方互換性コード完全削除、移行進捗100%達成; GKE/K8sデプロイ基盤構築: Timoni (CUE) によるモジュール化されたデプロイ設定実装、TimescaleDB StatefulSet、NGINX Gateway Fabric、Temporal、各種マイクロサービス・フロントエンドアプリのオーケストレーション(bundle.cue)完了; OrbStack K8sデプロイ完了: すべてのマイクロサービスとフロントエンドアプリを OrbStack ローカル Kubernetes 環境に Timoni を使用してデプロイ完了。全 Pod の Running 状態を確認。",
   
   "story": {
     "@id": "project:story",
@@ -1691,7 +1691,8 @@
             "TimescaleDB StatefulSet構成実装",
             "NGINX Gateway Fabric & cert-manager構成実装",
             "Temporalセルフホスト構成実装",
-            "各種マイクロサービス・フロントエンドアプリのオーケストレーション(bundle.cue)完了"
+            "各種マイクロサービス・フロントエンドアプリのオーケストレーション(bundle.cue)完了",
+            "OrbStackローカルKubernetes環境へのデプロイ完了（Timoni）"
     ]
   },
   

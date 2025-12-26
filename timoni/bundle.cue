@@ -8,6 +8,20 @@ bundle: {
 			}
 			namespace: "spirit-in-physics"
 			values: {
+				timescaledb: {
+					enabled: true
+					image: {
+						repository: "timescale/timescaledb"
+						tag:        "latest-pg15"
+					}
+				}
+				temporal: {
+					enabled: true
+					image: {
+						repository: "temporalio/auto-setup"
+						tag:        "latest"
+					}
+				}
 				gateway: hostname: "spirit-in-physics.gftd.ai"
 			}
 		}
@@ -18,7 +32,10 @@ bundle: {
 			}
 			namespace: "spirit-in-physics"
 			values: {
-				image: repository: "spirit-grpc-service"
+				image: {
+					repository: "spirit-grpc-service"
+					tag:        "latest"
+				}
 				service: port: 8080
 				env: [
 					{name: "DATABASE_URL", value: "postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics"},
@@ -33,7 +50,10 @@ bundle: {
 			}
 			namespace: "spirit-in-physics"
 			values: {
-				image: repository: "spirit-import-service"
+				image: {
+					repository: "spirit-import-service"
+					tag:        "latest"
+				}
 				service: port: 8082
 				env: [
 					{name: "DATABASE_URL", value: "postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics"},
@@ -47,7 +67,10 @@ bundle: {
 			}
 			namespace: "spirit-in-physics"
 			values: {
-				image: repository: "spirit-participant"
+				image: {
+					repository: "spirit-participant"
+					tag:        "latest"
+				}
 				service: port: 25250
 				routing: {
 					enabled:          true
@@ -67,7 +90,10 @@ bundle: {
 			}
 			namespace: "spirit-in-physics"
 			values: {
-				image: repository: "spirit-researcher"
+				image: {
+					repository: "spirit-researcher"
+					tag:        "latest"
+				}
 				service: port: 3000
 				routing: {
 					enabled:          true
@@ -87,7 +113,10 @@ bundle: {
 			}
 			namespace: "spirit-in-physics"
 			values: {
-				image: repository: "spirit-paper"
+				image: {
+					repository: "spirit-paper"
+					tag:        "latest"
+				}
 				service: port: 4321
 				routing: {
 					enabled:          true
@@ -107,7 +136,10 @@ bundle: {
 			}
 			namespace: "spirit-in-physics"
 			values: {
-				image: repository: "spirit-demo"
+				image: {
+					repository: "spirit-demo"
+					tag:        "latest"
+				}
 				service: port: 4322
 				routing: {
 					enabled:          true

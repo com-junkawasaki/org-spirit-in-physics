@@ -10,8 +10,11 @@ import (
 	#config: #Config
 	apiVersion: "v1"
 	kind:       "Service"
-	metadata:   #config.metadata & {
-		name: "\(#config.metadata.name)-temporal"
+	metadata: {
+		labels:      #config.metadata.labels
+		annotations: #config.metadata.annotations
+		namespace:   #config.metadata.namespace
+		name:        "\(#config.metadata.name)-temporal"
 	}
 	spec: {
 		ports: [{
@@ -35,8 +38,11 @@ import (
 	#config: #Config
 	apiVersion: "apps/v1"
 	kind:       "Deployment"
-	metadata:   #config.metadata & {
-		name: "\(#config.metadata.name)-temporal"
+	metadata: {
+		labels:      #config.metadata.labels
+		annotations: #config.metadata.annotations
+		namespace:   #config.metadata.namespace
+		name:        "\(#config.metadata.name)-temporal"
 	}
 	spec: appsv1.#DeploymentSpec & {
 		replicas: 1
@@ -64,7 +70,7 @@ import (
 					}]
 					env: [{
 						name:  "DB"
-						value: "postgresql"
+						value: "postgres12"
 					}, {
 						name:  "DB_PORT"
 						value: "\(#config.timescaledb.port)"

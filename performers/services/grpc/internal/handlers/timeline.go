@@ -8,7 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
-	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1/timelinev1"
+	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"

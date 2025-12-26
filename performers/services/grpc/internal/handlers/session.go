@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1/sessionv1"
+	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 )
 
@@ -158,7 +158,6 @@ func (h *SessionHandler) CreateSession(
 		if err != nil {
 			// Log error but continue
 		}
-	}
 	}
 
 	resp := &sessionv1.CreateSessionResponse{

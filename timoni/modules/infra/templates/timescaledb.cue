@@ -11,8 +11,11 @@ import (
 	#config: #Config
 	apiVersion: "v1"
 	kind:       "Service"
-	metadata:   #config.metadata & {
-		name: "\(#config.metadata.name)-timescaledb"
+	metadata: {
+		labels:      #config.metadata.labels
+		annotations: #config.metadata.annotations
+		namespace:   #config.metadata.namespace
+		name:        "\(#config.metadata.name)-timescaledb"
 	}
 	spec: {
 		ports: [{
@@ -31,8 +34,11 @@ import (
 	#config: #Config
 	apiVersion: "apps/v1"
 	kind:       "StatefulSet"
-	metadata:   #config.metadata & {
-		name: "\(#config.metadata.name)-timescaledb"
+	metadata: {
+		labels:      #config.metadata.labels
+		annotations: #config.metadata.annotations
+		namespace:   #config.metadata.namespace
+		name:        "\(#config.metadata.name)-timescaledb"
 	}
 	spec: appsv1.#StatefulSetSpec & {
 		serviceName: "\(#config.metadata.name)-timescaledb"

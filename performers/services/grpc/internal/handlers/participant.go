@@ -7,7 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
-	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1/participantv1"
+	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
