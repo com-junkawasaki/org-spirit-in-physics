@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.43.0",
+  "version": "1.44.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-26T19:30:00+09:00",
-  "merkleRoot": "Temporal Go による TDD/BDD ワークフロー基盤構築完了: OnboardingWorkflow と ParticipantActivities の Go 実装、testsuite による TDD (Red->Green) 実装、Cucumber.js による BDD (Onboarding Scenario) の Pass を確認。ParticipantHandler への Temporal 統合と main.go での Worker 起動設定完了。sqlc/pgtype 互換性問題を全面的に修正し、クリーンなビルドとテストを達成。",
+  "updatedAt": "2025-12-26T20:00:00+09:00",
+  "merkleRoot": "Tilt による開発環境のオーケストレーション統合完了: Tiltfile の作成、Go gRPC サービスと Svelte アプリのビルド自動化、Live Update (Svelte) の実装、Timoni との連携、および BDD テストの Tilt UI からの実行管理。開発サイクルの高速化とログの統合監視を実現。",
   
   "story": {
     "@id": "project:story",
@@ -61,10 +61,10 @@
     },
     "narrative": [
       {
-        "@id": "project:narrative/66",
+        "@id": "project:narrative/67",
         "@type": "project:Narrative",
-        "act": "Temporalによる高信頼ワークフローの確立",
-        "summary": "Temporal Workflow を用いた高信頼なデータ処理基盤を Go で構築。被験者の登録から環境設定、通知までの一連のプロセスをワークフローとして定義し、TDD (Temporal testsuite) と BDD (Cucumber.js + Gherkin) を用いてその振る舞いを厳密に検証。sqlc/pgtype のマッピング問題を解決し、DB 操作を含む Activity の堅牢性を向上させた。"
+        "act": "Tiltによる開発体験の極大化",
+        "summary": "開発フィードバックループを加速させるため Tilt を導入。Timoni によるインフラ適用、Go/Svelte のビルド、K8s へのデプロイ、そして BDD テストの実行を一つのダッシュボードに統合。Live Update によりフロントエンドの変更は即座にブラウザに反映され、バックエンドの修正も自動的にデプロイされる環境を整えた。"
       }
     ]
   },
@@ -72,15 +72,12 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
-      "Temporal Go SDK 統合",
-      "OnboardingWorkflow 実装",
-      "ParticipantActivities 実装",
-      "Temporal testsuite による TDD 実装",
-      "Cucumber.js によるワークフロー BDD 検証",
-      "Go Handler への Temporal Client 統合",
-      "main.go での Temporal Worker 起動設定",
-      "sqlc/pgtype 互換性問題の完全修正",
-      "session_events テーブルへの正しい pgtype マッピング"
+      "Tiltfile 作成と統合",
+      "Svelte アプリの Live Update 実装",
+      "Timoni Bundle の Tilt 連携",
+      "BDD テストの Tilt リソース化",
+      "gRPC Service Dockerfile のクリーンアップ",
+      "リソースのラベルグルーピング (infra, backend, frontend, test)"
     ]
   }
 }

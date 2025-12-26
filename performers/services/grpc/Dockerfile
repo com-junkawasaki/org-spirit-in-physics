@@ -4,9 +4,10 @@ WORKDIR /app
 
 # Install build dependencies
 RUN apk add --no-cache git make curl
-RUN curl -sSL "https://github.com/bufbuild/buf/releases/latest/download/buf-$(uname -s)-$(uname -m)" -o "/usr/local/bin/buf" && \
-    chmod +x "/usr/local/bin/buf"
+RUN curl -sSL "https://github.com/bufbuild/buf/releases/latest/download/buf-$(uname -s)-$(uname -m)" -o "/usr/local/bin/buf" &&     chmod +x "/usr/local/bin/buf"
 RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -15,18 +16,15 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-RUN go build -o bin/grpc-service ./cmd/server
-
-# Build the application
-RUN make build
+# Generate code and build
+RUN make generate && go build -o bin/grpc-service ./cmd/server
 
 # Final stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates curl
 
-WORKDIR /root/
+WORKDIR /app
 
 # Copy the binary from builder
 COPY --from=builder /app/bin/grpc-service .
