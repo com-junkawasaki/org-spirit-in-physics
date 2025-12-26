@@ -2,6 +2,7 @@
 	import { participantClient } from "$lib/connect";
 	import type { Participant } from "@/generated/proto/participant/v1/participant_pb";
 	import { onMount } from "svelte";
+	import { SignedIn, SignedOut, SignInButton, UserButton } from "svelte-clerk";
 
 	let participants = $state<Participant[]>([]);
 	let loading = $state(true);
@@ -19,8 +20,22 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Spirit in Physics</title>
+</svelte:head>
+
 <div class="container">
-	<h1>Spirit in Physics (Svelte 5 + CSR)</h1>
+	<header>
+		<h1>Spirit in Physics (Svelte 5 + CSR)</h1>
+		<div class="auth">
+			<SignedOut>
+				<SignInButton mode="modal" class="btn">Sign in</SignInButton>
+			</SignedOut>
+			<SignedIn>
+				<UserButton />
+			</SignedIn>
+		</div>
+	</header>
 
 	{#if loading}
 		<p>Loading participants...</p>
@@ -29,7 +44,7 @@
 	{:else}
 		<ul>
 			{#each participants as p}
-				<li>{p.name} (Age: {p.age})</li>
+				<li>{p.id} (Public: {p.isPublic})</li>
 			{/each}
 		</ul>
 	{/if}
@@ -41,7 +56,21 @@
 		max-width: 800px;
 		margin: 0 auto;
 	}
+	header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 2rem;
+	}
 	.error {
 		color: red;
+	}
+	.btn {
+		background-color: #007bff;
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		cursor: pointer;
 	}
 </style>

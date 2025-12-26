@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/import/v1/importv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1/participantv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1/sessionv1connect"
@@ -59,13 +60,37 @@ func main() {
 		fmt.Fprintf(w, "OK")
 	})
 
+	// Setup CORS
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"}, // Adjust this for production
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{
+			"Connect-Protocol-Version",
+			"Connect-Timeout-Ms",
+			"Content-Type",
+			"Accept",
+			"Authorization",
+			"X-User-Agent",
+			"X-Grpc-Web",
+		},
+		ExposedHeaders: []string{
+			"Connect-Error-Code",
+			"Connect-Error-Message",
+			"Grpc-Status",
+			"Grpc-Message",
+			"Grpc-Status-Details-Bin",
+		},
+		MaxAge: 7200,
+	})
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
 	log.Printf("Server starting on port %s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	// Wrap the mux with CORS middleware
+	if err := http.ListenAndServe(":"+port, c.Handler(mux)); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }

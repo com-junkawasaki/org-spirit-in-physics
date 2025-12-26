@@ -70,10 +70,10 @@ bundle: {
 					gatewayNamespace: "spirit-in-physics"
 				}
 				env: [
-					{name: "VITE_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
-					{name: "VITE_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
-					{name: "VITE_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
-					{name: "VITE_API_URL", value: "http://api.127.0.0.1.nip.io"},
+					{name: "PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+					{name: "PUBLIC_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
+					{name: "PUBLIC_API_URL", value: "http://api.127.0.0.1.nip.io"},
 				]
 			}
 		}
@@ -97,10 +97,10 @@ bundle: {
 					gatewayNamespace: "spirit-in-physics"
 				}
 				env: [
-					{name: "VITE_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
-					{name: "VITE_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
-					{name: "VITE_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
-					{name: "VITE_API_URL", value: "http://api.127.0.0.1.nip.io"},
+					{name: "PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+					{name: "PUBLIC_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
+					{name: "PUBLIC_API_URL", value: "http://api.127.0.0.1.nip.io"},
 				]
 			}
 		}
@@ -124,10 +124,10 @@ bundle: {
 					gatewayNamespace: "spirit-in-physics"
 				}
 				env: [
-					{name: "VITE_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
-					{name: "VITE_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
-					{name: "VITE_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
-					{name: "VITE_API_URL", value: "http://api.127.0.0.1.nip.io"},
+					{name: "PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+					{name: "PUBLIC_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
+					{name: "PUBLIC_API_URL", value: "http://api.127.0.0.1.nip.io"},
 				]
 			}
 		}
@@ -151,10 +151,10 @@ bundle: {
 					gatewayNamespace: "spirit-in-physics"
 				}
 				env: [
-					{name: "VITE_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
-					{name: "VITE_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
-					{name: "VITE_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
-					{name: "VITE_API_URL", value: "http://api.127.0.0.1.nip.io"},
+					{name: "PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+					{name: "PUBLIC_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
+					{name: "PUBLIC_API_URL", value: "http://api.127.0.0.1.nip.io"},
 				]
 			}
 		}
