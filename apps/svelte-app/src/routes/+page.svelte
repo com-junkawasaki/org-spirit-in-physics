@@ -24,10 +24,10 @@
 	});
 
 	const titles = {
-		participant: "Participant Portal | Spirit in Physics",
-		researcher: "Researcher Dashboard | Spirit in Physics",
-		paper: "Research Paper | Spirit in Physics",
-		demo: "Demo | Spirit in Physics",
+		participant: "被験者ポータル | Spirit in Physics",
+		researcher: "管理者ダッシュボード | Spirit in Physics",
+		paper: "研究論文 | Spirit in Physics",
+		demo: "デモ | Spirit in Physics",
 		default: "Spirit in Physics"
 	};
 </script>
@@ -37,41 +37,43 @@
 </svelte:head>
 
 <div class="app-container">
-	<header class="main-header">
-		<div class="logo">
-			<a href="/">Spirit in Physics</a>
-			<span class="badge">{service}</span>
-		</div>
-		<div class="auth-controls">
-			<SignedOut>
-				<SignInButton mode="modal" class="btn-signin">Sign in</SignInButton>
-			</SignedOut>
-			<SignedIn>
-				<UserButton />
-			</SignedIn>
-		</div>
-	</header>
-
-	<main class="content-area">
+	<main class={service === "participant" ? "content-area participant" : "content-area"}>
 		{#if service === "participant"}
 			<ParticipantView />
-		{:else if service === "researcher"}
-			<ResearcherView />
-		{:else if service === "paper"}
-			<PaperView />
-		{:else if service === "demo"}
-			<DemoView />
 		{:else}
-			<div class="welcome">
-				<h1>Welcome to Spirit in Physics</h1>
-				<p>Please use one of the subdomains to access specific features:</p>
-				<ul class="subdomain-links">
-					<li><a href="http://participant.127.0.0.1.nip.io">Participant Portal</a></li>
-					<li><a href="http://researcher.127.0.0.1.nip.io">Researcher Dashboard</a></li>
-					<li><a href="http://paper.127.0.0.1.nip.io">Research Paper</a></li>
-					<li><a href="http://demo.127.0.0.1.nip.io">Measurement Demo</a></li>
-				</ul>
-			</div>
+			<header class="main-header">
+				<div class="logo">
+					<a href="/">Spirit in Physics</a>
+					<span class="badge">{service}</span>
+				</div>
+				<div class="auth-controls">
+					<SignedOut>
+						<SignInButton mode="modal" class="btn-signin">Sign in</SignInButton>
+					</SignedOut>
+					<SignedIn>
+						<UserButton />
+					</SignedIn>
+				</div>
+			</header>
+
+			{#if service === "researcher"}
+				<ResearcherView />
+			{:else if service === "paper"}
+				<PaperView />
+			{:else if service === "demo"}
+				<DemoView />
+			{:else}
+				<div class="welcome">
+					<h1>Welcome to Spirit in Physics</h1>
+					<p>Please use one of the subdomains to access specific features:</p>
+					<ul class="subdomain-links">
+						<li><a href="http://participant.127.0.0.1.nip.io">Participant Portal</a></li>
+						<li><a href="http://researcher.127.0.0.1.nip.io">Researcher Dashboard</a></li>
+						<li><a href="http://paper.127.0.0.1.nip.io">Research Paper</a></li>
+						<li><a href="http://demo.127.0.0.1.nip.io">Measurement Demo</a></li>
+					</ul>
+				</div>
+			{/if}
 		{/if}
 	</main>
 
@@ -151,6 +153,12 @@
 		margin: 0 auto;
 		width: 100%;
 		box-sizing: border-box;
+	}
+
+	.content-area.participant {
+		padding: 0;
+		max-width: none;
+		margin: 0;
 	}
 
 	.welcome {
