@@ -3,7 +3,6 @@
 allow_k8s_contexts('orbstack')
 
 # 1. Generate YAML from Timoni and give it to Tilt
-# This allows Tilt to "own" the resources and associate them with image builds.
 k8s_yaml(local('timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue'))
 
 # 2. Go gRPC Service
@@ -42,11 +41,32 @@ local_resource(
     labels=['test']
 )
 
-# 5. UI Grouping
-k8s_resource('grpc-service', labels=['backend'])
-k8s_resource('participant', labels=['frontend'])
-k8s_resource('researcher', labels=['frontend'])
-k8s_resource('paper', labels=['frontend'])
-k8s_resource('demo', labels=['frontend'])
-k8s_resource('infra-temporal', labels=['infra'])
-k8s_resource('infra-timescaledb', labels=['infra'])
+# 5. UI Grouping & Endpoints Setup
+k8s_resource('grpc-service', 
+    labels=['backend'], 
+    links=['http://api.127.0.0.1.nip.io'])
+
+k8s_resource('participant', 
+    labels=['frontend'], 
+    links=['http://participant.127.0.0.1.nip.io'])
+
+k8s_resource('researcher', 
+    labels=['frontend'], 
+    links=['http://researcher.127.0.0.1.nip.io'])
+
+k8s_resource('paper', 
+    labels=['frontend'], 
+    links=['http://paper.127.0.0.1.nip.io'])
+
+k8s_resource('demo', 
+    labels=['frontend'], 
+    links=['http://demo.127.0.0.1.nip.io'])
+
+k8s_resource('infra-temporal', 
+    labels=['infra'], 
+    links=['http://localhost:8088'],
+    port_forwards=8088)
+
+k8s_resource('infra-timescaledb', 
+    labels=['infra'], 
+    port_forwards=5432)
