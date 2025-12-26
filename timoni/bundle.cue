@@ -22,7 +22,7 @@ bundle: {
 						tag:        "latest"
 					}
 				}
-				gateway: hostname: "spirit-in-physics.gftd.ai"
+				gateway: hostname: "127.0.0.1.nip.io"
 			}
 		}
 
@@ -35,28 +35,18 @@ bundle: {
 				image: {
 					repository: "spirit-grpc-service"
 					tag:        "latest"
+					pullPolicy: "IfNotPresent"
 				}
 				service: port: 8080
+				routing: {
+					enabled:          true
+					hostname:         "api.127.0.0.1.nip.io"
+					gatewayName:      "infra-gateway"
+					gatewayNamespace: "spirit-in-physics"
+				}
 				env: [
 					{name: "DATABASE_URL", value: "postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics"},
 					{name: "TEMPORAL_ADDRESS", value: "infra-temporal:7233"},
-				]
-			}
-		}
-
-		"import-service": {
-			module: {
-				url: "file://./modules/app"
-			}
-			namespace: "spirit-in-physics"
-			values: {
-				image: {
-					repository: "spirit-import-service"
-					tag:        "latest"
-				}
-				service: port: 8082
-				env: [
-					{name: "DATABASE_URL", value: "postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics"},
 				]
 			}
 		}
@@ -68,18 +58,22 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-participant"
+					repository: "spirit-svelte-app"
 					tag:        "latest"
+					pullPolicy: "IfNotPresent"
 				}
-				service: port: 25250
+				service: port: 80
 				routing: {
 					enabled:          true
-					hostname:         "participant.spirit-in-physics.gftd.ai"
+					hostname:         "participant.127.0.0.1.nip.io"
 					gatewayName:      "infra-gateway"
 					gatewayNamespace: "spirit-in-physics"
 				}
 				env: [
-					{name: "GRAPHQL_API_URL", value: "http://grpc-service:8080/graphql"},
+					{name: "VITE_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "VITE_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+					{name: "VITE_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
+					{name: "VITE_API_URL", value: "http://api.127.0.0.1.nip.io"},
 				]
 			}
 		}
@@ -91,18 +85,22 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-researcher"
+					repository: "spirit-svelte-app"
 					tag:        "latest"
+					pullPolicy: "IfNotPresent"
 				}
-				service: port: 3000
+				service: port: 80
 				routing: {
 					enabled:          true
-					hostname:         "researcher.spirit-in-physics.gftd.ai"
+					hostname:         "researcher.127.0.0.1.nip.io"
 					gatewayName:      "infra-gateway"
 					gatewayNamespace: "spirit-in-physics"
 				}
 				env: [
-					{name: "GRAPHQL_API_URL", value: "http://grpc-service:8080/graphql"},
+					{name: "VITE_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "VITE_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+					{name: "VITE_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
+					{name: "VITE_API_URL", value: "http://api.127.0.0.1.nip.io"},
 				]
 			}
 		}
@@ -114,18 +112,22 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-paper"
+					repository: "spirit-svelte-app"
 					tag:        "latest"
+					pullPolicy: "IfNotPresent"
 				}
-				service: port: 4321
+				service: port: 80
 				routing: {
 					enabled:          true
-					hostname:         "paper.spirit-in-physics.gftd.ai"
+					hostname:         "paper.127.0.0.1.nip.io"
 					gatewayName:      "infra-gateway"
 					gatewayNamespace: "spirit-in-physics"
 				}
 				env: [
-					{name: "GRAPHQL_API_URL", value: "http://grpc-service:8080/graphql"},
+					{name: "VITE_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "VITE_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+					{name: "VITE_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
+					{name: "VITE_API_URL", value: "http://api.127.0.0.1.nip.io"},
 				]
 			}
 		}
@@ -137,16 +139,23 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-demo"
+					repository: "spirit-svelte-app"
 					tag:        "latest"
+					pullPolicy: "IfNotPresent"
 				}
-				service: port: 4322
+				service: port: 80
 				routing: {
 					enabled:          true
-					hostname:         "demo.spirit-in-physics.gftd.ai"
+					hostname:         "demo.127.0.0.1.nip.io"
 					gatewayName:      "infra-gateway"
 					gatewayNamespace: "spirit-in-physics"
 				}
+				env: [
+					{name: "VITE_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "VITE_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+					{name: "VITE_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
+					{name: "VITE_API_URL", value: "http://api.127.0.0.1.nip.io"},
+				]
 			}
 		}
 	}

@@ -23,7 +23,6 @@ package templates
 			name:     "https"
 			port:     443
 			protocol: "HTTPS"
-			hostname: #config.gateway.hostname
 			tls: {
 				mode: "Terminate"
 				certificateRefs: [{

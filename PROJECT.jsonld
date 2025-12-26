@@ -1692,7 +1692,9 @@
             "NGINX Gateway Fabric & cert-manager構成実装",
             "Temporalセルフホスト構成実装",
             "各種マイクロサービス・フロントエンドアプリのオーケストレーション(bundle.cue)完了",
-            "OrbStackローカルKubernetes環境へのデプロイ完了（Timoni）"
+            "OrbStackローカルKubernetes環境へのデプロイ完了（Timoni）",
+            "BDDテスト基盤の構築 (Cucumber.js + Gherkin)",
+            "BDDテストの実行とパス（Red → Green）の確認完了"
     ]
   },
   

@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -29,20 +29,12 @@ func (h *ParticipantHandler) GetParticipants(
 	ctx context.Context,
 	req *connect.Request[participantv1.GetParticipantsRequest],
 ) (*connect.Response[participantv1.GetParticipantsResponse], error) {
-	var isPublic *bool
+	isPublic := true
 	if req.Msg.IsPublic != nil {
-		isPublic = req.Msg.IsPublic
+		isPublic = *req.Msg.IsPublic
 	}
 
-	var participants []db.Participant
-	var err error
-	if isPublic != nil {
-		participants, err = h.queries.GetParticipants(ctx, *isPublic)
-	} else {
-		// Get all participants (both public and private)
-		// This requires a different query or we pass nil
-		participants, err = h.queries.GetParticipants(ctx, true) // Default to public for now
-	}
+	participants, err := h.queries.GetParticipants(ctx, isPublic)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -52,14 +44,15 @@ func (h *ParticipantHandler) GetParticipants(
 	}
 
 	for _, p := range participants {
+		uid, _ := uuid.FromBytes(p.ID.Bytes[:])
 		resp.Participants = append(resp.Participants, &participantv1.Participant{
-			Id:         p.ID.String(),
+			Id:         uid.String(),
 			Age:        toInt32Ptr(p.Age),
 			Gender:     toStringPtr(p.Gender),
 			Handedness: toStringPtr(p.Handedness),
-			IsPublic:   p.IsPublic,
-			CreatedAt:  timestamppb.New(p.CreatedAt),
-			UpdatedAt:  timestamppb.New(p.UpdatedAt),
+			IsPublic:   p.IsPublic.Bool,
+			CreatedAt:  timestamppb.New(p.CreatedAt.Time),
+			UpdatedAt:  timestamppb.New(p.UpdatedAt.Time),
 		})
 	}
 
@@ -76,23 +69,22 @@ func (h *ParticipantHandler) GetParticipant(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	participant, err := h.queries.GetParticipant(ctx, participantID)
+	pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
+	participant, err := h.queries.GetParticipant(ctx, pgUUID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
 
+	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
 	resp := &participantv1.GetParticipantResponse{
 		Participant: &participantv1.Participant{
-			Id:         participant.ID.String(),
+			Id:         uid.String(),
 			Age:        toInt32Ptr(participant.Age),
 			Gender:     toStringPtr(participant.Gender),
 			Handedness: toStringPtr(participant.Handedness),
-			IsPublic:   participant.IsPublic,
-			CreatedAt:  timestamppb.New(participant.CreatedAt),
-			UpdatedAt:  timestamppb.New(participant.UpdatedAt),
+			IsPublic:   participant.IsPublic.Bool,
+			CreatedAt:  timestamppb.New(participant.CreatedAt.Time),
+			UpdatedAt:  timestamppb.New(participant.UpdatedAt.Time),
 		},
 	}
 
@@ -119,31 +111,32 @@ func (h *ParticipantHandler) CreateParticipant(
 	}
 
 	// Convert protobuf Timestamp to time.Time
-	agreedAt := req.Msg.AgreedAt.AsTime()
-	now := agreedAt
-	if now.IsZero() {
-		now = time.Now()
+	now := time.Now()
+	if req.Msg.AgreedAt != nil {
+		now = req.Msg.AgreedAt.AsTime()
 	}
 
+	pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
 	participant, err := h.queries.CreateParticipant(ctx, db.CreateParticipantParams{
-		ID:        participantID,
-		IsPublic:  isPublic,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:        pgUUID,
+		Column2:   isPublic,
+		CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
+		UpdatedAt: pgtype.Timestamptz{Time: now, Valid: true},
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
+	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
 	resp := &participantv1.CreateParticipantResponse{
 		Participant: &participantv1.Participant{
-			Id:         participant.ID.String(),
+			Id:         uid.String(),
 			Age:        toInt32Ptr(participant.Age),
 			Gender:     toStringPtr(participant.Gender),
 			Handedness: toStringPtr(participant.Handedness),
-			IsPublic:   participant.IsPublic,
-			CreatedAt:  timestamppb.New(participant.CreatedAt),
-			UpdatedAt:  timestamppb.New(participant.UpdatedAt),
+			IsPublic:   participant.IsPublic.Bool,
+			CreatedAt:  timestamppb.New(participant.CreatedAt.Time),
+			UpdatedAt:  timestamppb.New(participant.UpdatedAt.Time),
 		},
 	}
 
@@ -183,10 +176,7 @@ func (h *ParticipantHandler) GetStimulusWord(
 ) (*connect.Response[participantv1.GetStimulusWordResponse], error) {
 	word, err := h.queries.GetStimulusWord(ctx, req.Msg.Id)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, connect.NewError(connect.CodeNotFound, err)
-		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
 
 	resp := &participantv1.GetStimulusWordResponse{
@@ -202,16 +192,18 @@ func (h *ParticipantHandler) GetStimulusWord(
 }
 
 // Helper functions
-func toInt32Ptr(i sql.NullInt32) *int32 {
+func toInt32Ptr(i pgtype.Int4) *int32 {
 	if i.Valid {
-		return &i.Int32
+		val := i.Int32
+		return &val
 	}
 	return nil
 }
 
-func toStringPtr(s sql.NullString) *string {
+func toStringPtr(s pgtype.Text) *string {
 	if s.Valid {
-		return &s.String
+		val := s.String
+		return &val
 	}
 	return nil
 }

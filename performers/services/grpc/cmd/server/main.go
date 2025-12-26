@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/spirit-in-physics/services/grpc/gen/proto/import/v1/importv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1/participantv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1/sessionv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1/timelinev1connect"
@@ -17,12 +18,10 @@ import (
 )
 
 func main() {
-	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
 
-	// Connect to database
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		log.Fatal("DATABASE_URL environment variable is required")
@@ -34,34 +33,32 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Create queries instance
 	queries := db.New(pool)
 
-	// Create handlers
 	participantHandler := handlers.NewParticipantHandler(queries)
 	sessionHandler := handlers.NewSessionHandler(queries)
 	timelineHandler := handlers.NewTimelineHandler(queries)
+	importHandler := handlers.NewImportHandler(queries)
 
-	// Create HTTP mux
 	mux := http.NewServeMux()
 
-	// Register gRPC services
-	participantPath, participantHandler := participantv1connect.NewParticipantServiceHandler(participantHandler)
-	mux.Handle(participantPath, participantHandler)
+	path, handler := importv1connect.NewImportServiceHandler(importHandler)
+	mux.Handle(path, handler)
 
-	sessionPath, sessionHandler := sessionv1connect.NewSessionServiceHandler(sessionHandler)
-	mux.Handle(sessionPath, sessionHandler)
+	path, handler = participantv1connect.NewParticipantServiceHandler(participantHandler)
+	mux.Handle(path, handler)
 
-	timelinePath, timelineHandler := timelinev1connect.NewTimelineServiceHandler(timelineHandler)
-	mux.Handle(timelinePath, timelineHandler)
+	path, handler = sessionv1connect.NewSessionServiceHandler(sessionHandler)
+	mux.Handle(path, handler)
 
-	// Health check endpoint
+	path, handler = timelinev1connect.NewTimelineServiceHandler(timelineHandler)
+	mux.Handle(path, handler)
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "OK")
 	})
 
-	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
