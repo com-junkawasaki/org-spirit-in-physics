@@ -9,18 +9,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
+	"github.com/spirit-in-physics/services/grpc/internal/workflows"
+	"go.temporal.io/sdk/client"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ParticipantHandler handles participant service requests
 type ParticipantHandler struct {
-	queries *db.Queries
+	queries        *db.Queries
+	temporalClient client.Client
 }
 
 // NewParticipantHandler creates a new ParticipantHandler
-func NewParticipantHandler(queries *db.Queries) *ParticipantHandler {
+func NewParticipantHandler(queries *db.Queries, temporalClient client.Client) *ParticipantHandler {
 	return &ParticipantHandler{
-		queries: queries,
+		queries:        queries,
+		temporalClient: temporalClient,
 	}
 }
 
@@ -110,7 +114,6 @@ func (h *ParticipantHandler) CreateParticipant(
 		isPublic = *req.Msg.IsPublic
 	}
 
-	// Convert protobuf Timestamp to time.Time
 	now := time.Now()
 	if req.Msg.AgreedAt != nil {
 		now = req.Msg.AgreedAt.AsTime()
@@ -119,12 +122,25 @@ func (h *ParticipantHandler) CreateParticipant(
 	pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
 	participant, err := h.queries.CreateParticipant(ctx, db.CreateParticipantParams{
 		ID:        pgUUID,
-		Column2:   isPublic,
+		IsPublic:  pgtype.Bool{Bool: isPublic, Valid: true},
 		CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
 		UpdatedAt: pgtype.Timestamptz{Time: now, Valid: true},
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Trigger Temporal Workflow
+	if h.temporalClient != nil {
+		workflowOptions := client.StartWorkflowOptions{
+			ID:        "onboarding-" + participantID.String(),
+			TaskQueue: "onboarding-queue",
+		}
+		_, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.OnboardingWorkflow, req.Msg.Signature)
+		if err != nil {
+			// In production, we might want to handle this better (e.g., retry or log)
+			// For now, just log and continue
+		}
 	}
 
 	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
@@ -189,21 +205,4 @@ func (h *ParticipantHandler) GetStimulusWord(
 	}
 
 	return connect.NewResponse(resp), nil
-}
-
-// Helper functions
-func toInt32Ptr(i pgtype.Int4) *int32 {
-	if i.Valid {
-		val := i.Int32
-		return &val
-	}
-	return nil
-}
-
-func toStringPtr(s pgtype.Text) *string {
-	if s.Valid {
-		val := s.String
-		return &val
-	}
-	return nil
 }

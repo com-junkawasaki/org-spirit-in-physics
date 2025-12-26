@@ -14,8 +14,12 @@ import (
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1/participantv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1/sessionv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1/timelinev1connect"
+	"github.com/spirit-in-physics/services/grpc/internal/activities"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"github.com/spirit-in-physics/services/grpc/internal/handlers"
+	"github.com/spirit-in-physics/services/grpc/internal/workflows"
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/worker"
 )
 
 func main() {
@@ -36,7 +40,38 @@ func main() {
 
 	queries := db.New(pool)
 
-	participantHandler := handlers.NewParticipantHandler(queries)
+	// Temporal Client Setup
+	temporalAddress := os.Getenv("TEMPORAL_ADDRESS")
+	if temporalAddress == "" {
+		temporalAddress = "infra-temporal:7233"
+	}
+
+	temporalClient, err := client.Dial(client.Options{
+		HostPort: temporalAddress,
+	})
+	if err != nil {
+		log.Printf("Unable to create Temporal client: %v", err)
+	} else {
+		defer temporalClient.Close()
+
+		// Start Temporal Worker in background
+		go func() {
+			w := worker.New(temporalClient, "onboarding-queue", worker.Options{})
+
+			// Register Workflows and Activities
+			w.RegisterWorkflow(workflows.OnboardingWorkflow)
+			
+			a := &activities.ParticipantActivities{Queries: queries}
+			w.RegisterActivity(a)
+
+			log.Println("Starting Temporal worker")
+			if err := w.Run(worker.InterruptCh()); err != nil {
+				log.Fatalf("Unable to start Temporal worker: %v", err)
+			}
+		}()
+	}
+
+	participantHandler := handlers.NewParticipantHandler(queries, temporalClient)
 	sessionHandler := handlers.NewSessionHandler(queries)
 	timelineHandler := handlers.NewTimelineHandler(queries)
 	importHandler := handlers.NewImportHandler(queries)
@@ -62,7 +97,7 @@ func main() {
 
 	// Setup CORS
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"}, // Adjust this for production
+		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders: []string{
 			"Connect-Protocol-Version",
@@ -89,7 +124,6 @@ func main() {
 	}
 
 	log.Printf("Server starting on port %s", port)
-	// Wrap the mux with CORS middleware
 	if err := http.ListenAndServe(":"+port, c.Handler(mux)); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}

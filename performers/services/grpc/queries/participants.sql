@@ -11,8 +11,8 @@ WHERE id = $1;
 
 -- name: CreateParticipant :one
 INSERT INTO participants (id, is_public, created_at, updated_at)
-VALUES ($1, COALESCE($2, true), $3, $4)
-ON CONFLICT (id) DO UPDATE SET updated_at = $4
+VALUES (sqlc.arg(id), COALESCE(sqlc.narg(is_public)::boolean, true), sqlc.arg(created_at), sqlc.arg(updated_at))
+ON CONFLICT (id) DO UPDATE SET updated_at = sqlc.arg(updated_at)
 RETURNING *;
 
 -- name: GetStimulusWords :many

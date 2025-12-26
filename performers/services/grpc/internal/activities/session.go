@@ -2,9 +2,11 @@ package activities
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 )
 
@@ -31,13 +33,13 @@ func (a *SessionActivities) CreateSessionActivity(ctx context.Context, input Cre
 	now := time.Now()
 
 	_, err = a.queries.CreateSession(ctx, db.CreateSessionParams{
-		ID:            sessionID,
-		ParticipantID: participantID,
-		SessionIndex:  input.SessionIndex,
+		ID:            pgtype.UUID{Bytes: sessionID, Valid: true},
+		ParticipantID: pgtype.UUID{Bytes: participantID, Valid: true},
+		SessionIndex:  pgtype.Int4{Int32: *input.SessionIndex, Valid: input.SessionIndex != nil},
 		StartTs:       input.StartTS,
-		EndTs:         nil,
-		CreatedAt:     now,
-		UpdatedAt:     now,
+		EndTs:         pgtype.Int8{Valid: false},
+		CreatedAt:     pgtype.Timestamptz{Time: now, Valid: true},
+		UpdatedAt:     pgtype.Timestamptz{Time: now, Valid: true},
 	})
 	if err != nil {
 		return "", err
@@ -51,25 +53,23 @@ func (a *SessionActivities) CreateSessionActivity(ctx context.Context, input Cre
 			eventTimestamp = input.StartTS
 		}
 
-		var eventData interface{}
+		var eventData []byte
 		if data, ok := event["data"]; ok {
-			eventData = data
+			eventData, _ = json.Marshal(data)
 		}
 
-		var wordID *int32
-		if wid, ok := event["word_id"].(int64); ok {
-			w := int32(wid)
-			wordID = &w
+		var wordID pgtype.Int4
+		if wid, ok := event["word_id"].(float64); ok { // JSON numbers are float64
+			wordID = pgtype.Int4{Int32: int32(wid), Valid: true}
 		}
 
-		var reactionTimeMs *int32
-		if rt, ok := event["reaction_time_ms"].(int64); ok {
-			r := int32(rt)
-			reactionTimeMs = &r
+		var reactionTimeMs pgtype.Int4
+		if rt, ok := event["reaction_time_ms"].(float64); ok {
+			reactionTimeMs = pgtype.Int4{Int32: int32(rt), Valid: true}
 		}
 
 		err = a.queries.CreateSessionEvent(ctx, db.CreateSessionEventParams{
-			SessionID:      sessionID,
+			SessionID:      pgtype.UUID{Bytes: sessionID, Valid: true},
 			EventType:      eventType,
 			EventTimestamp: eventTimestamp,
 			EventData:      eventData,
