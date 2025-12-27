@@ -1,59 +1,38 @@
-# Tiltfile for Spirit in Physics
+# Tiltfile for Spirit in Physics using Nix & Docker
 
 allow_k8s_contexts('orbstack')
 
 # 1. Generate YAML from Timoni and give it to Tilt
 k8s_yaml(local('timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue'))
 
-# 2. Go gRPC Service
-docker_build(
+# 2. Go gRPC Service (Nix Cross-compilation)
+custom_build(
     'spirit-grpc-service',
-    './performers/services/grpc',
-    dockerfile='./performers/services/grpc/Dockerfile'
+    '$(nix build .#grpc-image --no-link --print-out-paths) | docker load',
+    deps=['./performers/services/grpc', './flake.nix'],
+    tag='latest'
 )
 
-# 3. Python Import Service & Worker
+# 3. Python Import Service & Worker (Docker - Nix Python cross-build is slow on Darwin)
 docker_build(
     'spirit-import-service',
     './performers/services/import',
     dockerfile='./performers/services/import/Dockerfile'
 )
 
-# 4. Temporal TypeScript Worker
+# 4. Temporal TypeScript Worker (Docker - Nix Node cross-build is slow on Darwin)
 docker_build(
     'spirit-temporal-ts',
     './performers/services/temporal-ts',
     dockerfile='./performers/services/temporal-ts/Dockerfile'
 )
 
-# 5. Svelte App
-local_resource(
-    'svelte-build',
-    cmd='cd apps/svelte-app && rm -rf build .svelte-kit && pnpm build',
-    deps=['./apps/svelte-app/src', './apps/svelte-app/package.json', './apps/svelte-app/vite.config.ts', './apps/svelte-app/svelte.config.js', './apps/svelte-app/tsconfig.json'],
-    labels=['frontend']
-)
-
-docker_build(
+# 5. Svelte App (Nix - Assets built on host, served by Linux Python)
+custom_build(
     'spirit-svelte-app',
-    './apps/svelte-app',
-    dockerfile='./apps/svelte-app/Dockerfile',
-    live_update=[
-        sync('./apps/svelte-app/build', '/app/www'),
-        run('/app/replace-env.sh /app/www'),
-    ]
-)
-
-# 5. BDD Tests (now orchestrated by Temporal, but can still be run locally)
-local_resource(
-    'bdd-tests',
-    cmd='cd performers/services/temporal-ts/bdd && pnpm test',
-    deps=[
-        './performers/services/temporal-ts/bdd',
-        './apps/svelte-app/src'
-    ],
-    auto_init=False,
-    labels=['test']
+    '$(nix build .#svelte-image --no-link --print-out-paths) | docker load',
+    deps=['./apps/svelte-app', './flake.nix'],
+    tag='latest'
 )
 
 # 6. Argo CD Setup
@@ -98,3 +77,7 @@ k8s_resource('infra-minio',
     links=['http://spirit.localhost/minio-console'],
     port_forwards=9001)
 
+k8s_resource('infra-nix-cache',
+    labels=['infra'],
+    links=['http://spirit.localhost/nix-cache'],
+    port_forwards=5000)

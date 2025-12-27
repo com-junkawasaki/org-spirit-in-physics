@@ -4,7 +4,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gatewayv1 "gateway.networking.k8s.io/v1"
 )
 
 #NixCacheService: corev1.#Service & {
@@ -25,7 +24,7 @@ import (
 			{
 				name:       "http"
 				port:       #config.nix_cache.port
-				targetPort: "http"
+				targetPort: #config.nix_cache.port
 				protocol:   "TCP"
 			},
 		]
@@ -94,7 +93,7 @@ import (
 	}
 }
 
-#NixCacheRoute: gatewayv1.#HTTPRoute & {
+#NixCacheRoute: {
 	#config: #Config
 	apiVersion: "gateway.networking.k8s.io/v1"
 	kind:       "HTTPRoute"
@@ -103,7 +102,7 @@ import (
 		namespace: #config.metadata.namespace
 		labels:    #config.metadata.labels
 	}
-	spec: gatewayv1.#HTTPRouteSpec & {
+	spec: {
 		parentRefs: [
 			{
 				name:      "infra-gateway"
@@ -142,4 +141,3 @@ import (
 		]
 	}
 }
-

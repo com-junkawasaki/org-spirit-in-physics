@@ -51,6 +51,10 @@ bundle: {
 						adminSecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 					}
 				}
+				nix_cache: {
+					enabled: true
+					storage: "20Gi"
+				}
 				gateway: hostname: "spirit.localhost"
 			}
 		}
