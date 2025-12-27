@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.44.0",
+  "version": "1.45.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-26T20:00:00+09:00",
-  "merkleRoot": "Tilt による開発環境のオーケストレーション統合完了: Tiltfile の作成、Go gRPC サービスと Svelte アプリのビルド自動化、Live Update (Svelte) の実装、Timoni との連携、および BDD テストの Tilt UI からの実行管理。開発サイクルの高速化とログの統合監視を実現。",
+  "updatedAt": "2025-12-27T12:00:00+09:00",
+  "merkleRoot": "SvelteKit のルーティングをサブドメインベースからパスベース (/participant, /researcher, /paper, /demo) へリファクタリング。Python Importer Service を Temporal (Python SDK) を用いたワークフロー・アクティビティ形式へ移行し、長時間実行可能なデータインポート処理を実現。",
   
   "story": {
     "@id": "project:story",
@@ -61,10 +61,10 @@
     },
     "narrative": [
       {
-        "@id": "project:narrative/67",
+        "@id": "project:narrative/68",
         "@type": "project:Narrative",
-        "act": "Tiltによる開発体験の極大化",
-        "summary": "開発フィードバックループを加速させるため Tilt を導入。Timoni によるインフラ適用、Go/Svelte のビルド、K8s へのデプロイ、そして BDD テストの実行を一つのダッシュボードに統合。Live Update によりフロントエンドの変更は即座にブラウザに反映され、バックエンドの修正も自動的にデプロイされる環境を整えた。"
+        "act": "アーキテクチャの整理とスケーラビリティの向上",
+        "summary": "フロントエンドのアクセス性を向上させるため、サブドメイン管理からディレクトリパス管理へ移行。また、Python によるデータインポーターを Temporal ワークフローとして再実装することで、大規模なデータインポート時の信頼性と可視性を確保した。"
       }
     ]
   },
@@ -72,21 +72,19 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "SvelteKit パスベースルーティングの実装 (/paper, /researcher, /participant, /demo)",
+      "Python Temporal SDK を使用したインポーターの再構築",
+      "ImportParticipantsWorkflow, ImportSessionsWorkflow の実装",
+      "Python Temporal Worker の作成とデータベース連携",
+      "FastAPI エンドポイントからの Temporal ワークフロー起動処理の実装",
       "Tiltfile 作成と統合",
       "Svelte アプリの Live Update 実装",
       "Timoni Bundle の Tilt 連携",
       "BDD テストの Tilt リソース化",
       "gRPC Service Dockerfile のクリーンアップ",
-      "リソースのラベルグルーピング (infra, backend, frontend, test)",
-      "WebM 音声・映像保存機能の設計と実装",
-      "画像（スナップショット）保存機能の実装",
       "Storage Service (gRPC) との連携実装",
       "MinIO の Kubernetes クラスターへの統合",
-      "MinIO Go SDK を使用したストレージハンドラーの実装",
-      "Svelte による研究者ポータル (Admin Dashboard) の設計と実装",
-      "被験者一覧、セッション履歴、アナリティクス概要コンポーネントの実装",
-      "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装",
-      "Connect RPC 経由でのインポート実行環境の整備"
+      "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装 (Go/Python 両対応)"
     ]
   }
 }

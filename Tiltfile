@@ -12,7 +12,14 @@ docker_build(
     dockerfile='./performers/services/grpc/Dockerfile'
 )
 
-# 3. Svelte App
+# 3. Python Import Service & Worker
+docker_build(
+    'spirit-import-service',
+    './performers/services/import',
+    dockerfile='./performers/services/import/Dockerfile'
+)
+
+# 4. Svelte App
 local_resource(
     'svelte-build',
     cmd='cd apps/svelte-app && pnpm build',
@@ -29,7 +36,7 @@ docker_build(
     ]
 )
 
-# 4. BDD Tests
+# 5. BDD Tests
 local_resource(
     'bdd-tests',
     cmd='cd tests/bdd && pnpm test',
@@ -41,26 +48,21 @@ local_resource(
     labels=['test']
 )
 
-# 5. UI Grouping & Endpoints Setup
+# 6. UI Grouping & Endpoints Setup
 k8s_resource('grpc-service', 
     labels=['backend'], 
     links=['http://api.localhost'])
 
-k8s_resource('participant', 
-    labels=['frontend'], 
-    links=['http://participant.localhost'])
+k8s_resource('import-service', 
+    labels=['backend'], 
+    links=['http://import.localhost'])
 
-k8s_resource('researcher', 
-    labels=['frontend'], 
-    links=['http://researcher.localhost'])
+k8s_resource('import-worker', 
+    labels=['backend'])
 
-k8s_resource('paper', 
+k8s_resource('portal', 
     labels=['frontend'], 
-    links=['http://paper.localhost'])
-
-k8s_resource('demo', 
-    labels=['frontend'], 
-    links=['http://demo.localhost'])
+    links=['http://spirit.localhost'])
 
 k8s_resource('infra-temporal', 
     labels=['infra'], 

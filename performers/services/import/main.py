@@ -2,7 +2,7 @@
 """
 Import Service - Python implementation
 Merkle DAG: import.service.main
-Import service HTTP server using FastAPI + PostgreSQL
+Import service HTTP server using FastAPI + PostgreSQL + Temporal
 """
 import os
 import logging
@@ -12,7 +12,7 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from temporalio.client import Client
 
 from app.database import get_db_pool, init_db_pool, close_db_pool
 from app.routers import participants, sessions, emotions, timeline
@@ -31,14 +31,22 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting import service...")
     
+    # DB initialization
     database_url = os.getenv(
         'DATABASE_URL',
         'postgresql://postgres:postgres@postgres:5432/spirit_in_physics'
     )
     logger.info(f"Connecting to database: {database_url.split('@')[-1]}")
-    
     await init_db_pool(database_url)
-    logger.info("PostgreSQL connection pool initialized")
+    
+    # Temporal initialization
+    temporal_address = os.getenv("TEMPORAL_ADDRESS", "infra-temporal:7233")
+    try:
+        app.state.temporal_client = await Client.connect(temporal_address)
+        logger.info(f"Connected to Temporal at {temporal_address}")
+    except Exception as e:
+        logger.error(f"Failed to connect to Temporal: {e}")
+        app.state.temporal_client = None
     
     yield
     
@@ -50,8 +58,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Import Service",
-    description="Data import service for spirit-in-physics",
-    version="2.0.0",
+    description="Data import service for spirit-in-physics using Temporal",
+    version="2.1.0",
     lifespan=lifespan
 )
 
@@ -78,10 +86,14 @@ async def get_status():
         pool = await get_db_pool()
         async with pool.acquire() as conn:
             await conn.execute("SELECT 1")
+        
+        temporal_status = "connected" if hasattr(app.state, "temporal_client") and app.state.temporal_client else "disconnected"
+        
         return {
             "status": "ok",
             "service": "import-service",
-            "version": "2.0.0"
+            "version": "2.1.0",
+            "temporal": temporal_status
         }
     except Exception as e:
         logger.error(f"Status check failed: {e}")
@@ -96,7 +108,7 @@ async def root():
     """Root endpoint"""
     return {
         "service": "import-service",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "endpoints": [
             "/import/status",
             "/import/participants",
@@ -116,4 +128,3 @@ if __name__ == "__main__":
         log_level="info",
         reload=False
     )
-

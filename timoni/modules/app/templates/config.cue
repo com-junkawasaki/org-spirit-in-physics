@@ -63,6 +63,10 @@ import (
 	// Environment variables
 	env?: [...corev1.#EnvVar]
 
+	// Command and args
+	command?: [...string]
+	args?: [...string]
+
 	// The securityContext allows setting the container security context.
 	// By default, the container is denined privilege escalation.
 	securityContext: corev1.#SecurityContext & {

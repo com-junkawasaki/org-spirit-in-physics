@@ -1,90 +1,57 @@
 <script lang="ts">
-	import { onMount } from "svelte";
 	import { SignedIn, SignedOut, SignInButton, UserButton } from "svelte-clerk";
-	import ParticipantView from "$lib/components/ParticipantView.svelte";
-	import ResearcherView from "$lib/components/ResearcherView.svelte";
-	import PaperView from "$lib/components/PaperView.svelte";
-	import DemoView from "$lib/components/DemoView.svelte";
-
-	let service = $state<"participant" | "researcher" | "paper" | "demo" | "default">("default");
-
-	onMount(() => {
-		const hostname = window.location.hostname;
-		const searchParams = new URLSearchParams(window.location.search);
-		const forcedService = searchParams.get("service");
-
-		if (forcedService === "participant" || forcedService === "researcher" || forcedService === "paper" || forcedService === "demo") {
-			service = forcedService;
-		} else if (hostname.includes("participant") || hostname.startsWith("participant.")) {
-			service = "participant";
-		} else if (hostname.includes("researcher") || hostname.startsWith("researcher.") || hostname.includes("admin")) {
-			service = "researcher";
-		} else if (hostname.includes("paper") || hostname.startsWith("paper.")) {
-			service = "paper";
-		} else if (hostname.includes("demo") || hostname.startsWith("demo.")) {
-			service = "demo";
-		} else {
-			service = "default";
-		}
-		
-		console.log("Service detected:", service, "for hostname:", hostname);
-	});
-
-	const titles = {
-		participant: "被験者ポータル | Spirit in Physics",
-		researcher: "管理者ダッシュボード | Spirit in Physics",
-		paper: "研究論文 | Spirit in Physics",
-		demo: "デモ | Spirit in Physics",
-		default: "Spirit in Physics"
-	};
 </script>
 
 <svelte:head>
-	<title>{titles[service]}</title>
+	<title>Spirit in Physics</title>
 </svelte:head>
 
 <div class="app-container">
-	<main class={service === "participant" ? "content-area participant" : "content-area"}>
-		{#if service === "participant"}
-			<ParticipantView />
-		{:else}
-			<header class="main-header">
-				<div class="logo">
-					<a href="/">Spirit in Physics</a>
-					<span class="badge">{service}</span>
-				</div>
-				<div class="auth-controls">
-					<SignedOut>
-						<SignInButton mode="modal" class="btn-signin">Sign in</SignInButton>
-					</SignedOut>
-					<SignedIn>
-						<UserButton />
-					</SignedIn>
-				</div>
-			</header>
+	<header class="main-header">
+		<div class="logo">
+			<a href="/">Spirit in Physics</a>
+		</div>
+		<div class="auth-controls">
+			<SignedOut>
+				<SignInButton mode="modal" class="btn-signin">Sign in</SignInButton>
+			</SignedOut>
+			<SignedIn>
+				<UserButton />
+			</SignedIn>
+		</div>
+	</header>
 
-			{#if service === "researcher"}
-				<ResearcherView />
-			{:else if service === "paper"}
-				<PaperView />
-			{:else if service === "demo"}
-				<DemoView />
-			{:else}
-				<div class="welcome">
-					<h1>Welcome to Spirit in Physics</h1>
-					<p>Please use one of the subdomains to access specific features:</p>
-					<ul class="subdomain-links">
-						<li><a href="http://participant.localhost">Participant Portal</a></li>
-						<li><a href="http://researcher.localhost">Researcher Dashboard</a></li>
-						<li><a href="http://paper.localhost">Research Paper</a></li>
-						<li><a href="http://demo.localhost">Measurement Demo</a></li>
-					</ul>
-					<div class="debug-info">
-						<p>Detected Service: <span class="badge">{service}</span></p>
-					</div>
-				</div>
-			{/if}
-		{/if}
+	<main class="content-area">
+		<div class="welcome">
+			<h1>Welcome to Spirit in Physics</h1>
+			<p>科学的手法による霊性測定システム</p>
+			
+			<div class="portal-grid">
+				<a href="/participant" class="portal-card">
+					<div class="card-icon">👤</div>
+					<h2>被験者ポータル</h2>
+					<p>測定テストの開始と結果の確認</p>
+				</a>
+				
+				<a href="/researcher" class="portal-card">
+					<div class="card-icon">📊</div>
+					<h2>管理者ダッシュボード</h2>
+					<p>被験者管理とデータ分析</p>
+				</a>
+				
+				<a href="/paper" class="portal-card">
+					<div class="card-icon">📄</div>
+					<h2>研究論文</h2>
+					<p>プロジェクトの背景と学術的成果</p>
+				</a>
+				
+				<a href="/demo" class="portal-card">
+					<div class="card-icon">✨</div>
+					<h2>デモ</h2>
+					<p>測定システムのクイックデモ</p>
+				</a>
+			</div>
+		</div>
 	</main>
 
 	<footer class="main-footer">
@@ -118,27 +85,11 @@
 		z-index: 100;
 	}
 
-	.logo {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
-
 	.logo a {
 		font-size: 1.25rem;
 		font-weight: 700;
 		text-decoration: none;
 		color: #111;
-	}
-
-	.badge {
-		background: #eee;
-		padding: 0.2rem 0.6rem;
-		border-radius: 12px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		color: #666;
 	}
 
 	:global(.btn-signin) {
@@ -152,67 +103,73 @@
 		transition: background 0.2s;
 	}
 
-	:global(.btn-signin:hover) {
-		background-color: #0056b3;
-	}
-
 	.content-area {
 		flex: 1;
 		padding: 2rem;
-		max-width: 1200px;
+		max-width: 1000px;
 		margin: 0 auto;
 		width: 100%;
 		box-sizing: border-box;
 	}
 
-	.content-area.participant {
-		padding: 0;
-		max-width: none;
-		margin: 0;
-	}
-
 	.welcome {
 		text-align: center;
-		padding: 4rem 0;
+		padding: 3rem 0;
 	}
 
-	.subdomain-links {
-		list-style: none;
-		padding: 0;
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: 1rem;
-		margin-top: 2rem;
+	.welcome h1 {
+		font-size: 2.5rem;
+		margin-bottom: 0.5rem;
 	}
 
-	.subdomain-links a {
-		display: block;
-		padding: 1.5rem 2rem;
+	.welcome p {
+		color: #666;
+		font-size: 1.1rem;
+		margin-bottom: 3rem;
+	}
+
+	.portal-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 1.5rem;
+	}
+
+	.portal-card {
 		background: white;
-		border-radius: 8px;
+		padding: 2rem;
+		border-radius: 12px;
 		text-decoration: none;
-		color: #007bff;
-		font-weight: 600;
-		box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+		color: inherit;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 		border: 1px solid #eee;
 		transition: transform 0.2s, box-shadow 0.2s;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 	}
 
-	.subdomain-links a:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+	.portal-card:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+		border-color: #007bff;
 	}
 
-	.debug-info {
-		margin-top: 4rem;
-		padding: 1rem;
-		background: #fff3cd;
-		border: 1px solid #ffeeba;
-		border-radius: 8px;
-		display: inline-block;
-		font-size: 0.875rem;
-		color: #856404;
+	.card-icon {
+		font-size: 3rem;
+		margin-bottom: 1rem;
+	}
+
+	.portal-card h2 {
+		font-size: 1.25rem;
+		margin: 0.5rem 0;
+		color: #111;
+	}
+
+	.portal-card p {
+		font-size: 0.9rem;
+		color: #666;
+		margin: 0;
+		text-align: center;
 	}
 
 	.main-footer {
