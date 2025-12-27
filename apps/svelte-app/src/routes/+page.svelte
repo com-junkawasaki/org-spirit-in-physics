@@ -10,17 +10,24 @@
 
 	onMount(() => {
 		const hostname = window.location.hostname;
-		if (hostname.startsWith("participant.")) {
+		const searchParams = new URLSearchParams(window.location.search);
+		const forcedService = searchParams.get("service");
+
+		if (forcedService === "participant" || forcedService === "researcher" || forcedService === "paper" || forcedService === "demo") {
+			service = forcedService;
+		} else if (hostname.includes("participant") || hostname.startsWith("participant.")) {
 			service = "participant";
-		} else if (hostname.startsWith("researcher.")) {
+		} else if (hostname.includes("researcher") || hostname.startsWith("researcher.") || hostname.includes("admin")) {
 			service = "researcher";
-		} else if (hostname.startsWith("paper.")) {
+		} else if (hostname.includes("paper") || hostname.startsWith("paper.")) {
 			service = "paper";
-		} else if (hostname.startsWith("demo.")) {
+		} else if (hostname.includes("demo") || hostname.startsWith("demo.")) {
 			service = "demo";
 		} else {
 			service = "default";
 		}
+		
+		console.log("Service detected:", service, "for hostname:", hostname);
 	});
 
 	const titles = {
@@ -72,6 +79,9 @@
 						<li><a href="http://paper.localhost">Research Paper</a></li>
 						<li><a href="http://demo.localhost">Measurement Demo</a></li>
 					</ul>
+					<div class="debug-info">
+						<p>Detected Service: <span class="badge">{service}</span></p>
+					</div>
 				</div>
 			{/if}
 		{/if}
@@ -131,7 +141,7 @@
 		color: #666;
 	}
 
-	.btn-signin {
+	:global(.btn-signin) {
 		background-color: #007bff;
 		color: white;
 		border: none;
@@ -142,7 +152,7 @@
 		transition: background 0.2s;
 	}
 
-	.btn-signin:hover {
+	:global(.btn-signin:hover) {
 		background-color: #0056b3;
 	}
 
@@ -192,6 +202,17 @@
 	.subdomain-links a:hover {
 		transform: translateY(-2px);
 		box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+	}
+
+	.debug-info {
+		margin-top: 4rem;
+		padding: 1rem;
+		background: #fff3cd;
+		border: 1px solid #ffeeba;
+		border-radius: 8px;
+		display: inline-block;
+		font-size: 0.875rem;
+		color: #856404;
 	}
 
 	.main-footer {
