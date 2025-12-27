@@ -117,30 +117,56 @@
         participantId, 
         sessionId: sessionId || undefined 
       });
+      console.log('DEBUG: integrated response', response);
       
       if (response && response.points && response.points.length > 0) {
-        data = response.points.map((item: any) => ({
-          timestamp: item.time ? (Number(item.time.seconds) * 1000 + (item.time.nanos / 1000000)) : 0,
-          word: item.word || '',
-          reactionTime: item.reactionTime ?? 0,
-          hasResponse: item.hasResponse,
-          emotions: (item.emotions || []).map((e: any) => ({
-            name: e.name || '',
-            score: e.score || 0,
-            fileType: e.fileType || ''
-          })),
-          physiological: item.physiological || [],
-          reactionValue: item.reactionValue || 0,
-          eventType: item.eventType || '',
-          metadata: item.metadata || {}
-        }));
+        console.log('DEBUG: first 3 points', response.points.slice(0, 3));
+        data = response.points.map((item: any) => {
+          // Robust timestamp conversion: handle Protobuf object, ISO string, or number
+          let timestamp: number | null = null;
+          if (item.time) {
+            if (typeof item.time === 'string') {
+              timestamp = new Date(item.time).getTime();
+            } else if (item.time.seconds !== undefined) {
+              timestamp = (Number(item.time.seconds) * 1000 + (item.time.nanos / 1000000));
+            } else if (typeof item.time === 'number') {
+              timestamp = item.time > 1e12 ? item.time : item.time * 1000;
+            }
+          }
+
+          if (timestamp === null || isNaN(timestamp)) {
+            // Fallback to a sensible default if time is missing
+            console.warn('Missing or invalid timestamp for item:', item);
+            return null;
+          }
+
+          const mapped = {
+            timestamp,
+            word: item.word || '',
+            // Reaction time is stored in seconds in DB, convert to ms for display
+            reactionTime: (item.reactionTime ?? item.reaction_time ?? 0) * 1000,
+            hasResponse: item.hasResponse ?? item.has_response ?? false,
+            emotions: (item.emotions || []).map((e: any) => ({
+              name: e.name || '',
+              score: e.score || 0,
+              fileType: e.fileType || ''
+            })),
+            physiological: item.physiological || [],
+            reactionValue: item.reactionValue ?? item.reaction_value ?? 0,
+            eventType: item.eventType ?? item.event_type ?? '',
+            metadata: item.metadata || {}
+          };
+          return mapped;
+        }).filter((d: any) => d !== null);
+        console.log('DEBUG: mapped data length', data.length);
+        console.log('DEBUG: first mapped point', data[0]);
 
         if (response.analysis) {
           analysisResults = {
-            gapAreas: (response.analysis.gapAreas || []) as any,
-            densityRegions: (response.analysis.densityRegions || []) as any,
-            duplicates: (response.analysis.duplicates || []) as any,
-            overallDensity: response.analysis.overallDensity || 0
+            gapAreas: (response.analysis.gapAreas ?? response.analysis.gap_areas ?? []) as any,
+            densityRegions: (response.analysis.densityRegions ?? response.analysis.density_regions ?? []) as any,
+            duplicates: (response.analysis.duplicates ?? response.analysis.duplicates ?? []) as any,
+            overallDensity: response.analysis.overallDensity ?? response.analysis.overall_density ?? 0
           };
         }
 
@@ -229,9 +255,31 @@
       fetchAnalysis();
     }
   });
+  let showDebug = $state(false);
 </script>
 
 <div class="timeline-visualization-container flex flex-col space-y-8">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <button 
+        class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-blue-500 transition-colors"
+        onclick={() => showDebug = !showDebug}
+      >
+        {showDebug ? 'Hide Debug' : 'Show Debug'}
+      </button>
+    </div>
+  </div>
+
+  {#if showDebug}
+    <div class="p-4 bg-black text-green-400 font-mono text-[10px] rounded-xl overflow-auto max-h-64 border border-green-900/30">
+      <p>Data points: {data.length}</p>
+      <p>Time Range: {JSON.stringify(timeRange)}</p>
+      <p>First Point: {JSON.stringify(data[0], null, 2)}</p>
+      <hr class="my-2 border-green-900/20" />
+      <p>Raw analysis gapAreas: {analysisResults.gapAreas?.length || 0}</p>
+    </div>
+  {/if}
+
   <!-- Header / Tabs Section -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm p-2 rounded-2xl border border-gray-200 dark:border-gray-700">
     <div class="flex p-1 bg-gray-200/50 dark:bg-gray-900/50 rounded-xl">
@@ -283,7 +331,7 @@
         <div class="space-y-10">
           <KPICards {data} />
           
-          <div class="bg-gray-50/50 dark:bg-gray-900/50 rounded-[40px] border border-gray-100 dark:border-gray-800 p-8">
+          <div class="bg-gray-50/50 dark:bg-gray-900/50 rounded-[40px] border border-gray-100 dark:border-gray-800 p-8 timeline-stream-container">
             <div class="flex items-center justify-between mb-8">
               <div class="flex items-center gap-3">
                 <div class="w-2 h-8 bg-blue-500 rounded-full"></div>

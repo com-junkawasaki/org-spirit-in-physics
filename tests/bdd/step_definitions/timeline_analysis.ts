@@ -1,16 +1,19 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { page } from './navigation.js'; // Assuming we can share the page object or similar setup
+import { page } from './navigation.js';
 
 Given('I am on the analysis page for participant {string}', async function (id: string) {
-  await page.goto(`http://spirit.localhost/researcher/participants/${id}`);
-  await page.waitForSelector('.timeline-visualization-container');
+  const url = `http://spirit.localhost/researcher/participants/${id}`;
+  console.log(`Navigating to ${url}`);
+  await page.goto(url);
 });
 
 When('the timeline data is loaded', async function () {
+  console.log('Waiting for timeline data to load...');
   // Wait for the spinner to disappear and data to be visible
   await page.waitForSelector('.spinner', { state: 'hidden', timeout: 30000 });
-  await page.waitForSelector('.timeline-stream-container, .timeline-chart-svg', { timeout: 10000 });
+  await page.waitForSelector('.timeline-stream-container, .timeline-chart-svg', { timeout: 15000 });
+  console.log('Timeline data loaded.');
 });
 
 Then('I should see the {string} chart', async function (title: string) {

@@ -108,6 +108,10 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 			sid = uuid.UUID(p.SessionID.Bytes).String()
 		}
 
+		if p.ReactionValue.Valid && p.ReactionValue.Float64 > 0 {
+			// fmt.Printf("Debug: RV for word %s: %f\n", p.Word.String, p.ReactionValue.Float64)
+		}
+
 		result = append(result, &timelinev1.TimelinePoint{
 			Time:          timestamppb.New(p.Time.Time),
 			ParticipantId: participantID,

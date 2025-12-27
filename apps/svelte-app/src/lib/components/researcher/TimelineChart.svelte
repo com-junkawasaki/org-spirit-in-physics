@@ -193,7 +193,14 @@
     // Reaction Value Line
     if (filters.reactionValues) {
       const rvExtent = d3.extent(data, d => Number(d.reactionValue) || 0) as [number, number];
-      if (rvExtent[0] === rvExtent[1]) rvExtent[1] += 0.1;
+      // Ensure we have a reasonable domain even if all values are 0
+      if (rvExtent[0] === rvExtent[1]) {
+        if (rvExtent[0] === 0) {
+          rvExtent[1] = 1.0;
+        } else {
+          rvExtent[1] += Math.abs(rvExtent[0]) * 0.1 || 0.1;
+        }
+      }
       const rvScale = d3.scaleLinear().domain(rvExtent).range([sectionHeight - 10, 10]);
 
       const line = d3.line<TimelineDataPoint>()
@@ -223,7 +230,14 @@
     // Reaction Time (Points)
     if (filters.reactionTime) {
       const rtExtent = d3.extent(data, d => Number(d.reactionTime) || 0) as [number, number];
-      if (rtExtent[0] === rtExtent[1]) rtExtent[1] += 100;
+      // Ensure we have a reasonable domain even if all values are the same
+      if (rtExtent[0] === rtExtent[1]) {
+        if (rtExtent[0] === 0) {
+          rtExtent[1] = 1000; // Default to 1s if all are 0
+        } else {
+          rtExtent[1] += Math.abs(rtExtent[0]) * 0.1 || 100;
+        }
+      }
       const rtScale = d3.scaleLinear().domain(rtExtent).range([sectionHeight * 2 - 10, sectionHeight + 10]);
 
       g.selectAll('.rt-dot')

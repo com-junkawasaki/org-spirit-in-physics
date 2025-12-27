@@ -284,10 +284,10 @@ func (h *TimelineHandler) GetAnalysis(
 	sessionData := make([]map[string]interface{}, 0, len(points))
 	for _, p := range points {
 		sessionData = append(sessionData, map[string]interface{}{
-			"timestamp":     p.Time.Time.UnixMilli(),
-			"word":          p.Word.String,
-			"reactionValue": p.ReactionValue.Float64,
-			"reactionTime":  p.ReactionTime.Float64,
+			"timestamp":      p.Time.Time.UnixMilli(),
+			"word":           p.Word.String,
+			"reaction_value": p.ReactionValue.Float64,
+			"reaction_time":  p.ReactionTime.Float64,
 		})
 	}
 
