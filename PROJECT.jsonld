@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.45.0",
+  "version": "1.46.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-27T16:15:00+09:00",
-  "merkleRoot": "polydam を除外し lakeFS に一本化したストレージ管理体制を構築。Kubernetes 上でのデータバージョン管理と整合性を確保。",
+  "updatedAt": "2025-12-27T21:20:00+09:00",
+  "merkleRoot": "SvelteKit ルーティングの正常化と Nix Flake 配信構成の最適化。不要なデバッグ instrumentation の除去とシンプルな構成への回帰。",
   
   "story": {
     "@id": "project:story",

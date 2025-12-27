@@ -93,74 +93,38 @@
           '';
         };
 
-        # SPA Handler Python script with better logging and robust fallback
+        # SPA Handler Python script
         spa-handler = pkgs.writeText "spa_handler.py" ''
-import http.server, socketserver, os, sys, json, time
+import http.server, socketserver, os, sys
 
 PORT = 80
 DIRECTORY = '/app/www'
-LOG_PATH = '/Volumes/251214/jun784/spirit-in-physics/.cursor/debug.log'
-
-def agent_log(hypothesis_id, message, data=None):
-    # #region agent log
-    try:
-        log_entry = {
-            "sessionId": "debug-session-routing",
-            "timestamp": int(time.time() * 1000),
-            "location": "spa_handler.py",
-            "hypothesisId": hypothesis_id,
-            "message": message,
-            "data": data or {}
-        }
-        with open(LOG_PATH, 'a') as f:
-            f.write(json.dumps(log_entry) + '\n')
-    except Exception as e:
-        sys.stderr.write(f"Logging failed: {e}\n")
-    # #endregion
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
     def do_GET(self):
-        agent_log("B", "Incoming request", {"path": self.path})
-        
         # Translate the URL path to a filesystem path
         actual_path = self.translate_path(self.path)
-        exists = os.path.exists(actual_path)
-        is_dir = os.path.isdir(actual_path)
-        
-        agent_log("B", "Path resolution", {
-            "path": self.path, 
-            "actual_path": actual_path, 
-            "exists": exists, 
-            "is_dir": is_dir
-        })
         
         # SPA Fallback logic:
         # If the file/dir doesn't exist, and it doesn't look like a static asset (no dot in basename)
         # serve index.html instead.
-        if not exists:
+        if not os.path.exists(actual_path):
             basename = os.path.basename(actual_path.rstrip('/'))
             if '.' not in basename:
-                print(f"SPA Fallback: {self.path} -> /index.html", file=sys.stderr)
-                agent_log("B", "SPA Fallback triggered", {"from": self.path, "to": "/index.html"})
                 self.path = '/index.html'
-            else:
-                print(f"Static asset not found: {self.path}", file=sys.stderr)
-                agent_log("B", "Static asset not found (no fallback)", {"path": self.path})
         
         return super().do_GET()
 
     def log_message(self, format, *args):
-        # Ensure logs go to stderr so they show up in kubectl logs/Tilt
+        # Redirect logs to stderr for container visibility
         sys.stderr.write("%s - - [%s] %s\n" %
                          (self.address_string(),
                           self.log_date_time_string(),
                           format%args))
 
-print(f"Starting SPA server on port {PORT}, serving from {DIRECTORY}", file=sys.stderr)
-# Use allow_reuse_address to avoid "Address already in use" on restarts
 socketserver.TCPServer.allow_reuse_address = True
 with socketserver.TCPServer(("", PORT), Handler) as httpd:
     httpd.serve_forever()
@@ -172,10 +136,15 @@ with socketserver.TCPServer(("", PORT), Handler) as httpd:
           mkdir -p /app
           cp -r ${svelte-app}/www /app/www
           chmod -R 777 /app/www
-          find /app/www -name "*.html" -exec sed -i "s|__PUBLIC_CLERK_PUBLISHABLE_KEY__|$PUBLIC_CLERK_PUBLISHABLE_KEY|g" {} + || true
-          find /app/www -name "*.html" -exec sed -i "s|__PUBLIC_API_URL__|$PUBLIC_API_URL|g" {} + || true
-          find /app/www -name "*.html" -exec sed -i "s|__PUBLIC_SUPABASE_URL__|$PUBLIC_SUPABASE_URL|g" {} + || true
-          find /app/www -name "*.html" -exec sed -i "s|__PUBLIC_SUPABASE_ANON_KEY__|$PUBLIC_SUPABASE_ANON_KEY|g" {} + || true
+          
+          # Replace environment variables in static assets
+          find /app/www -name "*.html" -exec sed -i \
+            -e "s|__PUBLIC_CLERK_PUBLISHABLE_KEY__|$PUBLIC_CLERK_PUBLISHABLE_KEY|g" \
+            -e "s|__PUBLIC_API_URL__|$PUBLIC_API_URL|g" \
+            -e "s|__PUBLIC_SUPABASE_URL__|$PUBLIC_SUPABASE_URL|g" \
+            -e "s|__PUBLIC_SUPABASE_ANON_KEY__|$PUBLIC_SUPABASE_ANON_KEY|g" \
+            {} + || true
+            
           exec ${linuxPkgs.python311}/bin/python3 ${spa-handler}
         '';
 
