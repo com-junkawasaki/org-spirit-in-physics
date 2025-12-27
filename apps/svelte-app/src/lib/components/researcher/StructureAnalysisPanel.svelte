@@ -46,7 +46,7 @@
           <button
             type="button"
             onclick={() => onGapAreaClick?.(gap)}
-            class="group w-full text-left p-3 bg-white dark:bg-gray-800/40 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-yellow-200 dark:hover:border-yellow-900/50 transition-all duration-300"
+            class="analysis-item group w-full text-left p-3 bg-white dark:bg-gray-800/40 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-yellow-200 dark:hover:border-yellow-900/50 transition-all duration-300"
           >
             <div class="flex items-center justify-between mb-2">
               <span class="px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 text-[9px] font-black rounded-md uppercase">
@@ -80,7 +80,7 @@
           <button
             type="button"
             onclick={() => onDensityRegionClick?.(region)}
-            class="group w-full text-left p-3 bg-white dark:bg-gray-800/40 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-red-200 dark:hover:border-red-900/50 transition-all duration-300"
+            class="analysis-item group w-full text-left p-3 bg-white dark:bg-gray-800/40 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-red-200 dark:hover:border-red-900/50 transition-all duration-300"
           >
             <div class="flex items-center justify-between mb-1">
               <span class="text-xs font-black text-gray-800 dark:text-gray-100">{region.nodeCount} Nodes</span>
@@ -105,7 +105,7 @@
           <button
             type="button"
             onclick={() => onDuplicateClick?.(dup)}
-            class="group w-full text-left p-3 bg-white dark:bg-gray-800/40 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-900/50 transition-all duration-300"
+            class="analysis-item group w-full text-left p-3 bg-white dark:bg-gray-800/40 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-900/50 transition-all duration-300"
           >
             <div class="flex items-center justify-between mb-2">
               <span class="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 text-[9px] font-black rounded-md uppercase">

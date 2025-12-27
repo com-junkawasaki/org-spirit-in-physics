@@ -99,6 +99,7 @@
           #!/bin/sh
           # SvelteKit adapter-node reads environment variables directly
           export PORT=80
+          export ORIGIN=http://spirit.localhost
           exec ${linuxPkgs.nodejs_20}/bin/node ${svelte-app}/build/index.js
         '';
 

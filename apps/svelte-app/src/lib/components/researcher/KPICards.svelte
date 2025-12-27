@@ -88,7 +88,7 @@
 {#if kpis}
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {#each cards as card (card.title)}
-      <div class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+      <div class="kpi-card group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
         <div class="flex items-start justify-between mb-4">
           <div class="p-2.5 bg-gray-50 dark:bg-gray-800 rounded-2xl group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors" style="min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-center;">
             {#if card.title === '平均反応時間'}

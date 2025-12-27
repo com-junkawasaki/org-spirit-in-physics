@@ -1,8 +1,11 @@
-import { Given, When, Then, Before, After } from '@cucumber/cucumber';
+import { Given, When, Then, Before, After, setDefaultTimeout } from '@cucumber/cucumber';
 import { chromium, Browser, Page, expect } from '@playwright/test';
 
-let browser: Browser;
-let page: Page;
+// Increase timeout for complex visualizations
+setDefaultTimeout(60000);
+
+export let browser: Browser;
+export let page: Page;
 
 Before(async function () {
   browser = await chromium.launch({ headless: true });
@@ -10,7 +13,9 @@ Before(async function () {
 });
 
 After(async function () {
-  await browser.close();
+  if (browser) {
+    await browser.close();
+  }
 });
 
 Given('I am on the researcher dashboard', async function () {

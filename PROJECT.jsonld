@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.46.0",
+  "version": "1.47.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-27T21:20:00+09:00",
-  "merkleRoot": "SvelteKit ルーティングの正常化と Nix Flake 配信構成の最適化。不要なデバッグ instrumentation の除去とシンプルな構成への回帰。",
+  "updatedAt": "2025-12-27T22:30:00+09:00",
+  "merkleRoot": "SvelteKit を adapter-node に移行し、SPA モード（ssr=false）で運用。Python SPA サーバを廃止し、Node.js による標準的な配信構成へ刷新。",
   
   "story": {
     "@id": "project:story",
@@ -63,8 +63,8 @@
       {
         "@id": "project:narrative/70",
         "@type": "project:Narrative",
-        "act": "データレイクのバージョン管理導入",
-        "summary": "データ管理基盤を Pachyderm から lakeFS に刷新。lakeFS を Kubernetes インフラ (Timoni) に統合し、Storage Service からの Git ライクなデータ操作（リポジトリ、ブランチ管理）の基礎を確立した。これにより、測定データの大規模な再現性と系統管理が容易になった。"
+        "act": "SvelteKit 配信基盤の Node.js 移行",
+        "summary": "SvelteKit の配信基盤を Python SPA サーバーから adapter-node による Node.js サーバーへ移行した。ssr: false を維持しつつ、SPA ルーティングの解決と環境変数の扱いを標準的な Node.js の仕組みに統合。これにより Kubernetes との親和性が向上し、構成が大幅にシンプルになった。"
       }
     ]
   },
@@ -115,7 +115,8 @@
       "ゲートウェイルーティングの簡素化。全サービスを単一の HTTPRoute (infra-main-route) に集約し、パスベースの振り分けを統一管理",
       "Svelte アプリ (portal) のポッド内 Envoy プロキシを廃止し、Python SPA サーバーによる直接配信へ構成を簡素化 (ポート 80)",
       "SvelteKit のインポートパス修正 (relative path) と、全ルート (/researcher/participants, /sessions, /settings) の SPA 正常動作確認",
-      "ConnectRPC API (GetParticipants) の導通確認と Gateway 経由の正常応答を確認 (200 OK)"
+      "ConnectRPC API (GetParticipants) の導通確認と Gateway 経由の正常応答を確認 (200 OK)",
+      "SvelteKit の配信基盤を adapter-node (Node.js) に移行。ssr: false を維持しつつ、より標準的でスケーラブルな構成を確立"
     ]
   }
 }

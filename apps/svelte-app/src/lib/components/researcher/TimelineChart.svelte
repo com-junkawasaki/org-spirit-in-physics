@@ -332,7 +332,7 @@
 
 <div class="space-y-6">
   <div class="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden">
-    <svg bind:this={svgElement} {width} {height} class="w-full h-auto"></svg>
+    <svg bind:this={svgElement} {width} {height} class="w-full h-auto timeline-chart-svg"></svg>
   </div>
   
   <div class="bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
