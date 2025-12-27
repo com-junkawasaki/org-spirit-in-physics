@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AnalyticsOverview from "$lib/components/researcher/AnalyticsOverview.svelte";
+  import ParticipantList from "$lib/components/researcher/ParticipantList.svelte";
   import { participantClient } from "$lib/connect";
   import type { Participant } from "@/generated/proto/participant/v1/participant_pb";
   import { onMount } from "svelte";
@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-  <title>管理者ダッシュボード | Spirit in Physics</title>
+  <title>被験者管理 | Spirit in Physics</title>
 </svelte:head>
 
 <div class="page-container">
@@ -35,7 +35,7 @@
       <p>エラーが発生しました: {error}</p>
     </div>
   {:else}
-    <AnalyticsOverview {participants} />
+    <ParticipantList {participants} />
   {/if}
 </div>
 
@@ -68,3 +68,4 @@
     100% { transform: rotate(360deg); }
   }
 </style>
+

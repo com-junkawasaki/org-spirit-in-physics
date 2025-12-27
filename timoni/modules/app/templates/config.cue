@@ -95,15 +95,6 @@ import (
 	affinity?: corev1.#Affinity
 	topologySpreadConstraints?: [...corev1.#TopologySpreadConstraint]
 
-	// Routing settings
-	routing: {
-		enabled: *false | bool
-		hostname: *"" | string
-		gatewayName: *"" | string
-		gatewayNamespace: *"" | string
-		path: *"/" | string
-	}
-
 	// Volume settings
 	volumes?: [...corev1.#Volume]
 	volumeMounts?: [...corev1.#VolumeMount]
@@ -119,10 +110,6 @@ import (
 		
 		deploy: #Deployment & {
 			#config: config
-		}
-		
-		if config.routing.enabled {
-			route: #HTTPRoute & {#config: config}
 		}
 	}
 }

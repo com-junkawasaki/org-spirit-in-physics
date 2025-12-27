@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Participant } from "../../../generated/proto/participant/v1/participant_pb";
+  import type { Participant } from "@/generated/proto/participant/v1/participant_pb";
 
   let { participants } = $props<{ participants: Participant[] }>();
   let searchQuery = $state("");

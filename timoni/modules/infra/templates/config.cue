@@ -1,8 +1,8 @@
 package templates
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	timoniv1 "timoni.sh/core/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // Config defines the schema and defaults for the Instance values.
@@ -136,17 +136,10 @@ import (
 		if config.temporal.enabled {
 			temporal_svc: #TemporalService & {#config: config}
 			temporal_deploy: #TemporalDeployment & {#config: config}
-			if config.gateway.enabled {
-				temporal_ui_route: #TemporalUIRoute & {#config: config}
-			}
 		}
 		if config.minio.enabled {
 			minio_svc: #MinIOService & {#config: config}
 			minio_sts: #MinIOStatefulSet & {#config: config}
-			if config.gateway.enabled {
-				minio_route:         #MinIORoute & {#config: config}
-				minio_console_route: #MinIOConsoleRoute & {#config: config}
-			}
 		}
 		if config.lakefs.enabled {
 			lakefs_svc: #LakeFSService & {#config: config}
@@ -154,20 +147,15 @@ import (
 			if config.lakefs.setup.enabled {
 				lakefs_setup: #LakeFSSetupJob & {#config: config}
 			}
-			if config.gateway.enabled {
-				lakefs_route: #LakeFSRoute & {#config: config}
-			}
-		}
-		if config.gateway.enabled {
-			gateway: #Gateway & {#config: config}
-			issuer: #ClusterIssuer & {#config: config}
 		}
 		if config.nix_cache.enabled {
 			nix_cache_svc: #NixCacheService & {#config: config}
 			nix_cache_sts: #NixCacheStatefulSet & {#config: config}
-			if config.gateway.enabled {
-				nix_cache_route: #NixCacheRoute & {#config: config}
-			}
+		}
+		if config.gateway.enabled {
+			gateway:    #Gateway & {#config: config}
+			issuer:     #ClusterIssuer & {#config: config}
+			main_route: #MainRoute & {#config: config}
 		}
 	}
 }

@@ -4,9 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    dream2nix.url = "github:nix-community/dream2nix";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, dream2nix }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -50,21 +51,65 @@
           '';
         };
 
-        # 2. Svelte App - Built on Host
+        # 2. Python Import Service - Built with dream2nix
+        import-service-eval = dream2nix.lib.evalModules {
+          packageSets.nixpkgs = pkgs;
+          modules = [
+            dream2nix.modules.dream2nix.pip
+            {
+              paths.projectRoot = ./.;
+              paths.package = ./performers/services/import;
+              name = "spirit-import-service";
+              version = "0.1.0";
+              pip.requirementsFiles = [ 
+                "${./performers/services/import/requirements.txt}"
+              ];
+              pip.flattenDependencies = true;
+              # Force source to be local
+              mkDerivation.src = ./performers/services/import;
+            }
+          ];
+        };
+        import-service = import-service-eval.config.public;
+
+        # 3. Svelte App - Standard build
         svelte-app = pkgs.stdenv.mkDerivation {
           pname = "spirit-svelte-app";
           version = "0.1.0";
           src = ./apps/svelte-app;
-          nativeBuildInputs = [ pkgs.nodejs_20 pkgs.pnpm.configHook pkgs.pnpm ];
-          pnpmDeps = pkgs.fetchPnpmDeps {
-            pname = "spirit-svelte-app-deps";
-            src = ./apps/svelte-app;
-            hash = "sha256-CwMqzwJMUKkRRVMAnV1X5Qct3BVMdclLtmvb0dlh/vw=";
-            fetcherVersion = 3;
-          };
-          buildPhase = "pnpm build";
-          installPhase = "mkdir -p $out/www && cp -r build/* $out/www/";
+          nativeBuildInputs = with pkgs; [ nodejs_20 pnpm.configHook ];
+          buildPhase = ''
+            pnpm build
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp -r build $out/www
+          '';
         };
+
+        # SPA Handler Python script
+        spa-handler = pkgs.writeText "spa_handler.py" ''
+import http.server
+import socketserver
+import os
+import sys
+
+PORT = 80
+DIRECTORY = '/app/www'
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=DIRECTORY, **kwargs)
+    def do_GET(self):
+        path = self.translate_path(self.path)
+        if not os.path.exists(path) and '.' not in os.path.basename(path):
+            self.path = '/index.html'
+        return super().do_GET()
+
+with socketserver.TCPServer(("", PORT), Handler) as httpd:
+    print(f"Serving SPA at port {PORT}")
+    httpd.serve_forever()
+        '';
 
         # Start script for the Svelte app
         start-script = linuxPkgs.writeScript "start-portal.sh" ''
@@ -76,26 +121,7 @@
           find /app/www -name "*.html" -exec sed -i "s|__PUBLIC_API_URL__|$PUBLIC_API_URL|g" {} + || true
           find /app/www -name "*.html" -exec sed -i "s|__PUBLIC_SUPABASE_URL__|$PUBLIC_SUPABASE_URL|g" {} + || true
           find /app/www -name "*.html" -exec sed -i "s|__PUBLIC_SUPABASE_ANON_KEY__|$PUBLIC_SUPABASE_ANON_KEY|g" {} + || true
-          
-          # Run Python SPA server
-          exec ${linuxPkgs.python311}/bin/python3 -c "
-          import http.server;
-          import socketserver;
-          import os;
-          PORT = 80;
-          DIRECTORY = '/app/www';
-          class Handler(http.server.SimpleHTTPRequestHandler):
-              def __init__(self, *args, **kwargs):
-                  super().__init__(*args, directory=DIRECTORY, **kwargs)
-              def do_GET(self):
-                  path = self.translate_path(self.path)
-                  if not os.path.exists(path) and '.' not in os.path.basename(path):
-                      self.path = '/index.html'
-                  return super().do_GET()
-          with socketserver.TCPServer(('', PORT), Handler) as httpd:
-              print('Serving SPA at port', PORT)
-              httpd.serve_forever()
-          "
+          exec ${linuxPkgs.python311}/bin/python3 ${spa-handler}
         '';
 
       in
@@ -124,11 +150,25 @@
               linuxPkgs.python311 
               linuxPkgs.busybox
               linuxPkgs.cacert
-              svelte-app 
+              svelte-app
             ];
             config = {
               Cmd = [ "${linuxPkgs.busybox}/bin/sh" "${start-script}" ];
               ExposedPorts = { "80/tcp" = { }; };
+            };
+          };
+
+          # Python Import Service
+          import-service = import-service;
+
+          # Python Import Service Image (Built with dream2nix!)
+          import-image = pkgs.dockerTools.streamLayeredImage {
+            name = "spirit-import-service";
+            tag = "latest";
+            contents = [ import-service linuxPkgs.cacert ];
+            config = {
+              Cmd = [ "${import-service}/bin/python" "-m" "main" ];
+              ExposedPorts = { "8000/tcp" = { }; };
             };
           };
         };

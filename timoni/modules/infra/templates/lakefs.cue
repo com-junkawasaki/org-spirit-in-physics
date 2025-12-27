@@ -92,46 +92,6 @@ import (
 	}
 }
 
-#LakeFSRoute: {
-	#config: #Config
-	apiVersion: "gateway.networking.k8s.io/v1"
-	kind:       "HTTPRoute"
-	metadata: {
-		labels:      #config.metadata.labels
-		annotations: #config.metadata.annotations
-		namespace:   #config.metadata.namespace
-		name:        "\(#config.metadata.name)-lakefs"
-	}
-	spec: {
-		parentRefs: [{
-			name:      "\(#config.metadata.name)-gateway"
-			namespace: #config.metadata.namespace
-		}]
-		hostnames: [#config.gateway.hostname]
-		rules: [{
-			matches: [{
-				path: {
-					type:  "PathPrefix"
-					value: "/lakefs"
-				}
-			}]
-			filters: [{
-				type: "URLRewrite"
-				urlRewrite: {
-					path: {
-						type:               "ReplacePrefixMatch"
-						replacePrefixMatch: "/"
-					}
-				}
-			}]
-			backendRefs: [{
-				name: "\(#config.metadata.name)-lakefs"
-				port: #config.lakefs.port
-			}]
-		}]
-	}
-}
-
 #LakeFSSetupJob: {
 	#config: #Config
 	apiVersion: "batch/v1"
