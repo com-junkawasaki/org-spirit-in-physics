@@ -82,7 +82,11 @@
       "画像（スナップショット）保存機能の実装",
       "Storage Service (gRPC) との連携実装",
       "MinIO の Kubernetes クラスターへの統合",
-      "MinIO Go SDK を使用したストレージハンドラーの実装"
+      "MinIO Go SDK を使用したストレージハンドラーの実装",
+      "Svelte による研究者ポータル (Admin Dashboard) の設計と実装",
+      "被験者一覧、セッション履歴、アナリティクス概要コンポーネントの実装",
+      "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装",
+      "Connect RPC 経由でのインポート実行環境の整備"
     ]
   }
 }

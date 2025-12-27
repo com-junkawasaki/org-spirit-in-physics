@@ -161,3 +161,16 @@ FROM timeline_word_statistics_by_session
 WHERE participant_id = $1
     AND ($2::uuid IS NULL OR session_id = $2)
 ORDER BY word ASC;
+
+-- name: CreateTimelinePoint :exec
+INSERT INTO timeline_points (time, participant_id, session_id, word, event_type, reaction_value, reaction_time, has_response)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (time, participant_id, session_id) DO NOTHING;
+
+-- name: CreateTimelineEmotionEntry :exec
+INSERT INTO timeline_emotion_entries (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, emotion_name, score, file_type)
+VALUES ($1, $2, $3, $4, $5, $6);
+
+-- name: CreatePhysiologicalMeasurement :exec
+INSERT INTO physiological_measurements (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, measurement_type, value, unit)
+VALUES ($1, $2, $3, $4, $5, $6);
