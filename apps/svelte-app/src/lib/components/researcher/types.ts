@@ -11,6 +11,7 @@ export interface WordNode {
   nodeType?: 'word' | 'anchor'
   initial?: [number, number, number]
   color?: string
+  emotion?: Record<string, number>
 }
 
 export interface WordLink {
@@ -269,6 +270,13 @@ export interface DuplicateCandidate {
   commonFeatures: CommonFeatures
   suggestedMerge: boolean
   distance: number
+}
+
+export interface AnalysisResults {
+  gapAreas: GapArea[]
+  densityRegions: DensityRegion[]
+  duplicates: DuplicateCandidate[]
+  overallDensity: number
 }
 
 // Merkle DAG: timeline.types -> definitions_complete

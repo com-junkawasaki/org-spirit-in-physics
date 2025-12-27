@@ -14,11 +14,21 @@
   import Force3DControls from './Force3DControls.svelte';
   import Force3DWordGraphTypeGPU from './Force3DWordGraphTypeGPU.svelte';
   import StructureAnalysisPanel from './StructureAnalysisPanel.svelte';
+  import type { 
+    AnalysisResults,
+    GapArea,
+    DensityRegion,
+    DuplicateCandidate
+  } from './types';
   import { timelineClient } from '$lib/connect';
   import * as d3 from 'd3';
   import { normalizeEmotionName, EMOTION_KEYS } from '$lib/researcher/emotion-normalization';
   import { JUNG_STIMULUS_WORDS } from '$lib/researcher/jung';
-  import { detectGapAreas, analyzeDensity, detectDuplicates } from '$lib/researcher/structure-analysis';
+  import type { 
+    WordAggregate, 
+    EmotionVector, 
+    WordStatistics 
+  } from '../../../generated/proto/timeline/v1/timeline_pb';
   
   let {
     participantId,
@@ -31,9 +41,14 @@
 
   // State
   let data: TimelineDataPoint[] = $state([]);
+  let wordStatistics: WordStatistics[] = $state([]);
+  let emotionVectors: EmotionVector[] = $state([]);
+  let wordAggregates: WordAggregate[] = $state([]);
+  
   let loading = $state(true);
   let error: string | null = $state(null);
   let timeRange: TimeRange | null = $state(null);
+
   let filters: FilterSettings = $state({
     emotions: true,
     physiological: true,
@@ -53,6 +68,8 @@
   let springK = $state(2.0);
   let repulsionK = $state(2000.0);
   let restLength = $state(80);
+  let minSep = $state(60);
+  let sepK = $state(5000.0);
   let damping = $state(0.92);
   let shellRadius = $state(300);
   let shellK = $state(1.5);
@@ -95,37 +112,55 @@
     loading = true;
     error = null;
     try {
-      const response = await timelineClient.getTimeline({
-        participantId,
-        sessionId: sessionId || ''
-      });
+      const results = await Promise.allSettled([
+        timelineClient.getTimeline({ participantId, sessionId: sessionId || undefined }),
+        timelineClient.getWordStatistics({ participantId, sessionId: sessionId || undefined }),
+        timelineClient.getEmotionVectors({ participantId, sessionId: sessionId || undefined }),
+        timelineClient.getWordAggregates({ participantId, sessionId: sessionId || undefined })
+      ]);
       
-      if (response.success && response.data?.timelineData) {
-        data = response.data.timelineData.map((item: any) => ({
-          timestamp: Number(item.ts || item.t || item.timestamp),
-          word: item.w || item.word || '',
-          reactionTime: item.rt ?? item.reactionTime ?? 0,
-          hasResponse: item.rt != null || item.reactionTime != null,
-          emotions: (item.em || item.emotions || []).map((e: any) => ({
-            name: e.n || e.name || '',
-            score: e.s || e.score || 0,
-            fileType: e.t || e.fileType || ''
+      const [timelineRes, statsRes, vectorsRes, aggregatesRes] = results;
+
+      if (timelineRes.status === 'fulfilled' && timelineRes.value.points && timelineRes.value.points.length > 0) {
+        const itemValue = timelineRes.value;
+        data = itemValue.points.map((item: any) => ({
+          timestamp: item.time ? (Number(item.time.seconds) * 1000 + (item.time.nanos / 1000000)) : 0,
+          word: item.word || '',
+          reactionTime: item.reactionTime ?? 0,
+          hasResponse: item.hasResponse,
+          emotions: (item.emotions || []).map((e: any) => ({
+            name: e.name || '',
+            score: e.score || 0,
+            fileType: e.fileType || ''
           })),
-          physiological: item.ph || item.physiological || { average: 0, max: 0, min: 0 },
-          reactionValue: item.rv || item.reactionValue || 0,
-          eventType: item.e || item.eventType || '',
-          metadata: item.md || item.m || item.metadata || {}
+          physiological: item.physiological || [],
+          reactionValue: item.reactionValue || 0,
+          eventType: item.eventType || '',
+          metadata: item.metadata || {}
         }));
 
         if (data.length > 0) {
           const extent = d3.extent(data, d => d.timestamp) as [number, number];
           timeRange = { start: extent[0], end: extent[1] };
         }
+      } else if (timelineRes.status === 'rejected') {
+        error = `Timeline data error: ${timelineRes.reason.message}`;
       } else {
-        error = "No data found for this participant";
+        error = "No timeline data found for this participant";
       }
+
+      if (statsRes.status === 'fulfilled') {
+        wordStatistics = statsRes.value.statistics || [];
+      }
+      if (vectorsRes.status === 'fulfilled') {
+        emotionVectors = vectorsRes.value.vectors || [];
+      }
+      if (aggregatesRes.status === 'fulfilled') {
+        wordAggregates = aggregatesRes.value.aggregates || [];
+      }
+
     } catch (e: any) {
-      error = e.message || "Failed to fetch timeline data";
+      error = e.message || "Failed to fetch visualization data";
       console.error(e);
     } finally {
       loading = false;
@@ -152,93 +187,215 @@
   });
 
   let showAnalysis = $state(false);
-  let analysisResults = $derived.by(() => {
-    if (graphData.nodes.length === 0) return { gapAreas: [], densityRegions: [], duplicates: [], overallDensity: 0 };
-    const { overcrowdedRegions, sparseRegions, overallDensity } = analyzeDensity(graphData.nodes);
-    return {
-      gapAreas: detectGapAreas(graphData.nodes, graphData.links, {}, data),
-      densityRegions: [...overcrowdedRegions, ...sparseRegions],
-      duplicates: detectDuplicates(graphData.nodes, {}, data),
-      overallDensity
-    };
+  let analysisResults: AnalysisResults = $state({
+    gapAreas: [],
+    densityRegions: [],
+    duplicates: [],
+    overallDensity: 0
+  });
+
+  async function fetchAnalysis() {
+    if (!participantId) return;
+    try {
+      const response = await timelineClient.getAnalysis({
+        participantId,
+        sessionId: sessionId || ''
+      });
+      if (response) {
+        analysisResults = {
+          gapAreas: (response.gapAreas || []) as any,
+          densityRegions: (response.densityRegions || []) as any,
+          duplicates: (response.duplicates || []) as any,
+          overallDensity: response.overallDensity || 0
+        };
+      }
+    } catch (e) {
+      console.error("Failed to fetch analysis", e);
+    }
+  }
+
+  $effect(() => {
+    if (data.length > 0 && showAnalysis) {
+      fetchAnalysis();
+    }
   });
 </script>
 
-<div class="flex flex-col space-y-6">
-  <div class="flex border-b border-gray-200 dark:border-gray-700">
-    <button 
-      class="px-4 py-2 {activeTab === 'timeline' ? 'border-b-2 border-blue-500 text-blue-500 font-medium' : 'text-gray-500 hover:text-gray-700'}"
-      onclick={() => activeTab = 'timeline'}
-    >
-      Timeline
-    </button>
-    <button 
-      class="px-4 py-2 {activeTab === 'force3d' ? 'border-b-2 border-blue-500 text-blue-500 font-medium' : 'text-gray-500 hover:text-gray-700'}"
-      onclick={() => activeTab = 'force3d'}
-    >
-      3D Force
-    </button>
-  </div>
+<div class="timeline-visualization-container flex flex-col space-y-8">
+  <!-- Header / Tabs Section -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm p-2 rounded-2xl border border-gray-200 dark:border-gray-700">
+    <div class="flex p-1 bg-gray-200/50 dark:bg-gray-900/50 rounded-xl">
+      <button 
+        class="px-6 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all {activeTab === 'timeline' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700'}"
+        onclick={() => activeTab = 'timeline'}
+      >
+        Timeline
+      </button>
+      <button 
+        class="px-6 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all {activeTab === 'force3d' ? 'bg-white dark:bg-gray-800 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700'}"
+        onclick={() => activeTab = 'force3d'}
+      >
+        3D Space
+      </button>
+    </div>
 
-  {#if loading}
-    <div class="flex items-center justify-center p-20">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-    </div>
-  {:else if error}
-    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center text-red-600 dark:text-red-400">
-      <p class="font-medium mb-2">Error</p>
-      <p>{error}</p>
-      <button class="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors" onclick={fetchData}>Retry</button>
-    </div>
-  {:else}
-    {#if activeTab === 'timeline'}
-      <KPICards {data} />
-      <TimelineChart 
-        {data} 
-        {filters} 
-        {width} 
-        {height} 
-        {timeRange}
-        onTimeRangeChange={(r) => timeRange = r}
-        onDataPointSelect={() => {}}
-        onTooltipShow={() => {}}
-        onTooltipHide={() => {}}
-      />
-    {:else if activeTab === 'force3d'}
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div class="lg:col-span-3">
-          <Force3DControls 
-            {forcePresets} {forcePresetId} {springK} {repulsionK} {restLength} {damping} {shellRadius} {shellK} {radialOutK} {alpha} {gamma} {lambda} {eta}
-            onPresetChange={applyForcePreset} onSpringKChange={(v) => springK = v} onRepulsionKChange={(v) => repulsionK = v} onRestLengthChange={(v) => restLength = v}
-            onMinSepChange={() => {}} onSepKChange={() => {}} onShellRadiusChange={(v) => shellRadius = v} onShellKChange={(v) => shellK = v}
-            onRadialOutKChange={(v) => radialOutK = v} onDampingChange={(v) => damping = v} onAlphaChange={(v) => alpha = v} onGammaChange={(v) => gamma = v}
-            onLambdaChange={(v) => lambda = v} onEtaChange={(v) => eta = v}
-          />
-          <div class="bg-black rounded-lg overflow-hidden relative" style="height: 600px;">
-            <Force3DWordGraphTypeGPU 
-              nodes={graphData.nodes} links={graphData.links} {width} height={600} 
-              physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK }}
-              gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} showAnalysis={showAnalysis}
-            />
-            <div class="absolute top-4 right-4 flex gap-2">
-              <button class="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded backdrop-blur-md border border-white/20 transition-colors" onclick={() => showAnalysis = !showAnalysis}>
-                {showAnalysis ? 'Hide Analysis' : 'Show Analysis'}
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="lg:col-span-1">
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 h-full">
-            <h3 class="font-bold text-lg mb-4 dark:text-white">Structure Analysis</h3>
-            <StructureAnalysisPanel 
-              gapAreas={analysisResults.gapAreas} 
-              densityRegions={analysisResults.densityRegions} 
-              duplicates={analysisResults.duplicates} 
-              overallDensity={analysisResults.overallDensity}
-            />
-          </div>
+    {#if activeTab === 'timeline' && !hideFilters}
+      <div class="flex items-center gap-4 px-4">
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Time Scale</span>
+          <input type="range" bind:value={filters.timeScale} min="0.1" max="5.0" step="0.1" class="w-32 accent-blue-500" />
         </div>
       </div>
     {/if}
+  </div>
+
+  {#if loading}
+    <div class="flex flex-col items-center justify-center py-32 space-y-6">
+      <div class="spinner"></div>
+      <p class="text-sm font-bold text-gray-400 uppercase tracking-widest animate-pulse">Analyzing Neural Patterns...</p>
+    </div>
+  {:else if error}
+    <div class="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-3xl p-12 text-center">
+      <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-black text-gray-900 dark:text-white mb-2 uppercase tracking-tight">Signal Interrupted</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto leading-relaxed">{error}</p>
+      <button class="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-black font-black text-xs uppercase tracking-widest rounded-xl hover:scale-105 transition-all" onclick={fetchData}>
+        Reconnect
+      </button>
+    </div>
+  {:else}
+    <div class="transition-all duration-500">
+      {#if activeTab === 'timeline'}
+        <div class="space-y-10">
+          <KPICards {data} />
+          
+          <div class="bg-gray-50/50 dark:bg-gray-900/50 rounded-[40px] border border-gray-100 dark:border-gray-800 p-8">
+            <div class="flex items-center justify-between mb-8">
+              <div class="flex items-center gap-3">
+                <div class="w-2 h-8 bg-blue-500 rounded-full"></div>
+                <h3 class="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">Timeline Stream</h3>
+              </div>
+            </div>
+            
+            <div class="overflow-x-auto custom-scrollbar pb-4">
+              <TimelineChart 
+                {data} 
+                {filters} 
+                width={Math.max(width, 1000)} 
+                {height} 
+                {timeRange}
+                onTimeRangeChange={(r) => timeRange = r}
+                onDataPointSelect={() => {}}
+                onTooltipShow={() => {}}
+                onTooltipHide={() => {}}
+              />
+            </div>
+          </div>
+        </div>
+      {:else if activeTab === 'force3d'}
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          <div class="xl:col-span-3 space-y-6">
+            <Force3DControls 
+              {forcePresets} {forcePresetId} {springK} {repulsionK} {restLength} {minSep} {sepK} {damping} {shellRadius} {shellK} {radialOutK} {alpha} {gamma} {lambda} {eta}
+              onPresetChange={applyForcePreset} 
+              onSpringKChange={(v) => springK = v} 
+              onRepulsionKChange={(v) => repulsionK = v} 
+              onRestLengthChange={(v) => restLength = v}
+              onMinSepChange={(v) => minSep = v} 
+              onSepKChange={(v) => sepK = v} 
+              onShellRadiusChange={(v) => shellRadius = v} 
+              onShellKChange={(v) => shellK = v}
+              onRadialOutKChange={(v) => radialOutK = v} 
+              onDampingChange={(v) => damping = v} 
+              onAlphaChange={(v) => alpha = v} 
+              onGammaChange={(v) => gamma = v}
+              onLambdaChange={(v) => lambda = v} 
+              onEtaChange={(v) => eta = v}
+            />
+            
+            <div class="bg-black rounded-[48px] overflow-hidden relative shadow-2xl border-[12px] border-gray-100 dark:border-gray-800" style="height: 700px;">
+              <Force3DWordGraphTypeGPU 
+                nodes={graphData.nodes} links={graphData.links} width={width} height={700} 
+                physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK, minSep, sepK }}
+                gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} showAnalysis={showAnalysis}
+              />
+              
+              <div class="absolute top-8 right-8 flex flex-col gap-4">
+                <button 
+                  class="px-6 py-3 {showAnalysis ? 'bg-blue-600 text-white shadow-blue-500/40' : 'bg-white/10 text-white hover:bg-white/20'} backdrop-blur-2xl border border-white/20 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl"
+                  onclick={() => showAnalysis = !showAnalysis}
+                >
+                  {showAnalysis ? '✨ Analysis Active' : '🔍 Analyze Space'}
+                </button>
+                
+                <div class="bg-black/60 backdrop-blur-xl p-4 rounded-2xl border border-white/10 text-[10px] text-gray-400 space-y-2">
+                  <div class="flex items-center justify-between gap-4">
+                    <span class="font-bold">ROTATE</span>
+                    <kbd class="px-2 py-1 bg-white/10 rounded-md">DRAG</kbd>
+                  </div>
+                  <div class="flex items-center justify-between gap-4">
+                    <span class="font-bold">ZOOM</span>
+                    <kbd class="px-2 py-1 bg-white/10 rounded-md">SCROLL</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="xl:col-span-1">
+            <div class="bg-white dark:bg-gray-900 rounded-[40px] p-8 border border-gray-100 dark:border-gray-800 shadow-xl h-full flex flex-col">
+              <div class="flex items-center justify-between mb-8">
+                <h3 class="font-black text-xl text-gray-900 dark:text-white tracking-tighter uppercase">Space Insight</h3>
+                <span class="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-black rounded-full uppercase tracking-widest">AI Computed</span>
+              </div>
+              
+              <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <StructureAnalysisPanel 
+                  gapAreas={analysisResults.gapAreas} 
+                  densityRegions={analysisResults.densityRegions} 
+                  duplicates={analysisResults.duplicates} 
+                  overallDensity={analysisResults.overallDensity}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      {/if}
+    </div>
   {/if}
 </div>
+
+<style>
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.2);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.4);
+  }
+</style>

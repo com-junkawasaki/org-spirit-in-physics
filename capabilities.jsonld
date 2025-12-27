@@ -186,6 +186,33 @@
       "relatedCapabilities": [
         "capability:data-visualization"
       ]
+    },
+    {
+      "@id": "capability:e2e-testing",
+      "@type": "capability:Capability",
+      "name": "E2Eテスト・BDD",
+      "purpose": "TemporalによってオーケストレーションされたBDDテストを実行し、ブラウザベースの振る舞い検証を行う",
+      "activities": [
+        "Cucumberテスト実行",
+        "Playwrightブラウザ操作",
+        "Temporalワークフローによるテスト管理"
+      ],
+      "resources": [
+        "tests/bdd",
+        "Temporal Workflow: runBDDWorkflow",
+        "Playwright",
+        "Cucumber.js",
+        "Envoy Proxy Infrastructure"
+      ],
+      "performers": [
+        "Temporal Worker (temporal-ts)",
+        "Cucumber Test Runner"
+      ],
+      "measures": [
+        "テスト成功率",
+        "テスト実行時間",
+        "機能カバレッジ"
+      ]
     }
   ]
 }

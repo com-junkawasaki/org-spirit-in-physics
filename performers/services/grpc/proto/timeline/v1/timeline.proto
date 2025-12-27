@@ -20,6 +20,66 @@ service TimelineService {
   
   // Get word statistics by session
   rpc GetWordStatistics(GetWordStatisticsRequest) returns (GetWordStatisticsResponse);
+
+  // Get structure analysis results (run via Temporal)
+  rpc GetAnalysis(GetAnalysisRequest) returns (GetAnalysisResponse);
+}
+
+message GetAnalysisRequest {
+  string participant_id = 1;
+  optional string session_id = 2;
+}
+
+message GetAnalysisResponse {
+  repeated GapArea gap_areas = 1;
+  repeated DensityRegion density_regions = 2;
+  repeated DuplicateCandidate duplicates = 3;
+  double overall_density = 4;
+}
+
+message GapArea {
+  string id = 1;
+  repeated double center = 2; // [x, y, z]
+  double radius = 3;
+  repeated NearbyNode nearby_nodes = 4;
+  repeated string suggested_items = 5;
+  double confidence = 6;
+  google.protobuf.Struct common_emotion_profile = 7;
+}
+
+message NearbyNode {
+  string node_id = 1;
+  string label = 2;
+  double distance = 3;
+  repeated string common_features = 4;
+}
+
+message DensityRegion {
+  string id = 1;
+  repeated double center = 2;
+  double radius = 3;
+  int32 node_count = 4;
+  double density = 5;
+  bool is_overcrowded = 6;
+  optional double suggested_separation = 7;
+}
+
+message DuplicateCandidate {
+  string id = 1;
+  repeated string node_ids = 2;
+  repeated string labels = 3;
+  double similarity = 4;
+  CommonFeatures common_features = 5;
+  bool suggested_merge = 6;
+  double distance = 7;
+}
+
+message CommonFeatures {
+  google.protobuf.Struct emotion_profile = 1;
+  repeated string semantic_tags = 2;
+  repeated double frequency_range = 3;
+  repeated double reaction_time_range = 4;
+  repeated double reaction_value_range = 5;
 }
 
 message GetTimelineRequest {

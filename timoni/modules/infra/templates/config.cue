@@ -66,6 +66,39 @@ import (
 		storage:      *"10Gi" | string
 	}
 
+	// lakeFS settings
+	lakefs: {
+		enabled: *true | bool
+		image: {
+			repository: *"treeverse/lakefs" | string
+			tag:        *"latest" | string
+			digest:     *"" | string
+			reference:  "\(repository):\(tag)"
+		}
+		port: *8000 | int
+		database: {
+			connectionString: string
+		}
+		auth: {
+			encryptSecretKey: string
+		}
+		blockstore: {
+			type: *"s3" | string
+			s3: {
+				endpoint:        string
+				forcePathStyle:  *true | bool
+				accessKeyId:     string
+				secretAccessKey: string
+			}
+		}
+		setup: {
+			enabled: *true | bool
+			repository: string
+			adminAccessKey: string
+			adminSecretKey: string
+		}
+	}
+
 	// Gateway settings
 	gateway: {
 		enabled: *true | bool
@@ -100,6 +133,16 @@ import (
 			if config.gateway.enabled {
 				minio_route:         #MinIORoute & {#config: config}
 				minio_console_route: #MinIOConsoleRoute & {#config: config}
+			}
+		}
+		if config.lakefs.enabled {
+			lakefs_svc: #LakeFSService & {#config: config}
+			lakefs_deploy: #LakeFSDeployment & {#config: config}
+			if config.lakefs.setup.enabled {
+				lakefs_setup: #LakeFSSetupJob & {#config: config}
+			}
+			if config.gateway.enabled {
+				lakefs_route: #LakeFSRoute & {#config: config}
 			}
 		}
 		if config.gateway.enabled {

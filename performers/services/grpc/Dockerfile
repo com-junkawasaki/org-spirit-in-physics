@@ -7,7 +7,8 @@ RUN apk add --no-cache git make curl
 RUN curl -sSL "https://github.com/bufbuild/buf/releases/latest/download/buf-$(uname -s)-$(uname -m)" -o "/usr/local/bin/buf" &&     chmod +x "/usr/local/bin/buf"
 RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+RUN go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
+RUN apk add --no-cache nodejs npm && npm install -g @bufbuild/protoc-gen-es@1.10.1 @connectrpc/protoc-gen-connect-es@1.7.0
 
 # Copy go mod files
 COPY go.mod go.sum ./

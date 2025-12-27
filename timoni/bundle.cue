@@ -29,7 +29,29 @@ bundle: {
 						tag:        "latest"
 					}
 				}
-				gateway: hostname: "localhost"
+				lakefs: {
+					enabled: true
+					database: {
+						connectionString: "postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics?sslmode=disable"
+					}
+					auth: {
+						encryptSecretKey: "spirit-in-physics-lakefs-secret-key-2025"
+					}
+					blockstore: {
+						s3: {
+							endpoint:        "http://infra-minio:9000"
+							accessKeyId:     "minioadmin"
+							secretAccessKey: "minioadmin"
+						}
+					}
+					setup: {
+						enabled:    true
+						repository: "spirit-in-physics"
+						adminAccessKey: "AKIAIOSFODNN7EXAMPLE"
+						adminSecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+					}
+				}
+				gateway: hostname: "spirit.localhost"
 			}
 		}
 
@@ -58,6 +80,10 @@ bundle: {
 					{name: "MINIO_ENDPOINT", value: "infra-minio:9000"},
 					{name: "MINIO_ROOT_USER", value: "minioadmin"},
 					{name: "MINIO_ROOT_PASSWORD", value: "minioadmin"},
+					{name: "LAKEFS_ENDPOINT", value: "http://infra-lakefs:8000"},
+					{name: "LAKEFS_ACCESS_KEY_ID", value: "AKIAIOSFODNN7EXAMPLE"}, // lakeFS usually starts with this for setup
+					{name: "LAKEFS_SECRET_ACCESS_KEY", value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"},
+					{name: "LAKEFS_REPOSITORY", value: "spirit-in-physics"},
 				]
 				volumeMounts: [
 					{name: "dataset", mountPath: "/dataset"},
@@ -169,6 +195,28 @@ bundle: {
 					{name: "PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
 					{name: "PUBLIC_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
 					{name: "PUBLIC_API_URL", value: "http://spirit.localhost/api"},
+				]
+			}
+		}
+
+		"temporal-ts": {
+			module: {
+				url: "file://./modules/app"
+			}
+			namespace: "spirit-in-physics"
+			values: {
+				image: {
+					repository: "spirit-temporal-ts"
+					tag:        "latest"
+					pullPolicy: "IfNotPresent"
+				}
+				service: port: 3000
+				routing: {
+					enabled: false
+				}
+				env: [
+					{name: "TEMPORAL_ADDRESS", value: "infra-temporal:7233"},
+					{name: "TASK_QUEUE", value: "visualization-analysis-queue"},
 				]
 			}
 		}

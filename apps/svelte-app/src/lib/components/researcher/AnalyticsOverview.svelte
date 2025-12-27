@@ -3,13 +3,13 @@
 
   let { participants } = $props<{ participants: Participant[] }>();
 
-  // Mock data for analytics
-  const stats = [
+  // Reactive stats for analytics
+  let stats = $derived([
     { label: "総被験者数", value: participants.length, icon: "👥", trend: "+12%" },
     { label: "完了セッション", value: 42, icon: "✅", trend: "+5%" },
     { label: "平均霊性確率", value: "72.4%", icon: "✨", trend: "+2%" },
     { label: "分析待ちデータ", value: 8, icon: "⏳", trend: "-3%" },
-  ];
+  ]);
 </script>
 
 <div class="analytics-overview">

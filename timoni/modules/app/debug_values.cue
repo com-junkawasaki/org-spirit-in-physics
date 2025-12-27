@@ -8,8 +8,8 @@ values: {
 	podAnnotations: "cluster-autoscaler.kubernetes.io/safe-to-evict": "true"
 	message: "Hello Debug"
 	image: {
-		repository: "docker.io/nginx"
-		tag:        "1-alpine"
+		repository: "envoyproxy/envoy"
+		tag:        "v1.31-latest"
 		digest:     ""
 	}
 	test: {

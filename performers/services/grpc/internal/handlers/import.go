@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/import/v1"
 	"github.com/spirit-in-physics/services/grpc/internal/activities"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
@@ -82,7 +80,7 @@ func (h *ImportHandler) ImportEmotions(
 	req *connect.Request[importv1.ImportEmotionsRequest],
 ) (*connect.Response[importv1.ImportEmotionsResponse], error) {
 	// We'll import emotions for all participants found in the dataset
-	participants, err := h.queries.GetParticipants(ctx, pgtype.Bool{Valid: false})
+	participants, err := h.queries.GetParticipants(ctx, false)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

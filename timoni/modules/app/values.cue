@@ -8,7 +8,7 @@ package main
 // Defaults
 values: {
 	image: {
-		repository: "nginx"
-		tag:        "latest"
+		repository: "envoyproxy/envoy"
+		tag:        "v1.31-latest"
 	}
 }

@@ -5,7 +5,7 @@
   let searchQuery = $state("");
 
   const filteredParticipants = $derived(
-    participants.filter(p => 
+    participants.filter((p: Participant) => 
       p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.gender || "").toLowerCase().includes(searchQuery.toLowerCase())
     )

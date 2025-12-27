@@ -19,11 +19,18 @@ docker_build(
     dockerfile='./performers/services/import/Dockerfile'
 )
 
-# 4. Svelte App
+# 4. Temporal TypeScript Worker
+docker_build(
+    'spirit-temporal-ts',
+    './performers/services/temporal-ts',
+    dockerfile='./performers/services/temporal-ts/Dockerfile'
+)
+
+# 5. Svelte App
 local_resource(
     'svelte-build',
-    cmd='cd apps/svelte-app && pnpm build',
-    deps=['./apps/svelte-app/src'],
+    cmd='cd apps/svelte-app && rm -rf build .svelte-kit && pnpm build',
+    deps=['./apps/svelte-app/src', './apps/svelte-app/package.json', './apps/svelte-app/vite.config.ts', './apps/svelte-app/svelte.config.js', './apps/svelte-app/tsconfig.json'],
     labels=['frontend']
 )
 
@@ -32,16 +39,17 @@ docker_build(
     './apps/svelte-app',
     dockerfile='./apps/svelte-app/Dockerfile',
     live_update=[
-        sync('./apps/svelte-app/build', '/usr/share/nginx/html'),
+        sync('./apps/svelte-app/build', '/app/www'),
+        run('/app/replace-env.sh /app/www'),
     ]
 )
 
-# 5. BDD Tests
+# 5. BDD Tests (now orchestrated by Temporal, but can still be run locally)
 local_resource(
     'bdd-tests',
-    cmd='cd tests/bdd && pnpm test',
+    cmd='cd performers/services/temporal-ts/bdd && pnpm test',
     deps=[
-        './performers/services/grpc/internal',
+        './performers/services/temporal-ts/bdd',
         './apps/svelte-app/src'
     ],
     auto_init=False,
@@ -72,6 +80,11 @@ k8s_resource('infra-temporal',
 k8s_resource('infra-timescaledb', 
     labels=['infra'], 
     port_forwards=5432)
+
+k8s_resource('infra-lakefs',
+    labels=['infra'],
+    links=['http://spirit.localhost/lakefs'],
+    port_forwards=8000)
 
 k8s_resource('infra-minio', 
     labels=['infra'], 

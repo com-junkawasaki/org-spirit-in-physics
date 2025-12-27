@@ -6,8 +6,11 @@ const config = {
 	preprocess: vitePreprocess(),
 	kit: {
 		adapter: adapter({
-			fallback: 'index.html' // CSR support
+			fallback: 'index.html' // Use index.html for SPA
 		}),
+		paths: {
+			relative: false
+		},
 		alias: {
 			'@/*': './src/*'
 		}

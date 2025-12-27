@@ -16,70 +16,86 @@ import (
 // StorageHandler handles storage service requests
 type StorageHandler struct {
 	minioClient *minio.Client
-	bucketName  string
+	repository  string
+	branch      string
 }
 
 // NewStorageHandler creates a new StorageHandler
 func NewStorageHandler() *StorageHandler {
-	endpoint := os.Getenv("MINIO_ENDPOINT")
+	endpoint := os.Getenv("LAKEFS_ENDPOINT")
 	if endpoint == "" {
-		endpoint = "infra-minio:9000"
+		endpoint = os.Getenv("MINIO_ENDPOINT")
+		if endpoint == "" {
+			endpoint = "infra-lakefs:8000"
+		}
 	}
-	accessKey := os.Getenv("MINIO_ROOT_USER")
+	// lakeFS S3 gateway is compatible with MinIO client
+	accessKey := os.Getenv("LAKEFS_ACCESS_KEY_ID")
 	if accessKey == "" {
-		accessKey = "minioadmin"
+		accessKey = os.Getenv("MINIO_ROOT_USER")
+		if accessKey == "" {
+			accessKey = "AKIAIOSFODNN7EXAMPLE"
+		}
 	}
-	secretKey := os.Getenv("MINIO_ROOT_PASSWORD")
+	secretKey := os.Getenv("LAKEFS_SECRET_ACCESS_KEY")
 	if secretKey == "" {
-		secretKey = "minioadmin"
+		secretKey = os.Getenv("MINIO_ROOT_PASSWORD")
+		if secretKey == "" {
+			secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		}
 	}
-	useSSL := os.Getenv("MINIO_USE_SSL") == "true"
-	bucketName := os.Getenv("MINIO_BUCKET_NAME")
-	if bucketName == "" {
-		bucketName = "spirit-in-physics"
+	useSSL := os.Getenv("LAKEFS_USE_SSL") == "true"
+	repository := os.Getenv("LAKEFS_REPOSITORY")
+	if repository == "" {
+		repository = "spirit-in-physics"
+	}
+	branch := os.Getenv("LAKEFS_BRANCH")
+	if branch == "" {
+		branch = "main"
 	}
 
 	// Initialize minio client object.
+	// We use MinIO client to talk to lakeFS S3 gateway.
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
 	})
 	if err != nil {
-		log.Printf("Failed to initialize MinIO client: %v", err)
-		return &StorageHandler{bucketName: bucketName}
+		log.Printf("Failed to initialize lakeFS (S3) client: %v", err)
+		return &StorageHandler{repository: repository, branch: branch}
 	}
 
-	// Make a new bucket.
+	// In lakeFS, we don't necessarily "MakeBucket" via S3 gateway if repository exists.
+	// But we can check it. The "bucket" in lakeFS S3 gateway is the repository name.
 	ctx := context.Background()
-	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+	exists, err := minioClient.BucketExists(ctx, repository)
 	if err != nil {
-		// Check to see if we already own this bucket (which happens if it's already been created)
-		exists, errBucketExists := minioClient.BucketExists(ctx, bucketName)
-		if errBucketExists == nil && exists {
-			log.Printf("We already own %s\n", bucketName)
-		} else {
-			log.Printf("Failed to create bucket: %v", err)
-		}
+		log.Printf("Failed to check if lakeFS repository %s exists: %v", repository, err)
+	} else if !exists {
+		log.Printf("lakeFS repository %s does not exist. Please create it via lakeFS UI/API.", repository)
 	} else {
-		log.Printf("Successfully created %s\n", bucketName)
+		log.Printf("Connected to lakeFS repository: %s", repository)
 	}
 
 	return &StorageHandler{
 		minioClient: minioClient,
-		bucketName:  bucketName,
+		repository:  repository,
+		branch:      branch,
 	}
 }
 
-// UploadArtifact uploads an artifact to MinIO
+// UploadArtifact uploads an artifact to lakeFS via S3 gateway
 func (h *StorageHandler) UploadArtifact(
 	ctx context.Context,
 	req *connect.Request[storagev1.UploadArtifactRequest],
 ) (*connect.Response[storagev1.UploadArtifactResponse], error) {
 	if h.minioClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("minio client not initialized"))
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("storage client not initialized"))
 	}
 
-	objectName := fmt.Sprintf("%s/%s/%s", req.Msg.ParticipantId, req.Msg.ArtifactType, req.Msg.FileName)
+	// In lakeFS S3 gateway (path-style), the path is /repository/branch/object
+	// But with MinIO client, we specify bucket=repository and the object key starts with branch/
+	objectName := fmt.Sprintf("%s/%s/%s/%s", h.branch, req.Msg.ParticipantId, req.Msg.ArtifactType, req.Msg.FileName)
 	contentType := req.Msg.ContentType
 	if contentType == "" {
 		contentType = "application/octet-stream"
@@ -88,16 +104,15 @@ func (h *StorageHandler) UploadArtifact(
 	reader := bytes.NewReader(req.Msg.FileData)
 	size := int64(len(req.Msg.FileData))
 
-	info, err := h.minioClient.PutObject(ctx, h.bucketName, objectName, reader, size, minio.PutObjectOptions{
+	info, err := h.minioClient.PutObject(ctx, h.repository, objectName, reader, size, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// Generate a public URL (this assumes MinIO is accessible or configured for public/presigned URLs)
-	// For now, return a simple path based on the endpoint
-	publicURL := fmt.Sprintf("http://spirit.localhost/minio/%s/%s", h.bucketName, info.Key)
+	// Generate a public URL (this assumes lakeFS is accessible via gateway)
+	publicURL := fmt.Sprintf("http://spirit.localhost/lakefs/repositories/%s/objects?path=%s", h.repository, info.Key)
 
 	return connect.NewResponse(&storagev1.UploadArtifactResponse{
 		PublicUrl: publicURL,

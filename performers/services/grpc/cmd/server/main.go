@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -66,6 +67,10 @@ func main() {
 			w.RegisterWorkflow(workflows.ImportParticipantsWorkflow)
 			w.RegisterWorkflow(workflows.ImportEmotionsWorkflow)
 			w.RegisterWorkflow(workflows.TimelineWorkflow)
+			w.RegisterWorkflow(workflows.WordAggregatesWorkflow)
+			w.RegisterWorkflow(workflows.EmotionVectorsWorkflow)
+			w.RegisterWorkflow(workflows.WordStatisticsWorkflow)
+			w.RegisterWorkflow(workflows.VisualizationAnalysisWorkflow)
 			
 			a := &activities.ParticipantActivities{Queries: queries}
 			w.RegisterActivity(a)
@@ -89,26 +94,41 @@ func main() {
 	importHandler := handlers.NewImportHandler(queries, temporalClient)
 	storageHandler := handlers.NewStorageHandler()
 
-	mux := http.NewServeMux()
+	apiMux := http.NewServeMux()
 
 	path, handler := importv1connect.NewImportServiceHandler(importHandler)
-	mux.Handle(path, handler)
+	apiMux.Handle(path, handler)
 
 	path, handler = participantv1connect.NewParticipantServiceHandler(participantHandler)
-	mux.Handle(path, handler)
+	apiMux.Handle(path, handler)
 
 	path, handler = sessionv1connect.NewSessionServiceHandler(sessionHandler)
-	mux.Handle(path, handler)
+	apiMux.Handle(path, handler)
 
 	path, handler = timelinev1connect.NewTimelineServiceHandler(timelineHandler)
-	mux.Handle(path, handler)
+	apiMux.Handle(path, handler)
 
 	path, handler = storagev1connect.NewStorageServiceHandler(storageHandler)
-	mux.Handle(path, handler)
+	apiMux.Handle(path, handler)
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	apiMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "OK")
+	})
+
+	// The main handler routes /api/... to apiMux with prefix stripped
+	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Incoming request: %s %s", r.Method, r.URL.Path)
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.StripPrefix("/api", apiMux).ServeHTTP(w, r)
+			return
+		}
+		if r.URL.Path == "/api" {
+			http.Redirect(w, r, "/api/", http.StatusMovedPermanently)
+			return
+		}
+		// Fallback for health check or other direct calls
+		apiMux.ServeHTTP(w, r)
 	})
 
 	// Setup CORS
@@ -140,7 +160,7 @@ func main() {
 	}
 
 	log.Printf("Server starting on port %s", port)
-	if err := http.ListenAndServe(":"+port, c.Handler(mux)); err != nil {
+	if err := http.ListenAndServe(":"+port, c.Handler(mainHandler)); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }

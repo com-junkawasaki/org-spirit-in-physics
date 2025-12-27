@@ -6,14 +6,14 @@
 	<title>Spirit in Physics</title>
 </svelte:head>
 
-<div class="app-container">
-	<header class="main-header">
-		<div class="logo">
-			<a href="/">Spirit in Physics</a>
+<div class="min-h-screen flex flex-col bg-gray-50 text-gray-900">
+	<header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+		<div class="text-xl font-black tracking-tighter">
+			<a href="/" class="hover:text-blue-600 transition-colors">SPIRIT IN PHYSICS</a>
 		</div>
-		<div class="auth-controls">
+		<div class="flex items-center gap-4">
 			<SignedOut>
-				<SignInButton mode="modal" class="btn-signin">Sign in</SignInButton>
+				<SignInButton mode="modal" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/20" />
 			</SignedOut>
 			<SignedIn>
 				<UserButton />
@@ -21,163 +21,54 @@
 		</div>
 	</header>
 
-	<main class="content-area">
-		<div class="welcome">
-			<h1>Welcome to Spirit in Physics</h1>
-			<p>科学的手法による霊性測定システム</p>
+	<main class="flex-1 max-w-6xl mx-auto w-full px-8 py-16">
+		<div class="text-center mb-20 space-y-4">
+			<h1 class="text-5xl md:text-7xl font-black tracking-tight leading-tight">
+				Welcome to <span class="text-blue-600">Spirit</span> in Physics
+			</h1>
+			<p class="text-xl text-gray-500 font-medium max-w-2xl mx-auto">
+				科学的手法による霊性測定システム。データ駆動型のアプローチで内面の世界を可視化します。
+			</p>
+		</div>
+		
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+			<a href="/participant" class="group bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center">
+				<div class="text-5xl mb-6 bg-blue-50 w-24 h-24 flex items-center justify-center rounded-3xl group-hover:scale-110 transition-transform duration-500">👤</div>
+				<h2 class="text-xl font-black mb-2 tracking-tight">被験者ポータル</h2>
+				<p class="text-sm text-gray-500 leading-relaxed font-medium">測定テストの開始と結果のリアルタイム確認</p>
+			</a>
 			
-			<div class="portal-grid">
-				<a href="/participant" class="portal-card">
-					<div class="card-icon">👤</div>
-					<h2>被験者ポータル</h2>
-					<p>測定テストの開始と結果の確認</p>
-				</a>
-				
-				<a href="/researcher" class="portal-card">
-					<div class="card-icon">📊</div>
-					<h2>管理者ダッシュボード</h2>
-					<p>被験者管理とデータ分析</p>
-				</a>
-				
-				<a href="/paper" class="portal-card">
-					<div class="card-icon">📄</div>
-					<h2>研究論文</h2>
-					<p>プロジェクトの背景と学術的成果</p>
-				</a>
-				
-				<a href="/demo" class="portal-card">
-					<div class="card-icon">✨</div>
-					<h2>デモ</h2>
-					<p>測定システムのクイックデモ</p>
-				</a>
-			</div>
+			<a href="/researcher" class="group bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center">
+				<div class="text-5xl mb-6 bg-purple-50 w-24 h-24 flex items-center justify-center rounded-3xl group-hover:scale-110 transition-transform duration-500">📊</div>
+				<h2 class="text-xl font-black mb-2 tracking-tight">管理者ダッシュボード</h2>
+				<p class="text-sm text-gray-500 leading-relaxed font-medium">被験者管理、生体データ分析、空間可視化</p>
+			</a>
+			
+			<a href="/paper" class="group bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center">
+				<div class="text-5xl mb-6 bg-emerald-50 w-24 h-24 flex items-center justify-center rounded-3xl group-hover:scale-110 transition-transform duration-500">📄</div>
+				<h2 class="text-xl font-black mb-2 tracking-tight">研究論文</h2>
+				<p class="text-sm text-gray-500 leading-relaxed font-medium">プロジェクトの背景、手法、および学術的成果</p>
+			</a>
+			
+			<a href="/demo" class="group bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col items-center text-center">
+				<div class="text-5xl mb-6 bg-amber-50 w-24 h-24 flex items-center justify-center rounded-3xl group-hover:scale-110 transition-transform duration-500">✨</div>
+				<h2 class="text-xl font-black mb-2 tracking-tight">クイックデモ</h2>
+				<p class="text-sm text-gray-500 leading-relaxed font-medium">システムの機能を数分で体験できるデモ</p>
+			</a>
 		</div>
 	</main>
 
-	<footer class="main-footer">
-		<p>&copy; 2025 Spirit in Physics Project</p>
+	<footer class="py-12 border-t border-gray-100 bg-white">
+		<div class="max-w-6xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+			<div class="text-sm font-black tracking-widest text-gray-400">SPIRIT IN PHYSICS</div>
+			<p class="text-sm text-gray-400 font-bold">&copy; 2025 Spirit in Physics Project. All rights reserved.</p>
+		</div>
 	</footer>
 </div>
 
 <style>
 	:global(body) {
 		margin: 0;
-		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-		background-color: #f5f7f9;
-		color: #333;
-	}
-
-	.app-container {
-		display: flex;
-		flex-direction: column;
-		min-height: 100vh;
-	}
-
-	.main-header {
-		background: white;
-		padding: 1rem 2rem;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-		position: sticky;
-		top: 0;
-		z-index: 100;
-	}
-
-	.logo a {
-		font-size: 1.25rem;
-		font-weight: 700;
-		text-decoration: none;
-		color: #111;
-	}
-
-	:global(.btn-signin) {
-		background-color: #007bff;
-		color: white;
-		border: none;
-		padding: 0.5rem 1rem;
-		border-radius: 6px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 0.2s;
-	}
-
-	.content-area {
-		flex: 1;
-		padding: 2rem;
-		max-width: 1000px;
-		margin: 0 auto;
-		width: 100%;
-		box-sizing: border-box;
-	}
-
-	.welcome {
-		text-align: center;
-		padding: 3rem 0;
-	}
-
-	.welcome h1 {
-		font-size: 2.5rem;
-		margin-bottom: 0.5rem;
-	}
-
-	.welcome p {
-		color: #666;
-		font-size: 1.1rem;
-		margin-bottom: 3rem;
-	}
-
-	.portal-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 1.5rem;
-	}
-
-	.portal-card {
-		background: white;
-		padding: 2rem;
-		border-radius: 12px;
-		text-decoration: none;
-		color: inherit;
-		box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-		border: 1px solid #eee;
-		transition: transform 0.2s, box-shadow 0.2s;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.portal-card:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-		border-color: #007bff;
-	}
-
-	.card-icon {
-		font-size: 3rem;
-		margin-bottom: 1rem;
-	}
-
-	.portal-card h2 {
-		font-size: 1.25rem;
-		margin: 0.5rem 0;
-		color: #111;
-	}
-
-	.portal-card p {
-		font-size: 0.9rem;
-		color: #666;
-		margin: 0;
-		text-align: center;
-	}
-
-	.main-footer {
-		padding: 2rem;
-		text-align: center;
-		font-size: 0.875rem;
-		color: #999;
-		border-top: 1px solid #eee;
-		background: white;
+		padding: 0;
 	}
 </style>

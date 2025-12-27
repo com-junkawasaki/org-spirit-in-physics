@@ -7,7 +7,7 @@ import { StorageService } from "@/generated/proto/storage/v1/storage_connect";
 import { PUBLIC_API_URL } from "$lib/env";
 
 // In CSR mode, we use relative URL or env var
-const baseUrl = PUBLIC_API_URL || "";
+const baseUrl = typeof window !== 'undefined' ? "/api" : (PUBLIC_API_URL || "");
 
 const transport = createConnectTransport({
 	baseUrl,

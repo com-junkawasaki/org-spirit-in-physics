@@ -7,6 +7,441 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 
 /**
+ * @generated from message timeline.v1.GetAnalysisRequest
+ */
+export class GetAnalysisRequest extends Message<GetAnalysisRequest> {
+  /**
+   * @generated from field: string participant_id = 1;
+   */
+  participantId = "";
+
+  /**
+   * @generated from field: optional string session_id = 2;
+   */
+  sessionId?: string;
+
+  constructor(data?: PartialMessage<GetAnalysisRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.GetAnalysisRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAnalysisRequest {
+    return new GetAnalysisRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAnalysisRequest {
+    return new GetAnalysisRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAnalysisRequest {
+    return new GetAnalysisRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAnalysisRequest | PlainMessage<GetAnalysisRequest> | undefined, b: GetAnalysisRequest | PlainMessage<GetAnalysisRequest> | undefined): boolean {
+    return proto3.util.equals(GetAnalysisRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message timeline.v1.GetAnalysisResponse
+ */
+export class GetAnalysisResponse extends Message<GetAnalysisResponse> {
+  /**
+   * @generated from field: repeated timeline.v1.GapArea gap_areas = 1;
+   */
+  gapAreas: GapArea[] = [];
+
+  /**
+   * @generated from field: repeated timeline.v1.DensityRegion density_regions = 2;
+   */
+  densityRegions: DensityRegion[] = [];
+
+  /**
+   * @generated from field: repeated timeline.v1.DuplicateCandidate duplicates = 3;
+   */
+  duplicates: DuplicateCandidate[] = [];
+
+  /**
+   * @generated from field: double overall_density = 4;
+   */
+  overallDensity = 0;
+
+  constructor(data?: PartialMessage<GetAnalysisResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.GetAnalysisResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "gap_areas", kind: "message", T: GapArea, repeated: true },
+    { no: 2, name: "density_regions", kind: "message", T: DensityRegion, repeated: true },
+    { no: 3, name: "duplicates", kind: "message", T: DuplicateCandidate, repeated: true },
+    { no: 4, name: "overall_density", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAnalysisResponse {
+    return new GetAnalysisResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAnalysisResponse {
+    return new GetAnalysisResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAnalysisResponse {
+    return new GetAnalysisResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAnalysisResponse | PlainMessage<GetAnalysisResponse> | undefined, b: GetAnalysisResponse | PlainMessage<GetAnalysisResponse> | undefined): boolean {
+    return proto3.util.equals(GetAnalysisResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message timeline.v1.GapArea
+ */
+export class GapArea extends Message<GapArea> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * [x, y, z]
+   *
+   * @generated from field: repeated double center = 2;
+   */
+  center: number[] = [];
+
+  /**
+   * @generated from field: double radius = 3;
+   */
+  radius = 0;
+
+  /**
+   * @generated from field: repeated timeline.v1.NearbyNode nearby_nodes = 4;
+   */
+  nearbyNodes: NearbyNode[] = [];
+
+  /**
+   * @generated from field: repeated string suggested_items = 5;
+   */
+  suggestedItems: string[] = [];
+
+  /**
+   * @generated from field: double confidence = 6;
+   */
+  confidence = 0;
+
+  /**
+   * @generated from field: google.protobuf.Struct common_emotion_profile = 7;
+   */
+  commonEmotionProfile?: Struct;
+
+  constructor(data?: PartialMessage<GapArea>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.GapArea";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "center", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, repeated: true },
+    { no: 3, name: "radius", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "nearby_nodes", kind: "message", T: NearbyNode, repeated: true },
+    { no: 5, name: "suggested_items", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "confidence", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 7, name: "common_emotion_profile", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GapArea {
+    return new GapArea().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GapArea {
+    return new GapArea().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GapArea {
+    return new GapArea().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GapArea | PlainMessage<GapArea> | undefined, b: GapArea | PlainMessage<GapArea> | undefined): boolean {
+    return proto3.util.equals(GapArea, a, b);
+  }
+}
+
+/**
+ * @generated from message timeline.v1.NearbyNode
+ */
+export class NearbyNode extends Message<NearbyNode> {
+  /**
+   * @generated from field: string node_id = 1;
+   */
+  nodeId = "";
+
+  /**
+   * @generated from field: string label = 2;
+   */
+  label = "";
+
+  /**
+   * @generated from field: double distance = 3;
+   */
+  distance = 0;
+
+  /**
+   * @generated from field: repeated string common_features = 4;
+   */
+  commonFeatures: string[] = [];
+
+  constructor(data?: PartialMessage<NearbyNode>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.NearbyNode";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "node_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "distance", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "common_features", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): NearbyNode {
+    return new NearbyNode().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): NearbyNode {
+    return new NearbyNode().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): NearbyNode {
+    return new NearbyNode().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: NearbyNode | PlainMessage<NearbyNode> | undefined, b: NearbyNode | PlainMessage<NearbyNode> | undefined): boolean {
+    return proto3.util.equals(NearbyNode, a, b);
+  }
+}
+
+/**
+ * @generated from message timeline.v1.DensityRegion
+ */
+export class DensityRegion extends Message<DensityRegion> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: repeated double center = 2;
+   */
+  center: number[] = [];
+
+  /**
+   * @generated from field: double radius = 3;
+   */
+  radius = 0;
+
+  /**
+   * @generated from field: int32 node_count = 4;
+   */
+  nodeCount = 0;
+
+  /**
+   * @generated from field: double density = 5;
+   */
+  density = 0;
+
+  /**
+   * @generated from field: bool is_overcrowded = 6;
+   */
+  isOvercrowded = false;
+
+  /**
+   * @generated from field: optional double suggested_separation = 7;
+   */
+  suggestedSeparation?: number;
+
+  constructor(data?: PartialMessage<DensityRegion>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.DensityRegion";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "center", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, repeated: true },
+    { no: 3, name: "radius", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "node_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "density", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 6, name: "is_overcrowded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "suggested_separation", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DensityRegion {
+    return new DensityRegion().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DensityRegion {
+    return new DensityRegion().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DensityRegion {
+    return new DensityRegion().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DensityRegion | PlainMessage<DensityRegion> | undefined, b: DensityRegion | PlainMessage<DensityRegion> | undefined): boolean {
+    return proto3.util.equals(DensityRegion, a, b);
+  }
+}
+
+/**
+ * @generated from message timeline.v1.DuplicateCandidate
+ */
+export class DuplicateCandidate extends Message<DuplicateCandidate> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: repeated string node_ids = 2;
+   */
+  nodeIds: string[] = [];
+
+  /**
+   * @generated from field: repeated string labels = 3;
+   */
+  labels: string[] = [];
+
+  /**
+   * @generated from field: double similarity = 4;
+   */
+  similarity = 0;
+
+  /**
+   * @generated from field: timeline.v1.CommonFeatures common_features = 5;
+   */
+  commonFeatures?: CommonFeatures;
+
+  /**
+   * @generated from field: bool suggested_merge = 6;
+   */
+  suggestedMerge = false;
+
+  /**
+   * @generated from field: double distance = 7;
+   */
+  distance = 0;
+
+  constructor(data?: PartialMessage<DuplicateCandidate>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.DuplicateCandidate";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "node_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "labels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "similarity", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 5, name: "common_features", kind: "message", T: CommonFeatures },
+    { no: 6, name: "suggested_merge", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "distance", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DuplicateCandidate {
+    return new DuplicateCandidate().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DuplicateCandidate {
+    return new DuplicateCandidate().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DuplicateCandidate {
+    return new DuplicateCandidate().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DuplicateCandidate | PlainMessage<DuplicateCandidate> | undefined, b: DuplicateCandidate | PlainMessage<DuplicateCandidate> | undefined): boolean {
+    return proto3.util.equals(DuplicateCandidate, a, b);
+  }
+}
+
+/**
+ * @generated from message timeline.v1.CommonFeatures
+ */
+export class CommonFeatures extends Message<CommonFeatures> {
+  /**
+   * @generated from field: google.protobuf.Struct emotion_profile = 1;
+   */
+  emotionProfile?: Struct;
+
+  /**
+   * @generated from field: repeated string semantic_tags = 2;
+   */
+  semanticTags: string[] = [];
+
+  /**
+   * @generated from field: repeated double frequency_range = 3;
+   */
+  frequencyRange: number[] = [];
+
+  /**
+   * @generated from field: repeated double reaction_time_range = 4;
+   */
+  reactionTimeRange: number[] = [];
+
+  /**
+   * @generated from field: repeated double reaction_value_range = 5;
+   */
+  reactionValueRange: number[] = [];
+
+  constructor(data?: PartialMessage<CommonFeatures>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.CommonFeatures";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "emotion_profile", kind: "message", T: Struct },
+    { no: 2, name: "semantic_tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "frequency_range", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, repeated: true },
+    { no: 4, name: "reaction_time_range", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, repeated: true },
+    { no: 5, name: "reaction_value_range", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CommonFeatures {
+    return new CommonFeatures().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CommonFeatures {
+    return new CommonFeatures().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CommonFeatures {
+    return new CommonFeatures().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CommonFeatures | PlainMessage<CommonFeatures> | undefined, b: CommonFeatures | PlainMessage<CommonFeatures> | undefined): boolean {
+    return proto3.util.equals(CommonFeatures, a, b);
+  }
+}
+
+/**
  * @generated from message timeline.v1.GetTimelineRequest
  */
 export class GetTimelineRequest extends Message<GetTimelineRequest> {

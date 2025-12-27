@@ -185,8 +185,8 @@
   }
 
   async function initWebGPU() {
-    if (!navigator.gpu) return;
-    const adapter = await navigator.gpu.requestAdapter();
+    if (!(navigator as any).gpu) return;
+    const adapter = await (navigator as any).gpu.requestAdapter();
     if (!adapter) return;
     device = await adapter.requestDevice();
 
@@ -293,12 +293,13 @@
   });
 </script>
 
-<div style="width: {width}px; height: {height}px; background: {background}; position: relative;">
+<div class="w-full relative overflow-hidden" style="height: {height}px; background: {background};">
   <canvas
     bind:this={canvas}
     {width}
     {height}
-    style="width: 100%; height: 100%; cursor: {isDragging ? 'grabbing' : 'grab'}"
+    class="w-full h-full"
+    style="cursor: {isDragging ? 'grabbing' : 'grab'}"
     onmousedown={(e) => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; }}
     onmousemove={(e) => {
       if (!isDragging) return;

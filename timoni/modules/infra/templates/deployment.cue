@@ -31,29 +31,27 @@ import (
 						ports: [
 							{
 								name:          "http"
-								containerPort: 8080
+								containerPort: 80
 								protocol:      "TCP"
 							},
 						]
 						livenessProbe: {
-							httpGet: {
-								path: "/healthz"
+							tcpSocket: {
 								port: "http"
 							}
 						}
 						readinessProbe: {
-							httpGet: {
-								path: "/healthz"
+							tcpSocket: {
 								port: "http"
 							}
 						}
 						volumeMounts: [
 							{
-								mountPath: "/etc/nginx/conf.d"
+								mountPath: "/etc/envoy"
 								name:      "config"
 							},
 							{
-								mountPath: "/usr/share/nginx/html"
+								mountPath: "/app/www"
 								name:      "html"
 							},
 						]
@@ -67,7 +65,7 @@ import (
 						configMap: {
 							name: #cmName
 							items: [{
-								key:  "nginx.default.conf"
+								key:  "envoy.yaml"
 								path: key
 							}]
 						}

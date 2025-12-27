@@ -29,4 +29,20 @@ values: {
 		enabled:  true
 		hostname: "spirit-in-physics.gftd.ai"
 	}
+	lakefs: {
+		enabled: true
+		database: {
+			connectionString: "postgresql://postgres:postgres@infra-timescaledb:5432/lakefs?sslmode=disable"
+		}
+		auth: {
+			encryptSecretKey: "base64-encoded-secret-key-placeholder"
+		}
+		blockstore: {
+			s3: {
+				endpoint:        "http://infra-minio:9000"
+				accessKeyId:     "minioadmin"
+				secretAccessKey: "minioadmin"
+			}
+		}
+	}
 }

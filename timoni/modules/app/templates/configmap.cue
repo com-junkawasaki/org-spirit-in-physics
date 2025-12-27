@@ -9,30 +9,51 @@ import (
 	#Kind:   timoniv1.#ConfigMapKind
 	#Meta:   #config.metadata
 	#Data: {
-		"nginx.default.conf": """
-			server {
-				listen       8080;
-				server_name  \(#config.metadata.name);
+		"envoy.yaml": """
+			static_resources:
+			  listeners:
+			  - name: listener_0
+			    address:
+			      socket_address:
+			        address: 0.0.0.0
+			        port_value: 80
+			    filter_chains:
+			    - filters:
+			      - name: envoy.filters.network.http_connection_manager
+			        typed_config:
+			          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+			          stat_prefix: ingress_http
+			          route_config:
+			            name: local_route
+			            virtual_hosts:
+			            - name: local_service
+			              domains: ["*"]
+			              routes:
+			              - match:
+			                  prefix: "/"
+			                route:
+			                  cluster: local_service
+			          http_filters:
+			          - name: envoy.filters.http.router
+			            typed_config:
+			              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
-				location / {
-			  	root   /usr/share/nginx/html;
-			  	index  index.html index.htm;
-				}
-
-				location /healthz {
-					access_log off;
-					default_type text/plain;
-					return 200 "OK";
-				}
-
-				error_page  404              /404.html;
-			  error_page  500 502 503 504  /50x.html;
-			  location = /50x.html {
-			    root   /usr/share/nginx/html;
-			  }
-			}
+			  clusters:
+			  - name: local_service
+			    connect_timeout: 0.25s
+			    type: STATIC
+			    lb_policy: ROUND_ROBIN
+			    load_assignment:
+			      cluster_name: local_service
+			      endpoints:
+			      - lb_endpoints:
+			        - endpoint:
+			            address:
+			              socket_address:
+			                address: 127.0.0.1
+			                port_value: 8080
 			"""
-		"index.html":         """
+		"index.html": """
 			<!doctype html>
 			<html lang="en">
 			<head>

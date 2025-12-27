@@ -5,7 +5,7 @@
 // - 密度分析（密集/分散領域の特定）
 // - 重複項目の検出
 
-import type { WordNode, WordLink, TimelineDataPoint } from '../timeline/types'
+import type { WordNode, WordLink, TimelineDataPoint } from '../components/researcher/types'
 
 // Merkle DAG: structure_analysis.gap_detection
 // 空白エリア（漏れた項目候補）の検出

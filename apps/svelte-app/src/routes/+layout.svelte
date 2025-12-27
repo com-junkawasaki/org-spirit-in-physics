@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ClerkProvider } from "svelte-clerk";
 	import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+	import "../app.css";
 
 	let { children } = $props();
 </script>

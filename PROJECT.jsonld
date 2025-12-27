@@ -45,8 +45,8 @@
   "version": "1.45.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-27T14:00:00+09:00",
-  "merkleRoot": "Next.js 版 researcher アプリを SvelteKit へ完全移行。バックエンドの GetTimeline 処理を Temporal Workflow/Activity (Go) に統合。全サービスを spirit.localhost ドメイン下のパスベースルーティングに統一。",
+  "updatedAt": "2025-12-27T15:30:00+09:00",
+  "merkleRoot": "polydam を除外し lakeFS に一本化したストレージ管理体制を構築。Kubernetes 上でのデータバージョン管理と整合性を確保。",
   
   "story": {
     "@id": "project:story",
@@ -61,10 +61,10 @@
     },
     "narrative": [
       {
-        "@id": "project:narrative/69",
+        "@id": "project:narrative/70",
         "@type": "project:Narrative",
-        "act": "インフラ構造の簡素化とドメインの統一",
-        "summary": "分析可視化機能の SvelteKit 移行に加え、インフラのルーティングを spirit.localhost 一本に集約。サブドメイン管理の複雑さを排除し、パスベースルーティング (/api, /import, /temporal 等) を採用することで、一貫性のあるユーザー体験と開発環境を構築した。"
+        "act": "データレイクのバージョン管理導入",
+        "summary": "データ管理基盤を Pachyderm から lakeFS に刷新。lakeFS を Kubernetes インフラ (Timoni) に統合し、Storage Service からの Git ライクなデータ操作（リポジトリ、ブランチ管理）の基礎を確立した。これにより、測定データの大規模な再現性と系統管理が容易になった。"
       }
     ]
   },
@@ -87,10 +87,25 @@
       "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装 (Go/Python 両対応)",
       "Next.js 版 researcher アプリの完全廃止と SvelteKit への統合",
       "3D Force 可視化 (Force3DWordGraphTypeGPU) の Svelte 実装",
-      "KPI カード、時系列チャート (TimelineChart)、構造分析パネルSvelte 実装",
+      "KPI カード、時系列チャート (TimelineChart)、構造分析パネル Svelte 実装",
       "SvelteKit への /researcher/participants/[id] ルート追加と ConnectRPC 連携",
       "Go 版 gRPC サービスの GetTimeline 処理を Temporal Workflow/Activity に移行",
-      "全サービス（API, Import, Temporal UI, MinIO）を spirit.localhost へのパスベースルーティングに統一"
+      "全サービス（API, Import, Temporal UI, MinIO）を spirit.localhost へのパスベースルーティングに統一",
+      "SvelteKit ビルドの成功と SPA 向け prerender 設定の最適化",
+      "gRPC サービスにおける /api パスプレフィックスのストリップ処理実装と HasPrefix による堅牢化",
+      "データ管理基盤の lakeFS への移行と Timoni 構成への統合",
+      "Storage Service の lakeFS S3 Gateway 連携実装",
+      "lakeFS 自動セットアップ用の Kubernetes Job (LakeFSSetupJob) の実装",
+      "dataset の git-annex による管理とポインタファイル化の完了",
+      "ストレージ管理（MinIO, lakeFS）の Kubernetes (Timoni/Tilt) での統合管理体制の確立",
+      "Temporal TypeScript Worker への BDD テスト実行機能の統合",
+      "Playwright + Cucumber.js によるブラウザ E2E テストの Temporal ワークフロー化",
+      "研究者ポータルへのテストモード（Auth バイパス）の実装と BDD 連携",
+      "Svelte アプリの配信基盤を Nginx から Envoy + Python SPA Server に移行",
+      "SvelteKit のパス解決を絶対パスに固定し、SPA ルーティングの整合性を確保",
+      "特定の被験者 (e41a9cd2-d803-49a8-9020-0260e55cd03e) の分析可視化 BDD シナリオのパス",
+      "Timoni app/infra モジュールの Nginx から Envoy への移行完了",
+      "Timoni モジュールのデフォルト設定（ConfigMap, Deployment, README）を Envoy ベースに刷新"
     ]
   }
 }
