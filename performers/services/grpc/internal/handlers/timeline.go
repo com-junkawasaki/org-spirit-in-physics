@@ -333,3 +333,37 @@ func (h *TimelineHandler) GetAnalysis(
 
 	return connect.NewResponse(&result), nil
 }
+
+func (h *TimelineHandler) GetIntegratedTimeline(
+	ctx context.Context,
+	req *connect.Request[timelinev1.GetIntegratedTimelineRequest],
+) (*connect.Response[timelinev1.GetIntegratedTimelineResponse], error) {
+	if h.temporalClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
+	}
+
+	workflowID := fmt.Sprintf("integrated-%s-%d", req.Msg.ParticipantId, time.Now().UnixNano())
+	workflowOptions := client.StartWorkflowOptions{
+		ID:        workflowID,
+		TaskQueue: "visualization-analysis-queue", // TS Worker queue
+	}
+
+	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "timelineIntegratedWorkflow", req.Msg.ParticipantId, req.Msg.SessionId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	var result struct {
+		Points   []*timelinev1.TimelinePoint `json:"points"`
+		Analysis *timelinev1.GetAnalysisResponse `json:"analysis"`
+	}
+	err = run.Get(ctx, &result)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&timelinev1.GetIntegratedTimelineResponse{
+		Points:   result.Points,
+		Analysis: result.Analysis,
+	}), nil
+}

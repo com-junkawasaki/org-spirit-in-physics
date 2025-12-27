@@ -1,11 +1,6 @@
-export const getEnv = (key: string): string => {
-    if (typeof window !== 'undefined' && (window as any).ENV) {
-        return (window as any).ENV[key] || '';
-    }
-    return '';
-};
+import { env } from '$env/dynamic/public';
 
-export const PUBLIC_CLERK_PUBLISHABLE_KEY = getEnv('PUBLIC_CLERK_PUBLISHABLE_KEY');
-export const PUBLIC_API_URL = getEnv('PUBLIC_API_URL');
-export const PUBLIC_SUPABASE_URL = getEnv('PUBLIC_SUPABASE_URL');
-export const PUBLIC_SUPABASE_ANON_KEY = getEnv('PUBLIC_SUPABASE_ANON_KEY');
+export const PUBLIC_CLERK_PUBLISHABLE_KEY = env.PUBLIC_CLERK_PUBLISHABLE_KEY || '';
+export const PUBLIC_API_URL = env.PUBLIC_API_URL || '';
+export const PUBLIC_SUPABASE_URL = env.PUBLIC_SUPABASE_URL || '';
+export const PUBLIC_SUPABASE_ANON_KEY = env.PUBLIC_SUPABASE_ANON_KEY || '';

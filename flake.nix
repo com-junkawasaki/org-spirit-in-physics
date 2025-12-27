@@ -71,7 +71,7 @@
         };
         import-service = import-service-eval.config.public;
 
-        # 3. Svelte App - Standard build with pnpm
+        # 3. Svelte App - Standard build with pnpm (adapter-node)
         svelte-app = pkgs.stdenv.mkDerivation {
           pname = "spirit-svelte-app";
           version = "0.1.0";
@@ -81,7 +81,7 @@
             pname = "spirit-svelte-app-deps";
             version = "0.1.0";
             src = ./apps/svelte-app;
-            hash = "sha256-biwnGKd9kuIktaDst4EXEHvgip39ZMGZV5UQ2iBq77k=";
+            hash = "sha256-I1vQulK67C95x1Y2B0irCXN/0iRv96Lb9lGdX4jrfNM=";
             fetcherVersion = 2;
           };
           buildPhase = ''
@@ -89,68 +89,23 @@
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r build $out/www
+            cp -r build $out/build
+            cp package.json $out/package.json
           '';
         };
 
-        # SPA Handler Python script
-        spa-handler = pkgs.writeText "spa_handler.py" ''
-import http.server, socketserver, os, sys
-
-PORT = 80
-DIRECTORY = '/app/www'
-
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=DIRECTORY, **kwargs)
-
-    def do_GET(self):
-        # Translate the URL path to a filesystem path
-        actual_path = self.translate_path(self.path)
-        
-        # SPA Fallback logic:
-        # If the file/dir doesn't exist, and it doesn't look like a static asset (no dot in basename)
-        # serve index.html instead.
-        if not os.path.exists(actual_path):
-            basename = os.path.basename(actual_path.rstrip('/'))
-            if '.' not in basename:
-                self.path = '/index.html'
-        
-        return super().do_GET()
-
-    def log_message(self, format, *args):
-        # Redirect logs to stderr for container visibility
-        sys.stderr.write("%s - - [%s] %s\n" %
-                         (self.address_string(),
-                          self.log_date_time_string(),
-                          format%args))
-
-socketserver.TCPServer.allow_reuse_address = True
-with socketserver.TCPServer(("", PORT), Handler) as httpd:
-    httpd.serve_forever()
-        '';
-
-        # Start script for the Svelte app
+        # Start script for the Svelte app (Node.js)
         start-script = linuxPkgs.writeScript "start-portal.sh" ''
           #!/bin/sh
-          mkdir -p /app
-          cp -r ${svelte-app}/www /app/www
-          chmod -R 777 /app/www
-          
-          # Replace environment variables in static assets
-          find /app/www -name "*.html" -exec sed -i \
-            -e "s|__PUBLIC_CLERK_PUBLISHABLE_KEY__|$PUBLIC_CLERK_PUBLISHABLE_KEY|g" \
-            -e "s|__PUBLIC_API_URL__|$PUBLIC_API_URL|g" \
-            -e "s|__PUBLIC_SUPABASE_URL__|$PUBLIC_SUPABASE_URL|g" \
-            -e "s|__PUBLIC_SUPABASE_ANON_KEY__|$PUBLIC_SUPABASE_ANON_KEY|g" \
-            {} + || true
-            
-          exec ${linuxPkgs.python311}/bin/python3 ${spa-handler}
+          # SvelteKit adapter-node reads environment variables directly
+          export PORT=80
+          exec ${linuxPkgs.nodejs_20}/bin/node ${svelte-app}/build/index.js
         '';
 
       in
       {
         packages = {
+          svelte-app = svelte-app;
           # Image using only cross-compiled Go binary
           grpc-image = pkgs.dockerTools.streamLayeredImage {
             name = "spirit-grpc-service";
@@ -166,12 +121,12 @@ with socketserver.TCPServer(("", PORT), Handler) as httpd:
             };
           };
 
-          # Svelte Image
+          # Svelte Image (Node.js)
           svelte-image = pkgs.dockerTools.streamLayeredImage {
             name = "spirit-svelte-app";
             tag = "latest";
             contents = [ 
-              linuxPkgs.python311 
+              linuxPkgs.nodejs_20
               linuxPkgs.busybox
               linuxPkgs.cacert
               svelte-app

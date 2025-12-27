@@ -112,18 +112,14 @@
     loading = true;
     error = null;
     try {
-      const results = await Promise.allSettled([
-        timelineClient.getTimeline({ participantId, sessionId: sessionId || undefined }),
-        timelineClient.getWordStatistics({ participantId, sessionId: sessionId || undefined }),
-        timelineClient.getEmotionVectors({ participantId, sessionId: sessionId || undefined }),
-        timelineClient.getWordAggregates({ participantId, sessionId: sessionId || undefined })
-      ]);
+      // Use the new integrated endpoint that runs on TS Temporal
+      const response = await (timelineClient as any).getIntegratedTimeline({ 
+        participantId, 
+        sessionId: sessionId || undefined 
+      });
       
-      const [timelineRes, statsRes, vectorsRes, aggregatesRes] = results;
-
-      if (timelineRes.status === 'fulfilled' && timelineRes.value.points && timelineRes.value.points.length > 0) {
-        const itemValue = timelineRes.value;
-        data = itemValue.points.map((item: any) => ({
+      if (response && response.points && response.points.length > 0) {
+        data = response.points.map((item: any) => ({
           timestamp: item.time ? (Number(item.time.seconds) * 1000 + (item.time.nanos / 1000000)) : 0,
           word: item.word || '',
           reactionTime: item.reactionTime ?? 0,
@@ -139,15 +135,29 @@
           metadata: item.metadata || {}
         }));
 
+        if (response.analysis) {
+          analysisResults = {
+            gapAreas: (response.analysis.gapAreas || []) as any,
+            densityRegions: (response.analysis.densityRegions || []) as any,
+            duplicates: (response.analysis.duplicates || []) as any,
+            overallDensity: response.analysis.overallDensity || 0
+          };
+        }
+
         if (data.length > 0) {
           const extent = d3.extent(data, d => d.timestamp) as [number, number];
           timeRange = { start: extent[0], end: extent[1] };
         }
-      } else if (timelineRes.status === 'rejected') {
-        error = `Timeline data error: ${timelineRes.reason.message}`;
       } else {
         error = "No timeline data found for this participant";
       }
+
+      // Still fetch statistics and other data if needed, or we could integrate them too
+      const [statsRes, vectorsRes, aggregatesRes] = await Promise.allSettled([
+        timelineClient.getWordStatistics({ participantId, sessionId: sessionId || undefined }),
+        timelineClient.getEmotionVectors({ participantId, sessionId: sessionId || undefined }),
+        timelineClient.getWordAggregates({ participantId, sessionId: sessionId || undefined })
+      ]);
 
       if (statsRes.status === 'fulfilled') {
         wordStatistics = statsRes.value.statistics || [];
@@ -288,6 +298,7 @@
                 width={Math.max(width, 1000)} 
                 {height} 
                 {timeRange}
+                analysisResults={analysisResults}
                 onTimeRangeChange={(r) => timeRange = r}
                 onDataPointSelect={() => {}}
                 onTooltipShow={() => {}}

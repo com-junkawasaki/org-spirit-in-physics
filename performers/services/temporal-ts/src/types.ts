@@ -27,15 +27,17 @@ export interface EmotionData {
 }
 
 export interface TimelineDataPoint {
-  timestamp: number
-  word: string
-  reactionTime: number
-  hasResponse: boolean
-  emotions: EmotionData[]
-  physiological: { average?: number; max?: number; min?: number } | any
-  reactionValue: number
-  eventType?: string
-  metadata?: any
+  time?: { seconds: number | string; nanos: number } | string;
+  participant_id: string;
+  session_id: string;
+  word: string;
+  reaction_time: number;
+  has_response: boolean;
+  emotions: EmotionData[];
+  physiological: any[];
+  reaction_value: number;
+  event_type?: string;
+  metadata?: any;
 }
 
 export interface GapArea {

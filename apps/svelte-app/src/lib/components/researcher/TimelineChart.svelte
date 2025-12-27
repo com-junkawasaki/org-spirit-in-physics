@@ -9,6 +9,10 @@
     width: number;
     height: number;
     timeRange: TimeRange | null;
+    analysisResults?: {
+      gapAreas: any[];
+      densityRegions: any[];
+    };
     onDataPointSelect: (point: TimelineDataPoint | null) => void;
     onTooltipShow: (event: any, point: TimelineDataPoint) => void;
     onTooltipHide: () => void;
@@ -21,6 +25,7 @@
     width,
     height,
     timeRange,
+    analysisResults,
     onDataPointSelect,
     onTooltipShow,
     onTooltipHide,
@@ -293,6 +298,35 @@
 
     gx.select('.domain').remove();
     gx.selectAll('.tick line').attr('class', 'stroke-gray-100 dark:stroke-gray-800').style('stroke-dasharray', '2,2');
+
+    // Analysis Overlays
+    if (analysisResults) {
+      const analysisG = g.append('g').attr('class', 'analysis-overlays');
+
+      // Highlight Gap Areas on Timeline
+      analysisResults.gapAreas?.forEach((gap: any) => {
+        const nodeLabels = gap.nearbyNodes?.map((n: any) => n.label) || [];
+        const gapPoints = data.filter(d => nodeLabels.includes(d.word));
+        if (gapPoints.length >= 2) {
+          const tMin = Math.min(...gapPoints.map(p => p.timestamp));
+          const tMax = Math.max(...gapPoints.map(p => p.timestamp));
+          
+          analysisG.append('rect')
+            .attr('x', xScale(toDate(tMin)))
+            .attr('y', 0)
+            .attr('width', Math.max(2, xScale(toDate(tMax)) - xScale(toDate(tMin))))
+            .attr('height', innerHeight)
+            .attr('class', 'fill-yellow-400/5 stroke-yellow-400/20')
+            .style('stroke-dasharray', '4,2');
+            
+          analysisG.append('text')
+            .attr('x', xScale(toDate(tMin)))
+            .attr('y', -5)
+            .attr('class', 'fill-yellow-600 text-[8px] font-black uppercase')
+            .text('Potential Gap');
+        }
+      });
+    }
   }
 </script>
 

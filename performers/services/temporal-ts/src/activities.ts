@@ -62,7 +62,7 @@ function extractNodeFeatures(
   topEmotions.forEach(e => features.push(`emotion:${e.name}`));
 
   // Extract reaction time features
-  const reactionTimes = wordData.map(d => d.reactionTime).filter((rt): rt is number => rt != null);
+  const reactionTimes = wordData.map(d => d.reaction_time).filter((rt): rt is number => rt != null);
   if (reactionTimes.length > 0) {
     const avgRT = reactionTimes.reduce((sum, rt) => sum + rt, 0) / reactionTimes.length;
     if (avgRT < 500) features.push('fast_response');
@@ -71,7 +71,7 @@ function extractNodeFeatures(
   }
 
   // Extract reaction value features
-  const reactionValues = wordData.map(d => d.reactionValue).filter((rv): rv is number => rv != null);
+  const reactionValues = wordData.map(d => d.reaction_value).filter((rv): rv is number => rv != null);
   if (reactionValues.length > 0) {
     const avgRV = reactionValues.reduce((sum, rv) => sum + rv, 0) / reactionValues.length;
     if (avgRV > 0.7) features.push('high_reaction');
@@ -429,8 +429,8 @@ export async function detectDuplicatesActivity(
         const allWordData = [...wordData1, ...wordData2];
 
         const frequencies = [wordData1.length, wordData2.length];
-        const reactionTimes = allWordData.map(d => d.reactionTime).filter((rt): rt is number => rt != null);
-        const reactionValues = allWordData.map(d => d.reactionValue).filter((rv): rv is number => rv != null);
+        const reactionTimes = allWordData.map(d => d.reaction_time).filter((rt): rt is number => rt != null);
+        const reactionValues = allWordData.map(d => d.reaction_value).filter((rv): rv is number => rv != null);
 
         candidates.push({
           id: `dup_${node1.id}_${node2.id}`,

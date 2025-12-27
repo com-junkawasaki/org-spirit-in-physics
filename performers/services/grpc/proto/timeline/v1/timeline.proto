@@ -23,6 +23,19 @@ service TimelineService {
 
   // Get structure analysis results (run via Temporal)
   rpc GetAnalysis(GetAnalysisRequest) returns (GetAnalysisResponse);
+
+  // Get integrated timeline data and analysis (run via TS Temporal)
+  rpc GetIntegratedTimeline(GetIntegratedTimelineRequest) returns (GetIntegratedTimelineResponse);
+}
+
+message GetIntegratedTimelineRequest {
+  string participant_id = 1;
+  optional string session_id = 2;
+}
+
+message GetIntegratedTimelineResponse {
+  repeated TimelinePoint points = 1;
+  GetAnalysisResponse analysis = 2;
 }
 
 message GetAnalysisRequest {
