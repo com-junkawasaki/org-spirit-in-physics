@@ -65,19 +65,25 @@
                 "${./performers/services/import/requirements.txt}"
               ];
               pip.flattenDependencies = true;
-              # Force source to be local
               mkDerivation.src = ./performers/services/import;
             }
           ];
         };
         import-service = import-service-eval.config.public;
 
-        # 3. Svelte App - Standard build
+        # 3. Svelte App - Standard build with pnpm
         svelte-app = pkgs.stdenv.mkDerivation {
           pname = "spirit-svelte-app";
           version = "0.1.0";
           src = ./apps/svelte-app;
-          nativeBuildInputs = with pkgs; [ nodejs_20 pnpm.configHook ];
+          nativeBuildInputs = with pkgs; [ nodejs_20 pnpm pnpmConfigHook ];
+          pnpmDeps = pkgs.fetchPnpmDeps {
+            pname = "spirit-svelte-app-deps";
+            version = "0.1.0";
+            src = ./apps/svelte-app;
+            hash = "sha256-biwnGKd9kuIktaDst4EXEHvgip39ZMGZV5UQ2iBq77k=";
+            fetcherVersion = 2;
+          };
           buildPhase = ''
             pnpm build
           '';
@@ -87,12 +93,9 @@
           '';
         };
 
-        # SPA Handler Python script
+        # SPA Handler Python script with better logging and robust fallback
         spa-handler = pkgs.writeText "spa_handler.py" ''
-import http.server
-import socketserver
-import os
-import sys
+import http.server, socketserver, os, sys
 
 PORT = 80
 DIRECTORY = '/app/www'
@@ -100,14 +103,33 @@ DIRECTORY = '/app/www'
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
+
     def do_GET(self):
-        path = self.translate_path(self.path)
-        if not os.path.exists(path) and '.' not in os.path.basename(path):
-            self.path = '/index.html'
+        # Translate the URL path to a filesystem path
+        actual_path = self.translate_path(self.path)
+        
+        # SPA Fallback logic:
+        # If the file/dir doesn't exist, and it doesn't look like a static asset (no dot in basename)
+        # serve index.html instead.
+        if not os.path.exists(actual_path):
+            basename = os.path.basename(actual_path.rstrip('/'))
+            if '.' not in basename:
+                print(f"SPA Fallback: {self.path} -> /index.html", file=sys.stderr)
+                self.path = '/index.html'
+        
         return super().do_GET()
 
+    def log_message(self, format, *args):
+        # Ensure logs go to stderr so they show up in kubectl logs/Tilt
+        sys.stderr.write("%s - - [%s] %s\n" %
+                         (self.address_string(),
+                          self.log_date_time_string(),
+                          format%args))
+
+print(f"Starting SPA server on port {PORT}, serving from {DIRECTORY}", file=sys.stderr)
+# Use allow_reuse_address to avoid "Address already in use" on restarts
+socketserver.TCPServer.allow_reuse_address = True
 with socketserver.TCPServer(("", PORT), Handler) as httpd:
-    print(f"Serving SPA at port {PORT}")
     httpd.serve_forever()
         '';
 

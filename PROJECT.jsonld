@@ -110,7 +110,12 @@
       "gRPC サービスの Nix 派生 (buildGoModule) と OCI イメージ生成の自動化",
       "Svelte アプリの Nix 派生 (pnpm.fetchDeps) による再現可能なビルドの実現",
       "OCI イメージのタグを Nix ハッシュに基づいた管理へ移行する基盤の確立",
-      "Argo CD の導入による GitOps 管理体制の構築と UI 監視の有効化 (Admin Password: C9DEyBLip4BhN7V1)"
+      "Argo CD の導入による GitOps 管理体制の構築と UI 監視の有効化 (Admin Password: C9DEyBLip4BhN7V1)",
+      "研究者ポータルの SvelteKit パスベースルーティングの完全移行 (/researcher/participants, /researcher/sessions, /researcher/settings)",
+      "ゲートウェイルーティングの簡素化。全サービスを単一の HTTPRoute (infra-main-route) に集約し、パスベースの振り分けを統一管理",
+      "Svelte アプリ (portal) のポッド内 Envoy プロキシを廃止し、Python SPA サーバーによる直接配信へ構成を簡素化 (ポート 80)",
+      "SvelteKit のインポートパス修正 (relative path) と、全ルート (/researcher/participants, /sessions, /settings) の SPA 正常動作確認",
+      "ConnectRPC API (GetParticipants) の導通確認と Gateway 経由の正常応答を確認 (200 OK)"
     ]
   }
 }

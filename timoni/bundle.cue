@@ -194,9 +194,6 @@ bundle: {
 					pullPolicy: "IfNotPresent"
 				}
 				service: port: 3000
-				routing: {
-					enabled: false
-				}
 				env: [
 					{name: "TEMPORAL_ADDRESS", value: "infra-temporal:7233"},
 					{name: "TASK_QUEUE", value: "visualization-analysis-queue"},

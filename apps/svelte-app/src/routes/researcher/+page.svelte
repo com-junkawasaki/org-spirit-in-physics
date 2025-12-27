@@ -1,7 +1,7 @@
 <script lang="ts">
   import AnalyticsOverview from "$lib/components/researcher/AnalyticsOverview.svelte";
   import { participantClient } from "$lib/connect";
-  import type { Participant } from "@/generated/proto/participant/v1/participant_pb";
+  import type { Participant } from "../../generated/proto/participant/v1/participant_pb";
   import { onMount } from "svelte";
 
   let participants = $state<Participant[]>([]);

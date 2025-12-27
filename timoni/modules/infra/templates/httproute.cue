@@ -14,7 +14,6 @@ package templates
 			name:      "\(#config.metadata.name)-gateway"
 			namespace: #config.metadata.namespace
 		}]
-		hostnames: [#config.gateway.hostname]
 		rules: [
 			{
 				matches: [{
