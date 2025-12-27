@@ -15,6 +15,16 @@
           config.allowUnfree = true;
         };
 
+        # Linux pkgs for OCI images (even when building on macOS)
+        linuxSystem = if system == "aarch64-darwin" then "aarch64-linux" 
+                      else if system == "x86_64-darwin" then "x86_64-linux"
+                      else system;
+        
+        pkgsLinux = import nixpkgs {
+          system = linuxSystem;
+          config.allowUnfree = true;
+        };
+
         # Shared build tools
         buildTools = with pkgs; [
           git
@@ -33,6 +43,7 @@
         ];
 
         grpc = pkgs.callPackage ./nix/grpc/default.nix { };
+        svelte = pkgs.callPackage ./nix/svelte-app/default.nix { };
 
       in
       {
@@ -53,6 +64,8 @@
         packages = {
           grpc-service = grpc.package;
           grpc-image = grpc.image;
+          svelte-app = svelte.package;
+          svelte-image = svelte.image;
         };
 
         defaultPackage = self.packages.${system}.grpc-service;

@@ -45,7 +45,7 @@
   "version": "1.45.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-27T15:30:00+09:00",
+  "updatedAt": "2025-12-27T16:00:00+09:00",
   "merkleRoot": "polydam を除外し lakeFS に一本化したストレージ管理体制を構築。Kubernetes 上でのデータバージョン管理と整合性を確保。",
   
   "story": {
@@ -105,7 +105,11 @@
       "SvelteKit のパス解決を絶対パスに固定し、SPA ルーティングの整合性を確保",
       "特定の被験者 (e41a9cd2-d803-49a8-9020-0260e55cd03e) の分析可視化 BDD シナリオのパス",
       "Timoni app/infra モジュールの Nginx から Envoy への移行完了",
-      "Timoni モジュールのデフォルト設定（ConfigMap, Deployment, README）を Envoy ベースに刷新"
+      "Timoni モジュールのデフォルト設定（ConfigMap, Deployment, README）を Envoy ベースに刷新",
+      "Nix Flake による決定論的ビルド環境の導入 (flake.nix, devenv)",
+      "gRPC サービスの Nix 派生 (buildGoModule) と OCI イメージ生成の自動化",
+      "Svelte アプリの Nix 派生 (pnpm.fetchDeps) による再現可能なビルドの実現",
+      "OCI イメージのタグを Nix ハッシュに基づいた管理へ移行する基盤の確立"
     ]
   }
 }
