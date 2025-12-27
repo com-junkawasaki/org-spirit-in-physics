@@ -57,11 +57,11 @@ The script will test:
 
 ```bash
 # Install dependencies if needed
-cd apps/researcher
+cd apps/svelte-app
 pnpm install
 
 # Run Vitest tests
-pnpm test tests/connect-integration.test.ts
+pnpm test
 ```
 
 ## Test Structure
@@ -99,17 +99,16 @@ If tests fail with database connection errors:
 3. Verify database exists: `psql -U postgres -d spirit_in_physics`
 
 ### Backend Not Running
-
 If shell script tests fail:
 1. Start backend: `cd performers/services/grpc && make run`
-2. Verify health endpoint: `curl http://localhost:8080/health`
+2. Verify health check: `curl http://spirit.localhost/api/health`
 3. Check logs for errors
 
 ### Type Errors in Frontend Tests
 
 If TypeScript tests fail:
 1. Regenerate Protobuf types: `cd performers/services/grpc && make copy-types`
-2. Verify types exist: `ls apps/researcher/src/generated/proto`
+2. Verify types exist: `ls apps/svelte-app/src/generated/proto`
 
 ## Continuous Integration
 

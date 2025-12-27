@@ -36,15 +36,7 @@ docker_build(
     ]
 )
 
-# 5. Researcher App (Next.js)
-docker_build(
-    'spirit-researcher',
-    '.',
-    dockerfile='./apps/researcher/Dockerfile',
-    labels=['frontend']
-)
-
-# 6. BDD Tests
+# 5. BDD Tests
 local_resource(
     'bdd-tests',
     cmd='cd tests/bdd && pnpm test',
@@ -59,11 +51,11 @@ local_resource(
 # 6. UI Grouping & Endpoints Setup
 k8s_resource('grpc-service', 
     labels=['backend'], 
-    links=['http://api.localhost'])
+    links=['http://spirit.localhost/api'])
 
 k8s_resource('import-service', 
     labels=['backend'], 
-    links=['http://import.localhost'])
+    links=['http://spirit.localhost/import'])
 
 k8s_resource('import-worker', 
     labels=['backend'])
@@ -74,7 +66,7 @@ k8s_resource('portal',
 
 k8s_resource('infra-temporal', 
     labels=['infra'], 
-    links=['http://temporal.localhost'],
+    links=['http://spirit.localhost/temporal'],
     port_forwards=8088)
 
 k8s_resource('infra-timescaledb', 
@@ -83,5 +75,5 @@ k8s_resource('infra-timescaledb',
 
 k8s_resource('infra-minio', 
     labels=['infra'], 
-    links=['http://minio-console.localhost'],
+    links=['http://spirit.localhost/minio-console'],
     port_forwards=9001)

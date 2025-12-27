@@ -18,7 +18,7 @@
   const jsonLd = {
     "@context": {
       "@version": 1.1,
-      "@vocab": "https://spirit-in-physics.gftd.ai/research#",
+      "@vocab": "http://spirit.localhost/research#",
       "id": "@id",
       "type": "@type",
       "dct": "http://purl.org/dc/terms/",
@@ -30,7 +30,7 @@
       "author": {"@id": "schema:author", "@type": "@id"},
       "affiliation": {"@id": "schema:affiliation", "@type": "@id"}
     },
-    "@id": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics",
+    "@id": "http://spirit.localhost/research/spirit-in-physics",
     "@type": ["schema:ScholarlyArticle", "schema:ResearchPaper"],
     "title": "Spirit in Physics",
     "description": "Structuring and Quantifying Human Spirit Using the Informational Vector Space",

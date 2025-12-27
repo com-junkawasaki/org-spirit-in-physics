@@ -47,7 +47,8 @@ bundle: {
 				service: port: 8080
 				routing: {
 					enabled:          true
-					hostname:         "api.localhost"
+					hostname:         "spirit.localhost"
+					path:             "/api"
 					gatewayName:      "infra-gateway"
 					gatewayNamespace: "spirit-in-physics"
 				}
@@ -87,7 +88,8 @@ bundle: {
 				service: port: 8082
 				routing: {
 					enabled:          true
-					hostname:         "import.localhost"
+					hostname:         "spirit.localhost"
+					path:             "/import"
 					gatewayName:      "infra-gateway"
 					gatewayNamespace: "spirit-in-physics"
 				}
@@ -166,7 +168,7 @@ bundle: {
 					{name: "PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
 					{name: "PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
 					{name: "PUBLIC_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
-					{name: "PUBLIC_API_URL", value: "http://api.localhost"},
+					{name: "PUBLIC_API_URL", value: "http://spirit.localhost/api"},
 				]
 			}
 		}

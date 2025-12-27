@@ -26,10 +26,10 @@ func (a *ImportActivities) ImportParticipantsActivity(ctx context.Context) (int,
 	// Check if directory exists
 	if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
 		// Fallback 1: Direct absolute path
-		datasetPath = "/Volumes/251214/jun784/spirit-in-physics/apps/researcher/public/dataset/participants"
+		datasetPath = "/Volumes/251214/jun784/spirit-in-physics/dataset/participants"
 		if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
 			// Fallback 2: From services/grpc
-			datasetPath = "../../../apps/researcher/public/dataset/participants"
+			datasetPath = "../../../dataset/participants"
 			if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
 				log.Printf("Dataset path not found in any common location")
 				return 0, nil
@@ -90,9 +90,9 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 	// Find CSV files
 	datasetPath := fmt.Sprintf("/dataset/%s", participantID)
 	if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
-		datasetPath = fmt.Sprintf("/Volumes/251214/jun784/spirit-in-physics/apps/researcher/public/dataset/participants/%s", participantID)
+		datasetPath = fmt.Sprintf("/Volumes/251214/jun784/spirit-in-physics/dataset/participants/%s", participantID)
 		if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
-			datasetPath = fmt.Sprintf("../../../apps/researcher/public/dataset/participants/%s", participantID)
+			datasetPath = fmt.Sprintf("../../../dataset/participants/%s", participantID)
 		}
 	}
 

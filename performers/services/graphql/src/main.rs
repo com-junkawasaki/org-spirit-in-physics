@@ -42,20 +42,11 @@ mod vercel_handler;
 // Get allowed origins from environment or use defaults
 pub fn get_allowed_origins() -> Vec<String> {
     let mut origins = vec![
+        "http://spirit.localhost".to_string(),
+        "https://spirit.spirit-in-physics.orb.local".to_string(),
         "http://localhost:25250".to_string(),      // participant app
-        "https://participant.spirit-in-physics.orb.local".to_string(), // participant app via orb.local
-        "http://localhost:3000".to_string(),      // researcher app (legacy)
-        "http://localhost:25260".to_string(),     // researcher app (current)
-        "https://researcher.spirit-in-physics.orb.local".to_string(), // researcher app via orb.local
-        "http://localhost:4321".to_string(),      // paper app
-        "http://localhost:4322".to_string(),      // demo app
-        "https://demo.spirit-in-physics.orb.local".to_string(), // demo app via orb.local
         "http://localhost:8080".to_string(),      // fallback
         "http://127.0.0.1:25250".to_string(),
-        "http://127.0.0.1:3000".to_string(),
-        "http://127.0.0.1:25260".to_string(),
-        "http://127.0.0.1:4321".to_string(),
-        "http://127.0.0.1:4322".to_string(),
     ];
 
     // Add Vercel deployment URLs from environment

@@ -45,8 +45,8 @@ services:
       # Next.js HMR settings
       - NEXT_TELEMETRY_DISABLED=1
       # GraphQL API URL (hardcoded for development)
-      # Client-side: use localhost for browser access
-      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
+      # Client-side: use spirit.localhost/graphql for consistency if proxy is present
+      - NEXT_PUBLIC_GRAPHQL_API_URL=http://spirit.localhost/graphql
       # Server-side: use container name for server-to-server communication
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
       # Supabase Authentication (hardcoded for development)

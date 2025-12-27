@@ -65,12 +65,16 @@ func main() {
 			w.RegisterWorkflow(workflows.OnboardingWorkflow)
 			w.RegisterWorkflow(workflows.ImportParticipantsWorkflow)
 			w.RegisterWorkflow(workflows.ImportEmotionsWorkflow)
+			w.RegisterWorkflow(workflows.TimelineWorkflow)
 			
 			a := &activities.ParticipantActivities{Queries: queries}
 			w.RegisterActivity(a)
 
 			ia := &activities.ImportActivities{Queries: queries}
 			w.RegisterActivity(ia)
+
+			ta := &activities.TimelineActivities{Queries: queries}
+			w.RegisterActivity(ta)
 
 			log.Println("Starting Temporal worker on queue 'onboarding-queue'")
 			if err := w.Run(worker.InterruptCh()); err != nil {
@@ -81,7 +85,7 @@ func main() {
 
 	participantHandler := handlers.NewParticipantHandler(queries, temporalClient)
 	sessionHandler := handlers.NewSessionHandler(queries)
-	timelineHandler := handlers.NewTimelineHandler(queries)
+	timelineHandler := handlers.NewTimelineHandler(queries, temporalClient)
 	importHandler := handlers.NewImportHandler(queries, temporalClient)
 	storageHandler := handlers.NewStorageHandler()
 

@@ -14,12 +14,12 @@ package templates
 			name:      "\(#config.metadata.name)-gateway"
 			namespace: #config.metadata.namespace
 		}]
-		hostnames: ["minio.localhost"]
+		hostnames: ["spirit.localhost"]
 		rules: [{
 			matches: [{
 				path: {
 					type:  "PathPrefix"
-					value: "/"
+					value: "/minio"
 				}
 			}]
 			backendRefs: [{
@@ -44,12 +44,12 @@ package templates
 			name:      "\(#config.metadata.name)-gateway"
 			namespace: #config.metadata.namespace
 		}]
-		hostnames: ["minio-console.localhost"]
+		hostnames: ["spirit.localhost"]
 		rules: [{
 			matches: [{
 				path: {
 					type:  "PathPrefix"
-					value: "/"
+					value: "/minio-console"
 				}
 			}]
 			backendRefs: [{
@@ -74,12 +74,12 @@ package templates
 			name:      "\(#config.metadata.name)-gateway"
 			namespace: #config.metadata.namespace
 		}]
-		hostnames: ["temporal.localhost"]
+		hostnames: ["spirit.localhost"]
 		rules: [{
 			matches: [{
 				path: {
 					type:  "PathPrefix"
-					value: "/"
+					value: "/temporal"
 				}
 			}]
 			backendRefs: [{

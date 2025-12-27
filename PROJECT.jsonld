@@ -1,7 +1,7 @@
 {
   "@context": {
     "@version": 1.1,
-    "@vocab": "https://spirit-in-physics.gftd.ai/project#",
+    "@vocab": "http://spirit.localhost/project#",
     "id": "@id",
     "type": "@type",
     
@@ -38,15 +38,15 @@
     "hadPrimarySource": "prov:hadPrimarySource"
   },
   
-  "@id": "https://spirit-in-physics.gftd.ai/project",
+  "@id": "http://spirit.localhost/project",
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
   "version": "1.45.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-27T13:30:00+09:00",
-  "merkleRoot": "Next.js 版 researcher アプリを完全に廃止し、SvelteKit (apps/svelte-app) へ統合。3D Force 可視化 (WebGPU)、KPI チャート、構造分析パネルを Svelte で再実装し、ConnectRPC によるデータ連携を強化。",
+  "updatedAt": "2025-12-27T14:00:00+09:00",
+  "merkleRoot": "Next.js 版 researcher アプリを SvelteKit へ完全移行。バックエンドの GetTimeline 処理を Temporal Workflow/Activity (Go) に統合。全サービスを spirit.localhost ドメイン下のパスベースルーティングに統一。",
   
   "story": {
     "@id": "project:story",
@@ -63,8 +63,8 @@
       {
         "@id": "project:narrative/69",
         "@type": "project:Narrative",
-        "act": "フロントエンド・フレームワークの統一",
-        "summary": "Next.js と SvelteKit の混在によるルーティングの複雑さと保守コストを解消するため、分析可視化機能を含む全ての研究者向け機能を SvelteKit へ完全移行。WebGPU を使用した 3D Force 可視化コンポーネントも Svelte ネイティブとして再実装した。"
+        "act": "インフラ構造の簡素化とドメインの統一",
+        "summary": "分析可視化機能の SvelteKit 移行に加え、インフラのルーティングを spirit.localhost 一本に集約。サブドメイン管理の複雑さを排除し、パスベースルーティング (/api, /import, /temporal 等) を採用することで、一貫性のあるユーザー体験と開発環境を構築した。"
       }
     ]
   },
@@ -87,8 +87,10 @@
       "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装 (Go/Python 両対応)",
       "Next.js 版 researcher アプリの完全廃止と SvelteKit への統合",
       "3D Force 可視化 (Force3DWordGraphTypeGPU) の Svelte 実装",
-      "KPI カード、時系列チャート (TimelineChart)、構造分析パネルの Svelte 実装",
-      "SvelteKit への /researcher/participants/[id] ルート追加と ConnectRPC 連携"
+      "KPI カード、時系列チャート (TimelineChart)、構造分析パネルSvelte 実装",
+      "SvelteKit への /researcher/participants/[id] ルート追加と ConnectRPC 連携",
+      "Go 版 gRPC サービスの GetTimeline 処理を Temporal Workflow/Activity に移行",
+      "全サービス（API, Import, Temporal UI, MinIO）を spirit.localhost へのパスベースルーティングに統一"
     ]
   }
 }
