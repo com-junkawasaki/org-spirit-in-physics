@@ -56,7 +56,14 @@ local_resource(
     labels=['test']
 )
 
-# 6. UI Grouping & Endpoints Setup
+# 6. Argo CD Setup
+local_resource(
+    'install-argocd',
+    cmd='kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f - && kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml',
+    labels=['infra']
+)
+
+# 7. UI Grouping & Endpoints Setup
 k8s_resource('grpc-service', 
     labels=['backend'], 
     links=['http://spirit.localhost/api'])
@@ -90,3 +97,9 @@ k8s_resource('infra-minio',
     labels=['infra'], 
     links=['http://spirit.localhost/minio-console'],
     port_forwards=9001)
+
+k8s_resource('argocd-server',
+    new_name='infra-argocd',
+    port_forwards='8080:8080',
+    links=['http://localhost:8080'],
+    labels=['infra'])
