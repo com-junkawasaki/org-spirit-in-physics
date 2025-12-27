@@ -106,6 +106,19 @@ import (
 		issuerName: *"letsencrypt-prod" | string
 	}
 
+	// Nix Cache settings
+	nix_cache: {
+		enabled: *false | bool
+		image: {
+			repository: *"ghcr.io/helsinki-systems/harmonia" | string
+			tag:        *"latest" | string
+			digest:     *"" | string
+			reference:  "\(repository):\(tag)"
+		}
+		port: *5000 | int
+		storage: *"10Gi" | string
+	}
+
 	imagePullSecrets?: [...timoniv1.#ObjectReference]
 	tolerations?: [...corev1.#Toleration]
 	affinity?: corev1.#Affinity
@@ -148,6 +161,13 @@ import (
 		if config.gateway.enabled {
 			gateway: #Gateway & {#config: config}
 			issuer: #ClusterIssuer & {#config: config}
+		}
+		if config.nix_cache.enabled {
+			nix_cache_svc: #NixCacheService & {#config: config}
+			nix_cache_sts: #NixCacheStatefulSet & {#config: config}
+			if config.gateway.enabled {
+				nix_cache_route: #NixCacheRoute & {#config: config}
+			}
 		}
 	}
 }

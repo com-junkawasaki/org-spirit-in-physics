@@ -98,8 +98,3 @@ k8s_resource('infra-minio',
     links=['http://spirit.localhost/minio-console'],
     port_forwards=9001)
 
-k8s_resource('argocd-server',
-    new_name='infra-argocd',
-    port_forwards='8080:8080',
-    links=['http://localhost:8080'],
-    labels=['infra'])

@@ -62,7 +62,10 @@ import (
 						name:          "http"
 					}]
 					env: [{
-						name:  "LAKEFS_DATABASE_CONNECTION_STRING"
+						name:  "LAKEFS_DATABASE_TYPE"
+						value: "postgres"
+					}, {
+						name:  "LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING"
 						value: #config.lakefs.database.connectionString
 					}, {
 						name:  "LAKEFS_AUTH_ENCRYPT_SECRET_KEY"
@@ -154,28 +157,25 @@ import (
 						set -e
 						LAKEFS_URL="http://\(#config.metadata.name)-lakefs:\(#config.lakefs.port)"
 						
-						echo "Waiting for lakeFS to be ready..."
-						until curl -s \"$LAKEFS_URL/_health\" | grep -q \"OK\"; do
+						echo "Waiting for lakeFS to be ready at $LAKEFS_URL..."
+						while ! curl -s "$LAKEFS_URL/_health" | grep -q "alive"; do
+						  echo "LakeFS not ready yet..."
 						  sleep 2
 						done
+						echo "LakeFS is ready!"
 						
-						echo \"Checking if lakeFS is already setup...\"
-						if curl -s \"$LAKEFS_URL/api/v1/setup_admin\" | grep -q \"already setup\"; then
-						  echo \"lakeFS is already setup.\"
+						echo "Checking if lakeFS is already setup..."
+						if curl -s "$LAKEFS_URL/setup_admin" | grep -q "already setup"; then
+						  echo "lakeFS is already setup."
 						else
-						  echo \"Setting up lakeFS admin...\"
-						  curl -X POST \"$LAKEFS_URL/api/v1/setup_admin\" \\
-						    -H \"Content-Type: application/json\" \\
-						    -d '{\"user_name\": \"admin\", \"access_key_id\": \"\(#config.lakefs.setup.adminAccessKey)\", \"secret_access_key\": \"\(#config.lakefs.setup.adminSecretKey)\"}'
+						  echo "Setting up lakeFS admin..."
+						  curl -X POST "$LAKEFS_URL/setup_admin" -H "Content-Type: application/json" -d '{"user_name": "admin", "access_key_id": "AKIAIOSFODNN7EXAMPLE", "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}'
 						fi
 						
-						echo \"Creating repository \(#config.lakefs.setup.repository)...\"
-						curl -X POST \"$LAKEFS_URL/api/v1/repositories\" \\
-						  -u \"\(#config.lakefs.setup.adminAccessKey):\(#config.lakefs.setup.adminSecretKey)\" \\
-						  -H \"Content-Type: application/json\" \\
-						  -d '{\"name\": \"\(#config.lakefs.setup.repository)\", \"storage_namespace\": \"s3://\(#config.lakefs.setup.repository)\", \"default_branch\": \"main\"}' || echo \"Repository might already exist\"
+						echo "Creating repository \(#config.lakefs.setup.repository)..."
+						curl -X POST "$LAKEFS_URL/api/v1/repositories" -u "AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" -H "Content-Type: application/json" -d '{"name": "\(#config.lakefs.setup.repository)", "storage_namespace": "s3://\(#config.lakefs.setup.repository)", "default_branch": "main"}' || echo "Repository might already exist"
 						
-						echo \"lakeFS setup complete.\"
+						echo "lakeFS setup complete."
 						""",
 					]
 				}]

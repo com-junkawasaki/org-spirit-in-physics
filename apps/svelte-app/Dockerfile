@@ -10,6 +10,7 @@ FROM envoyproxy/envoy:v1.31-latest
 WORKDIR /app
 RUN apt-get update && apt-get install -y python3 && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/build /app/www
+RUN chmod -R 777 /app/www
 COPY envoy.yaml /etc/envoy/envoy.yaml
 COPY replace-env.sh /app/replace-env.sh
 RUN chmod +x /app/replace-env.sh
