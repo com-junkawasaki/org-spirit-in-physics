@@ -169,5 +169,92 @@ bundle: {
 				]
 			}
 		}
+
+		"researcher": {
+			module: {
+				url: "file://./modules/app"
+			}
+			namespace: "spirit-in-physics"
+			values: {
+				image: {
+					repository: "spirit-researcher"
+					tag:        "latest"
+					pullPolicy: "IfNotPresent"
+				}
+				service: port: 3000
+				routing: {
+					enabled:          true
+					hostname:         "spirit.localhost"
+					path:             "/participants"
+					gatewayName:      "infra-gateway"
+					gatewayNamespace: "spirit-in-physics"
+				}
+				env: [
+					{name: "NODE_ENV", value: "development"},
+					{name: "GRAPHQL_API_URL", value: "http://grpc-service:8080/graphql"},
+					{name: "NEXT_PUBLIC_GRAPHQL_API_URL", value: "http://api.localhost/graphql"},
+					{name: "NEXT_PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+				]
+			}
+		}
+
+		"researcher-api": {
+			module: {
+				url: "file://./modules/app"
+			}
+			namespace: "spirit-in-physics"
+			values: {
+				image: {
+					repository: "spirit-researcher"
+					tag:        "latest"
+					pullPolicy: "IfNotPresent"
+				}
+				service: port: 3000
+				routing: {
+					enabled:          true
+					hostname:         "spirit.localhost"
+					path:             "/api"
+					gatewayName:      "infra-gateway"
+					gatewayNamespace: "spirit-in-physics"
+				}
+				env: [
+					{name: "NODE_ENV", value: "development"},
+					{name: "GRAPHQL_API_URL", value: "http://grpc-service:8080/graphql"},
+					{name: "NEXT_PUBLIC_GRAPHQL_API_URL", value: "http://api.localhost/graphql"},
+					{name: "NEXT_PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+				]
+			}
+		}
+
+		"researcher-assets": {
+			module: {
+				url: "file://./modules/app"
+			}
+			namespace: "spirit-in-physics"
+			values: {
+				image: {
+					repository: "spirit-researcher"
+					tag:        "latest"
+					pullPolicy: "IfNotPresent"
+				}
+				service: port: 3000
+				routing: {
+					enabled:          true
+					hostname:         "spirit.localhost"
+					path:             "/_next"
+					gatewayName:      "infra-gateway"
+					gatewayNamespace: "spirit-in-physics"
+				}
+				env: [
+					{name: "NODE_ENV", value: "development"},
+					{name: "GRAPHQL_API_URL", value: "http://grpc-service:8080/graphql"},
+					{name: "NEXT_PUBLIC_GRAPHQL_API_URL", value: "http://api.localhost/graphql"},
+					{name: "NEXT_PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
+					{name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
+				]
+			}
+		}
 	}
 }

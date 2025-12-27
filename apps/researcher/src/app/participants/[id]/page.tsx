@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/PageLayout'
-import { TimelineVisualization } from '@visualizer'
+import { TimelineVisualization } from '@spirit-in-physics/visualization-components'
 
 export default function ForceTimelinePage() {
   const { id } = useParams<{ id: string }>()

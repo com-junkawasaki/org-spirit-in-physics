@@ -71,14 +71,16 @@ function ParticipantsTable({ participants }: { participants: Participant[] }) {
           {participants.map((participant) => (
             <TableRow key={participant.id}>
               <TableCell>
-                <div>
-                  <div className="font-medium">
-                    {participant.name || `参加者 ${participant.id.slice(0, 8)}`}
+                <Link href={`/participants/${participant.id}`} className="block hover:bg-muted/50 transition-colors rounded-md p-1">
+                  <div>
+                    <div className="font-medium text-blue-600 dark:text-blue-400">
+                      {participant.name || `参加者 ${participant.id.slice(0, 8)}`}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {participant.id.slice(0, 12)}...
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {participant.id.slice(0, 12)}...
-                  </div>
-                </div>
+                </Link>
               </TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">

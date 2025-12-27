@@ -21,11 +21,18 @@
   const WELCOME_MESSAGE = "ユング式言語連想検査へようこそ。これから100個の単語が表示されます。それぞれの単語から連想される言葉を、できるだけ早く声に出して回答してください。";
 
   onMount(async () => {
-    await kawasakiStore.loadStimulusWords();
+    // Initial words are loaded by parent (ParticipantView)
+    // but we check just in case it's mounted directly or failed
+    if (kawasakiStore.stimulusWords.length === 0) {
+      await kawasakiStore.loadStimulusWords();
+    }
   });
 
+  let isInitializingMedia = false;
   // Media initialization
   async function initializeMedia() {
+    if (isInitializingMedia) return;
+    isInitializingMedia = true;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -42,6 +49,8 @@
       kawasakiStore.deviceStatus = 'error';
       kawasakiStore.error = "カメラまたはマイクへのアクセスに失敗しました。";
       kawasakiStore.logEvent('preflight_devices_failed', { error: err.message });
+    } finally {
+      isInitializingMedia = false;
     }
   }
 

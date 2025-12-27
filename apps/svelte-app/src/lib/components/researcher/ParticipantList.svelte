@@ -45,7 +45,7 @@
               <span class="status-badge active">参加中</span>
             </td>
             <td>
-              <span class="id-text">{p.id}</span>
+              <a href="/participants/{p.id}" class="id-text hover:underline">{p.id}</a>
             </td>
             <td>{p.age ?? '---'}</td>
             <td>{p.gender ?? '---'}</td>
@@ -65,7 +65,7 @@
             </td>
             <td>
               <div class="row-actions">
-                <button title="詳細">👁️</button>
+                <a href="/participants/{p.id}" title="詳細" class="action-btn">👁️</a>
                 <button title="編集">✏️</button>
                 <button title="削除" class="delete">🗑️</button>
               </div>
@@ -202,7 +202,8 @@
     gap: 0.5rem;
   }
 
-  .row-actions button {
+  .row-actions button,
+  .row-actions .action-btn {
     background: transparent;
     border: none;
     cursor: pointer;
@@ -210,9 +211,14 @@
     padding: 0.25rem;
     border-radius: 4px;
     transition: background 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .row-actions button:hover {
+  .row-actions button:hover,
+  .row-actions .action-btn:hover {
     background: #f1f5f9;
   }
 

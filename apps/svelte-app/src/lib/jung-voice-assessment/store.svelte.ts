@@ -66,6 +66,7 @@ class KawasakiStore {
     const sessionNumber = this.currentSession;
     // Shuffle and slice words
     const shuffled = [...this.stimulusWords].sort(() => 0.5 - Math.random()).slice(0, numberOfWords);
+    this.stimulusWords = shuffled;
     
     this.testStatus = sessionNumber === 1 ? 'session-1-running' : 'session-2-running';
     this.currentWordIndex = 0;

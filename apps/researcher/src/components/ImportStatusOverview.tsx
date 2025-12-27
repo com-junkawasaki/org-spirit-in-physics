@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -268,7 +269,9 @@ export function ImportStatusOverview() {
                     <div className="flex items-center gap-3">
                       {getStatusIcon(status.status)}
                       <div>
-                        <div className="font-medium">{status.participant_id}</div>
+                        <Link href={`/participants/${status.participant_id}`} className="font-medium text-blue-600 hover:underline">
+                          {status.participant_id}
+                        </Link>
                         <div className="text-sm text-muted-foreground">
                           {status.import_type} • {status.data_sources.join(', ')}
                         </div>

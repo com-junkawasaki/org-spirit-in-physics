@@ -45,8 +45,8 @@
   "version": "1.45.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-27T12:00:00+09:00",
-  "merkleRoot": "SvelteKit のルーティングをサブドメインベースからパスベース (/participant, /researcher, /paper, /demo) へリファクタリング。Python Importer Service を Temporal (Python SDK) を用いたワークフロー・アクティビティ形式へ移行し、長時間実行可能なデータインポート処理を実現。",
+  "updatedAt": "2025-12-27T12:45:00+09:00",
+  "merkleRoot": "spirit.localhost ドメイン配下のパスベースルーティングを強化。Next.js 版 researcher アプリを /participants, /api, /_next パスへマッピングし、404 エラーを解消。SvelteKit ポータルと Next.js 分析画面の共存を実現。",
   
   "story": {
     "@id": "project:story",
@@ -84,7 +84,10 @@
       "gRPC Service Dockerfile のクリーンアップ",
       "Storage Service (gRPC) との連携実装",
       "MinIO の Kubernetes クラスターへの統合",
-      "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装 (Go/Python 両対応)"
+      "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装 (Go/Python 両対応)",
+      "被験者一覧の ID クリックによる詳細ページ遷移の修正",
+      "可視化コンポーネントの共有パッケージ統合と Force3DControls の適用",
+      "Gateway API によるパスベースルーティング (/participants, /api, /_next) の設定と 404 エラーの解消"
     ]
   }
 }

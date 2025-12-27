@@ -36,7 +36,15 @@ docker_build(
     ]
 )
 
-# 5. BDD Tests
+# 5. Researcher App (Next.js)
+docker_build(
+    'spirit-researcher',
+    '.',
+    dockerfile='./apps/researcher/Dockerfile',
+    labels=['frontend']
+)
+
+# 6. BDD Tests
 local_resource(
     'bdd-tests',
     cmd='cd tests/bdd && pnpm test',
@@ -63,6 +71,16 @@ k8s_resource('import-worker',
 k8s_resource('portal', 
     labels=['frontend'], 
     links=['http://spirit.localhost'])
+
+k8s_resource('researcher', 
+    labels=['frontend'], 
+    links=['http://spirit.localhost/participants'])
+
+k8s_resource('researcher-api', 
+    labels=['frontend'])
+
+k8s_resource('researcher-assets', 
+    labels=['frontend'])
 
 k8s_resource('infra-temporal', 
     labels=['infra'], 
