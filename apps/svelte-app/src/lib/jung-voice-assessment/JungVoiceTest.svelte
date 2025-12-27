@@ -372,7 +372,7 @@
   .video-preview {
     width: 100%;
     height: 100%;
-    object-cover: cover;
+    object-fit: cover;
   }
 
   .overlay {

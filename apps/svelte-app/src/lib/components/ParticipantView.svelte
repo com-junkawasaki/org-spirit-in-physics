@@ -52,7 +52,7 @@
           </SignInButton>
         </SignedOut>
         
-        <a href="http://researcher.localhost" class="btn outline">
+        <a href="/researcher" class="btn outline">
           管理者画面
         </a>
 

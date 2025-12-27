@@ -32,7 +32,7 @@ services:
       - "25250:25250"
     volumes:
       - ./apps/participant:/app
-      - ./apps/researcher/public/dataset:/app/dataset:cached
+      - ./dataset:/app/dataset:cached
       - /app/node_modules
       - /app/.next
     environment:
@@ -67,45 +67,6 @@ services:
       start_period: 30s
 
 
-  # Researcher app (Next.js)
-  researcher:
-    build:
-      context: ./apps/researcher
-      dockerfile: Dockerfile
-    container_name: spirit-researcher
-    ports:
-      - "25260:3000"
-    volumes:
-      - ./apps/researcher:/app
-      - ./packages/visualization-components:/app/packages/visualization-components
-      - /app/node_modules
-      - ./dataset:/app/dataset:cached
-    command: pnpm run dev
-    env_file:
-      - ./apps/researcher/env.docker
-    environment:
-      - NODE_ENV=development
-      - INNGEST_EVENT_KEY=local_dev_key
-      - INNGEST_SIGNING_KEY=local_dev_signing_key
-      - GRAPHQL_API_URL=http://graphql-service:8081/graphql
-      - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
-      # Supabase Configuration (hardcoded for development)
-      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
-    depends_on:
-      postgres:
-        condition: service_healthy
-      graphql-service:
-        condition: service_healthy
-    networks:
-      - spirit-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
   # Participant app for cloud (Aura) profile
   participant-cloud:
     profiles: ["cloud"]
@@ -117,7 +78,7 @@ services:
       - "25251:25250"
     volumes:
       - ./apps/participant:/app
-      - ./apps/researcher/public/dataset:/app/dataset:cached
+      - ./dataset:/app/dataset:cached
       - /app/node_modules
       - /app/.next
     env_file:
@@ -134,12 +95,6 @@ services:
       # Supabase Authentication (hardcoded for development)
       - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
-    # Neo4j環境変数は削除済み - GraphQLサービス経由でPostgreSQLを使用
-    # environment:
-    #   - NEO4J_URI=neo4j+s://539ac6ec.databases.neo4j.io:7687
-    #   - NEO4J_USER=neo4j
-    #   - NEO4J_PASSWORD=ZApfDTJmpJAmBpMXgCHWn826CV69dE9_ntxtPHUc7hI
-    #   - NEO4J_DATABASE=neo4j
     networks:
       - spirit-network
     healthcheck:
@@ -159,7 +114,7 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ./apps/researcher/public/dataset:/app/dataset:cached
+      - ./dataset:/app/dataset:cached
     environment:
       # Production Supabase Database URL
       # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres

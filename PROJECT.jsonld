@@ -45,8 +45,8 @@
   "version": "1.45.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-27T12:45:00+09:00",
-  "merkleRoot": "spirit.localhost ドメイン配下のパスベースルーティングを強化。Next.js 版 researcher アプリを /participants, /api, /_next パスへマッピングし、404 エラーを解消。SvelteKit ポータルと Next.js 分析画面の共存を実現。",
+  "updatedAt": "2025-12-27T13:30:00+09:00",
+  "merkleRoot": "Next.js 版 researcher アプリを完全に廃止し、SvelteKit (apps/svelte-app) へ統合。3D Force 可視化 (WebGPU)、KPI チャート、構造分析パネルを Svelte で再実装し、ConnectRPC によるデータ連携を強化。",
   
   "story": {
     "@id": "project:story",
@@ -61,10 +61,10 @@
     },
     "narrative": [
       {
-        "@id": "project:narrative/68",
+        "@id": "project:narrative/69",
         "@type": "project:Narrative",
-        "act": "アーキテクチャの整理とスケーラビリティの向上",
-        "summary": "フロントエンドのアクセス性を向上させるため、サブドメイン管理からディレクトリパス管理へ移行。また、Python によるデータインポーターを Temporal ワークフローとして再実装することで、大規模なデータインポート時の信頼性と可視性を確保した。"
+        "act": "フロントエンド・フレームワークの統一",
+        "summary": "Next.js と SvelteKit の混在によるルーティングの複雑さと保守コストを解消するため、分析可視化機能を含む全ての研究者向け機能を SvelteKit へ完全移行。WebGPU を使用した 3D Force 可視化コンポーネントも Svelte ネイティブとして再実装した。"
       }
     ]
   },
@@ -85,9 +85,10 @@
       "Storage Service (gRPC) との連携実装",
       "MinIO の Kubernetes クラスターへの統合",
       "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装 (Go/Python 両対応)",
-      "被験者一覧の ID クリックによる詳細ページ遷移の修正",
-      "可視化コンポーネントの共有パッケージ統合と Force3DControls の適用",
-      "Gateway API によるパスベースルーティング (/participants, /api, /_next) の設定と 404 エラーの解消"
+      "Next.js 版 researcher アプリの完全廃止と SvelteKit への統合",
+      "3D Force 可視化 (Force3DWordGraphTypeGPU) の Svelte 実装",
+      "KPI カード、時系列チャート (TimelineChart)、構造分析パネルの Svelte 実装",
+      "SvelteKit への /researcher/participants/[id] ルート追加と ConnectRPC 連携"
     ]
   }
 }

@@ -72,16 +72,6 @@ k8s_resource('portal',
     labels=['frontend'], 
     links=['http://spirit.localhost'])
 
-k8s_resource('researcher', 
-    labels=['frontend'], 
-    links=['http://spirit.localhost/participants'])
-
-k8s_resource('researcher-api', 
-    labels=['frontend'])
-
-k8s_resource('researcher-assets', 
-    labels=['frontend'])
-
 k8s_resource('infra-temporal', 
     labels=['infra'], 
     links=['http://temporal.localhost'],
