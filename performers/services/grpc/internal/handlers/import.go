@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/import/v1"
+	"github.com/spirit-in-physics/services/grpc/internal/activities"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"github.com/spirit-in-physics/services/grpc/internal/workflows"
 	"connectrpc.com/connect"
@@ -28,29 +30,38 @@ func (h *ImportHandler) ImportParticipants(
 	ctx context.Context,
 	req *connect.Request[importv1.ImportParticipantsRequest],
 ) (*connect.Response[importv1.ImportParticipantsResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
+	// Try Temporal first if client initialized
+	if h.temporalClient != nil {
+		workflowOptions := client.StartWorkflowOptions{
+			ID:        "import-participants-" + uuid.New().String(),
+			TaskQueue: "onboarding-queue",
+		}
+
+		run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.ImportParticipantsWorkflow)
+		if err == nil {
+			var count int
+			err = run.Get(ctx, &count)
+			if err == nil {
+				return connect.NewResponse(&importv1.ImportParticipantsResponse{
+					Success:   true,
+					Total:     int32(count),
+					Processed: int32(count),
+				}), nil
+			}
+		}
+		log.Printf("Temporal import failed or timed out, falling back to direct import: %v", err)
 	}
 
-	workflowOptions := client.StartWorkflowOptions{
-		ID:        "import-participants",
-		TaskQueue: "onboarding-queue", // Using same queue for simplicity
-	}
-
-	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.ImportParticipantsWorkflow)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	var count int
-	err = run.Get(ctx, &count)
+	// Fallback to direct import
+	a := &activities.ImportActivities{Queries: h.queries}
+	count, err := a.ImportParticipantsActivity(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	return connect.NewResponse(&importv1.ImportParticipantsResponse{
-		Success: true,
-		Total: int32(count),
+		Success:   true,
+		Total:     int32(count),
 		Processed: int32(count),
 	}), nil
 }
@@ -70,36 +81,43 @@ func (h *ImportHandler) ImportEmotions(
 	ctx context.Context,
 	req *connect.Request[importv1.ImportEmotionsRequest],
 ) (*connect.Response[importv1.ImportEmotionsResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
-	}
-
 	// We'll import emotions for all participants found in the dataset
-	participants, err := h.queries.GetParticipants(ctx, true)
+	participants, err := h.queries.GetParticipants(ctx, pgtype.Bool{Valid: false})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	totalProcessed := 0
+	a := &activities.ImportActivities{Queries: h.queries}
 	for _, p := range participants {
 		uid, _ := uuid.FromBytes(p.ID.Bytes[:])
 		participantID := uid.String()
 		
-		workflowOptions := client.StartWorkflowOptions{
-			ID:        "import-emotions-" + participantID,
-			TaskQueue: "onboarding-queue",
+		log.Printf("Starting emotion import for %s", participantID)
+		
+		// Try Temporal if available
+		if h.temporalClient != nil {
+			workflowOptions := client.StartWorkflowOptions{
+				ID:        "import-emotions-" + participantID + "-" + uuid.New().String(),
+				TaskQueue: "onboarding-queue",
+			}
+
+			run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.ImportEmotionsWorkflow, participantID)
+			if err == nil {
+				var count int
+				err = run.Get(ctx, &count)
+				if err == nil {
+					totalProcessed += count
+					continue
+				}
+			}
+			log.Printf("Temporal emotion import failed for %s, falling back to direct: %v", participantID, err)
 		}
 
-		run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.ImportEmotionsWorkflow, participantID)
+		// Direct fallback
+		count, err := a.ImportEmotionsActivity(ctx, participantID)
 		if err != nil {
-			log.Printf("Failed to start import for %s: %v", participantID, err)
-			continue
-		}
-
-		var count int
-		err = run.Get(ctx, &count)
-		if err != nil {
-			log.Printf("Failed to get results for %s: %v", participantID, err)
+			log.Printf("Failed to import emotions for %s: %v", participantID, err)
 			continue
 		}
 		totalProcessed += count

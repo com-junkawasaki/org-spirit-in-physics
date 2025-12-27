@@ -67,10 +67,10 @@
 					<h1>Welcome to Spirit in Physics</h1>
 					<p>Please use one of the subdomains to access specific features:</p>
 					<ul class="subdomain-links">
-						<li><a href="http://participant.127.0.0.1.nip.io">Participant Portal</a></li>
-						<li><a href="http://researcher.127.0.0.1.nip.io">Researcher Dashboard</a></li>
-						<li><a href="http://paper.127.0.0.1.nip.io">Research Paper</a></li>
-						<li><a href="http://demo.127.0.0.1.nip.io">Measurement Demo</a></li>
+						<li><a href="http://participant.localhost">Participant Portal</a></li>
+						<li><a href="http://researcher.localhost">Researcher Dashboard</a></li>
+						<li><a href="http://paper.localhost">Research Paper</a></li>
+						<li><a href="http://demo.localhost">Measurement Demo</a></li>
 					</ul>
 				</div>
 			{/if}

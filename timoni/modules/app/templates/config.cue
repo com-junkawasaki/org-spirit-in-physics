@@ -99,6 +99,10 @@ import (
 		gatewayNamespace: *"" | string
 		path: *"/" | string
 	}
+
+	// Volume settings
+	volumes?: [...corev1.#Volume]
+	volumeMounts?: [...corev1.#VolumeMount]
 }
 
 // Instance takes the config values and outputs the Kubernetes objects.

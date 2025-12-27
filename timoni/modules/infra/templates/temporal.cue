@@ -86,6 +86,9 @@ import (
 					}, {
 						name:  "SKIP_DB_CREATE"
 						value: "false"
+					}, {
+						name:  "BIND_ON_IP"
+						value: "0.0.0.0"
 					}]
 				}]
 			}

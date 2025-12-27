@@ -97,7 +97,7 @@ func (h *StorageHandler) UploadArtifact(
 
 	// Generate a public URL (this assumes MinIO is accessible or configured for public/presigned URLs)
 	// For now, return a simple path based on the endpoint
-	publicURL := fmt.Sprintf("http://minio.127.0.0.1.nip.io/%s/%s", h.bucketName, info.Key)
+	publicURL := fmt.Sprintf("http://minio.localhost/%s/%s", h.bucketName, info.Key)
 
 	return connect.NewResponse(&storagev1.UploadArtifactResponse{
 		PublicUrl: publicURL,

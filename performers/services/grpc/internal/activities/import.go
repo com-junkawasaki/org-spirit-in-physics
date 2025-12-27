@@ -21,25 +21,32 @@ type ImportActivities struct {
 }
 
 func (a *ImportActivities) ImportParticipantsActivity(ctx context.Context) (int, error) {
-	datasetPath := "/Volumes/251214/jun784/spirit-in-physics/apps/researcher/public/dataset/participants"
+	datasetPath := "/dataset"
 	
 	// Check if directory exists
 	if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
-		// Fallback for local development or container environment
-		datasetPath = "./apps/researcher/public/dataset/participants"
+		// Fallback 1: Direct absolute path
+		datasetPath = "/Volumes/251214/jun784/spirit-in-physics/apps/researcher/public/dataset/participants"
 		if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
-			log.Printf("Dataset path not found: %s", datasetPath)
-			return 0, nil
+			// Fallback 2: From services/grpc
+			datasetPath = "../../../apps/researcher/public/dataset/participants"
+			if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
+				log.Printf("Dataset path not found in any common location")
+				return 0, nil
+			}
 		}
 	}
 
+	log.Printf("Reading directory: %s", datasetPath)
 	entries, err := os.ReadDir(datasetPath)
 	if err != nil {
 		return 0, fmt.Errorf("failed to read dataset path %s: %w", datasetPath, err)
 	}
 
+	log.Printf("Found %d entries in %s", len(entries), datasetPath)
 	count := 0
 	for _, entry := range entries {
+		log.Printf("Processing entry: %s (IsDir: %v)", entry.Name(), entry.IsDir())
 		if entry.IsDir() {
 			participantID, err := uuid.Parse(entry.Name())
 			if err != nil {
@@ -81,9 +88,12 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 	pgParticipantID := pgtype.UUID{Bytes: participantUUID, Valid: true}
 
 	// Find CSV files
-	datasetPath := fmt.Sprintf("/Volumes/251214/jun784/spirit-in-physics/apps/researcher/public/dataset/participants/%s", participantID)
+	datasetPath := fmt.Sprintf("/dataset/%s", participantID)
 	if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
-		datasetPath = fmt.Sprintf("./apps/researcher/public/dataset/participants/%s", participantID)
+		datasetPath = fmt.Sprintf("/Volumes/251214/jun784/spirit-in-physics/apps/researcher/public/dataset/participants/%s", participantID)
+		if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
+			datasetPath = fmt.Sprintf("../../../apps/researcher/public/dataset/participants/%s", participantID)
+		}
 	}
 
 	var csvFiles []string
@@ -200,7 +210,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 				var score float64
 				fmt.Sscanf(scoreStr, "%f", &score)
 
-				if score > 0.1 { // Only import significant emotions
+			if score > 0.1 { // Only import significant emotions
 					err = a.Queries.CreateTimelineEmotionEntry(ctx, db.CreateTimelineEmotionEntryParams{
 						TimelinePointTime:          pgtype.Timestamptz{Time: pointTime, Valid: true},
 						TimelinePointParticipantID: pgParticipantID,
@@ -209,6 +219,12 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 						Score:                      score,
 						FileType:                   fileType,
 					})
+					if err != nil {
+						// Log occasionally
+						if count%100 == 0 {
+							log.Printf("Failed to insert emotion entry: %v", err)
+						}
+					}
 				}
 			}
 

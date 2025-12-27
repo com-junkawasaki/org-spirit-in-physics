@@ -13,7 +13,7 @@ package templates
 		}
 	}
 	spec: {
-		gatewayClassName: "nginx"
+		gatewayClassName: "envoy"
 		listeners: [{
 			name:     "http"
 			port:     80

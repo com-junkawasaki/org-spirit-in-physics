@@ -90,10 +90,17 @@ import (
 		if config.temporal.enabled {
 			temporal_svc: #TemporalService & {#config: config}
 			temporal_deploy: #TemporalDeployment & {#config: config}
+			if config.gateway.enabled {
+				temporal_ui_route: #TemporalUIRoute & {#config: config}
+			}
 		}
 		if config.minio.enabled {
 			minio_svc: #MinIOService & {#config: config}
 			minio_sts: #MinIOStatefulSet & {#config: config}
+			if config.gateway.enabled {
+				minio_route:         #MinIORoute & {#config: config}
+				minio_console_route: #MinIOConsoleRoute & {#config: config}
+			}
 		}
 		if config.gateway.enabled {
 			gateway: #Gateway & {#config: config}

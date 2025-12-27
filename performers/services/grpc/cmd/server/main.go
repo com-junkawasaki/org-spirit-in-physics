@@ -56,10 +56,12 @@ func main() {
 		defer temporalClient.Close()
 
 		// Start Temporal Worker in background
+		log.Println("Initializing Temporal worker...")
 		go func() {
 			w := worker.New(temporalClient, "onboarding-queue", worker.Options{})
 
 			// Register Workflows and Activities
+			log.Println("Registering Temporal workflows and activities")
 			w.RegisterWorkflow(workflows.OnboardingWorkflow)
 			w.RegisterWorkflow(workflows.ImportParticipantsWorkflow)
 			w.RegisterWorkflow(workflows.ImportEmotionsWorkflow)
@@ -70,9 +72,9 @@ func main() {
 			ia := &activities.ImportActivities{Queries: queries}
 			w.RegisterActivity(ia)
 
-			log.Println("Starting Temporal worker")
+			log.Println("Starting Temporal worker on queue 'onboarding-queue'")
 			if err := w.Run(worker.InterruptCh()); err != nil {
-				log.Fatalf("Unable to start Temporal worker: %v", err)
+				log.Printf("Unable to start Temporal worker: %v", err)
 			}
 		}()
 	}

@@ -37,10 +37,16 @@ import (
 						if #config.env != _|_ {
 							env: #config.env
 						}
+						if #config.volumeMounts != _|_ {
+							volumeMounts: #config.volumeMounts
+						}
 						resources:       #config.resources
 						securityContext: #config.securityContext
 					},
 				]
+				if #config.volumes != _|_ {
+					volumes: #config.volumes
+				}
 				if #config.podSecurityContext != _|_ {
 					securityContext: #config.podSecurityContext
 				}

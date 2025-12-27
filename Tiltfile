@@ -44,29 +44,34 @@ local_resource(
 # 5. UI Grouping & Endpoints Setup
 k8s_resource('grpc-service', 
     labels=['backend'], 
-    links=['http://api.127.0.0.1.nip.io'])
+    links=['http://api.localhost'])
 
 k8s_resource('participant', 
     labels=['frontend'], 
-    links=['http://participant.127.0.0.1.nip.io'])
+    links=['http://participant.localhost'])
 
 k8s_resource('researcher', 
     labels=['frontend'], 
-    links=['http://researcher.127.0.0.1.nip.io'])
+    links=['http://researcher.localhost'])
 
 k8s_resource('paper', 
     labels=['frontend'], 
-    links=['http://paper.127.0.0.1.nip.io'])
+    links=['http://paper.localhost'])
 
 k8s_resource('demo', 
     labels=['frontend'], 
-    links=['http://demo.127.0.0.1.nip.io'])
+    links=['http://demo.localhost'])
 
 k8s_resource('infra-temporal', 
     labels=['infra'], 
-    links=['http://localhost:8088'],
+    links=['http://temporal.localhost'],
     port_forwards=8088)
 
 k8s_resource('infra-timescaledb', 
     labels=['infra'], 
     port_forwards=5432)
+
+k8s_resource('infra-minio', 
+    labels=['infra'], 
+    links=['http://minio-console.localhost'],
+    port_forwards=9001)
