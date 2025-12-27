@@ -45,7 +45,7 @@
               <span class="status-badge active">参加中</span>
             </td>
             <td>
-              <a href="/researcher/participants/{p.id}" class="id-text hover:underline" data-sveltekit-reload>{p.id}</a>
+              <a href="/researcher/participants/{p.id}" class="id-text hover:underline">{p.id}</a>
             </td>
             <td>{p.age ?? '---'}</td>
             <td>{p.gender ?? '---'}</td>
@@ -65,7 +65,7 @@
             </td>
             <td>
               <div class="row-actions">
-                <a href="/researcher/participants/{p.id}" title="詳細" class="action-btn" data-sveltekit-reload>👁️</a>
+                <a href="/researcher/participants/{p.id}" title="詳細" class="action-btn">👁️</a>
                 <button title="編集">✏️</button>
                 <button title="削除" class="delete">🗑️</button>
               </div>

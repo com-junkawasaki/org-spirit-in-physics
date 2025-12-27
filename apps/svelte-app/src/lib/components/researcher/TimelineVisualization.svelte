@@ -62,9 +62,15 @@
   let lambda = $state(1.0);
   let eta = $state(1.0);
 
-  let activeTab: 'timeline' | 'force3d' | 'words' | 'distance' = $state(
-    forceMode === 'force-3d-typegpu' ? 'force3d' : 'timeline'
-  );
+  let activeTab: 'timeline' | 'force3d' | 'words' | 'distance' = $state('timeline');
+
+  $effect(() => {
+    if (forceMode === 'force-3d-typegpu') {
+      activeTab = 'force3d';
+    } else {
+      activeTab = 'timeline';
+    }
+  });
 
   const forcePresets: readonly ForcePreset[] = [
     { id: 'balanced', label: 'Balanced', springK: 2.0, repulsionK: 2000, restLength: 80, damping: 0.92, emoWeak: 0.6, emoStrong: 1.6, emoGain: 1.5 },
