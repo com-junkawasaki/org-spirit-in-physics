@@ -19,17 +19,6 @@ package templates
 			port:     80
 			protocol: "HTTP"
 			allowedRoutes: namespaces: from: "Same"
-		}, {
-			name:     "https"
-			port:     443
-			protocol: "HTTPS"
-			tls: {
-				mode: "Terminate"
-				certificateRefs: [{
-					name: "\(#config.metadata.name)-tls"
-				}]
-			}
-			allowedRoutes: namespaces: from: "Same"
 		}]
 	}
 }
