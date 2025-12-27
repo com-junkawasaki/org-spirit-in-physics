@@ -32,7 +32,7 @@ class ImportActivities:
     def __init__(self):
         pass
 
-    @activity.define
+    @activity.defn
     async def process_participant(self, input: Dict[str, Any]) -> Dict[str, Any]:
         participant_id = input["participant_id"]
         participant_path_str = input["participant_path"]
@@ -80,7 +80,7 @@ class ImportActivities:
                 "metadata": {"consent": consent_data}
             }
 
-    @activity.define
+    @activity.defn
     async def process_session(self, input: Dict[str, Any]) -> Dict[str, Any]:
         participant_id = input["participant_id"]
         participant_path_str = input["participant_path"]
@@ -201,7 +201,7 @@ class ImportActivities:
                 "session_id": str(session_id)
             }
 
-    @activity.define
+    @activity.defn
     async def list_participant_directories(self, dataset_path_str: str) -> List[Dict[str, str]]:
         dataset_path = Path(dataset_path_str)
         if not dataset_path.exists():

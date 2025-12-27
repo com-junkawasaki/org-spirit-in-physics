@@ -5,7 +5,7 @@ from temporalio import workflow
 with workflow.unsafe.imports_passed_through():
     from app.activities import ImportActivities
 
-@workflow.define
+@workflow.defn
 class ImportParticipantsWorkflow:
     @workflow.run
     async def run(self, dataset_path: str) -> Dict[str, Any]:
@@ -35,7 +35,7 @@ class ImportParticipantsWorkflow:
             "results": results
         }
 
-@workflow.define
+@workflow.defn
 class ImportSessionsWorkflow:
     @workflow.run
     async def run(self, dataset_path: str) -> Dict[str, Any]:
