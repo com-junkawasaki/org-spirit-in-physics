@@ -274,10 +274,18 @@
         if (vec.confusionSum) emotion.confusion = Number(vec.confusionSum);
       }
 
+      // 反応値（reactionValue）と生理反応（physiological）の強さをスケールに反映
+      const rv = d.reactionValue || 0;
+      const phys = Array.isArray(d.physiological) ? d.physiological.length : 0;
+      const rt = (d.reactionTime || 0) / 5000; // 反応時間（5秒を基準に正規化）
+      
+      // 基本半径 2.0 に、各指標の重み付き寄与を加算
+      const nodeScale = 2.0 + (rv * 8.0) + (phys * 0.5) + (rt * 2.0);
+
       return {
         id: `node-${i}`,
         label: d.word,
-        scale: 1 + (d.reactionValue || 0) * 5,
+        scale: nodeScale,
         color: '#1e40af',
         emotion: Object.keys(emotion).length > 0 ? emotion : undefined
       };

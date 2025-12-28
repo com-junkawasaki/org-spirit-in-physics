@@ -168,20 +168,47 @@
     }
   `;
 
-  function mixEmotionColor(node: WordNode, alpha: number): string {
-    const emo = node.emotion;
-    if (!emo) return node.color || '#1e40af';
-    const palette: any = { joy: [255, 171, 0], sadness: [107, 114, 128], anger: [239, 68, 68], fear: [99, 102, 241], surprise: [16, 185, 129], disgust: [34, 197, 94], calm: [59, 130, 246], focus: [147, 51, 234], excitement: [245, 158, 11], confusion: [14, 165, 233] };
-    let r = 0, g = 0, b = 0, w = 0;
-    for (const key in emo) {
-      const v = (emo as any)[key] ?? 0;
-      if (v <= 0) continue;
-      const c = palette[key];
-      if (!c) continue;
-      r += c[0] * v; g += c[1] * v; b += c[2] * v; w += v;
-    }
-    if (w <= 0) return node.color || '#1e40af';
-    return `rgba(${Math.round(r/w)}, ${Math.round(g/w)}, ${Math.round(b/w)}, ${alpha})`;
+  function mixSpatialColor(nodeIdx: number, positions: Float32Array, alpha: number): string {
+    const node = nodes[nodeIdx];
+    if (node.nodeType === 'anchor') return node.color || '#000';
+
+    const nx = positions[nodeIdx * 3];
+    const ny = positions[nodeIdx * 3 + 1];
+    const nz = positions[nodeIdx * 3 + 2];
+
+    let rSum = 0, gSum = 0, bSum = 0, wSum = 0;
+
+    nodes.forEach((anchor, ai) => {
+      if (anchor.nodeType !== 'anchor' || !anchor.color) return;
+
+      const ax = positions[ai * 3];
+      const ay = positions[ai * 3 + 1];
+      const az = positions[ai * 3 + 2];
+
+      const dx = nx - ax;
+      const dy = ny - ay;
+      const dz = nz - az;
+      const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1;
+      
+      // 距離に基づいた重み（近いほど重い）
+      // 空間の広がりに合わせて調整
+      const weight = 1 / Math.pow(dist / 100, 2);
+
+      // Simple Hex to RGB conversion
+      const hex = anchor.color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+
+      rSum += r * weight;
+      gSum += g * weight;
+      bSum += b * weight;
+      wSum += weight;
+    });
+
+    if (wSum <= 0) return node.color || '#1e40af';
+    
+    return `rgba(${Math.round(rSum/wSum)}, ${Math.round(gSum/wSum)}, ${Math.round(bSum/wSum)}, ${alpha})`;
   }
 
   async function initWebGPU() {
@@ -320,7 +347,7 @@
             ctx.lineWidth = 2 * zoom;
             ctx.stroke();
           } else {
-            ctx.fillStyle = mixEmotionColor(n, 0.8);
+            ctx.fillStyle = mixSpatialColor(i, positions!, 0.8);
             ctx.globalAlpha = 0.8;
             ctx.fill();
           }

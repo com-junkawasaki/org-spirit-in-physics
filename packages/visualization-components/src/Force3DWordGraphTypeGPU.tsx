@@ -165,43 +165,46 @@ function Force3DWordGraphTypeGPU({
   // ズームレベル表示用のDOM要素への参照
   const zoomLevelDisplayRef = useRef<HTMLDivElement | null>(null)
 
-  // 感情カラー合成（線形混色）
-  const mixEmotionColor = useCallback((node: WordNode, alpha: number): string => {
-    const emo = node.emotion
-    if (!emo) return node.color || '#1e40af'
+  // 感情カラー合成（空間距離ベース）
+  const mixSpatialColor = useCallback((nodeIdx: number, positions: Float32Array, alpha: number): string => {
+    const node = nodesRef.current[nodeIdx]
+    if (!node) return '#1e40af'
+    if (node.nodeType === 'anchor') return node.color || '#000'
 
-    // 代表色（Hume → 一般7感情系 + 補助）
-    const palette: Record<string, [number, number, number]> = {
-      joy: [255, 171, 0],        // amber
-      sadness: [107, 114, 128],  // gray-500
-      anger: [239, 68, 68],      // red-500
-      fear: [99, 102, 241],      // indigo-500
-      surprise: [16, 185, 129],  // emerald-500
-      disgust: [34, 197, 94],    // green-500
-      calm: [59, 130, 246],      // blue-500
-      focus: [147, 51, 234],     // purple-600
-      excitement: [245, 158, 11],// orange-500
-      confusion: [14, 165, 233], // sky-500
-    }
+    const nx = positions[nodeIdx * 3]
+    const ny = positions[nodeIdx * 3 + 1]
+    const nz = positions[nodeIdx * 3 + 2]
 
-    let r = 0, g = 0, b = 0, w = 0
-    for (const key in emo) {
-      const v = Math.max(0, Math.min(1, (emo as any)[key] ?? 0))
-      if (v <= 0) continue
-      const c = palette[key]
-      if (!c) continue
-      r += c[0] * v
-      g += c[1] * v
-      b += c[2] * v
-      w += v
-    }
+    let rSum = 0, gSum = 0, bSum = 0, wSum = 0
 
-    if (w <= 0) return node.color || '#1e40af'
-    r = Math.round(r / w)
-    g = Math.round(g / w)
-    b = Math.round(b / w)
-    const a = Math.max(0, Math.min(1, alpha))
-    return `rgba(${r}, ${g}, ${b}, ${a})`
+    nodesRef.current.forEach((anchor, ai) => {
+      if (anchor.nodeType !== 'anchor' || !anchor.color) return
+
+      const ax = positions[ai * 3]
+      const ay = positions[ai * 3 + 1]
+      const az = positions[ai * 3 + 2]
+
+      const dx = nx - ax
+      const dy = ny - ay
+      const dz = nz - az
+      const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1
+      
+      const weight = 1 / Math.pow(dist / 100, 2)
+
+      const hex = anchor.color.replace('#', '')
+      const r = parseInt(hex.substring(0, 2), 16)
+      const g = parseInt(hex.substring(2, 4), 16)
+      const b = parseInt(hex.substring(4, 6), 16)
+
+      rSum += r * weight
+      gSum += g * weight
+      bSum += b * weight
+      wSum += weight
+    })
+
+    if (wSum <= 0) return node.color || '#1e40af'
+    
+    return `rgba(${Math.round(rSum/wSum)}, ${Math.round(gSum/wSum)}, ${Math.round(bSum/wSum)}, ${alpha})`
   }, [])
   
   // カメラ制御関数
@@ -937,10 +940,21 @@ function Force3DWordGraphTypeGPU({
                 ctx.globalAlpha = alpha
                 ctx.beginPath()
                 ctx.arc(screenX, screenY, radius, 0, Math.PI * 2)
-                // 感情色を合成
-                const fillColor = mixEmotionColor(node, alpha)
-                ctx.fillStyle = fillColor
-                ctx.fill()
+                
+                const isAnchor = node.nodeType === 'anchor'
+                if (isAnchor) {
+                  ctx.fillStyle = node.color || '#000'
+                  ctx.globalAlpha = 0.9
+                  ctx.fill()
+                  ctx.strokeStyle = '#fff'
+                  ctx.lineWidth = 2 * zoom
+                  ctx.stroke()
+                } else {
+                  // 感情色を合成
+                  const fillColor = mixSpatialColor(i, pos, alpha)
+                  ctx.fillStyle = fillColor
+                  ctx.fill()
+                }
                 
                 // ラベル
                 ctx.globalAlpha = Math.max(0.06, alpha * 0.9)
