@@ -55,9 +55,22 @@ import (
 				}
 			}
 			spec: corev1.#PodSpec & {
+				securityContext: {
+					fsGroup: 70
+				}
+				initContainers: [{
+					name:  "fix-permissions"
+					image: "busybox"
+					command: ["sh", "-c", "chown -R 70:70 /var/lib/postgresql/data"]
+					volumeMounts: [{
+						name:      "data"
+						mountPath: "/var/lib/postgresql/data"
+					}]
+				}]
 				containers: [{
 					name:  "timescaledb"
 					image: #config.timescaledb.image.reference
+					args: ["-c", "max_connections=200"]
 					ports: [{
 						containerPort: #config.timescaledb.port
 						name:          "postgres"
@@ -71,6 +84,9 @@ import (
 					}, {
 						name:  "POSTGRES_DB"
 						value: #config.timescaledb.database
+					}, {
+						name:  "PGDATA"
+						value: "/var/lib/postgresql/data/pgdata"
 					}]
 					resources: #config.timescaledb.resources
 					volumeMounts: [{

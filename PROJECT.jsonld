@@ -45,8 +45,8 @@
   "version": "1.54.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-    "updatedAt": "2025-12-28T17:15:00+09:00",
-    "merkleRoot": "GKE クラスター (Standard) および Envoy Gateway のセットアップ完了。Artifact Registry, 静的 IP (34.160.140.248) の確保を含め、インフラ基盤を構築。",
+    "updatedAt": "2025-12-28T19:40:00+09:00",
+    "merkleRoot": "GKE へのデプロイ完了。Spot インスタンス (e2-medium) を活用したコスト最適化構成 (月額 $50 以下) で全サービス (gRPC, Svelte, Python, Temporal) が稼働中。",
     "story": {
       "@id": "project:story",
       "@type": "project:Story",
@@ -59,6 +59,12 @@
         "legacy": "人々が満たされた人生を送れる社会を築いた"
       },
       "narrative": [
+        {
+          "@id": "project:narrative/73",
+          "@type": "project:Narrative",
+          "act": "GKE デプロイの完遂とコスト最適化",
+          "summary": "GCP (GKE) 上に全てのマイクロサービスをデプロイした。Apple Silicon (ARM64) 環境からの AMD64 クロスビルド課題を解決し、Spot インスタンスと e2-medium マシンの採用により、目標を大幅に下回る月額数千円〜1万円程度での運用基盤を確立した。"
+        },
         {
           "@id": "project:narrative/72",
           "@type": "project:Narrative",
@@ -83,6 +89,9 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "GKE への全マイクロサービスのデプロイ完了 (amd64 クロスビルド対応済み)",
+      "Spot インスタンス (e2-medium) による低コスト GKE 運用構成の確立",
+      "TimescaleDB, Temporal, lakeFS, MinIO の GKE 上での正常稼働",
       "GKE クラスター (Standard) の構築完了。Gateway API (Envoy Gateway) 有効化済み",
       "GCP Artifact Registry (spirit-in-physics) の作成",
       "GCP グローバル静的 IP (sip-static-ip: 34.160.140.248) の確保",

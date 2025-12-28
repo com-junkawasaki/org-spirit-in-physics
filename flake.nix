@@ -15,9 +15,18 @@
           config.allowUnfree = true;
         };
         
-        linuxPkgs = pkgs.pkgsCross.${if pkgs.stdenv.isAarch64 then "aarch64-multiplatform" else "gnu64"};
+        # Target Linux x86_64 for GKE (e2-medium nodes)
+        # We disable tests for Node.js to speed up cross-compilation
+        linuxPkgs = pkgs.pkgsCross.gnu64.extend (final: prev: {
+          nodejs_20 = prev.nodejs_20.overrideAttrs (old: {
+            doCheck = false;
+            doInstallCheck = false;
+            # Also skip some other time-consuming parts if possible
+            separateDebugInfo = false;
+          });
+        });
 
-        # 1. gRPC Service (Go) - Cross-compiled for Linux
+        # 1. gRPC Service (Go) - Cross-compiled for Linux x86_64
         grpc-service = linuxPkgs.buildGoModule {
           pname = "spirit-grpc-service";
           version = "0.1.0";
@@ -25,7 +34,11 @@
           vendorHash = "sha256-A1HJr9Gv0l3PZZm5/Nruwenx52MQ4DMTG8aHDKfi+yY=";
           proxyVendor = true;
           nativeBuildInputs = with pkgs; [ buf sqlc protoc-gen-go protoc-gen-connect-go ];
-          env = { CGO_ENABLED = "0"; };
+          env = { 
+            CGO_ENABLED = "0";
+            GOOS = "linux";
+            GOARCH = "amd64";
+          };
           preBuild = ''
             export HOME=$TMPDIR
             cat > buf.gen.go.yaml <<EOF
@@ -51,9 +64,9 @@
           '';
         };
 
-        # 2. Python Import Service - Built with dream2nix
+        # 2. Python Import Service - Built for Linux x86_64
         import-service-eval = dream2nix.lib.evalModules {
-          packageSets.nixpkgs = pkgs;
+          packageSets.nixpkgs = linuxPkgs;
           modules = [
             dream2nix.modules.dream2nix.pip
             {
@@ -108,7 +121,7 @@
         packages = {
           svelte-app = svelte-app;
           # Image using only cross-compiled Go binary
-          grpc-image = pkgs.dockerTools.streamLayeredImage {
+          grpc-image = linuxPkgs.dockerTools.streamLayeredImage {
             name = "spirit-grpc-service";
             tag = "latest";
             contents = [ grpc-service linuxPkgs.cacert ];
@@ -123,7 +136,7 @@
           };
 
           # Svelte Image (Node.js)
-          svelte-image = pkgs.dockerTools.streamLayeredImage {
+          svelte-image = linuxPkgs.dockerTools.streamLayeredImage {
             name = "spirit-svelte-app";
             tag = "latest";
             contents = [ 
@@ -142,7 +155,7 @@
           import-service = import-service;
 
           # Python Import Service Image (Built with dream2nix!)
-          import-image = pkgs.dockerTools.streamLayeredImage {
+          import-image = linuxPkgs.dockerTools.streamLayeredImage {
             name = "spirit-import-service";
             tag = "latest";
             contents = [ import-service linuxPkgs.cacert ];
