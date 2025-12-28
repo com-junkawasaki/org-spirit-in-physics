@@ -93,12 +93,23 @@ export async function timelineIntegratedWorkflow(
   }
   
   // 3. Prepare for analysis
-  const nodes: WordNode[] = points.map((p, i) => ({
-    id: `node-${i}`,
-    label: p.word || '',
-    scale: 1.0 + (p.reaction_value || 0) * 5.0,
-    initial: [i * 50, Math.sin(i / 10) * 100, Math.cos(i / 10) * 100] // Better dummy initial positions
-  }));
+  const nodes: WordNode[] = points.map((p, i) => {
+    const vec = emotionVectors[p.word] || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    // [joy, sadness, anger, fear, surprise, disgust, calm, focus, excitement, confusion]
+    
+    // Crude projection of 10D emotion space to 3D
+    const x = (vec[0]! + vec[4]! + vec[8]!) - (vec[1]! + vec[2]! + vec[3]! + vec[5]!);
+    const y = (vec[2]! + vec[3]! + vec[4]! + vec[8]!) - (vec[0]! + vec[6]! + vec[7]! + vec[9]!);
+    const z = (vec[7]! + vec[6]!) - (vec[9]! + vec[4]!);
+
+    return {
+      id: `node-${i}`,
+      label: p.word || '',
+      scale: 1.0 + (p.reaction_value || 0) * 5.0,
+      initial: [x * 100, y * 100, z * 100],
+      nodeType: 'word'
+    };
+  });
   
   const links: WordLink[] = [];
   for (let i = 1; i < nodes.length; i++) {

@@ -35,7 +35,8 @@ async def main():
         activities=[
             activities.list_participant_directories, 
             activities.process_participant,
-            activities.process_session
+            activities.process_session,
+            activities.generate_timeline
         ],
     )
     

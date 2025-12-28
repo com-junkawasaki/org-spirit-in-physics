@@ -5,6 +5,9 @@ from typing import Dict, Any, Optional, List
 from temporalio import activity
 from app.database import get_db_pool
 
+# Import the timeline processing logic
+from app.routers.timeline import process_session_timeline
+
 logger = logging.getLogger(__name__)
 
 # Valid session_event_type_enum values from database schema
@@ -198,8 +201,41 @@ class ImportActivities:
                 "participant_id": participant_id,
                 "status": "success",
                 "message": f"Imported session (ID: {session_id}, {inserted_count} events)",
-                "session_id": str(session_id)
+                "session_id": str(session_id),
+                "session_index": 0,
+                "start_ts": start_ts,
+                "end_ts": end_ts
             }
+
+    @activity.defn
+    async def generate_timeline(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        participant_id = input["participant_id"]
+        session_id = input["session_id"]
+        session_index = input.get("session_index", 0)
+        start_ts = input["start_ts"]
+        end_ts = input.get("end_ts")
+        
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            # We use a transaction for timeline processing
+            async with conn.transaction():
+                result = await process_session_timeline(
+                    conn, participant_id, session_id, session_index, start_ts, end_ts
+                )
+                
+                # Refresh materialized views
+                try:
+                    await conn.execute("SELECT refresh_timeline_materialized_views();")
+                except Exception as e:
+                    logger.warning(f"Failed to refresh materialized views in activity: {e}")
+                
+                return {
+                    "participant_id": participant_id,
+                    "session_id": session_id,
+                    "status": result.status,
+                    "message": result.message,
+                    "timeline_points_count": result.timeline_points_count
+                }
 
     @activity.defn
     async def list_participant_directories(self, dataset_path_str: str) -> List[Dict[str, str]]:

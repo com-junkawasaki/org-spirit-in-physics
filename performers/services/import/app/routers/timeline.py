@@ -194,6 +194,10 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
     # Filter word_displayed events
     word_events = [e for e in events if e.get('type') == 'word_displayed']
     
+    # Find recording_started timestamp for Hume AI data alignment
+    recording_started_event = next((e for e in events if e.get('type') == 'recording_started'), None)
+    recording_base_ts = recording_started_event.get('timestamp') if recording_started_event else start_ts
+    
     if not word_events:
         return TimelineResult(
             participant_id=participant_id,
@@ -245,7 +249,8 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
         
         # Find related emotions (within ±5 seconds for better coverage)
         # Expanded from ±2 seconds to capture more emotion data
-        relative_timestamp_sec = (timestamp - start_ts) / 1000.0
+        # Hume AI CSV data is relative to recording_started
+        relative_timestamp_sec = (timestamp - recording_base_ts) / 1000.0
         related_emotions = find_related_emotions(emotion_data, relative_timestamp_sec, time_window_sec=5.0)
         if idx < 5:  # Log first 5 events for debugging
             logger.debug(f"[process_session_timeline] Event {idx}: word={word}, relative_ts={relative_timestamp_sec:.2f}s, found {len(related_emotions)} related emotions (time_window=±5.0s)")

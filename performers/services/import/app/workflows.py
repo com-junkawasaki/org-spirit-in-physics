@@ -50,12 +50,25 @@ class ImportSessionsWorkflow:
         
         results = []
         for p_info in participant_dirs:
-            # Process each session
+            # 1. Process each session (import raw events)
             result = await workflow.execute_activity(
                 activities.process_session,
                 p_info,
                 start_to_close_timeout=timedelta(seconds=60),
             )
+            
+            # 2. Automatically generate timeline points if session import was successful
+            if result.get("status") == "success":
+                try:
+                    timeline_result = await workflow.execute_activity(
+                        activities.generate_timeline,
+                        result,
+                        start_to_close_timeout=timedelta(seconds=120),
+                    )
+                    result["timeline"] = timeline_result
+                except Exception as e:
+                    result["timeline"] = {"status": "error", "message": str(e)}
+            
             results.append(result)
             
         return {

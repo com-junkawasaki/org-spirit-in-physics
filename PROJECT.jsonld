@@ -42,10 +42,10 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.47.0",
+  "version": "1.48.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-27T22:30:00+09:00",
+  "updatedAt": "2025-12-28T10:00:00+09:00",
   "merkleRoot": "SvelteKit を adapter-node に移行し、SPA モード（ssr=false）で運用。Python SPA サーバを廃止し、Node.js による標準的な配信構成へ刷新。",
   
   "story": {
@@ -120,7 +120,11 @@
       "TS Temporal による統合タイムラインワークフロー (timelineIntegratedWorkflow) の実装。GoActivity でのデータ取得と TSActivity での構造分析を統合",
       "Go バックエンドの GetIntegratedTimeline RPC 実装。TS Temporal ワークフローを起動し、時系列データと分析結果を一括取得",
       "タイムライン可視化 (TimelineChart) における分析結果（ギャップエリア等）のオーバーレイ表示実装",
-      "Playwright + Cucumber.js による統合分析可視化の BDD シナリオ (timeline_analysis.feature) の実装とステップ定義の整備"
+      "Playwright + Cucumber.js による統合分析可視化の BDD シナリオ (timeline_analysis.feature) の実装とステップ定義の整備",
+      "タイムライン生成時の Hume AI 感情データのアライメント修正。recording_started イベントを基準とした相対時間計算への変更",
+      "TS Temporal 分析ワークフローの改善。ダミーの連番座標を廃止し、10次元感情ベクトルから3D空間への射影ロジックを実装",
+      "Python インポートワークフローへのタイムライン生成アクティビティ (generate_timeline) の統合",
+      "全セッションのタイムラインデータ再生成の完了 (curl -X POST http://spirit.localhost/import/timeline)"
     ]
   }
 }
