@@ -55,7 +55,7 @@ bundle: {
 					enabled: false
 					storage: "20Gi"
 				}
-				gateway: hostname: "spirit.localhost"
+				gateway: hostname: "sip.junkawasaki.com"
 			}
 		}
 

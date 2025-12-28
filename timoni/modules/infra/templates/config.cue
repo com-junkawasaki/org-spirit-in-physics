@@ -155,6 +155,7 @@ import (
 		if config.gateway.enabled {
 			gateway:    #Gateway & {#config: config}
 			issuer:     #ClusterIssuer & {#config: config}
+			cert:       #Certificate & {#config: config}
 			main_route: #MainRoute & {#config: config}
 		}
 	}

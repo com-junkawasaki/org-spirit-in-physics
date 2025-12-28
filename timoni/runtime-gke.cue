@@ -8,7 +8,7 @@ bundle: {
 		infra: {
 			values: {
 				gateway: {
-					hostname: "sip.gftd.ai" // Placeholder or IP
+					hostname: "sip.junkawasaki.com"
 					issuerName: "letsencrypt-prod"
 				}
 				lakefs: {

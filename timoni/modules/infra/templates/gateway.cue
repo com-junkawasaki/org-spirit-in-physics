@@ -14,12 +14,53 @@ package templates
 	}
 	spec: {
 		gatewayClassName: "envoy"
-		listeners: [{
-			name:     "http"
-			port:     80
-			protocol: "HTTP"
-			allowedRoutes: namespaces: from: "Same"
+		addresses: [{
+			type:  "IPAddress"
+			value: "35.221.65.104"
 		}]
+		listeners: [
+			{
+				name:     "http"
+				port:     80
+				protocol: "HTTP"
+				hostname: #config.gateway.hostname
+				allowedRoutes: namespaces: from: "Same"
+			},
+			{
+				name:     "https"
+				port:     443
+				protocol: "HTTPS"
+				hostname: #config.gateway.hostname
+				tls: {
+					mode: "Terminate"
+					certificateRefs: [{
+						name: "sip-tls-cert"
+					}]
+				}
+				allowedRoutes: namespaces: from: "Same"
+			},
+		]
+	}
+}
+
+#Certificate: {
+	#config: #Config
+	apiVersion: "cert-manager.io/v1"
+	kind:       "Certificate"
+	metadata: {
+		namespace: #config.metadata.namespace
+		name:      "sip-tls-cert"
+	}
+	spec: {
+		secretName: "sip-tls-cert"
+		issuerRef: {
+			name: #config.gateway.issuerName
+			kind: "ClusterIssuer"
+		}
+		commonName: #config.gateway.hostname
+		dnsNames: [
+			#config.gateway.hostname,
+		]
 	}
 }
 
@@ -32,7 +73,7 @@ package templates
 	}
 	spec: acme: {
 		server: "https://acme-v02.api.letsencrypt.org/directory"
-		email:  "admin@\(#config.gateway.hostname)"
+		email:  "junkawasaki@gmail.com" // Use a real email for Let's Encrypt
 		privateKeySecretRef: name: #config.gateway.issuerName
 		solvers: [{
 			http01: gatewayHTTPRoute: parentRefs: [{

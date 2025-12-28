@@ -10,6 +10,7 @@ package templates
 		name:        "\(#config.metadata.name)-main-route"
 	}
 	spec: {
+		hostnames: [#config.gateway.hostname]
 		parentRefs: [{
 			name:      "\(#config.metadata.name)-gateway"
 			namespace: #config.metadata.namespace
