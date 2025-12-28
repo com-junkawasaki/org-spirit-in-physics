@@ -135,7 +135,7 @@
     const svg = d3.select(svgElement);
     svg.selectAll('*').remove();
 
-    const margin = { top: 40, right: 60, bottom: 40, left: 200 };
+    const margin = { top: 40, right: 100, bottom: 40, left: 200 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -183,25 +183,25 @@
           .attr('class', 'stroke-gray-100 dark:stroke-gray-800');
       }
 
-      // Label with Color Indicator
-      const labelGroup = g.append('g')
-        .attr('transform', `translate(-30, ${y0 + sectionHeight / 2})`);
+    // Label with Color Indicator
+    const labelGroup = g.append('g')
+      .attr('transform', `translate(${-margin.left + 20}, ${y0 + sectionHeight / 2})`);
 
-      labelGroup.append('text')
-        .attr('x', -15)
-        .attr('y', 0)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'middle')
-        .attr('class', 'fill-gray-600 dark:fill-gray-300 text-[11px] font-black uppercase tracking-widest')
-        .style('font-family', 'Inter, system-ui, sans-serif')
-        .text(s.label);
+    labelGroup.append('text')
+      .attr('x', 15)
+      .attr('y', 0)
+      .attr('text-anchor', 'start')
+      .attr('dominant-baseline', 'middle')
+      .attr('class', 'fill-gray-600 dark:fill-gray-300 text-[11px] font-black uppercase tracking-widest')
+      .style('font-family', 'Inter, system-ui, sans-serif')
+      .text(s.label);
 
-      labelGroup.append('circle')
-        .attr('cx', 0)
-        .attr('cy', 0)
-        .attr('r', 5)
-        .attr('fill', s.color)
-        .attr('class', 'filter drop-shadow-sm');
+    labelGroup.append('circle')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 5)
+      .attr('fill', s.color)
+      .attr('class', 'filter drop-shadow-sm');
     });
 
     // Reaction Value Line

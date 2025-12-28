@@ -7,6 +7,7 @@ import logging
 import os
 from pathlib import Path
 from typing import List, Optional
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, HTTPException, status, Query
 from pydantic import BaseModel
@@ -198,7 +199,6 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
     recording_started_event = next((e for e in events if e.get('type') == 'recording_started'), None)
     recording_base_ts = recording_started_event.get('timestamp') if recording_started_event else start_ts
     
-    from datetime import datetime, timezone, timedelta
     recording_started_dt = datetime.fromtimestamp(recording_base_ts / 1000.0, tz=timezone.utc)
     
     # Define session time range for 1Hz sampling

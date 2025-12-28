@@ -72,7 +72,7 @@ export async function timelineIntegratedWorkflow(
     // Convert to highly compact format to stay under 2MB limit
     const emotions: any[] = [];
     (p.emotions || []).forEach((e: any) => {
-      const threshold = isWordEvent ? 0.05 : 0.2;
+      const threshold = isWordEvent ? 0.05 : 0.1;
       if (e.score >= threshold) {
         emotions.push({
           n: (e.name || '').toLowerCase(),

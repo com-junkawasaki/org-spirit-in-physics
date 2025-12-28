@@ -42,10 +42,10 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.53.0",
+  "version": "1.54.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-28T14:55:00+09:00",
+  "updatedAt": "2025-12-28T15:15:00+09:00",
   "merkleRoot": "SvelteKit を adapter-node に移行し、SPA モード（ssr=false）で運用。Python SPA サーバを廃止し、Node.js による標準的な配信構成へ刷新。",
   
   "story": {
@@ -135,7 +135,10 @@
       "TypeScript ワークフローの戻り値型を Protobuf (google.protobuf.Timestamp) と互換性のある形式へ修正。Go 側でのアンマーシャルエラーを解消",
       "JSON ペイロードの極限までの圧縮（キー名の短縮：emotions→e, word→w 等）と Go ハンドラ側でのデコード処理の実装による 2MB 制限の完全回避",
       "Go ハンドラにおける解析結果（Analysis）の動的デコード処理の実装による、Protobuf 型不一致エラーの解消",
-      "Playwright + Cucumber.js による E2E BDD テストの完全自動化。ナビゲーションおよび個別分析ページの正常動作確認済み"
+      "Playwright + Cucumber.js による E2E BDD テストの完全自動化。ナビゲーションおよび個別分析ページの正常動作確認済み",
+      "Hume AI インポートロジックの刷新。CSV ベースから JSON 予測ファイル (HumeAI_predictions_*.json) ベースへの完全移行により、全モダリティ（face, burst, language, prosody）の統合取り込みを実現",
+      "Svelte タイムライン可視化の表示領域改善。チャート高さの拡大（850px）とラベルマージンの最適化（200px）により、高密度マルチモーダルデータの視認性を向上",
+      "Temporal ワークフローにおける感情データフィルタリングの微調整（背景サンプルの閾値を 0.2 から 0.1 へ緩和）により、より詳細な感情推移の可視化を可能に"
     ]
   }
 }

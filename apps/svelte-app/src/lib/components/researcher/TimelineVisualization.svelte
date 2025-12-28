@@ -34,7 +34,7 @@
     participantId,
     sessionId,
     width = 800,
-    height = 400,
+    height = 850,
     hideFilters = false,
     forceMode
   }: TimelineVisualizationProps = $props();
