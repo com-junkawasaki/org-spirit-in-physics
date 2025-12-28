@@ -168,9 +168,15 @@
     }
   `;
 
-  function mixSpatialColor(nodeIdx: number, positions: Float32Array, alpha: number): string {
+  function getSpatialRGB(nodeIdx: number, positions: Float32Array): [number, number, number] {
     const node = nodes[nodeIdx];
-    if (node.nodeType === 'anchor') return node.color || '#000';
+    const hexToRgb = (hex: string): [number, number, number] => {
+      const h = hex.replace('#', '');
+      if (h.length === 3) return [parseInt(h[0]+h[0], 16), parseInt(h[1]+h[1], 16), parseInt(h[2]+h[2], 16)];
+      return [parseInt(h.substring(0, 2), 16), parseInt(h.substring(2, 4), 16), parseInt(h.substring(4, 6), 16)];
+    };
+
+    if (node.nodeType === 'anchor') return hexToRgb(node.color || '#000000');
 
     const nx = positions[nodeIdx * 3];
     const ny = positions[nodeIdx * 3 + 1];
@@ -189,26 +195,22 @@
       const dy = ny - ay;
       const dz = nz - az;
       const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1;
-      
-      // 距離に基づいた重み（近いほど重い）
-      // 空間の広がりに合わせて調整
       const weight = 1 / Math.pow(dist / 100, 2);
 
-      // Simple Hex to RGB conversion
-      const hex = anchor.color.replace('#', '');
-      const r = parseInt(hex.substring(0, 2), 16);
-      const g = parseInt(hex.substring(2, 4), 16);
-      const b = parseInt(hex.substring(4, 6), 16);
-
+      const [r, g, b] = hexToRgb(anchor.color);
       rSum += r * weight;
       gSum += g * weight;
       bSum += b * weight;
       wSum += weight;
     });
 
-    if (wSum <= 0) return node.color || '#1e40af';
-    
-    return `rgba(${Math.round(rSum/wSum)}, ${Math.round(gSum/wSum)}, ${Math.round(bSum/wSum)}, ${alpha})`;
+    if (wSum <= 0) return hexToRgb(node.color || '#1e40af');
+    return [rSum/wSum, gSum/wSum, bSum/wSum];
+  }
+
+  function mixSpatialColor(nodeIdx: number, positions: Float32Array, alpha: number): string {
+    const [r, g, b] = getSpatialRGB(nodeIdx, positions);
+    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
   }
 
   async function initWebGPU() {
@@ -293,6 +295,9 @@
         ctx.fillStyle = background; ctx.fillRect(0, 0, width, height);
         const zoom = 600 / camera.distance;
 
+        // Pre-calculate node RGBs for current frame
+        const nodeRGBs = nodes.map((_, i) => getSpatialRGB(i, positions!));
+
         // Links
         links.forEach(l => {
           const s = positions!.slice(l.source * 3, l.source * 3 + 3);
@@ -317,7 +322,19 @@
           ctx.lineTo(tp.x, tp.y);
           
           const isAnchorLink = l.mode === 'tension';
-          ctx.strokeStyle = l.color || (isAnchorLink ? 'rgba(100, 100, 100, 0.2)' : 'rgba(30, 64, 175, 0.4)');
+          
+          // 頂点同士の色の合成（平均）
+          const rgbS = nodeRGBs[l.source];
+          const rgbT = nodeRGBs[l.target];
+          if (rgbS && rgbT) {
+            const r = (rgbS[0] + rgbT[0]) / 2;
+            const g = (rgbS[1] + rgbT[1]) / 2;
+            const b = (rgbS[2] + rgbT[2]) / 2;
+            ctx.strokeStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${isAnchorLink ? 0.2 : 0.4})`;
+          } else {
+            ctx.strokeStyle = l.color || (isAnchorLink ? 'rgba(100, 100, 100, 0.2)' : 'rgba(30, 64, 175, 0.4)');
+          }
+          
           ctx.lineWidth = (isAnchorLink ? l.weight * 2 : 1) * zoom;
           ctx.stroke();
         });
@@ -347,14 +364,16 @@
             ctx.lineWidth = 2 * zoom;
             ctx.stroke();
           } else {
-            ctx.fillStyle = mixSpatialColor(i, positions!, 0.8);
+            const [r, g, b] = nodeRGBs[i];
+            ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, 0.8)`;
             ctx.globalAlpha = 0.8;
             ctx.fill();
           }
           
           // ラベル
           ctx.globalAlpha = 1.0;
-          ctx.fillStyle = isAnchor ? (n.color || '#000') : '#fff';
+          const [r, g, b] = isAnchor ? getSpatialRGB(i, positions!) : nodeRGBs[i];
+          ctx.fillStyle = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
           ctx.font = `${isAnchor ? 'bold ' : ''}${Math.round((isAnchor ? 14 : 10) * zoom)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';

@@ -165,11 +165,17 @@ function Force3DWordGraphTypeGPU({
   // ズームレベル表示用のDOM要素への参照
   const zoomLevelDisplayRef = useRef<HTMLDivElement | null>(null)
 
-  // 感情カラー合成（空間距離ベース）
-  const mixSpatialColor = useCallback((nodeIdx: number, positions: Float32Array, alpha: number): string => {
+  // 感情カラー成分取得（空間距離ベース）
+  const getSpatialRGB = useCallback((nodeIdx: number, positions: Float32Array): [number, number, number] => {
     const node = nodesRef.current[nodeIdx]
-    if (!node) return '#1e40af'
-    if (node.nodeType === 'anchor') return node.color || '#000'
+    const hexToRgb = (hex: string): [number, number, number] => {
+      const h = hex.replace('#', '')
+      if (h.length === 3) return [parseInt(h[0]+h[0], 16), parseInt(h[1]+h[1], 16), parseInt(h[2]+h[2], 16)]
+      return [parseInt(h.substring(0, 2), 16), parseInt(h.substring(2, 4), 16), parseInt(h.substring(4, 6), 16)]
+    }
+
+    if (!node) return [30, 64, 175] // #1e40af
+    if (node.nodeType === 'anchor') return hexToRgb(node.color || '#000000')
 
     const nx = positions[nodeIdx * 3]
     const ny = positions[nodeIdx * 3 + 1]
@@ -188,24 +194,24 @@ function Force3DWordGraphTypeGPU({
       const dy = ny - ay
       const dz = nz - az
       const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1
-      
       const weight = 1 / Math.pow(dist / 100, 2)
 
-      const hex = anchor.color.replace('#', '')
-      const r = parseInt(hex.substring(0, 2), 16)
-      const g = parseInt(hex.substring(2, 4), 16)
-      const b = parseInt(hex.substring(4, 6), 16)
-
+      const [r, g, b] = hexToRgb(anchor.color)
       rSum += r * weight
       gSum += g * weight
       bSum += b * weight
       wSum += weight
     })
 
-    if (wSum <= 0) return node.color || '#1e40af'
-    
-    return `rgba(${Math.round(rSum/wSum)}, ${Math.round(gSum/wSum)}, ${Math.round(bSum/wSum)}, ${alpha})`
+    if (wSum <= 0) return hexToRgb(node.color || '#1e40af')
+    return [rSum/wSum, gSum/wSum, bSum/wSum]
   }, [])
+
+  // 感情カラー合成（空間距離ベース）
+  const mixSpatialColor = useCallback((nodeIdx: number, positions: Float32Array, alpha: number): string => {
+    const [r, g, b] = getSpatialRGB(nodeIdx, positions)
+    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`
+  }, [getSpatialRGB])
   
   // カメラ制御関数
   const handleMouseDown = useCallback((e: MouseEvent) => {
@@ -889,6 +895,9 @@ function Force3DWordGraphTypeGPU({
               
               const pos = positionsRef.current
               if (!pos) return
+
+              // Pre-calculate node RGBs for current frame
+              const nodeRGBs = nodesRef.current.map((_, i) => getSpatialRGB(i, pos))
               
               // ノード描画（距離×接続度でスケーリング/濃淡）
               for (let i = 0; i < n; i++) {
@@ -951,18 +960,19 @@ function Force3DWordGraphTypeGPU({
                   ctx.stroke()
                 } else {
                   // 感情色を合成
-                  const fillColor = mixSpatialColor(i, pos, alpha)
-                  ctx.fillStyle = fillColor
+                  const [r, g, b] = nodeRGBs[i]
+                  ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`
                   ctx.fill()
                 }
                 
                 // ラベル
                 ctx.globalAlpha = Math.max(0.06, alpha * 0.9)
-                ctx.fillStyle = '#1f2937'
-                const labelSize = Math.round(10 + 4 * depthWeight)
-                ctx.font = `${labelSize}px sans-serif`
+                const [r, g, b] = nodeRGBs[i]
+                ctx.fillStyle = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`
+                const labelSize = Math.round((isAnchor ? 12 : 10) + 4 * depthWeight)
+                ctx.font = `${isAnchor ? 'bold ' : ''}${labelSize}px sans-serif`
                 ctx.textAlign = 'center'
-                ctx.fillText(node.label, screenX, screenY + 4)
+                ctx.fillText(node.label, screenX, screenY + (isAnchor ? radius + 12 : 4))
               }
               // 状態復元
               ctx.globalAlpha = 1
@@ -1029,11 +1039,23 @@ function Force3DWordGraphTypeGPU({
                 const alphaDepth = 0.35 + 0.55 * w
                 const minAlphaEdge = 0.06
                 const mixEdge = 0.2 + 0.8 * wc
-                ctx.globalAlpha = Math.max(0.03, Math.min(1, minAlphaEdge + (1 - minAlphaEdge) * alphaDepth * mixEdge))
+                const edgeAlpha = Math.max(0.03, Math.min(1, minAlphaEdge + (1 - minAlphaEdge) * alphaDepth * mixEdge))
+                ctx.globalAlpha = edgeAlpha
                 ctx.lineWidth = (0.6 + 1.6 * w) * (0.7 + 1.1 * wc)
 
+                // 頂点同士の色の合成
+                const rgbS = nodeRGBs[source]
+                const rgbT = nodeRGBs[target]
+                if (rgbS && rgbT) {
+                  const r = (rgbS[0] + rgbT[0]) / 2
+                  const g = (rgbS[1] + rgbT[1]) / 2
+                  const b = (rgbS[2] + rgbT[2]) / 2
+                  ctx.strokeStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${edgeAlpha})`
+                } else {
+                  ctx.strokeStyle = link.color || '#1e40af'
+                }
+
                 ctx.beginPath()
-                ctx.strokeStyle = link.color || '#1e40af'
                 ctx.moveTo(sScreenX, sScreenY)
                 ctx.lineTo(tScreenX, tScreenY)
                 ctx.stroke()
