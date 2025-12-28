@@ -14,10 +14,6 @@ package templates
 	}
 	spec: {
 		gatewayClassName: "envoy"
-		addresses: [{
-			type:  "IPAddress"
-			value: "35.221.65.104"
-		}]
 		listeners: [
 			{
 				name:     "http"
