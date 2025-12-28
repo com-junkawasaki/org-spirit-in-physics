@@ -74,16 +74,16 @@ type TimelineEmotionVectorsByWord struct {
 	ParticipantID     pgtype.UUID `json:"participant_id"`
 	SessionID         pgtype.UUID `json:"session_id"`
 	Word              pgtype.Text `json:"word"`
-	JoySum            int64       `json:"joy_sum"`
-	SadnessSum        int64       `json:"sadness_sum"`
-	AngerSum          int64       `json:"anger_sum"`
-	FearSum           int64       `json:"fear_sum"`
-	SurpriseSum       int64       `json:"surprise_sum"`
-	DisgustSum        int64       `json:"disgust_sum"`
-	CalmSum           int64       `json:"calm_sum"`
-	FocusSum          int64       `json:"focus_sum"`
-	ExcitementSum     int64       `json:"excitement_sum"`
-	ConfusionSum      int64       `json:"confusion_sum"`
+	JoySum            float64     `json:"joy_sum"`
+	SadnessSum        float64     `json:"sadness_sum"`
+	AngerSum          float64     `json:"anger_sum"`
+	FearSum           float64     `json:"fear_sum"`
+	SurpriseSum       float64     `json:"surprise_sum"`
+	DisgustSum        float64     `json:"disgust_sum"`
+	CalmSum           float64     `json:"calm_sum"`
+	FocusSum          float64     `json:"focus_sum"`
+	ExcitementSum     float64     `json:"excitement_sum"`
+	ConfusionSum      float64     `json:"confusion_sum"`
 	EmotionEntryCount int64       `json:"emotion_entry_count"`
 	EmotionByModality interface{} `json:"emotion_by_modality"`
 }
@@ -106,11 +106,11 @@ type TimelineWordAggregatesBySession struct {
 	Word             pgtype.Text `json:"word"`
 	Count            int64       `json:"count"`
 	AvgReactionValue float64     `json:"avg_reaction_value"`
-	SumReactionValue int64       `json:"sum_reaction_value"`
+	SumReactionValue float64     `json:"sum_reaction_value"`
 	AvgReactionTime  float64     `json:"avg_reaction_time"`
-	SumReactionTime  int64       `json:"sum_reaction_time"`
+	SumReactionTime  float64     `json:"sum_reaction_time"`
 	AvgPhysiological float64     `json:"avg_physiological"`
-	SumPhysAbs       int64       `json:"sum_phys_abs"`
+	SumPhysAbs       float64     `json:"sum_phys_abs"`
 	PhysSeries       interface{} `json:"phys_series"`
 	RtSeries         interface{} `json:"rt_series"`
 	RvSeries         interface{} `json:"rv_series"`
@@ -132,7 +132,7 @@ type TimelineWordStatisticsBySession struct {
 	AvgPhysiological float64     `json:"avg_physiological"`
 	StdPhysiological float64     `json:"std_physiological"`
 	VarPhysiological float64     `json:"var_physiological"`
-	SpeedIndex       int32       `json:"speed_index"`
+	SpeedIndex       float64     `json:"speed_index"`
 	PhysSeries       interface{} `json:"phys_series"`
 	RtSeries         interface{} `json:"rt_series"`
 }

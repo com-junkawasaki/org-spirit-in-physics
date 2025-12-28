@@ -99,16 +99,16 @@ SELECT
     participant_id,
     session_id,
     word,
-    joy_sum,
-    sadness_sum,
-    anger_sum,
-    fear_sum,
-    surprise_sum,
-    disgust_sum,
-    calm_sum,
-    focus_sum,
-    excitement_sum,
-    confusion_sum,
+    joy_sum::float8 as joy_sum,
+    sadness_sum::float8 as sadness_sum,
+    anger_sum::float8 as anger_sum,
+    fear_sum::float8 as fear_sum,
+    surprise_sum::float8 as surprise_sum,
+    disgust_sum::float8 as disgust_sum,
+    calm_sum::float8 as calm_sum,
+    focus_sum::float8 as focus_sum,
+    excitement_sum::float8 as excitement_sum,
+    confusion_sum::float8 as confusion_sum,
     emotion_entry_count,
     emotion_by_modality
 FROM timeline_emotion_vectors_by_word
@@ -122,15 +122,33 @@ type GetEmotionVectorsParams struct {
 	Column2       pgtype.UUID `json:"column_2"`
 }
 
-func (q *Queries) GetEmotionVectors(ctx context.Context, arg GetEmotionVectorsParams) ([]TimelineEmotionVectorsByWord, error) {
+type GetEmotionVectorsRow struct {
+	ParticipantID     pgtype.UUID `json:"participant_id"`
+	SessionID         pgtype.UUID `json:"session_id"`
+	Word              pgtype.Text `json:"word"`
+	JoySum            float64     `json:"joy_sum"`
+	SadnessSum        float64     `json:"sadness_sum"`
+	AngerSum          float64     `json:"anger_sum"`
+	FearSum           float64     `json:"fear_sum"`
+	SurpriseSum       float64     `json:"surprise_sum"`
+	DisgustSum        float64     `json:"disgust_sum"`
+	CalmSum           float64     `json:"calm_sum"`
+	FocusSum          float64     `json:"focus_sum"`
+	ExcitementSum     float64     `json:"excitement_sum"`
+	ConfusionSum      float64     `json:"confusion_sum"`
+	EmotionEntryCount int64       `json:"emotion_entry_count"`
+	EmotionByModality interface{} `json:"emotion_by_modality"`
+}
+
+func (q *Queries) GetEmotionVectors(ctx context.Context, arg GetEmotionVectorsParams) ([]GetEmotionVectorsRow, error) {
 	rows, err := q.db.Query(ctx, getEmotionVectors, arg.ParticipantID, arg.Column2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []TimelineEmotionVectorsByWord{}
+	items := []GetEmotionVectorsRow{}
 	for rows.Next() {
-		var i TimelineEmotionVectorsByWord
+		var i GetEmotionVectorsRow
 		if err := rows.Scan(
 			&i.ParticipantID,
 			&i.SessionID,
@@ -173,7 +191,7 @@ SELECT
             DISTINCT jsonb_build_object(
                 'name', tee.emotion_name::text,
                 'score', tee.score,
-                'fileType', tee.file_type::text
+                'file_type', tee.file_type::text
             )
         ) FILTER (WHERE tee.id IS NOT NULL),
         '[]'::json
@@ -199,7 +217,6 @@ LEFT JOIN physiological_measurements pm ON
     pm.timeline_point_participant_id = tp.participant_id AND
     pm.timeline_point_session_id = tp.session_id
 WHERE tp.participant_id = $1
-    AND tp.word IS NOT NULL AND tp.word != ''
     AND ($2::uuid IS NULL OR tp.session_id = $2)
     AND ($3::timestamptz IS NULL OR tp.time >= $3)
     AND ($4::timestamptz IS NULL OR tp.time <= $4)
@@ -279,7 +296,7 @@ SELECT
             DISTINCT jsonb_build_object(
                 'name', tee.emotion_name::text,
                 'score', tee.score,
-                'fileType', tee.file_type::text
+                'file_type', tee.file_type::text
             )
         ) FILTER (WHERE tee.id IS NOT NULL),
         '[]'::json
@@ -376,12 +393,12 @@ SELECT
     session_id,
     word,
     count,
-    avg_reaction_value,
-    sum_reaction_value,
-    avg_reaction_time,
-    sum_reaction_time,
-    avg_physiological,
-    sum_phys_abs,
+    avg_reaction_value::float8 as avg_reaction_value,
+    sum_reaction_value::float8 as sum_reaction_value,
+    avg_reaction_time::float8 as avg_reaction_time,
+    sum_reaction_time::float8 as sum_reaction_time,
+    avg_physiological::float8 as avg_physiological,
+    sum_phys_abs::float8 as sum_phys_abs,
     phys_series,
     rt_series,
     rv_series,
@@ -398,15 +415,33 @@ type GetWordAggregatesParams struct {
 	Column2       pgtype.UUID `json:"column_2"`
 }
 
-func (q *Queries) GetWordAggregates(ctx context.Context, arg GetWordAggregatesParams) ([]TimelineWordAggregatesBySession, error) {
+type GetWordAggregatesRow struct {
+	ParticipantID    pgtype.UUID `json:"participant_id"`
+	SessionID        pgtype.UUID `json:"session_id"`
+	Word             pgtype.Text `json:"word"`
+	Count            int64       `json:"count"`
+	AvgReactionValue float64     `json:"avg_reaction_value"`
+	SumReactionValue float64     `json:"sum_reaction_value"`
+	AvgReactionTime  float64     `json:"avg_reaction_time"`
+	SumReactionTime  float64     `json:"sum_reaction_time"`
+	AvgPhysiological float64     `json:"avg_physiological"`
+	SumPhysAbs       float64     `json:"sum_phys_abs"`
+	PhysSeries       interface{} `json:"phys_series"`
+	RtSeries         interface{} `json:"rt_series"`
+	RvSeries         interface{} `json:"rv_series"`
+	FirstTime        interface{} `json:"first_time"`
+	LastTime         interface{} `json:"last_time"`
+}
+
+func (q *Queries) GetWordAggregates(ctx context.Context, arg GetWordAggregatesParams) ([]GetWordAggregatesRow, error) {
 	rows, err := q.db.Query(ctx, getWordAggregates, arg.ParticipantID, arg.Column2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []TimelineWordAggregatesBySession{}
+	items := []GetWordAggregatesRow{}
 	for rows.Next() {
-		var i TimelineWordAggregatesBySession
+		var i GetWordAggregatesRow
 		if err := rows.Scan(
 			&i.ParticipantID,
 			&i.SessionID,
@@ -440,16 +475,16 @@ SELECT
     session_id,
     word,
     count,
-    avg_reaction_time,
-    std_reaction_time,
-    var_reaction_time,
-    avg_reaction_value,
-    std_reaction_value,
-    var_reaction_value,
-    avg_physiological,
-    std_physiological,
-    var_physiological,
-    speed_index,
+    avg_reaction_time::float8 as avg_reaction_time,
+    std_reaction_time::float8 as std_reaction_time,
+    var_reaction_time::float8 as var_reaction_time,
+    avg_reaction_value::float8 as avg_reaction_value,
+    std_reaction_value::float8 as std_reaction_value,
+    var_reaction_value::float8 as var_reaction_value,
+    avg_physiological::float8 as avg_physiological,
+    std_physiological::float8 as std_physiological,
+    var_physiological::float8 as var_physiological,
+    speed_index::float8 as speed_index,
     phys_series,
     rt_series
 FROM timeline_word_statistics_by_session
@@ -463,15 +498,34 @@ type GetWordStatisticsParams struct {
 	Column2       pgtype.UUID `json:"column_2"`
 }
 
-func (q *Queries) GetWordStatistics(ctx context.Context, arg GetWordStatisticsParams) ([]TimelineWordStatisticsBySession, error) {
+type GetWordStatisticsRow struct {
+	ParticipantID    pgtype.UUID `json:"participant_id"`
+	SessionID        pgtype.UUID `json:"session_id"`
+	Word             pgtype.Text `json:"word"`
+	Count            int64       `json:"count"`
+	AvgReactionTime  float64     `json:"avg_reaction_time"`
+	StdReactionTime  float64     `json:"std_reaction_time"`
+	VarReactionTime  float64     `json:"var_reaction_time"`
+	AvgReactionValue float64     `json:"avg_reaction_value"`
+	StdReactionValue float64     `json:"std_reaction_value"`
+	VarReactionValue float64     `json:"var_reaction_value"`
+	AvgPhysiological float64     `json:"avg_physiological"`
+	StdPhysiological float64     `json:"std_physiological"`
+	VarPhysiological float64     `json:"var_physiological"`
+	SpeedIndex       float64     `json:"speed_index"`
+	PhysSeries       interface{} `json:"phys_series"`
+	RtSeries         interface{} `json:"rt_series"`
+}
+
+func (q *Queries) GetWordStatistics(ctx context.Context, arg GetWordStatisticsParams) ([]GetWordStatisticsRow, error) {
 	rows, err := q.db.Query(ctx, getWordStatistics, arg.ParticipantID, arg.Column2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []TimelineWordStatisticsBySession{}
+	items := []GetWordStatisticsRow{}
 	for rows.Next() {
-		var i TimelineWordStatisticsBySession
+		var i GetWordStatisticsRow
 		if err := rows.Scan(
 			&i.ParticipantID,
 			&i.SessionID,

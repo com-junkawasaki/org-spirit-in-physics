@@ -17,7 +17,7 @@ type Querier interface {
 	CreateSessionEvent(ctx context.Context, arg CreateSessionEventParams) error
 	CreateTimelineEmotionEntry(ctx context.Context, arg CreateTimelineEmotionEntryParams) error
 	CreateTimelinePoint(ctx context.Context, arg CreateTimelinePointParams) error
-	GetEmotionVectors(ctx context.Context, arg GetEmotionVectorsParams) ([]TimelineEmotionVectorsByWord, error)
+	GetEmotionVectors(ctx context.Context, arg GetEmotionVectorsParams) ([]GetEmotionVectorsRow, error)
 	GetParticipant(ctx context.Context, id pgtype.UUID) (Participant, error)
 	GetParticipants(ctx context.Context, dollar_1 bool) ([]Participant, error)
 	GetSessions(ctx context.Context, participantID pgtype.UUID) ([]GetSessionsRow, error)
@@ -26,8 +26,8 @@ type Querier interface {
 	GetStimulusWords(ctx context.Context) ([]GetStimulusWordsRow, error)
 	GetTimelinePoints(ctx context.Context, arg GetTimelinePointsParams) ([]GetTimelinePointsRow, error)
 	GetTimelinePointsWithPublicCheck(ctx context.Context, arg GetTimelinePointsWithPublicCheckParams) ([]GetTimelinePointsWithPublicCheckRow, error)
-	GetWordAggregates(ctx context.Context, arg GetWordAggregatesParams) ([]TimelineWordAggregatesBySession, error)
-	GetWordStatistics(ctx context.Context, arg GetWordStatisticsParams) ([]TimelineWordStatisticsBySession, error)
+	GetWordAggregates(ctx context.Context, arg GetWordAggregatesParams) ([]GetWordAggregatesRow, error)
+	GetWordStatistics(ctx context.Context, arg GetWordStatisticsParams) ([]GetWordStatisticsRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

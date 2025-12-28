@@ -13,7 +13,7 @@ SELECT
             DISTINCT jsonb_build_object(
                 'name', tee.emotion_name::text,
                 'score', tee.score,
-                'fileType', tee.file_type::text
+                'file_type', tee.file_type::text
             )
         ) FILTER (WHERE tee.id IS NOT NULL),
         '[]'::json
@@ -61,7 +61,7 @@ SELECT
             DISTINCT jsonb_build_object(
                 'name', tee.emotion_name::text,
                 'score', tee.score,
-                'fileType', tee.file_type::text
+                'file_type', tee.file_type::text
             )
         ) FILTER (WHERE tee.id IS NOT NULL),
         '[]'::json
@@ -101,12 +101,12 @@ SELECT
     session_id,
     word,
     count,
-    avg_reaction_value,
-    sum_reaction_value,
-    avg_reaction_time,
-    sum_reaction_time,
-    avg_physiological,
-    sum_phys_abs,
+    avg_reaction_value::float8 as avg_reaction_value,
+    sum_reaction_value::float8 as sum_reaction_value,
+    avg_reaction_time::float8 as avg_reaction_time,
+    sum_reaction_time::float8 as sum_reaction_time,
+    avg_physiological::float8 as avg_physiological,
+    sum_phys_abs::float8 as sum_phys_abs,
     phys_series,
     rt_series,
     rv_series,
@@ -122,16 +122,16 @@ SELECT
     participant_id,
     session_id,
     word,
-    joy_sum,
-    sadness_sum,
-    anger_sum,
-    fear_sum,
-    surprise_sum,
-    disgust_sum,
-    calm_sum,
-    focus_sum,
-    excitement_sum,
-    confusion_sum,
+    joy_sum::float8 as joy_sum,
+    sadness_sum::float8 as sadness_sum,
+    anger_sum::float8 as anger_sum,
+    fear_sum::float8 as fear_sum,
+    surprise_sum::float8 as surprise_sum,
+    disgust_sum::float8 as disgust_sum,
+    calm_sum::float8 as calm_sum,
+    focus_sum::float8 as focus_sum,
+    excitement_sum::float8 as excitement_sum,
+    confusion_sum::float8 as confusion_sum,
     emotion_entry_count,
     emotion_by_modality
 FROM timeline_emotion_vectors_by_word
@@ -145,16 +145,16 @@ SELECT
     session_id,
     word,
     count,
-    avg_reaction_time,
-    std_reaction_time,
-    var_reaction_time,
-    avg_reaction_value,
-    std_reaction_value,
-    var_reaction_value,
-    avg_physiological,
-    std_physiological,
-    var_physiological,
-    speed_index,
+    avg_reaction_time::float8 as avg_reaction_time,
+    std_reaction_time::float8 as std_reaction_time,
+    var_reaction_time::float8 as var_reaction_time,
+    avg_reaction_value::float8 as avg_reaction_value,
+    std_reaction_value::float8 as std_reaction_value,
+    var_reaction_value::float8 as var_reaction_value,
+    avg_physiological::float8 as avg_physiological,
+    std_physiological::float8 as std_physiological,
+    var_physiological::float8 as var_physiological,
+    speed_index::float8 as speed_index,
     phys_series,
     rt_series
 FROM timeline_word_statistics_by_session

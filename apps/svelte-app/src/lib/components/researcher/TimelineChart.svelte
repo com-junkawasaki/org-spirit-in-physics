@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import * as d3 from 'd3';
   import type { TimelineDataPoint, FilterSettings, TimeRange } from './types';
+  import { normalizeEmotionName } from '$lib/researcher/emotion-normalization';
 
   interface Props {
     data: TimelineDataPoint[];
@@ -192,6 +193,7 @@
         .attr('text-anchor', 'end')
         .attr('dominant-baseline', 'middle')
         .attr('class', 'fill-gray-600 dark:fill-gray-300 text-[11px] font-black uppercase tracking-widest')
+        .style('font-family', 'Inter, system-ui, sans-serif')
         .text(s.label);
 
       labelGroup.append('circle')
@@ -282,34 +284,52 @@
         .attr('class', 'fill-emerald-500/10 stroke-none');
     }
 
-    // Emotions (Modality lanes)
-    const emoLanes = ['burst', 'face', 'language', 'prosody'];
-    const emoLaneHeight = (sectionHeight - 20) / emoLanes.length;
+    // Emotions (Detailed classification)
+    const emotionConfig = [
+      { key: 'joy', label: 'Joy', color: '#f59e0b' },
+      { key: 'sadness', label: 'Sadness', color: '#374151' },
+      { key: 'anger', label: 'Anger', color: '#ef4444' },
+      { key: 'fear', label: 'Fear', color: '#a78bfa' },
+      { key: 'surprise', label: 'Surprise', color: '#22c55e' },
+      { key: 'disgust', label: 'Disgust', color: '#10b981' },
+      { key: 'calm', label: 'Calm', color: '#93c5fd' },
+      { key: 'focus', label: 'Focus', color: '#60a5fa' },
+      { key: 'excitement', label: 'Excitement', color: '#f97316' },
+      { key: 'confusion', label: 'Confusion', color: '#64748b' }
+    ];
     
-    emoLanes.forEach((lane, i) => {
+    const emoLaneHeight = (sectionHeight - 20) / emotionConfig.length;
+    
+    emotionConfig.forEach((config, i) => {
       const y0 = sectionHeight * 3 + 10 + i * emoLaneHeight;
       
       g.append('text')
         .attr('x', innerWidth + 5)
         .attr('y', y0 + emoLaneHeight / 2)
-        .attr('class', 'fill-gray-300 text-[8px] uppercase font-medium')
+        .attr('class', 'fill-gray-400 text-[7px] uppercase font-bold')
         .attr('dominant-baseline', 'middle')
-        .text(lane);
+        .text(config.label);
 
       filteredData.forEach(d => {
-        const laneEmos = d.emotions.filter(e => (e.fileType || (e as any).file_type) === lane);
-        if (laneEmos.length > 0) {
-          const maxEmo = laneEmos.sort((a, b) => b.score - a.score)[0];
-          if (maxEmo && maxEmo.score > 0.01) {
-            g.append('rect')
-              .attr('x', xScale(toDate(d.timestamp)) - 1)
-              .attr('y', y0)
-              .attr('width', 2)
-              .attr('height', emoLaneHeight - 2)
-              .attr('rx', 0.5)
-              .attr('class', 'fill-violet-500')
-              .style('opacity', Math.max(0.2, maxEmo.score));
+        // Group emotions by normalized name and take the max score
+        const normalizedEmos: Record<string, number> = {};
+        d.emotions.forEach(e => {
+          const normName = normalizeEmotionName(e.name);
+          if (normName) {
+            normalizedEmos[normName] = Math.max(normalizedEmos[normName] || 0, e.score);
           }
+        });
+
+        const score = normalizedEmos[config.key];
+        if (score && score > 0.05) {
+          g.append('rect')
+            .attr('x', xScale(toDate(d.timestamp)) - 1)
+            .attr('y', y0)
+            .attr('width', 2)
+            .attr('height', emoLaneHeight - 1)
+            .attr('rx', 0.5)
+            .attr('fill', config.color)
+            .style('opacity', Math.max(0.3, score));
         }
       });
     });
