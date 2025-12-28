@@ -45,8 +45,8 @@
   "version": "1.54.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-    "updatedAt": "2025-12-28T19:40:00+09:00",
-    "merkleRoot": "GKE へのデプロイ完了。Spot インスタンス (e2-medium) を活用したコスト最適化構成 (月額 $50 以下) で全サービス (gRPC, Svelte, Python, Temporal) が稼働中。",
+    "updatedAt": "2025-12-28T22:30:00+09:00",
+    "merkleRoot": "GKE 公開完了。Custom Domain (sip.junkawasaki.com) + SSL (Let's Encrypt) の自動構成、および Clerk 連携を完遂。Spot インスタンス (e2-medium) によるコスト最適化構成で全サービスが HTTPS 稼働中。",
     "story": {
       "@id": "project:story",
       "@type": "project:Story",
@@ -59,6 +59,12 @@
         "legacy": "人々が満たされた人生を送れる社会を築いた"
       },
       "narrative": [
+        {
+          "@id": "project:narrative/74",
+          "@type": "project:Narrative",
+          "act": "カスタムドメイン公開とセキュリティ強化",
+          "summary": "独自ドメイン sip.junkawasaki.com への移行と SSL 化を完了した。cert-manager の Gateway API サポートを有効化し、クラスター内部の DNS キャッシュ問題を hostAlias により解消することで、自動証明書更新サイクルを確立した。Clerk の本番用 API キーを Secret 管理に移行し、セキュアな認証基盤を構築した。"
+        },
         {
           "@id": "project:narrative/73",
           "@type": "project:Narrative",
@@ -89,6 +95,9 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "独自ドメイン sip.junkawasaki.com による HTTPS 公開の完遂",
+      "cert-manager による Let's Encrypt 証明書の自動発行と Gateway API 連携",
+      "Clerk API キー (Live) の Kubernetes Secret 統合とアプリへの反映",
       "GKE への全マイクロサービスのデプロイ完了 (amd64 クロスビルド対応済み)",
       "Spot インスタンス (e2-medium) による低コスト GKE 運用構成の確立",
       "TimescaleDB, Temporal, lakeFS, MinIO の GKE 上での正常稼働",

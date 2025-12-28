@@ -1,0 +1,965 @@
+---
+# Instance: infra
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-lakefs
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 8000
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: lakefs
+    app.kubernetes.io/name: infra
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-minio
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: api
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
+  - name: console
+    port: 9001
+    protocol: TCP
+    targetPort: 9001
+  selector:
+    app: minio
+    app.kubernetes.io/name: infra
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-temporal
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: grpc
+    port: 7233
+    protocol: TCP
+    targetPort: 7233
+  - name: ui
+    port: 8088
+    protocol: TCP
+    targetPort: 8088
+  selector:
+    app: temporal
+    app.kubernetes.io/name: infra
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-timescaledb
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: postgres
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    app: timescaledb
+    app.kubernetes.io/name: infra
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-lakefs
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lakefs
+      app.kubernetes.io/name: infra
+  template:
+    metadata:
+      labels:
+        app: lakefs
+        app.kubernetes.io/name: infra
+    spec:
+      containers:
+      - env:
+        - name: LAKEFS_DATABASE_TYPE
+          value: postgres
+        - name: LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics?sslmode=disable
+        - name: LAKEFS_AUTH_ENCRYPT_SECRET_KEY
+          value: spirit-in-physics-lakefs-secret-key-2025
+        - name: LAKEFS_BLOCKSTORE_TYPE
+          value: s3
+        - name: LAKEFS_BLOCKSTORE_S3_ENDPOINT
+          value: http://infra-minio:9000
+        - name: LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE
+          value: "true"
+        - name: LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
+          value: minioadmin
+        - name: LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
+          value: minioadmin
+        image: treeverse/lakefs:latest
+        name: lakefs
+        ports:
+        - containerPort: 8000
+          name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-temporal
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal
+      app.kubernetes.io/name: infra
+  template:
+    metadata:
+      labels:
+        app: temporal
+        app.kubernetes.io/name: infra
+    spec:
+      containers:
+      - env:
+        - name: DB
+          value: postgres12
+        - name: DB_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PWD
+          value: postgres
+        - name: POSTGRES_SEEDS
+          value: infra-timescaledb
+        - name: SKIP_DB_CREATE
+          value: "false"
+        - name: BIND_ON_IP
+          value: 0.0.0.0
+        image: temporalio/auto-setup:latest
+        name: temporal
+        ports:
+        - containerPort: 7233
+          name: grpc
+        - containerPort: 8088
+          name: ui
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-minio
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+      app.kubernetes.io/name: infra
+  serviceName: infra-minio
+  template:
+    metadata:
+      labels:
+        app: minio
+        app.kubernetes.io/name: infra
+    spec:
+      containers:
+      - args:
+        - server
+        - /data
+        - --console-address
+        - :9001
+        env:
+        - name: MINIO_ROOT_USER
+          value: minioadmin
+        - name: MINIO_ROOT_PASSWORD
+          value: minioadmin
+        image: minio/minio:latest
+        name: minio
+        ports:
+        - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: console
+        volumeMounts:
+        - mountPath: /data
+          name: data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-timescaledb
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timescaledb
+      app.kubernetes.io/name: infra
+  serviceName: infra-timescaledb
+  template:
+    metadata:
+      labels:
+        app: timescaledb
+        app.kubernetes.io/name: infra
+    spec:
+      containers:
+      - args:
+        - -c
+        - max_connections=200
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        - name: POSTGRES_DB
+          value: spirit_in_physics
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        image: timescale/timescaledb:latest-pg15
+        name: timescaledb
+        ports:
+        - containerPort: 5432
+          name: postgres
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: data
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - chown -R 70:70 /var/lib/postgresql/data
+        image: busybox
+        name: fix-permissions
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: data
+      securityContext:
+        fsGroup: 70
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-lakefs-setup
+  namespace: spirit-in-physics
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - |-
+          set -e
+          LAKEFS_URL="http://infra-lakefs:8000"
+
+          echo "Waiting for lakeFS to be ready at $LAKEFS_URL..."
+          while ! curl -s "$LAKEFS_URL/_health" | grep -q "alive"; do
+            echo "LakeFS not ready yet..."
+            sleep 2
+          done
+          echo "LakeFS is ready!"
+
+          echo "Checking if lakeFS is already setup..."
+          if curl -s "$LAKEFS_URL/setup_admin" | grep -q "already setup"; then
+            echo "lakeFS is already setup."
+          else
+            echo "Setting up lakeFS admin..."
+            curl -X POST "$LAKEFS_URL/setup_admin" -H "Content-Type: application/json" -d '{"user_name": "admin", "access_key_id": "AKIAIOSFODNN7EXAMPLE", "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}'
+          fi
+
+          echo "Creating repository spirit-in-physics..."
+          curl -X POST "$LAKEFS_URL/api/v1/repositories" -u "AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" -H "Content-Type: application/json" -d '{"name": "spirit-in-physics", "storage_namespace": "s3://spirit-in-physics", "default_branch": "main"}' || echo "Repository might already exist"
+
+          echo "lakeFS setup complete."
+        command:
+        - /bin/sh
+        - -c
+        image: curlimages/curl:latest
+        name: setup
+      restartPolicy: OnFailure
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: sip-tls-cert
+  namespace: spirit-in-physics
+spec:
+  commonName: sip.junkawasaki.com
+  dnsNames:
+  - sip.junkawasaki.com
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  secretName: sip-tls-cert
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: junkawasaki@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+    - http01:
+        gatewayHTTPRoute:
+          parentRefs:
+          - name: infra-gateway
+            namespace: spirit-in-physics
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-gateway
+  namespace: spirit-in-physics
+spec:
+  gatewayClassName: envoy
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: sip.junkawasaki.com
+    name: http
+    port: 80
+    protocol: HTTP
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: sip.junkawasaki.com
+    name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - name: sip-tls-cert
+      mode: Terminate
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-main-route
+  namespace: spirit-in-physics
+spec:
+  hostnames:
+  - sip.junkawasaki.com
+  parentRefs:
+  - name: infra-gateway
+    namespace: spirit-in-physics
+  rules:
+  - backendRefs:
+    - name: grpc-service
+      port: 8080
+    matches:
+    - path:
+        type: PathPrefix
+        value: /api
+  - backendRefs:
+    - name: import-service
+      port: 8082
+    matches:
+    - path:
+        type: PathPrefix
+        value: /import
+  - backendRefs:
+    - name: infra-temporal
+      port: 8088
+    matches:
+    - path:
+        type: PathPrefix
+        value: /temporal
+  - backendRefs:
+    - name: infra-lakefs
+      port: 8000
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          replacePrefixMatch: /
+          type: ReplacePrefixMatch
+    matches:
+    - path:
+        type: PathPrefix
+        value: /lakefs
+  - backendRefs:
+    - name: infra-minio
+      port: 9001
+    matches:
+    - path:
+        type: PathPrefix
+        value: /minio-console
+  - backendRefs:
+    - name: infra-minio
+      port: 9000
+    matches:
+    - path:
+        type: PathPrefix
+        value: /minio
+  - backendRefs:
+    - name: portal
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+
+---
+# Instance: grpc-service
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: grpc-service
+    app.kubernetes.io/version: 0.0.0-devel
+  name: grpc-service
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: grpc-service
+    app.kubernetes.io/version: 0.0.0-devel
+  name: grpc-service
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: grpc-service
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: grpc-service
+    app.kubernetes.io/version: 0.0.0-devel
+  name: grpc-service
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grpc-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: grpc-service
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
+        - name: TEMPORAL_ADDRESS
+          value: infra-temporal:7233
+        - name: MINIO_ENDPOINT
+          value: infra-minio:9000
+        - name: MINIO_ROOT_USER
+          value: minioadmin
+        - name: MINIO_ROOT_PASSWORD
+          value: minioadmin
+        - name: LAKEFS_ENDPOINT
+          value: http://infra-lakefs:8000
+        - name: LAKEFS_ACCESS_KEY_ID
+          value: AKIAIOSFODNN7EXAMPLE
+        - name: LAKEFS_SECRET_ACCESS_KEY
+          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+        - name: LAKEFS_REPOSITORY
+          value: spirit-in-physics
+        image: spirit-grpc-service:latest
+        imagePullPolicy: IfNotPresent
+        name: grpc-service
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - NET_BIND_SERVICE
+            - SETGID
+            - SETUID
+            drop:
+            - ALL
+          privileged: false
+        volumeMounts:
+        - mountPath: /dataset
+          name: dataset
+      serviceAccountName: grpc-service
+      volumes:
+      - hostPath:
+          path: /Volumes/251214/jun784/spirit-in-physics/dataset/participants
+          type: Directory
+        name: dataset
+
+---
+# Instance: import-service
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: import-service
+    app.kubernetes.io/version: 0.0.0-devel
+  name: import-service
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: import-service
+    app.kubernetes.io/version: 0.0.0-devel
+  name: import-service
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 8082
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: import-service
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: import-service
+    app.kubernetes.io/version: 0.0.0-devel
+  name: import-service
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: import-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: import-service
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
+        - name: TEMPORAL_ADDRESS
+          value: infra-temporal:7233
+        - name: DATASET_PATH
+          value: /dataset
+        image: spirit-import-service:latest
+        imagePullPolicy: IfNotPresent
+        name: import-service
+        ports:
+        - containerPort: 8082
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - NET_BIND_SERVICE
+            - SETGID
+            - SETUID
+            drop:
+            - ALL
+          privileged: false
+        volumeMounts:
+        - mountPath: /dataset
+          name: dataset
+      serviceAccountName: import-service
+      volumes:
+      - hostPath:
+          path: /Volumes/251214/jun784/spirit-in-physics/dataset/participants
+          type: Directory
+        name: dataset
+
+---
+# Instance: import-worker
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: import-worker
+    app.kubernetes.io/version: 0.0.0-devel
+  name: import-worker
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: import-worker
+    app.kubernetes.io/version: 0.0.0-devel
+  name: import-worker
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: import-worker
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: import-worker
+    app.kubernetes.io/version: 0.0.0-devel
+  name: import-worker
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: import-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: import-worker
+    spec:
+      containers:
+      - command:
+        - python
+        - worker.py
+        env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
+        - name: TEMPORAL_ADDRESS
+          value: infra-temporal:7233
+        - name: DATASET_PATH
+          value: /dataset
+        image: spirit-import-service:latest
+        imagePullPolicy: IfNotPresent
+        name: import-worker
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - NET_BIND_SERVICE
+            - SETGID
+            - SETUID
+            drop:
+            - ALL
+          privileged: false
+        volumeMounts:
+        - mountPath: /dataset
+          name: dataset
+      serviceAccountName: import-worker
+      volumes:
+      - hostPath:
+          path: /Volumes/251214/jun784/spirit-in-physics/dataset/participants
+          type: Directory
+        name: dataset
+
+---
+# Instance: portal
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: portal
+    app.kubernetes.io/version: 0.0.0-devel
+  name: portal
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: portal
+    app.kubernetes.io/version: 0.0.0-devel
+  name: portal
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: portal
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: portal
+    app.kubernetes.io/version: 0.0.0-devel
+  name: portal
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: portal
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: portal
+    spec:
+      containers:
+      - env:
+        - name: PUBLIC_SUPABASE_URL
+          value: https://pxsuqemlayhnmcxuiigk.supabase.co
+        - name: PUBLIC_SUPABASE_ANON_KEY
+          value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
+        - name: PUBLIC_CLERK_PUBLISHABLE_KEY
+          valueFrom:
+            secretKeyRef:
+              key: PUBLIC_CLERK_PUBLISHABLE_KEY
+              name: clerk-secrets
+        - name: CLERK_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: CLERK_SECRET_KEY
+              name: clerk-secrets
+        - name: PUBLIC_API_URL
+          value: https://sip.junkawasaki.com/api
+        image: spirit-svelte-app:latest
+        imagePullPolicy: IfNotPresent
+        name: portal
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - NET_BIND_SERVICE
+            - SETGID
+            - SETUID
+            drop:
+            - ALL
+          privileged: false
+      serviceAccountName: portal
+
+---
+# Instance: temporal-ts
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: temporal-ts
+    app.kubernetes.io/version: 0.0.0-devel
+  name: temporal-ts
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: temporal-ts
+    app.kubernetes.io/version: 0.0.0-devel
+  name: temporal-ts
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 3000
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: temporal-ts
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: temporal-ts
+    app.kubernetes.io/version: 0.0.0-devel
+  name: temporal-ts
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: temporal-ts
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: temporal-ts
+    spec:
+      containers:
+      - env:
+        - name: TEMPORAL_ADDRESS
+          value: infra-temporal:7233
+        - name: TASK_QUEUE
+          value: visualization-analysis-queue
+        image: spirit-temporal-ts:latest
+        imagePullPolicy: IfNotPresent
+        name: temporal-ts
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - NET_BIND_SERVICE
+            - SETGID
+            - SETUID
+            drop:
+            - ALL
+          privileged: false
+      serviceAccountName: temporal-ts

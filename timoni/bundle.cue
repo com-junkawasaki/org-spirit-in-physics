@@ -66,9 +66,9 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-grpc-service"
+					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service"
 					tag:        "latest"
-					pullPolicy: "IfNotPresent"
+					pullPolicy: "Always"
 				}
 				service: port: 8080
 				env: [
@@ -104,9 +104,9 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-import-service"
+					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service"
 					tag:        "latest"
-					pullPolicy: "IfNotPresent"
+					pullPolicy: "Always"
 				}
 				service: port: 8082
 				env: [
@@ -136,9 +136,9 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-import-service"
+					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service"
 					tag:        "latest"
-					pullPolicy: "IfNotPresent"
+					pullPolicy: "Always"
 				}
 				command: ["python", "worker.py"]
 				env: [
@@ -168,16 +168,29 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-svelte-app"
+					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app"
 					tag:        "latest"
-					pullPolicy: "IfNotPresent"
+					pullPolicy: "Always"
 				}
 				service: port: 80
 				env: [
 					{name: "PUBLIC_SUPABASE_URL", value: "https://pxsuqemlayhnmcxuiigk.supabase.co"},
 					{name: "PUBLIC_SUPABASE_ANON_KEY", value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs"},
-					{name: "PUBLIC_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
-					{name: "PUBLIC_API_URL", value: "http://spirit.localhost/api"},
+					{
+						name: "PUBLIC_CLERK_PUBLISHABLE_KEY"
+						valueFrom: secretKeyRef: {
+							name: "clerk-secrets"
+							key:  "PUBLIC_CLERK_PUBLISHABLE_KEY"
+						}
+					},
+					{
+						name: "CLERK_SECRET_KEY"
+						valueFrom: secretKeyRef: {
+							name: "clerk-secrets"
+							key:  "CLERK_SECRET_KEY"
+						}
+					},
+					{name: "PUBLIC_API_URL", value: "https://sip.junkawasaki.com/api"},
 				]
 			}
 		}
@@ -189,9 +202,9 @@ bundle: {
 			namespace: "spirit-in-physics"
 			values: {
 				image: {
-					repository: "spirit-temporal-ts"
+					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts"
 					tag:        "latest"
-					pullPolicy: "IfNotPresent"
+					pullPolicy: "Always"
 				}
 				service: port: 3000
 				env: [
