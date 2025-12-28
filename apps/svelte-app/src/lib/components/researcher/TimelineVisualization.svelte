@@ -305,8 +305,8 @@
       const phys = Array.isArray(d.physiological) ? d.physiological.length : 0;
       const rt = (d.reactionTime || 0) / 5000; // 反応時間（5秒を基準に正規化）
       
-      // スケール差を調整（巨大化しすぎないように抑制）
-      const nodeScale = 1.2 + (rv * 12.0) + (phys * 0.8) + (rt * 3.0);
+      // スケール差を大幅に抑制（高密度な配置でも視認性を確保）
+      const nodeScale = 0.5 + (rv * 3.0) + (phys * 0.2) + (rt * 0.8);
 
       return {
         id: `node-${i}`,
