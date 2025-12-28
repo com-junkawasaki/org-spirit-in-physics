@@ -338,6 +338,7 @@ func (h *TimelineHandler) GetIntegratedTimeline(
 	ctx context.Context,
 	req *connect.Request[timelinev1.GetIntegratedTimelineRequest],
 ) (*connect.Response[timelinev1.GetIntegratedTimelineResponse], error) {
+	fmt.Printf("DEBUG: GetIntegratedTimeline called for participant %s\n", req.Msg.ParticipantId)
 	if h.temporalClient == nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
 	}

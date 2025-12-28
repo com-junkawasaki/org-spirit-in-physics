@@ -7,6 +7,92 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 
 /**
+ * @generated from message timeline.v1.GetIntegratedTimelineRequest
+ */
+export class GetIntegratedTimelineRequest extends Message<GetIntegratedTimelineRequest> {
+  /**
+   * @generated from field: string participant_id = 1;
+   */
+  participantId = "";
+
+  /**
+   * @generated from field: optional string session_id = 2;
+   */
+  sessionId?: string;
+
+  constructor(data?: PartialMessage<GetIntegratedTimelineRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.GetIntegratedTimelineRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIntegratedTimelineRequest {
+    return new GetIntegratedTimelineRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIntegratedTimelineRequest {
+    return new GetIntegratedTimelineRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIntegratedTimelineRequest {
+    return new GetIntegratedTimelineRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIntegratedTimelineRequest | PlainMessage<GetIntegratedTimelineRequest> | undefined, b: GetIntegratedTimelineRequest | PlainMessage<GetIntegratedTimelineRequest> | undefined): boolean {
+    return proto3.util.equals(GetIntegratedTimelineRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message timeline.v1.GetIntegratedTimelineResponse
+ */
+export class GetIntegratedTimelineResponse extends Message<GetIntegratedTimelineResponse> {
+  /**
+   * @generated from field: repeated timeline.v1.TimelinePoint points = 1;
+   */
+  points: TimelinePoint[] = [];
+
+  /**
+   * @generated from field: timeline.v1.GetAnalysisResponse analysis = 2;
+   */
+  analysis?: GetAnalysisResponse;
+
+  constructor(data?: PartialMessage<GetIntegratedTimelineResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.GetIntegratedTimelineResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "points", kind: "message", T: TimelinePoint, repeated: true },
+    { no: 2, name: "analysis", kind: "message", T: GetAnalysisResponse },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIntegratedTimelineResponse {
+    return new GetIntegratedTimelineResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIntegratedTimelineResponse {
+    return new GetIntegratedTimelineResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIntegratedTimelineResponse {
+    return new GetIntegratedTimelineResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIntegratedTimelineResponse | PlainMessage<GetIntegratedTimelineResponse> | undefined, b: GetIntegratedTimelineResponse | PlainMessage<GetIntegratedTimelineResponse> | undefined): boolean {
+    return proto3.util.equals(GetIntegratedTimelineResponse, a, b);
+  }
+}
+
+/**
  * @generated from message timeline.v1.GetAnalysisRequest
  */
 export class GetAnalysisRequest extends Message<GetAnalysisRequest> {

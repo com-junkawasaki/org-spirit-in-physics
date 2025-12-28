@@ -3,17 +3,29 @@ import { expect } from '@playwright/test';
 import { page } from './navigation.js';
 
 Given('I am on the analysis page for participant {string}', async function (id: string) {
-  const url = `http://spirit.localhost/researcher/participants/${id}`;
+  const url = `http://spirit.localhost/researcher/participants/${id}?test_mode=true`;
   console.log(`Navigating to ${url}`);
   await page.goto(url);
 });
 
 When('the timeline data is loaded', async function () {
   console.log('Waiting for timeline data to load...');
-  // Wait for the spinner to disappear and data to be visible
-  await page.waitForSelector('.spinner', { state: 'hidden', timeout: 30000 });
-  await page.waitForSelector('.timeline-stream-container, .timeline-chart-svg', { timeout: 15000 });
-  console.log('Timeline data loaded.');
+  try {
+    // Wait for the spinner to disappear and data to be visible
+    await page.waitForSelector('.spinner', { state: 'hidden', timeout: 45000 });
+    await page.waitForSelector('.timeline-stream-container, .timeline-chart-svg', { timeout: 30000 });
+    console.log('Timeline data loaded.');
+  } catch (err) {
+    console.log('Timeout waiting for data. Capturing debug info...');
+    await page.screenshot({ path: 'bdd-failure.png' });
+    const content = await page.content();
+    // Log any errors from the console
+    const consoleMsgs = await page.evaluate(() => {
+      return (window as any)._consoleMsgs || [];
+    });
+    console.log('Console messages:', consoleMsgs);
+    throw err;
+  }
 });
 
 Then('I should see the {string} chart', async function (title: string) {

@@ -113,7 +113,7 @@
     error = null;
     try {
       // Use the new integrated endpoint that runs on TS Temporal
-      const response = await (timelineClient as any).getIntegratedTimeline({ 
+      const response = await timelineClient.getIntegratedTimeline({ 
         participantId, 
         sessionId: sessionId || undefined 
       });

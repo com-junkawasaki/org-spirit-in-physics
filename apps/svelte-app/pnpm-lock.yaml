@@ -9,17 +9,17 @@ importers:
   .:
     dependencies:
       '@bufbuild/protobuf':
-        specifier: ^2.10.2
-        version: 2.10.2
+        specifier: ^1.10.1
+        version: 1.10.1
       '@connectrpc/connect':
-        specifier: ^2.1.1
-        version: 2.1.1(@bufbuild/protobuf@2.10.2)
+        specifier: ^1.7.0
+        version: 1.7.0(@bufbuild/protobuf@1.10.1)
       '@connectrpc/connect-node':
-        specifier: ^2.1.1
-        version: 2.1.1(@bufbuild/protobuf@2.10.2)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2))
+        specifier: ^1.7.0
+        version: 1.7.0(@bufbuild/protobuf@1.10.1)(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))
       '@connectrpc/connect-web':
-        specifier: ^2.1.1
-        version: 2.1.1(@bufbuild/protobuf@2.10.2)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2))
+        specifier: ^1.7.0
+        version: 1.7.0(@bufbuild/protobuf@1.10.1)(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))
       d3:
         specifier: ^7.9.0
         version: 7.9.0
@@ -31,11 +31,11 @@ importers:
         specifier: ^1.61.0
         version: 1.61.0
       '@bufbuild/protoc-gen-es':
-        specifier: ^1.10.1
-        version: 1.10.1(@bufbuild/protobuf@2.10.2)
+        specifier: 1.10.1
+        version: 1.10.1(@bufbuild/protobuf@1.10.1)
       '@connectrpc/protoc-gen-connect-es':
         specifier: 1.7.0
-        version: 1.7.0(@bufbuild/protoc-gen-es@1.10.1(@bufbuild/protobuf@2.10.2))(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2))
+        version: 1.7.0(@bufbuild/protoc-gen-es@1.10.1(@bufbuild/protobuf@1.10.1))(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))
       '@sveltejs/adapter-node':
         specifier: ^5.2.11
         version: 5.4.0(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.46.1)(vite@7.3.0(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.46.1)(vite@7.3.0(jiti@2.6.1)(lightningcss@1.30.2)))
@@ -135,9 +135,6 @@ packages:
   '@bufbuild/protobuf@1.10.1':
     resolution: {integrity: sha512-wJ8ReQbHxsAfXhrf9ixl0aYbZorRuOWpBNzm8pL8ftmSxQx/wnJD5Eg861NwJU/czy2VXFIebCeZnZrI9rktIQ==}
 
-  '@bufbuild/protobuf@2.10.2':
-    resolution: {integrity: sha512-uFsRXwIGyu+r6AMdz+XijIIZJYpoWeYzILt5yZ2d3mCjQrWUTVpVD9WL/jZAbvp+Ed04rOhrsk7FiTcEDseB5A==}
-
   '@bufbuild/protoc-gen-es@1.10.1':
     resolution: {integrity: sha512-YADugbvibIdZSb0NGf5OF87IyKTuMvMFZ7vMHgm6pL1SCfDwJ/ZRianTdrPG9hq/gOipK+NwHmXBViyS3J7nxA==}
     engines: {node: '>=14'}
@@ -171,23 +168,23 @@ packages:
     resolution: {integrity: sha512-RO00JqqmkIoI1o0XCtvudjaLpqEoe8PRDHlLS1r/aNZazUQCO0TT6nZOx1F3X+QJDjqYVY7YmYl3mtO2QVEk1g==}
     engines: {node: '>=18.17.0'}
 
-  '@connectrpc/connect-node@2.1.1':
-    resolution: {integrity: sha512-s3TfsI1XF+n+1z6MBS9rTnFsxxR4Rw5wmdEnkQINli81ESGxcsfaEet8duzq8LVuuCupmhUsgpRo0Nv9pZkufg==}
-    engines: {node: '>=20'}
+  '@connectrpc/connect-node@1.7.0':
+    resolution: {integrity: sha512-6vaPIkG/NyhxlYgytLoR9KYbPhczEboFB2OYWkA9qvUz1K7efXfeGrlRxoLtpa+r8VxyIOw73w5ktNe743nD+A==}
+    engines: {node: '>=16.0.0'}
     peerDependencies:
-      '@bufbuild/protobuf': ^2.7.0
-      '@connectrpc/connect': 2.1.1
+      '@bufbuild/protobuf': ^1.10.0
+      '@connectrpc/connect': 1.7.0
 
-  '@connectrpc/connect-web@2.1.1':
-    resolution: {integrity: sha512-J8317Q2MaFRCT1jzVR1o06bZhDIBmU0UAzWx6xOIXzOq8+k71/+k7MUF7AwcBUX+34WIvbm5syRgC5HXQA8fOg==}
+  '@connectrpc/connect-web@1.7.0':
+    resolution: {integrity: sha512-qyP0YOnUPRWwCc/VfsoydMJvkb7EyUPr2q9sHgBuJzbADjiqck1gKH5V5ZPzPhTLBvmz5UvG+wiZ5sMRQHU1MQ==}
     peerDependencies:
-      '@bufbuild/protobuf': ^2.7.0
-      '@connectrpc/connect': 2.1.1
+      '@bufbuild/protobuf': ^1.10.0
+      '@connectrpc/connect': 1.7.0
 
-  '@connectrpc/connect@2.1.1':
-    resolution: {integrity: sha512-JzhkaTvM73m2K1URT6tv53k2RwngSmCXLZJgK580qNQOXRzZRR/BCMfZw3h+90JpnG6XksP5bYT+cz0rpUzUWQ==}
+  '@connectrpc/connect@1.7.0':
+    resolution: {integrity: sha512-iNKdJRi69YP3mq6AePRT8F/HrxWCewrhxnLMNm0vpqXAR8biwzRtO6Hjx80C6UvtKJ5sFmffQT7I4Baecz389w==}
     peerDependencies:
-      '@bufbuild/protobuf': ^2.7.0
+      '@bufbuild/protobuf': ^1.10.0
 
   '@connectrpc/protoc-gen-connect-es@1.7.0':
     resolution: {integrity: sha512-g2rE799dxGgXtwSTBOJoSlzCy3HN0IX/Es8uKsCgXRmco8o277/bb5nz1X8TmvBooCBGNdtEdUDG50olcvS9jQ==}
@@ -357,6 +354,10 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fastify/busboy@2.1.1':
+    resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
+    engines: {node: '>=14'}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1291,6 +1292,10 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  undici@5.29.0:
+    resolution: {integrity: sha512-raqeBD6NQK4SkWhQzeYKd1KmIG6dllBOTt55Rmkt4HtI9mwdWtJljnrXjAFUBLTSN67HWrOIZ3EPF4kjUw80Bg==}
+    engines: {node: '>=14.0'}
+
   update-browserslist-db@1.2.3:
     resolution: {integrity: sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==}
     hasBin: true
@@ -1390,13 +1395,11 @@ snapshots:
 
   '@bufbuild/protobuf@1.10.1': {}
 
-  '@bufbuild/protobuf@2.10.2': {}
-
-  '@bufbuild/protoc-gen-es@1.10.1(@bufbuild/protobuf@2.10.2)':
+  '@bufbuild/protoc-gen-es@1.10.1(@bufbuild/protobuf@1.10.1)':
     dependencies:
       '@bufbuild/protoplugin': 1.10.1
     optionalDependencies:
-      '@bufbuild/protobuf': 2.10.2
+      '@bufbuild/protobuf': 1.10.1
     transitivePeerDependencies:
       - supports-color
 
@@ -1437,27 +1440,28 @@ snapshots:
       - react
       - react-dom
 
-  '@connectrpc/connect-node@2.1.1(@bufbuild/protobuf@2.10.2)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2))':
+  '@connectrpc/connect-node@1.7.0(@bufbuild/protobuf@1.10.1)(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))':
     dependencies:
-      '@bufbuild/protobuf': 2.10.2
-      '@connectrpc/connect': 2.1.1(@bufbuild/protobuf@2.10.2)
+      '@bufbuild/protobuf': 1.10.1
+      '@connectrpc/connect': 1.7.0(@bufbuild/protobuf@1.10.1)
+      undici: 5.29.0
 
-  '@connectrpc/connect-web@2.1.1(@bufbuild/protobuf@2.10.2)(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2))':
+  '@connectrpc/connect-web@1.7.0(@bufbuild/protobuf@1.10.1)(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))':
     dependencies:
-      '@bufbuild/protobuf': 2.10.2
-      '@connectrpc/connect': 2.1.1(@bufbuild/protobuf@2.10.2)
+      '@bufbuild/protobuf': 1.10.1
+      '@connectrpc/connect': 1.7.0(@bufbuild/protobuf@1.10.1)
 
-  '@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2)':
+  '@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1)':
     dependencies:
-      '@bufbuild/protobuf': 2.10.2
+      '@bufbuild/protobuf': 1.10.1
 
-  '@connectrpc/protoc-gen-connect-es@1.7.0(@bufbuild/protoc-gen-es@1.10.1(@bufbuild/protobuf@2.10.2))(@connectrpc/connect@2.1.1(@bufbuild/protobuf@2.10.2))':
+  '@connectrpc/protoc-gen-connect-es@1.7.0(@bufbuild/protoc-gen-es@1.10.1(@bufbuild/protobuf@1.10.1))(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))':
     dependencies:
       '@bufbuild/protobuf': 1.10.1
       '@bufbuild/protoplugin': 1.10.1
     optionalDependencies:
-      '@bufbuild/protoc-gen-es': 1.10.1(@bufbuild/protobuf@2.10.2)
-      '@connectrpc/connect': 2.1.1(@bufbuild/protobuf@2.10.2)
+      '@bufbuild/protoc-gen-es': 1.10.1(@bufbuild/protobuf@1.10.1)
+      '@connectrpc/connect': 1.7.0(@bufbuild/protobuf@1.10.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -1538,6 +1542,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.27.2':
     optional: true
+
+  '@fastify/busboy@2.1.1': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -2440,6 +2446,10 @@ snapshots:
   typescript@4.5.2: {}
 
   typescript@5.9.3: {}
+
+  undici@5.29.0:
+    dependencies:
+      '@fastify/busboy': 2.1.1
 
   update-browserslist-db@1.2.3(browserslist@4.28.1):
     dependencies:

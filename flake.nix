@@ -81,7 +81,7 @@
             pname = "spirit-svelte-app-deps";
             version = "0.1.0";
             src = ./apps/svelte-app;
-            hash = "sha256-I1vQulK67C95x1Y2B0irCXN/0iRv96Lb9lGdX4jrfNM=";
+            hash = "sha256-e8VkKBy4MgqNa4hWwVyG5OnD01aD6yAXMppFdowRSVk=";
             fetcherVersion = 2;
           };
           buildPhase = ''

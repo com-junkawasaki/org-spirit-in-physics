@@ -48,6 +48,9 @@ const (
 	// TimelineServiceGetAnalysisProcedure is the fully-qualified name of the TimelineService's
 	// GetAnalysis RPC.
 	TimelineServiceGetAnalysisProcedure = "/timeline.v1.TimelineService/GetAnalysis"
+	// TimelineServiceGetIntegratedTimelineProcedure is the fully-qualified name of the
+	// TimelineService's GetIntegratedTimeline RPC.
+	TimelineServiceGetIntegratedTimelineProcedure = "/timeline.v1.TimelineService/GetIntegratedTimeline"
 )
 
 // TimelineServiceClient is a client for the timeline.v1.TimelineService service.
@@ -62,6 +65,8 @@ type TimelineServiceClient interface {
 	GetWordStatistics(context.Context, *connect.Request[v1.GetWordStatisticsRequest]) (*connect.Response[v1.GetWordStatisticsResponse], error)
 	// Get structure analysis results (run via Temporal)
 	GetAnalysis(context.Context, *connect.Request[v1.GetAnalysisRequest]) (*connect.Response[v1.GetAnalysisResponse], error)
+	// Get integrated timeline data and analysis (run via TS Temporal)
+	GetIntegratedTimeline(context.Context, *connect.Request[v1.GetIntegratedTimelineRequest]) (*connect.Response[v1.GetIntegratedTimelineResponse], error)
 }
 
 // NewTimelineServiceClient constructs a client for the timeline.v1.TimelineService service. By
@@ -105,16 +110,23 @@ func NewTimelineServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(timelineServiceMethods.ByName("GetAnalysis")),
 			connect.WithClientOptions(opts...),
 		),
+		getIntegratedTimeline: connect.NewClient[v1.GetIntegratedTimelineRequest, v1.GetIntegratedTimelineResponse](
+			httpClient,
+			baseURL+TimelineServiceGetIntegratedTimelineProcedure,
+			connect.WithSchema(timelineServiceMethods.ByName("GetIntegratedTimeline")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // timelineServiceClient implements TimelineServiceClient.
 type timelineServiceClient struct {
-	getTimeline       *connect.Client[v1.GetTimelineRequest, v1.GetTimelineResponse]
-	getWordAggregates *connect.Client[v1.GetWordAggregatesRequest, v1.GetWordAggregatesResponse]
-	getEmotionVectors *connect.Client[v1.GetEmotionVectorsRequest, v1.GetEmotionVectorsResponse]
-	getWordStatistics *connect.Client[v1.GetWordStatisticsRequest, v1.GetWordStatisticsResponse]
-	getAnalysis       *connect.Client[v1.GetAnalysisRequest, v1.GetAnalysisResponse]
+	getTimeline           *connect.Client[v1.GetTimelineRequest, v1.GetTimelineResponse]
+	getWordAggregates     *connect.Client[v1.GetWordAggregatesRequest, v1.GetWordAggregatesResponse]
+	getEmotionVectors     *connect.Client[v1.GetEmotionVectorsRequest, v1.GetEmotionVectorsResponse]
+	getWordStatistics     *connect.Client[v1.GetWordStatisticsRequest, v1.GetWordStatisticsResponse]
+	getAnalysis           *connect.Client[v1.GetAnalysisRequest, v1.GetAnalysisResponse]
+	getIntegratedTimeline *connect.Client[v1.GetIntegratedTimelineRequest, v1.GetIntegratedTimelineResponse]
 }
 
 // GetTimeline calls timeline.v1.TimelineService.GetTimeline.
@@ -142,6 +154,11 @@ func (c *timelineServiceClient) GetAnalysis(ctx context.Context, req *connect.Re
 	return c.getAnalysis.CallUnary(ctx, req)
 }
 
+// GetIntegratedTimeline calls timeline.v1.TimelineService.GetIntegratedTimeline.
+func (c *timelineServiceClient) GetIntegratedTimeline(ctx context.Context, req *connect.Request[v1.GetIntegratedTimelineRequest]) (*connect.Response[v1.GetIntegratedTimelineResponse], error) {
+	return c.getIntegratedTimeline.CallUnary(ctx, req)
+}
+
 // TimelineServiceHandler is an implementation of the timeline.v1.TimelineService service.
 type TimelineServiceHandler interface {
 	// Get timeline data for a participant
@@ -154,6 +171,8 @@ type TimelineServiceHandler interface {
 	GetWordStatistics(context.Context, *connect.Request[v1.GetWordStatisticsRequest]) (*connect.Response[v1.GetWordStatisticsResponse], error)
 	// Get structure analysis results (run via Temporal)
 	GetAnalysis(context.Context, *connect.Request[v1.GetAnalysisRequest]) (*connect.Response[v1.GetAnalysisResponse], error)
+	// Get integrated timeline data and analysis (run via TS Temporal)
+	GetIntegratedTimeline(context.Context, *connect.Request[v1.GetIntegratedTimelineRequest]) (*connect.Response[v1.GetIntegratedTimelineResponse], error)
 }
 
 // NewTimelineServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -193,6 +212,12 @@ func NewTimelineServiceHandler(svc TimelineServiceHandler, opts ...connect.Handl
 		connect.WithSchema(timelineServiceMethods.ByName("GetAnalysis")),
 		connect.WithHandlerOptions(opts...),
 	)
+	timelineServiceGetIntegratedTimelineHandler := connect.NewUnaryHandler(
+		TimelineServiceGetIntegratedTimelineProcedure,
+		svc.GetIntegratedTimeline,
+		connect.WithSchema(timelineServiceMethods.ByName("GetIntegratedTimeline")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/timeline.v1.TimelineService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TimelineServiceGetTimelineProcedure:
@@ -205,6 +230,8 @@ func NewTimelineServiceHandler(svc TimelineServiceHandler, opts ...connect.Handl
 			timelineServiceGetWordStatisticsHandler.ServeHTTP(w, r)
 		case TimelineServiceGetAnalysisProcedure:
 			timelineServiceGetAnalysisHandler.ServeHTTP(w, r)
+		case TimelineServiceGetIntegratedTimelineProcedure:
+			timelineServiceGetIntegratedTimelineHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -232,4 +259,8 @@ func (UnimplementedTimelineServiceHandler) GetWordStatistics(context.Context, *c
 
 func (UnimplementedTimelineServiceHandler) GetAnalysis(context.Context, *connect.Request[v1.GetAnalysisRequest]) (*connect.Response[v1.GetAnalysisResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("timeline.v1.TimelineService.GetAnalysis is not implemented"))
+}
+
+func (UnimplementedTimelineServiceHandler) GetIntegratedTimeline(context.Context, *connect.Request[v1.GetIntegratedTimelineRequest]) (*connect.Response[v1.GetIntegratedTimelineResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("timeline.v1.TimelineService.GetIntegratedTimeline is not implemented"))
 }

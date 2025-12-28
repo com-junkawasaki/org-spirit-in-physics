@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetAnalysisRequest, GetAnalysisResponse, GetEmotionVectorsRequest, GetEmotionVectorsResponse, GetTimelineRequest, GetTimelineResponse, GetWordAggregatesRequest, GetWordAggregatesResponse, GetWordStatisticsRequest, GetWordStatisticsResponse, GetIntegratedTimelineRequest, GetIntegratedTimelineResponse } from "./timeline_pb.js";
+import { GetAnalysisRequest, GetAnalysisResponse, GetEmotionVectorsRequest, GetEmotionVectorsResponse, GetIntegratedTimelineRequest, GetIntegratedTimelineResponse, GetTimelineRequest, GetTimelineResponse, GetWordAggregatesRequest, GetWordAggregatesResponse, GetWordStatisticsRequest, GetWordStatisticsResponse } from "./timeline_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**

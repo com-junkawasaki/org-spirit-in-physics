@@ -23,6 +23,110 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type GetIntegratedTimelineRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ParticipantId string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	SessionId     *string                `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3,oneof" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetIntegratedTimelineRequest) Reset() {
+	*x = GetIntegratedTimelineRequest{}
+	mi := &file_timeline_v1_timeline_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetIntegratedTimelineRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetIntegratedTimelineRequest) ProtoMessage() {}
+
+func (x *GetIntegratedTimelineRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_timeline_v1_timeline_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetIntegratedTimelineRequest.ProtoReflect.Descriptor instead.
+func (*GetIntegratedTimelineRequest) Descriptor() ([]byte, []int) {
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GetIntegratedTimelineRequest) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *GetIntegratedTimelineRequest) GetSessionId() string {
+	if x != nil && x.SessionId != nil {
+		return *x.SessionId
+	}
+	return ""
+}
+
+type GetIntegratedTimelineResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Points        []*TimelinePoint       `protobuf:"bytes,1,rep,name=points,proto3" json:"points,omitempty"`
+	Analysis      *GetAnalysisResponse   `protobuf:"bytes,2,opt,name=analysis,proto3" json:"analysis,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetIntegratedTimelineResponse) Reset() {
+	*x = GetIntegratedTimelineResponse{}
+	mi := &file_timeline_v1_timeline_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetIntegratedTimelineResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetIntegratedTimelineResponse) ProtoMessage() {}
+
+func (x *GetIntegratedTimelineResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_timeline_v1_timeline_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetIntegratedTimelineResponse.ProtoReflect.Descriptor instead.
+func (*GetIntegratedTimelineResponse) Descriptor() ([]byte, []int) {
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GetIntegratedTimelineResponse) GetPoints() []*TimelinePoint {
+	if x != nil {
+		return x.Points
+	}
+	return nil
+}
+
+func (x *GetIntegratedTimelineResponse) GetAnalysis() *GetAnalysisResponse {
+	if x != nil {
+		return x.Analysis
+	}
+	return nil
+}
+
 type GetAnalysisRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ParticipantId string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
@@ -33,7 +137,7 @@ type GetAnalysisRequest struct {
 
 func (x *GetAnalysisRequest) Reset() {
 	*x = GetAnalysisRequest{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[0]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +149,7 @@ func (x *GetAnalysisRequest) String() string {
 func (*GetAnalysisRequest) ProtoMessage() {}
 
 func (x *GetAnalysisRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[0]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +162,7 @@ func (x *GetAnalysisRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAnalysisRequest.ProtoReflect.Descriptor instead.
 func (*GetAnalysisRequest) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{0}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetAnalysisRequest) GetParticipantId() string {
@@ -87,7 +191,7 @@ type GetAnalysisResponse struct {
 
 func (x *GetAnalysisResponse) Reset() {
 	*x = GetAnalysisResponse{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[1]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -99,7 +203,7 @@ func (x *GetAnalysisResponse) String() string {
 func (*GetAnalysisResponse) ProtoMessage() {}
 
 func (x *GetAnalysisResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[1]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -112,7 +216,7 @@ func (x *GetAnalysisResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAnalysisResponse.ProtoReflect.Descriptor instead.
 func (*GetAnalysisResponse) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{1}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetAnalysisResponse) GetGapAreas() []*GapArea {
@@ -158,7 +262,7 @@ type GapArea struct {
 
 func (x *GapArea) Reset() {
 	*x = GapArea{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[2]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -170,7 +274,7 @@ func (x *GapArea) String() string {
 func (*GapArea) ProtoMessage() {}
 
 func (x *GapArea) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[2]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -183,7 +287,7 @@ func (x *GapArea) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GapArea.ProtoReflect.Descriptor instead.
 func (*GapArea) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{2}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GapArea) GetId() string {
@@ -247,7 +351,7 @@ type NearbyNode struct {
 
 func (x *NearbyNode) Reset() {
 	*x = NearbyNode{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[3]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -259,7 +363,7 @@ func (x *NearbyNode) String() string {
 func (*NearbyNode) ProtoMessage() {}
 
 func (x *NearbyNode) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[3]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -272,7 +376,7 @@ func (x *NearbyNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NearbyNode.ProtoReflect.Descriptor instead.
 func (*NearbyNode) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{3}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *NearbyNode) GetNodeId() string {
@@ -318,7 +422,7 @@ type DensityRegion struct {
 
 func (x *DensityRegion) Reset() {
 	*x = DensityRegion{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[4]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -330,7 +434,7 @@ func (x *DensityRegion) String() string {
 func (*DensityRegion) ProtoMessage() {}
 
 func (x *DensityRegion) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[4]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -343,7 +447,7 @@ func (x *DensityRegion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DensityRegion.ProtoReflect.Descriptor instead.
 func (*DensityRegion) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{4}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DensityRegion) GetId() string {
@@ -410,7 +514,7 @@ type DuplicateCandidate struct {
 
 func (x *DuplicateCandidate) Reset() {
 	*x = DuplicateCandidate{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[5]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -422,7 +526,7 @@ func (x *DuplicateCandidate) String() string {
 func (*DuplicateCandidate) ProtoMessage() {}
 
 func (x *DuplicateCandidate) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[5]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -435,7 +539,7 @@ func (x *DuplicateCandidate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DuplicateCandidate.ProtoReflect.Descriptor instead.
 func (*DuplicateCandidate) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{5}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DuplicateCandidate) GetId() string {
@@ -500,7 +604,7 @@ type CommonFeatures struct {
 
 func (x *CommonFeatures) Reset() {
 	*x = CommonFeatures{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[6]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -512,7 +616,7 @@ func (x *CommonFeatures) String() string {
 func (*CommonFeatures) ProtoMessage() {}
 
 func (x *CommonFeatures) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[6]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -525,7 +629,7 @@ func (x *CommonFeatures) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommonFeatures.ProtoReflect.Descriptor instead.
 func (*CommonFeatures) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{6}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CommonFeatures) GetEmotionProfile() *structpb.Struct {
@@ -576,7 +680,7 @@ type GetTimelineRequest struct {
 
 func (x *GetTimelineRequest) Reset() {
 	*x = GetTimelineRequest{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[7]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -588,7 +692,7 @@ func (x *GetTimelineRequest) String() string {
 func (*GetTimelineRequest) ProtoMessage() {}
 
 func (x *GetTimelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[7]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -601,7 +705,7 @@ func (x *GetTimelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTimelineRequest.ProtoReflect.Descriptor instead.
 func (*GetTimelineRequest) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{7}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetTimelineRequest) GetParticipantId() string {
@@ -648,7 +752,7 @@ type GetTimelineResponse struct {
 
 func (x *GetTimelineResponse) Reset() {
 	*x = GetTimelineResponse{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[8]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -660,7 +764,7 @@ func (x *GetTimelineResponse) String() string {
 func (*GetTimelineResponse) ProtoMessage() {}
 
 func (x *GetTimelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[8]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -673,7 +777,7 @@ func (x *GetTimelineResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTimelineResponse.ProtoReflect.Descriptor instead.
 func (*GetTimelineResponse) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{8}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetTimelineResponse) GetPoints() []*TimelinePoint {
@@ -693,7 +797,7 @@ type GetWordAggregatesRequest struct {
 
 func (x *GetWordAggregatesRequest) Reset() {
 	*x = GetWordAggregatesRequest{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[9]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -705,7 +809,7 @@ func (x *GetWordAggregatesRequest) String() string {
 func (*GetWordAggregatesRequest) ProtoMessage() {}
 
 func (x *GetWordAggregatesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[9]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -718,7 +822,7 @@ func (x *GetWordAggregatesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWordAggregatesRequest.ProtoReflect.Descriptor instead.
 func (*GetWordAggregatesRequest) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{9}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetWordAggregatesRequest) GetParticipantId() string {
@@ -744,7 +848,7 @@ type GetWordAggregatesResponse struct {
 
 func (x *GetWordAggregatesResponse) Reset() {
 	*x = GetWordAggregatesResponse{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[10]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -756,7 +860,7 @@ func (x *GetWordAggregatesResponse) String() string {
 func (*GetWordAggregatesResponse) ProtoMessage() {}
 
 func (x *GetWordAggregatesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[10]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -769,7 +873,7 @@ func (x *GetWordAggregatesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWordAggregatesResponse.ProtoReflect.Descriptor instead.
 func (*GetWordAggregatesResponse) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{10}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetWordAggregatesResponse) GetAggregates() []*WordAggregate {
@@ -789,7 +893,7 @@ type GetEmotionVectorsRequest struct {
 
 func (x *GetEmotionVectorsRequest) Reset() {
 	*x = GetEmotionVectorsRequest{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[11]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -801,7 +905,7 @@ func (x *GetEmotionVectorsRequest) String() string {
 func (*GetEmotionVectorsRequest) ProtoMessage() {}
 
 func (x *GetEmotionVectorsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[11]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -814,7 +918,7 @@ func (x *GetEmotionVectorsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEmotionVectorsRequest.ProtoReflect.Descriptor instead.
 func (*GetEmotionVectorsRequest) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{11}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetEmotionVectorsRequest) GetParticipantId() string {
@@ -840,7 +944,7 @@ type GetEmotionVectorsResponse struct {
 
 func (x *GetEmotionVectorsResponse) Reset() {
 	*x = GetEmotionVectorsResponse{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[12]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -852,7 +956,7 @@ func (x *GetEmotionVectorsResponse) String() string {
 func (*GetEmotionVectorsResponse) ProtoMessage() {}
 
 func (x *GetEmotionVectorsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[12]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -865,7 +969,7 @@ func (x *GetEmotionVectorsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEmotionVectorsResponse.ProtoReflect.Descriptor instead.
 func (*GetEmotionVectorsResponse) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{12}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetEmotionVectorsResponse) GetVectors() []*EmotionVector {
@@ -885,7 +989,7 @@ type GetWordStatisticsRequest struct {
 
 func (x *GetWordStatisticsRequest) Reset() {
 	*x = GetWordStatisticsRequest{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[13]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -897,7 +1001,7 @@ func (x *GetWordStatisticsRequest) String() string {
 func (*GetWordStatisticsRequest) ProtoMessage() {}
 
 func (x *GetWordStatisticsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[13]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -910,7 +1014,7 @@ func (x *GetWordStatisticsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWordStatisticsRequest.ProtoReflect.Descriptor instead.
 func (*GetWordStatisticsRequest) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{13}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetWordStatisticsRequest) GetParticipantId() string {
@@ -936,7 +1040,7 @@ type GetWordStatisticsResponse struct {
 
 func (x *GetWordStatisticsResponse) Reset() {
 	*x = GetWordStatisticsResponse{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[14]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -948,7 +1052,7 @@ func (x *GetWordStatisticsResponse) String() string {
 func (*GetWordStatisticsResponse) ProtoMessage() {}
 
 func (x *GetWordStatisticsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[14]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -961,7 +1065,7 @@ func (x *GetWordStatisticsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWordStatisticsResponse.ProtoReflect.Descriptor instead.
 func (*GetWordStatisticsResponse) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{14}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetWordStatisticsResponse) GetStatistics() []*WordStatistics {
@@ -990,7 +1094,7 @@ type TimelinePoint struct {
 
 func (x *TimelinePoint) Reset() {
 	*x = TimelinePoint{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[15]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1002,7 +1106,7 @@ func (x *TimelinePoint) String() string {
 func (*TimelinePoint) ProtoMessage() {}
 
 func (x *TimelinePoint) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[15]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1015,7 +1119,7 @@ func (x *TimelinePoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimelinePoint.ProtoReflect.Descriptor instead.
 func (*TimelinePoint) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{15}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *TimelinePoint) GetTime() *timestamppb.Timestamp {
@@ -1107,7 +1211,7 @@ type EmotionData struct {
 
 func (x *EmotionData) Reset() {
 	*x = EmotionData{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[16]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1119,7 +1223,7 @@ func (x *EmotionData) String() string {
 func (*EmotionData) ProtoMessage() {}
 
 func (x *EmotionData) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[16]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1132,7 +1236,7 @@ func (x *EmotionData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmotionData.ProtoReflect.Descriptor instead.
 func (*EmotionData) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{16}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *EmotionData) GetName() string {
@@ -1174,7 +1278,7 @@ type PhysiologicalData struct {
 
 func (x *PhysiologicalData) Reset() {
 	*x = PhysiologicalData{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[17]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1186,7 +1290,7 @@ func (x *PhysiologicalData) String() string {
 func (*PhysiologicalData) ProtoMessage() {}
 
 func (x *PhysiologicalData) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[17]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1199,7 +1303,7 @@ func (x *PhysiologicalData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PhysiologicalData.ProtoReflect.Descriptor instead.
 func (*PhysiologicalData) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{17}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *PhysiologicalData) GetTimestamp() *timestamppb.Timestamp {
@@ -1246,7 +1350,7 @@ type WordAggregate struct {
 
 func (x *WordAggregate) Reset() {
 	*x = WordAggregate{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[18]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1258,7 +1362,7 @@ func (x *WordAggregate) String() string {
 func (*WordAggregate) ProtoMessage() {}
 
 func (x *WordAggregate) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[18]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1271,7 +1375,7 @@ func (x *WordAggregate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WordAggregate.ProtoReflect.Descriptor instead.
 func (*WordAggregate) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{18}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *WordAggregate) GetParticipantId() string {
@@ -1402,7 +1506,7 @@ type EmotionVector struct {
 
 func (x *EmotionVector) Reset() {
 	*x = EmotionVector{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[19]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1414,7 +1518,7 @@ func (x *EmotionVector) String() string {
 func (*EmotionVector) ProtoMessage() {}
 
 func (x *EmotionVector) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[19]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1427,7 +1531,7 @@ func (x *EmotionVector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmotionVector.ProtoReflect.Descriptor instead.
 func (*EmotionVector) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{19}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *EmotionVector) GetParticipantId() string {
@@ -1559,7 +1663,7 @@ type WordStatistics struct {
 
 func (x *WordStatistics) Reset() {
 	*x = WordStatistics{}
-	mi := &file_timeline_v1_timeline_proto_msgTypes[20]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1571,7 +1675,7 @@ func (x *WordStatistics) String() string {
 func (*WordStatistics) ProtoMessage() {}
 
 func (x *WordStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_timeline_v1_timeline_proto_msgTypes[20]
+	mi := &file_timeline_v1_timeline_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1584,7 +1688,7 @@ func (x *WordStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WordStatistics.ProtoReflect.Descriptor instead.
 func (*WordStatistics) Descriptor() ([]byte, []int) {
-	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{20}
+	return file_timeline_v1_timeline_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *WordStatistics) GetParticipantId() string {
@@ -1703,7 +1807,15 @@ var File_timeline_v1_timeline_proto protoreflect.FileDescriptor
 
 const file_timeline_v1_timeline_proto_rawDesc = "" +
 	"\n" +
-	"\x1atimeline/v1/timeline.proto\x12\vtimeline.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\"n\n" +
+	"\x1atimeline/v1/timeline.proto\x12\vtimeline.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\"x\n" +
+	"\x1cGetIntegratedTimelineRequest\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x12\"\n" +
+	"\n" +
+	"session_id\x18\x02 \x01(\tH\x00R\tsessionId\x88\x01\x01B\r\n" +
+	"\v_session_id\"\x91\x01\n" +
+	"\x1dGetIntegratedTimelineResponse\x122\n" +
+	"\x06points\x18\x01 \x03(\v2\x1a.timeline.v1.TimelinePointR\x06points\x12<\n" +
+	"\banalysis\x18\x02 \x01(\v2 .timeline.v1.GetAnalysisResponseR\banalysis\"n\n" +
 	"\x12GetAnalysisRequest\x12%\n" +
 	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x12\"\n" +
 	"\n" +
@@ -1922,13 +2034,14 @@ const file_timeline_v1_timeline_proto_rawDesc = "" +
 	"\x12_avg_physiologicalB\x14\n" +
 	"\x12_std_physiologicalB\x14\n" +
 	"\x12_var_physiologicalB\x0e\n" +
-	"\f_speed_index2\xe1\x03\n" +
+	"\f_speed_index2\xd1\x04\n" +
 	"\x0fTimelineService\x12P\n" +
 	"\vGetTimeline\x12\x1f.timeline.v1.GetTimelineRequest\x1a .timeline.v1.GetTimelineResponse\x12b\n" +
 	"\x11GetWordAggregates\x12%.timeline.v1.GetWordAggregatesRequest\x1a&.timeline.v1.GetWordAggregatesResponse\x12b\n" +
 	"\x11GetEmotionVectors\x12%.timeline.v1.GetEmotionVectorsRequest\x1a&.timeline.v1.GetEmotionVectorsResponse\x12b\n" +
 	"\x11GetWordStatistics\x12%.timeline.v1.GetWordStatisticsRequest\x1a&.timeline.v1.GetWordStatisticsResponse\x12P\n" +
-	"\vGetAnalysis\x12\x1f.timeline.v1.GetAnalysisRequest\x1a .timeline.v1.GetAnalysisResponseBMZKgithub.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1;timelinev1b\x06proto3"
+	"\vGetAnalysis\x12\x1f.timeline.v1.GetAnalysisRequest\x1a .timeline.v1.GetAnalysisResponse\x12n\n" +
+	"\x15GetIntegratedTimeline\x12).timeline.v1.GetIntegratedTimelineRequest\x1a*.timeline.v1.GetIntegratedTimelineResponseBMZKgithub.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1;timelinev1b\x06proto3"
 
 var (
 	file_timeline_v1_timeline_proto_rawDescOnce sync.Once
@@ -1942,70 +2055,76 @@ func file_timeline_v1_timeline_proto_rawDescGZIP() []byte {
 	return file_timeline_v1_timeline_proto_rawDescData
 }
 
-var file_timeline_v1_timeline_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_timeline_v1_timeline_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_timeline_v1_timeline_proto_goTypes = []any{
-	(*GetAnalysisRequest)(nil),        // 0: timeline.v1.GetAnalysisRequest
-	(*GetAnalysisResponse)(nil),       // 1: timeline.v1.GetAnalysisResponse
-	(*GapArea)(nil),                   // 2: timeline.v1.GapArea
-	(*NearbyNode)(nil),                // 3: timeline.v1.NearbyNode
-	(*DensityRegion)(nil),             // 4: timeline.v1.DensityRegion
-	(*DuplicateCandidate)(nil),        // 5: timeline.v1.DuplicateCandidate
-	(*CommonFeatures)(nil),            // 6: timeline.v1.CommonFeatures
-	(*GetTimelineRequest)(nil),        // 7: timeline.v1.GetTimelineRequest
-	(*GetTimelineResponse)(nil),       // 8: timeline.v1.GetTimelineResponse
-	(*GetWordAggregatesRequest)(nil),  // 9: timeline.v1.GetWordAggregatesRequest
-	(*GetWordAggregatesResponse)(nil), // 10: timeline.v1.GetWordAggregatesResponse
-	(*GetEmotionVectorsRequest)(nil),  // 11: timeline.v1.GetEmotionVectorsRequest
-	(*GetEmotionVectorsResponse)(nil), // 12: timeline.v1.GetEmotionVectorsResponse
-	(*GetWordStatisticsRequest)(nil),  // 13: timeline.v1.GetWordStatisticsRequest
-	(*GetWordStatisticsResponse)(nil), // 14: timeline.v1.GetWordStatisticsResponse
-	(*TimelinePoint)(nil),             // 15: timeline.v1.TimelinePoint
-	(*EmotionData)(nil),               // 16: timeline.v1.EmotionData
-	(*PhysiologicalData)(nil),         // 17: timeline.v1.PhysiologicalData
-	(*WordAggregate)(nil),             // 18: timeline.v1.WordAggregate
-	(*EmotionVector)(nil),             // 19: timeline.v1.EmotionVector
-	(*WordStatistics)(nil),            // 20: timeline.v1.WordStatistics
-	(*structpb.Struct)(nil),           // 21: google.protobuf.Struct
-	(*timestamppb.Timestamp)(nil),     // 22: google.protobuf.Timestamp
+	(*GetIntegratedTimelineRequest)(nil),  // 0: timeline.v1.GetIntegratedTimelineRequest
+	(*GetIntegratedTimelineResponse)(nil), // 1: timeline.v1.GetIntegratedTimelineResponse
+	(*GetAnalysisRequest)(nil),            // 2: timeline.v1.GetAnalysisRequest
+	(*GetAnalysisResponse)(nil),           // 3: timeline.v1.GetAnalysisResponse
+	(*GapArea)(nil),                       // 4: timeline.v1.GapArea
+	(*NearbyNode)(nil),                    // 5: timeline.v1.NearbyNode
+	(*DensityRegion)(nil),                 // 6: timeline.v1.DensityRegion
+	(*DuplicateCandidate)(nil),            // 7: timeline.v1.DuplicateCandidate
+	(*CommonFeatures)(nil),                // 8: timeline.v1.CommonFeatures
+	(*GetTimelineRequest)(nil),            // 9: timeline.v1.GetTimelineRequest
+	(*GetTimelineResponse)(nil),           // 10: timeline.v1.GetTimelineResponse
+	(*GetWordAggregatesRequest)(nil),      // 11: timeline.v1.GetWordAggregatesRequest
+	(*GetWordAggregatesResponse)(nil),     // 12: timeline.v1.GetWordAggregatesResponse
+	(*GetEmotionVectorsRequest)(nil),      // 13: timeline.v1.GetEmotionVectorsRequest
+	(*GetEmotionVectorsResponse)(nil),     // 14: timeline.v1.GetEmotionVectorsResponse
+	(*GetWordStatisticsRequest)(nil),      // 15: timeline.v1.GetWordStatisticsRequest
+	(*GetWordStatisticsResponse)(nil),     // 16: timeline.v1.GetWordStatisticsResponse
+	(*TimelinePoint)(nil),                 // 17: timeline.v1.TimelinePoint
+	(*EmotionData)(nil),                   // 18: timeline.v1.EmotionData
+	(*PhysiologicalData)(nil),             // 19: timeline.v1.PhysiologicalData
+	(*WordAggregate)(nil),                 // 20: timeline.v1.WordAggregate
+	(*EmotionVector)(nil),                 // 21: timeline.v1.EmotionVector
+	(*WordStatistics)(nil),                // 22: timeline.v1.WordStatistics
+	(*structpb.Struct)(nil),               // 23: google.protobuf.Struct
+	(*timestamppb.Timestamp)(nil),         // 24: google.protobuf.Timestamp
 }
 var file_timeline_v1_timeline_proto_depIdxs = []int32{
-	2,  // 0: timeline.v1.GetAnalysisResponse.gap_areas:type_name -> timeline.v1.GapArea
-	4,  // 1: timeline.v1.GetAnalysisResponse.density_regions:type_name -> timeline.v1.DensityRegion
-	5,  // 2: timeline.v1.GetAnalysisResponse.duplicates:type_name -> timeline.v1.DuplicateCandidate
-	3,  // 3: timeline.v1.GapArea.nearby_nodes:type_name -> timeline.v1.NearbyNode
-	21, // 4: timeline.v1.GapArea.common_emotion_profile:type_name -> google.protobuf.Struct
-	6,  // 5: timeline.v1.DuplicateCandidate.common_features:type_name -> timeline.v1.CommonFeatures
-	21, // 6: timeline.v1.CommonFeatures.emotion_profile:type_name -> google.protobuf.Struct
-	22, // 7: timeline.v1.GetTimelineRequest.start_time:type_name -> google.protobuf.Timestamp
-	22, // 8: timeline.v1.GetTimelineRequest.end_time:type_name -> google.protobuf.Timestamp
-	15, // 9: timeline.v1.GetTimelineResponse.points:type_name -> timeline.v1.TimelinePoint
-	18, // 10: timeline.v1.GetWordAggregatesResponse.aggregates:type_name -> timeline.v1.WordAggregate
-	19, // 11: timeline.v1.GetEmotionVectorsResponse.vectors:type_name -> timeline.v1.EmotionVector
-	20, // 12: timeline.v1.GetWordStatisticsResponse.statistics:type_name -> timeline.v1.WordStatistics
-	22, // 13: timeline.v1.TimelinePoint.time:type_name -> google.protobuf.Timestamp
-	16, // 14: timeline.v1.TimelinePoint.emotions:type_name -> timeline.v1.EmotionData
-	17, // 15: timeline.v1.TimelinePoint.physiological:type_name -> timeline.v1.PhysiologicalData
-	21, // 16: timeline.v1.TimelinePoint.metadata:type_name -> google.protobuf.Struct
-	22, // 17: timeline.v1.PhysiologicalData.timestamp:type_name -> google.protobuf.Timestamp
-	21, // 18: timeline.v1.PhysiologicalData.metadata:type_name -> google.protobuf.Struct
-	22, // 19: timeline.v1.WordAggregate.first_time:type_name -> google.protobuf.Timestamp
-	22, // 20: timeline.v1.WordAggregate.last_time:type_name -> google.protobuf.Timestamp
-	21, // 21: timeline.v1.EmotionVector.emotion_by_modality:type_name -> google.protobuf.Struct
-	7,  // 22: timeline.v1.TimelineService.GetTimeline:input_type -> timeline.v1.GetTimelineRequest
-	9,  // 23: timeline.v1.TimelineService.GetWordAggregates:input_type -> timeline.v1.GetWordAggregatesRequest
-	11, // 24: timeline.v1.TimelineService.GetEmotionVectors:input_type -> timeline.v1.GetEmotionVectorsRequest
-	13, // 25: timeline.v1.TimelineService.GetWordStatistics:input_type -> timeline.v1.GetWordStatisticsRequest
-	0,  // 26: timeline.v1.TimelineService.GetAnalysis:input_type -> timeline.v1.GetAnalysisRequest
-	8,  // 27: timeline.v1.TimelineService.GetTimeline:output_type -> timeline.v1.GetTimelineResponse
-	10, // 28: timeline.v1.TimelineService.GetWordAggregates:output_type -> timeline.v1.GetWordAggregatesResponse
-	12, // 29: timeline.v1.TimelineService.GetEmotionVectors:output_type -> timeline.v1.GetEmotionVectorsResponse
-	14, // 30: timeline.v1.TimelineService.GetWordStatistics:output_type -> timeline.v1.GetWordStatisticsResponse
-	1,  // 31: timeline.v1.TimelineService.GetAnalysis:output_type -> timeline.v1.GetAnalysisResponse
-	27, // [27:32] is the sub-list for method output_type
-	22, // [22:27] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	17, // 0: timeline.v1.GetIntegratedTimelineResponse.points:type_name -> timeline.v1.TimelinePoint
+	3,  // 1: timeline.v1.GetIntegratedTimelineResponse.analysis:type_name -> timeline.v1.GetAnalysisResponse
+	4,  // 2: timeline.v1.GetAnalysisResponse.gap_areas:type_name -> timeline.v1.GapArea
+	6,  // 3: timeline.v1.GetAnalysisResponse.density_regions:type_name -> timeline.v1.DensityRegion
+	7,  // 4: timeline.v1.GetAnalysisResponse.duplicates:type_name -> timeline.v1.DuplicateCandidate
+	5,  // 5: timeline.v1.GapArea.nearby_nodes:type_name -> timeline.v1.NearbyNode
+	23, // 6: timeline.v1.GapArea.common_emotion_profile:type_name -> google.protobuf.Struct
+	8,  // 7: timeline.v1.DuplicateCandidate.common_features:type_name -> timeline.v1.CommonFeatures
+	23, // 8: timeline.v1.CommonFeatures.emotion_profile:type_name -> google.protobuf.Struct
+	24, // 9: timeline.v1.GetTimelineRequest.start_time:type_name -> google.protobuf.Timestamp
+	24, // 10: timeline.v1.GetTimelineRequest.end_time:type_name -> google.protobuf.Timestamp
+	17, // 11: timeline.v1.GetTimelineResponse.points:type_name -> timeline.v1.TimelinePoint
+	20, // 12: timeline.v1.GetWordAggregatesResponse.aggregates:type_name -> timeline.v1.WordAggregate
+	21, // 13: timeline.v1.GetEmotionVectorsResponse.vectors:type_name -> timeline.v1.EmotionVector
+	22, // 14: timeline.v1.GetWordStatisticsResponse.statistics:type_name -> timeline.v1.WordStatistics
+	24, // 15: timeline.v1.TimelinePoint.time:type_name -> google.protobuf.Timestamp
+	18, // 16: timeline.v1.TimelinePoint.emotions:type_name -> timeline.v1.EmotionData
+	19, // 17: timeline.v1.TimelinePoint.physiological:type_name -> timeline.v1.PhysiologicalData
+	23, // 18: timeline.v1.TimelinePoint.metadata:type_name -> google.protobuf.Struct
+	24, // 19: timeline.v1.PhysiologicalData.timestamp:type_name -> google.protobuf.Timestamp
+	23, // 20: timeline.v1.PhysiologicalData.metadata:type_name -> google.protobuf.Struct
+	24, // 21: timeline.v1.WordAggregate.first_time:type_name -> google.protobuf.Timestamp
+	24, // 22: timeline.v1.WordAggregate.last_time:type_name -> google.protobuf.Timestamp
+	23, // 23: timeline.v1.EmotionVector.emotion_by_modality:type_name -> google.protobuf.Struct
+	9,  // 24: timeline.v1.TimelineService.GetTimeline:input_type -> timeline.v1.GetTimelineRequest
+	11, // 25: timeline.v1.TimelineService.GetWordAggregates:input_type -> timeline.v1.GetWordAggregatesRequest
+	13, // 26: timeline.v1.TimelineService.GetEmotionVectors:input_type -> timeline.v1.GetEmotionVectorsRequest
+	15, // 27: timeline.v1.TimelineService.GetWordStatistics:input_type -> timeline.v1.GetWordStatisticsRequest
+	2,  // 28: timeline.v1.TimelineService.GetAnalysis:input_type -> timeline.v1.GetAnalysisRequest
+	0,  // 29: timeline.v1.TimelineService.GetIntegratedTimeline:input_type -> timeline.v1.GetIntegratedTimelineRequest
+	10, // 30: timeline.v1.TimelineService.GetTimeline:output_type -> timeline.v1.GetTimelineResponse
+	12, // 31: timeline.v1.TimelineService.GetWordAggregates:output_type -> timeline.v1.GetWordAggregatesResponse
+	14, // 32: timeline.v1.TimelineService.GetEmotionVectors:output_type -> timeline.v1.GetEmotionVectorsResponse
+	16, // 33: timeline.v1.TimelineService.GetWordStatistics:output_type -> timeline.v1.GetWordStatisticsResponse
+	3,  // 34: timeline.v1.TimelineService.GetAnalysis:output_type -> timeline.v1.GetAnalysisResponse
+	1,  // 35: timeline.v1.TimelineService.GetIntegratedTimeline:output_type -> timeline.v1.GetIntegratedTimelineResponse
+	30, // [30:36] is the sub-list for method output_type
+	24, // [24:30] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_timeline_v1_timeline_proto_init() }
@@ -2014,24 +2133,25 @@ func file_timeline_v1_timeline_proto_init() {
 		return
 	}
 	file_timeline_v1_timeline_proto_msgTypes[0].OneofWrappers = []any{}
-	file_timeline_v1_timeline_proto_msgTypes[4].OneofWrappers = []any{}
-	file_timeline_v1_timeline_proto_msgTypes[7].OneofWrappers = []any{}
+	file_timeline_v1_timeline_proto_msgTypes[2].OneofWrappers = []any{}
+	file_timeline_v1_timeline_proto_msgTypes[6].OneofWrappers = []any{}
 	file_timeline_v1_timeline_proto_msgTypes[9].OneofWrappers = []any{}
 	file_timeline_v1_timeline_proto_msgTypes[11].OneofWrappers = []any{}
 	file_timeline_v1_timeline_proto_msgTypes[13].OneofWrappers = []any{}
 	file_timeline_v1_timeline_proto_msgTypes[15].OneofWrappers = []any{}
-	file_timeline_v1_timeline_proto_msgTypes[16].OneofWrappers = []any{}
 	file_timeline_v1_timeline_proto_msgTypes[17].OneofWrappers = []any{}
 	file_timeline_v1_timeline_proto_msgTypes[18].OneofWrappers = []any{}
 	file_timeline_v1_timeline_proto_msgTypes[19].OneofWrappers = []any{}
 	file_timeline_v1_timeline_proto_msgTypes[20].OneofWrappers = []any{}
+	file_timeline_v1_timeline_proto_msgTypes[21].OneofWrappers = []any{}
+	file_timeline_v1_timeline_proto_msgTypes[22].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_timeline_v1_timeline_proto_rawDesc), len(file_timeline_v1_timeline_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

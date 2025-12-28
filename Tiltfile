@@ -77,7 +77,7 @@ k8s_resource('infra-minio',
     links=['http://spirit.localhost/minio-console'],
     port_forwards=9001)
 
-k8s_resource('infra-nix-cache',
-    labels=['infra'],
-    links=['http://spirit.localhost/nix-cache'],
-    port_forwards=5000)
+# k8s_resource('infra-nix-cache',
+#     labels=['infra'],
+#     links=['http://spirit.localhost/nix-cache'],
+#     port_forwards=5000)

@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetAnalysisRequest, GetAnalysisResponse, GetEmotionVectorsRequest, GetEmotionVectorsResponse, GetTimelineRequest, GetTimelineResponse, GetWordAggregatesRequest, GetWordAggregatesResponse, GetWordStatisticsRequest, GetWordStatisticsResponse } from "./timeline_pb.js";
+import { GetAnalysisRequest, GetAnalysisResponse, GetEmotionVectorsRequest, GetEmotionVectorsResponse, GetIntegratedTimelineRequest, GetIntegratedTimelineResponse, GetTimelineRequest, GetTimelineResponse, GetWordAggregatesRequest, GetWordAggregatesResponse, GetWordStatisticsRequest, GetWordStatisticsResponse } from "./timeline_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -67,6 +67,17 @@ export const TimelineService = {
       name: "GetAnalysis",
       I: GetAnalysisRequest,
       O: GetAnalysisResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Get integrated timeline data and analysis (run via TS Temporal)
+     *
+     * @generated from rpc timeline.v1.TimelineService.GetIntegratedTimeline
+     */
+    getIntegratedTimeline: {
+      name: "GetIntegratedTimeline",
+      I: GetIntegratedTimelineRequest,
+      O: GetIntegratedTimelineResponse,
       kind: MethodKind.Unary,
     },
   }

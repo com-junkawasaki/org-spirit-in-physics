@@ -10,6 +10,20 @@ export let page: Page;
 Before(async function () {
   browser = await chromium.launch({ headless: true });
   page = await browser.newPage();
+  
+  // Capture console logs
+  await page.addInitScript(() => {
+    (window as any)._consoleMsgs = [];
+    const push = (type: string, args: any[]) => {
+      (window as any)._consoleMsgs.push({ type, text: args.map(a => String(a)).join(' ') });
+    };
+    const originalLog = console.log;
+    console.log = (...args) => { push('log', args); originalLog(...args); };
+    const originalError = console.error;
+    console.error = (...args) => { push('error', args); originalError(...args); };
+    const originalWarn = console.warn;
+    console.warn = (...args) => { push('warn', args); originalWarn(...args); };
+  });
 });
 
 After(async function () {
