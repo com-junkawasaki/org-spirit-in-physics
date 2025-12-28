@@ -449,6 +449,7 @@
                 physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK, minSep, sepK }}
                 gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} showAnalysis={showAnalysis}
                 onHover={(info) => hoveredInfo = info}
+                pinnedItems={pinnedItems}
                 onClick={(info) => {
                   const exists = pinnedItems.find(p => 
                     (info.node && p.node?.label === info.node.label) || 

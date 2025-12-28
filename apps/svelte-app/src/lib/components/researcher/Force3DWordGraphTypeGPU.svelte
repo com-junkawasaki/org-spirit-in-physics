@@ -15,6 +15,7 @@
     showAnalysis?: boolean;
     onHover?: (info: { node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } } | null) => void;
     onClick?: (info: { node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } }) => void;
+    pinnedItems?: Array<{ node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } }>;
   }
 
   let {
@@ -29,7 +30,8 @@
     densityRegions = [],
     showAnalysis = false,
     onHover,
-    onClick
+    onClick,
+    pinnedItems = []
   }: Props = $props();
 
   let canvas: HTMLCanvasElement | undefined = $state();
@@ -305,6 +307,13 @@
         // Pre-calculate node RGBs for current frame
         const nodeRGBs = nodes.map((_, i) => getSpatialRGB(i, positions!));
 
+        // Pre-calculate pinned status for performance and safety
+        const pinnedNodeIds = new Set(pinnedItems.filter(p => p.node).map(p => p.node?.id));
+        const pinnedLinkKeys = new Set(pinnedItems.filter(p => p.link).map(p => {
+          const l = p.link!;
+          return `${l.source.id}-${l.target.id}`;
+        }));
+
         let newHoveredNodeIdx: number | null = null;
         let newHoveredLinkIdx: number | null = null;
 
@@ -343,6 +352,10 @@
           const isHovered = distToLine < 5;
           if (isHovered) newHoveredLinkIdx = li;
 
+          const linkKey = `${nodes[l.source].id}-${nodes[l.target].id}`;
+          const isPinned = pinnedLinkKeys.has(linkKey);
+          const isHighlighted = isHovered || isPinned;
+
           ctx.beginPath();
           ctx.moveTo(sp.x, sp.y);
           ctx.lineTo(tp.x, tp.y);
@@ -351,7 +364,7 @@
           const rgbS = nodeRGBs[l.source];
           const rgbT = nodeRGBs[l.target];
           
-          const alpha = isHovered ? 0.9 : (isAnchorLink ? 0.2 : 0.4);
+          const alpha = isHighlighted ? 0.9 : (isAnchorLink ? 0.2 : 0.4);
           if (rgbS && rgbT) {
             const r = (rgbS[0] + rgbT[0]) / 2;
             const g = (rgbS[1] + rgbT[1]) / 2;
@@ -361,11 +374,11 @@
             ctx.strokeStyle = l.color || (isAnchorLink ? 'rgba(100, 100, 100, 0.2)' : 'rgba(30, 64, 175, 0.4)');
           }
           
-          ctx.lineWidth = ((isAnchorLink ? l.weight * 2 : 1) * zoom) + (isHovered ? 3 : 0);
+          ctx.lineWidth = ((isAnchorLink ? l.weight * 2 : 1) * zoom) + (isHighlighted ? 3 : 0);
           ctx.stroke();
 
-          if (isHovered) {
-            ctx.strokeStyle = '#fff';
+          if (isHighlighted) {
+            ctx.strokeStyle = isPinned ? 'rgba(59, 130, 246, 0.5)' : '#fff';
             ctx.lineWidth = 1;
             ctx.stroke();
           }
@@ -381,6 +394,9 @@
           const isHovered = dist < radius + 5;
           if (isHovered) newHoveredNodeIdx = i;
 
+          const isPinned = pinnedNodeIds.has(n.id);
+          const isHighlighted = isHovered || isPinned;
+
           ctx.beginPath(); 
           ctx.arc(p.x, p.y, radius, 0, Math.PI*2);
           
@@ -388,18 +404,18 @@
             ctx.fillStyle = n.color || '#000';
             ctx.globalAlpha = 0.9;
             ctx.fill();
-            ctx.strokeStyle = isHovered ? '#ff0' : '#fff';
-            ctx.lineWidth = (isHovered ? 4 : 2) * zoom;
+            ctx.strokeStyle = isHighlighted ? (isPinned ? '#3b82f6' : '#ff0') : '#fff';
+            ctx.lineWidth = (isHighlighted ? 4 : 2) * zoom;
             ctx.stroke();
           } else {
             const [r, g, b] = nodeRGBs[i];
-            ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, 0.8)`;
-            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${isHighlighted ? 1.0 : 0.8})`;
+            ctx.globalAlpha = isHighlighted ? 1.0 : 0.8;
             ctx.fill();
             
-            if (isHovered) {
-              ctx.strokeStyle = '#fff';
-              ctx.lineWidth = 2 * zoom;
+            if (isHighlighted) {
+              ctx.strokeStyle = isPinned ? '#3b82f6' : '#fff';
+              ctx.lineWidth = (isPinned ? 3 : 2) * zoom;
               ctx.stroke();
             }
           }
@@ -407,21 +423,21 @@
           // ラベル
           ctx.globalAlpha = 1.0;
           const [r, g, b] = isAnchor ? getSpatialRGB(i, positions!) : nodeRGBs[i];
-          const textColor = isHovered ? '#fff' : `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+          const textColor = isHighlighted ? '#fff' : `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
           
-          ctx.font = `${isAnchor || isHovered ? 'bold ' : ''}${Math.round((isAnchor ? 14 : 10) * zoom)}px sans-serif`;
+          ctx.font = `${isAnchor || isHighlighted ? 'bold ' : ''}${Math.round((isAnchor ? 14 : 10) * zoom)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
           // 文字の輪郭 (Outline)
-          ctx.strokeStyle = background === 'transparent' ? 'rgba(255,255,255,0.8)' : background;
-          ctx.lineWidth = 3;
+          ctx.strokeStyle = isPinned ? 'rgba(59, 130, 246, 0.4)' : (background === 'transparent' ? 'rgba(255,255,255,0.8)' : background);
+          ctx.lineWidth = isHighlighted ? 4 : 3;
           ctx.strokeText(n.label, p.x, p.y + (isAnchor ? radius + 10 : 0));
 
           ctx.fillStyle = textColor;
-          if (isHovered) {
+          if (isHighlighted) {
             ctx.shadowColor = 'rgba(0,0,0,0.8)';
-            ctx.shadowBlur = 4;
+            ctx.shadowBlur = isPinned ? 6 : 4;
           }
           ctx.fillText(n.label, p.x, p.y + (isAnchor ? radius + 10 : 0));
           ctx.shadowBlur = 0;
