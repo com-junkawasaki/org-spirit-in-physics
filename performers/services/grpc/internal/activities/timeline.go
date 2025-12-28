@@ -57,8 +57,17 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 		var emotions []*timelinev1.EmotionData
 		if p.Emotions != nil {
 			if b, ok := p.Emotions.([]byte); ok {
-				if err := json.Unmarshal(b, &emotions); err != nil {
-					// Handle error
+				var allEmos []*timelinev1.EmotionData
+				if err := json.Unmarshal(b, &allEmos); err == nil {
+					// Be aggressive with filtering at the source to prevent payload limit issues (2MB)
+					// Stimulus words: threshold 0.05
+					// Background samples: threshold 0.2
+					isWordEvent := p.Word.Valid && p.Word.String != "" && p.Word.String != "Unknown"
+					for _, e := range allEmos {
+						if (isWordEvent && e.Score >= 0.05) || (!isWordEvent && e.Score >= 0.2) {
+							emotions = append(emotions, e)
+						}
+					}
 				}
 			}
 		}

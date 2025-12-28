@@ -174,39 +174,38 @@
         }
 
         data = points.map((item: any) => {
-          // Robust timestamp conversion: handle Protobuf object, ISO string, or number
-          let timestamp: number | null = null;
+          // Robust timestamp conversion: handle ISO string (from ConnectRPC) or Protobuf object
+          let timestamp: number = 0;
           if (item.time) {
             if (typeof item.time === 'string') {
               timestamp = new Date(item.time).getTime();
             } else if (item.time.seconds !== undefined) {
               timestamp = (Number(item.time.seconds) * 1000 + (item.time.nanos / 1000000));
-            } else if (typeof item.time === 'number') {
-              timestamp = item.time > 1e12 ? item.time : item.time * 1000;
             }
           }
 
-          if (timestamp === null || isNaN(timestamp)) {
-            // Fallback to a sensible default if time is missing
-            console.warn('Missing or invalid timestamp for item:', item);
+          if (!timestamp || isNaN(timestamp)) {
             return null;
           }
+
+          // Convert compact emotion Record to array for internal use
+          //item.emotions is now a Record<string, number>
+          const emotions = Object.entries(item.emotions || {}).map(([name, score]) => ({
+            name,
+            score: score as number,
+            fileType: '' 
+          }));
 
           const mapped = {
             timestamp,
             word: item.word || '',
-            // Reaction time is stored in seconds in DB, convert to ms for display
             reactionTime: (item.reactionTime ?? item.reaction_time ?? 0) * 1000,
             hasResponse: item.hasResponse ?? item.has_response ?? false,
-            emotions: (item.emotions || []).map((e: any) => ({
-              name: e.name || '',
-              score: e.score || 0,
-              fileType: e.fileType || ''
-            })),
-            physiological: item.physiological || [],
+            emotions,
+            physiological: item.physiological || [], // Array of numbers
             reactionValue: item.reactionValue ?? item.reaction_value ?? 0,
             eventType: item.eventType ?? item.event_type ?? '',
-            metadata: item.metadata || {}
+            metadata: {}
           };
           return mapped;
         }).filter((d: any) => d !== null);

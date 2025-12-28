@@ -190,6 +190,9 @@ export async function detectGapAreasActivity(
 
   const gridDensity: Map<string, number> = new Map();
 
+  // Helper to get Unix millis from Protobuf timestamp
+  const getMillis = (t: any) => (Number(t.seconds) * 1000 + (t.nanos / 1000000));
+
   for (const node of nodes) {
     if (!node.initial || node.fixed) continue;
 
@@ -348,7 +351,7 @@ export async function analyzeDensityActivity(
         density: cell.density,
         is_overcrowded: true,
         suggested_separation: radius * 1.2,
-        nodes: cell.nodes
+        nodes: [] // STRIPPED: Clear nodes array to save space
       });
     } else if (relativeDensity <= sparseThreshold) {
       sparse_regions.push({
@@ -358,7 +361,7 @@ export async function analyzeDensityActivity(
         node_count: cell.nodes.length,
         density: cell.density,
         is_overcrowded: false,
-        nodes: cell.nodes
+        nodes: [] // STRIPPED: Clear nodes array to save space
       });
     }
   }

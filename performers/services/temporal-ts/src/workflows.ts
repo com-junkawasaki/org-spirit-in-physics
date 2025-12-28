@@ -51,23 +51,50 @@ export async function timelineIntegratedWorkflow(
   const rawPoints: any[] = await (goActivities as any).FetchTimelineActivity(participantId, sessionId);
   
   // Normalize points to snake_case for consistency and Go unmarshaling
-  const points: TimelineDataPoint[] = rawPoints.map(p => ({
-    time: p.time,
-    participant_id: p.participantId ?? p.participant_id,
-    session_id: p.sessionId ?? p.session_id,
-    word: p.word ?? '',
-    reaction_time: p.reactionTime ?? p.reaction_time ?? 0,
-    has_response: p.hasResponse ?? p.has_response ?? false,
-    emotions: (p.emotions || []).map((e: any) => ({
-      name: e.name || '',
-      score: e.score || 0,
-      fileType: e.fileType || e.file_type || ''
-    })),
-    physiological: p.physiological || [],
-    reaction_value: p.reactionValue ?? p.reaction_value ?? 0,
-    event_type: p.eventType ?? p.event_type,
-    metadata: p.metadata
-  }));
+  const points: TimelineDataPoint[] = rawPoints.map(p => {
+    const word = p.word ?? '';
+    const isWordEvent = word && word !== '' && word !== 'Unknown';
+    
+    // Robust timestamp conversion to Protobuf format
+    let seconds = 0;
+    let nanos = 0;
+    if (p.time) {
+      if (typeof p.time === 'string') {
+        const d = new Date(p.time);
+        seconds = Math.floor(d.getTime() / 1000);
+        nanos = (d.getTime() % 1000) * 1000000;
+      } else if (p.time.seconds !== undefined) {
+        seconds = Number(p.time.seconds);
+        nanos = Number(p.time.nanos);
+      }
+    }
+
+    // Convert emotions to compact Record format
+    const emotions: Record<string, number> = {};
+    (p.emotions || []).forEach((e: any) => {
+      // Threshold based on event type
+      const threshold = isWordEvent ? 0.05 : 0.2;
+      if (e.score >= threshold) {
+        // Use lowercase names for consistency and compactness
+        const name = (e.name || '').toLowerCase();
+        emotions[name] = Math.max(emotions[name] || 0, e.score);
+      }
+    });
+
+    // Convert physiological to compact array (just values)
+    const physiological: number[] = (p.physiological || []).map((m: any) => m.value || 0);
+
+    return {
+      time: { seconds, nanos },
+      word: word,
+      reaction_time: p.reactionTime ?? p.reaction_time ?? 0,
+      has_response: p.hasResponse ?? p.has_response ?? false,
+      emotions,
+      physiological,
+      reaction_value: p.reactionValue ?? p.reaction_value ?? 0,
+      event_type: p.eventType ?? p.event_type
+    };
+  });
 
   // 2. Fetch other data needed for analysis
   const rawEmotionVectors = await (goActivities as any).FetchEmotionVectorsActivity(participantId, sessionId);

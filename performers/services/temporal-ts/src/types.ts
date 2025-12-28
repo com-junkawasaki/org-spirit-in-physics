@@ -27,17 +27,14 @@ export interface EmotionData {
 }
 
 export interface TimelineDataPoint {
-  time?: { seconds: number | string; nanos: number } | string;
-  participant_id: string;
-  session_id: string;
+  time: { seconds: number; nanos: number }; // Protobuf Timestamp format
   word: string;
   reaction_time: number;
   has_response: boolean;
-  emotions: EmotionData[];
-  physiological: any[];
+  emotions: Record<string, number>; // { emotionName: score }
+  physiological: number[]; // Array of values (compact)
   reaction_value: number;
   event_type?: string;
-  metadata?: any;
 }
 
 export interface GapArea {
