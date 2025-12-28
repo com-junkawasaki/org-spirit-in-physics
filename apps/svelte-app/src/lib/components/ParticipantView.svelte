@@ -14,11 +14,22 @@
     await kawasakiStore.loadStimulusWords();
   });
 
-  async function handleConsent(id: string, signature: string, agreements: any) {
-    console.log("Consent received:", { id, signature, agreements });
-    // TODO: 実際の API 連携が必要な場合はここで実装
-    kawasakiStore.startPreflight();
-    step = "assessment";
+  async function handleConsent(id: string, signature: string, agreements: any, demographics: any) {
+    console.log("Consent received:", { id, signature, agreements, demographics });
+    
+    try {
+      // 参加者情報の初期化（ストア）
+      kawasakiStore.initializeParticipant(id, demographics);
+      
+      // API 連携: 参加者作成
+      await kawasakiStore.createParticipantOnServer(signature, agreements);
+      
+      kawasakiStore.startPreflight();
+      step = "assessment";
+    } catch (error) {
+      console.error("Failed to create participant:", error);
+      // 必要に応じてエラー表示
+    }
   }
 
   function startParticipantFlow() {

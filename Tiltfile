@@ -1,13 +1,21 @@
 # Tiltfile for Spirit in Physics using Nix & Docker
 
-allow_k8s_contexts('orbstack')
+allow_k8s_contexts(['orbstack', 'gke_com-junkawasaki-sip_asia-northeast1-a_spirit-in-physics'])
+
+ctx = str(local('kubectl config current-context')).strip()
+runtime_file = 'timoni/runtime-gke.cue' if 'gke' in ctx else 'timoni/runtime-orbstack.cue'
 
 # 1. Generate YAML from Timoni and give it to Tilt
-k8s_yaml(local('timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue'))
+k8s_yaml(local('timoni bundle build -f timoni/bundle.cue -r ' + runtime_file))
+
+GRPC_IMAGE = 'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service'
+IMPORT_IMAGE = 'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service'
+SVELTE_IMAGE = 'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app'
+TEMPORAL_TS_IMAGE = 'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts'
 
 # 2. Go gRPC Service (Nix Cross-compilation)
 custom_build(
-    'spirit-grpc-service',
+    GRPC_IMAGE,
     '$(nix build .#grpc-image --no-link --print-out-paths) | docker load',
     deps=['./performers/services/grpc', './flake.nix'],
     tag='latest'
@@ -15,21 +23,21 @@ custom_build(
 
 # 3. Python Import Service & Worker (Docker - Nix Python cross-build is slow on Darwin)
 docker_build(
-    'spirit-import-service',
+    IMPORT_IMAGE,
     './performers/services/import',
     dockerfile='./performers/services/import/Dockerfile'
 )
 
 # 4. Temporal TypeScript Worker (Docker - Nix Node cross-build is slow on Darwin)
 docker_build(
-    'spirit-temporal-ts',
+    TEMPORAL_TS_IMAGE,
     './performers/services/temporal-ts',
     dockerfile='./performers/services/temporal-ts/Dockerfile'
 )
 
 # 5. Svelte App (Docker - Nix Node cross-build is flaky on Darwin)
 docker_build(
-    'spirit-svelte-app',
+    SVELTE_IMAGE,
     './apps/svelte-app',
     dockerfile='./apps/svelte-app/Dockerfile'
 )

@@ -42,52 +42,40 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.54.0",
+  "version": "1.55.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-    "updatedAt": "2025-12-28T22:30:00+09:00",
-    "merkleRoot": "GKE 公開完了。Custom Domain (sip.junkawasaki.com) + SSL (Let's Encrypt) の自動構成、および Clerk 連携を完遂。Spot インスタンス (e2-medium) によるコスト最適化構成で全サービスが HTTPS 稼働中。",
-    "story": {
-      "@id": "project:story",
-      "@type": "project:Story",
-      "protagonist": {
-        "@id": "project:protagonist",
-        "@type": "project:Protagonist",
-        "name": "河崎純真",
-        "epithet": "社会起業家",
-        "lifespan": "享年100歳",
-        "legacy": "人々が満たされた人生を送れる社会を築いた"
-      },
-      "narrative": [
-        {
-          "@id": "project:narrative/74",
-          "@type": "project:Narrative",
-          "act": "カスタムドメイン公開とセキュリティ強化",
-          "summary": "独自ドメイン sip.junkawasaki.com への移行と SSL 化を完了した。cert-manager の Gateway API サポートを有効化し、クラスター内部の DNS キャッシュ問題を hostAlias により解消することで、自動証明書更新サイクルを確立した。Clerk の本番用 API キーを Secret 管理に移行し、セキュアな認証基盤を構築した。"
-        },
-        {
-          "@id": "project:narrative/73",
-          "@type": "project:Narrative",
-          "act": "GKE デプロイの完遂とコスト最適化",
-          "summary": "GCP (GKE) 上に全てのマイクロサービスをデプロイした。Apple Silicon (ARM64) 環境からの AMD64 クロスビルド課題を解決し、Spot インスタンスと e2-medium マシンの採用により、目標を大幅に下回る月額数千円〜1万円程度での運用基盤を確立した。"
-        },
-        {
-          "@id": "project:narrative/72",
-          "@type": "project:Narrative",
-          "act": "GKE インフラ基盤の構築完了",
-          "summary": "GCP プロジェクト com-junkawasaki-sip において、GKE Standard クラスターの構築と Envoy Gateway の導入を完了した。これに随伴して Artifact Registry の作成、およびグローバル静的 IP アドレスの確保を行い、本番環境へのデプロイ準備を整えた。"
-        },
-        {
-          "@id": "project:narrative/71",
-          "@type": "project:Narrative",
-          "act": "GKE インフラ構築の自動化",
-          "summary": "Google Cloud (GKE) へのデプロイに向けて、プロジェクト com-junkawasaki-sip 用のセットアップスクリプトを作成した。Gateway API と Envoy Gateway の導入を前提とし、Artifact Registry や静的 IP の確保を含む標準的な構成を自動化した。"
-        },
-        {
-          "@id": "project:narrative/70",
+  "updatedAt": "2025-12-28T23:30:00+09:00",
+  "merkleRoot": "研究参加同意プロセスの高度化。CDISC標準に準拠した属性情報（年齢層、人種、年収）の収集機能を追加。また、ICD-10に基づく精神疾患既往歴のサジェスト入力機能を実装し、Paraglideによる多言語（日・英）対応を完遂した。",
+  "story": {
+    "@id": "project:story",
+    "@type": "project:Story",
+    "protagonist": {
+      "@id": "project:protagonist",
+      "@type": "project:Protagonist",
+      "name": "河崎純真",
+      "epithet": "社会起業家",
+      "lifespan": "享年100歳",
+      "legacy": "人々が満たされた人生を送れる社会を築いた"
+    },
+    "narrative": [
+      {
+        "@id": "project:narrative/75",
         "@type": "project:Narrative",
-        "act": "SvelteKit 配信基盤の Node.js 移行",
-        "summary": "SvelteKit の配信基盤を Python SPA サーバーから adapter-node による Node.js サーバーへ移行した。ssr: false を維持しつつ、SPA ルーティングの解決と環境変数の扱いを標準的な Node.js の仕組みに統合。これにより Kubernetes との親和性が向上し、構成が大幅にシンプルになった。"
+        "act": "同意プロセスと属性収集の標準化",
+        "summary": "研究参加同意フォームを刷新した。CDISC標準に基づく属性情報収集と、ICD-10準拠の疾患コードサジェスト機能を導入。Paraglide i18n統合により、グローバルな臨床研究基準（ICH-GCP）に適合するユーザー体験を構築し、バックエンド（gRPC/Protobuf）への永続化ロジックまでを統合した。"
+      },
+      {
+        "@id": "project:narrative/74",
+        "@type": "project:Narrative",
+        "act": "カスタムドメイン公開とセキュリティ強化",
+        "summary": "独自ドメイン sip.junkawasaki.com への移行と SSL 化を完了した。cert-manager の Gateway API サポートを有効化し、クラスター内部の DNS キャッシュ問題を hostAlias により解消することで、自動証明書更新サイクルを確立した。Clerk の本番用 API キーを Secret 管理に移行し、セキュアな認証基盤を構築した。"
+      },
+      {
+        "@id": "project:narrative/73",
+        "@type": "project:Narrative",
+        "act": "GKE デプロイの完遂とコスト最適化",
+        "summary": "GCP (GKE) 上に全てのマイクロサービスをデプロイした。Apple Silicon (ARM64) 環境からの AMD64 クロスビルド課題を解決し、Spot インスタンスと e2-medium マシンの採用により、目標を大幅に下回る月額数千円〜1万円程度での運用基盤を確立した。"
       }
     ]
   },
@@ -95,6 +83,10 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "CDISC準拠の属性情報収集（年齢層、性別、人種、年収）の実装",
+      "ICD-10に基づく精神疾患既往歴のサジェスト入力機能（おうしん病対応）",
+      "Paraglideによる同意フォームの完全多言語化（日本語・英語）",
+      "参加者作成API (createParticipant) の拡張とフロントエンド統合",
       "独自ドメイン sip.junkawasaki.com による HTTPS 公開の完遂",
       "cert-manager による Let's Encrypt 証明書の自動発行と Gateway API 連携",
       "Clerk API キー (Live) の Kubernetes Secret 統合とアプリへの反映",

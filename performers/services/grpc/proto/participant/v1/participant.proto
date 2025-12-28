@@ -48,6 +48,10 @@ message CreateParticipantRequest {
   google.protobuf.Struct agreements = 3;
   google.protobuf.Timestamp agreed_at = 4;
   optional bool is_public = 5;
+  optional string age_group = 6;
+  optional string ethnicity = 7;
+  optional string income_range = 8;
+  optional string mental_illness = 9;
 }
 
 message CreateParticipantResponse {
@@ -73,6 +77,10 @@ message Participant {
   optional int32 age = 2;
   optional string gender = 3;
   optional string handedness = 4;
+  optional string age_group = 8;
+  optional string ethnicity = 9;
+  optional string income_range = 10;
+  optional string mental_illness = 11;
   bool is_public = 5;
   google.protobuf.Timestamp created_at = 6;
   google.protobuf.Timestamp updated_at = 7;

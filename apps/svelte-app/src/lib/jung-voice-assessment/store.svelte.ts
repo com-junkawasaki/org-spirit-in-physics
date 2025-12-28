@@ -31,14 +31,50 @@ class KawasakiStore {
   events = $state<TestEvent[]>([]);
   sessionVideoUrl = $state<string | null>(null);
   participantId = $state<string | null>(null);
+  demographics = $state({
+    ageGroup: "",
+    gender: "",
+    ethnicity: "",
+    incomeRange: "",
+    mentalIllness: "",
+  });
 
   constructor() {
     // Initial load if needed
   }
 
-  initializeParticipant(id?: string) {
+  initializeParticipant(id?: string, demographics?: any) {
     this.participantId = id || crypto.randomUUID();
-    this.logEvent('participant_initialized', { participantId: this.participantId });
+    if (demographics) {
+      this.demographics = { ...this.demographics, ...demographics };
+    }
+    this.logEvent('participant_initialized', { 
+      participantId: this.participantId,
+      demographics: this.demographics 
+    });
+  }
+
+  async createParticipantOnServer(signature: string, agreements: any) {
+    if (!this.participantId) return;
+
+    try {
+      await participantClient.createParticipant({
+        id: this.participantId,
+        signature,
+        agreements: agreements as any, // protobuf Struct will handle this if correctly formatted
+        agreedAt: { seconds: BigInt(Math.floor(Date.now() / 1000)), nanos: 0 },
+        ageGroup: this.demographics.ageGroup,
+        ethnicity: this.demographics.ethnicity,
+        incomeRange: this.demographics.incomeRange,
+        mentalIllness: this.demographics.mentalIllness,
+        isPublic: true
+      });
+      this.logEvent('participant_created_on_server');
+    } catch (e) {
+      console.error("Failed to create participant on server:", e);
+      this.logEvent('participant_creation_failed', { error: String(e) });
+      throw e;
+    }
   }
 
   async loadStimulusWords() {
