@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"github.com/spirit-in-physics/services/grpc/internal/workflows"
 	"go.temporal.io/sdk/client"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type TimelineHandler struct {
@@ -354,17 +356,95 @@ func (h *TimelineHandler) GetIntegratedTimeline(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	var result struct {
-		Points   []*timelinev1.TimelinePoint `json:"points"`
-		Analysis *timelinev1.GetAnalysisResponse `json:"analysis"`
+	// Compact types for TS result unmarshaling
+	type compactEmotion struct {
+		N string  `json:"n"`
+		S float64 `json:"s"`
+		F string  `json:"f"`
 	}
-	err = run.Get(ctx, &result)
+	type compactPhysio struct {
+		V float64 `json:"v"`
+		M string  `json:"m"`
+	}
+	type compactPoint struct {
+		T struct {
+			S int64 `json:"s"`
+			N int   `json:"n"`
+		} `json:"t"`
+		W  string           `json:"w"`
+		RT float64          `json:"rt"`
+		HR bool             `json:"hr"`
+		E  []compactEmotion `json:"e"`
+		P  []compactPhysio  `json:"p"`
+		RV float64          `json:"rv"`
+		ET string           `json:"et"`
+	}
+
+	var workflowResult struct {
+		Points   []compactPoint  `json:"points"`
+		Analysis json.RawMessage `json:"analysis"`
+	}
+	err = run.Get(ctx, &workflowResult)
 	if err != nil {
+		fmt.Printf("ERROR: Workflow Get failed: %v\n", err)
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
+	// Decode Analysis separately if needed, or just return it
+	var analysis timelinev1.GetAnalysisResponse
+	if len(workflowResult.Analysis) > 0 {
+		if err := json.Unmarshal(workflowResult.Analysis, &analysis); err != nil {
+			fmt.Printf("ERROR: Analysis unmarshal failed: %v\n", err)
+			// Continue anyway, analysis is optional for timeline view
+		}
+	}
+
+	// Map compact points to Protobuf TimelinePoints
+	points := make([]*timelinev1.TimelinePoint, 0, len(workflowResult.Points))
+	for _, cp := range workflowResult.Points {
+		// Use local variables to avoid pointer issues in loop
+		w := cp.W
+		et := cp.ET
+		rt := cp.RT
+		rv := cp.RV
+		hr := cp.HR
+
+		emotions := make([]*timelinev1.EmotionData, 0, len(cp.E))
+		for _, ce := range cp.E {
+			emotions = append(emotions, &timelinev1.EmotionData{
+				Name:     ce.N,
+				Score:    ce.S,
+				FileType: ce.F,
+			})
+		}
+
+		physio := make([]*timelinev1.PhysiologicalData, 0, len(cp.P))
+		for _, cpp := range cp.P {
+			v := cpp.V
+			m := cpp.M
+			physio = append(physio, &timelinev1.PhysiologicalData{
+				Value:           &v,
+				MeasurementType: &m,
+			})
+		}
+
+		points = append(points, &timelinev1.TimelinePoint{
+			Time: &timestamppb.Timestamp{
+				Seconds: cp.T.S,
+				Nanos:   int32(cp.T.N),
+			},
+			Word:          &w,
+			ReactionTime:  &rt,
+			ReactionValue: &rv,
+			EventType:     &et,
+			HasResponse:   hr,
+			Emotions:      emotions,
+			Physiological: physio,
+		})
+	}
+
 	return connect.NewResponse(&timelinev1.GetIntegratedTimelineResponse{
-		Points:   result.Points,
-		Analysis: result.Analysis,
+		Points:   points,
+		Analysis: &analysis,
 	}), nil
 }

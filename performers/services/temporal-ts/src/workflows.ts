@@ -69,30 +69,33 @@ export async function timelineIntegratedWorkflow(
       }
     }
 
-    // Convert emotions to compact Record format
-    const emotions: Record<string, number> = {};
+    // Convert to highly compact format to stay under 2MB limit
+    const emotions: any[] = [];
     (p.emotions || []).forEach((e: any) => {
-      // Threshold based on event type
       const threshold = isWordEvent ? 0.05 : 0.2;
       if (e.score >= threshold) {
-        // Use lowercase names for consistency and compactness
-        const name = (e.name || '').toLowerCase();
-        emotions[name] = Math.max(emotions[name] || 0, e.score);
+        emotions.push({
+          n: (e.name || '').toLowerCase(),
+          s: e.score,
+          f: e.fileType || e.file_type || ''
+        });
       }
     });
 
-    // Convert physiological to compact array (just values)
-    const physiological: number[] = (p.physiological || []).map((m: any) => m.value || 0);
+    const physiological: any[] = (p.physiological || []).map((m: any) => ({
+      v: m.value || 0,
+      m: m.measurementType || m.measurement_type || ''
+    }));
 
     return {
-      time: { seconds, nanos },
-      word: word,
-      reaction_time: p.reactionTime ?? p.reaction_time ?? 0,
-      has_response: p.hasResponse ?? p.has_response ?? false,
-      emotions,
-      physiological,
-      reaction_value: p.reactionValue ?? p.reaction_value ?? 0,
-      event_type: p.eventType ?? p.event_type
+      t: { s: seconds, n: nanos },
+      w: word,
+      rt: p.reactionTime ?? p.reaction_time ?? 0,
+      hr: p.hasResponse ?? p.has_response ?? false,
+      e: emotions,
+      p: physiological,
+      rv: p.reactionValue ?? p.reaction_value ?? 0,
+      et: p.eventType ?? p.event_type
     };
   });
 
@@ -120,9 +123,9 @@ export async function timelineIntegratedWorkflow(
   }
   
   // 3. Prepare for analysis (Only include points with stimulus words)
-  const wordPoints = points.filter(p => p.word && p.word !== 'Unknown');
+  const wordPoints = points.filter(p => p.w && p.w !== 'Unknown');
   const nodes: WordNode[] = wordPoints.map((p, i) => {
-    const vec = emotionVectors[p.word] || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const vec = emotionVectors[p.w] || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     // [joy, sadness, anger, fear, surprise, disgust, calm, focus, excitement, confusion]
     
     // Crude projection of 10D emotion space to 3D
@@ -132,8 +135,8 @@ export async function timelineIntegratedWorkflow(
 
     return {
       id: `node-${i}`,
-      label: p.word || '',
-      scale: 1.0 + (p.reaction_value || 0) * 5.0,
+      label: p.w || '',
+      scale: 1.0 + (p.rv || 0) * 5.0,
       initial: [x * 100, y * 100, z * 100],
       nodeType: 'word'
     };

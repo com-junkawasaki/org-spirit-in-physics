@@ -256,8 +256,8 @@
       const line = d3.line<TimelineDataPoint>()
         .x(d => xScale(toDate(d.timestamp)))
         .y(d => {
-          // physiological is now a compact number array (first element is Ch3)
-          const ch3 = (d.physiological && d.physiological.length > 0) ? (d.physiological[0] as number) : 0;
+          const phys = d.physiological as any[];
+          const ch3 = phys?.find(p => p.measurementType === 'Ch3' || p.measurement_type === 'Ch3')?.value ?? 0;
           return physScale(ch3);
         })
         .curve(d3.curveMonotoneX);
@@ -275,7 +275,8 @@
           .x(d => xScale(toDate(d.timestamp)))
           .y0(sectionHeight * 3 - 5)
           .y1(d => {
-            const ch3 = (d.physiological && d.physiological.length > 0) ? (d.physiological[0] as number) : 0;
+            const phys = d.physiological as any[];
+            const ch3 = phys?.find(p => p.measurementType === 'Ch3' || p.measurement_type === 'Ch3')?.value ?? 0;
             return physScale(ch3);
           })
           .curve(d3.curveMonotoneX)

@@ -133,6 +133,8 @@
       "Hume 感情データの詳細分類表示 (10種類) と TypeScript 側での正規化マッピングの実装",
       "Temporal ワークフローの結果サイズ制限 (2MB) 超過による Signal Interrupted エラーの最終解決。背景サンプルの感情フィルタリング強化 (0.2 threshold) と冗長フィールドの削除、分析結果の軽量化（density_regions からの nodes 削除）を実装",
       "TypeScript ワークフローの戻り値型を Protobuf (google.protobuf.Timestamp) と互換性のある形式へ修正。Go 側でのアンマーシャルエラーを解消",
+      "JSON ペイロードの極限までの圧縮（キー名の短縮：emotions→e, word→w 等）と Go ハンドラ側でのデコード処理の実装による 2MB 制限の完全回避",
+      "Go ハンドラにおける解析結果（Analysis）の動的デコード処理の実装による、Protobuf 型不一致エラーの解消",
       "Playwright + Cucumber.js による E2E BDD テストの完全自動化。ナビゲーションおよび個別分析ページの正常動作確認済み"
     ]
   }

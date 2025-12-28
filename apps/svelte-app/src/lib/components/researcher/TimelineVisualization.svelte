@@ -174,9 +174,11 @@
         }
 
         data = points.map((item: any) => {
-          // Robust timestamp conversion: handle ISO string (from ConnectRPC) or Protobuf object
+          // Compact format from TS worker: { t: { s, n }, w, rt, hr, e, p, rv, et }
           let timestamp: number = 0;
-          if (item.time) {
+          if (item.t) {
+            timestamp = (Number(item.t.s) * 1000 + (item.t.n / 1000000));
+          } else if (item.time) { // Fallback for standard Protobuf format
             if (typeof item.time === 'string') {
               timestamp = new Date(item.time).getTime();
             } else if (item.time.seconds !== undefined) {
@@ -188,23 +190,28 @@
             return null;
           }
 
-          // Convert compact emotion Record to array for internal use
-          //item.emotions is now a Record<string, number>
-          const emotions = Object.entries(item.emotions || {}).map(([name, score]) => ({
-            name,
-            score: score as number,
-            fileType: '' 
+          // Compact emotions: Array<{ n, s, f }>
+          const emotions = (item.e || []).map((e: any) => ({
+            name: e.n,
+            score: e.s,
+            fileType: e.f
+          }));
+
+          // Compact physiological: Array<{ v, m }>
+          const physiological = (item.p || []).map((p: any) => ({
+            value: p.v,
+            measurementType: p.m
           }));
 
           const mapped = {
             timestamp,
-            word: item.word || '',
-            reactionTime: (item.reactionTime ?? item.reaction_time ?? 0) * 1000,
-            hasResponse: item.hasResponse ?? item.has_response ?? false,
+            word: item.w || item.word || '',
+            reactionTime: (item.rt ?? item.reactionTime ?? item.reaction_time ?? 0) * 1000,
+            hasResponse: item.hr ?? item.hasResponse ?? item.has_response ?? false,
             emotions,
-            physiological: item.physiological || [], // Array of numbers
-            reactionValue: item.reactionValue ?? item.reaction_value ?? 0,
-            eventType: item.eventType ?? item.event_type ?? '',
+            physiological,
+            reactionValue: item.rv ?? item.reactionValue ?? item.reaction_value ?? 0,
+            eventType: item.et ?? item.eventType ?? item.event_type ?? '',
             metadata: {}
           };
           return mapped;
