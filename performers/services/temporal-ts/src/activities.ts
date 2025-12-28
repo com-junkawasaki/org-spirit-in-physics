@@ -163,7 +163,7 @@ export async function detectGapAreasActivity(
     minGapRadius = 50,
     maxGapRadius = 200,
     minNearbyNodes = 3,
-    gridResolution = 50,
+    gridResolution = 20,
     densityThreshold = 0.1
   } = options;
 
@@ -202,7 +202,7 @@ export async function detectGapAreasActivity(
     gridDensity.set(key, (gridDensity.get(key) || 0) + 1);
   }
 
-  const gapAreas: GapArea[] = [];
+  const gap_areas: GapArea[] = [];
   const cellVolume = gridSizeX * gridSizeY * gridSizeZ;
   const avgDensity = positions.length / (rangeX * rangeY * rangeZ + 1e-6);
 
@@ -261,7 +261,7 @@ export async function detectGapAreasActivity(
     }
   }
 
-  return gapAreas.sort((a, b) => b.confidence - a.confidence).slice(0, 10);
+  return gap_areas.sort((a, b) => b.confidence - a.confidence).slice(0, 10);
 }
 
 /**

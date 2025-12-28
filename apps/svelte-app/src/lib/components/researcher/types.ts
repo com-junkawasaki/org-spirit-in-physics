@@ -232,51 +232,73 @@ export interface GapArea {
   id: string
   center: [number, number, number]
   radius: number
-  nearbyNodes: Array<{
+  nearbyNodes?: Array<{
     nodeId: string
     label: string
     distance: number
     commonFeatures: string[]
   }>
-  suggestedItems: string[]
+  nearby_nodes?: Array<{
+    node_id: string
+    label: string
+    distance: number
+    common_features: string[]
+  }>
+  suggestedItems?: string[]
+  suggested_items?: string[]
   confidence: number
   commonEmotionProfile?: Record<string, number>
+  common_emotion_profile?: Record<string, number>
 }
 
 export interface CommonFeatures {
-  emotionProfile: Record<string, number>
-  semanticTags: string[]
-  frequencyRange: [number, number]
-  reactionTimeRange: [number, number]
-  reactionValueRange: [number, number]
+  emotionProfile?: Record<string, number>
+  emotion_profile?: Record<string, number>
+  semanticTags?: string[]
+  semantic_tags?: string[]
+  frequencyRange?: [number, number]
+  frequency_range?: [number, number]
+  reactionTimeRange?: [number, number]
+  reaction_time_range?: [number, number]
+  reactionValueRange?: [number, number]
+  reaction_value_range?: [number, number]
 }
 
 export interface DensityRegion {
   id: string
   center: [number, number, number]
   radius: number
-  nodeCount: number
+  nodeCount?: number
+  node_count?: number
   density: number
-  isOvercrowded: boolean
+  isOvercrowded?: boolean
+  is_overcrowded?: boolean
   suggestedSeparation?: number
+  suggested_separation?: number
   nodes: WordNode[]
 }
 
 export interface DuplicateCandidate {
   id: string
-  nodeIds: string[]
+  nodeIds?: string[]
+  node_ids?: string[]
   labels: string[]
   similarity: number
-  commonFeatures: CommonFeatures
-  suggestedMerge: boolean
+  commonFeatures?: CommonFeatures
+  common_features?: CommonFeatures
+  suggestedMerge?: boolean
+  suggested_merge?: boolean
   distance: number
 }
 
 export interface AnalysisResults {
-  gapAreas: GapArea[]
-  densityRegions: DensityRegion[]
+  gapAreas?: GapArea[]
+  gap_areas?: GapArea[]
+  densityRegions?: DensityRegion[]
+  density_regions?: DensityRegion[]
   duplicates: DuplicateCandidate[]
-  overallDensity: number
+  overallDensity?: number
+  overall_density?: number
 }
 
 // Merkle DAG: timeline.types -> definitions_complete

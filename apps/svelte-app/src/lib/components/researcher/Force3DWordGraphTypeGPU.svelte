@@ -265,6 +265,37 @@
       if (ctx) {
         ctx.fillStyle = background; ctx.fillRect(0, 0, width, height);
         const zoom = 600 / camera.distance;
+
+        // Links
+        links.forEach(l => {
+          const s = positions!.slice(l.source * 3, l.source * 3 + 3);
+          const t = positions!.slice(l.target * 3, l.target * 3 + 3);
+          
+          if (!s || !t || s.length < 3 || t.length < 3) return;
+
+          const project = (p: Float32Array) => {
+            const x = p[0], y = p[1], z = p[2];
+            const cosY = Math.cos(camera.rotationY), sinY = Math.sin(camera.rotationY);
+            const rx = x * cosY - z * sinY, rz = x * sinY + z * cosY;
+            const cosX = Math.cos(camera.rotationX), sinX = Math.sin(camera.rotationX);
+            const cy = y * cosX - rz * sinX, cz = y * sinX + rz * cosX;
+            return { x: width/2 + rx * zoom, y: height/2 + cy * zoom, z: cz };
+          };
+
+          const sp = project(s as any);
+          const tp = project(t as any);
+
+          ctx.beginPath();
+          ctx.moveTo(sp.x, sp.y);
+          ctx.lineTo(tp.x, tp.y);
+          
+          const isAnchorLink = l.mode === 'tension';
+          ctx.strokeStyle = l.color || (isAnchorLink ? 'rgba(100, 100, 100, 0.2)' : 'rgba(30, 64, 175, 0.4)');
+          ctx.lineWidth = (isAnchorLink ? l.weight * 2 : 1) * zoom;
+          ctx.stroke();
+        });
+
+        // Nodes
         nodes.forEach((n, i) => {
           const x = positions![i*3], y = positions![i*3+1], z = positions![i*3+2];
           // Simple projection
@@ -273,9 +304,34 @@
           const cosX = Math.cos(camera.rotationX), sinX = Math.sin(camera.rotationX);
           const cy = y * cosX - rz * sinX, cz = y * sinX + rz * cosX;
           const sx = width/2 + rx * zoom, sy = height/2 + cy * zoom;
-          ctx.beginPath(); ctx.arc(sx, sy, Math.max(1, n.scale * zoom), 0, Math.PI*2);
-          ctx.fillStyle = mixEmotionColor(n, 0.8); ctx.fill();
-          ctx.fillStyle = '#000'; ctx.fillText(n.label, sx, sy);
+
+          const isAnchor = n.nodeType === 'anchor';
+          const radius = Math.max(1, (isAnchor ? n.scale * 1.5 : n.scale) * zoom);
+
+          ctx.beginPath(); 
+          ctx.arc(sx, sy, radius, 0, Math.PI*2);
+          
+          if (isAnchor) {
+            // アンカーは外枠付きで描画
+            ctx.fillStyle = n.color || '#000';
+            ctx.globalAlpha = 0.9;
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2 * zoom;
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = mixEmotionColor(n, 0.8);
+            ctx.globalAlpha = 0.8;
+            ctx.fill();
+          }
+          
+          // ラベル
+          ctx.globalAlpha = 1.0;
+          ctx.fillStyle = isAnchor ? (n.color || '#000') : '#fff';
+          ctx.font = `${isAnchor ? 'bold ' : ''}${Math.round((isAnchor ? 14 : 10) * zoom)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(n.label, sx, sy + (isAnchor ? radius + 10 : 0));
         });
       }
 

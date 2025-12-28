@@ -79,6 +79,42 @@
   let lambda = $state(1.0);
   let eta = $state(1.0);
 
+  // Emotion Anchors
+  const anchor2d: Array<{ name: string; x: number; y: number; color: string }> = [
+    { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
+    { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
+    { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
+    { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
+    { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
+    { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
+    { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
+    { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
+    { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
+    { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
+  ];
+
+  const anchorToKey: Record<string, string> = {
+    Joy: 'joy',
+    Sadness: 'sadness',
+    Anger: 'anger',
+    Fear: 'fear',
+    Disgust: 'disgust',
+    Calmness: 'calm',
+    Interest: 'focus',
+    Surprise: 'surprise',
+    Confusion: 'confusion',
+    Determination: 'excitement',
+  };
+
+  const toSphere = (x01: number, y01: number, radius: number): [number, number, number] => {
+    const u = (x01 - 0.5) * Math.PI * 1.6; // 横回転
+    const v = (y01 - 0.5) * Math.PI; // 縦
+    const cx = Math.cos(v) * Math.cos(u);
+    const cy = Math.cos(v) * Math.sin(u);
+    const cz = Math.sin(v);
+    return [radius * cx, radius * cy, radius * cz];
+  };
+
   let activeTab: 'timeline' | 'force3d' | 'words' | 'distance' = $state('timeline');
 
   $effect(() => {
@@ -117,10 +153,8 @@
         participantId, 
         sessionId: sessionId || undefined 
       });
-      console.log('DEBUG: integrated response', response);
       
       if (response && response.points && response.points.length > 0) {
-        console.log('DEBUG: first 3 points', response.points.slice(0, 3));
         data = response.points.map((item: any) => {
           // Robust timestamp conversion: handle Protobuf object, ISO string, or number
           let timestamp: number | null = null;
@@ -158,8 +192,6 @@
           };
           return mapped;
         }).filter((d: any) => d !== null);
-        console.log('DEBUG: mapped data length', data.length);
-        console.log('DEBUG: first mapped point', data[0]);
 
         if (response.analysis) {
           analysisResults = {
@@ -209,17 +241,81 @@
 
   let graphData = $derived.by(() => {
     if (data.length === 0) return { nodes: [], links: [] };
-    const nodes: WordNode[] = data.map((d, i) => ({
-      id: `node-${i}`,
-      label: d.word,
-      scale: 1 + (d.reactionValue || 0) * 5,
-      color: '#1e40af'
-    }));
+
+    // 1. Emotion Anchors
+    const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
+      const [x, y, z] = toSphere(a.x, a.y, shellRadius);
+      return {
+        id: `anchor-${idx}`,
+        label: a.name,
+        scale: 6,
+        fixed: true,
+        nodeType: 'anchor',
+        initial: [x, y, z],
+        color: a.color
+      };
+    });
+
+    // 2. Word Nodes
+    const wordNodes: WordNode[] = data.map((d, i) => {
+      // Find emotion vector for this word
+      const vec = emotionVectors.find(v => v.word === d.word);
+      const emotion: Record<string, number> = {};
+      if (vec) {
+        if (vec.joySum) emotion.joy = Number(vec.joySum);
+        if (vec.sadnessSum) emotion.sadness = Number(vec.sadnessSum);
+        if (vec.angerSum) emotion.anger = Number(vec.angerSum);
+        if (vec.fearSum) emotion.fear = Number(vec.fearSum);
+        if (vec.surpriseSum) emotion.surprise = Number(vec.surpriseSum);
+        if (vec.disgustSum) emotion.disgust = Number(vec.disgustSum);
+        if (vec.calmSum) emotion.calm = Number(vec.calmSum);
+        if (vec.focusSum) emotion.focus = Number(vec.focusSum);
+        if (vec.excitementSum) emotion.excitement = Number(vec.excitementSum);
+        if (vec.confusionSum) emotion.confusion = Number(vec.confusionSum);
+      }
+
+      return {
+        id: `node-${i}`,
+        label: d.word,
+        scale: 1 + (d.reactionValue || 0) * 5,
+        color: '#1e40af',
+        emotion: Object.keys(emotion).length > 0 ? emotion : undefined
+      };
+    });
+
+    const allNodes = [...anchorNodes, ...wordNodes];
     const links: WordLink[] = [];
-    for (let i = 0; i < nodes.length - 1; i++) {
-      links.push({ source: i, target: i + 1, weight: 0.5 });
+
+    // 3. Sequential links between word nodes
+    for (let i = 0; i < wordNodes.length - 1; i++) {
+      links.push({ 
+        source: anchorNodes.length + i, 
+        target: anchorNodes.length + i + 1, 
+        weight: 0.5 
+      });
     }
-    return { nodes, links };
+
+    // 4. Emotion anchor links
+    wordNodes.forEach((node, i) => {
+      if (node.emotion) {
+        anchorNodes.forEach((anchor, ai) => {
+          const key = anchorToKey[anchor.label];
+          if (key && (node.emotion as any)[key]) {
+            const score = (node.emotion as any)[key];
+            if (score > 0.1) { // Threshold for link visibility
+              links.push({
+                source: anchorNodes.length + i,
+                target: ai,
+                weight: score * 0.8,
+                mode: 'tension'
+              });
+            }
+          }
+        });
+      }
+    });
+
+    return { nodes: allNodes, links };
   });
 
   let showAnalysis = $state(false);
@@ -255,31 +351,9 @@
       fetchAnalysis();
     }
   });
-  let showDebug = $state(false);
 </script>
 
 <div class="timeline-visualization-container flex flex-col space-y-8">
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <button 
-        class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-blue-500 transition-colors"
-        onclick={() => showDebug = !showDebug}
-      >
-        {showDebug ? 'Hide Debug' : 'Show Debug'}
-      </button>
-    </div>
-  </div>
-
-  {#if showDebug}
-    <div class="p-4 bg-black text-green-400 font-mono text-[10px] rounded-xl overflow-auto max-h-64 border border-green-900/30">
-      <p>Data points: {data.length}</p>
-      <p>Time Range: {JSON.stringify(timeRange)}</p>
-      <p>First Point: {JSON.stringify(data[0], null, 2)}</p>
-      <hr class="my-2 border-green-900/20" />
-      <p>Raw analysis gapAreas: {analysisResults.gapAreas?.length || 0}</p>
-    </div>
-  {/if}
-
   <!-- Header / Tabs Section -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm p-2 rounded-2xl border border-gray-200 dark:border-gray-700">
     <div class="flex p-1 bg-gray-200/50 dark:bg-gray-900/50 rounded-xl">
@@ -358,24 +432,6 @@
       {:else if activeTab === 'force3d'}
         <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
           <div class="xl:col-span-3 space-y-6">
-            <Force3DControls 
-              {forcePresets} {forcePresetId} {springK} {repulsionK} {restLength} {minSep} {sepK} {damping} {shellRadius} {shellK} {radialOutK} {alpha} {gamma} {lambda} {eta}
-              onPresetChange={applyForcePreset} 
-              onSpringKChange={(v) => springK = v} 
-              onRepulsionKChange={(v) => repulsionK = v} 
-              onRestLengthChange={(v) => restLength = v}
-              onMinSepChange={(v) => minSep = v} 
-              onSepKChange={(v) => sepK = v} 
-              onShellRadiusChange={(v) => shellRadius = v} 
-              onShellKChange={(v) => shellK = v}
-              onRadialOutKChange={(v) => radialOutK = v} 
-              onDampingChange={(v) => damping = v} 
-              onAlphaChange={(v) => alpha = v} 
-              onGammaChange={(v) => gamma = v}
-              onLambdaChange={(v) => lambda = v} 
-              onEtaChange={(v) => eta = v}
-            />
-            
             <div class="bg-black rounded-[48px] overflow-hidden relative shadow-2xl border-[12px] border-gray-100 dark:border-gray-800" style="height: 700px;">
               <Force3DWordGraphTypeGPU 
                 nodes={graphData.nodes} links={graphData.links} width={width} height={700} 
@@ -403,6 +459,24 @@
                 </div>
               </div>
             </div>
+
+            <Force3DControls 
+              {forcePresets} {forcePresetId} {springK} {repulsionK} {restLength} {minSep} {sepK} {damping} {shellRadius} {shellK} {radialOutK} {alpha} {gamma} {lambda} {eta}
+              onPresetChange={applyForcePreset} 
+              onSpringKChange={(v) => springK = v} 
+              onRepulsionKChange={(v) => repulsionK = v} 
+              onRestLengthChange={(v) => restLength = v}
+              onMinSepChange={(v) => minSep = v} 
+              onSepKChange={(v) => sepK = v} 
+              onShellRadiusChange={(v) => shellRadius = v} 
+              onShellKChange={(v) => shellK = v}
+              onRadialOutKChange={(v) => radialOutK = v} 
+              onDampingChange={(v) => damping = v} 
+              onAlphaChange={(v) => alpha = v} 
+              onGammaChange={(v) => gamma = v}
+              onLambdaChange={(v) => lambda = v} 
+              onEtaChange={(v) => eta = v}
+            />
           </div>
           
           <div class="xl:col-span-1">

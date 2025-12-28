@@ -59,6 +59,7 @@ Then('I should see the 3D Force Graph', async function () {
 Then('I should see the {string} panel with analysis results', async function (panelTitle: string) {
   const heading = page.locator('h3', { hasText: panelTitle });
   await expect(heading).toBeVisible();
-  await expect(page.locator('.analysis-item')).toBeVisible();
+  // Check that at least one analysis item is visible
+  await expect(page.locator('.analysis-item').first()).toBeVisible();
 });
 
