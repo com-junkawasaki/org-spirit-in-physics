@@ -45,23 +45,34 @@
   "version": "1.54.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-28T15:15:00+09:00",
-  "merkleRoot": "SvelteKit を adapter-node に移行し、SPA モード（ssr=false）で運用。Python SPA サーバを廃止し、Node.js による標準的な配信構成へ刷新。",
-  
-  "story": {
-    "@id": "project:story",
-    "@type": "project:Story",
-    "protagonist": {
-      "@id": "project:protagonist",
-      "@type": "project:Protagonist",
-      "name": "河崎純真",
-      "epithet": "社会起業家",
-      "lifespan": "享年100歳",
-      "legacy": "人々が満たされた人生を送れる社会を築いた"
-    },
-    "narrative": [
-      {
-        "@id": "project:narrative/70",
+    "updatedAt": "2025-12-28T17:15:00+09:00",
+    "merkleRoot": "GKE クラスター (Standard) および Envoy Gateway のセットアップ完了。Artifact Registry, 静的 IP (34.160.140.248) の確保を含め、インフラ基盤を構築。",
+    "story": {
+      "@id": "project:story",
+      "@type": "project:Story",
+      "protagonist": {
+        "@id": "project:protagonist",
+        "@type": "project:Protagonist",
+        "name": "河崎純真",
+        "epithet": "社会起業家",
+        "lifespan": "享年100歳",
+        "legacy": "人々が満たされた人生を送れる社会を築いた"
+      },
+      "narrative": [
+        {
+          "@id": "project:narrative/72",
+          "@type": "project:Narrative",
+          "act": "GKE インフラ基盤の構築完了",
+          "summary": "GCP プロジェクト com-junkawasaki-sip において、GKE Standard クラスターの構築と Envoy Gateway の導入を完了した。これに随伴して Artifact Registry の作成、およびグローバル静的 IP アドレスの確保を行い、本番環境へのデプロイ準備を整えた。"
+        },
+        {
+          "@id": "project:narrative/71",
+          "@type": "project:Narrative",
+          "act": "GKE インフラ構築の自動化",
+          "summary": "Google Cloud (GKE) へのデプロイに向けて、プロジェクト com-junkawasaki-sip 用のセットアップスクリプトを作成した。Gateway API と Envoy Gateway の導入を前提とし、Artifact Registry や静的 IP の確保を含む標準的な構成を自動化した。"
+        },
+        {
+          "@id": "project:narrative/70",
         "@type": "project:Narrative",
         "act": "SvelteKit 配信基盤の Node.js 移行",
         "summary": "SvelteKit の配信基盤を Python SPA サーバーから adapter-node による Node.js サーバーへ移行した。ssr: false を維持しつつ、SPA ルーティングの解決と環境変数の扱いを標準的な Node.js の仕組みに統合。これにより Kubernetes との親和性が向上し、構成が大幅にシンプルになった。"
@@ -72,6 +83,10 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "GKE クラスター (Standard) の構築完了。Gateway API (Envoy Gateway) 有効化済み",
+      "GCP Artifact Registry (spirit-in-physics) の作成",
+      "GCP グローバル静的 IP (sip-static-ip: 34.160.140.248) の確保",
+      "GKE セットアップスクリプト (scripts/setup-gke.sh) の作成と実行完了",
       "SvelteKit パスベースルーティングの実装 (/paper, /researcher, /participant, /demo)",
       "Python Temporal SDK を使用したインポーターの再構築",
       "ImportParticipantsWorkflow, ImportSessionsWorkflow の実装",
