@@ -134,7 +134,7 @@
     const svg = d3.select(svgElement);
     svg.selectAll('*').remove();
 
-    const margin = { top: 30, right: 40, bottom: 40, left: 80 };
+    const margin = { top: 40, right: 60, bottom: 40, left: 200 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -182,27 +182,29 @@
           .attr('class', 'stroke-gray-100 dark:stroke-gray-800');
       }
 
-      // Label
-      g.append('text')
+      // Label with Color Indicator
+      const labelGroup = g.append('g')
+        .attr('transform', `translate(-30, ${y0 + sectionHeight / 2})`);
+
+      labelGroup.append('text')
         .attr('x', -15)
-        .attr('y', y0 + sectionHeight / 2)
+        .attr('y', 0)
         .attr('text-anchor', 'end')
         .attr('dominant-baseline', 'middle')
-        .attr('class', 'fill-gray-400 text-[10px] font-bold uppercase tracking-wider')
+        .attr('class', 'fill-gray-600 dark:fill-gray-300 text-[11px] font-black uppercase tracking-widest')
         .text(s.label);
+
+      labelGroup.append('circle')
+        .attr('cx', 0)
+        .attr('cy', 0)
+        .attr('r', 5)
+        .attr('fill', s.color)
+        .attr('class', 'filter drop-shadow-sm');
     });
 
     // Reaction Value Line
     if (filters.reactionValues) {
-      const rvExtent = d3.extent(data, d => Number(d.reactionValue) || 0) as [number, number];
-      // Ensure we have a reasonable domain even if all values are 0
-      if (rvExtent[0] === rvExtent[1]) {
-        if (rvExtent[0] === 0) {
-          rvExtent[1] = 1.0;
-        } else {
-          rvExtent[1] += Math.abs(rvExtent[0]) * 0.1 || 0.1;
-        }
-      }
+      const rvExtent = [0, d3.max(data, d => Number(d.reactionValue) || 0) || 1] as [number, number];
       const rvScale = d3.scaleLinear().domain(rvExtent).range([sectionHeight - 10, 10]);
 
       const line = d3.line<TimelineDataPoint>()
@@ -217,9 +219,9 @@
         .style('stroke-width', 2.5)
         .style('stroke-linecap', 'round');
 
-      // Points for RV
+      // Points for RV (Only show for stimulus words to avoid clutter)
       g.selectAll('.rv-dot')
-        .data(filteredData)
+        .data(filteredData.filter(d => d.word && d.word !== 'Unknown'))
         .enter()
         .append('circle')
         .attr('cx', d => xScale(toDate(d.timestamp)))
@@ -231,15 +233,7 @@
 
     // Reaction Time (Points)
     if (filters.reactionTime) {
-      const rtExtent = d3.extent(data, d => Number(d.reactionTime) || 0) as [number, number];
-      // Ensure we have a reasonable domain even if all values are the same
-      if (rtExtent[0] === rtExtent[1]) {
-        if (rtExtent[0] === 0) {
-          rtExtent[1] = 1000; // Default to 1s if all are 0
-        } else {
-          rtExtent[1] += Math.abs(rtExtent[0]) * 0.1 || 100;
-        }
-      }
+      const rtExtent = [0, d3.max(data, d => Number(d.reactionTime) || 0) || 5000] as [number, number];
       const rtScale = d3.scaleLinear().domain(rtExtent).range([sectionHeight * 2 - 10, sectionHeight + 10]);
 
       g.selectAll('.rt-dot')
@@ -254,20 +248,38 @@
 
     // Physiological
     if (filters.physiological) {
-      const physScale = d3.scaleLinear().domain([0, 100]).range([sectionHeight * 3 - 10, sectionHeight * 2 + 10]);
+      // Scale for Ch3 (arousal proxy)
+      const physScale = d3.scaleLinear().domain([0, 3]).range([sectionHeight * 3 - 10, sectionHeight * 2 + 10]);
       
-      // Draw simulated phys line for now if real data is missing
       const line = d3.line<TimelineDataPoint>()
         .x(d => xScale(toDate(d.timestamp)))
-        .y(d => physScale(50 + Math.sin(d.timestamp / 1000) * 20))
-        .curve(d3.curveBasis);
+        .y(d => {
+          const phys = d.physiological as any[];
+          const ch3 = phys?.find(p => p.measurementType === 'Ch3' || p.measurement_type === 'Ch3')?.value ?? 0;
+          return physScale(ch3);
+        })
+        .curve(d3.curveMonotoneX);
 
       g.append('path')
         .datum(filteredData)
         .attr('d', line)
-        .attr('class', 'fill-none stroke-emerald-500/50')
-        .style('stroke-width', 2)
-        .style('stroke-dasharray', '4,4');
+        .attr('class', 'fill-none stroke-emerald-500')
+        .style('stroke-width', 2);
+        
+      // Add background for physiological lane
+      g.append('path')
+        .datum(filteredData)
+        .attr('d', d3.area<TimelineDataPoint>()
+          .x(d => xScale(toDate(d.timestamp)))
+          .y0(sectionHeight * 3 - 5)
+          .y1(d => {
+            const phys = d.physiological as any[];
+            const ch3 = phys?.find(p => p.measurementType === 'Ch3' || p.measurement_type === 'Ch3')?.value ?? 0;
+            return physScale(ch3);
+          })
+          .curve(d3.curveMonotoneX)
+        )
+        .attr('class', 'fill-emerald-500/10 stroke-none');
     }
 
     // Emotions (Modality lanes)
@@ -285,24 +297,26 @@
         .text(lane);
 
       filteredData.forEach(d => {
-        const laneEmos = d.emotions.filter(e => e.fileType === lane);
+        const laneEmos = d.emotions.filter(e => (e.fileType || (e as any).file_type) === lane);
         if (laneEmos.length > 0) {
           const maxEmo = laneEmos.sort((a, b) => b.score - a.score)[0];
-          g.append('rect')
-            .attr('x', xScale(toDate(d.timestamp)) - 2)
-            .attr('y', y0)
-            .attr('width', 4)
-            .attr('height', emoLaneHeight - 2)
-            .attr('rx', 1)
-            .attr('class', 'fill-violet-500')
-            .style('opacity', maxEmo.score);
+          if (maxEmo && maxEmo.score > 0.01) {
+            g.append('rect')
+              .attr('x', xScale(toDate(d.timestamp)) - 1)
+              .attr('y', y0)
+              .attr('width', 2)
+              .attr('height', emoLaneHeight - 2)
+              .attr('rx', 0.5)
+              .attr('class', 'fill-violet-500')
+              .style('opacity', Math.max(0.2, maxEmo.score));
+          }
         }
       });
     });
 
     // Final X axis
     const xAxis = d3.axisBottom(xScale)
-      .ticks(10)
+      .ticks(innerWidth > 800 ? 10 : 5)
       .tickFormat(d3.timeFormat('%H:%M:%S') as any)
       .tickSize(-innerHeight)
       .tickPadding(15);

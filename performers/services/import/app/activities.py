@@ -1,5 +1,7 @@
 import json
 import logging
+import csv
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from temporalio import activity
@@ -236,6 +238,106 @@ class ImportActivities:
                     "message": result.message,
                     "timeline_points_count": result.timeline_points_count
                 }
+
+    @activity.defn
+    async def process_physiological_data(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        participant_id = input["participant_id"]
+        session_id = input["session_id"]
+        participant_path_str = input["participant_path"]
+        participant_path = Path(participant_path_str)
+        
+        # Find physiological CSV file
+        # Pattern: YYYY-MM-DD(*)-*.CSV
+        csv_files = list(participant_path.glob("*.CSV"))
+        if not csv_files:
+            logger.info(f"No physiological CSV found for participant {participant_id}")
+            return {"status": "skipped", "message": "No CSV file found"}
+        
+        # For now, take the first one (assuming one per participant/session)
+        csv_path = csv_files[0]
+        logger.info(f"Processing physiological data from {csv_path}")
+        
+        pool = await get_db_pool()
+        inserted_count = 0
+        
+        try:
+            with open(csv_path, mode='r', encoding='utf-8-sig') as f:
+                lines = f.readlines()
+            
+            # Parse header metadata
+            metadata = {}
+            data_start_idx = 0
+            for i, line in enumerate(lines):
+                if not line.strip(): continue
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) >= 2:
+                    metadata[parts[0]] = parts[1]
+                
+                if "Time_Sec" in line:
+                    data_start_idx = i + 1
+                    break
+            
+            base_date_str = metadata.get("Date")
+            begin_time_str = metadata.get("Begin")
+            
+            if not base_date_str or not begin_time_str:
+                return {"status": "error", "message": "Missing Date or Begin metadata in CSV"}
+            
+            # Combine Date and Begin into a datetime object
+            # Format: Date=2025-07-31, Begin=15:3:49
+            try:
+                # Handle cases like 15:3:49 (one digit for min/sec)
+                h, m, s = map(int, begin_time_str.split(':'))
+                base_dt = datetime.strptime(base_date_str, "%Y-%m-%d")
+                base_dt = base_dt.replace(hour=h, minute=m, second=s, tzinfo=timezone.utc)
+            except Exception as e:
+                return {"status": "error", "message": f"Failed to parse Date/Begin: {e}"}
+            
+            # Parse data rows
+            async with pool.acquire() as conn:
+                async with conn.transaction():
+                    # Clear existing data for this session
+                    await conn.execute(
+                        "DELETE FROM physiological_data WHERE session_id = $1::uuid",
+                        session_id
+                    )
+                    
+                    for line in lines[data_start_idx:]:
+                        if not line.strip(): continue
+                        parts = [p.strip() for p in line.split(',')]
+                        if len(parts) < 9: continue
+                        
+                        try:
+                            time_sec = float(parts[0])
+                            channels = [float(p) for p in parts[1:9]]
+                            
+                            row_time = base_dt + timedelta(seconds=time_sec)
+                            
+                            await conn.execute(
+                                """
+                                INSERT INTO physiological_data (
+                                    time, participant_id, session_id,
+                                    ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8
+                                )
+                                VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11)
+                                ON CONFLICT (time, participant_id, session_id) DO NOTHING
+                                """,
+                                row_time, participant_id, session_id,
+                                *channels
+                            )
+                            inserted_count += 1
+                        except ValueError:
+                            continue
+            
+            return {
+                "status": "success",
+                "message": f"Imported {inserted_count} physiological samples",
+                "samples_count": inserted_count
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing physiological data: {e}")
+            return {"status": "error", "message": str(e)}
 
     @activity.defn
     async def list_participant_directories(self, dataset_path_str: str) -> List[Dict[str, str]]:

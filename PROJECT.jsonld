@@ -42,10 +42,10 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.48.0",
+  "version": "1.49.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-28T10:00:00+09:00",
+  "updatedAt": "2025-12-28T11:00:00+09:00",
   "merkleRoot": "SvelteKit を adapter-node に移行し、SPA モード（ssr=false）で運用。Python SPA サーバを廃止し、Node.js による標準的な配信構成へ刷新。",
   
   "story": {
@@ -124,7 +124,11 @@
       "タイムライン生成時の Hume AI 感情データのアライメント修正。recording_started イベントを基準とした相対時間計算への変更",
       "TS Temporal 分析ワークフローの改善。ダミーの連番座標を廃止し、10次元感情ベクトルから3D空間への射影ロジックを実装",
       "Python インポートワークフローへのタイムライン生成アクティビティ (generate_timeline) の統合",
-      "全セッションのタイムラインデータ再生成の完了 (curl -X POST http://spirit.localhost/import/timeline)"
+      "全セッションのタイムラインデータ再生成の完了 (curl -X POST http://spirit.localhost/import/timeline)",
+      "タイムライン可視化の X 軸スケーリング異常の修正。不要な emotion_sample データの削除と、フロントエンドでのセッション自動フィルタリングの実装",
+      "高密度マルチモーダルデータ統合の実装。1Hz サンプリングによるタイムライン生成、生体データ (生理指標 CSV) のインポート機能、および drift 補正ロジックの導入",
+      "生体データ (Ch3 Arousal proxy) を加味した reaction_value 計算ロジックの改善。感情データと生理反応の統合的な可視化を実現",
+      "Svelte タイムラインチャートの高密度データ対応。生理指標レーンへの実データマッピングと、刺激語イベントの視覚的強調の実装"
     ]
   }
 }

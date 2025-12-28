@@ -158,7 +158,8 @@ message EmotionData {
 message PhysiologicalData {
   optional google.protobuf.Timestamp timestamp = 1;
   optional double value = 2;
-  optional google.protobuf.Struct metadata = 3;
+  optional string measurement_type = 3;
+  optional google.protobuf.Struct metadata = 4;
 }
 
 message WordAggregate {

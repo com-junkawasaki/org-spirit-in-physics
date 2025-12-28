@@ -92,8 +92,9 @@ export async function timelineIntegratedWorkflow(
     });
   }
   
-  // 3. Prepare for analysis
-  const nodes: WordNode[] = points.map((p, i) => {
+  // 3. Prepare for analysis (Only include points with stimulus words)
+  const wordPoints = points.filter(p => p.word && p.word !== 'Unknown');
+  const nodes: WordNode[] = wordPoints.map((p, i) => {
     const vec = emotionVectors[p.word] || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     // [joy, sadness, anger, fear, surprise, disgust, calm, focus, excitement, confusion]
     

@@ -199,6 +199,7 @@ LEFT JOIN physiological_measurements pm ON
     pm.timeline_point_participant_id = tp.participant_id AND
     pm.timeline_point_session_id = tp.session_id
 WHERE tp.participant_id = $1
+    AND tp.word IS NOT NULL AND tp.word != ''
     AND ($2::uuid IS NULL OR tp.session_id = $2)
     AND ($3::timestamptz IS NULL OR tp.time >= $3)
     AND ($4::timestamptz IS NULL OR tp.time <= $4)

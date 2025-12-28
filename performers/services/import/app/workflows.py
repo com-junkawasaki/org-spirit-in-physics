@@ -57,7 +57,19 @@ class ImportSessionsWorkflow:
                 start_to_close_timeout=timedelta(seconds=60),
             )
             
-            # 2. Automatically generate timeline points if session import was successful
+            # 2. Process physiological data if session import was successful
+            if result.get("status") == "success":
+                try:
+                    physio_result = await workflow.execute_activity(
+                        activities.process_physiological_data,
+                        result | {"participant_path": p_info["participant_path"]},
+                        start_to_close_timeout=timedelta(seconds=120),
+                    )
+                    result["physiological"] = physio_result
+                except Exception as e:
+                    result["physiological"] = {"status": "error", "message": str(e)}
+
+            # 3. Automatically generate timeline points if session import was successful
             if result.get("status") == "success":
                 try:
                     timeline_result = await workflow.execute_activity(

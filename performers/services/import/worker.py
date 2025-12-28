@@ -36,7 +36,8 @@ async def main():
             activities.list_participant_directories, 
             activities.process_participant,
             activities.process_session,
-            activities.generate_timeline
+            activities.generate_timeline,
+            activities.process_physiological_data
         ],
     )
     

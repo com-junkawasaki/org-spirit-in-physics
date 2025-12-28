@@ -155,7 +155,25 @@
       });
       
       if (response && response.points && response.points.length > 0) {
-        data = response.points.map((item: any) => {
+        let points = response.points;
+        
+        // If no sessionId was provided, filter to only show the most recent session
+        // that has word data to avoid massive time gaps
+        if (!sessionId) {
+          const sessionsWithWords = [...new Set(points.filter((p: any) => p.word).map((p: any) => p.sessionId))];
+          if (sessionsWithWords.length > 1) {
+            // Find the session with the most recent timestamp
+            const latestSessionId = sessionsWithWords.sort((a, b) => {
+              const lastA = Math.max(...points.filter((p: any) => p.sessionId === a).map((p: any) => new Date(p.time).getTime()));
+              const lastB = Math.max(...points.filter((p: any) => p.sessionId === b).map((p: any) => new Date(p.time).getTime()));
+              return lastB - lastA;
+            })[0];
+            points = points.filter((p: any) => p.sessionId === latestSessionId);
+            console.log(`Auto-selected latest session: ${latestSessionId}`);
+          }
+        }
+
+        data = points.map((item: any) => {
           // Robust timestamp conversion: handle Protobuf object, ISO string, or number
           let timestamp: number | null = null;
           if (item.time) {
@@ -256,8 +274,10 @@
       };
     });
 
-    // 2. Word Nodes
-    const wordNodes: WordNode[] = data.map((d, i) => {
+    // 2. Word Nodes (Only include stimulus words for 3D graph)
+    const wordNodes: WordNode[] = data
+      .filter(d => d.word && d.word !== 'Unknown')
+      .map((d, i) => {
       // Find emotion vector for this word
       const vec = emotionVectors.find(v => v.word === d.word);
       const emotion: Record<string, number> = {};

@@ -80,8 +80,10 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 		physData := make([]*timelinev1.PhysiologicalData, 0, len(physItems))
 		for _, item := range physItems {
 			val := item.Value
+			mType := item.MeasurementType
 			physData = append(physData, &timelinev1.PhysiologicalData{
-				Value: &val,
+				Value:           &val,
+				MeasurementType: &mType,
 			})
 		}
 

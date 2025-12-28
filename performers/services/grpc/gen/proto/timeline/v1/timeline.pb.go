@@ -1268,12 +1268,13 @@ func (x *EmotionData) GetColor() string {
 }
 
 type PhysiologicalData struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
-	Value         *float64               `protobuf:"fixed64,2,opt,name=value,proto3,oneof" json:"value,omitempty"`
-	Metadata      *structpb.Struct       `protobuf:"bytes,3,opt,name=metadata,proto3,oneof" json:"metadata,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Timestamp       *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
+	Value           *float64               `protobuf:"fixed64,2,opt,name=value,proto3,oneof" json:"value,omitempty"`
+	MeasurementType *string                `protobuf:"bytes,3,opt,name=measurement_type,json=measurementType,proto3,oneof" json:"measurement_type,omitempty"`
+	Metadata        *structpb.Struct       `protobuf:"bytes,4,opt,name=metadata,proto3,oneof" json:"metadata,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *PhysiologicalData) Reset() {
@@ -1318,6 +1319,13 @@ func (x *PhysiologicalData) GetValue() float64 {
 		return *x.Value
 	}
 	return 0
+}
+
+func (x *PhysiologicalData) GetMeasurementType() string {
+	if x != nil && x.MeasurementType != nil {
+		return *x.MeasurementType
+	}
+	return ""
 }
 
 func (x *PhysiologicalData) GetMetadata() *structpb.Struct {
@@ -1933,14 +1941,16 @@ const file_timeline_v1_timeline_proto_rawDesc = "" +
 	"\x05score\x18\x02 \x01(\x01R\x05score\x12\x1b\n" +
 	"\tfile_type\x18\x03 \x01(\tR\bfileType\x12\x19\n" +
 	"\x05color\x18\x04 \x01(\tH\x00R\x05color\x88\x01\x01B\b\n" +
-	"\x06_color\"\xcc\x01\n" +
+	"\x06_color\"\x91\x02\n" +
 	"\x11PhysiologicalData\x12=\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\ttimestamp\x88\x01\x01\x12\x19\n" +
-	"\x05value\x18\x02 \x01(\x01H\x01R\x05value\x88\x01\x01\x128\n" +
-	"\bmetadata\x18\x03 \x01(\v2\x17.google.protobuf.StructH\x02R\bmetadata\x88\x01\x01B\f\n" +
+	"\x05value\x18\x02 \x01(\x01H\x01R\x05value\x88\x01\x01\x12.\n" +
+	"\x10measurement_type\x18\x03 \x01(\tH\x02R\x0fmeasurementType\x88\x01\x01\x128\n" +
+	"\bmetadata\x18\x04 \x01(\v2\x17.google.protobuf.StructH\x03R\bmetadata\x88\x01\x01B\f\n" +
 	"\n" +
 	"_timestampB\b\n" +
-	"\x06_valueB\v\n" +
+	"\x06_valueB\x13\n" +
+	"\x11_measurement_typeB\v\n" +
 	"\t_metadata\"\xf0\x05\n" +
 	"\rWordAggregate\x12%\n" +
 	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x12\x1d\n" +

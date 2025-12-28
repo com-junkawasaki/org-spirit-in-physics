@@ -1034,7 +1034,12 @@ export class PhysiologicalData extends Message<PhysiologicalData> {
   value?: number;
 
   /**
-   * @generated from field: optional google.protobuf.Struct metadata = 3;
+   * @generated from field: optional string measurement_type = 3;
+   */
+  measurementType?: string;
+
+  /**
+   * @generated from field: optional google.protobuf.Struct metadata = 4;
    */
   metadata?: Struct;
 
@@ -1048,7 +1053,8 @@ export class PhysiologicalData extends Message<PhysiologicalData> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "timestamp", kind: "message", T: Timestamp, opt: true },
     { no: 2, name: "value", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, opt: true },
-    { no: 3, name: "metadata", kind: "message", T: Struct, opt: true },
+    { no: 3, name: "measurement_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "metadata", kind: "message", T: Struct, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PhysiologicalData {
