@@ -327,6 +327,9 @@
   });
 
   let showAnalysis = $state(false);
+  let hoveredInfo = $state<{ node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } } | null>(null);
+  let pinnedItems = $state<Array<{ node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } }>>([]);
+
   let analysisResults: AnalysisResults = $state({
     gapAreas: [],
     densityRegions: [],
@@ -445,6 +448,16 @@
                 nodes={graphData.nodes} links={graphData.links} width={width} height={700} 
                 physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK, minSep, sepK }}
                 gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} showAnalysis={showAnalysis}
+                onHover={(info) => hoveredInfo = info}
+                onClick={(info) => {
+                  const exists = pinnedItems.find(p => 
+                    (info.node && p.node?.label === info.node.label) || 
+                    (info.link && p.link?.source.label === info.link.source.label && p.link?.target.label === info.link.target.label)
+                  );
+                  if (!exists) {
+                    pinnedItems = [info, ...pinnedItems];
+                  }
+                }}
               />
               
               <div class="absolute top-8 right-8 flex flex-col gap-4">
@@ -494,13 +507,147 @@
                 <span class="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-black rounded-full uppercase tracking-widest">AI Computed</span>
               </div>
               
-              <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                <StructureAnalysisPanel 
-                  gapAreas={analysisResults.gapAreas} 
-                  densityRegions={analysisResults.densityRegions} 
-                  duplicates={analysisResults.duplicates} 
-                  overallDensity={analysisResults.overallDensity}
-                />
+              <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8">
+                <!-- Pinned Items -->
+                {#each pinnedItems as item, idx}
+                  <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl p-6 border border-blue-100 dark:border-blue-900/30 animate-in fade-in slide-in-from-top-4 duration-300 relative group/pinned">
+                    <button 
+                      class="absolute top-4 right-4 text-gray-400 hover:text-red-500 opacity-0 group-hover/pinned:opacity-100 transition-opacity"
+                      onclick={() => pinnedItems = pinnedItems.filter((_, i) => i !== idx)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+
+                    {#if item.node}
+                      <div class="flex items-center justify-between mb-4">
+                        <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Pinned Neuron</span>
+                        <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tight {item.node.nodeType === 'anchor' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}">
+                          {item.node.nodeType || 'word'}
+                        </span>
+                      </div>
+                      <div class="text-2xl font-black text-gray-900 dark:text-white tracking-tighter mb-4">
+                        {item.node.label}
+                      </div>
+                      <!-- detail section similar to hovered but smaller -->
+                      {#if item.node.nodeType !== 'anchor'}
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                          <div class="bg-white/50 dark:bg-gray-800/50 p-2 rounded-xl border border-blue-50/50">
+                            <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Scale</span>
+                            <span class="text-md font-black text-gray-900 dark:text-white">{item.node.scale.toFixed(1)}</span>
+                          </div>
+                        </div>
+                      {/if}
+                    {:else if item.link}
+                      <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-4">Pinned Synapse</span>
+                      <div class="flex items-center justify-between gap-2 mb-4">
+                        <div class="flex-1 text-center bg-white/50 dark:bg-gray-800/50 p-2 rounded-xl border border-blue-50/50">
+                          <span class="text-[10px] font-black text-gray-900 dark:text-white truncate block">{item.link.source.label}</span>
+                        </div>
+                        <div class="flex-1 text-center bg-white/50 dark:bg-gray-800/50 p-2 rounded-xl border border-blue-50/50">
+                          <span class="text-[10px] font-black text-gray-900 dark:text-white truncate block">{item.link.target.label}</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center justify-between mb-2">
+                        <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Weight</span>
+                        <span class="text-[10px] font-black text-blue-500">{(item.link.weight * 100).toFixed(1)}%</span>
+                      </div>
+                    {/if}
+                  </div>
+                {/each}
+
+                <!-- Hovered Detail -->
+                {#if hoveredInfo?.node}
+                  <div class="bg-gray-50 dark:bg-black/40 rounded-3xl p-6 border border-gray-100 dark:border-white/5 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Entity</span>
+                      <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tight {hoveredInfo.node.nodeType === 'anchor' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}">
+                        {hoveredInfo.node.nodeType || 'word'}
+                      </span>
+                    </div>
+                    <div class="text-2xl font-black text-gray-900 dark:text-white tracking-tighter mb-4">
+                      {hoveredInfo.node.label}
+                    </div>
+
+                    {#if hoveredInfo.node.nodeType !== 'anchor'}
+                      <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-2xl border border-gray-100 dark:border-gray-700">
+                          <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Scale</span>
+                          <span class="text-lg font-black text-gray-900 dark:text-white">{hoveredInfo.node.scale.toFixed(1)}</span>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-2xl border border-gray-100 dark:border-gray-700">
+                          <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Emotion Sum</span>
+                          <span class="text-lg font-black text-gray-900 dark:text-white">
+                            {Object.values(hoveredInfo.node.emotion || {}).reduce((a, b) => a + (b || 0), 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {#if hoveredInfo.node.emotion}
+                        <div class="space-y-2">
+                          <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Emotional Vectors</span>
+                          <div class="grid grid-cols-1 gap-1.5">
+                            {#each Object.entries(hoveredInfo.node.emotion).filter(([_, v]) => (v || 0) > 0.05).sort((a, b) => (b[1] || 0) - (a[1] || 0)) as [emo, val]}
+                              <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-gray-500 uppercase">{emo}</span>
+                                <div class="flex items-center gap-2">
+                                  <div class="w-16 h-1 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500 rounded-full" style="width: {(val || 0) * 100}%"></div>
+                                  </div>
+                                  <span class="text-[10px] font-black text-gray-900 dark:text-white w-8 text-right">{(val || 0).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            {/each}
+                          </div>
+                        </div>
+                      {/if}
+                    {/if}
+                  </div>
+                {:else if hoveredInfo?.link}
+                  <div class="bg-gray-50 dark:bg-black/40 rounded-3xl p-6 border border-gray-100 dark:border-white/5 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-4">Synaptic Connection</span>
+                    <div class="flex items-center justify-between gap-2 mb-6">
+                      <div class="flex-1 text-center bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <span class="text-[10px] font-black text-gray-900 dark:text-white truncate block">{hoveredInfo.link.source.label}</span>
+                      </div>
+                      <div class="flex-shrink-0 text-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                      </div>
+                      <div class="flex-1 text-center bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <span class="text-[10px] font-black text-gray-900 dark:text-white truncate block">{hoveredInfo.link.target.label}</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Connection Weight</span>
+                      <span class="text-[10px] font-black text-blue-500">{(hoveredInfo.link.weight * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div class="h-full bg-blue-500 rounded-full" style="width: {hoveredInfo.link.weight * 100}%"></div>
+                    </div>
+                  </div>
+                {:else}
+                  <div class="bg-gray-50/50 dark:bg-white/5 rounded-3xl p-8 border border-dashed border-gray-200 dark:border-white/10 text-center space-y-4">
+                    <div class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center mx-auto shadow-sm">
+                      <div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></div>
+                    </div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">
+                      Interact with neurons<br/>to analyze geometry
+                    </p>
+                  </div>
+                {/if}
+
+                <div class="pt-6 border-t border-gray-100 dark:border-gray-800">
+                  <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Structural Analysis</h4>
+                  <StructureAnalysisPanel 
+                    gapAreas={analysisResults.gapAreas} 
+                    densityRegions={analysisResults.densityRegions} 
+                    duplicates={analysisResults.duplicates} 
+                    overallDensity={analysisResults.overallDensity}
+                  />
+                </div>
               </div>
             </div>
           </div>

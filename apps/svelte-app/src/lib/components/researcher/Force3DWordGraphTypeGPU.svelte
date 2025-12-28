@@ -13,6 +13,8 @@
     gapAreas?: GapArea[];
     densityRegions?: DensityRegion[];
     showAnalysis?: boolean;
+    onHover?: (info: { node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } } | null) => void;
+    onClick?: (info: { node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } }) => void;
   }
 
   let {
@@ -25,7 +27,9 @@
     physics,
     gapAreas = [],
     densityRegions = [],
-    showAnalysis = false
+    showAnalysis = false,
+    onHover,
+    onClick
   }: Props = $props();
 
   let canvas: HTMLCanvasElement | undefined = $state();
@@ -53,6 +57,9 @@
 
   let isDragging = $state(false);
   let lastMouse = { x: 0, y: 0 };
+  let currentMouse = $state({ x: 0, y: 0 });
+  let hoveredNodeIdx = $state<number | null>(null);
+  let hoveredLinkIdx = $state<number | null>(null);
 
   const physicsParams = $derived({
     springK: physics?.springK ?? 2.0,
@@ -298,87 +305,143 @@
         // Pre-calculate node RGBs for current frame
         const nodeRGBs = nodes.map((_, i) => getSpatialRGB(i, positions!));
 
-        // Links
-        links.forEach(l => {
-          const s = positions!.slice(l.source * 3, l.source * 3 + 3);
-          const t = positions!.slice(l.target * 3, l.target * 3 + 3);
-          
-          if (!s || !t || s.length < 3 || t.length < 3) return;
+        let newHoveredNodeIdx: number | null = null;
+        let newHoveredLinkIdx: number | null = null;
 
-          const project = (p: Float32Array) => {
-            const x = p[0], y = p[1], z = p[2];
-            const cosY = Math.cos(camera.rotationY), sinY = Math.sin(camera.rotationY);
-            const rx = x * cosY - z * sinY, rz = x * sinY + z * cosY;
-            const cosX = Math.cos(camera.rotationX), sinX = Math.sin(camera.rotationX);
-            const cy = y * cosX - rz * sinX, cz = y * sinX + rz * cosX;
-            return { x: width/2 + rx * zoom, y: height/2 + cy * zoom, z: cz };
-          };
+        // Projection utility
+        const project = (p: {x: number, y: number, z: number}) => {
+          const cosY = Math.cos(camera.rotationY), sinY = Math.sin(camera.rotationY);
+          const rx = p.x * cosY - p.z * sinY, rz = p.x * sinY + p.z * cosY;
+          const cosX = Math.cos(camera.rotationX), sinX = Math.sin(camera.rotationX);
+          const cy = p.y * cosX - rz * sinX, rz_ = p.y * sinX + rz * cosX;
+          return { x: width/2 + rx * zoom, y: height/2 + cy * zoom, z: rz_ };
+        };
 
-          const sp = project(s as any);
-          const tp = project(t as any);
+        const projectedNodes = nodes.map((_, i) => project({
+          x: positions![i*3], y: positions![i*3+1], z: positions![i*3+2]
+        }));
+
+        // Links hit testing and drawing
+        links.forEach((l, li) => {
+          const sp = projectedNodes[l.source];
+          const tp = projectedNodes[l.target];
+          if (!sp || !tp) return;
+
+          // Hit test for line
+          const dx = tp.x - sp.x;
+          const dy = tp.y - sp.y;
+          const l2 = dx * dx + dy * dy;
+          let distToLine = Infinity;
+          if (l2 === 0) {
+            distToLine = Math.hypot(currentMouse.x - sp.x, currentMouse.y - sp.y);
+          } else {
+            let t = ((currentMouse.x - sp.x) * dx + (currentMouse.y - sp.y) * dy) / l2;
+            t = Math.max(0, Math.min(1, t));
+            distToLine = Math.hypot(currentMouse.x - (sp.x + t * dx), currentMouse.y - (sp.y + t * dy));
+          }
+
+          const isHovered = distToLine < 5;
+          if (isHovered) newHoveredLinkIdx = li;
 
           ctx.beginPath();
           ctx.moveTo(sp.x, sp.y);
           ctx.lineTo(tp.x, tp.y);
           
           const isAnchorLink = l.mode === 'tension';
-          
-          // 頂点同士の色の合成（平均）
           const rgbS = nodeRGBs[l.source];
           const rgbT = nodeRGBs[l.target];
+          
+          const alpha = isHovered ? 0.9 : (isAnchorLink ? 0.2 : 0.4);
           if (rgbS && rgbT) {
             const r = (rgbS[0] + rgbT[0]) / 2;
             const g = (rgbS[1] + rgbT[1]) / 2;
             const b = (rgbS[2] + rgbT[2]) / 2;
-            ctx.strokeStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${isAnchorLink ? 0.2 : 0.4})`;
+            ctx.strokeStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
           } else {
             ctx.strokeStyle = l.color || (isAnchorLink ? 'rgba(100, 100, 100, 0.2)' : 'rgba(30, 64, 175, 0.4)');
           }
           
-          ctx.lineWidth = (isAnchorLink ? l.weight * 2 : 1) * zoom;
+          ctx.lineWidth = ((isAnchorLink ? l.weight * 2 : 1) * zoom) + (isHovered ? 3 : 0);
           ctx.stroke();
+
+          if (isHovered) {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
         });
 
-        // Nodes
-        nodes.forEach((n, i) => {
-          const x = positions![i*3], y = positions![i*3+1], z = positions![i*3+2];
-          // Simple projection
-          const cosY = Math.cos(camera.rotationY), sinY = Math.sin(camera.rotationY);
-          const rx = x * cosY - z * sinY, rz = x * sinY + z * cosY;
-          const cosX = Math.cos(camera.rotationX), sinX = Math.sin(camera.rotationX);
-          const cy = y * cosX - rz * sinX, cz = y * sinX + rz * cosX;
-          const sx = width/2 + rx * zoom, sy = height/2 + cy * zoom;
-
+        // Nodes hit testing and drawing
+        projectedNodes.forEach((p, i) => {
+          const n = nodes[i];
           const isAnchor = n.nodeType === 'anchor';
           const radius = Math.max(1, (isAnchor ? n.scale * 1.5 : n.scale) * zoom);
 
+          const dist = Math.hypot(currentMouse.x - p.x, currentMouse.y - p.y);
+          const isHovered = dist < radius + 5;
+          if (isHovered) newHoveredNodeIdx = i;
+
           ctx.beginPath(); 
-          ctx.arc(sx, sy, radius, 0, Math.PI*2);
+          ctx.arc(p.x, p.y, radius, 0, Math.PI*2);
           
           if (isAnchor) {
-            // アンカーは外枠付きで描画
             ctx.fillStyle = n.color || '#000';
             ctx.globalAlpha = 0.9;
             ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2 * zoom;
+            ctx.strokeStyle = isHovered ? '#ff0' : '#fff';
+            ctx.lineWidth = (isHovered ? 4 : 2) * zoom;
             ctx.stroke();
           } else {
             const [r, g, b] = nodeRGBs[i];
             ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, 0.8)`;
             ctx.globalAlpha = 0.8;
             ctx.fill();
+            
+            if (isHovered) {
+              ctx.strokeStyle = '#fff';
+              ctx.lineWidth = 2 * zoom;
+              ctx.stroke();
+            }
           }
           
           // ラベル
           ctx.globalAlpha = 1.0;
           const [r, g, b] = isAnchor ? getSpatialRGB(i, positions!) : nodeRGBs[i];
-          ctx.fillStyle = `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
-          ctx.font = `${isAnchor ? 'bold ' : ''}${Math.round((isAnchor ? 14 : 10) * zoom)}px sans-serif`;
+          const textColor = isHovered ? '#fff' : `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+          
+          ctx.font = `${isAnchor || isHovered ? 'bold ' : ''}${Math.round((isAnchor ? 14 : 10) * zoom)}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(n.label, sx, sy + (isAnchor ? radius + 10 : 0));
+
+          // 文字の輪郭 (Outline)
+          ctx.strokeStyle = background === 'transparent' ? 'rgba(255,255,255,0.8)' : background;
+          ctx.lineWidth = 3;
+          ctx.strokeText(n.label, p.x, p.y + (isAnchor ? radius + 10 : 0));
+
+          ctx.fillStyle = textColor;
+          if (isHovered) {
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 4;
+          }
+          ctx.fillText(n.label, p.x, p.y + (isAnchor ? radius + 10 : 0));
+          ctx.shadowBlur = 0;
         });
+
+        // Handle hover state change
+        if (hoveredNodeIdx !== newHoveredNodeIdx || hoveredLinkIdx !== newHoveredLinkIdx) {
+          hoveredNodeIdx = newHoveredNodeIdx;
+          hoveredLinkIdx = newHoveredLinkIdx;
+          if (onHover) {
+            if (hoveredNodeIdx !== null) {
+              onHover({ node: nodes[hoveredNodeIdx] });
+            } else if (hoveredLinkIdx !== null) {
+              const l = links[hoveredLinkIdx];
+              onHover({ link: { source: nodes[l.source], target: nodes[l.target], weight: l.weight } });
+            } else {
+              onHover(null);
+            }
+          }
+        }
       }
 
       animId = requestAnimationFrame(tick);
@@ -402,17 +465,36 @@
     {height}
     class="w-full h-full"
     style="cursor: {isDragging ? 'grabbing' : 'grab'}"
-    onmousedown={(e) => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; }}
-    onmousemove={(e) => {
-      if (!isDragging) return;
-      camera.rotationY += (e.clientX - lastMouse.x) * 0.01;
-      camera.rotationX += (e.clientY - lastMouse.y) * 0.01;
-      lastMouse = { x: e.clientX, y: e.clientY };
+    onmousedown={(e) => { 
+      isDragging = true; 
+      lastMouse = { x: e.clientX, y: e.clientY }; 
     }}
-    onmouseup={() => isDragging = false}
-    onwheel={(e) => {
-      e.preventDefault();
-      camera.distance *= e.deltaY > 0 ? 1.05 : 0.95;
+    onmousemove={(e) => {
+      const rect = canvas?.getBoundingClientRect();
+      if (rect) {
+        // Use clientX/Y relative to canvas rect for accurate hit testing
+        currentMouse = {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      }
+      if (isDragging) {
+        camera.rotationY += (e.clientX - lastMouse.x) * 0.01;
+        camera.rotationX += (e.clientY - lastMouse.y) * 0.01;
+        lastMouse = { x: e.clientX, y: e.clientY };
+      }
+    }}
+    onmouseup={(e) => { 
+      isDragging = false; 
+      // Handle click if not dragged much
+      if (onClick) {
+        if (hoveredNodeIdx !== null) {
+          onClick({ node: nodes[hoveredNodeIdx] });
+        } else if (hoveredLinkIdx !== null) {
+          const l = links[hoveredLinkIdx];
+          onClick({ link: { source: nodes[l.source], target: nodes[l.target], weight: l.weight } });
+        }
+      }
     }}
   ></canvas>
 </div>
