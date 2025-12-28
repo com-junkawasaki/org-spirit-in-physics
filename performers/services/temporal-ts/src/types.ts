@@ -44,50 +44,50 @@ export interface GapArea {
   id: string
   center: [number, number, number]
   radius: number
-  nearbyNodes: Array<{
-    nodeId: string
+  nearby_nodes: Array<{
+    node_id: string
     label: string
     distance: number
-    commonFeatures: string[]
+    common_features: string[]
   }>
-  suggestedItems: string[]
+  suggested_items: string[]
   confidence: number
-  commonEmotionProfile?: Record<string, number>
+  common_emotion_profile?: Record<string, number>
 }
 
 export interface CommonFeatures {
-  emotionProfile: Record<string, number>
-  semanticTags: string[]
-  frequencyRange: [number, number]
-  reactionTimeRange: [number, number]
-  reactionValueRange: [number, number]
+  emotion_profile: Record<string, number>
+  semantic_tags: string[]
+  frequency_range: [number, number]
+  reaction_time_range: [number, number]
+  reaction_value_range: [number, number]
 }
 
 export interface DensityRegion {
   id: string
   center: [number, number, number]
   radius: number
-  nodeCount: number
+  node_count: number
   density: number
-  isOvercrowded: boolean
-  suggestedSeparation?: number
+  is_overcrowded: boolean
+  suggested_separation?: number
   nodes: WordNode[]
 }
 
 export interface DuplicateCandidate {
   id: string
-  nodeIds: string[]
+  node_ids: string[]
   labels: string[]
   similarity: number
-  commonFeatures: CommonFeatures
-  suggestedMerge: boolean
+  common_features: CommonFeatures
+  suggested_merge: boolean
   distance: number
 }
 
 export interface AnalysisResults {
-  gapAreas: GapArea[]
-  densityRegions: DensityRegion[]
+  gap_areas: GapArea[]
+  density_regions: DensityRegion[]
   duplicates: DuplicateCandidate[]
-  overallDensity: number
+  overall_density: number
 }
 

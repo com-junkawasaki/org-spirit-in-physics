@@ -54,13 +54,13 @@
               </span>
               <span class="text-[9px] font-bold text-gray-400">R: {gap.radius.toFixed(0)}</span>
             </div>
-            {#if gap.suggestedItems.length > 0}
+            {#if (gap.suggested_items ?? gap.suggestedItems ?? []).length > 0}
               <div class="text-[10px] font-bold text-gray-800 dark:text-gray-200 line-clamp-1">
-                💡 {gap.suggestedItems[0]}
+                💡 {(gap.suggested_items ?? gap.suggestedItems ?? [])[0]}
               </div>
             {/if}
             <div class="mt-2 text-[9px] text-gray-400 group-hover:text-yellow-600 transition-colors">
-              {gap.nearbyNodes.length} nearby nodes detected
+              {(gap.nearby_nodes ?? gap.nearbyNodes ?? []).length} nearby nodes detected
             </div>
           </button>
         {/each}
@@ -69,21 +69,21 @@
   {/if}
 
   <!-- 密集領域 -->
-  {#if densityRegions.filter(r => r.isOvercrowded).length > 0}
+  {#if densityRegions.filter(r => r.is_overcrowded ?? r.isOvercrowded).length > 0}
     <div class="space-y-3">
       <h4 class="font-bold text-[10px] text-red-600 dark:text-red-500 uppercase tracking-widest flex items-center gap-2">
         <span>⚠</span>
-        <span>Clusters ({densityRegions.filter(r => r.isOvercrowded).length})</span>
+        <span>Clusters ({densityRegions.filter(r => r.is_overcrowded ?? r.isOvercrowded).length})</span>
       </h4>
       <div class="grid grid-cols-1 gap-2">
-        {#each densityRegions.filter(r => r.isOvercrowded) as region (region.id)}
+        {#each densityRegions.filter(r => r.is_overcrowded ?? r.isOvercrowded) as region (region.id)}
           <button
             type="button"
             onclick={() => onDensityRegionClick?.(region)}
             class="analysis-item group w-full text-left p-3 bg-white dark:bg-gray-800/40 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-red-200 dark:hover:border-red-900/50 transition-all duration-300"
           >
             <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-black text-gray-800 dark:text-gray-100">{region.nodeCount} Nodes</span>
+              <span class="text-xs font-black text-gray-800 dark:text-gray-100">{region.node_count ?? region.nodeCount} Nodes</span>
               <span class="text-[9px] font-bold text-red-500">D: {region.density.toFixed(3)}</span>
             </div>
             <div class="text-[9px] text-gray-400">Overcrowded area detected</div>

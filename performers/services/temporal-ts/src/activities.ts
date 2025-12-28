@@ -88,14 +88,14 @@ function extractNodeFeatures(
  * Calculates common emotion profile for a set of nodes
  */
 function calculateCommonEmotionProfile(
-  nearbyNodes: { label: string }[],
+  nearby_nodes: { label: string }[],
   emotionVectors: Record<string, number[]>
 ): Record<string, number> {
   const emotionNames = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'calm', 'focus', 'excitement', 'confusion'];
   const profile: Record<string, number> = {};
 
   emotionNames.forEach((name, idx) => {
-    const values = nearbyNodes
+    const values = nearby_nodes
       .map(n => emotionVectors[n.label]?.[idx] || 0)
       .filter(v => v > 0);
     if (values.length > 0) {
@@ -110,12 +110,12 @@ function calculateCommonEmotionProfile(
  * Generates suggested items based on common features
  */
 function generateSuggestedItems(
-  nearbyNodes: { commonFeatures: string[] }[],
-  commonEmotionProfile: Record<string, number>
+  nearby_nodes: { common_features: string[] }[],
+  common_emotion_profile: Record<string, number>
 ): string[] {
   const suggestions: string[] = [];
 
-  const topEmotions = Object.entries(commonEmotionProfile)
+  const topEmotions = Object.entries(common_emotion_profile)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .filter(([_, val]) => val > 0.2);
@@ -125,8 +125,8 @@ function generateSuggestedItems(
   });
 
   const commonFeaturesCount = new Map<string, number>();
-  nearbyNodes.forEach(n => {
-    n.commonFeatures.forEach(f => {
+  nearby_nodes.forEach(n => {
+    n.common_features.forEach(f => {
       commonFeaturesCount.set(f, (commonFeaturesCount.get(f) || 0) + 1);
     });
   });
@@ -219,7 +219,7 @@ export async function detectGapAreasActivity(
           const centerZ = minZ + (gz + 0.5) * gridSizeZ;
           const center: [number, number, number] = [centerX, centerY, centerZ];
 
-          const nearbyNodes: GapArea['nearbyNodes'] = [];
+          const nearby_nodes: GapArea['nearby_nodes'] = [];
           for (const node of nodes) {
             if (!node.initial || node.fixed) continue;
 
@@ -227,33 +227,33 @@ export async function detectGapAreasActivity(
             const distance = Math.hypot(nx - centerX, ny - centerY, nz - centerZ);
 
             if (distance >= minGapRadius && distance <= maxGapRadius) {
-              const commonFeatures = extractNodeFeatures(node, emotionVectors, sessionData);
-              nearbyNodes.push({
-                nodeId: node.id,
+              const common_features = extractNodeFeatures(node, emotionVectors, sessionData);
+              nearby_nodes.push({
+                node_id: node.id,
                 label: node.label,
                 distance,
-                commonFeatures
+                common_features
               });
             }
           }
 
-          if (nearbyNodes.length >= minNearbyNodes) {
-            const commonEmotionProfile = calculateCommonEmotionProfile(nearbyNodes, emotionVectors);
-            const suggestedItems = generateSuggestedItems(nearbyNodes, commonEmotionProfile);
+          if (nearby_nodes.length >= minNearbyNodes) {
+            const common_emotion_profile = calculateCommonEmotionProfile(nearby_nodes, emotionVectors);
+            const suggested_items = generateSuggestedItems(nearby_nodes, common_emotion_profile);
             const confidence = Math.min(1, 
-              (nearbyNodes.length / (minNearbyNodes * 2)) * (1 - relativeDensity)
+              (nearby_nodes.length / (minNearbyNodes * 2)) * (1 - relativeDensity)
             );
 
-            gapAreas.push({
+            gap_areas.push({
               id: `gap_${gx}_${gy}_${gz}`,
               center,
               radius: Math.max(minGapRadius, Math.min(maxGapRadius, 
-                nearbyNodes.reduce((sum, n) => sum + n.distance, 0) / nearbyNodes.length * 0.5
+                nearby_nodes.reduce((sum, n) => sum + n.distance, 0) / nearby_nodes.length * 0.5
               )),
-              nearbyNodes: nearbyNodes.sort((a, b) => a.distance - b.distance).slice(0, 10),
-              suggestedItems,
+              nearby_nodes: nearby_nodes.sort((a, b) => a.distance - b.distance).slice(0, 10),
+              suggested_items,
               confidence,
-              commonEmotionProfile
+              common_emotion_profile
             });
           }
         }
@@ -275,7 +275,7 @@ export async function analyzeDensityActivity(
     gridResolution?: number;
     minRegionNodes?: number;
   } = {}
-): Promise<{ overcrowdedRegions: DensityRegion[]; sparseRegions: DensityRegion[]; overallDensity: number }> {
+): Promise<{ overcrowded_regions: DensityRegion[]; sparse_regions: DensityRegion[]; overall_density: number }> {
   const {
     overcrowdingThreshold = 1.5,
     sparseThreshold = 0.5,
@@ -288,7 +288,7 @@ export async function analyzeDensityActivity(
     .map(n => ({ node: n, pos: n.initial! }));
 
   if (positions.length === 0) {
-    return { overcrowdedRegions: [], sparseRegions: [], overallDensity: 0 };
+    return { overcrowded_regions: [], sparse_regions: [], overall_density: 0 };
   }
 
   const minX = Math.min(...positions.map(p => p.pos[0]));
@@ -302,7 +302,7 @@ export async function analyzeDensityActivity(
   const rangeY = maxY - minY;
   const rangeZ = maxZ - minZ;
   const totalVolume = rangeX * rangeY * rangeZ;
-  const overallDensity = positions.length / (totalVolume + 1e-6);
+  const overall_density = positions.length / (totalVolume + 1e-6);
 
   const gridSizeX = rangeX / gridResolution;
   const gridSizeY = rangeY / gridResolution;
@@ -330,43 +330,43 @@ export async function analyzeDensityActivity(
     cell.density = cell.nodes.length / cellVolume;
   }
 
-  const overcrowdedRegions: DensityRegion[] = [];
-  const sparseRegions: DensityRegion[] = [];
+  const overcrowded_regions: DensityRegion[] = [];
+  const sparse_regions: DensityRegion[] = [];
 
   for (const [key, cell] of gridCells.entries()) {
     if (cell.nodes.length < minRegionNodes) continue;
 
-    const relativeDensity = cell.density / (overallDensity + 1e-6);
+    const relativeDensity = cell.density / (overall_density + 1e-6);
 
     if (relativeDensity >= overcrowdingThreshold) {
       const radius = Math.cbrt(cellVolume) * 0.5;
-      overcrowdedRegions.push({
+      overcrowded_regions.push({
         id: `overcrowded_${key}`,
         center: cell.center,
         radius,
-        nodeCount: cell.nodes.length,
+        node_count: cell.nodes.length,
         density: cell.density,
-        isOvercrowded: true,
-        suggestedSeparation: radius * 1.2,
+        is_overcrowded: true,
+        suggested_separation: radius * 1.2,
         nodes: cell.nodes
       });
     } else if (relativeDensity <= sparseThreshold) {
-      sparseRegions.push({
+      sparse_regions.push({
         id: `sparse_${key}`,
         center: cell.center,
         radius: Math.cbrt(cellVolume) * 0.5,
-        nodeCount: cell.nodes.length,
+        node_count: cell.nodes.length,
         density: cell.density,
-        isOvercrowded: false,
+        is_overcrowded: false,
         nodes: cell.nodes
       });
     }
   }
 
   return {
-    overcrowdedRegions: overcrowdedRegions.sort((a, b) => b.density - a.density).slice(0, 10),
-    sparseRegions: sparseRegions.sort((a, b) => a.density - b.density).slice(0, 10),
-    overallDensity
+    overcrowded_regions: overcrowded_regions.sort((a, b) => b.density - a.density).slice(0, 10),
+    sparse_regions: sparse_regions.sort((a, b) => a.density - b.density).slice(0, 10),
+    overall_density
   };
 }
 
@@ -416,10 +416,10 @@ export async function detectDuplicatesActivity(
       const cosineSim = (norm1 > 0 && norm2 > 0) ? dot / (norm1 * norm2) : 0;
 
       if (cosineSim >= minSimilarity && (1 - cosineSim) <= distanceThreshold) {
-        const commonEmotionProfile = calculateCommonEmotionProfile([node1, node2], emotionVectors);
+        const common_emotion_profile = calculateCommonEmotionProfile([node1, node2], emotionVectors);
         const emotionNames = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'calm', 'focus', 'excitement', 'confusion'];
         
-        const semanticTags = Object.entries(commonEmotionProfile)
+        const semantic_tags = Object.entries(common_emotion_profile)
           .filter(([_, val]) => val > 0.2)
           .map(([name]) => name)
           .slice(0, 5);
@@ -434,17 +434,17 @@ export async function detectDuplicatesActivity(
 
         candidates.push({
           id: `dup_${node1.id}_${node2.id}`,
-          nodeIds: [node1.id, node2.id],
+          node_ids: [node1.id, node2.id],
           labels: [node1.label, node2.label],
           similarity: cosineSim,
-          commonFeatures: {
-            emotionProfile: commonEmotionProfile,
-            semanticTags,
-            frequencyRange: [Math.min(...frequencies), Math.max(...frequencies)],
-            reactionTimeRange: reactionTimes.length > 0 ? [Math.min(...reactionTimes), Math.max(...reactionTimes)] : [0, 0],
-            reactionValueRange: reactionValues.length > 0 ? [Math.min(...reactionValues), Math.max(...reactionValues)] : [0, 0]
+          common_features: {
+            emotion_profile: common_emotion_profile,
+            semantic_tags,
+            frequency_range: [Math.min(...frequencies), Math.max(...frequencies)],
+            reaction_time_range: reactionTimes.length > 0 ? [Math.min(...reactionTimes), Math.max(...reactionTimes)] : [0, 0],
+            reaction_value_range: reactionValues.length > 0 ? [Math.min(...reactionValues), Math.max(...reactionValues)] : [0, 0]
           },
-          suggestedMerge: cosineSim >= 0.9 && spatialDist < spatialDistanceThreshold * 0.5,
+          suggested_merge: cosineSim >= 0.9 && spatialDist < spatialDistanceThreshold * 0.5,
           distance: spatialDist
         });
       }
@@ -463,17 +463,17 @@ export async function runStructureAnalysisActivity(
   emotionVectors: Record<string, number[]>,
   sessionData: TimelineDataPoint[]
 ): Promise<AnalysisResults> {
-  const [gapAreas, densityResults, duplicates] = await Promise.all([
+  const [gap_areas, densityResults, duplicates] = await Promise.all([
     detectGapAreasActivity(nodes, links, emotionVectors, sessionData),
     analyzeDensityActivity(nodes),
     detectDuplicatesActivity(nodes, emotionVectors, sessionData)
   ]);
 
   return {
-    gapAreas,
-    densityRegions: [...densityResults.overcrowdedRegions, ...densityResults.sparseRegions],
+    gap_areas,
+    density_regions: [...densityResults.overcrowded_regions, ...densityResults.sparse_regions],
     duplicates,
-    overallDensity: densityResults.overallDensity
+    overall_density: densityResults.overall_density
   };
 }
 

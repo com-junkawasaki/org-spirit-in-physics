@@ -10,8 +10,10 @@
     height: number;
     timeRange: TimeRange | null;
     analysisResults?: {
-      gapAreas: any[];
-      densityRegions: any[];
+      gap_areas?: any[];
+      gapAreas?: any[];
+      density_regions?: any[];
+      densityRegions?: any[];
     };
     onDataPointSelect: (point: TimelineDataPoint | null) => void;
     onTooltipShow: (event: any, point: TimelineDataPoint) => void;
@@ -318,8 +320,10 @@
       const analysisG = g.append('g').attr('class', 'analysis-overlays');
 
       // Highlight Gap Areas on Timeline
-      analysisResults.gapAreas?.forEach((gap: any) => {
-        const nodeLabels = gap.nearbyNodes?.map((n: any) => n.label) || [];
+      const gapAreas = analysisResults.gap_areas ?? analysisResults.gapAreas ?? [];
+      gapAreas.forEach((gap: any) => {
+        const nearbyNodes = gap.nearby_nodes ?? gap.nearbyNodes ?? [];
+        const nodeLabels = nearbyNodes.map((n: any) => n.label) || [];
         const gapPoints = data.filter(d => nodeLabels.includes(d.word));
         if (gapPoints.length >= 2) {
           const tMin = Math.min(...gapPoints.map(p => p.timestamp));

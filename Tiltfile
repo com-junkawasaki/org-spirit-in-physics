@@ -27,12 +27,11 @@ docker_build(
     dockerfile='./performers/services/temporal-ts/Dockerfile'
 )
 
-# 5. Svelte App (Nix - Assets built on host, served by Linux Python)
-custom_build(
+# 5. Svelte App (Docker - Nix Node cross-build is flaky on Darwin)
+docker_build(
     'spirit-svelte-app',
-    '$(nix build .#svelte-image --no-link --print-out-paths) | docker load',
-    deps=['./apps/svelte-app', './flake.nix'],
-    tag='latest'
+    './apps/svelte-app',
+    dockerfile='./apps/svelte-app/Dockerfile'
 )
 
 # 6. Argo CD Setup
