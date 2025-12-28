@@ -4,6 +4,7 @@
   import ConsentForm from "./ConsentForm.svelte";
   import JungVoiceTest from "../jung-voice-assessment/JungVoiceTest.svelte";
   import { kawasakiStore } from "../jung-voice-assessment/store.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   let step = $state<"landing" | "consent" | "assessment" | "complete">("landing");
 
@@ -33,8 +34,8 @@
   {#if step !== "landing"}
     <header class="step-header">
       <div class="header-content">
-        <button class="back-link" onclick={() => step = "landing"}>← 戻る</button>
-        <span class="step-title">被験者ポータル</span>
+        <button class="back-link" onclick={() => step = "landing"}>← {m.back()}</button>
+        <span class="step-title">{m.participant_portal()}</span>
       </div>
     </header>
   {/if}
@@ -42,22 +43,18 @@
   {#if step === "landing"}
     <div class="landing-hero">
       <h1 class="main-title">
-        <span class="gradient-text">Spirit in Physics</span>
+        <span class="gradient-text">{m.logo()}</span>
       </h1>
       
       <div class="button-group">
         <SignedOut>
           <SignInButton mode="modal">
-            <button class="btn secondary">サインイン</button>
+            <button class="btn secondary">{m.signin()}</button>
           </SignInButton>
         </SignedOut>
         
-        <a href="/researcher" class="btn outline">
-          管理者画面
-        </a>
-
         <button class="btn primary large" onclick={startParticipantFlow}>
-          被験者画面
+          {m.subject_view()}
         </button>
       </div>
     </div>
@@ -71,12 +68,12 @@
     </div>
   {:else if step === "complete"}
     <div class="step-container success">
-      <h2>ご協力ありがとうございました。</h2>
-      <p>実験はこれで終了です。ウィンドウを閉じてください。</p>
+      <h2>{m.thank_you()}</h2>
+      <p>{m.experiment_finished()}</p>
       <button class="btn" onclick={() => {
         kawasakiStore.resetTest();
         step = "landing";
-      }}>トップへ戻る</button>
+      }}>{m.back_to_top()}</button>
     </div>
   {/if}
 </div>

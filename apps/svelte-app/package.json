@@ -32,7 +32,8 @@
     "tailwindcss": "^4.1.18",
     "tslib": "^2.8.1",
     "typescript": "^5.9.3",
-    "vite": "^7.3.0"
+    "vite": "^7.3.0",
+    "@inlang/paraglide-js": "^2.7.1"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^1.10.1",
@@ -40,6 +41,7 @@
     "@connectrpc/connect-node": "^1.7.0",
     "@connectrpc/connect-web": "^1.7.0",
     "d3": "^7.9.0",
-    "svelte-clerk": "0.20.1"
+    "svelte-clerk": "0.20.1",
+    "@inlang/paraglide-sveltekit": "^0.15.2"
   }
 }
