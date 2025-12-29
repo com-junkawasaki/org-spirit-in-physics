@@ -5,7 +5,7 @@ import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
 import ConsentForm from "./ConsentForm.svelte";
   import JungVoiceTest from "../jung-voice-assessment/JungVoiceTest.svelte";
   import { kawasakiStore } from "../jung-voice-assessment/store.svelte";
-  import { languageTag } from "$lib/i18n";
+  import { languageTag } from "$lib/i18n.svelte";
   import * as m from "$lib/paraglide/messages.js";
 
   let step = $state<"landing" | "consent" | "assessment" | "complete">("landing");

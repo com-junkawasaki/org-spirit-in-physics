@@ -5,7 +5,7 @@
   import { browser } from "$app/environment";
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { languageTag, setLanguageTag } from "$lib/i18n";
+  import { languageTag, setLanguageTag } from "$lib/i18n.svelte";
   import "../app.css";
 
   let { children } = $props();

@@ -2,8 +2,8 @@
   import ResearchPlanContent from "./ResearchPlanContent.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { ILLNESS_CODES, type IllnessCode } from "$lib/researcher/illness-codes";
- import { languageTag } from "$lib/i18n";
- import { SignedIn, SignedOut, useClerkContext } from "svelte-clerk";
+  import { languageTag } from "$lib/i18n.svelte";
+  import { SignedIn, SignedOut, useClerkContext } from "svelte-clerk";
  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
 
  let { onConsent, participantId } = $props<{

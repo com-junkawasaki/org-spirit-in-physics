@@ -19,5 +19,5 @@ EXPOSE 80
 ENV PORT=80
 ENV NODE_ENV=production
 
-# Run env replacement, then start node server
-CMD ["/bin/sh", "-c", "/app/replace-env.sh /app/build && node build/index.js"]
+# Run env replacement, then start sirv server in SPA mode
+CMD ["/bin/sh", "-c", "/app/replace-env.sh /app/build && ./node_modules/.bin/sirv build --port 80 --single --host 0.0.0.0"]
