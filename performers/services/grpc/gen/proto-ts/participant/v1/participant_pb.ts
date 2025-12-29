@@ -157,6 +157,80 @@ export class GetParticipantResponse extends Message<GetParticipantResponse> {
 }
 
 /**
+ * @generated from message participant.v1.GetParticipantByEmailRequest
+ */
+export class GetParticipantByEmailRequest extends Message<GetParticipantByEmailRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<GetParticipantByEmailRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.GetParticipantByEmailRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetParticipantByEmailRequest {
+    return new GetParticipantByEmailRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetParticipantByEmailRequest {
+    return new GetParticipantByEmailRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetParticipantByEmailRequest {
+    return new GetParticipantByEmailRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetParticipantByEmailRequest | PlainMessage<GetParticipantByEmailRequest> | undefined, b: GetParticipantByEmailRequest | PlainMessage<GetParticipantByEmailRequest> | undefined): boolean {
+    return proto3.util.equals(GetParticipantByEmailRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.GetParticipantByEmailResponse
+ */
+export class GetParticipantByEmailResponse extends Message<GetParticipantByEmailResponse> {
+  /**
+   * @generated from field: participant.v1.Participant participant = 1;
+   */
+  participant?: Participant;
+
+  constructor(data?: PartialMessage<GetParticipantByEmailResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.GetParticipantByEmailResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant", kind: "message", T: Participant },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetParticipantByEmailResponse {
+    return new GetParticipantByEmailResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetParticipantByEmailResponse {
+    return new GetParticipantByEmailResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetParticipantByEmailResponse {
+    return new GetParticipantByEmailResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetParticipantByEmailResponse | PlainMessage<GetParticipantByEmailResponse> | undefined, b: GetParticipantByEmailResponse | PlainMessage<GetParticipantByEmailResponse> | undefined): boolean {
+    return proto3.util.equals(GetParticipantByEmailResponse, a, b);
+  }
+}
+
+/**
  * @generated from message participant.v1.CreateParticipantRequest
  */
 export class CreateParticipantRequest extends Message<CreateParticipantRequest> {
@@ -445,6 +519,11 @@ export class Participant extends Message<Participant> {
   handedness?: string;
 
   /**
+   * @generated from field: optional string email = 12;
+   */
+  email?: string;
+
+  /**
    * @generated from field: optional string age_group = 8;
    */
   ageGroup?: string;
@@ -491,6 +570,7 @@ export class Participant extends Message<Participant> {
     { no: 2, name: "age", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 3, name: "gender", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "handedness", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 12, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "age_group", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "ethnicity", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 10, name: "income_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },

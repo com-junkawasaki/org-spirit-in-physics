@@ -13,29 +13,32 @@ import (
 
 const createParticipant = `-- name: CreateParticipant :one
 INSERT INTO participants (
-    id, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+    id, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 )
 VALUES (
     $1, 
-    $2, 
+    $2,
     $3, 
     $4, 
     $5, 
-    COALESCE($6::boolean, true), 
-    $7, 
-    $8
+    $6, 
+    COALESCE($7::boolean, true), 
+    $8, 
+    $9
 )
 ON CONFLICT (id) DO UPDATE SET 
+    email = EXCLUDED.email,
     age_group = EXCLUDED.age_group,
     ethnicity = EXCLUDED.ethnicity,
     income_range = EXCLUDED.income_range,
     medical_history = EXCLUDED.medical_history,
     updated_at = EXCLUDED.updated_at
-RETURNING id, age, gender, handedness, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+RETURNING id, age, gender, handedness, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 `
 
 type CreateParticipantParams struct {
 	ID             pgtype.UUID        `json:"id"`
+	Email          pgtype.Text        `json:"email"`
 	AgeGroup       pgtype.Text        `json:"age_group"`
 	Ethnicity      pgtype.Text        `json:"ethnicity"`
 	IncomeRange    pgtype.Text        `json:"income_range"`
@@ -48,6 +51,7 @@ type CreateParticipantParams struct {
 func (q *Queries) CreateParticipant(ctx context.Context, arg CreateParticipantParams) (Participant, error) {
 	row := q.db.QueryRow(ctx, createParticipant,
 		arg.ID,
+		arg.Email,
 		arg.AgeGroup,
 		arg.Ethnicity,
 		arg.IncomeRange,
@@ -62,6 +66,7 @@ func (q *Queries) CreateParticipant(ctx context.Context, arg CreateParticipantPa
 		&i.Age,
 		&i.Gender,
 		&i.Handedness,
+		&i.Email,
 		&i.AgeGroup,
 		&i.Ethnicity,
 		&i.IncomeRange,
@@ -74,7 +79,7 @@ func (q *Queries) CreateParticipant(ctx context.Context, arg CreateParticipantPa
 }
 
 const getParticipant = `-- name: GetParticipant :one
-SELECT id, age, gender, handedness, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+SELECT id, age, gender, handedness, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 FROM participants
 WHERE id = $1
 `
@@ -87,6 +92,33 @@ func (q *Queries) GetParticipant(ctx context.Context, id pgtype.UUID) (Participa
 		&i.Age,
 		&i.Gender,
 		&i.Handedness,
+		&i.Email,
+		&i.AgeGroup,
+		&i.Ethnicity,
+		&i.IncomeRange,
+		&i.MedicalHistory,
+		&i.IsPublic,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getParticipantByEmail = `-- name: GetParticipantByEmail :one
+SELECT id, age, gender, handedness, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+FROM participants
+WHERE email = $1
+`
+
+func (q *Queries) GetParticipantByEmail(ctx context.Context, email pgtype.Text) (Participant, error) {
+	row := q.db.QueryRow(ctx, getParticipantByEmail, email)
+	var i Participant
+	err := row.Scan(
+		&i.ID,
+		&i.Age,
+		&i.Gender,
+		&i.Handedness,
+		&i.Email,
 		&i.AgeGroup,
 		&i.Ethnicity,
 		&i.IncomeRange,
@@ -99,7 +131,7 @@ func (q *Queries) GetParticipant(ctx context.Context, id pgtype.UUID) (Participa
 }
 
 const getParticipants = `-- name: GetParticipants :many
-SELECT id, age, gender, handedness, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+SELECT id, age, gender, handedness, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 FROM participants
 WHERE ($1::boolean IS NULL OR is_public = $1)
 ORDER BY created_at DESC
@@ -119,6 +151,7 @@ func (q *Queries) GetParticipants(ctx context.Context, dollar_1 bool) ([]Partici
 			&i.Age,
 			&i.Gender,
 			&i.Handedness,
+			&i.Email,
 			&i.AgeGroup,
 			&i.Ethnicity,
 			&i.IncomeRange,

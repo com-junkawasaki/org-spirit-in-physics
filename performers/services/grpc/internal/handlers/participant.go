@@ -54,6 +54,7 @@ func (h *ParticipantHandler) GetParticipants(
 			Age:            toInt32Ptr(p.Age),
 			Gender:         toStringPtr(p.Gender),
 			Handedness:     toStringPtr(p.Handedness),
+			Email:          toStringPtr(p.Email),
 			AgeGroup:       toStringPtr(p.AgeGroup),
 			Ethnicity:      toStringPtr(p.Ethnicity),
 			IncomeRange:    toStringPtr(p.IncomeRange),
@@ -90,6 +91,38 @@ func (h *ParticipantHandler) GetParticipant(
 			Age:            toInt32Ptr(participant.Age),
 			Gender:         toStringPtr(participant.Gender),
 			Handedness:     toStringPtr(participant.Handedness),
+			Email:          toStringPtr(participant.Email),
+			AgeGroup:       toStringPtr(participant.AgeGroup),
+			Ethnicity:      toStringPtr(participant.Ethnicity),
+			IncomeRange:    toStringPtr(participant.IncomeRange),
+			MedicalHistory: participant.MedicalHistory,
+			IsPublic:       participant.IsPublic.Bool,
+			CreatedAt:      timestamppb.New(participant.CreatedAt.Time),
+			UpdatedAt:      timestamppb.New(participant.UpdatedAt.Time),
+		},
+	}
+
+	return connect.NewResponse(resp), nil
+}
+
+// GetParticipantByEmail returns a participant by email
+func (h *ParticipantHandler) GetParticipantByEmail(
+	ctx context.Context,
+	req *connect.Request[participantv1.GetParticipantByEmailRequest],
+) (*connect.Response[participantv1.GetParticipantByEmailResponse], error) {
+	participant, err := h.queries.GetParticipantByEmail(ctx, pgtype.Text{String: req.Msg.Email, Valid: true})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, err)
+	}
+
+	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
+	resp := &participantv1.GetParticipantByEmailResponse{
+		Participant: &participantv1.Participant{
+			Id:             uid.String(),
+			Age:            toInt32Ptr(participant.Age),
+			Gender:         toStringPtr(participant.Gender),
+			Handedness:     toStringPtr(participant.Handedness),
+			Email:          toStringPtr(participant.Email),
 			AgeGroup:       toStringPtr(participant.AgeGroup),
 			Ethnicity:      toStringPtr(participant.Ethnicity),
 			IncomeRange:    toStringPtr(participant.IncomeRange),
@@ -130,6 +163,7 @@ func (h *ParticipantHandler) CreateParticipant(
 	pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
 	participant, err := h.queries.CreateParticipant(ctx, db.CreateParticipantParams{
 		ID:             pgUUID,
+		Email:          pgtype.Text{String: req.Msg.Email, Valid: true},
 		AgeGroup:       pgtype.Text{String: getStringValue(req.Msg.AgeGroup), Valid: req.Msg.AgeGroup != nil},
 		Ethnicity:      pgtype.Text{String: getStringValue(req.Msg.Ethnicity), Valid: req.Msg.Ethnicity != nil},
 		IncomeRange:    pgtype.Text{String: getStringValue(req.Msg.IncomeRange), Valid: req.Msg.IncomeRange != nil},
@@ -162,6 +196,7 @@ func (h *ParticipantHandler) CreateParticipant(
 			Age:            toInt32Ptr(participant.Age),
 			Gender:         toStringPtr(participant.Gender),
 			Handedness:     toStringPtr(participant.Handedness),
+			Email:          toStringPtr(participant.Email),
 			AgeGroup:       toStringPtr(participant.AgeGroup),
 			Ethnicity:      toStringPtr(participant.Ethnicity),
 			IncomeRange:    toStringPtr(participant.IncomeRange),

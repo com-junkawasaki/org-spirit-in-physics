@@ -18,6 +18,9 @@ service ParticipantService {
   // Create a new participant
   rpc CreateParticipant(CreateParticipantRequest) returns (CreateParticipantResponse);
   
+  // Get a participant by email
+  rpc GetParticipantByEmail(GetParticipantByEmailRequest) returns (GetParticipantByEmailResponse);
+
   // Get all stimulus words
   rpc GetStimulusWords(GetStimulusWordsRequest) returns (GetStimulusWordsResponse);
   
@@ -39,6 +42,14 @@ message GetParticipantRequest {
 }
 
 message GetParticipantResponse {
+  Participant participant = 1;
+}
+
+message GetParticipantByEmailRequest {
+  string email = 1;
+}
+
+message GetParticipantByEmailResponse {
   Participant participant = 1;
 }
 
@@ -77,6 +88,7 @@ message Participant {
   optional int32 age = 2;
   optional string gender = 3;
   optional string handedness = 4;
+  optional string email = 12;
   optional string age_group = 8;
   optional string ethnicity = 9;
   optional string income_range = 10;

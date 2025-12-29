@@ -23,7 +23,7 @@
   const WELCOME_MESSAGE = m.welcome_message();
 
   onMount(async () => {
-    // Initial words are loaded by parent (ParticipantView)
+    // Initial words are loaded by parent (Landing page)
     // but we check just in case it's mounted directly or failed
     if (kawasakiStore.stimulusWords.length === 0) {
       await kawasakiStore.loadStimulusWords();
@@ -36,9 +36,14 @@
     if (isInitializingMedia) return;
     isInitializingMedia = true;
     try {
+      // Check if navigator.mediaDevices is available (HTTPS or localhost)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Media devices not supported in this browser context (requires HTTPS or localhost)");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: { width: 1280, height: 720 }
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
       });
       kawasakiStore.stream = stream;
       kawasakiStore.deviceStatus = 'success';
@@ -46,10 +51,14 @@
       
       if (videoPreview) {
         videoPreview.srcObject = stream;
+        videoPreview.onloadedmetadata = () => {
+          videoPreview?.play().catch(e => console.warn("Video preview play failed:", e));
+        };
       }
     } catch (err: any) {
+      console.error("Failed to initialize media:", err);
       kawasakiStore.deviceStatus = 'error';
-      kawasakiStore.error = m.device_access_error();
+      kawasakiStore.error = m.device_access_error() + ": " + (err.message || "Unknown error");
       kawasakiStore.logEvent('preflight_devices_failed', { error: err.message });
     } finally {
       isInitializingMedia = false;
@@ -75,29 +84,50 @@
     if (!kawasakiStore.stream) return;
 
     // Take a snapshot at the start of recording
-    captureSnapshot(session);
+    try {
+      captureSnapshot(session);
+    } catch (e) {
+      console.error("Failed to capture snapshot:", e);
+    }
 
     videoChunks = [];
     try {
-      mediaRecorder = new MediaRecorder(kawasakiStore.stream, { mimeType: 'video/webm; codecs=vp9' });
+      const options: MediaRecorderOptions = {};
+      const mimeTypes = [
+        'video/webm; codecs=vp9',
+        'video/webm; codecs=vp8',
+        'video/webm',
+        'video/mp4'
+      ];
+      
+      for (const type of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          options.mimeType = type;
+          break;
+        }
+      }
+
+      mediaRecorder = new MediaRecorder(kawasakiStore.stream, options);
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) videoChunks.push(e.data);
       };
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(videoChunks, { type: 'video/webm' });
+        if (videoChunks.length === 0) return;
+        const blob = new Blob(videoChunks, { type: options.mimeType || 'video/webm' });
         kawasakiStore.logEvent('recording_stopped', { session });
         // Upload the video
         await kawasakiStore.uploadArtifact(blob, 'video', session);
       };
       mediaRecorder.start();
-      kawasakiStore.logEvent('recording_started', { session });
+      kawasakiStore.logEvent('recording_started', { session, mimeType: options.mimeType });
     } catch (e) {
       console.error("Failed to start MediaRecorder", e);
+      kawasakiStore.error = "Recording error: " + (e instanceof Error ? e.message : String(e));
     }
   }
 
   function captureSnapshot(sessionIndex: number) {
-    if (!videoPreview) return;
+    if (!videoPreview || videoPreview.videoWidth === 0) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = videoPreview.videoWidth;
@@ -115,26 +145,43 @@
 
   function stopRecording() {
     if (mediaRecorder && mediaRecorder.state === "recording") {
-      mediaRecorder.stop();
+      try {
+        mediaRecorder.stop();
+      } catch (e) {
+        console.error("Failed to stop MediaRecorder", e);
+      }
     }
   }
 
   // Session control
   async function handleStartSession() {
-    await startRecording(kawasakiStore.currentSession);
-    kawasakiStore.startSession(100);
+    try {
+      await startRecording(kawasakiStore.currentSession);
+      kawasakiStore.startSession(100);
+    } catch (e) {
+      console.error("Error starting session:", e);
+      kawasakiStore.error = "Error starting session: " + (e instanceof Error ? e.message : String(e));
+    }
   }
 
   async function handleStartNextSession() {
-    await startRecording(kawasakiStore.currentSession);
-    kawasakiStore.startSession(100);
+    try {
+      await startRecording(kawasakiStore.currentSession);
+      kawasakiStore.startSession(100);
+    } catch (e) {
+      console.error("Error starting next session:", e);
+    }
   }
 
   // Word association logic
   function startRecognition() {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       console.error("Speech Recognition not supported in this browser");
+      // Fallback: trigger response manually or skip
+      setTimeout(() => {
+        if (isListening) handleResponse("(Speech Recognition Not Supported)");
+      }, 3000);
       return;
     }
 
@@ -143,7 +190,7 @@
     }
 
     recognition = new SpeechRecognition();
-    recognition.lang = 'ja-JP';
+    recognition.lang = languageTag() === 'ja' ? 'ja-JP' : 'en-US';
     recognition.interimResults = true;
     recognition.continuous = false;
 
@@ -171,6 +218,9 @@
     recognition.onerror = (event: any) => {
       console.error("Speech recognition error:", event.error);
       kawasakiStore.logEvent('recognition_error', { error: event.error });
+      if (event.error === 'no-speech') {
+        // Just let it timeout or retry if appropriate
+      }
     };
 
     try {
@@ -208,7 +258,8 @@
         stimulusAudio.onended = () => {
           setTimeout(startRecognition, 500);
         };
-        stimulusAudio.play().catch(() => {
+        stimulusAudio.play().catch((err) => {
+          console.warn("Audio play failed, using TTS:", err);
           // Fallback to TTS
           const utterance = new SpeechSynthesisUtterance(stimulusWord);
           utterance.lang = languageTag() === 'ja' ? 'ja-JP' : 'en-US';
@@ -217,7 +268,7 @@
         });
       }
 
-      // Timeout for no response (increased to 10s as per some requirements seen in other files)
+      // Timeout for no response
       responseTimer = setTimeout(() => {
         kawasakiStore.logEvent('response_timeout', { word: stimulusWord });
         if (recognition) {
@@ -247,6 +298,7 @@
     stopRecording();
     if (kawasakiStore.stream) {
       kawasakiStore.stream.getTracks().forEach(t => t.stop());
+      kawasakiStore.stream = null;
     }
   });
 </script>
@@ -258,8 +310,8 @@
       <div class="card welcome-card">
         <h3>{m.welcome_title()}</h3>
         <p>{WELCOME_MESSAGE}</p>
-        <button class="btn" onclick={() => stimulusAudio?.play()}>{m.listen_again()}</button>
-        <audio bind:this={stimulusAudio} src="/audio/jung-voice-assessment/welcome_message.mp3" autoPlay></audio>
+        <button class="btn" onclick={() => stimulusAudio?.play().catch(console.error)}>{m.listen_again()}</button>
+        <audio bind:this={stimulusAudio} src="/audio/jung-voice-assessment/welcome_message.mp3"></audio>
       </div>
 
       <div class="video-container">
@@ -292,7 +344,7 @@
       <div class="progress-container">
         <p>{m.session_info({ session: kawasakiStore.currentSession, current: kawasakiStore.currentWordIndex + 1, total: kawasakiStore.stimulusWords.length })}</p>
         <div class="progress-bar">
-          <div class="fill" style="width: {((kawasakiStore.currentWordIndex + 1) / kawasakiStore.stimulusWords.length) * 100}%"></div>
+          <div class="fill" style="width: {((kawasakiStore.currentWordIndex + 1) / (kawasakiStore.stimulusWords.length || 1)) * 100}%"></div>
         </div>
       </div>
 
@@ -473,4 +525,3 @@
     margin-top: 1rem;
   }
 </style>
-

@@ -13,6 +13,7 @@ type Participant struct {
 	Age            pgtype.Int4        `json:"age"`
 	Gender         pgtype.Text        `json:"gender"`
 	Handedness     pgtype.Text        `json:"handedness"`
+	Email          pgtype.Text        `json:"email"`
 	AgeGroup       pgtype.Text        `json:"age_group"`
 	Ethnicity      pgtype.Text        `json:"ethnicity"`
 	IncomeRange    pgtype.Text        `json:"income_range"`

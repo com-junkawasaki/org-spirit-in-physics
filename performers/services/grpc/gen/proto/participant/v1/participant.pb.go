@@ -200,6 +200,94 @@ func (x *GetParticipantResponse) GetParticipant() *Participant {
 	return nil
 }
 
+type GetParticipantByEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetParticipantByEmailRequest) Reset() {
+	*x = GetParticipantByEmailRequest{}
+	mi := &file_participant_v1_participant_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetParticipantByEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetParticipantByEmailRequest) ProtoMessage() {}
+
+func (x *GetParticipantByEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetParticipantByEmailRequest.ProtoReflect.Descriptor instead.
+func (*GetParticipantByEmailRequest) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetParticipantByEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type GetParticipantByEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Participant   *Participant           `protobuf:"bytes,1,opt,name=participant,proto3" json:"participant,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetParticipantByEmailResponse) Reset() {
+	*x = GetParticipantByEmailResponse{}
+	mi := &file_participant_v1_participant_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetParticipantByEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetParticipantByEmailResponse) ProtoMessage() {}
+
+func (x *GetParticipantByEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetParticipantByEmailResponse.ProtoReflect.Descriptor instead.
+func (*GetParticipantByEmailResponse) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetParticipantByEmailResponse) GetParticipant() *Participant {
+	if x != nil {
+		return x.Participant
+	}
+	return nil
+}
+
 type CreateParticipantRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
@@ -217,7 +305,7 @@ type CreateParticipantRequest struct {
 
 func (x *CreateParticipantRequest) Reset() {
 	*x = CreateParticipantRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[4]
+	mi := &file_participant_v1_participant_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -229,7 +317,7 @@ func (x *CreateParticipantRequest) String() string {
 func (*CreateParticipantRequest) ProtoMessage() {}
 
 func (x *CreateParticipantRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[4]
+	mi := &file_participant_v1_participant_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -242,7 +330,7 @@ func (x *CreateParticipantRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateParticipantRequest.ProtoReflect.Descriptor instead.
 func (*CreateParticipantRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{4}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateParticipantRequest) GetId() string {
@@ -317,7 +405,7 @@ type CreateParticipantResponse struct {
 
 func (x *CreateParticipantResponse) Reset() {
 	*x = CreateParticipantResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[5]
+	mi := &file_participant_v1_participant_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -329,7 +417,7 @@ func (x *CreateParticipantResponse) String() string {
 func (*CreateParticipantResponse) ProtoMessage() {}
 
 func (x *CreateParticipantResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[5]
+	mi := &file_participant_v1_participant_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -342,7 +430,7 @@ func (x *CreateParticipantResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateParticipantResponse.ProtoReflect.Descriptor instead.
 func (*CreateParticipantResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{5}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateParticipantResponse) GetParticipant() *Participant {
@@ -360,7 +448,7 @@ type GetStimulusWordsRequest struct {
 
 func (x *GetStimulusWordsRequest) Reset() {
 	*x = GetStimulusWordsRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[6]
+	mi := &file_participant_v1_participant_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -372,7 +460,7 @@ func (x *GetStimulusWordsRequest) String() string {
 func (*GetStimulusWordsRequest) ProtoMessage() {}
 
 func (x *GetStimulusWordsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[6]
+	mi := &file_participant_v1_participant_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -385,7 +473,7 @@ func (x *GetStimulusWordsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStimulusWordsRequest.ProtoReflect.Descriptor instead.
 func (*GetStimulusWordsRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{6}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{8}
 }
 
 type GetStimulusWordsResponse struct {
@@ -397,7 +485,7 @@ type GetStimulusWordsResponse struct {
 
 func (x *GetStimulusWordsResponse) Reset() {
 	*x = GetStimulusWordsResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[7]
+	mi := &file_participant_v1_participant_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -409,7 +497,7 @@ func (x *GetStimulusWordsResponse) String() string {
 func (*GetStimulusWordsResponse) ProtoMessage() {}
 
 func (x *GetStimulusWordsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[7]
+	mi := &file_participant_v1_participant_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -422,7 +510,7 @@ func (x *GetStimulusWordsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStimulusWordsResponse.ProtoReflect.Descriptor instead.
 func (*GetStimulusWordsResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{7}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetStimulusWordsResponse) GetWords() []*StimulusWord {
@@ -441,7 +529,7 @@ type GetStimulusWordRequest struct {
 
 func (x *GetStimulusWordRequest) Reset() {
 	*x = GetStimulusWordRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[8]
+	mi := &file_participant_v1_participant_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -453,7 +541,7 @@ func (x *GetStimulusWordRequest) String() string {
 func (*GetStimulusWordRequest) ProtoMessage() {}
 
 func (x *GetStimulusWordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[8]
+	mi := &file_participant_v1_participant_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -466,7 +554,7 @@ func (x *GetStimulusWordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStimulusWordRequest.ProtoReflect.Descriptor instead.
 func (*GetStimulusWordRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{8}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetStimulusWordRequest) GetId() int32 {
@@ -485,7 +573,7 @@ type GetStimulusWordResponse struct {
 
 func (x *GetStimulusWordResponse) Reset() {
 	*x = GetStimulusWordResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[9]
+	mi := &file_participant_v1_participant_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -497,7 +585,7 @@ func (x *GetStimulusWordResponse) String() string {
 func (*GetStimulusWordResponse) ProtoMessage() {}
 
 func (x *GetStimulusWordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[9]
+	mi := &file_participant_v1_participant_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -510,7 +598,7 @@ func (x *GetStimulusWordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStimulusWordResponse.ProtoReflect.Descriptor instead.
 func (*GetStimulusWordResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{9}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetStimulusWordResponse) GetWord() *StimulusWord {
@@ -526,6 +614,7 @@ type Participant struct {
 	Age            *int32                 `protobuf:"varint,2,opt,name=age,proto3,oneof" json:"age,omitempty"`
 	Gender         *string                `protobuf:"bytes,3,opt,name=gender,proto3,oneof" json:"gender,omitempty"`
 	Handedness     *string                `protobuf:"bytes,4,opt,name=handedness,proto3,oneof" json:"handedness,omitempty"`
+	Email          *string                `protobuf:"bytes,12,opt,name=email,proto3,oneof" json:"email,omitempty"`
 	AgeGroup       *string                `protobuf:"bytes,8,opt,name=age_group,json=ageGroup,proto3,oneof" json:"age_group,omitempty"`
 	Ethnicity      *string                `protobuf:"bytes,9,opt,name=ethnicity,proto3,oneof" json:"ethnicity,omitempty"`
 	IncomeRange    *string                `protobuf:"bytes,10,opt,name=income_range,json=incomeRange,proto3,oneof" json:"income_range,omitempty"`
@@ -539,7 +628,7 @@ type Participant struct {
 
 func (x *Participant) Reset() {
 	*x = Participant{}
-	mi := &file_participant_v1_participant_proto_msgTypes[10]
+	mi := &file_participant_v1_participant_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -551,7 +640,7 @@ func (x *Participant) String() string {
 func (*Participant) ProtoMessage() {}
 
 func (x *Participant) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[10]
+	mi := &file_participant_v1_participant_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -564,7 +653,7 @@ func (x *Participant) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Participant.ProtoReflect.Descriptor instead.
 func (*Participant) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{10}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Participant) GetId() string {
@@ -591,6 +680,13 @@ func (x *Participant) GetGender() string {
 func (x *Participant) GetHandedness() string {
 	if x != nil && x.Handedness != nil {
 		return *x.Handedness
+	}
+	return ""
+}
+
+func (x *Participant) GetEmail() string {
+	if x != nil && x.Email != nil {
+		return *x.Email
 	}
 	return ""
 }
@@ -656,7 +752,7 @@ type StimulusWord struct {
 
 func (x *StimulusWord) Reset() {
 	*x = StimulusWord{}
-	mi := &file_participant_v1_participant_proto_msgTypes[11]
+	mi := &file_participant_v1_participant_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -668,7 +764,7 @@ func (x *StimulusWord) String() string {
 func (*StimulusWord) ProtoMessage() {}
 
 func (x *StimulusWord) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[11]
+	mi := &file_participant_v1_participant_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -681,7 +777,7 @@ func (x *StimulusWord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StimulusWord.ProtoReflect.Descriptor instead.
 func (*StimulusWord) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{11}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *StimulusWord) GetId() int32 {
@@ -726,6 +822,10 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x15GetParticipantRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"W\n" +
 	"\x16GetParticipantResponse\x12=\n" +
+	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"4\n" +
+	"\x1cGetParticipantByEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"^\n" +
+	"\x1dGetParticipantByEmailResponse\x12=\n" +
 	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\xb1\x03\n" +
 	"\x18CreateParticipantRequest\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x14\n" +
@@ -755,18 +855,19 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x16GetStimulusWordRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\"K\n" +
 	"\x17GetStimulusWordResponse\x120\n" +
-	"\x04word\x18\x01 \x01(\v2\x1c.participant.v1.StimulusWordR\x04word\"\xee\x03\n" +
+	"\x04word\x18\x01 \x01(\v2\x1c.participant.v1.StimulusWordR\x04word\"\x93\x04\n" +
 	"\vParticipant\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x03age\x18\x02 \x01(\x05H\x00R\x03age\x88\x01\x01\x12\x1b\n" +
 	"\x06gender\x18\x03 \x01(\tH\x01R\x06gender\x88\x01\x01\x12#\n" +
 	"\n" +
 	"handedness\x18\x04 \x01(\tH\x02R\n" +
-	"handedness\x88\x01\x01\x12 \n" +
-	"\tage_group\x18\b \x01(\tH\x03R\bageGroup\x88\x01\x01\x12!\n" +
-	"\tethnicity\x18\t \x01(\tH\x04R\tethnicity\x88\x01\x01\x12&\n" +
+	"handedness\x88\x01\x01\x12\x19\n" +
+	"\x05email\x18\f \x01(\tH\x03R\x05email\x88\x01\x01\x12 \n" +
+	"\tage_group\x18\b \x01(\tH\x04R\bageGroup\x88\x01\x01\x12!\n" +
+	"\tethnicity\x18\t \x01(\tH\x05R\tethnicity\x88\x01\x01\x12&\n" +
 	"\fincome_range\x18\n" +
-	" \x01(\tH\x05R\vincomeRange\x88\x01\x01\x12'\n" +
+	" \x01(\tH\x06R\vincomeRange\x88\x01\x01\x12'\n" +
 	"\x0fmedical_history\x18\v \x03(\tR\x0emedicalHistory\x12\x1b\n" +
 	"\tis_public\x18\x05 \x01(\bR\bisPublic\x129\n" +
 	"\n" +
@@ -775,7 +876,8 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAtB\x06\n" +
 	"\x04_ageB\t\n" +
 	"\a_genderB\r\n" +
-	"\v_handednessB\f\n" +
+	"\v_handednessB\b\n" +
+	"\x06_emailB\f\n" +
 	"\n" +
 	"_age_groupB\f\n" +
 	"\n" +
@@ -785,11 +887,12 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1a\n" +
 	"\bjapanese\x18\x02 \x01(\tR\bjapanese\x12\x18\n" +
 	"\aenglish\x18\x03 \x01(\tR\aenglish\x12$\n" +
-	"\rpronunciation\x18\x04 \x01(\tR\rpronunciation2\x8e\x04\n" +
+	"\rpronunciation\x18\x04 \x01(\tR\rpronunciation2\x84\x05\n" +
 	"\x12ParticipantService\x12b\n" +
 	"\x0fGetParticipants\x12&.participant.v1.GetParticipantsRequest\x1a'.participant.v1.GetParticipantsResponse\x12_\n" +
 	"\x0eGetParticipant\x12%.participant.v1.GetParticipantRequest\x1a&.participant.v1.GetParticipantResponse\x12h\n" +
-	"\x11CreateParticipant\x12(.participant.v1.CreateParticipantRequest\x1a).participant.v1.CreateParticipantResponse\x12e\n" +
+	"\x11CreateParticipant\x12(.participant.v1.CreateParticipantRequest\x1a).participant.v1.CreateParticipantResponse\x12t\n" +
+	"\x15GetParticipantByEmail\x12,.participant.v1.GetParticipantByEmailRequest\x1a-.participant.v1.GetParticipantByEmailResponse\x12e\n" +
 	"\x10GetStimulusWords\x12'.participant.v1.GetStimulusWordsRequest\x1a(.participant.v1.GetStimulusWordsResponse\x12b\n" +
 	"\x0fGetStimulusWord\x12&.participant.v1.GetStimulusWordRequest\x1a'.participant.v1.GetStimulusWordResponseBSZQgithub.com/spirit-in-physics/services/grpc/gen/proto/participant/v1;participantv1b\x06proto3"
 
@@ -805,48 +908,53 @@ func file_participant_v1_participant_proto_rawDescGZIP() []byte {
 	return file_participant_v1_participant_proto_rawDescData
 }
 
-var file_participant_v1_participant_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_participant_v1_participant_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_participant_v1_participant_proto_goTypes = []any{
-	(*GetParticipantsRequest)(nil),    // 0: participant.v1.GetParticipantsRequest
-	(*GetParticipantsResponse)(nil),   // 1: participant.v1.GetParticipantsResponse
-	(*GetParticipantRequest)(nil),     // 2: participant.v1.GetParticipantRequest
-	(*GetParticipantResponse)(nil),    // 3: participant.v1.GetParticipantResponse
-	(*CreateParticipantRequest)(nil),  // 4: participant.v1.CreateParticipantRequest
-	(*CreateParticipantResponse)(nil), // 5: participant.v1.CreateParticipantResponse
-	(*GetStimulusWordsRequest)(nil),   // 6: participant.v1.GetStimulusWordsRequest
-	(*GetStimulusWordsResponse)(nil),  // 7: participant.v1.GetStimulusWordsResponse
-	(*GetStimulusWordRequest)(nil),    // 8: participant.v1.GetStimulusWordRequest
-	(*GetStimulusWordResponse)(nil),   // 9: participant.v1.GetStimulusWordResponse
-	(*Participant)(nil),               // 10: participant.v1.Participant
-	(*StimulusWord)(nil),              // 11: participant.v1.StimulusWord
-	(*structpb.Struct)(nil),           // 12: google.protobuf.Struct
-	(*timestamppb.Timestamp)(nil),     // 13: google.protobuf.Timestamp
+	(*GetParticipantsRequest)(nil),        // 0: participant.v1.GetParticipantsRequest
+	(*GetParticipantsResponse)(nil),       // 1: participant.v1.GetParticipantsResponse
+	(*GetParticipantRequest)(nil),         // 2: participant.v1.GetParticipantRequest
+	(*GetParticipantResponse)(nil),        // 3: participant.v1.GetParticipantResponse
+	(*GetParticipantByEmailRequest)(nil),  // 4: participant.v1.GetParticipantByEmailRequest
+	(*GetParticipantByEmailResponse)(nil), // 5: participant.v1.GetParticipantByEmailResponse
+	(*CreateParticipantRequest)(nil),      // 6: participant.v1.CreateParticipantRequest
+	(*CreateParticipantResponse)(nil),     // 7: participant.v1.CreateParticipantResponse
+	(*GetStimulusWordsRequest)(nil),       // 8: participant.v1.GetStimulusWordsRequest
+	(*GetStimulusWordsResponse)(nil),      // 9: participant.v1.GetStimulusWordsResponse
+	(*GetStimulusWordRequest)(nil),        // 10: participant.v1.GetStimulusWordRequest
+	(*GetStimulusWordResponse)(nil),       // 11: participant.v1.GetStimulusWordResponse
+	(*Participant)(nil),                   // 12: participant.v1.Participant
+	(*StimulusWord)(nil),                  // 13: participant.v1.StimulusWord
+	(*structpb.Struct)(nil),               // 14: google.protobuf.Struct
+	(*timestamppb.Timestamp)(nil),         // 15: google.protobuf.Timestamp
 }
 var file_participant_v1_participant_proto_depIdxs = []int32{
-	10, // 0: participant.v1.GetParticipantsResponse.participants:type_name -> participant.v1.Participant
-	10, // 1: participant.v1.GetParticipantResponse.participant:type_name -> participant.v1.Participant
-	12, // 2: participant.v1.CreateParticipantRequest.agreements:type_name -> google.protobuf.Struct
-	13, // 3: participant.v1.CreateParticipantRequest.agreed_at:type_name -> google.protobuf.Timestamp
-	10, // 4: participant.v1.CreateParticipantResponse.participant:type_name -> participant.v1.Participant
-	11, // 5: participant.v1.GetStimulusWordsResponse.words:type_name -> participant.v1.StimulusWord
-	11, // 6: participant.v1.GetStimulusWordResponse.word:type_name -> participant.v1.StimulusWord
-	13, // 7: participant.v1.Participant.created_at:type_name -> google.protobuf.Timestamp
-	13, // 8: participant.v1.Participant.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 9: participant.v1.ParticipantService.GetParticipants:input_type -> participant.v1.GetParticipantsRequest
-	2,  // 10: participant.v1.ParticipantService.GetParticipant:input_type -> participant.v1.GetParticipantRequest
-	4,  // 11: participant.v1.ParticipantService.CreateParticipant:input_type -> participant.v1.CreateParticipantRequest
-	6,  // 12: participant.v1.ParticipantService.GetStimulusWords:input_type -> participant.v1.GetStimulusWordsRequest
-	8,  // 13: participant.v1.ParticipantService.GetStimulusWord:input_type -> participant.v1.GetStimulusWordRequest
-	1,  // 14: participant.v1.ParticipantService.GetParticipants:output_type -> participant.v1.GetParticipantsResponse
-	3,  // 15: participant.v1.ParticipantService.GetParticipant:output_type -> participant.v1.GetParticipantResponse
-	5,  // 16: participant.v1.ParticipantService.CreateParticipant:output_type -> participant.v1.CreateParticipantResponse
-	7,  // 17: participant.v1.ParticipantService.GetStimulusWords:output_type -> participant.v1.GetStimulusWordsResponse
-	9,  // 18: participant.v1.ParticipantService.GetStimulusWord:output_type -> participant.v1.GetStimulusWordResponse
-	14, // [14:19] is the sub-list for method output_type
-	9,  // [9:14] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	12, // 0: participant.v1.GetParticipantsResponse.participants:type_name -> participant.v1.Participant
+	12, // 1: participant.v1.GetParticipantResponse.participant:type_name -> participant.v1.Participant
+	12, // 2: participant.v1.GetParticipantByEmailResponse.participant:type_name -> participant.v1.Participant
+	14, // 3: participant.v1.CreateParticipantRequest.agreements:type_name -> google.protobuf.Struct
+	15, // 4: participant.v1.CreateParticipantRequest.agreed_at:type_name -> google.protobuf.Timestamp
+	12, // 5: participant.v1.CreateParticipantResponse.participant:type_name -> participant.v1.Participant
+	13, // 6: participant.v1.GetStimulusWordsResponse.words:type_name -> participant.v1.StimulusWord
+	13, // 7: participant.v1.GetStimulusWordResponse.word:type_name -> participant.v1.StimulusWord
+	15, // 8: participant.v1.Participant.created_at:type_name -> google.protobuf.Timestamp
+	15, // 9: participant.v1.Participant.updated_at:type_name -> google.protobuf.Timestamp
+	0,  // 10: participant.v1.ParticipantService.GetParticipants:input_type -> participant.v1.GetParticipantsRequest
+	2,  // 11: participant.v1.ParticipantService.GetParticipant:input_type -> participant.v1.GetParticipantRequest
+	6,  // 12: participant.v1.ParticipantService.CreateParticipant:input_type -> participant.v1.CreateParticipantRequest
+	4,  // 13: participant.v1.ParticipantService.GetParticipantByEmail:input_type -> participant.v1.GetParticipantByEmailRequest
+	8,  // 14: participant.v1.ParticipantService.GetStimulusWords:input_type -> participant.v1.GetStimulusWordsRequest
+	10, // 15: participant.v1.ParticipantService.GetStimulusWord:input_type -> participant.v1.GetStimulusWordRequest
+	1,  // 16: participant.v1.ParticipantService.GetParticipants:output_type -> participant.v1.GetParticipantsResponse
+	3,  // 17: participant.v1.ParticipantService.GetParticipant:output_type -> participant.v1.GetParticipantResponse
+	7,  // 18: participant.v1.ParticipantService.CreateParticipant:output_type -> participant.v1.CreateParticipantResponse
+	5,  // 19: participant.v1.ParticipantService.GetParticipantByEmail:output_type -> participant.v1.GetParticipantByEmailResponse
+	9,  // 20: participant.v1.ParticipantService.GetStimulusWords:output_type -> participant.v1.GetStimulusWordsResponse
+	11, // 21: participant.v1.ParticipantService.GetStimulusWord:output_type -> participant.v1.GetStimulusWordResponse
+	16, // [16:22] is the sub-list for method output_type
+	10, // [10:16] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_participant_v1_participant_proto_init() }
@@ -855,15 +963,15 @@ func file_participant_v1_participant_proto_init() {
 		return
 	}
 	file_participant_v1_participant_proto_msgTypes[0].OneofWrappers = []any{}
-	file_participant_v1_participant_proto_msgTypes[4].OneofWrappers = []any{}
-	file_participant_v1_participant_proto_msgTypes[10].OneofWrappers = []any{}
+	file_participant_v1_participant_proto_msgTypes[6].OneofWrappers = []any{}
+	file_participant_v1_participant_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_participant_v1_participant_proto_rawDesc), len(file_participant_v1_participant_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

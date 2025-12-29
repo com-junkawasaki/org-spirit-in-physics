@@ -45,7 +45,12 @@ class KawasakiStore {
   }
 
   initializeParticipant(id?: string, demographics?: any) {
-    this.participantId = id || crypto.randomUUID();
+    if (id) {
+      this.participantId = id;
+    } else if (!this.participantId) {
+      this.participantId = crypto.randomUUID();
+    }
+    
     if (demographics) {
       this.demographics = { ...this.demographics, ...demographics };
     }
@@ -53,6 +58,32 @@ class KawasakiStore {
       participantId: this.participantId,
       demographics: this.demographics 
     });
+  }
+
+  async checkExistingParticipant(email: string) {
+    try {
+      const response = await participantClient.getParticipantByEmail({ email });
+      if (response.participant) {
+        const p = response.participant;
+        this.participantId = p.id;
+        this.demographics = {
+          ageGroup: p.ageGroup || "",
+          gender: p.gender || "",
+          ethnicity: p.ethnicity || "",
+          incomeRange: p.incomeRange || "",
+          medicalHistory: p.medicalHistory || [],
+        };
+        this.logEvent('participant_restored_from_server', { 
+          participantId: this.participantId,
+          email
+        });
+        return true;
+      }
+    } catch (e) {
+      // Not found is expected for new users
+      console.log("No existing participant found for email:", email);
+    }
+    return false;
   }
 
   async createParticipantOnServer(email: string, agreements: any) {

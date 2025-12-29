@@ -1,20 +1,26 @@
 -- name: GetParticipants :many
-SELECT id, age, gender, handedness, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+SELECT id, age, gender, handedness, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 FROM participants
 WHERE ($1::boolean IS NULL OR is_public = $1)
 ORDER BY created_at DESC;
 
 -- name: GetParticipant :one
-SELECT id, age, gender, handedness, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+SELECT id, age, gender, handedness, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 FROM participants
 WHERE id = $1;
 
+-- name: GetParticipantByEmail :one
+SELECT id, age, gender, handedness, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+FROM participants
+WHERE email = $1;
+
 -- name: CreateParticipant :one
 INSERT INTO participants (
-    id, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+    id, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 )
 VALUES (
     sqlc.arg(id), 
+    sqlc.narg(email),
     sqlc.narg(age_group), 
     sqlc.narg(ethnicity), 
     sqlc.narg(income_range), 
@@ -24,6 +30,7 @@ VALUES (
     sqlc.arg(updated_at)
 )
 ON CONFLICT (id) DO UPDATE SET 
+    email = EXCLUDED.email,
     age_group = EXCLUDED.age_group,
     ethnicity = EXCLUDED.ethnicity,
     income_range = EXCLUDED.income_range,

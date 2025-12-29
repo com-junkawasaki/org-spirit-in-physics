@@ -19,6 +19,7 @@ type Querier interface {
 	CreateTimelinePoint(ctx context.Context, arg CreateTimelinePointParams) error
 	GetEmotionVectors(ctx context.Context, arg GetEmotionVectorsParams) ([]GetEmotionVectorsRow, error)
 	GetParticipant(ctx context.Context, id pgtype.UUID) (Participant, error)
+	GetParticipantByEmail(ctx context.Context, email pgtype.Text) (Participant, error)
 	GetParticipants(ctx context.Context, dollar_1 bool) ([]Participant, error)
 	GetSessions(ctx context.Context, participantID pgtype.UUID) ([]GetSessionsRow, error)
 	GetSessionsWithPublicCheck(ctx context.Context, participantID pgtype.UUID) ([]GetSessionsWithPublicCheckRow, error)

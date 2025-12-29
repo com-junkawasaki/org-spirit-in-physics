@@ -10,6 +10,7 @@ CREATE TABLE participants (
   age INTEGER,
   gender TEXT, -- ENUM型だが、sqlcではTEXTとして扱う
   handedness TEXT,
+  email TEXT,
   age_group TEXT,
   ethnicity TEXT,
   income_range TEXT,

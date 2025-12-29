@@ -42,6 +42,9 @@ const (
 	// ParticipantServiceCreateParticipantProcedure is the fully-qualified name of the
 	// ParticipantService's CreateParticipant RPC.
 	ParticipantServiceCreateParticipantProcedure = "/participant.v1.ParticipantService/CreateParticipant"
+	// ParticipantServiceGetParticipantByEmailProcedure is the fully-qualified name of the
+	// ParticipantService's GetParticipantByEmail RPC.
+	ParticipantServiceGetParticipantByEmailProcedure = "/participant.v1.ParticipantService/GetParticipantByEmail"
 	// ParticipantServiceGetStimulusWordsProcedure is the fully-qualified name of the
 	// ParticipantService's GetStimulusWords RPC.
 	ParticipantServiceGetStimulusWordsProcedure = "/participant.v1.ParticipantService/GetStimulusWords"
@@ -58,6 +61,8 @@ type ParticipantServiceClient interface {
 	GetParticipant(context.Context, *connect.Request[v1.GetParticipantRequest]) (*connect.Response[v1.GetParticipantResponse], error)
 	// Create a new participant
 	CreateParticipant(context.Context, *connect.Request[v1.CreateParticipantRequest]) (*connect.Response[v1.CreateParticipantResponse], error)
+	// Get a participant by email
+	GetParticipantByEmail(context.Context, *connect.Request[v1.GetParticipantByEmailRequest]) (*connect.Response[v1.GetParticipantByEmailResponse], error)
 	// Get all stimulus words
 	GetStimulusWords(context.Context, *connect.Request[v1.GetStimulusWordsRequest]) (*connect.Response[v1.GetStimulusWordsResponse], error)
 	// Get a stimulus word by ID
@@ -93,6 +98,12 @@ func NewParticipantServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(participantServiceMethods.ByName("CreateParticipant")),
 			connect.WithClientOptions(opts...),
 		),
+		getParticipantByEmail: connect.NewClient[v1.GetParticipantByEmailRequest, v1.GetParticipantByEmailResponse](
+			httpClient,
+			baseURL+ParticipantServiceGetParticipantByEmailProcedure,
+			connect.WithSchema(participantServiceMethods.ByName("GetParticipantByEmail")),
+			connect.WithClientOptions(opts...),
+		),
 		getStimulusWords: connect.NewClient[v1.GetStimulusWordsRequest, v1.GetStimulusWordsResponse](
 			httpClient,
 			baseURL+ParticipantServiceGetStimulusWordsProcedure,
@@ -110,11 +121,12 @@ func NewParticipantServiceClient(httpClient connect.HTTPClient, baseURL string, 
 
 // participantServiceClient implements ParticipantServiceClient.
 type participantServiceClient struct {
-	getParticipants   *connect.Client[v1.GetParticipantsRequest, v1.GetParticipantsResponse]
-	getParticipant    *connect.Client[v1.GetParticipantRequest, v1.GetParticipantResponse]
-	createParticipant *connect.Client[v1.CreateParticipantRequest, v1.CreateParticipantResponse]
-	getStimulusWords  *connect.Client[v1.GetStimulusWordsRequest, v1.GetStimulusWordsResponse]
-	getStimulusWord   *connect.Client[v1.GetStimulusWordRequest, v1.GetStimulusWordResponse]
+	getParticipants       *connect.Client[v1.GetParticipantsRequest, v1.GetParticipantsResponse]
+	getParticipant        *connect.Client[v1.GetParticipantRequest, v1.GetParticipantResponse]
+	createParticipant     *connect.Client[v1.CreateParticipantRequest, v1.CreateParticipantResponse]
+	getParticipantByEmail *connect.Client[v1.GetParticipantByEmailRequest, v1.GetParticipantByEmailResponse]
+	getStimulusWords      *connect.Client[v1.GetStimulusWordsRequest, v1.GetStimulusWordsResponse]
+	getStimulusWord       *connect.Client[v1.GetStimulusWordRequest, v1.GetStimulusWordResponse]
 }
 
 // GetParticipants calls participant.v1.ParticipantService.GetParticipants.
@@ -130,6 +142,11 @@ func (c *participantServiceClient) GetParticipant(ctx context.Context, req *conn
 // CreateParticipant calls participant.v1.ParticipantService.CreateParticipant.
 func (c *participantServiceClient) CreateParticipant(ctx context.Context, req *connect.Request[v1.CreateParticipantRequest]) (*connect.Response[v1.CreateParticipantResponse], error) {
 	return c.createParticipant.CallUnary(ctx, req)
+}
+
+// GetParticipantByEmail calls participant.v1.ParticipantService.GetParticipantByEmail.
+func (c *participantServiceClient) GetParticipantByEmail(ctx context.Context, req *connect.Request[v1.GetParticipantByEmailRequest]) (*connect.Response[v1.GetParticipantByEmailResponse], error) {
+	return c.getParticipantByEmail.CallUnary(ctx, req)
 }
 
 // GetStimulusWords calls participant.v1.ParticipantService.GetStimulusWords.
@@ -150,6 +167,8 @@ type ParticipantServiceHandler interface {
 	GetParticipant(context.Context, *connect.Request[v1.GetParticipantRequest]) (*connect.Response[v1.GetParticipantResponse], error)
 	// Create a new participant
 	CreateParticipant(context.Context, *connect.Request[v1.CreateParticipantRequest]) (*connect.Response[v1.CreateParticipantResponse], error)
+	// Get a participant by email
+	GetParticipantByEmail(context.Context, *connect.Request[v1.GetParticipantByEmailRequest]) (*connect.Response[v1.GetParticipantByEmailResponse], error)
 	// Get all stimulus words
 	GetStimulusWords(context.Context, *connect.Request[v1.GetStimulusWordsRequest]) (*connect.Response[v1.GetStimulusWordsResponse], error)
 	// Get a stimulus word by ID
@@ -181,6 +200,12 @@ func NewParticipantServiceHandler(svc ParticipantServiceHandler, opts ...connect
 		connect.WithSchema(participantServiceMethods.ByName("CreateParticipant")),
 		connect.WithHandlerOptions(opts...),
 	)
+	participantServiceGetParticipantByEmailHandler := connect.NewUnaryHandler(
+		ParticipantServiceGetParticipantByEmailProcedure,
+		svc.GetParticipantByEmail,
+		connect.WithSchema(participantServiceMethods.ByName("GetParticipantByEmail")),
+		connect.WithHandlerOptions(opts...),
+	)
 	participantServiceGetStimulusWordsHandler := connect.NewUnaryHandler(
 		ParticipantServiceGetStimulusWordsProcedure,
 		svc.GetStimulusWords,
@@ -201,6 +226,8 @@ func NewParticipantServiceHandler(svc ParticipantServiceHandler, opts ...connect
 			participantServiceGetParticipantHandler.ServeHTTP(w, r)
 		case ParticipantServiceCreateParticipantProcedure:
 			participantServiceCreateParticipantHandler.ServeHTTP(w, r)
+		case ParticipantServiceGetParticipantByEmailProcedure:
+			participantServiceGetParticipantByEmailHandler.ServeHTTP(w, r)
 		case ParticipantServiceGetStimulusWordsProcedure:
 			participantServiceGetStimulusWordsHandler.ServeHTTP(w, r)
 		case ParticipantServiceGetStimulusWordProcedure:
@@ -224,6 +251,10 @@ func (UnimplementedParticipantServiceHandler) GetParticipant(context.Context, *c
 
 func (UnimplementedParticipantServiceHandler) CreateParticipant(context.Context, *connect.Request[v1.CreateParticipantRequest]) (*connect.Response[v1.CreateParticipantResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.CreateParticipant is not implemented"))
+}
+
+func (UnimplementedParticipantServiceHandler) GetParticipantByEmail(context.Context, *connect.Request[v1.GetParticipantByEmailRequest]) (*connect.Response[v1.GetParticipantByEmailResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.GetParticipantByEmail is not implemented"))
 }
 
 func (UnimplementedParticipantServiceHandler) GetStimulusWords(context.Context, *connect.Request[v1.GetStimulusWordsRequest]) (*connect.Response[v1.GetStimulusWordsResponse], error) {

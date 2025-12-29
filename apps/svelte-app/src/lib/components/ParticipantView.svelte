@@ -17,6 +17,22 @@ import ConsentForm from "./ConsentForm.svelte";
     await kawasakiStore.loadStimulusWords();
   });
 
+  // ログイン済みの場合、既存の参加者情報をチェック
+  $effect(() => {
+    if (clerk?.user && step === "landing") {
+      const email = clerk.user.primaryEmailAddress?.emailAddress;
+      if (email) {
+        kawasakiStore.checkExistingParticipant(email).then((exists) => {
+          if (exists) {
+            console.log("Existing participant found, skipping consent");
+            kawasakiStore.startPreflight();
+            step = "assessment";
+          }
+        });
+      }
+    }
+  });
+
   async function handleConsent(id: string, email: string, agreements: any, demographics: any) {
     console.log("Consent received:", { id, email, agreements, demographics });
     
@@ -305,3 +321,4 @@ import ConsentForm from "./ConsentForm.svelte";
     }
   }
 </style>
+
