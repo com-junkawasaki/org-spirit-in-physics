@@ -18,7 +18,7 @@ VALUES ($1, $2, $3, $4, $5, $6)
 
 type CreatePhysiologicalMeasurementParams struct {
 	TimelinePointTime          pgtype.Timestamptz `json:"timeline_point_time"`
-	TimelinePointParticipantID pgtype.UUID        `json:"timeline_point_participant_id"`
+	TimelinePointParticipantID string             `json:"timeline_point_participant_id"`
 	TimelinePointSessionID     pgtype.UUID        `json:"timeline_point_session_id"`
 	MeasurementType            string             `json:"measurement_type"`
 	Value                      float64            `json:"value"`
@@ -44,7 +44,7 @@ VALUES ($1, $2, $3, $4, $5, $6)
 
 type CreateTimelineEmotionEntryParams struct {
 	TimelinePointTime          pgtype.Timestamptz `json:"timeline_point_time"`
-	TimelinePointParticipantID pgtype.UUID        `json:"timeline_point_participant_id"`
+	TimelinePointParticipantID string             `json:"timeline_point_participant_id"`
 	TimelinePointSessionID     pgtype.UUID        `json:"timeline_point_session_id"`
 	EmotionName                string             `json:"emotion_name"`
 	Score                      float64            `json:"score"`
@@ -71,7 +71,7 @@ ON CONFLICT (time, participant_id, session_id) DO NOTHING
 
 type CreateTimelinePointParams struct {
 	Time          pgtype.Timestamptz `json:"time"`
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	SessionID     pgtype.UUID        `json:"session_id"`
 	Word          pgtype.Text        `json:"word"`
 	EventType     pgtype.Text        `json:"event_type"`
@@ -118,12 +118,12 @@ ORDER BY word ASC
 `
 
 type GetEmotionVectorsParams struct {
-	ParticipantID pgtype.UUID `json:"participant_id"`
+	ParticipantID string      `json:"participant_id"`
 	Column2       pgtype.UUID `json:"column_2"`
 }
 
 type GetEmotionVectorsRow struct {
-	ParticipantID     pgtype.UUID `json:"participant_id"`
+	ParticipantID     string      `json:"participant_id"`
 	SessionID         pgtype.UUID `json:"session_id"`
 	Word              pgtype.Text `json:"word"`
 	JoySum            float64     `json:"joy_sum"`
@@ -226,7 +226,7 @@ LIMIT 20000
 `
 
 type GetTimelinePointsParams struct {
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	Column2       pgtype.UUID        `json:"column_2"`
 	Column3       pgtype.Timestamptz `json:"column_3"`
 	Column4       pgtype.Timestamptz `json:"column_4"`
@@ -234,7 +234,7 @@ type GetTimelinePointsParams struct {
 
 type GetTimelinePointsRow struct {
 	Time          pgtype.Timestamptz `json:"time"`
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	SessionID     pgtype.UUID        `json:"session_id"`
 	Word          pgtype.Text        `json:"word"`
 	EventType     pgtype.Text        `json:"event_type"`
@@ -332,7 +332,7 @@ LIMIT 20000
 `
 
 type GetTimelinePointsWithPublicCheckParams struct {
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	Column2       pgtype.UUID        `json:"column_2"`
 	Column3       pgtype.Timestamptz `json:"column_3"`
 	Column4       pgtype.Timestamptz `json:"column_4"`
@@ -340,7 +340,7 @@ type GetTimelinePointsWithPublicCheckParams struct {
 
 type GetTimelinePointsWithPublicCheckRow struct {
 	Time          pgtype.Timestamptz `json:"time"`
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	SessionID     pgtype.UUID        `json:"session_id"`
 	Word          pgtype.Text        `json:"word"`
 	EventType     pgtype.Text        `json:"event_type"`
@@ -411,12 +411,12 @@ ORDER BY word ASC
 `
 
 type GetWordAggregatesParams struct {
-	ParticipantID pgtype.UUID `json:"participant_id"`
+	ParticipantID string      `json:"participant_id"`
 	Column2       pgtype.UUID `json:"column_2"`
 }
 
 type GetWordAggregatesRow struct {
-	ParticipantID    pgtype.UUID `json:"participant_id"`
+	ParticipantID    string      `json:"participant_id"`
 	SessionID        pgtype.UUID `json:"session_id"`
 	Word             pgtype.Text `json:"word"`
 	Count            int64       `json:"count"`
@@ -494,12 +494,12 @@ ORDER BY word ASC
 `
 
 type GetWordStatisticsParams struct {
-	ParticipantID pgtype.UUID `json:"participant_id"`
+	ParticipantID string      `json:"participant_id"`
 	Column2       pgtype.UUID `json:"column_2"`
 }
 
 type GetWordStatisticsRow struct {
-	ParticipantID    pgtype.UUID `json:"participant_id"`
+	ParticipantID    string      `json:"participant_id"`
 	SessionID        pgtype.UUID `json:"session_id"`
 	Word             pgtype.Text `json:"word"`
 	Count            int64       `json:"count"`

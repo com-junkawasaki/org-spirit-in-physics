@@ -56,6 +56,7 @@ class KawasakiStore {
     if (id) {
       this.participantId = id;
     } else if (!this.participantId) {
+      // Use crypto.randomUUID() only as a fallback
       this.participantId = crypto.randomUUID();
     }
     
@@ -70,6 +71,19 @@ class KawasakiStore {
       participantId: this.participantId,
       demographics: this.demographics 
     });
+  }
+
+  syncWithClerk(user: any) {
+    if (user) {
+      this.participantId = user.id;
+      this.participantEmail = user.primaryEmailAddress?.emailAddress || null;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('participantId', this.participantId);
+        if (this.participantEmail) {
+          localStorage.setItem('participantEmail', this.participantEmail);
+        }
+      }
+    }
   }
 
   async checkExistingParticipant(email: string) {

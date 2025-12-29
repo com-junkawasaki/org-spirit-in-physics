@@ -16,7 +16,7 @@ WHERE email = $1;
 
 -- name: CreateParticipant :one
 INSERT INTO participants (
-    id, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+    id, email, age_group, ethnicity, income_range, medical_history, is_public, gender, created_at, updated_at
 )
 VALUES (
     sqlc.arg(id), 
@@ -26,6 +26,7 @@ VALUES (
     sqlc.narg(income_range), 
     sqlc.narg(medical_history), 
     COALESCE(sqlc.narg(is_public)::boolean, true), 
+    sqlc.narg(gender),
     sqlc.arg(created_at), 
     sqlc.arg(updated_at)
 )
@@ -35,6 +36,7 @@ ON CONFLICT (id) DO UPDATE SET
     ethnicity = EXCLUDED.ethnicity,
     income_range = EXCLUDED.income_range,
     medical_history = EXCLUDED.medical_history,
+    gender = EXCLUDED.gender,
     updated_at = EXCLUDED.updated_at
 RETURNING *;
 

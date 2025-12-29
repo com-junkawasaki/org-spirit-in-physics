@@ -6,7 +6,7 @@
 
 -- Participants table
 CREATE TABLE participants (
-  id UUID PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   age INTEGER,
   gender TEXT, -- ENUM型だが、sqlcではTEXTとして扱う
   handedness TEXT,
@@ -23,7 +23,7 @@ CREATE TABLE participants (
 -- Sessions table
 CREATE TABLE sessions (
   id UUID PRIMARY KEY,
-  participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+  participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
   session_index INTEGER,
   start_ts BIGINT NOT NULL,
   end_ts BIGINT,
@@ -57,7 +57,7 @@ CREATE TABLE stimulus_words (
 -- Timeline points table (TimescaleDB hypertable)
 CREATE TABLE timeline_points (
   time TIMESTAMPTZ NOT NULL,
-  participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+  participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
   session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   word TEXT,
   event_type TEXT,
@@ -72,7 +72,7 @@ CREATE TABLE timeline_points (
 CREATE TABLE timeline_emotion_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   timeline_point_time TIMESTAMPTZ NOT NULL,
-  timeline_point_participant_id UUID NOT NULL,
+  timeline_point_participant_id TEXT NOT NULL,
   timeline_point_session_id UUID NOT NULL,
   emotion_name TEXT NOT NULL, -- emotion_name_enum
   score DOUBLE PRECISION NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE timeline_emotion_entries (
 CREATE TABLE physiological_measurements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   timeline_point_time TIMESTAMPTZ NOT NULL,
-  timeline_point_participant_id UUID NOT NULL,
+  timeline_point_participant_id TEXT NOT NULL,
   timeline_point_session_id UUID NOT NULL,
   measurement_type TEXT NOT NULL, -- measurement_type_enum
   value DOUBLE PRECISION NOT NULL,

@@ -36,6 +36,7 @@
 
   // Constants
   const WELCOME_MESSAGE = m.welcome_message();
+  const DEBUG_MODE = true; // Added for validation as requested
 
   onMount(async () => {
     // If status is idle, we probably shouldn't be here directly without consent
@@ -187,7 +188,8 @@
       await new Promise(resolve => setTimeout(resolve, 300));
       
       await startRecording(kawasakiStore.currentSession);
-      kawasakiStore.startSession(100);
+      const wordCount = DEBUG_MODE ? 3 : 100;
+      kawasakiStore.startSession(wordCount);
     } catch (e) {
       console.error("Error starting session:", e);
       kawasakiStore.error = "Error starting session: " + (e instanceof Error ? e.message : String(e));
@@ -200,7 +202,8 @@
       // Wait a bit for MediaRecorder to fully stop and resource to be released
       await new Promise(resolve => setTimeout(resolve, 500));
       await startRecording(kawasakiStore.currentSession);
-      kawasakiStore.startSession(100);
+      const wordCount = DEBUG_MODE ? 3 : 100;
+      kawasakiStore.startSession(wordCount);
     } catch (e) {
       console.error("Error starting next session:", e);
       kawasakiStore.error = "Error starting next session: " + (e instanceof Error ? e.message : String(e));

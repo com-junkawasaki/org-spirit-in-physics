@@ -13,7 +13,7 @@ import (
 
 const createParticipant = `-- name: CreateParticipant :one
 INSERT INTO participants (
-    id, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+    id, email, age_group, ethnicity, income_range, medical_history, is_public, gender, created_at, updated_at
 )
 VALUES (
     $1, 
@@ -23,8 +23,9 @@ VALUES (
     $5, 
     $6, 
     COALESCE($7::boolean, true), 
-    $8, 
-    $9
+    $8,
+    $9, 
+    $10
 )
 ON CONFLICT (id) DO UPDATE SET 
     email = EXCLUDED.email,
@@ -32,18 +33,20 @@ ON CONFLICT (id) DO UPDATE SET
     ethnicity = EXCLUDED.ethnicity,
     income_range = EXCLUDED.income_range,
     medical_history = EXCLUDED.medical_history,
+    gender = EXCLUDED.gender,
     updated_at = EXCLUDED.updated_at
 RETURNING id, age, gender, handedness, email, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 `
 
 type CreateParticipantParams struct {
-	ID             pgtype.UUID        `json:"id"`
+	ID             string             `json:"id"`
 	Email          pgtype.Text        `json:"email"`
 	AgeGroup       pgtype.Text        `json:"age_group"`
 	Ethnicity      pgtype.Text        `json:"ethnicity"`
 	IncomeRange    pgtype.Text        `json:"income_range"`
 	MedicalHistory []string           `json:"medical_history"`
 	IsPublic       pgtype.Bool        `json:"is_public"`
+	Gender         pgtype.Text        `json:"gender"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
@@ -57,6 +60,7 @@ func (q *Queries) CreateParticipant(ctx context.Context, arg CreateParticipantPa
 		arg.IncomeRange,
 		arg.MedicalHistory,
 		arg.IsPublic,
+		arg.Gender,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -84,7 +88,7 @@ FROM participants
 WHERE id = $1
 `
 
-func (q *Queries) GetParticipant(ctx context.Context, id pgtype.UUID) (Participant, error) {
+func (q *Queries) GetParticipant(ctx context.Context, id string) (Participant, error) {
 	row := q.db.QueryRow(ctx, getParticipant, id)
 	var i Participant
 	err := row.Scan(

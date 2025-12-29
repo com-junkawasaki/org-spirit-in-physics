@@ -48,9 +48,8 @@ func (h *ParticipantHandler) GetParticipants(
 	}
 
 	for _, p := range participants {
-		uid, _ := uuid.FromBytes(p.ID.Bytes[:])
 		resp.Participants = append(resp.Participants, &participantv1.Participant{
-			Id:             uid.String(),
+			Id:             p.ID,
 			Age:            toInt32Ptr(p.Age),
 			Gender:         toStringPtr(p.Gender),
 			Handedness:     toStringPtr(p.Handedness),
@@ -73,21 +72,14 @@ func (h *ParticipantHandler) GetParticipant(
 	ctx context.Context,
 	req *connect.Request[participantv1.GetParticipantRequest],
 ) (*connect.Response[participantv1.GetParticipantResponse], error) {
-	participantID, err := uuid.Parse(req.Msg.Id)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
-	participant, err := h.queries.GetParticipant(ctx, pgUUID)
+	participant, err := h.queries.GetParticipant(ctx, req.Msg.Id)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
 
-	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
 	resp := &participantv1.GetParticipantResponse{
 		Participant: &participantv1.Participant{
-			Id:             uid.String(),
+			Id:             participant.ID,
 			Age:            toInt32Ptr(participant.Age),
 			Gender:         toStringPtr(participant.Gender),
 			Handedness:     toStringPtr(participant.Handedness),
@@ -115,10 +107,9 @@ func (h *ParticipantHandler) GetParticipantByEmail(
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
 
-	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
 	resp := &participantv1.GetParticipantByEmailResponse{
 		Participant: &participantv1.Participant{
-			Id:             uid.String(),
+			Id:             participant.ID,
 			Age:            toInt32Ptr(participant.Age),
 			Gender:         toStringPtr(participant.Gender),
 			Handedness:     toStringPtr(participant.Handedness),
@@ -141,13 +132,9 @@ func (h *ParticipantHandler) CreateParticipant(
 	ctx context.Context,
 	req *connect.Request[participantv1.CreateParticipantRequest],
 ) (*connect.Response[participantv1.CreateParticipantResponse], error) {
-	participantID := uuid.New()
-	if req.Msg.Id != nil && *req.Msg.Id != "" {
-		var err error
-		participantID, err = uuid.Parse(*req.Msg.Id)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
+	participantID := req.Msg.GetId()
+	if participantID == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, connect.NewError(connect.CodeInvalidArgument, nil))
 	}
 
 	isPublic := true
@@ -160,15 +147,15 @@ func (h *ParticipantHandler) CreateParticipant(
 		now = req.Msg.AgreedAt.AsTime()
 	}
 
-	pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
 	participant, err := h.queries.CreateParticipant(ctx, db.CreateParticipantParams{
-		ID:             pgUUID,
+		ID:             participantID,
 		Email:          pgtype.Text{String: req.Msg.Email, Valid: true},
 		AgeGroup:       pgtype.Text{String: getStringValue(req.Msg.AgeGroup), Valid: req.Msg.AgeGroup != nil},
 		Ethnicity:      pgtype.Text{String: getStringValue(req.Msg.Ethnicity), Valid: req.Msg.Ethnicity != nil},
 		IncomeRange:    pgtype.Text{String: getStringValue(req.Msg.IncomeRange), Valid: req.Msg.IncomeRange != nil},
 		MedicalHistory: req.Msg.MedicalHistory,
 		IsPublic:       pgtype.Bool{Bool: isPublic, Valid: true},
+		Gender:         pgtype.Text{String: getStringValue(req.Msg.Gender), Valid: req.Msg.Gender != nil},
 		CreatedAt:      pgtype.Timestamptz{Time: now, Valid: true},
 		UpdatedAt:      pgtype.Timestamptz{Time: now, Valid: true},
 	})
@@ -179,7 +166,7 @@ func (h *ParticipantHandler) CreateParticipant(
 	// Trigger Temporal Workflow
 	if h.temporalClient != nil {
 		workflowOptions := client.StartWorkflowOptions{
-			ID:        "onboarding-" + participantID.String(),
+			ID:        "onboarding-" + participantID,
 			TaskQueue: "onboarding-queue",
 		}
 		_, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.OnboardingWorkflow, req.Msg.Email)
@@ -189,10 +176,9 @@ func (h *ParticipantHandler) CreateParticipant(
 		}
 	}
 
-	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
 	resp := &participantv1.CreateParticipantResponse{
 		Participant: &participantv1.Participant{
-			Id:             uid.String(),
+			Id:             participant.ID,
 			Age:            toInt32Ptr(participant.Age),
 			Gender:         toStringPtr(participant.Gender),
 			Handedness:     toStringPtr(participant.Handedness),

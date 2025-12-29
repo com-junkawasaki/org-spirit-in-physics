@@ -18,9 +18,10 @@
   // Check for existing participant and skip consent if registered
   $effect(() => {
     if (browser && (isLanding || isConsent)) {
-      // If we've already checked and found someone, or we're already checked and no user is logged in yet,
-      // we might want to skip. But if a user logs in, we should check again.
-      
+      if (user) {
+        kawasakiStore.syncWithClerk(user);
+      }
+
       const clerkEmail = user?.primaryEmailAddress?.emailAddress;
       const localEmail = kawasakiStore.participantEmail;
       const emailToCheck = clerkEmail || localEmail;
@@ -36,9 +37,6 @@
             }
           }
         });
-      } else if (!emailToCheck) {
-        // No email available to check yet
-        kawasakiStore.hasCheckedExisting = false; 
       }
     }
   });

@@ -19,7 +19,7 @@ RETURNING id, participant_id, session_index, start_ts, end_ts, created_at, updat
 
 type CreateSessionParams struct {
 	ID            pgtype.UUID        `json:"id"`
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	SessionIndex  pgtype.Int4        `json:"session_index"`
 	StartTs       int64              `json:"start_ts"`
 	EndTs         pgtype.Int8        `json:"end_ts"`
@@ -107,7 +107,7 @@ ORDER BY s.session_index ASC
 
 type GetSessionsRow struct {
 	ID            pgtype.UUID        `json:"id"`
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	SessionIndex  pgtype.Int4        `json:"session_index"`
 	StartTs       int64              `json:"start_ts"`
 	EndTs         pgtype.Int8        `json:"end_ts"`
@@ -116,7 +116,7 @@ type GetSessionsRow struct {
 	Events        interface{}        `json:"events"`
 }
 
-func (q *Queries) GetSessions(ctx context.Context, participantID pgtype.UUID) ([]GetSessionsRow, error) {
+func (q *Queries) GetSessions(ctx context.Context, participantID string) ([]GetSessionsRow, error) {
 	rows, err := q.db.Query(ctx, getSessions, participantID)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ ORDER BY s.session_index ASC
 
 type GetSessionsWithPublicCheckRow struct {
 	ID            pgtype.UUID        `json:"id"`
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	SessionIndex  pgtype.Int4        `json:"session_index"`
 	StartTs       int64              `json:"start_ts"`
 	EndTs         pgtype.Int8        `json:"end_ts"`
@@ -185,7 +185,7 @@ type GetSessionsWithPublicCheckRow struct {
 	Events        interface{}        `json:"events"`
 }
 
-func (q *Queries) GetSessionsWithPublicCheck(ctx context.Context, participantID pgtype.UUID) ([]GetSessionsWithPublicCheckRow, error) {
+func (q *Queries) GetSessionsWithPublicCheck(ctx context.Context, participantID string) ([]GetSessionsWithPublicCheckRow, error) {
 	rows, err := q.db.Query(ctx, getSessionsWithPublicCheck, participantID)
 	if err != nil {
 		return nil, err

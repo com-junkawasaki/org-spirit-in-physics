@@ -9,7 +9,7 @@ import (
 )
 
 type Participant struct {
-	ID             pgtype.UUID        `json:"id"`
+	ID             string             `json:"id"`
 	Age            pgtype.Int4        `json:"age"`
 	Gender         pgtype.Text        `json:"gender"`
 	Handedness     pgtype.Text        `json:"handedness"`
@@ -26,7 +26,7 @@ type Participant struct {
 type PhysiologicalMeasurement struct {
 	ID                         pgtype.UUID        `json:"id"`
 	TimelinePointTime          pgtype.Timestamptz `json:"timeline_point_time"`
-	TimelinePointParticipantID pgtype.UUID        `json:"timeline_point_participant_id"`
+	TimelinePointParticipantID string             `json:"timeline_point_participant_id"`
 	TimelinePointSessionID     pgtype.UUID        `json:"timeline_point_session_id"`
 	MeasurementType            string             `json:"measurement_type"`
 	Value                      float64            `json:"value"`
@@ -36,7 +36,7 @@ type PhysiologicalMeasurement struct {
 
 type Session struct {
 	ID            pgtype.UUID        `json:"id"`
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	SessionIndex  pgtype.Int4        `json:"session_index"`
 	StartTs       int64              `json:"start_ts"`
 	EndTs         pgtype.Int8        `json:"end_ts"`
@@ -67,7 +67,7 @@ type StimulusWord struct {
 type TimelineEmotionEntry struct {
 	ID                         pgtype.UUID        `json:"id"`
 	TimelinePointTime          pgtype.Timestamptz `json:"timeline_point_time"`
-	TimelinePointParticipantID pgtype.UUID        `json:"timeline_point_participant_id"`
+	TimelinePointParticipantID string             `json:"timeline_point_participant_id"`
 	TimelinePointSessionID     pgtype.UUID        `json:"timeline_point_session_id"`
 	EmotionName                string             `json:"emotion_name"`
 	Score                      float64            `json:"score"`
@@ -76,7 +76,7 @@ type TimelineEmotionEntry struct {
 }
 
 type TimelineEmotionVectorsByWord struct {
-	ParticipantID     pgtype.UUID `json:"participant_id"`
+	ParticipantID     string      `json:"participant_id"`
 	SessionID         pgtype.UUID `json:"session_id"`
 	Word              pgtype.Text `json:"word"`
 	JoySum            float64     `json:"joy_sum"`
@@ -95,7 +95,7 @@ type TimelineEmotionVectorsByWord struct {
 
 type TimelinePoint struct {
 	Time          pgtype.Timestamptz `json:"time"`
-	ParticipantID pgtype.UUID        `json:"participant_id"`
+	ParticipantID string             `json:"participant_id"`
 	SessionID     pgtype.UUID        `json:"session_id"`
 	Word          pgtype.Text        `json:"word"`
 	EventType     pgtype.Text        `json:"event_type"`
@@ -106,7 +106,7 @@ type TimelinePoint struct {
 }
 
 type TimelineWordAggregatesBySession struct {
-	ParticipantID    pgtype.UUID `json:"participant_id"`
+	ParticipantID    string      `json:"participant_id"`
 	SessionID        pgtype.UUID `json:"session_id"`
 	Word             pgtype.Text `json:"word"`
 	Count            int64       `json:"count"`
@@ -124,7 +124,7 @@ type TimelineWordAggregatesBySession struct {
 }
 
 type TimelineWordStatisticsBySession struct {
-	ParticipantID    pgtype.UUID `json:"participant_id"`
+	ParticipantID    string      `json:"participant_id"`
 	SessionID        pgtype.UUID `json:"session_id"`
 	Word             pgtype.Text `json:"word"`
 	Count            int64       `json:"count"`
