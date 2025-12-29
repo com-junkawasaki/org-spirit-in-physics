@@ -88,5 +88,8 @@
 	"plan_voluntary_title": "6. Voluntary Participation",
 	"plan_voluntary_text": "Participation in this research is completely voluntary. You may withdraw at any time without explaining your reasons. Refusing or discontinuing participation will not result in any disadvantages.",
 	"plan_contact_title": "7. Contact Information",
-	"plan_contact_text": "If you have questions or concerns about this research, please contact the research supervisor (kztainaka@bri.niigata-u.ac.jp). Phone: 025-227-0900."
+	"plan_contact_text": "If you have questions or concerns about this research, please contact the research supervisor (kztainaka@bri.niigata-u.ac.jp). Phone: 025-227-0900.",
+	"page_not_found": "Page Not Found",
+	"page_not_found_desc": "The page you are looking for does not exist.",
+	"go_to_home": "Go to Home"
 }

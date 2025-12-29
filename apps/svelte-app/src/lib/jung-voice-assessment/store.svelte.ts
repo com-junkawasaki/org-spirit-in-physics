@@ -70,8 +70,10 @@ class KawasakiStore {
         isPublic: true
       });
       this.logEvent('participant_created_on_server');
-    } catch (e) {
+      this.error = null;
+    } catch (e: any) {
       console.error("Failed to create participant on server:", e);
+      this.error = `参加者情報の登録に失敗しました: ${e.message || '不明なエラー'}`;
       this.logEvent('participant_creation_failed', { error: String(e) });
       throw e;
     }
@@ -82,10 +84,15 @@ class KawasakiStore {
       const response = await participantClient.getStimulusWords({});
       this.stimulusWords = response.words;
       this.logEvent('stimulus_words_loaded', { count: this.stimulusWords.length });
+      this.error = null;
     } catch (e: any) {
-      this.error = "刺激語の読み込みに失敗しました。";
+      this.error = `刺激語の読み込みに失敗しました: ${e.message || 'ネットワークエラー'}`;
       console.error(e);
     }
+  }
+
+  clearError() {
+    this.error = null;
   }
 
   startPreflight() {

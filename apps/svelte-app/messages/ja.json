@@ -68,5 +68,8 @@
 	"plan_voluntary_title": "５．研究協力の任意性と撤回の自由",
 	"plan_voluntary_text": "この研究に参加するかどうかは、あなたの自由な意思でお決めください。参加に同意いただいた場合でも、いつでも同意を取り消すことができます。それにより不利益をこうむることは全くありません。",
 	"plan_contact_title": "６．お問い合わせ先",
-	"plan_contact_text": "新潟大学脳研究所 システム脳病態学分野（田井中研究室）。電話：025-227-0900。メール：kztainaka@bri.niigata-u.ac.jp"
+	"plan_contact_text": "新潟大学脳研究所 システム脳病態学分野（田井中研究室）。電話：025-227-0900。メール：kztainaka@bri.niigata-u.ac.jp",
+	"page_not_found": "ページが見つかりません",
+	"page_not_found_desc": "お探しのページは存在しないか、移動した可能性があります。",
+	"go_to_home": "ホームへ戻る"
 }

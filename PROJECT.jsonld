@@ -45,8 +45,8 @@
   "version": "1.56.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-29T12:30:00+09:00",
-  "merkleRoot": "SvelteKit構成をadapter-static(SSG+CSR)へ移行し、Clerk Liveキーを設定。useClerkContextへの修正とガード処理により、認証キー未設定時のクラッシュを回避しつつ、静的ビルドでの環境変数注入に対応した。",
+  "updatedAt": "2025-12-29T12:45:00+09:00",
+  "merkleRoot": "SvelteKit構成をadapter-static(SSG+CSR)へ移行。Clerkキーをローカル開発用のpk_test...へ更新。useClerkContextへの修正とガード処理により、認証キー未設定時のクラッシュを回避しつつ、静的ビルドでの環境変数注入に対応した。",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
