@@ -13,6 +13,12 @@ export default defineConfig({
 	server: {
 		port: 3000,
 		host: true,
-		allowedHosts: true // Vite 6+ requirement
+		allowedHosts: true, // Vite 6+ requirement
+		proxy: {
+			'/api': {
+				target: 'http://localhost:8090',
+				changeOrigin: true
+			}
+		}
 	}
 });

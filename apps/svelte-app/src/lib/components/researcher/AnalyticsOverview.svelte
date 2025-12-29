@@ -13,6 +13,7 @@
 </script>
 
 <div class="analytics-overview">
+  <div style="background: red; color: white; padding: 10px;">ANALYTICS OVERVIEW RENDERING (Participants: {participants.length})</div>
   <div class="stats-grid">
     {#each stats as stat}
       <div class="stat-card">

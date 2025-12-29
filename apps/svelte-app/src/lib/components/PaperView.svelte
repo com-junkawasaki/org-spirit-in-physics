@@ -4,7 +4,7 @@
   import * as m from "$lib/paraglide/messages.js";
   import katex from "katex";
   import "katex/dist/katex.min.css";
-  import renderMathInElement from "katex/dist/contrib/auto-render";
+  import renderMathInElement from "katex/dist/contrib/auto-render.mjs";
 
   interface Section {
     id: string;
@@ -146,7 +146,6 @@
 </script>
 
 <svelte:head>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-n9jH495v6S6LyE3FqbEuRSBy6wub9GkBnqDZ6ZQ7GtSvpMAJJFEFrLQH6NJ9CPdr" crossorigin="anonymous">
   {@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`}
 </svelte:head>
 
@@ -244,7 +243,7 @@
         
         <div class="equation-block">
           <p class="formula">
-            &#92;&#91; S = &#123;V, E, T&#125; &#92;&#93;
+            &#92;[ S = &#123;V, E, T&#125; &#92;]
           </p>
           <p class="equation-desc">
             Let the state of the Spirit, S, be a point in a space composed of a set of informational vertices V, edges E, and time axis T.
@@ -257,7 +256,7 @@
 
         <div class="equation-block">
           <p class="formula">
-            &#92;&#91; E = -&#92;ln P(w_O | w_I),&#92;; V = &#123;&#92;vec&#123;w_I&#125;, &#92;vec&#123;w_O&#125;, ...&#125;,&#92;; T = &#92;text&#123;time axis&#125; &#92;&#93;
+            &#92;[ E = -&#92;ln P(w_O | w_I),&#92;; V = &#123;&#92;vec&#123;w_I&#125;, &#92;vec&#123;w_O&#125;, ...&#125;,&#92;; T = &#92;text&#123;time axis&#125; &#92;]
           </p>
         </div>
 
@@ -267,7 +266,7 @@
 
         <div class="equation-block">
           <p class="formula">
-            &#92;&#91; &#92;psi(S) = &#92;frac&#123;&#92;delta E(S)&#125;&#123;&#92;delta S&#125; &#92;&#93;
+            &#92;[ &#92;psi(S) = &#92;frac&#123;&#92;delta E(S)&#125;&#123;&#92;delta S&#125; &#92;]
           </p>
         </div>
 
@@ -278,7 +277,7 @@
 
         <div class="equation-block">
           <p class="formula">
-            &#92;&#91; &#92;frac&#123;dS&#125;&#123;dt&#125; = &#92;frac&#123;dS_&#123;internal&#125;&#125;&#123;dt&#125; + &#92;frac&#123;dS_&#123;exchange&#125;&#125;&#123;dt&#125; &#92;&#93;
+            &#92;[ &#92;frac&#123;dS&#125;&#123;dt&#125; = &#92;frac&#123;dS_&#123;internal&#125;&#125;&#123;dt&#125; + &#92;frac&#123;dS_&#123;exchange&#125;&#125;&#123;dt&#125; &#92;]
           </p>
         </div>
       </section>
@@ -330,7 +329,7 @@
 
         <div class="equation-block large">
           <p class="formula">
-            &#92;&#91; P(w_O | w_I) = &#92;frac&#123;&#92;exp(&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_O&#125;) &#92;cdot [r(w_I, w_O)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125;&#123;&#92;sum_&#123;j&#125; &#92;exp(&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_j&#125;) &#92;cdot [r(w_I, w_j)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125; &#92;&#93;
+            &#92;[ P(w_O | w_I) = &#92;frac&#123;&#92;exp(&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_O&#125;) &#92;cdot [r(w_I, w_O)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125;&#123;&#92;sum_&#123;j&#125; &#92;exp(&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_j&#125;) &#92;cdot [r(w_I, w_j)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125; &#92;]
           </p>
         </div>
 

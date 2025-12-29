@@ -118,9 +118,14 @@ func main() {
 
 	// The main handler routes /api/... to apiMux with prefix stripped
 	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Incoming request: %s %s", r.Method, r.URL.Path)
+		log.Printf("[MainHandler] Incoming request: %s %s (RemoteAddr: %s)", r.Method, r.URL.Path, r.RemoteAddr)
 		if strings.HasPrefix(r.URL.Path, "/api/") {
-			http.StripPrefix("/api", apiMux).ServeHTTP(w, r)
+			strippedPath := strings.TrimPrefix(r.URL.Path, "/api")
+			log.Printf("[MainHandler] Stripping /api prefix. New path: %s", strippedPath)
+			// Use a custom request with the stripped path to avoid issues with StripPrefix
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = strippedPath
+			apiMux.ServeHTTP(w, r2)
 			return
 		}
 		if r.URL.Path == "/api" {

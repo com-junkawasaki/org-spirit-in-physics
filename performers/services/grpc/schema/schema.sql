@@ -77,7 +77,7 @@ CREATE TABLE timeline_emotion_entries (
   score DOUBLE PRECISION NOT NULL,
   file_type TEXT NOT NULL, -- emotion_file_type_enum
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  FOREIGN KEY (time, participant_id, session_id) 
+  FOREIGN KEY (timeline_point_time, timeline_point_participant_id, timeline_point_session_id) 
     REFERENCES timeline_points(time, participant_id, session_id) ON DELETE CASCADE
 );
 
@@ -91,7 +91,7 @@ CREATE TABLE physiological_measurements (
   value DOUBLE PRECISION NOT NULL,
   unit TEXT, -- measurement_unit_enum
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  FOREIGN KEY (time, participant_id, session_id) 
+  FOREIGN KEY (timeline_point_time, timeline_point_participant_id, timeline_point_session_id) 
     REFERENCES timeline_points(time, participant_id, session_id) ON DELETE CASCADE
 );
 

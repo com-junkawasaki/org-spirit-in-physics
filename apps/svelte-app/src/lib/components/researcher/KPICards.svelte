@@ -83,7 +83,10 @@
       })
       .curve(d3.curveMonotoneX)(sparkline) || '';
   }
-</script>
+    function getSafeId(title: string) {
+      return title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    }
+  </script>
 
 {#if kpis}
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -120,14 +123,14 @@
         <div class="h-12 relative">
           <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" class="overflow-visible">
             <defs>
-              <linearGradient id="gradient-{card.title.replace(/\s+/g, '')}" x1="0%" y1="0%" x2="0%" y2="100%">
+              <linearGradient id="gradient-{getSafeId(card.title)}" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stop-color="currentColor" stop-opacity="0.2" />
                 <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
               </linearGradient>
             </defs>
             <path
               d={getPath(card.sparkline)}
-              fill="none"
+              fill="url(#gradient-{getSafeId(card.title)})"
               stroke="currentColor"
               stroke-width="3"
               stroke-linecap="round"
