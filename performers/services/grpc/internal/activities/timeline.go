@@ -30,11 +30,6 @@ func float64Ptr(v float64) *float64 {
 }
 
 func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.TimelinePoint, error) {
-	pUID, err := uuid.Parse(participantID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid participant ID: %v", err)
-	}
-
 	var sUID pgtype.UUID
 	if sessionID != "" {
 		parsedSessionID, err := uuid.Parse(sessionID)
@@ -45,7 +40,7 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 	}
 
 	points, err := a.Queries.GetTimelinePoints(ctx, db.GetTimelinePointsParams{
-		ParticipantID: pgtype.UUID{Bytes: pUID, Valid: true},
+		ParticipantID: participantID,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -141,11 +136,6 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 }
 
 func (a *TimelineActivities) FetchWordAggregatesActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.WordAggregate, error) {
-	pUID, err := uuid.Parse(participantID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid participant ID: %v", err)
-	}
-
 	var sUID pgtype.UUID
 	if sessionID != "" {
 		parsedSessionID, err := uuid.Parse(sessionID)
@@ -156,7 +146,7 @@ func (a *TimelineActivities) FetchWordAggregatesActivity(ctx context.Context, pa
 	}
 
 	rows, err := a.Queries.GetWordAggregates(ctx, db.GetWordAggregatesParams{
-		ParticipantID: pgtype.UUID{Bytes: pUID, Valid: true},
+		ParticipantID: participantID,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -185,11 +175,6 @@ func (a *TimelineActivities) FetchWordAggregatesActivity(ctx context.Context, pa
 }
 
 func (a *TimelineActivities) FetchEmotionVectorsActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.EmotionVector, error) {
-	pUID, err := uuid.Parse(participantID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid participant ID: %v", err)
-	}
-
 	var sUID pgtype.UUID
 	if sessionID != "" {
 		parsedSessionID, err := uuid.Parse(sessionID)
@@ -200,7 +185,7 @@ func (a *TimelineActivities) FetchEmotionVectorsActivity(ctx context.Context, pa
 	}
 
 	rows, err := a.Queries.GetEmotionVectors(ctx, db.GetEmotionVectorsParams{
-		ParticipantID: pgtype.UUID{Bytes: pUID, Valid: true},
+		ParticipantID: participantID,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -230,11 +215,6 @@ func (a *TimelineActivities) FetchEmotionVectorsActivity(ctx context.Context, pa
 }
 
 func (a *TimelineActivities) FetchWordStatisticsActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.WordStatistics, error) {
-	pUID, err := uuid.Parse(participantID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid participant ID: %v", err)
-	}
-
 	var sUID pgtype.UUID
 	if sessionID != "" {
 		parsedSessionID, err := uuid.Parse(sessionID)
@@ -245,7 +225,7 @@ func (a *TimelineActivities) FetchWordStatisticsActivity(ctx context.Context, pa
 	}
 
 	rows, err := a.Queries.GetWordStatistics(ctx, db.GetWordStatisticsParams{
-		ParticipantID: pgtype.UUID{Bytes: pUID, Valid: true},
+		ParticipantID: participantID,
 		Column2:       sUID,
 	})
 	if err != nil {

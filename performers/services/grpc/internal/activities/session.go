@@ -24,17 +24,12 @@ func NewSessionActivities(queries *db.Queries) *SessionActivities {
 
 // CreateSessionActivity creates a new session in the database
 func (a *SessionActivities) CreateSessionActivity(ctx context.Context, input CreateSessionInput) (string, error) {
-	participantID, err := uuid.Parse(input.ParticipantID)
-	if err != nil {
-		return "", err
-	}
-
 	sessionID := uuid.New()
 	now := time.Now()
 
-	_, err = a.queries.CreateSession(ctx, db.CreateSessionParams{
+	_, err := a.queries.CreateSession(ctx, db.CreateSessionParams{
 		ID:            pgtype.UUID{Bytes: sessionID, Valid: true},
-		ParticipantID: pgtype.UUID{Bytes: participantID, Valid: true},
+		ParticipantID: input.ParticipantID,
 		SessionIndex:  pgtype.Int4{Int32: *input.SessionIndex, Valid: input.SessionIndex != nil},
 		StartTs:       input.StartTS,
 		EndTs:         pgtype.Int8{Valid: false},

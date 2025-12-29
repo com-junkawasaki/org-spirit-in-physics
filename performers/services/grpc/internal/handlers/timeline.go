@@ -84,11 +84,6 @@ func (h *TimelineHandler) GetWordAggregates(
 	ctx context.Context,
 	req *connect.Request[timelinev1.GetWordAggregatesRequest],
 ) (*connect.Response[timelinev1.GetWordAggregatesResponse], error) {
-	pUID, err := uuid.Parse(req.Msg.ParticipantId)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid participant ID: %v", err))
-	}
-
 	var sUID pgtype.UUID
 	if req.Msg.SessionId != nil && *req.Msg.SessionId != "" {
 		parsed, err := uuid.Parse(*req.Msg.SessionId)
@@ -99,7 +94,7 @@ func (h *TimelineHandler) GetWordAggregates(
 	}
 
 	rows, err := h.queries.GetWordAggregates(ctx, db.GetWordAggregatesParams{
-		ParticipantID: pgtype.UUID{Bytes: pUID, Valid: true},
+		ParticipantID: req.Msg.ParticipantId,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -109,7 +104,7 @@ func (h *TimelineHandler) GetWordAggregates(
 	aggregates := make([]*timelinev1.WordAggregate, 0, len(rows))
 	for _, r := range rows {
 		aggregates = append(aggregates, &timelinev1.WordAggregate{
-			ParticipantId:      uuid.UUID(r.ParticipantID.Bytes).String(),
+			ParticipantId:      r.ParticipantID,
 			SessionId:          uuid.UUID(r.SessionID.Bytes).String(),
 			Word:               r.Word.String,
 			Count:              r.Count,
@@ -134,11 +129,6 @@ func (h *TimelineHandler) GetEmotionVectors(
 	ctx context.Context,
 	req *connect.Request[timelinev1.GetEmotionVectorsRequest],
 ) (*connect.Response[timelinev1.GetEmotionVectorsResponse], error) {
-	pUID, err := uuid.Parse(req.Msg.ParticipantId)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid participant ID: %v", err))
-	}
-
 	var sUID pgtype.UUID
 	if req.Msg.SessionId != nil && *req.Msg.SessionId != "" {
 		parsed, err := uuid.Parse(*req.Msg.SessionId)
@@ -149,7 +139,7 @@ func (h *TimelineHandler) GetEmotionVectors(
 	}
 
 	rows, err := h.queries.GetEmotionVectors(ctx, db.GetEmotionVectorsParams{
-		ParticipantID: pgtype.UUID{Bytes: pUID, Valid: true},
+		ParticipantID: req.Msg.ParticipantId,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -159,7 +149,7 @@ func (h *TimelineHandler) GetEmotionVectors(
 	vectors := make([]*timelinev1.EmotionVector, 0, len(rows))
 	for _, r := range rows {
 		vectors = append(vectors, &timelinev1.EmotionVector{
-			ParticipantId:     uuid.UUID(r.ParticipantID.Bytes).String(),
+			ParticipantId:     r.ParticipantID,
 			SessionId:         uuid.UUID(r.SessionID.Bytes).String(),
 			Word:              r.Word.String,
 			JoySum:            float64Ptr(float64(r.JoySum)),
@@ -185,11 +175,6 @@ func (h *TimelineHandler) GetWordStatistics(
 	ctx context.Context,
 	req *connect.Request[timelinev1.GetWordStatisticsRequest],
 ) (*connect.Response[timelinev1.GetWordStatisticsResponse], error) {
-	pUID, err := uuid.Parse(req.Msg.ParticipantId)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid participant ID: %v", err))
-	}
-
 	var sUID pgtype.UUID
 	if req.Msg.SessionId != nil && *req.Msg.SessionId != "" {
 		parsed, err := uuid.Parse(*req.Msg.SessionId)
@@ -200,7 +185,7 @@ func (h *TimelineHandler) GetWordStatistics(
 	}
 
 	rows, err := h.queries.GetWordStatistics(ctx, db.GetWordStatisticsParams{
-		ParticipantID: pgtype.UUID{Bytes: pUID, Valid: true},
+		ParticipantID: req.Msg.ParticipantId,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -210,7 +195,7 @@ func (h *TimelineHandler) GetWordStatistics(
 	stats := make([]*timelinev1.WordStatistics, 0, len(rows))
 	for _, r := range rows {
 		stats = append(stats, &timelinev1.WordStatistics{
-			ParticipantId:     uuid.UUID(r.ParticipantID.Bytes).String(),
+			ParticipantId:     r.ParticipantID,
 			SessionId:         uuid.UUID(r.SessionID.Bytes).String(),
 			Word:              r.Word.String,
 			Count:             r.Count,
@@ -242,11 +227,6 @@ func (h *TimelineHandler) GetAnalysis(
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
 	}
 
-	pUID, err := uuid.Parse(req.Msg.ParticipantId)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid participant ID: %v", err))
-	}
-
 	var sUID pgtype.UUID
 	sessionID := ""
 	if req.Msg.SessionId != nil && *req.Msg.SessionId != "" {
@@ -260,7 +240,7 @@ func (h *TimelineHandler) GetAnalysis(
 
 	// 1. Fetch data needed for analysis
 	points, err := h.queries.GetTimelinePoints(ctx, db.GetTimelinePointsParams{
-		ParticipantID: pgtype.UUID{Bytes: pUID, Valid: true},
+		ParticipantID: req.Msg.ParticipantId,
 		Column2:       sUID,
 	})
 	if err != nil {

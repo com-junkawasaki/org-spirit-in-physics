@@ -30,13 +30,7 @@ func (h *SessionHandler) GetSessions(
 	ctx context.Context,
 	req *connect.Request[sessionv1.GetSessionsRequest],
 ) (*connect.Response[sessionv1.GetSessionsResponse], error) {
-	participantID, err := uuid.Parse(req.Msg.ParticipantId)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
-	sessions, err := h.queries.GetSessions(ctx, pgUUID)
+	sessions, err := h.queries.GetSessions(ctx, req.Msg.ParticipantId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -50,11 +44,10 @@ func (h *SessionHandler) GetSessions(
 		// TODO: Parse events if needed
 
 		uid, _ := uuid.FromBytes(s.ID.Bytes[:])
-		pid, _ := uuid.FromBytes(s.ParticipantID.Bytes[:])
 
 		resp.Sessions = append(resp.Sessions, &sessionv1.Session{
 			Id:            uid.String(),
-			ParticipantId: pid.String(),
+			ParticipantId: s.ParticipantID,
 			SessionIndex:  toInt32Ptr(s.SessionIndex),
 			StartTs:       s.StartTs,
 			EndTs:         toInt64PtrFromInt8(s.EndTs),
@@ -72,20 +65,14 @@ func (h *SessionHandler) CreateSession(
 	ctx context.Context,
 	req *connect.Request[sessionv1.CreateSessionRequest],
 ) (*connect.Response[sessionv1.CreateSessionResponse], error) {
-	participantID, err := uuid.Parse(req.Msg.ParticipantId)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
 	sessionID := uuid.New()
 	now := time.Now()
 
 	pgSessionID := pgtype.UUID{Bytes: sessionID, Valid: true}
-	pgParticipantID := pgtype.UUID{Bytes: participantID, Valid: true}
 
 	session, err := h.queries.CreateSession(ctx, db.CreateSessionParams{
 		ID:            pgSessionID,
-		ParticipantID: pgParticipantID,
+		ParticipantID: req.Msg.ParticipantId,
 		SessionIndex:  toInt32FromOptional(req.Msg.SessionIndex),
 		StartTs:       req.Msg.StartTs,
 		CreatedAt:     pgtype.Timestamptz{Time: now, Valid: true},
@@ -96,12 +83,11 @@ func (h *SessionHandler) CreateSession(
 	}
 
 	uid, _ := uuid.FromBytes(session.ID.Bytes[:])
-	pid, _ := uuid.FromBytes(session.ParticipantID.Bytes[:])
 
 	resp := &sessionv1.CreateSessionResponse{
 		Session: &sessionv1.Session{
 			Id:            uid.String(),
-			ParticipantId: pid.String(),
+			ParticipantId: session.ParticipantID,
 			SessionIndex:  toInt32Ptr(session.SessionIndex),
 			StartTs:       session.StartTs,
 			EndTs:         toInt64PtrFromInt8(session.EndTs),

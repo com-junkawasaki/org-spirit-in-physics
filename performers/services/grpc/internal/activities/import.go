@@ -48,21 +48,15 @@ func (a *ImportActivities) ImportParticipantsActivity(ctx context.Context) (int,
 	for _, entry := range entries {
 		log.Printf("Processing entry: %s (IsDir: %v)", entry.Name(), entry.IsDir())
 		if entry.IsDir() {
-			participantID, err := uuid.Parse(entry.Name())
-			if err != nil {
-				log.Printf("Skipping invalid participant ID directory: %s", entry.Name())
-				continue
-			}
-
-			pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
+			participantID := entry.Name()
 			now := time.Now()
 			
 			// Check if exists
-			_, err = a.Queries.GetParticipant(ctx, pgUUID)
+			_, err = a.Queries.GetParticipant(ctx, participantID)
 			if err != nil {
 				// Create if not exists
 				_, err = a.Queries.CreateParticipant(ctx, db.CreateParticipantParams{
-					ID:        pgUUID,
+					ID:        participantID,
 					IsPublic:  pgtype.Bool{Bool: true, Valid: true},
 					CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
 					UpdatedAt: pgtype.Timestamptz{Time: now, Valid: true},
@@ -80,13 +74,6 @@ func (a *ImportActivities) ImportParticipantsActivity(ctx context.Context) (int,
 }
 
 func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participantID string) (int, error) {
-	participantUUID, err := uuid.Parse(participantID)
-	if err != nil {
-		return 0, err
-	}
-
-	pgParticipantID := pgtype.UUID{Bytes: participantUUID, Valid: true}
-
 	// Find CSV files
 	datasetPath := fmt.Sprintf("/dataset/%s", participantID)
 	if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
@@ -97,7 +84,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 	}
 
 	var csvFiles []string
-	err = filepath.Walk(datasetPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(datasetPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -130,7 +117,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 		}
 
 		// Create a session for this participant if none exists, or use existing
-		sessions, _ := a.Queries.GetSessions(ctx, pgParticipantID)
+		sessions, _ := a.Queries.GetSessions(ctx, participantID)
 		var sessionID pgtype.UUID
 		if len(sessions) > 0 {
 			sessionID = sessions[0].ID
@@ -140,7 +127,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 			now := time.Now()
 			_, err = a.Queries.CreateSession(ctx, db.CreateSessionParams{
 				ID:            sessionID,
-				ParticipantID: pgParticipantID,
+				ParticipantID: participantID,
 				SessionIndex:  pgtype.Int4{Int32: 1, Valid: true},
 				StartTs:       now.UnixMilli(),
 				CreatedAt:     pgtype.Timestamptz{Time: now, Valid: true},
@@ -192,7 +179,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 			// 1. Create Timeline Point
 			err = a.Queries.CreateTimelinePoint(ctx, db.CreateTimelinePointParams{
 				Time:          pgtype.Timestamptz{Time: pointTime, Valid: true},
-				ParticipantID: pgParticipantID,
+				ParticipantID: participantID,
 				SessionID:     sessionID,
 				EventType:     pgtype.Text{String: "emotion_sample", Valid: true},
 			})
@@ -213,7 +200,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 			if score > 0.1 { // Only import significant emotions
 					err = a.Queries.CreateTimelineEmotionEntry(ctx, db.CreateTimelineEmotionEntryParams{
 						TimelinePointTime:          pgtype.Timestamptz{Time: pointTime, Valid: true},
-						TimelinePointParticipantID: pgParticipantID,
+						TimelinePointParticipantID: participantID,
 						TimelinePointSessionID:     sessionID,
 						EmotionName:                emotionName,
 						Score:                      score,
