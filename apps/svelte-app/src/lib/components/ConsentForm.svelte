@@ -58,393 +58,229 @@
   }
 </script>
 
-<div class="consent-card">
-  <div class="card-header">
-    <h3>{m.consent_title()}</h3>
-    <p class="subtitle">{m.consent_subtitle()}</p>
-  </div>
-
-  <div class="card-content">
-    <div class="consent-toggle">
-      <button 
-        type="button"
-        onclick={() => showFullConsent = !showFullConsent}
-        class="btn-text"
-      >
-        {showFullConsent ? m.collapse_consent() : m.read_full_consent()}
-      </button>
-    </div>
-
+<form 
+  class="w-full max-w-3xl mx-auto p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700" 
+  onsubmit={handleSubmit} 
+  id="consent-form"
+>
+  <h2 class="text-xl sm:text-2xl font-bold mb-3 text-black dark:text-white">{m.consent_title()}</h2>
+  
+  <div class="mb-4 sm:mb-6">
+    <p class="mb-3 text-sm sm:text-base text-gray-800 dark:text-gray-200">{m.consent_subtitle()}</p>
+    
+    <button 
+      type="button"
+      onclick={() => showFullConsent = !showFullConsent}
+      class="text-blue-600 dark:text-blue-400 hover:underline mb-3 text-sm sm:text-base font-medium"
+    >
+      {showFullConsent ? m.collapse_consent() : m.read_full_consent()}
+    </button>
+    
     {#if showFullConsent}
-      <div class="scroll-box">
+      <div class="p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-md mb-4 max-h-72 sm:max-h-96 overflow-y-auto text-xs sm:text-sm border border-gray-200 dark:border-gray-600">
         <ResearchPlanContent />
       </div>
     {/if}
-
-    <form onsubmit={handleSubmit} id="consent-form">
-      <div class="section-title">{m.demographic_title()}</div>
-      <p class="section-subtitle">{m.demographic_subtitle()}</p>
-
-      <div class="demographic-grid">
-        <div class="form-group">
-          <label for="ageGroup">{m.age_group()}</label>
-          <select id="ageGroup" bind:value={demographics.ageGroup}>
-            <option value="">{m.select_age()}</option>
-            <option value="18-24">18-24</option>
-            <option value="25-34">25-34</option>
-            <option value="35-44">35-44</option>
-            <option value="45-54">45-54</option>
-            <option value="55-64">55-64</option>
-            <option value="65+">65+</option>
-            <option value="prefer-not-to-say">{m.prefer_not_to_say()}</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="gender">{m.gender()}</label>
-          <select id="gender" bind:value={demographics.gender}>
-            <option value="">{m.prefer_not_to_say()}</option>
-            <option value="male">{m.male()}</option>
-            <option value="female">{m.female()}</option>
-            <option value="non-binary">{m.non_binary()}</option>
-            <option value="prefer-not-to-say">{m.prefer_not_to_say()}</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="ethnicity">{m.ethnicity()}</label>
-          <select id="ethnicity" bind:value={demographics.ethnicity}>
-            <option value="">{m.select_ethnicity()}</option>
-            <option value="asian">{m.asian()}</option>
-            <option value="black">{m.black()}</option>
-            <option value="hispanic">{m.hispanic()}</option>
-            <option value="native">{m.native()}</option>
-            <option value="pacific">{m.pacific()}</option>
-            <option value="white">{m.white()}</option>
-            <option value="multiple">{m.multiple()}</option>
-            <option value="other">{m.other()}</option>
-            <option value="prefer-not-to-say">{m.prefer_not_to_say()}</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="income">{m.income()}</label>
-          <select id="income" bind:value={demographics.incomeRange}>
-            <option value="">{m.select_income()}</option>
-            <option value="under-25k">{m.under_25k()}</option>
-            <option value="25k-50k">{m.25k_50k()}</option>
-            <option value="50k-75k">{m.50k_75k()}</option>
-            <option value="75k-100k">{m.75k_100k()}</option>
-            <option value="100k-150k">{m.100k_150k()}</option>
-            <option value="over-150k">{m.over_150k()}</option>
-            <option value="prefer-not-to-say">{m.prefer_not_to_say()}</option>
-          </select>
+  </div>
+  
+  <div class="mb-6 p-4 sm:p-6 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
+    <h3 class="font-bold mb-1 text-gray-900 dark:text-gray-100 text-base sm:text-lg">{m.demographic_title()}</h3>
+    <p class="text-xs sm:text-sm mb-5 text-gray-600 dark:text-gray-400">{m.demographic_subtitle()}</p>
+    
+    <div class="space-y-5">
+      <div>
+        <label for="ageGroup" class="block mb-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{m.age_group()}</label>
+        <select 
+          id="ageGroup" 
+          bind:value={demographics.ageGroup}
+          class="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+        >
+          <option value="">{m.select_age()}</option>
+          <option value="18-24">18-24</option>
+          <option value="25-34">25-34</option>
+          <option value="35-44">35-44</option>
+          <option value="45-54">45-54</option>
+          <option value="55-64">55-64</option>
+          <option value="65+">65+</option>
+          <option value="prefer-not-to-say">{m.prefer_not_to_say()}</option>
+        </select>
+      </div>
+      
+      <div>
+        <span class="block mb-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{m.gender()}</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {#each [
+            { value: "male", label: m.male() },
+            { value: "female", label: m.female() }, 
+            { value: "non-binary", label: m.non_binary() },
+            { value: "prefer-not-to-say", label: m.prefer_not_to_say() }
+          ] as option}
+            <button 
+              type="button"
+              class="flex items-center gap-3 border rounded-md p-3 cursor-pointer transition-all text-left
+                {demographics.gender === option.value 
+                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 shadow-sm ring-1 ring-blue-500' 
+                  : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 border-gray-200 dark:border-gray-600'}"
+              onclick={() => demographics.gender = option.value}
+            >
+              <div class="w-4 h-4 rounded-full border flex items-center justify-center
+                {demographics.gender === option.value ? 'border-blue-500' : 'border-gray-400'}">
+                {#if demographics.gender === option.value}
+                  <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                {/if}
+              </div>
+              <span class="text-xs sm:text-sm text-gray-800 dark:text-gray-200 flex-1">{option.label}</span>
+            </button>
+          {/each}
         </div>
       </div>
+      
+      <div>
+        <label for="ethnicity" class="block mb-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{m.ethnicity()}</label>
+        <select 
+          id="ethnicity" 
+          bind:value={demographics.ethnicity}
+          class="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+        >
+          <option value="">{m.select_ethnicity()}</option>
+          <option value="asian">{m.asian()}</option>
+          <option value="black">{m.black()}</option>
+          <option value="hispanic">{m.hispanic()}</option>
+          <option value="native">{m.native()}</option>
+          <option value="pacific">{m.pacific()}</option>
+          <option value="white">{m.white()}</option>
+          <option value="multiple">{m.multiple()}</option>
+          <option value="other">{m.other()}</option>
+          <option value="prefer-not-to-say">{m.prefer_not_to_say()}</option>
+        </select>
+      </div>
+      
+      <div>
+        <label for="income" class="block mb-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{m.income()}</label>
+        <select 
+          id="income" 
+          bind:value={demographics.incomeRange}
+          class="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+        >
+          <option value="">{m.select_income()}</option>
+          <option value="under-25k">{m.under_25k()}</option>
+          <option value="25k-50k">{m.income_25k_50k()}</option>
+          <option value="50k-75k">{m.income_50k_75k()}</option>
+          <option value="75k-100k">{m.income_75k_100k()}</option>
+          <option value="100k-150k">{m.income_100k_150k()}</option>
+          <option value="over-150k">{m.over_150k()}</option>
+          <option value="prefer-not-to-say">{m.prefer_not_to_say()}</option>
+        </select>
+      </div>
 
-      <div class="form-group full-width suggest-container">
-        <label for="mentalIllness">{m.mental_illness()}</label>
+      <div class="relative">
+        <label for="mentalIllness" class="block mb-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{m.mental_illness()}</label>
         <input 
           type="text" 
           id="mentalIllness" 
           bind:value={illnessSearch}
           placeholder={m.mental_illness_placeholder()}
           onfocus={() => showIllnessSuggestions = true}
+          class="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
           autocomplete="off"
         />
         {#if showIllnessSuggestions && filteredIllnessCodes.length > 0}
-          <ul class="suggestions">
+          <ul class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
             {#each filteredIllnessCodes as code}
               <li>
-                <button type="button" onclick={() => selectIllness(code)}>
-                  <span class="code">{code.code}</span>
-                  <span class="name">{languageTag() === "ja" ? code.name_ja : code.name_en}</span>
+                <button 
+                  type="button" 
+                  onclick={() => selectIllness(code)}
+                  class="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex gap-3 border-b border-gray-100 dark:border-gray-700 last:border-none"
+                >
+                  <span class="font-bold text-blue-600 dark:text-blue-400 min-width-[3rem]">{code.code}</span>
+                  <span class="text-sm dark:text-gray-200">{languageTag() === "ja" ? code.name_ja : code.name_en}</span>
                 </button>
               </li>
             {/each}
           </ul>
         {/if}
       </div>
-
-      <div class="checkbox-group">
-        <label class="checkbox-item">
-          <input type="checkbox" bind:checked={agreements.understand} />
-          <span>{m.consent_understand()}</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" bind:checked={agreements.voluntary} />
-          <span>{m.consent_voluntary()}</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" bind:checked={agreements.withdraw} />
-          <span>{m.consent_withdraw()}</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" bind:checked={agreements.recording} />
-          <span>{m.consent_recording()}</span>
-        </label>
-      </div>
-
-      <div class="signature-section">
-        <label for="signature">{m.electronic_signature()}</label>
-        <input
-          type="text"
-          id="signature"
-          bind:value={signature}
-          placeholder={m.enter_name()}
+    </div>
+  </div>
+  
+  <div class="space-y-4 mb-6 px-1">
+    <div class="flex items-start gap-3">
+      <div class="relative flex items-center mt-1">
+        <input 
+          type="checkbox" 
+          id="consent-check" 
+          bind:checked={agreements.understand}
+          class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
         />
       </div>
-    </form>
+      <label for="consent-check" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer">{m.consent_understand()}</label>
+    </div>
+    <div class="flex items-start gap-3">
+      <div class="relative flex items-center mt-1">
+        <input 
+          type="checkbox" 
+          id="voluntary-check" 
+          bind:checked={agreements.voluntary}
+          class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        />
+      </div>
+      <label for="voluntary-check" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer">{m.consent_voluntary()}</label>
+    </div>
+    <div class="flex items-start gap-3">
+      <div class="relative flex items-center mt-1">
+        <input 
+          type="checkbox" 
+          id="withdraw-check" 
+          bind:checked={agreements.withdraw}
+          class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        />
+      </div>
+      <label for="withdraw-check" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer">{m.consent_withdraw()}</label>
+    </div>
+    <div class="flex items-start gap-3">
+      <div class="relative flex items-center mt-1">
+        <input 
+          type="checkbox" 
+          id="recording-check" 
+          bind:checked={agreements.recording}
+          class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        />
+      </div>
+      <label for="recording-check" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer">{m.consent_recording()}</label>
+    </div>
   </div>
 
-  <div class="card-footer">
-    <button
-      type="submit"
-      form="consent-form"
-      disabled={!isAllAgreed}
-      class="btn-submit"
-    >
-      {m.agree_and_start()}
-    </button>
-    <div class="standards-info">
+  <div class="mb-8">
+    <label for="signature" class="block mb-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{m.electronic_signature()}</label>
+    <input
+      type="text"
+      id="signature"
+      bind:value={signature}
+      placeholder={m.enter_name()}
+      class="w-full p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-base focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+    />
+  </div>
+  
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+    <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 space-y-1">
       <p>{m.gcp_standards()}</p>
       <p>{m.irb_info()}</p>
     </div>
+    
+    <button 
+      type="submit"
+      disabled={!isAllAgreed}
+      class="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-bold rounded-md transition-colors shadow-sm text-sm"
+    >
+      {m.agree_and_start()}
+    </button>
   </div>
-</div>
+</form>
 
 <style>
-  .consent-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    max-width: 800px;
-    width: 100%;
-    margin: 0 auto;
-    color: #333;
-  }
-
-  .card-header {
-    padding: 2rem;
-    border-bottom: 1px solid #eee;
-    background: #fcfcfc;
-  }
-
-  .card-header h3 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: #111;
-  }
-
-  .subtitle {
-    margin: 0.5rem 0 0;
-    color: #666;
-    font-size: 0.9rem;
-  }
-
-  .card-content {
-    padding: 2rem;
-  }
-
-  .consent-toggle {
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .btn-text {
-    background: none;
-    border: none;
-    color: #007bff;
-    text-decoration: underline;
-    cursor: pointer;
-    font-size: 0.9rem;
-  }
-
-  .scroll-box {
-    border: 1px solid #eee;
-    border-radius: 8px;
-    height: 300px;
-    overflow-y: auto;
-    background: #fafafa;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    font-size: 0.9rem;
-  }
-
-  .section-title {
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 0.25rem;
-    color: #111;
-  }
-
-  .section-subtitle {
-    font-size: 0.85rem;
-    color: #666;
-    margin-bottom: 1.5rem;
-  }
-
-  .demographic-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .form-group label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #444;
-  }
-
-  .form-group select, .form-group input {
-    padding: 0.6rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: white;
-    font-size: 0.95rem;
-  }
-
-  .suggest-container {
-    position: relative;
-    margin-bottom: 2rem;
-  }
-
-  .suggestions {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 1px solid #ccc;
-    border-top: none;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 10;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .suggestions li button {
-    width: 100%;
-    text-align: left;
-    padding: 0.75rem 1rem;
-    border: none;
-    background: none;
-    cursor: pointer;
-    display: flex;
-    gap: 1rem;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  .suggestions li button:hover {
-    background: #f8f9fa;
-  }
-
-  .suggestions li button .code {
-    font-weight: 700;
-    color: #007bff;
-    min-width: 3rem;
-  }
-
-  .checkbox-group {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    background: #f9f9f9;
-    border-radius: 8px;
-    border: 1px solid #eee;
-  }
-
-  .checkbox-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    cursor: pointer;
-    font-size: 0.95rem;
-  }
-
-  .checkbox-item input {
-    margin-top: 0.2rem;
-    width: 1.1rem;
-    height: 1.1rem;
-  }
-
-  .signature-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .signature-section label {
-    font-weight: 600;
-    color: #333;
-  }
-
-  .signature-section input {
-    padding: 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 1.1rem;
-  }
-
-  .card-footer {
-    padding: 2rem;
-    background: #f9f9f9;
-    border-top: 1px solid #eee;
-  }
-
-  .btn-submit {
-    width: 100%;
-    padding: 1rem;
-    background: #000;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-bottom: 1.5rem;
-  }
-
-  .btn-submit:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-  }
-
-  .btn-submit:not(:disabled):hover {
-    background: #333;
-  }
-
-  .standards-info {
-    font-size: 0.75rem;
-    color: #888;
-    line-height: 1.4;
-  }
-
-  .standards-info p {
-    margin: 0;
-  }
-
-  @media (max-width: 600px) {
-    .demographic-grid {
-      grid-template-columns: 1fr;
-    }
+  /* Use Tailwind classes for most styles */
+  :global(.dark) select {
+    color-scheme: dark;
   }
 </style>

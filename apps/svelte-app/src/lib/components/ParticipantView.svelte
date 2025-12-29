@@ -4,7 +4,10 @@
   import ConsentForm from "./ConsentForm.svelte";
   import JungVoiceTest from "../jung-voice-assessment/JungVoiceTest.svelte";
   import { kawasakiStore } from "../jung-voice-assessment/store.svelte";
+  import { languageTag } from "$lib/paraglide/runtime.js";
   import * as m from "$lib/paraglide/messages.js";
+
+  console.log("Current language tag:", languageTag());
 
   let step = $state<"landing" | "consent" | "assessment" | "complete">("landing");
 

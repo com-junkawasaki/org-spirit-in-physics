@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.55.0",
+  "version": "1.56.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-28T23:30:00+09:00",
-  "merkleRoot": "研究参加同意プロセスの高度化。CDISC標準に準拠した属性情報（年齢層、人種、年収）の収集機能を追加。また、ICD-10に基づく精神疾患既往歴のサジェスト入力機能を実装し、Paraglideによる多言語（日・英）対応を完遂した。",
+  "updatedAt": "2025-12-28T23:45:00+09:00",
+  "merkleRoot": "同意プロセスのUI/UX統合と完全多言語化。ResearchPlanContentのParaglide統合により、研究計画書の詳細な日・英表示を実現。また、元のtsxに基づいたカラースキーム（Tailwind/Dark Mode対応）をConsentFormに適用した。",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -60,22 +60,16 @@
     },
     "narrative": [
       {
+        "@id": "project:narrative/76",
+        "@type": "project:Narrative",
+        "act": "同意説明文書の多言語統合とUI洗練",
+        "summary": "ResearchPlanContent.svelteをParaglide i18nに統合し、詳細な研究計画書を日・英で提供可能にした。また、ConsentFormのUIをオリジナルのtsxデザインに基づき洗練。Tailwindによるダークモード対応と、CDISC準拠の属性収集、ICD-10疾患コードサジェスト機能を含む統合的な同意フローを完成させた。"
+      },
+      {
         "@id": "project:narrative/75",
         "@type": "project:Narrative",
         "act": "同意プロセスと属性収集の標準化",
         "summary": "研究参加同意フォームを刷新した。CDISC標準に基づく属性情報収集と、ICD-10準拠の疾患コードサジェスト機能を導入。Paraglide i18n統合により、グローバルな臨床研究基準（ICH-GCP）に適合するユーザー体験を構築し、バックエンド（gRPC/Protobuf）への永続化ロジックまでを統合した。"
-      },
-      {
-        "@id": "project:narrative/74",
-        "@type": "project:Narrative",
-        "act": "カスタムドメイン公開とセキュリティ強化",
-        "summary": "独自ドメイン sip.junkawasaki.com への移行と SSL 化を完了した。cert-manager の Gateway API サポートを有効化し、クラスター内部の DNS キャッシュ問題を hostAlias により解消することで、自動証明書更新サイクルを確立した。Clerk の本番用 API キーを Secret 管理に移行し、セキュアな認証基盤を構築した。"
-      },
-      {
-        "@id": "project:narrative/73",
-        "@type": "project:Narrative",
-        "act": "GKE デプロイの完遂とコスト最適化",
-        "summary": "GCP (GKE) 上に全てのマイクロサービスをデプロイした。Apple Silicon (ARM64) 環境からの AMD64 クロスビルド課題を解決し、Spot インスタンスと e2-medium マシンの採用により、目標を大幅に下回る月額数千円〜1万円程度での運用基盤を確立した。"
       }
     ]
   },
@@ -83,6 +77,8 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "ResearchPlanContentの完全多言語化（Paraglide統合）",
+      "ConsentFormのUIデザイン刷新（tsxベースのカラー・ダークモード対応）",
       "CDISC準拠の属性情報収集（年齢層、性別、人種、年収）の実装",
       "ICD-10に基づく精神疾患既往歴のサジェスト入力機能（おうしん病対応）",
       "Paraglideによる同意フォームの完全多言語化（日本語・英語）",
@@ -104,7 +100,7 @@
       "FastAPI エンドポイントからの Temporal ワークフロー起動処理の実装",
       "Tiltfile 作成と統合",
       "Svelte アプリの Live Update 実装",
-      "Timoni Bundle の Tilt 連携",
+      "Timoni Bundle の Tilt連携",
       "BDD テストの Tilt リソース化",
       "gRPC Service Dockerfile のクリーンアップ",
       "Storage Service (gRPC) との連携実装",
