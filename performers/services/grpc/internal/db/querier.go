@@ -28,6 +28,7 @@ type Querier interface {
 	GetTimelinePointsWithPublicCheck(ctx context.Context, arg GetTimelinePointsWithPublicCheckParams) ([]GetTimelinePointsWithPublicCheckRow, error)
 	GetWordAggregates(ctx context.Context, arg GetWordAggregatesParams) ([]GetWordAggregatesRow, error)
 	GetWordStatistics(ctx context.Context, arg GetWordStatisticsParams) ([]GetWordStatisticsRow, error)
+	UpsertStimulusWord(ctx context.Context, arg UpsertStimulusWordParams) error
 }
 
 var _ Querier = (*Queries)(nil)

@@ -23,6 +23,13 @@
     const newLang = languageTag() === 'ja' ? 'en' : 'ja';
     setLanguageTag(newLang);
   }
+
+  // Sync html lang attribute
+  $effect(() => {
+    if (browser) {
+      document.documentElement.lang = languageTag();
+    }
+  });
 </script>
 
 {#if PUBLIC_CLERK_PUBLISHABLE_KEY}

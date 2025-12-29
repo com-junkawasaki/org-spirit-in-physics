@@ -2,12 +2,21 @@ import * as runtime from "$lib/paraglide/runtime.js";
 import { browser } from "$app/environment";
 
 // Svelte 5 reactive state
-let tag = $state(runtime.sourceLanguageTag);
+let tag = $state<"en" | "ja">("en"); 
 
 if (browser) {
-	const saved = localStorage.getItem("preferredLanguage");
-	if (saved === "en" || saved === "ja") {
-		tag = saved;
+	// Check URL parameter first (e.g. ?lang=en)
+	const urlParams = new URLSearchParams(window.location.search);
+	const langParam = urlParams.get('lang');
+	
+	if (langParam === "en" || langParam === "ja") {
+		tag = langParam as "en" | "ja";
+		localStorage.setItem("preferredLanguage", tag);
+	} else {
+		const saved = localStorage.getItem("preferredLanguage");
+		if (saved === "en" || saved === "ja") {
+			tag = saved as "en" | "ja";
+		}
 	}
 }
 

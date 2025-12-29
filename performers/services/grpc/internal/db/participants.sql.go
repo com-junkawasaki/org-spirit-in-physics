@@ -199,3 +199,30 @@ func (q *Queries) GetStimulusWords(ctx context.Context) ([]GetStimulusWordsRow, 
 	}
 	return items, nil
 }
+
+const upsertStimulusWord = `-- name: UpsertStimulusWord :exec
+INSERT INTO stimulus_words (id, japanese, english, pronunciation, created_at, updated_at)
+VALUES ($1, $2, $3, $4, NOW(), NOW())
+ON CONFLICT (id) DO UPDATE SET
+    japanese = EXCLUDED.japanese,
+    english = EXCLUDED.english,
+    pronunciation = EXCLUDED.pronunciation,
+    updated_at = NOW()
+`
+
+type UpsertStimulusWordParams struct {
+	ID            int32  `json:"id"`
+	Japanese      string `json:"japanese"`
+	English       string `json:"english"`
+	Pronunciation string `json:"pronunciation"`
+}
+
+func (q *Queries) UpsertStimulusWord(ctx context.Context, arg UpsertStimulusWordParams) error {
+	_, err := q.db.Exec(ctx, upsertStimulusWord,
+		arg.ID,
+		arg.Japanese,
+		arg.English,
+		arg.Pronunciation,
+	)
+	return err
+}

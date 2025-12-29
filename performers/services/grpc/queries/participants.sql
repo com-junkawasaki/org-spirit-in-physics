@@ -40,3 +40,12 @@ ORDER BY id;
 SELECT id, japanese, english, pronunciation
 FROM stimulus_words
 WHERE id = $1;
+
+-- name: UpsertStimulusWord :exec
+INSERT INTO stimulus_words (id, japanese, english, pronunciation, created_at, updated_at)
+VALUES ($1, $2, $3, $4, NOW(), NOW())
+ON CONFLICT (id) DO UPDATE SET
+    japanese = EXCLUDED.japanese,
+    english = EXCLUDED.english,
+    pronunciation = EXCLUDED.pronunciation,
+    updated_at = NOW();

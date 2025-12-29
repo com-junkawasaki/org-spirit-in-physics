@@ -17,30 +17,10 @@ import ConsentForm from "./ConsentForm.svelte";
     await kawasakiStore.loadStimulusWords();
   });
 
-  async function handleConsent(id: string, email: string, agreements: any, demographics: any, password?: string) {
+  async function handleConsent(id: string, email: string, agreements: any, demographics: any) {
     console.log("Consent received:", { id, email, agreements, demographics });
     
     try {
-      // もし未ログインなら、まず Clerk でサインアップを試みる
-      if (clerk && !clerk.user && password) {
-        try {
-          const signUp = await clerk.client?.signUp.create({
-            emailAddress: email,
-            password: password,
-          });
-          
-          // 本来は検証ステップが必要だが、ここではアカウント作成フローを開始することを優先
-          await clerk.client?.signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-        } catch (signUpError: any) {
-          console.error("Clerk sign up failed:", signUpError);
-          if (signUpError.errors?.[0]?.code === "form_identifier_exists") {
-             await clerk.client?.signIn.create({ identifier: email, password });
-          } else {
-            throw signUpError;
-          }
-        }
-      }
-
       // 参加者情報の初期化（ストア）
       kawasakiStore.initializeParticipant(id, demographics);
       

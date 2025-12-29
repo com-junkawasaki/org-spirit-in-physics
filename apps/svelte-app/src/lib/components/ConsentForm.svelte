@@ -7,7 +7,7 @@
   import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
 
  let { onConsent, participantId } = $props<{
-    onConsent: (id: string, email: string, agreements: any, demographics: any, password?: string) => void;
+    onConsent: (id: string, email: string, agreements: any, demographics: any) => void;
     participantId: string;
   }>();
 
@@ -19,7 +19,6 @@
   });
 
   let email = $state("");
-  let password = $state("");
   let showFullConsent = $state(false);
 
   let demographics = $state({
@@ -48,7 +47,7 @@
   const user = $derived(clerk?.user);
 
   const isAllAgreed = $derived(
-    Object.values(agreements).every(Boolean) && (user || (email.trim() !== "" && password.trim().length >= 8))
+    Object.values(agreements).every(Boolean) && (user || email.trim() !== "")
   );
 
   function selectIllness(code: IllnessCode) {
@@ -75,7 +74,7 @@
       if (user) {
         onConsent(participantId, user.primaryEmailAddress?.emailAddress || "", agreements, demographics);
       } else {
-        onConsent(participantId, email, agreements, demographics, password);
+        onConsent(participantId, email, agreements, demographics);
       }
     }
   }
@@ -314,14 +313,14 @@
       </SignedIn>
 
       <SignedOut>
-        {@render emailPasswordFields()}
+        {@render emailField()}
       </SignedOut>
     {:else}
-      {@render emailPasswordFields()}
+      {@render emailField()}
     {/if}
   </div>
   
-  {#snippet emailPasswordFields()}
+  {#snippet emailField()}
     <div class="space-y-4">
       <div class="relative">
         <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -337,22 +336,6 @@
           class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white shadow-sm"
         />
       </div>
-
-      <div class="relative">
-        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <input
-          type="password"
-          id="password"
-          bind:value={password}
-          placeholder={m.enter_password()}
-          class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white shadow-sm"
-        />
-      </div>
-      <p class="text-[10px] text-gray-400 px-1 font-medium italic">{m.password_hint()}</p>
     </div>
   {/snippet}
   

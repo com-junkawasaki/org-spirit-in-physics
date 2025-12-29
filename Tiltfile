@@ -39,7 +39,12 @@ docker_build(
 docker_build(
     SVELTE_IMAGE,
     './apps/svelte-app',
-    dockerfile='./apps/svelte-app/Dockerfile'
+    dockerfile='./apps/svelte-app/Dockerfile',
+    live_update=[
+        sync('./apps/svelte-app/src', '/app/src'),
+        sync('./apps/svelte-app/messages', '/app/messages'),
+        run('cd /app && npx paraglide-js compile --project ./project.inlang && pnpm build', trigger=['./apps/svelte-app/src', './apps/svelte-app/messages'])
+    ]
 )
 
 # 6. Argo CD Setup
