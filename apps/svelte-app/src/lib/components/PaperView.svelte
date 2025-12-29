@@ -2,6 +2,9 @@
   // PaperView.svelte - Complete research paper content ported from archive with JSON-LD and KaTeX
   import { onMount } from "svelte";
   import * as m from "$lib/paraglide/messages.js";
+  import katex from "katex";
+  import "katex/dist/katex.min.css";
+  import renderMathInElement from "katex/dist/contrib/auto-render";
 
   interface Section {
     id: string;
@@ -111,6 +114,20 @@
   }
 
   onMount(() => {
+    // Render LaTeX
+    const paperArticle = document.querySelector('.paper-article');
+    if (paperArticle) {
+      renderMathInElement(paperArticle as HTMLElement, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '\\[', right: '\\]', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false }
+        ],
+        throwOnError: false
+      });
+    }
+
     const observer = new IntersectionObserver((entries: IntersectionObserverEntry[]) => {
       entries.forEach((entry: IntersectionObserverEntry) => {
         if (entry.isIntersecting) {

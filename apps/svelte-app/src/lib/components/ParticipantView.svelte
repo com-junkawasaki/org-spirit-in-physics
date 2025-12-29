@@ -1,13 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { SignedIn, SignedOut, SignInButton } from "svelte-clerk";
+  import { SignedIn, SignedOut, SignInButton, clerkContext } from "svelte-clerk";
   import ConsentForm from "./ConsentForm.svelte";
   import JungVoiceTest from "../jung-voice-assessment/JungVoiceTest.svelte";
   import { kawasakiStore } from "../jung-voice-assessment/store.svelte";
-  import { languageTag } from "$lib/paraglide/runtime.js";
+  import { languageTag } from "$lib/i18n";
   import * as m from "$lib/paraglide/messages.js";
 
   let step = $state<"landing" | "consent" | "assessment" | "complete">("landing");
+  const clerk = clerkContext();
 
   onMount(async () => {
     // 参加者IDの初期化
@@ -15,21 +16,40 @@
     await kawasakiStore.loadStimulusWords();
   });
 
-  async function handleConsent(id: string, signature: string, agreements: any, demographics: any) {
-    console.log("Consent received:", { id, signature, agreements, demographics });
+  async function handleConsent(id: string, email: string, agreements: any, demographics: any, password?: string) {
+    console.log("Consent received:", { id, email, agreements, demographics });
     
     try {
+      // もし未ログインなら、まず Clerk でサインアップを試みる
+      if (!clerk.user && password) {
+        try {
+          const signUp = await clerk.client.signUp.create({
+            emailAddress: email,
+            password: password,
+          });
+          
+          // 本来は検証ステップが必要だが、ここではアカウント作成フローを開始することを優先
+          await clerk.client.signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        } catch (signUpError: any) {
+          console.error("Clerk sign up failed:", signUpError);
+          if (signUpError.errors?.[0]?.code === "form_identifier_exists") {
+             await clerk.client.signIn.create({ identifier: email, password });
+          } else {
+            throw signUpError;
+          }
+        }
+      }
+
       // 参加者情報の初期化（ストア）
       kawasakiStore.initializeParticipant(id, demographics);
       
       // API 連携: 参加者作成
-      await kawasakiStore.createParticipantOnServer(signature, agreements);
+      await kawasakiStore.createParticipantOnServer(email, agreements);
       
       kawasakiStore.startPreflight();
       step = "assessment";
     } catch (error) {
       console.error("Failed to create participant:", error);
-      // 必要に応じてエラー表示
     }
   }
 

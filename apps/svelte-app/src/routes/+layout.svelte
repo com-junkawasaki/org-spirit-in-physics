@@ -19,7 +19,15 @@
   }
 </script>
 
-<ClerkProvider publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY}>
+{#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+  <ClerkProvider publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY}>
+    {@render layoutContent()}
+  </ClerkProvider>
+{:else}
+  {@render layoutContent()}
+{/if}
+
+{#snippet layoutContent()}
   <header class="global-nav">
     <div class="nav-container">
       <div class="logo">
@@ -40,12 +48,16 @@
         <button class="lang-switcher" onclick={toggleLanguage}>
           {languageTag() === 'ja' ? 'English' : '日本語'}
         </button>
-        <SignedOut>
-          <SignInButton mode="modal" class="signin-btn" />
-        </SignedOut>
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
+        {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+          <SignedOut>
+            <SignInButton mode="modal" class="signin-btn" />
+          </SignedOut>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+        {:else}
+          <span class="text-xs text-gray-400">Auth Disabled (No Key)</span>
+        {/if}
       </div>
     </div>
   </header>
@@ -57,7 +69,7 @@
   <main class="content-wrapper">
     {@render children()}
   </main>
-</ClerkProvider>
+{/snippet}
 
 <style>
   :global(body) {

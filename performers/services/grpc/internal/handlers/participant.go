@@ -148,7 +148,7 @@ func (h *ParticipantHandler) CreateParticipant(
 			ID:        "onboarding-" + participantID.String(),
 			TaskQueue: "onboarding-queue",
 		}
-		_, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.OnboardingWorkflow, req.Msg.Signature)
+		_, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.OnboardingWorkflow, req.Msg.Email)
 		if err != nil {
 			// In production, we might want to handle this better (e.g., retry or log)
 			// For now, just log and continue

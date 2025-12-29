@@ -54,13 +54,13 @@ class KawasakiStore {
     });
   }
 
-  async createParticipantOnServer(signature: string, agreements: any) {
+  async createParticipantOnServer(email: string, agreements: any) {
     if (!this.participantId) return;
 
     try {
       await participantClient.createParticipant({
         id: this.participantId,
-        signature,
+        email,
         agreements: agreements as any, // protobuf Struct will handle this if correctly formatted
         agreedAt: { seconds: BigInt(Math.floor(Date.now() / 1000)), nanos: 0 },
         ageGroup: this.demographics.ageGroup,

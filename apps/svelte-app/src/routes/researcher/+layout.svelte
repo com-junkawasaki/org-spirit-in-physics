@@ -1,27 +1,10 @@
 <script lang="ts">
-  // Cache bust: 2025-12-27-17-45
-  import { SignedIn, SignedOut, UserButton } from "svelte-clerk";
+  import { UserButton } from "svelte-clerk";
   import { page } from "$app/state";
+  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
 
   let { children } = $props();
 
-  // For E2E testing: bypass auth
-  let bypassAuth = $state(false);
-  
-  $effect(() => {
-    // Check both search and hash for test_mode=true
-    const checkBypass = () => {
-      const url = new URL(window.location.href);
-      return url.searchParams.get('test_mode') === 'true' || 
-             url.hash.includes('test_mode=true') ||
-             window.location.search.includes('test_mode=true');
-    };
-    
-    bypassAuth = checkBypass();
-    console.log('[AuthDebug] URL:', window.location.href);
-    console.log('[AuthDebug] BypassAuth:', bypassAuth);
-  });
-  
   let activeTab = $derived.by(() => {
     const path = page.url.pathname;
     if (path.startsWith('/researcher/participants')) return 'participants';
@@ -32,33 +15,52 @@
 </script>
 
 <div class="researcher-container">
-  <!-- DEBUG: {bypassAuth} -->
-  {#if bypassAuth}
-    <div class="dashboard-layout">
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <span class="brand">Admin Dashboard (Test Mode)</span>
-        </div>
-        <nav class="sidebar-nav">
-          <a 
-            href="/researcher?test_mode=true"
-            class="nav-item"
-            class:active={activeTab === "overview"} 
-          >
-            <span class="icon">📊</span> 概要
-          </a>
-          <a 
-            href="/researcher/participants?test_mode=true"
-            class="nav-item"
-            class:active={activeTab === "participants"} 
-          >
-            <span class="icon">👥</span> 被験者一覧
-          </a>
-        </nav>
-      </aside>
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="brand">Admin Dashboard</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a 
+          href="/researcher"
+          class="nav-item"
+          class:active={activeTab === "overview"} 
+        >
+          <span class="icon">📊</span> 概要
+        </a>
+        <a 
+          href="/researcher/participants"
+          class="nav-item"
+          class:active={activeTab === "participants"} 
+        >
+          <span class="icon">👥</span> 被験者一覧
+        </a>
+        <a 
+          href="/researcher/sessions"
+          class="nav-item"
+          class:active={activeTab === "sessions"} 
+        >
+          <span class="icon">🕒</span> セッション履歴
+        </a>
+        <a 
+          href="/researcher/settings"
+          class="nav-item"
+          class:active={activeTab === "settings"} 
+        >
+          <span class="icon">⚙️</span> 設定
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+          <UserButton />
+        {/if}
+        <span class="user-name">管理者</span>
+      </div>
+    </aside>
 
-      <main class="main-content">
-        <header class="content-header">
+    <main class="main-content">
+      <header class="content-header">
+        <div class="flex items-center gap-4">
           <h2 class="text-xl font-bold text-gray-800">
             {#if activeTab === "overview"}概要
             {:else if activeTab === "participants"}被験者管理
@@ -66,98 +68,21 @@
             {:else if activeTab === "settings"}システム設定
             {/if}
           </h2>
-        </header>
+        </div>
+        <div class="header-actions">
+          <button class="btn-refresh" onclick={() => window.location.reload()}>更新</button>
+        </div>
+      </header>
 
-        <div class="content-body">
-          {@render children()}
-        </div>
-      </main>
-    </div>
-  {:else}
-    <SignedOut>
-      <div class="auth-required">
-      <div class="auth-card">
-        <h1>RESEARCHER PORTAL</h1>
-        <p>管理者権限を持つアカウントでサインインしてください。</p>
-        <div class="auth-placeholder">
-          <p>（サインインボタンは共通ヘッダーにあります）</p>
-        </div>
+      <div style="background: blue; padding: 10px;">LAYOUT BEFORE CHILDREN</div>
+      {@render children()}
+      <div style="background: green; padding: 10px;">LAYOUT AFTER CHILDREN</div>
+
+      <div class="content-body">
+        {@render children()}
       </div>
-    </div>
-  </SignedOut>
-
-  <SignedIn>
-    <div class="dashboard-layout">
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <span class="brand">Admin Dashboard</span>
-        </div>
-        <nav class="sidebar-nav">
-          <a 
-            href="/researcher"
-            class="nav-item"
-            class:active={activeTab === "overview"} 
-          >
-            <span class="icon">📊</span> 概要
-          </a>
-          <a 
-            href="/researcher/participants"
-            class="nav-item"
-            class:active={activeTab === "participants"} 
-          >
-            <span class="icon">👥</span> 被験者一覧
-          </a>
-          <a 
-            href="/researcher/sessions"
-            class="nav-item"
-            class:active={activeTab === "sessions"} 
-          >
-            <span class="icon">🕒</span> セッション履歴
-          </a>
-          <a 
-            href="/researcher/settings"
-            class="nav-item"
-            class:active={activeTab === "settings"} 
-          >
-            <span class="icon">⚙️</span> 設定
-          </a>
-        </nav>
-        <div class="sidebar-footer">
-          <UserButton />
-          <span class="user-name">管理者</span>
-        </div>
-      </aside>
-
-      <main class="main-content">
-        <header class="content-header">
-          <div class="flex items-center gap-4">
-            {#if activeTab === 'participants' && page.url.pathname !== '/researcher'}
-              <a href="/researcher" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="min-width: 20px; min-height: 20px;">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-              </a>
-            {/if}
-            <h2 class="text-xl font-bold text-gray-800">
-              {#if activeTab === "overview"}概要
-              {:else if activeTab === "participants"}被験者管理
-              {:else if activeTab === "sessions"}セッション履歴
-              {:else if activeTab === "settings"}システム設定
-              {/if}
-            </h2>
-          </div>
-          <div class="header-actions">
-            <button class="btn-refresh" onclick={() => window.location.reload()}>更新</button>
-          </div>
-        </header>
-
-        <div class="content-body">
-          {@render children()}
-        </div>
-      </main>
-    </div>
-  </SignedIn>
-  {/if}
+    </main>
+  </div>
 </div>
 
 <style>
@@ -168,39 +93,10 @@
   }
 
   .researcher-container {
-    height: 100vh;
+    height: calc(100vh - 64px);
     display: flex;
     flex-direction: column;
     background-color: #f8fafc;
-  }
-
-  .auth-required {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    padding: 2rem;
-  }
-
-  .auth-card {
-    background: white;
-    padding: 3rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    text-align: center;
-    max-width: 400px;
-    width: 100%;
-  }
-
-  .auth-card h1 {
-    margin-top: 0;
-    color: #1e293b;
-  }
-
-  .auth-placeholder {
-    margin-top: 2rem;
-    color: #64748b;
-    font-size: 0.875rem;
   }
 
   .dashboard-layout {

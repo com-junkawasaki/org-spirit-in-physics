@@ -203,7 +203,7 @@ func (x *GetParticipantResponse) GetParticipant() *Participant {
 type CreateParticipantRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Id             *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
-	Signature      string                 `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	Email          string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	Agreements     *structpb.Struct       `protobuf:"bytes,3,opt,name=agreements,proto3" json:"agreements,omitempty"`
 	AgreedAt       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=agreed_at,json=agreedAt,proto3" json:"agreed_at,omitempty"`
 	IsPublic       *bool                  `protobuf:"varint,5,opt,name=is_public,json=isPublic,proto3,oneof" json:"is_public,omitempty"`
@@ -252,9 +252,9 @@ func (x *CreateParticipantRequest) GetId() string {
 	return ""
 }
 
-func (x *CreateParticipantRequest) GetSignature() string {
+func (x *CreateParticipantRequest) GetEmail() string {
 	if x != nil {
-		return x.Signature
+		return x.Email
 	}
 	return ""
 }
@@ -726,10 +726,10 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x15GetParticipantRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"W\n" +
 	"\x16GetParticipantResponse\x12=\n" +
-	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\xb9\x03\n" +
+	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\xb1\x03\n" +
 	"\x18CreateParticipantRequest\x12\x13\n" +
-	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\tR\tsignature\x127\n" +
+	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x127\n" +
 	"\n" +
 	"agreements\x18\x03 \x01(\v2\x17.google.protobuf.StructR\n" +
 	"agreements\x127\n" +

@@ -1,0 +1,8 @@
+{
+	"dependencies": {
+		"katex": "^0.16.27"
+	},
+	"devDependencies": {
+		"@types/katex": "^0.16.7"
+	}
+}

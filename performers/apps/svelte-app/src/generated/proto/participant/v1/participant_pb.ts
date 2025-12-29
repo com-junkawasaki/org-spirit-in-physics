@@ -166,9 +166,9 @@ export class CreateParticipantRequest extends Message<CreateParticipantRequest> 
   id?: string;
 
   /**
-   * @generated from field: string signature = 2;
+   * @generated from field: string email = 2;
    */
-  signature = "";
+  email = "";
 
   /**
    * @generated from field: google.protobuf.Struct agreements = 3;
@@ -214,7 +214,7 @@ export class CreateParticipantRequest extends Message<CreateParticipantRequest> 
   static readonly typeName = "participant.v1.CreateParticipantRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 2, name: "signature", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "agreements", kind: "message", T: Struct },
     { no: 4, name: "agreed_at", kind: "message", T: Timestamp },
     { no: 5, name: "is_public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
