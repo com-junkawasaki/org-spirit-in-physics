@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
@@ -132,6 +131,15 @@ func (h *ParticipantHandler) CreateParticipant(
 	ctx context.Context,
 	req *connect.Request[participantv1.CreateParticipantRequest],
 ) (*connect.Response[participantv1.CreateParticipantResponse], error) {
+	// #region agent log
+	{
+		logFile, _ := os.OpenFile("/Volumes/251214/jun784/spirit-in-physics/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if logFile != nil {
+			fmt.Fprintf(logFile, "{\"location\":\"participant.go:133\",\"message\":\"CreateParticipant started\",\"data\":{\"id\":\"%s\",\"email\":\"%s\"},\"timestamp\":%d,\"sessionId\":\"debug-session\",\"hypothesisId\":\"A\"}\n", req.Msg.GetId(), req.Msg.Email, time.Now().UnixMilli())
+			logFile.Close()
+		}
+	}
+	// #endregion
 	participantID := req.Msg.GetId()
 	if participantID == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, connect.NewError(connect.CodeInvalidArgument, nil))
@@ -160,6 +168,15 @@ func (h *ParticipantHandler) CreateParticipant(
 		UpdatedAt:      pgtype.Timestamptz{Time: now, Valid: true},
 	})
 	if err != nil {
+		// #region agent log
+		{
+			logFile, _ := os.OpenFile("/Volumes/251214/jun784/spirit-in-physics/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if logFile != nil {
+				fmt.Fprintf(logFile, "{\"location\":\"participant.go:161\",\"message\":\"CreateParticipant DB error\",\"data\":{\"error\":\"%s\"},\"timestamp\":%d,\"sessionId\":\"debug-session\",\"hypothesisId\":\"A\"}\n", err.Error(), time.Now().UnixMilli())
+				logFile.Close()
+			}
+		}
+		// #endregion
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -169,7 +186,7 @@ func (h *ParticipantHandler) CreateParticipant(
 			ID:        "onboarding-" + participantID,
 			TaskQueue: "onboarding-queue",
 		}
-		_, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.OnboardingWorkflow, req.Msg.Email)
+		_, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.OnboardingWorkflow, participantID)
 		if err != nil {
 			// In production, we might want to handle this better (e.g., retry or log)
 			// For now, just log and continue

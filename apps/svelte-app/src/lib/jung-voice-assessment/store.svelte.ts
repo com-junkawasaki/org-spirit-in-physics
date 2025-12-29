@@ -124,6 +124,9 @@ class KawasakiStore {
     if (!this.participantId) return;
 
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7247/ingest/dd38c440-a27e-40c0-b740-1186fa2e0e03',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'store.svelte.ts:127',message:'Creating participant on server',data:{participantId:this.participantId,email,demographics:this.demographics},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       await participantClient.createParticipant({
         id: this.participantId,
         email,

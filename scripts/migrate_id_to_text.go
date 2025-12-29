@@ -22,13 +22,18 @@ func main() {
 	defer conn.Close(context.Background())
 
 	ddls := []string{
+		"DROP MATERIALIZED VIEW IF EXISTS timeline_daily CASCADE",
+		"DROP MATERIALIZED VIEW IF EXISTS timeline_hourly CASCADE",
+		"DROP VIEW IF EXISTS participant_detail CASCADE",
+		"DROP VIEW IF EXISTS participant_summary CASCADE",
+		"DROP VIEW IF EXISTS session_detail CASCADE",
 		"DROP MATERIALIZED VIEW IF EXISTS timeline_word_statistics_by_session CASCADE",
 		"DROP MATERIALIZED VIEW IF EXISTS timeline_emotion_vectors_by_word CASCADE",
 		"DROP MATERIALIZED VIEW IF EXISTS timeline_word_aggregates_by_session CASCADE",
 		
 		"ALTER TABLE timeline_emotion_entries DROP CONSTRAINT IF EXISTS timeline_emotion_entries_timeline_point_time_fkey",
 		"ALTER TABLE physiological_measurements DROP CONSTRAINT IF EXISTS physiological_measurements_timeline_point_time_fkey",
-		"ALTER TABLE timeline_points DROP CONSTRAINT IF EXISTS timeline_points_pkey",
+		"ALTER TABLE timeline_points DROP CONSTRAINT IF EXISTS timeline_points_pkey CASCADE",
 		"ALTER TABLE timeline_points DROP CONSTRAINT IF EXISTS timeline_points_participant_id_fkey",
 		"ALTER TABLE sessions DROP CONSTRAINT IF EXISTS sessions_participant_id_session_index_key",
 		"ALTER TABLE sessions DROP CONSTRAINT IF EXISTS sessions_participant_id_fkey",

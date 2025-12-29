@@ -6,6 +6,9 @@
 
   async function handleConsent(id: string, email: string, agreements: any, demographics: any) {
     console.log("Consent received:", { id, email, agreements, demographics });
+    // #region agent log
+    fetch('http://127.0.0.1:7247/ingest/dd38c440-a27e-40c0-b740-1186fa2e0e03',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'+page.svelte:8',message:'handleConsent called',data:{id,email,demographics},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     
     try {
       // 参加者情報の初期化（ストア）

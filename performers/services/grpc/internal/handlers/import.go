@@ -88,8 +88,7 @@ func (h *ImportHandler) ImportEmotions(
 	totalProcessed := 0
 	a := &activities.ImportActivities{Queries: h.queries}
 	for _, p := range participants {
-		uid, _ := uuid.FromBytes(p.ID.Bytes[:])
-		participantID := uid.String()
+		participantID := p.ID
 		
 		log.Printf("Starting emotion import for %s", participantID)
 		

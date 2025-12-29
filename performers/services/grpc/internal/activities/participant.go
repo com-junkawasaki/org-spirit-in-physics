@@ -3,7 +3,6 @@ package activities
 import (
 	"context"
 	"time"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 )
