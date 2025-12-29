@@ -1,5 +1,6 @@
 import { participantClient, storageClient } from "$lib/connect";
 import type { StimulusWord } from "@/generated/proto/participant/v1/participant_pb";
+import * as m from "$lib/paraglide/messages.js";
 
 export type TestStatus = 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
 export type DeviceStatus = 'idle' | 'pending' | 'success' | 'error';
@@ -73,7 +74,7 @@ class KawasakiStore {
       this.error = null;
     } catch (e: any) {
       console.error("Failed to create participant on server:", e);
-      this.error = `参加者情報の登録に失敗しました: ${e.message || '不明なエラー'}`;
+      this.error = m.participant_creation_failed({ error: e.message || m.unknown_error() });
       this.logEvent('participant_creation_failed', { error: String(e) });
       throw e;
     }
@@ -86,7 +87,7 @@ class KawasakiStore {
       this.logEvent('stimulus_words_loaded', { count: this.stimulusWords.length });
       this.error = null;
     } catch (e: any) {
-      this.error = `刺激語の読み込みに失敗しました: ${e.message || 'ネットワークエラー'}`;
+      this.error = m.stimulus_words_load_failed({ error: e.message || m.network_error() });
       console.error(e);
     }
   }

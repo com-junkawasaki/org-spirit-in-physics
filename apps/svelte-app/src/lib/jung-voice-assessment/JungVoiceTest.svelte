@@ -2,6 +2,8 @@
   import { onMount, onDestroy } from "svelte";
   import { kawasakiStore } from "./store.svelte";
   import AudioVisualizer from "./AudioVisualizer.svelte";
+  import * as m from "$lib/paraglide/messages.js";
+  import { languageTag } from "$lib/i18n.svelte";
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
@@ -18,7 +20,7 @@
   let responseTimer: any = null;
 
   // Constants
-  const WELCOME_MESSAGE = "ユング式言語連想検査へようこそ。これから100個の単語が表示されます。それぞれの単語から連想される言葉を、できるだけ早く声に出して回答してください。";
+  const WELCOME_MESSAGE = m.welcome_message();
 
   onMount(async () => {
     // Initial words are loaded by parent (ParticipantView)
@@ -47,7 +49,7 @@
       }
     } catch (err: any) {
       kawasakiStore.deviceStatus = 'error';
-      kawasakiStore.error = "カメラまたはマイクへのアクセスに失敗しました。";
+      kawasakiStore.error = m.device_access_error();
       kawasakiStore.logEvent('preflight_devices_failed', { error: err.message });
     } finally {
       isInitializingMedia = false;
@@ -194,7 +196,8 @@
     const word = kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex];
 
     if (isRunning && word) {
-      kawasakiStore.logEvent('word_displayed', { word: word.japanese, id: word.id });
+      const stimulusWord = languageTag() === 'ja' ? word.japanese : word.english;
+      kawasakiStore.logEvent('word_displayed', { word: stimulusWord, id: word.id });
       wordDisplayedTime = Date.now();
       recognizedText = "";
 
@@ -207,8 +210,8 @@
         };
         stimulusAudio.play().catch(() => {
           // Fallback to TTS
-          const utterance = new SpeechSynthesisUtterance(word.japanese);
-          utterance.lang = 'ja-JP';
+          const utterance = new SpeechSynthesisUtterance(stimulusWord);
+          utterance.lang = languageTag() === 'ja' ? 'ja-JP' : 'en-US';
           utterance.onend = () => setTimeout(startRecognition, 500);
           speechSynthesis.speak(utterance);
         });
@@ -216,7 +219,7 @@
 
       // Timeout for no response (increased to 10s as per some requirements seen in other files)
       responseTimer = setTimeout(() => {
-        kawasakiStore.logEvent('response_timeout', { word: word.japanese });
+        kawasakiStore.logEvent('response_timeout', { word: stimulusWord });
         if (recognition) {
           try { recognition.stop(); } catch (e) {}
         }
@@ -251,11 +254,11 @@
 <div class="test-container">
   {#if kawasakiStore.testStatus === 'preflight'}
     <div class="screen preflight">
-      <h2>デバイスチェック</h2>
+      <h2>{m.device_check()}</h2>
       <div class="card welcome-card">
-        <h3>ようこそ</h3>
+        <h3>{m.welcome_title()}</h3>
         <p>{WELCOME_MESSAGE}</p>
-        <button class="btn" onclick={() => stimulusAudio?.play()}>説明をもう一度聞く</button>
+        <button class="btn" onclick={() => stimulusAudio?.play()}>{m.listen_again()}</button>
         <audio bind:this={stimulusAudio} src="/audio/jung-voice-assessment/welcome_message.mp3" autoPlay></audio>
       </div>
 
@@ -263,14 +266,14 @@
         <video bind:this={videoPreview} autoPlay playsInline muted class="video-preview"></video>
         {#if kawasakiStore.deviceStatus !== 'success'}
           <div class="overlay">
-            <p>{kawasakiStore.deviceStatus === 'pending' ? 'カメラとマイクを準備しています...' : 'デバイスにアクセスできませんでした。'}</p>
+            <p>{kawasakiStore.deviceStatus === 'pending' ? m.preparing_devices() : m.device_access_error()}</p>
           </div>
         {/if}
       </div>
 
       {#if kawasakiStore.deviceStatus === 'success'}
         <div class="status-ready">
-          <p class="success-text">カメラとマイクの準備ができました。</p>
+          <p class="success-text">{m.devices_ready()}</p>
           <AudioVisualizer stream={kawasakiStore.stream} />
         </div>
       {/if}
@@ -280,21 +283,21 @@
       {/if}
 
       <button class="btn primary large" disabled={kawasakiStore.deviceStatus !== 'success'} onclick={handleStartSession}>
-        セッションを開始
+        {m.start_session()}
       </button>
     </div>
 
   {:else if kawasakiStore.testStatus.includes('running')}
     <div class="screen session">
       <div class="progress-container">
-        <p>セッション {kawasakiStore.currentSession} - 単語 {kawasakiStore.currentWordIndex + 1} / {kawasakiStore.stimulusWords.length}</p>
+        <p>{m.session_info({ session: kawasakiStore.currentSession, current: kawasakiStore.currentWordIndex + 1, total: kawasakiStore.stimulusWords.length })}</p>
         <div class="progress-bar">
           <div class="fill" style="width: {((kawasakiStore.currentWordIndex + 1) / kawasakiStore.stimulusWords.length) * 100}%"></div>
         </div>
       </div>
 
       {#if kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
-        <h1 class="stimulus-word">{kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex].japanese}</h1>
+        <h1 class="stimulus-word">{languageTag() === 'ja' ? kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex].japanese : kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex].english}</h1>
       {/if}
 
       <div class="visualizer-box">
@@ -303,10 +306,10 @@
 
       <div class="recognition-status">
         {#if isListening}
-          <span class="listening-indicator">聞き取り中...</span>
+          <span class="listening-indicator">{m.listening()}</span>
         {/if}
         {#if recognizedText}
-          <p class="recognized-text">認識結果: {recognizedText}</p>
+          <p class="recognized-text">{m.recognition_result({ text: recognizedText })}</p>
         {/if}
       </div>
       
@@ -315,19 +318,19 @@
 
   {:else if kawasakiStore.testStatus === 'session-1-complete'}
     <div class="screen break">
-      <h2>セッション1が完了しました</h2>
-      <p>短い休憩を取ってください。準備ができたら、セッション2を開始してください。</p>
+      <h2>{m.session_1_complete_title()}</h2>
+      <p>{m.session_1_complete_desc()}</p>
       <button class="btn primary large" onclick={handleStartNextSession}>
-        セッション2を開始
+        {m.start_session_2()}
       </button>
     </div>
 
   {:else if kawasakiStore.testStatus === 'completed'}
     <div class="screen completion">
-      <h2>検査完了</h2>
-      <p>ご協力ありがとうございました。データは保存されました。</p>
+      <h2>{m.test_complete_title()}</h2>
+      <p>{m.test_complete_desc()}</p>
       <button class="btn" onclick={() => kawasakiStore.resetTest()}>
-        新しいセッションを開始する
+        {m.start_new_session()}
       </button>
     </div>
   {/if}

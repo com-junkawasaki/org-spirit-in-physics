@@ -2,6 +2,7 @@
   import { SignedIn, SignedOut, UserButton } from "svelte-clerk";
   import { page } from "$app/state";
   import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+  import * as m from "$lib/paraglide/messages.js";
 
   let { children } = $props();
 
@@ -43,14 +44,14 @@
             class="nav-item"
             class:active={activeTab === "overview"} 
           >
-            <span class="icon">📊</span> 概要
+            <span class="icon">📊</span> {m.overview()}
           </a>
           <a 
             href="/researcher/participants?test_mode=true"
             class="nav-item"
             class:active={activeTab === "participants"} 
           >
-            <span class="icon">👥</span> 被験者一覧
+            <span class="icon">👥</span> {m.participants_list()}
           </a>
         </nav>
       </aside>
@@ -58,14 +59,14 @@
       <main class="main-content">
         <header class="content-header">
           <h2 class="text-xl font-bold text-gray-800">
-            {#if activeTab === "overview"}概要
-            {:else if activeTab === "participants"}被験者管理
-            {:else if activeTab === "sessions"}セッション履歴
-            {:else if activeTab === "settings"}システム設定
+            {#if activeTab === "overview"}{m.overview()}
+            {:else if activeTab === "participants"}{m.participants_list()}
+            {:else if activeTab === "sessions"}{m.sessions_history()}
+            {:else if activeTab === "settings"}{m.settings()}
             {/if}
           </h2>
           <div class="header-actions">
-            <button class="btn-refresh" onclick={() => window.location.reload()} aria-label="更新">更新</button>
+            <button class="btn-refresh" onclick={() => window.location.reload()} aria-label={m.update()}>{m.update()}</button>
           </div>
         </header>
 
@@ -80,10 +81,10 @@
     <SignedOut>
       <div class="auth-required">
         <div class="auth-card">
-          <h1>RESEARCHER PORTAL</h1>
-          <p>管理者権限を持つアカウントでサインインしてください。</p>
+          <h1>{m.auth_required_title()}</h1>
+          <p>{m.auth_required_desc()}</p>
           <div class="auth-placeholder">
-            <p>（サインインボタンは共通ヘッダーにあります）</p>
+            <p>{m.sign_in_hint()}</p>
           </div>
         </div>
       </div>
@@ -101,33 +102,33 @@
               class="nav-item"
               class:active={activeTab === "overview"} 
             >
-              <span class="icon">📊</span> 概要
+              <span class="icon">📊</span> {m.overview()}
             </a>
             <a 
               href="/researcher/participants"
               class="nav-item"
               class:active={activeTab === "participants"} 
             >
-              <span class="icon">👥</span> 被験者一覧
+              <span class="icon">👥</span> {m.participants_list()}
             </a>
             <a 
               href="/researcher/sessions"
               class="nav-item"
               class:active={activeTab === "sessions"} 
             >
-              <span class="icon">🕒</span> セッション履歴
+              <span class="icon">🕒</span> {m.sessions_history()}
             </a>
             <a 
               href="/researcher/settings"
               class="nav-item"
               class:active={activeTab === "settings"} 
             >
-              <span class="icon">⚙️</span> 設定
+              <span class="icon">⚙️</span> {m.settings()}
             </a>
           </nav>
           <div class="sidebar-footer">
             <UserButton />
-            <span class="user-name">管理者</span>
+            <span class="user-name">{m.admin()}</span>
           </div>
         </aside>
 
@@ -135,15 +136,15 @@
           <header class="content-header">
             <div class="flex items-center gap-4">
               <h2 class="text-xl font-bold text-gray-800">
-                {#if activeTab === "overview"}概要
-                {:else if activeTab === "participants"}被験者管理
-                {:else if activeTab === "sessions"}セッション履歴
-                {:else if activeTab === "settings"}システム設定
+                {#if activeTab === "overview"}{m.overview()}
+                {:else if activeTab === "participants"}{m.participants_list()}
+                {:else if activeTab === "sessions"}{m.sessions_history()}
+                {:else if activeTab === "settings"}{m.settings()}
                 {/if}
               </h2>
             </div>
             <div class="header-actions">
-              <button class="btn-refresh" onclick={() => window.location.reload()} aria-label="更新">更新</button>
+              <button class="btn-refresh" onclick={() => window.location.reload()} aria-label={m.update()}>{m.update()}</button>
             </div>
           </header>
 

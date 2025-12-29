@@ -10,14 +10,12 @@ COPY apps/svelte-app/replace-env.sh ./replace-env.sh
 RUN chmod +x ./replace-env.sh
 
 # Install only production dependencies
-# Since Nix build already happened, we just need to run the index.js
-# But adapter-node might need some runtime libs. 
-# Usually everything is bundled.
+RUN npm install -g pnpm && pnpm install --prod --no-frozen-lockfile
 
 ENV PORT=80
 ENV NODE_ENV=production
 
 EXPOSE 80
 
-CMD ["/bin/sh", "-c", "/app/replace-env.sh /app/build && node build/index.js"]
+CMD ["/bin/sh", "-c", "/app/replace-env.sh /app/build && ./node_modules/.bin/sirv build --port 80 --single --host 0.0.0.0"]
 

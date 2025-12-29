@@ -10,6 +10,12 @@
 
   let { children } = $props();
 
+  if (browser) {
+    console.log("Current URL:", page.url.href);
+    console.log("Current Pathname:", page.url.pathname);
+    console.log("Language Tag:", languageTag());
+  }
+
   // 被験者画面では管理画面へのリンクを隠す
   let isParticipantPage = $derived(page.url.pathname === '/participant');
   

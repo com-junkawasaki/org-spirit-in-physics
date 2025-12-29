@@ -3,6 +3,7 @@
   import { participantClient } from "$lib/connect";
   import type { Participant } from "../../generated/proto/participant/v1/participant_pb";
   import { onMount } from "svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   let participants = $state<Participant[]>([]);
   let loading = $state(true);
@@ -25,22 +26,22 @@
 </script>
 
 <svelte:head>
-  <title>管理者ダッシュボード | Spirit in Physics</title>
+  <title>{m.researcher_dashboard()} | Spirit in Physics</title>
 </svelte:head>
 
 <div class="page-container">
   {#if loading}
     <div class="loading-state">
       <div class="spinner"></div>
-      <p>データを読み込んでいます...</p>
+      <p>{m.loading_data()}</p>
     </div>
   {:else if error}
     <div class="error-state">
       <div class="error-card">
         <span class="error-icon">⚠️</span>
-        <h3>データ取得エラー</h3>
+        <h3>{m.fetch_error()}</h3>
         <p>{error}</p>
-        <button class="retry-btn" onclick={() => window.location.reload()}>再試行</button>
+        <button class="retry-btn" onclick={() => window.location.reload()}>{m.retry()}</button>
       </div>
     </div>
   {:else}

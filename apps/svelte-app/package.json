@@ -38,9 +38,9 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "^1.10.1",
-    "@connectrpc/connect": "^2.1.1",
+    "@connectrpc/connect": "^1.7.0",
     "@connectrpc/connect-node": "^1.7.0",
-    "@connectrpc/connect-web": "^2.1.1",
+    "@connectrpc/connect-web": "^1.7.0",
     "@inlang/paraglide-sveltekit": "0.15.5",
     "d3": "^7.9.0",
     "katex": "^0.16.27",

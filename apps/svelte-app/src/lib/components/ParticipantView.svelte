@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { SignedIn, SignedOut, SignInButton, useClerkContext } from "svelte-clerk";
+import { SignedIn, SignedOut, SignInButton, useClerkContext } from 'svelte-clerk';
 import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
 import ConsentForm from "./ConsentForm.svelte";
   import JungVoiceTest from "../jung-voice-assessment/JungVoiceTest.svelte";

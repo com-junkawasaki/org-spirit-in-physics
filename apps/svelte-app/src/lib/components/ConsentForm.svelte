@@ -3,8 +3,8 @@
   import * as m from "$lib/paraglide/messages.js";
   import { ILLNESS_CODES, type IllnessCode } from "$lib/researcher/illness-codes";
   import { languageTag } from "$lib/i18n.svelte";
-  import { SignedIn, SignedOut, useClerkContext } from "svelte-clerk";
- import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+  import { SignedIn, SignedOut, useClerkContext } from 'svelte-clerk';
+  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
 
  let { onConsent, participantId } = $props<{
     onConsent: (id: string, email: string, agreements: any, demographics: any, password?: string) => void;
@@ -352,7 +352,7 @@
           class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white shadow-sm"
         />
       </div>
-      <p class="text-[10px] text-gray-400 px-1 font-medium italic">※ パスワードは8文字以上で入力してください。</p>
+      <p class="text-[10px] text-gray-400 px-1 font-medium italic">{m.password_hint()}</p>
     </div>
   {/snippet}
   

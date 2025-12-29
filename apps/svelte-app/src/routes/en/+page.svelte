@@ -12,5 +12,10 @@
   <title>Spirit in Physics - English</title>
 </svelte:head>
 
+<div style="padding: 2rem; background: #fff;">
+  <h1>English Route Active</h1>
+  <p>Language should be English.</p>
+</div>
+
 <PaperView />
 
