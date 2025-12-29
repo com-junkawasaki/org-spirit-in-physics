@@ -45,8 +45,8 @@
   "version": "1.56.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-28T23:45:00+09:00",
-  "merkleRoot": "同意プロセスのUI/UX統合と完全多言語化。ResearchPlanContentのParaglide統合により、研究計画書の詳細な日・英表示を実現。また、元のtsxに基づいたカラースキーム（Tailwind/Dark Mode対応）をConsentFormに適用した。",
+  "updatedAt": "2025-12-29T12:30:00+09:00",
+  "merkleRoot": "SvelteKit構成をadapter-static(SSG+CSR)へ移行し、Clerk Liveキーを設定。useClerkContextへの修正とガード処理により、認証キー未設定時のクラッシュを回避しつつ、静的ビルドでの環境変数注入に対応した。",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -77,6 +77,9 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "SvelteKit 構成を adapter-node (SSR) から adapter-static (SSG+CSR) へ移行",
+      "Clerk publishable key の設定および環境変数の実行時注入 (window.ENV) への対応",
+      "Clerk context 取得エラーの修正 (clerkContext -> useClerkContext) とガード処理の実装",
       "ResearchPlanContentの完全多言語化（Paraglide統合）",
       "ConsentFormのUIデザイン刷新（tsxベースのカラー・ダークモード対応）",
       "CDISC準拠の属性情報収集（年齢層、性別、人種、年収）の実装",

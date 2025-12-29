@@ -1,14 +1,15 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { SignedIn, SignedOut, SignInButton, clerkContext } from "svelte-clerk";
-  import ConsentForm from "./ConsentForm.svelte";
+import { onMount } from "svelte";
+import { SignedIn, SignedOut, SignInButton, useClerkContext } from "svelte-clerk";
+import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+import ConsentForm from "./ConsentForm.svelte";
   import JungVoiceTest from "../jung-voice-assessment/JungVoiceTest.svelte";
   import { kawasakiStore } from "../jung-voice-assessment/store.svelte";
   import { languageTag } from "$lib/i18n";
   import * as m from "$lib/paraglide/messages.js";
 
   let step = $state<"landing" | "consent" | "assessment" | "complete">("landing");
-  const clerk = clerkContext();
+  const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
 
   onMount(async () => {
     // 参加者IDの初期化
@@ -21,19 +22,19 @@
     
     try {
       // もし未ログインなら、まず Clerk でサインアップを試みる
-      if (!clerk.user && password) {
+      if (clerk && !clerk.user && password) {
         try {
-          const signUp = await clerk.client.signUp.create({
+          const signUp = await clerk.client?.signUp.create({
             emailAddress: email,
             password: password,
           });
           
           // 本来は検証ステップが必要だが、ここではアカウント作成フローを開始することを優先
-          await clerk.client.signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+          await clerk.client?.signUp.prepareEmailAddressVerification({ strategy: "email_code" });
         } catch (signUpError: any) {
           console.error("Clerk sign up failed:", signUpError);
           if (signUpError.errors?.[0]?.code === "form_identifier_exists") {
-             await clerk.client.signIn.create({ identifier: email, password });
+             await clerk.client?.signIn.create({ identifier: email, password });
           } else {
             throw signUpError;
           }
@@ -79,11 +80,13 @@
       </h1>
       
       <div class="button-group">
-        <SignedOut>
-          <SignInButton mode="modal">
-            <button class="btn secondary">{m.signin()}</button>
-          </SignInButton>
-        </SignedOut>
+        {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button class="btn secondary">{m.signin()}</button>
+            </SignInButton>
+          </SignedOut>
+        {/if}
         
         <button class="btn primary large" onclick={startParticipantFlow}>
           {m.subject_view()}

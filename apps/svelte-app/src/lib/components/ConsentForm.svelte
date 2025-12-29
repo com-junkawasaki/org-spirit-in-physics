@@ -2,10 +2,11 @@
   import ResearchPlanContent from "./ResearchPlanContent.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { ILLNESS_CODES, type IllnessCode } from "$lib/researcher/illness-codes";
-  import { languageTag } from "$lib/i18n";
-  import { SignedIn, SignedOut, clerkContext } from "svelte-clerk";
+ import { languageTag } from "$lib/i18n";
+ import { SignedIn, SignedOut, useClerkContext } from "svelte-clerk";
+ import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
 
-  let { onConsent, participantId } = $props<{
+ let { onConsent, participantId } = $props<{
     onConsent: (id: string, email: string, agreements: any, demographics: any, password?: string) => void;
     participantId: string;
   }>();
@@ -43,8 +44,8 @@
         )
   );
 
-  const clerk = clerkContext();
-  const user = $derived(clerk.user);
+  const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
+  const user = $derived(clerk?.user);
 
   const isAllAgreed = $derived(
     Object.values(agreements).every(Boolean) && (user || (email.trim() !== "" && password.trim().length >= 8))
@@ -298,54 +299,62 @@
   <div class="mb-8 p-6 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-200 dark:border-gray-700">
     <label for="email" class="block mb-4 text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">{m.electronic_signature()}</label>
     
-    <SignedIn>
-      <div class="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-blue-100 dark:border-blue-900/30 shadow-sm">
-        <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-xs uppercase">
-          {user?.primaryEmailAddress?.emailAddress?.charAt(0) || 'U'}
-        </div>
-        <div class="flex-1">
-          <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none mb-1">{m.already_signed_in_as()}</p>
-          <p class="text-sm font-bold text-gray-900 dark:text-white">{user?.primaryEmailAddress?.emailAddress}</p>
-        </div>
-        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-      </div>
-    </SignedIn>
-
-    <SignedOut>
-      <div class="space-y-4">
-        <div class="relative">
-          <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
-            </svg>
+    {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+      <SignedIn>
+        <div class="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-blue-100 dark:border-blue-900/30 shadow-sm">
+          <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-xs uppercase">
+            {user?.primaryEmailAddress?.emailAddress?.charAt(0) || 'U'}
           </div>
-          <input
-            type="email"
-            id="email"
-            bind:value={email}
-            placeholder={m.enter_name()}
-            class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white shadow-sm"
-          />
-        </div>
-
-        <div class="relative">
-          <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+          <div class="flex-1">
+            <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none mb-1">{m.already_signed_in_as()}</p>
+            <p class="text-sm font-bold text-gray-900 dark:text-white">{user?.primaryEmailAddress?.emailAddress}</p>
           </div>
-          <input
-            type="password"
-            id="password"
-            bind:value={password}
-            placeholder={m.enter_password()}
-            class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white shadow-sm"
-          />
+          <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
         </div>
-        <p class="text-[10px] text-gray-400 px-1 font-medium italic">※ パスワードは8文字以上で入力してください。</p>
-      </div>
-    </SignedOut>
+      </SignedIn>
+
+      <SignedOut>
+        {@render emailPasswordFields()}
+      </SignedOut>
+    {:else}
+      {@render emailPasswordFields()}
+    {/if}
   </div>
+  
+  {#snippet emailPasswordFields()}
+    <div class="space-y-4">
+      <div class="relative">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
+          </svg>
+        </div>
+        <input
+          type="email"
+          id="email"
+          bind:value={email}
+          placeholder={m.enter_name()}
+          class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white shadow-sm"
+        />
+      </div>
+
+      <div class="relative">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <input
+          type="password"
+          id="password"
+          bind:value={password}
+          placeholder={m.enter_password()}
+          class="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white shadow-sm"
+        />
+      </div>
+      <p class="text-[10px] text-gray-400 px-1 font-medium italic">※ パスワードは8文字以上で入力してください。</p>
+    </div>
+  {/snippet}
   
   <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
     <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 space-y-1">
