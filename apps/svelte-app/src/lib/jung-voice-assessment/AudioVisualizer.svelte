@@ -11,7 +11,8 @@
     }
 
     let animationFrameId: number;
-    let audioContext: AudioContext;
+    let audioContext: AudioContext | null = null;
+    let isClosed = false;
 
     const startVisualization = async () => {
       try {
@@ -20,12 +21,19 @@
 
         audioContext = new AudioContextClass();
         
+        if (isClosed) {
+          audioContext.close();
+          return;
+        }
+        
         // Wait for audio context to be ready
         if (audioContext.state === 'suspended') {
-          // In some browsers, we might need a user gesture, 
-          // but for visualizer we can just wait or try to resume.
-          // However, for device check, the stream is already acquired.
           await audioContext.resume();
+        }
+
+        if (isClosed) {
+          audioContext.close();
+          return;
         }
 
         const source = audioContext.createMediaStreamSource(stream);
@@ -39,7 +47,7 @@
         const canvasCtx = canvas?.getContext('2d');
 
         const draw = () => {
-          if (!canvasCtx || !canvas) return;
+          if (isClosed || !canvasCtx || !canvas) return;
           
           animationFrameId = requestAnimationFrame(draw);
           analyser.getByteFrequencyData(dataArray);
@@ -64,6 +72,7 @@
     startVisualization();
 
     return () => {
+      isClosed = true;
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       if (audioContext && audioContext.state !== 'closed') {
         audioContext.close().catch(console.error);

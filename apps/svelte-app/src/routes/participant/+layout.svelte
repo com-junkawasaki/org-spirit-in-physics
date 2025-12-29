@@ -2,10 +2,36 @@
   import * as m from "$lib/paraglide/messages.js";
   import { page } from "$app/state";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
+  import { useClerkContext } from "svelte-clerk";
+  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+  import { goto } from "$app/navigation";
+  import { browser } from "$app/environment";
 
   let { children } = $props();
 
+  const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
+  const user = $derived(clerk?.user);
+
   const isLanding = $derived(page.url.pathname === '/participant' || page.url.pathname === '/participant/');
+  const isConsent = $derived(page.url.pathname === '/participant/consent');
+
+  // Check for existing participant and skip consent if registered
+  $effect(() => {
+    if (browser && user && !kawasakiStore.hasCheckedExisting && (isLanding || isConsent)) {
+      const email = user.primaryEmailAddress?.emailAddress;
+      if (email) {
+        kawasakiStore.checkExistingParticipant(email).then((exists) => {
+          kawasakiStore.hasCheckedExisting = true;
+          if (exists) {
+            console.log("Existing participant found, skipping consent");
+            kawasakiStore.startPreflight();
+            goto("/participant/test");
+          }
+        });
+      }
+    }
+  });
+
 </script>
 
 <div class="participant-container">
@@ -143,4 +169,3 @@
     padding: 2rem 0;
   }
 </style>
-

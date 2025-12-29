@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { goto } from "$app/navigation";
   import { kawasakiStore } from "./store.svelte";
   import AudioVisualizer from "./AudioVisualizer.svelte";
   import * as m from "$lib/paraglide/messages.js";
@@ -23,6 +24,12 @@
   const WELCOME_MESSAGE = m.welcome_message();
 
   onMount(async () => {
+    // If status is idle, we probably shouldn't be here directly without consent
+    if (kawasakiStore.testStatus === 'idle') {
+      goto("/participant/consent");
+      return;
+    }
+
     // Initial words are loaded by parent (Landing page)
     // but we check just in case it's mounted directly or failed
     if (kawasakiStore.stimulusWords.length === 0) {

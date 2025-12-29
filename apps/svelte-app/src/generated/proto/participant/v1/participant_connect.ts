@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateParticipantRequest, CreateParticipantResponse, GetParticipantRequest, GetParticipantResponse, GetParticipantsRequest, GetParticipantsResponse, GetStimulusWordRequest, GetStimulusWordResponse, GetStimulusWordsRequest, GetStimulusWordsResponse } from "./participant_pb.js";
+import { CreateParticipantRequest, CreateParticipantResponse, GetParticipantByEmailRequest, GetParticipantByEmailResponse, GetParticipantRequest, GetParticipantResponse, GetParticipantsRequest, GetParticipantsResponse, GetStimulusWordRequest, GetStimulusWordResponse, GetStimulusWordsRequest, GetStimulusWordsResponse } from "./participant_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -45,6 +45,17 @@ export const ParticipantService = {
       name: "CreateParticipant",
       I: CreateParticipantRequest,
       O: CreateParticipantResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Get a participant by email
+     *
+     * @generated from rpc participant.v1.ParticipantService.GetParticipantByEmail
+     */
+    getParticipantByEmail: {
+      name: "GetParticipantByEmail",
+      I: GetParticipantByEmailRequest,
+      O: GetParticipantByEmailResponse,
       kind: MethodKind.Unary,
     },
     /**

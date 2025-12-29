@@ -1,6 +1,7 @@
 import { participantClient, storageClient } from "$lib/connect";
 import type { StimulusWord } from "@/generated/proto/participant/v1/participant_pb";
 import * as m from "$lib/paraglide/messages.js";
+import { untrack } from "svelte";
 
 export type TestStatus = 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
 export type DeviceStatus = 'idle' | 'pending' | 'success' | 'error';
@@ -32,6 +33,7 @@ class KawasakiStore {
   events = $state<TestEvent[]>([]);
   sessionVideoUrl = $state<string | null>(null);
   participantId = $state<string | null>(null);
+  hasCheckedExisting = $state(false);
   demographics = $state({
     ageGroup: "",
     gender: "",
@@ -134,7 +136,9 @@ class KawasakiStore {
   }
 
   logEvent(type: string, payload: any = {}) {
-    this.events.push({ timestamp: Date.now(), type, payload });
+    untrack(() => {
+      this.events.push({ timestamp: Date.now(), type, payload });
+    });
   }
 
   startSession(numberOfWords: number) {
