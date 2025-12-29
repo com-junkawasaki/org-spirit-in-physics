@@ -10,6 +10,10 @@ CREATE TABLE participants (
   age INTEGER,
   gender TEXT, -- ENUM型だが、sqlcではTEXTとして扱う
   handedness TEXT,
+  age_group TEXT,
+  ethnicity TEXT,
+  income_range TEXT,
+  medical_history TEXT[],
   is_public BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL

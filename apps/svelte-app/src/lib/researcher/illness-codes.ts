@@ -1,4 +1,4 @@
-// ICD-10 Based Mental and Behavioural Disorders (F00-F99)
+// ICD-10 Based Illnesses
 // Used for suggest input in the consent form
 
 export interface IllnessCode {
@@ -7,7 +7,7 @@ export interface IllnessCode {
   name_ja: string;
 }
 
-export const MENTAL_ILLNESS_CODES: IllnessCode[] = [
+export const ILLNESS_CODES: IllnessCode[] = [
   { code: "F00", name_en: "Dementia in Alzheimer disease", name_ja: "アルツハイマー病の認知症" },
   { code: "F01", name_en: "Vascular dementia", name_ja: "血管性認知症" },
   { code: "F03", name_en: "Unspecified dementia", name_ja: "詳細不明の認知症" },

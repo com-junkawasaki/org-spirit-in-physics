@@ -2,32 +2,20 @@
   import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from "svelte-clerk";
   import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
   import { page } from "$app/state";
+  import { browser } from "$app/environment";
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { languageTag, setLanguageTag } from "$lib/paraglide/runtime.js";
+  import { languageTag, setLanguageTag } from "$lib/i18n";
   import "../app.css";
 
   let { children } = $props();
 
   // 被験者画面では管理画面へのリンクを隠す
-  let isParticipantPage = $derived(page.url.pathname === '/participant' || page.url.pathname.startsWith('/en/participant'));
+  let isParticipantPage = $derived(page.url.pathname === '/participant');
   
   function toggleLanguage() {
     const newLang = languageTag() === 'ja' ? 'en' : 'ja';
-    const currentPath = page.url.pathname;
-    
-    // パスから現在の言語プレフィックスを削除または置換
-    let newPath = currentPath;
-    if (currentPath.startsWith('/en')) {
-      newPath = currentPath.replace('/en', newLang === 'ja' ? '' : '/en');
-    } else if (currentPath === '/') {
-      newPath = newLang === 'en' ? '/en' : '/';
-    } else {
-      newPath = newLang === 'en' ? '/en' + currentPath : currentPath;
-    }
-    
-    // 言語を切り替えてリダイレクト
-    window.location.href = newPath || '/';
+    setLanguageTag(newLang);
   }
 </script>
 

@@ -201,14 +201,18 @@ func (x *GetParticipantResponse) GetParticipant() *Participant {
 }
 
 type CreateParticipantRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
-	Signature     string                 `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
-	Agreements    *structpb.Struct       `protobuf:"bytes,3,opt,name=agreements,proto3" json:"agreements,omitempty"`
-	AgreedAt      *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=agreed_at,json=agreedAt,proto3" json:"agreed_at,omitempty"`
-	IsPublic      *bool                  `protobuf:"varint,5,opt,name=is_public,json=isPublic,proto3,oneof" json:"is_public,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Signature      string                 `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	Agreements     *structpb.Struct       `protobuf:"bytes,3,opt,name=agreements,proto3" json:"agreements,omitempty"`
+	AgreedAt       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=agreed_at,json=agreedAt,proto3" json:"agreed_at,omitempty"`
+	IsPublic       *bool                  `protobuf:"varint,5,opt,name=is_public,json=isPublic,proto3,oneof" json:"is_public,omitempty"`
+	AgeGroup       *string                `protobuf:"bytes,6,opt,name=age_group,json=ageGroup,proto3,oneof" json:"age_group,omitempty"`
+	Ethnicity      *string                `protobuf:"bytes,7,opt,name=ethnicity,proto3,oneof" json:"ethnicity,omitempty"`
+	IncomeRange    *string                `protobuf:"bytes,8,opt,name=income_range,json=incomeRange,proto3,oneof" json:"income_range,omitempty"`
+	MedicalHistory []string               `protobuf:"bytes,9,rep,name=medical_history,json=medicalHistory,proto3" json:"medical_history,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CreateParticipantRequest) Reset() {
@@ -274,6 +278,34 @@ func (x *CreateParticipantRequest) GetIsPublic() bool {
 		return *x.IsPublic
 	}
 	return false
+}
+
+func (x *CreateParticipantRequest) GetAgeGroup() string {
+	if x != nil && x.AgeGroup != nil {
+		return *x.AgeGroup
+	}
+	return ""
+}
+
+func (x *CreateParticipantRequest) GetEthnicity() string {
+	if x != nil && x.Ethnicity != nil {
+		return *x.Ethnicity
+	}
+	return ""
+}
+
+func (x *CreateParticipantRequest) GetIncomeRange() string {
+	if x != nil && x.IncomeRange != nil {
+		return *x.IncomeRange
+	}
+	return ""
+}
+
+func (x *CreateParticipantRequest) GetMedicalHistory() []string {
+	if x != nil {
+		return x.MedicalHistory
+	}
+	return nil
 }
 
 type CreateParticipantResponse struct {
@@ -489,16 +521,20 @@ func (x *GetStimulusWordResponse) GetWord() *StimulusWord {
 }
 
 type Participant struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Age           *int32                 `protobuf:"varint,2,opt,name=age,proto3,oneof" json:"age,omitempty"`
-	Gender        *string                `protobuf:"bytes,3,opt,name=gender,proto3,oneof" json:"gender,omitempty"`
-	Handedness    *string                `protobuf:"bytes,4,opt,name=handedness,proto3,oneof" json:"handedness,omitempty"`
-	IsPublic      bool                   `protobuf:"varint,5,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Age            *int32                 `protobuf:"varint,2,opt,name=age,proto3,oneof" json:"age,omitempty"`
+	Gender         *string                `protobuf:"bytes,3,opt,name=gender,proto3,oneof" json:"gender,omitempty"`
+	Handedness     *string                `protobuf:"bytes,4,opt,name=handedness,proto3,oneof" json:"handedness,omitempty"`
+	AgeGroup       *string                `protobuf:"bytes,8,opt,name=age_group,json=ageGroup,proto3,oneof" json:"age_group,omitempty"`
+	Ethnicity      *string                `protobuf:"bytes,9,opt,name=ethnicity,proto3,oneof" json:"ethnicity,omitempty"`
+	IncomeRange    *string                `protobuf:"bytes,10,opt,name=income_range,json=incomeRange,proto3,oneof" json:"income_range,omitempty"`
+	MedicalHistory []string               `protobuf:"bytes,11,rep,name=medical_history,json=medicalHistory,proto3" json:"medical_history,omitempty"`
+	IsPublic       bool                   `protobuf:"varint,5,opt,name=is_public,json=isPublic,proto3" json:"is_public,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt      *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Participant) Reset() {
@@ -557,6 +593,34 @@ func (x *Participant) GetHandedness() string {
 		return *x.Handedness
 	}
 	return ""
+}
+
+func (x *Participant) GetAgeGroup() string {
+	if x != nil && x.AgeGroup != nil {
+		return *x.AgeGroup
+	}
+	return ""
+}
+
+func (x *Participant) GetEthnicity() string {
+	if x != nil && x.Ethnicity != nil {
+		return *x.Ethnicity
+	}
+	return ""
+}
+
+func (x *Participant) GetIncomeRange() string {
+	if x != nil && x.IncomeRange != nil {
+		return *x.IncomeRange
+	}
+	return ""
+}
+
+func (x *Participant) GetMedicalHistory() []string {
+	if x != nil {
+		return x.MedicalHistory
+	}
+	return nil
 }
 
 func (x *Participant) GetIsPublic() bool {
@@ -662,7 +726,7 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x15GetParticipantRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"W\n" +
 	"\x16GetParticipantResponse\x12=\n" +
-	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\xf6\x01\n" +
+	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\xb9\x03\n" +
 	"\x18CreateParticipantRequest\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1c\n" +
 	"\tsignature\x18\x02 \x01(\tR\tsignature\x127\n" +
@@ -670,10 +734,19 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"agreements\x18\x03 \x01(\v2\x17.google.protobuf.StructR\n" +
 	"agreements\x127\n" +
 	"\tagreed_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\bagreedAt\x12 \n" +
-	"\tis_public\x18\x05 \x01(\bH\x01R\bisPublic\x88\x01\x01B\x05\n" +
+	"\tis_public\x18\x05 \x01(\bH\x01R\bisPublic\x88\x01\x01\x12 \n" +
+	"\tage_group\x18\x06 \x01(\tH\x02R\bageGroup\x88\x01\x01\x12!\n" +
+	"\tethnicity\x18\a \x01(\tH\x03R\tethnicity\x88\x01\x01\x12&\n" +
+	"\fincome_range\x18\b \x01(\tH\x04R\vincomeRange\x88\x01\x01\x12'\n" +
+	"\x0fmedical_history\x18\t \x03(\tR\x0emedicalHistoryB\x05\n" +
 	"\x03_idB\f\n" +
 	"\n" +
-	"_is_public\"Z\n" +
+	"_is_publicB\f\n" +
+	"\n" +
+	"_age_groupB\f\n" +
+	"\n" +
+	"_ethnicityB\x0f\n" +
+	"\r_income_range\"Z\n" +
 	"\x19CreateParticipantResponse\x12=\n" +
 	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\x19\n" +
 	"\x17GetStimulusWordsRequest\"N\n" +
@@ -682,14 +755,19 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x16GetStimulusWordRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\"K\n" +
 	"\x17GetStimulusWordResponse\x120\n" +
-	"\x04word\x18\x01 \x01(\v2\x1c.participant.v1.StimulusWordR\x04word\"\xab\x02\n" +
+	"\x04word\x18\x01 \x01(\v2\x1c.participant.v1.StimulusWordR\x04word\"\xee\x03\n" +
 	"\vParticipant\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x03age\x18\x02 \x01(\x05H\x00R\x03age\x88\x01\x01\x12\x1b\n" +
 	"\x06gender\x18\x03 \x01(\tH\x01R\x06gender\x88\x01\x01\x12#\n" +
 	"\n" +
 	"handedness\x18\x04 \x01(\tH\x02R\n" +
-	"handedness\x88\x01\x01\x12\x1b\n" +
+	"handedness\x88\x01\x01\x12 \n" +
+	"\tage_group\x18\b \x01(\tH\x03R\bageGroup\x88\x01\x01\x12!\n" +
+	"\tethnicity\x18\t \x01(\tH\x04R\tethnicity\x88\x01\x01\x12&\n" +
+	"\fincome_range\x18\n" +
+	" \x01(\tH\x05R\vincomeRange\x88\x01\x01\x12'\n" +
+	"\x0fmedical_history\x18\v \x03(\tR\x0emedicalHistory\x12\x1b\n" +
 	"\tis_public\x18\x05 \x01(\bR\bisPublic\x129\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
@@ -697,7 +775,12 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAtB\x06\n" +
 	"\x04_ageB\t\n" +
 	"\a_genderB\r\n" +
-	"\v_handedness\"z\n" +
+	"\v_handednessB\f\n" +
+	"\n" +
+	"_age_groupB\f\n" +
+	"\n" +
+	"_ethnicityB\x0f\n" +
+	"\r_income_range\"z\n" +
 	"\fStimulusWord\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1a\n" +
 	"\bjapanese\x18\x02 \x01(\tR\bjapanese\x12\x18\n" +

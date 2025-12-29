@@ -185,6 +185,26 @@ export class CreateParticipantRequest extends Message<CreateParticipantRequest> 
    */
   isPublic?: boolean;
 
+  /**
+   * @generated from field: optional string age_group = 6;
+   */
+  ageGroup?: string;
+
+  /**
+   * @generated from field: optional string ethnicity = 7;
+   */
+  ethnicity?: string;
+
+  /**
+   * @generated from field: optional string income_range = 8;
+   */
+  incomeRange?: string;
+
+  /**
+   * @generated from field: repeated string medical_history = 9;
+   */
+  medicalHistory: string[] = [];
+
   constructor(data?: PartialMessage<CreateParticipantRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -198,6 +218,10 @@ export class CreateParticipantRequest extends Message<CreateParticipantRequest> 
     { no: 3, name: "agreements", kind: "message", T: Struct },
     { no: 4, name: "agreed_at", kind: "message", T: Timestamp },
     { no: 5, name: "is_public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "age_group", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "ethnicity", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "income_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 9, name: "medical_history", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateParticipantRequest {
@@ -421,6 +445,26 @@ export class Participant extends Message<Participant> {
   handedness?: string;
 
   /**
+   * @generated from field: optional string age_group = 8;
+   */
+  ageGroup?: string;
+
+  /**
+   * @generated from field: optional string ethnicity = 9;
+   */
+  ethnicity?: string;
+
+  /**
+   * @generated from field: optional string income_range = 10;
+   */
+  incomeRange?: string;
+
+  /**
+   * @generated from field: repeated string medical_history = 11;
+   */
+  medicalHistory: string[] = [];
+
+  /**
    * @generated from field: bool is_public = 5;
    */
   isPublic = false;
@@ -447,6 +491,10 @@ export class Participant extends Message<Participant> {
     { no: 2, name: "age", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 3, name: "gender", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "handedness", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "age_group", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 9, name: "ethnicity", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 10, name: "income_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 11, name: "medical_history", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "is_public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "created_at", kind: "message", T: Timestamp },
     { no: 7, name: "updated_at", kind: "message", T: Timestamp },

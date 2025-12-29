@@ -50,13 +50,17 @@ func (h *ParticipantHandler) GetParticipants(
 	for _, p := range participants {
 		uid, _ := uuid.FromBytes(p.ID.Bytes[:])
 		resp.Participants = append(resp.Participants, &participantv1.Participant{
-			Id:         uid.String(),
-			Age:        toInt32Ptr(p.Age),
-			Gender:     toStringPtr(p.Gender),
-			Handedness: toStringPtr(p.Handedness),
-			IsPublic:   p.IsPublic.Bool,
-			CreatedAt:  timestamppb.New(p.CreatedAt.Time),
-			UpdatedAt:  timestamppb.New(p.UpdatedAt.Time),
+			Id:             uid.String(),
+			Age:            toInt32Ptr(p.Age),
+			Gender:         toStringPtr(p.Gender),
+			Handedness:     toStringPtr(p.Handedness),
+			AgeGroup:       toStringPtr(p.AgeGroup),
+			Ethnicity:      toStringPtr(p.Ethnicity),
+			IncomeRange:    toStringPtr(p.IncomeRange),
+			MedicalHistory: p.MedicalHistory,
+			IsPublic:       p.IsPublic.Bool,
+			CreatedAt:      timestamppb.New(p.CreatedAt.Time),
+			UpdatedAt:      timestamppb.New(p.UpdatedAt.Time),
 		})
 	}
 
@@ -82,13 +86,17 @@ func (h *ParticipantHandler) GetParticipant(
 	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
 	resp := &participantv1.GetParticipantResponse{
 		Participant: &participantv1.Participant{
-			Id:         uid.String(),
-			Age:        toInt32Ptr(participant.Age),
-			Gender:     toStringPtr(participant.Gender),
-			Handedness: toStringPtr(participant.Handedness),
-			IsPublic:   participant.IsPublic.Bool,
-			CreatedAt:  timestamppb.New(participant.CreatedAt.Time),
-			UpdatedAt:  timestamppb.New(participant.UpdatedAt.Time),
+			Id:             uid.String(),
+			Age:            toInt32Ptr(participant.Age),
+			Gender:         toStringPtr(participant.Gender),
+			Handedness:     toStringPtr(participant.Handedness),
+			AgeGroup:       toStringPtr(participant.AgeGroup),
+			Ethnicity:      toStringPtr(participant.Ethnicity),
+			IncomeRange:    toStringPtr(participant.IncomeRange),
+			MedicalHistory: participant.MedicalHistory,
+			IsPublic:       participant.IsPublic.Bool,
+			CreatedAt:      timestamppb.New(participant.CreatedAt.Time),
+			UpdatedAt:      timestamppb.New(participant.UpdatedAt.Time),
 		},
 	}
 
@@ -121,10 +129,14 @@ func (h *ParticipantHandler) CreateParticipant(
 
 	pgUUID := pgtype.UUID{Bytes: participantID, Valid: true}
 	participant, err := h.queries.CreateParticipant(ctx, db.CreateParticipantParams{
-		ID:        pgUUID,
-		IsPublic:  pgtype.Bool{Bool: isPublic, Valid: true},
-		CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
-		UpdatedAt: pgtype.Timestamptz{Time: now, Valid: true},
+		ID:             pgUUID,
+		AgeGroup:       pgtype.Text{String: getStringValue(req.Msg.AgeGroup), Valid: req.Msg.AgeGroup != nil},
+		Ethnicity:      pgtype.Text{String: getStringValue(req.Msg.Ethnicity), Valid: req.Msg.Ethnicity != nil},
+		IncomeRange:    pgtype.Text{String: getStringValue(req.Msg.IncomeRange), Valid: req.Msg.IncomeRange != nil},
+		MedicalHistory: req.Msg.MedicalHistory,
+		IsPublic:       pgtype.Bool{Bool: isPublic, Valid: true},
+		CreatedAt:      pgtype.Timestamptz{Time: now, Valid: true},
+		UpdatedAt:      pgtype.Timestamptz{Time: now, Valid: true},
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -146,13 +158,17 @@ func (h *ParticipantHandler) CreateParticipant(
 	uid, _ := uuid.FromBytes(participant.ID.Bytes[:])
 	resp := &participantv1.CreateParticipantResponse{
 		Participant: &participantv1.Participant{
-			Id:         uid.String(),
-			Age:        toInt32Ptr(participant.Age),
-			Gender:     toStringPtr(participant.Gender),
-			Handedness: toStringPtr(participant.Handedness),
-			IsPublic:   participant.IsPublic.Bool,
-			CreatedAt:  timestamppb.New(participant.CreatedAt.Time),
-			UpdatedAt:  timestamppb.New(participant.UpdatedAt.Time),
+			Id:             uid.String(),
+			Age:            toInt32Ptr(participant.Age),
+			Gender:         toStringPtr(participant.Gender),
+			Handedness:     toStringPtr(participant.Handedness),
+			AgeGroup:       toStringPtr(participant.AgeGroup),
+			Ethnicity:      toStringPtr(participant.Ethnicity),
+			IncomeRange:    toStringPtr(participant.IncomeRange),
+			MedicalHistory: participant.MedicalHistory,
+			IsPublic:       participant.IsPublic.Bool,
+			CreatedAt:      timestamppb.New(participant.CreatedAt.Time),
+			UpdatedAt:      timestamppb.New(participant.UpdatedAt.Time),
 		},
 	}
 

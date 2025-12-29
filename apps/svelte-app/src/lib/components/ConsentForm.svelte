@@ -1,7 +1,7 @@
 <script lang="ts">
   import ResearchPlanContent from "./ResearchPlanContent.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { MENTAL_ILLNESS_CODES, type IllnessCode } from "$lib/researcher/illness-codes";
+  import { ILLNESS_CODES, type IllnessCode } from "$lib/researcher/illness-codes";
   import { languageTag } from "$lib/paraglide/runtime.js";
 
   let { onConsent, participantId } = $props<{
@@ -24,7 +24,7 @@
     gender: "",
     ethnicity: "",
     incomeRange: "",
-    mentalIllness: "",
+    medicalHistory: [] as string[],
   });
 
   let illnessSearch = $state("");
@@ -33,10 +33,11 @@
   const filteredIllnessCodes = $derived(
     illnessSearch.trim() === "" 
       ? [] 
-      : MENTAL_ILLNESS_CODES.filter(code => 
-          code.name_en.toLowerCase().includes(illnessSearch.toLowerCase()) || 
+      : ILLNESS_CODES.filter(code => 
+          (code.name_en.toLowerCase().includes(illnessSearch.toLowerCase()) || 
           code.name_ja.includes(illnessSearch) ||
-          code.code.toLowerCase().includes(illnessSearch.toLowerCase())
+          code.code.toLowerCase().includes(illnessSearch.toLowerCase())) &&
+          !demographics.medicalHistory.includes(code.code)
         )
   );
 
@@ -45,9 +46,21 @@
   );
 
   function selectIllness(code: IllnessCode) {
-    demographics.mentalIllness = code.code;
-    illnessSearch = languageTag() === "ja" ? code.name_ja : code.name_en;
+    if (!demographics.medicalHistory.includes(code.code)) {
+      demographics.medicalHistory = [...demographics.medicalHistory, code.code];
+    }
+    illnessSearch = "";
     showIllnessSuggestions = false;
+  }
+
+  function removeIllness(code: string) {
+    demographics.medicalHistory = demographics.medicalHistory.filter(c => c !== code);
+  }
+
+  function getIllnessName(code: string) {
+    const illness = ILLNESS_CODES.find(c => c.code === code);
+    if (!illness) return code;
+    return languageTag() === "ja" ? illness.name_ja : illness.name_en;
   }
 
   function handleSubmit(event: Event) {
@@ -174,12 +187,34 @@
       </div>
 
       <div class="relative">
-        <label for="mentalIllness" class="block mb-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{m.mental_illness()}</label>
+        <label for="medicalHistory" class="block mb-2 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">{m.medical_history()}</label>
+        
+        {#if demographics.medicalHistory.length > 0}
+          <div class="flex flex-wrap gap-2 mb-3">
+            {#each demographics.medicalHistory as code}
+              <div class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-300 transition-all hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                <span class="font-bold border-r border-blue-200 dark:border-blue-700 pr-1.5">{code}</span>
+                <span class="max-w-[150px] truncate">{getIllnessName(code)}</span>
+                <button 
+                  type="button" 
+                  onclick={() => removeIllness(code)}
+                  class="ml-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full transition-colors group"
+                  aria-label="Remove"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-blue-400 group-hover:text-blue-600 dark:group-hover:text-blue-200" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
         <input 
           type="text" 
-          id="mentalIllness" 
+          id="medicalHistory" 
           bind:value={illnessSearch}
-          placeholder={m.mental_illness_placeholder()}
+          placeholder={m.medical_history_placeholder()}
           onfocus={() => showIllnessSuggestions = true}
           class="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
           autocomplete="off"

@@ -1,3 +1,4 @@
-import { i18n } from "$lib/i18n";
-
-export const handle = i18n.handle();
+// Server-side hooks are not used for client-side localStorage language detection.
+export const handle = ({ event, resolve }) => {
+	return resolve(event);
+};

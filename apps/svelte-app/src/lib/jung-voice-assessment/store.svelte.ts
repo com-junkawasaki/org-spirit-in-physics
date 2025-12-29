@@ -36,7 +36,7 @@ class KawasakiStore {
     gender: "",
     ethnicity: "",
     incomeRange: "",
-    mentalIllness: "",
+    medicalHistory: [] as string[],
   });
 
   constructor() {
@@ -66,7 +66,7 @@ class KawasakiStore {
         ageGroup: this.demographics.ageGroup,
         ethnicity: this.demographics.ethnicity,
         incomeRange: this.demographics.incomeRange,
-        mentalIllness: this.demographics.mentalIllness,
+        medicalHistory: this.demographics.medicalHistory,
         isPublic: true
       });
       this.logEvent('participant_created_on_server');

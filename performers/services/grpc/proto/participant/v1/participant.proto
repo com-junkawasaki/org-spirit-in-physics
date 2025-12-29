@@ -51,7 +51,7 @@ message CreateParticipantRequest {
   optional string age_group = 6;
   optional string ethnicity = 7;
   optional string income_range = 8;
-  optional string mental_illness = 9;
+  repeated string medical_history = 9;
 }
 
 message CreateParticipantResponse {
@@ -80,7 +80,7 @@ message Participant {
   optional string age_group = 8;
   optional string ethnicity = 9;
   optional string income_range = 10;
-  optional string mental_illness = 11;
+  repeated string medical_history = 11;
   bool is_public = 5;
   google.protobuf.Timestamp created_at = 6;
   google.protobuf.Timestamp updated_at = 7;

@@ -9,13 +9,17 @@ import (
 )
 
 type Participant struct {
-	ID         pgtype.UUID        `json:"id"`
-	Age        pgtype.Int4        `json:"age"`
-	Gender     pgtype.Text        `json:"gender"`
-	Handedness pgtype.Text        `json:"handedness"`
-	IsPublic   pgtype.Bool        `json:"is_public"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ID             pgtype.UUID        `json:"id"`
+	Age            pgtype.Int4        `json:"age"`
+	Gender         pgtype.Text        `json:"gender"`
+	Handedness     pgtype.Text        `json:"handedness"`
+	AgeGroup       pgtype.Text        `json:"age_group"`
+	Ethnicity      pgtype.Text        `json:"ethnicity"`
+	IncomeRange    pgtype.Text        `json:"income_range"`
+	MedicalHistory []string           `json:"medical_history"`
+	IsPublic       pgtype.Bool        `json:"is_public"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type PhysiologicalMeasurement struct {

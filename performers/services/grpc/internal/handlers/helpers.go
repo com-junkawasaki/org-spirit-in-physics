@@ -42,3 +42,10 @@ func toInt64PtrFromOptional(i pgtype.Int8) *int64 {
 	}
 	return nil
 }
+
+func getStringValue(s *string) string {
+	if s != nil {
+		return *s
+	}
+	return ""
+}

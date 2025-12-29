@@ -12,22 +12,46 @@ import (
 )
 
 const createParticipant = `-- name: CreateParticipant :one
-INSERT INTO participants (id, is_public, created_at, updated_at)
-VALUES ($1, COALESCE($2::boolean, true), $3, $4)
-ON CONFLICT (id) DO UPDATE SET updated_at = $4
-RETURNING id, age, gender, handedness, is_public, created_at, updated_at
+INSERT INTO participants (
+    id, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
+)
+VALUES (
+    $1, 
+    $2, 
+    $3, 
+    $4, 
+    $5, 
+    COALESCE($6::boolean, true), 
+    $7, 
+    $8
+)
+ON CONFLICT (id) DO UPDATE SET 
+    age_group = EXCLUDED.age_group,
+    ethnicity = EXCLUDED.ethnicity,
+    income_range = EXCLUDED.income_range,
+    medical_history = EXCLUDED.medical_history,
+    updated_at = EXCLUDED.updated_at
+RETURNING id, age, gender, handedness, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 `
 
 type CreateParticipantParams struct {
-	ID        pgtype.UUID        `json:"id"`
-	IsPublic  pgtype.Bool        `json:"is_public"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID             pgtype.UUID        `json:"id"`
+	AgeGroup       pgtype.Text        `json:"age_group"`
+	Ethnicity      pgtype.Text        `json:"ethnicity"`
+	IncomeRange    pgtype.Text        `json:"income_range"`
+	MedicalHistory []string           `json:"medical_history"`
+	IsPublic       pgtype.Bool        `json:"is_public"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 func (q *Queries) CreateParticipant(ctx context.Context, arg CreateParticipantParams) (Participant, error) {
 	row := q.db.QueryRow(ctx, createParticipant,
 		arg.ID,
+		arg.AgeGroup,
+		arg.Ethnicity,
+		arg.IncomeRange,
+		arg.MedicalHistory,
 		arg.IsPublic,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -38,6 +62,10 @@ func (q *Queries) CreateParticipant(ctx context.Context, arg CreateParticipantPa
 		&i.Age,
 		&i.Gender,
 		&i.Handedness,
+		&i.AgeGroup,
+		&i.Ethnicity,
+		&i.IncomeRange,
+		&i.MedicalHistory,
 		&i.IsPublic,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -46,7 +74,7 @@ func (q *Queries) CreateParticipant(ctx context.Context, arg CreateParticipantPa
 }
 
 const getParticipant = `-- name: GetParticipant :one
-SELECT id, age, gender, handedness, is_public, created_at, updated_at
+SELECT id, age, gender, handedness, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 FROM participants
 WHERE id = $1
 `
@@ -59,6 +87,10 @@ func (q *Queries) GetParticipant(ctx context.Context, id pgtype.UUID) (Participa
 		&i.Age,
 		&i.Gender,
 		&i.Handedness,
+		&i.AgeGroup,
+		&i.Ethnicity,
+		&i.IncomeRange,
+		&i.MedicalHistory,
 		&i.IsPublic,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -67,7 +99,7 @@ func (q *Queries) GetParticipant(ctx context.Context, id pgtype.UUID) (Participa
 }
 
 const getParticipants = `-- name: GetParticipants :many
-SELECT id, age, gender, handedness, is_public, created_at, updated_at
+SELECT id, age, gender, handedness, age_group, ethnicity, income_range, medical_history, is_public, created_at, updated_at
 FROM participants
 WHERE ($1::boolean IS NULL OR is_public = $1)
 ORDER BY created_at DESC
@@ -87,6 +119,10 @@ func (q *Queries) GetParticipants(ctx context.Context, dollar_1 bool) ([]Partici
 			&i.Age,
 			&i.Gender,
 			&i.Handedness,
+			&i.AgeGroup,
+			&i.Ethnicity,
+			&i.IncomeRange,
+			&i.MedicalHistory,
 			&i.IsPublic,
 			&i.CreatedAt,
 			&i.UpdatedAt,
