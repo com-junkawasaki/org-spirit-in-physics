@@ -12,10 +12,10 @@ type ParticipantActivities struct {
 	Queries *db.Queries
 }
 
-func (a *ParticipantActivities) CreateParticipantActivity(ctx context.Context, signature string) error {
+func (a *ParticipantActivities) CreateParticipantActivity(ctx context.Context, participantID string) error {
 	now := time.Now()
 	_, err := a.Queries.CreateParticipant(ctx, db.CreateParticipantParams{
-		ID:        pgtype.UUID{Bytes: uuid.New(), Valid: true},
+		ID:        participantID,
 		IsPublic:  pgtype.Bool{Bool: true, Valid: true},
 		CreatedAt: pgtype.Timestamptz{Time: now, Valid: true},
 		UpdatedAt: pgtype.Timestamptz{Time: now, Valid: true},

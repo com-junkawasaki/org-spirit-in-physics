@@ -84,16 +84,30 @@ func (h *TimelineHandler) GetWordAggregates(
 	ctx context.Context,
 	req *connect.Request[timelinev1.GetWordAggregatesRequest],
 ) (*connect.Response[timelinev1.GetWordAggregatesResponse], error) {
-	var sUID pgtype.UUID
+	var sID string
 	if req.Msg.SessionId != nil && *req.Msg.SessionId != "" {
-		parsed, err := uuid.Parse(*req.Msg.SessionId)
+		sID = *req.Msg.SessionId
+	}
+
+	rows, err := h.queries.GetWordAggregates(ctx, db.GetWordAggregatesParams{
+		ParticipantID: req.Msg.ParticipantId,
+		Column2:       pgtype.UUID{Valid: sID != ""}, // We'll need to handle UUID parsing for sessions if sessions are still UUID
+	})
+	// Actually, let's keep session IDs as UUIDs for now since they are system-generated, but participant IDs are strings (Clerk IDs).
+	// But the error is "invalid UUID format" for participant ID.
+	// In the queries, Column2 is session_id which IS a UUID.
+	
+	// Wait, if session_id is still UUID in the DB, we need to parse it.
+	var sUID pgtype.UUID
+	if sID != "" {
+		parsed, err := uuid.Parse(sID)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid session ID: %v", err))
 		}
 		sUID = pgtype.UUID{Bytes: parsed, Valid: true}
 	}
 
-	rows, err := h.queries.GetWordAggregates(ctx, db.GetWordAggregatesParams{
+	rows, err = h.queries.GetWordAggregates(ctx, db.GetWordAggregatesParams{
 		ParticipantID: req.Msg.ParticipantId,
 		Column2:       sUID,
 	})
