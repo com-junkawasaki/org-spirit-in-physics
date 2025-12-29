@@ -7,6 +7,548 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 
 /**
+ * @generated from message participant.v1.StartAssessmentRequest
+ */
+export class StartAssessmentRequest extends Message<StartAssessmentRequest> {
+  /**
+   * @generated from field: string participant_id = 1;
+   */
+  participantId = "";
+
+  /**
+   * @generated from field: string email = 2;
+   */
+  email = "";
+
+  /**
+   * @generated from field: optional string age_group = 3;
+   */
+  ageGroup?: string;
+
+  /**
+   * @generated from field: optional string gender = 4;
+   */
+  gender?: string;
+
+  /**
+   * @generated from field: optional string ethnicity = 5;
+   */
+  ethnicity?: string;
+
+  /**
+   * @generated from field: optional string income_range = 6;
+   */
+  incomeRange?: string;
+
+  /**
+   * @generated from field: repeated string medical_history = 7;
+   */
+  medicalHistory: string[] = [];
+
+  constructor(data?: PartialMessage<StartAssessmentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.StartAssessmentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "age_group", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "gender", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "ethnicity", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "income_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "medical_history", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartAssessmentRequest {
+    return new StartAssessmentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StartAssessmentRequest {
+    return new StartAssessmentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StartAssessmentRequest {
+    return new StartAssessmentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StartAssessmentRequest | PlainMessage<StartAssessmentRequest> | undefined, b: StartAssessmentRequest | PlainMessage<StartAssessmentRequest> | undefined): boolean {
+    return proto3.util.equals(StartAssessmentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.StartAssessmentResponse
+ */
+export class StartAssessmentResponse extends Message<StartAssessmentResponse> {
+  /**
+   * @generated from field: string workflow_id = 1;
+   */
+  workflowId = "";
+
+  /**
+   * @generated from field: string run_id = 2;
+   */
+  runId = "";
+
+  constructor(data?: PartialMessage<StartAssessmentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.StartAssessmentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "workflow_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "run_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartAssessmentResponse {
+    return new StartAssessmentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StartAssessmentResponse {
+    return new StartAssessmentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StartAssessmentResponse {
+    return new StartAssessmentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: StartAssessmentResponse | PlainMessage<StartAssessmentResponse> | undefined, b: StartAssessmentResponse | PlainMessage<StartAssessmentResponse> | undefined): boolean {
+    return proto3.util.equals(StartAssessmentResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.SignalWordResponseRequest
+ */
+export class SignalWordResponseRequest extends Message<SignalWordResponseRequest> {
+  /**
+   * @generated from field: string participant_id = 1;
+   */
+  participantId = "";
+
+  /**
+   * @generated from field: int32 stimulus_word_id = 2;
+   */
+  stimulusWordId = 0;
+
+  /**
+   * @generated from field: string response_word = 3;
+   */
+  responseWord = "";
+
+  /**
+   * @generated from field: int32 reaction_time_ms = 4;
+   */
+  reactionTimeMs = 0;
+
+  constructor(data?: PartialMessage<SignalWordResponseRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.SignalWordResponseRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "stimulus_word_id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "response_word", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "reaction_time_ms", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SignalWordResponseRequest {
+    return new SignalWordResponseRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SignalWordResponseRequest {
+    return new SignalWordResponseRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SignalWordResponseRequest {
+    return new SignalWordResponseRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SignalWordResponseRequest | PlainMessage<SignalWordResponseRequest> | undefined, b: SignalWordResponseRequest | PlainMessage<SignalWordResponseRequest> | undefined): boolean {
+    return proto3.util.equals(SignalWordResponseRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.SignalWordResponseResponse
+ */
+export class SignalWordResponseResponse extends Message<SignalWordResponseResponse> {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success = false;
+
+  constructor(data?: PartialMessage<SignalWordResponseResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.SignalWordResponseResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SignalWordResponseResponse {
+    return new SignalWordResponseResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SignalWordResponseResponse {
+    return new SignalWordResponseResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SignalWordResponseResponse {
+    return new SignalWordResponseResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SignalWordResponseResponse | PlainMessage<SignalWordResponseResponse> | undefined, b: SignalWordResponseResponse | PlainMessage<SignalWordResponseResponse> | undefined): boolean {
+    return proto3.util.equals(SignalWordResponseResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.SignalStartSessionRequest
+ */
+export class SignalStartSessionRequest extends Message<SignalStartSessionRequest> {
+  /**
+   * @generated from field: string participant_id = 1;
+   */
+  participantId = "";
+
+  /**
+   * @generated from field: int32 session_number = 2;
+   */
+  sessionNumber = 0;
+
+  constructor(data?: PartialMessage<SignalStartSessionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.SignalStartSessionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "session_number", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SignalStartSessionRequest {
+    return new SignalStartSessionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SignalStartSessionRequest {
+    return new SignalStartSessionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SignalStartSessionRequest {
+    return new SignalStartSessionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SignalStartSessionRequest | PlainMessage<SignalStartSessionRequest> | undefined, b: SignalStartSessionRequest | PlainMessage<SignalStartSessionRequest> | undefined): boolean {
+    return proto3.util.equals(SignalStartSessionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.SignalStartSessionResponse
+ */
+export class SignalStartSessionResponse extends Message<SignalStartSessionResponse> {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success = false;
+
+  constructor(data?: PartialMessage<SignalStartSessionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.SignalStartSessionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SignalStartSessionResponse {
+    return new SignalStartSessionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SignalStartSessionResponse {
+    return new SignalStartSessionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SignalStartSessionResponse {
+    return new SignalStartSessionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SignalStartSessionResponse | PlainMessage<SignalStartSessionResponse> | undefined, b: SignalStartSessionResponse | PlainMessage<SignalStartSessionResponse> | undefined): boolean {
+    return proto3.util.equals(SignalStartSessionResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.SignalArtifactRequest
+ */
+export class SignalArtifactRequest extends Message<SignalArtifactRequest> {
+  /**
+   * @generated from field: string participant_id = 1;
+   */
+  participantId = "";
+
+  /**
+   * video, image, audio
+   *
+   * @generated from field: string artifact_type = 2;
+   */
+  artifactType = "";
+
+  /**
+   * @generated from field: string url = 3;
+   */
+  url = "";
+
+  /**
+   * @generated from field: int32 session = 4;
+   */
+  session = 0;
+
+  constructor(data?: PartialMessage<SignalArtifactRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.SignalArtifactRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "artifact_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "session", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SignalArtifactRequest {
+    return new SignalArtifactRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SignalArtifactRequest {
+    return new SignalArtifactRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SignalArtifactRequest {
+    return new SignalArtifactRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SignalArtifactRequest | PlainMessage<SignalArtifactRequest> | undefined, b: SignalArtifactRequest | PlainMessage<SignalArtifactRequest> | undefined): boolean {
+    return proto3.util.equals(SignalArtifactRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.SignalArtifactResponse
+ */
+export class SignalArtifactResponse extends Message<SignalArtifactResponse> {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success = false;
+
+  constructor(data?: PartialMessage<SignalArtifactResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.SignalArtifactResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SignalArtifactResponse {
+    return new SignalArtifactResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SignalArtifactResponse {
+    return new SignalArtifactResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SignalArtifactResponse {
+    return new SignalArtifactResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SignalArtifactResponse | PlainMessage<SignalArtifactResponse> | undefined, b: SignalArtifactResponse | PlainMessage<SignalArtifactResponse> | undefined): boolean {
+    return proto3.util.equals(SignalArtifactResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.CompleteAssessmentRequest
+ */
+export class CompleteAssessmentRequest extends Message<CompleteAssessmentRequest> {
+  /**
+   * @generated from field: string participant_id = 1;
+   */
+  participantId = "";
+
+  constructor(data?: PartialMessage<CompleteAssessmentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.CompleteAssessmentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteAssessmentRequest {
+    return new CompleteAssessmentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompleteAssessmentRequest {
+    return new CompleteAssessmentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompleteAssessmentRequest {
+    return new CompleteAssessmentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompleteAssessmentRequest | PlainMessage<CompleteAssessmentRequest> | undefined, b: CompleteAssessmentRequest | PlainMessage<CompleteAssessmentRequest> | undefined): boolean {
+    return proto3.util.equals(CompleteAssessmentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.CompleteAssessmentResponse
+ */
+export class CompleteAssessmentResponse extends Message<CompleteAssessmentResponse> {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success = false;
+
+  constructor(data?: PartialMessage<CompleteAssessmentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.CompleteAssessmentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteAssessmentResponse {
+    return new CompleteAssessmentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompleteAssessmentResponse {
+    return new CompleteAssessmentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompleteAssessmentResponse {
+    return new CompleteAssessmentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompleteAssessmentResponse | PlainMessage<CompleteAssessmentResponse> | undefined, b: CompleteAssessmentResponse | PlainMessage<CompleteAssessmentResponse> | undefined): boolean {
+    return proto3.util.equals(CompleteAssessmentResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.GetAssessmentStatusRequest
+ */
+export class GetAssessmentStatusRequest extends Message<GetAssessmentStatusRequest> {
+  /**
+   * @generated from field: string participant_id = 1;
+   */
+  participantId = "";
+
+  constructor(data?: PartialMessage<GetAssessmentStatusRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.GetAssessmentStatusRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "participant_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAssessmentStatusRequest {
+    return new GetAssessmentStatusRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAssessmentStatusRequest {
+    return new GetAssessmentStatusRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAssessmentStatusRequest {
+    return new GetAssessmentStatusRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAssessmentStatusRequest | PlainMessage<GetAssessmentStatusRequest> | undefined, b: GetAssessmentStatusRequest | PlainMessage<GetAssessmentStatusRequest> | undefined): boolean {
+    return proto3.util.equals(GetAssessmentStatusRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message participant.v1.GetAssessmentStatusResponse
+ */
+export class GetAssessmentStatusResponse extends Message<GetAssessmentStatusResponse> {
+  /**
+   * @generated from field: string status = 1;
+   */
+  status = "";
+
+  /**
+   * @generated from field: int32 responses_count = 2;
+   */
+  responsesCount = 0;
+
+  /**
+   * @generated from field: int32 artifacts_count = 3;
+   */
+  artifactsCount = 0;
+
+  constructor(data?: PartialMessage<GetAssessmentStatusResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "participant.v1.GetAssessmentStatusResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "responses_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "artifacts_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAssessmentStatusResponse {
+    return new GetAssessmentStatusResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAssessmentStatusResponse {
+    return new GetAssessmentStatusResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAssessmentStatusResponse {
+    return new GetAssessmentStatusResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAssessmentStatusResponse | PlainMessage<GetAssessmentStatusResponse> | undefined, b: GetAssessmentStatusResponse | PlainMessage<GetAssessmentStatusResponse> | undefined): boolean {
+    return proto3.util.equals(GetAssessmentStatusResponse, a, b);
+  }
+}
+
+/**
  * @generated from message participant.v1.GetParticipantsRequest
  */
 export class GetParticipantsRequest extends Message<GetParticipantsRequest> {
@@ -279,6 +821,11 @@ export class CreateParticipantRequest extends Message<CreateParticipantRequest> 
    */
   medicalHistory: string[] = [];
 
+  /**
+   * @generated from field: optional string gender = 10;
+   */
+  gender?: string;
+
   constructor(data?: PartialMessage<CreateParticipantRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -296,6 +843,7 @@ export class CreateParticipantRequest extends Message<CreateParticipantRequest> 
     { no: 7, name: "ethnicity", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "income_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "medical_history", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "gender", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateParticipantRequest {

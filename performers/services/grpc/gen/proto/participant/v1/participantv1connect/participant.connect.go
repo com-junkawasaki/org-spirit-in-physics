@@ -51,6 +51,24 @@ const (
 	// ParticipantServiceGetStimulusWordProcedure is the fully-qualified name of the
 	// ParticipantService's GetStimulusWord RPC.
 	ParticipantServiceGetStimulusWordProcedure = "/participant.v1.ParticipantService/GetStimulusWord"
+	// ParticipantServiceStartAssessmentProcedure is the fully-qualified name of the
+	// ParticipantService's StartAssessment RPC.
+	ParticipantServiceStartAssessmentProcedure = "/participant.v1.ParticipantService/StartAssessment"
+	// ParticipantServiceSignalWordResponseProcedure is the fully-qualified name of the
+	// ParticipantService's SignalWordResponse RPC.
+	ParticipantServiceSignalWordResponseProcedure = "/participant.v1.ParticipantService/SignalWordResponse"
+	// ParticipantServiceSignalStartSessionProcedure is the fully-qualified name of the
+	// ParticipantService's SignalStartSession RPC.
+	ParticipantServiceSignalStartSessionProcedure = "/participant.v1.ParticipantService/SignalStartSession"
+	// ParticipantServiceSignalArtifactProcedure is the fully-qualified name of the ParticipantService's
+	// SignalArtifact RPC.
+	ParticipantServiceSignalArtifactProcedure = "/participant.v1.ParticipantService/SignalArtifact"
+	// ParticipantServiceCompleteAssessmentProcedure is the fully-qualified name of the
+	// ParticipantService's CompleteAssessment RPC.
+	ParticipantServiceCompleteAssessmentProcedure = "/participant.v1.ParticipantService/CompleteAssessment"
+	// ParticipantServiceGetAssessmentStatusProcedure is the fully-qualified name of the
+	// ParticipantService's GetAssessmentStatus RPC.
+	ParticipantServiceGetAssessmentStatusProcedure = "/participant.v1.ParticipantService/GetAssessmentStatus"
 )
 
 // ParticipantServiceClient is a client for the participant.v1.ParticipantService service.
@@ -67,6 +85,18 @@ type ParticipantServiceClient interface {
 	GetStimulusWords(context.Context, *connect.Request[v1.GetStimulusWordsRequest]) (*connect.Response[v1.GetStimulusWordsResponse], error)
 	// Get a stimulus word by ID
 	GetStimulusWord(context.Context, *connect.Request[v1.GetStimulusWordRequest]) (*connect.Response[v1.GetStimulusWordResponse], error)
+	// Start or resume an assessment workflow
+	StartAssessment(context.Context, *connect.Request[v1.StartAssessmentRequest]) (*connect.Response[v1.StartAssessmentResponse], error)
+	// Signal a word response to the workflow
+	SignalWordResponse(context.Context, *connect.Request[v1.SignalWordResponseRequest]) (*connect.Response[v1.SignalWordResponseResponse], error)
+	// Signal start of a session
+	SignalStartSession(context.Context, *connect.Request[v1.SignalStartSessionRequest]) (*connect.Response[v1.SignalStartSessionResponse], error)
+	// Signal an artifact (video/image) upload
+	SignalArtifact(context.Context, *connect.Request[v1.SignalArtifactRequest]) (*connect.Response[v1.SignalArtifactResponse], error)
+	// Signal completion of the assessment
+	CompleteAssessment(context.Context, *connect.Request[v1.CompleteAssessmentRequest]) (*connect.Response[v1.CompleteAssessmentResponse], error)
+	// Get current status of the assessment workflow
+	GetAssessmentStatus(context.Context, *connect.Request[v1.GetAssessmentStatusRequest]) (*connect.Response[v1.GetAssessmentStatusResponse], error)
 }
 
 // NewParticipantServiceClient constructs a client for the participant.v1.ParticipantService
@@ -116,6 +146,42 @@ func NewParticipantServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(participantServiceMethods.ByName("GetStimulusWord")),
 			connect.WithClientOptions(opts...),
 		),
+		startAssessment: connect.NewClient[v1.StartAssessmentRequest, v1.StartAssessmentResponse](
+			httpClient,
+			baseURL+ParticipantServiceStartAssessmentProcedure,
+			connect.WithSchema(participantServiceMethods.ByName("StartAssessment")),
+			connect.WithClientOptions(opts...),
+		),
+		signalWordResponse: connect.NewClient[v1.SignalWordResponseRequest, v1.SignalWordResponseResponse](
+			httpClient,
+			baseURL+ParticipantServiceSignalWordResponseProcedure,
+			connect.WithSchema(participantServiceMethods.ByName("SignalWordResponse")),
+			connect.WithClientOptions(opts...),
+		),
+		signalStartSession: connect.NewClient[v1.SignalStartSessionRequest, v1.SignalStartSessionResponse](
+			httpClient,
+			baseURL+ParticipantServiceSignalStartSessionProcedure,
+			connect.WithSchema(participantServiceMethods.ByName("SignalStartSession")),
+			connect.WithClientOptions(opts...),
+		),
+		signalArtifact: connect.NewClient[v1.SignalArtifactRequest, v1.SignalArtifactResponse](
+			httpClient,
+			baseURL+ParticipantServiceSignalArtifactProcedure,
+			connect.WithSchema(participantServiceMethods.ByName("SignalArtifact")),
+			connect.WithClientOptions(opts...),
+		),
+		completeAssessment: connect.NewClient[v1.CompleteAssessmentRequest, v1.CompleteAssessmentResponse](
+			httpClient,
+			baseURL+ParticipantServiceCompleteAssessmentProcedure,
+			connect.WithSchema(participantServiceMethods.ByName("CompleteAssessment")),
+			connect.WithClientOptions(opts...),
+		),
+		getAssessmentStatus: connect.NewClient[v1.GetAssessmentStatusRequest, v1.GetAssessmentStatusResponse](
+			httpClient,
+			baseURL+ParticipantServiceGetAssessmentStatusProcedure,
+			connect.WithSchema(participantServiceMethods.ByName("GetAssessmentStatus")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -127,6 +193,12 @@ type participantServiceClient struct {
 	getParticipantByEmail *connect.Client[v1.GetParticipantByEmailRequest, v1.GetParticipantByEmailResponse]
 	getStimulusWords      *connect.Client[v1.GetStimulusWordsRequest, v1.GetStimulusWordsResponse]
 	getStimulusWord       *connect.Client[v1.GetStimulusWordRequest, v1.GetStimulusWordResponse]
+	startAssessment       *connect.Client[v1.StartAssessmentRequest, v1.StartAssessmentResponse]
+	signalWordResponse    *connect.Client[v1.SignalWordResponseRequest, v1.SignalWordResponseResponse]
+	signalStartSession    *connect.Client[v1.SignalStartSessionRequest, v1.SignalStartSessionResponse]
+	signalArtifact        *connect.Client[v1.SignalArtifactRequest, v1.SignalArtifactResponse]
+	completeAssessment    *connect.Client[v1.CompleteAssessmentRequest, v1.CompleteAssessmentResponse]
+	getAssessmentStatus   *connect.Client[v1.GetAssessmentStatusRequest, v1.GetAssessmentStatusResponse]
 }
 
 // GetParticipants calls participant.v1.ParticipantService.GetParticipants.
@@ -159,6 +231,36 @@ func (c *participantServiceClient) GetStimulusWord(ctx context.Context, req *con
 	return c.getStimulusWord.CallUnary(ctx, req)
 }
 
+// StartAssessment calls participant.v1.ParticipantService.StartAssessment.
+func (c *participantServiceClient) StartAssessment(ctx context.Context, req *connect.Request[v1.StartAssessmentRequest]) (*connect.Response[v1.StartAssessmentResponse], error) {
+	return c.startAssessment.CallUnary(ctx, req)
+}
+
+// SignalWordResponse calls participant.v1.ParticipantService.SignalWordResponse.
+func (c *participantServiceClient) SignalWordResponse(ctx context.Context, req *connect.Request[v1.SignalWordResponseRequest]) (*connect.Response[v1.SignalWordResponseResponse], error) {
+	return c.signalWordResponse.CallUnary(ctx, req)
+}
+
+// SignalStartSession calls participant.v1.ParticipantService.SignalStartSession.
+func (c *participantServiceClient) SignalStartSession(ctx context.Context, req *connect.Request[v1.SignalStartSessionRequest]) (*connect.Response[v1.SignalStartSessionResponse], error) {
+	return c.signalStartSession.CallUnary(ctx, req)
+}
+
+// SignalArtifact calls participant.v1.ParticipantService.SignalArtifact.
+func (c *participantServiceClient) SignalArtifact(ctx context.Context, req *connect.Request[v1.SignalArtifactRequest]) (*connect.Response[v1.SignalArtifactResponse], error) {
+	return c.signalArtifact.CallUnary(ctx, req)
+}
+
+// CompleteAssessment calls participant.v1.ParticipantService.CompleteAssessment.
+func (c *participantServiceClient) CompleteAssessment(ctx context.Context, req *connect.Request[v1.CompleteAssessmentRequest]) (*connect.Response[v1.CompleteAssessmentResponse], error) {
+	return c.completeAssessment.CallUnary(ctx, req)
+}
+
+// GetAssessmentStatus calls participant.v1.ParticipantService.GetAssessmentStatus.
+func (c *participantServiceClient) GetAssessmentStatus(ctx context.Context, req *connect.Request[v1.GetAssessmentStatusRequest]) (*connect.Response[v1.GetAssessmentStatusResponse], error) {
+	return c.getAssessmentStatus.CallUnary(ctx, req)
+}
+
 // ParticipantServiceHandler is an implementation of the participant.v1.ParticipantService service.
 type ParticipantServiceHandler interface {
 	// Get all participants
@@ -173,6 +275,18 @@ type ParticipantServiceHandler interface {
 	GetStimulusWords(context.Context, *connect.Request[v1.GetStimulusWordsRequest]) (*connect.Response[v1.GetStimulusWordsResponse], error)
 	// Get a stimulus word by ID
 	GetStimulusWord(context.Context, *connect.Request[v1.GetStimulusWordRequest]) (*connect.Response[v1.GetStimulusWordResponse], error)
+	// Start or resume an assessment workflow
+	StartAssessment(context.Context, *connect.Request[v1.StartAssessmentRequest]) (*connect.Response[v1.StartAssessmentResponse], error)
+	// Signal a word response to the workflow
+	SignalWordResponse(context.Context, *connect.Request[v1.SignalWordResponseRequest]) (*connect.Response[v1.SignalWordResponseResponse], error)
+	// Signal start of a session
+	SignalStartSession(context.Context, *connect.Request[v1.SignalStartSessionRequest]) (*connect.Response[v1.SignalStartSessionResponse], error)
+	// Signal an artifact (video/image) upload
+	SignalArtifact(context.Context, *connect.Request[v1.SignalArtifactRequest]) (*connect.Response[v1.SignalArtifactResponse], error)
+	// Signal completion of the assessment
+	CompleteAssessment(context.Context, *connect.Request[v1.CompleteAssessmentRequest]) (*connect.Response[v1.CompleteAssessmentResponse], error)
+	// Get current status of the assessment workflow
+	GetAssessmentStatus(context.Context, *connect.Request[v1.GetAssessmentStatusRequest]) (*connect.Response[v1.GetAssessmentStatusResponse], error)
 }
 
 // NewParticipantServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -218,6 +332,42 @@ func NewParticipantServiceHandler(svc ParticipantServiceHandler, opts ...connect
 		connect.WithSchema(participantServiceMethods.ByName("GetStimulusWord")),
 		connect.WithHandlerOptions(opts...),
 	)
+	participantServiceStartAssessmentHandler := connect.NewUnaryHandler(
+		ParticipantServiceStartAssessmentProcedure,
+		svc.StartAssessment,
+		connect.WithSchema(participantServiceMethods.ByName("StartAssessment")),
+		connect.WithHandlerOptions(opts...),
+	)
+	participantServiceSignalWordResponseHandler := connect.NewUnaryHandler(
+		ParticipantServiceSignalWordResponseProcedure,
+		svc.SignalWordResponse,
+		connect.WithSchema(participantServiceMethods.ByName("SignalWordResponse")),
+		connect.WithHandlerOptions(opts...),
+	)
+	participantServiceSignalStartSessionHandler := connect.NewUnaryHandler(
+		ParticipantServiceSignalStartSessionProcedure,
+		svc.SignalStartSession,
+		connect.WithSchema(participantServiceMethods.ByName("SignalStartSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	participantServiceSignalArtifactHandler := connect.NewUnaryHandler(
+		ParticipantServiceSignalArtifactProcedure,
+		svc.SignalArtifact,
+		connect.WithSchema(participantServiceMethods.ByName("SignalArtifact")),
+		connect.WithHandlerOptions(opts...),
+	)
+	participantServiceCompleteAssessmentHandler := connect.NewUnaryHandler(
+		ParticipantServiceCompleteAssessmentProcedure,
+		svc.CompleteAssessment,
+		connect.WithSchema(participantServiceMethods.ByName("CompleteAssessment")),
+		connect.WithHandlerOptions(opts...),
+	)
+	participantServiceGetAssessmentStatusHandler := connect.NewUnaryHandler(
+		ParticipantServiceGetAssessmentStatusProcedure,
+		svc.GetAssessmentStatus,
+		connect.WithSchema(participantServiceMethods.ByName("GetAssessmentStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/participant.v1.ParticipantService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ParticipantServiceGetParticipantsProcedure:
@@ -232,6 +382,18 @@ func NewParticipantServiceHandler(svc ParticipantServiceHandler, opts ...connect
 			participantServiceGetStimulusWordsHandler.ServeHTTP(w, r)
 		case ParticipantServiceGetStimulusWordProcedure:
 			participantServiceGetStimulusWordHandler.ServeHTTP(w, r)
+		case ParticipantServiceStartAssessmentProcedure:
+			participantServiceStartAssessmentHandler.ServeHTTP(w, r)
+		case ParticipantServiceSignalWordResponseProcedure:
+			participantServiceSignalWordResponseHandler.ServeHTTP(w, r)
+		case ParticipantServiceSignalStartSessionProcedure:
+			participantServiceSignalStartSessionHandler.ServeHTTP(w, r)
+		case ParticipantServiceSignalArtifactProcedure:
+			participantServiceSignalArtifactHandler.ServeHTTP(w, r)
+		case ParticipantServiceCompleteAssessmentProcedure:
+			participantServiceCompleteAssessmentHandler.ServeHTTP(w, r)
+		case ParticipantServiceGetAssessmentStatusProcedure:
+			participantServiceGetAssessmentStatusHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -263,4 +425,28 @@ func (UnimplementedParticipantServiceHandler) GetStimulusWords(context.Context, 
 
 func (UnimplementedParticipantServiceHandler) GetStimulusWord(context.Context, *connect.Request[v1.GetStimulusWordRequest]) (*connect.Response[v1.GetStimulusWordResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.GetStimulusWord is not implemented"))
+}
+
+func (UnimplementedParticipantServiceHandler) StartAssessment(context.Context, *connect.Request[v1.StartAssessmentRequest]) (*connect.Response[v1.StartAssessmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.StartAssessment is not implemented"))
+}
+
+func (UnimplementedParticipantServiceHandler) SignalWordResponse(context.Context, *connect.Request[v1.SignalWordResponseRequest]) (*connect.Response[v1.SignalWordResponseResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.SignalWordResponse is not implemented"))
+}
+
+func (UnimplementedParticipantServiceHandler) SignalStartSession(context.Context, *connect.Request[v1.SignalStartSessionRequest]) (*connect.Response[v1.SignalStartSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.SignalStartSession is not implemented"))
+}
+
+func (UnimplementedParticipantServiceHandler) SignalArtifact(context.Context, *connect.Request[v1.SignalArtifactRequest]) (*connect.Response[v1.SignalArtifactResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.SignalArtifact is not implemented"))
+}
+
+func (UnimplementedParticipantServiceHandler) CompleteAssessment(context.Context, *connect.Request[v1.CompleteAssessmentRequest]) (*connect.Response[v1.CompleteAssessmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.CompleteAssessment is not implemented"))
+}
+
+func (UnimplementedParticipantServiceHandler) GetAssessmentStatus(context.Context, *connect.Request[v1.GetAssessmentStatusRequest]) (*connect.Response[v1.GetAssessmentStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("participant.v1.ParticipantService.GetAssessmentStatus is not implemented"))
 }

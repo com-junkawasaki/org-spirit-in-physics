@@ -33,6 +33,7 @@ class KawasakiStore {
   events = $state<TestEvent[]>([]);
   sessionVideoUrl = $state<string | null>(null);
   participantId = $state<string | null>(null);
+  participantEmail = $state<string | null>(null);
   hasCheckedExisting = $state(false);
   demographics = $state({
     ageGroup: "",
@@ -43,7 +44,12 @@ class KawasakiStore {
   });
 
   constructor() {
-    // Initial load if needed
+    if (typeof window !== 'undefined') {
+      const savedId = localStorage.getItem('participantId');
+      const savedEmail = localStorage.getItem('participantEmail');
+      if (savedId) this.participantId = savedId;
+      if (savedEmail) this.participantEmail = savedEmail;
+    }
   }
 
   initializeParticipant(id?: string, demographics?: any) {
@@ -51,6 +57,10 @@ class KawasakiStore {
       this.participantId = id;
     } else if (!this.participantId) {
       this.participantId = crypto.randomUUID();
+    }
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('participantId', this.participantId);
     }
     
     if (demographics) {
@@ -68,6 +78,11 @@ class KawasakiStore {
       if (response.participant) {
         const p = response.participant;
         this.participantId = p.id;
+        this.participantEmail = email;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('participantId', p.id);
+          localStorage.setItem('participantEmail', email);
+        }
         this.demographics = {
           ageGroup: p.ageGroup || "",
           gender: p.gender || "",
@@ -79,6 +94,9 @@ class KawasakiStore {
           participantId: this.participantId,
           email
         });
+
+        // Ensure Temporal Workflow is running
+        await this.startAssessmentWorkflow();
         return true;
       }
     } catch (e) {
@@ -101,15 +119,41 @@ class KawasakiStore {
         ethnicity: this.demographics.ethnicity,
         incomeRange: this.demographics.incomeRange,
         medicalHistory: this.demographics.medicalHistory,
+        gender: this.demographics.gender,
         isPublic: true
       });
+      this.participantEmail = email;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('participantEmail', email);
+      }
       this.logEvent('participant_created_on_server');
       this.error = null;
+
+      // Start Temporal Assessment Workflow
+      await this.startAssessmentWorkflow();
     } catch (e: any) {
       console.error("Failed to create participant on server:", e);
       this.error = m.participant_creation_failed({ error: e.message || m.unknown_error() });
       this.logEvent('participant_creation_failed', { error: String(e) });
       throw e;
+    }
+  }
+
+  async startAssessmentWorkflow() {
+    if (!this.participantId || !this.participantEmail) return;
+    try {
+      await participantClient.startAssessment({
+        participantId: this.participantId,
+        email: this.participantEmail,
+        ageGroup: this.demographics.ageGroup,
+        gender: this.demographics.gender,
+        ethnicity: this.demographics.ethnicity,
+        incomeRange: this.demographics.incomeRange,
+        medicalHistory: this.demographics.medicalHistory
+      });
+      this.logEvent('assessment_workflow_started');
+    } catch (e) {
+      console.error("Failed to start assessment workflow:", e);
     }
   }
 
@@ -150,6 +194,14 @@ class KawasakiStore {
     this.testStatus = sessionNumber === 1 ? 'session-1-running' : 'session-2-running';
     this.currentWordIndex = 0;
     this.logEvent('session_started', { session: sessionNumber, numberOfWords });
+
+    // Signal Temporal
+    if (this.participantId) {
+      participantClient.signalStartSession({
+        participantId: this.participantId,
+        sessionNumber
+      }).catch(e => console.error("Failed to signal start session:", e));
+    }
   }
 
   completeSession() {
@@ -162,6 +214,12 @@ class KawasakiStore {
       this.testStatus = 'completed';
       this.logEvent('session_2_completed');
       this.logEvent('test_completed');
+
+      // Signal Temporal Completion
+      if (this.participantId) {
+        participantClient.completeAssessment({ participantId: this.participantId })
+          .catch(e => console.error("Failed to signal completion:", e));
+      }
     }
   }
 
@@ -191,6 +249,16 @@ class KawasakiStore {
       reaction: response.reactionTimeMs,
     });
 
+    // Signal Temporal
+    if (this.participantId) {
+      participantClient.signalWordResponse({
+        participantId: this.participantId,
+        stimulusWordId: stimulusWord.id,
+        responseWord: response.responseWord,
+        reactionTimeMs: response.reactionTimeMs
+      }).catch(e => console.error("Failed to signal word response:", e));
+    }
+
     this.advanceToNextWord();
   }
 
@@ -213,6 +281,15 @@ class KawasakiStore {
       });
 
       this.logEvent('artifact_uploaded', { type, url: response.publicUrl, session: sessionIndex });
+
+      // Signal Temporal
+      await participantClient.signalArtifact({
+        participantId: this.participantId,
+        artifactType: type,
+        url: response.publicUrl,
+        session: sessionIndex
+      });
+
       return response.publicUrl;
     } catch (e) {
       console.error(`Failed to upload ${type}:`, e);

@@ -26,6 +26,90 @@ service ParticipantService {
   
   // Get a stimulus word by ID
   rpc GetStimulusWord(GetStimulusWordRequest) returns (GetStimulusWordResponse);
+
+  // --- Assessment Lifecycle (Temporal Integration) ---
+  
+  // Start or resume an assessment workflow
+  rpc StartAssessment(StartAssessmentRequest) returns (StartAssessmentResponse);
+  
+  // Signal a word response to the workflow
+  rpc SignalWordResponse(SignalWordResponseRequest) returns (SignalWordResponseResponse);
+  
+  // Signal start of a session
+  rpc SignalStartSession(SignalStartSessionRequest) returns (SignalStartSessionResponse);
+  
+  // Signal an artifact (video/image) upload
+  rpc SignalArtifact(SignalArtifactRequest) returns (SignalArtifactResponse);
+  
+  // Signal completion of the assessment
+  rpc CompleteAssessment(CompleteAssessmentRequest) returns (CompleteAssessmentResponse);
+  
+  // Get current status of the assessment workflow
+  rpc GetAssessmentStatus(GetAssessmentStatusRequest) returns (GetAssessmentStatusResponse);
+}
+
+message StartAssessmentRequest {
+  string participant_id = 1;
+  string email = 2;
+  optional string age_group = 3;
+  optional string gender = 4;
+  optional string ethnicity = 5;
+  optional string income_range = 6;
+  repeated string medical_history = 7;
+}
+
+message StartAssessmentResponse {
+  string workflow_id = 1;
+  string run_id = 2;
+}
+
+message SignalWordResponseRequest {
+  string participant_id = 1;
+  int32 stimulus_word_id = 2;
+  string response_word = 3;
+  int32 reaction_time_ms = 4;
+}
+
+message SignalWordResponseResponse {
+  bool success = 1;
+}
+
+message SignalStartSessionRequest {
+  string participant_id = 1;
+  int32 session_number = 2;
+}
+
+message SignalStartSessionResponse {
+  bool success = 1;
+}
+
+message SignalArtifactRequest {
+  string participant_id = 1;
+  string artifact_type = 2; // video, image, audio
+  string url = 3;
+  int32 session = 4;
+}
+
+message SignalArtifactResponse {
+  bool success = 1;
+}
+
+message CompleteAssessmentRequest {
+  string participant_id = 1;
+}
+
+message CompleteAssessmentResponse {
+  bool success = 1;
+}
+
+message GetAssessmentStatusRequest {
+  string participant_id = 1;
+}
+
+message GetAssessmentStatusResponse {
+  string status = 1;
+  int32 responses_count = 2;
+  int32 artifacts_count = 3;
 }
 
 message GetParticipantsRequest {
@@ -63,6 +147,7 @@ message CreateParticipantRequest {
   optional string ethnicity = 7;
   optional string income_range = 8;
   repeated string medical_history = 9;
+  optional string gender = 10;
 }
 
 message CreateParticipantResponse {

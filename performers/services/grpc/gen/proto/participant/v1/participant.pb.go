@@ -23,6 +23,662 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type StartAssessmentRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ParticipantId  string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	Email          string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	AgeGroup       *string                `protobuf:"bytes,3,opt,name=age_group,json=ageGroup,proto3,oneof" json:"age_group,omitempty"`
+	Gender         *string                `protobuf:"bytes,4,opt,name=gender,proto3,oneof" json:"gender,omitempty"`
+	Ethnicity      *string                `protobuf:"bytes,5,opt,name=ethnicity,proto3,oneof" json:"ethnicity,omitempty"`
+	IncomeRange    *string                `protobuf:"bytes,6,opt,name=income_range,json=incomeRange,proto3,oneof" json:"income_range,omitempty"`
+	MedicalHistory []string               `protobuf:"bytes,7,rep,name=medical_history,json=medicalHistory,proto3" json:"medical_history,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *StartAssessmentRequest) Reset() {
+	*x = StartAssessmentRequest{}
+	mi := &file_participant_v1_participant_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartAssessmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartAssessmentRequest) ProtoMessage() {}
+
+func (x *StartAssessmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartAssessmentRequest.ProtoReflect.Descriptor instead.
+func (*StartAssessmentRequest) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *StartAssessmentRequest) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *StartAssessmentRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *StartAssessmentRequest) GetAgeGroup() string {
+	if x != nil && x.AgeGroup != nil {
+		return *x.AgeGroup
+	}
+	return ""
+}
+
+func (x *StartAssessmentRequest) GetGender() string {
+	if x != nil && x.Gender != nil {
+		return *x.Gender
+	}
+	return ""
+}
+
+func (x *StartAssessmentRequest) GetEthnicity() string {
+	if x != nil && x.Ethnicity != nil {
+		return *x.Ethnicity
+	}
+	return ""
+}
+
+func (x *StartAssessmentRequest) GetIncomeRange() string {
+	if x != nil && x.IncomeRange != nil {
+		return *x.IncomeRange
+	}
+	return ""
+}
+
+func (x *StartAssessmentRequest) GetMedicalHistory() []string {
+	if x != nil {
+		return x.MedicalHistory
+	}
+	return nil
+}
+
+type StartAssessmentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorkflowId    string                 `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartAssessmentResponse) Reset() {
+	*x = StartAssessmentResponse{}
+	mi := &file_participant_v1_participant_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartAssessmentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartAssessmentResponse) ProtoMessage() {}
+
+func (x *StartAssessmentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartAssessmentResponse.ProtoReflect.Descriptor instead.
+func (*StartAssessmentResponse) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *StartAssessmentResponse) GetWorkflowId() string {
+	if x != nil {
+		return x.WorkflowId
+	}
+	return ""
+}
+
+func (x *StartAssessmentResponse) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+type SignalWordResponseRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ParticipantId  string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	StimulusWordId int32                  `protobuf:"varint,2,opt,name=stimulus_word_id,json=stimulusWordId,proto3" json:"stimulus_word_id,omitempty"`
+	ResponseWord   string                 `protobuf:"bytes,3,opt,name=response_word,json=responseWord,proto3" json:"response_word,omitempty"`
+	ReactionTimeMs int32                  `protobuf:"varint,4,opt,name=reaction_time_ms,json=reactionTimeMs,proto3" json:"reaction_time_ms,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SignalWordResponseRequest) Reset() {
+	*x = SignalWordResponseRequest{}
+	mi := &file_participant_v1_participant_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignalWordResponseRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignalWordResponseRequest) ProtoMessage() {}
+
+func (x *SignalWordResponseRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignalWordResponseRequest.ProtoReflect.Descriptor instead.
+func (*SignalWordResponseRequest) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *SignalWordResponseRequest) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *SignalWordResponseRequest) GetStimulusWordId() int32 {
+	if x != nil {
+		return x.StimulusWordId
+	}
+	return 0
+}
+
+func (x *SignalWordResponseRequest) GetResponseWord() string {
+	if x != nil {
+		return x.ResponseWord
+	}
+	return ""
+}
+
+func (x *SignalWordResponseRequest) GetReactionTimeMs() int32 {
+	if x != nil {
+		return x.ReactionTimeMs
+	}
+	return 0
+}
+
+type SignalWordResponseResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignalWordResponseResponse) Reset() {
+	*x = SignalWordResponseResponse{}
+	mi := &file_participant_v1_participant_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignalWordResponseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignalWordResponseResponse) ProtoMessage() {}
+
+func (x *SignalWordResponseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignalWordResponseResponse.ProtoReflect.Descriptor instead.
+func (*SignalWordResponseResponse) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SignalWordResponseResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type SignalStartSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ParticipantId string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	SessionNumber int32                  `protobuf:"varint,2,opt,name=session_number,json=sessionNumber,proto3" json:"session_number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignalStartSessionRequest) Reset() {
+	*x = SignalStartSessionRequest{}
+	mi := &file_participant_v1_participant_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignalStartSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignalStartSessionRequest) ProtoMessage() {}
+
+func (x *SignalStartSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignalStartSessionRequest.ProtoReflect.Descriptor instead.
+func (*SignalStartSessionRequest) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SignalStartSessionRequest) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *SignalStartSessionRequest) GetSessionNumber() int32 {
+	if x != nil {
+		return x.SessionNumber
+	}
+	return 0
+}
+
+type SignalStartSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignalStartSessionResponse) Reset() {
+	*x = SignalStartSessionResponse{}
+	mi := &file_participant_v1_participant_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignalStartSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignalStartSessionResponse) ProtoMessage() {}
+
+func (x *SignalStartSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignalStartSessionResponse.ProtoReflect.Descriptor instead.
+func (*SignalStartSessionResponse) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SignalStartSessionResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type SignalArtifactRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ParticipantId string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	ArtifactType  string                 `protobuf:"bytes,2,opt,name=artifact_type,json=artifactType,proto3" json:"artifact_type,omitempty"` // video, image, audio
+	Url           string                 `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	Session       int32                  `protobuf:"varint,4,opt,name=session,proto3" json:"session,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignalArtifactRequest) Reset() {
+	*x = SignalArtifactRequest{}
+	mi := &file_participant_v1_participant_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignalArtifactRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignalArtifactRequest) ProtoMessage() {}
+
+func (x *SignalArtifactRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignalArtifactRequest.ProtoReflect.Descriptor instead.
+func (*SignalArtifactRequest) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SignalArtifactRequest) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+func (x *SignalArtifactRequest) GetArtifactType() string {
+	if x != nil {
+		return x.ArtifactType
+	}
+	return ""
+}
+
+func (x *SignalArtifactRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *SignalArtifactRequest) GetSession() int32 {
+	if x != nil {
+		return x.Session
+	}
+	return 0
+}
+
+type SignalArtifactResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignalArtifactResponse) Reset() {
+	*x = SignalArtifactResponse{}
+	mi := &file_participant_v1_participant_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignalArtifactResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignalArtifactResponse) ProtoMessage() {}
+
+func (x *SignalArtifactResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignalArtifactResponse.ProtoReflect.Descriptor instead.
+func (*SignalArtifactResponse) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SignalArtifactResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type CompleteAssessmentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ParticipantId string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteAssessmentRequest) Reset() {
+	*x = CompleteAssessmentRequest{}
+	mi := &file_participant_v1_participant_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteAssessmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteAssessmentRequest) ProtoMessage() {}
+
+func (x *CompleteAssessmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteAssessmentRequest.ProtoReflect.Descriptor instead.
+func (*CompleteAssessmentRequest) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CompleteAssessmentRequest) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+type CompleteAssessmentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteAssessmentResponse) Reset() {
+	*x = CompleteAssessmentResponse{}
+	mi := &file_participant_v1_participant_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteAssessmentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteAssessmentResponse) ProtoMessage() {}
+
+func (x *CompleteAssessmentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteAssessmentResponse.ProtoReflect.Descriptor instead.
+func (*CompleteAssessmentResponse) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CompleteAssessmentResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type GetAssessmentStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ParticipantId string                 `protobuf:"bytes,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAssessmentStatusRequest) Reset() {
+	*x = GetAssessmentStatusRequest{}
+	mi := &file_participant_v1_participant_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAssessmentStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAssessmentStatusRequest) ProtoMessage() {}
+
+func (x *GetAssessmentStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAssessmentStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetAssessmentStatusRequest) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetAssessmentStatusRequest) GetParticipantId() string {
+	if x != nil {
+		return x.ParticipantId
+	}
+	return ""
+}
+
+type GetAssessmentStatusResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Status         string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	ResponsesCount int32                  `protobuf:"varint,2,opt,name=responses_count,json=responsesCount,proto3" json:"responses_count,omitempty"`
+	ArtifactsCount int32                  `protobuf:"varint,3,opt,name=artifacts_count,json=artifactsCount,proto3" json:"artifacts_count,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetAssessmentStatusResponse) Reset() {
+	*x = GetAssessmentStatusResponse{}
+	mi := &file_participant_v1_participant_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAssessmentStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAssessmentStatusResponse) ProtoMessage() {}
+
+func (x *GetAssessmentStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_participant_v1_participant_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAssessmentStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetAssessmentStatusResponse) Descriptor() ([]byte, []int) {
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetAssessmentStatusResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *GetAssessmentStatusResponse) GetResponsesCount() int32 {
+	if x != nil {
+		return x.ResponsesCount
+	}
+	return 0
+}
+
+func (x *GetAssessmentStatusResponse) GetArtifactsCount() int32 {
+	if x != nil {
+		return x.ArtifactsCount
+	}
+	return 0
+}
+
 type GetParticipantsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Optional: filter by is_public (for unauthenticated users)
@@ -33,7 +689,7 @@ type GetParticipantsRequest struct {
 
 func (x *GetParticipantsRequest) Reset() {
 	*x = GetParticipantsRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[0]
+	mi := &file_participant_v1_participant_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +701,7 @@ func (x *GetParticipantsRequest) String() string {
 func (*GetParticipantsRequest) ProtoMessage() {}
 
 func (x *GetParticipantsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[0]
+	mi := &file_participant_v1_participant_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +714,7 @@ func (x *GetParticipantsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetParticipantsRequest.ProtoReflect.Descriptor instead.
 func (*GetParticipantsRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{0}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetParticipantsRequest) GetIsPublic() bool {
@@ -77,7 +733,7 @@ type GetParticipantsResponse struct {
 
 func (x *GetParticipantsResponse) Reset() {
 	*x = GetParticipantsResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[1]
+	mi := &file_participant_v1_participant_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -89,7 +745,7 @@ func (x *GetParticipantsResponse) String() string {
 func (*GetParticipantsResponse) ProtoMessage() {}
 
 func (x *GetParticipantsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[1]
+	mi := &file_participant_v1_participant_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -102,7 +758,7 @@ func (x *GetParticipantsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetParticipantsResponse.ProtoReflect.Descriptor instead.
 func (*GetParticipantsResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{1}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetParticipantsResponse) GetParticipants() []*Participant {
@@ -121,7 +777,7 @@ type GetParticipantRequest struct {
 
 func (x *GetParticipantRequest) Reset() {
 	*x = GetParticipantRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[2]
+	mi := &file_participant_v1_participant_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -133,7 +789,7 @@ func (x *GetParticipantRequest) String() string {
 func (*GetParticipantRequest) ProtoMessage() {}
 
 func (x *GetParticipantRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[2]
+	mi := &file_participant_v1_participant_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -146,7 +802,7 @@ func (x *GetParticipantRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetParticipantRequest.ProtoReflect.Descriptor instead.
 func (*GetParticipantRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{2}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetParticipantRequest) GetId() string {
@@ -165,7 +821,7 @@ type GetParticipantResponse struct {
 
 func (x *GetParticipantResponse) Reset() {
 	*x = GetParticipantResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[3]
+	mi := &file_participant_v1_participant_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -177,7 +833,7 @@ func (x *GetParticipantResponse) String() string {
 func (*GetParticipantResponse) ProtoMessage() {}
 
 func (x *GetParticipantResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[3]
+	mi := &file_participant_v1_participant_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -190,7 +846,7 @@ func (x *GetParticipantResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetParticipantResponse.ProtoReflect.Descriptor instead.
 func (*GetParticipantResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{3}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetParticipantResponse) GetParticipant() *Participant {
@@ -209,7 +865,7 @@ type GetParticipantByEmailRequest struct {
 
 func (x *GetParticipantByEmailRequest) Reset() {
 	*x = GetParticipantByEmailRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[4]
+	mi := &file_participant_v1_participant_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -221,7 +877,7 @@ func (x *GetParticipantByEmailRequest) String() string {
 func (*GetParticipantByEmailRequest) ProtoMessage() {}
 
 func (x *GetParticipantByEmailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[4]
+	mi := &file_participant_v1_participant_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -234,7 +890,7 @@ func (x *GetParticipantByEmailRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetParticipantByEmailRequest.ProtoReflect.Descriptor instead.
 func (*GetParticipantByEmailRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{4}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetParticipantByEmailRequest) GetEmail() string {
@@ -253,7 +909,7 @@ type GetParticipantByEmailResponse struct {
 
 func (x *GetParticipantByEmailResponse) Reset() {
 	*x = GetParticipantByEmailResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[5]
+	mi := &file_participant_v1_participant_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -265,7 +921,7 @@ func (x *GetParticipantByEmailResponse) String() string {
 func (*GetParticipantByEmailResponse) ProtoMessage() {}
 
 func (x *GetParticipantByEmailResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[5]
+	mi := &file_participant_v1_participant_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -278,7 +934,7 @@ func (x *GetParticipantByEmailResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetParticipantByEmailResponse.ProtoReflect.Descriptor instead.
 func (*GetParticipantByEmailResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{5}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetParticipantByEmailResponse) GetParticipant() *Participant {
@@ -299,13 +955,14 @@ type CreateParticipantRequest struct {
 	Ethnicity      *string                `protobuf:"bytes,7,opt,name=ethnicity,proto3,oneof" json:"ethnicity,omitempty"`
 	IncomeRange    *string                `protobuf:"bytes,8,opt,name=income_range,json=incomeRange,proto3,oneof" json:"income_range,omitempty"`
 	MedicalHistory []string               `protobuf:"bytes,9,rep,name=medical_history,json=medicalHistory,proto3" json:"medical_history,omitempty"`
+	Gender         *string                `protobuf:"bytes,10,opt,name=gender,proto3,oneof" json:"gender,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CreateParticipantRequest) Reset() {
 	*x = CreateParticipantRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[6]
+	mi := &file_participant_v1_participant_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -317,7 +974,7 @@ func (x *CreateParticipantRequest) String() string {
 func (*CreateParticipantRequest) ProtoMessage() {}
 
 func (x *CreateParticipantRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[6]
+	mi := &file_participant_v1_participant_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -330,7 +987,7 @@ func (x *CreateParticipantRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateParticipantRequest.ProtoReflect.Descriptor instead.
 func (*CreateParticipantRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{6}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CreateParticipantRequest) GetId() string {
@@ -396,6 +1053,13 @@ func (x *CreateParticipantRequest) GetMedicalHistory() []string {
 	return nil
 }
 
+func (x *CreateParticipantRequest) GetGender() string {
+	if x != nil && x.Gender != nil {
+		return *x.Gender
+	}
+	return ""
+}
+
 type CreateParticipantResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Participant   *Participant           `protobuf:"bytes,1,opt,name=participant,proto3" json:"participant,omitempty"`
@@ -405,7 +1069,7 @@ type CreateParticipantResponse struct {
 
 func (x *CreateParticipantResponse) Reset() {
 	*x = CreateParticipantResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[7]
+	mi := &file_participant_v1_participant_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -417,7 +1081,7 @@ func (x *CreateParticipantResponse) String() string {
 func (*CreateParticipantResponse) ProtoMessage() {}
 
 func (x *CreateParticipantResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[7]
+	mi := &file_participant_v1_participant_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -430,7 +1094,7 @@ func (x *CreateParticipantResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateParticipantResponse.ProtoReflect.Descriptor instead.
 func (*CreateParticipantResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{7}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CreateParticipantResponse) GetParticipant() *Participant {
@@ -448,7 +1112,7 @@ type GetStimulusWordsRequest struct {
 
 func (x *GetStimulusWordsRequest) Reset() {
 	*x = GetStimulusWordsRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[8]
+	mi := &file_participant_v1_participant_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -460,7 +1124,7 @@ func (x *GetStimulusWordsRequest) String() string {
 func (*GetStimulusWordsRequest) ProtoMessage() {}
 
 func (x *GetStimulusWordsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[8]
+	mi := &file_participant_v1_participant_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -473,7 +1137,7 @@ func (x *GetStimulusWordsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStimulusWordsRequest.ProtoReflect.Descriptor instead.
 func (*GetStimulusWordsRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{8}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{20}
 }
 
 type GetStimulusWordsResponse struct {
@@ -485,7 +1149,7 @@ type GetStimulusWordsResponse struct {
 
 func (x *GetStimulusWordsResponse) Reset() {
 	*x = GetStimulusWordsResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[9]
+	mi := &file_participant_v1_participant_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -497,7 +1161,7 @@ func (x *GetStimulusWordsResponse) String() string {
 func (*GetStimulusWordsResponse) ProtoMessage() {}
 
 func (x *GetStimulusWordsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[9]
+	mi := &file_participant_v1_participant_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -510,7 +1174,7 @@ func (x *GetStimulusWordsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStimulusWordsResponse.ProtoReflect.Descriptor instead.
 func (*GetStimulusWordsResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{9}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetStimulusWordsResponse) GetWords() []*StimulusWord {
@@ -529,7 +1193,7 @@ type GetStimulusWordRequest struct {
 
 func (x *GetStimulusWordRequest) Reset() {
 	*x = GetStimulusWordRequest{}
-	mi := &file_participant_v1_participant_proto_msgTypes[10]
+	mi := &file_participant_v1_participant_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -541,7 +1205,7 @@ func (x *GetStimulusWordRequest) String() string {
 func (*GetStimulusWordRequest) ProtoMessage() {}
 
 func (x *GetStimulusWordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[10]
+	mi := &file_participant_v1_participant_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -554,7 +1218,7 @@ func (x *GetStimulusWordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStimulusWordRequest.ProtoReflect.Descriptor instead.
 func (*GetStimulusWordRequest) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{10}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *GetStimulusWordRequest) GetId() int32 {
@@ -573,7 +1237,7 @@ type GetStimulusWordResponse struct {
 
 func (x *GetStimulusWordResponse) Reset() {
 	*x = GetStimulusWordResponse{}
-	mi := &file_participant_v1_participant_proto_msgTypes[11]
+	mi := &file_participant_v1_participant_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -585,7 +1249,7 @@ func (x *GetStimulusWordResponse) String() string {
 func (*GetStimulusWordResponse) ProtoMessage() {}
 
 func (x *GetStimulusWordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[11]
+	mi := &file_participant_v1_participant_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -598,7 +1262,7 @@ func (x *GetStimulusWordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStimulusWordResponse.ProtoReflect.Descriptor instead.
 func (*GetStimulusWordResponse) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{11}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetStimulusWordResponse) GetWord() *StimulusWord {
@@ -628,7 +1292,7 @@ type Participant struct {
 
 func (x *Participant) Reset() {
 	*x = Participant{}
-	mi := &file_participant_v1_participant_proto_msgTypes[12]
+	mi := &file_participant_v1_participant_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -640,7 +1304,7 @@ func (x *Participant) String() string {
 func (*Participant) ProtoMessage() {}
 
 func (x *Participant) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[12]
+	mi := &file_participant_v1_participant_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -653,7 +1317,7 @@ func (x *Participant) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Participant.ProtoReflect.Descriptor instead.
 func (*Participant) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{12}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *Participant) GetId() string {
@@ -752,7 +1416,7 @@ type StimulusWord struct {
 
 func (x *StimulusWord) Reset() {
 	*x = StimulusWord{}
-	mi := &file_participant_v1_participant_proto_msgTypes[13]
+	mi := &file_participant_v1_participant_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -764,7 +1428,7 @@ func (x *StimulusWord) String() string {
 func (*StimulusWord) ProtoMessage() {}
 
 func (x *StimulusWord) ProtoReflect() protoreflect.Message {
-	mi := &file_participant_v1_participant_proto_msgTypes[13]
+	mi := &file_participant_v1_participant_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -777,7 +1441,7 @@ func (x *StimulusWord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StimulusWord.ProtoReflect.Descriptor instead.
 func (*StimulusWord) Descriptor() ([]byte, []int) {
-	return file_participant_v1_participant_proto_rawDescGZIP(), []int{13}
+	return file_participant_v1_participant_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *StimulusWord) GetId() int32 {
@@ -812,7 +1476,54 @@ var File_participant_v1_participant_proto protoreflect.FileDescriptor
 
 const file_participant_v1_participant_proto_rawDesc = "" +
 	"\n" +
-	" participant/v1/participant.proto\x12\x0eparticipant.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\"H\n" +
+	" participant/v1/participant.proto\x12\x0eparticipant.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\"\xc0\x02\n" +
+	"\x16StartAssessmentRequest\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12 \n" +
+	"\tage_group\x18\x03 \x01(\tH\x00R\bageGroup\x88\x01\x01\x12\x1b\n" +
+	"\x06gender\x18\x04 \x01(\tH\x01R\x06gender\x88\x01\x01\x12!\n" +
+	"\tethnicity\x18\x05 \x01(\tH\x02R\tethnicity\x88\x01\x01\x12&\n" +
+	"\fincome_range\x18\x06 \x01(\tH\x03R\vincomeRange\x88\x01\x01\x12'\n" +
+	"\x0fmedical_history\x18\a \x03(\tR\x0emedicalHistoryB\f\n" +
+	"\n" +
+	"_age_groupB\t\n" +
+	"\a_genderB\f\n" +
+	"\n" +
+	"_ethnicityB\x0f\n" +
+	"\r_income_range\"Q\n" +
+	"\x17StartAssessmentResponse\x12\x1f\n" +
+	"\vworkflow_id\x18\x01 \x01(\tR\n" +
+	"workflowId\x12\x15\n" +
+	"\x06run_id\x18\x02 \x01(\tR\x05runId\"\xbb\x01\n" +
+	"\x19SignalWordResponseRequest\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x12(\n" +
+	"\x10stimulus_word_id\x18\x02 \x01(\x05R\x0estimulusWordId\x12#\n" +
+	"\rresponse_word\x18\x03 \x01(\tR\fresponseWord\x12(\n" +
+	"\x10reaction_time_ms\x18\x04 \x01(\x05R\x0ereactionTimeMs\"6\n" +
+	"\x1aSignalWordResponseResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"i\n" +
+	"\x19SignalStartSessionRequest\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x12%\n" +
+	"\x0esession_number\x18\x02 \x01(\x05R\rsessionNumber\"6\n" +
+	"\x1aSignalStartSessionResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x8f\x01\n" +
+	"\x15SignalArtifactRequest\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x12#\n" +
+	"\rartifact_type\x18\x02 \x01(\tR\fartifactType\x12\x10\n" +
+	"\x03url\x18\x03 \x01(\tR\x03url\x12\x18\n" +
+	"\asession\x18\x04 \x01(\x05R\asession\"2\n" +
+	"\x16SignalArtifactResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"B\n" +
+	"\x19CompleteAssessmentRequest\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\"6\n" +
+	"\x1aCompleteAssessmentResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"C\n" +
+	"\x1aGetAssessmentStatusRequest\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\"\x87\x01\n" +
+	"\x1bGetAssessmentStatusResponse\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\x12'\n" +
+	"\x0fresponses_count\x18\x02 \x01(\x05R\x0eresponsesCount\x12'\n" +
+	"\x0fartifacts_count\x18\x03 \x01(\x05R\x0eartifactsCount\"H\n" +
 	"\x16GetParticipantsRequest\x12 \n" +
 	"\tis_public\x18\x01 \x01(\bH\x00R\bisPublic\x88\x01\x01B\f\n" +
 	"\n" +
@@ -826,7 +1537,7 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x1cGetParticipantByEmailRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"^\n" +
 	"\x1dGetParticipantByEmailResponse\x12=\n" +
-	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\xb1\x03\n" +
+	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\xd9\x03\n" +
 	"\x18CreateParticipantRequest\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x127\n" +
@@ -838,7 +1549,9 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\tage_group\x18\x06 \x01(\tH\x02R\bageGroup\x88\x01\x01\x12!\n" +
 	"\tethnicity\x18\a \x01(\tH\x03R\tethnicity\x88\x01\x01\x12&\n" +
 	"\fincome_range\x18\b \x01(\tH\x04R\vincomeRange\x88\x01\x01\x12'\n" +
-	"\x0fmedical_history\x18\t \x03(\tR\x0emedicalHistoryB\x05\n" +
+	"\x0fmedical_history\x18\t \x03(\tR\x0emedicalHistory\x12\x1b\n" +
+	"\x06gender\x18\n" +
+	" \x01(\tH\x05R\x06gender\x88\x01\x01B\x05\n" +
 	"\x03_idB\f\n" +
 	"\n" +
 	"_is_publicB\f\n" +
@@ -846,7 +1559,8 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"_age_groupB\f\n" +
 	"\n" +
 	"_ethnicityB\x0f\n" +
-	"\r_income_range\"Z\n" +
+	"\r_income_rangeB\t\n" +
+	"\a_gender\"Z\n" +
 	"\x19CreateParticipantResponse\x12=\n" +
 	"\vparticipant\x18\x01 \x01(\v2\x1b.participant.v1.ParticipantR\vparticipant\"\x19\n" +
 	"\x17GetStimulusWordsRequest\"N\n" +
@@ -887,14 +1601,21 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1a\n" +
 	"\bjapanese\x18\x02 \x01(\tR\bjapanese\x12\x18\n" +
 	"\aenglish\x18\x03 \x01(\tR\aenglish\x12$\n" +
-	"\rpronunciation\x18\x04 \x01(\tR\rpronunciation2\x84\x05\n" +
+	"\rpronunciation\x18\x04 \x01(\tR\rpronunciation2\x80\n" +
+	"\n" +
 	"\x12ParticipantService\x12b\n" +
 	"\x0fGetParticipants\x12&.participant.v1.GetParticipantsRequest\x1a'.participant.v1.GetParticipantsResponse\x12_\n" +
 	"\x0eGetParticipant\x12%.participant.v1.GetParticipantRequest\x1a&.participant.v1.GetParticipantResponse\x12h\n" +
 	"\x11CreateParticipant\x12(.participant.v1.CreateParticipantRequest\x1a).participant.v1.CreateParticipantResponse\x12t\n" +
 	"\x15GetParticipantByEmail\x12,.participant.v1.GetParticipantByEmailRequest\x1a-.participant.v1.GetParticipantByEmailResponse\x12e\n" +
 	"\x10GetStimulusWords\x12'.participant.v1.GetStimulusWordsRequest\x1a(.participant.v1.GetStimulusWordsResponse\x12b\n" +
-	"\x0fGetStimulusWord\x12&.participant.v1.GetStimulusWordRequest\x1a'.participant.v1.GetStimulusWordResponseBSZQgithub.com/spirit-in-physics/services/grpc/gen/proto/participant/v1;participantv1b\x06proto3"
+	"\x0fGetStimulusWord\x12&.participant.v1.GetStimulusWordRequest\x1a'.participant.v1.GetStimulusWordResponse\x12b\n" +
+	"\x0fStartAssessment\x12&.participant.v1.StartAssessmentRequest\x1a'.participant.v1.StartAssessmentResponse\x12k\n" +
+	"\x12SignalWordResponse\x12).participant.v1.SignalWordResponseRequest\x1a*.participant.v1.SignalWordResponseResponse\x12k\n" +
+	"\x12SignalStartSession\x12).participant.v1.SignalStartSessionRequest\x1a*.participant.v1.SignalStartSessionResponse\x12_\n" +
+	"\x0eSignalArtifact\x12%.participant.v1.SignalArtifactRequest\x1a&.participant.v1.SignalArtifactResponse\x12k\n" +
+	"\x12CompleteAssessment\x12).participant.v1.CompleteAssessmentRequest\x1a*.participant.v1.CompleteAssessmentResponse\x12n\n" +
+	"\x13GetAssessmentStatus\x12*.participant.v1.GetAssessmentStatusRequest\x1a+.participant.v1.GetAssessmentStatusResponseBSZQgithub.com/spirit-in-physics/services/grpc/gen/proto/participant/v1;participantv1b\x06proto3"
 
 var (
 	file_participant_v1_participant_proto_rawDescOnce sync.Once
@@ -908,50 +1629,74 @@ func file_participant_v1_participant_proto_rawDescGZIP() []byte {
 	return file_participant_v1_participant_proto_rawDescData
 }
 
-var file_participant_v1_participant_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_participant_v1_participant_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_participant_v1_participant_proto_goTypes = []any{
-	(*GetParticipantsRequest)(nil),        // 0: participant.v1.GetParticipantsRequest
-	(*GetParticipantsResponse)(nil),       // 1: participant.v1.GetParticipantsResponse
-	(*GetParticipantRequest)(nil),         // 2: participant.v1.GetParticipantRequest
-	(*GetParticipantResponse)(nil),        // 3: participant.v1.GetParticipantResponse
-	(*GetParticipantByEmailRequest)(nil),  // 4: participant.v1.GetParticipantByEmailRequest
-	(*GetParticipantByEmailResponse)(nil), // 5: participant.v1.GetParticipantByEmailResponse
-	(*CreateParticipantRequest)(nil),      // 6: participant.v1.CreateParticipantRequest
-	(*CreateParticipantResponse)(nil),     // 7: participant.v1.CreateParticipantResponse
-	(*GetStimulusWordsRequest)(nil),       // 8: participant.v1.GetStimulusWordsRequest
-	(*GetStimulusWordsResponse)(nil),      // 9: participant.v1.GetStimulusWordsResponse
-	(*GetStimulusWordRequest)(nil),        // 10: participant.v1.GetStimulusWordRequest
-	(*GetStimulusWordResponse)(nil),       // 11: participant.v1.GetStimulusWordResponse
-	(*Participant)(nil),                   // 12: participant.v1.Participant
-	(*StimulusWord)(nil),                  // 13: participant.v1.StimulusWord
-	(*structpb.Struct)(nil),               // 14: google.protobuf.Struct
-	(*timestamppb.Timestamp)(nil),         // 15: google.protobuf.Timestamp
+	(*StartAssessmentRequest)(nil),        // 0: participant.v1.StartAssessmentRequest
+	(*StartAssessmentResponse)(nil),       // 1: participant.v1.StartAssessmentResponse
+	(*SignalWordResponseRequest)(nil),     // 2: participant.v1.SignalWordResponseRequest
+	(*SignalWordResponseResponse)(nil),    // 3: participant.v1.SignalWordResponseResponse
+	(*SignalStartSessionRequest)(nil),     // 4: participant.v1.SignalStartSessionRequest
+	(*SignalStartSessionResponse)(nil),    // 5: participant.v1.SignalStartSessionResponse
+	(*SignalArtifactRequest)(nil),         // 6: participant.v1.SignalArtifactRequest
+	(*SignalArtifactResponse)(nil),        // 7: participant.v1.SignalArtifactResponse
+	(*CompleteAssessmentRequest)(nil),     // 8: participant.v1.CompleteAssessmentRequest
+	(*CompleteAssessmentResponse)(nil),    // 9: participant.v1.CompleteAssessmentResponse
+	(*GetAssessmentStatusRequest)(nil),    // 10: participant.v1.GetAssessmentStatusRequest
+	(*GetAssessmentStatusResponse)(nil),   // 11: participant.v1.GetAssessmentStatusResponse
+	(*GetParticipantsRequest)(nil),        // 12: participant.v1.GetParticipantsRequest
+	(*GetParticipantsResponse)(nil),       // 13: participant.v1.GetParticipantsResponse
+	(*GetParticipantRequest)(nil),         // 14: participant.v1.GetParticipantRequest
+	(*GetParticipantResponse)(nil),        // 15: participant.v1.GetParticipantResponse
+	(*GetParticipantByEmailRequest)(nil),  // 16: participant.v1.GetParticipantByEmailRequest
+	(*GetParticipantByEmailResponse)(nil), // 17: participant.v1.GetParticipantByEmailResponse
+	(*CreateParticipantRequest)(nil),      // 18: participant.v1.CreateParticipantRequest
+	(*CreateParticipantResponse)(nil),     // 19: participant.v1.CreateParticipantResponse
+	(*GetStimulusWordsRequest)(nil),       // 20: participant.v1.GetStimulusWordsRequest
+	(*GetStimulusWordsResponse)(nil),      // 21: participant.v1.GetStimulusWordsResponse
+	(*GetStimulusWordRequest)(nil),        // 22: participant.v1.GetStimulusWordRequest
+	(*GetStimulusWordResponse)(nil),       // 23: participant.v1.GetStimulusWordResponse
+	(*Participant)(nil),                   // 24: participant.v1.Participant
+	(*StimulusWord)(nil),                  // 25: participant.v1.StimulusWord
+	(*structpb.Struct)(nil),               // 26: google.protobuf.Struct
+	(*timestamppb.Timestamp)(nil),         // 27: google.protobuf.Timestamp
 }
 var file_participant_v1_participant_proto_depIdxs = []int32{
-	12, // 0: participant.v1.GetParticipantsResponse.participants:type_name -> participant.v1.Participant
-	12, // 1: participant.v1.GetParticipantResponse.participant:type_name -> participant.v1.Participant
-	12, // 2: participant.v1.GetParticipantByEmailResponse.participant:type_name -> participant.v1.Participant
-	14, // 3: participant.v1.CreateParticipantRequest.agreements:type_name -> google.protobuf.Struct
-	15, // 4: participant.v1.CreateParticipantRequest.agreed_at:type_name -> google.protobuf.Timestamp
-	12, // 5: participant.v1.CreateParticipantResponse.participant:type_name -> participant.v1.Participant
-	13, // 6: participant.v1.GetStimulusWordsResponse.words:type_name -> participant.v1.StimulusWord
-	13, // 7: participant.v1.GetStimulusWordResponse.word:type_name -> participant.v1.StimulusWord
-	15, // 8: participant.v1.Participant.created_at:type_name -> google.protobuf.Timestamp
-	15, // 9: participant.v1.Participant.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 10: participant.v1.ParticipantService.GetParticipants:input_type -> participant.v1.GetParticipantsRequest
-	2,  // 11: participant.v1.ParticipantService.GetParticipant:input_type -> participant.v1.GetParticipantRequest
-	6,  // 12: participant.v1.ParticipantService.CreateParticipant:input_type -> participant.v1.CreateParticipantRequest
-	4,  // 13: participant.v1.ParticipantService.GetParticipantByEmail:input_type -> participant.v1.GetParticipantByEmailRequest
-	8,  // 14: participant.v1.ParticipantService.GetStimulusWords:input_type -> participant.v1.GetStimulusWordsRequest
-	10, // 15: participant.v1.ParticipantService.GetStimulusWord:input_type -> participant.v1.GetStimulusWordRequest
-	1,  // 16: participant.v1.ParticipantService.GetParticipants:output_type -> participant.v1.GetParticipantsResponse
-	3,  // 17: participant.v1.ParticipantService.GetParticipant:output_type -> participant.v1.GetParticipantResponse
-	7,  // 18: participant.v1.ParticipantService.CreateParticipant:output_type -> participant.v1.CreateParticipantResponse
-	5,  // 19: participant.v1.ParticipantService.GetParticipantByEmail:output_type -> participant.v1.GetParticipantByEmailResponse
-	9,  // 20: participant.v1.ParticipantService.GetStimulusWords:output_type -> participant.v1.GetStimulusWordsResponse
-	11, // 21: participant.v1.ParticipantService.GetStimulusWord:output_type -> participant.v1.GetStimulusWordResponse
-	16, // [16:22] is the sub-list for method output_type
-	10, // [10:16] is the sub-list for method input_type
+	24, // 0: participant.v1.GetParticipantsResponse.participants:type_name -> participant.v1.Participant
+	24, // 1: participant.v1.GetParticipantResponse.participant:type_name -> participant.v1.Participant
+	24, // 2: participant.v1.GetParticipantByEmailResponse.participant:type_name -> participant.v1.Participant
+	26, // 3: participant.v1.CreateParticipantRequest.agreements:type_name -> google.protobuf.Struct
+	27, // 4: participant.v1.CreateParticipantRequest.agreed_at:type_name -> google.protobuf.Timestamp
+	24, // 5: participant.v1.CreateParticipantResponse.participant:type_name -> participant.v1.Participant
+	25, // 6: participant.v1.GetStimulusWordsResponse.words:type_name -> participant.v1.StimulusWord
+	25, // 7: participant.v1.GetStimulusWordResponse.word:type_name -> participant.v1.StimulusWord
+	27, // 8: participant.v1.Participant.created_at:type_name -> google.protobuf.Timestamp
+	27, // 9: participant.v1.Participant.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 10: participant.v1.ParticipantService.GetParticipants:input_type -> participant.v1.GetParticipantsRequest
+	14, // 11: participant.v1.ParticipantService.GetParticipant:input_type -> participant.v1.GetParticipantRequest
+	18, // 12: participant.v1.ParticipantService.CreateParticipant:input_type -> participant.v1.CreateParticipantRequest
+	16, // 13: participant.v1.ParticipantService.GetParticipantByEmail:input_type -> participant.v1.GetParticipantByEmailRequest
+	20, // 14: participant.v1.ParticipantService.GetStimulusWords:input_type -> participant.v1.GetStimulusWordsRequest
+	22, // 15: participant.v1.ParticipantService.GetStimulusWord:input_type -> participant.v1.GetStimulusWordRequest
+	0,  // 16: participant.v1.ParticipantService.StartAssessment:input_type -> participant.v1.StartAssessmentRequest
+	2,  // 17: participant.v1.ParticipantService.SignalWordResponse:input_type -> participant.v1.SignalWordResponseRequest
+	4,  // 18: participant.v1.ParticipantService.SignalStartSession:input_type -> participant.v1.SignalStartSessionRequest
+	6,  // 19: participant.v1.ParticipantService.SignalArtifact:input_type -> participant.v1.SignalArtifactRequest
+	8,  // 20: participant.v1.ParticipantService.CompleteAssessment:input_type -> participant.v1.CompleteAssessmentRequest
+	10, // 21: participant.v1.ParticipantService.GetAssessmentStatus:input_type -> participant.v1.GetAssessmentStatusRequest
+	13, // 22: participant.v1.ParticipantService.GetParticipants:output_type -> participant.v1.GetParticipantsResponse
+	15, // 23: participant.v1.ParticipantService.GetParticipant:output_type -> participant.v1.GetParticipantResponse
+	19, // 24: participant.v1.ParticipantService.CreateParticipant:output_type -> participant.v1.CreateParticipantResponse
+	17, // 25: participant.v1.ParticipantService.GetParticipantByEmail:output_type -> participant.v1.GetParticipantByEmailResponse
+	21, // 26: participant.v1.ParticipantService.GetStimulusWords:output_type -> participant.v1.GetStimulusWordsResponse
+	23, // 27: participant.v1.ParticipantService.GetStimulusWord:output_type -> participant.v1.GetStimulusWordResponse
+	1,  // 28: participant.v1.ParticipantService.StartAssessment:output_type -> participant.v1.StartAssessmentResponse
+	3,  // 29: participant.v1.ParticipantService.SignalWordResponse:output_type -> participant.v1.SignalWordResponseResponse
+	5,  // 30: participant.v1.ParticipantService.SignalStartSession:output_type -> participant.v1.SignalStartSessionResponse
+	7,  // 31: participant.v1.ParticipantService.SignalArtifact:output_type -> participant.v1.SignalArtifactResponse
+	9,  // 32: participant.v1.ParticipantService.CompleteAssessment:output_type -> participant.v1.CompleteAssessmentResponse
+	11, // 33: participant.v1.ParticipantService.GetAssessmentStatus:output_type -> participant.v1.GetAssessmentStatusResponse
+	22, // [22:34] is the sub-list for method output_type
+	10, // [10:22] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -963,15 +1708,16 @@ func file_participant_v1_participant_proto_init() {
 		return
 	}
 	file_participant_v1_participant_proto_msgTypes[0].OneofWrappers = []any{}
-	file_participant_v1_participant_proto_msgTypes[6].OneofWrappers = []any{}
 	file_participant_v1_participant_proto_msgTypes[12].OneofWrappers = []any{}
+	file_participant_v1_participant_proto_msgTypes[18].OneofWrappers = []any{}
+	file_participant_v1_participant_proto_msgTypes[24].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_participant_v1_participant_proto_rawDesc), len(file_participant_v1_participant_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -1,7 +1,21 @@
-import { proxyActivities } from '@temporalio/workflow';
+import { 
+  proxyActivities, 
+  defineSignal, 
+  defineQuery, 
+  setHandler, 
+  condition 
+} from '@temporalio/workflow';
 import type * as activities from './activities';
 import type * as bddActivities from './bdd_activities';
-import { WordNode, WordLink, TimelineDataPoint, AnalysisResults } from './types';
+import { 
+  WordNode, 
+  WordLink, 
+  TimelineDataPoint, 
+  AnalysisResults,
+  AssessmentState,
+  WordResponse,
+  ParticipantDemographics
+} from './types';
 
 const {
   runStructureAnalysisActivity,
@@ -9,6 +23,73 @@ const {
 } = proxyActivities<typeof activities>({
   startToCloseTimeout: '1 minute',
 });
+
+// Signals for Jung Assessment
+export const updateConsentSignal = defineSignal<[ParticipantDemographics]>('updateConsent');
+export const startSessionSignal = defineSignal<[number]>('startSession');
+export const recordWordResponseSignal = defineSignal<[WordResponse]>('recordWordResponse');
+export const updateArtifactSignal = defineSignal<[{ type: string; url: string; session: number }]>('updateArtifact');
+export const completeAssessmentSignal = defineSignal('completeAssessment');
+
+// Queries for Jung Assessment
+export const getStatusQuery = defineQuery<AssessmentState>('getStatus');
+
+/**
+ * Workflow for Jung Voice Assessment
+ */
+export async function jungVoiceAssessmentWorkflow(participantId: string, email: string): Promise<AssessmentState> {
+  const state: AssessmentState = {
+    participantId,
+    email,
+    status: 'idle',
+    demographics: {
+      ageGroup: '',
+      gender: '',
+      ethnicity: '',
+      incomeRange: '',
+      medicalHistory: []
+    },
+    responses: [],
+    artifacts: []
+  };
+
+  let isComplete = false;
+
+  // Set up handlers
+  setHandler(updateConsentSignal, (demographics) => {
+    state.demographics = demographics;
+    if (state.status === 'idle') {
+      state.status = 'preflight';
+    }
+  });
+
+  setHandler(startSessionSignal, (sessionNumber) => {
+    state.status = sessionNumber === 1 ? 'session-1-running' : 'session-2-running';
+  });
+
+  setHandler(recordWordResponseSignal, (response) => {
+    state.responses.push(response);
+  });
+
+  setHandler(updateArtifactSignal, (artifact) => {
+    state.artifacts.push(artifact as any);
+  });
+
+  setHandler(completeAssessmentSignal, () => {
+    isComplete = true;
+    state.status = 'completed';
+  });
+
+  setHandler(getStatusQuery, () => state);
+
+  // Initial wait for consent or session start
+  await condition(() => state.status !== 'idle');
+
+  // Wait for the entire assessment to finish
+  await condition(() => isComplete, '2 hours'); // Safety timeout
+
+  return state;
+}
 
 // Activities from the Go worker
 const goActivities = proxyActivities({

@@ -14,11 +14,25 @@
   let recognizedText = $state("");
   let isListening = $state(false);
   let wordDisplayedTime = $state(0);
+  let isProcessingResponse = false;
   
   let recognition: any = null;
   let mediaRecorder: MediaRecorder | null = null;
   let videoChunks: Blob[] = [];
   let responseTimer: any = null;
+
+  function cleanupRecognition() {
+    if (recognition) {
+      try {
+        recognition.onstart = null;
+        recognition.onend = null;
+        recognition.onresult = null;
+        recognition.onerror = null;
+        recognition.stop();
+      } catch (e) {}
+      recognition = null;
+    }
+  }
 
   // Constants
   const WELCOME_MESSAGE = m.welcome_message();
@@ -88,8 +102,12 @@
 
   // Recording logic
   async function startRecording(session: 1 | 2) {
-    if (!kawasakiStore.stream) return;
+    if (!kawasakiStore.stream) {
+      console.warn("No stream available for recording");
+      return;
+    }
 
+    console.log(`Starting recording for session ${session}`);
     // Take a snapshot at the start of recording
     try {
       captureSnapshot(session);
@@ -151,18 +169,23 @@
   }
 
   function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
       try {
         mediaRecorder.stop();
       } catch (e) {
         console.error("Failed to stop MediaRecorder", e);
       }
     }
+    mediaRecorder = null;
   }
 
   // Session control
   async function handleStartSession() {
     try {
+      // Just in case something is already recording
+      stopRecording();
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       await startRecording(kawasakiStore.currentSession);
       kawasakiStore.startSession(100);
     } catch (e) {
@@ -173,10 +196,14 @@
 
   async function handleStartNextSession() {
     try {
+      stopRecording();
+      // Wait a bit for MediaRecorder to fully stop and resource to be released
+      await new Promise(resolve => setTimeout(resolve, 500));
       await startRecording(kawasakiStore.currentSession);
       kawasakiStore.startSession(100);
     } catch (e) {
       console.error("Error starting next session:", e);
+      kawasakiStore.error = "Error starting next session: " + (e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -192,9 +219,7 @@
       return;
     }
 
-    if (recognition) {
-      try { recognition.stop(); } catch (e) {}
-    }
+    cleanupRecognition();
 
     recognition = new SpeechRecognition();
     recognition.lang = languageTag() === 'ja' ? 'ja-JP' : 'en-US';
@@ -238,12 +263,19 @@
   }
 
   function handleResponse(response: string) {
+    if (isProcessingResponse) return;
+    isProcessingResponse = true;
+
+    if (responseTimer) {
+      clearTimeout(responseTimer);
+      responseTimer = null;
+    }
+    
     const reactionTimeMs = Date.now() - wordDisplayedTime;
     kawasakiStore.recordWordResponse({
       responseWord: response,
       reactionTimeMs
     });
-    if (responseTimer) clearTimeout(responseTimer);
     recognizedText = "";
   }
 
@@ -253,6 +285,7 @@
     const word = kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex];
 
     if (isRunning && word) {
+      isProcessingResponse = false;
       const stimulusWord = languageTag() === 'ja' ? word.japanese : word.english;
       kawasakiStore.logEvent('word_displayed', { word: stimulusWord, id: word.id });
       wordDisplayedTime = Date.now();
@@ -278,17 +311,16 @@
       // Timeout for no response
       responseTimer = setTimeout(() => {
         kawasakiStore.logEvent('response_timeout', { word: stimulusWord });
-        if (recognition) {
-          try { recognition.stop(); } catch (e) {}
-        }
+        cleanupRecognition();
         kawasakiStore.advanceToNextWord();
       }, 10000);
 
       return () => {
-        if (responseTimer) clearTimeout(responseTimer);
-        if (recognition) {
-          try { recognition.stop(); } catch (e) {}
+        if (responseTimer) {
+          clearTimeout(responseTimer);
+          responseTimer = null;
         }
+        cleanupRecognition();
         speechSynthesis.cancel();
       };
     }

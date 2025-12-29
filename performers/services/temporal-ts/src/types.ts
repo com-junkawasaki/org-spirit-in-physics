@@ -88,3 +88,37 @@ export interface AnalysisResults {
   overall_density: number
 }
 
+// Types for Jung Voice Assessment Workflow
+export interface StimulusWord {
+  id: number;
+  japanese: string;
+  english: string;
+}
+
+export interface WordResponse {
+  stimulusWord: StimulusWord;
+  responseWord: string;
+  reactionTimeMs: number;
+}
+
+export interface ParticipantDemographics {
+  ageGroup: string;
+  gender: string;
+  ethnicity: string;
+  incomeRange: string;
+  medicalHistory: string[];
+}
+
+export interface AssessmentState {
+  participantId: string;
+  email: string;
+  status: 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
+  demographics: ParticipantDemographics;
+  responses: WordResponse[];
+  artifacts: Array<{
+    type: 'video' | 'image' | 'audio';
+    url: string;
+    session: number;
+  }>;
+}
+

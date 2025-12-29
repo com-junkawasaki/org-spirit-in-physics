@@ -257,3 +257,137 @@ func (h *ParticipantHandler) GetStimulusWord(
 
 	return connect.NewResponse(resp), nil
 }
+
+// StartAssessment starts a new assessment workflow
+func (h *ParticipantHandler) StartAssessment(
+	ctx context.Context,
+	req *connect.Request[participantv1.StartAssessmentRequest],
+) (*connect.Response[participantv1.StartAssessmentResponse], error) {
+	if h.temporalClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, connect.NewError(connect.CodeInternal, nil))
+	}
+
+	workflowID := "assessment-" + req.Msg.ParticipantId
+	workflowOptions := client.StartWorkflowOptions{
+		ID:        workflowID,
+		TaskQueue: "visualization-analysis-queue",
+	}
+
+	// In Go SDK, when calling a TS workflow, we just use the string name
+	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "jungVoiceAssessmentWorkflow", req.Msg.ParticipantId, req.Msg.Email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	// Signal demographics
+	demographics := map[string]interface{}{
+		"ageGroup":       req.Msg.GetAgeGroup(),
+		"gender":         req.Msg.GetGender(),
+		"ethnicity":      req.Msg.GetEthnicity(),
+		"incomeRange":    req.Msg.GetIncomeRange(),
+		"medicalHistory": req.Msg.GetMedicalHistory(),
+	}
+	_ = h.temporalClient.SignalWorkflow(ctx, workflowID, "", "updateConsent", demographics)
+
+	return connect.NewResponse(&participantv1.StartAssessmentResponse{
+		WorkflowId: run.GetID(),
+		RunId:      run.GetRunID(),
+	}), nil
+}
+
+// SignalWordResponse signals a response to the workflow
+func (h *ParticipantHandler) SignalWordResponse(
+	ctx context.Context,
+	req *connect.Request[participantv1.SignalWordResponseRequest],
+) (*connect.Response[participantv1.SignalWordResponseResponse], error) {
+	if h.temporalClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, nil)
+	}
+
+	workflowID := "assessment-" + req.Msg.ParticipantId
+	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "recordWordResponse", req.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&participantv1.SignalWordResponseResponse{Success: true}), nil
+}
+
+// SignalStartSession signals start of a session
+func (h *ParticipantHandler) SignalStartSession(
+	ctx context.Context,
+	req *connect.Request[participantv1.SignalStartSessionRequest],
+) (*connect.Response[participantv1.SignalStartSessionResponse], error) {
+	if h.temporalClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, nil)
+	}
+
+	workflowID := "assessment-" + req.Msg.ParticipantId
+	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "startSession", req.Msg.SessionNumber)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&participantv1.SignalStartSessionResponse{Success: true}), nil
+}
+
+// SignalArtifact signals an artifact upload
+func (h *ParticipantHandler) SignalArtifact(
+	ctx context.Context,
+	req *connect.Request[participantv1.SignalArtifactRequest],
+) (*connect.Response[participantv1.SignalArtifactResponse], error) {
+	if h.temporalClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, nil)
+	}
+
+	workflowID := "assessment-" + req.Msg.ParticipantId
+	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "updateArtifact", req.Msg)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&participantv1.SignalArtifactResponse{Success: true}), nil
+}
+
+// CompleteAssessment signals completion
+func (h *ParticipantHandler) CompleteAssessment(
+	ctx context.Context,
+	req *connect.Request[participantv1.CompleteAssessmentRequest],
+) (*connect.Response[participantv1.CompleteAssessmentResponse], error) {
+	if h.temporalClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, nil)
+	}
+
+	workflowID := "assessment-" + req.Msg.ParticipantId
+	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "completeAssessment", nil)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&participantv1.CompleteAssessmentResponse{Success: true}), nil
+}
+
+// GetAssessmentStatus returns the current status
+func (h *ParticipantHandler) GetAssessmentStatus(
+	ctx context.Context,
+	req *connect.Request[participantv1.GetAssessmentStatusRequest],
+) (*connect.Response[participantv1.GetAssessmentStatusResponse], error) {
+	if h.temporalClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, nil)
+	}
+
+	workflowID := "assessment-" + req.Msg.ParticipantId
+	queryResp, err := h.temporalClient.QueryWorkflow(ctx, workflowID, "", "getStatus")
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	var state any
+	if err := queryResp.Get(&state); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+
+	return connect.NewResponse(&participantv1.GetAssessmentStatusResponse{
+		Status: "active",
+	}), nil
+}

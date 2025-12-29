@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateParticipantRequest, CreateParticipantResponse, GetParticipantByEmailRequest, GetParticipantByEmailResponse, GetParticipantRequest, GetParticipantResponse, GetParticipantsRequest, GetParticipantsResponse, GetStimulusWordRequest, GetStimulusWordResponse, GetStimulusWordsRequest, GetStimulusWordsResponse } from "./participant_pb.js";
+import { CompleteAssessmentRequest, CompleteAssessmentResponse, CreateParticipantRequest, CreateParticipantResponse, GetAssessmentStatusRequest, GetAssessmentStatusResponse, GetParticipantByEmailRequest, GetParticipantByEmailResponse, GetParticipantRequest, GetParticipantResponse, GetParticipantsRequest, GetParticipantsResponse, GetStimulusWordRequest, GetStimulusWordResponse, GetStimulusWordsRequest, GetStimulusWordsResponse, SignalArtifactRequest, SignalArtifactResponse, SignalStartSessionRequest, SignalStartSessionResponse, SignalWordResponseRequest, SignalWordResponseResponse, StartAssessmentRequest, StartAssessmentResponse } from "./participant_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -78,6 +78,72 @@ export const ParticipantService = {
       name: "GetStimulusWord",
       I: GetStimulusWordRequest,
       O: GetStimulusWordResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Start or resume an assessment workflow
+     *
+     * @generated from rpc participant.v1.ParticipantService.StartAssessment
+     */
+    startAssessment: {
+      name: "StartAssessment",
+      I: StartAssessmentRequest,
+      O: StartAssessmentResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Signal a word response to the workflow
+     *
+     * @generated from rpc participant.v1.ParticipantService.SignalWordResponse
+     */
+    signalWordResponse: {
+      name: "SignalWordResponse",
+      I: SignalWordResponseRequest,
+      O: SignalWordResponseResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Signal start of a session
+     *
+     * @generated from rpc participant.v1.ParticipantService.SignalStartSession
+     */
+    signalStartSession: {
+      name: "SignalStartSession",
+      I: SignalStartSessionRequest,
+      O: SignalStartSessionResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Signal an artifact (video/image) upload
+     *
+     * @generated from rpc participant.v1.ParticipantService.SignalArtifact
+     */
+    signalArtifact: {
+      name: "SignalArtifact",
+      I: SignalArtifactRequest,
+      O: SignalArtifactResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Signal completion of the assessment
+     *
+     * @generated from rpc participant.v1.ParticipantService.CompleteAssessment
+     */
+    completeAssessment: {
+      name: "CompleteAssessment",
+      I: CompleteAssessmentRequest,
+      O: CompleteAssessmentResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Get current status of the assessment workflow
+     *
+     * @generated from rpc participant.v1.ParticipantService.GetAssessmentStatus
+     */
+    getAssessmentStatus: {
+      name: "GetAssessmentStatus",
+      I: GetAssessmentStatusRequest,
+      O: GetAssessmentStatusResponse,
       kind: MethodKind.Unary,
     },
   }

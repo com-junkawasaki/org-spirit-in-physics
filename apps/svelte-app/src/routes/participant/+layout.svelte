@@ -12,22 +12,33 @@
   const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
   const user = $derived(clerk?.user);
 
-  const isLanding = $derived(page.url.pathname === '/participant' || page.url.pathname === '/participant/');
-  const isConsent = $derived(page.url.pathname === '/participant/consent');
+  const isLanding = $derived(page.url.pathname.replace(/\/$/, '') === '/participant');
+  const isConsent = $derived(page.url.pathname.replace(/\/$/, '') === '/participant/consent');
 
   // Check for existing participant and skip consent if registered
   $effect(() => {
-    if (browser && user && !kawasakiStore.hasCheckedExisting && (isLanding || isConsent)) {
-      const email = user.primaryEmailAddress?.emailAddress;
-      if (email) {
-        kawasakiStore.checkExistingParticipant(email).then((exists) => {
+    if (browser && (isLanding || isConsent)) {
+      // If we've already checked and found someone, or we're already checked and no user is logged in yet,
+      // we might want to skip. But if a user logs in, we should check again.
+      
+      const clerkEmail = user?.primaryEmailAddress?.emailAddress;
+      const localEmail = kawasakiStore.participantEmail;
+      const emailToCheck = clerkEmail || localEmail;
+
+      if (emailToCheck && !kawasakiStore.hasCheckedExisting) {
+        kawasakiStore.checkExistingParticipant(emailToCheck).then((exists) => {
           kawasakiStore.hasCheckedExisting = true;
           if (exists) {
             console.log("Existing participant found, skipping consent");
-            kawasakiStore.startPreflight();
-            goto("/participant/test");
+            if (isConsent || isLanding) {
+              kawasakiStore.startPreflight();
+              goto("/participant/test");
+            }
           }
         });
+      } else if (!emailToCheck) {
+        // No email available to check yet
+        kawasakiStore.hasCheckedExisting = false; 
       }
     }
   });
