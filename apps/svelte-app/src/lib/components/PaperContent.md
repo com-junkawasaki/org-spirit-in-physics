@@ -51,7 +51,7 @@
 {m.theory_text_2_2()}
 
 <div class="equation-block">
-  $ S = \\{V, E, T\\} $
+  $ S = &#92;&#123;V, E, T&#92;&#125; $
   
   <p class="equation-desc">
     {m.theory_equation_desc_1()}
@@ -61,13 +61,13 @@
 The energy potential of an edge connecting two informational vertices ($w_I, w_O$) is defined as the negative logarithm of their association probability, reflecting the information content or "surprise" of their connection:
 
 <div class="equation-block">
-  $ E = -\\ln P(w_O | w_I),\\; V = \\{\\vec{w_I}, \\vec{w_O}, ...\\},\\; T = \\text{time axis} $
+  $ E = -&#92;ln P(w_O | w_I),&#92;; V = &#92;&#123;&#92;vec&#123;w_I&#125;, &#92;vec&#123;w_O&#125;, ...&#92;&#125;,&#92;; T = &#92;text&#123;time axis&#125; $
 </div>
 
 {m.theory_text_2_2_2()}
 
 <div class="equation-block">
-  $ \\psi(S) = \\frac{\\delta E(S)}{\\delta S} $
+  $ &#92;psi(S) = &#92;frac&#123;&#92;delta E(S)&#125;&#123;&#92;delta S&#125; $
 </div>
 
 <h3>{m.theory_title_2_3()}</h3>
@@ -75,7 +75,7 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 {m.theory_text_2_3()}
 
 <div class="equation-block">
-  $ \\frac{dS}{dt} = \\frac{dS_{internal}}{dt} + \\frac{dS_{exchange}}{dt} $
+  $ &#92;frac&#123;dS&#125;&#123;dt&#125; = &#92;frac&#123;dS_&#123;internal&#125;&#125;&#123;dt&#125; + &#92;frac&#123;dS_&#123;exchange&#125;&#125;&#123;dt&#125; $
 </div>
 
 <h2 id="structural">{m.structural()}</h2>
@@ -104,13 +104,13 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 <div class="pattern-box spirit-type">
   <h4>{m.spirit_type_title()}</h4>
   <p>{m.spirit_type_text()}</p>
-  <p class="formula-inline">\\( SpiritType = Archetype(Gene, Meme, Field) \\)</p>
+  <p class="formula-inline">&#92;( SpiritType = Archetype(Gene, Meme, Field) &#92;)</p>
 </div>
 
 <div class="pattern-box ghost-pattern">
   <h4>{m.ghost_pattern_title()}</h4>
   <p>{m.ghost_pattern_text()}</p>
-  <p class="formula-inline">\\( GhostPattern = f(Shadow, CollectiveArchetype, Meme, Field) \\)</p>
+  <p class="formula-inline">&#92;( GhostPattern = f(Shadow, CollectiveArchetype, Meme, Field) &#92;)</p>
 </div>
 
 <h2 id="measurement">{m.measurement()}</h2>
@@ -118,18 +118,18 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 {m.measurement_text_1()}
 
 <div class="equation-block large">
-  $$ P(w_O | w_I) = \\frac{\\exp(\\vec{w_I} \\cdot \\vec{w_O}) \\cdot [r(w_I, w_O)]^\\alpha \\cdot \\exp(\\gamma \\frac{\\Delta SP}{\\lambda}) \\cdot \\exp(\\eta F)}{\\sum_{j} \\exp(\\vec{w_I} \\cdot \\vec{w_j}) \\cdot [r(w_I, w_j)]^\\alpha \\cdot \\exp(\\gamma \\frac{\\Delta SP}{\\lambda}) \\cdot \\exp(\\eta F)} $$
+  $$ P(w_O | w_I) = &#92;frac&#123;&#92;exp(&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_O&#125;) &#92;cdot [r(w_I, w_O)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125;&#123;&#92;sum_&#123;j&#125; &#92;exp(&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_j&#125;) &#92;cdot [r(w_I, w_j)]^&#123;&#92;alpha&#125; &#92;cdot &#92;exp(&#92;gamma &#92;frac&#123;&#92;Delta SP&#125;&#123;&#92;lambda&#125;) &#92;cdot &#92;exp(&#92;eta F)&#125; $$
 </div>
 
 <div class="component-list">
   <div class="component-item">
-    <strong>{m.semantic_component_title()} (\\vec{w_I} \\cdot \\vec{w_O}):</strong> {m.semantic_component_text()}
+    <strong>{m.semantic_component_title()} (&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_O&#125;):</strong> {m.semantic_component_text()}
   </div>
   <div class="component-item">
     <strong>{m.behavioural_component_title()} ($r(w_I, w_O)$):</strong> {m.behavioural_component_text()}
   </div>
   <div class="component-item">
-    <strong>{m.physiological_component_title()} (Emotion $F$, Arousal $\\Delta SP$):</strong> {m.physiological_component_text()}
+    <strong>{m.physiological_component_title()} (Emotion $F$, Arousal &#92;Delta SP):</strong> {m.physiological_component_text()}
   </div>
 </div>
 

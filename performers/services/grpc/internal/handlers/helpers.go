@@ -49,3 +49,10 @@ func getStringValue(s *string) string {
 	}
 	return ""
 }
+
+func pgTextToString(t pgtype.Text) string {
+	if t.Valid {
+		return t.String
+	}
+	return ""
+}

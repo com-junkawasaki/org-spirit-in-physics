@@ -203,7 +203,7 @@
             measurementType: p.m
           }));
 
-          const mapped = {
+          const mapped: TimelineDataPoint = {
             timestamp,
             word: item.w || item.word || '',
             reactionTime: (item.rt ?? item.reactionTime ?? item.reaction_time ?? 0) * 1000,
@@ -215,14 +215,15 @@
             metadata: {}
           };
           return mapped;
-        }).filter((d: any) => d !== null);
+        }).filter((d: any): d is TimelineDataPoint => d !== null);
 
         if (response.analysis) {
+          const analysis = response.analysis as any;
           analysisResults = {
-            gapAreas: (response.analysis.gapAreas ?? response.analysis.gap_areas ?? []) as any,
-            densityRegions: (response.analysis.densityRegions ?? response.analysis.density_regions ?? []) as any,
-            duplicates: (response.analysis.duplicates ?? response.analysis.duplicates ?? []) as any,
-            overallDensity: response.analysis.overallDensity ?? response.analysis.overall_density ?? 0
+            gapAreas: (analysis.gapAreas ?? analysis.gap_areas ?? []) as any,
+            densityRegions: (analysis.densityRegions ?? analysis.density_regions ?? []) as any,
+            duplicates: (analysis.duplicates ?? analysis.duplicates ?? []) as any,
+            overallDensity: analysis.overallDensity ?? analysis.overall_density ?? 0
           };
         }
 
@@ -356,7 +357,7 @@
   let hoveredInfo = $state<{ node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } } | null>(null);
   let pinnedItems = $state<Array<{ node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } }>>([]);
 
-  let analysisResults: AnalysisResults = $state({
+  let analysisResults = $state<AnalysisResults>({
     gapAreas: [],
     densityRegions: [],
     duplicates: [],
@@ -541,6 +542,7 @@
                     <button 
                       class="absolute top-4 right-4 text-gray-400 hover:text-red-500 opacity-0 group-hover/pinned:opacity-100 transition-opacity"
                       onclick={() => pinnedItems = pinnedItems.filter((_, i) => i !== idx)}
+                      title="Remove pinned item"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -669,10 +671,10 @@
                 <div class="pt-6 border-t border-gray-100 dark:border-gray-800">
                   <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Structural Analysis</h4>
                   <StructureAnalysisPanel 
-                    gapAreas={analysisResults.gapAreas} 
-                    densityRegions={analysisResults.densityRegions} 
+                    gapAreas={analysisResults.gapAreas ?? []} 
+                    densityRegions={analysisResults.densityRegions ?? []}
                     duplicates={analysisResults.duplicates} 
-                    overallDensity={analysisResults.overallDensity}
+                    overallDensity={analysisResults.overallDensity ?? 0}
                   />
                 </div>
               </div>

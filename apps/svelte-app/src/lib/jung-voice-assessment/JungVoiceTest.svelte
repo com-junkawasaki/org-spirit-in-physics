@@ -301,7 +301,15 @@
 
     if (isRunning && word) {
       isProcessingResponse = false;
-      const stimulusWord = languageTag() === 'ja' ? word.japanese : word.english;
+      const lang = languageTag();
+      let stimulusWord = word.english;
+      if (lang === 'ja') stimulusWord = word.japanese;
+      else if (lang === 'fr') stimulusWord = word.french || word.english;
+      else if (lang === 'es') stimulusWord = word.spanish || word.english;
+      else if (lang === 'ru') stimulusWord = word.russian || word.english;
+      else if (lang === 'ar') stimulusWord = word.arabic || word.english;
+      else if (lang === 'zh') stimulusWord = word.chinese || word.english;
+
       kawasakiStore.logEvent('word_displayed', { word: stimulusWord, id: word.id });
       wordDisplayedTime = Date.now();
       recognizedText = "";
@@ -403,7 +411,17 @@
       </div>
 
       {#if kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
-        <h1 class="stimulus-word">{languageTag() === 'ja' ? kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex].japanese : kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex].english}</h1>
+        {@const word = kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
+        {@const lang = languageTag()}
+        <h1 class="stimulus-word">
+          {lang === 'ja' ? word.japanese : 
+           lang === 'fr' ? (word.french || word.english) :
+           lang === 'es' ? (word.spanish || word.english) :
+           lang === 'ru' ? (word.russian || word.english) :
+           lang === 'ar' ? (word.arabic || word.english) :
+           lang === 'zh' ? (word.chinese || word.english) :
+           word.english}
+        </h1>
       {/if}
 
       <div class="visualizer-box">

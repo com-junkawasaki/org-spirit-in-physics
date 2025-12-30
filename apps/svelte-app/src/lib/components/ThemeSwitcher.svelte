@@ -23,49 +23,44 @@
 <style>
 	.theme-switcher {
 		display: flex;
-		background: rgba(0, 0, 0, 0.05);
+		background: transparent;
 		padding: 2px;
 		border-radius: 12px;
-		border: 1px solid rgba(0, 0, 0, 0.05);
-	}
-
-	:global(.dark) .theme-switcher {
-		background: rgba(255, 255, 255, 0.05);
-		border-color: rgba(255, 255, 255, 0.1);
 	}
 
 	.theme-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0.4rem 0.6rem;
-		border-radius: 10px;
+		width: 32px;
+		height: 32px;
+		padding: 0;
+		border-radius: 8px;
 		border: none;
 		background: transparent;
 		cursor: pointer;
 		font-size: 1rem;
 		transition: all 0.2s;
+		opacity: 0.5;
 	}
 
-	:global(.dark) .theme-btn {
-		color: #aaa;
+	.theme-btn:hover {
+		opacity: 0.8;
+		background: rgba(0, 0, 0, 0.05);
+	}
+
+	:global(.dark) .theme-btn:hover {
+		background: rgba(255, 255, 255, 0.1);
 	}
 
 	.theme-btn.active {
+		opacity: 1;
 		background: white;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
 	:global(.dark) .theme-btn.active {
-		background: rgba(255, 255, 255, 0.15);
+		background: rgba(255, 255, 255, 0.2);
 		color: #fff;
-	}
-
-	.theme-btn:hover:not(.active) {
-		background: rgba(0, 0, 0, 0.03);
-	}
-
-	:global(.dark) .theme-btn:hover:not(.active) {
-		background: rgba(255, 255, 255, 0.03);
 	}
 </style>

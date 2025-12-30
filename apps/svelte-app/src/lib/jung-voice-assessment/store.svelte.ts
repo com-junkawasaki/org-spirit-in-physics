@@ -61,7 +61,7 @@ class KawasakiStore {
     }
     
     if (typeof window !== 'undefined') {
-      localStorage.setItem('participantId', this.participantId);
+      localStorage.setItem('participantId', this.participantId || '');
     }
     
     if (demographics) {
@@ -78,7 +78,7 @@ class KawasakiStore {
       this.participantId = user.id;
       this.participantEmail = user.primaryEmailAddress?.emailAddress || null;
       if (typeof window !== 'undefined') {
-        localStorage.setItem('participantId', this.participantId);
+        localStorage.setItem('participantId', this.participantId || '');
         if (this.participantEmail) {
           localStorage.setItem('participantEmail', this.participantEmail);
         }
@@ -94,7 +94,7 @@ class KawasakiStore {
         this.participantId = p.id;
         this.participantEmail = email;
         if (typeof window !== 'undefined') {
-          localStorage.setItem('participantId', p.id);
+          localStorage.setItem('participantId', p.id || '');
           localStorage.setItem('participantEmail', email);
         }
         this.demographics = {

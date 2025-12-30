@@ -1,7 +1,9 @@
 <script lang="ts">
   // PaperView.svelte - Complete research paper content ported from archive with JSON-LD and KaTeX
   import { onMount } from "svelte";
+  import { page } from "$app/state";
   import * as m from "$lib/paraglide/messages.js";
+  import { languageTag } from "$lib/paraglide/runtime.js";
   import katex from "katex";
   import "katex/dist/katex.min.css";
   import renderMathInElement from "katex/dist/contrib/auto-render.mjs";
@@ -25,18 +27,24 @@
     doi: string | null;
   }
 
-  const sections = $derived([
-    { id: 'abstract', title: m.abstract(), level: 1 },
-    { id: 'introduction', title: m.introduction(), level: 1 },
-    { id: 'theory', title: m.theory(), level: 1 },
-    { id: 'structural', title: m.structural(), level: 1 },
-    { id: 'measurement', title: m.measurement(), level: 1 },
-    { id: 'methods', title: m.methods(), level: 1 },
-    { id: 'results', title: m.results(), level: 1 },
-    { id: 'discussion', title: m.discussion(), level: 1 },
-    { id: 'conclusion', title: m.conclusion(), level: 1 },
-    { id: 'references', title: m.references(), level: 1 }
-  ]);
+  const sections = $derived.by(() => {
+    // Depend on page.url.pathname to ensure re-calculation on language change
+    const _path = page.url.pathname;
+    const lang = languageTag();
+    console.log("[PaperView] Re-calculating sections for lang:", lang);
+    return [
+      { id: 'abstract', title: m.abstract(), level: 1 },
+      { id: 'introduction', title: m.introduction(), level: 1 },
+      { id: 'theory', title: m.theory(), level: 1 },
+      { id: 'structural', title: m.structural(), level: 1 },
+      { id: 'measurement', title: m.measurement(), level: 1 },
+      { id: 'methods', title: m.methods(), level: 1 },
+      { id: 'results', title: m.results(), level: 1 },
+      { id: 'discussion', title: m.discussion(), level: 1 },
+      { id: 'conclusion', title: m.conclusion(), level: 1 },
+      { id: 'references', title: m.references(), level: 1 }
+    ];
+  });
 
   const references: Reference[] = [
     {
@@ -66,45 +74,51 @@
     },
   ];
 
-  const authors = $derived([
-    {
-      name: "Jun Kawasaki",
-      email: "root@junkawasaki.com",
-      affiliation: m.affiliation_niigata_med()
-    },
-    {
-      name: "Kazuki Tainaka",
-      affiliation: m.affiliation_niigata_brain()
-    },
-    {
-      name: "Tomonori Takeuchi",
-      affiliation: m.affiliation_aarhus()
-    }
-  ]);
-
-  const jsonLd = $derived({
-    "@context": "https://schema.org/",
-    "@type": "ScholarlyArticle",
-    "headline": m.paper_title_full(),
-    "description": m.abstract_text(),
-    "datePublished": "2024-11-30",
-    "author": authors.map(a => ({
-      "@type": "Person",
-      "name": a.name,
-      "email": a.email,
-      "affiliation": {
-        "@type": "Organization",
-        "name": a.affiliation
+  const authors = $derived.by(() => {
+    const _path = page.url.pathname;
+    return [
+      {
+        name: "Jun Kawasaki",
+        email: "root@junkawasaki.com",
+        affiliation: m.affiliation_niigata_med()
+      },
+      {
+        name: "Kazuki Tainaka",
+        affiliation: m.affiliation_niigata_brain()
+      },
+      {
+        name: "Tomonori Takeuchi",
+        affiliation: m.affiliation_aarhus()
       }
-    })),
-    "publisher": {
-      "@type": "Organization",
-      "name": "Spirit in Physics Research Group"
-    },
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
-    }
+    ];
+  });
+
+  const jsonLd = $derived.by(() => {
+    const _path = page.url.pathname;
+    return {
+      "@context": "https://schema.org/",
+      "@type": "ScholarlyArticle",
+      "headline": m.paper_title_full(),
+      "description": m.abstract_text(),
+      "datePublished": "2024-11-30",
+      "author": authors.map(a => ({
+        "@type": "Person",
+        "name": a.name,
+        "email": a.email,
+        "affiliation": {
+          "@type": "Organization",
+          "name": a.affiliation
+        }
+      })),
+      "publisher": {
+        "@type": "Organization",
+        "name": "Spirit in Physics Research Group"
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
+      }
+    };
   });
 
   let activeSection = $state('abstract');

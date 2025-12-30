@@ -1165,6 +1165,31 @@ export class StimulusWord extends Message<StimulusWord> {
   english = "";
 
   /**
+   * @generated from field: string french = 5;
+   */
+  french = "";
+
+  /**
+   * @generated from field: string spanish = 6;
+   */
+  spanish = "";
+
+  /**
+   * @generated from field: string russian = 7;
+   */
+  russian = "";
+
+  /**
+   * @generated from field: string arabic = 8;
+   */
+  arabic = "";
+
+  /**
+   * @generated from field: string chinese = 9;
+   */
+  chinese = "";
+
+  /**
    * @generated from field: string pronunciation = 4;
    */
   pronunciation = "";
@@ -1180,6 +1205,11 @@ export class StimulusWord extends Message<StimulusWord> {
     { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "japanese", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "english", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "french", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "spanish", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "russian", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "arabic", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "chinese", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "pronunciation", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
