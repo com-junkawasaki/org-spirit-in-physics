@@ -3,10 +3,12 @@
   import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
   import { page } from "$app/state";
   import { browser } from "$app/environment";
+  import { goto } from "$app/navigation";
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { languageTag, setLanguageTag, availableLanguageTags } from "$lib/i18n.svelte";
+  import { languageTag, availableLanguageTags } from "$lib/paraglide/runtime.js";
+  import { i18n } from "$lib/i18n";
   import "../app.css";
 
   let { children } = $props();
@@ -21,18 +23,13 @@
     zh: "简体中文"
   };
 
-  if (browser) {
-    console.log("Current URL:", page.url.href);
-    console.log("Current Pathname:", page.url.pathname);
-    console.log("Language Tag:", languageTag());
-  }
-
-  // 被験者画面では管理画面へのリンクを隠す
-  let isParticipantPage = $derived(page.url.pathname === '/participant');
-  
   function handleLanguageChange(event: Event) {
     const select = event.target as HTMLSelectElement;
-    setLanguageTag(select.value);
+    const newLang = select.value;
+    
+    // Use Paraglide-SvelteKit to get the localized path
+    const newPath = i18n.resolveRoute(page.url.pathname, newLang);
+    goto(newPath);
   }
 
   // Sync html lang and dir attributes

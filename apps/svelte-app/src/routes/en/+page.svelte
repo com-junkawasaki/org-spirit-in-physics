@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { setLanguageTag } from '$lib/i18n.svelte';
+  import { setLanguageTag } from '$lib/paraglide/runtime.js';
   import PaperView from '$lib/components/PaperView.svelte';
 
   onMount(() => {

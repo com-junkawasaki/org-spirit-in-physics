@@ -4,7 +4,7 @@
   import { kawasakiStore } from "./store.svelte";
   import AudioVisualizer from "./AudioVisualizer.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { languageTag } from "$lib/i18n.svelte";
+  import { languageTag } from "$lib/paraglide/runtime.js";
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
