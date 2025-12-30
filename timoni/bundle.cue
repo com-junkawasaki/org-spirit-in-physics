@@ -57,6 +57,7 @@ bundle: {
 				}
 				gateway: {
 					hostname: [
+						"localhost",
 						"envoy-spirit-in-physics-infra-gateway-2d53dc11.envoy-gateway-system.orb.local",
 						"spirit-in-physics.orb.local",
 						"spirit.localhost",
