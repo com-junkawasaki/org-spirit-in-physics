@@ -14,36 +14,37 @@ package templates
 	}
 	spec: {
 		gatewayClassName: "envoy"
+		_hlist: {
+			if (#config.gateway.hostname & string) != _|_ {
+				res: [#config.gateway.hostname]
+			}
+			if (#config.gateway.hostname & [...string]) != _|_ {
+				res: #config.gateway.hostname
+			}
+		}
+		_types: ["http", "https"]
 		listeners: [
-			{
-				name:     "http"
-				port:     80
-				protocol: "HTTP"
-				if (#config.gateway.hostname & string) != _|_ {
-					hostname: #config.gateway.hostname
+			for t in _types
+			for i, h in _hlist.res {
+				{
+					name:     "\(t)-\(i)"
+					hostname: h
+					if t == "http" {
+						port:     80
+						protocol: "HTTP"
+					}
+					if t == "https" {
+						port:     443
+						protocol: "HTTPS"
+						tls: {
+							mode: "Terminate"
+							certificateRefs: [{
+								name: "sip-tls-cert"
+							}]
+						}
+					}
+					allowedRoutes: namespaces: from: "Same"
 				}
-				if (#config.gateway.hostname & [...string]) != _|_ {
-					hostname: #config.gateway.hostname[0]
-				}
-				allowedRoutes: namespaces: from: "Same"
-			},
-			{
-				name:     "https"
-				port:     443
-				protocol: "HTTPS"
-				if (#config.gateway.hostname & string) != _|_ {
-					hostname: #config.gateway.hostname
-				}
-				if (#config.gateway.hostname & [...string]) != _|_ {
-					hostname: #config.gateway.hostname[0]
-				}
-				tls: {
-					mode: "Terminate"
-					certificateRefs: [{
-						name: "sip-tls-cert"
-					}]
-				}
-				allowedRoutes: namespaces: from: "Same"
 			},
 		]
 	}
