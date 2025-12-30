@@ -38,7 +38,7 @@ func main() {
 			AND NOT a.attisdropped
 			AND (c.relname IN ('participants', 'sessions', 'timeline_points', 'timeline_emotion_entries', 'physiological_measurements')
 			     OR c.relname IN ('timeline_word_statistics_by_session', 'timeline_emotion_vectors_by_word', 'timeline_word_aggregates_by_session'))
-			AND a.attname IN ('id', 'participant_id', 'timeline_point_participant_id')
+			AND a.attname IN ('id', 'participant_id', 'timeline_point_participant_id', 'session_id', 'timeline_point_session_id')
 		ORDER BY 
 			c.relname, a.attname;
 	`

@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"connectrpc.com/connect"
@@ -133,6 +136,7 @@ func (h *ParticipantHandler) CreateParticipant(
 ) (*connect.Response[participantv1.CreateParticipantResponse], error) {
 	// #region agent log
 	{
+		log.Printf("AGENT_LOG: CreateParticipant started, id=%s, email=%s", req.Msg.GetId(), req.Msg.Email)
 		logFile, _ := os.OpenFile("/Volumes/251214/jun784/spirit-in-physics/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if logFile != nil {
 			fmt.Fprintf(logFile, "{\"location\":\"participant.go:133\",\"message\":\"CreateParticipant started\",\"data\":{\"id\":\"%s\",\"email\":\"%s\"},\"timestamp\":%d,\"sessionId\":\"debug-session\",\"hypothesisId\":\"A\"}\n", req.Msg.GetId(), req.Msg.Email, time.Now().UnixMilli())
@@ -170,6 +174,7 @@ func (h *ParticipantHandler) CreateParticipant(
 	if err != nil {
 		// #region agent log
 		{
+			log.Printf("AGENT_LOG: CreateParticipant DB error: %v", err)
 			logFile, _ := os.OpenFile("/Volumes/251214/jun784/spirit-in-physics/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if logFile != nil {
 				fmt.Fprintf(logFile, "{\"location\":\"participant.go:161\",\"message\":\"CreateParticipant DB error\",\"data\":{\"error\":\"%s\"},\"timestamp\":%d,\"sessionId\":\"debug-session\",\"hypothesisId\":\"A\"}\n", err.Error(), time.Now().UnixMilli())

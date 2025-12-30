@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
+	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
@@ -23,6 +27,36 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+// The main handler routes /api/... to apiMux with prefix stripped
+func (rw *responseWriter) Write(b []byte) (int, error) {
+	if rw.statusCode >= 400 {
+		log.Printf("[MainHandler] ERROR Response (%d): %s", rw.statusCode, string(b))
+	}
+	return rw.ResponseWriter.Write(b)
+}
+
+func loggerInterceptor() connect.UnaryInterceptorFunc {
+	return func(next connect.UnaryFunc) connect.UnaryFunc {
+		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+			resp, err := next(ctx, req)
+			if err != nil {
+				log.Printf("AGENT_LOG ERROR [%s]: %v", req.Spec().Procedure, err)
+			}
+			return resp, err
+		}
+	}
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -95,20 +129,21 @@ func main() {
 	storageHandler := handlers.NewStorageHandler()
 
 	apiMux := http.NewServeMux()
+	opts := connect.WithInterceptors(loggerInterceptor())
 
-	path, handler := importv1connect.NewImportServiceHandler(importHandler)
+	path, handler := importv1connect.NewImportServiceHandler(importHandler, opts)
 	apiMux.Handle(path, handler)
 
-	path, handler = participantv1connect.NewParticipantServiceHandler(participantHandler)
+	path, handler = participantv1connect.NewParticipantServiceHandler(participantHandler, opts)
 	apiMux.Handle(path, handler)
 
-	path, handler = sessionv1connect.NewSessionServiceHandler(sessionHandler)
+	path, handler = sessionv1connect.NewSessionServiceHandler(sessionHandler, opts)
 	apiMux.Handle(path, handler)
 
-	path, handler = timelinev1connect.NewTimelineServiceHandler(timelineHandler)
+	path, handler = timelinev1connect.NewTimelineServiceHandler(timelineHandler, opts)
 	apiMux.Handle(path, handler)
 
-	path, handler = storagev1connect.NewStorageServiceHandler(storageHandler)
+	path, handler = storagev1connect.NewStorageServiceHandler(storageHandler, opts)
 	apiMux.Handle(path, handler)
 
 	apiMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -118,22 +153,34 @@ func main() {
 
 	// The main handler routes /api/... to apiMux with prefix stripped
 	mainHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		log.Printf("[MainHandler] Incoming request: %s %s (RemoteAddr: %s)", r.Method, r.URL.Path, r.RemoteAddr)
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			strippedPath := strings.TrimPrefix(r.URL.Path, "/api")
 			log.Printf("[MainHandler] Stripping /api prefix. New path: %s", strippedPath)
+			// #region agent log
+			{
+				bodyBytes, _ := io.ReadAll(r.Body)
+				r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+				logFile, _ := os.OpenFile("/Volumes/251214/jun784/spirit-in-physics/.cursor/debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if logFile != nil {
+					fmt.Fprintf(logFile, "{\"location\":\"main.go:125\",\"message\":\"MainHandler routing\",\"data\":{\"method\":\"%s\",\"path\":\"%s\",\"newPath\":\"%s\",\"body\":\"%s\"},\"timestamp\":%d,\"sessionId\":\"debug-session\",\"hypothesisId\":\"A\"}\n", r.Method, r.URL.Path, strippedPath, string(bodyBytes), time.Now().UnixMilli())
+					logFile.Close()
+				}
+			}
+			// #endregion
 			// Use a custom request with the stripped path to avoid issues with StripPrefix
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = strippedPath
-			apiMux.ServeHTTP(w, r2)
+			apiMux.ServeHTTP(rw, r2)
 			return
 		}
 		if r.URL.Path == "/api" {
-			http.Redirect(w, r, "/api/", http.StatusMovedPermanently)
+			http.Redirect(rw, r, "/api/", http.StatusMovedPermanently)
 			return
 		}
 		// Fallback for health check or other direct calls
-		apiMux.ServeHTTP(w, r)
+		apiMux.ServeHTTP(rw, r)
 	})
 
 	// Setup CORS
