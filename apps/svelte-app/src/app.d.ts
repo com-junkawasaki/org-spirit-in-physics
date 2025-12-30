@@ -1,5 +1,3 @@
-import { AvailableLanguageTag } from "$lib/paraglide/runtime.js";
-
 declare global {
 	namespace App {
 		// interface Error {}
@@ -21,4 +19,3 @@ declare module "katex/dist/contrib/auto-render.mjs" {
 }
 
 export {};
-
