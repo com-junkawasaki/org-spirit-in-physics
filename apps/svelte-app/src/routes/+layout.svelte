@@ -5,6 +5,7 @@
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
+  import UserSync from "$lib/components/auth/UserSync.svelte";
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { languageTag, availableLanguageTags } from "$lib/paraglide/runtime.js";
@@ -44,6 +45,7 @@
 
 {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
   <ClerkProvider publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY}>
+    <UserSync />
     {@render layoutContent()}
   </ClerkProvider>
 {:else}
@@ -73,7 +75,7 @@
         <select class="lang-selector" value={languageTag()} onchange={handleLanguageChange}>
           {#each availableLanguageTags as lang}
             <option value={lang}>{languageNames[lang] || lang}</option>
-          {#/each}
+          {/each}
         </select>
         <ThemeSwitcher />
         {#if PUBLIC_CLERK_PUBLISHABLE_KEY}

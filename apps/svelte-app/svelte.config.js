@@ -12,9 +12,10 @@ const config = {
 			assets: 'build',
 			fallback: 'index.html', // SPA mode fallback
 			precompress: false,
-			strict: true
+			strict: false
 		}),
 		prerender: {
+			handleHttpError: 'warn',
 			handleUnseenRoutes: 'ignore'
 		},
 		paths: {

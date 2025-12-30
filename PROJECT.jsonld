@@ -165,7 +165,9 @@
       "Svelte タイムライン可視化の表示領域改善。チャート高さの拡大（850px）とラベルマージンの最適化（200px）により、高密度マルチモーダルデータの視認性を向上",
       "Temporal ワークフローにおける感情データフィルタリングの微調整（背景サンプルの閾値を 0.2 から 0.1 へ緩和）により、より詳細な感情推移の可視化を可能に",
       "Timoni CLI と Taskfile (+ watchexec) を組み合わせた高速なローカル開発ワークフロー (Inner Loop) の確立",
-      "Gateway API における localhost エントリポイントの追加と、OrbStack 環境での非破壊的なローカルアクセス手段の提供"
+      "Gateway API における localhost エントリポイントの追加と、OrbStack 環境での非破壊的なローカルアクセス手段の提供",
+      "PreferenceService (gRPC/Connect) の実装と TDD による検証完了。ユーザーのテーマ（Light/Dark/Auto）と言語設定のバックエンド永続化に対応",
+      "SvelteKit フロントエンドにおけるユーザー設定の自動同期機能 (UserSync コンポーネント) の導入"
     ]
   }
 }

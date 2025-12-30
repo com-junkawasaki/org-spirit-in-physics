@@ -17,6 +17,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/import/v1/importv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1/participantv1connect"
+	"github.com/spirit-in-physics/services/grpc/gen/proto/preference/v1/preferencev1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1/sessionv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/storage/v1/storagev1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1/timelinev1connect"
@@ -127,6 +128,7 @@ func main() {
 	timelineHandler := handlers.NewTimelineHandler(queries, temporalClient)
 	importHandler := handlers.NewImportHandler(queries, temporalClient)
 	storageHandler := handlers.NewStorageHandler()
+	preferenceHandler := handlers.NewPreferenceHandler()
 
 	apiMux := http.NewServeMux()
 	opts := connect.WithInterceptors(loggerInterceptor())
@@ -144,6 +146,9 @@ func main() {
 	apiMux.Handle(path, handler)
 
 	path, handler = storagev1connect.NewStorageServiceHandler(storageHandler, opts)
+	apiMux.Handle(path, handler)
+
+	path, handler = preferencev1connect.NewPreferenceServiceHandler(preferenceHandler, opts)
 	apiMux.Handle(path, handler)
 
 	apiMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
