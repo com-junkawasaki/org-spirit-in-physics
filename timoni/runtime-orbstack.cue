@@ -8,7 +8,7 @@ bundle: {
 		infra: {
 			values: {
 				gateway: {
-					hostname: "spirit-in-physics.orb.local"
+					hostname: ["spirit-in-physics.orb.local", "spirit.localhost", "sip.junkawasaki.com"]
 					issuerName: "letsencrypt-staging"
 				}
 			}

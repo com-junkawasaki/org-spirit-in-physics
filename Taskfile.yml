@@ -1,0 +1,32 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build manifests with timoni
+    cmds:
+      - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+
+  apply:
+    desc: Apply manifests to local cluster with timoni
+    cmds:
+      - timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+
+  dev:
+    desc: Watch files and auto-apply with timoni
+    cmds:
+      - |
+        watchexec -e cue,go,ts,svelte -- \
+          "timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue"
+
+  sync-local:
+    desc: Sync local changes to ArgoCD
+    cmds:
+      - argocd app sync spirit-in-physics --local .
+
+  nix-build-portal:
+    desc: Build portal image with Nix and load into docker
+    cmds:
+      - nix build .#image-spirit-svelte-app
+      - docker load < result
+      - task: apply
+

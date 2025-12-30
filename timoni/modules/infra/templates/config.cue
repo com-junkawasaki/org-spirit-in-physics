@@ -102,7 +102,7 @@ import (
 	// Gateway settings
 	gateway: {
 		enabled: *true | bool
-		hostname: string
+		hostname: string | [...string]
 		issuerName: *"letsencrypt-prod" | string
 	}
 

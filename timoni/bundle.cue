@@ -55,7 +55,9 @@ bundle: {
 					enabled: false
 					storage: "20Gi"
 				}
-				gateway: hostname: "sip.junkawasaki.com"
+				gateway: {
+					hostname: ["spirit-in-physics.orb.local", "spirit.localhost", "sip.junkawasaki.com"]
+				}
 			}
 		}
 

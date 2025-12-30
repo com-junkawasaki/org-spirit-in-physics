@@ -19,14 +19,24 @@ package templates
 				name:     "http"
 				port:     80
 				protocol: "HTTP"
-				hostname: #config.gateway.hostname
+				if (#config.gateway.hostname & string) != _|_ {
+					hostname: #config.gateway.hostname
+				}
+				if (#config.gateway.hostname & [...string]) != _|_ {
+					hostname: #config.gateway.hostname[0]
+				}
 				allowedRoutes: namespaces: from: "Same"
 			},
 			{
 				name:     "https"
 				port:     443
 				protocol: "HTTPS"
-				hostname: #config.gateway.hostname
+				if (#config.gateway.hostname & string) != _|_ {
+					hostname: #config.gateway.hostname
+				}
+				if (#config.gateway.hostname & [...string]) != _|_ {
+					hostname: #config.gateway.hostname[0]
+				}
 				tls: {
 					mode: "Terminate"
 					certificateRefs: [{
@@ -53,10 +63,16 @@ package templates
 			name: #config.gateway.issuerName
 			kind: "ClusterIssuer"
 		}
-		commonName: #config.gateway.hostname
-		dnsNames: [
-			#config.gateway.hostname,
-		]
+		if (#config.gateway.hostname & string) != _|_ {
+			commonName: #config.gateway.hostname
+			dnsNames: [
+				#config.gateway.hostname,
+			]
+		}
+		if (#config.gateway.hostname & [...string]) != _|_ {
+			commonName: #config.gateway.hostname[0]
+			dnsNames:   #config.gateway.hostname
+		}
 	}
 }
 

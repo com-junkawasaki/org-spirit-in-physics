@@ -1,0 +1,38 @@
+---
+description: Development workflow using Timoni and Taskfile for local development and verification.
+globs: ["**/*.cue", "Taskfile.yml", "timoni/**/*"]
+---
+
+# Development Workflow
+
+This project uses Timoni and Taskfile for local development to provide a fast feedback loop (Inner Loop), while ArgoCD handles continuous deployment (Outer Loop).
+
+## Key Tools
+- **Timoni CLI**: Main tool for managing Kubernetes resources via CUE.
+- **Taskfile**: Orchestrates development tasks (replaces Makefile).
+- **Watchexec**: Recommended for automatic application of changes.
+
+## Inner Loop (Local Development)
+For fast iteration without pushing to Git:
+
+1. **Watch and Apply**: Use the `task dev` command (if implemented) or manually run:
+   ```bash
+   watchexec -e cue,go,ts,svelte -- "timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue"
+   ```
+2. **Build and Load**: If building images locally via Nix:
+   ```bash
+   nix build .#image-spirit-svelte-app && docker load < result && timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+   ```
+
+## Outer Loop (GitOps / ArgoCD)
+Once changes are verified locally:
+1. **Commit and Push**: Changes to `timoni/` will be picked up by ArgoCD.
+2. **Verify on ArgoCD**: Check the ArgoCD UI or use `argocd app sync spirit-in-physics` to ensure the Git state matches the cluster state.
+
+## Best Practices
+- **Prefer Timoni for Local Dev**: It's faster than waiting for ArgoCD to sync.
+- **Use Taskfile for Automation**: Keep `Tiltfile` only for complex multi-container orchestration if absolutely necessary, but prioritize Taskfile + Timoni.
+- **Pre-commit Check**: Before pushing, verify manifests locally:
+  ```bash
+  timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+  ```
