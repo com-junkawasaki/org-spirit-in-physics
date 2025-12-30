@@ -167,7 +167,9 @@
       "Timoni CLI と Taskfile (+ watchexec) を組み合わせた高速なローカル開発ワークフロー (Inner Loop) の確立",
       "Gateway API における localhost エントリポイントの追加と、OrbStack 環境での非破壊的なローカルアクセス手段の提供",
       "PreferenceService (gRPC/Connect) の実装と TDD による検証完了。ユーザーのテーマ（Light/Dark/Auto）と言語設定のバックエンド永続化に対応",
-      "SvelteKit フロントエンドにおけるユーザー設定の自動同期機能 (UserSync コンポーネント) の導入"
+      "SvelteKit フロントエンドにおけるユーザー設定の自動同期機能 (UserSync コンポーネント) の導入",
+      "Svelte アプリビルド時の sveltex 依存関係欠如の修正 (hast-util-to-html, unified 等の追加)",
+      "全100個の刺激語 (stimulus_words) のデータベースへのシード完了"
     ]
   }
 }

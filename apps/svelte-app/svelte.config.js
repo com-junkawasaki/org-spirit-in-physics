@@ -1,6 +1,6 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import { sveltex } from 'sveltex';
+import { sveltex } from '@nvl/sveltex';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {

@@ -26,13 +26,13 @@
   <span class="schema"><strong>{m.id()}:</strong> research/spirit-in-physics</span>
 </div>
 
-## {m.abstract()}
+<h2 id="abstract">{m.abstract()}</h2>
 
 <div class="abstract-box">
   {m.abstract_text()}
 </div>
 
-## {m.introduction()}
+<h2 id="introduction">{m.introduction()}</h2>
 
 {m.introduction_text_1()}
 
@@ -40,18 +40,18 @@
 
 {m.introduction_text_3()}
 
-## {m.theory()}
+<h2 id="theory">{m.theory()}</h2>
 
-### {m.theory_title_2_1()}
+<h3>{m.theory_title_2_1()}</h3>
 
 {m.theory_text_2_1()}
 
-### {m.theory_title_2_2()}
+<h3>{m.theory_title_2_2()}</h3>
 
 {m.theory_text_2_2()}
 
 <div class="equation-block">
-  $ S = \{V, E, T\} $
+  $ S = \\{V, E, T\\} $
   
   <p class="equation-desc">
     {m.theory_equation_desc_1()}
@@ -61,24 +61,24 @@
 The energy potential of an edge connecting two informational vertices ($w_I, w_O$) is defined as the negative logarithm of their association probability, reflecting the information content or "surprise" of their connection:
 
 <div class="equation-block">
-  $ E = -\ln P(w_O | w_I),\; V = \{\vec{w_I}, \vec{w_O}, ...\},\; T = \text{time axis} $
+  $ E = -\\ln P(w_O | w_I),\\; V = \\{\\vec{w_I}, \\vec{w_O}, ...\\},\\; T = \\text{time axis} $
 </div>
 
 {m.theory_text_2_2_2()}
 
 <div class="equation-block">
-  $ \psi(S) = \frac{\delta E(S)}{\delta S} $
+  $ \\psi(S) = \\frac{\\delta E(S)}{\\delta S} $
 </div>
 
-### {m.theory_title_2_3()}
+<h3>{m.theory_title_2_3()}</h3>
 
 {m.theory_text_2_3()}
 
 <div class="equation-block">
-  $ \frac{dS}{dt} = \frac{dS_{internal}}{dt} + \frac{dS_{exchange}}{dt} $
+  $ \\frac{dS}{dt} = \\frac{dS_{internal}}{dt} + \\frac{dS_{exchange}}{dt} $
 </div>
 
-## {m.structural()}
+<h2 id="structural">{m.structural()}</h2>
 
 {m.structural_text_1()}
 
@@ -97,43 +97,43 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
   </div>
 </div>
 
-### {m.classification_observed_patterns_title()}
+<h3>{m.classification_observed_patterns_title()}</h3>
 
 {m.classification_observed_patterns_text()}
 
 <div class="pattern-box spirit-type">
   <h4>{m.spirit_type_title()}</h4>
   <p>{m.spirit_type_text()}</p>
-  <p class="formula-inline">$ SpiritType = Archetype(Gene, Meme, Field) $</p>
+  <p class="formula-inline">\\( SpiritType = Archetype(Gene, Meme, Field) \\)</p>
 </div>
 
 <div class="pattern-box ghost-pattern">
   <h4>{m.ghost_pattern_title()}</h4>
   <p>{m.ghost_pattern_text()}</p>
-  <p class="formula-inline">$ GhostPattern = f(Shadow, CollectiveArchetype, Meme, Field) $</p>
+  <p class="formula-inline">\\( GhostPattern = f(Shadow, CollectiveArchetype, Meme, Field) \\)</p>
 </div>
 
-## {m.measurement()}
+<h2 id="measurement">{m.measurement()}</h2>
 
 {m.measurement_text_1()}
 
 <div class="equation-block large">
-  $$ P(w_O | w_I) = \frac{\exp(\vec{w_I} \cdot \vec{w_O}) \cdot [r(w_I, w_O)]^\alpha \cdot \exp(\gamma \frac{\Delta SP}{\lambda}) \cdot \exp(\eta F)}{\sum_{j} \exp(\vec{w_I} \cdot \vec{w_j}) \cdot [r(w_I, w_j)]^\alpha \cdot \exp(\gamma \frac{\Delta SP}{\lambda}) \cdot \exp(\eta F)} $$
+  $$ P(w_O | w_I) = \\frac{\\exp(\\vec{w_I} \\cdot \\vec{w_O}) \\cdot [r(w_I, w_O)]^\\alpha \\cdot \\exp(\\gamma \\frac{\\Delta SP}{\\lambda}) \\cdot \\exp(\\eta F)}{\\sum_{j} \\exp(\\vec{w_I} \\cdot \\vec{w_j}) \\cdot [r(w_I, w_j)]^\\alpha \\cdot \\exp(\\gamma \\frac{\\Delta SP}{\\lambda}) \\cdot \\exp(\\eta F)} $$
 </div>
 
 <div class="component-list">
   <div class="component-item">
-    <strong>{m.semantic_component_title()} ($\vec{w_I} \cdot \vec{w_O}$):</strong> {m.semantic_component_text()}
+    <strong>{m.semantic_component_title()} (\\vec{w_I} \\cdot \\vec{w_O}):</strong> {m.semantic_component_text()}
   </div>
   <div class="component-item">
     <strong>{m.behavioural_component_title()} ($r(w_I, w_O)$):</strong> {m.behavioural_component_text()}
   </div>
   <div class="component-item">
-    <strong>{m.physiological_component_title()} (Emotion $F$, Arousal $\Delta SP$):</strong> {m.physiological_component_text()}
+    <strong>{m.physiological_component_title()} (Emotion $F$, Arousal $\\Delta SP$):</strong> {m.physiological_component_text()}
   </div>
 </div>
 
-## {m.methods()}
+<h2 id="methods">{m.methods()}</h2>
 
 **{m.methods_participants_title()}:** {m.methods_participants_text()}
 
@@ -143,7 +143,7 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 
 **{m.methods_pipeline_title()}:** {m.methods_pipeline_text()}
 
-## {m.results()}
+<h2 id="results">{m.results()}</h2>
 
 <div class="results-overview">
   <div class="result-card highlight">
@@ -212,23 +212,23 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
   </div>
 </div>
 
-## {m.discussion()}
+<h2 id="discussion">{m.discussion()}</h2>
 
 {m.discussion_text_1()}
 
 {m.discussion_text_2()}
 
-### {m.comparison_with_existing_research_title()}
+<h3>{m.comparison_with_existing_research_title()}</h3>
 
 - **{m.comparison_jung_text()}**
 - **{m.comparison_landauer_text()}**
 - **{m.comparison_botvinick_text()}**
 
-## {m.conclusion()}
+<h2 id="conclusion">{m.conclusion()}</h2>
 
 {m.conclusion_text()}
 
-## {m.references()}
+<h2 id="references">{m.references()}</h2>
 
 <ul class="ref-list">
   <li id="landauer-1991">

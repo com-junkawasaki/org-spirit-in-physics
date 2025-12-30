@@ -4,8 +4,8 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --no-frozen-lockfile
 COPY . .
-# Force rebuild v13
-RUN echo "build-v13" > build-version.txt
+# Force rebuild v14
+RUN echo "build-v14" > build-version.txt
 ENV POSTHOG_DISABLED=1
 RUN pnpm build
 
