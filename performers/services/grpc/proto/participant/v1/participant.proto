@@ -187,5 +187,10 @@ message StimulusWord {
   int32 id = 1;
   string japanese = 2;
   string english = 3;
+  string french = 5;
+  string spanish = 6;
+  string russian = 7;
+  string arabic = 8;
+  string chinese = 9;
   string pronunciation = 4;
 }

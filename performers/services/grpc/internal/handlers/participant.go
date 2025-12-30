@@ -237,6 +237,11 @@ func (h *ParticipantHandler) GetStimulusWords(
 			Id:            int32(w.ID),
 			Japanese:      w.Japanese,
 			English:       w.English,
+			French:        toStringPtr(w.French),
+			Spanish:       toStringPtr(w.Spanish),
+			Russian:       toStringPtr(w.Russian),
+			Arabic:        toStringPtr(w.Arabic),
+			Chinese:       toStringPtr(w.Chinese),
 			Pronunciation: w.Pronunciation,
 		})
 	}
@@ -259,6 +264,11 @@ func (h *ParticipantHandler) GetStimulusWord(
 			Id:            int32(word.ID),
 			Japanese:      word.Japanese,
 			English:       word.English,
+			French:        toStringPtr(word.French),
+			Spanish:       toStringPtr(word.Spanish),
+			Russian:       toStringPtr(word.Russian),
+			Arabic:        toStringPtr(word.Arabic),
+			Chinese:       toStringPtr(word.Chinese),
 			Pronunciation: word.Pronunciation,
 		},
 	}

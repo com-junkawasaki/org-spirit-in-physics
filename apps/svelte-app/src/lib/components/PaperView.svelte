@@ -65,27 +65,27 @@
     },
   ];
 
-  const authors: Author[] = [
+  const authors = $derived([
     {
       name: "Jun Kawasaki",
       email: "root@junkawasaki.com",
-      affiliation: "Graduate School of Medical and Dental Sciences, Niigata University"
+      affiliation: m.affiliation_niigata_med()
     },
     {
       name: "Kazuki Tainaka",
-      affiliation: "Brain Research Institute, Niigata University, Japan"
+      affiliation: m.affiliation_niigata_brain()
     },
     {
       name: "Tomonori Takeuchi",
-      affiliation: "Department of Biomedicine, Aarhus University, Denmark"
+      affiliation: m.affiliation_aarhus()
     }
-  ];
+  ]);
 
-  const jsonLd = {
+  const jsonLd = $derived({
     "@context": "https://schema.org/",
     "@type": "ScholarlyArticle",
-    "headline": "Spirit in Physics: Spirit as a Thermodynamic Information Quantity",
-    "description": "Defining and measuring Spirit as a thermodynamic information quantity on a high-dimensional manifold.",
+    "headline": m.paper_title_full(),
+    "description": m.abstract_text(),
     "datePublished": "2024-11-30",
     "author": authors.map(a => ({
       "@type": "Person",
@@ -104,7 +104,7 @@
       "@type": "WebPage",
       "@id": "https://spirit-in-physics.gftd.ai/research/spirit-in-physics"
     }
-  };
+  });
 
   let activeSection = $state('abstract');
   let isTocOpen = $state(false);
@@ -187,7 +187,7 @@
   <main class="paper-content">
     <article class="paper-article">
       <header class="paper-header">
-        <h1 class="paper-title">{m.logo()}: Spirit as a Thermodynamic Information Quantity</h1>
+        <h1 class="paper-title">{m.logo()}: {m.paper_title_full()}</h1>
         
         <div class="author-grid">
           {#each authors as author}
@@ -211,34 +211,34 @@
       <section id="abstract" class="section abstract-box">
         <h2>{m.abstract()}</h2>
         <p>
-          Philosophical accounts often invoke “spirit” as a non-material essence, yet have lacked an operational definition compatible with physics. Here we introduce Spirit as a thermodynamic information quantity defined on a high-dimensional manifold that couples linguistic, behavioural and physiological signals. This paper presents a theoretical framework for Spirit, a model for interpreting its internal structures, and an experimental methodology for its measurement.
+          {m.abstract_text()}
         </p>
       </section>
 
       <section id="introduction" class="section">
         <h2>{m.introduction()}</h2>
         <p>
-          The concept of "spirit" has long been central to philosophical and psychological inquiry, yet it has remained largely outside the scope of empirical science due to the absence of a physically grounded, measurable definition. This conceptual gap has hindered our ability to investigate the material basis of what are often considered non-material phenomena. To bridge this gap, we propose a fundamental re-conceptualization of Spirit, moving it from the metaphysical realm to the physical.
+          {m.introduction_text_1()}
         </p>
         <p>
-          Our approach is built on a foundational premise established in modern physics: information is physical (Landauer, 1991). The erasure of one bit of information corresponds to a minimal dissipation of energy, a principle that has been experimentally verified (Bérut et al., 2012). If Spirit is fundamentally informational in nature, as we postulate, then it must also be subject to physical laws.
+          {m.introduction_text_2()}
         </p>
         <p>
-          In this paper, we define Spirit as a thermodynamic information quantity. Specifically, we model it as a state on a high-dimensional manifold—termed Complex Space—that integrates multiple streams of data: linguistic (word associations), behavioural (reaction times), and physiological (skin potential, emotional expression). We then propose an experimental method to quantify this state and analyze its structure. By operationalizing Spirit in this way, we provide a new framework for investigating the physical underpinnings of consciousness and psychosomatic phenomena.
+          {m.introduction_text_3()}
         </p>
       </section>
 
       <section id="theory" class="section">
         <h2>{m.theory()}</h2>
         
-        <h3>2.1. The Physical Nature of Information</h3>
+        <h3>{m.theory_title_2_1()}</h3>
         <p>
-          Our framework rests on the principle that information is a physical quantity, inextricably linked to thermodynamics. Landauer's principle states that any logically irreversible manipulation of information, such as the erasure of a bit, must be accompanied by a corresponding entropy increase in the non-information-bearing degrees of freedom of the information-processing apparatus. This establishes a direct connection between information theory and thermodynamics, which we extend to the concept of Spirit.
+          {m.theory_text_2_1()}
         </p>
 
-        <h3>2.2. The Physical Definition of Spirit</h3>
+        <h3>{m.theory_title_2_2()}</h3>
         <p>
-          We define Spirit not as a monolithic entity but as a dynamic state within a high-dimensional vector space. This "Spirit Physical Space" is a manifold constructed from informational and biological components.
+          {m.theory_text_2_2()}
         </p>
         
         <div class="equation-block">
@@ -246,7 +246,7 @@
             &#92;[ S = &#123;V, E, T&#125; &#92;]
           </p>
           <p class="equation-desc">
-            Let the state of the Spirit, S, be a point in a space composed of a set of informational vertices V, edges E, and time axis T.
+            {m.theory_equation_desc_1()}
           </p>
         </div>
 
@@ -261,7 +261,7 @@
         </div>
 
         <p>
-          We can then define Spirit, &#92;psi(S), as a physical field quantity—the functional derivative of the total information energy of the system with respect to its state:
+          {m.theory_text_2_2_2()}
         </p>
 
         <div class="equation-block">
@@ -270,9 +270,9 @@
           </p>
         </div>
 
-        <h3>2.3. The Open System Dynamics of Spirit</h3>
+        <h3>{m.theory_title_2_3()}</h3>
         <p>
-          The Spirit operates as a thermodynamic open system, constantly exchanging information and energy with its environment. The total entropy change of the system can be expressed as:
+          {m.theory_text_2_3()}
         </p>
 
         <div class="equation-block">
@@ -285,46 +285,46 @@
       <section id="structural" class="section">
         <h2>{m.structural()}</h2>
         <p>
-          While the physical framework allows us to define and measure the Spirit manifold, understanding its internal structure requires an interpretative model. We use the concepts of analytical psychology developed by C.G. Jung as a model to interpret the physical structures we measure.
+          {m.structural_text_1()}
         </p>
 
         <div class="definition-grid">
           <div class="definition-card">
-            <h4>Complex</h4>
-            <p>An individual's personal implementation of an Archetype, acting as an energy-charged node in the informational space.</p>
+            <h4>{m.complex_title()}</h4>
+            <p>{m.complex_text()}</p>
           </div>
           <div class="definition-card">
-            <h4>Archetype</h4>
-            <p>A fundamental, structural template residing in the Collective Unconscious.</p>
+            <h4>{m.archetype_title()}</h4>
+            <p>{m.archetype_text()}</p>
           </div>
           <div class="definition-card">
-            <h4>Shadow</h4>
-            <p>The unconscious and often suppressed part of a Complex, a primary source of internal conflict.</p>
+            <h4>{m.shadow_title()}</h4>
+            <p>{m.shadow_text()}</p>
           </div>
         </div>
 
-        <h3>Classification of Observed Patterns</h3>
+        <h3>{m.classification_observed_patterns_title()}</h3>
         <p>
-          We classify the observed patterns within the Spirit manifold into two primary categories:
+          {m.classification_observed_patterns_text()}
         </p>
         
         <div class="pattern-box spirit-type">
-          <h4>Spirit Type (Integrated)</h4>
-          <p>Stable and integrated structures formed by the harmonious integration of Archetypes.</p>
-          <p class="formula-inline">&#92;( SpiritType = Archetype(Gene, Meme, Field) &#92;)</p>
+          <h4>{m.spirit_type_title()}</h4>
+          <p>{m.spirit_type_text()}</p>
+          <p class="formula-inline">\( SpiritType = Archetype(Gene, Meme, Field) \)</p>
         </div>
 
         <div class="pattern-box ghost-pattern">
-          <h4>Ghost Pattern (Unintegrated)</h4>
-          <p>Problematic structures arising from the interference of the Shadow and unintegrated Archetypes.</p>
-          <p class="formula-inline">&#92;( GhostPattern = f(Shadow, CollectiveArchetype, Meme, Field) &#92;)</p>
+          <h4>{m.ghost_pattern_title()}</h4>
+          <p>{m.ghost_pattern_text()}</p>
+          <p class="formula-inline">\( GhostPattern = f(Shadow, CollectiveArchetype, Meme, Field) \)</p>
         </div>
       </section>
 
       <section id="measurement" class="section">
         <h2>{m.measurement()}</h2>
         <p>
-          We use a modified version of the Word Association Experiment (Jung, 1910) to probe the structure of an individual's information space. The probability of association is modeled as:
+          {m.measurement_text_1()}
         </p>
 
         <div class="equation-block large">
@@ -335,13 +335,13 @@
 
         <div class="component-list">
           <div class="component-item">
-            <strong>Semantic Component (&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_O&#125;):</strong> Cosine similarity between word vectors.
+            <strong>{m.semantic_component_title()} (&#92;vec&#123;w_I&#125; &#92;cdot &#92;vec&#123;w_O&#125;):</strong> {m.semantic_component_text()}
           </div>
           <div class="component-item">
-            <strong>Behavioural Component (r(w_I, w_O)):</strong> Inverse of reaction time.
+            <strong>{m.behavioural_component_title()} (r(w_I, w_O)):</strong> {m.behavioural_component_text()}
           </div>
           <div class="component-item">
-            <strong>Physiological Component (Emotion F, Arousal &#92;Delta SP):</strong> Multi-modal data from Hume AI and SKINPRO.
+            <strong>{m.physiological_component_title()} (Emotion F, Arousal &#92;Delta SP):</strong> {m.physiological_component_text()}
           </div>
         </div>
       </section>
@@ -349,16 +349,16 @@
       <section id="methods" class="section">
         <h2>{m.methods()}</h2>
         <p>
-          <strong>Participants:</strong> Healthy adults (n=30) meeting specific inclusion/exclusion criteria.
+          <strong>{m.methods_participants_title()}:</strong> {m.methods_participants_text()}
         </p>
         <p>
-          <strong>Equipment:</strong> High-resolution display, SKINPRO (8-channel skin potential), Hume AI Expression Measurement API (face, voice, language).
+          <strong>{m.methods_equipment_title()}:</strong> {m.methods_equipment_text()}
         </p>
         <p>
-          <strong>Data Integration:</strong> Time-series synchronization of stimulus presentation, verbal responses, and physiological/emotional data with a ±2-second matching window.
+          <strong>{m.methods_integration_title()}:</strong> {m.methods_integration_text()}
         </p>
         <p>
-          <strong>Analysis Pipeline:</strong> 1024-dimensional complex space vectors reduced via PCA/UMAP for 3D visualization and classification using K-means and Isolation Forest.
+          <strong>{m.methods_pipeline_title()}:</strong> {m.methods_pipeline_text()}
         </p>
       </section>
 
@@ -368,65 +368,65 @@
           <div class="result-card highlight">
             <span class="result-label">{m.classification_accuracy()}</span>
             <span class="result-value">82%</span>
-            <span class="result-sub">For Spirit Type identification</span>
+            <span class="result-sub">{m.results_classification_accuracy_sub()}</span>
           </div>
           <div class="result-card">
             <span class="result-label">{m.ghost_patterns_identified()}</span>
             <span class="result-value">14</span>
-            <span class="result-sub">Distinct types identified</span>
+            <span class="result-sub">{m.results_ghost_patterns_identified_sub()}</span>
           </div>
           <div class="result-card">
             <span class="result-label">{m.manifold_dim()}</span>
             <span class="result-value">1024</span>
-            <span class="result-sub">Initial feature space</span>
+            <span class="result-sub">{m.results_manifold_dim_sub()}</span>
           </div>
         </div>
         
         <div class="results-details grid md:grid-cols-2 gap-8 my-12">
           <div class="results-sub-section p-6 bg-gray-50 rounded-xl">
-            <h3 class="mt-0 text-xl">Spirit Type Distribution</h3>
-            <p class="text-sm text-gray-600 mb-4">Typical patterns composed of Gene + Meme + Field.</p>
+            <h3 class="mt-0 text-xl">{m.results_spirit_type_distribution_title()}</h3>
+            <p class="text-sm text-gray-600 mb-4">{m.results_spirit_type_distribution_text()}</p>
             <ul class="text-sm space-y-2">
-              <li class="flex justify-between"><strong>Hero Archetype:</strong> <span>124 responses</span></li>
-              <li class="flex justify-between"><strong>Sage Archetype:</strong> <span>98 responses</span></li>
-              <li class="flex justify-between"><strong>Lover Archetype:</strong> <span>76 responses</span></li>
-              <li class="flex justify-between"><strong>Caregiver Archetype:</strong> <span>45 responses</span></li>
+              <li class="flex justify-between"><strong>{m.results_hero_archetype()}:</strong> <span>{m.results_responses({ count: 124 })}</span></li>
+              <li class="flex justify-between"><strong>{m.results_sage_archetype()}:</strong> <span>{m.results_responses({ count: 98 })}</span></li>
+              <li class="flex justify-between"><strong>{m.results_lover_archetype()}:</strong> <span>{m.results_responses({ count: 76 })}</span></li>
+              <li class="flex justify-between"><strong>{m.results_caregiver_archetype()}:</strong> <span>{m.results_responses({ count: 45 })}</span></li>
             </ul>
             <div class="mt-4 pt-4 border-t border-gray-200">
-              <p class="text-xs italic text-gray-500">Mean distance to archetype: 0.142</p>
+              <p class="text-xs italic text-gray-500">{m.results_mean_distance({ value: '0.142' })}</p>
             </div>
           </div>
 
           <div class="results-sub-section p-6 bg-gray-50 rounded-xl">
-            <h3 class="mt-0 text-xl">Ghost Pattern Detection</h3>
-            <p class="text-sm text-gray-600 mb-4">Hidden patterns primarily composed of Meme + Field.</p>
+            <h3 class="mt-0 text-xl">{m.results_ghost_pattern_detection_title()}</h3>
+            <p class="text-sm text-gray-600 mb-4">{m.results_ghost_pattern_detection_text()}</p>
             <ul class="text-sm space-y-2">
-              <li class="flex justify-between"><strong>Individual Shadow:</strong> <span>56 responses</span></li>
-              <li class="flex justify-between"><strong>Collective Unconscious Meme:</strong> <span>32 responses</span></li>
+              <li class="flex justify-between"><strong>{m.results_individual_shadow()}:</strong> <span>{m.results_responses({ count: 56 })}</span></li>
+              <li class="flex justify-between"><strong>{m.results_collective_unconscious_meme()}:</strong> <span>{m.results_responses({ count: 32 })}</span></li>
             </ul>
             <div class="mt-4 pt-4 border-t border-gray-200">
-              <p class="text-xs font-semibold text-gray-700 mb-2">Problematic Indicators:</p>
+              <p class="text-xs font-semibold text-gray-700 mb-2">{m.results_problematic_indicators()}</p>
               <div class="flex flex-wrap gap-2">
-                <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[10px]">High Meme Variance</span>
-                <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[10px]">Pattern Interference</span>
-                <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[10px]">Cognitive Bias</span>
+                <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[10px]">{m.results_high_meme_variance()}</span>
+                <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[10px]">{m.results_pattern_interference()}</span>
+                <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-[10px]">{m.results_cognitive_bias()}</span>
               </div>
             </div>
           </div>
         </div>
         
         <p>
-          The experimental results support the viability of our framework. We observed clear differentiation between stable archetypal structures (Spirit Types) and unstable shadow-driven interferences (Ghost Patterns).
+          {m.results_summary_text()}
         </p>
 
         <!-- Placeholder for Interactive Visualization -->
         <div class="viz-placeholder">
           <div class="viz-header">
-            <h4>Interactive Visualization (Spirit Manifold)</h4>
-            <span class="badge">Experimental</span>
+            <h4>{m.viz_interactive_visualization_title()}</h4>
+            <span class="badge">{m.viz_experimental_badge()}</span>
           </div>
           <div class="viz-body">
-            <p>Visualization components like <code>Force3DWordGraphTypeGPU</code> and <code>TimelineVisualization</code> can be integrated here to show real-time analysis of the spirit manifold.</p>
+            <p>{@html m.viz_visualization_desc({ code1: '<code>Force3DWordGraphTypeGPU</code>', code2: '<code>TimelineVisualization</code>' })}</p>
             <div class="mock-graph">
               <!-- Graph mock visualization here -->
             </div>
@@ -437,23 +437,23 @@
       <section id="discussion" class="section">
         <h2>{m.discussion()}</h2>
         <p>
-          The successful construction of the high-dimensional manifold from linguistic, behavioural, and physiological data demonstrates the viability of our framework. The distinction between Spirit Types and Ghost Patterns provides a quantitative basis for identifying both healthy, coherent informational structures and problematic, bug-producing ones.
+          {m.discussion_text_1()}
         </p>
         <p>
-          Our analysis suggests Ghost Patterns arise from measurable interference between different informational layers, such as conflicts between unconscious patterns (the Shadow) and conscious intentions. This work builds upon Jung's foundational work by embedding it within a modern information-theoretic and thermodynamic framework.
+          {m.discussion_text_2()}
         </p>
-        <h3>Comparison with Existing Research</h3>
+        <h3>{m.comparison_with_existing_research_title()}</h3>
         <ul class="comparison-list">
-          <li><strong>Jung (1910):</strong> We extend qualitative insights into quantitative structural analysis.</li>
-          <li><strong>Landauer (1991):</strong> Physical validation of information as a state variable for Spirit.</li>
-          <li><strong>Botvinick (1998):</strong> Rubber hand illusion as a manifold boundary transition.</li>
+          <li><strong>{m.comparison_jung_text()}</strong></li>
+          <li><strong>{m.comparison_landauer_text()}</strong></li>
+          <li><strong>{m.comparison_botvinick_text()}</strong></li>
         </ul>
       </section>
 
       <section id="conclusion" class="section">
         <h2>{m.conclusion()}</h2>
         <p>
-          This paper introduces a paradigm shift, moving "spirit" from metaphysical abstraction to concrete, physically measurable quantity. By operationalizing Spirit as a thermodynamic information quantity on a high-dimensional manifold, we have provided a framework that is both theoretically coherent and experimentally verifiable. This work lays the foundation for a new physics of spirit, opening the door to a truly empirical investigation of consciousness and the human condition.
+          {m.conclusion_text()}
         </p>
       </section>
 
@@ -472,15 +472,15 @@
       </section>
 
       <section class="section addendum">
-        <h3>Additional Research: High-IQ Japanese GWAS</h3>
+        <h3>{m.addendum_title()}</h3>
         <p>
-          Leveraging Japan's unique genetics, a GWAS targeting individuals with IQ ≥140 will compare genetic and cognitive data to identify SNPs linked to intelligence. The study begins in 2024 with results slated for publication.
+          {m.addendum_text()}
         </p>
         <div class="dataset-info">
-          <strong>Dataset:</strong> 92 people / CAMS IQ140 sd15 - IQ180t / SNPs.
+          <strong>{m.dataset_label()}</strong> {m.dataset_value()}
         </div>
         <p class="ref-text text-sm mt-4">
-          <strong>ref:</strong> Jonathan R. I. Coleman et al, Mol Psychiatry 24, 182-197 (2019)
+          <strong>{m.ref_label()}</strong> Jonathan R. I. Coleman et al, Mol Psychiatry 24, 182-197 (2019)
         </p>
       </section>
     </article>

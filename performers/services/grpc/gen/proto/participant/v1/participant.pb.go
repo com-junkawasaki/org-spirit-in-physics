@@ -1409,6 +1409,11 @@ type StimulusWord struct {
 	Id            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Japanese      string                 `protobuf:"bytes,2,opt,name=japanese,proto3" json:"japanese,omitempty"`
 	English       string                 `protobuf:"bytes,3,opt,name=english,proto3" json:"english,omitempty"`
+	French        string                 `protobuf:"bytes,5,opt,name=french,proto3" json:"french,omitempty"`
+	Spanish       string                 `protobuf:"bytes,6,opt,name=spanish,proto3" json:"spanish,omitempty"`
+	Russian       string                 `protobuf:"bytes,7,opt,name=russian,proto3" json:"russian,omitempty"`
+	Arabic        string                 `protobuf:"bytes,8,opt,name=arabic,proto3" json:"arabic,omitempty"`
+	Chinese       string                 `protobuf:"bytes,9,opt,name=chinese,proto3" json:"chinese,omitempty"`
 	Pronunciation string                 `protobuf:"bytes,4,opt,name=pronunciation,proto3" json:"pronunciation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1461,6 +1466,41 @@ func (x *StimulusWord) GetJapanese() string {
 func (x *StimulusWord) GetEnglish() string {
 	if x != nil {
 		return x.English
+	}
+	return ""
+}
+
+func (x *StimulusWord) GetFrench() string {
+	if x != nil {
+		return x.French
+	}
+	return ""
+}
+
+func (x *StimulusWord) GetSpanish() string {
+	if x != nil {
+		return x.Spanish
+	}
+	return ""
+}
+
+func (x *StimulusWord) GetRussian() string {
+	if x != nil {
+		return x.Russian
+	}
+	return ""
+}
+
+func (x *StimulusWord) GetArabic() string {
+	if x != nil {
+		return x.Arabic
+	}
+	return ""
+}
+
+func (x *StimulusWord) GetChinese() string {
+	if x != nil {
+		return x.Chinese
 	}
 	return ""
 }
@@ -1596,11 +1636,16 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"_age_groupB\f\n" +
 	"\n" +
 	"_ethnicityB\x0f\n" +
-	"\r_income_range\"z\n" +
+	"\r_income_range\"\xf8\x01\n" +
 	"\fStimulusWord\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1a\n" +
 	"\bjapanese\x18\x02 \x01(\tR\bjapanese\x12\x18\n" +
-	"\aenglish\x18\x03 \x01(\tR\aenglish\x12$\n" +
+	"\aenglish\x18\x03 \x01(\tR\aenglish\x12\x16\n" +
+	"\x06french\x18\x05 \x01(\tR\x06french\x12\x18\n" +
+	"\aspanish\x18\x06 \x01(\tR\aspanish\x12\x18\n" +
+	"\arussian\x18\a \x01(\tR\arussian\x12\x16\n" +
+	"\x06arabic\x18\b \x01(\tR\x06arabic\x12\x18\n" +
+	"\achinese\x18\t \x01(\tR\achinese\x12$\n" +
 	"\rpronunciation\x18\x04 \x01(\tR\rpronunciation2\x80\n" +
 	"\n" +
 	"\x12ParticipantService\x12b\n" +

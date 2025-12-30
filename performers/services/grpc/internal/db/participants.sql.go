@@ -175,16 +175,28 @@ func (q *Queries) GetParticipants(ctx context.Context, dollar_1 bool) ([]Partici
 }
 
 const getStimulusWord = `-- name: GetStimulusWord :one
-SELECT id, japanese, english, pronunciation
+SELECT id, japanese, english, french, spanish, russian, arabic, chinese, pronunciation, audio_ja, audio_en, audio_fr, audio_es, audio_ru, audio_ar, audio_zh
 FROM stimulus_words
 WHERE id = $1
 `
 
 type GetStimulusWordRow struct {
-	ID            int32  `json:"id"`
-	Japanese      string `json:"japanese"`
-	English       string `json:"english"`
-	Pronunciation string `json:"pronunciation"`
+	ID            int32       `json:"id"`
+	Japanese      string      `json:"japanese"`
+	English       string      `json:"english"`
+	French        pgtype.Text `json:"french"`
+	Spanish       pgtype.Text `json:"spanish"`
+	Russian       pgtype.Text `json:"russian"`
+	Arabic        pgtype.Text `json:"arabic"`
+	Chinese       pgtype.Text `json:"chinese"`
+	Pronunciation string      `json:"pronunciation"`
+	AudioJa       []byte      `json:"audio_ja"`
+	AudioEn       []byte      `json:"audio_en"`
+	AudioFr       []byte      `json:"audio_fr"`
+	AudioEs       []byte      `json:"audio_es"`
+	AudioRu       []byte      `json:"audio_ru"`
+	AudioAr       []byte      `json:"audio_ar"`
+	AudioZh       []byte      `json:"audio_zh"`
 }
 
 func (q *Queries) GetStimulusWord(ctx context.Context, id int32) (GetStimulusWordRow, error) {
@@ -194,22 +206,46 @@ func (q *Queries) GetStimulusWord(ctx context.Context, id int32) (GetStimulusWor
 		&i.ID,
 		&i.Japanese,
 		&i.English,
+		&i.French,
+		&i.Spanish,
+		&i.Russian,
+		&i.Arabic,
+		&i.Chinese,
 		&i.Pronunciation,
+		&i.AudioJa,
+		&i.AudioEn,
+		&i.AudioFr,
+		&i.AudioEs,
+		&i.AudioRu,
+		&i.AudioAr,
+		&i.AudioZh,
 	)
 	return i, err
 }
 
 const getStimulusWords = `-- name: GetStimulusWords :many
-SELECT id, japanese, english, pronunciation
+SELECT id, japanese, english, french, spanish, russian, arabic, chinese, pronunciation, audio_ja, audio_en, audio_fr, audio_es, audio_ru, audio_ar, audio_zh
 FROM stimulus_words
 ORDER BY id
 `
 
 type GetStimulusWordsRow struct {
-	ID            int32  `json:"id"`
-	Japanese      string `json:"japanese"`
-	English       string `json:"english"`
-	Pronunciation string `json:"pronunciation"`
+	ID            int32       `json:"id"`
+	Japanese      string      `json:"japanese"`
+	English       string      `json:"english"`
+	French        pgtype.Text `json:"french"`
+	Spanish       pgtype.Text `json:"spanish"`
+	Russian       pgtype.Text `json:"russian"`
+	Arabic        pgtype.Text `json:"arabic"`
+	Chinese       pgtype.Text `json:"chinese"`
+	Pronunciation string      `json:"pronunciation"`
+	AudioJa       []byte      `json:"audio_ja"`
+	AudioEn       []byte      `json:"audio_en"`
+	AudioFr       []byte      `json:"audio_fr"`
+	AudioEs       []byte      `json:"audio_es"`
+	AudioRu       []byte      `json:"audio_ru"`
+	AudioAr       []byte      `json:"audio_ar"`
+	AudioZh       []byte      `json:"audio_zh"`
 }
 
 func (q *Queries) GetStimulusWords(ctx context.Context) ([]GetStimulusWordsRow, error) {
@@ -225,7 +261,19 @@ func (q *Queries) GetStimulusWords(ctx context.Context) ([]GetStimulusWordsRow, 
 			&i.ID,
 			&i.Japanese,
 			&i.English,
+			&i.French,
+			&i.Spanish,
+			&i.Russian,
+			&i.Arabic,
+			&i.Chinese,
 			&i.Pronunciation,
+			&i.AudioJa,
+			&i.AudioEn,
+			&i.AudioFr,
+			&i.AudioEs,
+			&i.AudioRu,
+			&i.AudioAr,
+			&i.AudioZh,
 		); err != nil {
 			return nil, err
 		}
@@ -238,20 +286,48 @@ func (q *Queries) GetStimulusWords(ctx context.Context) ([]GetStimulusWordsRow, 
 }
 
 const upsertStimulusWord = `-- name: UpsertStimulusWord :exec
-INSERT INTO stimulus_words (id, japanese, english, pronunciation, created_at, updated_at)
-VALUES ($1, $2, $3, $4, NOW(), NOW())
+INSERT INTO stimulus_words (
+    id, japanese, english, french, spanish, russian, arabic, chinese, pronunciation,
+    audio_ja, audio_en, audio_fr, audio_es, audio_ru, audio_ar, audio_zh,
+    created_at, updated_at
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
     japanese = EXCLUDED.japanese,
     english = EXCLUDED.english,
+    french = EXCLUDED.french,
+    spanish = EXCLUDED.spanish,
+    russian = EXCLUDED.russian,
+    arabic = EXCLUDED.arabic,
+    chinese = EXCLUDED.chinese,
     pronunciation = EXCLUDED.pronunciation,
+    audio_ja = COALESCE(EXCLUDED.audio_ja, stimulus_words.audio_ja),
+    audio_en = COALESCE(EXCLUDED.audio_en, stimulus_words.audio_en),
+    audio_fr = COALESCE(EXCLUDED.audio_fr, stimulus_words.audio_fr),
+    audio_es = COALESCE(EXCLUDED.audio_es, stimulus_words.audio_es),
+    audio_ru = COALESCE(EXCLUDED.audio_ru, stimulus_words.audio_ru),
+    audio_ar = COALESCE(EXCLUDED.audio_ar, stimulus_words.audio_ar),
+    audio_zh = COALESCE(EXCLUDED.audio_zh, stimulus_words.audio_zh),
     updated_at = NOW()
 `
 
 type UpsertStimulusWordParams struct {
-	ID            int32  `json:"id"`
-	Japanese      string `json:"japanese"`
-	English       string `json:"english"`
-	Pronunciation string `json:"pronunciation"`
+	ID            int32       `json:"id"`
+	Japanese      string      `json:"japanese"`
+	English       string      `json:"english"`
+	French        pgtype.Text `json:"french"`
+	Spanish       pgtype.Text `json:"spanish"`
+	Russian       pgtype.Text `json:"russian"`
+	Arabic        pgtype.Text `json:"arabic"`
+	Chinese       pgtype.Text `json:"chinese"`
+	Pronunciation string      `json:"pronunciation"`
+	AudioJa       []byte      `json:"audio_ja"`
+	AudioEn       []byte      `json:"audio_en"`
+	AudioFr       []byte      `json:"audio_fr"`
+	AudioEs       []byte      `json:"audio_es"`
+	AudioRu       []byte      `json:"audio_ru"`
+	AudioAr       []byte      `json:"audio_ar"`
+	AudioZh       []byte      `json:"audio_zh"`
 }
 
 func (q *Queries) UpsertStimulusWord(ctx context.Context, arg UpsertStimulusWordParams) error {
@@ -259,7 +335,19 @@ func (q *Queries) UpsertStimulusWord(ctx context.Context, arg UpsertStimulusWord
 		arg.ID,
 		arg.Japanese,
 		arg.English,
+		arg.French,
+		arg.Spanish,
+		arg.Russian,
+		arg.Arabic,
+		arg.Chinese,
 		arg.Pronunciation,
+		arg.AudioJa,
+		arg.AudioEn,
+		arg.AudioFr,
+		arg.AudioEs,
+		arg.AudioRu,
+		arg.AudioAr,
+		arg.AudioZh,
 	)
 	return err
 }

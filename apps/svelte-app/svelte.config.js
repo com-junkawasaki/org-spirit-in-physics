@@ -1,9 +1,19 @@
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { sveltex } from 'sveltex';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	preprocess: vitePreprocess(),
+	extensions: ['.svelte', '.svx', '.sveltex', '.md'],
+	preprocess: [
+		vitePreprocess(),
+		sveltex({
+			extensions: ['.svx', '.sveltex', '.md'],
+			math: {
+				engine: 'katex',
+			}
+		})
+	],
 	kit: {
 		adapter: adapter({
 			// default options are shown. On some platforms

@@ -59,7 +59,19 @@ type StimulusWord struct {
 	ID            int32              `json:"id"`
 	Japanese      string             `json:"japanese"`
 	English       string             `json:"english"`
+	French        pgtype.Text        `json:"french"`
+	Spanish       pgtype.Text        `json:"spanish"`
+	Russian       pgtype.Text        `json:"russian"`
+	Arabic        pgtype.Text        `json:"arabic"`
+	Chinese       pgtype.Text        `json:"chinese"`
 	Pronunciation string             `json:"pronunciation"`
+	AudioJa       []byte             `json:"audio_ja"`
+	AudioEn       []byte             `json:"audio_en"`
+	AudioFr       []byte             `json:"audio_fr"`
+	AudioEs       []byte             `json:"audio_es"`
+	AudioRu       []byte             `json:"audio_ru"`
+	AudioAr       []byte             `json:"audio_ar"`
+	AudioZh       []byte             `json:"audio_zh"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }

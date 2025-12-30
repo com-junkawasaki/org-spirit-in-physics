@@ -41,20 +41,36 @@ ON CONFLICT (id) DO UPDATE SET
 RETURNING *;
 
 -- name: GetStimulusWords :many
-SELECT id, japanese, english, pronunciation
+SELECT id, japanese, english, french, spanish, russian, arabic, chinese, pronunciation, audio_ja, audio_en, audio_fr, audio_es, audio_ru, audio_ar, audio_zh
 FROM stimulus_words
 ORDER BY id;
 
 -- name: GetStimulusWord :one
-SELECT id, japanese, english, pronunciation
+SELECT id, japanese, english, french, spanish, russian, arabic, chinese, pronunciation, audio_ja, audio_en, audio_fr, audio_es, audio_ru, audio_ar, audio_zh
 FROM stimulus_words
 WHERE id = $1;
 
 -- name: UpsertStimulusWord :exec
-INSERT INTO stimulus_words (id, japanese, english, pronunciation, created_at, updated_at)
-VALUES ($1, $2, $3, $4, NOW(), NOW())
+INSERT INTO stimulus_words (
+    id, japanese, english, french, spanish, russian, arabic, chinese, pronunciation,
+    audio_ja, audio_en, audio_fr, audio_es, audio_ru, audio_ar, audio_zh,
+    created_at, updated_at
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
 ON CONFLICT (id) DO UPDATE SET
     japanese = EXCLUDED.japanese,
     english = EXCLUDED.english,
+    french = EXCLUDED.french,
+    spanish = EXCLUDED.spanish,
+    russian = EXCLUDED.russian,
+    arabic = EXCLUDED.arabic,
+    chinese = EXCLUDED.chinese,
     pronunciation = EXCLUDED.pronunciation,
+    audio_ja = COALESCE(EXCLUDED.audio_ja, stimulus_words.audio_ja),
+    audio_en = COALESCE(EXCLUDED.audio_en, stimulus_words.audio_en),
+    audio_fr = COALESCE(EXCLUDED.audio_fr, stimulus_words.audio_fr),
+    audio_es = COALESCE(EXCLUDED.audio_es, stimulus_words.audio_es),
+    audio_ru = COALESCE(EXCLUDED.audio_ru, stimulus_words.audio_ru),
+    audio_ar = COALESCE(EXCLUDED.audio_ar, stimulus_words.audio_ar),
+    audio_zh = COALESCE(EXCLUDED.audio_zh, stimulus_words.audio_zh),
     updated_at = NOW();
