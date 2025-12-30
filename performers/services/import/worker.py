@@ -5,7 +5,7 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 
 from app.database import init_db_pool, close_db_pool
-from app.workflows import ImportParticipantsWorkflow, ImportSessionsWorkflow
+from app.workflows import ImportParticipantsWorkflow, ImportSessionsWorkflow, StimulusAudioGenerationWorkflow
 from app.activities import ImportActivities
 
 logging.basicConfig(level=logging.INFO)
@@ -31,13 +31,14 @@ async def main():
     worker = Worker(
         client,
         task_queue="import-task-queue",
-        workflows=[ImportParticipantsWorkflow, ImportSessionsWorkflow],
+        workflows=[ImportParticipantsWorkflow, ImportSessionsWorkflow, StimulusAudioGenerationWorkflow],
         activities=[
             activities.list_participant_directories, 
             activities.process_participant,
             activities.process_session,
             activities.generate_timeline,
-            activities.process_physiological_data
+            activities.process_physiological_data,
+            activities.generate_stimulus_audio
         ],
     )
     

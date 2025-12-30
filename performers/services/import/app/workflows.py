@@ -89,3 +89,36 @@ class ImportSessionsWorkflow:
             "processed": len(results),
             "results": results
         }
+
+@workflow.defn
+class StimulusAudioGenerationWorkflow:
+    @workflow.run
+    async def run(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generates audio for stimulus words across multiple languages.
+        input: {
+            "words": [{"id": 1, "text": "頭", "lang": "ja"}, ...],
+            "api_key": "..."
+        }
+        """
+        activities = ImportActivities()
+        words = input.get("words", [])
+        api_key = input.get("api_key")
+        
+        results = []
+        for word_info in words:
+            activity_input = word_info | {"api_key": api_key}
+            
+            result = await workflow.execute_activity(
+                activities.generate_stimulus_audio,
+                activity_input,
+                start_to_close_timeout=timedelta(seconds=30),
+            )
+            results.append(result)
+            await workflow.sleep(timedelta(seconds=0.5))
+            
+        return {
+            "success": True,
+            "total": len(words),
+            "results": results
+        }

@@ -9,6 +9,8 @@ from app.database import get_db_pool
 
 # Import the timeline processing logic
 from app.routers.timeline import process_session_timeline
+from app.hume_voice import generate_audio_hume
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -349,3 +351,52 @@ class ImportActivities:
             {"participant_id": d.name, "participant_path": str(d)}
             for d in dataset_path.iterdir() if d.is_dir()
         ]
+
+    @activity.defn
+    async def generate_stimulus_audio(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        word_id = input["id"]
+        text = input["text"]
+        lang = input["lang"]
+        api_key = input["api_key"]
+        
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            # Check if audio already exists for this language
+            column_name = f"audio_{lang}"
+            exists = await conn.fetchval(
+                f"SELECT {column_name} FROM stimulus_words WHERE id = $1",
+                word_id
+            )
+            
+            if exists:
+                return {
+                    "word_id": word_id,
+                    "lang": lang,
+                    "status": "skipped",
+                    "message": "Audio already exists in database"
+                }
+            
+            # Generate audio
+            audio_data = await generate_audio_hume(api_key, text)
+            
+            if not audio_data:
+                return {
+                    "word_id": word_id,
+                    "lang": lang,
+                    "status": "error",
+                    "message": "Failed to generate audio from Hume AI"
+                }
+            
+            # Store audio in database
+            await conn.execute(
+                f"UPDATE stimulus_words SET {column_name} = $1, updated_at = NOW() WHERE id = $2",
+                audio_data,
+                word_id
+            )
+            
+            return {
+                "word_id": word_id,
+                "lang": lang,
+                "status": "success",
+                "message": f"Generated and stored {lang} audio"
+            }

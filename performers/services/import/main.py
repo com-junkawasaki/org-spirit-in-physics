@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from temporalio.client import Client
 
 from app.database import get_db_pool, init_db_pool, close_db_pool
-from app.routers import participants, sessions, emotions, timeline
+from app.routers import participants, sessions, emotions, timeline, audio
 
 # Configure logging
 logging.basicConfig(
@@ -77,6 +77,7 @@ app.include_router(participants.router, prefix="/import", tags=["participants"])
 app.include_router(sessions.router, prefix="/import", tags=["sessions"])
 app.include_router(emotions.router, prefix="/import", tags=["emotions"])
 app.include_router(timeline.router, prefix="/import", tags=["timeline"])
+app.include_router(audio.router, prefix="/import", tags=["audio"])
 
 
 @app.get("/import/status")
