@@ -8,6 +8,18 @@
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
+  const localeMap: Record<string, string> = {
+    en: "en-US",
+    ja: "ja-JP",
+    fr: "fr-FR",
+    es: "es-ES",
+    ru: "ru-RU",
+    ar: "ar-SA",
+    zh: "zh-CN"
+  };
+
+  const currentLocale = $derived(localeMap[languageTag()] || "en-US");
+
   let videoPreview: HTMLVideoElement | undefined = $state();
   let stimulusAudio: HTMLAudioElement | undefined = $state();
   
@@ -225,7 +237,7 @@
     cleanupRecognition();
 
     recognition = new SpeechRecognition();
-    recognition.lang = languageTag() === 'ja' ? 'ja-JP' : 'en-US';
+    recognition.lang = currentLocale;
     recognition.interimResults = true;
     recognition.continuous = false;
 
@@ -305,7 +317,7 @@
           console.warn("Audio play failed, using TTS:", err);
           // Fallback to TTS
           const utterance = new SpeechSynthesisUtterance(stimulusWord);
-          utterance.lang = languageTag() === 'ja' ? 'ja-JP' : 'en-US';
+          utterance.lang = currentLocale;
           utterance.onend = () => setTimeout(startRecognition, 500);
           speechSynthesis.speak(utterance);
         });

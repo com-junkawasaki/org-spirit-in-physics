@@ -24,9 +24,8 @@ tasks:
       - argocd app sync spirit-in-physics --local .
 
   nix-build-portal:
-    desc: Build portal image with Nix and load into docker
+    desc: Build portal image with Docker and apply with Timoni
     cmds:
-      - nix build .#image-spirit-svelte-app
-      - docker load < result
+      - docker build -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest ./apps/svelte-app
       - task: apply
 

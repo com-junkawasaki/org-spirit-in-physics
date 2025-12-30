@@ -1,6 +1,6 @@
 {
 	"sourceLanguageTag": "en",
-	"languageTags": ["en", "ja"],
+	"languageTags": ["en", "ja", "fr", "es", "ru", "ar", "zh"],
 	"modules": [
 		"https://cdn.jsdelivr.net/npm/@inlang/plugin-json@4/dist/index.js"
 	],

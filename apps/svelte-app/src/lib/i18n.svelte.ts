@@ -2,32 +2,43 @@ import * as runtime from "$lib/paraglide/runtime.js";
 import { browser } from "$app/environment";
 
 // Svelte 5 reactive state
-let tag = $state<"en" | "ja">("en"); 
+let tag = $state<string>(runtime.sourceLanguageTag); 
 
 if (browser) {
 	// Check URL parameter first (e.g. ?lang=en)
 	const urlParams = new URLSearchParams(window.location.search);
 	const langParam = urlParams.get('lang');
 	
-	if (langParam === "en" || langParam === "ja") {
-		tag = langParam as "en" | "ja";
+	const isAvailable = (l: string | null): l is string => 
+		!!l && runtime.availableLanguageTags.includes(l as any);
+
+	if (isAvailable(langParam)) {
+		tag = langParam;
 		localStorage.setItem("preferredLanguage", tag);
 	} else {
 		const saved = localStorage.getItem("preferredLanguage");
-		if (saved === "en" || saved === "ja") {
-			tag = saved as "en" | "ja";
+		if (isAvailable(saved)) {
+			tag = saved;
+		} else {
+			// Fallback to browser language if available
+			const browserLang = navigator.language.split('-')[0];
+			if (isAvailable(browserLang)) {
+				tag = browserLang;
+			}
 		}
 	}
 }
 
 // Tell paraglide to use this reactive state
-runtime.setLanguageTag(() => tag);
+runtime.setLanguageTag(() => tag as any);
 
 export const languageTag = () => tag;
-export const setLanguageTag = (value: "en" | "ja") => {
-	tag = value;
-	if (browser) {
-		localStorage.setItem("preferredLanguage", value);
+export const setLanguageTag = (value: string) => {
+	if (runtime.availableLanguageTags.includes(value as any)) {
+		tag = value;
+		if (browser) {
+			localStorage.setItem("preferredLanguage", value);
+		}
 	}
 };
 export const availableLanguageTags = runtime.availableLanguageTags;

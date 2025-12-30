@@ -15,13 +15,15 @@ This project uses Timoni and Taskfile for local development to provide a fast fe
 ## Inner Loop (Local Development)
 For fast iteration without pushing to Git:
 
-1. **Watch and Apply**: Use the `task dev` command (if implemented) or manually run:
+1. **Access**: Use [http://localhost/](http://localhost/) for browser-based verification (no `/etc/hosts` editing required).
+2. **Watch and Apply**: Use the `task dev` command:
    ```bash
-   watchexec -e cue,go,ts,svelte -- "timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue"
+   task dev
    ```
-2. **Build and Load**: If building images locally via Nix:
+   This runs `watchexec` to automatically apply changes to the cluster using `timoni`.
+3. **Build and Load**: If building images locally via Nix:
    ```bash
-   nix build .#image-spirit-svelte-app && docker load < result && timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+   task nix-build-portal
    ```
 
 ## Outer Loop (GitOps / ArgoCD)

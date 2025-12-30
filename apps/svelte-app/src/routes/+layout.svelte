@@ -6,10 +6,20 @@
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { languageTag, setLanguageTag } from "$lib/i18n.svelte";
+  import { languageTag, setLanguageTag, availableLanguageTags } from "$lib/i18n.svelte";
   import "../app.css";
 
   let { children } = $props();
+
+  const languageNames: Record<string, string> = {
+    en: "English",
+    ja: "日本語",
+    fr: "Français",
+    es: "Español",
+    ru: "Русский",
+    ar: "العربية",
+    zh: "简体中文"
+  };
 
   if (browser) {
     console.log("Current URL:", page.url.href);
@@ -20,15 +30,17 @@
   // 被験者画面では管理画面へのリンクを隠す
   let isParticipantPage = $derived(page.url.pathname === '/participant');
   
-  function toggleLanguage() {
-    const newLang = languageTag() === 'ja' ? 'en' : 'ja';
-    setLanguageTag(newLang);
+  function handleLanguageChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    setLanguageTag(select.value);
   }
 
-  // Sync html lang attribute
+  // Sync html lang and dir attributes
   $effect(() => {
     if (browser) {
-      document.documentElement.lang = languageTag();
+      const lang = languageTag();
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     }
   });
 </script>
@@ -61,9 +73,12 @@
       {/if}
 
       <div class="auth-section">
-        <button class="lang-switcher" onclick={toggleLanguage}>
-          {languageTag() === 'ja' ? 'English' : '日本語'}
-        </button>
+        <select class="lang-selector" value={languageTag()} onchange={handleLanguageChange}>
+          {#each availableLanguageTags as lang}
+            <option value={lang}>{languageNames[lang] || lang}</option>
+          {#/each}
+        </select>
+        <ThemeSwitcher />
         {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
           <SignedOut>
             <SignInButton mode="modal" class="signin-btn" />
@@ -77,10 +92,6 @@
       </div>
     </div>
   </header>
-
-  <div class="theme-toggle-container">
-    <ThemeSwitcher />
-  </div>
 
   <main class="content-wrapper">
     {@render children()}
@@ -101,7 +112,7 @@
     gap: 1.5rem;
   }
 
-  .lang-switcher {
+  .lang-selector {
     background: transparent;
     border: 1px solid rgba(0, 0, 0, 0.1);
     padding: 0.4rem 0.8rem;
@@ -111,11 +122,17 @@
     cursor: pointer;
     transition: all 0.2s;
     color: #666;
+    outline: none;
   }
 
-  .lang-switcher:hover {
+  .lang-selector:hover {
     background: rgba(0, 0, 0, 0.05);
     color: #000;
+  }
+
+  .lang-selector option {
+    background: white;
+    color: black;
   }
 
   .global-nav {
@@ -202,13 +219,6 @@
 
   .signin-btn:hover {
     opacity: 0.9;
-  }
-
-  .theme-toggle-container {
-    position: fixed;
-    bottom: 2rem;
-    left: 2rem;
-    z-index: 1000;
   }
 
   .content-wrapper {
