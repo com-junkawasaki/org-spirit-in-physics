@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { SignedIn, SignedOut, UserButton } from "svelte-clerk";
+  import { SignedIn, SignedOut, UserButton, useClerkContext } from "svelte-clerk";
+  import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import { page } from "$app/state";
   import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
   import * as m from "$lib/paraglide/messages.js";
@@ -91,68 +92,83 @@
     </SignedOut>
 
     <SignedIn>
-      <div class="dashboard-layout">
-        <aside class="sidebar">
-          <div class="sidebar-header">
-            <span class="brand">Admin Dashboard</span>
-          </div>
-          <nav class="sidebar-nav">
-            <a 
-              href="/researcher"
-              class="nav-item"
-              class:active={activeTab === "overview"} 
-            >
-              <span class="icon">📊</span> {m.overview()}
-            </a>
-            <a 
-              href="/researcher/participants"
-              class="nav-item"
-              class:active={activeTab === "participants"} 
-            >
-              <span class="icon">👥</span> {m.participants_list()}
-            </a>
-            <a 
-              href="/researcher/sessions"
-              class="nav-item"
-              class:active={activeTab === "sessions"} 
-            >
-              <span class="icon">🕒</span> {m.sessions_history()}
-            </a>
-            <a 
-              href="/researcher/settings"
-              class="nav-item"
-              class:active={activeTab === "settings"} 
-            >
-              <span class="icon">⚙️</span> {m.settings()}
-            </a>
-          </nav>
-          <div class="sidebar-footer">
-            <UserButton />
-            <span class="user-name">{m.admin()}</span>
-          </div>
-        </aside>
-
-        <main class="main-content">
-          <header class="content-header">
-            <div class="flex items-center gap-4">
-              <h2 class="text-xl font-bold text-gray-800">
-                {#if activeTab === "overview"}{m.overview()}
-                {:else if activeTab === "participants"}{m.participants_list()}
-                {:else if activeTab === "sessions"}{m.sessions_history()}
-                {:else if activeTab === "settings"}{m.settings()}
-                {/if}
-              </h2>
+      <ResearcherGuard>
+        <div class="dashboard-layout">
+          <aside class="sidebar">
+            <div class="sidebar-header">
+              <span class="brand">Admin Dashboard</span>
             </div>
-            <div class="header-actions">
-              <button class="btn-refresh" onclick={() => window.location.reload()} aria-label={m.update()}>{m.update()}</button>
+            <nav class="sidebar-nav">
+              <a 
+                href="/researcher"
+                class="nav-item"
+                class:active={activeTab === "overview"} 
+              >
+                <span class="icon">📊</span> {m.overview()}
+              </a>
+              <a 
+                href="/researcher/participants"
+                class="nav-item"
+                class:active={activeTab === "participants"} 
+              >
+                <span class="icon">👥</span> {m.participants_list()}
+              </a>
+              <a 
+                href="/researcher/sessions"
+                class="nav-item"
+                class:active={activeTab === "sessions"} 
+              >
+                <span class="icon">🕒</span> {m.sessions_history()}
+              </a>
+              <a 
+                href="/researcher/settings"
+                class="nav-item"
+                class:active={activeTab === "settings"} 
+              >
+                <span class="icon">⚙️</span> {m.settings()}
+              </a>
+            </nav>
+            <div class="sidebar-footer">
+              <UserButton />
+              <span class="user-name">{m.admin()}</span>
             </div>
-          </header>
+          </aside>
 
-          <div class="content-body">
-            {@render children()}
+          <main class="main-content">
+            <header class="content-header">
+              <div class="flex items-center gap-4">
+                <h2 class="text-xl font-bold text-gray-800">
+                  {#if activeTab === "overview"}{m.overview()}
+                  {:else if activeTab === "participants"}{m.participants_list()}
+                  {:else if activeTab === "sessions"}{m.sessions_history()}
+                  {:else if activeTab === "settings"}{m.settings()}
+                  {/if}
+                </h2>
+              </div>
+              <div class="header-actions">
+                <button class="btn-refresh" onclick={() => window.location.reload()} aria-label={m.update()}>{m.update()}</button>
+              </div>
+            </header>
+
+            <div class="content-body">
+              {@render children()}
+            </div>
+          </main>
+        </div>
+
+        {#snippet fallback()}
+          <div class="auth-required">
+            <div class="auth-card">
+              <h1>Access Denied</h1>
+              <p>研究者権限 (researcher role) が必要です。管理者にお問い合わせください。</p>
+              <div class="auth-placeholder">
+                <p>現在のユーザーにはこのページを表示する権限がありません。</p>
+                <a href="/" class="btn secondary" style="margin-top: 1rem; display: inline-block;">トップへ戻る</a>
+              </div>
+            </div>
           </div>
-        </main>
-      </div>
+        {/snippet}
+      </ResearcherGuard>
     </SignedIn>
   {/if}
 </div>

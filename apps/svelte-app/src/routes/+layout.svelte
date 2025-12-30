@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { browser } from "$app/environment";
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
+  import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { languageTag, setLanguageTag } from "$lib/i18n.svelte";
   import "../app.css";
@@ -52,7 +53,9 @@
           <a href="/" class="nav-link">{m.paper()}</a>
           <div class="subtle-links">
             <a href="/participant" class="subtle-link">{m.participant()}</a>
-            <a href="/researcher" class="subtle-link">{m.researcher()}</a>
+            <ResearcherGuard>
+              <a href="/researcher" class="subtle-link">{m.researcher()}</a>
+            </ResearcherGuard>
           </div>
         </nav>
       {/if}
