@@ -24,19 +24,40 @@
     zh: "简体中文"
   };
 
+  let isParticipantPage = $derived(page.url.pathname === '/participant');
+
   function handleLanguageChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     const newLang = select.value;
     
-    // Use Paraglide-SvelteKit to get the localized path
-    const newPath = i18n.resolveRoute(page.url.pathname, newLang);
+    console.log("Switching language to:", newLang);
+    console.log("Current path:", page.url.pathname);
+    
+    // Manual prefix stripping to prevent nesting like /fr/fr/ja/
+    let path = page.url.pathname;
+    const segments = path.split('/').filter(Boolean);
+    while (segments.length > 0 && availableLanguageTags.includes(segments[0] as any)) {
+      segments.shift();
+    }
+    const canonicalPath = '/' + segments.join('/');
+    console.log("Canonical path calculated:", canonicalPath);
+    
+    const newPath = i18n.resolveRoute(canonicalPath, newLang);
+    console.log("New path calculated:", newPath);
+    
     goto(newPath);
   }
 
   // Sync html lang and dir attributes
   $effect(() => {
+    // Depend on page.url.pathname to re-run on navigation
+    const _path = page.url.pathname;
+    
     if (browser) {
       const lang = languageTag();
+      console.log("Current languageTag:", lang);
+      console.log("Current page.url.pathname:", page.url.pathname);
+      console.log("Current page.route.id:", page.route.id);
       document.documentElement.lang = lang;
       document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     }

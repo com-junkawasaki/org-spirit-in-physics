@@ -5,4 +5,3 @@ export const i18n = createI18n(runtime, {
     pathnames: {},
     prefixDefaultLanguage: "never", 
 });
-

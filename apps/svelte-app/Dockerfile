@@ -4,8 +4,9 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --no-frozen-lockfile
 COPY . .
-# Force rebuild v4
-RUN echo "build-v4" > build-version.txt
+# Force rebuild v13
+RUN echo "build-v13" > build-version.txt
+ENV POSTHOG_DISABLED=1
 RUN pnpm build
 
 FROM node:20-alpine

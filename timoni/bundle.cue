@@ -76,7 +76,7 @@ bundle: {
 				image: {
 					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service"
 					tag:        "latest"
-					pullPolicy: "Always"
+					pullPolicy: "IfNotPresent"
 				}
 				service: port: 8080
 				env: [
@@ -85,7 +85,7 @@ bundle: {
 					{name: "MINIO_ENDPOINT", value: "infra-minio:9000"},
 					{name: "MINIO_ROOT_USER", value: "minioadmin"},
 					{name: "MINIO_ROOT_PASSWORD", value: "minioadmin"},
-					{name: "LAKEFS_ENDPOINT", value: "http://infra-lakefs:8000"},
+					{name: "LAKEFS_ENDPOINT", value: "infra-lakefs:8000"},
 					{name: "LAKEFS_ACCESS_KEY_ID", value: "AKIAIOSFODNN7EXAMPLE"}, // lakeFS usually starts with this for setup
 					{name: "LAKEFS_SECRET_ACCESS_KEY", value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"},
 					{name: "LAKEFS_REPOSITORY", value: "spirit-in-physics"},
@@ -114,7 +114,7 @@ bundle: {
 				image: {
 					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service"
 					tag:        "latest"
-					pullPolicy: "Always"
+					pullPolicy: "IfNotPresent"
 				}
 				service: port: 8082
 				env: [
@@ -146,7 +146,7 @@ bundle: {
 				image: {
 					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service"
 					tag:        "latest"
-					pullPolicy: "Always"
+					pullPolicy: "IfNotPresent"
 				}
 				command: ["python", "worker.py"]
 				env: [
@@ -178,7 +178,7 @@ bundle: {
 				image: {
 					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app"
 					tag:        "latest"
-					pullPolicy: "Always"
+					pullPolicy: "IfNotPresent"
 				}
 				service: port: 80
 				env: [
@@ -212,7 +212,7 @@ bundle: {
 				image: {
 					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts"
 					tag:        "latest"
-					pullPolicy: "Always"
+					pullPolicy: "IfNotPresent"
 				}
 				service: port: 3000
 				env: [

@@ -554,7 +554,7 @@ spec:
         - name: MINIO_ROOT_PASSWORD
           value: minioadmin
         - name: LAKEFS_ENDPOINT
-          value: http://infra-lakefs:8000
+          value: infra-lakefs:8000
         - name: LAKEFS_ACCESS_KEY_ID
           value: AKIAIOSFODNN7EXAMPLE
         - name: LAKEFS_SECRET_ACCESS_KEY

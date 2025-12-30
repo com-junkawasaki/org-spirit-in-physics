@@ -1,4 +1,5 @@
 import { createConnectTransport } from "@connectrpc/connect-web";
+// connect.ts - trigger tilt rebuild v2
 import { createClient } from "@connectrpc/connect";
 import { ParticipantService } from "@/generated/proto/participant/v1/participant_connect";
 import { SessionService } from "@/generated/proto/session/v1/session_connect";

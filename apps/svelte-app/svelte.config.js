@@ -10,7 +10,7 @@ const config = {
 			// these options are set automatically — see below
 			pages: 'build',
 			assets: 'build',
-			fallback: 'index.html', // SPA mode fallback
+			fallback: 'spa.html', // SPA mode fallback
 			precompress: false,
 			strict: false
 		}),
