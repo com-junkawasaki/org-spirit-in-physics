@@ -71,7 +71,8 @@ package templates
 			]
 		}
 		if (#config.gateway.hostname & [...string]) != _|_ {
-			commonName: #config.gateway.hostname[0]
+			// Pick a short enough name for commonName (max 64 chars)
+			commonName: [ for h in #config.gateway.hostname if len(h) < 64 { h }][0]
 			dnsNames:   #config.gateway.hostname
 		}
 	}
