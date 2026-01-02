@@ -268,7 +268,8 @@
 </div>
 
 <style>
-  :root {
+  .lp-container {
+    /* Light mode variables (Default) */
     --lp-bg: #fbfbfd;
     --lp-text: #1d1d1f;
     --lp-subtext: #86868b;
@@ -277,9 +278,16 @@
     --lp-badge-bg: rgba(0, 0, 0, 0.05);
     --lp-gradient-start: #fbfbfd;
     --lp-gradient-end: #f5f5f7;
+
+    width: 100%;
+    overflow-x: hidden;
+    background: var(--lp-bg);
+    color: var(--lp-text);
+    transition: background-color 0.5s ease, color 0.5s ease;
   }
 
   :global(.dark) .lp-container {
+    /* Dark mode variables override */
     --lp-bg: #000;
     --lp-text: #fff;
     --lp-subtext: #a1a1a6;
@@ -288,14 +296,6 @@
     --lp-badge-bg: rgba(255, 255, 255, 0.05);
     --lp-gradient-start: #000;
     --lp-gradient-end: #0a0a0c;
-  }
-
-  .lp-container {
-    width: 100%;
-    overflow-x: hidden;
-    background: var(--lp-bg);
-    color: var(--lp-text);
-    transition: background-color 0.5s ease, color 0.5s ease;
   }
 
   /* 1. Interactive Graph Section */
@@ -404,6 +404,7 @@
     font-weight: 900;
     margin-bottom: 1.5rem;
     letter-spacing: -0.05em;
+    color: var(--lp-text);
   }
 
   .gradient-text {

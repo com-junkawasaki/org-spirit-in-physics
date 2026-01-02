@@ -213,18 +213,8 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
-  .addendum {
-    background: #fbfbfd;
-    padding: 3rem;
-    border-radius: 20px;
-    border: 1px solid #f0f0f2;
-    margin-top: 4rem;
-  }
-
-  .dataset-info {
-    font-size: 1rem;
-    color: #86868b;
-    margin-top: 1rem;
+  :global(.dark) :global(body) {
+    background-color: #000;
   }
 
   .paper-container {
@@ -253,6 +243,12 @@
     border-radius: 20px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
     border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  :global(.dark) .toc-inner {
+    background: #121214;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   }
 
   .toc-header {
@@ -298,6 +294,10 @@
     display: block;
     transition: all 0.2s;
     font-weight: 500;
+  }
+
+  :global(.dark) .toc-sidebar a {
+    color: #e5e5e7;
   }
 
   .toc-sidebar a:hover {
@@ -356,6 +356,12 @@
     max-width: 900px;
   }
 
+  :global(.dark) .paper-article {
+    background: #1c1c1e;
+    color: #e5e5e7;
+    box-shadow: 0 10px 60px rgba(0, 0, 0, 0.4);
+  }
+
   .paper-header {
     text-align: left;
     margin-bottom: 6rem;
@@ -368,6 +374,10 @@
     letter-spacing: -0.02em;
     margin-bottom: 4rem;
     color: #000;
+  }
+
+  :global(.dark) .paper-title {
+    color: #fff;
   }
 
   .author-grid {
@@ -387,6 +397,10 @@
     font-weight: 700;
     font-size: 1.15rem;
     color: #000;
+  }
+
+  :global(.dark) .author-name {
+    color: #fff;
   }
 
   .author-email {
@@ -415,6 +429,10 @@
     font-size: 0.9rem;
   }
 
+  :global(.dark) .paper-metadata {
+    border-top-color: #2c2c2e;
+  }
+
   /* Sections */
   .section {
     margin-bottom: 7rem;
@@ -431,12 +449,21 @@
     letter-spacing: -0.01em;
   }
 
+  :global(.dark) h2 {
+    color: #fff;
+    border-bottom-color: #2c2c2e;
+  }
+
   h3 {
     font-size: 1.5rem;
     font-weight: 600;
     margin-top: 3.5rem;
     margin-bottom: 1.25rem;
     color: #1d1d1f;
+  }
+
+  :global(.dark) h3 {
+    color: #fff;
   }
 
   p {
@@ -448,6 +475,10 @@
     text-align: left;
   }
 
+  :global(.dark) p {
+    color: #d1d1d6;
+  }
+
   .abstract-box {
     background: #f8f8f9;
     padding: 3rem;
@@ -457,10 +488,18 @@
     margin-bottom: 5rem;
   }
 
+  :global(.dark) .abstract-box {
+    background: #2c2c2e;
+  }
+
   .abstract-box p {
     font-size: 1.2rem;
     color: #1d1d1f;
     line-height: 1.7;
+  }
+
+  :global(.dark) .abstract-box p {
+    color: #e5e5e7;
   }
 
   .abstract-box h2 {
@@ -481,10 +520,19 @@
     box-shadow: inset 0 2px 8px rgba(0,0,0,0.01);
   }
 
+  :global(.dark) .equation-block {
+    background: #2c2c2e;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
   .formula {
     font-size: 1.75rem;
     margin-bottom: 1.25rem !important;
     color: #000;
+  }
+
+  :global(.dark) .formula {
+    color: #fff;
   }
 
   .equation-desc {
@@ -510,6 +558,11 @@
     transition: transform 0.2s;
   }
 
+  :global(.dark) .definition-card {
+    background: #2c2c2e;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
   .definition-card:hover {
     transform: translateY(-4px);
   }
@@ -528,6 +581,10 @@
     margin: 0;
     line-height: 1.6;
     color: #1d1d1f;
+  }
+
+  :global(.dark) .definition-card p {
+    color: #e5e5e7;
   }
 
   .pattern-box {
@@ -558,6 +615,10 @@
     color: #000;
   }
 
+  :global(.dark) .formula-inline {
+    color: #fff;
+  }
+
   /* Results */
   .results-overview {
     display: grid;
@@ -577,6 +638,11 @@
     transition: all 0.3s;
   }
 
+  :global(.dark) .result-card {
+    background: #2c2c2e;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
   .result-card:hover {
     box-shadow: 0 8px 30px rgba(0,0,0,0.05);
   }
@@ -586,6 +652,10 @@
     color: white;
     border: none;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  :global(.dark) .result-card.highlight {
+    background: #3a3a3c;
   }
 
   .result-label {
@@ -623,6 +693,11 @@
     background: #fafafa;
   }
 
+  :global(.dark) .viz-placeholder {
+    background: #1c1c1e;
+    border-color: #3a3a3c;
+  }
+
   .viz-header {
     display: flex;
     align-items: center;
@@ -644,6 +719,11 @@
     letter-spacing: 0.05em;
   }
 
+  :global(.dark) .badge {
+    background: #3a3a3c;
+    color: #a1a1a6;
+  }
+
   /* References */
   .ref-list {
     list-style: none;
@@ -660,6 +740,10 @@
   .ref-text {
     font-size: 1.15rem;
     color: #424245;
+  }
+
+  :global(.dark) .ref-text {
+    color: #a1a1a6;
   }
 
   .ref-doi {
