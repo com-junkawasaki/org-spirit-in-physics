@@ -1,4 +1,9 @@
-import type { UserResource } from "@clerk/types";
+// Use a loose type for User to avoid dependency issues with @clerk/types
+export interface ClerkUser {
+  id: string;
+  publicMetadata: Record<string, any>;
+  [key: string]: any;
+}
 
 export type Plan = 'free' | 'premium' | 'expert';
 
@@ -12,7 +17,7 @@ export interface SubscriptionInfo {
 /**
  * Gets subscription information from Clerk user metadata
  */
-export function getSubscriptionInfo(user: UserResource | null | undefined): SubscriptionInfo {
+export function getSubscriptionInfo(user: ClerkUser | null | undefined): SubscriptionInfo {
   if (!user) {
     return { plan: 'free', status: 'none' };
   }
@@ -30,7 +35,7 @@ export function getSubscriptionInfo(user: UserResource | null | undefined): Subs
 /**
  * Checks if the user has access to a specific mode
  */
-export function hasAccess(user: UserResource | null | undefined, mode: 'quick' | 'full' | 'professional'): boolean {
+export function hasAccess(user: ClerkUser | null | undefined, mode: 'quick' | 'full' | 'professional'): boolean {
   const info = getSubscriptionInfo(user);
   
   if (mode === 'quick') return true; // Always free

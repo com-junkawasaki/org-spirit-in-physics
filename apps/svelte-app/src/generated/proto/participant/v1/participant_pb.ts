@@ -45,6 +45,13 @@ export class StartAssessmentRequest extends Message<StartAssessmentRequest> {
    */
   medicalHistory: string[] = [];
 
+  /**
+   * quick, full, professional
+   *
+   * @generated from field: optional string mode = 8;
+   */
+  mode?: string;
+
   constructor(data?: PartialMessage<StartAssessmentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -60,6 +67,7 @@ export class StartAssessmentRequest extends Message<StartAssessmentRequest> {
     { no: 5, name: "ethnicity", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "income_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "medical_history", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartAssessmentRequest {
