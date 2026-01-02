@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { SignedOut, SignInButton, useClerkContext } from 'svelte-clerk';
-  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+  import { runtimeConfig } from "$lib/env.svelte";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { hasAccess } from "$lib/subscription";
 
-  const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
+  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
 
   onMount(async () => {
@@ -26,7 +26,7 @@
   </h1>
   
   <div class="button-group">
-    {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+    {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
       <SignedOut>
         <SignInButton mode="modal">
           <button class="btn secondary">{m.signin()}</button>

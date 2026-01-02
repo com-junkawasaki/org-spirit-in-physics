@@ -4,7 +4,7 @@
   import { ILLNESS_CODES, type IllnessCode } from "$lib/researcher/illness-codes";
   import { languageTag } from "$lib/paraglide/runtime.js";
   import { SignedIn, SignedOut, useClerkContext } from 'svelte-clerk';
-  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+  import { runtimeConfig } from "$lib/env.svelte";
 
  let { onConsent, participantId } = $props<{
     onConsent: (id: string, email: string, agreements: any, demographics: any) => void;
@@ -43,7 +43,7 @@
         )
   );
 
-  const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
+  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
 
   const isAllAgreed = $derived(
@@ -298,7 +298,7 @@
   <div class="mb-8 p-6 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-200 dark:border-gray-700">
     <label for="email" class="block mb-4 text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">{m.electronic_signature()}</label>
     
-    {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+    {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
       <SignedIn>
         <div class="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-blue-100 dark:border-blue-900/30 shadow-sm">
           <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-black text-xs uppercase">

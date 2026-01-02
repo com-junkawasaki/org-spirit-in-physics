@@ -1,7 +1,7 @@
 -- SQL schema for sqlc
 -- This file contains the table definitions needed for sqlc code generation
 
--- Note: This is a reference schema. The actual schema is managed in supabase/migrations/
+-- Note: This is a reference schema. The actual schema is managed in migrations/
 -- This file is used by sqlc to generate type-safe Go code
 
 -- Participants table

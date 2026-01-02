@@ -3,13 +3,13 @@
   import { page } from "$app/state";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import { useClerkContext } from "svelte-clerk";
-  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+  import { runtimeConfig } from "$lib/env.svelte";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
 
   let { children } = $props();
 
-  const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
+  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
 
   const isLanding = $derived(page.url.pathname.replace(/\/$/, '') === '/participant');

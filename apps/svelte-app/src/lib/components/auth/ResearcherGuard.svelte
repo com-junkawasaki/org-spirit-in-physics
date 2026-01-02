@@ -1,6 +1,6 @@
 <script lang="ts">
   import { useClerkContext } from 'svelte-clerk';
-  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from '$lib/env';
+  import { runtimeConfig } from '$lib/env.svelte';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -9,10 +9,10 @@
 
   let { children, fallback }: Props = $props();
 
-  const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
+  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
   const isResearcher = $derived(
-    !PUBLIC_CLERK_PUBLISHABLE_KEY || 
+    !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY || 
     user?.publicMetadata?.role === 'researcher'
   );
 </script>

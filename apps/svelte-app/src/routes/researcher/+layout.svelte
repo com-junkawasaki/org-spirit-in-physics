@@ -2,7 +2,7 @@
   import { SignedIn, SignedOut, UserButton, useClerkContext } from "svelte-clerk";
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import { page } from "$app/state";
-  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+  import { runtimeConfig } from "$lib/env.svelte";
   import * as m from "$lib/paraglide/messages.js";
 
   let { children } = $props();
@@ -33,11 +33,11 @@
 </script>
 
 <div class="researcher-container">
-  {#if bypassAuth || !PUBLIC_CLERK_PUBLISHABLE_KEY}
+  {#if bypassAuth || !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
     <div class="dashboard-layout">
       <aside class="sidebar">
         <div class="sidebar-header">
-          <span class="brand">Admin Dashboard {#if !PUBLIC_CLERK_PUBLISHABLE_KEY}(No Auth Mode){:else}(Test Mode){/if}</span>
+          <span class="brand">Admin Dashboard {#if !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}(No Auth Mode){:else}(Test Mode){/if}</span>
         </div>
         <nav class="sidebar-nav">
           <a 

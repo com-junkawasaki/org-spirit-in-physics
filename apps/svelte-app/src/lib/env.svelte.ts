@@ -9,7 +9,14 @@ const getEnv = (key: string, defaultValue: string = ''): string => {
     return (env as any)[key] || defaultValue;
 };
 
+// Create a reactive state for environment variables
+// This ensures that if the variables are set after the initial load (e.g. via late-injected scripts),
+// components using them will update.
+export const runtimeConfig = $state({
+    PUBLIC_CLERK_PUBLISHABLE_KEY: getEnv('PUBLIC_CLERK_PUBLISHABLE_KEY'),
+    PUBLIC_API_URL: getEnv('PUBLIC_API_URL')
+});
+
+// For backward compatibility and ease of use, export individual getters or simple values if they don't change
 export const PUBLIC_CLERK_PUBLISHABLE_KEY = getEnv('PUBLIC_CLERK_PUBLISHABLE_KEY');
 export const PUBLIC_API_URL = getEnv('PUBLIC_API_URL');
-export const PUBLIC_SUPABASE_URL = getEnv('PUBLIC_SUPABASE_URL');
-export const PUBLIC_SUPABASE_ANON_KEY = getEnv('PUBLIC_SUPABASE_ANON_KEY');

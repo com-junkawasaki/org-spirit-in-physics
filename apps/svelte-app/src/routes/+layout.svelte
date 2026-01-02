@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from "svelte-clerk";
-  import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+  import { runtimeConfig } from "$lib/env.svelte";
   import { page } from "$app/state";
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
@@ -66,8 +66,8 @@
   });
 </script>
 
-{#if PUBLIC_CLERK_PUBLISHABLE_KEY}
-  <ClerkProvider publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY}>
+{#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
+  <ClerkProvider publishableKey={runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}>
     <UserSync />
     {@render layoutContent()}
   </ClerkProvider>
@@ -108,7 +108,7 @@
         </div>
         
         <div class="auth-group">
-          {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+          {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
             <SignedOut>
               <SignInButton mode="modal" class="signin-btn" />
             </SignedOut>

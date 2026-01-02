@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.56.2",
+  "version": "1.56.4",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2026-01-02T15:25:00+09:00",
-  "merkleRoot": "GKE resource restoration and deletion protection implementation for Gateway and HTTPRoute.",
+  "updatedAt": "2026-01-02T16:15:00+09:00",
+  "merkleRoot": "Separated landing page into distinct sections to avoid overlapping and improve readability.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,18 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/78",
+        "@type": "project:Narrative",
+        "act": "ランディングページのセクション分割とUI改善",
+        "summary": "ヒーローセクションの3D可視化とエントリーカードが重なって見づらいという課題に対し、ページを「視覚的ヒーロー（Visual Hero）」と「アクション（Entry Cards）」の2つの独立したセクションに分割。スクロールによる没入感を維持しつつ、情報の可読性を大幅に向上させた。"
+      },
+      {
+        "@id": "project:narrative/77",
+        "@type": "project:Narrative",
+        "act": "ランディングページの視覚的・データ的強化",
+        "summary": "トップページの「SPIRIT IN PHYSICS」セクションにスクロール連動アニメーション（フェード、スケール、ブラー）を導入し、ユーザー体験をより直感的かつ洗練されたものにした。また、背景の3D Force Graphに実際の被験者データ（imai）を統合し、ダミーデータではなく本物の「心のmanifold」が可視化されるように実装を刷新した。"
+      },
       {
         "@id": "project:narrative/76",
         "@type": "project:Narrative",
@@ -77,6 +89,9 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "ランディングページのセクション分割（Visual Hero / Entry Cards）による可読性の向上",
+      "ランディングページへのスクロール連動アニメーション（opacity, scale, blur, translateY）の実装",
+      "ランディングページの背景 3D Graph への実データ（参加者: imai）の統合",
       "Gateway (infra-gateway) および HTTPRoute への削除保護 (Deletion Protection) の適用",
       "Kubernetes Finalizer によるリソースの誤削除防止策の導入",
       "SvelteKit 構成を adapter-node (SSR) から adapter-static (SSG+CSR) へ移行",

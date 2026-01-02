@@ -5,8 +5,6 @@ def replace_env(target_dir):
     env_vars = {
         "__PUBLIC_CLERK_PUBLISHABLE_KEY__": os.environ.get("PUBLIC_CLERK_PUBLISHABLE_KEY", ""),
         "__PUBLIC_API_URL__": os.environ.get("PUBLIC_API_URL", ""),
-        "__PUBLIC_SUPABASE_URL__": os.environ.get("PUBLIC_SUPABASE_URL", ""),
-        "__PUBLIC_SUPABASE_ANON_KEY__": os.environ.get("PUBLIC_SUPABASE_ANON_KEY", ""),
     }
     
     for root, dirs, files in os.walk(target_dir):

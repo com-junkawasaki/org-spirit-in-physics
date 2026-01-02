@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 import { SignedIn, SignedOut, SignInButton, useClerkContext } from 'svelte-clerk';
-import { PUBLIC_CLERK_PUBLISHABLE_KEY } from "$lib/env";
+import { runtimeConfig } from "$lib/env.svelte";
 import ConsentForm from "./ConsentForm.svelte";
   import JungVoiceTest from "../jung-voice-assessment/JungVoiceTest.svelte";
   import { kawasakiStore } from "../jung-voice-assessment/store.svelte";
@@ -9,7 +9,7 @@ import ConsentForm from "./ConsentForm.svelte";
   import * as m from "$lib/paraglide/messages.js";
 
   let step = $state<"landing" | "consent" | "assessment" | "complete">("landing");
-  const clerk = PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
+  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
 
   onMount(async () => {
     // 参加者IDの初期化
@@ -88,7 +88,7 @@ import ConsentForm from "./ConsentForm.svelte";
       </h1>
       
       <div class="button-group">
-        {#if PUBLIC_CLERK_PUBLISHABLE_KEY}
+        {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
           <SignedOut>
             <SignInButton mode="modal">
               <button class="btn secondary">{m.signin()}</button>

@@ -223,28 +223,39 @@
   }
 
   async function initWebGPU() {
-    if (!(navigator as any).gpu) return;
+    // Always initialize positions/velocities for CPU fallback
+    if (!positions) {
+      positions = new Float32Array(nodes.length * 3);
+      velocities = new Float32Array(nodes.length * 3);
+      nodes.forEach((n, i) => {
+        if (n.initial) {
+          positions![i*3] = n.initial[0]; positions![i*3+1] = n.initial[1]; positions![i*3+2] = n.initial[2];
+        } else {
+          const r = 200 + Math.random() * 200;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(2 * Math.random() - 1);
+          positions![i*3] = r * Math.sin(phi) * Math.cos(theta);
+          positions![i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+          positions![i*3+2] = r * Math.cos(phi);
+        }
+      });
+    }
+
+    if (!(navigator as any).gpu) {
+      console.warn("WebGPU not supported, falling back to CPU physics");
+      startLoop();
+      return;
+    }
+    
     const adapter = await (navigator as any).gpu.requestAdapter();
-    if (!adapter) return;
+    if (!adapter) {
+      startLoop();
+      return;
+    }
     device = await adapter.requestDevice();
 
     const shaderModule = device.createShaderModule({ code: computeShader });
     computePipeline = device.createComputePipeline({ layout: 'auto', compute: { module: shaderModule, entryPoint: 'main' } });
-
-    positions = new Float32Array(nodes.length * 3);
-    velocities = new Float32Array(nodes.length * 3);
-    nodes.forEach((n, i) => {
-      if (n.initial) {
-        positions![i*3] = n.initial[0]; positions![i*3+1] = n.initial[1]; positions![i*3+2] = n.initial[2];
-      } else {
-        const r = 200 + Math.random() * 200;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        positions![i*3] = r * Math.sin(phi) * Math.cos(theta);
-        positions![i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-        positions![i*3+2] = r * Math.cos(phi);
-      }
-    });
 
     nodeBuffer = device.createBuffer({ size: nodes.length * 32, usage: 0x0008 | 0x0002 | 0x0004 });
     linkBuffer = device.createBuffer({ size: Math.max(links.length * 24, 24), usage: 0x0008 | 0x0002 });
@@ -259,53 +270,115 @@
   }
 
   function startLoop() {
+    if (animId) return; // Prevent multiple loops
     let lastTime = performance.now();
     const tick = (now: number) => {
       const delta = Math.min(0.05, (now - lastTime) / 1000);
       lastTime = now;
 
-      if (!device || !canvas) { animId = requestAnimationFrame(tick); return; }
+      if (!canvas) { animId = requestAnimationFrame(tick); return; }
 
-      const nodeData = new Float32Array(nodes.length * 8);
-      nodes.forEach((n, i) => {
-        nodeData[i*8] = positions![i*3]; nodeData[i*8+1] = positions![i*3+1]; nodeData[i*8+2] = positions![i*3+2];
-        nodeData[i*8+3] = velocities![i*3]; nodeData[i*8+4] = velocities![i*3+1]; nodeData[i*8+5] = velocities![i*3+2];
-        nodeData[i*8+6] = n.scale; nodeData[i*8+7] = n.fixed ? 1 : 0;
-      });
+      // CPU Fallback for Physics if WebGPU is not available
+      const currentPositions = positions;
+      const currentVelocities = velocities;
+      if (!device && currentPositions && currentVelocities) {
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].fixed) continue;
+          
+          let fx = 0, fy = 0, fz = 0;
+          const px = currentPositions[i*3], py = currentPositions[i*3+1], pz = currentPositions[i*3+2];
+          
+          // Repulsion (simplified for performance)
+          for (let j = 0; j < nodes.length; j++) {
+            if (i === j) continue;
+            const dx = px - currentPositions[j*3], dy = py - currentPositions[j*3+1], dz = pz - currentPositions[j*3+2];
+            const d2 = dx*dx + dy*dy + dz*dz + 1e-3;
+            if (d2 < 1000000) {
+              const f = physicsParams.repulsionK / d2;
+              fx += f * dx / Math.sqrt(d2);
+              fy += f * dy / Math.sqrt(d2);
+              fz += f * dz / Math.sqrt(d2);
+            }
+          }
+          
+          // Spring
+          links.forEach(l => {
+            if (l.source === i || l.target === i) {
+              const other = l.source === i ? l.target : l.source;
+              const dx = currentPositions[other*3] - px, dy = currentPositions[other*3+1] - py, dz = currentPositions[other*3+2] - pz;
+              const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) + 1e-3;
+              const f = physicsParams.springK * (dist - physicsParams.restLength);
+              fx += f * dx / dist;
+              fy += f * dy / dist;
+              fz += f * dz / dist;
+            }
+          });
 
-      const linkData = new Float32Array(links.length * 6);
-      links.forEach((l, i) => {
-        linkData[i*6] = l.source; linkData[i*6+1] = l.target; linkData[i*6+2] = l.weight;
-        linkData[i*6+3] = l.mode === 'tension' ? 1 : l.mode === 'compression' ? 2 : 0;
-        linkData[i*6+4] = l.L0 || 0; linkData[i*6+5] = l.k || 0;
-      });
+          // Shell constraint
+          const dist = Math.sqrt(px*px + py*py + pz*pz) + 1e-3;
+          const shellF = (physicsParams.shellRadius - dist) * physicsParams.shellK;
+          fx += shellF * px / dist;
+          fy += shellF * py / dist;
+          fz += shellF * pz / dist;
 
-      const paramsData = new Float32Array([
-        physicsParams.springK, physicsParams.repulsionK, physicsParams.damping, physicsParams.restLength,
-        physicsParams.maxSpeed, physicsParams.shellRadius, physicsParams.shellK, physicsParams.shellRadiusOuter,
-        physicsParams.shellKOuter, physicsParams.radialOutK, physicsParams.minSep, physicsParams.sepK, delta, 0, 0, 0
-      ]);
+          currentVelocities[i*3] = (currentVelocities[i*3] + fx * delta) * physicsParams.damping;
+          currentVelocities[i*3+1] = (currentVelocities[i*3+1] + fy * delta) * physicsParams.damping;
+          currentVelocities[i*3+2] = (currentVelocities[i*3+2] + fz * delta) * physicsParams.damping;
+          
+          currentPositions[i*3] += currentVelocities[i*3] * delta;
+          currentPositions[i*3+1] += currentVelocities[i*3+1] * delta;
+          currentPositions[i*3+2] += currentVelocities[i*3+2] * delta;
+        }
+      }
 
-      device.queue.writeBuffer(nodeBuffer, 0, nodeData);
-      device.queue.writeBuffer(linkBuffer, 0, linkData);
-      device.queue.writeBuffer(paramsBuffer, 0, paramsData);
+      if (device && currentPositions && currentVelocities) {
+        const nodeData = new Float32Array(nodes.length * 8);
+        nodes.forEach((n, i) => {
+          nodeData[i*8] = currentPositions[i*3]; nodeData[i*8+1] = currentPositions[i*3+1]; nodeData[i*8+2] = currentPositions[i*3+2];
+          nodeData[i*8+3] = currentVelocities[i*3]; nodeData[i*8+4] = currentVelocities[i*3+1]; nodeData[i*8+5] = currentVelocities[i*3+2];
+          nodeData[i*8+6] = n.scale; nodeData[i*8+7] = n.fixed ? 1 : 0;
+        });
 
-      const encoder = device.createCommandEncoder();
-      const pass = encoder.beginComputePass();
-      pass.setPipeline(computePipeline);
-      pass.setBindGroup(0, bindGroup);
-      pass.dispatchWorkgroups(Math.ceil(nodes.length / 64));
-      pass.end();
-      device.queue.submit([encoder.finish()]);
+        const linkData = new Float32Array(links.length * 6);
+        links.forEach((l, i) => {
+          linkData[i*6] = l.source; linkData[i*6+1] = l.target; linkData[i*6+2] = l.weight;
+          linkData[i*6+3] = l.mode === 'tension' ? 1 : l.mode === 'compression' ? 2 : 0;
+          linkData[i*6+4] = l.L0 || 0; linkData[i*6+5] = l.k || 0;
+        });
 
-      // Simple 2D rendering for now
+        const paramsData = new Float32Array([
+          physicsParams.springK, physicsParams.repulsionK, physicsParams.damping, physicsParams.restLength,
+          physicsParams.maxSpeed, physicsParams.shellRadius, physicsParams.shellK, physicsParams.shellRadiusOuter,
+          physicsParams.shellKOuter, physicsParams.radialOutK, physicsParams.minSep, physicsParams.sepK, delta, 0, 0, 0
+        ]);
+
+        device.queue.writeBuffer(nodeBuffer, 0, nodeData);
+        device.queue.writeBuffer(linkBuffer, 0, linkData);
+        device.queue.writeBuffer(paramsBuffer, 0, paramsData);
+
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginComputePass();
+        pass.setPipeline(computePipeline);
+        pass.setBindGroup(0, bindGroup);
+        pass.dispatchWorkgroups(Math.ceil(nodes.length / 64));
+        pass.end();
+        device.queue.submit([encoder.finish()]);
+      }
+
+      // Simple 2D rendering - now OUTSIDE if (device)
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = background; ctx.fillRect(0, 0, width, height);
-        const zoom = 600 / camera.distance;
+      if (ctx && currentPositions) {
+        if (background === 'transparent') {
+          ctx.clearRect(0, 0, width, height);
+        } else {
+          ctx.fillStyle = background; 
+          ctx.fillRect(0, 0, width, height);
+        }
+        
+        const zoom = 800 / camera.distance; // Increased base zoom
 
         // Pre-calculate node RGBs for current frame
-        const nodeRGBs = nodes.map((_, i) => getSpatialRGB(i, positions!));
+        const nodeRGBs = nodes.map((_, i) => getSpatialRGB(i, currentPositions));
 
         // Pre-calculate pinned status for performance and safety
         const pinnedNodeIds = new Set(pinnedItems.filter(p => p.node).map(p => p.node?.id));
@@ -326,8 +399,10 @@
           return { x: width/2 + rx * zoom, y: height/2 + cy * zoom, z: rz_ };
         };
 
+        const isLightMode = background !== 'transparent' && background !== '#000' && background !== '#000000' && background !== 'black';
+
         const projectedNodes = nodes.map((_, i) => project({
-          x: positions![i*3], y: positions![i*3+1], z: positions![i*3+2]
+          x: currentPositions[i*3], y: currentPositions[i*3+1], z: currentPositions[i*3+2]
         }));
 
         // Links hit testing and drawing
@@ -366,10 +441,10 @@
           
           const alpha = isHighlighted ? 0.9 : (isAnchorLink ? 0.2 : 0.4);
           if (rgbS && rgbT) {
-            const r = (rgbS[0] + rgbT[0]) / 2;
-            const g = (rgbS[1] + rgbT[1]) / 2;
-            const b = (rgbS[2] + rgbT[2]) / 2;
-            ctx.strokeStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
+            const lkr = (rgbS[0] + rgbT[0]) / 2;
+            const lkg = (rgbS[1] + rgbT[1]) / 2;
+            const lkb = (rgbS[2] + rgbT[2]) / 2;
+            ctx.strokeStyle = `rgba(${Math.round(lkr)}, ${Math.round(lkg)}, ${Math.round(lkb)}, ${alpha})`;
           } else {
             ctx.strokeStyle = l.color || (isAnchorLink ? 'rgba(100, 100, 100, 0.2)' : 'rgba(30, 64, 175, 0.4)');
           }
@@ -388,10 +463,10 @@
         projectedNodes.forEach((p, i) => {
           const n = nodes[i];
           const isAnchor = n.nodeType === 'anchor';
-          const radius = Math.max(1, (isAnchor ? n.scale * 1.5 : n.scale) * zoom);
+          const radius = Math.max(2, (isAnchor ? n.scale * 2.0 : n.scale * 1.5) * zoom); // Increased node size
 
           const dist = Math.hypot(currentMouse.x - p.x, currentMouse.y - p.y);
-          const isHovered = dist < radius + 5;
+          const isHovered = dist < radius + 10;
           if (isHovered) newHoveredNodeIdx = i;
 
           const isPinned = pinnedNodeIds.has(n.id);
@@ -402,44 +477,54 @@
           
           if (isAnchor) {
             ctx.fillStyle = n.color || '#000';
-            ctx.globalAlpha = 0.9;
+            ctx.globalAlpha = 0.95;
             ctx.fill();
-            ctx.strokeStyle = isHighlighted ? (isPinned ? '#3b82f6' : '#ff0') : '#fff';
-            ctx.lineWidth = (isHighlighted ? 4 : 2) * zoom;
+            ctx.strokeStyle = isHighlighted ? (isPinned ? '#3b82f6' : '#ff0') : 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = (isHighlighted ? 6 : 3) * zoom;
             ctx.stroke();
           } else {
-            const [r, g, b] = nodeRGBs[i];
-            ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${isHighlighted ? 1.0 : 0.8})`;
-            ctx.globalAlpha = isHighlighted ? 1.0 : 0.8;
+            const nodeRgb = nodeRGBs[i];
+            if (nodeRgb) {
+              const [nr, ng, nb] = nodeRgb;
+              ctx.fillStyle = `rgba(${Math.round(nr)}, ${Math.round(ng)}, ${Math.round(nb)}, ${isHighlighted ? 1.0 : 0.85})`;
+            } else {
+              ctx.fillStyle = 'rgba(100, 100, 255, 0.85)';
+            }
+            ctx.globalAlpha = 1.0;
             ctx.fill();
             
             if (isHighlighted) {
               ctx.strokeStyle = isPinned ? '#3b82f6' : '#fff';
-              ctx.lineWidth = (isPinned ? 3 : 2) * zoom;
+              ctx.lineWidth = (isPinned ? 4 : 3) * zoom;
               ctx.stroke();
             }
           }
           
           // ラベル
           ctx.globalAlpha = 1.0;
-          const [r, g, b] = isAnchor ? getSpatialRGB(i, positions!) : nodeRGBs[i];
-          const textColor = isHighlighted ? '#fff' : `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+          const labelRgb = isAnchor ? getSpatialRGB(i, currentPositions) : nodeRGBs[i];
+          const [txtR, txtG, txtB] = labelRgb || [255, 255, 255];
           
-          ctx.font = `${isAnchor || isHighlighted ? 'bold ' : ''}${Math.round((isAnchor ? 14 : 10) * zoom)}px sans-serif`;
+          let textColor = isHighlighted ? '#fff' : `rgb(${Math.max(100, Math.round(txtR))}, ${Math.max(100, Math.round(txtG))}, ${Math.max(100, Math.round(txtB))})`;
+          if (isLightMode && !isHighlighted) {
+            textColor = `rgb(${Math.min(100, Math.round(txtR))}, ${Math.min(100, Math.round(txtG))}, ${Math.min(100, Math.round(txtB))})`;
+          }
+          
+          ctx.font = `${isAnchor || isHighlighted ? 'bold ' : ''}${Math.round((isAnchor ? 24 : 16) * zoom)}px sans-serif`; // Increased font size
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
           // 文字の輪郭 (Outline)
-          ctx.strokeStyle = isPinned ? 'rgba(59, 130, 246, 0.4)' : (background === 'transparent' ? 'rgba(255,255,255,0.8)' : background);
-          ctx.lineWidth = isHighlighted ? 4 : 3;
-          ctx.strokeText(n.label, p.x, p.y + (isAnchor ? radius + 10 : 0));
+          ctx.strokeStyle = isLightMode ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)';
+          ctx.lineWidth = isHighlighted ? 5 : 4;
+          ctx.strokeText(n.label, p.x, p.y + (isAnchor ? radius + 20 : 0));
 
           ctx.fillStyle = textColor;
           if (isHighlighted) {
-            ctx.shadowColor = 'rgba(0,0,0,0.8)';
-            ctx.shadowBlur = isPinned ? 6 : 4;
+            ctx.shadowColor = isLightMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.9)';
+            ctx.shadowBlur = isPinned ? 10 : 8;
           }
-          ctx.fillText(n.label, p.x, p.y + (isAnchor ? radius + 10 : 0));
+          ctx.fillText(n.label, p.x, p.y + (isAnchor ? radius + 20 : 0));
           ctx.shadowBlur = 0;
         });
 

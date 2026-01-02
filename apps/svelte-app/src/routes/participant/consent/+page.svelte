@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { useClerkContext } from "svelte-clerk";
+  import { runtimeConfig } from "$lib/env.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import ConsentForm from "$lib/components/ConsentForm.svelte";
@@ -8,8 +9,8 @@
   import * as m from "$lib/paraglide/messages.js";
   import { hasAccess } from "$lib/subscription";
 
-  const clerk = useClerkContext();
-  const user = $derived(clerk.user);
+  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
+  const user = $derived(clerk?.user);
   const mode = $derived((page.url.searchParams.get("mode") as any) || "full");
 
   onMount(() => {

@@ -11,7 +11,6 @@ services:
       - POSTGRES_DB=spirit_in_physics
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./supabase/migrations:/docker-entrypoint-initdb.d
     networks:
       - spirit-network
     restart: unless-stopped
@@ -49,9 +48,6 @@ services:
       - NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:8081/graphql
       # Server-side: use container name for server-to-server communication
       - GRAPHQL_API_URL=http://graphql-service:8081/graphql
-      # Supabase Authentication (hardcoded for development)
-      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,9 +88,6 @@ services:
       - WATCHPACK_POLLING_INTERVAL=1000
       # Next.js HMR settings
       - NEXT_TELEMETRY_DISABLED=1
-      # Supabase Authentication (hardcoded for development)
-      - NEXT_PUBLIC_SUPABASE_URL=https://pxsuqemlayhnmcxuiigk.supabase.co
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MTY5NzIsImV4cCI6MjA2NjA5Mjk3Mn0.CoFBY4BZLhiiSFZL-PpRyZDJFoNNnMoXg4BtwT76NWs
     networks:
       - spirit-network
     healthcheck:
@@ -116,10 +109,6 @@ services:
     volumes:
       - ./dataset:/app/dataset:cached
     environment:
-      # Production Supabase Database URL
-      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
-      # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
-      # For local development, use local PostgreSQL container
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
       - DATASET_PATH=/app/dataset/participants
       - PORT=8082
@@ -144,19 +133,8 @@ services:
     ports:
       - "8081:8081"
     environment:
-      # Production Supabase Database URL (Connection pooler - IPv4 compatible)
-      # Format: postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
-      # Get from Supabase Dashboard > Project Settings > Database > Connection string > Transaction mode
-      # Note: Using pooler to avoid IPv6 connectivity issues in Docker
-      # For local development, use local PostgreSQL container (override .envrc)
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spirit_in_physics
       - RUST_LOG=info
-      # Production Supabase Configuration
-      - SUPABASE_URL=${SUPABASE_URL:-https://pxsuqemlayhnmcxuiigk.supabase.co}
-      # Production Supabase Service Role Key
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4c3VxZW1sYXlobm1jeHVpaWdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDUxNjk3MiwiZXhwIjoyMDY2MDkyOTcyfQ.7KSDYa5pxYCiA_ZtTe_8KPGBKELdj0buxba2nG7EnJc}
-      # Storage bucket name (from supabase/migrations/20241004000003_storage_policies.sql)
-      - SUPABASE_STORAGE_BUCKET=spirit-in-physics
     depends_on:
       postgres:
         condition: service_healthy
