@@ -385,11 +385,11 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 1.8rem;
     font-weight: 700;
-    margin-top: 4rem;
-    margin-bottom: 1.5rem;
+    margin-top: 6rem;
+    margin-bottom: 2rem;
     color: #000;
     border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.75rem;
   }
 
   :global(.dark .paper-article h2) {
@@ -401,8 +401,8 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 1.4rem;
     font-weight: 600;
-    margin-top: 2.5rem;
-    margin-bottom: 1rem;
+    margin-top: 4rem;
+    margin-bottom: 1.5rem;
     color: #1d1d1f;
   }
 
@@ -411,10 +411,11 @@
   }
 
   :global(.paper-article p) {
-    margin-bottom: 1.25rem;
+    margin-bottom: 2rem;
     font-size: 1.1rem;
     text-align: justify;
     hyphens: auto;
+    line-height: 1.8;
   }
 
   :global(.paper-article strong) {
@@ -428,9 +429,9 @@
 
   .author-section {
     text-align: center;
-    margin-bottom: 4rem;
+    margin-bottom: 6rem;
     border-bottom: 1px solid #eee;
-    padding-bottom: 3rem;
+    padding-bottom: 4rem;
   }
 
   :global(.dark) .author-section {
@@ -441,8 +442,8 @@
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 3rem;
-    margin-bottom: 2rem;
+    gap: 4rem;
+    margin-bottom: 3rem;
   }
 
   .author-item {
@@ -454,7 +455,7 @@
 
   .author-name {
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     color: #000;
   }
 
@@ -466,15 +467,15 @@
     font-size: 0.9rem;
     color: #007aff;
     text-decoration: none;
-    margin-top: 0.2rem;
+    margin-top: 0.4rem;
   }
 
   .author-affiliation {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: #666;
-    margin-top: 0.4rem;
+    margin-top: 0.6rem;
     text-align: center;
-    line-height: 1.4;
+    line-height: 1.5;
     font-style: italic;
   }
 
@@ -485,9 +486,9 @@
   .paper-metadata {
     display: flex;
     justify-content: center;
-    gap: 2rem;
+    gap: 3rem;
     color: #888;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
   }
 
   .metadata-item strong {
@@ -500,7 +501,7 @@
 
   /* Abstract */
   .abstract-container {
-    margin: 3rem auto;
+    margin: 4rem auto;
     max-width: 85%;
   }
 
@@ -509,13 +510,13 @@
     font-weight: 700;
     text-align: center;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 1.5rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 2rem;
   }
 
   .abstract-content {
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 1.05rem;
+    line-height: 1.8;
     text-align: justify;
     font-style: italic;
     color: #333;
@@ -527,8 +528,8 @@
 
   /* Equations */
   .equation-block {
-    margin: 3rem 0;
-    padding: 2rem;
+    margin: 4rem 0;
+    padding: 3rem 2rem;
     background: #fcfcfd;
     border-radius: 4px;
     text-align: center;
