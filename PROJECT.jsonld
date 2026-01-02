@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.56.1",
+  "version": "1.56.2",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2025-12-29T13:05:00+09:00",
-  "merkleRoot": "Production pod (portal) crash fix by updating Dockerfile.svelte to use sirv. Svelte-clerk import cleanup in ConsentForm and ParticipantView to address local dev SyntaxError.",
+  "updatedAt": "2026-01-02T15:25:00+09:00",
+  "merkleRoot": "GKE resource restoration and deletion protection implementation for Gateway and HTTPRoute.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -77,6 +77,8 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "Gateway (infra-gateway) および HTTPRoute への削除保護 (Deletion Protection) の適用",
+      "Kubernetes Finalizer によるリソースの誤削除防止策の導入",
       "SvelteKit 構成を adapter-node (SSR) から adapter-static (SSG+CSR) へ移行",
       "Clerk publishable key の設定および環境変数の実行時注入 (window.ENV) への対応",
       "Clerk context 取得エラーの修正 (clerkContext -> useClerkContext) とガード処理の実装",

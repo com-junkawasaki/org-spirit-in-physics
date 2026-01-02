@@ -19,6 +19,54 @@ bundle: {
 				}
 			}
 		}
+		"grpc-service": {
+			values: {
+				volumeMounts: [
+					{name: "dataset", mountPath: "/dataset"},
+				]
+				volumes: [
+					{
+						name: "dataset"
+						hostPath: {
+							path: "/Volumes/251214/jun784/spirit-in-physics/dataset/participants"
+							type: "Directory"
+						}
+					},
+				]
+			}
+		}
+		"import-service": {
+			values: {
+				volumeMounts: [
+					{name: "dataset", mountPath: "/dataset"},
+				]
+				volumes: [
+					{
+						name: "dataset"
+						hostPath: {
+							path: "/Volumes/251214/jun784/spirit-in-physics/dataset/participants"
+							type: "Directory"
+						}
+					},
+				]
+			}
+		}
+		"import-worker": {
+			values: {
+				volumeMounts: [
+					{name: "dataset", mountPath: "/dataset"},
+				]
+				volumes: [
+					{
+						name: "dataset"
+						hostPath: {
+							path: "/Volumes/251214/jun784/spirit-in-physics/dataset/participants"
+							type: "Directory"
+						}
+					},
+				]
+			}
+		}
 		"participant": {
 			values: {
 				routing: {

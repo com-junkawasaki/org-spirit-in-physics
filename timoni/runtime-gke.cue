@@ -10,6 +10,7 @@ bundle: {
 				gateway: {
 					hostname: "sip.junkawasaki.com"
 					issuerName: "letsencrypt-prod"
+					staticIP: "34.160.140.248"
 				}
 				lakefs: {
 					enabled: true

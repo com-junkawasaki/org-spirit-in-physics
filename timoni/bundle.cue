@@ -56,13 +56,7 @@ bundle: {
 					storage: "20Gi"
 				}
 				gateway: {
-					hostname: [
-						"localhost",
-						"envoy-spirit-in-physics-infra-gateway-2d53dc11.envoy-gateway-system.orb.local",
-						"spirit-in-physics.orb.local",
-						"spirit.localhost",
-						"sip.junkawasaki.com",
-					]
+					hostname: "sip.junkawasaki.com"
 				}
 			}
 		}
@@ -90,18 +84,6 @@ bundle: {
 					{name: "LAKEFS_SECRET_ACCESS_KEY", value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"},
 					{name: "LAKEFS_REPOSITORY", value: "spirit-in-physics"},
 				]
-				volumeMounts: [
-					{name: "dataset", mountPath: "/dataset"},
-				]
-				volumes: [
-					{
-						name: "dataset"
-						hostPath: {
-							path: "/Volumes/251214/jun784/spirit-in-physics/dataset/participants"
-							type: "Directory"
-						}
-					},
-				]
 			}
 		}
 
@@ -122,18 +104,6 @@ bundle: {
 					{name: "TEMPORAL_ADDRESS", value: "infra-temporal:7233"},
 					{name: "DATASET_PATH", value: "/dataset"},
 				]
-				volumeMounts: [
-					{name: "dataset", mountPath: "/dataset"},
-				]
-				volumes: [
-					{
-						name: "dataset"
-						hostPath: {
-							path: "/Volumes/251214/jun784/spirit-in-physics/dataset/participants"
-							type: "Directory"
-						}
-					},
-				]
 			}
 		}
 
@@ -153,18 +123,6 @@ bundle: {
 					{name: "DATABASE_URL", value: "postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics"},
 					{name: "TEMPORAL_ADDRESS", value: "infra-temporal:7233"},
 					{name: "DATASET_PATH", value: "/dataset"},
-				]
-				volumeMounts: [
-					{name: "dataset", mountPath: "/dataset"},
-				]
-				volumes: [
-					{
-						name: "dataset"
-						hostPath: {
-							path: "/Volumes/251214/jun784/spirit-in-physics/dataset/participants"
-							type: "Directory"
-						}
-					},
 				]
 			}
 		}

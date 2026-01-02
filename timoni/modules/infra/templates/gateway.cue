@@ -10,10 +10,18 @@ package templates
 		name:        "\(#config.metadata.name)-gateway"
 		annotations: #config.metadata.annotations & {
 			"cert-manager.io/cluster-issuer": #config.gateway.issuerName
+			"networking.gke.io/deletion-protection": "true"
 		}
+		finalizers: ["spirit-in-physics.gftd.ai/deletion-protection"]
 	}
 	spec: {
 		gatewayClassName: "envoy"
+		if #config.gateway.staticIP != _|_ {
+			addresses: [{
+				type:  "IPAddress"
+				value: #config.gateway.staticIP
+			}]
+		}
 		_hlist: {
 			if (#config.gateway.hostname & string) != _|_ {
 				res: [#config.gateway.hostname]

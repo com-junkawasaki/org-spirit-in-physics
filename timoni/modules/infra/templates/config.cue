@@ -104,6 +104,7 @@ import (
 		enabled: *true | bool
 		hostname: string | [...string]
 		issuerName: *"letsencrypt-prod" | string
+		staticIP?: string
 	}
 
 	// Nix Cache settings
