@@ -23,5 +23,5 @@ EXPOSE 80
 ENV PORT=80
 ENV NODE_ENV=production
 
-# Run env replacement, then start sirv server in SPA mode
-CMD ["/bin/sh", "-c", "python3 /app/replace-env.py /app/build && ./node_modules/.bin/sirv build --port 80 --single --host 0.0.0.0"]
+# Run env replacement, then start sirv server in SPA mode with spa.html as fallback
+CMD ["/bin/sh", "-c", "python3 /app/replace-env.py /app/build && ./node_modules/.bin/sirv build --port 80 --single spa.html --host 0.0.0.0"]
