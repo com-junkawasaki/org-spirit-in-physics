@@ -37,7 +37,7 @@ export const getStatusQuery = defineQuery<AssessmentState>('getStatus');
 /**
  * Workflow for Jung Voice Assessment
  */
-export async function jungVoiceAssessmentWorkflow(participantId: string, email: string): Promise<AssessmentState> {
+export async function jungVoiceAssessmentWorkflow(participantId: string, email: string, mode: string = 'full'): Promise<AssessmentState> {
   const state: AssessmentState = {
     participantId,
     email,

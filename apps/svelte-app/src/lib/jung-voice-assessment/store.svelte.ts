@@ -4,6 +4,7 @@ import * as m from "$lib/paraglide/messages.js";
 import { untrack } from "svelte";
 
 export type TestStatus = 'idle' | 'preflight' | 'session-1-running' | 'session-1-complete' | 'session-2-running' | 'completed';
+export type TestMode = 'quick' | 'full';
 export type DeviceStatus = 'idle' | 'pending' | 'success' | 'error';
 export type MediaStatus = 'idle' | 'recording_session' | 'recording_response' | 'processing';
 
@@ -22,6 +23,7 @@ export interface TestEvent {
 
 class KawasakiStore {
   testStatus = $state<TestStatus>('idle');
+  testMode = $state<TestMode>('full');
   deviceStatus = $state<DeviceStatus>('idle');
   stream = $state<MediaStream | null>(null);
   error = $state<string | null>(null);
@@ -52,7 +54,8 @@ class KawasakiStore {
     }
   }
 
-  initializeParticipant(id?: string, demographics?: any) {
+  initializeParticipant(id?: string, demographics?: any, mode: TestMode = 'full') {
+    this.testMode = mode;
     if (id) {
       this.participantId = id;
     } else if (!this.participantId) {
@@ -181,9 +184,10 @@ class KawasakiStore {
         gender: this.demographics.gender,
         ethnicity: this.demographics.ethnicity,
         incomeRange: this.demographics.incomeRange,
-        medicalHistory: this.demographics.medicalHistory
+        medicalHistory: this.demographics.medicalHistory,
+        mode: this.testMode
       });
-      this.logEvent('assessment_workflow_started');
+      this.logEvent('assessment_workflow_started', { mode: this.testMode });
     } catch (e) {
       console.error("Failed to start assessment workflow:", e);
     }
@@ -219,9 +223,21 @@ class KawasakiStore {
 
   startSession(numberOfWords: number) {
     const sessionNumber = this.currentSession;
-    // Shuffle and slice words
-    const shuffled = [...this.stimulusWords].sort(() => 0.5 - Math.random()).slice(0, numberOfWords);
-    this.stimulusWords = shuffled;
+    
+    let wordsToUse = [...this.stimulusWords];
+    
+    if (this.testMode === 'quick') {
+      // 5-minute mode: Specific core words (15 words)
+      const quickWordIds = [17, 35, 36, 41, 55, 60, 75, 80, 94, 96, 99, 22, 23, 28, 71];
+      wordsToUse = wordsToUse.filter(w => quickWordIds.includes(w.id));
+      // Shuffle quick words
+      wordsToUse.sort(() => 0.5 - Math.random());
+    } else {
+      // Full mode: Shuffle and slice
+      wordsToUse.sort(() => 0.5 - Math.random()).slice(0, numberOfWords);
+    }
+    
+    this.stimulusWords = wordsToUse;
     
     this.testStatus = sessionNumber === 1 ? 'session-1-running' : 'session-2-running';
     this.currentWordIndex = 0;
@@ -237,14 +253,16 @@ class KawasakiStore {
   }
 
   completeSession() {
-    if (this.currentSession === 1) {
+    if (this.currentSession === 1 && this.testMode === 'full') {
       this.testStatus = 'session-1-complete';
       this.currentWordIndex = -1;
       this.currentSession = 2;
       this.logEvent('session_1_completed');
     } else {
       this.testStatus = 'completed';
-      this.logEvent('session_2_completed');
+      if (this.testMode === 'full') {
+        this.logEvent('session_2_completed');
+      }
       this.logEvent('test_completed');
 
       // Signal Temporal Completion

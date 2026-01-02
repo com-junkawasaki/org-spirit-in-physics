@@ -291,8 +291,13 @@ func (h *ParticipantHandler) StartAssessment(
 		TaskQueue: "visualization-analysis-queue",
 	}
 
+	mode := "full"
+	if req.Msg.Mode != nil {
+		mode = *req.Msg.Mode
+	}
+
 	// In Go SDK, when calling a TS workflow, we just use the string name
-	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "jungVoiceAssessmentWorkflow", req.Msg.ParticipantId, req.Msg.Email)
+	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "jungVoiceAssessmentWorkflow", req.Msg.ParticipantId, req.Msg.Email, mode)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

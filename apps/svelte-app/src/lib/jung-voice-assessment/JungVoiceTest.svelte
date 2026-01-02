@@ -200,7 +200,7 @@
       await new Promise(resolve => setTimeout(resolve, 300));
       
       await startRecording(kawasakiStore.currentSession);
-      const wordCount = DEBUG_MODE ? 3 : 100;
+      const wordCount = kawasakiStore.testMode === 'quick' ? 15 : (DEBUG_MODE ? 3 : 100);
       kawasakiStore.startSession(wordCount);
     } catch (e) {
       console.error("Error starting session:", e);
@@ -214,7 +214,7 @@
       // Wait a bit for MediaRecorder to fully stop and resource to be released
       await new Promise(resolve => setTimeout(resolve, 500));
       await startRecording(kawasakiStore.currentSession);
-      const wordCount = DEBUG_MODE ? 3 : 100;
+      const wordCount = kawasakiStore.testMode === 'quick' ? 15 : (DEBUG_MODE ? 3 : 100);
       kawasakiStore.startSession(wordCount);
     } catch (e) {
       console.error("Error starting next session:", e);
