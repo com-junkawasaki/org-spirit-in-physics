@@ -41,8 +41,8 @@ export function hasAccess(user: ClerkUser | null | undefined, mode: 'quick' | 'f
   if (mode === 'quick') return true; // Always free
   
   if (mode === 'full') {
-    // For now, full research is free but marked as premium
-    return true; 
+    // Requires premium or expert plan
+    return (info.plan === 'premium' || info.plan === 'expert') && info.status === 'active';
   }
   
   if (mode === 'professional') {

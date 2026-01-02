@@ -1,11 +1,24 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { useClerkContext } from "svelte-clerk";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import ConsentForm from "$lib/components/ConsentForm.svelte";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import * as m from "$lib/paraglide/messages.js";
+  import { hasAccess } from "$lib/subscription";
 
+  const clerk = useClerkContext();
+  const user = $derived(clerk.user);
   const mode = $derived((page.url.searchParams.get("mode") as any) || "full");
+
+  onMount(() => {
+    // 権限チェック: quick 以外はサブスクリプションが必要
+    if (mode !== 'quick' && !hasAccess(user, mode)) {
+      console.warn(`Access denied for mode: ${mode}`);
+      goto("/participant");
+    }
+  });
 
   async function handleConsent(id: string, email: string, agreements: any, demographics: any) {
     console.log("Consent received:", { id, email, agreements, demographics, mode });

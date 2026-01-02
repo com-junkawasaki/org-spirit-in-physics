@@ -46,20 +46,27 @@
         </div>
       </a>
       
-      <a href="/participant/consent?mode=full" class="entry-card full featured">
-        <div class="icon">🔬</div>
-        <div class="info">
-          <div class="title-row">
-            <h3>Full Research</h3>
-            <span class="premium-badge">PREMIUM</span>
+      <div class="entry-card full featured {hasAccess(user, 'full') ? '' : 'disabled'}">
+        <a href={hasAccess(user, 'full') ? "/participant/consent?mode=full" : "#"} class="card-link-wrapper">
+          <div class="icon">🔬</div>
+          <div class="info">
+            <div class="title-row">
+              <h3>Full Research</h3>
+              <span class="premium-badge">PREMIUM</span>
+            </div>
+            <p class="desc">30 min / 専門レポート付</p>
+            <div class="price-info">
+              <span class="current">$80</span>
+            </div>
           </div>
-          <p class="desc">30 min / 専門レポート付</p>
-          <div class="price-info">
-            <span class="old">$80</span>
-            <span class="current">FREE</span>
+        </a>
+        {#if !hasAccess(user, 'full')}
+          <div class="lock-overlay">
+            <span class="lock-icon">🔒</span>
+            <span class="lock-text">Premium Access Required</span>
           </div>
-        </div>
-      </a>
+        {/if}
+      </div>
 
       <div class="entry-card professional {hasAccess(user, 'professional') ? '' : 'disabled'}">
         <div class="icon">💎</div>
@@ -133,12 +140,6 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
-  }
-
-  .price-info .old {
-    font-size: 0.75rem;
-    color: #9ca3af;
-    text-decoration: line-through;
   }
 
   .price-info .current {
@@ -216,6 +217,18 @@
     cursor: default;
     background: #f9fafb;
     position: relative;
+    pointer-events: none;
+  }
+
+  .card-link-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    text-decoration: none;
+    color: inherit;
+    width: 100%;
+    height: 100%;
   }
 
   .lock-overlay {

@@ -82,7 +82,7 @@
           </div>
         </a>
 
-        <a href={l("/participant/consent?mode=full")} class="card full featured">
+        <div class="card full featured">
           <div class="card-header">
             <span class="card-icon">🔬</span>
             <span class="premium-badge">PREMIUM</span>
@@ -92,10 +92,11 @@
             <p>深層心理の完全な多様体を可視化。専門的な構造分析レポートを提供。</p>
             <div class="card-footer">
               <span class="time-badge">30 min</span>
-              <span class="price-tag"><span class="old-price">$80</span> <span class="new-price">FREE</span></span>
+              <span class="price-tag">$80</span>
             </div>
           </div>
-        </a>
+          <div class="subscription-hint">Premium Subscription Required</div>
+        </div>
 
         <div class="card professional">
           <div class="card-header">
@@ -269,11 +270,16 @@
     margin-top: auto;
     font-size: 0.65rem;
     font-weight: 800;
-    color: #a855f7;
+    color: #f59e0b;
     text-align: center;
-    border-top: 1px solid rgba(168, 85, 247, 0.2);
+    border-top: 1px solid rgba(245, 158, 11, 0.2);
     padding-top: 0.75rem;
     letter-spacing: 0.05em;
+  }
+
+  .card.professional .subscription-hint {
+    color: #a855f7;
+    border-top-color: rgba(168, 85, 247, 0.2);
   }
 
   .card-footer {
@@ -289,19 +295,6 @@
     align-items: center;
     font-size: 0.85rem;
     font-weight: 800;
-  }
-
-  .old-price {
-    color: #6b7280;
-    text-decoration: line-through;
-    font-weight: 500;
-  }
-
-  .new-price {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px;
   }
 
   .card-body h3 {
@@ -372,4 +365,5 @@
     .hero-content { padding: 1rem; }
   }
 </style>
+
 
