@@ -5,7 +5,7 @@ export interface ClerkUser {
   [key: string]: any;
 }
 
-export type Plan = 'free' | 'premium' | 'expert';
+export type Plan = 'free' | 'premium';
 
 export interface SubscriptionInfo {
   plan: Plan;
@@ -35,18 +35,14 @@ export function getSubscriptionInfo(user: ClerkUser | null | undefined): Subscri
 /**
  * Checks if the user has access to a specific mode
  */
-export function hasAccess(user: ClerkUser | null | undefined, mode: 'quick' | 'full' | 'professional'): boolean {
+export function hasAccess(user: ClerkUser | null | undefined, mode: 'quick' | 'full'): boolean {
   const info = getSubscriptionInfo(user);
   
   if (mode === 'quick') return true; // Always free
   
   if (mode === 'full') {
-    // Requires premium or expert plan
-    return (info.plan === 'premium' || info.plan === 'expert') && info.status === 'active';
-  }
-  
-  if (mode === 'professional') {
-    return info.plan === 'expert' && info.status === 'active';
+    // Requires premium plan
+    return info.plan === 'premium' && info.status === 'active';
   }
   
   return false;

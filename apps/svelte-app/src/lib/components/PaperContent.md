@@ -2,34 +2,37 @@
   import * as m from "$lib/paraglide/messages.js";
 </script>
 
-# {m.logo()}: {m.paper_title_full()}
+<h1>{m.logo()}: {m.paper_title_full()}</h1>
 
-<div class="author-grid">
-  <div class="author-item">
-    <span class="author-name">Jun Kawasaki</span>
-    <a href="mailto:root@junkawasaki.com" class="author-email">root@junkawasaki.com</a>
-    <span class="author-affiliation">{m.affiliation_niigata_med()}</span>
+<div class="author-section">
+  <div class="author-grid">
+    <div class="author-item">
+      <span class="author-name">Jun Kawasaki</span>
+      <a href="mailto:root@junkawasaki.com" class="author-email">root@junkawasaki.com</a>
+      <span class="author-affiliation">{m.affiliation_niigata_med()}</span>
+    </div>
+    <div class="author-item">
+      <span class="author-name">Kazuki Tainaka</span>
+      <span class="author-affiliation">{m.affiliation_niigata_brain()}</span>
+    </div>
+    <div class="author-item">
+      <span class="author-name">Tomonori Takeuchi</span>
+      <span class="author-affiliation">{m.affiliation_aarhus()}</span>
+    </div>
   </div>
-  <div class="author-item">
-    <span class="author-name">Kazuki Tainaka</span>
-    <span class="author-affiliation">{m.affiliation_niigata_brain()}</span>
-  </div>
-  <div class="author-item">
-    <span class="author-name">Tomonori Takeuchi</span>
-    <span class="author-affiliation">{m.affiliation_aarhus()}</span>
+
+  <div class="paper-metadata">
+    <span class="metadata-item"><strong>{m.published()}:</strong> 2024-11-30</span>
+    <span class="metadata-item"><strong>{m.version()}:</strong> 1.0.0</span>
+    <span class="metadata-item"><strong>{m.id()}:</strong> research/spirit-in-physics</span>
   </div>
 </div>
 
-<div class="paper-metadata">
-  <span class="date"><strong>{m.published()}:</strong> 2024-11-30</span>
-  <span class="version"><strong>{m.version()}:</strong> 1.0.0</span>
-  <span class="schema"><strong>{m.id()}:</strong> research/spirit-in-physics</span>
-</div>
-
-<h2 id="abstract">{m.abstract()}</h2>
-
-<div class="abstract-box">
-  {m.abstract_text()}
+<div class="abstract-container">
+  <h2 id="abstract" class="abstract-title">{m.abstract()}</h2>
+  <div class="abstract-content">
+    {m.abstract_text()}
+  </div>
 </div>
 
 <h2 id="introduction">{m.introduction()}</h2>
@@ -101,16 +104,18 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 
 {m.classification_observed_patterns_text()}
 
-<div class="pattern-box spirit-type">
-  <h4>{m.spirit_type_title()}</h4>
-  <p>{m.spirit_type_text()}</p>
-  <p class="formula-inline">&#92;( SpiritType = Archetype(Gene, Meme, Field) &#92;)</p>
-</div>
+<div class="pattern-section">
+  <div class="pattern-box spirit-type">
+    <h4>{m.spirit_type_title()}</h4>
+    <p>{m.spirit_type_text()}</p>
+    <p class="formula-inline">&#92;( SpiritType = Archetype(Gene, Meme, Field) &#92;)</p>
+  </div>
 
-<div class="pattern-box ghost-pattern">
-  <h4>{m.ghost_pattern_title()}</h4>
-  <p>{m.ghost_pattern_text()}</p>
-  <p class="formula-inline">&#92;( GhostPattern = f(Shadow, CollectiveArchetype, Meme, Field) &#92;)</p>
+  <div class="pattern-box ghost-pattern">
+    <h4>{m.ghost_pattern_title()}</h4>
+    <p>{m.ghost_pattern_text()}</p>
+    <p class="formula-inline">&#92;( GhostPattern = f(Shadow, CollectiveArchetype, Meme, Field) &#92;)</p>
+  </div>
 </div>
 
 <h2 id="measurement">{m.measurement()}</h2>
@@ -164,7 +169,7 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 </div>
 
 <div class="results-details grid md:grid-cols-2 gap-8 my-12">
-  <div class="results-sub-section p-6 bg-gray-50 rounded-xl">
+  <div class="results-sub-section p-6 bg-gray-50 rounded">
     <h3 class="mt-0 text-xl">{m.results_spirit_type_distribution_title()}</h3>
     <p class="text-sm text-gray-600 mb-4">{m.results_spirit_type_distribution_text()}</p>
     <ul class="text-sm space-y-2">
@@ -178,7 +183,7 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
     </div>
   </div>
 
-  <div class="results-sub-section p-6 bg-gray-50 rounded-xl">
+  <div class="results-sub-section p-6 bg-gray-50 rounded">
     <h3 class="mt-0 text-xl">{m.results_ghost_pattern_detection_title()}</h3>
     <p class="text-sm text-gray-600 mb-4">{m.results_ghost_pattern_detection_text()}</p>
     <ul class="text-sm space-y-2">
@@ -206,9 +211,6 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
   </div>
   <div class="viz-body">
     <p>{@html m.viz_visualization_desc({ code1: '<code>Force3DWordGraphTypeGPU</code>', code2: '<code>TimelineVisualization</code>' })}</p>
-    <div class="mock-graph">
-      <!-- Graph mock visualization here -->
-    </div>
   </div>
 </div>
 
@@ -220,9 +222,11 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 
 <h3>{m.comparison_with_existing_research_title()}</h3>
 
-- **{m.comparison_jung_text()}**
-- **{m.comparison_landauer_text()}**
-- **{m.comparison_botvinick_text()}**
+<ul class="comparison-list">
+  <li><strong>{m.comparison_jung_text()}</strong></li>
+  <li><strong>{m.comparison_landauer_text()}</strong></li>
+  <li><strong>{m.comparison_botvinick_text()}</strong></li>
+</ul>
 
 <h2 id="conclusion">{m.conclusion()}</h2>
 

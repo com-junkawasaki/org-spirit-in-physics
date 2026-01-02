@@ -18,40 +18,37 @@
 
   let graphBg = $derived(isDark ? 'transparent' : '#fbfbfd');
 
-  // Default participant for landing page data visualization
-  const LANDING_PARTICIPANT_ID = "144b325f-5966-4d59-a629-f2ca421388cc";
+  // Researcher IDs whose data can be made public for the landing page
+  const RESEARCHER_IDS = [
+    "e41a9cd2-d803-49a8-9020-0260e55cd03e", // junkawasaki
+  ];
 
   let nodes = $state<WordNode[]>([
-    { id: 'a1', label: 'Hero / 英雄', scale: 2.5, nodeType: 'anchor', color: '#ff3b30', initial: [300, 0, 0] },
-    { id: 'a2', label: 'Sage / 賢者', scale: 2.5, nodeType: 'anchor', color: '#007aff', initial: [-300, 0, 0] },
-    { id: 'a3', label: 'Lover / 恋人', scale: 2.5, nodeType: 'anchor', color: '#ff2d55', initial: [0, 300, 0] },
-    { id: 'a4', label: 'Caregiver / 介護者', scale: 2.5, nodeType: 'anchor', color: '#34c759', initial: [0, -300, 0] },
-    { id: 'a5', label: 'Shadow / 影', scale: 2.5, nodeType: 'anchor', color: '#5856d6', initial: [0, 0, 300] },
-    { id: 'n1', label: 'Spirit', scale: 1.5, nodeType: 'word', initial: [100, 100, 100] },
-    { id: 'n2', label: 'Physics', scale: 1.5, nodeType: 'word', initial: [-100, -100, -100] },
+    { id: 'a1', label: 'Joy / 喜び', scale: 2.5, nodeType: 'anchor', color: '#f59e0b', initial: [200, 200, 200] },
+    { id: 'a2', label: 'Sadness / 悲しみ', scale: 2.5, nodeType: 'anchor', color: '#1f2937', initial: [-200, -200, -200] },
+    { id: 'a3', label: 'Anger / 怒り', scale: 2.5, nodeType: 'anchor', color: '#ef4444', initial: [200, -200, 0] },
+    { id: 'a4', label: 'Fear / 恐れ', scale: 2.5, nodeType: 'anchor', color: '#a78bfa', initial: [-200, 200, 0] },
+    { id: 'a5', label: 'Calmness / 冷静', scale: 2.5, nodeType: 'anchor', color: '#93c5fd', initial: [0, 0, 300] },
   ]);
 
-  let links = $state<WordLink[]>([
-    { source: 5, target: 0, weight: 0.5 },
-    { source: 6, target: 1, weight: 0.5 },
-  ]);
+  let links = $state<WordLink[]>([]);
 
   const anchor2d = [
-    { name: 'Joy', x: 0.15, y: 0.85, color: '#f59e0b' },
-    { name: 'Sadness', x: 0.70, y: 0.45, color: '#1f2937' },
-    { name: 'Anger', x: 0.82, y: 0.25, color: '#ef4444' },
-    { name: 'Fear', x: 0.92, y: 0.10, color: '#a78bfa' },
-    { name: 'Disgust', x: 0.78, y: 0.52, color: '#10b981' },
-    { name: 'Calmness', x: 0.28, y: 0.70, color: '#93c5fd' },
-    { name: 'Interest', x: 0.35, y: 0.55, color: '#60a5fa' },
-    { name: 'Surprise', x: 0.40, y: 0.20, color: '#22c55e' },
-    { name: 'Confusion', x: 0.48, y: 0.35, color: '#64748b' },
-    { name: 'Determination', x: 0.22, y: 0.85, color: '#f97316' },
+    { name: 'Joy', label: 'Joy / 喜び', x: 0.15, y: 0.85, color: '#f59e0b' },
+    { name: 'Sadness', label: 'Sadness / 悲しみ', x: 0.70, y: 0.45, color: '#1f2937' },
+    { name: 'Anger', label: 'Anger / 怒り', x: 0.82, y: 0.25, color: '#ef4444' },
+    { name: 'Fear', label: 'Fear / 恐れ', x: 0.92, y: 0.10, color: '#a78bfa' },
+    { name: 'Disgust', label: 'Disgust / 嫌悪', x: 0.78, y: 0.52, color: '#10b981' },
+    { name: 'Calmness', label: 'Calmness / 冷静', x: 0.28, y: 0.70, color: '#93c5fd' },
+    { name: 'Interest', label: 'Interest / 興味', x: 0.35, y: 0.55, color: '#60a5fa' },
+    { name: 'Surprise', label: 'Surprise / 驚き', x: 0.40, y: 0.20, color: '#22c55e' },
+    { name: 'Confusion', label: 'Confusion / 混乱', x: 0.48, y: 0.35, color: '#64748b' },
+    { name: 'Determination', label: 'Determination / 決意', x: 0.22, y: 0.85, color: '#f97316' },
   ];
 
   const anchorToKey: Record<string, string> = {
-    Joy: 'joy', Sadness: 'sadness', Anger: 'anger', Fear: 'fear', Disgust: 'disgust',
-    Calmness: 'calm', Interest: 'focus', Surprise: 'surprise', Confusion: 'confusion', Determination: 'excitement',
+    'Joy / 喜び': 'joy', 'Sadness / 悲しみ': 'sadness', 'Anger / 怒り': 'anger', 'Fear / 恐れ': 'fear', 'Disgust / 嫌悪': 'disgust',
+    'Calmness / 冷静': 'calm', 'Interest / 興味': 'focus', 'Surprise / 驚き': 'surprise', 'Confusion / 混乱': 'confusion', 'Determination / 決意': 'excitement',
   };
 
   function toSphereLocal(x01: number, y01: number, radius: number): [number, number, number] {
@@ -65,79 +62,104 @@
 
   onMount(async () => {
     try {
-      const response = await timelineClient.getIntegratedTimeline({ 
-        participantId: LANDING_PARTICIPANT_ID 
-      });
-      const vectors = await timelineClient.getEmotionVectors({ 
-        participantId: LANDING_PARTICIPANT_ID 
+      console.log("Loading data for researchers:", RESEARCHER_IDS);
+      const allResponses = await Promise.all(RESEARCHER_IDS.map(id => 
+        timelineClient.getIntegratedTimeline({ participantId: id })
+      ));
+      const allVectors = await Promise.all(RESEARCHER_IDS.map(id => 
+        timelineClient.getEmotionVectors({ participantId: id })
+      ));
+
+      console.log("Responses received:", allResponses.map(r => r?.points?.length || 0));
+      console.log("Vectors received:", allVectors.map(v => v?.vectors?.length || 0));
+
+      const shellRadius = 350;
+      const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
+        const [x, y, z] = toSphereLocal(a.x, a.y, shellRadius);
+        return {
+          id: `anchor-${idx}`,
+          label: a.label,
+          scale: 6,
+          fixed: true,
+          nodeType: 'anchor',
+          initial: [x, y, z],
+          color: a.color
+        };
       });
 
-      if (response && response.points) {
-        const shellRadius = 300;
-        const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-          const [x, y, z] = toSphereLocal(a.x, a.y, shellRadius);
-          return {
-            id: `anchor-${idx}`,
-            label: a.name,
-            scale: 6,
-            fixed: true,
-            nodeType: 'anchor',
-            initial: [x, y, z],
-            color: a.color
-          };
-        });
+      let mergedWordNodes: WordNode[] = [];
+      let mergedLinks: WordLink[] = [];
 
+      allResponses.forEach((response, researcherIdx) => {
+        if (!response || !response.points) return;
+        
+        const vectors = allVectors[researcherIdx];
+        if (!vectors) return;
+
+        const researcherOffset = mergedWordNodes.length;
         const wordNodes: WordNode[] = response.points
+          .map(p => ({
+            ...p,
+            word: (p as any).w || (p as any).word || ''
+          }))
           .filter((p): p is typeof p & { word: string } => !!p.word && p.word !== 'Unknown')
-          .slice(0, 60) // Slightly more nodes for richness
+          .slice(0, 100) // Rich visualization for a single researcher
           .map((d, i) => {
-            const vec = vectors.vectors.find(v => v.word === d.word);
+            const word = d.word;
+            const vec = vectors.vectors.find(v => v.word === word);
             const emotion: Record<string, number> = {};
             if (vec) {
               const keys = ['joy', 'sadness', 'anger', 'fear', 'disgust', 'calm', 'focus', 'surprise', 'confusion', 'excitement'];
               keys.forEach(key => {
-                const val = (vec as any)[key + 'Sum'];
+                const val = (vec as any)[key + 'Sum'] || (vec as any)[key] || 0;
                 if (val) emotion[key] = Number(val);
               });
             }
             
-            // Richer scaling based on reaction value and emotion intensity
+            const reactionValue = (d as any).rv ?? (d as any).reactionValue ?? (d as any).reaction_value ?? 0;
             const emotionSum = Object.values(emotion).reduce((a, b) => a + b, 0);
-            const nodeScale = 0.8 + (d.reactionValue || 0) * 2.5 + (emotionSum * 0.1);
+            const nodeScale = 0.8 + (reactionValue || 0) * 2.5 + (emotionSum * 0.1);
 
             return {
-              id: `node-${i}`,
-              label: d.word,
+              id: `node-${researcherIdx}-${i}`,
+              label: word,
               scale: nodeScale,
-              color: '#6366f1', // Matches the gradient start
+              color: researcherIdx === 0 ? '#6366f1' : researcherIdx === 1 ? '#a855f7' : '#ec4899',
               emotion: Object.keys(emotion).length > 0 ? emotion : undefined
             };
           });
 
-        nodes = [...anchorNodes, ...wordNodes];
-        
-        const newLinks: WordLink[] = [];
+        mergedWordNodes = [...mergedWordNodes, ...wordNodes];
+
+        // Links between words of the same researcher (internal timeline)
         for (let i = 0; i < wordNodes.length - 1; i++) {
-          newLinks.push({ source: anchorNodes.length + i, target: anchorNodes.length + i + 1, weight: 0.5 });
+          mergedLinks.push({ 
+            source: anchorNodes.length + researcherOffset + i, 
+            target: anchorNodes.length + researcherOffset + i + 1, 
+            weight: 0.4 
+          });
         }
         
+        // Tension links to anchors based on emotion
         wordNodes.forEach((node, i) => {
           if (node.emotion) {
             anchorNodes.forEach((anchor, ai) => {
               const key = anchorToKey[anchor.label];
               if (key && (node.emotion as any)[key] > 0.1) {
-                newLinks.push({
-                  source: anchorNodes.length + i,
+                mergedLinks.push({
+                  source: anchorNodes.length + researcherOffset + i,
                   target: ai,
-                  weight: (node.emotion as any)[key] * 0.8,
+                  weight: (node.emotion as any)[key] * 0.7,
                   mode: 'tension'
                 });
               }
             });
           }
         });
-        links = newLinks;
-      }
+      });
+
+      nodes = [...anchorNodes, ...mergedWordNodes];
+      links = mergedLinks;
     } catch (e) {
       console.error("Failed to load landing page data:", e);
     }
@@ -203,53 +225,37 @@
       <p class="section-subtitle">Choose your depth of immersion into the thermodynamic information of the soul.</p>
     </div>
 
-    <div class="entry-cards">
-      <a href={l("/participant/consent?mode=quick")} class="card quick">
-        <div class="card-header">
-          <span class="card-icon">⚡</span>
-          <span class="free-badge">FREE</span>
-        </div>
-        <div class="card-body">
-          <h3>Quick Scan</h3>
-          <p>心の「今の温度」を5分で測定。直感的な診断を即座に体験。</p>
-          <div class="card-footer">
-            <span class="time-badge">5 min</span>
-          </div>
-        </div>
-      </a>
-
-      <div class="card full featured">
-        <div class="card-header">
-          <span class="card-icon">🔬</span>
-          <span class="premium-badge">PREMIUM</span>
-        </div>
-        <div class="card-body">
-          <h3>Full Research</h3>
-          <p>深層心理の完全な多様体を可視化。専門的な構造分析レポートを提供。</p>
-          <div class="card-footer">
-            <span class="time-badge">30 min</span>
-            <span class="price-tag">$80</span>
-          </div>
-        </div>
-        <div class="subscription-hint">Premium Subscription Required</div>
-      </div>
-
-      <div class="card professional">
-        <div class="card-header">
-          <span class="card-icon">💎</span>
-          <span class="expert-badge">EXPERT</span>
-        </div>
-        <div class="card-body">
-          <h3>Professional</h3>
-          <p>専門家による1on1深層分析。無意識のバグを特定し、変容を支援。</p>
-          <div class="card-footer">
-            <span class="time-badge">60 min+</span>
-            <span class="price-tag">$250</span>
-          </div>
-        </div>
-        <div class="subscription-hint">Clerk Subscription Required</div>
-      </div>
-    </div>
+     <div class="entry-cards">
+       <a href={l("/participant/consent?mode=quick")} class="card quick">
+         <div class="card-header">
+           <span class="card-icon">⚡</span>
+           <span class="free-badge">FREE</span>
+         </div>
+         <div class="card-body">
+           <h3>Quick Scan</h3>
+           <p>心の「今の温度」を5分で測定。直感的な診断を即座に体験。</p>
+           <div class="card-footer">
+             <span class="time-badge">5 min</span>
+           </div>
+         </div>
+       </a>
+ 
+       <div class="card full featured">
+         <div class="card-header">
+           <span class="card-icon">🔬</span>
+           <span class="premium-badge">PREMIUM</span>
+         </div>
+         <div class="card-body">
+           <h3>Full Research</h3>
+           <p>深層心理の完全な多様体を可視化。専門的な構造分析レポートを提供。</p>
+           <div class="card-footer">
+             <span class="time-badge">30 min</span>
+             <span class="price-tag">$80</span>
+           </div>
+         </div>
+         <div class="subscription-hint">Premium Subscription Required</div>
+       </div>
+     </div>
 
     <div class="paper-cta">
       <a href="#paper" class="scroll-link">
@@ -425,14 +431,14 @@
     margin-right: auto;
   }
 
-  .entry-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-    margin-bottom: 5rem;
-    width: 100%;
-    max-width: 1200px;
-  }
+    .entry-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+      margin-bottom: 5rem;
+      width: 100%;
+      max-width: 900px;
+    }
 
   .paper-cta {
     margin-top: 2rem;
@@ -507,16 +513,6 @@
     letter-spacing: 0.05em;
   }
 
-  .expert-badge {
-    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
-    color: #fff;
-    font-size: 0.7rem;
-    font-weight: 900;
-    padding: 0.3rem 0.7rem;
-    border-radius: 6px;
-    letter-spacing: 0.05em;
-  }
-
   .subscription-hint {
     margin-top: auto;
     font-size: 0.7rem;
@@ -527,11 +523,6 @@
     padding-top: 1rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-  }
-
-  .card.professional .subscription-hint {
-    color: #a855f7;
-    border-top-color: rgba(168, 85, 247, 0.15);
   }
 
   .card-footer {
@@ -611,10 +602,9 @@
     background: var(--lp-bg);
   }
 
-  @media (max-width: 1024px) {
-    .entry-cards { grid-template-columns: repeat(2, 1fr); }
-    .title { font-size: 4rem; }
-  }
+   @media (max-width: 1024px) {
+     .title { font-size: 4rem; }
+   }
 
   @media (max-width: 768px) {
     .title { font-size: 3rem; }

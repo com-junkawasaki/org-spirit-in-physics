@@ -554,6 +554,21 @@
     initWebGPU();
   });
 
+  // Watch for nodes/links changes to re-initialize buffers
+  $effect(() => {
+    if (nodes.length > 0 && canvas) {
+      // Re-initialize if node count changed
+      if (!positions || positions.length !== nodes.length * 3) {
+        console.log("Nodes changed, re-initializing WebGPU buffers", nodes.length);
+        if (animId) cancelAnimationFrame(animId);
+        animId = null;
+        positions = null;
+        velocities = null;
+        initWebGPU();
+      }
+    }
+  });
+
   onDestroy(() => {
     if (animId) cancelAnimationFrame(animId);
   });

@@ -67,26 +67,6 @@
           </div>
         {/if}
       </div>
-
-      <div class="entry-card professional {hasAccess(user, 'professional') ? '' : 'disabled'}">
-        <div class="icon">💎</div>
-        <div class="info">
-          <div class="title-row">
-            <h3>Expert Dive</h3>
-            <span class="expert-badge">EXPERT</span>
-          </div>
-          <p class="desc">60 min+ / 専門家解析</p>
-          <div class="price-info">
-            <span class="current">$250</span>
-          </div>
-        </div>
-        {#if !hasAccess(user, 'professional')}
-          <div class="lock-overlay">
-            <span class="lock-icon">🔒</span>
-            <span class="lock-text">Sub required</span>
-          </div>
-        {/if}
-      </div>
     </div>
   </div>
 </div>
@@ -117,16 +97,6 @@
 
   .premium-badge {
     background: #f59e0b;
-    color: #fff;
-    font-size: 0.6rem;
-    font-weight: 900;
-    padding: 0.15rem 0.4rem;
-    border-radius: 4px;
-    letter-spacing: 0.05em;
-  }
-
-  .expert-badge {
-    background: #a855f7;
     color: #fff;
     font-size: 0.6rem;
     font-weight: 900;
@@ -180,10 +150,10 @@
 
   .entry-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
     width: 100%;
-    max-width: 900px;
+    max-width: 800px;
   }
 
   .entry-card {
