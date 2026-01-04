@@ -37,6 +37,7 @@
   }: Props = $props();
 
   let canvas: HTMLCanvasElement | undefined = $state();
+  let isWebGPUSupported = $state(true);
   
   let device: any = null;
   let positions: Float32Array | null = null;
@@ -245,16 +246,19 @@
 
     if (!(navigator as any).gpu) {
       console.warn("WebGPU not supported, falling back to CPU physics");
+      isWebGPUSupported = false;
       startLoop();
       return;
     }
     
     const adapter = await (navigator as any).gpu.requestAdapter();
     if (!adapter) {
+      isWebGPUSupported = false;
       startLoop();
       return;
     }
     device = await adapter.requestDevice();
+    isWebGPUSupported = true;
 
     const shaderModule = device.createShaderModule({ code: computeShader });
     computePipeline = device.createComputePipeline({ layout: 'auto', compute: { module: shaderModule, entryPoint: 'main' } });
@@ -619,10 +623,13 @@
       isDragging = true; 
       lastMouse = { x: e.clientX, y: e.clientY }; 
     }}
+    ontouchstart={(e) => {
+      isDragging = true;
+      lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }}
     onmousemove={(e) => {
       const rect = canvas?.getBoundingClientRect();
       if (rect) {
-        // Use clientX/Y relative to canvas rect for accurate hit testing
         currentMouse = {
           x: e.clientX - rect.left,
           y: e.clientY - rect.top
@@ -634,9 +641,15 @@
         lastMouse = { x: e.clientX, y: e.clientY };
       }
     }}
+    ontouchmove={(e) => {
+      if (isDragging) {
+        camera.rotationY += (e.touches[0].clientX - lastMouse.x) * 0.01;
+        camera.rotationX += (e.touches[0].clientY - lastMouse.y) * 0.01;
+        lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    }}
     onmouseup={(e) => { 
       isDragging = false; 
-      // Handle click if not dragged much
       if (onClick) {
         if (hoveredNodeIdx !== null) {
           onClick({ node: nodes[hoveredNodeIdx] });
@@ -646,6 +659,15 @@
         }
       }
     }}
+    ontouchend={() => { isDragging = false; }}
   ></canvas>
+
+  {#if !isWebGPUSupported}
+    <div class="absolute bottom-4 right-4 px-3 py-1 bg-gray-900/50 backdrop-blur-md rounded-full border border-white/10">
+      <p class="text-[8px] font-black uppercase tracking-widest text-gray-400">
+        <span class="text-orange-500 mr-1">●</span> CPU Physics Mode
+      </p>
+    </div>
+  {/if}
 </div>
 

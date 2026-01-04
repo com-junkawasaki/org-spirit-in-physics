@@ -209,5 +209,12 @@
 	"ref_label": "ref:",
 	"affiliation_niigata_med": "Graduate School of Medical and Dental Sciences, Niigata University",
 	"affiliation_niigata_brain": "Brain Research Institute, Niigata University, Japan",
-	"affiliation_aarhus": "Department of Biomedicine, Aarhus University, Denmark"
+	"affiliation_aarhus": "Department of Biomedicine, Aarhus University, Denmark",
+	"experiment_auth_title": "Join the Research",
+	"experiment_auth_subtitle": "Help us map the human spirit using physics. Enter your email to receive a one-time code.",
+	"experiment_landing_title": "The Physics of Spirit",
+	"experiment_landing_hero": "Contribute to a landmark study in Nature Physics.",
+	"experiment_landing_description": "Participate in the world's first large-scale experiment to define 'Spirit' as a thermodynamic information quantity. Your contribution helps us reach our goal of 1,000 participants.",
+	"start_experiment": "Start Experiment",
+	"email_otp_required": "Email verification is required to ensure data quality."
 }

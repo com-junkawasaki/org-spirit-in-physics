@@ -209,5 +209,12 @@
 	"ref_label": "参照：",
 	"affiliation_niigata_med": "新潟大学大学院 医歯学総合研究科",
 	"affiliation_niigata_brain": "新潟大学 脳研究所（日本）",
-	"affiliation_aarhus": "オーフス大学 生物医学部（デンマーク）"
+	"affiliation_aarhus": "オーフス大学 生物医学部（デンマーク）",
+	"experiment_auth_title": "研究に参加する",
+	"experiment_auth_subtitle": "物理学を用いて精神の地図を作成する研究にご協力ください。メールアドレスを入力して、ワンタイムコードを受け取ってください。",
+	"experiment_landing_title": "精神の物理学",
+	"experiment_landing_hero": "Nature Physics 掲載を目指す画期的な研究への貢献",
+	"experiment_landing_description": "「精神」を熱力学的情報量として定義する、世界初の大規模実験に参加してください。あなたの貢献が、目標である1,000名のデータ収集の支えとなります。",
+	"start_experiment": "実験を開始する",
+	"email_otp_required": "データの品質を担保するため、メール認証が必須となります。"
 }

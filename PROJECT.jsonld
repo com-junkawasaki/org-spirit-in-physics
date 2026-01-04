@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.56.4",
+  "version": "1.57.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
   "updatedAt": "2026-01-04T00:00:00+09:00",
-  "merkleRoot": "Enhanced 3D visualization with Ghost Pattern overlays and integrated structural analysis for基準個体 validation.",
+  "merkleRoot": "Implemented public experiment route (/experiment) with frictionless Clerk Email OTP auth and n=1,000 scaling strategy.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,12 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/83",
+        "@type": "project:Narrative",
+        "act": "n=1,000 に向けた公開用ルート (/experiment) の構築とモバイル最適化",
+        "summary": "n=1,000 のサンプルサイズ拡大を目指し、摩擦の少ない一般公開用実験ルート（/experiment）を実装。Clerk を用いた Email OTP（ワンタイムパスワード）認証を統合し、モバイル端末でのタッチ操作対応、OGP によるソーシャルシェア機能、およびデバイス権限取得のガイダンスを統合し、広範なユーザー参加を可能にする基盤を構築した。"
+      },
       {
         "@id": "project:narrative/82",
         "@type": "project:Narrative",
@@ -113,6 +119,8 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "一般公開用実験ルート (/experiment) の構築と Clerk Email OTP 認証の統合",
+      "被験者へのパーソナル多様体レポート（Ghost Pattern 解析付）の提供機能",
       "3D Force Graph への Ghost Pattern（空間歪曲領域）の視覚的オーバーレイ表示",
       "StructureAnalysisPanel への理論的異常パターン（Complex/Void）の統合",
       "ConnectRPC/gRPC プロトコルの拡張（GhostPattern フィールドの追加）",

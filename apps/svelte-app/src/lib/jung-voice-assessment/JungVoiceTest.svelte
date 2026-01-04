@@ -380,7 +380,19 @@
         <video bind:this={videoPreview} autoPlay playsInline muted class="video-preview"></video>
         {#if kawasakiStore.deviceStatus !== 'success'}
           <div class="overlay">
-            <p>{kawasakiStore.deviceStatus === 'pending' ? m.preparing_devices() : m.device_access_error()}</p>
+            <div class="flex flex-col items-center gap-4">
+              <p class="text-sm font-bold">{kawasakiStore.deviceStatus === 'pending' ? m.preparing_devices() : m.device_access_error()}</p>
+              {#if kawasakiStore.deviceStatus === 'error'}
+                <div class="text-[10px] bg-red-500/20 p-4 rounded-xl max-w-xs leading-relaxed">
+                  <p class="mb-2 font-bold uppercase tracking-widest">Mobile Guide:</p>
+                  <ul class="text-left list-disc pl-4 space-y-1">
+                    <li>iOS: Use <strong>Safari</strong> and ensure "Camera & Microphone" are allowed in Settings.</li>
+                    <li>Android: Use <strong>Chrome</strong>.</li>
+                    <li>Please reload the page if you accidentally denied permissions.</li>
+                  </ul>
+                </div>
+              {/if}
+            </div>
           </div>
         {/if}
       </div>
@@ -518,6 +530,18 @@
     font-weight: 900;
     margin: 4rem 0;
     color: #111;
+    text-align: center;
+    word-break: break-word;
+  }
+
+  @media (max-width: 640px) {
+    .stimulus-word {
+      font-size: 3rem;
+      margin: 2rem 0;
+    }
+    .screen {
+      padding: 1rem;
+    }
   }
 
   .progress-container {
