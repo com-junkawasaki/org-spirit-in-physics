@@ -45,3 +45,4 @@ async def generate_audio_hume(api_key: str, text: str) -> Optional[bytes]:
         logger.error(f"Hume WebSocket Error: {e}")
         return None
 
+

@@ -7,3 +7,4 @@ plugins:
     out: src/generated/proto
     opt: target=ts
 
+

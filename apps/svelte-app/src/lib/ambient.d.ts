@@ -9,3 +9,4 @@ declare module "katex/dist/contrib/auto-render.mjs" {
 	export default renderMathInElement;
 }
 
+
