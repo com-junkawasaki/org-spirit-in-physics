@@ -60,6 +60,12 @@
     },
     "narrative": [
       {
+        "@id": "project:narrative/85",
+        "@type": "project:Narrative",
+        "act": "iOS シミュレータでのモバイルアプリ起動とネイティブ統合の検証",
+        "summary": "Capacitor プロジェクトのビルドと同期を行い、iOS シミュレータでのアプリ起動プロセスを確立。SvelteKit 側への Capacitor 依存関係の追加、iOS Deployment Target の引き上げ（iOS 14.0）、およびネイティブ録音プラグインの統合により、モバイル特有の計測安定性を確保した。"
+      },
+      {
         "@id": "project:narrative/84",
         "@type": "project:Narrative",
         "act": "Capacitor による iOS/Android モバイルアプリ (apps/mobile) の初期化",
