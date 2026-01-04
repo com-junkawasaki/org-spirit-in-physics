@@ -216,5 +216,13 @@
 	"experiment_landing_hero": "Nature Physics 掲載を目指す画期的な研究への貢献",
 	"experiment_landing_description": "「精神」を熱力学的情報量として定義する、世界初の大規模実験に参加してください。あなたの貢献が、目標である1,000名のデータ収集の支えとなります。",
 	"start_experiment": "実験を開始する",
-	"email_otp_required": "データの品質を担保するため、メール認証が必須となります。"
+	"email_otp_required": "データの品質を担保するため、メール認証が必須となります。",
+	"appearance": "外観",
+	"language": "言語",
+	"theme_light": "ライト",
+	"theme_dark": "ダーク",
+	"theme_system": "システム設定に従う",
+	"system_settings": "システム設定",
+	"general": "全般",
+	"ui_preferences": "インターフェース設定"
 }

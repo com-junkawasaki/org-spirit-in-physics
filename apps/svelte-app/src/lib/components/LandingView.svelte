@@ -357,17 +357,25 @@
     z-index: 5;
     pointer-events: none;
     text-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
-    max-width: 80%;
+    max-width: 90%;
     line-height: 1.1;
+    text-align: center;
   }
 
   @media (max-width: 768px) {
     .interactive-title {
-      font-size: 1.8rem;
-      top: 6rem;
+      font-size: 1.6rem;
+      top: 5.5rem;
+      max-width: 85%;
     }
     .section-label {
       top: 3.5rem;
+      font-size: 0.65rem;
+    }
+    .interaction-hint {
+      bottom: 2.5rem;
+      font-size: 0.75rem;
+      padding: 0.4rem 1.2rem;
     }
   }
 

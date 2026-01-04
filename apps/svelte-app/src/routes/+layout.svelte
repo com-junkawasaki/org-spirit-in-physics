@@ -5,11 +5,10 @@
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
   import UserSync from "$lib/components/auth/UserSync.svelte";
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { languageTag, availableLanguageTags, type AvailableLanguageTag } from "$lib/paraglide/runtime.js";
+  import { languageTag, availableLanguageTags } from "$lib/paraglide/runtime.js";
   import { i18n } from "$lib/i18n";
   import "../app.css";
 
@@ -20,15 +19,12 @@
       const { App } = await import('@capacitor/app');
       
       App.addListener('appUrlOpen', (event: any) => {
-        // Handle deep links for Clerk
-        // URL format: ai.gftd.spirit://clerk?__clerk_ticket=...
         const url = new URL(event.url);
         const slug = url.hostname;
         
         console.log("[Mobile] Deep link received:", event.url);
         
         if (slug === 'clerk' || url.searchParams.has('__clerk_ticket')) {
-          // Redirect to the auth handler within the app
           const path = url.pathname + url.search;
           goto(path);
         }
@@ -36,56 +32,25 @@
     }
   });
 
-  const languageNames: Record<string, string> = {
-    en: "English",
-    ja: "日本語",
-    fr: "Français",
-    es: "Español",
-    ru: "Русский",
-    ar: "العربية",
-    zh: "简体中文"
-  };
-
-  // Create a reactive state for the language tag to ensure Svelte 5 UI updates
-  let currentLang = $state(languageTag());
-
-  let isParticipantPage = $derived(page.url.pathname.includes('/participant'));
-  
-  function handleLanguageChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    const newLang = select.value as AvailableLanguageTag;
-    
-    console.log("[Layout] Switching language to:", newLang);
-    
-    // Manual prefix stripping to prevent nesting like /fr/fr/ja/
-    let path = page.url.pathname;
-    const segments = path.split('/').filter(Boolean);
-    while (segments.length > 0 && availableLanguageTags.includes(segments[0] as any)) {
-      segments.shift();
-    }
-    const canonicalPath = '/' + segments.join('/');
-    
-    const newPath = i18n.resolveRoute(canonicalPath, newLang);
-    console.log("[Layout] Navigating to:", newPath);
-    
-    goto(newPath);
-  }
+  let activeTab = $derived.by(() => {
+    const path = page.url.pathname;
+    if (path.includes('/researcher')) return 'analyzer';
+    if (path.includes('/paper')) return 'paper';
+    return 'spirit';
+  });
 
   // Sync html lang and dir attributes
   $effect(() => {
-    // Depend on page.url.pathname to re-run on navigation
-    const currentPath = page.url.pathname;
-    
     if (browser) {
       const lang = languageTag();
-      currentLang = lang; // Update reactive state
-      console.log("[Layout] Current languageTag:", lang);
-      console.log("[Layout] Current path:", currentPath);
-      
       document.documentElement.lang = lang;
       document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     }
   });
+
+  function resolveRoute(path: string) {
+    return i18n.resolveRoute(path, languageTag());
+  }
 </script>
 
 {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
@@ -98,158 +63,103 @@
 {/if}
 
 {#snippet layoutContent()}
-  <header class="global-nav">
-    <div class="nav-container">
-      <div class="nav-left">
-        <div class="logo">
-          <a href="/" class="logo-text">{m.logo()}</a>
+  <div class="app-shell">
+    <header class="global-header">
+      <div class="header-container">
+        <div class="header-left">
+          <a href={resolveRoute("/")} class="logo-text">{m.logo()}</a>
         </div>
         
-        {#if !isParticipantPage}
-          <nav class="main-nav">
-            <a href="/" class="nav-link" class:active={page.url.pathname === '/' || availableLanguageTags.some(lang => page.url.pathname === `/${lang}/`)}>{m.paper()}</a>
-            <div class="subtle-links">
-              <a href="/participant" class="subtle-link" class:active={page.url.pathname.includes('/participant')}>{m.participant()}</a>
-              <ResearcherGuard>
-                <a href="/researcher" class="subtle-link" class:active={page.url.pathname.includes('/researcher')}>{m.researcher()}</a>
-              </ResearcherGuard>
-            </div>
-          </nav>
-        {/if}
-      </div>
-
-      <div class="nav-right">
-        <div class="controls-group">
-          <select class="lang-selector" value={currentLang} onchange={handleLanguageChange}>
-            {#each availableLanguageTags as lang}
-              <option value={lang}>{languageNames[lang] || lang}</option>
-            {/each}
-          </select>
-          <div class="divider"></div>
-          <ThemeSwitcher />
+        <div class="header-right">
+          <div class="auth-group">
+            {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
+              <SignedIn>
+                <UserButton userProfileMode="navigation" userProfileUrl={resolveRoute("/settings")} />
+              </SignedIn>
+              <SignedOut>
+                <a href={resolveRoute("/settings")} class="settings-link" aria-label="Settings">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
+              </SignedOut>
+            {:else}
+              <span class="no-auth-label">No Auth</span>
+            {/if}
+          </div>
         </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      {@render children()}
+    </main>
+
+    <nav class="bottom-nav">
+      <div class="nav-container">
+        <a href={resolveRoute("/researcher")} class="nav-item" class:active={activeTab === 'analyzer'}>
+          <span class="icon">📊</span>
+          <span class="label">Analyzer</span>
+        </a>
         
-        <div class="auth-group">
-          {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
-            <SignedOut>
-              <SignInButton mode="modal" class="signin-btn" />
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-          {:else}
-            <span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">No Auth</span>
-          {/if}
-        </div>
+        <a href={resolveRoute("/")} class="nav-item spirit-tab" class:active={activeTab === 'spirit'}>
+          <div class="spirit-wrap">
+            <span class="icon">✨</span>
+          </div>
+          <span class="label">Spirit</span>
+        </a>
+        
+        <a href={resolveRoute("/paper")} class="nav-item" class:active={activeTab === 'paper'}>
+          <span class="icon">📄</span>
+          <span class="label">Paper</span>
+        </a>
       </div>
-    </div>
-  </header>
-
-  <main class="content-wrapper">
-    {@render children()}
-  </main>
+    </nav>
+  </div>
 {/snippet}
 
 <style>
-  :global(body) {
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
     background-color: #f5f5f7;
-    transition: background-color 0.3s;
   }
 
-  :global(.dark body) {
+  :global(.dark) .app-shell {
     background-color: #000;
-    color: #fff;
   }
 
-  .global-nav {
-    position: sticky;
+  .global-header {
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
     z-index: 1000;
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    transition: background 0.3s, border-color 0.3s;
   }
 
-  :global(.dark) .global-nav {
+  :global(.dark) .global-header {
     background: rgba(0, 0, 0, 0.8);
     border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
-  .nav-container {
-    max-width: 1400px;
+  .header-container {
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem;
-    height: 64px;
+    padding: 0 1.5rem;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
 
-  .nav-left, .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-  }
-
-  .controls-group {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: rgba(0, 0, 0, 0.03);
-    padding: 4px;
-    border-radius: 16px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  :global(.dark) .controls-group {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .lang-selector {
-    background: transparent;
-    border: none;
-    padding: 0.4rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: #666;
-    outline: none;
-  }
-
-  :global(.dark) .lang-selector {
-    color: #aaa;
-  }
-
-  .lang-selector:hover {
-    color: #000;
-  }
-
-  :global(.dark) .lang-selector:hover {
-    color: #fff;
-  }
-
-  .divider {
-    width: 1px;
-    height: 1.2rem;
-    background: rgba(0, 0, 0, 0.1);
-    margin: 0 0.5rem;
-  }
-
-  :global(.dark) .divider {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .logo .logo-text {
+  .logo-text {
     font-size: 1.1rem;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: -0.02em;
     text-decoration: none;
     background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
@@ -257,98 +167,117 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     color: transparent;
-    display: inline-block;
   }
 
-  .main-nav {
+  .settings-link {
+    color: #86868b;
     display: flex;
     align-items: center;
-    gap: 2rem;
-  }
-
-  .nav-link {
-    text-decoration: none;
-    color: #86868b;
-    font-weight: 600;
-    font-size: 0.9rem;
     transition: color 0.2s;
   }
 
-  :global(.dark) .nav-link {
-    color: #86868b;
+  :global(.dark) .settings-link {
+    color: #a1a1a6;
   }
 
-  .nav-link:hover, .nav-link.active {
-    color: #000;
+  .main-content {
+    flex: 1;
+    margin-top: 60px;
+    margin-bottom: 70px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  :global(.dark) .nav-link:hover, :global(.dark) .nav-link.active {
-    color: #fff;
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 1000;
   }
 
-  .subtle-links {
+  :global(.dark) .bottom-nav {
+    background: rgba(10, 10, 12, 0.9);
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .nav-container {
+    max-width: 600px;
+    margin: 0 auto;
+    height: 100%;
     display: flex;
-    gap: 1.5rem;
-    border-left: 1px solid rgba(0, 0, 0, 0.1);
-    padding-left: 1.5rem;
+    justify-content: space-around;
+    align-items: center;
   }
 
-  :global(.dark) .subtle-links {
-    border-left-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .subtle-link {
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
     text-decoration: none;
     color: #86868b;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+    min-width: 80px;
   }
 
-  .subtle-link:hover {
-    color: #1d1d1f;
+  .nav-item .icon {
+    font-size: 1.4rem;
+    filter: grayscale(100%) opacity(0.6);
   }
 
-  :global(.dark) .subtle-link:hover {
-    color: #fff;
-  }
-
-  :global(.signin-btn) {
-    background: #007aff;
-    color: white;
-    border: none;
-    padding: 0.5rem 1.2rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
+  .nav-item .label {
+    font-size: 0.7rem;
     font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.2s, opacity 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
-  :global(.signin-btn:hover) {
-    transform: scale(1.02);
-    opacity: 0.9;
+  .nav-item.active {
+    color: #3b82f6;
   }
 
-  .content-wrapper {
-    min-height: calc(100vh - 64px);
+  .nav-item.active .icon {
+    filter: none;
+    opacity: 1;
+    transform: scale(1.1);
   }
 
-  @media (max-width: 1024px) {
-    .subtle-links {
-      display: none;
-    }
-    .nav-left, .nav-right {
-      gap: 1rem;
-    }
+  .spirit-tab .spirit-wrap {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -24px;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  @media (max-width: 768px) {
-    .nav-container {
-      padding: 0 1rem;
-    }
-    .main-nav {
-      display: none;
-    }
+  .spirit-tab.active .spirit-wrap {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.6);
+  }
+
+  .spirit-tab .icon {
+    filter: none;
+    opacity: 1;
+    font-size: 1.5rem;
+  }
+
+  .no-auth-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #888;
+    letter-spacing: 0.1em;
   }
 </style>

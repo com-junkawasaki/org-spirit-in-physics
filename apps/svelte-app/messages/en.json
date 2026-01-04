@@ -216,5 +216,13 @@
 	"experiment_landing_hero": "Contribute to a landmark study in Nature Physics.",
 	"experiment_landing_description": "Participate in the world's first large-scale experiment to define 'Spirit' as a thermodynamic information quantity. Your contribution helps us reach our goal of 1,000 participants.",
 	"start_experiment": "Start Experiment",
-	"email_otp_required": "Email verification is required to ensure data quality."
+	"email_otp_required": "Email verification is required to ensure data quality.",
+	"appearance": "Appearance",
+	"language": "Language",
+	"theme_light": "Light",
+	"theme_dark": "Dark",
+	"theme_system": "System",
+	"system_settings": "System Settings",
+	"general": "General",
+	"ui_preferences": "Interface Preferences"
 }
