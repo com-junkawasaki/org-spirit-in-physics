@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  grpc-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - PORT=8080
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-localhost:7233}
+      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
+    depends_on:
+      - postgres
+    networks:
+      - spirit-in-physics
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=spirit_in_physics
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - spirit-in-physics
+
+  temporal:
+    image: temporalio/auto-setup:latest
+    ports:
+      - "7233:7233"
+      - "8088:8088"
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=postgres
+      - POSTGRES_SEEDS=postgres
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    depends_on:
+      - postgres
+    networks:
+      - spirit-in-physics
+
+volumes:
+  postgres_data:
+
+networks:
+  spirit-in-physics:
+    driver: bridge

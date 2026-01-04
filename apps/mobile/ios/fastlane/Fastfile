@@ -1,0 +1,36 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Debug build for Simulator"
+  lane :debug_sim do
+    # 依存関係の更新
+    cocoapods(
+      podfile: "App/Podfile"
+    )
+
+    # シミュレータ向けビルド
+    scan(
+      scheme: "App",
+      clean: true,
+      skip_test: true,
+      destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6",
+      buildlog_path: "./fastlane/logs"
+    )
+  end
+
+  desc "Run on Simulator"
+  lane :run_sim do
+    # ビルドしてシミュレータを起動
+    xcodebuild(
+      workspace: "App.xcworkspace",
+      scheme: "App",
+      configuration: "Debug",
+      destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6",
+      build_settings: {
+        "ARCHS" => "x86_64", # Apple Silicon の場合は arm64
+        "ONLY_ACTIVE_ARCH" => "YES"
+      }
+    )
+  end
+end
+

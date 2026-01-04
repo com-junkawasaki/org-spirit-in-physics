@@ -7,6 +7,7 @@ import logging
 import os
 from pathlib import Path
 from typing import List, Optional
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, HTTPException, status, Query
 from pydantic import BaseModel
@@ -194,32 +195,33 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
     # Filter word_displayed events
     word_events = [e for e in events if e.get('type') == 'word_displayed']
     
-    if not word_events:
-        return TimelineResult(
-            participant_id=participant_id,
-            session_id=session_id,
-            status="skipped",
-            message="No word_displayed events found",
-            timeline_points_count=0
-        )
+    # Find recording_started timestamp for Hume AI data alignment
+    recording_started_event = next((e for e in events if e.get('type') == 'recording_started'), None)
+    recording_base_ts = recording_started_event.get('timestamp') if recording_started_event else start_ts
     
+    recording_started_dt = datetime.fromtimestamp(recording_base_ts / 1000.0, tz=timezone.utc)
+    
+    # Define session time range for 1Hz sampling
+    start_dt = datetime.fromtimestamp(start_ts / 1000.0, tz=timezone.utc)
+    if end_ts:
+        end_dt = datetime.fromtimestamp(end_ts / 1000.0, tz=timezone.utc)
+    else:
+        end_dt = datetime.fromtimestamp(events[-1]['timestamp'] / 1000.0, tz=timezone.utc)
+    
+    # Ensure end_dt is at least 1 second after start_dt
+    if end_dt <= start_dt:
+        end_dt = start_dt + timedelta(seconds=60)
+
     # Get emotion data
     emotion_data = await get_emotion_data(conn, session_id, participant_id)
     
-    # Get physiological data
-    physiological_data = await get_physiological_data(conn, session_id, participant_id)
+    # Get physiological data (from the new high-density table)
+    physiological_data_hd = await get_physiological_data_hd(conn, session_id, participant_id)
     
-    # Process each word event
-    timeline_points_count = 0
-    
+    # Map word events to their nearest second for efficient lookup
+    word_by_second = {} # Key: int(timestamp/1000), Value: (word, reaction_time)
     for idx, event in enumerate(word_events):
-        timestamp = event.get('timestamp')
-        # Extract word from event_data (stored as JSON string in session_events table)
-        # Try multiple ways to get the word:
-        # 1. From event['data'] (parsed JSON from event_data column, or added from word_map)
-        # 2. From event['payload'] (legacy format)
-        # 3. From word_map directly (fallback)
-        # 4. Default to 'Unknown'
+        ts = event.get('timestamp')
         word = 'Unknown'
         if event.get('data'):
             if isinstance(event['data'], dict):
@@ -228,116 +230,92 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                 try:
                     data_dict = json.loads(event['data'])
                     word = data_dict.get('word', 'Unknown')
-                except:
-                    pass
+                except: pass
         if word == 'Unknown' and event.get('payload'):
             word = event.get('payload', {}).get('word', 'Unknown')
-        # Final fallback: try word_map directly
-        if word == 'Unknown' and timestamp in word_map:
-            word = word_map[timestamp]
-            logger.debug(f"Used word_map fallback for timestamp {timestamp}: '{word}'")
+        if word == 'Unknown' and ts in word_map:
+            word = word_map[ts]
         
-        if idx < 5:  # Log first 5 words for debugging
-            logger.info(f"Event {idx}: timestamp={timestamp}, word='{word}', has_data={bool(event.get('data'))}, word_in_map={timestamp in word_map}")
+        reaction_time = calculate_reaction_time(events, ts, events.index(event))
+        word_by_second[int(ts / 1000)] = (word, reaction_time)
+
+    # Process each second
+    timeline_points_count = 0
+    
+    # Limit session duration to avoid infinite loops
+    max_duration_sec = 7200 # 2 hours
+    duration_sec = int((end_dt - start_dt).total_seconds())
+    if duration_sec > max_duration_sec:
+        logger.warning(f"Session {session_id} duration {duration_sec}s exceeds limit, truncating to {max_duration_sec}s")
+        duration_sec = max_duration_sec
+
+    for i in range(duration_sec + 1):
+        tick_dt = start_dt + timedelta(seconds=i)
+        tick_ts_ms = int(tick_dt.timestamp() * 1000)
+        tick_ts_sec_key = int(tick_ts_ms / 1000)
         
-        # Calculate reaction time
-        reaction_time = calculate_reaction_time(events, timestamp, idx)
+        # Check if a word was displayed in this second
+        word_info = word_by_second.get(tick_ts_sec_key)
+        word = word_info[0] if word_info else None
+        reaction_time = word_info[1] if word_info else None
+        event_type = 'word_displayed' if word else 'emotion_sample'
         
-        # Find related emotions (within ±5 seconds for better coverage)
-        # Expanded from ±2 seconds to capture more emotion data
-        relative_timestamp_sec = (timestamp - start_ts) / 1000.0
-        related_emotions = find_related_emotions(emotion_data, relative_timestamp_sec, time_window_sec=5.0)
-        if idx < 5:  # Log first 5 events for debugging
-            logger.debug(f"[process_session_timeline] Event {idx}: word={word}, relative_ts={relative_timestamp_sec:.2f}s, found {len(related_emotions)} related emotions (time_window=±5.0s)")
+        # Calculate relative timestamp for Hume AI
+        relative_timestamp_sec = (tick_dt - recording_started_dt).total_seconds()
         
-        # Find related physiological data (within ±5 seconds)
-        related_physiological = find_related_physiological(physiological_data, timestamp)
+        # Find related emotions
+        related_emotions = find_related_emotions(emotion_data, relative_timestamp_sec, time_window_sec=2.0)
         
-        # Build emotions array with optimizations:
-        # 1. Score threshold: lowered to 0.01 to include more emotion data (was 0.1)
-        # 2. Deduplicate by name and fileType (keep max score)
-        # 3. Limit to top 10 emotions per file_type (increased from 5)
-        EMOTION_SCORE_THRESHOLD = 0.01  # Lowered from 0.1 to capture more data
-        emotions_dict = {}  # Key: (name, fileType), Value: max score
-        total_scores_processed = 0
-        scores_below_threshold = 0
-        invalid_emotion_names = 0
+        # Find related physiological data from HD table
+        related_physio_hd = find_related_physiological_hd(physiological_data_hd, tick_dt)
         
+        # Process emotions
+        EMOTION_SCORE_THRESHOLD = 0.01
+        emotions_dict = {}
         for emotion in related_emotions:
             emotion_scores = emotion.get('emotion_scores', {})
             file_type = emotion.get('file_type', 'unknown')
-            
             for name, score in emotion_scores.items():
-                total_scores_processed += 1
-                # Apply score threshold: lowered to 0.01 to include more emotion data
                 score_float = float(score)
                 if score_float >= EMOTION_SCORE_THRESHOLD:
-                    # Use emotion name as-is (already validated against ENUM in import_emotions)
-                    # ENUM type is case-sensitive, so use the original name from database
                     key = (name, file_type)
-                    # Keep the maximum score for each emotion name + fileType combination
                     if key not in emotions_dict or emotions_dict[key] < score_float:
                         emotions_dict[key] = score_float
-                else:
-                    scores_below_threshold += 1
         
-        # Log debug info for first few events
-        if idx < 5:
-            logger.debug(f"[process_session_timeline] Event {idx}: word={word}, processed {total_scores_processed} scores, "
-                       f"below_threshold={scores_below_threshold}, invalid_names={invalid_emotion_names}, "
-                       f"final_emotions={len(emotions_dict)}")
-        
-        # Group by file_type and keep top 5 per file_type
+        emotions_array = []
         emotions_by_file_type = {}
         for (name, file_type), score in emotions_dict.items():
-            if file_type not in emotions_by_file_type:
-                emotions_by_file_type[file_type] = []
-            emotions_by_file_type[file_type].append({
-                'name': name,
-                'score': score,
-                'fileType': file_type
-            })
+            if file_type not in emotions_by_file_type: emotions_by_file_type[file_type] = []
+            emotions_by_file_type[file_type].append({'name': name, 'score': score, 'fileType': file_type})
         
-        # Sort by score descending and keep top 10 per file_type (increased from 5)
-        emotions_array = []
         for file_type, emotion_list in emotions_by_file_type.items():
             sorted_emotions = sorted(emotion_list, key=lambda x: x['score'], reverse=True)
-            emotions_array.extend(sorted_emotions[:10])  # Increased from 5 to 10
-        
-        # Build physiological object
-        physiological_obj = {
-            'average': 0.0,
-            'max': 0.0,
-            'min': 0.0,
-            'channels': {}
-        }
-        
-        if related_physiological:
-            all_values = []
-            for physio in related_physiological:
-                channels = physio.get('channels', {})
-                all_values.extend([v for v in channels.values() if isinstance(v, (int, float))])
+            emotions_array.extend(sorted_emotions[:5])
+
+        # Process physiological data
+        physio_values = []
+        channels_obj = {}
+        arousal_score = 0.0
+        if related_physio_hd:
+            for ch in range(1, 9):
+                val = related_physio_hd.get(f'ch{ch}')
+                if val is not None:
+                    physio_values.append(val)
+                    channels_obj[f'Ch{ch}'] = val
             
-            if all_values:
-                physiological_obj['average'] = sum(all_values) / len(all_values)
-                physiological_obj['max'] = max(all_values)
-                physiological_obj['min'] = min(all_values)
+            # Integration plan: Use Ch3 as arousal proxy (scaled to 0.0-1.0 range)
+            ch3_val = related_physio_hd.get('ch3')
+            if ch3_val is not None:
+                # Assume Ch3 is a sensor value where 0-3V maps to arousal
+                # or similar. For now, use a simple linear scaling.
+                arousal_score = min(1.0, max(0.0, ch3_val / 3.0))
         
         # Calculate reaction value
         emotion_total = sum(e['score'] for e in emotions_array)
-        reaction_value = emotion_total + physiological_obj['average']
-        
-        # Build metadata
-        metadata = {
-            'emotionCount': len(related_emotions),
-            'physiologicalCount': len(related_physiological)
-        }
-        
-        # Convert timestamp to datetime
-        from datetime import datetime, timezone
-        time_dt = datetime.fromtimestamp(timestamp / 1000.0, tz=timezone.utc)
-        
-        # Insert timeline point (without emotions and physiological JSONB columns)
+        # Combine emotions and physiological arousal with 0.5 weighting
+        reaction_value = emotion_total + (arousal_score * 0.5)
+
+        # Insert timeline point
         await conn.execute(
             """
             INSERT INTO timeline_points (
@@ -353,20 +331,14 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                 reaction_time = EXCLUDED.reaction_time,
                 has_response = EXCLUDED.has_response
             """,
-            time_dt, participant_id, session_id, word, 'word_displayed',
+            tick_dt, participant_id, session_id, word, event_type,
             reaction_value,
             reaction_time / 1000.0 if reaction_time else None,
             reaction_time is not None
         )
         
-        # Insert emotions into normalized table
+        # Insert emotions
         for emotion in emotions_array:
-            emotion_name_raw = emotion['name']
-            emotion_score = emotion['score']
-            file_type = emotion['fileType']
-            
-            # Insert emotion entry (direct ENUM type, PostgreSQL will validate)
-            # Skip invalid emotion names by catching the exception
             try:
                 await conn.execute(
                     """
@@ -378,38 +350,38 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                     ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, emotion_name, file_type) DO UPDATE
                     SET score = EXCLUDED.score
                     """,
-                    time_dt, participant_id, session_id,
-                    emotion_name_raw, emotion_score, file_type
+                    tick_dt, participant_id, session_id,
+                    emotion['name'], emotion['score'], emotion['fileType']
                 )
-            except Exception as e:
-                # Skip invalid emotion names (e.g., not in ENUM type)
-                logger.debug(f"Skipping invalid emotion name '{emotion_name_raw}' for timeline point at {time_dt}: {e}")
-                continue
-        
-        # Insert physiological measurements into normalized table
-        if related_physiological:
-            for physio in related_physiological:
-                channels = physio.get('channels', {})
-                for measurement_type, value in channels.items():
-                    if not isinstance(value, (int, float)):
-                        continue
-                    
-                    # Insert measurement (direct ENUM type, no master table lookup)
-                    await conn.execute(
-                        """
-                        INSERT INTO physiological_measurements (
-                            timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
-                            measurement_type, value, unit
-                        )
-                        VALUES ($1, $2::uuid, $3::uuid, $4::measurement_type_enum, $5, 'unknown'::measurement_unit_enum)
-                        ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, measurement_type) DO UPDATE
-                        SET value = EXCLUDED.value
-                        """,
-                        time_dt, participant_id, session_id,
-                        measurement_type, float(value)
-                    )
+            except: continue
+
+        # Insert physiological measurements
+        for ch_name, val in channels_obj.items():
+            await conn.execute(
+                """
+                INSERT INTO physiological_measurements (
+                    timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
+                    measurement_type, value, unit
+                )
+                VALUES ($1, $2::uuid, $3::uuid, $4::measurement_type_enum, $5, 'unknown'::measurement_unit_enum)
+                ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, measurement_type) DO UPDATE
+                SET value = EXCLUDED.value
+                """,
+                tick_dt, participant_id, session_id,
+                ch_name, float(val)
+            )
         
         timeline_points_count += 1
+
+    logger.info(f"Created {timeline_points_count} high-density timeline points for session {session_id}")
+    
+    return TimelineResult(
+        participant_id=participant_id,
+        session_id=session_id,
+        status="success",
+        message=f"Created {timeline_points_count} high-density timeline points",
+        timeline_points_count=timeline_points_count
+    )
     
     logger.info(f"Created {timeline_points_count} timeline points for session {session_id}")
     
@@ -713,6 +685,44 @@ async def get_physiological_data(conn, session_id: str, participant_id: str):
                 'channels': channels
             })
         return entries
+
+
+async def get_physiological_data_hd(conn, session_id: str, participant_id: str):
+    """Get high-density physiological data for a session"""
+    rows = await conn.fetch(
+        """
+        SELECT time, ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8
+        FROM physiological_data
+        WHERE session_id::text = $1
+        ORDER BY time ASC
+        """,
+        session_id
+    )
+    return rows
+
+
+def find_related_physiological_hd(physiological_data_hd, target_dt):
+    """Find HD physiological data nearest to a target datetime"""
+    # Simple nearest neighbor search for now
+    # physiological_data_hd is sorted by time
+    if not physiological_data_hd:
+        return None
+    
+    # Use binary search or simple loop if small
+    # For now, just find the closest one within 1 second
+    closest = None
+    min_diff = 1.0 # 1 second
+    
+    for row in physiological_data_hd:
+        row_time = row['time']
+        diff = abs((row_time - target_dt).total_seconds())
+        if diff < min_diff:
+            min_diff = diff
+            closest = row
+        if row_time > target_dt + timedelta(seconds=1):
+            break
+            
+    return closest
 
 
 def calculate_reaction_time(events, timestamp: int, event_index: int):

@@ -135,6 +135,26 @@ async def process_emotions(conn, participant_id: str, participant_path: Path):
     
     # Process each artifacts directory
     for artifacts_dir in hume_artifacts_dirs:
+        # Priority 1: JSON Predictions
+        json_predictions = list(artifacts_dir.glob("HumeAI_predictions_*.json"))
+        if json_predictions:
+            for json_file in json_predictions:
+                logger.info(f"Processing Hume AI JSON predictions: {json_file.name}")
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    try:
+                        data = json.load(f)
+                        entries, emotions_count = await import_json_predictions(
+                            conn, session_id, participant_id, data
+                        )
+                        total_entries += entries
+                        total_emotions += emotions_count
+                        # We count JSON as one "file" for statistics
+                        csv_files_processed += 1 
+                    except Exception as e:
+                        logger.error(f"Error processing JSON {json_file}: {e}")
+            continue # If we found JSON, we don't look for CSV in this artifacts_dir
+
+        # Priority 2: CSV fallback (only if no JSON was found in this directory)
         # Find registry_file directories
         for registry_dir in artifacts_dir.glob("registry_file-*"):
             csv_dir = registry_dir / "csv"
@@ -170,6 +190,105 @@ async def process_emotions(conn, participant_id: str, participant_path: Path):
             total_emotions=total_emotions
         )
     )
+
+
+async def import_json_predictions(conn, session_id: str, participant_id: str, data: List[Dict]):
+    """Import from Hume AI JSON predictions format"""
+    entries_count = 0
+    emotions_count = 0
+    
+    # Get valid emotion names from ENUM type
+    valid_emotion_names = await conn.fetch(
+        "SELECT unnest(enum_range(NULL::emotion_name_enum))::text as emotion_name"
+    )
+    valid_emotion_set = {row['emotion_name'] for row in valid_emotion_names}
+    
+    for source_item in data:
+        results = source_item.get('results', {})
+        predictions_list = results.get('predictions', [])
+        
+        for pred in predictions_list:
+            models = pred.get('models', {})
+            for model_name, model_data in models.items():
+                table_prefix = None
+                if model_name == 'face': table_prefix = 'hume_face'
+                elif model_name == 'burst': table_prefix = 'hume_burst'
+                elif model_name == 'language': table_prefix = 'hume_language'
+                elif model_name == 'prosody': table_prefix = 'hume_prosody'
+                
+                if not table_prefix:
+                    continue
+                
+                grouped_predictions = model_data.get('grouped_predictions', [])
+                for group in grouped_predictions:
+                    record_id = group.get('id', 'unknown')
+                    for p in group.get('predictions', []):
+                        emotions = p.get('emotions', [])
+                        emotion_scores = {
+                            e['name']: e['score'] 
+                            for e in emotions 
+                            if e['name'] in valid_emotion_set
+                        }
+                        
+                        if not emotion_scores:
+                            continue
+                            
+                        time_data = p.get('time')
+                        begin_time = 0.0
+                        end_time = None
+                        
+                        if isinstance(time_data, (int, float)):
+                            begin_time = float(time_data)
+                        elif isinstance(time_data, dict):
+                            begin_time = float(time_data.get('begin', 0.0))
+                            end_time = float(time_data.get('end', begin_time + 1.0))
+                        
+                        # Insert into corresponding table
+                        data_id = None
+                        if model_name in ['face', 'prosody']:
+                            data_id = await conn.fetchval(
+                                f"""
+                                INSERT INTO {table_prefix}_emotion_data (
+                                    time, session_id, participant_id, record_id,
+                                    begin_time, created_at
+                                )
+                                VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, NOW())
+                                ON CONFLICT DO NOTHING
+                                RETURNING id
+                                """,
+                                session_id, participant_id, record_id, begin_time
+                            )
+                        else: # burst, language
+                            data_id = await conn.fetchval(
+                                f"""
+                                INSERT INTO {table_prefix}_emotion_data (
+                                    time, session_id, participant_id, record_id,
+                                    begin_time, end_time, created_at
+                                )
+                                VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5, NOW())
+                                ON CONFLICT DO NOTHING
+                                RETURNING id
+                                """,
+                                session_id, participant_id, record_id, begin_time, end_time
+                            )
+                            
+                        if data_id:
+                            entries_count += 1
+                            for emotion_name, score in emotion_scores.items():
+                                await conn.execute(
+                                    f"""
+                                    INSERT INTO {table_prefix}_emotion_scores (
+                                        {table_prefix}_emotion_data_id, emotion_name, score
+                                    )
+                                    VALUES ($1::uuid, $2::emotion_name_enum, $3)
+                                    ON CONFLICT ({table_prefix}_emotion_data_id, emotion_name) DO UPDATE
+                                    SET score = EXCLUDED.score
+                                    """,
+                                    data_id, emotion_name, score
+                                )
+                                emotions_count += 1
+                                
+    return entries_count, emotions_count
 
 
 async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: Path, csv_type: str):

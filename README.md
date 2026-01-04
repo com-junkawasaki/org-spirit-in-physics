@@ -59,11 +59,19 @@
 ### 10. 実行
 ```
 pnpm i
-pnpm -F apps/researcher dev
+# ローカル開発環境の起動 (Tilt)
+tilt up
 ```
-ブラウザで 3D Force Timeline（`/3d-force-timeline`）へアクセス。UI で σ, Spectral Init, Shell/Constraints 等を調整します。
+ブラウザで `http://spirit.localhost/researcher` へアクセス。UI で σ, Spectral Init, Shell/Constraints 等を調整します。
 
-### 11. 設計の要点（Why it works）
+### 11. サービス一覧
+- Portal: `http://spirit.localhost`
+- API (ConnectRPC): `http://spirit.localhost/api`
+- Import Service: `http://spirit.localhost/import`
+- Temporal UI: `http://spirit.localhost/temporal`
+- MinIO Console: `http://spirit.localhost/minio-console`
+
+### 12. 設計の要点（Why it works）
 - スペクトラル初期化が「感情距離」の幾何を低次元で大域的に保存。
 - テンセグリティの片側拘束＋PBD で自己支持的な安定形へ漸近（ストレス最小化の近似）。
 - アンカーとグローバル場（殻/トーラス/斥力）で、辺縁系の環状・層状のマクロ形態を制御。

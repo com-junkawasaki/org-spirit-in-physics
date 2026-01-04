@@ -1,0 +1,3 @@
+version: v1
+directories:
+  - performers/services/grpc/proto

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package preference.v1;
+
+option go_package = "github.com/spirit-in-physics/services/grpc/gen/proto/preference/v1;preferencev1";
+
+// Preference service to store user settings like theme and language
+service PreferenceService {
+  // Get user preferences
+  rpc GetPreference(GetPreferenceRequest) returns (GetPreferenceResponse);
+  
+  // Update user preferences
+  rpc UpdatePreference(UpdatePreferenceRequest) returns (UpdatePreferenceResponse);
+}
+
+message GetPreferenceRequest {
+  string user_id = 1;
+}
+
+message GetPreferenceResponse {
+  Preference preference = 1;
+}
+
+message UpdatePreferenceRequest {
+  string user_id = 1;
+  optional string theme = 2; // light, dark, system
+  optional string language = 3; // en, ja, etc.
+}
+
+message UpdatePreferenceResponse {
+  Preference preference = 1;
+}
+
+message Preference {
+  string user_id = 1;
+  string theme = 2;
+  string language = 3;
+}

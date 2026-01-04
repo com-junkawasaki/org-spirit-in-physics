@@ -1,0 +1,87 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "http://spirit.localhost/architecture#",
+    "id": "@id",
+    "type": "@type",
+    "dct": "http://purl.org/dc/terms/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "title": "dct:title",
+    "description": "dct:description",
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "mathematicalModel": "architecture:mathematicalModel",
+    "definitions": "architecture:definitions",
+    "equations": "architecture:equations",
+    "stateSpace": "architecture:stateSpace",
+    "dynamics": "architecture:dynamics",
+    "energyFunction": "architecture:energyFunction",
+    "measurementModel": "architecture:measurementModel"
+  },
+  
+  "@id": "http://spirit.localhost/architecture",
+  "@type": "architecture:SystemArchitecture",
+  "title": "Spirit in Physics: Theoretical Framework & Mathematical Definitions",
+  "description": "熱力学的情報量としての精神を定義し、高次元多様体上での動態をモデル化する理論的基盤",
+  "updatedAt": "2026-01-04T00:00:00+09:00",
+  
+  "stateSpace": {
+    "symbol": "S",
+    "definition": "Spirit Physical Space",
+    "components": {
+      "V": "Set of informational vertices (e.g., semantic word vectors)",
+      "E": "Set of potential edges (information energy between vertices)",
+      "T": "Time dimension"
+    },
+    "formula": "S = {V, E, T}"
+  },
+  
+  "energyFunction": {
+    "title": "Information Energy Potential",
+    "description": "単語 w_I から w_O への遷移に伴う「驚き（Surprise）」を情報的エネルギーとして定義",
+    "formula": "E = -ln P(w_O | w_I)"
+  },
+  
+  "mathematicalModel": {
+    "symbol": "ψ(S)",
+    "title": "Field Quantity of Spirit",
+    "definition": "システムの全情報エネルギーの状態に対する関数微分",
+    "formula": "ψ(S) = δE(S) / δS",
+    "interpretation": "精神とは、情報空間のポテンシャル勾配から生じる物理的な場（Field）である"
+  },
+  
+  "dynamics": {
+    "title": "Open System Thermodynamics",
+    "description": "精神の状態変化は、内部エントロピー生成と外部（環境）との情報交換の総和である",
+    "formula": "dS/dt = dS_internal/dt + dS_exchange/dt"
+  },
+  
+  "measurementModel": {
+    "title": "Multimodal Association Probability",
+    "description": "言語、行動、生理指標を統合した高次元空間での遷移確率",
+    "formula": "P(w_O | w_I) ∝ exp(semantic_sim) * behavior_term^α * exp(γ * ΔSP / λ) * exp(η * F)",
+    "parameters": {
+      "semantic_sim": "w_I ⋅ w_O (Cosine similarity)",
+      "behavior_term": "r(w_I, w_O) (Inverse of reaction time)",
+      "arousal": "ΔSP (Skin Potential Change)",
+      "emotion": "F (Emotional Expression vector)"
+    }
+  },
+  
+  "definitions": [
+    {
+      "term": "Complex (錯体)",
+      "description": "情報空間内のエネルギーがチャージされたノード群。特定の領域にノードが異常密集し、かつ高い生体反応（Reaction Value）を共有している状態。LLM的な意味の近さだけでなく、生理的な固着によって空間が歪められた領域。"
+    },
+    {
+      "term": "Ghost Pattern",
+      "description": "ベクトル空間における位相と距離感の幾何学的異常。生体反応（生理指標・行動指標）をカーネル（距離関数）に組み込むことで、標準的なセマンティック空間が個人特有の斥力や引力によって歪められたパターン（異常密集、特異的空白、位相干渉）を指す。"
+    },
+    {
+      "term": "Protagonist Sample (Jun Kawasaki)",
+      "description": "本アーキテクチャの妥当性を検証するための基準個体。社会起業家としての高度な情報統合と開放系力学を体現し、生体情報に基づく空間歪曲の解析モデルを適用する対象。"
+    }
+  ]
+}
+

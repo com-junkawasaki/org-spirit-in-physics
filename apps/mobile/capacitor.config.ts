@@ -1,0 +1,19 @@
+import { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'ai.gftd.spirit',
+  appName: 'Spirit in Physics',
+  webDir: '../svelte-app/build',
+  bundledWebRuntime: false,
+  server: {
+    androidScheme: 'https',
+    hostname: 'sip.junkawasaki.com', // 本番ドメインに合わせる
+    allowNavigation: ['sip.junkawasaki.com', '*.clerk.accounts.dev']
+  },
+  ios: {
+    contentInset: 'always'
+  }
+};
+
+export default config;
+
