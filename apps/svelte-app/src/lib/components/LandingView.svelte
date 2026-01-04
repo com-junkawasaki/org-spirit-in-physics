@@ -32,6 +32,7 @@
   ]);
 
   let links = $state<WordLink[]>([]);
+  let ghostPatterns = $state<any[]>([]);
 
   const anchor2d = [
     { name: 'Joy', label: 'Joy / 喜び', x: 0.15, y: 0.85, color: '#f59e0b' },
@@ -69,17 +70,20 @@
       const allVectors = await Promise.all(RESEARCHER_IDS.map(id => 
         timelineClient.getEmotionVectors({ participantId: id })
       ));
+      const allAnalysis = await Promise.all(RESEARCHER_IDS.map(id => 
+        timelineClient.getAnalysis({ participantId: id })
+      ));
 
       console.log("Responses received:", allResponses.map(r => r?.points?.length || 0));
       console.log("Vectors received:", allVectors.map(v => v?.vectors?.length || 0));
 
-      const shellRadius = 350;
+      const shellRadius = 400;
       const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
         const [x, y, z] = toSphereLocal(a.x, a.y, shellRadius);
         return {
           id: `anchor-${idx}`,
           label: a.label,
-          scale: 6,
+          scale: 8,
           fixed: true,
           nodeType: 'anchor',
           initial: [x, y, z],
@@ -89,12 +93,18 @@
 
       let mergedWordNodes: WordNode[] = [];
       let mergedLinks: WordLink[] = [];
+      let mergedGhostPatterns: any[] = [];
 
       allResponses.forEach((response, researcherIdx) => {
         if (!response || !response.points) return;
         
         const vectors = allVectors[researcherIdx];
         if (!vectors) return;
+
+        const analysis = allAnalysis[researcherIdx];
+        if (analysis && analysis.ghost_patterns) {
+          mergedGhostPatterns = [...mergedGhostPatterns, ...analysis.ghost_patterns];
+        }
 
         const researcherOffset = mergedWordNodes.length;
         const wordNodes: WordNode[] = response.points
@@ -103,7 +113,7 @@
             word: (p as any).w || (p as any).word || ''
           }))
           .filter((p): p is typeof p & { word: string } => !!p.word && p.word !== 'Unknown')
-          .slice(0, 100) // Rich visualization for a single researcher
+          .slice(0, 150) // Higher density for Jun Kawasaki
           .map((d, i) => {
             const word = d.word;
             const vec = vectors.vectors.find(v => v.word === word);
@@ -118,7 +128,7 @@
             
             const reactionValue = (d as any).rv ?? (d as any).reactionValue ?? (d as any).reaction_value ?? 0;
             const emotionSum = Object.values(emotion).reduce((a, b) => a + b, 0);
-            const nodeScale = 0.8 + (reactionValue || 0) * 2.5 + (emotionSum * 0.1);
+            const nodeScale = 1.0 + (reactionValue || 0) * 3.5 + (emotionSum * 0.15);
 
             return {
               id: `node-${researcherIdx}-${i}`,
@@ -131,25 +141,25 @@
 
         mergedWordNodes = [...mergedWordNodes, ...wordNodes];
 
-        // Links between words of the same researcher (internal timeline)
+        // Timeline links
         for (let i = 0; i < wordNodes.length - 1; i++) {
           mergedLinks.push({ 
             source: anchorNodes.length + researcherOffset + i, 
             target: anchorNodes.length + researcherOffset + i + 1, 
-            weight: 0.4 
+            weight: 0.5 
           });
         }
         
-        // Tension links to anchors based on emotion
+        // Emotion tension links
         wordNodes.forEach((node, i) => {
           if (node.emotion) {
             anchorNodes.forEach((anchor, ai) => {
               const key = anchorToKey[anchor.label];
-              if (key && (node.emotion as any)[key] > 0.1) {
+              if (key && (node.emotion as any)[key] > 0.15) {
                 mergedLinks.push({
                   source: anchorNodes.length + researcherOffset + i,
                   target: ai,
-                  weight: (node.emotion as any)[key] * 0.7,
+                  weight: (node.emotion as any)[key] * 0.8,
                   mode: 'tension'
                 });
               }
@@ -160,6 +170,7 @@
 
       nodes = [...anchorNodes, ...mergedWordNodes];
       links = mergedLinks;
+      ghostPatterns = mergedGhostPatterns;
     } catch (e) {
       console.error("Failed to load landing page data:", e);
     }
@@ -189,10 +200,18 @@
     <Force3DWordGraphTypeGPU 
       {nodes} 
       {links} 
+      {ghostPatterns}
       width={2000} 
       height={1000} 
       background={graphBg}
-      physics={{ repulsionK: 12000, springK: 2.5, damping: 0.96 }}
+      physics={{ 
+        repulsionK: 15000, 
+        springK: 3.5, 
+        damping: 0.95,
+        restLength: 100,
+        shellRadius: 450
+      }}
+      showAnalysis={true}
     />
     <div class="interaction-hint">
       Drag to rotate • Scroll to zoom • Interaction Enabled
@@ -313,7 +332,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.12) 0%, #000 80%);
     overflow: hidden;
   }
 
@@ -330,13 +349,26 @@
 
   .interactive-title {
     position: absolute;
-    top: 6rem;
-    font-size: 2rem;
+    top: 7rem;
+    font-size: 2.5rem;
     font-weight: 900;
-    color: var(--lp-text);
-    letter-spacing: -0.02em;
+    color: #fff;
+    letter-spacing: -0.04em;
     z-index: 5;
     pointer-events: none;
+    text-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+    max-width: 80%;
+    line-height: 1.1;
+  }
+
+  @media (max-width: 768px) {
+    .interactive-title {
+      font-size: 1.8rem;
+      top: 6rem;
+    }
+    .section-label {
+      top: 3.5rem;
+    }
   }
 
   .interaction-hint {

@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.57.0",
+  "version": "1.58.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
   "updatedAt": "2026-01-04T00:00:00+09:00",
-  "merkleRoot": "Implemented public experiment route (/experiment) with frictionless Clerk Email OTP auth and n=1,000 scaling strategy.",
+  "merkleRoot": "Implemented high-density 3D manifold visualization for reference individual (Jun Kawasaki) with mobile-optimized glow effects and camera control.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,12 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/86",
+        "@type": "project:Narrative",
+        "act": "基準個体（河崎純真）データの高密度可視化とモバイル最適化",
+        "summary": "河崎純真の spirit データ（n=150ノード以上）をデフォルトサンプルとして統合。モバイル端末の縦長画面に最適化したカメラ制御、ノードごとの発光（Radial Glow）エフェクト、および Ghost Pattern に基づく空間全体の環境光レンダリングを実装。Nature Physics 掲載を見据えた、没入感の高い 3D 多様体表現を実現した。"
+      },
       {
         "@id": "project:narrative/85",
         "@type": "project:Narrative",

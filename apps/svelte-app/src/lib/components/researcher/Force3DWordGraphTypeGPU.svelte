@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import type { WordNode, WordLink, GapArea, DensityRegion, GhostPattern } from './types';
+  import { runtimeConfig } from '$lib/env.svelte';
 
   interface Props {
     nodes: WordNode[];
@@ -52,9 +53,9 @@
   let computePipeline: any = null;
 
   let camera = $state({
-    distance: 600,
-    rotationX: 0.2,
-    rotationY: 0.5,
+    distance: runtimeConfig.IS_CAPACITOR ? 900 : 700,
+    rotationX: 0.4,
+    rotationY: 0.6,
     centerX: 0,
     centerY: 0,
     centerZ: 0
@@ -396,6 +397,8 @@
         let newHoveredNodeIdx: number | null = null;
         let newHoveredLinkIdx: number | null = null;
 
+        const isLightMode = background !== 'transparent' && background !== '#000' && background !== '#000000' && background !== 'black';
+
         // Projection utility
         const project = (p: {x: number, y: number, z: number}) => {
           const cosY = Math.cos(camera.rotationY), sinY = Math.sin(camera.rotationY);
@@ -405,22 +408,38 @@
           return { x: width/2 + rx * zoom, y: height/2 + cy * zoom, z: rz_ };
         };
 
-        const isLightMode = background !== 'transparent' && background !== '#000' && background !== '#000000' && background !== 'black';
-
         const projectedNodes = nodes.map((_, i) => project({
           x: currentPositions[i*3], y: currentPositions[i*3+1], z: currentPositions[i*3+2]
         }));
 
-        // Draw Ghost Patterns (Theory based space distortion)
+        // 1. Draw Space Glow (Background atmosphere)
+        if (!isLightMode) {
+          ctx.globalCompositeOperation = 'lighter';
+          ghostPatterns.forEach(ghost => {
+            const p = project({ x: ghost.center[0], y: ghost.center[1], z: ghost.center[2] });
+            const radius = ghost.radius * zoom * 2.5;
+            const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
+            const color = ghost.pattern_type === 'overcrowding' ? '147, 51, 234' : '192, 38, 211';
+            g.addColorStop(0, `rgba(${color}, 0.15)`);
+            g.addColorStop(1, `rgba(${color}, 0)`);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // 2. Draw Ghost Patterns (Theory based space distortion)
         if (showAnalysis && ghostPatterns.length > 0) {
           ghostPatterns.forEach(ghost => {
             const p = project({ x: ghost.center[0], y: ghost.center[1], z: ghost.center[2] });
             const radius = ghost.radius * zoom;
             
-            // Glow effect
+            // Core Glow
             const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
             const color = ghost.pattern_type === 'overcrowding' ? 'rgba(147, 51, 234, ' : 'rgba(192, 38, 211, ';
-            gradient.addColorStop(0, color + '0.2)');
+            gradient.addColorStop(0, color + '0.3)');
             gradient.addColorStop(0.7, color + '0.1)');
             gradient.addColorStop(1, color + '0.0)');
             
@@ -430,33 +449,31 @@
             ctx.fill();
             
             // Border/Ring
-            ctx.strokeStyle = color + '0.4)';
+            ctx.strokeStyle = color + '0.5)';
             ctx.setLineDash([5, 5]);
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 2;
             ctx.stroke();
             ctx.setLineDash([]);
 
             // Label
-            ctx.fillStyle = color + '0.8)';
-            ctx.font = `bold ${Math.round(10 * zoom)}px sans-serif`;
-            ctx.fillText(ghost.pattern_type.toUpperCase(), p.x, p.y - radius - 5);
+            ctx.fillStyle = color + '1.0)';
+            ctx.font = `bold ${Math.round(12 * zoom)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(ghost.pattern_type.toUpperCase(), p.x, p.y - radius - 10);
           });
         }
 
-        // Links hit testing and drawing
+        // 3. Links
         links.forEach((l, li) => {
           const sp = projectedNodes[l.source];
           const tp = projectedNodes[l.target];
           if (!sp || !tp) return;
 
-          // Hit test for line
           const dx = tp.x - sp.x;
           const dy = tp.y - sp.y;
           const l2 = dx * dx + dy * dy;
           let distToLine = Infinity;
-          if (l2 === 0) {
-            distToLine = Math.hypot(currentMouse.x - sp.x, currentMouse.y - sp.y);
-          } else {
+          if (l2 > 0) {
             let t = ((currentMouse.x - sp.x) * dx + (currentMouse.y - sp.y) * dy) / l2;
             t = Math.max(0, Math.min(1, t));
             distToLine = Math.hypot(currentMouse.x - (sp.x + t * dx), currentMouse.y - (sp.y + t * dy));
@@ -477,31 +494,27 @@
           const rgbS = nodeRGBs[l.source];
           const rgbT = nodeRGBs[l.target];
           
-          const alpha = isHighlighted ? 0.9 : (isAnchorLink ? 0.2 : 0.4);
+          let alpha = isHighlighted ? 0.9 : (isAnchorLink ? 0.15 : 0.3);
+          if (isLightMode) alpha *= 0.8;
+
           if (rgbS && rgbT) {
             const lkr = (rgbS[0] + rgbT[0]) / 2;
             const lkg = (rgbS[1] + rgbT[1]) / 2;
             const lkb = (rgbS[2] + rgbT[2]) / 2;
             ctx.strokeStyle = `rgba(${Math.round(lkr)}, ${Math.round(lkg)}, ${Math.round(lkb)}, ${alpha})`;
           } else {
-            ctx.strokeStyle = l.color || (isAnchorLink ? 'rgba(100, 100, 100, 0.2)' : 'rgba(30, 64, 175, 0.4)');
+            ctx.strokeStyle = l.color || (isAnchorLink ? `rgba(100, 100, 100, ${alpha})` : `rgba(30, 64, 175, ${alpha})`);
           }
           
-          ctx.lineWidth = ((isAnchorLink ? l.weight * 2 : 1) * zoom) + (isHighlighted ? 3 : 0);
+          ctx.lineWidth = ((isAnchorLink ? l.weight * 3 : 1.5) * zoom) + (isHighlighted ? 2 : 0);
           ctx.stroke();
-
-          if (isHighlighted) {
-            ctx.strokeStyle = isPinned ? 'rgba(59, 130, 246, 0.5)' : '#fff';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
         });
 
-        // Nodes hit testing and drawing
+        // 4. Nodes
         projectedNodes.forEach((p, i) => {
           const n = nodes[i];
           const isAnchor = n.nodeType === 'anchor';
-          const radius = Math.max(2, (isAnchor ? n.scale * 2.0 : n.scale * 1.5) * zoom); // Increased node size
+          const radius = Math.max(2, (isAnchor ? n.scale * 2.2 : n.scale * 1.8) * zoom);
 
           const dist = Math.hypot(currentMouse.x - p.x, currentMouse.y - p.y);
           const isHovered = dist < radius + 10;
@@ -509,6 +522,18 @@
 
           const isPinned = pinnedNodeIds.has(n.id);
           const isHighlighted = isHovered || isPinned;
+
+          // Node Glow (if dark)
+          if (!isLightMode && !isAnchor) {
+            const nodeRgb = nodeRGBs[i];
+            if (nodeRgb) {
+              const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius * 3);
+              g.addColorStop(0, `rgba(${nodeRgb[0]}, ${nodeRgb[1]}, ${nodeRgb[2]}, 0.3)`);
+              g.addColorStop(1, `rgba(${nodeRgb[0]}, ${nodeRgb[1]}, ${nodeRgb[2]}, 0)`);
+              ctx.fillStyle = g;
+              ctx.beginPath(); ctx.arc(p.x, p.y, radius * 3, 0, Math.PI*2); ctx.fill();
+            }
+          }
 
           ctx.beginPath(); 
           ctx.arc(p.x, p.y, radius, 0, Math.PI*2);
@@ -524,9 +549,9 @@
             const nodeRgb = nodeRGBs[i];
             if (nodeRgb) {
               const [nr, ng, nb] = nodeRgb;
-              ctx.fillStyle = `rgba(${Math.round(nr)}, ${Math.round(ng)}, ${Math.round(nb)}, ${isHighlighted ? 1.0 : 0.85})`;
+              ctx.fillStyle = `rgba(${Math.round(nr)}, ${Math.round(ng)}, ${Math.round(nb)}, ${isHighlighted ? 1.0 : 0.9})`;
             } else {
-              ctx.fillStyle = 'rgba(100, 100, 255, 0.85)';
+              ctx.fillStyle = 'rgba(100, 100, 255, 0.9)';
             }
             ctx.globalAlpha = 1.0;
             ctx.fill();
@@ -538,32 +563,35 @@
             }
           }
           
-          // ラベル
+          // Label Rendering
           ctx.globalAlpha = 1.0;
           const labelRgb = isAnchor ? getSpatialRGB(i, currentPositions) : nodeRGBs[i];
           const [txtR, txtG, txtB] = labelRgb || [255, 255, 255];
           
-          let textColor = isHighlighted ? '#fff' : `rgb(${Math.max(100, Math.round(txtR))}, ${Math.max(100, Math.round(txtG))}, ${Math.max(100, Math.round(txtB))})`;
+          let textColor = isHighlighted ? '#fff' : `rgb(${Math.max(150, Math.round(txtR))}, ${Math.max(150, Math.round(txtG))}, ${Math.max(150, Math.round(txtB))})`;
           if (isLightMode && !isHighlighted) {
             textColor = `rgb(${Math.min(100, Math.round(txtR))}, ${Math.min(100, Math.round(txtG))}, ${Math.min(100, Math.round(txtB))})`;
           }
           
-          ctx.font = `${isAnchor || isHighlighted ? 'bold ' : ''}${Math.round((isAnchor ? 24 : 16) * zoom)}px sans-serif`; // Increased font size
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
+          const fontSize = Math.round((isAnchor ? 22 : 14) * zoom);
+          if (fontSize > 4) {
+            ctx.font = `${isAnchor || isHighlighted ? 'bold ' : ''}${fontSize}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
 
-          // 文字の輪郭 (Outline)
-          ctx.strokeStyle = isLightMode ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)';
-          ctx.lineWidth = isHighlighted ? 5 : 4;
-          ctx.strokeText(n.label, p.x, p.y + (isAnchor ? radius + 20 : 0));
+            // Outline
+            ctx.strokeStyle = isLightMode ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)';
+            ctx.lineWidth = isHighlighted ? 4 : 3;
+            ctx.strokeText(n.label, p.x, p.y + (isAnchor ? radius + 18 : 0));
 
-          ctx.fillStyle = textColor;
-          if (isHighlighted) {
-            ctx.shadowColor = isLightMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.9)';
-            ctx.shadowBlur = isPinned ? 10 : 8;
+            ctx.fillStyle = textColor;
+            if (isHighlighted) {
+              ctx.shadowColor = isLightMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.9)';
+              ctx.shadowBlur = isPinned ? 10 : 8;
+            }
+            ctx.fillText(n.label, p.x, p.y + (isAnchor ? radius + 18 : 0));
+            ctx.shadowBlur = 0;
           }
-          ctx.fillText(n.label, p.x, p.y + (isAnchor ? radius + 20 : 0));
-          ctx.shadowBlur = 0;
         });
 
         // Handle hover state change
