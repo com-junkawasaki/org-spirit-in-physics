@@ -14,7 +14,8 @@ const getEnv = (key: string, defaultValue: string = ''): string => {
 // components using them will update.
 export const runtimeConfig = $state({
     PUBLIC_CLERK_PUBLISHABLE_KEY: getEnv('PUBLIC_CLERK_PUBLISHABLE_KEY'),
-    PUBLIC_API_URL: getEnv('PUBLIC_API_URL')
+    PUBLIC_API_URL: getEnv('PUBLIC_API_URL'),
+    IS_CAPACITOR: browser && (window as any).Capacitor !== undefined
 });
 
 // For backward compatibility and ease of use, export individual getters or simple values if they don't change

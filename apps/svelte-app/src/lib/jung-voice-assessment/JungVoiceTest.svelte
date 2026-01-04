@@ -115,52 +115,54 @@
 
   // Recording logic
   async function startRecording(session: 1 | 2) {
-    if (!kawasakiStore.stream) {
-      console.warn("No stream available for recording");
-      return;
-    }
-
-    console.log(`Starting recording for session ${session}`);
-    // Take a snapshot at the start of recording
-    try {
-      captureSnapshot(session);
-    } catch (e) {
-      console.error("Failed to capture snapshot:", e);
-    }
-
-    videoChunks = [];
-    try {
-      const options: MediaRecorderOptions = {};
-      const mimeTypes = [
-        'video/webm; codecs=vp9',
-        'video/webm; codecs=vp8',
-        'video/webm',
-        'video/mp4'
-      ];
-      
-      for (const type of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(type)) {
-          options.mimeType = type;
-          break;
-        }
+    if (kawasakiStore.stream) {
+      console.log(`Starting web recording for session ${session}`);
+      // Take a snapshot at the start of recording
+      try {
+        captureSnapshot(session);
+      } catch (e) {
+        console.error("Failed to capture snapshot:", e);
       }
 
-      mediaRecorder = new MediaRecorder(kawasakiStore.stream, options);
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) videoChunks.push(e.data);
-      };
-      mediaRecorder.onstop = async () => {
-        if (videoChunks.length === 0) return;
-        const blob = new Blob(videoChunks, { type: options.mimeType || 'video/webm' });
-        kawasakiStore.logEvent('recording_stopped', { session });
-        // Upload the video
-        await kawasakiStore.uploadArtifact(blob, 'video', session);
-      };
-      mediaRecorder.start();
-      kawasakiStore.logEvent('recording_started', { session, mimeType: options.mimeType });
-    } catch (e) {
-      console.error("Failed to start MediaRecorder", e);
-      kawasakiStore.error = "Recording error: " + (e instanceof Error ? e.message : String(e));
+      videoChunks = [];
+      try {
+        const options: MediaRecorderOptions = {};
+        const mimeTypes = [
+          'video/webm; codecs=vp9',
+          'video/webm; codecs=vp8',
+          'video/webm',
+          'video/mp4'
+        ];
+        
+        for (const type of mimeTypes) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            options.mimeType = type;
+            break;
+          }
+        }
+
+        mediaRecorder = new MediaRecorder(kawasakiStore.stream, options);
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) videoChunks.push(e.data);
+        };
+        mediaRecorder.onstop = async () => {
+          if (videoChunks.length === 0) return;
+          const blob = new Blob(videoChunks, { type: options.mimeType || 'video/webm' });
+          kawasakiStore.logEvent('recording_stopped', { session });
+          // Upload the video
+          await kawasakiStore.uploadArtifact(blob, 'video', session);
+        };
+        mediaRecorder.start();
+        kawasakiStore.logEvent('recording_started', { session, mimeType: options.mimeType });
+      } catch (e) {
+        console.error("Failed to start MediaRecorder", e);
+        kawasakiStore.error = "Recording error: " + (e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    // Always attempt native recording if in Capacitor
+    if (typeof window !== 'undefined' && (window as any).Capacitor) {
+      await kawasakiStore.startNativeRecording();
     }
   }
 
@@ -181,7 +183,7 @@
     }
   }
 
-  function stopRecording() {
+  async function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       try {
         mediaRecorder.stop();
@@ -190,6 +192,10 @@
       }
     }
     mediaRecorder = null;
+
+    if (typeof window !== 'undefined' && (window as any).Capacitor) {
+      await kawasakiStore.stopNativeRecording(kawasakiStore.currentSession);
+    }
   }
 
   // Session control

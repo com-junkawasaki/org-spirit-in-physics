@@ -6,7 +6,9 @@ const config: CapacitorConfig = {
   webDir: '../svelte-app/build',
   bundledWebRuntime: false,
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    hostname: 'sip.junkawasaki.com', // 本番ドメインに合わせる
+    allowNavigation: ['sip.junkawasaki.com', '*.clerk.accounts.dev']
   },
   ios: {
     contentInset: 'always'

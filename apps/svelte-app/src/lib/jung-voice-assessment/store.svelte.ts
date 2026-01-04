@@ -221,6 +221,32 @@ class KawasakiStore {
     });
   }
 
+  // Native Recording Helpers (Capacitor)
+  async startNativeRecording() {
+    if (typeof window !== 'undefined' && (window as any).Capacitor) {
+      const { VoiceRecorder } = await import('capacitor-voice-recorder');
+      const canRecord = await VoiceRecorder.canDeviceVoiceRecord();
+      if (canRecord.value) {
+        await VoiceRecorder.startRecording();
+        this.logEvent('native_recording_started');
+      }
+    }
+  }
+
+  async stopNativeRecording(sessionIndex: number) {
+    if (typeof window !== 'undefined' && (window as any).Capacitor) {
+      const { VoiceRecorder } = await import('capacitor-voice-recorder');
+      const result = await VoiceRecorder.stopRecording();
+      if (result.value && result.value.recordDataBase64) {
+        // Convert base64 to Blob
+        const response = await fetch(`data:audio/webm;base64,${result.value.recordDataBase64}`);
+        const blob = await response.blob();
+        await this.uploadArtifact(blob, 'audio', sessionIndex);
+        this.logEvent('native_recording_stopped');
+      }
+    }
+  }
+
   startSession(numberOfWords: number) {
     const sessionNumber = this.currentSession;
     

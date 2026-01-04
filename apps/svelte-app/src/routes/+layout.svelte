@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
   import ThemeSwitcher from "$lib/components/ThemeSwitcher.svelte";
   import UserSync from "$lib/components/auth/UserSync.svelte";
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
@@ -13,6 +14,27 @@
   import "../app.css";
 
   let { children } = $props();
+
+  onMount(async () => {
+    if (runtimeConfig.IS_CAPACITOR) {
+      const { App } = await import('@capacitor/app');
+      
+      App.addListener('appUrlOpen', (event: any) => {
+        // Handle deep links for Clerk
+        // URL format: ai.gftd.spirit://clerk?__clerk_ticket=...
+        const url = new URL(event.url);
+        const slug = url.hostname;
+        
+        console.log("[Mobile] Deep link received:", event.url);
+        
+        if (slug === 'clerk' || url.searchParams.has('__clerk_ticket')) {
+          // Redirect to the auth handler within the app
+          const path = url.pathname + url.search;
+          goto(path);
+        }
+      });
+    }
+  });
 
   const languageNames: Record<string, string> = {
     en: "English",
