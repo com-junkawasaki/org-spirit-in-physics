@@ -5,6 +5,7 @@
   import AudioVisualizer from "./AudioVisualizer.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { languageTag } from "$lib/paraglide/runtime.js";
+  import { fade, fly, scale } from "svelte/transition";
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
@@ -33,6 +34,19 @@
   let videoChunks: Blob[] = [];
   let responseTimer: any = null;
 
+  let showManifestation = $state(false);
+  let manifestationProgress = $state(0);
+  let manifestationMessage = $state("");
+
+  const manifestationMessages = [
+    "解析の儀式を開始します...",
+    "意識の幾何学を構築しています...",
+    "情報のエントロピーを計算中...",
+    "精神多様体の位相を特定しています...",
+    "ゴースト・パターンを抽出中...",
+    "あなたの Spirit が形作られています..."
+  ];
+
   function cleanupRecognition() {
     if (recognition) {
       try {
@@ -48,31 +62,26 @@
 
   // Constants
   const WELCOME_MESSAGE = m.welcome_message();
-  const DEBUG_MODE = true; // Added for validation as requested
+  const DEBUG_MODE = true; 
 
   onMount(async () => {
-    // If status is idle, we probably shouldn't be here directly without consent
     if (kawasakiStore.testStatus === 'idle') {
-      goto("/participant/consent");
+      goto("/experiment/consent");
       return;
     }
 
-    // Initial words are loaded by parent (Landing page)
-    // but we check just in case it's mounted directly or failed
     if (kawasakiStore.stimulusWords.length === 0) {
       await kawasakiStore.loadStimulusWords();
     }
   });
 
   let isInitializingMedia = false;
-  // Media initialization
   async function initializeMedia() {
     if (isInitializingMedia) return;
     isInitializingMedia = true;
     try {
-      // Check if navigator.mediaDevices is available (HTTPS or localhost)
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Media devices not supported in this browser context (requires HTTPS or localhost)");
+        throw new Error("Media devices not supported");
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -81,7 +90,6 @@
       });
       kawasakiStore.stream = stream;
       kawasakiStore.deviceStatus = 'success';
-      kawasakiStore.logEvent('preflight_devices_acquired');
       
       if (videoPreview) {
         videoPreview.srcObject = stream;
@@ -93,47 +101,40 @@
       console.error("Failed to initialize media:", err);
       kawasakiStore.deviceStatus = 'error';
       kawasakiStore.error = m.device_access_error() + ": " + (err.message || "Unknown error");
-      kawasakiStore.logEvent('preflight_devices_failed', { error: err.message });
     } finally {
       isInitializingMedia = false;
     }
   }
 
-  // Effect to handle preflight media
   $effect(() => {
     if (kawasakiStore.testStatus === 'preflight' && !kawasakiStore.stream) {
       initializeMedia();
     }
   });
 
-  // Effect to handle completion callback
   $effect(() => {
-    if (kawasakiStore.testStatus === 'completed' && onComplete) {
-      onComplete();
+    if (kawasakiStore.testStatus === 'completed') {
+      startManifestation();
     }
   });
 
-  // Recording logic
+  async function startManifestation() {
+    showManifestation = true;
+    for (let i = 0; i < manifestationMessages.length; i++) {
+      manifestationMessage = manifestationMessages[i]!;
+      manifestationProgress = ((i + 1) / manifestationMessages.length) * 100;
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    if (onComplete) onComplete();
+  }
+
   async function startRecording(session: 1 | 2) {
     if (kawasakiStore.stream) {
-      console.log(`Starting web recording for session ${session}`);
-      // Take a snapshot at the start of recording
-      try {
-        captureSnapshot(session);
-      } catch (e) {
-        console.error("Failed to capture snapshot:", e);
-      }
-
+      captureSnapshot(session);
       videoChunks = [];
       try {
         const options: MediaRecorderOptions = {};
-        const mimeTypes = [
-          'video/webm; codecs=vp9',
-          'video/webm; codecs=vp8',
-          'video/webm',
-          'video/mp4'
-        ];
-        
+        const mimeTypes = ['video/webm; codecs=vp9', 'video/webm; codecs=vp8', 'video/webm', 'video/mp4'];
         for (const type of mimeTypes) {
           if (MediaRecorder.isTypeSupported(type)) {
             options.mimeType = type;
@@ -148,19 +149,14 @@
         mediaRecorder.onstop = async () => {
           if (videoChunks.length === 0) return;
           const blob = new Blob(videoChunks, { type: options.mimeType || 'video/webm' });
-          kawasakiStore.logEvent('recording_stopped', { session });
-          // Upload the video
           await kawasakiStore.uploadArtifact(blob, 'video', session);
         };
         mediaRecorder.start();
-        kawasakiStore.logEvent('recording_started', { session, mimeType: options.mimeType });
       } catch (e) {
         console.error("Failed to start MediaRecorder", e);
-        kawasakiStore.error = "Recording error: " + (e instanceof Error ? e.message : String(e));
       }
     }
 
-    // Always attempt native recording if in Capacitor
     if (typeof window !== 'undefined' && (window as any).Capacitor) {
       await kawasakiStore.startNativeRecording();
     }
@@ -168,7 +164,6 @@
 
   function captureSnapshot(sessionIndex: number) {
     if (!videoPreview || videoPreview.videoWidth === 0) return;
-
     const canvas = document.createElement('canvas');
     canvas.width = videoPreview.videoWidth;
     canvas.height = videoPreview.videoHeight;
@@ -176,135 +171,73 @@
     if (ctx) {
       ctx.drawImage(videoPreview, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(async (blob) => {
-        if (blob) {
-          await kawasakiStore.uploadArtifact(blob, 'image', sessionIndex);
-        }
+        if (blob) await kawasakiStore.uploadArtifact(blob, 'image', sessionIndex);
       }, 'image/jpeg', 0.8);
     }
   }
 
   async function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      try {
-        mediaRecorder.stop();
-      } catch (e) {
-        console.error("Failed to stop MediaRecorder", e);
-      }
+      try { mediaRecorder.stop(); } catch (e) {}
     }
     mediaRecorder = null;
-
     if (typeof window !== 'undefined' && (window as any).Capacitor) {
       await kawasakiStore.stopNativeRecording(kawasakiStore.currentSession);
     }
   }
 
-  // Session control
   async function handleStartSession() {
-    try {
-      // Just in case something is already recording
-      stopRecording();
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      await startRecording(kawasakiStore.currentSession);
-      const wordCount = kawasakiStore.testMode === 'quick' ? 15 : (DEBUG_MODE ? 3 : 100);
-      kawasakiStore.startSession(wordCount);
-    } catch (e) {
-      console.error("Error starting session:", e);
-      kawasakiStore.error = "Error starting session: " + (e instanceof Error ? e.message : String(e));
-    }
+    stopRecording();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    await startRecording(kawasakiStore.currentSession);
+    const wordCount = kawasakiStore.testMode === 'quick' ? 15 : (DEBUG_MODE ? 3 : 100);
+    kawasakiStore.startSession(wordCount);
   }
 
   async function handleStartNextSession() {
-    try {
-      stopRecording();
-      // Wait a bit for MediaRecorder to fully stop and resource to be released
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await startRecording(kawasakiStore.currentSession);
-      const wordCount = kawasakiStore.testMode === 'quick' ? 15 : (DEBUG_MODE ? 3 : 100);
-      kawasakiStore.startSession(wordCount);
-    } catch (e) {
-      console.error("Error starting next session:", e);
-      kawasakiStore.error = "Error starting next session: " + (e instanceof Error ? e.message : String(e));
-    }
+    stopRecording();
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await startRecording(kawasakiStore.currentSession);
+    const wordCount = kawasakiStore.testMode === 'quick' ? 15 : (DEBUG_MODE ? 3 : 100);
+    kawasakiStore.startSession(wordCount);
   }
 
-  // Word association logic
   function startRecognition() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      console.error("Speech Recognition not supported in this browser");
-      // Fallback: trigger response manually or skip
-      setTimeout(() => {
-        if (isListening) handleResponse("(Speech Recognition Not Supported)");
-      }, 3000);
+      setTimeout(() => { if (isListening) handleResponse("(Not Supported)"); }, 3000);
       return;
     }
-
     cleanupRecognition();
-
     recognition = new SpeechRecognition();
     recognition.lang = currentLocale;
     recognition.interimResults = true;
     recognition.continuous = false;
-
-    recognition.onstart = () => {
-      isListening = true;
-      kawasakiStore.logEvent('recognition_started');
-    };
-    recognition.onend = () => {
-      isListening = false;
-      kawasakiStore.logEvent('recognition_ended');
-    };
-
+    recognition.onstart = () => { isListening = true; };
+    recognition.onend = () => { isListening = false; };
     recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0].transcript)
-        .join('');
+      const transcript = Array.from(event.results).map((result: any) => result[0].transcript).join('');
       recognizedText = transcript;
-      
       if (event.results[0].isFinal) {
         handleResponse(transcript);
         recognition.stop();
       }
     };
-
-    recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
-      kawasakiStore.logEvent('recognition_error', { error: event.error });
-      if (event.error === 'no-speech') {
-        // Just let it timeout or retry if appropriate
-      }
-    };
-
-    try {
-      recognition.start();
-    } catch (e) {
-      console.error("Failed to start recognition:", e);
-    }
+    try { recognition.start(); } catch (e) {}
   }
 
   function handleResponse(response: string) {
     if (isProcessingResponse) return;
     isProcessingResponse = true;
-
-    if (responseTimer) {
-      clearTimeout(responseTimer);
-      responseTimer = null;
-    }
-    
+    if (responseTimer) { clearTimeout(responseTimer); responseTimer = null; }
     const reactionTimeMs = Date.now() - wordDisplayedTime;
-    kawasakiStore.recordWordResponse({
-      responseWord: response,
-      reactionTimeMs
-    });
+    kawasakiStore.recordWordResponse({ responseWord: response, reactionTimeMs });
     recognizedText = "";
   }
 
-  // Effect for word display
   $effect(() => {
     const isRunning = kawasakiStore.testStatus.includes('running');
     const word = kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex];
-
     if (isRunning && word) {
       isProcessingResponse = false;
       const lang = languageTag();
@@ -316,20 +249,14 @@
       else if (lang === 'ar') stimulusWord = word.arabic || word.english;
       else if (lang === 'zh') stimulusWord = word.chinese || word.english;
 
-      kawasakiStore.logEvent('word_displayed', { word: stimulusWord, id: word.id });
       wordDisplayedTime = Date.now();
       recognizedText = "";
 
-      // Play audio or TTS
       const audioUrl = `/audio/jung-voice-assessment/${word.id}.mp3`;
       if (stimulusAudio) {
         stimulusAudio.src = audioUrl;
-        stimulusAudio.onended = () => {
-          setTimeout(startRecognition, 500);
-        };
-        stimulusAudio.play().catch((err) => {
-          console.warn("Audio play failed, using TTS:", err);
-          // Fallback to TTS
+        stimulusAudio.onended = () => { setTimeout(startRecognition, 500); };
+        stimulusAudio.play().catch(() => {
           const utterance = new SpeechSynthesisUtterance(stimulusWord);
           utterance.lang = currentLocale;
           utterance.onend = () => setTimeout(startRecognition, 500);
@@ -337,25 +264,19 @@
         });
       }
 
-      // Timeout for no response
       responseTimer = setTimeout(() => {
-        kawasakiStore.logEvent('response_timeout', { word: stimulusWord });
         cleanupRecognition();
         kawasakiStore.advanceToNextWord();
       }, 10000);
 
       return () => {
-        if (responseTimer) {
-          clearTimeout(responseTimer);
-          responseTimer = null;
-        }
+        if (responseTimer) { clearTimeout(responseTimer); responseTimer = null; }
         cleanupRecognition();
         speechSynthesis.cancel();
       };
     }
   });
 
-  // Stop recording on session complete
   $effect(() => {
     if (kawasakiStore.testStatus === 'session-1-complete' || kawasakiStore.testStatus === 'completed') {
       stopRecording();
@@ -371,259 +292,168 @@
   });
 </script>
 
-<div class="test-container">
-  {#if kawasakiStore.testStatus === 'preflight'}
-    <div class="screen preflight">
-      <h2>{m.device_check()}</h2>
-      <div class="card welcome-card">
-        <h3>{m.welcome_title()}</h3>
-        <p>{WELCOME_MESSAGE}</p>
-        <button class="btn" onclick={() => stimulusAudio?.play().catch(console.error)}>{m.listen_again()}</button>
-        <audio bind:this={stimulusAudio} src="/audio/jung-voice-assessment/welcome_message.mp3"></audio>
+<div class="test-view h-full w-full flex flex-col">
+  {#if showManifestation}
+    <div 
+      transition:fade 
+      class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center text-white p-12 text-center"
+    >
+      <div class="manifestation-glow absolute inset-0 -z-10"></div>
+      
+      <div class="mb-12 relative">
+        <div class="w-32 h-32 border-2 border-blue-500/30 rounded-full animate-ping absolute inset-0"></div>
+        <div class="w-32 h-32 border border-blue-500 rounded-full flex items-center justify-center relative">
+          <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+        </div>
       </div>
 
-      <div class="video-container">
-        <video bind:this={videoPreview} autoPlay playsInline muted class="video-preview"></video>
-        {#if kawasakiStore.deviceStatus !== 'success'}
-          <div class="overlay">
-            <div class="flex flex-col items-center gap-4">
-              <p class="text-sm font-bold">{kawasakiStore.deviceStatus === 'pending' ? m.preparing_devices() : m.device_access_error()}</p>
-              {#if kawasakiStore.deviceStatus === 'error'}
-                <div class="text-[10px] bg-red-500/20 p-4 rounded-xl max-w-xs leading-relaxed">
-                  <p class="mb-2 font-bold uppercase tracking-widest">Mobile Guide:</p>
-                  <ul class="text-left list-disc pl-4 space-y-1">
-                    <li>iOS: Use <strong>Safari</strong> and ensure "Camera & Microphone" are allowed in Settings.</li>
-                    <li>Android: Use <strong>Chrome</strong>.</li>
-                    <li>Please reload the page if you accidentally denied permissions.</li>
-                  </ul>
+      <h2 class="text-xl font-black uppercase tracking-[0.3em] mb-4 transition-all duration-500">
+        {manifestationMessage}
+      </h2>
+      
+      <div class="w-64 h-0.5 bg-gray-900 rounded-full overflow-hidden">
+        <div 
+          class="h-full bg-blue-500 transition-all duration-500 ease-out"
+          style="width: {manifestationProgress}%"
+        ></div>
+      </div>
+    </div>
+  {/if}
+
+  {#if kawasakiStore.testStatus === 'preflight'}
+    <div in:fade class="flex-1 flex flex-col items-center justify-center py-12">
+      <div class="w-full max-w-xl text-center space-y-12">
+        <div class="space-y-4">
+          <h2 class="text-3xl font-black uppercase tracking-tighter">{m.welcome_title()}</h2>
+          <p class="text-gray-500 dark:text-gray-400 leading-relaxed max-w-md mx-auto">
+            {WELCOME_MESSAGE}
+          </p>
+        </div>
+
+        <div class="relative group">
+          <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-[32px] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+          <div class="relative aspect-video bg-black rounded-[28px] overflow-hidden border border-white/10 shadow-2xl">
+            <video bind:this={videoPreview} autoPlay playsInline muted class="w-full h-full object-cover opacity-80"></video>
+            {#if kawasakiStore.deviceStatus !== 'success'}
+              <div class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                <div class="flex flex-col items-center gap-6">
+                  <div class="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <p class="text-xs font-black uppercase tracking-widest text-white">
+                    {kawasakiStore.deviceStatus === 'pending' ? m.preparing_devices() : m.device_access_error()}
+                  </p>
                 </div>
-              {/if}
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        {#if kawasakiStore.deviceStatus === 'success'}
+          <div in:fade class="space-y-8">
+            <div class="h-12 flex items-center justify-center">
+              <AudioVisualizer stream={kawasakiStore.stream} />
             </div>
+            <button 
+              class="px-12 py-5 bg-blue-600 text-white font-black uppercase tracking-[0.2em] text-xs rounded-full hover:scale-105 transition-all shadow-2xl shadow-blue-600/30"
+              onclick={handleStartSession}
+            >
+              {m.start_session()}
+            </button>
           </div>
         {/if}
       </div>
-
-      {#if kawasakiStore.deviceStatus === 'success'}
-        <div class="status-ready">
-          <p class="success-text">{m.devices_ready()}</p>
-          <AudioVisualizer stream={kawasakiStore.stream} />
-        </div>
-      {/if}
-
-      {#if kawasakiStore.error}
-        <p class="error-text">{kawasakiStore.error}</p>
-      {/if}
-
-      <button class="btn primary large" disabled={kawasakiStore.deviceStatus !== 'success'} onclick={handleStartSession}>
-        {m.start_session()}
-      </button>
     </div>
 
   {:else if kawasakiStore.testStatus.includes('running')}
-    <div class="screen session">
-      <div class="progress-container">
-        <p>{m.session_info({ session: kawasakiStore.currentSession, current: kawasakiStore.currentWordIndex + 1, total: kawasakiStore.stimulusWords.length })}</p>
-        <div class="progress-bar">
-          <div class="fill" style="width: {((kawasakiStore.currentWordIndex + 1) / (kawasakiStore.stimulusWords.length || 1)) * 100}%"></div>
+    <div in:fade class="flex-1 flex flex-col items-center justify-center">
+      <div class="fixed top-12 left-0 right-0 px-12 flex justify-between items-center">
+        <div class="flex flex-col">
+          <span class="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-1">Session {kawasakiStore.currentSession}</span>
+          <div class="flex items-center gap-2">
+            <div class="w-32 h-1 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
+              <div 
+                class="h-full bg-blue-500 transition-all duration-300"
+                style="width: {((kawasakiStore.currentWordIndex + 1) / (kawasakiStore.stimulusWords.length || 1)) * 100}%"
+              ></div>
+            </div>
+            <span class="text-[10px] font-mono text-gray-400">
+              {kawasakiStore.currentWordIndex + 1} / {kawasakiStore.stimulusWords.length}
+            </span>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50"></div>
+          <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Recording Data</span>
         </div>
       </div>
 
-      {#if kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
-        {@const word = kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
-        {@const lang = languageTag()}
-        <h1 class="stimulus-word">
-          {lang === 'ja' ? word.japanese : 
-           lang === 'fr' ? (word.french || word.english) :
-           lang === 'es' ? (word.spanish || word.english) :
-           lang === 'ru' ? (word.russian || word.english) :
-           lang === 'ar' ? (word.arabic || word.english) :
-           lang === 'zh' ? (word.chinese || word.english) :
-           word.english}
-        </h1>
-      {/if}
-
-      <div class="visualizer-box">
-        <AudioVisualizer stream={kawasakiStore.stream} />
-      </div>
-
-      <div class="recognition-status">
-        {#if isListening}
-          <span class="listening-indicator">{m.listening()}</span>
+      <div class="text-center space-y-24">
+        {#if kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
+          {@const word = kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
+          {@const lang = languageTag()}
+          <h1 
+            key={kawasakiStore.currentWordIndex}
+            in:fly={{ y: 20, duration: 600, delay: 200 }}
+            out:fade={{ duration: 400 }}
+            class="text-6xl sm:text-8xl font-black uppercase tracking-tighter"
+          >
+            {lang === 'ja' ? word.japanese : 
+             lang === 'fr' ? (word.french || word.english) :
+             lang === 'es' ? (word.spanish || word.english) :
+             lang === 'ru' ? (word.russian || word.english) :
+             lang === 'ar' ? (word.arabic || word.english) :
+             lang === 'zh' ? (word.chinese || word.english) :
+             word.english}
+          </h1>
         {/if}
-        {#if recognizedText}
-          <p class="recognized-text">{m.recognition_result({ text: recognizedText })}</p>
-        {/if}
+
+        <div class="flex flex-col items-center gap-8">
+          <div class="h-16 flex items-center justify-center opacity-40">
+            <AudioVisualizer stream={kawasakiStore.stream} />
+          </div>
+          
+          <div class="h-8 flex flex-col items-center justify-center">
+            {#if isListening}
+              <div in:fade class="flex items-center gap-3">
+                <div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></div>
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">{m.listening()}</span>
+              </div>
+            {/if}
+            {#if recognizedText}
+              <p in:fade class="text-sm font-bold text-gray-400 mt-2">“{recognizedText}”</p>
+            {/if}
+          </div>
+        </div>
       </div>
       
       <audio bind:this={stimulusAudio}></audio>
     </div>
 
   {:else if kawasakiStore.testStatus === 'session-1-complete'}
-    <div class="screen break">
-      <h2>{m.session_1_complete_title()}</h2>
-      <p>{m.session_1_complete_desc()}</p>
-      <button class="btn primary large" onclick={handleStartNextSession}>
+    <div in:fade class="flex-1 flex flex-col items-center justify-center text-center space-y-12">
+      <div class="space-y-4">
+        <h2 class="text-3xl font-black uppercase tracking-tighter">{m.session_1_complete_title()}</h2>
+        <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
+          {m.session_1_complete_desc()}
+        </p>
+      </div>
+      
+      <button 
+        class="px-12 py-5 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-[0.2em] text-xs rounded-full hover:scale-105 transition-all shadow-2xl"
+        onclick={handleStartNextSession}
+      >
         {m.start_session_2()}
-      </button>
-    </div>
-
-  {:else if kawasakiStore.testStatus === 'completed'}
-    <div class="screen completion">
-      <h2>{m.test_complete_title()}</h2>
-      <p>{m.test_complete_desc()}</p>
-      <button class="btn" onclick={() => kawasakiStore.resetTest()}>
-        {m.start_new_session()}
       </button>
     </div>
   {/if}
 </div>
 
 <style>
-  .test-container {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
+  .manifestation-glow {
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
   }
 
-  .screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2rem;
-    padding: 2rem;
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-  }
-
-  .welcome-card {
-    text-align: left;
-    padding: 1.5rem;
-    background: #f9fafb;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-  }
-
-  .video-container {
-    position: relative;
-    width: 100%;
-    max-width: 480px;
-    aspect-ratio: 16/9;
-    background: #111;
-    border-radius: 12px;
+  :global(body) {
     overflow: hidden;
-  }
-
-  .video-preview {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    text-align: center;
-    padding: 1rem;
-  }
-
-  .stimulus-word {
-    font-size: 5rem;
-    font-weight: 900;
-    margin: 4rem 0;
-    color: #111;
-    text-align: center;
-    word-break: break-word;
-  }
-
-  @media (max-width: 640px) {
-    .stimulus-word {
-      font-size: 3rem;
-      margin: 2rem 0;
-    }
-    .screen {
-      padding: 1rem;
-    }
-  }
-
-  .progress-container {
-    width: 100%;
-  }
-
-  .progress-bar {
-    width: 100%;
-    height: 8px;
-    background: #e5e7eb;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 0.5rem;
-  }
-
-  .fill {
-    height: 100%;
-    background: #6366f1;
-    transition: width 0.3s ease;
-  }
-
-  .success-text {
-    color: #10b981;
-    font-weight: 600;
-  }
-
-  .error-text {
-    color: #ef4444;
-  }
-
-  .btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1px solid #e5e7eb;
-    background: white;
-    transition: all 0.2s;
-  }
-
-  .btn.primary {
-    background: #000;
-    color: white;
-    border: none;
-  }
-
-  .btn.large {
-    padding: 1rem 3rem;
-    font-size: 1.25rem;
-  }
-
-  .btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .listening-indicator {
-    color: #6366f1;
-    font-weight: 600;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-  }
-
-  .recognized-text {
-    font-size: 1.25rem;
-    color: #4b5563;
-    margin-top: 1rem;
   }
 </style>

@@ -9,6 +9,7 @@
   import * as m from "$lib/paraglide/messages.js";
   import { i18n } from "$lib/i18n";
   import { languageTag } from "$lib/paraglide/runtime.js";
+  import VoidBackground from "$lib/components/experiment/VoidBackground.svelte";
 
   const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
@@ -46,25 +47,15 @@
   <title>{m.consent_title()} | Spirit in Physics</title>
 </svelte:head>
 
-<div class="py-12 flex justify-center">
-  <div class="w-full max-w-4xl">
-    <div class="mb-12 text-center">
-      <h1 class="text-3xl font-black mb-2 uppercase tracking-tight">{m.consent_title()}</h1>
-      <p class="text-gray-500">{m.consent_subtitle()}</p>
-    </div>
+<VoidBackground />
 
-    <div class="bg-white dark:bg-gray-950 rounded-3xl border border-gray-100 dark:border-gray-900 overflow-hidden shadow-xl shadow-blue-500/5">
+<div class="min-h-[80vh] flex flex-col items-center justify-center py-12">
+  <div class="w-full max-w-2xl px-6">
+    <div class="bg-white/80 dark:bg-black/80 backdrop-blur-xl rounded-[40px] border border-white/20 dark:border-white/5 overflow-hidden shadow-2xl shadow-blue-500/5 p-8 sm:p-12">
       <ConsentForm 
         participantId={user?.id || kawasakiStore.participantId || ""} 
         onConsent={handleConsent} 
       />
-    </div>
-
-    <div class="mt-8 text-center">
-      <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
-        {m.gcp_standards()}<br/>
-        {m.irb_info()}
-      </p>
     </div>
   </div>
 </div>
