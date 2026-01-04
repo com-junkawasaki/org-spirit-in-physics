@@ -47,7 +47,22 @@ message GetAnalysisResponse {
   repeated GapArea gap_areas = 1;
   repeated DensityRegion density_regions = 2;
   repeated DuplicateCandidate duplicates = 3;
-  double overall_density = 4;
+  repeated GhostPattern ghost_patterns = 4;
+  double overall_density = 5;
+}
+
+message GhostPattern {
+  string id = 1;
+  repeated double center = 2; // [x, y, z]
+  double radius = 3;
+  repeated string node_ids = 4;
+  repeated string labels = 5;
+  double intensity = 6;
+  string pattern_type = 7;
+  repeated string indicators = 8;
+  repeated string primary_emotions = 9;
+  string description = 10;
+  double confidence = 11;
 }
 
 message GapArea {
