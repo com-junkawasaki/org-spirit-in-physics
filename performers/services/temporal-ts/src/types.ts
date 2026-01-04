@@ -81,10 +81,25 @@ export interface DuplicateCandidate {
   distance: number
 }
 
+export interface GhostPattern {
+  id: string
+  center: [number, number, number]
+  radius: number
+  node_ids: string[]
+  labels: string[]
+  intensity: number // 0.0 - 1.0
+  pattern_type: 'overcrowding' | 'void' | 'interference'
+  indicators: string[] 
+  primary_emotions: string[]
+  description: string
+  confidence: number
+}
+
 export interface AnalysisResults {
   gap_areas: GapArea[]
   density_regions: DensityRegion[]
   duplicates: DuplicateCandidate[]
+  ghost_patterns: GhostPattern[]
   overall_density: number
 }
 

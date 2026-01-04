@@ -46,7 +46,7 @@
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
   "updatedAt": "2026-01-04T00:00:00+09:00",
-  "merkleRoot": "Established Nature publication strategy and created STRATEGY.jsonld to guide scaling to n=1000.",
+  "merkleRoot": "Implemented geometric Ghost Pattern detection weighted by bio-responses and updated ARCHITECTURE.jsonld with refined definitions.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,18 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/81",
+        "@type": "project:Narrative",
+        "act": "幾何学的 Ghost Pattern 検出の実装と理論統合",
+        "summary": "ベクトル空間における「生体反応（生理指標・行動指標）」を距離関数に組み込んだ Ghost Pattern 検出アルゴリズムを実装。異常密集（Complex Core）や特異的空白（Repression Gap）を幾何学的に特定するロジックを Temporal ワークフローに統合し、ARCHITECTURE.jsonld を最新の定義にアップデートした。"
+      },
+      {
+        "@id": "project:narrative/80",
+        "@type": "project:Narrative",
+        "act": "理論モデルの定式化と基準個体の設定",
+        "summary": "論文の核心となる「精神物理空間」および「情報エネルギーの関数微分」の数学的定義を ARCHITECTURE.jsonld に集約。主人公・河崎純真を、高度な情報統合を体現する基準個体（Sample）としてモデル内に位置づけた。"
+      },
       {
         "@id": "project:narrative/79",
         "@type": "project:Narrative",
@@ -95,6 +107,10 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "幾何学的 Ghost Pattern 検出アルゴリズム（異常密集・特異的空白）の実装",
+      "生体反応（Reaction Value/Time）を質量・斥力とした空間解析の導入",
+      "理論モデルの数学的定式化 (ARCHITECTURE.jsonld) の完了",
+      "河崎純真を基準個体（Sample）とした理論的バリデーション基盤の構築",
       "Nature 掲載に向けた戦略計画 (STRATEGY.jsonld) の策定",
       "n=1,000 をターゲットとしたサンプルサイズ拡大戦略の定義",
       "ランディングページのセクション分割（Visual Hero / Entry Cards）による可読性の向上",

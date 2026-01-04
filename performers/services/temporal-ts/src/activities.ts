@@ -458,6 +458,118 @@ export async function detectDuplicatesActivity(
 }
 
 /**
+ * Activity: Detect Ghost Patterns (geometric anomalies in vector space weighted by bio-responses)
+ */
+export async function detectGhostPatternsActivity(
+  nodes: WordNode[],
+  emotionVectors: Record<string, number[]>,
+  sessionData: TimelineDataPoint[],
+  options: {
+    intensityThreshold?: number;
+    densityThreshold?: number;
+    voidThreshold?: number;
+  } = {}
+): Promise<GhostPattern[]> {
+  const { 
+    intensityThreshold = 0.6, 
+    densityThreshold = 1.8, // 1.8x average density
+    voidThreshold = 0.2     // 0.2x average density with high surrounding bio-reaction
+  } = options;
+
+  const ghost_patterns: GhostPattern[] = [];
+  const emotionNames = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'calm', 'focus', 'excitement', 'confusion'];
+
+  // 1. Calculate bio-mass for each node
+  const nodeMetrices = nodes.map(node => {
+    const data = sessionData.filter(d => d.w === node.label);
+    const avgRV = data.length > 0 ? data.reduce((s, d) => s + (d.rv || 0), 0) / data.length : 0;
+    const avgRT = data.length > 0 ? data.reduce((s, d) => s + (d.rt || 0), 0) / data.length : 0;
+    
+    // Bio-mass increases with high reaction value and reaction delay
+    const bioMass = (avgRV * 0.7) + (avgRT > 1500 ? 0.3 : 0);
+    
+    return { node, bioMass, avgRV, avgRT };
+  });
+
+  // 2. Detect Overcrowding with High Bio-Reaction (Complex Core)
+  const overcrowdingResults = await analyzeDensityActivity(nodes, { overcrowdingThreshold: densityThreshold });
+  overcrowdingResults.overcrowded_regions.forEach((region, idx) => {
+    // Find nodes in this region and calculate their average bio-mass
+    const regionNodes = nodeMetrices.filter(m => {
+      if (!m.node.initial) return false;
+      const dist = Math.hypot(
+        m.node.initial[0] - region.center[0],
+        m.node.initial[1] - region.center[1],
+        m.node.initial[2] - region.center[2]
+      );
+      return dist <= region.radius;
+    });
+
+    const avgRegionBioMass = regionNodes.length > 0 
+      ? regionNodes.reduce((s, n) => s + n.bioMass, 0) / regionNodes.length 
+      : 0;
+
+    if (avgRegionBioMass > 0.5) {
+      ghost_patterns.push({
+        id: `ghost_overcrowding_${idx}`,
+        center: region.center,
+        radius: region.radius,
+        node_ids: regionNodes.map(n => n.node.id),
+        labels: regionNodes.map(n => n.node.label),
+        intensity: avgRegionBioMass,
+        pattern_type: 'overcrowding',
+        indicators: ['high_density', 'bio_fixation'],
+        primary_emotions: calculateCommonEmotionProfile(regionNodes.map(n => n.node), emotionVectors)
+          ? Object.entries(calculateCommonEmotionProfile(regionNodes.map(n => n.node), emotionVectors))
+              .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name]) => name)
+          : [],
+        description: "Complex Core: High density region with significant biological fixation.",
+        confidence: avgRegionBioMass * (region.density / (densityThreshold + 1e-6))
+      });
+    }
+  });
+
+  // 3. Detect Meaningful Voids (Repression Gaps)
+  const gapResults = await detectGapAreasActivity(nodes, [], emotionVectors, sessionData, { densityThreshold: voidThreshold });
+  gapResults.forEach((gap, idx) => {
+    // A gap is a Ghost Pattern if surrounding nodes have high bio-mass (repulsive force)
+    const surroundingNodes = nodeMetrices.filter(m => {
+      if (!m.node.initial) return false;
+      const dist = Math.hypot(
+        m.node.initial[0] - gap.center[0],
+        m.node.initial[1] - gap.center[1],
+        m.node.initial[2] - gap.center[2]
+      );
+      return dist <= gap.radius * 1.5;
+    });
+
+    const avgSurroundingBioMass = surroundingNodes.length > 0
+      ? surroundingNodes.reduce((s, n) => s + n.bioMass, 0) / surroundingNodes.length
+      : 0;
+
+    if (avgSurroundingBioMass > intensityThreshold) {
+      ghost_patterns.push({
+        id: `ghost_void_${idx}`,
+        center: gap.center,
+        radius: gap.radius,
+        node_ids: [],
+        labels: [],
+        intensity: avgSurroundingBioMass,
+        pattern_type: 'void',
+        indicators: ['structural_gap', 'repulsive_force'],
+        primary_emotions: gap.common_emotion_profile 
+          ? Object.entries(gap.common_emotion_profile).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name]) => name)
+          : [],
+        description: "Repression Gap: Significant structural void surrounded by high-arousal concepts.",
+        confidence: avgSurroundingBioMass * (1 - gap.confidence) // High surrounding mass + clear gap
+      });
+    }
+  });
+
+  return ghost_patterns.sort((a, b) => b.intensity - a.intensity).slice(0, 10);
+}
+
+/**
  * Main Activity: Run all structure analysis
  */
 export async function runStructureAnalysisActivity(
@@ -466,16 +578,18 @@ export async function runStructureAnalysisActivity(
   emotionVectors: Record<string, number[]>,
   sessionData: TimelineDataPoint[]
 ): Promise<AnalysisResults> {
-  const [gap_areas, densityResults, duplicates] = await Promise.all([
+  const [gap_areas, densityResults, duplicates, ghost_patterns] = await Promise.all([
     detectGapAreasActivity(nodes, links, emotionVectors, sessionData),
     analyzeDensityActivity(nodes),
-    detectDuplicatesActivity(nodes, emotionVectors, sessionData)
+    detectDuplicatesActivity(nodes, emotionVectors, sessionData),
+    detectGhostPatternsActivity(nodes, emotionVectors, sessionData)
   ]);
 
   return {
     gap_areas,
     density_regions: [...densityResults.overcrowded_regions, ...densityResults.sparse_regions],
     duplicates,
+    ghost_patterns,
     overall_density: densityResults.overall_density
   };
 }
