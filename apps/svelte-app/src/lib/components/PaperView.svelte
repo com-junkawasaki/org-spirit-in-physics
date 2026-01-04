@@ -357,6 +357,9 @@
     margin: 0 auto;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif;
     position: relative;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   :global(.dark) .paper-article {
@@ -753,28 +756,31 @@
   /* Responsive */
   @media (max-width: 1024px) {
     .paper-container {
-      grid-template-columns: 1fr;
-      padding: 0; /* Remove side padding on mobile */
-      padding-bottom: 120px; /* Safe area for bottom tab bar */
+      display: block; /* Switch from grid to block to prevent layout shift */
+      width: 100%;
+      overflow-x: hidden;
+      padding: 0;
+      padding-bottom: 120px;
     }
     .toc-sidebar {
       position: fixed;
       left: 0;
       top: 0;
       bottom: 0;
-      width: 80%; /* Wider sidebar for touch */
-      max-width: 320px;
+      width: 280px;
       transform: translateX(-100%);
       background: white;
-      z-index: 2000; /* Higher than tab bar */
+      z-index: 2000;
       height: 100dvh;
       box-shadow: 20px 0 50px rgba(0,0,0,0.1);
+      visibility: hidden; /* Hide completely when closed */
     }
     :global(.dark) .toc-sidebar {
       background: #1c1c1e;
     }
     .toc-sidebar.open {
       transform: translateX(0);
+      visibility: visible;
     }
     .toc-overlay {
       display: block;
@@ -784,7 +790,7 @@
       display: flex;
       position: fixed;
       top: auto;
-      bottom: 100px; /* Above tab bar */
+      bottom: 100px;
       right: 1.5rem;
       background: #007aff;
       color: #fff;
@@ -799,17 +805,21 @@
       display: block;
     }
     .paper-article {
-      padding: 2.5rem 1.5rem; /* HIG standard padding */
+      padding: 2.5rem 1.25rem;
       border-radius: 0;
       box-shadow: none;
       background: transparent;
-      max-width: 100%;
+      width: 100%;
+      max-width: 100vw;
+      margin: 0;
+      box-sizing: border-box;
     }
     :global(.paper-article h1) {
-      font-size: 2rem; /* Reasonable mobile title */
+      font-size: 2rem;
       margin-bottom: 2rem;
       text-align: left;
-      line-height: 1.2;
+      line-height: 1.1;
+      width: 100%;
     }
     :global(.paper-article h2) {
       font-size: 1.5rem;
@@ -817,9 +827,10 @@
       margin-bottom: 1.2rem;
     }
     :global(.paper-article p) {
-      font-size: 1.05rem; /* Standard readable size */
+      font-size: 1.05rem;
       line-height: 1.6;
       margin-bottom: 1.2rem;
+      width: 100%;
     }
     .author-grid {
       gap: 1.2rem;
@@ -837,11 +848,15 @@
       margin: 2rem 0;
       padding: 1.5rem;
       border-radius: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
     .equation-block {
       padding: 1.5rem 1rem;
       margin: 2rem 0;
       border-radius: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
   }
 

@@ -3,24 +3,36 @@
   import * as m from "$lib/paraglide/messages.js";
   import { i18n } from "$lib/i18n";
   import { languageTag } from "$lib/paraglide/runtime.js";
+  import { runtimeConfig } from "$lib/env.svelte";
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
 
   const clerk = useClerkContext();
+
+  // On mobile, if already signed in, skip this page entirely and go to consent
+  $effect(() => {
+    if (runtimeConfig.IS_CAPACITOR && clerk.user) {
+      goto(i18n.resolveRoute('/experiment/consent', languageTag()));
+    }
+  });
 </script>
 
-<div class="py-12 md:py-24 flex flex-col items-center text-center">
-  <div class="mb-12">
-    <h1 class="text-4xl md:text-6xl font-black tracking-tight mb-4">
-      {m.experiment_landing_title()}
-    </h1>
-    <p class="text-xl md:text-2xl font-medium text-blue-600 mb-6">
-      {m.experiment_landing_hero()}
-    </p>
-    <p class="max-w-2xl text-gray-500 dark:text-gray-400 leading-relaxed">
-      {m.experiment_landing_description()}
-    </p>
-  </div>
+<div class="flex flex-col items-center text-center" class:py-12={!runtimeConfig.IS_CAPACITOR} class:md:py-24={!runtimeConfig.IS_CAPACITOR} class:p-4={runtimeConfig.IS_CAPACITOR}>
+  {#if !runtimeConfig.IS_CAPACITOR}
+    <div class="mb-12">
+      <h1 class="text-4xl md:text-6xl font-black tracking-tight mb-4">
+        {m.experiment_landing_title()}
+      </h1>
+      <p class="text-xl md:text-2xl font-medium text-blue-600 mb-6">
+        {m.experiment_landing_hero()}
+      </p>
+      <p class="max-w-2xl text-gray-500 dark:text-gray-400 leading-relaxed">
+        {m.experiment_landing_description()}
+      </p>
+    </div>
+  {/if}
 
-  <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-gray-800">
+  <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-gray-800" class:mt-8={runtimeConfig.IS_CAPACITOR}>
     <SignedOut>
       <div class="mb-6">
         <h2 class="text-lg font-bold mb-2">{m.experiment_auth_title()}</h2>
@@ -31,8 +43,6 @@
       </div>
       
       <div class="clerk-container">
-        <!-- Force only Email OTP by appearance if possible, 
-             or just rely on Clerk Dashboard settings for the instance -->
         <SignUp 
           routing="hash"
           signInUrl={i18n.resolveRoute('/experiment', languageTag())}
@@ -75,23 +85,25 @@
     </SignedIn>
   </div>
 
-  <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 text-left max-w-4xl">
-    <div class="p-6 bg-white dark:bg-black border border-gray-100 dark:border-gray-900 rounded-2xl">
-      <div class="text-blue-600 font-black mb-2">01. Measure</div>
-      <h3 class="font-bold mb-2">Multi-modal Analysis</h3>
-      <p class="text-xs text-gray-500 leading-relaxed">We use voice, facial expressions, and reaction times to build your unique spirit manifold.</p>
+  {#if !runtimeConfig.IS_CAPACITOR}
+    <div class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 text-left max-w-4xl">
+      <div class="p-6 bg-white dark:bg-black border border-gray-100 dark:border-gray-900 rounded-2xl">
+        <div class="text-blue-600 font-black mb-2">01. Measure</div>
+        <h3 class="font-bold mb-2">Multi-modal Analysis</h3>
+        <p class="text-xs text-gray-500 leading-relaxed">We use voice, facial expressions, and reaction times to build your unique spirit manifold.</p>
+      </div>
+      <div class="p-6 bg-white dark:bg-black border border-gray-100 dark:border-gray-900 rounded-2xl">
+        <div class="text-blue-600 font-black mb-2">02. Analyze</div>
+        <h3 class="font-bold mb-2">Ghost Pattern Detection</h3>
+        <p class="text-xs text-gray-500 leading-relaxed">Our algorithms identify structural anomalies and information energy charge in your psychological space.</p>
+      </div>
+      <div class="p-6 bg-white dark:bg-black border border-gray-100 dark:border-gray-900 rounded-2xl">
+        <div class="text-blue-600 font-black mb-2">03. Report</div>
+        <h3 class="font-bold mb-2">Scientific Feedback</h3>
+        <p class="text-xs text-gray-500 leading-relaxed">Receive a personal report of your results, formatted for our contribution to the global research community.</p>
+      </div>
     </div>
-    <div class="p-6 bg-white dark:bg-black border border-gray-100 dark:border-gray-900 rounded-2xl">
-      <div class="text-blue-600 font-black mb-2">02. Analyze</div>
-      <h3 class="font-bold mb-2">Ghost Pattern Detection</h3>
-      <p class="text-xs text-gray-500 leading-relaxed">Our algorithms identify structural anomalies and information energy charge in your psychological space.</p>
-    </div>
-    <div class="p-6 bg-white dark:bg-black border border-gray-100 dark:border-gray-900 rounded-2xl">
-      <div class="text-blue-600 font-black mb-2">03. Report</div>
-      <h3 class="font-bold mb-2">Scientific Feedback</h3>
-      <p class="text-xs text-gray-500 leading-relaxed">Receive a personal report of your results, formatted for our contribution to the global research community.</p>
-    </div>
-  </div>
+  {/if}
 </div>
 
 <style>

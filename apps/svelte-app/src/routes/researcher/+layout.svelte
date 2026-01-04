@@ -187,6 +187,26 @@
     height: 100%;
   }
 
+  @media (max-width: 1024px) {
+    .dashboard-layout {
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar {
+      display: none; /* Hide desktop sidebar on mobile */
+    }
+    .content-header {
+      padding: 0.75rem 1.25rem;
+      height: auto;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .content-body {
+      padding: 1rem;
+    }
+  }
+
   .sidebar {
     background: #1e293b;
     color: white;
