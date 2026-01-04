@@ -60,6 +60,18 @@
     },
     "narrative": [
       {
+        "@id": "project:narrative/89",
+        "@type": "project:Narrative",
+        "act": "モバイル・レイアウトの最適化と Clerk 認証フォールバックの実装",
+        "summary": "モバイルアプリにおけるレイアウトの二重表示（Header/Footer）を解消し、Apple HIG に準拠した一貫性のある UI を確立。Capacitor 環境での環境変数置換不全を想定した Clerk 認証キーの安全なフォールバックを `env.svelte.ts` に実装。実験ルートにおける没入感を高めるため、計測中はタブバーを動的に隠蔽するロジックを統合し、ユーザーが精神探索に集中できる環境を整えた。"
+      },
+      {
+        "@id": "project:narrative/88",
+        "@type": "project:Narrative",
+        "act": "実験フローのナラティブ化と没入型 UI/UX の実装",
+        "summary": "実験開始から結果表示までを「自己探求の物語」として再設計。VoidBackground による精神空間の視覚化、ステップ式のナラティブ同意フォーム、計測中の没入型 Void Mode、および解析の儀式（Manifestation）アニメーションを実装。結果画面もダイナミックな 3D ポートレートとして刷新し、科学的な没入感を極限まで高めた。"
+      },
+      {
         "@id": "project:narrative/87",
         "@type": "project:Narrative",
         "act": "論文閲覧体験のモバイル最適化 (Apple HIG 準拠)",
@@ -143,6 +155,15 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "モバイルアプリにおけるレイアウト二重表示の解消と Header/Footer の一本化",
+      "Capacitor 環境下での Clerk 認証キーのハードコード・フォールバック実装（環境変数置換不全対策）",
+      "実験フロー（/experiment/*）におけるボトムタブバーの動的非表示制御",
+      "Clerk 初期化待ち状態におけるナラティブなローディング UI（Initializing Space...）の追加",
+      "実験フローのナラティブ化（Consent -> Session -> Manifestation -> Report）の実装",
+      "VoidBackground による精神空間の動的背景シミュレーションの導入",
+      "計測セッション中の没入型 Void Mode（UI 排除、生体反応視覚化）の実装",
+      "解析完了後のストーリーテリング型ローディング（解析の儀式）の実装",
+      "結果画面（Report）の没入型デザイン刷新と 3D 多様体のアニメーション導入",
       "Apple HIG に基づく論文閲覧画面 (Paper View) のモバイル最適化とレスポンシブタイポグラフィ",
       "親指操作を優先した TOC（目次）フローティングボタンの再配置（Bottom-heavy Interaction）",
       "タブベース・ナビゲーション (Analyzer / Spirit / Paper) による 1 ページ 1 コンテンツ設計",

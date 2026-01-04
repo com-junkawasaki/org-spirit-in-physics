@@ -32,6 +32,8 @@
     }
   });
 
+  let isExperimentRoute = $derived(page.url.pathname.includes('/experiment'));
+
   let activeTab = $derived.by(() => {
     const path = page.url.pathname;
     if (path.includes('/researcher')) return 'analyzer';
@@ -89,30 +91,32 @@
       </div>
     </header>
 
-    <main class="main-content">
+    <main class="main-content" class:no-header={isExperimentRoute}>
       {@render children()}
     </main>
 
-    <nav class="bottom-nav">
-      <div class="nav-container">
-        <a href={resolveRoute("/researcher")} class="nav-item" class:active={activeTab === 'analyzer'}>
-          <span class="icon">📊</span>
-          <span class="label">Analyzer</span>
-        </a>
-        
-        <a href={resolveRoute("/")} class="nav-item spirit-tab" class:active={activeTab === 'spirit'}>
-          <div class="spirit-wrap">
-            <span class="icon">✨</span>
-          </div>
-          <span class="label">Spirit</span>
-        </a>
-        
-        <a href={resolveRoute("/paper")} class="nav-item" class:active={activeTab === 'paper'}>
-          <span class="icon">📄</span>
-          <span class="label">Paper</span>
-        </a>
-      </div>
-    </nav>
+    {#if !isExperimentRoute}
+      <nav class="bottom-nav">
+        <div class="nav-container">
+          <a href={resolveRoute("/researcher")} class="nav-item" class:active={activeTab === 'analyzer'}>
+            <span class="icon">📊</span>
+            <span class="label">Analyzer</span>
+          </a>
+          
+          <a href={resolveRoute("/")} class="nav-item spirit-tab" class:active={activeTab === 'spirit'}>
+            <div class="spirit-wrap">
+              <span class="icon">✨</span>
+            </div>
+            <span class="label">Spirit</span>
+          </a>
+          
+          <a href={resolveRoute("/paper")} class="nav-item" class:active={activeTab === 'paper'}>
+            <span class="icon">📄</span>
+            <span class="label">Paper</span>
+          </a>
+        </div>
+      </nav>
+    {/if}
   </div>
 {/snippet}
 
@@ -186,6 +190,19 @@
     margin-bottom: 70px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .main-content.no-header {
+    margin-top: 60px; /* Keep header but we might adjust if needed */
+  }
+
+  /* When bottom nav is hidden, remove bottom margin */
+  :has(.bottom-nav) .main-content {
+    margin-bottom: 70px;
+  }
+  
+  .main-content:not(:has(+ .bottom-nav)) {
+    margin-bottom: 0;
   }
 
   .bottom-nav {

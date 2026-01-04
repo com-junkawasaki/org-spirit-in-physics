@@ -3,8 +3,15 @@ import { browser } from '$app/environment';
 
 // Helper to get env from window.ENV (injected at runtime in static builds)
 const getEnv = (key: string, defaultValue: string = ''): string => {
-    if (browser && (window as any).ENV?.[key] && (window as any).ENV[key] !== `__${key}__`) {
+    if (browser && (window as any).ENV?.[key] && (window as any).ENV[key] !== `__${key}__` && (window as any).ENV[key] !== "") {
         return (window as any).ENV[key];
+    }
+    // Fallback for Capacitor/local dev if dynamic env isn't available
+    if (key === 'PUBLIC_CLERK_PUBLISHABLE_KEY' && ((env as any)[key] === undefined || (env as any)[key] === "")) {
+        return "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ";
+    }
+    if (key === 'PUBLIC_API_URL' && ((env as any)[key] === undefined || (env as any)[key] === "")) {
+        return "https://sip.junkawasaki.com/api";
     }
     return (env as any)[key] || defaultValue;
 };
