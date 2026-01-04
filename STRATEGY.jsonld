@@ -1,0 +1,117 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "http://spirit.localhost/strategy#",
+    "id": "@id",
+    "type": "@type",
+    "dct": "http://purl.org/dc/terms/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    
+    "title": "dct:title",
+    "description": "dct:description",
+    "updatedAt": {"@id": "dct:modified", "@type": "xsd:dateTime"},
+    
+    "goals": "strategy:goals",
+    "milestones": "strategy:milestones",
+    "tactics": "strategy:tactics",
+    "kpis": "strategy:kpis",
+    "targetJournals": "strategy:targetJournals",
+    
+    "status": "strategy:status",
+    "deadline": {"@id": "strategy:deadline", "@type": "xsd:dateTime"},
+    "priority": "strategy:priority"
+  },
+  
+  "@id": "http://spirit.localhost/strategy",
+  "@type": "strategy:StrategicPlan",
+  "title": "Spirit in Physics: Nature Publication & Scaling Strategy",
+  "description": "精神の物理学的定義を確立し、1,000名以上のサンプルを通じてNature誌への掲載を目指す戦略計画",
+  "updatedAt": "2026-01-04T00:00:00+09:00",
+  
+  "goals": [
+    {
+      "@id": "goal:nature-publication",
+      "title": "Nature 誌への論文掲載",
+      "description": "熱力学的情報量としての精神の定義と、その実証的データの提示",
+      "priority": "Critical"
+    },
+    {
+      "@id": "goal:large-scale-data",
+      "title": "大規模データセットの構築",
+      "description": "n=1,000 を超える多様なデモグラフィック・臨床的背景を持つ参加者データの収集",
+      "priority": "High"
+    }
+  ],
+  
+  "targetJournals": [
+    {
+      "name": "Nature Physics",
+      "focus": "情報物理学・熱力学的アプローチの理論的厳密性"
+    },
+    {
+      "name": "Nature Communications",
+      "focus": "学際的インパクトと大規模データによる実証"
+    },
+    {
+      "name": "Nature Computational Science",
+      "focus": "Temporal/lakeFSを用いた高度な計算再現性と多様体分析"
+    }
+  ],
+  
+  "milestones": [
+    {
+      "title": "n=100: パイロット分析の完了",
+      "description": "Ghost Pattern の自動検出アルゴリズムの精度検証",
+      "deadline": "2026-03-31T00:00:00+09:00",
+      "status": "In Progress"
+    },
+    {
+      "title": "n=1000: データセット完成",
+      "description": "ICD-10 に基づく疾患群と健常群の比較統計の実施",
+      "deadline": "2026-09-30T00:00:00+09:00",
+      "status": "Planned"
+    },
+    {
+      "title": "論文投稿",
+      "description": "再現性パッケージ（Timoni/Temporal）と共に投稿",
+      "deadline": "2026-12-31T00:00:00+09:00",
+      "status": "Planned"
+    }
+  ],
+  
+  "tactics": [
+    {
+      "@id": "tactic:public-experiment-route",
+      "title": "一般公開用参加ルート (/experiment) の整備",
+      "description": "Clerk 非ログイン状態での簡易体験と、シームレスな同意取得フローの実装",
+      "relatedCapability": "capability:data-visualization"
+    },
+    {
+      "@id": "tactic:personal-manifold-report",
+      "title": "パーソナル多様体レポートの提供",
+      "description": "参加者が自身の精神構造を可視化・シェアできるインセンティブの構築",
+      "relatedCapability": "capability:data-visualization"
+    },
+    {
+      "@id": "tactic:temporal-auto-analysis",
+      "title": "Temporal による全自動解析パイプラインのスケールアウト",
+      "description": "数千名規模の Hume AI 解析と多様体計算を並列実行可能にするインフラの最適化",
+      "relatedCapability": "capability:data-aggregation"
+    }
+  ],
+  
+  "kpis": [
+    {
+      "name": "Monthly Active Participants",
+      "target": "200",
+      "current": "10"
+    },
+    {
+      "name": "Replication Package Integrity",
+      "target": "100%",
+      "description": "全解析工程がコードで再現可能であること"
+    }
+  ]
+}
+

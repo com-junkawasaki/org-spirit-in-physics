@@ -45,8 +45,8 @@
   "version": "1.56.4",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2026-01-02T16:15:00+09:00",
-  "merkleRoot": "Separated landing page into distinct sections to avoid overlapping and improve readability.",
+  "updatedAt": "2026-01-04T00:00:00+09:00",
+  "merkleRoot": "Established Nature publication strategy and created STRATEGY.jsonld to guide scaling to n=1000.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,12 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/79",
+        "@type": "project:Narrative",
+        "act": "Nature 掲載戦略の策定と構造化",
+        "summary": "研究を Nature Physics 等のトップジャーナルへ掲載するための戦略を策定。n=1,000 を目標としたサンプルサイズ拡大、Ghost Pattern の自動検出、再現性パッケージの構築を柱とする STRATEGY.jsonld を作成した。"
+      },
       {
         "@id": "project:narrative/78",
         "@type": "project:Narrative",
@@ -89,6 +95,8 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "Nature 掲載に向けた戦略計画 (STRATEGY.jsonld) の策定",
+      "n=1,000 をターゲットとしたサンプルサイズ拡大戦略の定義",
       "ランディングページのセクション分割（Visual Hero / Entry Cards）による可読性の向上",
       "ランディングページへのスクロール連動アニメーション（opacity, scale, blur, translateY）の実装",
       "ランディングページの背景 3D Graph への実データ（参加者: imai）の統合",
