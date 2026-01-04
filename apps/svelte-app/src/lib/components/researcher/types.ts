@@ -291,12 +291,29 @@ export interface DuplicateCandidate {
   distance: number
 }
 
+export interface GhostPattern {
+  id: string
+  center: [number, number, number]
+  radius: number
+  node_ids?: string[]
+  nodeIds?: string[]
+  labels?: string[]
+  intensity: number
+  pattern_type: 'overcrowding' | 'void' | 'interference'
+  indicators: string[]
+  primary_emotions: string[]
+  description: string
+  confidence: number
+}
+
 export interface AnalysisResults {
   gapAreas?: GapArea[]
   gap_areas?: GapArea[]
   densityRegions?: DensityRegion[]
   density_regions?: DensityRegion[]
   duplicates: DuplicateCandidate[]
+  ghostPatterns?: GhostPattern[]
+  ghost_patterns?: GhostPattern[]
   overallDensity?: number
   overall_density?: number
 }

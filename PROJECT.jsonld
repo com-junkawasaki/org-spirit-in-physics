@@ -46,7 +46,7 @@
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
   "updatedAt": "2026-01-04T00:00:00+09:00",
-  "merkleRoot": "Implemented geometric Ghost Pattern detection weighted by bio-responses and updated ARCHITECTURE.jsonld with refined definitions.",
+  "merkleRoot": "Enhanced 3D visualization with Ghost Pattern overlays and integrated structural analysis for基準個体 validation.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,12 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/82",
+        "@type": "project:Narrative",
+        "act": "基準個体データの解析強化と可視化の高度化",
+        "summary": "河崎純真を基準個体（Sample）として、幾何学的な Ghost Pattern 検出ロジックを 3D Force Graph に統合。異常密集（Complex Core）や特異的空白（Repression Gap）を紫色のグロー効果と注釈で可視化し、生体反応による空間歪曲を直感的に把握可能にした。"
+      },
       {
         "@id": "project:narrative/81",
         "@type": "project:Narrative",
@@ -107,6 +113,9 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "3D Force Graph への Ghost Pattern（空間歪曲領域）の視覚的オーバーレイ表示",
+      "StructureAnalysisPanel への理論的異常パターン（Complex/Void）の統合",
+      "ConnectRPC/gRPC プロトコルの拡張（GhostPattern フィールドの追加）",
       "幾何学的 Ghost Pattern 検出アルゴリズム（異常密集・特異的空白）の実装",
       "生体反応（Reaction Value/Time）を質量・斥力とした空間解析の導入",
       "理論モデルの数学的定式化 (ARCHITECTURE.jsonld) の完了",

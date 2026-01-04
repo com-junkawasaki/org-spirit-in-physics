@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import type { WordNode, WordLink, GapArea, DensityRegion } from './types';
+  import type { WordNode, WordLink, GapArea, DensityRegion, GhostPattern } from './types';
 
   interface Props {
     nodes: WordNode[];
@@ -12,6 +12,7 @@
     physics?: any;
     gapAreas?: GapArea[];
     densityRegions?: DensityRegion[];
+    ghostPatterns?: GhostPattern[];
     showAnalysis?: boolean;
     onHover?: (info: { node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } } | null) => void;
     onClick?: (info: { node?: WordNode; link?: { source: WordNode; target: WordNode; weight: number } }) => void;
@@ -28,6 +29,7 @@
     physics,
     gapAreas = [],
     densityRegions = [],
+    ghostPatterns = [],
     showAnalysis = false,
     onHover,
     onClick,
@@ -404,6 +406,38 @@
         const projectedNodes = nodes.map((_, i) => project({
           x: currentPositions[i*3], y: currentPositions[i*3+1], z: currentPositions[i*3+2]
         }));
+
+        // Draw Ghost Patterns (Theory based space distortion)
+        if (showAnalysis && ghostPatterns.length > 0) {
+          ghostPatterns.forEach(ghost => {
+            const p = project({ x: ghost.center[0], y: ghost.center[1], z: ghost.center[2] });
+            const radius = ghost.radius * zoom;
+            
+            // Glow effect
+            const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
+            const color = ghost.pattern_type === 'overcrowding' ? 'rgba(147, 51, 234, ' : 'rgba(192, 38, 211, ';
+            gradient.addColorStop(0, color + '0.2)');
+            gradient.addColorStop(0.7, color + '0.1)');
+            gradient.addColorStop(1, color + '0.0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Border/Ring
+            ctx.strokeStyle = color + '0.4)';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Label
+            ctx.fillStyle = color + '0.8)';
+            ctx.font = `bold ${Math.round(10 * zoom)}px sans-serif`;
+            ctx.fillText(ghost.pattern_type.toUpperCase(), p.x, p.y - radius - 5);
+          });
+        }
 
         // Links hit testing and drawing
         links.forEach((l, li) => {

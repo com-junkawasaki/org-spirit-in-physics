@@ -370,12 +370,14 @@ func (h *TimelineHandler) GetIntegratedTimeline(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// Decode Analysis separately if needed, or just return it
+	// Decode Analysis
 	var analysis timelinev1.GetAnalysisResponse
 	if len(workflowResult.Analysis) > 0 {
+		// TS Temporal result might have field names that don't match exactly due to compacting
+		// but for Analysis we keep the field names as is in the TS activity
 		if err := json.Unmarshal(workflowResult.Analysis, &analysis); err != nil {
 			fmt.Printf("ERROR: Analysis unmarshal failed: %v\n", err)
-			// Continue anyway, analysis is optional for timeline view
+			// Try manual decoding if needed, but for now we expect field name match
 		}
 	}
 

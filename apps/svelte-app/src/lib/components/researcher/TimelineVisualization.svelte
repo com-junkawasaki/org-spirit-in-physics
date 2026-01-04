@@ -223,6 +223,7 @@
             gapAreas: (analysis.gapAreas ?? analysis.gap_areas ?? []) as any,
             densityRegions: (analysis.densityRegions ?? analysis.density_regions ?? []) as any,
             duplicates: (analysis.duplicates ?? analysis.duplicates ?? []) as any,
+            ghostPatterns: (analysis.ghostPatterns ?? analysis.ghost_patterns ?? []) as any,
             overallDensity: analysis.overallDensity ?? analysis.overall_density ?? 0
           };
         }
@@ -361,6 +362,7 @@
     gapAreas: [],
     densityRegions: [],
     duplicates: [],
+    ghostPatterns: [],
     overallDensity: 0
   });
 
@@ -376,6 +378,7 @@
           gapAreas: (response.gapAreas || []) as any,
           densityRegions: (response.densityRegions || []) as any,
           duplicates: (response.duplicates || []) as any,
+          ghostPatterns: (response.ghostPatterns || []) as any,
           overallDensity: response.overallDensity || 0
         };
       }
@@ -474,7 +477,8 @@
               <Force3DWordGraphTypeGPU 
                 nodes={graphData.nodes} links={graphData.links} width={width} height={700} 
                 physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK, minSep, sepK }}
-                gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} showAnalysis={showAnalysis}
+                gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} 
+                ghostPatterns={analysisResults.ghostPatterns} showAnalysis={showAnalysis}
                 onHover={(info) => hoveredInfo = info}
                 pinnedItems={pinnedItems}
                 onClick={(info) => {
@@ -674,7 +678,18 @@
                     gapAreas={analysisResults.gapAreas ?? []} 
                     densityRegions={analysisResults.densityRegions ?? []}
                     duplicates={analysisResults.duplicates} 
+                    ghostPatterns={analysisResults.ghostPatterns}
                     overallDensity={analysisResults.overallDensity ?? 0}
+                    onGhostPatternClick={(ghost) => {
+                      // Center camera on ghost pattern center
+                      // This would require camera control exposure, but for now we just pin the labels if any
+                      if (ghost.labels && ghost.labels.length > 0) {
+                        const node = graphData.nodes.find(n => ghost.labels?.includes(n.label));
+                        if (node) {
+                          pinnedItems = [{ node }, ...pinnedItems];
+                        }
+                      }
+                    }}
                   />
                 </div>
               </div>

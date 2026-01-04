@@ -1,24 +1,28 @@
 <script lang="ts">
-  import type { GapArea, DensityRegion, DuplicateCandidate } from './types';
+  import type { GapArea, DensityRegion, DuplicateCandidate, GhostPattern } from './types';
 
   interface Props {
     gapAreas: GapArea[];
     densityRegions: DensityRegion[];
     duplicates: DuplicateCandidate[];
+    ghostPatterns?: GhostPattern[];
     overallDensity: number;
     onGapAreaClick?: (gapArea: GapArea) => void;
     onDensityRegionClick?: (region: DensityRegion) => void;
     onDuplicateClick?: (duplicate: DuplicateCandidate) => void;
+    onGhostPatternClick?: (pattern: GhostPattern) => void;
   }
 
   let {
     gapAreas,
     densityRegions,
     duplicates,
+    ghostPatterns = [],
     overallDensity,
     onGapAreaClick,
     onDensityRegionClick,
-    onDuplicateClick
+    onDuplicateClick,
+    onGhostPatternClick
   }: Props = $props();
 </script>
 
@@ -33,6 +37,44 @@
       <div class="bg-blue-500 h-full" style="width: {Math.min(100, overallDensity * 1000)}%"></div>
     </div>
   </div>
+
+  <!-- Ghost Patterns (理論的な空間歪曲) -->
+  {#if ghostPatterns.length > 0}
+    <div class="space-y-3">
+      <h4 class="font-bold text-[10px] text-purple-600 dark:text-purple-400 uppercase tracking-widest flex items-center gap-2">
+        <span>👻</span>
+        <span>Ghost Patterns ({ghostPatterns.length})</span>
+      </h4>
+      <div class="grid grid-cols-1 gap-2">
+        {#each ghostPatterns as ghost (ghost.id)}
+          <button
+            type="button"
+            onclick={() => onGhostPatternClick?.(ghost)}
+            class="analysis-item group w-full text-left p-3 bg-white dark:bg-gray-800/40 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-900/50 transition-all duration-300"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 text-[9px] font-black rounded-md uppercase">
+                {ghost.pattern_type}
+              </span>
+              <span class="text-[9px] font-bold text-gray-400">Int: {(ghost.intensity * 100).toFixed(0)}%</span>
+            </div>
+            <div class="text-[10px] font-bold text-gray-800 dark:text-gray-200 line-clamp-2">
+              {ghost.description}
+            </div>
+            {#if (ghost.labels ?? []).length > 0}
+              <div class="mt-2 flex flex-wrap gap-1">
+                {#each (ghost.labels ?? []).slice(0, 3) as label}
+                  <span class="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[8px] rounded">
+                    {label}
+                  </span>
+                {/each}
+              </div>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
   <!-- 空白エリア -->
   {#if gapAreas.length > 0}
