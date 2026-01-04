@@ -60,6 +60,12 @@
     },
     "narrative": [
       {
+        "@id": "project:narrative/84",
+        "@type": "project:Narrative",
+        "act": "Capacitor による iOS/Android モバイルアプリ (apps/mobile) の初期化",
+        "summary": "n=1,000 の目標達成に向けた戦略的アプローチとして、ネイティブアプリ化を決定。apps/mobile を Capacitor で構築し、iOS/Android プラットフォームを初期化。既存の SvelteKit (SSG) 資産をモバイルアプリとしてパッケージングする基盤を構築した。"
+      },
+      {
         "@id": "project:narrative/83",
         "@type": "project:Narrative",
         "act": "n=1,000 に向けた公開用ルート (/experiment) の構築とモバイル最適化",
@@ -119,6 +125,7 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "Capacitor による iOS/Android モバイルアプリ (apps/mobile) の初期化とプラットフォーム追加",
       "一般公開用実験ルート (/experiment) の構築と Clerk Email OTP 認証の統合",
       "被験者へのパーソナル多様体レポート（Ghost Pattern 解析付）の提供機能",
       "3D Force Graph への Ghost Pattern（空間歪曲領域）の視覚的オーバーレイ表示",

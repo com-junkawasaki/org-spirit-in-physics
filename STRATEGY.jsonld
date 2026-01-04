@@ -82,6 +82,12 @@
   
   "tactics": [
     {
+      "@id": "tactic:mobile-app-launch",
+      "title": "iOS/Android モバイルアプリ (Capacitor) のリリース",
+      "description": "ストア経由での配布により、マイク・カメラへの安定したアクセスと、プッシュ通知によるリテンションを確保",
+      "relatedCapability": "capability:data-aggregation"
+    },
+    {
       "@id": "tactic:public-experiment-route",
       "title": "一般公開用参加ルート (/experiment) の整備",
       "description": "Clerk 非ログイン状態での簡易体験と、シームレスな同意取得フローの実装",
