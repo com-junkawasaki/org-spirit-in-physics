@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.58.0",
+  "version": "1.59.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
   "updatedAt": "2026-01-04T00:00:00+09:00",
-  "merkleRoot": "Implemented high-density 3D manifold visualization for reference individual (Jun Kawasaki) with mobile-optimized glow effects and camera control.",
+  "merkleRoot": "Implemented mobile-first academic UI for Paper view following Apple HIG, optimized typography, and enhanced navigation with a bottom tab bar.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,12 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/87",
+        "@type": "project:Narrative",
+        "act": "論文閲覧体験のモバイル最適化 (Apple HIG 準拠)",
+        "summary": "iPhone 等のモバイル端末における論文の読みやすさを改善。Apple Human Interface Guidelines に基づき、フォントサイズのスケーリング、余白の再設計（6rem -> 1.5rem）、および親指での操作を考慮した TOC ボタンのフローティング配置（Bottom-heavy Interaction）を実装。学術的な格調高さを維持しつつ、現代的な iOS アプリの読書体験を実現した。"
+      },
       {
         "@id": "project:narrative/86",
         "@type": "project:Narrative",
@@ -137,6 +143,9 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "Apple HIG に基づく論文閲覧画面 (Paper View) のモバイル最適化とレスポンシブタイポグラフィ",
+      "親指操作を優先した TOC（目次）フローティングボタンの再配置（Bottom-heavy Interaction）",
+      "タブベース・ナビゲーション (Analyzer / Spirit / Paper) による 1 ページ 1 コンテンツ設計",
       "Capacitor による iOS/Android モバイルアプリ (apps/mobile) の初期化とプラットフォーム追加",
       "一般公開用実験ルート (/experiment) の構築と Clerk Email OTP 認証の統合",
       "被験者へのパーソナル多様体レポート（Ghost Pattern 解析付）の提供機能",

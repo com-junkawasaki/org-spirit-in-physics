@@ -188,11 +188,17 @@
   function l(path: string) {
     return i18n.resolveRoute(path, languageTag());
   }
+
+  interface Props {
+    mode?: 'full' | 'compact';
+  }
+
+  let { mode = 'full' }: Props = $props();
 </script>
 
 <svelte:window bind:scrollY bind:innerHeight />
 
-<div class="lp-container">
+<div class="lp-container" class:compact={mode === 'compact'}>
   <!-- 1. Interactive 3D Force Section -->
   <div class="interactive-graph-section">
     <div class="section-label">Neural Topology Visualization</div>
@@ -218,78 +224,75 @@
     </div>
   </div>
 
-  <!-- 2. Current Hero Section -->
-  <div class="hero-visual-section">
-    <div class="hero-main-content" style="opacity: {opacity}; transform: translateY({yOffset}px) scale({scale}); filter: blur({blur}px)">
-      <h1 class="title">
-        <span class="gradient-text">{m.logo()}</span>
-      </h1>
-      <p class="subtitle">{m.paper_title_full()}</p>
-      
-      <div class="scroll-indicator" style="opacity: {Math.max(0, 1 - scrollY / 100)}">
-        <div class="scroll-link">
-          <span>Scroll to Explore Plans</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-          </svg>
+  {#if mode === 'full'}
+    <!-- 2. Current Hero Section -->
+    <div class="hero-visual-section">
+      <div class="hero-main-content" style="opacity: {opacity}; transform: translateY({yOffset}px) scale({scale}); filter: blur({blur}px)">
+        <h1 class="title">
+          <span class="gradient-text">{m.logo()}</span>
+        </h1>
+        <p class="subtitle">{m.paper_title_full()}</p>
+        
+        <div class="scroll-indicator" style="opacity: {Math.max(0, 1 - scrollY / 100)}">
+          <div class="scroll-link">
+            <span>Scroll to Explore Plans</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- 3. Plan (Entry Cards) Section -->
-  <div id="plan" class="entry-cards-section">
-    <div class="section-header">
-      <h2 class="section-title">Research Protocols</h2>
-      <p class="section-subtitle">Choose your depth of immersion into the thermodynamic information of the soul.</p>
-    </div>
+    <!-- 3. Plan (Entry Cards) Section -->
+    <div id="plan" class="entry-cards-section">
+      <div class="section-header">
+        <h2 class="section-title">Research Protocols</h2>
+        <p class="section-subtitle">Choose your depth of immersion into the thermodynamic information of the soul.</p>
+      </div>
 
-     <div class="entry-cards">
-       <a href={l("/participant/consent?mode=quick")} class="card quick">
-         <div class="card-header">
-           <span class="card-icon">⚡</span>
-           <span class="free-badge">FREE</span>
-         </div>
-         <div class="card-body">
-           <h3>Quick Scan</h3>
-           <p>心の「今の温度」を5分で測定。直感的な診断を即座に体験。</p>
-           <div class="card-footer">
-             <span class="time-badge">5 min</span>
+       <div class="entry-cards">
+         <a href={l("/participant/consent?mode=quick")} class="card quick">
+           <div class="card-header">
+             <span class="card-icon">⚡</span>
+             <span class="free-badge">FREE</span>
            </div>
-         </div>
-       </a>
- 
-       <div class="card full featured">
-         <div class="card-header">
-           <span class="card-icon">🔬</span>
-           <span class="premium-badge">PREMIUM</span>
-         </div>
-         <div class="card-body">
-           <h3>Full Research</h3>
-           <p>深層心理の完全な多様体を可視化。専門的な構造分析レポートを提供。</p>
-           <div class="card-footer">
-             <span class="time-badge">30 min</span>
-             <span class="price-tag">$80</span>
+           <div class="card-body">
+             <h3>Quick Scan</h3>
+             <p>心の「今の温度」を5分で測定。直感的な診断を即座に体験。</p>
+             <div class="card-footer">
+               <span class="time-badge">5 min</span>
+             </div>
            </div>
+         </a>
+   
+         <div class="card full featured">
+           <div class="card-header">
+             <span class="card-icon">🔬</span>
+             <span class="premium-badge">PREMIUM</span>
+           </div>
+           <div class="card-body">
+             <h3>Full Research</h3>
+             <p>深層心理の完全な多様体を可視化。専門的な構造分析レポートを提供。</p>
+             <div class="card-footer">
+               <span class="time-badge">30 min</span>
+               <span class="price-tag">$80</span>
+             </div>
+           </div>
+           <div class="subscription-hint">Premium Subscription Required</div>
          </div>
-         <div class="subscription-hint">Premium Subscription Required</div>
        </div>
-     </div>
 
-    <div class="paper-cta">
-      <a href="#paper" class="scroll-link">
-        <span>Read Full Scientific Paper</span>
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-        </svg>
-      </a>
+      <div class="paper-cta">
+        <a href={l("/paper")} class="scroll-link">
+          <span>Read Full Scientific Paper</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+          </svg>
+        </a>
+      </div>
     </div>
-  </div>
-
-  <!-- 4. Paper Section -->
-  <section id="paper" class="paper-section">
-    <slot />
-  </section>
+  {/if}
 </div>
 
 <style>
@@ -309,6 +312,11 @@
     background: var(--lp-bg);
     color: var(--lp-text);
     transition: background-color 0.5s ease, color 0.5s ease;
+  }
+
+  .lp-container.compact {
+    height: 100%;
+    overflow: hidden;
   }
 
   :global(.dark) .lp-container {
@@ -640,6 +648,11 @@
   .paper-section {
     padding: 8rem 0;
     background: var(--lp-bg);
+  }
+
+  /* Compact mode overrides */
+  .compact .interactive-graph-section {
+    height: 100%;
   }
 
    @media (max-width: 1024px) {
