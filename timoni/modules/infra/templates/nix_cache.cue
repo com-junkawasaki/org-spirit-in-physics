@@ -86,6 +86,7 @@ import (
 				metadata: name: "nix-store"
 				spec: {
 					accessModes: ["ReadWriteOnce"]
+					storageClassName: #config.nix_cache.storageClass
 					resources: requests: storage: #config.nix_cache.storage
 				}
 			},

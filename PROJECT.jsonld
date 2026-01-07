@@ -161,6 +161,7 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "GKE Autopilot クラスター (spirit-autopilot) の作成と Workload Identity の設定完了",
       "GKE Autopilot クラスターへの移行（コスト最適化）",
       "lakeFS のバックエンドを MinIO から GCS へ切り替え",
       "Workload Identity を使用した lakeFS から GCS への安全なアクセス設定",

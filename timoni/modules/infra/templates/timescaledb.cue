@@ -100,6 +100,7 @@ import (
 			metadata: name: "data"
 			spec: corev1.#PersistentVolumeClaimSpec & {
 				accessModes: ["ReadWriteOnce"]
+				storageClassName: #config.timescaledb.storageClass
 				resources: requests: storage: resource.#Quantity & #config.timescaledb.storage
 			}
 		}]

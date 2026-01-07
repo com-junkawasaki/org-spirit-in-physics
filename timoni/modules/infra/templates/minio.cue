@@ -90,6 +90,7 @@ import (
 			metadata: name: "data"
 			spec: corev1.#PersistentVolumeClaimSpec & {
 				accessModes: ["ReadWriteOnce"]
+				storageClassName: #config.minio.storageClass
 				resources: requests: storage: resource.#Quantity & #config.minio.storage
 			}
 		}]

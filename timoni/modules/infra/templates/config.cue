@@ -28,6 +28,7 @@ import (
 		password: *"postgres" | string // In production, use secrets
 		database: *"spirit_in_physics" | string
 		storage:  *"10Gi" | string
+		storageClass: *"standard" | string
 		port:     *5432 | int & >0 & <=65535
 		resources: timoniv1.#ResourceRequirements & {
 			requests: {
@@ -70,6 +71,7 @@ import (
 		port:         *9000 | int
 		consolePort:  *9001 | int
 		storage:      *"10Gi" | string
+		storageClass: *"standard" | string
 		resources: timoniv1.#ResourceRequirements & {
 			requests: {
 				cpu:    *"250m" | timoniv1.#CPUQuantity
@@ -143,6 +145,7 @@ import (
 		}
 		port: *5000 | int
 		storage: *"10Gi" | string
+		storageClass: *"standard" | string
 	}
 
 	imagePullSecrets?: [...timoniv1.#ObjectReference]

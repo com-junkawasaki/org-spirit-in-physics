@@ -17,6 +17,7 @@ values: {
 		password: "postgres"
 		database: "spirit_in_physics"
 		storage:  "10Gi"
+		storageClass: "standard"
 	}
 	temporal: {
 		enabled: true
@@ -31,6 +32,7 @@ values: {
 	}
 	minio: {
 		enabled: false
+		storageClass: "standard"
 	}
 	lakefs: {
 		enabled: true
