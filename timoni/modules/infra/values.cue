@@ -29,6 +29,9 @@ values: {
 		enabled:  true
 		hostname: "spirit-in-physics.gftd.ai"
 	}
+	minio: {
+		enabled: false
+	}
 	lakefs: {
 		enabled: true
 		database: {
@@ -38,11 +41,13 @@ values: {
 			encryptSecretKey: "base64-encoded-secret-key-placeholder"
 		}
 		blockstore: {
-			s3: {
-				endpoint:        "http://infra-minio:9000"
-				accessKeyId:     "minioadmin"
-				secretAccessKey: "minioadmin"
-			}
+			type: "gs"
+		}
+		setup: {
+			repository:       "spirit-in-physics"
+			storageNamespace: "gs://spirit-in-physics-dataset"
+			adminAccessKey:   "AKIAIOSFODNN7EXAMPLE"
+			adminSecretKey:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 		}
 	}
 }

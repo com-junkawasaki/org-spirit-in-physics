@@ -1,5 +1,5 @@
 runtime: {
-	name: "gke"
+	name: "gke-autopilot"
 	cluster: "*"
 }
 
@@ -10,10 +10,26 @@ bundle: {
 				gateway: {
 					hostname: "sip.junkawasaki.com"
 					issuerName: "letsencrypt-prod"
-					staticIP: "34.160.140.248"
+					// In Autopilot, we can omit staticIP to use ephemeral or manage separately
+					// staticIP: "34.160.140.248"
+				}
+				minio: {
+					enabled: false
 				}
 				lakefs: {
 					enabled: true
+					serviceAccount: {
+						annotations: {
+							"iam.gke.io/gcp-service-account": "gene-annex-sa@com-junkawasaki-sip.iam.gserviceaccount.com"
+						}
+					}
+					blockstore: {
+						type: "gs"
+					}
+					setup: {
+						repository:       "spirit-in-physics"
+						storageNamespace: "gs://com-junkawasaki-sip-dataset"
+					}
 				}
 				temporal: {
 					enabled: true

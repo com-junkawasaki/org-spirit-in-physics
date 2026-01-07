@@ -31,8 +31,8 @@ import (
 		port:     *5432 | int & >0 & <=65535
 		resources: timoniv1.#ResourceRequirements & {
 			requests: {
-				cpu:    *"100m" | timoniv1.#CPUQuantity
-				memory: *"256Mi" | timoniv1.#MemoryQuantity
+				cpu:    *"250m" | timoniv1.#CPUQuantity
+				memory: *"512Mi" | timoniv1.#MemoryQuantity
 			}
 		}
 	}
@@ -48,6 +48,12 @@ import (
 		}
 		port: *7233 | int
 		uiPort: *8088 | int
+		resources: timoniv1.#ResourceRequirements & {
+			requests: {
+				cpu:    *"250m" | timoniv1.#CPUQuantity
+				memory: *"512Mi" | timoniv1.#MemoryQuantity
+			}
+		}
 	}
 
 	// MinIO settings
@@ -64,6 +70,12 @@ import (
 		port:         *9000 | int
 		consolePort:  *9001 | int
 		storage:      *"10Gi" | string
+		resources: timoniv1.#ResourceRequirements & {
+			requests: {
+				cpu:    *"250m" | timoniv1.#CPUQuantity
+				memory: *"512Mi" | timoniv1.#MemoryQuantity
+			}
+		}
 	}
 
 	// lakeFS settings
@@ -82,18 +94,31 @@ import (
 		auth: {
 			encryptSecretKey: string
 		}
+		resources: timoniv1.#ResourceRequirements & {
+			requests: {
+				cpu:    *"250m" | timoniv1.#CPUQuantity
+				memory: *"512Mi" | timoniv1.#MemoryQuantity
+			}
+		}
+		serviceAccount: {
+			annotations: *{} | timoniv1.#Annotations
+		}
 		blockstore: {
-			type: *"s3" | string
+			type: *"s3" | "gs" | string
 			s3: {
 				endpoint:        string
 				forcePathStyle:  *true | bool
 				accessKeyId:     string
 				secretAccessKey: string
 			}
+			gs: {
+				credentialsJson?: string
+			}
 		}
 		setup: {
-			enabled: *true | bool
+			enabled:    *true | bool
 			repository: string
+			storageNamespace: string
 			adminAccessKey: string
 			adminSecretKey: string
 		}
@@ -143,7 +168,8 @@ import (
 			minio_sts: #MinIOStatefulSet & {#config: config}
 		}
 		if config.lakefs.enabled {
-			lakefs_svc: #LakeFSService & {#config: config}
+			lakefs_sa:     #LakeFSServiceAccount & {#config: config}
+			lakefs_svc:    #LakeFSService & {#config: config}
 			lakefs_deploy: #LakeFSDeployment & {#config: config}
 			if config.lakefs.setup.enabled {
 				lakefs_setup: #LakeFSSetupJob & {#config: config}

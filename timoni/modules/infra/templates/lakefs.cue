@@ -30,6 +30,18 @@ import (
 	}
 }
 
+#LakeFSServiceAccount: {
+	#config: #Config
+	apiVersion: "v1"
+	kind:       "ServiceAccount"
+	metadata: {
+		labels:      #config.metadata.labels
+		annotations: #config.metadata.annotations & #config.lakefs.serviceAccount.annotations
+		namespace:   #config.metadata.namespace
+		name:        "\(#config.metadata.name)-lakefs"
+	}
+}
+
 #LakeFSDeployment: {
 	#config: #Config
 	apiVersion: "apps/v1"
@@ -54,6 +66,7 @@ import (
 				}
 			}
 			spec: corev1.#PodSpec & {
+				serviceAccountName: "\(#config.metadata.name)-lakefs"
 				containers: [{
 					name:  "lakefs"
 					image: #config.lakefs.image.reference
@@ -73,19 +86,39 @@ import (
 					}, {
 						name:  "LAKEFS_BLOCKSTORE_TYPE"
 						value: #config.lakefs.blockstore.type
-					}, {
-						name:  "LAKEFS_BLOCKSTORE_S3_ENDPOINT"
-						value: #config.lakefs.blockstore.s3.endpoint
-					}, {
-						name:  "LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE"
-						value: "\(#config.lakefs.blockstore.s3.forcePathStyle)"
-					}, {
-						name:  "LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID"
-						value: #config.lakefs.blockstore.s3.accessKeyId
-					}, {
-						name:  "LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY"
-						value: #config.lakefs.blockstore.s3.secretAccessKey
-					}]
+					},
+						if #config.lakefs.blockstore.type == "s3" {
+							{
+								name:  "LAKEFS_BLOCKSTORE_S3_ENDPOINT"
+								value: #config.lakefs.blockstore.s3.endpoint
+							}
+						},
+						if #config.lakefs.blockstore.type == "s3" {
+							{
+								name:  "LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE"
+								value: "\(#config.lakefs.blockstore.s3.forcePathStyle)"
+							}
+						},
+						if #config.lakefs.blockstore.type == "s3" {
+							{
+								name:  "LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID"
+								value: #config.lakefs.blockstore.s3.accessKeyId
+							}
+						},
+						if #config.lakefs.blockstore.type == "s3" {
+							{
+								name:  "LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY"
+								value: #config.lakefs.blockstore.s3.secretAccessKey
+							}
+						},
+						if #config.lakefs.blockstore.type == "gs" && #config.lakefs.blockstore.gs.credentialsJson != _|_ {
+							{
+								name:  "LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON"
+								value: #config.lakefs.blockstore.gs.credentialsJson
+							}
+						},
+					]
+					resources: #config.lakefs.resources
 				}]
 			}
 		}
@@ -129,11 +162,11 @@ import (
 						  echo "lakeFS is already setup."
 						else
 						  echo "Setting up lakeFS admin..."
-						  curl -X POST "$LAKEFS_URL/setup_admin" -H "Content-Type: application/json" -d '{"user_name": "admin", "access_key_id": "AKIAIOSFODNN7EXAMPLE", "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}'
+						  curl -X POST "$LAKEFS_URL/setup_admin" -H "Content-Type: application/json" -d '{"user_name": "admin", "access_key_id": "\(#config.lakefs.setup.adminAccessKey)", "secret_access_key": "\(#config.lakefs.setup.adminSecretKey)"}'
 						fi
 						
 						echo "Creating repository \(#config.lakefs.setup.repository)..."
-						curl -X POST "$LAKEFS_URL/api/v1/repositories" -u "AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" -H "Content-Type: application/json" -d '{"name": "\(#config.lakefs.setup.repository)", "storage_namespace": "s3://\(#config.lakefs.setup.repository)", "default_branch": "main"}' || echo "Repository might already exist"
+						curl -X POST "$LAKEFS_URL/api/v1/repositories" -u "\(#config.lakefs.setup.adminAccessKey):\(#config.lakefs.setup.adminSecretKey)" -H "Content-Type: application/json" -d '{"name": "\(#config.lakefs.setup.repository)", "storage_namespace": "\(#config.lakefs.setup.storageNamespace)", "default_branch": "main"}' || echo "Repository might already exist"
 						
 						echo "lakeFS setup complete."
 						""",

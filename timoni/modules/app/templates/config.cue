@@ -48,11 +48,11 @@ import (
 	}
 
 	// The resources allows setting the container resource requirements.
-	// By default, the container requests 10m CPU and 32Mi memory.
+	// By default, the container requests 250m CPU and 512Mi memory.
 	resources: timoniv1.#ResourceRequirements & {
 		requests: {
-			cpu:    *"10m" | timoniv1.#CPUQuantity
-			memory: *"32Mi" | timoniv1.#MemoryQuantity
+			cpu:    *"250m" | timoniv1.#CPUQuantity
+			memory: *"512Mi" | timoniv1.#MemoryQuantity
 		}
 	}
 

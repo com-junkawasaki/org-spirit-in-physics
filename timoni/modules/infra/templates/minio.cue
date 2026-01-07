@@ -78,6 +78,7 @@ import (
 						name:  "MINIO_ROOT_PASSWORD"
 						value: #config.minio.rootPassword
 					}]
+					resources: #config.minio.resources
 					volumeMounts: [{
 						name:      "data"
 						mountPath: "/data"

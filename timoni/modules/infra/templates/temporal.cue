@@ -90,6 +90,7 @@ import (
 						name:  "BIND_ON_IP"
 						value: "0.0.0.0"
 					}]
+					resources: #config.temporal.resources
 				}]
 			}
 		}

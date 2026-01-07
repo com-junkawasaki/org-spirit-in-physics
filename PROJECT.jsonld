@@ -60,6 +60,12 @@
     },
     "narrative": [
       {
+        "@id": "project:narrative/90",
+        "@type": "project:Narrative",
+        "act": "GKE Autopilot への移行と GCS ストレージ統合の開始",
+        "summary": "インフラコスト最適化のため、GKE Standard から Autopilot への移行を開始。同時に MinIO を廃止し、lakeFS のバックエンドを Google Cloud Storage (GCS) へ統合。データの永続性を確保しつつ、アイドル時のコストを最小化する構成へ刷新中。"
+      },
+      {
         "@id": "project:narrative/89",
         "@type": "project:Narrative",
         "act": "モバイル・レイアウトの最適化と Clerk 認証フォールバックの実装",
@@ -155,6 +161,10 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "GKE Autopilot クラスターへの移行（コスト最適化）",
+      "lakeFS のバックエンドを MinIO から GCS へ切り替え",
+      "Workload Identity を使用した lakeFS から GCS への安全なアクセス設定",
+      "全 Pod のリソース要求 (requests) を Autopilot 向けに最適化 (250m CPU / 512Mi Memory)",
       "モバイルアプリにおけるレイアウト二重表示の解消と Header/Footer の一本化",
       "Capacitor 環境下での Clerk 認証キーのハードコード・フォールバック実装（環境変数置換不全対策）",
       "実験フロー（/experiment/*）におけるボトムタブバーの動的非表示制御",
