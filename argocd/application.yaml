@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spirit-in-physics
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/com-junkawasaki/spirit-in-physics.git
+    targetRevision: main
+    path: timoni
+    
+    # Timoni plugin を使用する場合
+    plugin:
+      name: timoni
+      env:
+        - name: RUNTIME_FILE
+          value: runtime-gke.cue
+        - name: BUNDLE_FILE
+          value: bundle.cue
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: spirit-in-physics
+  
+  syncPolicy:
+    automated:
+      prune: true  # リポジトリから削除されたリソースを自動削除
+      selfHeal: true  # クラスター上での手動変更を自動修正
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true  # namespace が存在しない場合は作成
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # 無視するリソース（例：Secret など）
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+

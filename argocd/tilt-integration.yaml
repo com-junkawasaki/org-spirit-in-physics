@@ -1,0 +1,29 @@
+# ArgoCD + Tilt Integration
+# https://argo-cd.readthedocs.io/en/stable/developer-guide/tilt/
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  # Tilt が生成したマニフェストを無視するように設定
+  resource.customizations.ignoreDifferences.all: |
+    jqPathExpressions:
+    - .metadata.annotations["tilt.dev/update-mode"]
+    - .metadata.annotations["tilt.dev/resource-id"]
+    - .metadata.labels["tilt.dev/resource"]
+  
+  # Tilt による変更を許容
+  application.resourceTrackingMethod: annotation+label
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+data:
+  # Self-heal を無効化して Tilt の変更を許可
+  # 本番環境では有効化を推奨
+  application.sync.self-heal: "false"
+
