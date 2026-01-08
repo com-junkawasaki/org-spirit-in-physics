@@ -5,36 +5,128 @@ globs: ["**/*.cue", "Taskfile.yml", "timoni/**/*"]
 
 # Development Workflow
 
-This project uses Timoni and Taskfile for local development to provide a fast feedback loop (Inner Loop), while ArgoCD handles continuous deployment (Outer Loop).
+This project uses Timoni and Taskfile for local development to provide a fast feedback loop (Inner Loop), while GKE serves as the production environment (Outer Loop).
 
 ## Key Tools
 - **Timoni CLI**: Main tool for managing Kubernetes resources via CUE.
 - **Taskfile**: Orchestrates development tasks (replaces Makefile).
 - **Watchexec**: Recommended for automatic application of changes.
+- **kubectl**: Kubernetes CLI for cluster operations.
+
+## Environments
+
+### Local Development (OrbStack)
+- **Context**: `orbstack`
+- **Runtime**: `timoni/runtime-orbstack.cue`
+- **Access**: [http://localhost/](http://localhost/)
+
+### Production (GKE)
+- **Cluster**: `spirit-autopilot` (GKE Autopilot, asia-northeast1)
+- **Context**: `gke_com-junkawasaki-sip_asia-northeast1_spirit-autopilot`
+- **Runtime**: `timoni/runtime-gke.cue`
+- **Domain**: [https://spirit-in-physics.com](https://spirit-in-physics.com)
+- **Static IP**: `34.160.140.248` (sip-static-ip)
 
 ## Inner Loop (Local Development)
 For fast iteration without pushing to Git:
 
-1. **Access**: Use [http://localhost/](http://localhost/) for browser-based verification (no `/etc/hosts` editing required).
-2. **Watch and Apply**: Use the `task dev` command:
+1. **Switch to Local Context**:
+   ```bash
+   kubectl config use-context orbstack
+   ```
+
+2. **Access**: Use [http://localhost/](http://localhost/) for browser-based verification.
+
+3. **Watch and Apply**: Use the `task dev` command:
    ```bash
    task dev
    ```
    This runs `watchexec` to automatically apply changes to the cluster using `timoni`.
-3. **Build and Load**: If building images locally via Nix:
+
+4. **Build and Load**: If building images locally via Nix:
    ```bash
    task nix-build-portal
    ```
 
-## Outer Loop (GitOps / ArgoCD)
-Once changes are verified locally:
-1. **Commit and Push**: Changes to `timoni/` will be picked up by ArgoCD.
-2. **Verify on ArgoCD**: Check the ArgoCD UI or use `argocd app sync spirit-in-physics` to ensure the Git state matches the cluster state.
+## Outer Loop (Production Deployment to GKE)
+
+### Deploying to Production
+
+1. **Switch to GKE Context**:
+   ```bash
+   kubectl config use-context gke_com-junkawasaki-sip_asia-northeast1_spirit-autopilot
+   ```
+
+2. **Build and Push Images** (if needed):
+   ```bash
+   docker build -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest ./apps/svelte-app
+   docker push asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
+   ```
+
+3. **Apply to GKE**:
+   ```bash
+   timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-gke.cue
+   ```
+
+4. **Verify Deployment**:
+   ```bash
+   kubectl get pods -n spirit-in-physics
+   kubectl get gateway -n spirit-in-physics
+   kubectl get certificate -n spirit-in-physics
+   ```
+
+### Domain and DNS Management
+
+**Domain**: `spirit-in-physics.com` (Google Cloud Domains)
+**DNS**: Cloud DNS (`spirit-in-physics-zone`)
+
+To update DNS records:
+```bash
+gcloud dns record-sets update spirit-in-physics.com. \
+  --zone=spirit-in-physics-zone \
+  --type=A \
+  --ttl=300 \
+  --rrdatas=<NEW_IP> \
+  --project=com-junkawasaki-sip
+```
+
+To verify DNS propagation:
+```bash
+dig spirit-in-physics.com +short
+dig @8.8.8.8 spirit-in-physics.com +short
+```
+
+### SSL Certificate Management
+
+Certificates are managed by cert-manager with Let's Encrypt:
+- **Issuer**: `letsencrypt-prod` (ClusterIssuer)
+- **Certificate**: `sip-tls-cert`
+- **Domains**: `spirit-in-physics.com`, `www.spirit-in-physics.com`
+
+To check certificate status:
+```bash
+kubectl get certificate -n spirit-in-physics
+kubectl describe certificate sip-tls-cert -n spirit-in-physics
+```
+
+To force certificate renewal:
+```bash
+kubectl delete certificate sip-tls-cert -n spirit-in-physics
+kubectl delete secret sip-tls-cert -n spirit-in-physics
+timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-gke.cue
+```
 
 ## Best Practices
-- **Prefer Timoni for Local Dev**: It's faster than waiting for ArgoCD to sync.
-- **Use Taskfile for Automation**: Keep `Tiltfile` only for complex multi-container orchestration if absolutely necessary, but prioritize Taskfile + Timoni.
-- **Pre-commit Check**: Before pushing, verify manifests locally:
+
+- **Always Check Context**: Use `kubectl config current-context` before operations.
+- **Prefer Timoni for Deployments**: Consistent across local and production.
+- **Pre-deploy Verification**: Build manifests locally before applying:
   ```bash
+  # Local
   timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+  
+  # GKE
+  timoni bundle build -f timoni/bundle.cue -r timoni/runtime-gke.cue
   ```
+- **DNS Changes**: Allow 5-10 minutes for DNS propagation after updates.
+- **Static IP**: Never delete `sip-static-ip` reservation without updating DNS first.

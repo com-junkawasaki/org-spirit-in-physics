@@ -11,6 +11,10 @@ const getEnv = (key: string, defaultValue: string = ''): string => {
         return "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ";
     }
     if (key === 'PUBLIC_API_URL' && ((env as any)[key] === undefined || (env as any)[key] === "")) {
+        // For Capacitor iOS Simulator, use localhost
+        if (browser && (window as any).Capacitor !== undefined) {
+            return "http://localhost:8080";
+        }
         return "https://sip.junkawasaki.com/api";
     }
     return (env as any)[key] || defaultValue;

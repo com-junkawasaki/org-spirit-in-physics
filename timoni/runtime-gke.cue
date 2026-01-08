@@ -8,10 +8,9 @@ bundle: {
 		infra: {
 			values: {
 				gateway: {
-					hostname: "sip.junkawasaki.com"
+					hostname: "spirit-in-physics.com"
 					issuerName: "letsencrypt-prod"
-					// In Autopilot, we can omit staticIP to use ephemeral or manage separately
-					// staticIP: "34.160.140.248"
+					staticIP: "34.160.140.248"
 				}
 				minio: {
 					enabled: false
