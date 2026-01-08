@@ -72,6 +72,30 @@ export interface FilterSettings {
   showWordLabels: boolean
 }
 
+export interface Force3DFilters {
+  // Emotion filters
+  joy: boolean
+  sadness: boolean
+  anger: boolean
+  fear: boolean
+  surprise: boolean
+  disgust: boolean
+  calm: boolean
+  focus: boolean
+  excitement: boolean
+  confusion: boolean
+  
+  // Modality filters (感情抽出元)
+  prosody: boolean
+  burst: boolean
+  face: boolean
+  language: boolean
+  
+  // Word selection
+  topWords: number // Number of top words to show (e.g., 100)
+  selectedWords: string[] // Manually selected words
+}
+
 export interface TimeRange {
   start: number
   end: number

@@ -7,13 +7,15 @@
     TimeRange,
     ForcePreset,
     WordNode,
-    WordLink
+    WordLink,
+    Force3DFilters
   } from './types';
   import KPICards from './KPICards.svelte';
   import TimelineChart from './TimelineChart.svelte';
   import Force3DControls from './Force3DControls.svelte';
   import Force3DWordGraphTypeGPU from './Force3DWordGraphTypeGPU.svelte';
   import StructureAnalysisPanel from './StructureAnalysisPanel.svelte';
+  import Force3DFiltersPanel from './Force3DFiltersPanel.svelte';
   import type { 
     AnalysisResults,
     GapArea,
@@ -29,6 +31,11 @@
     EmotionVector, 
     WordStatistics 
   } from '../../../generated/proto/timeline/v1/timeline_pb';
+  import { 
+    generateMockTimelineData, 
+    generateMockEmotionVectors, 
+    generateMockWordStatistics 
+  } from '$lib/researcher/mock-data';
   
   let {
     participantId,
@@ -36,8 +43,9 @@
     width = 800,
     height = 850,
     hideFilters = false,
-    forceMode
-  }: TimelineVisualizationProps = $props();
+    forceMode,
+    useMockData = false // Add option to use mock data
+  }: TimelineVisualizationProps & { useMockData?: boolean } = $props();
 
   // State
   let data: TimelineDataPoint[] = $state([]);
@@ -144,9 +152,32 @@
   }
 
   async function fetchData() {
-    if (!participantId) return;
+    if (!participantId && !useMockData) return;
     loading = true;
     error = null;
+    
+    // Use mock data if enabled
+    if (useMockData) {
+      try {
+        data = generateMockTimelineData(100);
+        emotionVectors = generateMockEmotionVectors() as any;
+        wordStatistics = generateMockWordStatistics() as any;
+        
+        if (data.length > 0) {
+          const extent = d3.extent(data, d => d.timestamp) as [number, number];
+          timeRange = { start: extent[0], end: extent[1] };
+        }
+        
+        loading = false;
+        return;
+      } catch (e: any) {
+        error = e.message || "Failed to generate mock data";
+        console.error(e);
+        loading = false;
+        return;
+      }
+    }
+    
     try {
       // Use the new integrated endpoint that runs on TS Temporal
       const response = await timelineClient.getIntegratedTimeline({ 
@@ -265,47 +296,98 @@
     fetchData();
   });
 
+  // Mock word list with scores for filtering UI
+  let availableWords = $derived.by(() => {
+    const wordScores = new Map<string, number>();
+    
+    data.forEach(d => {
+      if (d.word && d.word !== 'Unknown') {
+        const currentScore = wordScores.get(d.word) || 0;
+        const newScore = currentScore + (d.reactionValue || 0) + (d.reactionTime ? 1000 / d.reactionTime : 0);
+        wordScores.set(d.word, newScore);
+      }
+    });
+
+    return Array.from(wordScores.entries())
+      .map(([word, score]) => ({ 
+        word, 
+        score, 
+        selected: force3dFilters.selectedWords.includes(word) 
+      }))
+      .sort((a, b) => b.score - a.score);
+  });
+
   let graphData = $derived.by(() => {
     if (data.length === 0) return { nodes: [], links: [] };
 
-    // 1. Emotion Anchors
-    const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-      const [x, y, z] = toSphere(a.x, a.y, shellRadius);
-      return {
-        id: `anchor-${idx}`,
-        label: a.name,
-        scale: 6,
-        fixed: true,
-        nodeType: 'anchor',
-        initial: [x, y, z],
-        color: a.color
-      };
-    });
+    // 1. Emotion Anchors - Filter by selected emotions
+    const anchorNodes: WordNode[] = anchor2d
+      .filter(a => {
+        const emotionKey = anchorToKey[a.name];
+        if (!emotionKey) return true;
+        return (force3dFilters as any)[emotionKey] === true;
+      })
+      .map((a, idx) => {
+        const [x, y, z] = toSphere(a.x, a.y, shellRadius);
+        return {
+          id: `anchor-${idx}`,
+          label: a.name,
+          scale: 6,
+          fixed: true,
+          nodeType: 'anchor',
+          initial: [x, y, z],
+          color: a.color
+        };
+      });
 
-    // 2. Word Nodes (Only include stimulus words for 3D graph)
+    // 2. Word Nodes - Apply word selection filter
+    const topWordsList = availableWords.slice(0, force3dFilters.topWords).map(w => w.word);
+    const selectedOrTopWords = force3dFilters.selectedWords.length > 0 
+      ? force3dFilters.selectedWords 
+      : topWordsList;
+
     const wordNodes: WordNode[] = data
-      .filter(d => d.word && d.word !== 'Unknown')
+      .filter(d => d.word && d.word !== 'Unknown' && selectedOrTopWords.includes(d.word))
       .map((d, i) => {
-      // Find emotion vector for this word
+      // Find emotion vector for this word - Apply modality filter
       const vec = emotionVectors.find(v => v.word === d.word);
       const emotion: Record<string, number> = {};
       if (vec) {
-        if (vec.joySum) emotion.joy = Number(vec.joySum);
-        if (vec.sadnessSum) emotion.sadness = Number(vec.sadnessSum);
-        if (vec.angerSum) emotion.anger = Number(vec.angerSum);
-        if (vec.fearSum) emotion.fear = Number(vec.fearSum);
-        if (vec.surpriseSum) emotion.surprise = Number(vec.surpriseSum);
-        if (vec.disgustSum) emotion.disgust = Number(vec.disgustSum);
-        if (vec.calmSum) emotion.calm = Number(vec.calmSum);
-        if (vec.focusSum) emotion.focus = Number(vec.focusSum);
-        if (vec.excitementSum) emotion.excitement = Number(vec.excitementSum);
-        if (vec.confusionSum) emotion.confusion = Number(vec.confusionSum);
+        // Only include emotions that are enabled in filters
+        if (vec.joySum && force3dFilters.joy) emotion.joy = Number(vec.joySum);
+        if (vec.sadnessSum && force3dFilters.sadness) emotion.sadness = Number(vec.sadnessSum);
+        if (vec.angerSum && force3dFilters.anger) emotion.anger = Number(vec.angerSum);
+        if (vec.fearSum && force3dFilters.fear) emotion.fear = Number(vec.fearSum);
+        if (vec.surpriseSum && force3dFilters.surprise) emotion.surprise = Number(vec.surpriseSum);
+        if (vec.disgustSum && force3dFilters.disgust) emotion.disgust = Number(vec.disgustSum);
+        if (vec.calmSum && force3dFilters.calm) emotion.calm = Number(vec.calmSum);
+        if (vec.focusSum && force3dFilters.focus) emotion.focus = Number(vec.focusSum);
+        if (vec.excitementSum && force3dFilters.excitement) emotion.excitement = Number(vec.excitementSum);
+        if (vec.confusionSum && force3dFilters.confusion) emotion.confusion = Number(vec.confusionSum);
       }
+      
+      // Apply modality filter to emotions from data points
+      const filteredEmotions = d.emotions?.filter(e => {
+        const type = e.fileType?.toLowerCase() || '';
+        if (type.includes('prosody') && !force3dFilters.prosody) return false;
+        if (type.includes('burst') && !force3dFilters.burst) return false;
+        if (type.includes('face') && !force3dFilters.face) return false;
+        if (type.includes('language') && !force3dFilters.language) return false;
+        return true;
+      }) || [];
 
       // 反応値（reactionValue）と生理反応（physiological）の強さをスケールに反映
       const rv = d.reactionValue || 0;
       const phys = Array.isArray(d.physiological) ? d.physiological.length : 0;
       const rt = (d.reactionTime || 0) / 5000; // 反応時間（5秒を基準に正規化）
+      
+      // Add filtered emotion scores to the emotion object
+      filteredEmotions.forEach(e => {
+        const emotionName = normalizeEmotionName(e.name);
+        if (emotionName && (force3dFilters as any)[emotionName]) {
+          emotion[emotionName] = (emotion[emotionName] || 0) + e.score;
+        }
+      });
       
       // スケール差を大幅に抑制（高密度な配置でも視認性を確保）
       const nodeScale = 0.5 + (rv * 3.0) + (phys * 0.2) + (rt * 0.8);
@@ -364,6 +446,26 @@
     duplicates: [],
     ghostPatterns: [],
     overallDensity: 0
+  });
+
+  // 3D Force Filters
+  let force3dFilters = $state<Force3DFilters>({
+    joy: true,
+    sadness: true,
+    anger: true,
+    fear: true,
+    surprise: true,
+    disgust: true,
+    calm: true,
+    focus: true,
+    excitement: true,
+    confusion: true,
+    prosody: true,
+    burst: true,
+    face: true,
+    language: true,
+    topWords: 100,
+    selectedWords: []
   });
 
   async function fetchAnalysis() {
@@ -471,7 +573,19 @@
           </div>
         </div>
       {:else if activeTab === 'force3d'}
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 xl:grid-cols-5 gap-8">
+          <!-- Left Sidebar: Filters -->
+          <div class="xl:col-span-1">
+            <div class="bg-white dark:bg-gray-900 rounded-[40px] p-6 border border-gray-100 dark:border-gray-800 shadow-xl sticky top-4">
+              <Force3DFiltersPanel 
+                filters={force3dFilters} 
+                onFiltersChange={(f) => force3dFilters = f}
+                availableWords={availableWords}
+              />
+            </div>
+          </div>
+
+          <!-- Center: 3D Visualization -->
           <div class="xl:col-span-3 space-y-6">
             <div class="bg-black rounded-[48px] overflow-hidden relative shadow-2xl border-[12px] border-gray-100 dark:border-gray-800" style="height: 700px;">
               <Force3DWordGraphTypeGPU 
@@ -532,6 +646,7 @@
             />
           </div>
           
+          <!-- Right Sidebar: Analysis -->
           <div class="xl:col-span-1">
             <div class="bg-white dark:bg-gray-900 rounded-[40px] p-8 border border-gray-100 dark:border-gray-800 shadow-xl h-full flex flex-col">
               <div class="flex items-center justify-between mb-8">

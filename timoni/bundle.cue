@@ -38,6 +38,7 @@ bundle: {
 						encryptSecretKey: "spirit-in-physics-lakefs-secret-key-2025"
 					}
 					blockstore: {
+						type: "s3"
 						s3: {
 							endpoint:        "http://infra-minio:9000"
 							accessKeyId:     "minioadmin"
@@ -45,10 +46,11 @@ bundle: {
 						}
 					}
 					setup: {
-						enabled:    true
-						repository: "spirit-in-physics"
-						adminAccessKey: "AKIAIOSFODNN7EXAMPLE"
-						adminSecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+						enabled:          true
+						repository:       "spirit-in-physics"
+						storageNamespace: "s3://spirit-in-physics"
+						adminAccessKey:   "AKIAIOSFODNN7EXAMPLE"
+						adminSecretKey:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 					}
 				}
 				nix_cache: {
@@ -71,6 +73,10 @@ bundle: {
 					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service"
 					tag:        "latest"
 					pullPolicy: "IfNotPresent"
+				}
+				resources: requests: {
+					cpu:    "100m"
+					memory: "256Mi"
 				}
 				service: port: 8080
 				env: [
@@ -137,6 +143,10 @@ bundle: {
 					repository: "asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app"
 					tag:        "latest"
 					pullPolicy: "IfNotPresent"
+				}
+				resources: requests: {
+					cpu:    "100m"
+					memory: "128Mi"
 				}
 				service: port: 80
 				env: [

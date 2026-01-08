@@ -4,8 +4,8 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --no-frozen-lockfile
 COPY . .
-# Force rebuild v17
-RUN echo "build-v17" > build-version.txt
+# Force rebuild v18
+RUN echo "build-v18" > build-version.txt
 ENV POSTHOG_DISABLED=1
 RUN pnpm build
 
@@ -24,4 +24,5 @@ ENV PORT=80
 ENV NODE_ENV=production
 
 # Run env replacement, then start sirv server in SPA mode with spa.html as fallback
-CMD ["/bin/sh", "-c", "python3 /app/replace-env.py /app/build && ./node_modules/.bin/sirv build --port 80 --single spa.html --host 0.0.0.0"]
+# Using /app/build explicitly to avoid any path issues
+CMD ["/bin/sh", "-c", "python3 /app/replace-env.py /app/build && ./node_modules/.bin/sirv /app/build --port 80 --single spa.html --host 0.0.0.0"]

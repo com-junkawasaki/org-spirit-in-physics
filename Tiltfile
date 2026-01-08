@@ -16,9 +16,8 @@ TEMPORAL_TS_IMAGE = 'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-i
 # 2. Go gRPC Service (Nix Cross-compilation)
 custom_build(
     GRPC_IMAGE,
-    '$(nix build .#grpc-image --no-link --print-out-paths) | docker load',
-    deps=['./performers/services/grpc', './flake.nix'],
-    tag='latest'
+    '$(nix build .#grpc-image --no-link --print-out-paths) | docker load && docker tag spirit-grpc-service:latest $EXPECTED_REF',
+    deps=['./performers/services/grpc', './flake.nix']
 )
 
 # 3. Python Import Service & Worker (Docker - Nix Python cross-build is slow on Darwin)
