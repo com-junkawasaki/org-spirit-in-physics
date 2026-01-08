@@ -1,5 +1,39 @@
 package templates
 
+// HTTP to HTTPS redirect route
+#HTTPSRedirect: {
+	#config: #Config
+	apiVersion: "gateway.networking.k8s.io/v1"
+	kind:       "HTTPRoute"
+	metadata: {
+		labels:      #config.metadata.labels
+		namespace:   #config.metadata.namespace
+		name:        "\(#config.metadata.name)-https-redirect"
+	}
+	spec: {
+		if (#config.gateway.hostname & string) != _|_ {
+			hostnames: [#config.gateway.hostname]
+		}
+		if (#config.gateway.hostname & [...string]) != _|_ {
+			hostnames: #config.gateway.hostname
+		}
+		parentRefs: [{
+			name:      "\(#config.metadata.name)-gateway"
+			namespace: #config.metadata.namespace
+			sectionName: "http-0"
+		}]
+		rules: [{
+			filters: [{
+				type: "RequestRedirect"
+				requestRedirect: {
+					scheme: "https"
+					statusCode: 301
+				}
+			}]
+		}]
+	}
+}
+
 #MainRoute: {
 	#config: #Config
 	apiVersion: "gateway.networking.k8s.io/v1"
@@ -19,6 +53,7 @@ package templates
 		parentRefs: [{
 			name:      "\(#config.metadata.name)-gateway"
 			namespace: #config.metadata.namespace
+			sectionName: "https-0"
 		}]
 		rules: [
 			{
