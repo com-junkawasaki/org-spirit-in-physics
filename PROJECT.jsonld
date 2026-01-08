@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2026-01-07T14:30:00+09:00",
-  "merkleRoot": "MinIO removal completed. lakeFS maintained as Git-like data versioning layer with GCS backend. git-annex integration guide documented.",
+  "updatedAt": "2026-01-07T14:45:00+09:00",
+  "merkleRoot": "lakeFS fully operational with GCS backend, Workload Identity configured, git-annex remote successfully integrated with 186 files ready for sync.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -299,7 +299,11 @@
       "月額コストの 80% 以上削減 ($100-150 → $15-25) の達成",
       "MinIO の完全削除 (StatefulSet, PVC, Service) による更なるコスト削減 ($3/月)",
       "lakeFS を Git-like データバージョニングレイヤーとして維持決定",
-      "git-annex と lakeFS S3 Gateway の統合ガイド (docs/lakefs-setup-guide.md) の作成"
+      "git-annex と lakeFS S3 Gateway の統合ガイド (docs/lakefs-setup-guide.md) の作成",
+      "lakeFS 管理者アカウントの作成完了 (admin / AKIAIOSFODNN7EXAMPLE)",
+      "Workload Identity annotation の設定による lakeFS の GCS アクセス権限付与",
+      "lakeFS リポジトリ 'spirit-in-physics' の作成完了 (gs://com-junkawasaki-sip-dataset/spirit-in-physics)",
+      "git-annex S3 remote (lakefs) の初期化完了 (exporttree モード, 186 ファイル管理対象)"
     ]
   }
 }
