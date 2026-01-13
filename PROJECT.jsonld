@@ -45,8 +45,8 @@
   "version": "2.2.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2026-01-07T14:45:00+09:00",
-  "merkleRoot": "lakeFS fully operational with GCS backend, Workload Identity configured, git-annex remote successfully integrated with 186 files ready for sync.",
+  "updatedAt": "2026-01-13T22:35:00+09:00",
+  "merkleRoot": "Terminology updated from 精神 to 霊性. Philosophical rationale (negation of individual, open system thermodynamics) added to paper.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,18 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/92",
+        "@type": "project:Narrative",
+        "act": "「精神」から「霊性」への用語変更と哲学的根拠の追記",
+        "summary": "論文の核心的用語を「精神（mind）」から「霊性（spirit）」へ全面的に変更。その根拠として、(1) 心は場・身体・他者と分離独立していない、(2) 人間は開放系の熱力学的情報場である、(3) individual（不可分の個体）の否定、という存在論的主張を論文の導入部に追加。Paraglide 日本語メッセージファイルの全26箇所を更新し、PDF を再生成した。"
+      },
+      {
+        "@id": "project:narrative/91",
+        "@type": "project:Narrative",
+        "act": "論文の日本語版 PDF 生成とドキュメント化",
+        "summary": "多言語対応（Paraglide）された論文コンテンツから日本語メッセージを抽出し、学術的な Markdown 形式で再構成。LuaLaTeX エンジンと pandoc を用いて、数式（LaTeX）や構造を維持した高品質な日本語 PDF 論文を生成した。"
+      },
       {
         "@id": "project:narrative/90",
         "@type": "project:Narrative",
@@ -161,6 +173,7 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "論文の日本語版 PDF 自動生成パイプライン (pandoc + lualatex) の確立",
       "GKE Autopilot クラスター (spirit-autopilot) の作成と Workload Identity の設定完了",
       "GKE Autopilot クラスターへの移行（コスト最適化）",
       "lakeFS のバックエンドを MinIO から GCS へ切り替え",
