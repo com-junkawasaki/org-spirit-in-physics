@@ -23,10 +23,16 @@ package templates
 			sectionName: "http-0"
 		}]
 		rules: [{
+			matches: [{
+				path: {
+					type:  "PathPrefix"
+					value: "/"
+				}
+			}]
 			filters: [{
 				type: "RequestRedirect"
 				requestRedirect: {
-					scheme: "https"
+					scheme:     "https"
 					statusCode: 301
 				}
 			}]
