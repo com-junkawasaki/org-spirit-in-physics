@@ -45,8 +45,8 @@
   "version": "2.2.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2026-01-13T22:35:00+09:00",
-  "merkleRoot": "Terminology updated from 精神 to 霊性. Philosophical rationale (negation of individual, open system thermodynamics) added to paper.",
+  "updatedAt": "2026-01-13T22:40:00+09:00",
+  "merkleRoot": "Bilingual paper PDFs (ja/en) generated with philosophical rationale: negation of individual, open system thermodynamics.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -59,6 +59,12 @@
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
     "narrative": [
+      {
+        "@id": "project:narrative/93",
+        "@type": "project:Narrative",
+        "act": "英語版論文 PDF の生成（Paraglide 翻訳ベース）",
+        "summary": "Paraglide で管理された英語翻訳（en.js）を基に、日本語版と同等の構成で英語版論文 PDF（paper_en.pdf）を生成。'Why Spirit: The Negation of the Individual' セクションを含む完全な哲学的根拠を英語で記述し、国際的な学術発表に対応可能な形式とした。"
+      },
       {
         "@id": "project:narrative/92",
         "@type": "project:Narrative",
@@ -173,6 +179,8 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "論文の日英バイリンガル PDF 生成（paper_ja.pdf / paper_en.pdf）",
+      "「精神」から「霊性」への用語変更と哲学的根拠（Individual の否定、開放系熱力学的情報場）の追記",
       "論文の日本語版 PDF 自動生成パイプライン (pandoc + lualatex) の確立",
       "GKE Autopilot クラスター (spirit-autopilot) の作成と Workload Identity の設定完了",
       "GKE Autopilot クラスターへの移行（コスト最適化）",
