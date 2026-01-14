@@ -12,7 +12,8 @@ class ThemeManager {
 			if (saved) {
 				this.current = saved;
 			}
-			this.apply();
+			// Don't call apply in constructor to avoid early rune access issues
+			// this.apply();
 
 			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 				if (this.current === 'system') {
