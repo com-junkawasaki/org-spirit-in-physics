@@ -8,9 +8,11 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod
     server: https://acme-v02.api.letsencrypt.org/directory
+    # HTTP-01 チャレンジの設定
     solvers:
     - http01:
         gatewayHTTPRoute:
           parentRefs:
           - name: infra-gateway
             namespace: spirit-in-physics
+            sectionName: http-0

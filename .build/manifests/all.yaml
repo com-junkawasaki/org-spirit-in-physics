@@ -6,6 +6,14 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  annotations:
+    configmanagement.gke.io/managed: enabled
+  name: cert-manager-cleanup
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: grpc-service
   namespace: spirit-in-physics
 ---
@@ -31,6 +39,47 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: temporal-ts
+  namespace: spirit-in-physics
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    configmanagement.gke.io/managed: enabled
+  name: cert-manager-cleanup
+  namespace: spirit-in-physics
+rules:
+- apiGroups:
+  - acme.cert-manager.io
+  resources:
+  - challenges
+  verbs:
+  - get
+  - list
+  - delete
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - httproutes
+  verbs:
+  - get
+  - list
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    configmanagement.gke.io/managed: enabled
+  name: cert-manager-cleanup
+  namespace: spirit-in-physics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cert-manager-cleanup
+subjects:
+- kind: ServiceAccount
+  name: cert-manager-cleanup
   namespace: spirit-in-physics
 ---
 apiVersion: v1
@@ -374,9 +423,64 @@ spec:
         requests:
           storage: 10Gi
 ---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  annotations:
+    configmanagement.gke.io/managed: enabled
+  name: cert-manager-cleanup-failed-challenges
+  namespace: spirit-in-physics
+spec:
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - command:
+            - /bin/sh
+            - -c
+            - "set -e\n\n# 失敗したChallengeリソースを削除（invalid, expired, または24時間以上pendingのもの）\necho
+              \"Cleaning up failed challenges...\"\nkubectl get challenges -n spirit-in-physics
+              --no-headers 2>/dev/null | while read name rest; do\n  state=$(kubectl
+              get challenge $name -n spirit-in-physics -o jsonpath='{.status.state}'
+              2>/dev/null || echo \"\")\n  age=$(kubectl get challenge $name -n spirit-in-physics
+              -o jsonpath='{.metadata.creationTimestamp}' 2>/dev/null || echo \"\")\n
+              \ \n  if [ \"$state\" = \"invalid\" ] || [ \"$state\" = \"expired\"
+              ]; then\n    echo \"Deleting failed challenge: $name (state: $state)\"\n
+              \   kubectl delete challenge $name -n spirit-in-physics --ignore-not-found=true
+              || true\n  elif [ \"$state\" = \"pending\" ] && [ -n \"$age\" ]; then\n
+              \   # 24時間以上経過しているかチェック（簡易版：作成時刻が24時間前より古い）\n    echo \"Checking pending
+              challenge: $name (created: $age)\"\n    # より正確なチェックが必要な場合は、別の方法を使用\n
+              \ fi\ndone\n\n# 失敗したChallengeに関連する古いHTTPRouteリソースを削除\necho \"Cleaning
+              up orphaned HTTPRoute resources...\"\nkubectl get httproute -n spirit-in-physics
+              -l acme.cert-manager.io/http01-solver=true --no-headers 2>/dev/null
+              | while read name rest; do\n  owner=$(kubectl get httproute $name -n
+              spirit-in-physics -o jsonpath='{.metadata.ownerReferences[?(@.kind==\"Challenge\")].name}'
+              2>/dev/null || echo \"\")\n  if [ -z \"$owner\" ]; then\n    echo \"Deleting
+              HTTPRoute without owner: $name\"\n    kubectl delete httproute $name
+              -n spirit-in-physics --ignore-not-found=true || true\n  else\n    #
+              Challengeが存在しないかチェック\n    if ! kubectl get challenge $owner -n spirit-in-physics
+              &>/dev/null; then\n      echo \"Deleting HTTPRoute with missing challenge
+              owner: $name (owner: $owner)\"\n      kubectl delete httproute $name
+              -n spirit-in-physics --ignore-not-found=true || true\n    fi\n  fi\ndone\n\necho
+              \"Cleanup completed at $(date)\"\n"
+            env:
+            - name: TZ
+              value: Asia/Tokyo
+            image: bitnami/kubectl:latest
+            name: cleanup
+          restartPolicy: OnFailure
+          serviceAccountName: cert-manager-cleanup
+  schedule: 0 3 * * *
+  successfulJobsHistoryLimit: 3
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
+  annotations:
+    cert-manager.io/issue-temporary-certificate: "true"
+    configmanagement.gke.io/managed: enabled
   name: sip-tls-cert
   namespace: spirit-in-physics
 spec:
@@ -384,9 +488,11 @@ spec:
   dnsNames:
   - spirit-in-physics.com
   - sip.junkawasaki.com
+  duration: 2160h
   issuerRef:
     kind: ClusterIssuer
     name: letsencrypt-prod
+  renewBefore: 720h
   secretName: sip-tls-cert
 ---
 apiVersion: cert-manager.io/v1
@@ -405,6 +511,7 @@ spec:
           parentRefs:
           - name: infra-gateway
             namespace: spirit-in-physics
+            sectionName: http-0
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
