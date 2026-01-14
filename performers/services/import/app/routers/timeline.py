@@ -340,6 +340,8 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
         # Insert emotions
         for emotion in emotions_array:
             try:
+                # Normalize emotion name to lowercase common names for the materialized views
+                normalized_name = normalize_emotion_name(emotion['name'])
                 await conn.execute(
                     """
                     INSERT INTO timeline_emotion_entries (
@@ -351,7 +353,7 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                     SET score = EXCLUDED.score
                     """,
                     tick_dt, participant_id, session_id,
-                    emotion['name'], emotion['score'], emotion['fileType']
+                    normalized_name, emotion['score'], emotion['fileType']
                 )
             except: continue
 

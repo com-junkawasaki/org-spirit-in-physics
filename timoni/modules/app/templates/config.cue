@@ -54,6 +54,10 @@ import (
 			cpu:    *"250m" | timoniv1.#CPUQuantity
 			memory: *"512Mi" | timoniv1.#MemoryQuantity
 		}
+		limits: {
+			cpu:    *"500m" | timoniv1.#CPUQuantity
+			memory: *"1Gi" | timoniv1.#MemoryQuantity
+		}
 	}
 
 	// The number of pods replicas.

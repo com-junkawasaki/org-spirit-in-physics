@@ -104,6 +104,16 @@ bundle: {
 				image: {
 					pullPolicy: "IfNotPresent"
 				}
+				resources: {
+					requests: {
+						cpu: "100m"
+						memory: "256Mi"
+					}
+					limits: {
+						cpu: "500m"
+						memory: "512Mi"
+					}
+				}
 				env: [
 					{name: "PUBLIC_CLERK_PUBLISHABLE_KEY", value: "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ"},
 					{name: "CLERK_SECRET_KEY", value: "sk_test_dummy"},

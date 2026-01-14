@@ -79,6 +79,16 @@ bundle: {
 					tag:        "latest"
 					pullPolicy: "Always"
 				}
+				resources: {
+					requests: {
+						cpu: "100m"
+						memory: "256Mi"
+					}
+					limits: {
+						cpu: "500m"
+						memory: "512Mi"
+					}
+				}
 			}
 		}
 	}
