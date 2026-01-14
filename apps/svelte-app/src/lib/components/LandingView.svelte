@@ -11,29 +11,6 @@
   let scrollY = $state(0);
   let innerHeight = $state(0);
 
-  let isDark = $derived(
-    theme.current === 'dark' || 
-    (theme.current === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-  );
-
-  let graphBg = $derived(isDark ? 'transparent' : '#fbfbfd');
-
-  // Researcher IDs whose data can be made public for the landing page
-  const RESEARCHER_IDS = [
-    "e41a9cd2-d803-49a8-9020-0260e55cd03e", // junkawasaki
-  ];
-
-  let nodes = $state<WordNode[]>([
-    { id: 'a1', label: 'Joy / 喜び', scale: 2.5, nodeType: 'anchor', color: '#f59e0b', initial: [200, 200, 200] },
-    { id: 'a2', label: 'Sadness / 悲しみ', scale: 2.5, nodeType: 'anchor', color: '#1f2937', initial: [-200, -200, -200] },
-    { id: 'a3', label: 'Anger / 怒り', scale: 2.5, nodeType: 'anchor', color: '#ef4444', initial: [200, -200, 0] },
-    { id: 'a4', label: 'Fear / 恐れ', scale: 2.5, nodeType: 'anchor', color: '#a78bfa', initial: [-200, 200, 0] },
-    { id: 'a5', label: 'Calmness / 冷静', scale: 2.5, nodeType: 'anchor', color: '#93c5fd', initial: [0, 0, 300] },
-  ]);
-
-  let links = $state<WordLink[]>([]);
-  let ghostPatterns = $state<any[]>([]);
-
   const anchor2d = [
     { name: 'Joy', label: 'Joy / 喜び', x: 0.15, y: 0.85, color: '#f59e0b' },
     { name: 'Sadness', label: 'Sadness / 悲しみ', x: 0.70, y: 0.45, color: '#1f2937' },
@@ -61,35 +38,75 @@
     return [radius * cx, radius * cy, radius * cz];
   }
 
+  let isDark = $derived(
+    theme.current === 'dark' || 
+    (theme.current === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  );
+
+  let graphBg = $derived(isDark ? 'transparent' : '#fbfbfd');
+
+  // Researcher IDs whose data can be made public for the landing page
+  const RESEARCHER_IDS = [
+    "e41a9cd2-d803-49a8-9020-0260e55cd03e", // Jun Kawasaki
+    "144b325f-5966-4d59-a629-f2ca421388cc", // Participant 1
+    "15592cdb-86cf-4baf-86f5-66184169ee39", // Participant 2
+  ];
+
+  let nodes = $state<WordNode[]>(anchor2d.map((a, idx) => {
+    const u = (a.x - 0.5) * Math.PI * 1.6;
+    const v = (a.y - 0.5) * Math.PI;
+    const radius = 400;
+    const cx = Math.cos(v) * Math.cos(u);
+    const cy = Math.cos(v) * Math.sin(u);
+    const cz = Math.sin(v);
+    return {
+      id: `anchor-${idx}`,
+      label: a.label,
+      scale: 8,
+      fixed: true,
+      nodeType: 'anchor',
+      initial: [radius * cx, radius * cy, radius * cz],
+      color: a.color
+    };
+  }));
+
+  let links = $state<WordLink[]>([]);
+  let ghostPatterns = $state<any[]>([]);
+
   onMount(async () => {
     try {
       console.log("Loading data for researchers:", RESEARCHER_IDS);
-      const allResponses = await Promise.all(RESEARCHER_IDS.map(id => 
-        timelineClient.getIntegratedTimeline({ participantId: id })
-      ));
-      const allVectors = await Promise.all(RESEARCHER_IDS.map(id => 
-        timelineClient.getEmotionVectors({ participantId: id })
-      ));
-      const allAnalysis = await Promise.all(RESEARCHER_IDS.map(id => 
-        timelineClient.getAnalysis({ participantId: id })
-      ));
+      
+      // Use shorter timeout or handle individual failures
+      const fetchData = async (id: string) => {
+        try {
+          const [timeline, vectors, analysis] = await Promise.all([
+            timelineClient.getIntegratedTimeline({ participantId: id }),
+            timelineClient.getEmotionVectors({ participantId: id }),
+            timelineClient.getAnalysis({ participantId: id })
+          ]);
+          return { timeline, vectors, analysis };
+        } catch (err) {
+          console.error(`Failed to fetch data for researcher ${id}:`, err);
+          return null;
+        }
+      };
+
+      const results = await Promise.all(RESEARCHER_IDS.map(fetchData));
+      const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null);
+
+      console.log(`Successfully loaded data for ${validResults.length} researchers`);
+
+      const allResponses = validResults.map(r => r.timeline);
+      const allVectors = validResults.map(r => r.vectors);
+      const allAnalysis = validResults.map(r => r.analysis);
 
       console.log("Responses received:", allResponses.map(r => r?.points?.length || 0));
       console.log("Vectors received:", allVectors.map(v => v?.vectors?.length || 0));
 
-      const shellRadius = 400;
-      const anchorNodes: WordNode[] = anchor2d.map((a, idx) => {
-        const [x, y, z] = toSphereLocal(a.x, a.y, shellRadius);
-        return {
-          id: `anchor-${idx}`,
-          label: a.label,
-          scale: 8,
-          fixed: true,
-          nodeType: 'anchor',
-          initial: [x, y, z],
-          color: a.color
-        };
-      });
+      if (validResults.length === 0) {
+        console.warn("No data received for any researcher. Check if gRPC services are running.");
+      }
 
       let mergedWordNodes: WordNode[] = [];
       let mergedLinks: WordLink[] = [];
@@ -108,11 +125,17 @@
 
         const researcherOffset = mergedWordNodes.length;
         const wordNodes: WordNode[] = response.points
-          .map(p => ({
-            ...p,
-            word: (p as any).w || (p as any).word || ''
-          }))
-          .filter((p): p is typeof p & { word: string } => !!p.word && p.word !== 'Unknown')
+          .map(p => {
+            // Buf messages have getters, spreading doesn't work well
+            const word = p.word || (p as any).w || '';
+            const reactionValue = p.reactionValue ?? (p as any).rv ?? 0;
+            return {
+              ...p,
+              word,
+              reactionValue
+            };
+          })
+          .filter((p): p is any & { word: string } => !!p.word && p.word !== 'Unknown')
           .slice(0, 150) // Higher density for Jun Kawasaki
           .map((d, i) => {
             const word = d.word;
@@ -126,15 +149,18 @@
               });
             }
             
-            const reactionValue = (d as any).rv ?? (d as any).reactionValue ?? (d as any).reaction_value ?? 0;
+            const reactionValue = d.reactionValue || 0;
             const emotionSum = Object.values(emotion).reduce((a, b) => a + b, 0);
             const nodeScale = 1.0 + (reactionValue || 0) * 3.5 + (emotionSum * 0.15);
+
+            const colors = ['#6366f1', '#a855f7', '#ec4899', '#10b981', '#f59e0b', '#3b82f6'];
+            const researcherColor = colors[researcherIdx % colors.length];
 
             return {
               id: `node-${researcherIdx}-${i}`,
               label: word,
               scale: nodeScale,
-              color: researcherIdx === 0 ? '#6366f1' : researcherIdx === 1 ? '#a855f7' : '#ec4899',
+              color: researcherColor,
               emotion: Object.keys(emotion).length > 0 ? emotion : undefined
             };
           });
@@ -144,8 +170,8 @@
         // Timeline links
         for (let i = 0; i < wordNodes.length - 1; i++) {
           mergedLinks.push({ 
-            source: anchorNodes.length + researcherOffset + i, 
-            target: anchorNodes.length + researcherOffset + i + 1, 
+            source: anchor2d.length + researcherOffset + i, 
+            target: anchor2d.length + researcherOffset + i + 1, 
             weight: 0.5 
           });
         }
@@ -153,11 +179,11 @@
         // Emotion tension links
         wordNodes.forEach((node, i) => {
           if (node.emotion) {
-            anchorNodes.forEach((anchor, ai) => {
+            anchor2d.forEach((anchor, ai) => {
               const key = anchorToKey[anchor.label];
               if (key && (node.emotion as any)[key] > 0.15) {
                 mergedLinks.push({
-                  source: anchorNodes.length + researcherOffset + i,
+                  source: anchor2d.length + researcherOffset + i,
                   target: ai,
                   weight: (node.emotion as any)[key] * 0.8,
                   mode: 'tension'
@@ -168,7 +194,7 @@
         });
       });
 
-      nodes = [...anchorNodes, ...mergedWordNodes];
+      nodes = [...nodes, ...mergedWordNodes];
       links = mergedLinks;
       ghostPatterns = mergedGhostPatterns;
     } catch (e) {
@@ -202,7 +228,7 @@
   <!-- 1. Interactive 3D Force Section -->
   <div class="interactive-graph-section">
     <div class="section-label">Neural Topology Visualization</div>
-    <h2 class="interactive-title">Explore the Soul's Manifold</h2>
+    <h2 class="interactive-title">Explore the Spirit's Manifold</h2>
     <Force3DWordGraphTypeGPU 
       {nodes} 
       {links} 
@@ -248,7 +274,7 @@
     <div id="plan" class="entry-cards-section">
       <div class="section-header">
         <h2 class="section-title">Research Protocols</h2>
-        <p class="section-subtitle">Choose your depth of immersion into the thermodynamic information of the soul.</p>
+        <p class="section-subtitle">Choose your depth of immersion into the thermodynamic information of the Spirit.</p>
       </div>
 
        <div class="entry-cards">

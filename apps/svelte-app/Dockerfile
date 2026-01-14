@@ -1,21 +1,30 @@
+# syntax=docker/dockerfile:1
 FROM node:20-alpine AS builder
 WORKDIR /app
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.26.2
+
+# Use cache mount for pnpm store to speed up install
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --no-frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --no-frozen-lockfile
+
 COPY . .
 # Force rebuild v18
 RUN echo "build-v18" > build-version.txt
 ENV POSTHOG_DISABLED=1
-RUN pnpm build
+
+# Use cache mount for svelte-kit to speed up build
+RUN --mount=type=cache,id=svelte-kit,target=/app/.svelte-kit pnpm build
 
 FROM node:20-alpine
 WORKDIR /app
 # Install python3 for env replacement
 RUN apk add --no-cache python3
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.26.2
+
+# Use cache mount for pnpm store in prod install too
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --no-frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --no-frozen-lockfile
+
 COPY --from=builder /app/build /app/build
 COPY replace-env.py /app/replace-env.py
 

@@ -323,7 +323,7 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                 reaction_value, reaction_time, has_response,
                 created_at
             )
-            VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, NOW())
+            VALUES ($1, $2, $3::uuid, $4, $5, $6, $7, $8, NOW())
             ON CONFLICT (time, participant_id, session_id) DO UPDATE SET
                 word = EXCLUDED.word,
                 event_type = EXCLUDED.event_type,
@@ -346,7 +346,7 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                         timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
                         emotion_name, score, file_type
                     )
-                    VALUES ($1, $2::uuid, $3::uuid, $4::emotion_name_enum, $5, $6::emotion_file_type)
+                    VALUES ($1, $2, $3::uuid, $4::emotion_name_enum, $5, $6::emotion_file_type)
                     ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, emotion_name, file_type) DO UPDATE
                     SET score = EXCLUDED.score
                     """,
@@ -363,7 +363,7 @@ async def process_session_timeline(conn, participant_id: str, session_id: str,
                     timeline_point_time, timeline_point_participant_id, timeline_point_session_id,
                     measurement_type, value, unit
                 )
-                VALUES ($1, $2::uuid, $3::uuid, $4::measurement_type_enum, $5, 'unknown'::measurement_unit_enum)
+                VALUES ($1, $2, $3::uuid, $4::measurement_type_enum, $5, 'unknown'::measurement_unit_enum)
                 ON CONFLICT (timeline_point_time, timeline_point_participant_id, timeline_point_session_id, measurement_type) DO UPDATE
                 SET value = EXCLUDED.value
                 """,

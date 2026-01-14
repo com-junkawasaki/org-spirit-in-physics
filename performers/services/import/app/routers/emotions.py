@@ -252,7 +252,7 @@ async def import_json_predictions(conn, session_id: str, participant_id: str, da
                                     time, session_id, participant_id, record_id,
                                     begin_time, created_at
                                 )
-                                VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, NOW())
+                                VALUES (NOW(), $1::uuid, $2, $3, $4, NOW())
                                 ON CONFLICT DO NOTHING
                                 RETURNING id
                                 """,
@@ -265,7 +265,7 @@ async def import_json_predictions(conn, session_id: str, participant_id: str, da
                                     time, session_id, participant_id, record_id,
                                     begin_time, end_time, created_at
                                 )
-                                VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5, NOW())
+                                VALUES (NOW(), $1::uuid, $2, $3, $4, $5, NOW())
                                 ON CONFLICT DO NOTHING
                                 RETURNING id
                                 """,
@@ -336,7 +336,7 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
                         time, session_id, participant_id, record_id,
                         begin_time, end_time, created_at
                     )
-                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5, NOW())
+                    VALUES (NOW(), $1::uuid, $2, $3, $4, $5, NOW())
                     ON CONFLICT DO NOTHING
                     RETURNING id
                     """,
@@ -368,7 +368,7 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
                         time, session_id, participant_id, record_id,
                         begin_time, created_at
                     )
-                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, NOW())
+                    VALUES (NOW(), $1::uuid, $2, $3, $4, NOW())
                     ON CONFLICT DO NOTHING
                     RETURNING id
                     """,
@@ -400,7 +400,7 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
                         time, session_id, participant_id, record_id,
                         begin_time, end_time, created_at
                     )
-                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, $5, NOW())
+                    VALUES (NOW(), $1::uuid, $2, $3, $4, $5, NOW())
                     ON CONFLICT DO NOTHING
                     RETURNING id
                     """,
@@ -432,7 +432,7 @@ async def import_csv_file(conn, session_id: str, participant_id: str, csv_path: 
                         time, session_id, participant_id, record_id,
                         begin_time, created_at
                     )
-                    VALUES (NOW(), $1::uuid, $2::uuid, $3, $4, NOW())
+                    VALUES (NOW(), $1::uuid, $2, $3, $4, NOW())
                     ON CONFLICT DO NOTHING
                     RETURNING id
                     """,

@@ -321,7 +321,7 @@ class ImportActivities:
                                     time, participant_id, session_id,
                                     ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8
                                 )
-                                VALUES ($1, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11)
+                                VALUES ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11)
                                 ON CONFLICT (time, participant_id, session_id) DO NOTHING
                                 """,
                                 row_time, participant_id, session_id,

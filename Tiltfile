@@ -20,15 +20,40 @@ local_resource(
 )
 k8s_yaml(local(timoni_cmd))
 
-# Portal (Svelte App) - Fast rebuild with live reload
+# Portal (Svelte App) - Host-side build for maximum efficiency
+# This builds the app on your machine, which is much faster than inside Docker.
+local_resource(
+  'svelte-app-build',
+  'cd apps/svelte-app && pnpm build',
+  deps=[
+    './apps/svelte-app/src',
+    './apps/svelte-app/static',
+    './apps/svelte-app/package.json',
+    './apps/svelte-app/pnpm-lock.yaml',
+    './apps/svelte-app/svelte.config.js',
+    './apps/svelte-app/vite.config.ts'
+  ],
+  labels=['frontend']
+)
+
 docker_build(
   'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app',
   './apps/svelte-app',
   dockerfile='./apps/svelte-app/Dockerfile',
+  ignore=[
+    '**/node_modules',
+    '**/.svelte-kit',
+    # We ignore the build folder here because we sync it via live_update
+    # and we don't want every local build to trigger a full image rebuild.
+    './build'
+  ],
   live_update=[
-    sync('./apps/svelte-app/src', '/app/src'),
-    sync('./apps/svelte-app/static', '/app/static'),
-    run('npm run build', trigger=['./apps/svelte-app/src']),
+    # Sync the build output from host to container
+    sync('./build', '/app/build'),
+    # Also sync static files just in case
+    sync('./static', '/app/static'),
+    # NOTE: We removed 'run npm run build' from here.
+    # The host-side 'svelte-app-build' resource handles the build.
   ]
 )
 
@@ -52,6 +77,7 @@ docker_build_with_restart(
   entrypoint='python main.py',
   live_update=[
     sync('./performers/services/import', '/app'),
+    sync('./dataset', '/dataset'),
     run('pip install -e .', trigger=['./performers/services/import/setup.py']),
   ]
 )
