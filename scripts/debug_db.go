@@ -33,5 +33,10 @@ func main() {
 		log.Fatalf("Failed to query participants: %v", err)
 	}
 	fmt.Printf("Total participants: %d\n", count)
-}
 
+	err = pool.QueryRow(context.Background(), "SELECT count(*) FROM participants WHERE is_public = true").Scan(&count)
+	if err != nil {
+		log.Fatalf("Failed to query public participants: %v", err)
+	}
+	fmt.Printf("Total public participants: %d\n", count)
+}

@@ -1,44 +1,19 @@
 version: '3'
 
 tasks:
-  build:
-    desc: Build manifests with timoni
+  apply-local:
+    desc: Apply manifests to local cluster
     cmds:
-    prefix: [ "timoni" ]
-    - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
-
-  build-gke:
-    desc: Build manifests for GKE with timoni
-    cmds:
-    - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-gke.cue
+      - kubectl apply -f manifests/overlays/local/all.yaml
 
   push-manifest:
-    desc: Push rendered manifests to Artifact Registry for Config Sync
+    desc: Push static manifests to Artifact Registry for Config Sync
     cmds:
-    - mkdir -p .build/manifests
-    - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-gke.cue -o .build/manifests
-    - gcloud artifacts oci upload --source=.build/manifests --image=asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/manifests:latest
-
-  apply:
-    desc: Apply manifests to local cluster with timoni
-    cmds:
-      - timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
-
-  dev:
-    desc: Watch files and auto-apply with timoni
-    cmds:
-      - |
-        watchexec -e cue,go,ts,svelte -- \
-          "timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue"
-
-  sync-local:
-    desc: Sync local changes to ArgoCD
-    cmds:
-      - argocd app sync spirit-in-physics --local .
+      - gcloud artifacts oci upload --source=manifests/overlays/gke --image=asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/manifests:latest
 
   nix-build-portal:
-    desc: Build portal image with Docker and apply with Timoni
+    desc: Build portal image with Docker and apply locally
     cmds:
       - docker build -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest ./apps/svelte-app
-      - task: apply
+      - task: apply-local
 

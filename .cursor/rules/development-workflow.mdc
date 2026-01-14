@@ -1,36 +1,35 @@
 ---
-description: Development workflow using Timoni and Taskfile for local development and verification.
-globs: ["**/*.cue", "Taskfile.yml", "timoni/**/*"]
+description: Development workflow using static manifests and Taskfile for local development and GKE Config Sync.
+globs: ["manifests/**/*", "Taskfile.yml"]
 ---
 
 # Development Workflow
 
-This project uses Timoni and Taskfile for local development to provide a fast feedback loop (Inner Loop), while GKE serves as the production environment (Outer Loop).
+This project uses static Kubernetes manifests and Taskfile for local development and GKE Config Sync for production GitOps.
 
 ## Key Tools
-- **Timoni CLI**: Main tool for managing Kubernetes resources via CUE.
+- **kubectl**: Main tool for managing Kubernetes resources.
 - **Tilt**: Fast local Kubernetes development with live updates.
-- **ArgoCD**: GitOps continuous delivery for production.
-- **Taskfile**: Orchestrates development tasks (replaces Makefile).
-- **kubectl**: Kubernetes CLI for cluster operations.
+- **Config Sync**: GKE native GitOps controller.
+- **Taskfile**: Orchestrates development tasks.
 
 ## Environments
 
 ### Local Development (OrbStack)
 - **Context**: `orbstack`
-- **Runtime**: `timoni/runtime-orbstack.cue`
+- **Manifests**: `manifests/overlays/local/all.yaml`
 - **Access**: [http://localhost/](http://localhost/)
 
 ### Production (GKE)
 - **Cluster**: `spirit-autopilot` (GKE Autopilot, asia-northeast1)
 - **Context**: `gke_com-junkawasaki-sip_asia-northeast1_spirit-autopilot`
-- **Runtime**: `timoni/runtime-gke.cue`
+- **Manifests**: `manifests/overlays/gke/all.yaml`
 - **Domain**: [https://spirit-in-physics.com](https://spirit-in-physics.com)
 - **Static IP**: `34.160.140.248` (sip-static-ip)
 
 ## Inner Loop (Local Development)
 
-### Option 1: Tilt (推奨 - 最速)
+### Tilt (推奨 - 最速)
 
 Tilt を使用した高速開発:
 
@@ -50,185 +49,48 @@ Tilt を使用した高速開発:
    - Portal: http://localhost:3000
    - Temporal UI: http://localhost:8088
    - MinIO Console: http://localhost:9001
-   - LakeFS: http://localhost:8000
-
-### Option 2: Taskfile + Timoni (手動)
-
-手動で変更を適用:
-
-1. **Switch to Local Context**:
-   ```bash
-   kubectl config use-context orbstack
-   ```
-
-2. **Watch and Apply**:
-   ```bash
-   task dev
-   ```
-   This runs `watchexec` to automatically apply changes using `timoni`.
-
-3. **Build and Load** (Nix):
-   ```bash
-   task nix-build-portal
-   ```
 
 ## Outer Loop (Production Deployment to GKE with GitOps)
 
-### GitOps with ArgoCD
+### GitOps with Config Sync
 
-本番環境は ArgoCD による GitOps で管理されています。
-
-**ArgoCD UI**: `http://35.243.108.4`
-- **ユーザー名**: `admin`
-- **パスワード**: `JfUcAuk3te2kQ0Re` (初回ログイン後に変更推奨)
+本番環境は GKE Config Sync による GitOps で管理されています。
 
 ### 通常のデプロイフロー (GitOps)
 
-1. **コードを変更してプッシュ**:
+1. **マニフェストをプッシュ**:
    ```bash
-   git add .
-   git commit -m "Update configuration"
-   git push origin main
+   task push-manifest
    ```
+   これにより、`manifests/overlays/gke/` の内容が Artifact Registry に OCI イメージとしてプッシュされます。
 
-2. **ArgoCD が自動的に同期** (約3分以内):
-   - ArgoCD が Git リポジトリの変更を検知
+2. **Config Sync が自動的に同期**:
+   - GKE クラスター内の RootSync が OCI イメージの更新を検知
    - 自動的にクラスターに適用
-   - UI で進捗確認可能
 
 3. **確認**:
    ```bash
-   # Application の状態を確認
-   kubectl get application spirit-in-physics -n argocd
-   
-   # または ArgoCD UI で確認
+   kubectl get rootsync root-sync -n config-management-system
    ```
 
-### 手動デプロイ (緊急時のみ)
-
-GitOps を経由せず、直接デプロイする場合:
+### 手動適用 (緊急時のみ)
 
 1. **Switch to GKE Context**:
    ```bash
    kubectl config use-context gke_com-junkawasaki-sip_asia-northeast1_spirit-autopilot
    ```
 
-2. **Build and Push Images** (if needed):
+2. **Apply to GKE**:
    ```bash
-   docker build -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest ./apps/svelte-app
-   docker push asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
+   kubectl apply -f manifests/overlays/gke/all.yaml
    ```
-
-3. **Apply to GKE**:
-   ```bash
-   timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-gke.cue
-   ```
-   
-   ⚠️ **注意**: 手動デプロイ後、ArgoCD が自動修正する可能性があります
-
-4. **Verify Deployment**:
-   ```bash
-   kubectl get pods -n spirit-in-physics
-   kubectl get gateway -n spirit-in-physics
-   kubectl get certificate -n spirit-in-physics
-   ```
-
-### ArgoCD の管理
-
-**手動同期をトリガー**:
-```bash
-kubectl patch application spirit-in-physics -n argocd \
-  --type merge -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{}}}'
-```
-
-**Application の状態確認**:
-```bash
-kubectl get application spirit-in-physics -n argocd -o yaml
-```
-
-**ログ確認**:
-```bash
-# Application Controller のログ
-kubectl logs -n argocd statefulset/argocd-application-controller
-
-# Repo Server のログ
-kubectl logs -n argocd deployment/argocd-repo-server
-```
-
-### Domain and DNS Management
-
-**Domain**: `spirit-in-physics.com` (Google Cloud Domains)
-**DNS**: Cloud DNS (`spirit-in-physics-zone`)
-
-To update DNS records:
-```bash
-gcloud dns record-sets update spirit-in-physics.com. \
-  --zone=spirit-in-physics-zone \
-  --type=A \
-  --ttl=300 \
-  --rrdatas=<NEW_IP> \
-  --project=com-junkawasaki-sip
-```
-
-To verify DNS propagation:
-```bash
-dig spirit-in-physics.com +short
-dig @8.8.8.8 spirit-in-physics.com +short
-```
-
-### SSL Certificate Management
-
-Certificates are managed by cert-manager with Let's Encrypt:
-- **Issuer**: `letsencrypt-prod` (ClusterIssuer)
-- **Certificate**: `sip-tls-cert`
-- **Domains**: `spirit-in-physics.com`, `www.spirit-in-physics.com`
-
-To check certificate status:
-```bash
-kubectl get certificate -n spirit-in-physics
-kubectl describe certificate sip-tls-cert -n spirit-in-physics
-```
-
-To force certificate renewal:
-```bash
-kubectl delete certificate sip-tls-cert -n spirit-in-physics
-kubectl delete secret sip-tls-cert -n spirit-in-physics
-timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-gke.cue
-```
 
 ## Best Practices
 
 ### Development Workflow
 - **Always Check Context**: Use `kubectl config current-context` before operations.
-- **Local First**: Test changes locally on OrbStack before pushing to Git.
-- **Pre-commit Verification**: Build manifests locally before committing:
-  ```bash
-  # Local
-  timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
-  
-  # GKE (dry-run)
-  timoni bundle build -f timoni/bundle.cue -r timoni/runtime-gke.cue
-  ```
+- **Local First**: Test changes locally on OrbStack before pushing.
 
 ### GitOps Workflow
-- **Use Git as Source of Truth**: All changes should go through Git → ArgoCD → Cluster.
-- **Avoid Manual Changes**: ArgoCD will revert manual changes (self-heal enabled).
-- **Review Before Push**: Changes are automatically deployed to production.
-- **Monitor ArgoCD UI**: Check sync status after pushing changes.
-
-### Infrastructure Management
-- **DNS Changes**: Allow 5-10 minutes for DNS propagation after updates.
-- **Static IP**: Never delete `sip-static-ip` reservation without updating DNS first.
-- **Certificates**: Let cert-manager handle SSL certificates automatically.
-
-### Emergency Procedures
-- **Rollback**: Revert Git commit and ArgoCD will auto-sync.
-- **Manual Override**: If needed, disable auto-sync temporarily:
-  ```bash
-  kubectl patch application spirit-in-physics -n argocd \
-    --type merge -p '{"spec":{"syncPolicy":{"automated":null}}}'
-  ```
-- **Re-enable Auto-sync**:
-  ```bash
-  kubectl apply -f argocd/application.yaml
-  ```
+- **OCI as Source of Truth**: The OCI image in Artifact Registry is what gets deployed.
+- **Monitor RootSync**: Check the status of synchronization via Google Cloud Console or kubectl.

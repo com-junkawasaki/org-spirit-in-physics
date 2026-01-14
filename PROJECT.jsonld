@@ -179,6 +179,7 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "Timoni および ArgoCD を除去し、GKE Config Sync (OCI ベース) による GitOps へ完全移行",
       "ArgoCD から GKE Config Sync への GitOps 移行（RootSync, Taskfile 実装済み）",
       "論文の日英バイリンガル PDF 生成（paper_ja.pdf / paper_en.pdf）",
       "「精神」から「霊性」への用語変更と哲学的根拠（Individual の否定、開放系熱力学的情報場）の追記",
