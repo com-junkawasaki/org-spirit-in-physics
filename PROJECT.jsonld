@@ -46,7 +46,7 @@
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
   "updatedAt": "2026-01-14T00:00:00+09:00",
-  "merkleRoot": "Bilingual paper PDFs (ja/en) generated with philosophical rationale: negation of individual, open system thermodynamics.",
+  "merkleRoot": "Bilingual paper PDFs (ja/en) generated with philosophical rationale. Added presentation records for CNS 2025 and SfN 2025.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -58,6 +58,19 @@
       "lifespan": "享年100歳",
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
+    "act": [
+      {
+        "@id": "project:narrative/98",
+        "@type": "project:Narrative",
+        "act": "SfN 2025 でのポスター発表実績の追加",
+        "summary": "北米神経科学学会 (SfN 2025) におけるポスター発表 'PSTR197.20 / YY7 - Spirit in Physics: An Information-Physics Model for Quantifying Self-Expansion' の情報を論文に追加。"
+      },
+      {
+        "@id": "project:narrative/97",
+        "@type": "project:Narrative",
+        "act": "CNS 2025 でのポスター発表実績の追加",
+        "summary": "第32回北米認知神経科学会 (CNS 2025) におけるポスター発表 'F35 - Spirit in Physics: Structuring and Quantifying Human Spirit Using the Vector Space' の情報を論文に追加。"
+      },
       {
         "@id": "project:narrative/96",
         "@type": "project:Narrative",
@@ -196,6 +209,7 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "CNS 2025 および SfN 2025 の学会発表実績を論文ページに追加",
       "Timoni および Terraform を廃止し、Config Connector (KCC) による Kubernetes ネイティブなインフラ管理へ移行",
       "Config Connector による Google Cloud Storage (GCS) バケットおよび IAM 権限の宣言的管理",
       "Kustomize による Kubernetes マニフェスト管理への移行（base/ overlays/ 構成）",
