@@ -5,6 +5,7 @@ metadata:
   namespace: spirit-in-physics
 spec:
   hostnames:
+  - spirit-in-physics.com
   - sip.junkawasaki.com
   parentRefs:
   - name: infra-gateway

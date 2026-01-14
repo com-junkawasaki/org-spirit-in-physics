@@ -9,14 +9,14 @@ spec:
   - allowedRoutes:
       namespaces:
         from: Same
-    hostname: sip.junkawasaki.com
+    hostname: spirit-in-physics.com
     name: http-0
     port: 80
     protocol: HTTP
   - allowedRoutes:
       namespaces:
         from: Same
-    hostname: sip.junkawasaki.com
+    hostname: spirit-in-physics.com
     name: https-0
     port: 443
     protocol: HTTPS

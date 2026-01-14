@@ -4,8 +4,9 @@ metadata:
   name: sip-tls-cert
   namespace: spirit-in-physics
 spec:
-  commonName: sip.junkawasaki.com
+  commonName: spirit-in-physics.com
   dnsNames:
+  - spirit-in-physics.com
   - sip.junkawasaki.com
   issuerRef:
     kind: ClusterIssuer
