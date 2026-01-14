@@ -210,7 +210,7 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
     <span class="badge">{m.viz_experimental_badge()}</span>
   </div>
   <div class="viz-body">
-    <p>{@html m.viz_visualization_desc({ code1: '<code>Force3DWordGraphTypeGPU</code>', code2: '<code>TimelineVisualization</code>' })}</p>
+    <p>{@html m.viz_visualization_desc({ code1: '<code>Force3DThrelte</code>', code2: '<code>TimelineVisualization</code>' })}</p>
   </div>
 </div>
 

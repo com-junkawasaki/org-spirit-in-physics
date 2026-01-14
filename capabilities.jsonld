@@ -50,7 +50,7 @@
       ],
       "resources": [
         "TimelineChartコンポーネント",
-        "Force3DWordGraphTypeGPUコンポーネント",
+        "Force3DThrelteコンポーネント",
         "D3.js可視化ライブラリ",
         "Three.js 3D可視化ライブラリ"
       ],

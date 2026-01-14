@@ -126,7 +126,7 @@
   let activeTab: 'timeline' | 'force3d' | 'words' | 'distance' = $state('timeline');
 
   $effect(() => {
-    if (forceMode === 'force-3d-typegpu') {
+    if (forceMode === 'force-3d-threlte') {
       activeTab = 'force3d';
     } else {
       activeTab = 'timeline';

@@ -269,7 +269,7 @@
       "Storage Service (gRPC) との連携実装",
       "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装 (Go/Python 両対応)",
       "Next.js 版 researcher アプリの完全廃止と SvelteKit への統合",
-      "3D Force 可視化 (Force3DWordGraphTypeGPU) の Svelte 実装",
+      "3D Force 可視化 (Force3DThrelte) の Svelte 実装",
       "KPI カード、時系列チャート (TimelineChart)、構造分析パネル Svelte 実装",
       "SvelteKit への /researcher/participants/[id] ルート追加と ConnectRPC 連携",
       "Go 版 gRPC サービスの GetTimeline 処理を Temporal Workflow/Activity に移行",
