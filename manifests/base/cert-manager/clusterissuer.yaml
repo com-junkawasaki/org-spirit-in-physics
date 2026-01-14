@@ -13,6 +13,8 @@ spec:
     - http01:
         gatewayHTTPRoute:
           parentRefs:
-          - name: infra-gateway
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: infra-gateway
             namespace: spirit-in-physics
             sectionName: http-0
