@@ -30,7 +30,7 @@
           participantId="mock-participant" 
           width={runtimeConfig.IS_CAPACITOR ? 1200 : 1600} 
           height={runtimeConfig.IS_CAPACITOR ? 600 : 900}
-          forceMode="force-3d-typegpu"
+          forceMode="force-3d-threlte"
           useMockData={true}
         />
       </div>

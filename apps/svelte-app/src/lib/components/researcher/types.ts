@@ -101,7 +101,7 @@ export interface TimeRange {
   end: number
 }
 
-export type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d-typegpu'
+export type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d-typegpu' | 'force-3d-threlte'
 
 // Word aggregates data types (for props injection)
 export interface WordAggregateData {
