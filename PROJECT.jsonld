@@ -58,7 +58,12 @@
       "lifespan": "享年100歳",
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
-    "narrative": [
+      {
+        "@id": "project:narrative/96",
+        "@type": "project:Narrative",
+        "act": "Nix ビルド構成の除去とビルドプロセスの簡素化",
+        "summary": "プロジェクトで使用していなかった Nix 関連の構成（flake.nix, nix/ ディレクトリ）を完全に除去。Docker および標準的なパッケージマネージャー（pnpm, go mod等）によるビルドプロセスに一本化し、リポジトリの複雑性を低減した。"
+      },
       {
         "@id": "project:narrative/95",
         "@type": "project:Narrative",
@@ -280,10 +285,6 @@
       "特定の被験者 (e41a9cd2-d803-49a8-9020-0260e55cd03e) の分析可視化 BDD シナリオのパス",
       "Timoni app/infra モジュールの Nginx から Envoy への移行完了",
       "Timoni モジュールのデフォルト設定（ConfigMap, Deployment, README）を Envoy ベースに刷新",
-      "Nix Flake による決定論的ビルド環境の導入 (flake.nix, devenv)",
-      "gRPC サービスの Nix 派生 (buildGoModule) と OCI イメージ生成の自動化",
-      "Svelte アプリの Nix 派生 (pnpm.fetchDeps) による再現可能なビルドの実現",
-      "OCI イメージのタグを Nix ハッシュに基づいた管理へ移行する基盤の確立",
       "Argo CD の導入による GitOps 管理体制の構築と UI 監視の有効化 (Admin Password: C9DEyBLip4BhN7V1)",
       "研究者ポータルの SvelteKit パスベースルーティングの完全移行 (/researcher/participants, /researcher/sessions, /researcher/settings)",
       "ゲートウェイルーティングの簡素化。全サービスを単一の HTTPRoute (infra-main-route) に集約し、パスベースの振り分けを統一管理",

@@ -13,9 +13,3 @@ tasks:
       - kubectl kustomize manifests/overlays/gke > .build/manifests/all.yaml
       - gcloud artifacts oci upload --source=.build/manifests --image=asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/manifests:latest
 
-  nix-build-portal:
-    desc: Build portal image with Docker and apply locally
-    cmds:
-      - docker build -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest ./apps/svelte-app
-      - task: apply-local
-
