@@ -16,7 +16,6 @@ resources:
   - services/grpc-service.yaml
   - services/import-service.yaml
   - services/import-worker.yaml
-  - services/infra-minio.yaml
   - services/infra-temporal.yaml
   - services/infra-timescaledb.yaml
   - services/portal.yaml
@@ -27,5 +26,4 @@ resources:
   - deployments/infra-temporal.yaml
   - deployments/portal.yaml
   - deployments/temporal-ts.yaml
-  - statefulsets/infra-minio.yaml
   - statefulsets/infra-timescaledb.yaml

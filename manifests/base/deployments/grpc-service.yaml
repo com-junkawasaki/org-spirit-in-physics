@@ -19,6 +19,12 @@ spec:
           value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
         - name: TEMPORAL_ADDRESS
           value: infra-temporal:7233
+        - name: STORAGE_ENDPOINT
+          value: storage.googleapis.com
+        - name: STORAGE_BUCKET
+          value: spirit-in-physics
+        - name: STORAGE_USE_SSL
+          value: "true"
         image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service:latest
         name: grpc-service
         ports:

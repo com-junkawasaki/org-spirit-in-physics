@@ -25,7 +25,7 @@ func NewStorageHandler() *StorageHandler {
 	if endpoint == "" {
 		endpoint = os.Getenv("MINIO_ENDPOINT")
 		if endpoint == "" {
-			endpoint = "infra-minio:9000"
+			endpoint = "storage.googleapis.com"
 		}
 	}
 
@@ -33,7 +33,7 @@ func NewStorageHandler() *StorageHandler {
 	if accessKey == "" {
 		accessKey = os.Getenv("MINIO_ROOT_USER")
 		if accessKey == "" {
-			accessKey = "minioadmin"
+			accessKey = "" // GCS might use different auth, but HMAC uses this
 		}
 	}
 
@@ -41,11 +41,11 @@ func NewStorageHandler() *StorageHandler {
 	if secretKey == "" {
 		secretKey = os.Getenv("MINIO_ROOT_PASSWORD")
 		if secretKey == "" {
-			secretKey = "minioadmin"
+			secretKey = ""
 		}
 	}
 
-	useSSL := os.Getenv("STORAGE_USE_SSL") == "true"
+	useSSL := os.Getenv("STORAGE_USE_SSL") != "false" // Default to true for GCS
 	repository := os.Getenv("STORAGE_BUCKET")
 	if repository == "" {
 		repository = "spirit-in-physics"
@@ -103,7 +103,13 @@ func (h *StorageHandler) UploadArtifact(
 	}
 
 	// Generate a URL (this depends on the storage provider and network setup)
-	publicURL := fmt.Sprintf("http://spirit.localhost/storage/%s/%s", h.repository, info.Key)
+	var publicURL string
+	if h.repository == "spirit-in-physics" && os.Getenv("STORAGE_ENDPOINT") == "" {
+		// Default to GCS public URL if using defaults
+		publicURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", h.repository, info.Key)
+	} else {
+		publicURL = fmt.Sprintf("http://spirit.localhost/storage/%s/%s", h.repository, info.Key)
+	}
 
 	return connect.NewResponse(&storagev1.UploadArtifactResponse{
 		PublicUrl: publicURL,

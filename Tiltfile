@@ -113,12 +113,6 @@ k8s_resource(
 )
 
 k8s_resource(
-  'infra-minio',
-  port_forwards=['9000:9000', '9001:9001'],
-  labels=['infrastructure']
-)
-
-k8s_resource(
   'infra-timescaledb',
   port_forwards=['5432:5432'],
   labels=['infrastructure']
@@ -144,7 +138,6 @@ print("""
 🌐 Access your services:
   - Portal: http://localhost:3000
   - Temporal UI: http://localhost:8088
-  - MinIO Console: http://localhost:9001
 
 📊 Tilt UI: http://localhost:10350
 
