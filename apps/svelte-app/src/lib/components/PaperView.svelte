@@ -42,6 +42,7 @@
       { id: 'results', title: m.results(), level: 1 },
       { id: 'discussion', title: m.discussion(), level: 1 },
       { id: 'conclusion', title: m.conclusion(), level: 1 },
+      { id: 'presentations', title: m.presentations(), level: 1 },
       { id: 'references', title: m.references(), level: 1 }
     ];
   });

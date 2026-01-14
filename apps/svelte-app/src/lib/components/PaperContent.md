@@ -231,6 +231,12 @@ The energy potential of an edge connecting two informational vertices ($w_I, w_O
 <h2 id="conclusion">{m.conclusion()}</h2>
 
 {m.conclusion_text()}
+<h2 id="presentations">{m.presentations()}</h2>
+
+<div class="presentation-item">
+  <h4 class="mb-1">{m.cns_2025_title()}</h4>
+  <p class="text-sm text-gray-600 dark:text-gray-400">{m.cns_2025_details()}</p>
+</div>
 
 <h2 id="references">{m.references()}</h2>
 
