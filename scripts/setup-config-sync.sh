@@ -12,12 +12,13 @@ gcloud container fleet memberships register ${CLUSTER_NAME}-membership \
     --gke-cluster=${REGION}/${CLUSTER_NAME} \
     --enable-workload-identity || true
 
-gcloud container fleet config-management enable
+gcloud beta container fleet config-management enable --project=${PROJECT_ID}
 
-gcloud container fleet config-management apply \
+gcloud beta container fleet config-management apply \
     --membership=${CLUSTER_NAME}-membership \
     --config-sync-version=1.17.0 \
-    --config-sync-source-format=unstructured
+    --config-sync-source-format=unstructured \
+    --project=${PROJECT_ID} --location=global
 
 # IAM Setup
 if ! gcloud iam service-accounts describe ${GSA_EMAIL} > /dev/null 2>&1; then
