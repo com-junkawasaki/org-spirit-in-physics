@@ -115,7 +115,7 @@ Tilt UI でリソースを整理:
 
 - **frontend**: Portal
 - **backend**: gRPC, Import Service
-- **infrastructure**: Temporal, LakeFS, MinIO, TimescaleDB
+- **infrastructure**: Temporal, MinIO, TimescaleDB
 - **argocd**: ArgoCD Server (GKE mode)
 - **tools**: カスタムコマンド
 

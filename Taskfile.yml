@@ -4,7 +4,20 @@ tasks:
   build:
     desc: Build manifests with timoni
     cmds:
-      - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+    prefix: [ "timoni" ]
+    - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+
+  build-gke:
+    desc: Build manifests for GKE with timoni
+    cmds:
+    - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-gke.cue
+
+  push-manifest:
+    desc: Push rendered manifests to Artifact Registry for Config Sync
+    cmds:
+    - mkdir -p .build/manifests
+    - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-gke.cue -o .build/manifests
+    - gcloud artifacts oci upload --source=.build/manifests --image=asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/manifests:latest
 
   apply:
     desc: Apply manifests to local cluster with timoni

@@ -9,26 +9,6 @@ metadata:
     app.kubernetes.io/managed-by: timoni
     app.kubernetes.io/name: infra
     app.kubernetes.io/version: 0.0.0-devel
-  name: infra-lakefs
-  namespace: spirit-in-physics
-spec:
-  ports:
-  - name: http
-    port: 8000
-    protocol: TCP
-    targetPort: 8000
-  selector:
-    app: lakefs
-    app.kubernetes.io/name: infra
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations: {}
-  labels:
-    app.kubernetes.io/managed-by: timoni
-    app.kubernetes.io/name: infra
-    app.kubernetes.io/version: 0.0.0-devel
   name: infra-minio
   namespace: spirit-in-physics
 spec:
@@ -97,52 +77,6 @@ metadata:
     app.kubernetes.io/managed-by: timoni
     app.kubernetes.io/name: infra
     app.kubernetes.io/version: 0.0.0-devel
-  name: infra-lakefs
-  namespace: spirit-in-physics
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: lakefs
-      app.kubernetes.io/name: infra
-  template:
-    metadata:
-      labels:
-        app: lakefs
-        app.kubernetes.io/name: infra
-    spec:
-      containers:
-      - env:
-        - name: LAKEFS_DATABASE_TYPE
-          value: postgres
-        - name: LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING
-          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics?sslmode=disable
-        - name: LAKEFS_AUTH_ENCRYPT_SECRET_KEY
-          value: spirit-in-physics-lakefs-secret-key-2025
-        - name: LAKEFS_BLOCKSTORE_TYPE
-          value: s3
-        - name: LAKEFS_BLOCKSTORE_S3_ENDPOINT
-          value: http://infra-minio:9000
-        - name: LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE
-          value: "true"
-        - name: LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
-          value: minioadmin
-        - name: LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
-          value: minioadmin
-        image: treeverse/lakefs:latest
-        name: lakefs
-        ports:
-        - containerPort: 8000
-          name: http
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  annotations: {}
-  labels:
-    app.kubernetes.io/managed-by: timoni
-    app.kubernetes.io/name: infra
-    app.kubernetes.io/version: 0.0.0-devel
   name: infra-temporal
   namespace: spirit-in-physics
 spec:
@@ -180,6 +114,10 @@ spec:
           name: grpc
         - containerPort: 8088
           name: ui
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -222,6 +160,10 @@ spec:
           name: api
         - containerPort: 9001
           name: console
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
         volumeMounts:
         - mountPath: /data
           name: data
@@ -234,6 +176,7 @@ spec:
       resources:
         requests:
           storage: 10Gi
+      storageClassName: standard
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -278,8 +221,8 @@ spec:
           name: postgres
         resources:
           requests:
-            cpu: 100m
-            memory: 256Mi
+            cpu: 250m
+            memory: 512Mi
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: data
@@ -304,52 +247,7 @@ spec:
       resources:
         requests:
           storage: 10Gi
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  annotations:
-    helm.sh/hook: post-install,post-upgrade
-  labels:
-    app.kubernetes.io/managed-by: timoni
-    app.kubernetes.io/name: infra
-    app.kubernetes.io/version: 0.0.0-devel
-  name: infra-lakefs-setup
-  namespace: spirit-in-physics
-spec:
-  template:
-    spec:
-      containers:
-      - args:
-        - |-
-          set -e
-          LAKEFS_URL="http://infra-lakefs:8000"
-
-          echo "Waiting for lakeFS to be ready at $LAKEFS_URL..."
-          while ! curl -s "$LAKEFS_URL/_health" | grep -q "alive"; do
-            echo "LakeFS not ready yet..."
-            sleep 2
-          done
-          echo "LakeFS is ready!"
-
-          echo "Checking if lakeFS is already setup..."
-          if curl -s "$LAKEFS_URL/setup_admin" | grep -q "already setup"; then
-            echo "lakeFS is already setup."
-          else
-            echo "Setting up lakeFS admin..."
-            curl -X POST "$LAKEFS_URL/setup_admin" -H "Content-Type: application/json" -d '{"user_name": "admin", "access_key_id": "AKIAIOSFODNN7EXAMPLE", "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}'
-          fi
-
-          echo "Creating repository spirit-in-physics..."
-          curl -X POST "$LAKEFS_URL/api/v1/repositories" -u "AKIAIOSFODNN7EXAMPLE:wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" -H "Content-Type: application/json" -d '{"name": "spirit-in-physics", "storage_namespace": "s3://spirit-in-physics", "default_branch": "main"}' || echo "Repository might already exist"
-
-          echo "lakeFS setup complete."
-        command:
-        - /bin/sh
-        - -c
-        image: curlimages/curl:latest
-        name: setup
-      restartPolicy: OnFailure
+      storageClassName: standard
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -387,6 +285,9 @@ kind: Gateway
 metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    networking.gke.io/deletion-protection: "true"
+  finalizers:
+  - spirit-in-physics.gftd.ai/deletion-protection
   labels:
     app.kubernetes.io/managed-by: timoni
     app.kubernetes.io/name: infra
@@ -400,20 +301,47 @@ spec:
       namespaces:
         from: Same
     hostname: sip.junkawasaki.com
-    name: http
+    name: http-0
     port: 80
     protocol: HTTP
   - allowedRoutes:
       namespaces:
         from: Same
     hostname: sip.junkawasaki.com
-    name: https
+    name: https-0
     port: 443
     protocol: HTTPS
     tls:
       certificateRefs:
       - name: sip-tls-cert
       mode: Terminate
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: infra
+    app.kubernetes.io/version: 0.0.0-devel
+  name: infra-https-redirect
+  namespace: spirit-in-physics
+spec:
+  hostnames:
+  - sip.junkawasaki.com
+  parentRefs:
+  - name: infra-gateway
+    namespace: spirit-in-physics
+    sectionName: http-0
+  rules:
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 301
+      type: RequestRedirect
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -430,6 +358,7 @@ spec:
   parentRefs:
   - name: infra-gateway
     namespace: spirit-in-physics
+    sectionName: https-0
   rules:
   - backendRefs:
     - name: grpc-service
@@ -452,19 +381,6 @@ spec:
     - path:
         type: PathPrefix
         value: /temporal
-  - backendRefs:
-    - name: infra-lakefs
-      port: 8000
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          replacePrefixMatch: /
-          type: ReplacePrefixMatch
-    matches:
-    - path:
-        type: PathPrefix
-        value: /lakefs
   - backendRefs:
     - name: infra-minio
       port: 9001
@@ -553,15 +469,7 @@ spec:
           value: minioadmin
         - name: MINIO_ROOT_PASSWORD
           value: minioadmin
-        - name: LAKEFS_ENDPOINT
-          value: infra-lakefs:8000
-        - name: LAKEFS_ACCESS_KEY_ID
-          value: AKIAIOSFODNN7EXAMPLE
-        - name: LAKEFS_SECRET_ACCESS_KEY
-          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-        - name: LAKEFS_REPOSITORY
-          value: spirit-in-physics
-        image: spirit-grpc-service:latest
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service:latest
         imagePullPolicy: IfNotPresent
         name: grpc-service
         ports:
@@ -569,9 +477,12 @@ spec:
           name: http
           protocol: TCP
         resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
           requests:
-            cpu: 10m
-            memory: 32Mi
+            cpu: 100m
+            memory: 256Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -583,15 +494,7 @@ spec:
             drop:
             - ALL
           privileged: false
-        volumeMounts:
-        - mountPath: /dataset
-          name: dataset
       serviceAccountName: grpc-service
-      volumes:
-      - hostPath:
-          path: /Volumes/251214/jun784/spirit-in-physics/dataset/participants
-          type: Directory
-        name: dataset
 
 ---
 # Instance: import-service
@@ -655,7 +558,7 @@ spec:
           value: infra-temporal:7233
         - name: DATASET_PATH
           value: /dataset
-        image: spirit-import-service:latest
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service:latest
         imagePullPolicy: IfNotPresent
         name: import-service
         ports:
@@ -663,9 +566,12 @@ spec:
           name: http
           protocol: TCP
         resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
           requests:
-            cpu: 10m
-            memory: 32Mi
+            cpu: 250m
+            memory: 512Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -677,15 +583,7 @@ spec:
             drop:
             - ALL
           privileged: false
-        volumeMounts:
-        - mountPath: /dataset
-          name: dataset
       serviceAccountName: import-service
-      volumes:
-      - hostPath:
-          path: /Volumes/251214/jun784/spirit-in-physics/dataset/participants
-          type: Directory
-        name: dataset
 
 ---
 # Instance: import-worker
@@ -752,7 +650,7 @@ spec:
           value: infra-temporal:7233
         - name: DATASET_PATH
           value: /dataset
-        image: spirit-import-service:latest
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service:latest
         imagePullPolicy: IfNotPresent
         name: import-worker
         ports:
@@ -760,9 +658,12 @@ spec:
           name: http
           protocol: TCP
         resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
           requests:
-            cpu: 10m
-            memory: 32Mi
+            cpu: 250m
+            memory: 512Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -774,15 +675,7 @@ spec:
             drop:
             - ALL
           privileged: false
-        volumeMounts:
-        - mountPath: /dataset
-          name: dataset
       serviceAccountName: import-worker
-      volumes:
-      - hostPath:
-          path: /Volumes/251214/jun784/spirit-in-physics/dataset/participants
-          type: Directory
-        name: dataset
 
 ---
 # Instance: portal
@@ -852,7 +745,7 @@ spec:
               name: clerk-secrets
         - name: PUBLIC_API_URL
           value: https://sip.junkawasaki.com/api
-        image: spirit-svelte-app:latest
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
         imagePullPolicy: IfNotPresent
         name: portal
         ports:
@@ -860,9 +753,12 @@ spec:
           name: http
           protocol: TCP
         resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
           requests:
-            cpu: 10m
-            memory: 32Mi
+            cpu: 100m
+            memory: 128Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -936,7 +832,7 @@ spec:
           value: infra-temporal:7233
         - name: TASK_QUEUE
           value: visualization-analysis-queue
-        image: spirit-temporal-ts:latest
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts:latest
         imagePullPolicy: IfNotPresent
         name: temporal-ts
         ports:
@@ -944,9 +840,12 @@ spec:
           name: http
           protocol: TCP
         resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
           requests:
-            cpu: 10m
-            memory: 32Mi
+            cpu: 250m
+            memory: 512Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
