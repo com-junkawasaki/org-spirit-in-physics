@@ -5,10 +5,10 @@ globs: ["manifests/**/*", "Taskfile.yml"]
 
 # Development Workflow
 
-This project uses static Kubernetes manifests and Taskfile for local development and GKE Config Sync for production GitOps.
+This project uses **Kustomize** for manifest management and **Taskfile** for local development, with **GKE Config Sync** for production GitOps.
 
 ## Key Tools
-- **kubectl**: Main tool for managing Kubernetes resources.
+- **kubectl / kustomize**: Tools for managing Kubernetes resources.
 - **Tilt**: Fast local Kubernetes development with live updates.
 - **Config Sync**: GKE native GitOps controller.
 - **Taskfile**: Orchestrates development tasks.
@@ -17,13 +17,13 @@ This project uses static Kubernetes manifests and Taskfile for local development
 
 ### Local Development (OrbStack)
 - **Context**: `orbstack`
-- **Manifests**: `manifests/overlays/local/all.yaml`
+- **Kustomize Overlay**: `manifests/overlays/local`
 - **Access**: [http://localhost/](http://localhost/)
 
 ### Production (GKE)
 - **Cluster**: `spirit-autopilot` (GKE Autopilot, asia-northeast1)
 - **Context**: `gke_com-junkawasaki-sip_asia-northeast1_spirit-autopilot`
-- **Manifests**: `manifests/overlays/gke/all.yaml`
+- **Kustomize Overlay**: `manifests/overlays/gke`
 - **Domain**: [https://spirit-in-physics.com](https://spirit-in-physics.com)
 - **Static IP**: `34.160.140.248` (sip-static-ip)
 
@@ -45,11 +45,6 @@ Tilt を使用した高速開発:
    - ファイル保存で自動ビルド・デプロイ
    - Live update でコンテナ再起動なし
 
-4. **アクセス**:
-   - Portal: http://localhost:3000
-   - Temporal UI: http://localhost:8088
-   - MinIO Console: http://localhost:9001
-
 ## Outer Loop (Production Deployment to GKE with GitOps)
 
 ### GitOps with Config Sync
@@ -58,32 +53,21 @@ Tilt を使用した高速開発:
 
 ### 通常のデプロイフロー (GitOps)
 
-1. **マニフェストをプッシュ**:
+1. **マニフェストをビルド & プッシュ**:
    ```bash
    task push-manifest
    ```
-   これにより、`manifests/overlays/gke/` の内容が Artifact Registry に OCI イメージとしてプッシュされます。
+   これにより、Kustomize でレンダリングされたマニフェストが Artifact Registry に OCI イメージとしてプッシュされます。
 
 2. **Config Sync が自動的に同期**:
    - GKE クラスター内の RootSync が OCI イメージの更新を検知
    - 自動的にクラスターに適用
 
-3. **確認**:
-   ```bash
-   kubectl get rootsync root-sync -n config-management-system
-   ```
+## Manifest Management (Kustomize)
 
-### 手動適用 (緊急時のみ)
-
-1. **Switch to GKE Context**:
-   ```bash
-   kubectl config use-context gke_com-junkawasaki-sip_asia-northeast1_spirit-autopilot
-   ```
-
-2. **Apply to GKE**:
-   ```bash
-   kubectl apply -f manifests/overlays/gke/all.yaml
-   ```
+- **base/**: 全環境共通の Kubernetes リソース定義。
+- **overlays/local/**: ローカル開発用の設定（イメージプルポリシー `IfNotPresent` 等）。
+- **overlays/gke/**: 本番用の設定（静的 IP、ドメイン、証明書設定等）。
 
 ## Best Practices
 

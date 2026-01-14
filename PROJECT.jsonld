@@ -179,6 +179,7 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "Kustomize による Kubernetes マニフェスト管理への移行（base/ overlays/ 構成）",
       "Timoni および ArgoCD を除去し、GKE Config Sync (OCI ベース) による GitOps へ完全移行",
       "ArgoCD から GKE Config Sync への GitOps 移行（RootSync, Taskfile 実装済み）",
       "論文の日英バイリンガル PDF 生成（paper_ja.pdf / paper_en.pdf）",

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: import-worker
+    app.kubernetes.io/version: 0.0.0-devel
+  name: import-worker
+  namespace: spirit-in-physics
+

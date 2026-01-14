@@ -2,14 +2,16 @@ version: '3'
 
 tasks:
   apply-local:
-    desc: Apply manifests to local cluster
+    desc: Apply manifests to local cluster using Kustomize
     cmds:
-      - kubectl apply -f manifests/overlays/local/all.yaml
+      - kubectl kustomize manifests/overlays/local | kubectl apply -f -
 
   push-manifest:
-    desc: Push static manifests to Artifact Registry for Config Sync
+    desc: Render and push manifests for GKE to Artifact Registry
     cmds:
-      - gcloud artifacts oci upload --source=manifests/overlays/gke --image=asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/manifests:latest
+      - mkdir -p .build/manifests
+      - kubectl kustomize manifests/overlays/gke > .build/manifests/all.yaml
+      - gcloud artifacts oci upload --source=.build/manifests --image=asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/manifests:latest
 
   nix-build-portal:
     desc: Build portal image with Docker and apply locally

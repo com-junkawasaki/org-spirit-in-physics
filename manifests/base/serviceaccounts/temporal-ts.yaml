@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/managed-by: timoni
+    app.kubernetes.io/name: temporal-ts
+    app.kubernetes.io/version: 0.0.0-devel
+  name: temporal-ts
+  namespace: spirit-in-physics
+

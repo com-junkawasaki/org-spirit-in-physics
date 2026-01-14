@@ -171,7 +171,7 @@
 
           <div class="space-y-6">
             <div>
-              <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.age_group()}</label>
+              <span class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.age_group()}</span>
               <div class="grid grid-cols-3 gap-2">
                 {#each ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"] as age}
                   <button 
@@ -189,7 +189,7 @@
             </div>
 
             <div>
-              <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.gender()}</label>
+              <span class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.gender()}</span>
               <div class="grid grid-cols-2 gap-2">
                 {#each [
                   { value: "male", label: m.male() },
@@ -218,8 +218,9 @@
           
           <div class="space-y-6">
             <div>
-              <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.ethnicity()}</label>
+              <label for="ethnicity" class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.ethnicity()}</label>
               <select 
+                id="ethnicity"
                 bind:value={demographics.ethnicity}
                 class="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
@@ -237,8 +238,9 @@
             </div>
 
             <div>
-              <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.income()}</label>
+              <label for="income" class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.income()}</label>
               <select 
+                id="income"
                 bind:value={demographics.incomeRange}
                 class="w-full p-4 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               >
@@ -254,7 +256,7 @@
             </div>
 
             <div class="relative">
-              <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.medical_history()}</label>
+              <label for="medical-history" class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{m.medical_history()}</label>
               
               <div class="flex flex-wrap gap-2 mb-3">
                 {#each demographics.medicalHistory as code}
@@ -272,6 +274,7 @@
               </div>
 
               <input 
+                id="medical-history"
                 type="text" 
                 bind:value={illnessSearch}
                 placeholder={m.medical_history_placeholder()}

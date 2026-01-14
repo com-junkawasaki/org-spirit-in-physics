@@ -11,9 +11,8 @@ runtime = cfg.get("runtime", "orbstack")
 
 print("🚀 Tilt starting with runtime: {}".format(runtime))
 
-# Static YAML manifests (generated from Timoni before its removal)
-yaml_path = 'manifests/overlays/{}/all.yaml'.format(runtime)
-k8s_yaml(yaml_path)
+# Kustomize manifests
+k8s_yaml(local('kubectl kustomize manifests/overlays/{}'.format(runtime)))
 
 # Portal (Svelte App) - Host-side build for maximum efficiency
 # This builds the app on your machine, which is much faster than inside Docker.
