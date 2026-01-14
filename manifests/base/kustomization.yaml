@@ -20,6 +20,8 @@ resources:
   - services/infra-timescaledb.yaml
   - services/portal.yaml
   - services/temporal-ts.yaml
+  - gcs-bucket.yaml
+  - gcs-iam.yaml
   - deployments/grpc-service.yaml
   - deployments/import-service.yaml
   - deployments/import-worker.yaml

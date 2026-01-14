@@ -60,6 +60,18 @@
     },
     "narrative": [
       {
+        "@id": "project:narrative/95",
+        "@type": "project:Narrative",
+        "act": "Timoni および Terraform の完全除去と KCC への一本化",
+        "summary": "インフラ管理の複雑さを解消するため、Timoni および Terraform 関連の資材を完全に除去。Google Cloud Config Connector (KCC) に一本化することで、Kubernetes ネイティブな GitOps 構成を確立し、管理コストを最小化した。"
+      },
+      {
+        "@id": "project:narrative/94",
+        "@type": "project:Narrative",
+        "act": "Config Connector による GCS プロビジョニングの自動化",
+        "summary": "Google Cloud Config Connector (KCC) を導入し、GCS バケット（spirit-in-physics）と IAM 権限を K8s マニフェストとして定義。Config Sync と連携することで、インフラリソースの作成・管理を GitOps フローに完全に統合し、手動操作を排除した。"
+      },
+      {
         "@id": "project:narrative/93",
         "@type": "project:Narrative",
         "act": "英語版論文 PDF の生成（Paraglide 翻訳ベース）",
@@ -179,8 +191,10 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "Timoni および Terraform を廃止し、Config Connector (KCC) による Kubernetes ネイティブなインフラ管理へ移行",
+      "Config Connector による Google Cloud Storage (GCS) バケットおよび IAM 権限の宣言的管理",
       "Kustomize による Kubernetes マニフェスト管理への移行（base/ overlays/ 構成）",
-      "Timoni および ArgoCD を除去し、GKE Config Sync (OCI ベース) による GitOps へ完全移行",
+      "GKE Config Sync (OCI ベース) による GitOps への完全移行",
       "ArgoCD から GKE Config Sync への GitOps 移行（RootSync, Taskfile 実装済み）",
       "論文の日英バイリンガル PDF 生成（paper_ja.pdf / paper_en.pdf）",
       "「精神」から「霊性」への用語変更と哲学的根拠（Individual の否定、開放系熱力学的情報場）の追記",

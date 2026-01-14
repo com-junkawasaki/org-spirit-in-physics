@@ -99,9 +99,9 @@ https://console.developers.google.com/apis/api/billingbudgets.googleapis.com/ove
 停止後、再開するには:
 
 ```bash
-cd /Volumes/251214/jun784/spirit-in-physics
-kubectl config use-context gke_com-junkawasaki-sip_asia-northeast1_spirit-autopilot
-timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-gke.cue
+cd /Users/junkawasaki/github/spirit-in-physics
+# 各 Deployment をスケールアップする、または Config Sync による再適用を待ちます
+task push-manifest
 ```
 
 ---

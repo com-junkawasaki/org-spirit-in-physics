@@ -1,0 +1,15 @@
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  name: spirit-in-physics
+  namespace: spirit-in-physics
+  annotations:
+    cnrm.cloud.google.com/project-id: "com-junkawasaki-sip"
+spec:
+  location: asia-northeast1
+  storageClass: STANDARD
+  uniformBucketLevelAccess: true
+  publicAccessPrevention: inherited
+  versioning:
+    enabled: true
+
