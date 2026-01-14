@@ -51,3 +51,4 @@ ALTER COLUMN event_type TYPE session_event_type_enum USING event_type::session_e
 ALTER TABLE timeline_emotion_entries 
 ALTER COLUMN emotion_name TYPE emotion_name_enum USING emotion_name::emotion_name_enum;
 
+
