@@ -252,28 +252,39 @@
       return;
     }
     
-    const adapter = await (navigator as any).gpu.requestAdapter();
-    if (!adapter) {
-      isWebGPUSupported = false;
+    try {
+      const adapter = await (navigator as any).gpu.requestAdapter();
+      if (!adapter) {
+        isWebGPUSupported = false;
+        startLoop();
+        return;
+      }
+      device = await adapter.requestDevice();
+      isWebGPUSupported = true;
+
+      const shaderModule = device.createShaderModule({ code: computeShader });
+      computePipeline = device.createComputePipeline({ layout: 'auto', compute: { module: shaderModule, entryPoint: 'main' } });
+
+      // Correct usage flags: 
+      // nodeBuffer: STORAGE (0x0080) | COPY_DST (0x0008)
+      // linkBuffer: STORAGE (0x0080) | COPY_DST (0x0008)
+      // paramsBuffer: UNIFORM (0x0040) | COPY_DST (0x0008)
+      nodeBuffer = device.createBuffer({ size: nodes.length * 32, usage: 0x0080 | 0x0008 });
+      linkBuffer = device.createBuffer({ size: Math.max(links.length * 24, 24), usage: 0x0080 | 0x0008 });
+      paramsBuffer = device.createBuffer({ size: 64, usage: 0x0040 | 0x0008 });
+
+      bindGroup = device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [{ binding: 0, resource: { buffer: nodeBuffer } }, { binding: 1, resource: { buffer: linkBuffer } }, { binding: 2, resource: { buffer: paramsBuffer } }]
+      });
+
       startLoop();
-      return;
+    } catch (err) {
+      console.error("WebGPU initialization failed, falling back to CPU:", err);
+      isWebGPUSupported = false;
+      device = null;
+      startLoop();
     }
-    device = await adapter.requestDevice();
-    isWebGPUSupported = true;
-
-    const shaderModule = device.createShaderModule({ code: computeShader });
-    computePipeline = device.createComputePipeline({ layout: 'auto', compute: { module: shaderModule, entryPoint: 'main' } });
-
-    nodeBuffer = device.createBuffer({ size: nodes.length * 32, usage: 0x0008 | 0x0002 | 0x0004 });
-    linkBuffer = device.createBuffer({ size: Math.max(links.length * 24, 24), usage: 0x0008 | 0x0002 });
-    paramsBuffer = device.createBuffer({ size: 64, usage: 0x0040 | 0x0002 });
-
-    bindGroup = device.createBindGroup({
-      layout: computePipeline.getBindGroupLayout(0),
-      entries: [{ binding: 0, resource: { buffer: nodeBuffer } }, { binding: 1, resource: { buffer: linkBuffer } }, { binding: 2, resource: { buffer: paramsBuffer } }]
-    });
-
-    startLoop();
   }
 
   function startLoop() {

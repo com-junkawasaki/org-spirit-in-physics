@@ -48,8 +48,8 @@
   // Researcher IDs whose data can be made public for the landing page
   const RESEARCHER_IDS = [
     "e41a9cd2-d803-49a8-9020-0260e55cd03e", // Jun Kawasaki
-    "144b325f-5966-4d59-a629-f2ca421388cc", // Participant 1
-    "15592cdb-86cf-4baf-86f5-66184169ee39", // Participant 2
+    // "144b325f-5966-4d59-a629-f2ca421388cc", // Participant 1
+    // "f7221b87-28ac-48c7-8ef1-1d675aa5e38f", // Participant 2
   ];
 
   let nodes = $state<WordNode[]>(anchor2d.map((a, idx) => {
@@ -72,6 +72,71 @@
 
   let links = $state<WordLink[]>([]);
   let ghostPatterns = $state<any[]>([]);
+
+  function generateMockData() {
+    console.log("Generating mock data for the 3D graph...");
+    const mockWords = [
+      "Spirit", "Physics", "Information", "Entropy", "Consciousness", 
+      "Quantum", "Thermodynamics", "Neural", "Topology", "Manifold",
+      "Emotion", "Resonance", "Dissonance", "Harmony", "Complexity",
+      "Life", "Death", "Entropy", "Order", "Chaos",
+      "Meaning", "Pattern", "Signal", "Noise", "Frequency"
+    ];
+
+    const mockNodes: WordNode[] = [];
+    const mockLinks: WordLink[] = [];
+
+    for (let i = 0; i < 60; i++) {
+      const word = mockWords[i % mockWords.length] + (i >= mockWords.length ? ` ${Math.floor(i/mockWords.length)}` : "");
+      const emotion: Record<string, number> = {};
+      const emotionKeys = ['joy', 'sadness', 'anger', 'fear', 'disgust', 'calm', 'focus', 'surprise', 'confusion', 'excitement'];
+      
+      // Randomly assign some emotions
+      if (Math.random() > 0.3) {
+        const key = emotionKeys[Math.floor(Math.random() * emotionKeys.length)]!;
+        emotion[key] = 0.5 + Math.random() * 0.5;
+      }
+
+      mockNodes.push({
+        id: `mock-node-${i}`,
+        label: word,
+        scale: 1.5 + Math.random() * 3,
+        color: i % 2 === 0 ? '#6366f1' : '#a855f7',
+        emotion: Object.keys(emotion).length > 0 ? emotion : undefined
+      });
+    }
+
+    // Timeline-like links
+    for (let i = 0; i < mockNodes.length - 1; i++) {
+      if (Math.random() > 0.2) {
+        mockLinks.push({
+          source: anchor2d.length + i,
+          target: anchor2d.length + i + 1,
+          weight: 0.3
+        });
+      }
+    }
+
+    // Emotion links to anchors
+    mockNodes.forEach((node, i) => {
+      if (node.emotion) {
+        anchor2d.forEach((anchor, ai) => {
+          const key = anchorToKey[anchor.label];
+          if (key && (node.emotion as any)[key] > 0.15) {
+            mockLinks.push({
+              source: anchor2d.length + i,
+              target: ai,
+              weight: (node.emotion as any)[key] * 0.8,
+              mode: 'tension'
+            });
+          }
+        });
+      }
+    });
+
+    nodes = [...nodes, ...mockNodes];
+    links = mockLinks;
+  }
 
   onMount(async () => {
     try {
@@ -106,6 +171,8 @@
 
       if (validResults.length === 0) {
         console.warn("No data received for any researcher. Check if gRPC services are running.");
+        generateMockData();
+        return;
       }
 
       let mergedWordNodes: WordNode[] = [];
@@ -136,7 +203,7 @@
             };
           })
           .filter((p): p is any & { word: string } => !!p.word && p.word !== 'Unknown')
-          .slice(0, 150) // Higher density for Jun Kawasaki
+          .slice(0, 300) // Higher density for Jun Kawasaki
           .map((d, i) => {
             const word = d.word;
             const vec = vectors.vectors.find(v => v.word === word);

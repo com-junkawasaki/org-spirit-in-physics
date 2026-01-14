@@ -80,7 +80,7 @@ func main() {
 	// Temporal Client Setup
 	temporalAddress := os.Getenv("TEMPORAL_ADDRESS")
 	if temporalAddress == "" {
-		temporalAddress = "infra-temporal:7233"
+		temporalAddress = "localhost:7233"
 	}
 
 	temporalClient, err := client.Dial(client.Options{

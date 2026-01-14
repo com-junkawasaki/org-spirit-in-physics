@@ -32,6 +32,7 @@ type StartAssessmentRequest struct {
 	Ethnicity      *string                `protobuf:"bytes,5,opt,name=ethnicity,proto3,oneof" json:"ethnicity,omitempty"`
 	IncomeRange    *string                `protobuf:"bytes,6,opt,name=income_range,json=incomeRange,proto3,oneof" json:"income_range,omitempty"`
 	MedicalHistory []string               `protobuf:"bytes,7,rep,name=medical_history,json=medicalHistory,proto3" json:"medical_history,omitempty"`
+	Mode           *string                `protobuf:"bytes,8,opt,name=mode,proto3,oneof" json:"mode,omitempty"` // quick, full, professional
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -113,6 +114,13 @@ func (x *StartAssessmentRequest) GetMedicalHistory() []string {
 		return x.MedicalHistory
 	}
 	return nil
+}
+
+func (x *StartAssessmentRequest) GetMode() string {
+	if x != nil && x.Mode != nil {
+		return *x.Mode
+	}
+	return ""
 }
 
 type StartAssessmentResponse struct {
@@ -1516,7 +1524,7 @@ var File_participant_v1_participant_proto protoreflect.FileDescriptor
 
 const file_participant_v1_participant_proto_rawDesc = "" +
 	"\n" +
-	" participant/v1/participant.proto\x12\x0eparticipant.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\"\xc0\x02\n" +
+	" participant/v1/participant.proto\x12\x0eparticipant.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\"\xe2\x02\n" +
 	"\x16StartAssessmentRequest\x12%\n" +
 	"\x0eparticipant_id\x18\x01 \x01(\tR\rparticipantId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12 \n" +
@@ -1524,13 +1532,15 @@ const file_participant_v1_participant_proto_rawDesc = "" +
 	"\x06gender\x18\x04 \x01(\tH\x01R\x06gender\x88\x01\x01\x12!\n" +
 	"\tethnicity\x18\x05 \x01(\tH\x02R\tethnicity\x88\x01\x01\x12&\n" +
 	"\fincome_range\x18\x06 \x01(\tH\x03R\vincomeRange\x88\x01\x01\x12'\n" +
-	"\x0fmedical_history\x18\a \x03(\tR\x0emedicalHistoryB\f\n" +
+	"\x0fmedical_history\x18\a \x03(\tR\x0emedicalHistory\x12\x17\n" +
+	"\x04mode\x18\b \x01(\tH\x04R\x04mode\x88\x01\x01B\f\n" +
 	"\n" +
 	"_age_groupB\t\n" +
 	"\a_genderB\f\n" +
 	"\n" +
 	"_ethnicityB\x0f\n" +
-	"\r_income_range\"Q\n" +
+	"\r_income_rangeB\a\n" +
+	"\x05_mode\"Q\n" +
 	"\x17StartAssessmentResponse\x12\x1f\n" +
 	"\vworkflow_id\x18\x01 \x01(\tR\n" +
 	"workflowId\x12\x15\n" +

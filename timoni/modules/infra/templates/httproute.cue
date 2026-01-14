@@ -102,27 +102,6 @@ package templates
 				matches: [{
 					path: {
 						type:  "PathPrefix"
-						value: "/lakefs"
-					}
-				}]
-				filters: [{
-					type: "URLRewrite"
-					urlRewrite: {
-						path: {
-							type:               "ReplacePrefixMatch"
-							replacePrefixMatch: "/"
-						}
-					}
-				}]
-				backendRefs: [{
-					name: "\(#config.metadata.name)-lakefs"
-					port: #config.lakefs.port
-				}]
-			},
-			{
-				matches: [{
-					path: {
-						type:  "PathPrefix"
 						value: "/minio-console"
 					}
 				}]

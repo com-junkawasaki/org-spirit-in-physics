@@ -80,7 +80,7 @@ func (h *ImportHandler) ImportEmotions(
 	req *connect.Request[importv1.ImportEmotionsRequest],
 ) (*connect.Response[importv1.ImportEmotionsResponse], error) {
 	// We'll import emotions for all participants found in the dataset
-	participants, err := h.queries.GetParticipants(ctx, false)
+	participants, err := h.queries.GetParticipants(ctx, true)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

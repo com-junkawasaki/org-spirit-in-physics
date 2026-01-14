@@ -29,30 +29,6 @@ bundle: {
 						tag:        "latest"
 					}
 				}
-				lakefs: {
-					enabled: true
-					database: {
-						connectionString: "postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics?sslmode=disable"
-					}
-					auth: {
-						encryptSecretKey: "spirit-in-physics-lakefs-secret-key-2025"
-					}
-					blockstore: {
-						type: "s3"
-						s3: {
-							endpoint:        "http://infra-minio:9000"
-							accessKeyId:     "minioadmin"
-							secretAccessKey: "minioadmin"
-						}
-					}
-					setup: {
-						enabled:          true
-						repository:       "spirit-in-physics"
-						storageNamespace: "s3://spirit-in-physics"
-						adminAccessKey:   "AKIAIOSFODNN7EXAMPLE"
-						adminSecretKey:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-					}
-				}
 				nix_cache: {
 					enabled: false
 					storage: "20Gi"
@@ -85,10 +61,6 @@ bundle: {
 					{name: "MINIO_ENDPOINT", value: "infra-minio:9000"},
 					{name: "MINIO_ROOT_USER", value: "minioadmin"},
 					{name: "MINIO_ROOT_PASSWORD", value: "minioadmin"},
-					{name: "LAKEFS_ENDPOINT", value: "infra-lakefs:8000"},
-					{name: "LAKEFS_ACCESS_KEY_ID", value: "AKIAIOSFODNN7EXAMPLE"}, // lakeFS usually starts with this for setup
-					{name: "LAKEFS_SECRET_ACCESS_KEY", value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"},
-					{name: "LAKEFS_REPOSITORY", value: "spirit-in-physics"},
 				]
 			}
 		}

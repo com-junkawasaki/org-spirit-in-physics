@@ -34,22 +34,4 @@ values: {
 		enabled: false
 		storageClass: "standard"
 	}
-	lakefs: {
-		enabled: true
-		database: {
-			connectionString: "postgresql://postgres:postgres@infra-timescaledb:5432/lakefs?sslmode=disable"
-		}
-		auth: {
-			encryptSecretKey: "base64-encoded-secret-key-placeholder"
-		}
-		blockstore: {
-			type: "gs"
-		}
-		setup: {
-			repository:       "spirit-in-physics"
-			storageNamespace: "gs://spirit-in-physics-dataset"
-			adminAccessKey:   "AKIAIOSFODNN7EXAMPLE"
-			adminSecretKey:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-		}
-	}
 }

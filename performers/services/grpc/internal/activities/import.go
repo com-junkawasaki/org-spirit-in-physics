@@ -82,13 +82,14 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 			datasetPath = fmt.Sprintf("../../../dataset/participants/%s", participantID)
 		}
 	}
+	log.Printf("Using dataset path for participant %s: %s", participantID, datasetPath)
 
 	var csvFiles []string
 	err := filepath.Walk(datasetPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".csv") {
+		if !info.IsDir() && (strings.HasSuffix(strings.ToLower(info.Name()), ".csv")) {
 			csvFiles = append(csvFiles, path)
 		}
 		return nil
@@ -97,6 +98,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 	if err != nil {
 		return 0, err
 	}
+	log.Printf("Found %d CSV files for participant %s in %s", len(csvFiles), participantID, datasetPath)
 
 	totalImported := 0
 	for _, csvFile := range csvFiles {

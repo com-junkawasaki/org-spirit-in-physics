@@ -15,21 +15,6 @@ bundle: {
 				minio: {
 					enabled: false
 				}
-				lakefs: {
-					enabled: true
-					serviceAccount: {
-						annotations: {
-							"iam.gke.io/gcp-service-account": "gene-annex-sa@com-junkawasaki-sip.iam.gserviceaccount.com"
-						}
-					}
-					blockstore: {
-						type: "gs"
-					}
-					setup: {
-						repository:       "spirit-in-physics"
-						storageNamespace: "gs://com-junkawasaki-sip-dataset"
-					}
-				}
 				temporal: {
 					enabled: true
 				}

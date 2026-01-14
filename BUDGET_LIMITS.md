@@ -85,7 +85,7 @@ https://console.developers.google.com/apis/api/billingbudgets.googleapis.com/ove
 
 2. **$135 到達時のアクション**:
    - 不要な Pod を停止
-   - lakefs、temporal など一時的に不要なサービスを停止
+   - temporal など一時的に不要なサービスを停止
 
 3. **$145 到達時のアクション**:
    ```bash
@@ -113,7 +113,6 @@ timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-gke.cue
    - 月額コスト: $108 → $80
 
 2. **不要なサービスを削除**
-   - lakefs (停止中): -$8/月
    - temporal (検討中): -$8/月
 
 3. **リージョン変更を検討**

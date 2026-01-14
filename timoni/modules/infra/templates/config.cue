@@ -80,52 +80,6 @@ import (
 		}
 	}
 
-	// lakeFS settings
-	lakefs: {
-		enabled: *true | bool
-		image: {
-			repository: *"treeverse/lakefs" | string
-			tag:        *"latest" | string
-			digest:     *"" | string
-			reference:  "\(repository):\(tag)"
-		}
-		port: *8000 | int
-		database: {
-			connectionString: string
-		}
-		auth: {
-			encryptSecretKey: string
-		}
-		resources: timoniv1.#ResourceRequirements & {
-			requests: {
-				cpu:    *"250m" | timoniv1.#CPUQuantity
-				memory: *"512Mi" | timoniv1.#MemoryQuantity
-			}
-		}
-		serviceAccount: {
-			annotations: *{} | timoniv1.#Annotations
-		}
-		blockstore: {
-			type: *"s3" | "gs" | string
-			s3: {
-				endpoint:        string
-				forcePathStyle:  *true | bool
-				accessKeyId:     string
-				secretAccessKey: string
-			}
-			gs: {
-				credentialsJson?: string
-			}
-		}
-		setup: {
-			enabled:    *true | bool
-			repository: string
-			storageNamespace: string
-			adminAccessKey: string
-			adminSecretKey: string
-		}
-	}
-
 	// Gateway settings
 	gateway: {
 		enabled: *true | bool
@@ -169,14 +123,6 @@ import (
 		if config.minio.enabled {
 			minio_svc: #MinIOService & {#config: config}
 			minio_sts: #MinIOStatefulSet & {#config: config}
-		}
-		if config.lakefs.enabled {
-			lakefs_sa:     #LakeFSServiceAccount & {#config: config}
-			lakefs_svc:    #LakeFSService & {#config: config}
-			lakefs_deploy: #LakeFSDeployment & {#config: config}
-			if config.lakefs.setup.enabled {
-				lakefs_setup: #LakeFSSetupJob & {#config: config}
-			}
 		}
 		if config.nix_cache.enabled {
 			nix_cache_svc: #NixCacheService & {#config: config}

@@ -45,7 +45,7 @@
   "version": "2.2.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2026-01-13T22:40:00+09:00",
+  "updatedAt": "2026-01-14T00:00:00+09:00",
   "merkleRoot": "Bilingual paper PDFs (ja/en) generated with philosophical rationale: negation of individual, open system thermodynamics.",
   "story": {
     "@id": "project:story",
@@ -80,8 +80,8 @@
       {
         "@id": "project:narrative/90",
         "@type": "project:Narrative",
-        "act": "GKE Autopilot への移行と GCS ストレージ統合の開始",
-        "summary": "インフラコスト最適化のため、GKE Standard から Autopilot への移行を開始。同時に MinIO を廃止し、lakeFS のバックエンドを Google Cloud Storage (GCS) へ統合。データの永続性を確保しつつ、アイドル時のコストを最小化する構成へ刷新中。"
+        "act": "GKE Autopilot への移行とコスト最適化",
+        "summary": "インフラコスト最適化のため、GKE Standard から Autopilot への移行を完了。不要なミドルウェア（MinIO, lakeFS）を廃止し、Google Cloud Storage (GCS) を直接利用する構成へ刷新。データの永続性を確保しつつ、アイドル時のコストを最小化。"
       },
       {
         "@id": "project:narrative/89",
