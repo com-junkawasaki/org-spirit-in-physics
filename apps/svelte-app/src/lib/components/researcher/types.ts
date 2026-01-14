@@ -101,7 +101,7 @@ export interface TimeRange {
   end: number
 }
 
-export type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d-typegpu' | 'force-3d-threlte'
+export type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d-threlte'
 
 // Word aggregates data types (for props injection)
 export interface WordAggregateData {
@@ -156,7 +156,7 @@ export interface TimelineVisualizationProps {
   sessionId?: string
   width?: number
   height?: number
-  // このページでモードを固定したい場合に指定（例: 'force-3d-typegpu'）
+  // このページでモードを固定したい場合に指定（例: 'force-3d-threlte'）
   forceMode?: VisualizationMode
   // フィルターUIを非表示にする
   hideFilters?: boolean

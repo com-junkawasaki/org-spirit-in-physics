@@ -13,7 +13,6 @@
   import KPICards from './KPICards.svelte';
   import TimelineChart from './TimelineChart.svelte';
   import Force3DControls from './Force3DControls.svelte';
-  import Force3DWordGraphTypeGPU from './Force3DWordGraphTypeGPU.svelte';
   import Force3DThrelte from './Force3DThrelte.svelte';
   import StructureAnalysisPanel from './StructureAnalysisPanel.svelte';
   import Force3DFiltersPanel from './Force3DFiltersPanel.svelte';
@@ -589,43 +588,23 @@
           <!-- Center: 3D Visualization -->
           <div class="xl:col-span-3 space-y-6">
             <div class="bg-black rounded-[48px] overflow-hidden relative shadow-2xl border-[12px] border-gray-100 dark:border-gray-800" style="height: 700px;">
-              {#if forceMode === 'force-3d-threlte'}
-                <Force3DThrelte 
-                  nodes={graphData.nodes} links={graphData.links} width={width} height={700} 
-                  physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK, minSep, sepK }}
-                  gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} 
-                  ghostPatterns={analysisResults.ghostPatterns} showAnalysis={showAnalysis}
-                  onHover={(info) => hoveredInfo = info}
-                  pinnedItems={pinnedItems}
-                  onClick={(info) => {
-                    const exists = pinnedItems.find(p => 
-                      (info.node && p.node?.label === info.node.label) || 
-                      (info.link && p.link?.source.label === info.link.source.label && p.link?.target.label === info.link.target.label)
-                    );
-                    if (!exists) {
-                      pinnedItems = [info, ...pinnedItems];
-                    }
-                  }}
-                />
-              {:else}
-                <Force3DWordGraphTypeGPU 
-                  nodes={graphData.nodes} links={graphData.links} width={width} height={700} 
-                  physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK, minSep, sepK }}
-                  gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} 
-                  ghostPatterns={analysisResults.ghostPatterns} showAnalysis={showAnalysis}
-                  onHover={(info) => hoveredInfo = info}
-                  pinnedItems={pinnedItems}
-                  onClick={(info) => {
-                    const exists = pinnedItems.find(p => 
-                      (info.node && p.node?.label === info.node.label) || 
-                      (info.link && p.link?.source.label === info.link.source.label && p.link?.target.label === info.link.target.label)
-                    );
-                    if (!exists) {
-                      pinnedItems = [info, ...pinnedItems];
-                    }
-                  }}
-                />
-              {/if}
+              <Force3DThrelte 
+                nodes={graphData.nodes} links={graphData.links} width={width} height={700} 
+                physics={{ springK, repulsionK, damping, restLength, maxSpeed: 200, shellRadius, shellK, radialOutK, minSep, sepK }}
+                gapAreas={analysisResults.gapAreas} densityRegions={analysisResults.densityRegions} 
+                ghostPatterns={analysisResults.ghostPatterns} showAnalysis={showAnalysis}
+                onHover={(info) => hoveredInfo = info}
+                pinnedItems={pinnedItems}
+                onClick={(info) => {
+                  const exists = pinnedItems.find(p => 
+                    (info.node && p.node?.label === info.node.label) || 
+                    (info.link && p.link?.source.label === info.link.source.label && p.link?.target.label === info.link.target.label)
+                  );
+                  if (!exists) {
+                    pinnedItems = [info, ...pinnedItems];
+                  }
+                }}
+              />
               
               <div class="absolute top-8 right-8 flex flex-col gap-4">
                 <button 

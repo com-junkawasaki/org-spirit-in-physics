@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Force3DWordGraphTypeGPU from "./researcher/Force3DWordGraphTypeGPU.svelte";
+  import Force3DThrelte from "./researcher/Force3DThrelte.svelte";
   import type { WordNode, WordLink } from "./researcher/types";
   import * as m from "$lib/paraglide/messages.js";
   import { i18n } from "$lib/i18n";
@@ -296,7 +296,7 @@
   <div class="interactive-graph-section">
     <div class="section-label">Neural Topology Visualization</div>
     <h2 class="interactive-title">Explore the Spirit's Manifold</h2>
-    <Force3DWordGraphTypeGPU 
+    <Force3DThrelte 
       {nodes} 
       {links} 
       {ghostPatterns}
