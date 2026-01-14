@@ -1,10 +1,6 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  labels:
-    app.kubernetes.io/managed-by: timoni
-    app.kubernetes.io/name: infra
-    app.kubernetes.io/version: 0.0.0-devel
   name: infra-main-route
   namespace: spirit-in-physics
 spec:
@@ -30,32 +26,9 @@ spec:
         type: PathPrefix
         value: /import
   - backendRefs:
-    - name: infra-temporal
-      port: 8088
-    matches:
-    - path:
-        type: PathPrefix
-        value: /temporal
-  - backendRefs:
-    - name: infra-minio
-      port: 9001
-    matches:
-    - path:
-        type: PathPrefix
-        value: /minio-console
-  - backendRefs:
-    - name: infra-minio
-      port: 9000
-    matches:
-    - path:
-        type: PathPrefix
-        value: /minio
-  - backendRefs:
     - name: portal
       port: 80
     matches:
     - path:
         type: PathPrefix
         value: /
-
-

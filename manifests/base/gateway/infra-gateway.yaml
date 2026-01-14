@@ -1,15 +1,6 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    networking.gke.io/deletion-protection: "true"
-  finalizers:
-  - spirit-in-physics.gftd.ai/deletion-protection
-  labels:
-    app.kubernetes.io/managed-by: timoni
-    app.kubernetes.io/name: infra
-    app.kubernetes.io/version: 0.0.0-devel
   name: infra-gateway
   namespace: spirit-in-physics
 spec:
@@ -33,4 +24,3 @@ spec:
       certificateRefs:
       - name: sip-tls-cert
       mode: Terminate
-

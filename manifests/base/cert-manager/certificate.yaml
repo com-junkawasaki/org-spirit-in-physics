@@ -11,4 +11,3 @@ spec:
     kind: ClusterIssuer
     name: letsencrypt-prod
   secretName: sip-tls-cert
-

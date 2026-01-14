@@ -1,11 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations: {}
-  labels:
-    app.kubernetes.io/managed-by: timoni
-    app.kubernetes.io/name: infra
-    app.kubernetes.io/version: 0.0.0-devel
   name: infra-temporal
   namespace: spirit-in-physics
 spec:
@@ -13,12 +8,10 @@ spec:
   selector:
     matchLabels:
       app: temporal
-      app.kubernetes.io/name: infra
   template:
     metadata:
       labels:
         app: temporal
-        app.kubernetes.io/name: infra
     spec:
       containers:
       - env:
@@ -32,10 +25,6 @@ spec:
           value: postgres
         - name: POSTGRES_SEEDS
           value: infra-timescaledb
-        - name: SKIP_DB_CREATE
-          value: "false"
-        - name: BIND_ON_IP
-          value: 0.0.0.0
         image: temporalio/auto-setup:latest
         name: temporal
         ports:
@@ -47,4 +36,3 @@ spec:
           requests:
             cpu: 250m
             memory: 512Mi
-

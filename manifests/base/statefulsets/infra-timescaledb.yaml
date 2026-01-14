@@ -1,11 +1,6 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations: {}
-  labels:
-    app.kubernetes.io/managed-by: timoni
-    app.kubernetes.io/name: infra
-    app.kubernetes.io/version: 0.0.0-devel
   name: infra-timescaledb
   namespace: spirit-in-physics
 spec:
@@ -13,13 +8,11 @@ spec:
   selector:
     matchLabels:
       app: timescaledb
-      app.kubernetes.io/name: infra
   serviceName: infra-timescaledb
   template:
     metadata:
       labels:
         app: timescaledb
-        app.kubernetes.io/name: infra
     spec:
       containers:
       - args:
@@ -32,32 +25,14 @@ spec:
           value: postgres
         - name: POSTGRES_DB
           value: spirit_in_physics
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
         image: timescale/timescaledb:latest-pg15
         name: timescaledb
         ports:
         - containerPort: 5432
           name: postgres
-        resources:
-          requests:
-            cpu: 250m
-            memory: 512Mi
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: data
-      initContainers:
-      - command:
-        - sh
-        - -c
-        - chown -R 70:70 /var/lib/postgresql/data
-        image: busybox
-        name: fix-permissions
-        volumeMounts:
-        - mountPath: /var/lib/postgresql/data
-          name: data
-      securityContext:
-        fsGroup: 70
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -67,5 +42,3 @@ spec:
       resources:
         requests:
           storage: 10Gi
-      storageClassName: standard
-

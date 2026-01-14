@@ -737,12 +737,6 @@
     60% {transform: translateY(-5px);}
   }
 
-  /* 4. Paper Section */
-  .paper-section {
-    padding: 8rem 0;
-    background: var(--lp-bg);
-  }
-
   /* Compact mode overrides */
   .compact .interactive-graph-section {
     height: 100%;

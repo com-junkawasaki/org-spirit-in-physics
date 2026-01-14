@@ -7,7 +7,7 @@ load('ext://helm_resource', 'helm_resource', 'helm_repo')
 # Configuration
 config.define_string("runtime", args=True, usage="Runtime environment (orbstack or gke)")
 cfg = config.parse()
-runtime = cfg.get("runtime", "orbstack")
+runtime = cfg.get("runtime", "local")
 
 print("🚀 Tilt starting with runtime: {}".format(runtime))
 
@@ -43,9 +43,9 @@ docker_build(
   ],
   live_update=[
     # Sync the build output from host to container
-    sync('./build', '/app/build'),
+    sync('./apps/svelte-app/build', '/app/build'),
     # Also sync static files just in case
-    sync('./static', '/app/static'),
+    sync('./apps/svelte-app/static', '/app/static'),
     # NOTE: We removed 'run npm run build' from here.
     # The host-side 'svelte-app-build' resource handles the build.
   ]
@@ -71,7 +71,6 @@ docker_build_with_restart(
   entrypoint='python main.py',
   live_update=[
     sync('./performers/services/import', '/app'),
-    sync('./dataset', '/dataset'),
     run('pip install -e .', trigger=['./performers/services/import/setup.py']),
   ]
 )
@@ -136,6 +135,7 @@ local_resource(
 
 # Watch files for changes
 watch_file('manifests/')
+watch_file('dataset/')
 watch_file('.cursor/rules/')
 
 print("""

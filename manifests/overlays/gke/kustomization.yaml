@@ -9,9 +9,12 @@ patches:
       kind: Gateway
       name: infra-gateway
     patch: |-
-      - op: add
-        path: /metadata/annotations/networking.gke.io/static-ip
-        value: sip-static-ip
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: Gateway
+      metadata:
+        name: infra-gateway
+        annotations:
+          networking.gke.io/static-ip: sip-static-ip
   - target:
       kind: Deployment
     patch: |-

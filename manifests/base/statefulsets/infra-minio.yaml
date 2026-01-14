@@ -1,11 +1,6 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations: {}
-  labels:
-    app.kubernetes.io/managed-by: timoni
-    app.kubernetes.io/name: infra
-    app.kubernetes.io/version: 0.0.0-devel
   name: infra-minio
   namespace: spirit-in-physics
 spec:
@@ -13,13 +8,11 @@ spec:
   selector:
     matchLabels:
       app: minio
-      app.kubernetes.io/name: infra
   serviceName: infra-minio
   template:
     metadata:
       labels:
         app: minio
-        app.kubernetes.io/name: infra
     spec:
       containers:
       - args:
@@ -39,10 +32,6 @@ spec:
           name: api
         - containerPort: 9001
           name: console
-        resources:
-          requests:
-            cpu: 250m
-            memory: 512Mi
         volumeMounts:
         - mountPath: /data
           name: data
@@ -55,5 +44,3 @@ spec:
       resources:
         requests:
           storage: 10Gi
-      storageClassName: standard
-

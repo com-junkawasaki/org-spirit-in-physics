@@ -283,26 +283,13 @@ import ConsentForm from "./ConsentForm.svelte";
     border: 1px solid #e5e7eb;
   }
 
-  .btn.outline {
-    background: transparent;
-    color: #4b5563;
-    border: 2px solid #e5e7eb;
-    height: 80px;
-    font-size: 1.25rem;
-  }
-
-  .btn.outline:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
-  }
-
   .step-container {
     width: 100%;
     max-width: 900px;
     padding: 2rem;
   }
 
-  .assessment-placeholder, .success {
+  .success {
     background: white;
     padding: 4rem;
     border-radius: 20px;

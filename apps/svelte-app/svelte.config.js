@@ -8,10 +8,7 @@ const config = {
 	preprocess: [
 		vitePreprocess(),
 		sveltex({
-			extensions: ['.svx', '.sveltex', '.md'],
-			math: {
-				engine: 'katex',
-			}
+			mathBackend: 'katex',
 		})
 	],
 	kit: {
