@@ -391,20 +391,21 @@
         {#if kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
           {@const word = kawasakiStore.stimulusWords[kawasakiStore.currentWordIndex]}
           {@const lang = languageTag()}
-          <h1 
-            key={kawasakiStore.currentWordIndex}
-            in:fly={{ y: 20, duration: 600, delay: 200 }}
-            out:fade={{ duration: 400 }}
-            class="text-6xl sm:text-8xl font-black uppercase tracking-tighter"
-          >
-            {lang === 'ja' ? word.japanese : 
-             lang === 'fr' ? (word.french || word.english) :
-             lang === 'es' ? (word.spanish || word.english) :
-             lang === 'ru' ? (word.russian || word.english) :
-             lang === 'ar' ? (word.arabic || word.english) :
-             lang === 'zh' ? (word.chinese || word.english) :
-             word.english}
-          </h1>
+          {#key kawasakiStore.currentWordIndex}
+            <h1 
+              in:fly={{ y: 20, duration: 600, delay: 200 }}
+              out:fade={{ duration: 400 }}
+              class="text-6xl sm:text-8xl font-black uppercase tracking-tighter"
+            >
+              {lang === 'ja' ? word.japanese : 
+               lang === 'fr' ? (word.french || word.english) :
+               lang === 'es' ? (word.spanish || word.english) :
+               lang === 'ru' ? (word.russian || word.english) :
+               lang === 'ar' ? (word.arabic || word.english) :
+               lang === 'zh' ? (word.chinese || word.english) :
+               word.english}
+            </h1>
+          {/key}
         {/if}
 
         <div class="flex flex-col items-center gap-8">

@@ -12,74 +12,59 @@ runtime = cfg.get("runtime", "orbstack")
 print("🚀 Tilt starting with runtime: {}".format(runtime))
 
 # Generate YAML from Timoni and give it to Tilt
-k8s_yaml(local('timoni bundle build -f timoni/bundle.cue -r timoni/runtime-{}.cue'.format(runtime)))
+timoni_cmd = 'timoni bundle build -f timoni/bundle.cue -r timoni/runtime-{}.cue'.format(runtime)
+local_resource(
+  'timoni-build',
+  timoni_cmd,
+  labels=['tools']
+)
+k8s_yaml(local(timoni_cmd))
 
 # Portal (Svelte App) - Fast rebuild with live reload
 docker_build(
-  'spirit-svelte-app',
+  'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app',
   './apps/svelte-app',
   dockerfile='./apps/svelte-app/Dockerfile',
   live_update=[
     sync('./apps/svelte-app/src', '/app/src'),
     sync('./apps/svelte-app/static', '/app/static'),
     run('npm run build', trigger=['./apps/svelte-app/src']),
-  ],
-  only=[
-    './apps/svelte-app/src',
-    './apps/svelte-app/static',
-    './apps/svelte-app/package.json',
-    './apps/svelte-app/svelte.config.js',
-    './apps/svelte-app/vite.config.ts',
   ]
 )
 
 # gRPC Service - Go hot reload
-docker_build(
-  'spirit-grpc-service',
+docker_build_with_restart(
+  'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service',
   './performers/services/grpc',
   dockerfile='./performers/services/grpc/Dockerfile',
+  entrypoint='./grpc-service',
   live_update=[
     sync('./performers/services/grpc', '/app'),
     run('go build -o main .', trigger=['./performers/services/grpc/**/*.go']),
-    restart_container(),
-  ],
-  only=[
-    './performers/services/grpc/**/*.go',
-    './performers/services/grpc/go.mod',
-    './performers/services/grpc/go.sum',
   ]
 )
 
 # Import Service - Python hot reload
-docker_build(
-  'spirit-import-service',
+docker_build_with_restart(
+  'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service',
   './performers/services/import',
   dockerfile='./performers/services/import/Dockerfile',
+  entrypoint='python main.py',
   live_update=[
     sync('./performers/services/import', '/app'),
     run('pip install -e .', trigger=['./performers/services/import/setup.py']),
-    restart_container(),
-  ],
-  only=[
-    './performers/services/import/**/*.py',
-    './performers/services/import/requirements.txt',
   ]
 )
 
 # Temporal Worker - TypeScript hot reload
-docker_build(
-  'spirit-temporal-ts',
+docker_build_with_restart(
+  'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts',
   './performers/services/temporal-ts',
   dockerfile='./performers/services/temporal-ts/Dockerfile',
+  entrypoint='node dist/worker.js',
   live_update=[
     sync('./performers/services/temporal-ts/src', '/app/src'),
     run('npm run build', trigger=['./performers/services/temporal-ts/src/**/*.ts']),
-    restart_container(),
-  ],
-  only=[
-    './performers/services/temporal-ts/src',
-    './performers/services/temporal-ts/package.json',
-    './performers/services/temporal-ts/tsconfig.json',
   ]
 )
 

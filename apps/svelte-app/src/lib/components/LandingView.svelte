@@ -102,8 +102,8 @@
         if (!vectors) return;
 
         const analysis = allAnalysis[researcherIdx];
-        if (analysis && analysis.ghost_patterns) {
-          mergedGhostPatterns = [...mergedGhostPatterns, ...analysis.ghost_patterns];
+        if (analysis && analysis.ghostPatterns) {
+          mergedGhostPatterns = [...mergedGhostPatterns, ...analysis.ghostPatterns];
         }
 
         const researcherOffset = mergedWordNodes.length;

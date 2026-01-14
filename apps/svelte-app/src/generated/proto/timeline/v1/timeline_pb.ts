@@ -155,7 +155,12 @@ export class GetAnalysisResponse extends Message<GetAnalysisResponse> {
   duplicates: DuplicateCandidate[] = [];
 
   /**
-   * @generated from field: double overall_density = 4;
+   * @generated from field: repeated timeline.v1.GhostPattern ghost_patterns = 4;
+   */
+  ghostPatterns: GhostPattern[] = [];
+
+  /**
+   * @generated from field: double overall_density = 5;
    */
   overallDensity = 0;
 
@@ -170,7 +175,8 @@ export class GetAnalysisResponse extends Message<GetAnalysisResponse> {
     { no: 1, name: "gap_areas", kind: "message", T: GapArea, repeated: true },
     { no: 2, name: "density_regions", kind: "message", T: DensityRegion, repeated: true },
     { no: 3, name: "duplicates", kind: "message", T: DuplicateCandidate, repeated: true },
-    { no: 4, name: "overall_density", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "ghost_patterns", kind: "message", T: GhostPattern, repeated: true },
+    { no: 5, name: "overall_density", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAnalysisResponse {
@@ -187,6 +193,105 @@ export class GetAnalysisResponse extends Message<GetAnalysisResponse> {
 
   static equals(a: GetAnalysisResponse | PlainMessage<GetAnalysisResponse> | undefined, b: GetAnalysisResponse | PlainMessage<GetAnalysisResponse> | undefined): boolean {
     return proto3.util.equals(GetAnalysisResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message timeline.v1.GhostPattern
+ */
+export class GhostPattern extends Message<GhostPattern> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * [x, y, z]
+   *
+   * @generated from field: repeated double center = 2;
+   */
+  center: number[] = [];
+
+  /**
+   * @generated from field: double radius = 3;
+   */
+  radius = 0;
+
+  /**
+   * @generated from field: repeated string node_ids = 4;
+   */
+  nodeIds: string[] = [];
+
+  /**
+   * @generated from field: repeated string labels = 5;
+   */
+  labels: string[] = [];
+
+  /**
+   * @generated from field: double intensity = 6;
+   */
+  intensity = 0;
+
+  /**
+   * @generated from field: string pattern_type = 7;
+   */
+  patternType = "";
+
+  /**
+   * @generated from field: repeated string indicators = 8;
+   */
+  indicators: string[] = [];
+
+  /**
+   * @generated from field: repeated string primary_emotions = 9;
+   */
+  primaryEmotions: string[] = [];
+
+  /**
+   * @generated from field: string description = 10;
+   */
+  description = "";
+
+  /**
+   * @generated from field: double confidence = 11;
+   */
+  confidence = 0;
+
+  constructor(data?: PartialMessage<GhostPattern>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "timeline.v1.GhostPattern";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "center", kind: "scalar", T: 1 /* ScalarType.DOUBLE */, repeated: true },
+    { no: 3, name: "radius", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "node_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "labels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "intensity", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 7, name: "pattern_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "indicators", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "primary_emotions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "confidence", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GhostPattern {
+    return new GhostPattern().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GhostPattern {
+    return new GhostPattern().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GhostPattern {
+    return new GhostPattern().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GhostPattern | PlainMessage<GhostPattern> | undefined, b: GhostPattern | PlainMessage<GhostPattern> | undefined): boolean {
+    return proto3.util.equals(GhostPattern, a, b);
   }
 }
 
