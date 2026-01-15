@@ -9,7 +9,7 @@
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { languageTag, availableLanguageTags } from "$lib/paraglide/runtime.js";
-  import { i18n } from "$lib/i18n";
+  import { resolveRoute } from "$lib/routing";
   import "../app.css";
 
   let { children } = $props();
@@ -54,10 +54,6 @@
       document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     }
   });
-
-  function resolveRoute(path: string) {
-    return i18n.resolveRoute(path, languageTag());
-  }
 </script>
 
 {#if runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}

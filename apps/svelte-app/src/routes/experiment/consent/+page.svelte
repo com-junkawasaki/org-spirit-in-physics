@@ -7,8 +7,7 @@
   import ConsentForm from "$lib/components/ConsentForm.svelte";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { i18n } from "$lib/i18n";
-  import { languageTag } from "$lib/paraglide/runtime.js";
+  import { resolveRoute } from "$lib/routing";
   import VoidBackground from "$lib/components/experiment/VoidBackground.svelte";
 
   const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
@@ -20,7 +19,7 @@
   onMount(() => {
     if (clerk && !user) {
       // If not signed in, go back to landing
-      goto(i18n.resolveRoute('/experiment', languageTag()));
+      goto(resolveRoute('/experiment'));
     }
   });
 
@@ -36,7 +35,7 @@
       
       // Move to device check / session
       kawasakiStore.startPreflight();
-      goto(i18n.resolveRoute('/experiment/session', languageTag()));
+      goto(resolveRoute('/experiment/session'));
     } catch (error) {
       console.error("[Experiment] Failed to handle consent:", error);
     }

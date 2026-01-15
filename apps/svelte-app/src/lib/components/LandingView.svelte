@@ -2,8 +2,7 @@
   import Force3DThrelte from "./researcher/Force3DThrelte.svelte";
   import type { WordNode, WordLink } from "./researcher/types";
   import * as m from "$lib/paraglide/messages.js";
-  import { i18n } from "$lib/i18n";
-  import { languageTag } from "$lib/paraglide/runtime.js";
+  import { resolveRoute } from "$lib/routing";
   import { onMount } from "svelte";
   import { timelineClient } from "$lib/connect";
   import { theme } from "$lib/theme.svelte";
@@ -290,10 +289,8 @@
 
   let containerHeight = $state(600);
 
-  // Helper to resolve routes with current language
-  function l(path: string) {
-    return i18n.resolveRoute(path, languageTag());
-  }
+  // Helper to resolve routes with current language (alias for consistency)
+  const l = resolveRoute;
 
   interface Props {
     mode?: 'full' | 'compact';

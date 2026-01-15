@@ -2,14 +2,13 @@
   import { goto } from "$app/navigation";
   import JungVoiceTest from "$lib/jung-voice-assessment/JungVoiceTest.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { i18n } from "$lib/i18n";
-  import { languageTag } from "$lib/paraglide/runtime.js";
+  import { resolveRoute } from "$lib/routing";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import VoidBackground from "$lib/components/experiment/VoidBackground.svelte";
 
   function handleTestComplete() {
     // Navigate to report page after experiment is done
-    goto(i18n.resolveRoute('/experiment/report', languageTag()));
+    goto(resolveRoute('/experiment/report'));
   }
 </script>
 

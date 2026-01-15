@@ -1,14 +1,9 @@
 <script lang="ts">
   import LandingView from "$lib/components/LandingView.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { i18n } from "$lib/i18n";
-  import { languageTag } from "$lib/paraglide/runtime.js";
+  import { resolveRoute } from "$lib/routing";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
-
-  function resolveRoute(path: string) {
-    return i18n.resolveRoute(path, languageTag());
-  }
 
   if (browser) {
     onMount(() => {

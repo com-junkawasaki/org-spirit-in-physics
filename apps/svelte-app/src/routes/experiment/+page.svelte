@@ -1,8 +1,7 @@
 <script lang="ts">
   import { SignedIn, SignedOut, SignUp, useClerkContext } from "svelte-clerk";
   import * as m from "$lib/paraglide/messages.js";
-  import { i18n } from "$lib/i18n";
-  import { languageTag } from "$lib/paraglide/runtime.js";
+  import { resolveRoute } from "$lib/routing";
   import { runtimeConfig } from "$lib/env.svelte";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
@@ -13,7 +12,7 @@
   $effect(() => {
     if (runtimeConfig.IS_CAPACITOR && clerk.user) {
       console.log("[Mobile] User is signed in, redirecting to consent");
-      goto(i18n.resolveRoute('/experiment/consent', languageTag()));
+      goto(resolveRoute('/experiment/consent'));
     }
   });
 </script>
@@ -52,8 +51,8 @@
         <div class="clerk-container">
           <SignUp 
             routing="hash"
-            signInUrl={i18n.resolveRoute('/experiment', languageTag())}
-            forceRedirectUrl={i18n.resolveRoute('/experiment/consent', languageTag())}
+            signInUrl={resolveRoute('/experiment')}
+            forceRedirectUrl={resolveRoute('/experiment/consent')}
             appearance={{
               elements: {
                 rootBox: "w-full",
@@ -83,7 +82,7 @@
           <p class="text-sm text-gray-500 mb-8">You are signed in as {clerk.user?.primaryEmailAddress?.emailAddress}</p>
           
           <a 
-            href={i18n.resolveRoute('/experiment/consent', languageTag())}
+            href={resolveRoute('/experiment/consent')}
             class="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
           >
             {m.start_experiment()}

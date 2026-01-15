@@ -3,8 +3,7 @@
   import TimelineVisualization from "$lib/components/researcher/TimelineVisualization.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
-  import { i18n } from "$lib/i18n";
-  import { languageTag } from "$lib/paraglide/runtime.js";
+  import { resolveRoute } from "$lib/routing";
   import VoidBackground from "$lib/components/experiment/VoidBackground.svelte";
   import { fade, fly } from "svelte/transition";
 
@@ -134,7 +133,7 @@
         
         <div class="flex flex-col items-center gap-6">
           <a 
-            href={i18n.resolveRoute('/', languageTag())}
+            href={resolveRoute('/')}
             class="px-12 py-5 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px] rounded-full hover:scale-105 transition-all shadow-xl"
           >
             Learn More about the Research
