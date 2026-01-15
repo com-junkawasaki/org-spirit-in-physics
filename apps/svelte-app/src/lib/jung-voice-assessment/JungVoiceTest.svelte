@@ -6,6 +6,7 @@
   import * as m from "$lib/paraglide/messages.js";
   import { languageTag } from "$lib/paraglide/runtime.js";
   import { fade, fly, scale } from "svelte/transition";
+  import { resolveRoute } from "$lib/routing";
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
@@ -66,7 +67,7 @@
 
   onMount(async () => {
     if (kawasakiStore.testStatus === 'idle') {
-      goto("/experiment/consent");
+      goto(resolveRoute("/experiment/consent"));
       return;
     }
 

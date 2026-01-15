@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { runtimeConfig } from "$lib/env.svelte";
   import * as m from "$lib/paraglide/messages.js";
+  import { resolveRoute } from "$lib/routing";
 
   let { children } = $props();
 
@@ -25,14 +26,14 @@
         </div>
         <nav class="sidebar-nav">
           <a 
-            href="/researcher"
+            href={resolveRoute("/researcher")}
             class="nav-item"
             class:active={activeTab === "overview"} 
           >
             <span class="icon">📊</span> {m.overview()}
           </a>
           <a 
-            href="/researcher/participants"
+            href={resolveRoute("/researcher/participants")}
             class="nav-item"
             class:active={activeTab === "participants"} 
           >
@@ -84,28 +85,28 @@
             </div>
             <nav class="sidebar-nav">
               <a 
-                href="/researcher"
+                href={resolveRoute("/researcher")}
                 class="nav-item"
                 class:active={activeTab === "overview"} 
               >
                 <span class="icon">📊</span> {m.overview()}
               </a>
               <a 
-                href="/researcher/participants"
+                href={resolveRoute("/researcher/participants")}
                 class="nav-item"
                 class:active={activeTab === "participants"} 
               >
                 <span class="icon">👥</span> {m.participants_list()}
               </a>
               <a 
-                href="/researcher/sessions"
+                href={resolveRoute("/researcher/sessions")}
                 class="nav-item"
                 class:active={activeTab === "sessions"} 
               >
                 <span class="icon">🕒</span> {m.sessions_history()}
               </a>
               <a 
-                href="/researcher/settings"
+                href={resolveRoute("/researcher/settings")}
                 class="nav-item"
                 class:active={activeTab === "settings"} 
               >
@@ -147,7 +148,7 @@
               <p>研究者権限 (researcher role) が必要です。管理者にお問い合わせください。</p>
               <div class="auth-placeholder">
                 <p>現在のユーザーにはこのページを表示する権限がありません。</p>
-                <a href="/" class="btn secondary" style="margin-top: 1rem; display: inline-block;">トップへ戻る</a>
+                <a href={resolveRoute("/")} class="btn secondary" style="margin-top: 1rem; display: inline-block;">トップへ戻る</a>
               </div>
             </div>
           </div>

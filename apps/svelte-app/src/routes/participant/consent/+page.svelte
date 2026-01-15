@@ -8,6 +8,7 @@
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { hasAccess } from "$lib/subscription";
+  import { resolveRoute } from "$lib/routing";
 
   const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
@@ -17,7 +18,7 @@
     // 権限チェック: quick 以外はサブスクリプションが必要
     if (mode !== 'quick' && !hasAccess(user, mode)) {
       console.warn(`Access denied for mode: ${mode}`);
-      goto("/participant");
+      goto(resolveRoute("/participant"));
     }
   });
 
@@ -35,7 +36,7 @@
       await kawasakiStore.createParticipantOnServer(email, agreements);
       
       kawasakiStore.startPreflight();
-      goto("/participant/test");
+      goto(resolveRoute("/participant/test"));
     } catch (error) {
       console.error("Failed to create participant:", error);
     }

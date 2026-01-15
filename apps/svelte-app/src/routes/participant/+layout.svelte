@@ -6,6 +6,7 @@
   import { runtimeConfig } from "$lib/env.svelte";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
+  import { resolveRoute } from "$lib/routing";
 
   let { children } = $props();
 
@@ -29,13 +30,13 @@
       if (emailToCheck && !kawasakiStore.hasCheckedExisting) {
         kawasakiStore.checkExistingParticipant(emailToCheck).then((exists) => {
           kawasakiStore.hasCheckedExisting = true;
-          if (exists) {
-            console.log("Existing participant found, skipping consent");
-            if (isConsent || isLanding) {
-              kawasakiStore.startPreflight();
-              goto("/participant/test");
+            if (exists) {
+              console.log("Existing participant found, skipping consent");
+              if (isConsent || isLanding) {
+                kawasakiStore.startPreflight();
+                goto(resolveRoute("/participant/test"));
+              }
             }
-          }
         });
       }
     }
@@ -59,7 +60,7 @@
   {#if !isLanding}
     <header class="step-header">
       <div class="header-content">
-        <a href="/participant" class="back-link">← {m.back()}</a>
+        <a href={resolveRoute("/participant")} class="back-link">← {m.back()}</a>
         <span class="step-title">{m.participant_portal()}</span>
       </div>
     </header>

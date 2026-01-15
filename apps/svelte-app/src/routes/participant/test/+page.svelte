@@ -2,9 +2,10 @@
   import { goto } from "$app/navigation";
   import JungVoiceTest from "$lib/jung-voice-assessment/JungVoiceTest.svelte";
   import * as m from "$lib/paraglide/messages.js";
+  import { resolveRoute } from "$lib/routing";
 
   function handleTestComplete() {
-    goto("/participant/complete");
+    goto(resolveRoute("/participant/complete"));
   }
 </script>
 

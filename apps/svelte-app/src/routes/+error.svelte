@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import * as m from "$lib/paraglide/messages.js";
+  import { resolveRoute } from "$lib/routing";
 </script>
 
 <div class="error-container">
@@ -10,7 +11,7 @@
     <p class="error-message">
       {m.page_not_found_desc()}
     </p>
-    <a href="/" class="home-link">
+    <a href={resolveRoute("/")} class="home-link">
       {m.go_to_home()}
     </a>
   </div>

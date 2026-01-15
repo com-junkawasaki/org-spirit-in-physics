@@ -5,6 +5,7 @@
   import { kawasakiStore } from "$lib/jung-voice-assessment/store.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { hasAccess } from "$lib/subscription";
+  import { resolveRoute } from "$lib/routing";
 
   const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
@@ -35,7 +36,7 @@
     {/if}
     
     <div class="entry-grid">
-      <a href="/participant/consent?mode=quick" class="entry-card quick">
+      <a href={resolveRoute("/participant/consent?mode=quick")} class="entry-card quick">
         <div class="icon">⚡</div>
         <div class="info">
           <div class="title-row">
@@ -47,7 +48,7 @@
       </a>
       
       <div class="entry-card full featured {hasAccess(user, 'full') ? '' : 'disabled'}">
-        <a href={hasAccess(user, 'full') ? "/participant/consent?mode=full" : "#"} class="card-link-wrapper">
+        <a href={hasAccess(user, 'full') ? resolveRoute("/participant/consent?mode=full") : "#"} class="card-link-wrapper">
           <div class="icon">🔬</div>
           <div class="info">
             <div class="title-row">
