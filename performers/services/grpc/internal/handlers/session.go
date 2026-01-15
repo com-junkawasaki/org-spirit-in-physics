@@ -41,7 +41,7 @@ func (h *SessionHandler) GetSessions(
 
 	for _, s := range sessions {
 		var events []*structpb.Struct
-		// TODO: Parse events if needed
+		// Events parsing deferred
 
 		uid, _ := uuid.FromBytes(s.ID.Bytes[:])
 

@@ -7,22 +7,6 @@
 
   let { children } = $props();
 
-  // For E2E testing: bypass auth
-  let bypassAuth = $state(false);
-  
-  $effect(() => {
-    const checkBypass = () => {
-      const url = new URL(window.location.href);
-      return url.searchParams.get('test_mode') === 'true' || 
-             url.hash.includes('test_mode=true') ||
-             window.location.search.includes('test_mode=true');
-    };
-    
-    bypassAuth = checkBypass();
-    console.log('[AuthDebug] URL:', window.location.href);
-    console.log('[AuthDebug] BypassAuth:', bypassAuth);
-  });
-  
   let activeTab = $derived.by(() => {
     const path = page.url.pathname;
     if (path.startsWith('/researcher/participants')) return 'participants';
@@ -33,22 +17,22 @@
 </script>
 
 <div class="researcher-container">
-  {#if bypassAuth || !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
+  {#if !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}
     <div class="dashboard-layout">
       <aside class="sidebar">
         <div class="sidebar-header">
-          <span class="brand">Admin Dashboard {#if !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY}(No Auth Mode){:else}(Test Mode){/if}</span>
+          <span class="brand">Admin Dashboard (No Auth Mode)</span>
         </div>
         <nav class="sidebar-nav">
           <a 
-            href="/researcher?test_mode=true"
+            href="/researcher"
             class="nav-item"
             class:active={activeTab === "overview"} 
           >
             <span class="icon">📊</span> {m.overview()}
           </a>
           <a 
-            href="/researcher/participants?test_mode=true"
+            href="/researcher/participants"
             class="nav-item"
             class:active={activeTab === "participants"} 
           >

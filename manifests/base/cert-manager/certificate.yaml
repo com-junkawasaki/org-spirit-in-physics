@@ -4,8 +4,6 @@ metadata:
   name: sip-tls-cert
   namespace: spirit-in-physics
   annotations:
-    # Config Sync による管理を明示
-    configmanagement.gke.io/managed: enabled
     # cert-manager の再試行設定
     cert-manager.io/issue-temporary-certificate: "true"
 spec:

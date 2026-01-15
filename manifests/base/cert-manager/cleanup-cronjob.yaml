@@ -3,8 +3,6 @@ kind: CronJob
 metadata:
   name: cert-manager-cleanup-failed-challenges
   namespace: spirit-in-physics
-  annotations:
-    configmanagement.gke.io/managed: enabled
 spec:
   # 毎日午前3時に実行
   schedule: "0 3 * * *"

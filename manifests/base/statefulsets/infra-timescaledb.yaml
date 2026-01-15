@@ -25,13 +25,15 @@ spec:
           value: postgres
         - name: POSTGRES_DB
           value: spirit_in_physics
+        - name: PGDATA
+          value: /var/lib/postgresql/pv/data
         image: timescale/timescaledb:latest-pg15
         name: timescaledb
         ports:
         - containerPort: 5432
           name: postgres
         volumeMounts:
-        - mountPath: /var/lib/postgresql/data
+        - mountPath: /var/lib/postgresql/pv
           name: data
   volumeClaimTemplates:
   - metadata:

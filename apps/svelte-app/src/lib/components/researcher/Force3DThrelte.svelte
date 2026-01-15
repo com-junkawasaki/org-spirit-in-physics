@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Canvas } from '@threlte/core';
   import { WebGPURenderer } from 'three/webgpu';
+  import { WebGLRenderer } from 'three';
   import Scene from './ThrelteGraph.svelte';
   import type { WordNode, WordLink, GapArea, DensityRegion, GhostPattern } from './types';
 
@@ -65,15 +66,27 @@
       />
     </Canvas>
   {:else}
-    <div class="flex flex-col items-center justify-center h-full bg-gray-900 text-white p-8 text-center">
-      <div class="bg-orange-500/20 border border-orange-500/50 rounded-2xl p-6 max-w-md">
-        <h3 class="text-xl font-bold mb-2 text-orange-400">WebGPU Not Supported</h3>
-        <p class="text-gray-400 text-sm">
-          Your browser does not support WebGPU, which is required for this high-performance visualization. 
-          Please try using a modern browser like Chrome, Edge, or Arc.
-        </p>
-      </div>
-    </div>
+    <Canvas
+      createRenderer={(canvas) => {
+        return new WebGLRenderer({
+          canvas,
+          antialias: true
+        });
+      }}
+    >
+      <Scene
+        {nodes}
+        {links}
+        {physics}
+        {gapAreas}
+        {densityRegions}
+        {ghostPatterns}
+        {showAnalysis}
+        {onHover}
+        {onClick}
+        {pinnedItems}
+      />
+    </Canvas>
   {/if}
 </div>
 

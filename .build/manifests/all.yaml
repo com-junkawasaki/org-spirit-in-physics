@@ -6,8 +6,6 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  annotations:
-    configmanagement.gke.io/managed: enabled
   name: cert-manager-cleanup
   namespace: spirit-in-physics
 ---
@@ -44,8 +42,6 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  annotations:
-    configmanagement.gke.io/managed: enabled
   name: cert-manager-cleanup
   namespace: spirit-in-physics
 rules:
@@ -69,8 +65,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  annotations:
-    configmanagement.gke.io/managed: enabled
   name: cert-manager-cleanup
   namespace: spirit-in-physics
 roleRef:
@@ -342,7 +336,7 @@ spec:
               key: CLERK_SECRET_KEY
               name: clerk-secrets
         - name: PUBLIC_API_URL
-          value: https://sip.junkawasaki.com/api
+          value: https://spirit-in-physics.com/api
         image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
         imagePullPolicy: Always
         name: portal
@@ -405,13 +399,15 @@ spec:
           value: postgres
         - name: POSTGRES_DB
           value: spirit_in_physics
+        - name: PGDATA
+          value: /var/lib/postgresql/pv/data
         image: timescale/timescaledb:latest-pg15
         name: timescaledb
         ports:
         - containerPort: 5432
           name: postgres
         volumeMounts:
-        - mountPath: /var/lib/postgresql/data
+        - mountPath: /var/lib/postgresql/pv
           name: data
   volumeClaimTemplates:
   - metadata:
@@ -426,8 +422,6 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  annotations:
-    configmanagement.gke.io/managed: enabled
   name: cert-manager-cleanup-failed-challenges
   namespace: spirit-in-physics
 spec:
@@ -480,7 +474,6 @@ kind: Certificate
 metadata:
   annotations:
     cert-manager.io/issue-temporary-certificate: "true"
-    configmanagement.gke.io/managed: enabled
   name: sip-tls-cert
   namespace: spirit-in-physics
 spec:

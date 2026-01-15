@@ -15,7 +15,7 @@ const getEnv = (key: string, defaultValue: string = ''): string => {
         if (browser && (window as any).Capacitor !== undefined) {
             return "http://localhost:8080";
         }
-        return "https://sip.junkawasaki.com/api";
+        return "https://spirit-in-physics.com/api";
     }
     return (env as any)[key] || defaultValue;
 };

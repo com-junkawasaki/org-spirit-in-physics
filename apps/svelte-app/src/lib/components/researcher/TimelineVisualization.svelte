@@ -31,11 +31,6 @@
     EmotionVector, 
     WordStatistics 
   } from '../../../generated/proto/timeline/v1/timeline_pb';
-  import { 
-    generateMockTimelineData, 
-    generateMockEmotionVectors, 
-    generateMockWordStatistics 
-  } from '$lib/researcher/mock-data';
   
   let {
     participantId,
@@ -43,9 +38,8 @@
     width = 800,
     height = 850,
     hideFilters = false,
-    forceMode,
-    useMockData = false // Add option to use mock data
-  }: TimelineVisualizationProps & { useMockData?: boolean } = $props();
+    forceMode
+  }: TimelineVisualizationProps = $props();
 
   // State
   let data: TimelineDataPoint[] = $state([]);
@@ -128,8 +122,6 @@
   $effect(() => {
     if (forceMode === 'force-3d-threlte') {
       activeTab = 'force3d';
-    } else {
-      activeTab = 'timeline';
     }
   });
 
@@ -152,31 +144,9 @@
   }
 
   async function fetchData() {
-    if (!participantId && !useMockData) return;
+    if (!participantId) return;
     loading = true;
     error = null;
-    
-    // Use mock data if enabled
-    if (useMockData) {
-      try {
-        data = generateMockTimelineData(100);
-        emotionVectors = generateMockEmotionVectors() as any;
-        wordStatistics = generateMockWordStatistics() as any;
-        
-        if (data.length > 0) {
-          const extent = d3.extent(data, d => d.timestamp) as [number, number];
-          timeRange = { start: extent[0], end: extent[1] };
-        }
-        
-        loading = false;
-        return;
-      } catch (e: any) {
-        error = e.message || "Failed to generate mock data";
-        console.error(e);
-        loading = false;
-        return;
-      }
-    }
     
     try {
       // Use the new integrated endpoint that runs on TS Temporal
@@ -292,7 +262,7 @@
     }
   }
 
-  onMount(() => {
+  $effect(() => {
     fetchData();
   });
 

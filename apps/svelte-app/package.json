@@ -62,5 +62,10 @@
     "sirv-cli": "^3.0.1",
     "svelte-clerk": "0.20.1",
     "three": "^0.182.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "posthog-node": "link:./noop-posthog"
+    }
   }
 }

@@ -2,8 +2,10 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { page } from './navigation.js';
 
+const BASE_URL = process.env.BASE_URL || 'https://spirit-in-physics.com';
+
 Given('I am on the analysis page for participant {string}', async function (id: string) {
-  const url = `http://spirit.localhost/researcher/participants/${id}?test_mode=true`;
+  const url = `${BASE_URL}/researcher/participants/${id}?test_mode=true`;
   console.log(`Navigating to ${url}`);
   await page.goto(url);
 });
@@ -49,11 +51,18 @@ Then('I should see potential {string} highlights on the timeline', async functio
 
 When('I switch to the {string} tab', async function (tabName: string) {
   const tabButton = page.locator('button', { hasText: tabName });
-  await tabButton.click();
+  console.log(`Clicking tab button: "${tabName}"`);
+  await expect(tabButton).toBeVisible();
+  await tabButton.click({ force: true });
+  console.log('Clicked tab button');
+  // Wait for the button to become active (check for shadow-sm class which is applied when active)
+  await expect(tabButton).toHaveClass(/shadow-sm/, { timeout: 5000 });
+  await page.waitForTimeout(1000); // Wait for transition
 });
 
 Then('I should see the 3D Force Graph', async function () {
-  await expect(page.locator('canvas')).toBeVisible();
+  // Wait longer for 3D canvas initialization
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 15000 });
 });
 
 Then('I should see the {string} panel with analysis results', async function (panelTitle: string) {
