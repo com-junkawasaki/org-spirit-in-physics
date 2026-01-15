@@ -12,7 +12,6 @@ spec:
   commonName: spirit-in-physics.com
   dnsNames:
   - spirit-in-physics.com
-  - sip.junkawasaki.com
   issuerRef:
     kind: ClusterIssuer
     name: letsencrypt-prod

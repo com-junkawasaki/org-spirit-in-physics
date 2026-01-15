@@ -487,7 +487,6 @@ spec:
   commonName: spirit-in-physics.com
   dnsNames:
   - spirit-in-physics.com
-  - sip.junkawasaki.com
   duration: 2160h
   issuerRef:
     kind: ClusterIssuer
@@ -509,7 +508,9 @@ spec:
     - http01:
         gatewayHTTPRoute:
           parentRefs:
-          - name: infra-gateway
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: infra-gateway
             namespace: spirit-in-physics
             sectionName: http-0
 ---
