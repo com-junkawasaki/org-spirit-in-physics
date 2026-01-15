@@ -139,25 +139,35 @@
   }
 
   onMount(async () => {
+    const startTime = performance.now();
+    console.log('[DEBUG] LandingView.svelte: onMount started');
+    console.log('[DEBUG] Loading data for researchers:', RESEARCHER_IDS);
+    
     try {
-      console.log("Loading data for researchers:", RESEARCHER_IDS);
-      
       // Use shorter timeout or handle individual failures
       const fetchData = async (id: string) => {
+        const fetchStart = performance.now();
+        console.log(`[DEBUG] Starting API calls for researcher ${id}`);
         try {
           const [timeline, vectors, analysis] = await Promise.all([
             timelineClient.getIntegratedTimeline({ participantId: id }),
             timelineClient.getEmotionVectors({ participantId: id }),
             timelineClient.getAnalysis({ participantId: id })
           ]);
+          const fetchDuration = performance.now() - fetchStart;
+          console.log(`[DEBUG] API calls completed for ${id} in ${fetchDuration.toFixed(2)}ms`);
           return { timeline, vectors, analysis };
         } catch (err) {
-          console.error(`Failed to fetch data for researcher ${id}:`, err);
+          const fetchDuration = performance.now() - fetchStart;
+          console.error(`[DEBUG] Failed to fetch data for researcher ${id} after ${fetchDuration.toFixed(2)}ms:`, err);
           return null;
         }
       };
 
+      console.log('[DEBUG] Starting Promise.all for all researchers');
       const results = await Promise.all(RESEARCHER_IDS.map(fetchData));
+      const totalDuration = performance.now() - startTime;
+      console.log(`[DEBUG] All API calls completed in ${totalDuration.toFixed(2)}ms`);
       const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null);
 
       console.log(`Successfully loaded data for ${validResults.length} researchers`);
@@ -170,10 +180,13 @@
       console.log("Vectors received:", allVectors.map(v => v?.vectors?.length || 0));
 
       if (validResults.length === 0) {
-        console.warn("No data received for any researcher. Check if gRPC services are running.");
+        console.warn("[DEBUG] No data received for any researcher. Check if gRPC services are running.");
+        console.log("[DEBUG] Falling back to mock data");
         generateMockData();
         return;
       }
+      
+      console.log('[DEBUG] Processing valid results, count:', validResults.length);
 
       let mergedWordNodes: WordNode[] = [];
       let mergedLinks: WordLink[] = [];

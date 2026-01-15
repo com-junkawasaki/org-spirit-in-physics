@@ -15,6 +15,9 @@
   let { children } = $props();
 
   onMount(async () => {
+    console.log('[DEBUG] +layout.svelte: onMount started');
+    console.log('[DEBUG] Current route:', page.url.pathname);
+    
     if (runtimeConfig.IS_CAPACITOR) {
       const { App } = await import('@capacitor/app');
       
@@ -30,6 +33,8 @@
         }
       });
     }
+    
+    console.log('[DEBUG] +layout.svelte: onMount completed');
   });
 
   let isExperimentRoute = $derived(page.url.pathname.includes('/experiment'));
