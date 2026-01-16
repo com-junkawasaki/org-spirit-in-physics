@@ -231,5 +231,11 @@
 	"theme_system": "System",
 	"system_settings": "System Settings",
 	"general": "General",
+	"assumption_1_title": "Assumption 1: Information is Thermodynamics",
+	"assumption_1_text": "We posit that information is a physical quantity governed by thermodynamic laws. Following Shannon's definition of information entropy as uncertainty (Shannon, 1948), Jaynes linked it to statistical mechanics (Jaynes, 1957). Landauer further established that information processing is physical, with bit erasure incurring an energetic cost (Landauer, 1961), a principle experimentally verified (Bérut et al., 2012).",
+	"assumption_2_title": "Assumption 2: Spirituality is Information",
+	"assumption_2_text": "We define 'Spirit' as a high-dimensional informational structure. The Rubber Hand Illusion demonstrates that the self-boundary is a malleable informational construct (Botvinick & Cohen, 1998). Jung's Word Association reveals that the psyche consists of measurable information clusters (Jung, 1910).",
+	"assumption_3_title": "Assumption 3: Spirit as Open System Dynamics",
+	"assumption_3_text": "The Spirit is modeled as a thermodynamic Open System. Unlike a closed system, it exchanges entropy with its environment to maintain order (Schrödinger, 1944). This aligns with the Free Energy Principle, where agents minimize surprisal to maintain integrity (Friston, 2010).",
 	"ui_preferences": "Interface Preferences"
 }

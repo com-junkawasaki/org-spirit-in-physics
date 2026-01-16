@@ -45,9 +45,22 @@
 
 <h2 id="theory">{m.theory()}</h2>
 
-<h3>{m.theory_title_2_1()}</h3>
+<h3>2.1. Fundamental Assumptions</h3>
 
-{m.theory_text_2_1()}
+<div class="assumption-block">
+  <h4>{m.assumption_1_title()}</h4>
+  <p>{m.assumption_1_text()}</p>
+</div>
+
+<div class="assumption-block">
+  <h4>{m.assumption_2_title()}</h4>
+  <p>{m.assumption_2_text()}</p>
+</div>
+
+<div class="assumption-block">
+  <h4>{m.assumption_3_title()}</h4>
+  <p>{m.assumption_3_text()}</p>
+</div>
 
 <h3>{m.theory_title_2_2()}</h3>
 
