@@ -32,13 +32,19 @@
     pinnedItems = []
   }: Props = $props();
 
-  // Simulation state
   let simulation: any;
   let d3Nodes = $state<any[]>([]);
   let d3Links = $state<any[]>([]);
+  let tickCount = 0;
+  const MAX_TICKS = 300; // Limit simulation duration to prevent persistent CPU drain
+  
+  // Track references to Three.js objects for direct updates
+  let nodeRefs: Record<string, THREE.Group> = {};
+  let linkRefs: Array<{ ref: any; sourceIdx: number; targetIdx: number }> = [];
 
   // Convert Props to D3 structure
   function initSimulation() {
+    tickCount = 0;
     d3Nodes = nodes.map(n => ({ 
       ...n, 
       x: n.initial?.[0] ?? (Math.random() - 0.5) * 400,
@@ -51,24 +57,57 @@
       ...l,
       source: d3Nodes[l.source]?.id,
       target: d3Nodes[l.target]?.id,
+      sourceIdx: l.source,
+      targetIdx: l.target
     }));
+
+    if (simulation) simulation.stop();
 
     simulation = d3.forceSimulation(d3Nodes, 3)
       .force('link', d3.forceLink(d3Links).id((d: any) => d.id).distance(physics?.restLength ?? 100))
       .force('charge', d3.forceManyBody().strength(-(physics?.repulsionK ?? 1000) / 5))
       .force('center', d3.forceCenter(0, 0, 0))
       .force('radial', d3.forceRadial(physics?.shellRadius ?? 500).strength(0.1))
-      .velocityDecay(1 - (physics?.damping ?? 0.93));
+      .velocityDecay(1 - (physics?.damping ?? 0.93))
+      .on('tick', () => {
+        tickCount++;
+        if (tickCount > MAX_TICKS) {
+          simulation.stop();
+          console.log('[DEBUG] Simulation auto-stopped after MAX_TICKS');
+          return;
+        }
+
+        // Direct updates to Three.js objects
+        for (const node of d3Nodes) {
+          const ref = nodeRefs[node.id];
+          if (ref) {
+            ref.position.set(node.x, node.y, node.z);
+          }
+        }
+        
+        for (const link of linkRefs) {
+          if (link.ref) {
+            const s = d3Nodes[link.sourceIdx];
+            const t = d3Nodes[link.targetIdx];
+            if (s && t) {
+              const positions = link.ref.geometry.attributes.position;
+              positions.setXYZ(0, s.x, s.y, s.z);
+              positions.setXYZ(1, t.x, t.y, t.z);
+              positions.needsUpdate = true;
+            }
+          }
+        }
+      });
   }
 
   onMount(() => {
     initSimulation();
+    return () => simulation?.stop();
   });
 
   // React to data changes
   $effect(() => {
-    if (nodes && links && simulation) {
-      // Simple re-init if count changes significantly, otherwise update forces
+    if (nodes && links) {
       initSimulation();
     }
   });
@@ -76,24 +115,12 @@
   useTask(() => {
     if (simulation) {
       simulation.tick();
-      // Force UI update by triggering state refresh
-      d3Nodes = [...d3Nodes];
-      d3Links = [...d3Links];
     }
   });
 
   // Materials
   const nodeGeometry = new THREE.SphereGeometry(1, 16, 16);
   const anchorGeometry = new THREE.BoxGeometry(2, 2, 2);
-  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x4444ff, transparent: true, opacity: 0.3 });
-
-  function getLinkPoints(link: any) {
-    if (!link.source || !link.target) return [];
-    return [
-      new THREE.Vector3(link.source.x || 0, link.source.y || 0, link.source.z || 0),
-      new THREE.Vector3(link.target.x || 0, link.target.y || 0, link.target.z || 0)
-    ];
-  }
 </script>
 
 <T.PerspectiveCamera
@@ -109,11 +136,24 @@
 <T.PointLight position={[-100, -100, -100]} intensity={0.5} color="#4444ff" />
 
 <!-- Links -->
-{#each d3Links as link}
+{#each d3Links as link, i}
   {#if typeof link.source === 'object' && typeof link.target === 'object'}
     <T.Line
-      points={getLinkPoints(link)}
+      oncreate={({ ref }) => {
+        linkRefs[i] = { ref, sourceIdx: link.sourceIdx, targetIdx: link.targetIdx };
+      }}
     >
+      <T.BufferGeometry
+        oncreate={({ ref }) => {
+          const s = d3Nodes[link.sourceIdx];
+          const t = d3Nodes[link.targetIdx];
+          const vertices = new Float32Array([
+            s.x || 0, s.y || 0, s.z || 0,
+            t.x || 0, t.y || 0, t.z || 0
+          ]);
+          ref.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        }}
+      />
       <T.LineBasicMaterial 
         color={link.color || (link.mode === 'tension' ? '#666' : '#3b82f6')} 
         transparent 
@@ -125,7 +165,12 @@
 
 <!-- Nodes -->
 {#each d3Nodes as node (node.id)}
-  <T.Group position={[node.x || 0, node.y || 0, node.z || 0]}>
+  <T.Group 
+    oncreate={({ ref }) => {
+      nodeRefs[node.id] = ref;
+      ref.position.set(node.x || 0, node.y || 0, node.z || 0);
+    }}
+  >
     <T.Mesh
       geometry={node.nodeType === 'anchor' ? anchorGeometry : nodeGeometry}
       scale={node.scale * 2 || 2}

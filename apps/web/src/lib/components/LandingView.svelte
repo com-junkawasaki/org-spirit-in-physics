@@ -142,31 +142,44 @@
     console.log('[DEBUG] LandingView.svelte: onMount started');
     console.log('[DEBUG] Loading data for researchers:', RESEARCHER_IDS);
     
+    // Global AbortController for all fetches in this mount
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn("[DEBUG] Global timeout reached in LandingView. Aborting fetches.");
+      controller.abort();
+    }, 3000); // 3 seconds total timeout
+
     try {
-      // Use shorter timeout or handle individual failures
       const fetchData = async (id: string) => {
         const fetchStart = performance.now();
         console.log(`[DEBUG] Starting API calls for researcher ${id}`);
         try {
+          // ConnectRPC supports signal for cancellation/timeout
           const [timeline, vectors, analysis] = await Promise.all([
-            timelineClient.getIntegratedTimeline({ participantId: id }),
-            timelineClient.getEmotionVectors({ participantId: id }),
-            timelineClient.getAnalysis({ participantId: id })
+            timelineClient.getIntegratedTimeline({ participantId: id }, { signal: controller.signal }),
+            timelineClient.getEmotionVectors({ participantId: id }, { signal: controller.signal }),
+            timelineClient.getAnalysis({ participantId: id }, { signal: controller.signal })
           ]);
           const fetchDuration = performance.now() - fetchStart;
           console.log(`[DEBUG] API calls completed for ${id} in ${fetchDuration.toFixed(2)}ms`);
           return { timeline, vectors, analysis };
-        } catch (err) {
+        } catch (err: any) {
           const fetchDuration = performance.now() - fetchStart;
-          console.error(`[DEBUG] Failed to fetch data for researcher ${id} after ${fetchDuration.toFixed(2)}ms:`, err);
+          if (err.name === 'AbortError') {
+            console.warn(`[DEBUG] API calls for ${id} timed out after ${fetchDuration.toFixed(2)}ms`);
+          } else {
+            console.error(`[DEBUG] Failed to fetch data for researcher ${id} after ${fetchDuration.toFixed(2)}ms:`, err);
+          }
           return null;
         }
       };
 
       console.log('[DEBUG] Starting Promise.all for all researchers');
       const results = await Promise.all(RESEARCHER_IDS.map(fetchData));
+      clearTimeout(timeoutId);
+      
       const totalDuration = performance.now() - startTime;
-      console.log(`[DEBUG] All API calls completed in ${totalDuration.toFixed(2)}ms`);
+      console.log(`[DEBUG] All API calls processing completed in ${totalDuration.toFixed(2)}ms`);
       const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null);
 
       console.log(`Successfully loaded data for ${validResults.length} researchers`);
@@ -215,7 +228,7 @@
             };
           })
           .filter((p): p is any & { word: string } => !!p.word && p.word !== 'Unknown')
-          .slice(0, 300) // Higher density for Jun Kawasaki
+          .slice(0, 100) // Reduced from 300 for performance
           .map((d, i) => {
             const word = d.word;
             const vec = vectors.vectors.find(v => v.word === word);
