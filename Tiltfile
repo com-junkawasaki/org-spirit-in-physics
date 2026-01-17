@@ -4,6 +4,9 @@
 load('ext://restart_process', 'docker_build_with_restart')
 load('ext://helm_resource', 'helm_resource', 'helm_repo')
 
+# Allow GKE context for development
+allow_k8s_contexts('gke_com-junkawasaki-sip_asia-northeast1_spirit-autopilot')
+
 # Configuration
 config.define_string("runtime", args=True, usage="Runtime environment (orbstack or gke)")
 cfg = config.parse()

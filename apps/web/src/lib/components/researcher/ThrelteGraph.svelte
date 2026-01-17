@@ -45,13 +45,21 @@
   // Convert Props to D3 structure
   function initSimulation() {
     tickCount = 0;
-    d3Nodes = nodes.map(n => ({ 
-      ...n, 
-      x: n.initial?.[0] ?? (Math.random() - 0.5) * 400,
-      y: n.initial?.[1] ?? (Math.random() - 0.5) * 400,
-      z: n.initial?.[2] ?? (Math.random() - 0.5) * 400,
-      vx: 0, vy: 0, vz: 0
-    }));
+    nodeRefs = {};
+    linkRefs = [];
+    d3Nodes = nodes.map(n => {
+      const x = n.initial?.[0] ?? (Math.random() - 0.5) * 400;
+      const y = n.initial?.[1] ?? (Math.random() - 0.5) * 400;
+      const z = n.initial?.[2] ?? (Math.random() - 0.5) * 400;
+      return { 
+        ...n, 
+        x, y, z,
+        fx: n.fixed ? x : undefined,
+        fy: n.fixed ? y : undefined,
+        fz: n.fixed ? z : undefined,
+        vx: 0, vy: 0, vz: 0
+      };
+    });
 
     d3Links = links.map(l => ({
       ...l,
@@ -66,7 +74,7 @@
     simulation = d3.forceSimulation(d3Nodes, 3)
       .force('link', d3.forceLink(d3Links).id((d: any) => d.id).distance(physics?.restLength ?? 100))
       .force('charge', d3.forceManyBody().strength(-(physics?.repulsionK ?? 1000) / 5))
-      .force('center', d3.forceCenter(0, 0, 0))
+      .force('center', d3.forceCenter(0, 0, 0).strength(0.05))
       .force('radial', d3.forceRadial(physics?.shellRadius ?? 500).strength(0.1))
       .velocityDecay(1 - (physics?.damping ?? 0.93))
       .on('tick', () => {
@@ -120,7 +128,7 @@
 
   // Materials
   const nodeGeometry = new THREE.SphereGeometry(1, 16, 16);
-  const anchorGeometry = new THREE.BoxGeometry(2, 2, 2);
+  const anchorGeometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
 </script>
 
 <T.PerspectiveCamera
@@ -130,6 +138,10 @@
 >
   <OrbitControls enableDamping />
 </T.PerspectiveCamera>
+
+<!-- Visual Helpers for Vector Space -->
+<T.AxesHelper args={[500]} />
+<T.GridHelper args={[1000, 20, 0x444444, 0x222222]} rotation.x={Math.PI / 2} />
 
 <T.AmbientLight intensity={0.4} />
 <T.DirectionalLight position={[100, 100, 100]} intensity={1} />
@@ -165,39 +177,68 @@
 
 <!-- Nodes -->
 {#each d3Nodes as node (node.id)}
-  <T.Group 
-    oncreate={({ ref }) => {
-      nodeRefs[node.id] = ref;
-      ref.position.set(node.x || 0, node.y || 0, node.z || 0);
-    }}
-  >
-    <T.Mesh
-      geometry={node.nodeType === 'anchor' ? anchorGeometry : nodeGeometry}
-      scale={node.scale * 2 || 2}
-      onpointerenter={() => onHover?.({ node })}
-      onpointerleave={() => onHover?.(null)}
-      onclick={() => onClick?.({ node })}
+  {#if node.nodeType === 'anchor'}
+    <!-- Render Anchor as a 3D Vector (Arrow from origin) -->
+    <T.ArrowHelper
+      args={[
+        new THREE.Vector3(node.x, node.y, node.z).normalize(),
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(node.x, node.y, node.z).length(),
+        node.color || '#ffffff',
+        30, // headLength
+        15  // headWidth
+      ]}
+    />
+    
+    <T.Group position={[node.x || 0, node.y || 0, node.z || 0]}>
+      {#if node.label}
+        <Text
+          text={node.label}
+          position.y={15}
+          fontSize={14}
+          anchorX="center"
+          anchorY="bottom"
+          color="white"
+          outlineColor="black"
+          outlineWidth={1}
+        />
+      {/if}
+    </T.Group>
+  {:else}
+    <T.Group 
+      oncreate={({ ref }) => {
+        nodeRefs[node.id] = ref;
+        ref.position.set(node.x || 0, node.y || 0, node.z || 0);
+      }}
     >
-      <T.MeshStandardMaterial 
-        color={node.color || '#1e40af'} 
-        emissive={node.color || '#1e40af'}
-        emissiveIntensity={0.2}
-      />
-    </T.Mesh>
+      <T.Mesh
+        geometry={nodeGeometry}
+        scale={node.scale * 2 || 2}
+        onpointerenter={() => onHover?.({ node })}
+        onpointerleave={() => onHover?.(null)}
+        onclick={() => onClick?.({ node })}
+      >
+        <T.MeshStandardMaterial 
+          color={node.color || '#1e40af'} 
+          emissive={node.color || '#1e40af'}
+          emissiveIntensity={0.2}
+        />
+      </T.Mesh>
 
-    {#if node.label && (node.scale > 5 || node.nodeType === 'anchor')}
-      <Text
-        text={node.label}
-        position.y={(node.scale * 2 || 2) + 5}
-        fontSize={12}
-        anchorX="center"
-        anchorY="bottom"
-        color="white"
-        outlineColor="black"
-        outlineWidth={1}
-      />
-    {/if}
-  </T.Group>
+      {#if node.label && node.scale > 5}
+        <Text
+          text={node.label}
+          position.y={(node.scale * 2 || 2) + 5}
+          fontSize={12}
+          anchorX="center"
+          anchorY="bottom"
+          color="white"
+          outlineColor="black"
+          outlineWidth={1}
+        />
+      {/if}
+    </T.Group>
+  {/if}
 {/each}
 
 <!-- Ghost Patterns / Analysis -->
