@@ -55,7 +55,7 @@
     },
     {
       "name": "Nature Computational Science",
-      "focus": "Temporal/lakeFSを用いた高度な計算再現性と多様体分析"
+      "focus": "Temporalを用いた高度な計算再現性と多様体分析"
     }
   ],
   
@@ -81,6 +81,12 @@
   ],
   
   "tactics": [
+    {
+      "@id": "tactic:cost-efficient-scaling",
+      "title": "GKE Autopilot & GCS への移行による低コスト・スケーラビリティの確保",
+      "description": "n=1,000 へのスケールに向け、インフラを従量課金モデル（Autopilot/GCS）へ刷新。不活動時の固定費を極限まで抑えつつ、急激な参加者増に対応可能な弾力性を確保。",
+      "relatedCapability": "capability:system-management"
+    },
     {
       "@id": "tactic:mobile-app-launch",
       "title": "iOS/Android モバイルアプリ (Capacitor) のリリース",

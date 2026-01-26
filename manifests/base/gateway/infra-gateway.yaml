@@ -1,0 +1,26 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: infra-gateway
+  namespace: spirit-in-physics
+spec:
+  gatewayClassName: envoy
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: spirit-in-physics.com
+    name: http-0
+    port: 80
+    protocol: HTTP
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: spirit-in-physics.com
+    name: https-0
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - name: sip-tls-cert
+      mode: Terminate

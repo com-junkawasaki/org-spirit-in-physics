@@ -1,0 +1,625 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spirit-in-physics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cert-manager-cleanup
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grpc-service
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: import-service
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: import-worker
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: portal
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: temporal-ts
+  namespace: spirit-in-physics
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cert-manager-cleanup
+  namespace: spirit-in-physics
+rules:
+- apiGroups:
+  - acme.cert-manager.io
+  resources:
+  - challenges
+  verbs:
+  - get
+  - list
+  - delete
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - httproutes
+  verbs:
+  - get
+  - list
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cert-manager-cleanup
+  namespace: spirit-in-physics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cert-manager-cleanup
+subjects:
+- kind: ServiceAccount
+  name: cert-manager-cleanup
+  namespace: spirit-in-physics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-service
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: grpc-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: import-service
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 8082
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: import-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: import-worker
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: import-worker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: infra-temporal
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: grpc
+    port: 7233
+    protocol: TCP
+    targetPort: 7233
+  - name: ui
+    port: 8088
+    protocol: TCP
+    targetPort: 8088
+  selector:
+    app: temporal
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: infra-timescaledb
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: postgres
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    app: timescaledb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portal
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: portal
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-ts
+  namespace: spirit-in-physics
+spec:
+  ports:
+  - name: http
+    port: 3000
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: temporal-ts
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-service
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grpc-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: grpc-service
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
+        - name: TEMPORAL_ADDRESS
+          value: infra-temporal:7233
+        - name: STORAGE_ENDPOINT
+          value: storage.googleapis.com
+        - name: STORAGE_BUCKET
+          value: spirit-in-physics
+        - name: STORAGE_USE_SSL
+          value: "true"
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service:latest
+        imagePullPolicy: Always
+        name: grpc-service
+        ports:
+        - containerPort: 8080
+          name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: import-service
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: import-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: import-service
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
+        - name: TEMPORAL_ADDRESS
+          value: infra-temporal:7233
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service:latest
+        imagePullPolicy: Always
+        name: import-service
+        ports:
+        - containerPort: 8082
+          name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: import-worker
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: import-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: import-worker
+    spec:
+      containers:
+      - command:
+        - python
+        - worker.py
+        env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
+        - name: TEMPORAL_ADDRESS
+          value: infra-temporal:7233
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service:latest
+        imagePullPolicy: Always
+        name: import-worker
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infra-temporal
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temporal
+  template:
+    metadata:
+      labels:
+        app: temporal
+    spec:
+      containers:
+      - env:
+        - name: DB
+          value: postgres12
+        - name: DB_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PWD
+          value: postgres
+        - name: POSTGRES_SEEDS
+          value: infra-timescaledb
+        image: temporalio/auto-setup:latest
+        imagePullPolicy: Always
+        name: temporal
+        ports:
+        - containerPort: 7233
+          name: grpc
+        - containerPort: 8088
+          name: ui
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: portal
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: portal
+    spec:
+      containers:
+      - env:
+        - name: PUBLIC_CLERK_PUBLISHABLE_KEY
+          valueFrom:
+            secretKeyRef:
+              key: PUBLIC_CLERK_PUBLISHABLE_KEY
+              name: clerk-secrets
+        - name: CLERK_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: CLERK_SECRET_KEY
+              name: clerk-secrets
+        - name: PUBLIC_API_URL
+          value: https://spirit-in-physics.com/api
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
+        imagePullPolicy: Always
+        name: portal
+        ports:
+        - containerPort: 80
+          name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-ts
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: temporal-ts
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: temporal-ts
+    spec:
+      containers:
+      - env:
+        - name: TEMPORAL_ADDRESS
+          value: infra-temporal:7233
+        - name: TASK_QUEUE
+          value: visualization-analysis-queue
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts:latest
+        imagePullPolicy: Always
+        name: temporal-ts
+        ports:
+        - containerPort: 3000
+          name: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: infra-timescaledb
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timescaledb
+  serviceName: infra-timescaledb
+  template:
+    metadata:
+      labels:
+        app: timescaledb
+    spec:
+      containers:
+      - args:
+        - -c
+        - max_connections=200
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        - name: POSTGRES_DB
+          value: spirit_in_physics
+        - name: PGDATA
+          value: /var/lib/postgresql/pv/data
+        image: timescale/timescaledb:latest-pg15
+        name: timescaledb
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/pv
+          name: data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cert-manager-cleanup-failed-challenges
+  namespace: spirit-in-physics
+spec:
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - command:
+            - /bin/sh
+            - -c
+            - "set -e\n\n# 失敗したChallengeリソースを削除（invalid, expired, または24時間以上pendingのもの）\necho
+              \"Cleaning up failed challenges...\"\nkubectl get challenges -n spirit-in-physics
+              --no-headers 2>/dev/null | while read name rest; do\n  state=$(kubectl
+              get challenge $name -n spirit-in-physics -o jsonpath='{.status.state}'
+              2>/dev/null || echo \"\")\n  age=$(kubectl get challenge $name -n spirit-in-physics
+              -o jsonpath='{.metadata.creationTimestamp}' 2>/dev/null || echo \"\")\n
+              \ \n  if [ \"$state\" = \"invalid\" ] || [ \"$state\" = \"expired\"
+              ]; then\n    echo \"Deleting failed challenge: $name (state: $state)\"\n
+              \   kubectl delete challenge $name -n spirit-in-physics --ignore-not-found=true
+              || true\n  elif [ \"$state\" = \"pending\" ] && [ -n \"$age\" ]; then\n
+              \   # 24時間以上経過しているかチェック（簡易版：作成時刻が24時間前より古い）\n    echo \"Checking pending
+              challenge: $name (created: $age)\"\n    # より正確なチェックが必要な場合は、別の方法を使用\n
+              \ fi\ndone\n\n# 失敗したChallengeに関連する古いHTTPRouteリソースを削除\necho \"Cleaning
+              up orphaned HTTPRoute resources...\"\nkubectl get httproute -n spirit-in-physics
+              -l acme.cert-manager.io/http01-solver=true --no-headers 2>/dev/null
+              | while read name rest; do\n  owner=$(kubectl get httproute $name -n
+              spirit-in-physics -o jsonpath='{.metadata.ownerReferences[?(@.kind==\"Challenge\")].name}'
+              2>/dev/null || echo \"\")\n  if [ -z \"$owner\" ]; then\n    echo \"Deleting
+              HTTPRoute without owner: $name\"\n    kubectl delete httproute $name
+              -n spirit-in-physics --ignore-not-found=true || true\n  else\n    #
+              Challengeが存在しないかチェック\n    if ! kubectl get challenge $owner -n spirit-in-physics
+              &>/dev/null; then\n      echo \"Deleting HTTPRoute with missing challenge
+              owner: $name (owner: $owner)\"\n      kubectl delete httproute $name
+              -n spirit-in-physics --ignore-not-found=true || true\n    fi\n  fi\ndone\n\necho
+              \"Cleanup completed at $(date)\"\n"
+            env:
+            - name: TZ
+              value: Asia/Tokyo
+            image: bitnami/kubectl:latest
+            name: cleanup
+          restartPolicy: OnFailure
+          serviceAccountName: cert-manager-cleanup
+  schedule: 0 3 * * *
+  successfulJobsHistoryLimit: 3
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  annotations:
+    cert-manager.io/issue-temporary-certificate: "true"
+  name: sip-tls-cert
+  namespace: spirit-in-physics
+spec:
+  commonName: spirit-in-physics.com
+  dnsNames:
+  - spirit-in-physics.com
+  duration: 2160h
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  renewBefore: 720h
+  secretName: sip-tls-cert
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: junkawasaki@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+    - http01:
+        gatewayHTTPRoute:
+          parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: infra-gateway
+            namespace: spirit-in-physics
+            sectionName: http-0
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    networking.gke.io/static-ip: sip-static-ip
+  name: infra-gateway
+  namespace: spirit-in-physics
+spec:
+  gatewayClassName: envoy
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: spirit-in-physics.com
+    name: http-0
+    port: 80
+    protocol: HTTP
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: spirit-in-physics.com
+    name: https-0
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - name: sip-tls-cert
+      mode: Terminate
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: infra-https-redirect
+  namespace: spirit-in-physics
+spec:
+  hostnames:
+  - spirit-in-physics.com
+  - sip.junkawasaki.com
+  parentRefs:
+  - name: infra-gateway
+    namespace: spirit-in-physics
+    sectionName: http-0
+  rules:
+  - filters:
+    - requestRedirect:
+        scheme: https
+        statusCode: 301
+      type: RequestRedirect
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: infra-main-route
+  namespace: spirit-in-physics
+spec:
+  hostnames:
+  - spirit-in-physics.com
+  - sip.junkawasaki.com
+  parentRefs:
+  - name: infra-gateway
+    namespace: spirit-in-physics
+    sectionName: https-0
+  rules:
+  - backendRefs:
+    - name: grpc-service
+      port: 8080
+    matches:
+    - path:
+        type: PathPrefix
+        value: /api
+  - backendRefs:
+    - name: import-service
+      port: 8082
+    matches:
+    - path:
+        type: PathPrefix
+        value: /import
+  - backendRefs:
+    - name: portal
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+---
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicyMember
+metadata:
+  name: grpc-service-storage-admin
+  namespace: spirit-in-physics
+spec:
+  member: serviceAccount:com-junkawasaki-sip.svc.id.goog[spirit-in-physics/grpc-service]
+  resourceRef:
+    apiVersion: storage.cnrm.cloud.google.com/v1beta1
+    kind: StorageBucket
+    name: spirit-in-physics
+  role: roles/storage.objectAdmin
+---
+apiVersion: storage.cnrm.cloud.google.com/v1beta1
+kind: StorageBucket
+metadata:
+  annotations:
+    cnrm.cloud.google.com/project-id: com-junkawasaki-sip
+  name: spirit-in-physics
+  namespace: spirit-in-physics
+spec:
+  location: asia-northeast1
+  publicAccessPrevention: inherited
+  storageClass: STANDARD
+  uniformBucketLevelAccess: true
+  versioning:
+    enabled: true

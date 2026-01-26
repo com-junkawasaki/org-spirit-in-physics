@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"connectrpc.com/connect"
@@ -321,6 +322,7 @@ func (h *TimelineHandler) GetIntegratedTimeline(
 	req *connect.Request[timelinev1.GetIntegratedTimelineRequest],
 ) (*connect.Response[timelinev1.GetIntegratedTimelineResponse], error) {
 	fmt.Printf("DEBUG: GetIntegratedTimeline called for participant %s\n", req.Msg.ParticipantId)
+	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Started","participantId":"%s"}`, req.Msg.ParticipantId)
 	if h.temporalClient == nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
 	}
@@ -331,8 +333,10 @@ func (h *TimelineHandler) GetIntegratedTimeline(
 		TaskQueue: "visualization-analysis-queue", // TS Worker queue
 	}
 
+	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Executing Workflow","workflowID":"%s"}`, workflowID)
 	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "timelineIntegratedWorkflow", req.Msg.ParticipantId, req.Msg.SessionId)
 	if err != nil {
+		log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"ExecuteWorkflow Failed","error":"%v"}`, err)
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -364,11 +368,14 @@ func (h *TimelineHandler) GetIntegratedTimeline(
 		Points   []compactPoint  `json:"points"`
 		Analysis json.RawMessage `json:"analysis"`
 	}
+	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Waiting for Workflow Result"}`)
 	err = run.Get(ctx, &workflowResult)
 	if err != nil {
 		fmt.Printf("ERROR: Workflow Get failed: %v\n", err)
+		log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Workflow Get Failed","error":"%v"}`, err)
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Workflow Completed","pointsCount":%d}`, len(workflowResult.Points))
 
 	// Decode Analysis
 	var analysis timelinev1.GetAnalysisResponse

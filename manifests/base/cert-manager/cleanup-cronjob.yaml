@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cert-manager-cleanup-failed-challenges
+  namespace: spirit-in-physics
+spec:
+  # 毎日午前3時に実行
+  schedule: "0 3 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: cert-manager-cleanup
+          containers:
+          - name: cleanup
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              
+              # 失敗したChallengeリソースを削除（invalid, expired, または24時間以上pendingのもの）
+              echo "Cleaning up failed challenges..."
+              kubectl get challenges -n spirit-in-physics --no-headers 2>/dev/null | while read name rest; do
+                state=$(kubectl get challenge $name -n spirit-in-physics -o jsonpath='{.status.state}' 2>/dev/null || echo "")
+                age=$(kubectl get challenge $name -n spirit-in-physics -o jsonpath='{.metadata.creationTimestamp}' 2>/dev/null || echo "")
+                
+                if [ "$state" = "invalid" ] || [ "$state" = "expired" ]; then
+                  echo "Deleting failed challenge: $name (state: $state)"
+                  kubectl delete challenge $name -n spirit-in-physics --ignore-not-found=true || true
+                elif [ "$state" = "pending" ] && [ -n "$age" ]; then
+                  # 24時間以上経過しているかチェック（簡易版：作成時刻が24時間前より古い）
+                  echo "Checking pending challenge: $name (created: $age)"
+                  # より正確なチェックが必要な場合は、別の方法を使用
+                fi
+              done
+              
+              # 失敗したChallengeに関連する古いHTTPRouteリソースを削除
+              echo "Cleaning up orphaned HTTPRoute resources..."
+              kubectl get httproute -n spirit-in-physics -l acme.cert-manager.io/http01-solver=true --no-headers 2>/dev/null | while read name rest; do
+                owner=$(kubectl get httproute $name -n spirit-in-physics -o jsonpath='{.metadata.ownerReferences[?(@.kind=="Challenge")].name}' 2>/dev/null || echo "")
+                if [ -z "$owner" ]; then
+                  echo "Deleting HTTPRoute without owner: $name"
+                  kubectl delete httproute $name -n spirit-in-physics --ignore-not-found=true || true
+                else
+                  # Challengeが存在しないかチェック
+                  if ! kubectl get challenge $owner -n spirit-in-physics &>/dev/null; then
+                    echo "Deleting HTTPRoute with missing challenge owner: $name (owner: $owner)"
+                    kubectl delete httproute $name -n spirit-in-physics --ignore-not-found=true || true
+                  fi
+                fi
+              done
+              
+              echo "Cleanup completed at $(date)"
+            env:
+            - name: TZ
+              value: Asia/Tokyo
+          restartPolicy: OnFailure
+

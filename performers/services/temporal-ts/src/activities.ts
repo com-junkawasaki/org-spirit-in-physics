@@ -6,7 +6,8 @@ import {
   DensityRegion, 
   DuplicateCandidate, 
   CommonFeatures,
-  AnalysisResults
+  AnalysisResults,
+  GhostPattern
 } from './types';
 
 import { exec } from 'child_process';

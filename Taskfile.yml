@@ -1,31 +1,28 @@
 version: '3'
 
 tasks:
-  build:
-    desc: Build manifests with timoni
+  apply-local:
+    desc: Apply manifests to local cluster using Kustomize
     cmds:
-      - timoni bundle build -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
+      - timeout 60s kubectl kustomize manifests/overlays/local | kubectl apply -f -
 
-  apply:
-    desc: Apply manifests to local cluster with timoni
+  push-manifest:
+    desc: Render and push manifests for GKE to Artifact Registry
     cmds:
-      - timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue
-
-  dev:
-    desc: Watch files and auto-apply with timoni
-    cmds:
+      - mkdir -p .build/manifests
+      - timeout 30s kubectl kustomize manifests/overlays/gke > .build/manifests/all.yaml
       - |
-        watchexec -e cue,go,ts,svelte -- \
-          "timoni bundle apply -f timoni/bundle.cue -r timoni/runtime-orbstack.cue"
+        cat <<EOF > .build/manifests/Dockerfile
+        FROM scratch
+        COPY all.yaml /
+        EOF
+      - timeout 300s docker build -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/manifests:latest .build/manifests
+      - timeout 60s docker push asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/manifests:latest
 
-  sync-local:
-    desc: Sync local changes to ArgoCD
+  push-app:
+    desc: Build and push svelte-app image to Artifact Registry
     cmds:
-      - argocd app sync spirit-in-physics --local .
-
-  nix-build-portal:
-    desc: Build portal image with Docker and apply with Timoni
-    cmds:
-      - docker build -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest ./apps/svelte-app
-      - task: apply
+      - timeout 600s docker build --platform linux/amd64 -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest apps/svelte-app
+      - timeout 120s docker push asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
+      - timeout 30s kubectl rollout restart deployment portal -n spirit-in-physics
 

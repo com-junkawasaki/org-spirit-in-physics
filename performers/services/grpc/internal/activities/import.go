@@ -82,13 +82,14 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 			datasetPath = fmt.Sprintf("../../../dataset/participants/%s", participantID)
 		}
 	}
+	log.Printf("Using dataset path for participant %s: %s", participantID, datasetPath)
 
 	var csvFiles []string
 	err := filepath.Walk(datasetPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".csv") {
+		if !info.IsDir() && (strings.HasSuffix(strings.ToLower(info.Name()), ".csv")) {
 			csvFiles = append(csvFiles, path)
 		}
 		return nil
@@ -97,8 +98,9 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 	if err != nil {
 		return 0, err
 	}
+	log.Printf("Found %d CSV files for participant %s in %s", len(csvFiles), participantID, datasetPath)
 
-	totalImported := 0
+	totalEmotionsImported := 0
 	for _, csvFile := range csvFiles {
 		fileName := filepath.Base(csvFile)
 		
@@ -157,7 +159,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 			headerMap[h] = i
 		}
 
-		count := 0
+		rowCount := 0
 		for {
 			record, err := reader.Read()
 			if err == io.EOF {
@@ -176,16 +178,13 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 			baseTime := time.Date(2025, 12, 26, 10, 0, 0, 0, time.UTC)
 			pointTime := baseTime.Add(time.Duration(beginTime * float64(time.Second)))
 
-			// 1. Create Timeline Point
-			err = a.Queries.CreateTimelinePoint(ctx, db.CreateTimelinePointParams{
+			// 1. Create Timeline Point (ignore duplicate errors)
+			_ = a.Queries.CreateTimelinePoint(ctx, db.CreateTimelinePointParams{
 				Time:          pgtype.Timestamptz{Time: pointTime, Valid: true},
 				ParticipantID: participantID,
 				SessionID:     sessionID,
 				EventType:     pgtype.Text{String: "emotion_sample", Valid: true},
 			})
-			if err != nil {
-				// Likely conflict if multiple CSVs have same BeginTime, which is expected
-			}
 
 			// 2. Insert Emotions
 			for emotionName, idx := range headerMap {
@@ -197,7 +196,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 				var score float64
 				fmt.Sscanf(scoreStr, "%f", &score)
 
-			if score > 0.1 { // Only import significant emotions
+				if score > 0.1 { // Only import significant emotions
 					err = a.Queries.CreateTimelineEmotionEntry(ctx, db.CreateTimelineEmotionEntryParams{
 						TimelinePointTime:          pgtype.Timestamptz{Time: pointTime, Valid: true},
 						TimelinePointParticipantID: participantID,
@@ -206,24 +205,19 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 						Score:                      score,
 						FileType:                   fileType,
 					})
-					if err != nil {
-						// Log occasionally
-						if count%100 == 0 {
-							log.Printf("Failed to insert emotion entry: %v", err)
-						}
+					if err == nil {
+						totalEmotionsImported++
 					}
 				}
 			}
 
-			count++
-			if count > 500 { // Limit per file for now to speed up test
+			rowCount++
+			if rowCount > 100 { // Reduced to 100 per file for faster feedback
 				break
 			}
 		}
-		totalImported += count
-		log.Printf("Imported %d emotion points from %s", count, fileName)
+		log.Printf("Processed %d rows from %s, total emotions so far: %d", rowCount, fileName, totalEmotionsImported)
 	}
 
-	return totalImported, nil
+	return totalEmotionsImported, nil
 }
-

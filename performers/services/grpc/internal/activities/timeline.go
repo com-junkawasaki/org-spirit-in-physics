@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1"
@@ -30,6 +32,8 @@ func float64Ptr(v float64) *float64 {
 }
 
 func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.TimelinePoint, error) {
+	start := time.Now()
+	log.Printf(`{"sessionId":"debug-session","location":"activities/timeline.go:FetchTimelineActivity","message":"Started","participantId":"%s","sessionId":"%s"}`, participantID, sessionID)
 	var sUID pgtype.UUID
 	if sessionID != "" {
 		parsedSessionID, err := uuid.Parse(sessionID)
@@ -39,13 +43,16 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 		sUID = pgtype.UUID{Bytes: parsedSessionID, Valid: true}
 	}
 
+	log.Printf(`{"sessionId":"debug-session","location":"activities/timeline.go:FetchTimelineActivity","message":"Executing Query"}`)
 	points, err := a.Queries.GetTimelinePoints(ctx, db.GetTimelinePointsParams{
 		ParticipantID: participantID,
 		Column2:       sUID,
 	})
 	if err != nil {
+		log.Printf(`{"sessionId":"debug-session","location":"activities/timeline.go:FetchTimelineActivity","message":"Query Failed","error":"%v"}`, err)
 		return nil, err
 	}
+	log.Printf(`{"sessionId":"debug-session","location":"activities/timeline.go:FetchTimelineActivity","message":"Query Completed","duration_ms":%d,"pointsCount":%d}`, time.Since(start).Milliseconds(), len(points))
 
 	result := make([]*timelinev1.TimelinePoint, 0, len(points))
 	for _, p := range points {

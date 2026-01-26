@@ -42,11 +42,11 @@
   "@type": "project:Project",
   "title": "いい感じの社会の物語",
   "description": "Spirit in Physicsプロジェクト - 科学的手法による霊性測定システム",
-  "version": "1.59.0",
+  "version": "2.2.0",
   "author": "Jumma Kawasaki",
   "createdAt": "2024-01-01T00:00:00+09:00",
-  "updatedAt": "2026-01-04T00:00:00+09:00",
-  "merkleRoot": "Implemented mobile-first academic UI for Paper view following Apple HIG, optimized typography, and enhanced navigation with a bottom tab bar.",
+  "updatedAt": "2026-01-14T00:00:00+09:00",
+  "merkleRoot": "Bilingual paper PDFs (ja/en) generated with philosophical rationale. Added presentation records for CNS 2025 and SfN 2025.",
   "story": {
     "@id": "project:story",
     "@type": "project:Story",
@@ -58,7 +58,61 @@
       "lifespan": "享年100歳",
       "legacy": "人々が満たされた人生を送れる社会を築いた"
     },
-    "narrative": [
+    "act": [
+      {
+        "@id": "project:narrative/98",
+        "@type": "project:Narrative",
+        "act": "SfN 2025 でのポスター発表実績の追加",
+        "summary": "北米神経科学学会 (SfN 2025) におけるポスター発表 'PSTR197.20 / YY7 - Spirit in Physics: An Information-Physics Model for Quantifying Self-Expansion' の情報を論文に追加。"
+      },
+      {
+        "@id": "project:narrative/97",
+        "@type": "project:Narrative",
+        "act": "CNS 2025 でのポスター発表実績の追加",
+        "summary": "第32回北米認知神経科学会 (CNS 2025) におけるポスター発表 'F35 - Spirit in Physics: Structuring and Quantifying Human Spirit Using the Vector Space' の情報を論文に追加。"
+      },
+      {
+        "@id": "project:narrative/96",
+        "@type": "project:Narrative",
+        "act": "Nix ビルド構成の除去とビルドプロセスの簡素化",
+        "summary": "プロジェクトで使用していなかった Nix 関連の構成（flake.nix, nix/ ディレクトリ）を完全に除去。Docker および標準的なパッケージマネージャー（pnpm, go mod等）によるビルドプロセスに一本化し、リポジトリの複雑性を低減した。"
+      },
+      {
+        "@id": "project:narrative/95",
+        "@type": "project:Narrative",
+        "act": "Timoni および Terraform の完全除去と KCC への一本化",
+        "summary": "インフラ管理の複雑さを解消するため、Timoni および Terraform 関連の資材を完全に除去。Google Cloud Config Connector (KCC) に一本化することで、Kubernetes ネイティブな GitOps 構成を確立し、管理コストを最小化した。"
+      },
+      {
+        "@id": "project:narrative/94",
+        "@type": "project:Narrative",
+        "act": "Config Connector による GCS プロビジョニングの自動化",
+        "summary": "Google Cloud Config Connector (KCC) を導入し、GCS バケット（spirit-in-physics）と IAM 権限を K8s マニフェストとして定義。Config Sync と連携することで、インフラリソースの作成・管理を GitOps フローに完全に統合し、手動操作を排除した。"
+      },
+      {
+        "@id": "project:narrative/93",
+        "@type": "project:Narrative",
+        "act": "英語版論文 PDF の生成（Paraglide 翻訳ベース）",
+        "summary": "Paraglide で管理された英語翻訳（en.js）を基に、日本語版と同等の構成で英語版論文 PDF（paper_en.pdf）を生成。'Why Spirit: The Negation of the Individual' セクションを含む完全な哲学的根拠を英語で記述し、国際的な学術発表に対応可能な形式とした。"
+      },
+      {
+        "@id": "project:narrative/92",
+        "@type": "project:Narrative",
+        "act": "「精神」から「霊性」への用語変更と哲学的根拠の追記",
+        "summary": "論文の核心的用語を「精神（mind）」から「霊性（spirit）」へ全面的に変更。その根拠として、(1) 心は場・身体・他者と分離独立していない、(2) 人間は開放系の熱力学的情報場である、(3) individual（不可分の個体）の否定、という存在論的主張を論文の導入部に追加。Paraglide 日本語メッセージファイルの全26箇所を更新し、PDF を再生成した。"
+      },
+      {
+        "@id": "project:narrative/91",
+        "@type": "project:Narrative",
+        "act": "論文の日本語版 PDF 生成とドキュメント化",
+        "summary": "多言語対応（Paraglide）された論文コンテンツから日本語メッセージを抽出し、学術的な Markdown 形式で再構成。LuaLaTeX エンジンと pandoc を用いて、数式（LaTeX）や構造を維持した高品質な日本語 PDF 論文を生成した。"
+      },
+      {
+        "@id": "project:narrative/90",
+        "@type": "project:Narrative",
+        "act": "GKE Autopilot への移行とコスト最適化",
+        "summary": "インフラコスト最適化のため、GKE Standard から Autopilot への移行を完了。不要なミドルウェア（MinIO, lakeFS）を廃止し、Google Cloud Storage (GCS) を直接利用する構成へ刷新。データの永続性を確保しつつ、アイドル時のコストを最小化。"
+      },
       {
         "@id": "project:narrative/89",
         "@type": "project:Narrative",
@@ -155,6 +209,18 @@
     "@id": "project:metadata",
     "@type": "project:Metadata",
     "implementedFeatures": [
+      "CNS 2025 および SfN 2025 の学会発表実績を論文ページに追加",
+      "Timoni および Terraform を廃止し、Config Connector (KCC) による Kubernetes ネイティブなインフラ管理へ移行",
+      "Config Connector による Google Cloud Storage (GCS) バケットおよび IAM 権限の宣言的管理",
+      "Kustomize による Kubernetes マニフェスト管理への移行（base/ overlays/ 構成）",
+      "GKE Config Sync (OCI ベース) による GitOps への完全移行",
+      "ArgoCD から GKE Config Sync への GitOps 移行（RootSync, Taskfile 実装済み）",
+      "論文の日英バイリンガル PDF 生成（paper_ja.pdf / paper_en.pdf）",
+      "「精神」から「霊性」への用語変更と哲学的根拠（Individual の否定、開放系熱力学的情報場）の追記",
+      "論文の日本語版 PDF 自動生成パイプライン (pandoc + lualatex) の確立",
+      "GKE Autopilot クラスター (spirit-autopilot) の作成と Workload Identity の設定完了",
+      "GKE Autopilot クラスターへの移行（コスト最適化）",
+      "全 Pod のリソース要求 (requests) を Autopilot 向けに最適化 (250m CPU / 512Mi Memory)",
       "モバイルアプリにおけるレイアウト二重表示の解消と Header/Footer の一本化",
       "Capacitor 環境下での Clerk 認証キーのハードコード・フォールバック実装（環境変数置換不全対策）",
       "実験フロー（/experiment/*）におけるボトムタブバーの動的非表示制御",
@@ -199,7 +265,7 @@
       "Clerk API キー (Live) の Kubernetes Secret 統合とアプリへの反映",
       "GKE への全マイクロサービスのデプロイ完了 (amd64 クロスビルド対応済み)",
       "Spot インスタンス (e2-medium) による低コスト GKE 運用構成の確立",
-      "TimescaleDB, Temporal, lakeFS, MinIO の GKE 上での正常稼働",
+      "TimescaleDB, Temporal の GKE 上での正常稼働",
       "GKE クラスター (Standard) の構築完了。Gateway API (Envoy Gateway) 有効化済み",
       "GCP Artifact Registry (spirit-in-physics) の作成",
       "GCP グローバル静的 IP (sip-static-ip: 34.160.140.248) の確保",
@@ -215,21 +281,16 @@
       "BDD テストの Tilt リソース化",
       "gRPC Service Dockerfile のクリーンアップ",
       "Storage Service (gRPC) との連携実装",
-      "MinIO の Kubernetes クラスターへの統合",
       "Temporal を使用したデータインポーター（Workflow/Activity）の設計と実装 (Go/Python 両対応)",
       "Next.js 版 researcher アプリの完全廃止と SvelteKit への統合",
-      "3D Force 可視化 (Force3DWordGraphTypeGPU) の Svelte 実装",
+      "3D Force 可視化 (Force3DThrelte) の Svelte 実装",
       "KPI カード、時系列チャート (TimelineChart)、構造分析パネル Svelte 実装",
       "SvelteKit への /researcher/participants/[id] ルート追加と ConnectRPC 連携",
       "Go 版 gRPC サービスの GetTimeline 処理を Temporal Workflow/Activity に移行",
       "全サービス（API, Import, Temporal UI, MinIO）を spirit.localhost へのパスベースルーティングに統一",
       "SvelteKit ビルドの成功と SPA 向け prerender 設定の最適化",
       "gRPC サービスにおける /api パスプレフィックスのストリップ処理実装と HasPrefix による堅牢化",
-      "データ管理基盤の lakeFS への移行と Timoni 構成への統合",
-      "Storage Service の lakeFS S3 Gateway 連携実装",
-      "lakeFS 自動セットアップ用の Kubernetes Job (LakeFSSetupJob) の実装",
       "dataset の git-annex による管理とポインタファイル化の完了",
-      "ストレージ管理（MinIO, lakeFS）の Kubernetes (Timoni/Tilt) での統合管理体制の確立",
       "Temporal TypeScript Worker への BDD テスト実行機能の統合",
       "Playwright + Cucumber.js によるブラウザ E2E テストの Temporal ワークフロー化",
       "研究者ポータルへのテストモード（Auth バイパス）の実装と BDD 連携",
@@ -238,10 +299,6 @@
       "特定の被験者 (e41a9cd2-d803-49a8-9020-0260e55cd03e) の分析可視化 BDD シナリオのパス",
       "Timoni app/infra モジュールの Nginx から Envoy への移行完了",
       "Timoni モジュールのデフォルト設定（ConfigMap, Deployment, README）を Envoy ベースに刷新",
-      "Nix Flake による決定論的ビルド環境の導入 (flake.nix, devenv)",
-      "gRPC サービスの Nix 派生 (buildGoModule) と OCI イメージ生成の自動化",
-      "Svelte アプリの Nix 派生 (pnpm.fetchDeps) による再現可能なビルドの実現",
-      "OCI イメージのタグを Nix ハッシュに基づいた管理へ移行する基盤の確立",
       "Argo CD の導入による GitOps 管理体制の構築と UI 監視の有効化 (Admin Password: C9DEyBLip4BhN7V1)",
       "研究者ポータルの SvelteKit パスベースルーティングの完全移行 (/researcher/participants, /researcher/sessions, /researcher/settings)",
       "ゲートウェイルーティングの簡素化。全サービスを単一の HTTPRoute (infra-main-route) に集約し、パスベースの振り分けを統一管理",
@@ -276,7 +333,15 @@
       "PreferenceService (gRPC/Connect) の実装と TDD による検証完了。ユーザーのテーマ（Light/Dark/Auto）と言語設定のバックエンド永続化に対応",
       "SvelteKit フロントエンドにおけるユーザー設定の自動同期機能 (UserSync コンポーネント) の導入",
       "Svelte アプリビルド時の sveltex 依存関係欠如の修正 (hast-util-to-html, unified 等の追加)",
-      "全100個の刺激語 (stimulus_words) のデータベースへのシード完了"
+      "全100個の刺激語 (stimulus_words) のデータベースへのシード完了",
+      "GKE Autopilot への完全移行（spirit-autopilot クラスター）とノード管理からの解放",
+      "Autopilot 最適化のためのリソース requests (250m CPU / 512Mi Memory) の統一設定",
+      "旧 GKE Standard クラスター (spirit-in-physics) の完全削除と SSD Quota 問題の解決",
+      "cert-manager と Envoy Gateway の Autopilot クラスターへの再デプロイとトラブルシューティング",
+      "clerk-secrets シークレットの再作成による Portal Pod の正常起動",
+      "3.73 GB のデータセットの GCS への完全移行とバージョン管理基盤の確立",
+      "月額コストの 80% 以上削減 ($100-150 → $15-25) の達成",
+      "MinIO の完全削除 (StatefulSet, PVC, Service) による更なるコスト削減 ($3/月)"
     ]
   }
 }
