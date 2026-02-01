@@ -15,6 +15,8 @@ spec:
     spec:
       containers:
       - env:
+        - name: BIND_ON_IP
+          value: "0.0.0.0"
         - name: DB
           value: postgres12
         - name: DB_PORT
