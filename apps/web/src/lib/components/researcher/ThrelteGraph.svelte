@@ -77,6 +77,8 @@
       .force('center', d3.forceCenter(0, 0, 0).strength(0.05))
       .force('radial', d3.forceRadial(physics?.shellRadius ?? 500).strength(0.1))
       .velocityDecay(1 - (physics?.damping ?? 0.93))
+      .alphaMin(0.01)  // Stop simulation when alpha drops below this threshold
+      .alphaDecay(0.02)  // Increase decay rate for faster convergence
       .on('tick', () => {
         tickCount++;
         if (tickCount > MAX_TICKS) {
@@ -113,18 +115,27 @@
     return () => simulation?.stop();
   });
 
-  // React to data changes
+  // React to data changes - use a debounce-like approach to prevent re-initialization loops
+  let lastNodesLength = 0;
+  let lastLinksLength = 0;
   $effect(() => {
-    if (nodes && links) {
+    // Only re-init if the actual data has meaningfully changed (length comparison to avoid infinite loops)
+    const nodesChanged = nodes.length !== lastNodesLength;
+    const linksChanged = links.length !== lastLinksLength;
+    if ((nodesChanged || linksChanged) && nodes.length > 0) {
+      console.log('[DEBUG] ThrelteGraph: Data changed, reinitializing simulation', {
+        prevNodes: lastNodesLength, newNodes: nodes.length,
+        prevLinks: lastLinksLength, newLinks: links.length
+      });
+      lastNodesLength = nodes.length;
+      lastLinksLength = links.length;
       initSimulation();
     }
   });
 
-  useTask(() => {
-    if (simulation) {
-      simulation.tick();
-    }
-  });
+  // NOTE: Removed useTask() that was calling simulation.tick() every frame.
+  // The d3-force simulation already runs its own ticks via the 'tick' event handler in initSimulation().
+  // Having both useTask and the simulation's internal tick caused double processing and memory issues.
 
   // Materials
   const nodeGeometry = new THREE.SphereGeometry(1, 16, 16);

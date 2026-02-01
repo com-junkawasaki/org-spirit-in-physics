@@ -1,8 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# Use only core resources for local development
+# Excludes: Gateway API, cert-manager, GCS bucket, IAM (these require GKE CRDs)
 resources:
-  - ../../base
+  - ../../base/core
 
 patches:
   - target:
@@ -11,3 +13,10 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: IfNotPresent
+  - target:
+      kind: Deployment
+      name: portal
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/2/value
+        value: http://localhost:8080
