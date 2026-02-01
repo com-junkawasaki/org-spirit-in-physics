@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: portal
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: portal
+    spec:
+      containers:
+      - env:
+        - name: PUBLIC_CLERK_PUBLISHABLE_KEY
+          valueFrom:
+            secretKeyRef:
+              key: PUBLIC_CLERK_PUBLISHABLE_KEY
+              name: clerk-secrets
+        - name: CLERK_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: CLERK_SECRET_KEY
+              name: clerk-secrets
+        - name: PUBLIC_API_URL
+          value: http://localhost:8080
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
+        imagePullPolicy: IfNotPresent
+        name: portal
+        ports:
+        - containerPort: 80
+          name: http

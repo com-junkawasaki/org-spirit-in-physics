@@ -1,8 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# Use only core resources for local development
+# Excludes: Gateway API, cert-manager, GCS bucket, IAM (these require GKE CRDs)
 resources:
-  - ../../base
+  - ../../base/core
 
 patches:
   - target:
