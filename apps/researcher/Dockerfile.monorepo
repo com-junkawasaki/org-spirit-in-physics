@@ -30,8 +30,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y python3 && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@10.26.2
 
-# Copy package files and install production dependencies
-COPY apps/researcher/package.json ./
+# Create a production package.json without workspace references
+# Only need sirv-cli for serving static files
+RUN echo '{"dependencies":{"sirv-cli":"^3.0.1"}}' > package.json
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --no-frozen-lockfile
 
 # Copy built files and scripts

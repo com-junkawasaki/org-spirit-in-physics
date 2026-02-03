@@ -347,25 +347,25 @@
     <!-- Navigation -->
     <div class="mt-12 flex justify-between items-center">
       {#if step > 1}
-        <button 
-          type="button" 
+        <button
+          type="button"
           onclick={prevStep}
           class="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition-colors"
         >
-          {m.back || "Back"}
+          {m.back()}
         </button>
       {:else}
         <div></div>
       {/if}
 
       {#if step < totalSteps}
-        <button 
-          type="button" 
+        <button
+          type="button"
           onclick={nextStep}
           disabled={(step === 1 && !isAllAgreed) || (step === 2 && (!demographics.ageGroup || !demographics.gender)) || (step === 3 && (!demographics.ethnicity || !demographics.incomeRange))}
           class="px-8 py-4 bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-xs rounded-full hover:scale-105 transition-all disabled:opacity-20 disabled:scale-100 shadow-xl shadow-black/10 dark:shadow-white/10"
         >
-          {m.next || "Continue"}
+          {m.next()}
         </button>
       {:else}
         <button 
@@ -382,7 +382,7 @@
 
 {#snippet emailInput()}
   <div class="space-y-4">
-    <label for="email" class="block text-[10px] font-black uppercase tracking-widest text-gray-400">{m.enter_email || "Email Address"}</label>
+    <label for="email" class="block text-[10px] font-black uppercase tracking-widest text-gray-400">{m.enter_email()}</label>
     <input
       type="email"
       id="email"
