@@ -10,14 +10,17 @@
   import { resolveRoute } from "$lib/routing";
   import VoidBackground from "$lib/components/experiment/VoidBackground.svelte";
 
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
+  // In local dev with placeholder keys, skip Clerk auth entirely
+  const isLocalDev = runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('placeholder');
+  const clerk = $derived(!isLocalDev && runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
-  
+
   // For /experiment, we default to 'full' for Nature-grade data, but allow override
   const mode = $derived((page.url.searchParams.get("mode") as any) || "full");
 
   onMount(() => {
-    if (clerk && !user) {
+    // Skip auth check in local dev mode
+    if (!isLocalDev && clerk && !user) {
       // If not signed in, go back to landing
       goto(resolveRoute('/experiment'));
     }

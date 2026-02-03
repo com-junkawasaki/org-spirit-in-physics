@@ -6,11 +6,19 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
 
-  const clerk = useClerkContext();
+  // In local dev with placeholder keys, skip Clerk auth entirely and go directly to consent
+  const isLocalDev = runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('placeholder');
+  const clerk = isLocalDev ? null : useClerkContext();
 
   // On mobile, if already signed in, skip this page entirely and go to consent
   $effect(() => {
-    if (runtimeConfig.IS_CAPACITOR && clerk.user) {
+    // In local dev mode, skip auth and go directly to consent
+    if (isLocalDev) {
+      console.log("[Local Dev] Skipping auth, redirecting to consent");
+      goto(resolveRoute('/experiment/consent'));
+      return;
+    }
+    if (runtimeConfig.IS_CAPACITOR && clerk?.user) {
       console.log("[Mobile] User is signed in, redirecting to consent");
       goto(resolveRoute('/experiment/consent'));
     }

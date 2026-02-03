@@ -11,6 +11,10 @@ build:
       context: apps/web
       docker:
         dockerfile: Dockerfile
+    - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/researcher
+      context: .
+      docker:
+        dockerfile: apps/researcher/Dockerfile.monorepo
     - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service
       context: performers/services/grpc
       docker:
@@ -29,8 +33,9 @@ manifests:
     - manifests/base/namespace.yaml
     - manifests/base/serviceaccounts/*.yaml
     - manifests/base/services/*.yaml
-    # Use local portal deployment with localhost API URL
+    # Use local deployments with localhost API URL
     - manifests/overlays/local/deployments/portal.yaml
+    - manifests/overlays/local/deployments/researcher.yaml
     # Other deployments from base
     - manifests/base/deployments/grpc-service.yaml
     - manifests/base/deployments/import-service.yaml
@@ -48,6 +53,11 @@ portForward:
     namespace: spirit-in-physics
     port: 80
     localPort: 3000
+  - resourceType: service
+    resourceName: researcher
+    namespace: spirit-in-physics
+    port: 80
+    localPort: 3002
   - resourceType: service
     resourceName: grpc-service
     namespace: spirit-in-physics

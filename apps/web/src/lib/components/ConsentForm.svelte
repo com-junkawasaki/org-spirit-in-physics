@@ -47,7 +47,9 @@
         )
   );
 
-  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
+  // In local dev with placeholder keys, skip Clerk auth
+  const isLocalDev = runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('placeholder');
+  const clerk = $derived(!isLocalDev && runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
   const user = $derived(clerk?.user);
 
   const isAllAgreed = $derived(
@@ -91,10 +93,12 @@
   function handleSubmit(event: Event) {
     event.preventDefault();
     if (isAllAgreed && isDemographicsComplete && isEmailProvided) {
+      // Generate a local dev participant ID if none provided
+      const effectiveParticipantId = participantId || (isLocalDev ? `local-dev-${Date.now()}` : '');
       if (user) {
-        onConsent(participantId, user.primaryEmailAddress?.emailAddress || "", agreements, demographics);
+        onConsent(effectiveParticipantId, user.primaryEmailAddress?.emailAddress || "", agreements, demographics);
       } else {
-        onConsent(participantId, email, agreements, demographics);
+        onConsent(effectiveParticipantId, email || "local-dev@example.com", agreements, demographics);
       }
     }
   }

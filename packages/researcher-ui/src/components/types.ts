@@ -1,0 +1,346 @@
+// Merkle DAG: timeline.types
+// 時系列可視化コンポーネントの型定義
+
+// TypeGPU 用型
+export interface WordNode {
+  id: string
+  label: string
+  scale: number
+  axis?: [number, number, number]
+  fixed?: boolean
+  nodeType?: 'word' | 'anchor'
+  initial?: [number, number, number]
+  color?: string
+  emotion?: Record<string, number>
+}
+
+export interface WordLink {
+  source: number
+  target: number
+  weight: number
+  mode?: 'tension' | 'compression'
+  L0?: number
+  k?: number
+  color?: string
+}
+
+export interface WordDetailStats {
+  word: string
+  overall: {
+    reactionTimeAvg: number
+    physioAvg: number
+    reactionValueAvg: number
+    prosodyAvg: number
+    burstAvg: number
+    faceAvg: number
+    languageAvg: number
+  }
+  first: WordDetailStats['overall']
+  second: WordDetailStats['overall']
+}
+
+export interface EmotionData {
+  name: string
+  score: number
+  fileType: string
+}
+
+export interface TimelineDataPoint {
+  timestamp: number
+  word: string
+  reactionTime: number
+  hasResponse: boolean
+  emotions: EmotionData[]
+  physiological: { average?: number; max?: number; min?: number } | unknown[]
+  reactionValue: number
+  eventType?: string
+  metadata?: { emotionCount?: number; physiologicalCount?: number }
+}
+
+export interface FilterSettings {
+  emotions: boolean
+  physiological: boolean
+  reactionValues: boolean
+  wordDisplay: boolean
+  reactionTime: boolean
+  physiologicalThreshold: boolean
+  emotionChange: boolean
+  range: number
+  timeScale: number
+  verticalScale: number
+  showEmotionDetails: boolean
+  showWordLabels: boolean
+}
+
+export interface Force3DFilters {
+  // Emotion filters
+  joy: boolean
+  sadness: boolean
+  anger: boolean
+  fear: boolean
+  surprise: boolean
+  disgust: boolean
+  calm: boolean
+  focus: boolean
+  excitement: boolean
+  confusion: boolean
+  
+  // Modality filters (感情抽出元)
+  prosody: boolean
+  burst: boolean
+  face: boolean
+  language: boolean
+  
+  // Word selection
+  topWords: number // Number of top words to show (e.g., 100)
+  selectedWords: string[] // Manually selected words
+}
+
+export interface TimeRange {
+  start: number
+  end: number
+}
+
+export type VisualizationMode = 'timeline' | 'kpi' | 'dumbbell' | 'small-multiples' | 'force-3d-threlte'
+
+// Word aggregates data types (for props injection)
+export interface WordAggregateData {
+  word: string
+  count: number
+  avgReactionValue: number
+  sumReactionValue: number
+  avgReactionTime: number
+  sumReactionTime: number
+  avgPhysiological: number
+  sumPhysAbs: number
+  physSeries: number[]
+  rtSeries: number[]
+  rvSeries: number[]
+}
+
+export interface EmotionVectorData {
+  word: string
+  joySum: number
+  sadnessSum: number
+  angerSum: number
+  fearSum: number
+  surpriseSum: number
+  disgustSum: number
+  calmSum: number
+  focusSum: number
+  excitementSum: number
+  confusionSum: number
+  emotionEntryCount: number
+  emotionByModality?: any
+}
+
+export interface WordStatisticsData {
+  word: string
+  count: number
+  avgReactionTime: number
+  stdReactionTime: number
+  varReactionTime: number
+  avgReactionValue: number
+  stdReactionValue: number
+  varReactionValue: number
+  avgPhysiological: number
+  stdPhysiological: number
+  varPhysiological: number
+  speedIndex: number
+  physSeries: number[]
+  rtSeries: number[]
+}
+
+export interface TimelineVisualizationProps {
+  participantId: string
+  sessionId?: string
+  width?: number
+  height?: number
+  // このページでモードを固定したい場合に指定（例: 'force-3d-threlte'）
+  forceMode?: VisualizationMode
+  // フィルターUIを非表示にする
+  hideFilters?: boolean
+  // Word aggregates data (optional, injected from parent app)
+  wordAggregates?: WordAggregateData[]
+  emotionVectors?: EmotionVectorData[]
+  wordStatistics?: WordStatisticsData[]
+  aggregatesLoading?: boolean
+  aggregatesError?: string | null
+}
+
+export interface KPICalculations {
+  current: {
+    avgReactionTime: number
+    avgReactionValue: number
+    responseRate: number
+    totalResponses: number
+  }
+  previous: {
+    avgReactionTime: number
+    avgReactionValue: number
+    responseRate: number
+    totalResponses: number
+  }
+  changes: {
+    avgReactionTime: number
+    avgReactionValue: number
+    responseRate: number
+    totalResponses: number
+  }
+}
+
+export interface DumbbellDataPoint {
+  word: string
+  firstHalf: {
+    avgReactionTime: number
+    avgReactionValue: number
+    count: number
+  }
+  secondHalf: {
+    avgReactionTime: number
+    avgReactionValue: number
+    count: number
+  }
+}
+
+export interface SmallMultiplesDataPoint {
+  word: string
+  data: TimelineDataPoint[]
+  stats: {
+    avgReactionTime: number
+    avgReactionValue: number
+    maxReactionValue: number
+    responseRate: number
+  }
+}
+
+export interface ForcePreset {
+  id: string
+  label: string
+  springK: number
+  repulsionK: number
+  restLength: number
+  damping: number
+  emoWeak: number
+  emoStrong: number
+  emoGain: number
+}
+
+export interface Force3DGraphData {
+  nodes: WordNode[]
+  links: WordLink[]
+}
+
+export interface WordDistancePair {
+  word1: string
+  word2: string
+  totalDistance: number
+  emotionDistance: number
+  reactionValueDistance: number
+  reactionTimeDistance: number
+  physiologicalDistance: number
+}
+
+export interface ModalityEmotionStats {
+  modality: 'burst' | 'face' | 'language' | 'prosody'
+  totalEmotions: number
+  emotionDistribution: Record<string, number> // emotion name -> count
+  emotionScores: Record<string, number[]> // emotion name -> scores array
+  wordsWithEmotions: number
+  wordsWithoutEmotions: number
+  sampleWordsWithoutEmotions: string[]
+}
+
+// Structure analysis types
+export interface GapArea {
+  id: string
+  center: [number, number, number]
+  radius: number
+  nearbyNodes?: Array<{
+    nodeId: string
+    label: string
+    distance: number
+    commonFeatures: string[]
+  }>
+  nearby_nodes?: Array<{
+    node_id: string
+    label: string
+    distance: number
+    common_features: string[]
+  }>
+  suggestedItems?: string[]
+  suggested_items?: string[]
+  confidence: number
+  commonEmotionProfile?: Record<string, number>
+  common_emotion_profile?: Record<string, number>
+}
+
+export interface CommonFeatures {
+  emotionProfile?: Record<string, number>
+  emotion_profile?: Record<string, number>
+  semanticTags?: string[]
+  semantic_tags?: string[]
+  frequencyRange?: [number, number]
+  frequency_range?: [number, number]
+  reactionTimeRange?: [number, number]
+  reaction_time_range?: [number, number]
+  reactionValueRange?: [number, number]
+  reaction_value_range?: [number, number]
+}
+
+export interface DensityRegion {
+  id: string
+  center: [number, number, number]
+  radius: number
+  nodeCount?: number
+  node_count?: number
+  density: number
+  isOvercrowded?: boolean
+  is_overcrowded?: boolean
+  suggestedSeparation?: number
+  suggested_separation?: number
+  nodes: WordNode[]
+}
+
+export interface DuplicateCandidate {
+  id: string
+  nodeIds?: string[]
+  node_ids?: string[]
+  labels: string[]
+  similarity: number
+  commonFeatures?: CommonFeatures
+  common_features?: CommonFeatures
+  suggestedMerge?: boolean
+  suggested_merge?: boolean
+  distance: number
+}
+
+export interface GhostPattern {
+  id: string
+  center: [number, number, number]
+  radius: number
+  node_ids?: string[]
+  nodeIds?: string[]
+  labels?: string[]
+  intensity: number
+  pattern_type: 'overcrowding' | 'void' | 'interference'
+  indicators: string[]
+  primary_emotions: string[]
+  description: string
+  confidence: number
+}
+
+export interface AnalysisResults {
+  gapAreas?: GapArea[]
+  gap_areas?: GapArea[]
+  densityRegions?: DensityRegion[]
+  density_regions?: DensityRegion[]
+  duplicates: DuplicateCandidate[]
+  ghostPatterns?: GhostPattern[]
+  ghost_patterns?: GhostPattern[]
+  overallDensity?: number
+  overall_density?: number
+}
+
+// Merkle DAG: timeline.types -> definitions_complete
+// 時系列可視化コンポーネントの型定義完了

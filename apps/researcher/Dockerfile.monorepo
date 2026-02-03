@@ -1,0 +1,45 @@
+# syntax=docker/dockerfile:1
+# This Dockerfile is built from the monorepo root context
+# to include the @spirit/researcher-ui package
+
+FROM node:20-slim AS builder
+WORKDIR /app
+RUN npm install -g pnpm@10.26.2
+
+# Copy workspace config
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+
+# Copy package.json files for all relevant packages
+COPY packages/researcher-ui/package.json ./packages/researcher-ui/
+COPY apps/researcher/package.json ./apps/researcher/
+
+# Install all dependencies
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --no-frozen-lockfile
+
+# Copy source files
+COPY packages/researcher-ui/ ./packages/researcher-ui/
+COPY apps/researcher/ ./apps/researcher/
+
+# Build the researcher app
+WORKDIR /app/apps/researcher
+RUN pnpm build
+
+FROM node:20-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y python3 && rm -rf /var/lib/apt/lists/*
+RUN npm install -g pnpm@10.26.2
+
+# Copy package files and install production dependencies
+COPY apps/researcher/package.json ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --no-frozen-lockfile
+
+# Copy built files and scripts
+COPY --from=builder /app/apps/researcher/build ./build
+COPY apps/researcher/replace-env.py ./
+
+EXPOSE 80
+ENV PORT=80
+ENV NODE_ENV=production
+
+CMD ["/bin/sh", "-c", "python3 replace-env.py build && ./node_modules/.bin/sirv build --port 80 --single spa.html --host 0.0.0.0"]
