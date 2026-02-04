@@ -11,16 +11,12 @@ build:
       context: ./apps/web
       docker:
         dockerfile: Dockerfile
-    - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service
+    - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/api
       context: ./performers/services/grpc
       docker:
         dockerfile: Dockerfile
-    - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service
+    - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/importer
       context: ./performers/services/import
-      docker:
-        dockerfile: Dockerfile
-    - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts
-      context: ./performers/services/temporal-ts
       docker:
         dockerfile: Dockerfile
 
@@ -41,25 +37,15 @@ portForward:
     port: 80
     localPort: 3000
   - resourceType: service
-    resourceName: grpc-service
+    resourceName: api
     namespace: spirit-in-physics
     port: 8080
     localPort: 8080
   - resourceType: service
-    resourceName: import-service
+    resourceName: importer
     namespace: spirit-in-physics
     port: 8082
     localPort: 8082
-  - resourceType: service
-    resourceName: infra-temporal
-    namespace: spirit-in-physics
-    port: 7233
-    localPort: 7233
-  - resourceType: service
-    resourceName: infra-temporal
-    namespace: spirit-in-physics
-    port: 8088
-    localPort: 8088
   - resourceType: service
     resourceName: infra-timescaledb
     namespace: spirit-in-physics

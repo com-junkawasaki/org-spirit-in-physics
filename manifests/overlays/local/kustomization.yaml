@@ -2,27 +2,19 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 # Core resources for local development
-# Excludes: Gateway API, cert-manager, GCS bucket, IAM (these require GKE CRDs)
+# Excludes: Gateway API, cert-manager, GCS bucket, IAM, Temporal
 resources:
   - ../../base/namespace.yaml
-  - ../../base/serviceaccounts/grpc-service.yaml
-  - ../../base/serviceaccounts/import-service.yaml
-  - ../../base/serviceaccounts/import-worker.yaml
+  - ../../base/serviceaccounts/api.yaml
+  - ../../base/serviceaccounts/importer.yaml
   - ../../base/serviceaccounts/portal.yaml
-  - ../../base/serviceaccounts/temporal-ts.yaml
-  - ../../base/services/grpc-service.yaml
-  - ../../base/services/import-service.yaml
-  - ../../base/services/import-worker.yaml
-  - ../../base/services/infra-temporal.yaml
+  - ../../base/services/api.yaml
+  - ../../base/services/importer.yaml
   - ../../base/services/infra-timescaledb.yaml
   - ../../base/services/portal.yaml
-  - ../../base/services/temporal-ts.yaml
-  - ../../base/deployments/grpc-service.yaml
-  - ../../base/deployments/import-service.yaml
-  - ../../base/deployments/import-worker.yaml
-  - ../../base/deployments/infra-temporal.yaml
+  - ../../base/deployments/api.yaml
+  - ../../base/deployments/importer.yaml
   - ../../base/deployments/portal.yaml
-  - ../../base/deployments/temporal-ts.yaml
   - ../../base/statefulsets/infra-timescaledb.yaml
 
 patches:
