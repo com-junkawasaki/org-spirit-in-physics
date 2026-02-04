@@ -1,10 +1,29 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Use only core resources for local development
+# Core resources for local development
 # Excludes: Gateway API, cert-manager, GCS bucket, IAM (these require GKE CRDs)
 resources:
-  - ../../base/core
+  - ../../base/namespace.yaml
+  - ../../base/serviceaccounts/grpc-service.yaml
+  - ../../base/serviceaccounts/import-service.yaml
+  - ../../base/serviceaccounts/import-worker.yaml
+  - ../../base/serviceaccounts/portal.yaml
+  - ../../base/serviceaccounts/temporal-ts.yaml
+  - ../../base/services/grpc-service.yaml
+  - ../../base/services/import-service.yaml
+  - ../../base/services/import-worker.yaml
+  - ../../base/services/infra-temporal.yaml
+  - ../../base/services/infra-timescaledb.yaml
+  - ../../base/services/portal.yaml
+  - ../../base/services/temporal-ts.yaml
+  - ../../base/deployments/grpc-service.yaml
+  - ../../base/deployments/import-service.yaml
+  - ../../base/deployments/import-worker.yaml
+  - ../../base/deployments/infra-temporal.yaml
+  - ../../base/deployments/portal.yaml
+  - ../../base/deployments/temporal-ts.yaml
+  - ../../base/statefulsets/infra-timescaledb.yaml
 
 patches:
   - target:
@@ -18,5 +37,5 @@ patches:
       name: portal
     patch: |-
       - op: replace
-        path: /spec/template/spec/containers/0/env/2/value
+        path: /spec/template/spec/containers/0/env/1/value
         value: http://localhost:8080
