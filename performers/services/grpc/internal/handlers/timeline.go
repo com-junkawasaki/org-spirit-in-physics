@@ -5,27 +5,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"connectrpc.com/connect"
+	dapr "github.com/dapr/go-sdk/client"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1"
+	timelinev1 "github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1"
+	"github.com/spirit-in-physics/services/grpc/internal/dapr/workflows"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
-	"github.com/spirit-in-physics/services/grpc/internal/workflows"
-	"go.temporal.io/sdk/client"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type TimelineHandler struct {
-	queries        *db.Queries
-	temporalClient client.Client
+	queries    *db.Queries
+	daprClient dapr.Client
 }
 
-func NewTimelineHandler(queries *db.Queries, temporalClient client.Client) *TimelineHandler {
+func NewTimelineHandler(queries *db.Queries, daprClient dapr.Client) *TimelineHandler {
 	return &TimelineHandler{
-		queries:        queries,
-		temporalClient: temporalClient,
+		queries:    queries,
+		daprClient: daprClient,
 	}
 }
 
@@ -47,8 +46,8 @@ func (h *TimelineHandler) GetTimeline(
 	ctx context.Context,
 	req *connect.Request[timelinev1.GetTimelineRequest],
 ) (*connect.Response[timelinev1.GetTimelineResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
+	if h.daprClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("dapr client not initialized"))
 	}
 
 	sessionID := ""
@@ -56,23 +55,24 @@ func (h *TimelineHandler) GetTimeline(
 		sessionID = *req.Msg.SessionId
 	}
 
-	workflowID := "timeline-" + req.Msg.ParticipantId + "-" + sessionID + "-" + fmt.Sprintf("%d", time.Now().UnixNano())
-	workflowOptions := client.StartWorkflowOptions{
-		ID:        workflowID,
-		TaskQueue: "onboarding-queue",
-	}
-
-	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.TimelineWorkflow, workflows.TimelineWorkflowInput{
+	// Use Dapr service invocation to call workflow
+	input := workflows.TimelineWorkflowInput{
 		ParticipantID: req.Msg.ParticipantId,
 		SessionID:     sessionID,
-	})
+	}
+	inputBytes, _ := json.Marshal(input)
+	content := &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
+	}
+
+	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "grpc-service", "timeline/points", "POST", content)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	var points []*timelinev1.TimelinePoint
-	err = run.Get(ctx, &points)
-	if err != nil {
+	if err := json.Unmarshal(resp, &points); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -224,8 +224,8 @@ func (h *TimelineHandler) GetAnalysis(
 	ctx context.Context,
 	req *connect.Request[timelinev1.GetAnalysisRequest],
 ) (*connect.Response[timelinev1.GetAnalysisResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
+	if h.daprClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("dapr client not initialized"))
 	}
 
 	var sUID pgtype.UUID
@@ -254,13 +254,6 @@ func (h *TimelineHandler) GetAnalysis(
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	// 2. Prepare for analysis workflow
-	workflowID := fmt.Sprintf("analysis-%s-%d", req.Msg.ParticipantId, time.Now().UnixNano())
-	workflowOptions := client.StartWorkflowOptions{
-		ID:        workflowID,
-		TaskQueue: "visualization-analysis-queue",
 	}
 
 	// Simple mapping for sessionData (minimal fields needed for analysis)
@@ -302,15 +295,26 @@ func (h *TimelineHandler) GetAnalysis(
 		}
 	}
 
-	// We pass the data to the workflow which is implemented in TypeScript
-	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "visualizationAnalysisWorkflow", nodes, links, emoVectors, sessionData)
+	// Call TypeScript service via Dapr
+	input := map[string]interface{}{
+		"nodes":          nodes,
+		"links":          links,
+		"emotionVectors": emoVectors,
+		"sessionData":    sessionData,
+	}
+	inputBytes, _ := json.Marshal(input)
+	content := &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
+	}
+
+	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", "run_structure_analysis", "POST", content)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	var result timelinev1.GetAnalysisResponse
-	err = run.Get(ctx, &result)
-	if err != nil {
+	if err := json.Unmarshal(resp, &result); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -323,20 +327,26 @@ func (h *TimelineHandler) GetIntegratedTimeline(
 ) (*connect.Response[timelinev1.GetIntegratedTimelineResponse], error) {
 	fmt.Printf("DEBUG: GetIntegratedTimeline called for participant %s\n", req.Msg.ParticipantId)
 	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Started","participantId":"%s"}`, req.Msg.ParticipantId)
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("temporal client not initialized"))
+
+	if h.daprClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("dapr client not initialized"))
 	}
 
-	workflowID := fmt.Sprintf("integrated-%s-%d", req.Msg.ParticipantId, time.Now().UnixNano())
-	workflowOptions := client.StartWorkflowOptions{
-		ID:        workflowID,
-		TaskQueue: "visualization-analysis-queue", // TS Worker queue
+	// Call TypeScript service via Dapr service invocation
+	input := map[string]interface{}{
+		"participantId": req.Msg.ParticipantId,
+		"sessionId":     req.Msg.SessionId,
+	}
+	inputBytes, _ := json.Marshal(input)
+	content := &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
 	}
 
-	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Executing Workflow","workflowID":"%s"}`, workflowID)
-	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "timelineIntegratedWorkflow", req.Msg.ParticipantId, req.Msg.SessionId)
+	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Invoking dapr-ts service"}`)
+	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", "get_integrated_timeline", "POST", content)
 	if err != nil {
-		log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"ExecuteWorkflow Failed","error":"%v"}`, err)
+		log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Invoke Failed","error":"%v"}`, err)
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -368,30 +378,25 @@ func (h *TimelineHandler) GetIntegratedTimeline(
 		Points   []compactPoint  `json:"points"`
 		Analysis json.RawMessage `json:"analysis"`
 	}
-	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Waiting for Workflow Result"}`)
-	err = run.Get(ctx, &workflowResult)
-	if err != nil {
-		fmt.Printf("ERROR: Workflow Get failed: %v\n", err)
-		log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Workflow Get Failed","error":"%v"}`, err)
+
+	if err := json.Unmarshal(resp, &workflowResult); err != nil {
+		fmt.Printf("ERROR: Unmarshal failed: %v\n", err)
+		log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Unmarshal Failed","error":"%v"}`, err)
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Workflow Completed","pointsCount":%d}`, len(workflowResult.Points))
+	log.Printf(`{"sessionId":"debug-session","location":"handlers/timeline.go:GetIntegratedTimeline","message":"Service Completed","pointsCount":%d}`, len(workflowResult.Points))
 
 	// Decode Analysis
 	var analysis timelinev1.GetAnalysisResponse
 	if len(workflowResult.Analysis) > 0 {
-		// TS Temporal result might have field names that don't match exactly due to compacting
-		// but for Analysis we keep the field names as is in the TS activity
 		if err := json.Unmarshal(workflowResult.Analysis, &analysis); err != nil {
 			fmt.Printf("ERROR: Analysis unmarshal failed: %v\n", err)
-			// Try manual decoding if needed, but for now we expect field name match
 		}
 	}
 
 	// Map compact points to Protobuf TimelinePoints
 	points := make([]*timelinev1.TimelinePoint, 0, len(workflowResult.Points))
 	for _, cp := range workflowResult.Points {
-		// Use local variables to avoid pointer issues in loop
 		w := cp.W
 		et := cp.ET
 		rt := cp.RT

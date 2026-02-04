@@ -19,7 +19,7 @@ k8s_yaml(local('timeout 30s kubectl kustomize manifests/overlays/{}'.format(runt
 
 # Portal (Svelte App)
 docker_build(
-  'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app',
+  'asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/web',
   './apps/web',
   dockerfile='./apps/web/Dockerfile',
   ignore=[

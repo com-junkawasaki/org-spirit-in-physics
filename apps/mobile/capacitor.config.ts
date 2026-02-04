@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'ai.gftd.spirit',
   appName: 'Spirit in Physics',
-  webDir: '../svelte-app/build',
+  webDir: '../web/build',
   bundledWebRuntime: false,
   server: {
     androidScheme: 'https',

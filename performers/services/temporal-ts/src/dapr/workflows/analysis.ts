@@ -5,7 +5,7 @@
  * Workflows are implemented as stateful sequences using state store.
  */
 
-import { DaprClient } from '@dapr/dapr';
+import { DaprClient, HttpMethod } from '@dapr/dapr';
 import {
   WordNode,
   WordLink,
@@ -67,7 +67,7 @@ export async function timelineIntegratedWorkflow(
   const rawPoints = await daprClient.invoker.invoke(
     'grpc-service',
     'timeline/points',
-    'POST',
+    HttpMethod.POST,
     { participant_id: participantId, session_id: sessionId }
   );
 
@@ -122,7 +122,7 @@ export async function timelineIntegratedWorkflow(
   const rawEmotionVectors = await daprClient.invoker.invoke(
     'grpc-service',
     'timeline/emotion-vectors',
-    'POST',
+    HttpMethod.POST,
     { participant_id: participantId, session_id: sessionId }
   );
 

@@ -3,7 +3,7 @@ package tools
 import (
 	"context"
 
-	"github.com/gftdcojp/dapr-agents-go/tool"
+	agent "github.com/gftdcojp/dapr-agents-go"
 	"github.com/spirit-in-physics/services/grpc/internal/dapr/activities"
 	"github.com/spirit-in-physics/services/grpc/internal/dapr/workflows"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
@@ -21,32 +21,30 @@ func NewImportTools(queries *db.Queries) *ImportTools {
 	}
 }
 
-func (t *ImportTools) RegisterTools(registry *tool.Registry) {
-	registry.Register(tool.Tool{
-		Name:        "import_participants",
-		Description: "Import participants from the dataset directory.",
-		InputSchema: map[string]interface{}{
-			"type":       "object",
-			"properties": map[string]interface{}{},
-		},
-		Handler: t.ImportParticipants,
-	})
-
-	registry.Register(tool.Tool{
-		Name:        "import_emotions",
-		Description: "Import emotions data for a specific participant from CSV files.",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"participant_id": map[string]interface{}{
-					"type":        "string",
-					"description": "UUID of the participant to import emotions for",
-				},
+func (t *ImportTools) GetTools() []agent.Tool {
+	return []agent.Tool{
+		agent.NewFuncTool(
+			"import_participants",
+			"Import participants from the dataset directory.",
+			&agent.ToolSchema{
+				Type:       "object",
+				Properties: map[string]*agent.ToolSchema{},
 			},
-			"required": []string{"participant_id"},
-		},
-		Handler: t.ImportEmotions,
-	})
+			t.ImportParticipants,
+		),
+		agent.NewFuncTool(
+			"import_emotions",
+			"Import emotions data for a specific participant from CSV files.",
+			&agent.ToolSchema{
+				Type: "object",
+				Properties: map[string]*agent.ToolSchema{
+					"participant_id": {Type: "string", Description: "UUID of the participant to import emotions for"},
+				},
+				Required: []string{"participant_id"},
+			},
+			t.ImportEmotions,
+		),
+	}
 }
 
 func (t *ImportTools) ImportParticipants(ctx context.Context, params map[string]interface{}) (interface{}, error) {
@@ -56,7 +54,7 @@ func (t *ImportTools) ImportParticipants(ctx context.Context, params map[string]
 	}
 
 	return map[string]interface{}{
-		"success":          true,
+		"success":            true,
 		"participants_count": count,
 	}, nil
 }

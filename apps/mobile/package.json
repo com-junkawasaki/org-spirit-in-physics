@@ -4,7 +4,7 @@
   "description": "Spirit in Physics Mobile App via Capacitor",
   "main": "index.js",
   "scripts": {
-    "build": "cd ../svelte-app && pnpm build",
+    "build": "cd ../web && pnpm build",
     "sync": "cap sync",
     "open:ios": "cap open ios",
     "open:android": "cap open android",

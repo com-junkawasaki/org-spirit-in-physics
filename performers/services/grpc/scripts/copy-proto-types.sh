@@ -8,7 +8,7 @@ SOURCE_DIR="gen/proto-ts"
 
 # Frontend apps that need the types
 FRONTEND_APPS=(
-  "../../apps/svelte-app/src/generated/proto"
+  "../../apps/web/src/generated/proto"
   "../../apps/participant/src/generated/proto"
 )
 

@@ -6,24 +6,24 @@ import (
 	"fmt"
 
 	dapr "github.com/dapr/go-sdk/client"
-	"github.com/gftdcojp/dapr-agents-go/mcp"
-	"github.com/gftdcojp/dapr-agents-go/tool"
+	agent "github.com/gftdcojp/dapr-agents-go"
 	"github.com/spirit-in-physics/services/grpc/internal/dapr/tools"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 )
 
 type MCPServer struct {
-	server     *mcp.Server
+	server     *agent.MCPServer
 	queries    *db.Queries
 	daprClient dapr.Client
 }
 
 func NewMCPServer(queries *db.Queries, daprClient dapr.Client) (*MCPServer, error) {
-	server := mcp.NewServer(mcp.ServerConfig{
-		Name:        "spirit-in-physics-mcp",
-		Version:     "1.0.0",
-		Description: "MCP server for Spirit in Physics platform",
-	})
+	config := agent.DefaultMCPServerConfig()
+	config.Name = "spirit-in-physics-mcp"
+	config.Version = "1.0.0"
+	config.Description = "MCP server for Spirit in Physics platform"
+
+	server := agent.NewMCPServer(config)
 
 	s := &MCPServer{
 		server:     server,
@@ -37,133 +37,132 @@ func NewMCPServer(queries *db.Queries, daprClient dapr.Client) (*MCPServer, erro
 	// Register proxied tools from Python/TypeScript services
 	s.registerProxiedTools()
 
-	// Register resources
-	s.registerResources()
-
 	return s, nil
 }
 
 func (s *MCPServer) registerGoTools() {
-	registry := s.server.ToolRegistry()
-
 	// Timeline tools
 	timelineTools := tools.NewTimelineTools(s.queries)
-	timelineTools.RegisterTools(registry)
+	for _, tool := range timelineTools.GetTools() {
+		s.server.RegisterTool(tool)
+	}
 
 	// Participant tools
 	participantTools := tools.NewParticipantTools(s.queries)
-	participantTools.RegisterTools(registry)
+	for _, tool := range participantTools.GetTools() {
+		s.server.RegisterTool(tool)
+	}
 
 	// Import tools
 	importTools := tools.NewImportTools(s.queries)
-	importTools.RegisterTools(registry)
+	for _, tool := range importTools.GetTools() {
+		s.server.RegisterTool(tool)
+	}
 
 	// Workflow management tools
-	registry.Register(tool.Tool{
-		Name:        "start_workflow",
-		Description: "Start a Dapr workflow",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"workflow_name": map[string]string{"type": "string"},
-				"input":         map[string]string{"type": "object"},
+	s.server.RegisterTool(agent.NewFuncTool(
+		"start_workflow",
+		"Start a Dapr workflow",
+		&agent.ToolSchema{
+			Type: "object",
+			Properties: map[string]*agent.ToolSchema{
+				"workflow_name": {Type: "string"},
+				"input":         {Type: "object"},
 			},
-			"required": []string{"workflow_name"},
+			Required: []string{"workflow_name"},
 		},
-		Handler: s.startWorkflowHandler,
-	})
+		s.startWorkflowHandler,
+	))
 
-	registry.Register(tool.Tool{
-		Name:        "get_workflow_status",
-		Description: "Get status of a running workflow",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"instance_id": map[string]string{"type": "string"},
+	s.server.RegisterTool(agent.NewFuncTool(
+		"get_workflow_status",
+		"Get status of a running workflow",
+		&agent.ToolSchema{
+			Type: "object",
+			Properties: map[string]*agent.ToolSchema{
+				"instance_id": {Type: "string"},
 			},
-			"required": []string{"instance_id"},
+			Required: []string{"instance_id"},
 		},
-		Handler: s.getWorkflowStatusHandler,
-	})
+		s.getWorkflowStatusHandler,
+	))
 }
 
 func (s *MCPServer) registerProxiedTools() {
-	registry := s.server.ToolRegistry()
-
 	// Python service tools (import-service)
-	registry.Register(tool.Tool{
-		Name:        "python_import_participants",
-		Description: "Import participants from dataset directory (Python service)",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"dataset_path": map[string]string{"type": "string"},
+	s.server.RegisterTool(agent.NewFuncTool(
+		"python_import_participants",
+		"Import participants from dataset directory (Python service)",
+		&agent.ToolSchema{
+			Type: "object",
+			Properties: map[string]*agent.ToolSchema{
+				"dataset_path": {Type: "string"},
 			},
-			"required": []string{"dataset_path"},
+			Required: []string{"dataset_path"},
 		},
-		Handler: s.proxyToPythonService("import_participants"),
-	})
+		s.proxyToPythonService("import_participants"),
+	))
 
-	registry.Register(tool.Tool{
-		Name:        "python_import_sessions",
-		Description: "Import sessions with physiological data (Python service)",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"dataset_path": map[string]string{"type": "string"},
+	s.server.RegisterTool(agent.NewFuncTool(
+		"python_import_sessions",
+		"Import sessions with physiological data (Python service)",
+		&agent.ToolSchema{
+			Type: "object",
+			Properties: map[string]*agent.ToolSchema{
+				"dataset_path": {Type: "string"},
 			},
-			"required": []string{"dataset_path"},
+			Required: []string{"dataset_path"},
 		},
-		Handler: s.proxyToPythonService("import_sessions"),
-	})
+		s.proxyToPythonService("import_sessions"),
+	))
 
-	registry.Register(tool.Tool{
-		Name:        "generate_stimulus_audio",
-		Description: "Generate audio for stimulus words (Python service)",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"words":   map[string]string{"type": "array"},
-				"api_key": map[string]string{"type": "string"},
+	s.server.RegisterTool(agent.NewFuncTool(
+		"generate_stimulus_audio",
+		"Generate audio for stimulus words (Python service)",
+		&agent.ToolSchema{
+			Type: "object",
+			Properties: map[string]*agent.ToolSchema{
+				"words":   {Type: "array"},
+				"api_key": {Type: "string"},
 			},
-			"required": []string{"words", "api_key"},
+			Required: []string{"words", "api_key"},
 		},
-		Handler: s.proxyToPythonService("generate_stimulus_audio"),
-	})
+		s.proxyToPythonService("generate_stimulus_audio"),
+	))
 
-	// TypeScript service tools (temporal-ts -> dapr-ts)
-	registry.Register(tool.Tool{
-		Name:        "run_structure_analysis",
-		Description: "Run 3D structure analysis on visualization data (TypeScript service)",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"nodes":           map[string]string{"type": "array"},
-				"links":           map[string]string{"type": "array"},
-				"emotion_vectors": map[string]string{"type": "object"},
-				"session_data":    map[string]string{"type": "array"},
+	// TypeScript service tools (dapr-ts)
+	s.server.RegisterTool(agent.NewFuncTool(
+		"run_structure_analysis",
+		"Run 3D structure analysis on visualization data (TypeScript service)",
+		&agent.ToolSchema{
+			Type: "object",
+			Properties: map[string]*agent.ToolSchema{
+				"nodes":           {Type: "array"},
+				"links":           {Type: "array"},
+				"emotion_vectors": {Type: "object"},
+				"session_data":    {Type: "array"},
 			},
-			"required": []string{"nodes", "links", "emotion_vectors", "session_data"},
+			Required: []string{"nodes", "links", "emotion_vectors", "session_data"},
 		},
-		Handler: s.proxyToTypeScriptService("run_structure_analysis"),
-	})
+		s.proxyToTypeScriptService("run_structure_analysis"),
+	))
 
-	registry.Register(tool.Tool{
-		Name:        "get_integrated_timeline",
-		Description: "Get integrated timeline with analysis (TypeScript orchestrated)",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"participant_id": map[string]string{"type": "string"},
-				"session_id":     map[string]string{"type": "string"},
+	s.server.RegisterTool(agent.NewFuncTool(
+		"get_integrated_timeline",
+		"Get integrated timeline with analysis (TypeScript orchestrated)",
+		&agent.ToolSchema{
+			Type: "object",
+			Properties: map[string]*agent.ToolSchema{
+				"participant_id": {Type: "string"},
+				"session_id":     {Type: "string"},
 			},
-			"required": []string{"participant_id"},
+			Required: []string{"participant_id"},
 		},
-		Handler: s.proxyToTypeScriptService("get_integrated_timeline"),
-	})
+		s.proxyToTypeScriptService("get_integrated_timeline"),
+	))
 }
 
-func (s *MCPServer) proxyToPythonService(method string) tool.Handler {
+func (s *MCPServer) proxyToPythonService(method string) func(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	return func(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 		inputBytes, _ := json.Marshal(params)
 		content := &dapr.DataContent{
@@ -184,7 +183,7 @@ func (s *MCPServer) proxyToPythonService(method string) tool.Handler {
 	}
 }
 
-func (s *MCPServer) proxyToTypeScriptService(method string) tool.Handler {
+func (s *MCPServer) proxyToTypeScriptService(method string) func(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 	return func(ctx context.Context, params map[string]interface{}) (interface{}, error) {
 		inputBytes, _ := json.Marshal(params)
 		content := &dapr.DataContent{
@@ -192,7 +191,7 @@ func (s *MCPServer) proxyToTypeScriptService(method string) tool.Handler {
 			Data:        inputBytes,
 		}
 
-		resp, err := s.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", method, "POST", content)
+		resp, err := s.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", method, "POST", content)
 		if err != nil {
 			return nil, fmt.Errorf("failed to invoke TypeScript service: %w", err)
 		}
@@ -203,32 +202,6 @@ func (s *MCPServer) proxyToTypeScriptService(method string) tool.Handler {
 		}
 		return result, nil
 	}
-}
-
-func (s *MCPServer) registerResources() {
-	s.server.RegisterResource(mcp.Resource{
-		URI:         "spirit://participants",
-		Name:        "Participants",
-		Description: "List of all participants in the system",
-		MimeType:    "application/json",
-		Handler:     s.getParticipantsResource,
-	})
-
-	s.server.RegisterResource(mcp.Resource{
-		URI:         "spirit://stimulus-words",
-		Name:        "Stimulus Words",
-		Description: "List of stimulus words for assessments",
-		MimeType:    "application/json",
-		Handler:     s.getStimulusWordsResource,
-	})
-}
-
-func (s *MCPServer) getParticipantsResource(ctx context.Context) (interface{}, error) {
-	return s.queries.ListParticipants(ctx)
-}
-
-func (s *MCPServer) getStimulusWordsResource(ctx context.Context) (interface{}, error) {
-	return s.queries.ListStimulusWords(ctx)
 }
 
 func (s *MCPServer) startWorkflowHandler(ctx context.Context, params map[string]interface{}) (interface{}, error) {
@@ -265,5 +238,6 @@ func (s *MCPServer) getWorkflowStatusHandler(ctx context.Context, params map[str
 }
 
 func (s *MCPServer) Start(port int) error {
-	return s.server.ListenAndServe(fmt.Sprintf(":%d", port))
+	s.server.Start()
+	return nil
 }

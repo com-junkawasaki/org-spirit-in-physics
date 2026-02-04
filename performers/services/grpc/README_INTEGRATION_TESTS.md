@@ -57,7 +57,7 @@ The script will test:
 
 ```bash
 # Install dependencies if needed
-cd apps/svelte-app
+cd apps/web
 pnpm install
 
 # Run Vitest tests
@@ -108,7 +108,7 @@ If shell script tests fail:
 
 If TypeScript tests fail:
 1. Regenerate Protobuf types: `cd performers/services/grpc && make copy-types`
-2. Verify types exist: `ls apps/svelte-app/src/generated/proto`
+2. Verify types exist: `ls apps/web/src/generated/proto`
 
 ## Continuous Integration
 

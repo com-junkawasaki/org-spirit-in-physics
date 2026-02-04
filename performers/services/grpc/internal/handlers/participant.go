@@ -308,7 +308,7 @@ func (h *ParticipantHandler) StartAssessment(
 	}
 	inputBytes, _ := json.Marshal(input)
 
-	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "start_assessment", "POST", &dapr.DataContent{
+	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", "start_assessment", "POST", &dapr.DataContent{
 		ContentType: "application/json",
 		Data:        inputBytes,
 	})
@@ -338,7 +338,7 @@ func (h *ParticipantHandler) SignalWordResponse(
 	}
 
 	inputBytes, _ := json.Marshal(req.Msg)
-	_, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "signal_word_response", "POST", &dapr.DataContent{
+	_, err := h.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", "signal_word_response", "POST", &dapr.DataContent{
 		ContentType: "application/json",
 		Data:        inputBytes,
 	})
@@ -359,7 +359,7 @@ func (h *ParticipantHandler) SignalStartSession(
 	}
 
 	inputBytes, _ := json.Marshal(req.Msg)
-	_, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "signal_start_session", "POST", &dapr.DataContent{
+	_, err := h.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", "signal_start_session", "POST", &dapr.DataContent{
 		ContentType: "application/json",
 		Data:        inputBytes,
 	})
@@ -380,7 +380,7 @@ func (h *ParticipantHandler) SignalArtifact(
 	}
 
 	inputBytes, _ := json.Marshal(req.Msg)
-	_, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "signal_artifact", "POST", &dapr.DataContent{
+	_, err := h.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", "signal_artifact", "POST", &dapr.DataContent{
 		ContentType: "application/json",
 		Data:        inputBytes,
 	})
@@ -401,7 +401,7 @@ func (h *ParticipantHandler) CompleteAssessment(
 	}
 
 	inputBytes, _ := json.Marshal(req.Msg)
-	_, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "complete_assessment", "POST", &dapr.DataContent{
+	_, err := h.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", "complete_assessment", "POST", &dapr.DataContent{
 		ContentType: "application/json",
 		Data:        inputBytes,
 	})
@@ -422,7 +422,7 @@ func (h *ParticipantHandler) GetAssessmentStatus(
 	}
 
 	inputBytes, _ := json.Marshal(req.Msg)
-	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "get_assessment_status", "POST", &dapr.DataContent{
+	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "dapr-ts", "get_assessment_status", "POST", &dapr.DataContent{
 		ContentType: "application/json",
 		Data:        inputBytes,
 	})

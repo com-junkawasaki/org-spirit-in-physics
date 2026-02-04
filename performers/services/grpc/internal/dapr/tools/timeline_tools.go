@@ -3,7 +3,7 @@ package tools
 import (
 	"context"
 
-	"github.com/gftdcojp/dapr-agents-go/tool"
+	agent "github.com/gftdcojp/dapr-agents-go"
 	"github.com/spirit-in-physics/services/grpc/internal/dapr/activities"
 	"github.com/spirit-in-physics/services/grpc/internal/dapr/workflows"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
@@ -21,74 +21,61 @@ func NewTimelineTools(queries *db.Queries) *TimelineTools {
 	}
 }
 
-func (t *TimelineTools) RegisterTools(registry *tool.Registry) {
-	registry.Register(tool.Tool{
-		Name:        "fetch_timeline",
-		Description: "Fetch timeline points for a participant's session. Returns time-series data including emotions, physiological readings, and reactions.",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"participant_id": map[string]interface{}{
-					"type":        "string",
-					"description": "UUID of the participant",
+func (t *TimelineTools) GetTools() []agent.Tool {
+	return []agent.Tool{
+		agent.NewFuncTool(
+			"fetch_timeline",
+			"Fetch timeline points for a participant's session. Returns time-series data including emotions, physiological readings, and reactions.",
+			&agent.ToolSchema{
+				Type: "object",
+				Properties: map[string]*agent.ToolSchema{
+					"participant_id": {Type: "string", Description: "UUID of the participant"},
+					"session_id":     {Type: "string", Description: "Optional UUID of specific session"},
 				},
-				"session_id": map[string]interface{}{
-					"type":        "string",
-					"description": "Optional UUID of specific session",
+				Required: []string{"participant_id"},
+			},
+			t.FetchTimeline,
+		),
+		agent.NewFuncTool(
+			"fetch_word_aggregates",
+			"Fetch aggregated statistics for each stimulus word including reaction times and physiological responses.",
+			&agent.ToolSchema{
+				Type: "object",
+				Properties: map[string]*agent.ToolSchema{
+					"participant_id": {Type: "string", Description: "UUID of the participant"},
+					"session_id":     {Type: "string", Description: "Optional UUID of specific session"},
 				},
+				Required: []string{"participant_id"},
 			},
-			"required": []string{"participant_id"},
-		},
-		Handler: t.FetchTimeline,
-	})
-
-	registry.Register(tool.Tool{
-		Name:        "fetch_word_aggregates",
-		Description: "Fetch aggregated statistics for each stimulus word including reaction times and physiological responses.",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"participant_id": map[string]interface{}{
-					"type":        "string",
-					"description": "UUID of the participant",
+			t.FetchWordAggregates,
+		),
+		agent.NewFuncTool(
+			"fetch_emotion_vectors",
+			"Fetch emotion vectors (10-dimensional) for each word showing emotional response patterns.",
+			&agent.ToolSchema{
+				Type: "object",
+				Properties: map[string]*agent.ToolSchema{
+					"participant_id": {Type: "string"},
+					"session_id":     {Type: "string"},
 				},
-				"session_id": map[string]interface{}{
-					"type":        "string",
-					"description": "Optional UUID of specific session",
+				Required: []string{"participant_id"},
+			},
+			t.FetchEmotionVectors,
+		),
+		agent.NewFuncTool(
+			"fetch_word_statistics",
+			"Fetch detailed statistics for words including mean, std, variance of reaction metrics.",
+			&agent.ToolSchema{
+				Type: "object",
+				Properties: map[string]*agent.ToolSchema{
+					"participant_id": {Type: "string"},
+					"session_id":     {Type: "string"},
 				},
+				Required: []string{"participant_id"},
 			},
-			"required": []string{"participant_id"},
-		},
-		Handler: t.FetchWordAggregates,
-	})
-
-	registry.Register(tool.Tool{
-		Name:        "fetch_emotion_vectors",
-		Description: "Fetch emotion vectors (10-dimensional) for each word showing emotional response patterns.",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"participant_id": map[string]interface{}{"type": "string"},
-				"session_id":     map[string]interface{}{"type": "string"},
-			},
-			"required": []string{"participant_id"},
-		},
-		Handler: t.FetchEmotionVectors,
-	})
-
-	registry.Register(tool.Tool{
-		Name:        "fetch_word_statistics",
-		Description: "Fetch detailed statistics for words including mean, std, variance of reaction metrics.",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"participant_id": map[string]interface{}{"type": "string"},
-				"session_id":     map[string]interface{}{"type": "string"},
-			},
-			"required": []string{"participant_id"},
-		},
-		Handler: t.FetchWordStatistics,
-	})
+			t.FetchWordStatistics,
+		),
+	}
 }
 
 func (t *TimelineTools) FetchTimeline(ctx context.Context, params map[string]interface{}) (interface{}, error) {

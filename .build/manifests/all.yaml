@@ -337,7 +337,7 @@ spec:
               name: clerk-secrets
         - name: PUBLIC_API_URL
           value: https://spirit-in-physics.com/api
-        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/web:latest
         imagePullPolicy: Always
         name: portal
         ports:

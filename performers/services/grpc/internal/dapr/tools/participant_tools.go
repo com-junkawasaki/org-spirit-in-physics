@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/gftdcojp/dapr-agents-go/tool"
+	agent "github.com/gftdcojp/dapr-agents-go"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 )
@@ -19,48 +19,42 @@ func NewParticipantTools(queries *db.Queries) *ParticipantTools {
 	}
 }
 
-func (t *ParticipantTools) RegisterTools(registry *tool.Registry) {
-	registry.Register(tool.Tool{
-		Name:        "create_participant",
-		Description: "Create a new participant in the system.",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"participant_id": map[string]interface{}{
-					"type":        "string",
-					"description": "Unique identifier for the participant",
+func (t *ParticipantTools) GetTools() []agent.Tool {
+	return []agent.Tool{
+		agent.NewFuncTool(
+			"create_participant",
+			"Create a new participant in the system.",
+			&agent.ToolSchema{
+				Type: "object",
+				Properties: map[string]*agent.ToolSchema{
+					"participant_id": {Type: "string", Description: "Unique identifier for the participant"},
 				},
+				Required: []string{"participant_id"},
 			},
-			"required": []string{"participant_id"},
-		},
-		Handler: t.CreateParticipant,
-	})
-
-	registry.Register(tool.Tool{
-		Name:        "get_participant",
-		Description: "Get participant details by ID.",
-		InputSchema: map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"participant_id": map[string]interface{}{
-					"type":        "string",
-					"description": "UUID of the participant",
+			t.CreateParticipant,
+		),
+		agent.NewFuncTool(
+			"get_participant",
+			"Get participant details by ID.",
+			&agent.ToolSchema{
+				Type: "object",
+				Properties: map[string]*agent.ToolSchema{
+					"participant_id": {Type: "string", Description: "UUID of the participant"},
 				},
+				Required: []string{"participant_id"},
 			},
-			"required": []string{"participant_id"},
-		},
-		Handler: t.GetParticipant,
-	})
-
-	registry.Register(tool.Tool{
-		Name:        "list_participants",
-		Description: "List all participants in the system.",
-		InputSchema: map[string]interface{}{
-			"type":       "object",
-			"properties": map[string]interface{}{},
-		},
-		Handler: t.ListParticipants,
-	})
+			t.GetParticipant,
+		),
+		agent.NewFuncTool(
+			"list_participants",
+			"List all participants in the system.",
+			&agent.ToolSchema{
+				Type:       "object",
+				Properties: map[string]*agent.ToolSchema{},
+			},
+			t.ListParticipants,
+		),
+	}
 }
 
 func (t *ParticipantTools) CreateParticipant(ctx context.Context, params map[string]interface{}) (interface{}, error) {
