@@ -7,14 +7,14 @@ resources:
   - ../../base/namespace.yaml
   - ../../base/serviceaccounts/api.yaml
   - ../../base/serviceaccounts/importer.yaml
-  - ../../base/serviceaccounts/portal.yaml
+  - ../../base/serviceaccounts/www.yaml
   - ../../base/services/api.yaml
   - ../../base/services/importer.yaml
   - ../../base/services/infra-timescaledb.yaml
-  - ../../base/services/portal.yaml
+  - ../../base/services/www.yaml
   - ../../base/deployments/api.yaml
   - ../../base/deployments/importer.yaml
-  - ../../base/deployments/portal.yaml
+  - ../../base/deployments/www.yaml
   - ../../base/statefulsets/infra-timescaledb.yaml
 
 patches:
@@ -26,7 +26,7 @@ patches:
         value: IfNotPresent
   - target:
       kind: Deployment
-      name: portal
+      name: www
     patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/env/1/value

@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: portal
+  name: www
   namespace: spirit-in-physics
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: portal
+      app.kubernetes.io/name: www
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: portal
+        app.kubernetes.io/name: www
     spec:
       containers:
       - env:
@@ -19,8 +19,8 @@ spec:
           value: pk_live_Y2xlcmsuZ2Z0ZC5kZXYk
         - name: PUBLIC_API_URL
           value: https://spirit-in-physics.com/api
-        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
-        name: portal
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/www:latest
+        name: www
         ports:
         - containerPort: 80
           name: http
