@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: importer
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: importer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: importer
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/importer:latest
+        name: importer
+        ports:
+        - containerPort: 8082
+          name: http
