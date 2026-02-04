@@ -1,14 +1,14 @@
-import { 
-  WordNode, 
-  WordLink, 
-  TimelineDataPoint, 
-  GapArea, 
-  DensityRegion, 
-  DuplicateCandidate, 
+import {
+  WordNode,
+  WordLink,
+  TimelineDataPoint,
+  GapArea,
+  DensityRegion,
+  DuplicateCandidate,
   CommonFeatures,
   AnalysisResults,
   GhostPattern
-} from './types';
+} from '../../types';
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -39,6 +39,31 @@ export async function runBDDTestActivity(featurePath?: string): Promise<{ succes
 }
 
 /**
+ * Activity: Run Cucumber tests
+ */
+export async function runCucumberTests(feature?: string): Promise<{ success: boolean; output: string; error?: string }> {
+  const bddDirPath = path.resolve(process.cwd(), './bdd');
+  const command = `npx cucumber-js ${feature || ''} --import 'step_definitions/*.ts' --loader ts-node/esm`;
+
+  try {
+    const { stdout, stderr } = await execPromise(command, {
+      cwd: bddDirPath,
+      env: { ...process.env, NODE_OPTIONS: '--loader ts-node/esm --no-warnings' }
+    });
+    return {
+      success: true,
+      output: stdout + (stderr ? `\nStderr: ${stderr}` : '')
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      output: error.stdout || '',
+      error: error.message || 'Cucumber test failed'
+    };
+  }
+}
+
+/**
  * Extracts features from a node for analysis
  */
 function extractNodeFeatures(
@@ -59,7 +84,7 @@ function extractNodeFeatures(
     .sort((a, b) => b.val - a.val)
     .slice(0, 3)
     .filter(e => e.val > 0.1);
-  
+
   topEmotions.forEach(e => features.push(`emotion:${e.name}`));
 
   // Extract reaction time features
@@ -171,7 +196,7 @@ export async function detectGapAreasActivity(
   const positions = nodes
     .filter(n => n.initial && !n.fixed)
     .map(n => n.initial!);
-  
+
   if (positions.length === 0) return [];
 
   const minX = Math.min(...positions.map(p => p[0]));
@@ -190,9 +215,6 @@ export async function detectGapAreasActivity(
   const gridSizeZ = rangeZ / gridResolution;
 
   const gridDensity: Map<string, number> = new Map();
-
-  // Helper to get Unix millis from compact Protobuf-like timestamp
-  const getMillis = (t: any) => (Number(t.s) * 1000 + (t.n / 1000000));
 
   for (const node of nodes) {
     if (!node.initial || node.fixed) continue;
@@ -244,14 +266,14 @@ export async function detectGapAreasActivity(
           if (nearby_nodes.length >= minNearbyNodes) {
             const common_emotion_profile = calculateCommonEmotionProfile(nearby_nodes, emotionVectors);
             const suggested_items = generateSuggestedItems(nearby_nodes, common_emotion_profile);
-            const confidence = Math.min(1, 
+            const confidence = Math.min(1,
               (nearby_nodes.length / (minNearbyNodes * 2)) * (1 - relativeDensity)
             );
 
             gap_areas.push({
               id: `gap_${gx}_${gy}_${gz}`,
               center,
-              radius: Math.max(minGapRadius, Math.min(maxGapRadius, 
+              radius: Math.max(minGapRadius, Math.min(maxGapRadius,
                 nearby_nodes.reduce((sum, n) => sum + n.distance, 0) / nearby_nodes.length * 0.5
               )),
               nearby_nodes: nearby_nodes.sort((a, b) => a.distance - b.distance).slice(0, 10),
@@ -352,7 +374,7 @@ export async function analyzeDensityActivity(
         density: cell.density,
         is_overcrowded: true,
         suggested_separation: radius * 1.2,
-        nodes: [] // STRIPPED: Clear nodes array to save space
+        nodes: []
       });
     } else if (relativeDensity <= sparseThreshold) {
       sparse_regions.push({
@@ -362,7 +384,7 @@ export async function analyzeDensityActivity(
         node_count: cell.nodes.length,
         density: cell.density,
         is_overcrowded: false,
-        nodes: [] // STRIPPED: Clear nodes array to save space
+        nodes: []
       });
     }
   }
@@ -421,8 +443,7 @@ export async function detectDuplicatesActivity(
 
       if (cosineSim >= minSimilarity && (1 - cosineSim) <= distanceThreshold) {
         const common_emotion_profile = calculateCommonEmotionProfile([node1, node2], emotionVectors);
-        const emotionNames = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'calm', 'focus', 'excitement', 'confusion'];
-        
+
         const semantic_tags = Object.entries(common_emotion_profile)
           .filter(([_, val]) => val > 0.2)
           .map(([name]) => name)
@@ -459,7 +480,7 @@ export async function detectDuplicatesActivity(
 }
 
 /**
- * Activity: Detect Ghost Patterns (geometric anomalies in vector space weighted by bio-responses)
+ * Activity: Detect Ghost Patterns
  */
 export async function detectGhostPatternsActivity(
   nodes: WordNode[],
@@ -471,31 +492,27 @@ export async function detectGhostPatternsActivity(
     voidThreshold?: number;
   } = {}
 ): Promise<GhostPattern[]> {
-  const { 
-    intensityThreshold = 0.6, 
-    densityThreshold = 1.8, // 1.8x average density
-    voidThreshold = 0.2     // 0.2x average density with high surrounding bio-reaction
+  const {
+    intensityThreshold = 0.6,
+    densityThreshold = 1.8,
+    voidThreshold = 0.2
   } = options;
 
   const ghost_patterns: GhostPattern[] = [];
-  const emotionNames = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust', 'calm', 'focus', 'excitement', 'confusion'];
 
-  // 1. Calculate bio-mass for each node
+  // Calculate bio-mass for each node
   const nodeMetrices = nodes.map(node => {
     const data = sessionData.filter(d => d.w === node.label);
     const avgRV = data.length > 0 ? data.reduce((s, d) => s + (d.rv || 0), 0) / data.length : 0;
     const avgRT = data.length > 0 ? data.reduce((s, d) => s + (d.rt || 0), 0) / data.length : 0;
-    
-    // Bio-mass increases with high reaction value and reaction delay
     const bioMass = (avgRV * 0.7) + (avgRT > 1500 ? 0.3 : 0);
-    
+
     return { node, bioMass, avgRV, avgRT };
   });
 
-  // 2. Detect Overcrowding with High Bio-Reaction (Complex Core)
+  // Detect Overcrowding with High Bio-Reaction
   const overcrowdingResults = await analyzeDensityActivity(nodes, { overcrowdingThreshold: densityThreshold });
   overcrowdingResults.overcrowded_regions.forEach((region, idx) => {
-    // Find nodes in this region and calculate their average bio-mass
     const regionNodes = nodeMetrices.filter(m => {
       if (!m.node.initial) return false;
       const dist = Math.hypot(
@@ -506,8 +523,8 @@ export async function detectGhostPatternsActivity(
       return dist <= region.radius;
     });
 
-    const avgRegionBioMass = regionNodes.length > 0 
-      ? regionNodes.reduce((s, n) => s + n.bioMass, 0) / regionNodes.length 
+    const avgRegionBioMass = regionNodes.length > 0
+      ? regionNodes.reduce((s, n) => s + n.bioMass, 0) / regionNodes.length
       : 0;
 
     if (avgRegionBioMass > 0.5) {
@@ -530,10 +547,9 @@ export async function detectGhostPatternsActivity(
     }
   });
 
-  // 3. Detect Meaningful Voids (Repression Gaps)
+  // Detect Meaningful Voids
   const gapResults = await detectGapAreasActivity(nodes, [], emotionVectors, sessionData, { densityThreshold: voidThreshold });
   gapResults.forEach((gap, idx) => {
-    // A gap is a Ghost Pattern if surrounding nodes have high bio-mass (repulsive force)
     const surroundingNodes = nodeMetrices.filter(m => {
       if (!m.node.initial) return false;
       const dist = Math.hypot(
@@ -558,11 +574,11 @@ export async function detectGhostPatternsActivity(
         intensity: avgSurroundingBioMass,
         pattern_type: 'void',
         indicators: ['structural_gap', 'repulsive_force'],
-        primary_emotions: gap.common_emotion_profile 
+        primary_emotions: gap.common_emotion_profile
           ? Object.entries(gap.common_emotion_profile).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([name]) => name)
           : [],
         description: "Repression Gap: Significant structural void surrounded by high-arousal concepts.",
-        confidence: avgSurroundingBioMass * (1 - gap.confidence) // High surrounding mass + clear gap
+        confidence: avgSurroundingBioMass * (1 - gap.confidence)
       });
     }
   });
@@ -594,4 +610,3 @@ export async function runStructureAnalysisActivity(
     overall_density: densityResults.overall_density
   };
 }
-

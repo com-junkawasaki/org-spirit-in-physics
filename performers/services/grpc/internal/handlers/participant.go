@@ -2,31 +2,32 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"connectrpc.com/connect"
+	dapr "github.com/dapr/go-sdk/client"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1"
+	daprWorkflows "github.com/spirit-in-physics/services/grpc/internal/dapr/workflows"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
-	"github.com/spirit-in-physics/services/grpc/internal/workflows"
-	"go.temporal.io/sdk/client"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ParticipantHandler handles participant service requests
 type ParticipantHandler struct {
-	queries        *db.Queries
-	temporalClient client.Client
+	queries    *db.Queries
+	daprClient dapr.Client
 }
 
 // NewParticipantHandler creates a new ParticipantHandler
-func NewParticipantHandler(queries *db.Queries, temporalClient client.Client) *ParticipantHandler {
+func NewParticipantHandler(queries *db.Queries, daprClient dapr.Client) *ParticipantHandler {
 	return &ParticipantHandler{
-		queries:        queries,
-		temporalClient: temporalClient,
+		queries:    queries,
+		daprClient: daprClient,
 	}
 }
 
@@ -185,16 +186,18 @@ func (h *ParticipantHandler) CreateParticipant(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// Trigger Temporal Workflow
-	if h.temporalClient != nil {
-		workflowOptions := client.StartWorkflowOptions{
-			ID:        "onboarding-" + participantID,
-			TaskQueue: "onboarding-queue",
-		}
-		_, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.OnboardingWorkflow, participantID)
+	// Trigger Dapr Workflow
+	if h.daprClient != nil {
+		input := daprWorkflows.OnboardingInput{Signature: participantID}
+		inputBytes, _ := json.Marshal(input)
+		_, err := h.daprClient.StartWorkflowBeta1(ctx, &dapr.StartWorkflowRequest{
+			InstanceID:        "onboarding-" + participantID,
+			WorkflowComponent: "dapr",
+			WorkflowName:      "OnboardingWorkflow",
+			Input:             inputBytes,
+		})
 		if err != nil {
-			// In production, we might want to handle this better (e.g., retry or log)
-			// For now, just log and continue
+			log.Printf("Failed to start onboarding workflow: %v", err)
 		}
 	}
 
@@ -276,19 +279,13 @@ func (h *ParticipantHandler) GetStimulusWord(
 	return connect.NewResponse(resp), nil
 }
 
-// StartAssessment starts a new assessment workflow
+// StartAssessment starts a new assessment workflow (via TypeScript Dapr service)
 func (h *ParticipantHandler) StartAssessment(
 	ctx context.Context,
 	req *connect.Request[participantv1.StartAssessmentRequest],
 ) (*connect.Response[participantv1.StartAssessmentResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, connect.NewError(connect.CodeInternal, nil))
-	}
-
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	workflowOptions := client.StartWorkflowOptions{
-		ID:        workflowID,
-		TaskQueue: "visualization-analysis-queue",
+	if h.daprClient == nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("dapr client not initialized"))
 	}
 
 	mode := "full"
@@ -296,25 +293,38 @@ func (h *ParticipantHandler) StartAssessment(
 		mode = *req.Msg.Mode
 	}
 
-	// In Go SDK, when calling a TS workflow, we just use the string name
-	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "jungVoiceAssessmentWorkflow", req.Msg.ParticipantId, req.Msg.Email, mode)
+	// Call TypeScript service to start assessment workflow
+	input := map[string]interface{}{
+		"participant_id": req.Msg.ParticipantId,
+		"email":          req.Msg.Email,
+		"mode":           mode,
+		"demographics": map[string]interface{}{
+			"ageGroup":       req.Msg.GetAgeGroup(),
+			"gender":         req.Msg.GetGender(),
+			"ethnicity":      req.Msg.GetEthnicity(),
+			"incomeRange":    req.Msg.GetIncomeRange(),
+			"medicalHistory": req.Msg.GetMedicalHistory(),
+		},
+	}
+	inputBytes, _ := json.Marshal(input)
+
+	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "start_assessment", "POST", &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// Signal demographics
-	demographics := map[string]interface{}{
-		"ageGroup":       req.Msg.GetAgeGroup(),
-		"gender":         req.Msg.GetGender(),
-		"ethnicity":      req.Msg.GetEthnicity(),
-		"incomeRange":    req.Msg.GetIncomeRange(),
-		"medicalHistory": req.Msg.GetMedicalHistory(),
+	var result struct {
+		WorkflowID string `json:"workflow_id"`
+		RunID      string `json:"run_id"`
 	}
-	_ = h.temporalClient.SignalWorkflow(ctx, workflowID, "", "updateConsent", demographics)
+	json.Unmarshal(resp, &result)
 
 	return connect.NewResponse(&participantv1.StartAssessmentResponse{
-		WorkflowId: run.GetID(),
-		RunId:      run.GetRunID(),
+		WorkflowId: result.WorkflowID,
+		RunId:      result.RunID,
 	}), nil
 }
 
@@ -323,12 +333,15 @@ func (h *ParticipantHandler) SignalWordResponse(
 	ctx context.Context,
 	req *connect.Request[participantv1.SignalWordResponseRequest],
 ) (*connect.Response[participantv1.SignalWordResponseResponse], error) {
-	if h.temporalClient == nil {
+	if h.daprClient == nil {
 		return nil, connect.NewError(connect.CodeInternal, nil)
 	}
 
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "recordWordResponse", req.Msg)
+	inputBytes, _ := json.Marshal(req.Msg)
+	_, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "signal_word_response", "POST", &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -341,12 +354,15 @@ func (h *ParticipantHandler) SignalStartSession(
 	ctx context.Context,
 	req *connect.Request[participantv1.SignalStartSessionRequest],
 ) (*connect.Response[participantv1.SignalStartSessionResponse], error) {
-	if h.temporalClient == nil {
+	if h.daprClient == nil {
 		return nil, connect.NewError(connect.CodeInternal, nil)
 	}
 
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "startSession", req.Msg.SessionNumber)
+	inputBytes, _ := json.Marshal(req.Msg)
+	_, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "signal_start_session", "POST", &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -359,12 +375,15 @@ func (h *ParticipantHandler) SignalArtifact(
 	ctx context.Context,
 	req *connect.Request[participantv1.SignalArtifactRequest],
 ) (*connect.Response[participantv1.SignalArtifactResponse], error) {
-	if h.temporalClient == nil {
+	if h.daprClient == nil {
 		return nil, connect.NewError(connect.CodeInternal, nil)
 	}
 
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "updateArtifact", req.Msg)
+	inputBytes, _ := json.Marshal(req.Msg)
+	_, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "signal_artifact", "POST", &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -377,12 +396,15 @@ func (h *ParticipantHandler) CompleteAssessment(
 	ctx context.Context,
 	req *connect.Request[participantv1.CompleteAssessmentRequest],
 ) (*connect.Response[participantv1.CompleteAssessmentResponse], error) {
-	if h.temporalClient == nil {
+	if h.daprClient == nil {
 		return nil, connect.NewError(connect.CodeInternal, nil)
 	}
 
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "completeAssessment", nil)
+	inputBytes, _ := json.Marshal(req.Msg)
+	_, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "complete_assessment", "POST", &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -395,22 +417,25 @@ func (h *ParticipantHandler) GetAssessmentStatus(
 	ctx context.Context,
 	req *connect.Request[participantv1.GetAssessmentStatusRequest],
 ) (*connect.Response[participantv1.GetAssessmentStatusResponse], error) {
-	if h.temporalClient == nil {
+	if h.daprClient == nil {
 		return nil, connect.NewError(connect.CodeInternal, nil)
 	}
 
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	queryResp, err := h.temporalClient.QueryWorkflow(ctx, workflowID, "", "getStatus")
+	inputBytes, _ := json.Marshal(req.Msg)
+	resp, err := h.daprClient.InvokeMethodWithContent(ctx, "temporal-ts", "get_assessment_status", "POST", &dapr.DataContent{
+		ContentType: "application/json",
+		Data:        inputBytes,
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	var state any
-	if err := queryResp.Get(&state); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+	var result struct {
+		Status string `json:"status"`
 	}
+	json.Unmarshal(resp, &result)
 
 	return connect.NewResponse(&participantv1.GetAssessmentStatusResponse{
-		Status: "active",
+		Status: result.Status,
 	}), nil
 }

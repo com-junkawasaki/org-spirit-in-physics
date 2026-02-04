@@ -1,7 +1,7 @@
 {
-  "name": "temporal-ts-worker",
+  "name": "dapr-ts-worker",
   "version": "1.0.0",
-  "description": "Temporal TypeScript worker for visualization analysis",
+  "description": "Dapr TypeScript worker for visualization analysis",
   "main": "dist/worker.js",
   "scripts": {
     "build": "tsc",
@@ -9,9 +9,7 @@
     "dev": "ts-node src/worker.ts"
   },
   "dependencies": {
-    "@temporalio/worker": "^1.11.0",
-    "@temporalio/activity": "^1.11.0",
-    "@temporalio/workflow": "^1.11.0",
+    "@dapr/dapr": "^3.2.0",
     "d3": "^7.9.0"
   },
   "devDependencies": {

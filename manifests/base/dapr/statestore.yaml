@@ -1,0 +1,15 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: spirit-in-physics
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+  - name: connectionString
+    value: "host=infra-timescaledb user=postgres password=postgres dbname=spirit_in_physics sslmode=disable"
+  - name: actorStateStore
+    value: "true"
+  - name: tableName
+    value: "dapr_state"

@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/spirit-in-physics/services/grpc/internal/dapr/workflows"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 )
 
@@ -22,7 +23,7 @@ type ImportActivities struct {
 
 func (a *ImportActivities) ImportParticipantsActivity(ctx context.Context) (int, error) {
 	datasetPath := "/dataset"
-	
+
 	// Check if directory exists
 	if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
 		// Fallback 1: Direct absolute path
@@ -50,7 +51,7 @@ func (a *ImportActivities) ImportParticipantsActivity(ctx context.Context) (int,
 		if entry.IsDir() {
 			participantID := entry.Name()
 			now := time.Now()
-			
+
 			// Check if exists
 			_, err = a.Queries.GetParticipant(ctx, participantID)
 			if err != nil {
@@ -73,7 +74,9 @@ func (a *ImportActivities) ImportParticipantsActivity(ctx context.Context) (int,
 	return count, nil
 }
 
-func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participantID string) (int, error) {
+func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, input workflows.ImportEmotionsInput) (int, error) {
+	participantID := input.ParticipantID
+
 	// Find CSV files
 	datasetPath := fmt.Sprintf("/dataset/%s", participantID)
 	if _, err := os.Stat(datasetPath); os.IsNotExist(err) {
@@ -103,7 +106,7 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 	totalEmotionsImported := 0
 	for _, csvFile := range csvFiles {
 		fileName := filepath.Base(csvFile)
-		
+
 		// Map file name to type
 		fileType := ""
 		if strings.Contains(fileName, "face") {
@@ -174,7 +177,6 @@ func (a *ImportActivities) ImportEmotionsActivity(ctx context.Context, participa
 			fmt.Sscanf(beginTimeStr, "%f", &beginTime)
 
 			// Calculate a timestamp (base session time + beginTime)
-			// Using mock base time for now
 			baseTime := time.Date(2025, 12, 26, 10, 0, 0, 0, time.UTC)
 			pointTime := baseTime.Add(time.Duration(beginTime * float64(time.Second)))
 

@@ -1,0 +1,11 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: dapr-workflow
+  namespace: spirit-in-physics
+spec:
+  type: workflow.dapr
+  version: v1
+  metadata:
+  - name: actorRuntime
+    value: "true"

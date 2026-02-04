@@ -8,10 +8,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
+	dapr "github.com/dapr/go-sdk/client"
+	"github.com/dapr/go-sdk/workflow"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
@@ -21,12 +24,11 @@ import (
 	"github.com/spirit-in-physics/services/grpc/gen/proto/session/v1/sessionv1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/storage/v1/storagev1connect"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1/timelinev1connect"
-	"github.com/spirit-in-physics/services/grpc/internal/activities"
+	daprActivities "github.com/spirit-in-physics/services/grpc/internal/dapr/activities"
+	daprWorkflows "github.com/spirit-in-physics/services/grpc/internal/dapr/workflows"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"github.com/spirit-in-physics/services/grpc/internal/handlers"
-	"github.com/spirit-in-physics/services/grpc/internal/workflows"
-	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/worker"
+	"github.com/spirit-in-physics/services/grpc/internal/mcp"
 )
 
 type responseWriter struct {
@@ -39,7 +41,6 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-// The main handler routes /api/... to apiMux with prefix stripped
 func (rw *responseWriter) Write(b []byte) (int, error) {
 	if rw.statusCode >= 400 {
 		log.Printf("[MainHandler] ERROR Response (%d): %s", rw.statusCode, string(b))
@@ -77,56 +78,86 @@ func main() {
 
 	queries := db.New(pool)
 
-	// Temporal Client Setup
-	temporalAddress := os.Getenv("TEMPORAL_ADDRESS")
-	if temporalAddress == "" {
-		temporalAddress = "localhost:7233"
-	}
-
-	temporalClient, err := client.Dial(client.Options{
-		HostPort: temporalAddress,
-	})
+	// Dapr Client Setup
+	daprClient, err := dapr.NewClient()
 	if err != nil {
-		log.Printf("Unable to create Temporal client: %v", err)
+		log.Printf("Unable to create Dapr client: %v", err)
 	} else {
-		defer temporalClient.Close()
+		defer daprClient.Close()
 
-		// Start Temporal Worker in background
-		log.Println("Initializing Temporal worker...")
+		// Start Dapr Workflow Worker in background
+		log.Println("Initializing Dapr workflow worker...")
 		go func() {
-			w := worker.New(temporalClient, "onboarding-queue", worker.Options{})
+			w, err := workflow.NewWorker()
+			if err != nil {
+				log.Printf("Failed to create workflow worker: %v", err)
+				return
+			}
 
-			// Register Workflows and Activities
-			log.Println("Registering Temporal workflows and activities")
-			w.RegisterWorkflow(workflows.OnboardingWorkflow)
-			w.RegisterWorkflow(workflows.ImportParticipantsWorkflow)
-			w.RegisterWorkflow(workflows.ImportEmotionsWorkflow)
-			w.RegisterWorkflow(workflows.TimelineWorkflow)
-			w.RegisterWorkflow(workflows.WordAggregatesWorkflow)
-			w.RegisterWorkflow(workflows.EmotionVectorsWorkflow)
-			w.RegisterWorkflow(workflows.WordStatisticsWorkflow)
-			w.RegisterWorkflow(workflows.VisualizationAnalysisWorkflow)
-			
-			a := &activities.ParticipantActivities{Queries: queries}
-			w.RegisterActivity(a)
+			// Register Workflows
+			log.Println("Registering Dapr workflows and activities")
+			w.RegisterWorkflow(daprWorkflows.OnboardingWorkflow)
+			w.RegisterWorkflow(daprWorkflows.ImportParticipantsWorkflow)
+			w.RegisterWorkflow(daprWorkflows.ImportEmotionsWorkflow)
+			w.RegisterWorkflow(daprWorkflows.TimelineWorkflow)
+			w.RegisterWorkflow(daprWorkflows.WordAggregatesWorkflow)
+			w.RegisterWorkflow(daprWorkflows.EmotionVectorsWorkflow)
+			w.RegisterWorkflow(daprWorkflows.WordStatisticsWorkflow)
+			w.RegisterWorkflow(daprWorkflows.VisualizationAnalysisWorkflow)
 
-			ia := &activities.ImportActivities{Queries: queries}
-			w.RegisterActivity(ia)
+			// Register Activities
+			participantActs := &daprActivities.ParticipantActivities{Queries: queries}
+			w.RegisterActivity(participantActs.CreateParticipantActivity)
+			w.RegisterActivity(participantActs.SetupEnvironmentActivity)
 
-			ta := &activities.TimelineActivities{Queries: queries}
-			w.RegisterActivity(ta)
+			importActs := &daprActivities.ImportActivities{Queries: queries}
+			w.RegisterActivity(importActs.ImportParticipantsActivity)
+			w.RegisterActivity(importActs.ImportEmotionsActivity)
 
-			log.Println("Starting Temporal worker on queue 'onboarding-queue'")
-			if err := w.Run(worker.InterruptCh()); err != nil {
-				log.Printf("Unable to start Temporal worker: %v", err)
+			timelineActs := &daprActivities.TimelineActivities{Queries: queries}
+			w.RegisterActivity(timelineActs.FetchTimelineActivity)
+			w.RegisterActivity(timelineActs.FetchWordAggregatesActivity)
+			w.RegisterActivity(timelineActs.FetchEmotionVectorsActivity)
+			w.RegisterActivity(timelineActs.FetchWordStatisticsActivity)
+
+			serviceActs := &daprActivities.ServiceInvocationActivities{DaprClient: daprClient}
+			w.RegisterActivity(serviceActs.RunVisualizationAnalysisActivity)
+			w.RegisterActivity(serviceActs.GetIntegratedTimelineActivity)
+
+			log.Println("Starting Dapr workflow worker")
+			if err := w.Start(); err != nil {
+				log.Printf("Unable to start Dapr workflow worker: %v", err)
+			}
+		}()
+
+		// Start MCP Server
+		log.Println("Initializing MCP server...")
+		go func() {
+			mcpServer, err := mcp.NewMCPServer(queries, daprClient)
+			if err != nil {
+				log.Printf("Failed to create MCP server: %v", err)
+				return
+			}
+
+			mcpPortStr := os.Getenv("MCP_PORT")
+			mcpPort := 3001
+			if mcpPortStr != "" {
+				if p, err := strconv.Atoi(mcpPortStr); err == nil {
+					mcpPort = p
+				}
+			}
+
+			log.Printf("Starting MCP server on port %d", mcpPort)
+			if err := mcpServer.Start(mcpPort); err != nil {
+				log.Printf("MCP server failed: %v", err)
 			}
 		}()
 	}
 
-	participantHandler := handlers.NewParticipantHandler(queries, temporalClient)
+	participantHandler := handlers.NewParticipantHandler(queries, daprClient)
 	sessionHandler := handlers.NewSessionHandler(queries)
-	timelineHandler := handlers.NewTimelineHandler(queries, temporalClient)
-	importHandler := handlers.NewImportHandler(queries, temporalClient)
+	timelineHandler := handlers.NewTimelineHandler(queries, daprClient)
+	importHandler := handlers.NewImportHandler(queries, daprClient)
 	storageHandler := handlers.NewStorageHandler()
 	preferenceHandler := handlers.NewPreferenceHandler()
 
@@ -174,7 +205,6 @@ func main() {
 				}
 			}
 			// #endregion
-			// Use a custom request with the stripped path to avoid issues with StripPrefix
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = strippedPath
 			apiMux.ServeHTTP(rw, r2)

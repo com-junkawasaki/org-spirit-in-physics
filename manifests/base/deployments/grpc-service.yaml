@@ -12,6 +12,11 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: grpc-service
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "grpc-service"
+        dapr.io/app-port: "8080"
+        dapr.io/enable-api-logging: "true"
     spec:
       containers:
       - env:

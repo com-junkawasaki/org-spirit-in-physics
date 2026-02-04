@@ -2,5 +2,6 @@ fastapi==0.115.0
 uvicorn[standard]==0.32.0
 asyncpg==0.30.0
 pydantic==2.9.2
-temporalio==1.7.0
+dapr==1.13.0
+dapr-ext-workflow==0.3.0
 python-dotenv==1.0.1

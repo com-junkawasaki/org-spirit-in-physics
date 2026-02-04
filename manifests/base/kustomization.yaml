@@ -14,20 +14,23 @@ resources:
   - serviceaccounts/import-service.yaml
   - serviceaccounts/import-worker.yaml
   - serviceaccounts/portal.yaml
-  - serviceaccounts/temporal-ts.yaml
+  - serviceaccounts/dapr-ts.yaml
   - services/grpc-service.yaml
   - services/import-service.yaml
   - services/import-worker.yaml
-  - services/infra-temporal.yaml
   - services/infra-timescaledb.yaml
   - services/portal.yaml
-  - services/temporal-ts.yaml
+  - services/dapr-ts.yaml
   - gcs-bucket.yaml
   - gcs-iam.yaml
+  # Dapr components
+  - dapr/statestore.yaml
+  - dapr/pubsub.yaml
+  - dapr/workflow.yaml
+  - deployments/dapr-redis.yaml
   - deployments/grpc-service.yaml
   - deployments/import-service.yaml
   - deployments/import-worker.yaml
-  - deployments/infra-temporal.yaml
   - deployments/portal.yaml
-  - deployments/temporal-ts.yaml
+  - deployments/dapr-ts.yaml
   - statefulsets/infra-timescaledb.yaml

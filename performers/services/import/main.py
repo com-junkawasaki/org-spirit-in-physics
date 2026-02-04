@@ -2,7 +2,7 @@
 """
 Import Service - Python implementation
 Merkle DAG: import.service.main
-Import service HTTP server using FastAPI + PostgreSQL + Temporal
+Import service HTTP server using FastAPI + PostgreSQL + Dapr
 """
 import os
 import logging
@@ -12,7 +12,7 @@ from typing import Optional
 import uvicorn
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from temporalio.client import Client
+from dapr.clients import DaprClient
 
 from app.database import get_db_pool, init_db_pool, close_db_pool
 from app.routers import participants, sessions, emotions, timeline, audio
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
     logger.info("Starting import service...")
-    
+
     # DB initialization
     database_url = os.getenv(
         'DATABASE_URL',
@@ -38,18 +38,17 @@ async def lifespan(app: FastAPI):
     )
     logger.info(f"Connecting to database: {database_url.split('@')[-1]}")
     await init_db_pool(database_url)
-    
-    # Temporal initialization
-    temporal_address = os.getenv("TEMPORAL_ADDRESS", "infra-temporal:7233")
+
+    # Dapr client initialization
     try:
-        app.state.temporal_client = await Client.connect(temporal_address)
-        logger.info(f"Connected to Temporal at {temporal_address}")
+        app.state.dapr_client = DaprClient()
+        logger.info("Dapr client initialized")
     except Exception as e:
-        logger.error(f"Failed to connect to Temporal: {e}")
-        app.state.temporal_client = None
-    
+        logger.error(f"Failed to initialize Dapr client: {e}")
+        app.state.dapr_client = None
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down import service...")
     await close_db_pool()
@@ -58,8 +57,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Import Service",
-    description="Data import service for spirit-in-physics using Temporal",
-    version="2.1.0",
+    description="Data import service for spirit-in-physics using Dapr",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -87,14 +86,14 @@ async def get_status():
         pool = await get_db_pool()
         async with pool.acquire() as conn:
             await conn.execute("SELECT 1")
-        
-        temporal_status = "connected" if hasattr(app.state, "temporal_client") and app.state.temporal_client else "disconnected"
-        
+
+        dapr_status = "connected" if hasattr(app.state, "dapr_client") and app.state.dapr_client else "disconnected"
+
         return {
             "status": "ok",
             "service": "import-service",
-            "version": "2.1.0",
-            "temporal": temporal_status
+            "version": "3.0.0",
+            "dapr": dapr_status
         }
     except Exception as e:
         logger.error(f"Status check failed: {e}")
@@ -109,7 +108,7 @@ async def root():
     """Root endpoint"""
     return {
         "service": "import-service",
-        "version": "2.1.0",
+        "version": "3.0.0",
         "endpoints": [
             "/import/status",
             "/import/participants",

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"time"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1"
+	timelinev1 "github.com/spirit-in-physics/services/grpc/gen/proto/timeline/v1"
+	"github.com/spirit-in-physics/services/grpc/internal/dapr/workflows"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -31,28 +33,29 @@ func float64Ptr(v float64) *float64 {
 	return &v
 }
 
-func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.TimelinePoint, error) {
+func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, input workflows.TimelineWorkflowInput) ([]*timelinev1.TimelinePoint, error) {
 	start := time.Now()
-	log.Printf(`{"sessionId":"debug-session","location":"activities/timeline.go:FetchTimelineActivity","message":"Started","participantId":"%s","sessionId":"%s"}`, participantID, sessionID)
+	log.Printf(`{"location":"dapr/activities/timeline.go:FetchTimelineActivity","message":"Started","participantId":"%s","sessionId":"%s"}`, input.ParticipantID, input.SessionID)
+
 	var sUID pgtype.UUID
-	if sessionID != "" {
-		parsedSessionID, err := uuid.Parse(sessionID)
+	if input.SessionID != "" {
+		parsedSessionID, err := uuid.Parse(input.SessionID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid session ID: %v", err)
 		}
 		sUID = pgtype.UUID{Bytes: parsedSessionID, Valid: true}
 	}
 
-	log.Printf(`{"sessionId":"debug-session","location":"activities/timeline.go:FetchTimelineActivity","message":"Executing Query"}`)
+	log.Printf(`{"location":"dapr/activities/timeline.go:FetchTimelineActivity","message":"Executing Query"}`)
 	points, err := a.Queries.GetTimelinePoints(ctx, db.GetTimelinePointsParams{
-		ParticipantID: participantID,
+		ParticipantID: input.ParticipantID,
 		Column2:       sUID,
 	})
 	if err != nil {
-		log.Printf(`{"sessionId":"debug-session","location":"activities/timeline.go:FetchTimelineActivity","message":"Query Failed","error":"%v"}`, err)
+		log.Printf(`{"location":"dapr/activities/timeline.go:FetchTimelineActivity","message":"Query Failed","error":"%v"}`, err)
 		return nil, err
 	}
-	log.Printf(`{"sessionId":"debug-session","location":"activities/timeline.go:FetchTimelineActivity","message":"Query Completed","duration_ms":%d,"pointsCount":%d}`, time.Since(start).Milliseconds(), len(points))
+	log.Printf(`{"location":"dapr/activities/timeline.go:FetchTimelineActivity","message":"Query Completed","duration_ms":%d,"pointsCount":%d}`, time.Since(start).Milliseconds(), len(points))
 
 	result := make([]*timelinev1.TimelinePoint, 0, len(points))
 	for _, p := range points {
@@ -61,9 +64,6 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 			if b, ok := p.Emotions.([]byte); ok {
 				var allEmos []*timelinev1.EmotionData
 				if err := json.Unmarshal(b, &allEmos); err == nil {
-					// Be aggressive with filtering at the source to prevent payload limit issues (2MB)
-					// Stimulus words: threshold 0.05
-					// Background samples: threshold 0.1
 					isWordEvent := p.Word.Valid && p.Word.String != "" && p.Word.String != "Unknown"
 					for _, e := range allEmos {
 						if (isWordEvent && e.Score >= 0.05) || (!isWordEvent && e.Score >= 0.1) {
@@ -82,9 +82,7 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 		}
 		if p.Physiological != nil {
 			if b, ok := p.Physiological.([]byte); ok {
-				if err := json.Unmarshal(b, &physItems); err != nil {
-					// Handle error
-				}
+				json.Unmarshal(b, &physItems)
 			}
 		}
 
@@ -121,13 +119,9 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 			sid = uuid.UUID(p.SessionID.Bytes).String()
 		}
 
-		if p.ReactionValue.Valid && p.ReactionValue.Float64 > 0 {
-			// fmt.Printf("Debug: RV for word %s: %f\n", p.Word.String, p.ReactionValue.Float64)
-		}
-
 		result = append(result, &timelinev1.TimelinePoint{
 			Time:          timestamppb.New(p.Time.Time),
-			ParticipantId: participantID,
+			ParticipantId: input.ParticipantID,
 			SessionId:     sid,
 			Word:          word,
 			ReactionTime:  rt,
@@ -142,10 +136,10 @@ func (a *TimelineActivities) FetchTimelineActivity(ctx context.Context, particip
 	return result, nil
 }
 
-func (a *TimelineActivities) FetchWordAggregatesActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.WordAggregate, error) {
+func (a *TimelineActivities) FetchWordAggregatesActivity(ctx context.Context, input workflows.TimelineWorkflowInput) ([]*timelinev1.WordAggregate, error) {
 	var sUID pgtype.UUID
-	if sessionID != "" {
-		parsedSessionID, err := uuid.Parse(sessionID)
+	if input.SessionID != "" {
+		parsedSessionID, err := uuid.Parse(input.SessionID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid session ID: %v", err)
 		}
@@ -153,7 +147,7 @@ func (a *TimelineActivities) FetchWordAggregatesActivity(ctx context.Context, pa
 	}
 
 	rows, err := a.Queries.GetWordAggregates(ctx, db.GetWordAggregatesParams{
-		ParticipantID: participantID,
+		ParticipantID: input.ParticipantID,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -163,7 +157,7 @@ func (a *TimelineActivities) FetchWordAggregatesActivity(ctx context.Context, pa
 	result := make([]*timelinev1.WordAggregate, 0, len(rows))
 	for _, r := range rows {
 		result = append(result, &timelinev1.WordAggregate{
-			ParticipantId:    participantID,
+			ParticipantId:    input.ParticipantID,
 			SessionId:        uuid.UUID(r.SessionID.Bytes).String(),
 			Word:             r.Word.String,
 			Count:            r.Count,
@@ -181,10 +175,10 @@ func (a *TimelineActivities) FetchWordAggregatesActivity(ctx context.Context, pa
 	return result, nil
 }
 
-func (a *TimelineActivities) FetchEmotionVectorsActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.EmotionVector, error) {
+func (a *TimelineActivities) FetchEmotionVectorsActivity(ctx context.Context, input workflows.TimelineWorkflowInput) ([]*timelinev1.EmotionVector, error) {
 	var sUID pgtype.UUID
-	if sessionID != "" {
-		parsedSessionID, err := uuid.Parse(sessionID)
+	if input.SessionID != "" {
+		parsedSessionID, err := uuid.Parse(input.SessionID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid session ID: %v", err)
 		}
@@ -192,7 +186,7 @@ func (a *TimelineActivities) FetchEmotionVectorsActivity(ctx context.Context, pa
 	}
 
 	rows, err := a.Queries.GetEmotionVectors(ctx, db.GetEmotionVectorsParams{
-		ParticipantID: participantID,
+		ParticipantID: input.ParticipantID,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -202,7 +196,7 @@ func (a *TimelineActivities) FetchEmotionVectorsActivity(ctx context.Context, pa
 	result := make([]*timelinev1.EmotionVector, 0, len(rows))
 	for _, r := range rows {
 		result = append(result, &timelinev1.EmotionVector{
-			ParticipantId:     participantID,
+			ParticipantId:     input.ParticipantID,
 			SessionId:         uuid.UUID(r.SessionID.Bytes).String(),
 			Word:              r.Word.String,
 			JoySum:            float64Ptr(float64(r.JoySum)),
@@ -221,10 +215,10 @@ func (a *TimelineActivities) FetchEmotionVectorsActivity(ctx context.Context, pa
 	return result, nil
 }
 
-func (a *TimelineActivities) FetchWordStatisticsActivity(ctx context.Context, participantID string, sessionID string) ([]*timelinev1.WordStatistics, error) {
+func (a *TimelineActivities) FetchWordStatisticsActivity(ctx context.Context, input workflows.TimelineWorkflowInput) ([]*timelinev1.WordStatistics, error) {
 	var sUID pgtype.UUID
-	if sessionID != "" {
-		parsedSessionID, err := uuid.Parse(sessionID)
+	if input.SessionID != "" {
+		parsedSessionID, err := uuid.Parse(input.SessionID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid session ID: %v", err)
 		}
@@ -232,7 +226,7 @@ func (a *TimelineActivities) FetchWordStatisticsActivity(ctx context.Context, pa
 	}
 
 	rows, err := a.Queries.GetWordStatistics(ctx, db.GetWordStatisticsParams{
-		ParticipantID: participantID,
+		ParticipantID: input.ParticipantID,
 		Column2:       sUID,
 	})
 	if err != nil {
@@ -242,7 +236,7 @@ func (a *TimelineActivities) FetchWordStatisticsActivity(ctx context.Context, pa
 	result := make([]*timelinev1.WordStatistics, 0, len(rows))
 	for _, r := range rows {
 		result = append(result, &timelinev1.WordStatistics{
-			ParticipantId:    participantID,
+			ParticipantId:    input.ParticipantID,
 			SessionId:        uuid.UUID(r.SessionID.Bytes).String(),
 			Word:             r.Word.String,
 			Count:            r.Count,
