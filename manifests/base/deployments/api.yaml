@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: spirit-in-physics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          value: postgresql://postgres:postgres@infra-timescaledb:5432/spirit_in_physics
+        - name: STORAGE_ENDPOINT
+          value: storage.googleapis.com
+        - name: STORAGE_BUCKET
+          value: spirit-in-physics
+        - name: STORAGE_USE_SSL
+          value: "true"
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/api:latest
+        name: api
+        ports:
+        - containerPort: 8080
+          name: http

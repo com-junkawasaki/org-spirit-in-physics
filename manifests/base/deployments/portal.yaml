@@ -16,18 +16,10 @@ spec:
       containers:
       - env:
         - name: PUBLIC_CLERK_PUBLISHABLE_KEY
-          valueFrom:
-            secretKeyRef:
-              key: PUBLIC_CLERK_PUBLISHABLE_KEY
-              name: clerk-secrets
-        - name: CLERK_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              key: CLERK_SECRET_KEY
-              name: clerk-secrets
+          value: pk_live_Y2xlcmsuZ2Z0ZC5kZXYk
         - name: PUBLIC_API_URL
           value: https://spirit-in-physics.com/api
-        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app:latest
+        image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/portal:latest
         name: portal
         ports:
         - containerPort: 80
