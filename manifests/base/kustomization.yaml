@@ -10,24 +10,16 @@ resources:
   - gateway/infra-gateway.yaml
   - gateway/infra-https-redirect.yaml
   - gateway/infra-main-route.yaml
-  - serviceaccounts/grpc-service.yaml
-  - serviceaccounts/import-service.yaml
-  - serviceaccounts/import-worker.yaml
+  - serviceaccounts/api.yaml
+  - serviceaccounts/importer.yaml
   - serviceaccounts/portal.yaml
-  - serviceaccounts/temporal-ts.yaml
-  - services/grpc-service.yaml
-  - services/import-service.yaml
-  - services/import-worker.yaml
-  - services/infra-temporal.yaml
+  - services/api.yaml
+  - services/importer.yaml
   - services/infra-timescaledb.yaml
   - services/portal.yaml
-  - services/temporal-ts.yaml
   - gcs-bucket.yaml
   - gcs-iam.yaml
-  - deployments/grpc-service.yaml
-  - deployments/import-service.yaml
-  - deployments/import-worker.yaml
-  - deployments/infra-temporal.yaml
+  - deployments/api.yaml
+  - deployments/importer.yaml
   - deployments/portal.yaml
-  - deployments/temporal-ts.yaml
   - statefulsets/infra-timescaledb.yaml

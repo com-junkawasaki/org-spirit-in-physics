@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: temporal-ts
+  name: importer
   namespace: spirit-in-physics
 spec:
   ports:
   - name: http
-    port: 3000
+    port: 8082
     protocol: TCP
     targetPort: http
   selector:
-    app.kubernetes.io/name: temporal-ts
+    app.kubernetes.io/name: importer
