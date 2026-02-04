@@ -12,6 +12,9 @@ spec:
     namespace: spirit-in-physics
     sectionName: http-0
   rules:
+  # ACME チャレンジはリダイレクトしない（cert-manager が処理）
+  # cert-manager の gatewayHTTPRoute solver が自動的にルートを作成する
+  # その他のHTTPリクエストをHTTPSにリダイレクト
   - filters:
     - requestRedirect:
         scheme: https
