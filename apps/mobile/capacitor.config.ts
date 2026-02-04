@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'ai.gftd.spirit',
+  appId: 'com.junkawasaki.spiriti-in-physics',
   appName: 'Spirit in Physics',
   webDir: '../svelte-app/build',
   bundledWebRuntime: false,

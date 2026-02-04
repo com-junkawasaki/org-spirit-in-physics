@@ -1,0 +1,12 @@
+# Google Play Store 設定
+# https://docs.fastlane.tools/actions/supply/
+
+# Application ID（build.gradle の applicationId と一致させる）
+package_name("com.junkawasaki.spiriti_in_physics")
+
+# Google Play Console サービスアカウント JSON キーのパス
+# Google Cloud Console で作成し、Google Play Console で権限を付与する
+# json_key_file("./play-store-credentials.json")
+
+# または環境変数で設定
+# json_key_file(ENV["GOOGLE_PLAY_JSON_KEY"])

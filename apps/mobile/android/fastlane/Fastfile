@@ -1,0 +1,197 @@
+default_platform(:android)
+
+platform :android do
+  # ==================== 開発・テスト ====================
+  desc "デバッグビルド"
+  lane :debug do
+    # Web アプリをビルド
+    Dir.chdir("../../..") do
+      sh("cd svelte-app && pnpm build")
+    end
+
+    # Capacitor 同期
+    Dir.chdir("..") do
+      sh("npx cap sync android")
+    end
+
+    # デバッグ APK をビルド
+    gradle(
+      task: "assembleDebug",
+      project_dir: "./"
+    )
+  end
+
+  desc "デバッグ APK をインストール"
+  lane :install_debug do
+    debug
+    adb(
+      command: "install -r app/build/outputs/apk/debug/app-debug.apk"
+    )
+  end
+
+  # ==================== 内部テスト ====================
+  desc "内部テストトラックにアップロード"
+  lane :internal do
+    # Web アプリをビルド
+    Dir.chdir("../../..") do
+      sh("cd svelte-app && pnpm build")
+    end
+
+    # Capacitor 同期
+    Dir.chdir("..") do
+      sh("npx cap sync android")
+    end
+
+    # バージョンコードをインクリメント
+    increment_version_code
+
+    # リリース AAB をビルド（App Bundle）
+    gradle(
+      task: "bundleRelease",
+      project_dir: "./"
+    )
+
+    # Google Play 内部テストトラックにアップロード
+    upload_to_play_store(
+      track: "internal",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  # ==================== ベータ（クローズドテスト） ====================
+  desc "クローズドテスト（ベータ）にアップロード"
+  lane :beta do
+    # Web アプリをビルド
+    Dir.chdir("../../..") do
+      sh("cd svelte-app && pnpm build")
+    end
+
+    # Capacitor 同期
+    Dir.chdir("..") do
+      sh("npx cap sync android")
+    end
+
+    # バージョンコードをインクリメント
+    increment_version_code
+
+    # リリース AAB をビルド
+    gradle(
+      task: "bundleRelease",
+      project_dir: "./"
+    )
+
+    # Google Play ベータトラックにアップロード
+    upload_to_play_store(
+      track: "beta",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  # ==================== 本番リリース ====================
+  desc "本番環境にリリース"
+  lane :release do
+    # Git の状態を確認
+    ensure_git_status_clean
+
+    # Web アプリをビルド
+    Dir.chdir("../../..") do
+      sh("cd svelte-app && pnpm build")
+    end
+
+    # Capacitor 同期
+    Dir.chdir("..") do
+      sh("npx cap sync android")
+    end
+
+    # バージョンコードをインクリメント
+    increment_version_code
+
+    # リリース AAB をビルド
+    gradle(
+      task: "bundleRelease",
+      project_dir: "./"
+    )
+
+    # Google Play 本番トラックにアップロード
+    upload_to_play_store(
+      track: "production",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_metadata: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "draft"  # 手動で公開する場合は "draft"
+    )
+
+    # Git タグを作成
+    version_name = get_version_name
+    version_code = get_version_code
+    add_git_tag(tag: "android/v#{version_name}-#{version_code}")
+    push_git_tags
+  end
+
+  # ==================== メタデータ ====================
+  desc "Google Play からメタデータをダウンロード"
+  lane :fetch_metadata do
+    download_from_play_store
+  end
+
+  desc "メタデータのみをアップロード"
+  lane :upload_metadata do
+    upload_to_play_store(
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  # ==================== ヘルパー ====================
+  desc "バージョンコードを取得"
+  private_lane :get_version_code do
+    # build.gradle から versionCode を読み取る
+    gradle_file = File.read("./app/build.gradle")
+    version_code = gradle_file.match(/versionCode\s+(\d+)/)[1].to_i
+    version_code
+  end
+
+  desc "バージョン名を取得"
+  private_lane :get_version_name do
+    gradle_file = File.read("./app/build.gradle")
+    version_name = gradle_file.match(/versionName\s+["'](.+)["']/)[1]
+    version_name
+  end
+
+  desc "バージョンコードをインクリメント"
+  private_lane :increment_version_code do
+    gradle_file_path = "./app/build.gradle"
+    gradle_file = File.read(gradle_file_path)
+
+    current_version_code = gradle_file.match(/versionCode\s+(\d+)/)[1].to_i
+    new_version_code = current_version_code + 1
+
+    new_gradle_file = gradle_file.gsub(
+      /versionCode\s+\d+/,
+      "versionCode #{new_version_code}"
+    )
+
+    File.write(gradle_file_path, new_gradle_file)
+
+    UI.success("Version code incremented to #{new_version_code}")
+    new_version_code
+  end
+
+  # ==================== エラーハンドリング ====================
+  error do |lane, exception|
+    # Slack 通知などを設定可能
+    # slack(
+    #   message: "Error in Android lane #{lane}: #{exception.message}",
+    #   success: false
+    # )
+  end
+end

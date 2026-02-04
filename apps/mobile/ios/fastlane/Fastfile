@@ -1,14 +1,10 @@
 default_platform(:ios)
 
 platform :ios do
+  # ==================== 開発・テスト ====================
   desc "Debug build for Simulator"
   lane :debug_sim do
-    # 依存関係の更新
-    cocoapods(
-      podfile: "App/Podfile"
-    )
-
-    # シミュレータ向けビルド
+    cocoapods(podfile: "App/Podfile")
     scan(
       scheme: "App",
       clean: true,
@@ -20,17 +16,137 @@ platform :ios do
 
   desc "Run on Simulator"
   lane :run_sim do
-    # ビルドしてシミュレータを起動
     xcodebuild(
-      workspace: "App.xcworkspace",
+      workspace: "App/App.xcworkspace",
       scheme: "App",
       configuration: "Debug",
       destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6",
       build_settings: {
-        "ARCHS" => "x86_64", # Apple Silicon の場合は arm64
+        "ARCHS" => "arm64",
         "ONLY_ACTIVE_ARCH" => "YES"
       }
     )
   end
-end
 
+  # ==================== 証明書管理 ====================
+  desc "証明書とプロファイルを同期 (match)"
+  lane :sync_certs do
+    match(type: "appstore", readonly: true)
+  end
+
+  desc "新しい証明書とプロファイルを作成"
+  lane :create_certs do
+    match(type: "development", force_for_new_devices: true)
+    match(type: "appstore")
+  end
+
+  # ==================== TestFlight ====================
+  desc "TestFlight にアップロード"
+  lane :beta do
+    # Web アプリをビルド
+    Dir.chdir("../../..") do
+      sh("cd svelte-app && pnpm build")
+    end
+
+    # Capacitor 同期
+    Dir.chdir("..") do
+      sh("npx cap sync ios")
+    end
+
+    # 証明書を取得
+    match(type: "appstore", readonly: true)
+
+    # ビルド番号をインクリメント
+    increment_build_number(xcodeproj: "App/App.xcodeproj")
+
+    # Archive & Export
+    build_app(
+      workspace: "App/App.xcworkspace",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "SpiritInPhysics.ipa"
+    )
+
+    # TestFlight にアップロード
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+  end
+
+  # ==================== App Store ====================
+  desc "App Store に提出"
+  lane :release do
+    # Web アプリをビルド
+    Dir.chdir("../../..") do
+      sh("cd svelte-app && pnpm build")
+    end
+
+    # Capacitor 同期
+    Dir.chdir("..") do
+      sh("npx cap sync ios")
+    end
+
+    # 証明書を取得
+    match(type: "appstore", readonly: true)
+
+    # バージョン番号を確認
+    ensure_git_status_clean
+
+    # ビルド番号をインクリメント
+    increment_build_number(xcodeproj: "App/App.xcodeproj")
+
+    # Archive & Export
+    build_app(
+      workspace: "App/App.xcworkspace",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "SpiritInPhysics.ipa",
+      include_bitcode: false
+    )
+
+    # App Store Connect にアップロード
+    upload_to_app_store(
+      skip_screenshots: true,
+      skip_metadata: false,
+      submit_for_review: false,
+      automatic_release: false,
+      precheck_include_in_app_purchases: false
+    )
+
+    # Git タグを作成
+    add_git_tag(tag: "ios/v#{get_version_number}-#{get_build_number}")
+    push_git_tags
+  end
+
+  # ==================== メタデータ ====================
+  desc "App Store メタデータをダウンロード"
+  lane :fetch_metadata do
+    deliver(
+      skip_binary_upload: true,
+      skip_screenshots: true
+    )
+  end
+
+  desc "スクリーンショットをアップロード"
+  lane :upload_screenshots do
+    deliver(
+      skip_binary_upload: true,
+      skip_metadata: true,
+      overwrite_screenshots: true
+    )
+  end
+
+  # ==================== エラーハンドリング ====================
+  error do |lane, exception|
+    # Slack 通知などを設定可能
+    # slack(
+    #   message: "Error in lane #{lane}: #{exception.message}",
+    #   success: false
+    # )
+  end
+end

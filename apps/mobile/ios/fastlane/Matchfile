@@ -1,0 +1,33 @@
+# Matchfile - 証明書とプロビジョニングプロファイルの管理設定
+# https://docs.fastlane.tools/actions/match/
+
+# 証明書保存先
+git_url("git@github.com:com-junkawasaki/spirit-in-physics-certificates.git")
+
+# アプリの Bundle ID
+app_identifier(["com.junkawasaki.spiriti-in-physics"])
+
+# Apple ID（Apple Developer 登録後に設定）
+username("jun784@gmail.com")
+
+# 証明書の種類（development, appstore, adhoc, enterprise）
+type("appstore")
+
+# チーム ID
+team_id("3A5CBTEBFP")
+
+# readonly モード（CI では true 推奨）
+# readonly(true)
+
+# クローン時のブランチ指定
+# git_branch("main")
+
+# 既存の証明書を強制更新
+# force(false)
+
+# 証明書の有効期限が切れる日数前に警告
+# expiration_threshold(30)
+
+# Keychain 名（CI 環境用）
+# keychain_name("fastlane_keychain")
+# keychain_password(ENV["MATCH_KEYCHAIN_PASSWORD"])
