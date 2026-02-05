@@ -8,6 +8,76 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type HumeBurstEmotionDatum struct {
+	ID            pgtype.UUID        `json:"id"`
+	Time          pgtype.Timestamptz `json:"time"`
+	SessionID     pgtype.UUID        `json:"session_id"`
+	ParticipantID string             `json:"participant_id"`
+	RecordID      pgtype.Text        `json:"record_id"`
+	BeginTime     pgtype.Float8      `json:"begin_time"`
+	EndTime       pgtype.Float8      `json:"end_time"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type HumeBurstEmotionScore struct {
+	ID                     pgtype.UUID `json:"id"`
+	HumeBurstEmotionDataID pgtype.UUID `json:"hume_burst_emotion_data_id"`
+	EmotionName            interface{} `json:"emotion_name"`
+	Score                  float64     `json:"score"`
+}
+
+type HumeFaceEmotionDatum struct {
+	ID            pgtype.UUID        `json:"id"`
+	Time          pgtype.Timestamptz `json:"time"`
+	SessionID     pgtype.UUID        `json:"session_id"`
+	ParticipantID string             `json:"participant_id"`
+	RecordID      pgtype.Text        `json:"record_id"`
+	BeginTime     pgtype.Float8      `json:"begin_time"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type HumeFaceEmotionScore struct {
+	ID                    pgtype.UUID `json:"id"`
+	HumeFaceEmotionDataID pgtype.UUID `json:"hume_face_emotion_data_id"`
+	EmotionName           interface{} `json:"emotion_name"`
+	Score                 float64     `json:"score"`
+}
+
+type HumeLanguageEmotionDatum struct {
+	ID            pgtype.UUID        `json:"id"`
+	Time          pgtype.Timestamptz `json:"time"`
+	SessionID     pgtype.UUID        `json:"session_id"`
+	ParticipantID string             `json:"participant_id"`
+	RecordID      pgtype.Text        `json:"record_id"`
+	BeginTime     pgtype.Float8      `json:"begin_time"`
+	EndTime       pgtype.Float8      `json:"end_time"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type HumeLanguageEmotionScore struct {
+	ID                        pgtype.UUID `json:"id"`
+	HumeLanguageEmotionDataID pgtype.UUID `json:"hume_language_emotion_data_id"`
+	EmotionName               interface{} `json:"emotion_name"`
+	Score                     float64     `json:"score"`
+}
+
+type HumeProsodyEmotionDatum struct {
+	ID            pgtype.UUID        `json:"id"`
+	Time          pgtype.Timestamptz `json:"time"`
+	SessionID     pgtype.UUID        `json:"session_id"`
+	ParticipantID string             `json:"participant_id"`
+	RecordID      pgtype.Text        `json:"record_id"`
+	BeginTime     pgtype.Float8      `json:"begin_time"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type HumeProsodyEmotionScore struct {
+	ID                       pgtype.UUID `json:"id"`
+	HumeProsodyEmotionDataID pgtype.UUID `json:"hume_prosody_emotion_data_id"`
+	EmotionName              interface{} `json:"emotion_name"`
+	Score                    float64     `json:"score"`
+}
+
 type Participant struct {
 	ID             string             `json:"id"`
 	Age            pgtype.Int4        `json:"age"`
@@ -21,6 +91,20 @@ type Participant struct {
 	IsPublic       pgtype.Bool        `json:"is_public"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PhysiologicalDatum struct {
+	Time          pgtype.Timestamptz `json:"time"`
+	ParticipantID string             `json:"participant_id"`
+	SessionID     pgtype.UUID        `json:"session_id"`
+	Ch1           pgtype.Float8      `json:"ch1"`
+	Ch2           pgtype.Float8      `json:"ch2"`
+	Ch3           pgtype.Float8      `json:"ch3"`
+	Ch4           pgtype.Float8      `json:"ch4"`
+	Ch5           pgtype.Float8      `json:"ch5"`
+	Ch6           pgtype.Float8      `json:"ch6"`
+	Ch7           pgtype.Float8      `json:"ch7"`
+	Ch8           pgtype.Float8      `json:"ch8"`
 }
 
 type PhysiologicalMeasurement struct {

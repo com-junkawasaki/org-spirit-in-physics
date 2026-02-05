@@ -3,33 +3,34 @@ package workflows
 import (
 	"time"
 
-	"go.temporal.io/sdk/workflow"
+	"github.com/dapr/go-sdk/workflow"
 )
 
-// ParticipantWorkflow handles participant-related workflows
-type ParticipantWorkflow struct{}
+// CreateParticipantInput represents input for creating a participant
+type CreateParticipantInput struct {
+	ID         *string                `json:"id"`
+	Signature  string                 `json:"signature"`
+	Agreements map[string]interface{} `json:"agreements"`
+	AgreedAt   time.Time              `json:"agreedAt"`
+	IsPublic   *bool                  `json:"isPublic"`
+}
 
 // CreateParticipantWorkflow creates a new participant with consent data
-func (w *ParticipantWorkflow) CreateParticipantWorkflow(ctx workflow.Context, input CreateParticipantInput) (string, error) {
-	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 10 * time.Second,
+func CreateParticipantWorkflow(ctx *workflow.WorkflowContext) (any, error) {
+	var input CreateParticipantInput
+	if err := ctx.GetInput(&input); err != nil {
+		return "", err
 	}
-	ctx = workflow.WithActivityOptions(ctx, ao)
 
 	var participantID string
-	err := workflow.ExecuteActivity(ctx, "CreateParticipantActivity", input).Get(ctx, &participantID)
-	if err != nil {
+	if err := ctx.CallActivity(CreateParticipantDBActivity, workflow.ActivityInput(input)).Await(&participantID); err != nil {
 		return "", err
 	}
 
 	return participantID, nil
 }
 
-// CreateParticipantInput represents input for creating a participant
-type CreateParticipantInput struct {
-	ID         *string
-	Signature  string
-	Agreements map[string]interface{}
-	AgreedAt   time.Time
-	IsPublic   *bool
+// CreateParticipantDBActivity placeholder - actual implementation in activities
+func CreateParticipantDBActivity(ctx workflow.ActivityContext) (any, error) {
+	return "", nil
 }

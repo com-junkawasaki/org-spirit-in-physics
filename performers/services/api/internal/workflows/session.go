@@ -1,34 +1,33 @@
 package workflows
 
 import (
-	"time"
-
-	"go.temporal.io/sdk/workflow"
+	"github.com/dapr/go-sdk/workflow"
 )
 
-// SessionWorkflow handles session-related workflows
-type SessionWorkflow struct{}
+// CreateSessionInput represents input for creating a session
+type CreateSessionInput struct {
+	ParticipantID string                   `json:"participantId"`
+	SessionIndex  *int32                   `json:"sessionIndex"`
+	StartTS       int64                    `json:"startTs"`
+	Events        []map[string]interface{} `json:"events"`
+}
 
 // CreateSessionWorkflow creates a new session for a participant
-func (w *SessionWorkflow) CreateSessionWorkflow(ctx workflow.Context, input CreateSessionInput) (string, error) {
-	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 10 * time.Second,
+func CreateSessionWorkflow(ctx *workflow.WorkflowContext) (any, error) {
+	var input CreateSessionInput
+	if err := ctx.GetInput(&input); err != nil {
+		return "", err
 	}
-	ctx = workflow.WithActivityOptions(ctx, ao)
 
 	var sessionID string
-	err := workflow.ExecuteActivity(ctx, "CreateSessionActivity", input).Get(ctx, &sessionID)
-	if err != nil {
+	if err := ctx.CallActivity(CreateSessionActivity, workflow.ActivityInput(input)).Await(&sessionID); err != nil {
 		return "", err
 	}
 
 	return sessionID, nil
 }
 
-// CreateSessionInput represents input for creating a session
-type CreateSessionInput struct {
-	ParticipantID string
-	SessionIndex  *int32
-	StartTS       int64
-	Events        []map[string]interface{}
+// CreateSessionActivity placeholder - actual implementation in activities
+func CreateSessionActivity(ctx workflow.ActivityContext) (any, error) {
+	return "", nil
 }

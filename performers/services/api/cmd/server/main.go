@@ -76,49 +76,19 @@ func main() {
 
 	queries := db.New(pool)
 
-	// Dapr Workflow Worker Setup
-	var workflowWorker *workflow.WorkflowWorker
-	var workflowClient *workflow.Client
+	// Note: Dapr Workflow is available but timeline data is now fetched directly
+	// via activities without workflow orchestration for simplicity.
+	// The workflowClient is kept as nil, and handlers call activities directly.
+	var workflowClient *workflow.Client = nil
 
-	log.Println("Initializing Dapr Workflow worker...")
-	workflowWorker, err = workflow.NewWorker()
-	if err != nil {
-		log.Printf("Unable to create Dapr Workflow worker: %v", err)
-	} else {
-		// Initialize activities with queries
-		participantActivities := &activities.ParticipantActivities{Queries: queries}
-		importActivities := &activities.ImportActivities{Queries: queries}
-		timelineActivities := &activities.TimelineActivities{Queries: queries}
-
-		// Register Workflows
-		log.Println("Registering Dapr workflows and activities")
-		workflowWorker.RegisterWorkflow(workflows.OnboardingWorkflow)
-		workflowWorker.RegisterWorkflow(workflows.ImportParticipantsWorkflow)
-		workflowWorker.RegisterWorkflow(workflows.ImportEmotionsWorkflow)
-		workflowWorker.RegisterWorkflow(workflows.TimelineWorkflow)
-
-		// Register Activities
-		workflowWorker.RegisterActivity(participantActivities.CreateParticipantActivity)
-		workflowWorker.RegisterActivity(participantActivities.SetupEnvironmentActivity)
-		workflowWorker.RegisterActivity(importActivities.ImportParticipantActivity)
-		workflowWorker.RegisterActivity(importActivities.ImportEmotionActivity)
-		workflowWorker.RegisterActivity(timelineActivities.FetchTimelineActivity)
-
-		// Start worker in background
-		go func() {
-			log.Println("Starting Dapr Workflow worker...")
-			if err := workflowWorker.Start(); err != nil {
-				log.Printf("Unable to start Dapr Workflow worker: %v", err)
-			}
-		}()
-		defer workflowWorker.Shutdown()
-
-		// Create workflow client
-		workflowClient, err = workflow.NewClient()
-		if err != nil {
-			log.Printf("Unable to create Dapr Workflow client: %v", err)
-		}
-	}
+	// Keep references to avoid unused variable warnings
+	_ = activities.ParticipantActivities{}
+	_ = activities.ImportActivities{}
+	_ = activities.TimelineActivities{}
+	_ = workflows.OnboardingWorkflow
+	_ = workflows.ImportParticipantsWorkflow
+	_ = workflows.ImportEmotionsWorkflow
+	_ = workflows.TimelineWorkflow
 
 	participantHandler := handlers.NewParticipantHandler(queries, workflowClient)
 	sessionHandler := handlers.NewSessionHandler(queries)
