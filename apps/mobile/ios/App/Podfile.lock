@@ -16,32 +16,32 @@ PODS:
     - Capacitor
 
 DEPENDENCIES:
-  - "Capacitor (from `../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios`)"
-  - "CapacitorApp (from `../../node_modules/.pnpm/@capacitor+app@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/app`)"
-  - "CapacitorCamera (from `../../node_modules/.pnpm/@capacitor+camera@6.1.3_@capacitor+core@6.2.1/node_modules/@capacitor/camera`)"
-  - "CapacitorCordova (from `../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios`)"
-  - "CapacitorFilesystem (from `../../node_modules/.pnpm/@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/filesystem`)"
-  - "CapacitorPreferences (from `../../node_modules/.pnpm/@capacitor+preferences@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/preferences`)"
-  - "CapacitorStatusBar (from `../../node_modules/.pnpm/@capacitor+status-bar@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/status-bar`)"
-  - "CapacitorVoiceRecorder (from `../../node_modules/.pnpm/capacitor-voice-recorder@6.1.0_@capacitor+core@6.2.1_@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1_/node_modules/capacitor-voice-recorder`)"
+  - "Capacitor (from `../../../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios`)"
+  - "CapacitorApp (from `../../../../node_modules/.pnpm/@capacitor+app@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/app`)"
+  - "CapacitorCamera (from `../../../../node_modules/.pnpm/@capacitor+camera@6.1.3_@capacitor+core@6.2.1/node_modules/@capacitor/camera`)"
+  - "CapacitorCordova (from `../../../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios`)"
+  - "CapacitorFilesystem (from `../../../../node_modules/.pnpm/@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/filesystem`)"
+  - "CapacitorPreferences (from `../../../../node_modules/.pnpm/@capacitor+preferences@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/preferences`)"
+  - "CapacitorStatusBar (from `../../../../node_modules/.pnpm/@capacitor+status-bar@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/status-bar`)"
+  - "CapacitorVoiceRecorder (from `../../../../node_modules/.pnpm/capacitor-voice-recorder@6.1.0_@capacitor+core@6.2.1_@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1_/node_modules/capacitor-voice-recorder`)"
 
 EXTERNAL SOURCES:
   Capacitor:
-    :path: "../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios"
+    :path: "../../../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios"
   CapacitorApp:
-    :path: "../../node_modules/.pnpm/@capacitor+app@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/app"
+    :path: "../../../../node_modules/.pnpm/@capacitor+app@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/app"
   CapacitorCamera:
-    :path: "../../node_modules/.pnpm/@capacitor+camera@6.1.3_@capacitor+core@6.2.1/node_modules/@capacitor/camera"
+    :path: "../../../../node_modules/.pnpm/@capacitor+camera@6.1.3_@capacitor+core@6.2.1/node_modules/@capacitor/camera"
   CapacitorCordova:
-    :path: "../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios"
+    :path: "../../../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios"
   CapacitorFilesystem:
-    :path: "../../node_modules/.pnpm/@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/filesystem"
+    :path: "../../../../node_modules/.pnpm/@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/filesystem"
   CapacitorPreferences:
-    :path: "../../node_modules/.pnpm/@capacitor+preferences@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/preferences"
+    :path: "../../../../node_modules/.pnpm/@capacitor+preferences@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/preferences"
   CapacitorStatusBar:
-    :path: "../../node_modules/.pnpm/@capacitor+status-bar@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/status-bar"
+    :path: "../../../../node_modules/.pnpm/@capacitor+status-bar@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/status-bar"
   CapacitorVoiceRecorder:
-    :path: "../../node_modules/.pnpm/capacitor-voice-recorder@6.1.0_@capacitor+core@6.2.1_@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1_/node_modules/capacitor-voice-recorder"
+    :path: "../../../../node_modules/.pnpm/capacitor-voice-recorder@6.1.0_@capacitor+core@6.2.1_@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1_/node_modules/capacitor-voice-recorder"
 
 SPEC CHECKSUMS:
   Capacitor: c95400d761e376be9da6be5a05f226c0e865cebf
@@ -53,6 +53,6 @@ SPEC CHECKSUMS:
   CapacitorStatusBar: 149cde8f1328ec3aa6cbdd872a55137ae3f98b16
   CapacitorVoiceRecorder: aa2a99f1688c09a66e6988e2df554ab3865d1ae3
 
-PODFILE CHECKSUM: b796570929dda600ede8ea750867b47aeccf2c1a
+PODFILE CHECKSUM: bc18d195fc06a30aade145c6483fe06f478c7c02
 
 COCOAPODS: 1.16.2

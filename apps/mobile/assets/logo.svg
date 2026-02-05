@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="480" fill="#16213e"/>
+
+  <!-- Subtle ring -->
+  <circle cx="512" cy="512" r="460" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.1"/>
+
+  <!-- Central circle representing the "spirit" -->
+  <circle cx="512" cy="512" r="60" fill="#ffffff" opacity="0.15"/>
+  <circle cx="512" cy="512" r="40" fill="#ffffff" opacity="0.25"/>
+  <circle cx="512" cy="512" r="20" fill="#ffffff"/>
+
+  <!-- Wave 1 (top) - warm pink/red -->
+  <polyline points="120,400 200,320 280,400 360,480 440,400 520,320 600,400 680,480 760,400 840,320 904,400"
+            fill="none" stroke="#e94560" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Wave 2 (center) - cyan/blue -->
+  <polyline points="120,512 180,470 240,512 300,554 360,512 420,470 480,512 540,554 600,512 660,470 720,512 780,554 840,512 904,470"
+            fill="none" stroke="#48dbfb" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Wave 3 (bottom) - purple -->
+  <polyline points="120,624 220,700 320,624 420,548 520,624 620,700 720,624 820,548 904,624"
+            fill="none" stroke="#a29bfe" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Data points on wave 1 -->
+  <circle cx="280" cy="400" r="12" fill="#ffffff"/>
+  <circle cx="440" cy="400" r="12" fill="#ffffff"/>
+  <circle cx="600" cy="400" r="12" fill="#ffffff"/>
+  <circle cx="760" cy="400" r="12" fill="#ffffff"/>
+
+  <!-- Data points on wave 2 -->
+  <circle cx="240" cy="512" r="10" fill="#ffffff"/>
+  <circle cx="360" cy="512" r="10" fill="#ffffff"/>
+  <circle cx="480" cy="512" r="10" fill="#ffffff"/>
+  <circle cx="600" cy="512" r="10" fill="#ffffff"/>
+  <circle cx="720" cy="512" r="10" fill="#ffffff"/>
+  <circle cx="840" cy="512" r="10" fill="#ffffff"/>
+
+  <!-- Data points on wave 3 -->
+  <circle cx="320" cy="624" r="11" fill="#ffffff"/>
+  <circle cx="520" cy="624" r="11" fill="#ffffff"/>
+  <circle cx="720" cy="624" r="11" fill="#ffffff"/>
+
+  <!-- Connecting lines -->
+  <line x1="280" y1="400" x2="240" y2="512" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+  <line x1="440" y1="400" x2="480" y2="512" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+  <line x1="600" y1="400" x2="600" y2="512" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+  <line x1="760" y1="400" x2="720" y2="512" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+  <line x1="360" y1="512" x2="320" y2="624" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+  <line x1="600" y1="512" x2="520" y2="624" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+  <line x1="720" y1="512" x2="720" y2="624" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+</svg>

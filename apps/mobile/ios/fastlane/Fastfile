@@ -45,7 +45,7 @@ platform :ios do
   lane :beta do
     # Web アプリをビルド
     Dir.chdir("../../..") do
-      sh("cd svelte-app && pnpm build")
+      sh("cd web && pnpm build")
     end
 
     # Capacitor 同期
@@ -81,7 +81,7 @@ platform :ios do
   lane :release do
     # Web アプリをビルド
     Dir.chdir("../../..") do
-      sh("cd svelte-app && pnpm build")
+      sh("cd web && pnpm build")
     end
 
     # Capacitor 同期

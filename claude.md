@@ -89,12 +89,13 @@ skaffold dev -p local
 
 ### Deployment
 ```bash
-# Build and push www image
-docker build --platform linux/amd64 -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/www:latest -f apps/web/Dockerfile .
-docker push asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/www:latest
+# Build and push www image (use unique tag to avoid cache issues)
+TAG="v$(date +%Y%m%d%H%M%S)"
+docker build --platform linux/amd64 --no-cache -t asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/www:$TAG -f apps/web/Dockerfile .
+docker push asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/www:$TAG
 
-# Deploy to GKE
-kubectl rollout restart deployment/www -n spirit-in-physics
+# Deploy to GKE with specific tag
+kubectl set image deployment/www www=asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/www:$TAG -n spirit-in-physics
 kubectl rollout status deployment/www -n spirit-in-physics
 ```
 
@@ -117,3 +118,11 @@ python scripts/local_importer.py \
 
 ### Git Annex (Legacy)
 Previously used git-annex for large files. Now migrated to regular git for CSV/JSON, with videos gitignored.
+
+## Frontend Notes
+
+### Threlte (Three.js + Svelte)
+- Using Threlte v8 with Svelte 5
+- `oncreate` callback receives `ref` directly (not `{ ref }`)
+- For `T.ArrowHelper`, use `args` prop instead of `oncreate` for initialization
+- For `T.BufferGeometry`, create geometry in script and pass via `<T is={geometry} />`

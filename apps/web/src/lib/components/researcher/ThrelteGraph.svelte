@@ -102,6 +102,17 @@
   const tempVec3 = new THREE.Vector3();
   const originVec3 = new THREE.Vector3(0, 0, 0);
 
+  // Create BufferGeometry for links
+  function createLinkGeometry(s: any, t: any): THREE.BufferGeometry {
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+      s?.x || 0, s?.y || 0, s?.z || 0,
+      t?.x || 0, t?.y || 0, t?.z || 0
+    ]);
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    return geometry;
+  }
+
   // Cleanup function to dispose all cached resources
   function disposeResources() {
     materialCache.forEach(mat => mat.dispose());
@@ -236,22 +247,17 @@
 <!-- Links -->
 {#each d3Links as link, i}
   {#if typeof link.source === 'object' && typeof link.target === 'object'}
+    {@const s = d3Nodes[link.sourceIdx]}
+    {@const t = d3Nodes[link.targetIdx]}
+    {@const geometry = createLinkGeometry(s, t)}
     <T.Line
-      oncreate={(e: any) => {
-        linkRefs[i] = { ref: e.ref, sourceIdx: link.sourceIdx, targetIdx: link.targetIdx };
+      oncreate={(ref: any) => {
+        if (ref) {
+          linkRefs[i] = { ref, sourceIdx: link.sourceIdx, targetIdx: link.targetIdx };
+        }
       }}
     >
-      <T.BufferGeometry
-        oncreate={(e: any) => {
-          const s = d3Nodes[link.sourceIdx];
-          const t = d3Nodes[link.targetIdx];
-          const vertices = new Float32Array([
-            s.x || 0, s.y || 0, s.z || 0,
-            t.x || 0, t.y || 0, t.z || 0
-          ]);
-          e.ref.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-        }}
-      />
+      <T is={geometry} />
       <T is={getLinkMaterial(link.color || (link.mode === 'tension' ? '#666' : '#3b82f6'), 0.3)} />
     </T.Line>
   {/if}
@@ -261,16 +267,10 @@
 {#each d3Nodes as node (node.id)}
   {#if node.nodeType === 'anchor'}
     <!-- Render Anchor as a 3D Vector (Arrow from origin) -->
+    {@const dir = new THREE.Vector3(node.x || 0, node.y || 0, node.z || 0).normalize()}
+    {@const len = new THREE.Vector3(node.x || 0, node.y || 0, node.z || 0).length()}
     <T.ArrowHelper
-      oncreate={({ ref }) => {
-        // Set direction and length using reusable Vector3
-        tempVec3.set(node.x || 0, node.y || 0, node.z || 0);
-        const length = tempVec3.length();
-        tempVec3.normalize();
-        ref.setDirection(tempVec3);
-        ref.setLength(length, 30, 15);
-        ref.setColor(new THREE.Color(node.color || '#ffffff'));
-      }}
+      args={[dir, originVec3, len, node.color || '#ffffff', 30, 15]}
     />
 
     <T.Group position={[node.x || 0, node.y || 0, node.z || 0]}>
@@ -289,9 +289,11 @@
     </T.Group>
   {:else}
     <T.Group
-      oncreate={(e: any) => {
-        nodeRefs[node.id] = e.ref;
-        e.ref.position.set(node.x || 0, node.y || 0, node.z || 0);
+      oncreate={(ref: any) => {
+        if (ref) {
+          nodeRefs[node.id] = ref;
+          ref.position.set(node.x || 0, node.y || 0, node.z || 0);
+        }
       }}
     >
       <T.Mesh

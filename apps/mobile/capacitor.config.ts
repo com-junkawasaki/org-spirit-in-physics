@@ -3,8 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.junkawasaki.spiriti-in-physics',
   appName: 'Spirit in Physics',
-  webDir: '../svelte-app/build',
-  bundledWebRuntime: false,
+  webDir: '../web/build',
   server: {
     androidScheme: 'https',
     hostname: 'sip.junkawasaki.com', // 本番ドメインに合わせる
