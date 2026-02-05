@@ -16,10 +16,10 @@ resources:
   - services/api.yaml
   - services/importer.yaml
   - services/infra-timescaledb.yaml
-  - services/portal.yaml
-  - services/researcher.yaml
+  - services/www.yaml
+  - gcs-bucket.yaml
+  - gcs-iam.yaml
   - deployments/api.yaml
   - deployments/importer.yaml
-  - deployments/portal.yaml
-  - deployments/researcher.yaml
+  - deployments/www.yaml
   - statefulsets/infra-timescaledb.yaml

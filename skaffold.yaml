@@ -10,14 +10,10 @@ profiles:
         push: false
         useBuildkit: true
       artifacts:
-        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/portal
+        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/www
           context: .
           docker:
             dockerfile: apps/web/Dockerfile
-        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/researcher
-          context: .
-          docker:
-            dockerfile: apps/researcher/Dockerfile
         - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/api
           context: performers/services/api
           docker:
@@ -37,14 +33,10 @@ profiles:
         push: true
         useBuildkit: true
       artifacts:
-        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/portal
+        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/www
           context: .
           docker:
             dockerfile: apps/web/Dockerfile
-        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/researcher
-          context: .
-          docker:
-            dockerfile: apps/researcher/Dockerfile
         - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/api
           context: performers/services/api
           docker:
