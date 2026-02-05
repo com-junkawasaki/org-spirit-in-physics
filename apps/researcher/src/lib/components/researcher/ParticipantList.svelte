@@ -46,7 +46,7 @@
               <span class="status-badge active">参加中</span>
             </td>
             <td>
-              <a href={resolveRoute(`/researcher/participants/${p.id}`)} class="id-text hover:underline">{p.id}</a>
+              <a href={resolveRoute(`/participants/${p.id}`)} class="id-text hover:underline">{p.id}</a>
             </td>
             <td>{p.age ?? '---'}</td>
             <td>{p.gender ?? '---'}</td>
@@ -66,7 +66,7 @@
             </td>
             <td>
               <div class="row-actions">
-                <a href={resolveRoute(`/researcher/participants/${p.id}`)} title="詳細" class="action-btn">👁️</a>
+                <a href={resolveRoute(`/participants/${p.id}`)} title="詳細" class="action-btn">👁️</a>
                 <button title="編集">✏️</button>
                 <button title="削除" class="delete">🗑️</button>
               </div>
