@@ -19,17 +19,18 @@ build:
       context: ./performers/services/import
       docker:
         dockerfile: Dockerfile
+      docker:
+        dockerfile: Dockerfile
 
 manifests:
+<<<<<<< HEAD
   kustomize:
-    paths:
-      - manifests/overlays/local
-    buildArgs:
-      - --load-restrictor=LoadRestrictionsNone
-
-deploy:
-  kubectl: {}
-
+    manifests:
+      kustomize:
+        paths:
+          - manifests/overlays/local
+        buildArgs:
+          - --load-restrictor=LoadRestrictionsNone
 portForward:
   - resourceType: service
     resourceName: www
@@ -47,6 +48,19 @@ portForward:
     port: 8082
     localPort: 8082
   - resourceType: service
+<<<<<<< HEAD
+=======
+    resourceName: infra-temporal
+    namespace: spirit-in-physics
+    port: 7233
+    localPort: 7233
+  - resourceType: service
+    resourceName: infra-temporal
+    namespace: spirit-in-physics
+    port: 8088
+    localPort: 8088
+  - resourceType: service
+>>>>>>> origin/main
     resourceName: infra-timescaledb
     namespace: spirit-in-physics
     port: 5432

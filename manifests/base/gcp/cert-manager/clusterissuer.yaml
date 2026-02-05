@@ -1,0 +1,35 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: junkawasaki@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+    # spirit-in-physics.com 用
+    - selector:
+        dnsNames:
+        - spirit-in-physics.com
+      http01:
+        gatewayHTTPRoute:
+          parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: infra-gateway
+            namespace: spirit-in-physics
+            sectionName: http-0
+    # researcher.spirit-in-physics.com 用
+    - selector:
+        dnsNames:
+        - researcher.spirit-in-physics.com
+      http01:
+        gatewayHTTPRoute:
+          parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: infra-gateway
+            namespace: spirit-in-physics
+            sectionName: http-researcher
