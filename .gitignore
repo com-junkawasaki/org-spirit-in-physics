@@ -53,3 +53,8 @@ target/
 **/*.rs.bk
 *.pdb
 Cargo.lockresult*
+
+# Video files (stored separately)
+*.webm
+*.mp4
+*.mov

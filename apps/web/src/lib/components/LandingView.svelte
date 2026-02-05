@@ -206,9 +206,9 @@
 
       allResponses.forEach((response, researcherIdx) => {
         if (!response || !response.points) return;
-        
+
         const vectors = allVectors[researcherIdx];
-        if (!vectors) return;
+        // Don't skip if vectors is empty - we can still display word nodes without emotion data
 
         const analysis = allAnalysis[researcherIdx];
         if (analysis && analysis.ghostPatterns) {
@@ -231,7 +231,7 @@
           .slice(0, 100) // Reduced from 300 for performance
           .map((d, i) => {
             const word = d.word;
-            const vec = vectors.vectors.find(v => v.word === word);
+            const vec = vectors?.vectors?.find(v => v.word === word);
             const emotion: Record<string, number> = {};
             if (vec) {
               const keys = ['joy', 'sadness', 'anger', 'fear', 'disgust', 'calm', 'focus', 'surprise', 'confusion', 'excitement'];
