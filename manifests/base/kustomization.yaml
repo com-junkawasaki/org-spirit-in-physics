@@ -3,9 +3,16 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - cert-manager/certificate.yaml
+  - cert-manager/clusterissuer.yaml
+  - cert-manager/cleanup-rbac.yaml
+  - cert-manager/cleanup-cronjob.yaml
+  - gateway/infra-gateway.yaml
+  - gateway/infra-https-redirect.yaml
+  - gateway/infra-main-route.yaml
   - serviceaccounts/api.yaml
   - serviceaccounts/importer.yaml
-  - serviceaccounts/portal.yaml
+  - serviceaccounts/www.yaml
   - services/api.yaml
   - services/importer.yaml
   - services/infra-timescaledb.yaml
