@@ -2,7 +2,7 @@
   import { T, useTask } from '@threlte/core';
   import { OrbitControls, Text } from '@threlte/extras';
   import * as THREE from 'three';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import * as d3 from 'd3-force-3d';
   import type { WordNode, WordLink, GapArea, DensityRegion, GhostPattern } from './types';
 
@@ -37,10 +37,82 @@
   let d3Links = $state<any[]>([]);
   let tickCount = 0;
   const MAX_TICKS = 300; // Limit simulation duration to prevent persistent CPU drain
-  
+
   // Track references to Three.js objects for direct updates
   let nodeRefs: Record<string, THREE.Group> = {};
   let linkRefs: Array<{ ref: any; sourceIdx: number; targetIdx: number }> = [];
+
+  // === MEMORY OPTIMIZATION: Cache materials and geometries ===
+  // Material cache by color to avoid creating new materials every render
+  const materialCache = new Map<string, THREE.MeshStandardMaterial>();
+  const lineMaterialCache = new Map<string, THREE.LineBasicMaterial>();
+
+  function getNodeMaterial(color: string): THREE.MeshStandardMaterial {
+    const key = color;
+    if (!materialCache.has(key)) {
+      materialCache.set(key, new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: 0.2
+      }));
+    }
+    return materialCache.get(key)!;
+  }
+
+  function getLinkMaterial(color: string, opacity: number = 0.3): THREE.LineBasicMaterial {
+    const key = `${color}-${opacity}`;
+    if (!lineMaterialCache.has(key)) {
+      lineMaterialCache.set(key, new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity
+      }));
+    }
+    return lineMaterialCache.get(key)!;
+  }
+
+  // Cached geometry for ghost patterns (lower polygon count for performance)
+  const ghostGeometryCache = new Map<number, THREE.SphereGeometry>();
+  function getGhostGeometry(radius: number): THREE.SphereGeometry {
+    // Round radius to reduce cache fragmentation
+    const roundedRadius = Math.round(radius);
+    if (!ghostGeometryCache.has(roundedRadius)) {
+      // Use 16x16 instead of 32x32 for better performance
+      ghostGeometryCache.set(roundedRadius, new THREE.SphereGeometry(roundedRadius, 16, 16));
+    }
+    return ghostGeometryCache.get(roundedRadius)!;
+  }
+
+  // Cached materials for ghost patterns
+  const ghostMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
+  function getGhostMaterial(patternType: string): THREE.MeshStandardMaterial {
+    if (!ghostMaterialCache.has(patternType)) {
+      const color = patternType === 'overcrowding' ? '#9333ea' : '#c026d3';
+      ghostMaterialCache.set(patternType, new THREE.MeshStandardMaterial({
+        color,
+        transparent: true,
+        opacity: 0.1,
+        wireframe: true
+      }));
+    }
+    return ghostMaterialCache.get(patternType)!;
+  }
+
+  // Reusable Vector3 instances to avoid creating new ones every frame
+  const tempVec3 = new THREE.Vector3();
+  const originVec3 = new THREE.Vector3(0, 0, 0);
+
+  // Cleanup function to dispose all cached resources
+  function disposeResources() {
+    materialCache.forEach(mat => mat.dispose());
+    materialCache.clear();
+    lineMaterialCache.forEach(mat => mat.dispose());
+    lineMaterialCache.clear();
+    ghostGeometryCache.forEach(geo => geo.dispose());
+    ghostGeometryCache.clear();
+    ghostMaterialCache.forEach(mat => mat.dispose());
+    ghostMaterialCache.clear();
+  }
 
   // Convert Props to D3 structure
   function initSimulation() {
@@ -112,7 +184,10 @@
 
   onMount(() => {
     initSimulation();
-    return () => simulation?.stop();
+    return () => {
+      simulation?.stop();
+      disposeResources();
+    };
   });
 
   // React to data changes - use a debounce-like approach to prevent re-initialization loops
@@ -177,11 +252,7 @@
           ref.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
         }}
       />
-      <T.LineBasicMaterial 
-        color={link.color || (link.mode === 'tension' ? '#666' : '#3b82f6')} 
-        transparent 
-        opacity={0.3} 
-      />
+      <T is={getLinkMaterial(link.color || (link.mode === 'tension' ? '#666' : '#3b82f6'), 0.3)} />
     </T.Line>
   {/if}
 {/each}
@@ -191,16 +262,17 @@
   {#if node.nodeType === 'anchor'}
     <!-- Render Anchor as a 3D Vector (Arrow from origin) -->
     <T.ArrowHelper
-      args={[
-        new THREE.Vector3(node.x, node.y, node.z).normalize(),
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(node.x, node.y, node.z).length(),
-        node.color || '#ffffff',
-        30, // headLength
-        15  // headWidth
-      ]}
+      oncreate={({ ref }) => {
+        // Set direction and length using reusable Vector3
+        tempVec3.set(node.x || 0, node.y || 0, node.z || 0);
+        const length = tempVec3.length();
+        tempVec3.normalize();
+        ref.setDirection(tempVec3);
+        ref.setLength(length, 30, 15);
+        ref.setColor(new THREE.Color(node.color || '#ffffff'));
+      }}
     />
-    
+
     <T.Group position={[node.x || 0, node.y || 0, node.z || 0]}>
       {#if node.label}
         <Text
@@ -224,17 +296,12 @@
     >
       <T.Mesh
         geometry={nodeGeometry}
+        material={getNodeMaterial(node.color || '#1e40af')}
         scale={node.scale * 2 || 2}
         onpointerenter={() => onHover?.({ node })}
         onpointerleave={() => onHover?.(null)}
         onclick={() => onClick?.({ node })}
-      >
-        <T.MeshStandardMaterial 
-          color={node.color || '#1e40af'} 
-          emissive={node.color || '#1e40af'}
-          emissiveIntensity={0.2}
-        />
-      </T.Mesh>
+      />
 
       {#if node.label && node.scale > 5}
         <Text
@@ -256,15 +323,10 @@
 {#if showAnalysis}
   {#each ghostPatterns as ghost}
     <T.Group position={ghost.center}>
-      <T.Mesh>
-        <T.SphereGeometry args={[ghost.radius, 32, 32]} />
-        <T.MeshStandardMaterial 
-          color={ghost.pattern_type === 'overcrowding' ? '#9333ea' : '#c026d3'} 
-          transparent 
-          opacity={0.1} 
-          wireframe
-        />
-      </T.Mesh>
+      <T.Mesh
+        geometry={getGhostGeometry(ghost.radius)}
+        material={getGhostMaterial(ghost.pattern_type)}
+      />
       <Text
         text={ghost.pattern_type.toUpperCase()}
         position.y={ghost.radius + 10}

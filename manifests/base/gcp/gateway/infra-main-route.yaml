@@ -27,7 +27,7 @@ spec:
         type: PathPrefix
         value: /import
   - backendRefs:
-    - name: portal
+    - name: www
       port: 80
     matches:
     - path:
