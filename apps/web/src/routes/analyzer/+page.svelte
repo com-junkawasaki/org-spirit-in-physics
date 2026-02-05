@@ -77,6 +77,10 @@
           <h2>ログインが必要です</h2>
           <p>あなたの分析結果を表示するには、ログインしてください。</p>
           <a href="/settings" class="login-btn">ログイン / サインアップ</a>
+          <div class="experiment-link-container">
+            <p class="new-user-text">まだ実験に参加していませんか？</p>
+            <a href="/experiment" class="experiment-link">🧪 実験を始める</a>
+          </div>
         </div>
       </div>
     </SignedOut>
@@ -213,6 +217,47 @@
   .login-btn:hover, .action-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+  }
+
+  .experiment-link-container {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  :global(.dark) .experiment-link-container {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .new-user-text {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+  }
+
+  .experiment-link {
+    display: inline-block;
+    color: #3b82f6;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .experiment-link:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: translateY(-1px);
+  }
+
+  :global(.dark) .experiment-link {
+    background: rgba(59, 130, 246, 0.2);
+  }
+
+  :global(.dark) .experiment-link:hover {
+    background: rgba(59, 130, 246, 0.3);
   }
 
   .analysis-container {
