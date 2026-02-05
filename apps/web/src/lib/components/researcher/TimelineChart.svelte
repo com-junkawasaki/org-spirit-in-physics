@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as d3 from 'd3';
-  import type { TimelineDataPoint, FilterSettings, TimeRange } from './types';
-  import { normalizeEmotionName } from '$lib/researcher/emotion-normalization';
+  import type { TimelineDataPoint, FilterSettings, TimeRange } from '@spirit/visualization';
+  import { normalizeEmotionName } from '@spirit/visualization';
 
   interface Props {
     data: TimelineDataPoint[];

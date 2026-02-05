@@ -47,12 +47,14 @@
     "vite": "^7.3.0"
   },
   "dependencies": {
+    "@spirit/consent": "workspace:*",
+    "@spirit/experiment": "workspace:*",
+    "@spirit/visualization": "workspace:*",
     "@bufbuild/protobuf": "^1.10.1",
+    "@connectrpc/connect": "^1.7.0",
+    "@connectrpc/connect-web": "^1.7.0",
     "@capacitor/app": "^8.0.0",
     "@capacitor/core": "^8.0.0",
-    "@connectrpc/connect": "^1.7.0",
-    "@connectrpc/connect-node": "^1.7.0",
-    "@connectrpc/connect-web": "^1.7.0",
     "@inlang/paraglide-sveltekit": "0.15.5",
     "@threlte/core": "^8.3.1",
     "@threlte/extras": "^9.7.1",

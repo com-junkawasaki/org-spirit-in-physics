@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as d3 from 'd3';
-  import type { TimelineDataPoint, KPICalculations } from './types';
+  import type { TimelineDataPoint, KPICalculations } from '@spirit/visualization';
 
   interface Props {
     data: TimelineDataPoint[];

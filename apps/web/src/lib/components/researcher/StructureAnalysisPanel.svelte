@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { GapArea, DensityRegion, DuplicateCandidate, GhostPattern } from './types';
+  import type { GapArea, DensityRegion, DuplicateCandidate, GhostPattern } from '@spirit/visualization';
 
   interface Props {
     gapAreas: GapArea[];

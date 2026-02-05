@@ -26,12 +26,11 @@
     <!-- Visualization Card -->
     <div class="bg-white dark:bg-gray-900 rounded-[48px] shadow-2xl border-4 border-gray-100 dark:border-gray-800 overflow-hidden">
       <div class="p-8">
-        <TimelineVisualization 
-          participantId="mock-participant" 
-          width={runtimeConfig.IS_CAPACITOR ? 1200 : 1600} 
+        <TimelineVisualization
+          participantId="e41a9cd2-d803-49a8-9020-0260e55cd03e"
+          width={runtimeConfig.IS_CAPACITOR ? 1200 : 1600}
           height={runtimeConfig.IS_CAPACITOR ? 600 : 900}
           forceMode="force-3d-threlte"
-          useMockData={true}
         />
       </div>
     </div>

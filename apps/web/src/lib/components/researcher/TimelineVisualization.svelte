@@ -1,31 +1,29 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { 
-    TimelineVisualizationProps, 
-    TimelineDataPoint, 
-    FilterSettings, 
+  import type {
+    TimelineVisualizationProps,
+    TimelineDataPoint,
+    FilterSettings,
     TimeRange,
     ForcePreset,
     WordNode,
     WordLink,
-    Force3DFilters
-  } from './types';
+    Force3DFilters,
+    AnalysisResults,
+    GapArea,
+    DensityRegion,
+    DuplicateCandidate
+  } from '@spirit/visualization';
+  import { normalizeEmotionName, EMOTION_KEYS } from '@spirit/visualization';
+  import { JUNG_STIMULUS_WORDS } from '@spirit/experiment';
   import KPICards from './KPICards.svelte';
   import TimelineChart from './TimelineChart.svelte';
   import Force3DControls from './Force3DControls.svelte';
   import Force3DThrelte from './Force3DThrelte.svelte';
   import StructureAnalysisPanel from './StructureAnalysisPanel.svelte';
   import Force3DFiltersPanel from './Force3DFiltersPanel.svelte';
-  import type { 
-    AnalysisResults,
-    GapArea,
-    DensityRegion,
-    DuplicateCandidate
-  } from './types';
   import { timelineClient } from '$lib/connect';
   import * as d3 from 'd3';
-  import { normalizeEmotionName, EMOTION_KEYS } from '$lib/researcher/emotion-normalization';
-  import { JUNG_STIMULUS_WORDS } from '$lib/researcher/jung';
   import type { 
     WordAggregate, 
     EmotionVector, 

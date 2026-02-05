@@ -3,7 +3,7 @@
   import { WebGPURenderer } from 'three/webgpu';
   import { WebGLRenderer } from 'three';
   import Scene from './ThrelteGraph.svelte';
-  import type { WordNode, WordLink, GapArea, DensityRegion, GhostPattern } from './types';
+  import type { WordNode, WordLink, GapArea, DensityRegion, GhostPattern } from '@spirit/visualization';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Force3DFilters } from './types';
+  import type { Force3DFilters } from '@spirit/visualization';
 
   interface Props {
     filters: Force3DFilters;

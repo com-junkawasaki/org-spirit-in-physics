@@ -1,7 +1,7 @@
 <script lang="ts">
   import ResearchPlanContent from "./ResearchPlanContent.svelte";
   import * as m from "$lib/paraglide/messages.js";
-  import { ILLNESS_CODES, type IllnessCode } from "$lib/researcher/illness-codes";
+  import { ILLNESS_CODES, type IllnessCode } from "@spirit/consent";
   import { languageTag } from "$lib/paraglide/runtime.js";
   import { SignedIn, SignedOut, useClerkContext } from 'svelte-clerk';
   import { runtimeConfig } from "$lib/env.svelte";

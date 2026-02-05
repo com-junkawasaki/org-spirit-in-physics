@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ForcePreset } from './types';
+  import type { ForcePreset } from '@spirit/visualization';
 
   interface Props {
     forcePresets: readonly ForcePreset[];
