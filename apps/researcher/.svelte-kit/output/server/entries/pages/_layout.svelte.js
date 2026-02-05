@@ -1,4 +1,4 @@
-import { s as spread_props, a as attr_class, b as attr } from "../../chunks/index.js";
+import { a as attr_style, b as attr_class, c as clsx, s as spread_props, d as attr } from "../../chunks/index.js";
 import { g as ssr_context, h as getContext, s as setContext, i as escape_html } from "../../chunks/context.js";
 import { p as page, g as goto } from "../../chunks/index3.js";
 import { p as public_env } from "../../chunks/shared-server.js";
@@ -8,7 +8,7 @@ import "../../chunks/utils.js";
 import "@sveltejs/kit/internal/server";
 import "../../chunks/state.svelte.js";
 import { r as runtimeConfig } from "../../chunks/env.svelte.js";
-import { o as overview, p as participants_list, s as sessions_history, a as settings, u as update, b as auth_required_title, c as auth_required_desc, d as sign_in_hint, e as admin } from "../../chunks/messages.js";
+import { o as overview, p as participants_list, s as sessions_history, a as settings, u as update, b as auth_required_title, c as auth_required_desc, d as signin, e as admin } from "../../chunks/messages.js";
 function onDestroy(fn) {
   /** @type {SSRContext} */
   ssr_context.r.on_destroy(fn);
@@ -123,6 +123,51 @@ function SignedOut($$renderer, $$props) {
       $$renderer2.push(`<!---->`);
     } else {
       $$renderer2.push("<!--[!-->");
+    }
+    $$renderer2.push(`<!--]-->`);
+  });
+}
+function SignInButton($$renderer, $$props) {
+  $$renderer.component(($$renderer2) => {
+    const {
+      mode,
+      children,
+      style,
+      class: buttonClass,
+      asChild,
+      $$slots,
+      $$events,
+      ...props
+    } = $$props;
+    const ctx = useClerkContext();
+    function signIn() {
+      if (!ctx.clerk) return;
+      if (mode === "modal") {
+        void ctx.clerk.openSignIn(props);
+        return;
+      }
+      void ctx.clerk.redirectToSignIn({
+        ...props,
+        signInFallbackRedirectUrl: props.fallbackRedirectUrl,
+        signInForceRedirectUrl: props.forceRedirectUrl
+      });
+    }
+    if (asChild) {
+      $$renderer2.push("<!--[-->");
+      children?.($$renderer2, { signIn });
+      $$renderer2.push(`<!---->`);
+    } else {
+      $$renderer2.push("<!--[!-->");
+      $$renderer2.push(`<button type="button"${attr_style(style)}${attr_class(clsx(buttonClass))}>`);
+      if (children) {
+        $$renderer2.push("<!--[-->");
+        children($$renderer2, { signIn });
+        $$renderer2.push(`<!---->`);
+      } else {
+        $$renderer2.push("<!--[!-->");
+        $$renderer2.push(`Sign in`);
+      }
+      $$renderer2.push(`<!--]--></button>`);
     }
     $$renderer2.push(`<!--]-->`);
   });
@@ -361,10 +406,19 @@ function ClerkProvider_1($$renderer, $$props) {
 }
 function ResearcherGuard($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
+    const RESEARCHER_ORG_ID = "org_39Eb89xAUCDs7FtQL9YzJJBsqLm";
     let { children, fallback } = $$props;
     const clerk = runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null;
     const user = clerk?.user;
-    const isResearcher = !runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY || user?.publicMetadata?.role === "researcher";
+    const isResearcher = (() => {
+      if (!runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY) return true;
+      if (user?.organizationMemberships) {
+        const hasResearcherOrg = user.organizationMemberships.some((membership) => membership.organization?.id === RESEARCHER_ORG_ID);
+        if (hasResearcherOrg) return true;
+      }
+      if (user?.publicMetadata?.role === "researcher") return true;
+      return false;
+    })();
     if (isResearcher) {
       $$renderer2.push("<!--[-->");
       children($$renderer2);
@@ -432,7 +486,15 @@ function _layout($$renderer, $$props) {
         $$renderer3.push("<!--[!-->");
         SignedOut($$renderer3, {
           children: ($$renderer4) => {
-            $$renderer4.push(`<div class="auth-required svelte-12qhfyh"><div class="auth-card svelte-12qhfyh"><h1 class="svelte-12qhfyh">${escape_html(auth_required_title())}</h1> <p class="svelte-12qhfyh">${escape_html(auth_required_desc())}</p> <div class="auth-placeholder svelte-12qhfyh"><p class="svelte-12qhfyh">${escape_html(sign_in_hint())}</p></div></div></div>`);
+            $$renderer4.push(`<div class="auth-required svelte-12qhfyh"><div class="auth-card svelte-12qhfyh"><h1 class="svelte-12qhfyh">${escape_html(auth_required_title())}</h1> <p class="svelte-12qhfyh">${escape_html(auth_required_desc())}</p> <div class="auth-actions svelte-12qhfyh">`);
+            SignInButton($$renderer4, {
+              mode: "modal",
+              children: ($$renderer5) => {
+                $$renderer5.push(`<button class="btn-signin svelte-12qhfyh">${escape_html(signin())}</button>`);
+              },
+              $$slots: { default: true }
+            });
+            $$renderer4.push(`<!----></div></div></div>`);
           }
         });
         $$renderer3.push(`<!----> `);

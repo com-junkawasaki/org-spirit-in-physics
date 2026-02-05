@@ -65,9 +65,18 @@ class ImportActivities:
             consent_path = participant_path / "consent.json"
             if not consent_path.exists():
                 raise ValueError(f"consent.json not found for participant {participant_id}")
-            
+
             with open(consent_path, 'r', encoding='utf-8') as f:
-                consent_data = json.load(f)
+                content = f.read()
+                # Skip if this is a git-annex pointer file
+                if content.startswith('/annex'):
+                    logger.info(f"Skipping participant {participant_id}: consent.json is annex pointer")
+                    return {
+                        "participant_id": participant_id,
+                        "status": "skipped",
+                        "message": "consent.json is annex pointer (data not available locally)"
+                    }
+                consent_data = json.loads(content)
             
             # Insert participant
             await conn.execute(
@@ -116,9 +125,18 @@ class ImportActivities:
                     "status": "skipped",
                     "message": "session_data.json not found"
                 }
-            
+
             with open(session_data_path, 'r', encoding='utf-8') as f:
-                session_data = json.load(f)
+                content = f.read()
+                # Skip if this is a git-annex pointer file
+                if content.startswith('/annex'):
+                    logger.info(f"Skipping session for {participant_id}: session_data.json is annex pointer")
+                    return {
+                        "participant_id": participant_id,
+                        "status": "skipped",
+                        "message": "session_data.json is annex pointer (data not available locally)"
+                    }
+                session_data = json.loads(content)
             
             events = session_data.get('events', [])
             if not events:

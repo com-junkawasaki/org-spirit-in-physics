@@ -1,4 +1,4 @@
-import { e as ensure_array_like, a as attr_class, b as attr, h as head } from "../../../chunks/index.js";
+import { g as ensure_array_like, b as attr_class, d as attr, h as head } from "../../../chunks/index.js";
 import { i as escape_html } from "../../../chunks/context.js";
 function SessionHistory($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {

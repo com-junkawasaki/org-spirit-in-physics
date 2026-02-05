@@ -1232,6 +1232,10 @@ function attr_class(value, hash, directives) {
   var result = to_class(value, hash, directives);
   return result ? ` class="${escape_html(result, true)}"` : "";
 }
+function attr_style(value, directives) {
+  var result = to_style(value, directives);
+  return result ? ` style="${escape_html(result, true)}"` : "";
+}
 function bind_props(props_parent, props_now) {
   for (const key in props_now) {
     const initial_value = props_parent[key];
@@ -1248,11 +1252,13 @@ function ensure_array_like(array_like_or_iterator) {
   return [];
 }
 export {
-  attr_class as a,
-  attr as b,
-  stringify as c,
-  bind_props as d,
-  ensure_array_like as e,
+  attr_style as a,
+  attr_class as b,
+  clsx as c,
+  attr as d,
+  stringify as e,
+  bind_props as f,
+  ensure_array_like as g,
   head as h,
   is_passive_event as i,
   render as r,

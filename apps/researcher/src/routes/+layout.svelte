@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SignedIn, SignedOut, UserButton, ClerkProvider } from "svelte-clerk";
+  import { SignedIn, SignedOut, UserButton, SignInButton, ClerkProvider } from "svelte-clerk";
   import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import { page } from "$app/state";
   import { runtimeConfig } from "$lib/env.svelte";
@@ -90,8 +90,12 @@
           <div class="auth-card">
             <h1>{m.auth_required_title()}</h1>
             <p>{m.auth_required_desc()}</p>
-            <div class="auth-placeholder">
-              <p>{m.sign_in_hint()}</p>
+            <div class="auth-actions">
+              <SignInButton mode="modal">
+                <button class="btn-signin">
+                  {m.signin()}
+                </button>
+              </SignInButton>
             </div>
           </div>
         </div>
@@ -362,5 +366,27 @@
     border-radius: 16px;
     color: #94a3b8;
     font-size: 0.9rem;
+  }
+
+  .auth-actions {
+    margin-top: 1.5rem;
+  }
+
+  .btn-signin {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  }
+
+  .btn-signin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
   }
 </style>

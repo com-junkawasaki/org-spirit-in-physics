@@ -1,4 +1,5 @@
 import { l as languageTag } from "./runtime2.js";
+const signin$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Sign In`;
 const loading_data$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Loading data...`;
 const overview$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Overview`;
 const participants_list$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Participants`;
@@ -6,9 +7,9 @@ const sessions_history$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Sessions`;
 const settings$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Settings`;
 const auth_required_title$7 = /* @__NO_SIDE_EFFECTS__ */ () => `RESEARCHER PORTAL`;
 const auth_required_desc$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Please sign in with an account that has administrative privileges.`;
-const sign_in_hint$7 = /* @__NO_SIDE_EFFECTS__ */ () => `(The sign-in button is in the global header)`;
 const admin$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Admin`;
 const update$7 = /* @__NO_SIDE_EFFECTS__ */ () => `Update`;
+const signin$6 = /* @__NO_SIDE_EFFECTS__ */ () => `サインイン`;
 const loading_data$6 = /* @__NO_SIDE_EFFECTS__ */ () => `データを読み込んでいます...`;
 const overview$6 = /* @__NO_SIDE_EFFECTS__ */ () => `概要`;
 const participants_list$6 = /* @__NO_SIDE_EFFECTS__ */ () => `被験者一覧`;
@@ -16,9 +17,9 @@ const sessions_history$6 = /* @__NO_SIDE_EFFECTS__ */ () => `セッション履�
 const settings$6 = /* @__NO_SIDE_EFFECTS__ */ () => `設定`;
 const auth_required_title$6 = /* @__NO_SIDE_EFFECTS__ */ () => `管理者ポータル`;
 const auth_required_desc$6 = /* @__NO_SIDE_EFFECTS__ */ () => `管理者権限を持つアカウントでサインインしてください。`;
-const sign_in_hint$6 = /* @__NO_SIDE_EFFECTS__ */ () => `（サインインボタンは共通ヘッダーにあります）`;
 const admin$6 = /* @__NO_SIDE_EFFECTS__ */ () => `管理者`;
 const update$6 = /* @__NO_SIDE_EFFECTS__ */ () => `更新`;
+const signin$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Se connecter`;
 const loading_data$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Chargement des données...`;
 const overview$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Aperçu`;
 const participants_list$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Participants`;
@@ -26,9 +27,9 @@ const sessions_history$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Sessions`;
 const settings$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Paramètres`;
 const auth_required_title$5 = /* @__NO_SIDE_EFFECTS__ */ () => `PORTAIL DU CHERCHEUR`;
 const auth_required_desc$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Veuillez vous connecter avec un compte disposant de privilèges administratifs.`;
-const sign_in_hint$5 = /* @__NO_SIDE_EFFECTS__ */ () => `(Le bouton de connexion se trouve dans l'en-tête global)`;
 const admin$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Admin`;
 const update$5 = /* @__NO_SIDE_EFFECTS__ */ () => `Mettre à jour`;
+const signin$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Iniciar sesión`;
 const loading_data$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Cargando datos...`;
 const overview$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Resumen`;
 const participants_list$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Participantes`;
@@ -36,9 +37,9 @@ const sessions_history$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Sesiones`;
 const settings$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Ajustes`;
 const auth_required_title$4 = /* @__NO_SIDE_EFFECTS__ */ () => `PORTAL DEL INVESTIGADOR`;
 const auth_required_desc$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Por favor, inicie sesión con una cuenta que tenga privilegios administrativos.`;
-const sign_in_hint$4 = /* @__NO_SIDE_EFFECTS__ */ () => `(El botón de inicio de sesión está en el encabezado global)`;
 const admin$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Admin`;
 const update$4 = /* @__NO_SIDE_EFFECTS__ */ () => `Actualizar`;
+const signin$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Войти`;
 const loading_data$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Загрузка данных...`;
 const overview$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Обзор`;
 const participants_list$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Участники`;
@@ -46,9 +47,9 @@ const sessions_history$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Сессии`;
 const settings$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Настройки`;
 const auth_required_title$3 = /* @__NO_SIDE_EFFECTS__ */ () => `ПОРТАЛ ИССЛЕДОВАТЕЛЯ`;
 const auth_required_desc$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Пожалуйста, войдите в систему с учетной записью, обладающей правами администратора.`;
-const sign_in_hint$3 = /* @__NO_SIDE_EFFECTS__ */ () => `(Кнопка входа находится в общем заголовке)`;
 const admin$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Админ`;
 const update$3 = /* @__NO_SIDE_EFFECTS__ */ () => `Обновить`;
+const signin$2 = /* @__NO_SIDE_EFFECTS__ */ () => `تسجيل الدخول`;
 const loading_data$2 = /* @__NO_SIDE_EFFECTS__ */ () => `جاري تحميل البيانات...`;
 const overview$2 = /* @__NO_SIDE_EFFECTS__ */ () => `نظرة عامة`;
 const participants_list$2 = /* @__NO_SIDE_EFFECTS__ */ () => `المشاركون`;
@@ -56,9 +57,9 @@ const sessions_history$2 = /* @__NO_SIDE_EFFECTS__ */ () => `الجلسات`;
 const settings$2 = /* @__NO_SIDE_EFFECTS__ */ () => `الإعدادات`;
 const auth_required_title$2 = /* @__NO_SIDE_EFFECTS__ */ () => `بوابة الباحث`;
 const auth_required_desc$2 = /* @__NO_SIDE_EFFECTS__ */ () => `يرجى تسجيل الدخول بحساب لديه امتيازات إدارية.`;
-const sign_in_hint$2 = /* @__NO_SIDE_EFFECTS__ */ () => `(زر تسجيل الدخول موجود في الترويسة العالمية)`;
 const admin$2 = /* @__NO_SIDE_EFFECTS__ */ () => `مشرف`;
 const update$2 = /* @__NO_SIDE_EFFECTS__ */ () => `تحديث`;
+const signin$1 = /* @__NO_SIDE_EFFECTS__ */ () => `登录`;
 const loading_data$1 = /* @__NO_SIDE_EFFECTS__ */ () => `正在加载数据...`;
 const overview$1 = /* @__NO_SIDE_EFFECTS__ */ () => `概览`;
 const participants_list$1 = /* @__NO_SIDE_EFFECTS__ */ () => `受试者`;
@@ -66,9 +67,19 @@ const sessions_history$1 = /* @__NO_SIDE_EFFECTS__ */ () => `会话`;
 const settings$1 = /* @__NO_SIDE_EFFECTS__ */ () => `设置`;
 const auth_required_title$1 = /* @__NO_SIDE_EFFECTS__ */ () => `研究员门户`;
 const auth_required_desc$1 = /* @__NO_SIDE_EFFECTS__ */ () => `请使用具有管理权限的账户登录。`;
-const sign_in_hint$1 = /* @__NO_SIDE_EFFECTS__ */ () => `（登录按钮位于全局页眉中）`;
 const admin$1 = /* @__NO_SIDE_EFFECTS__ */ () => `管理员`;
 const update$1 = /* @__NO_SIDE_EFFECTS__ */ () => `更新`;
+const signin = /* @__NO_SIDE_EFFECTS__ */ (params = {}, options = {}) => {
+  return {
+    ar: signin$2,
+    en: signin$7,
+    es: signin$4,
+    fr: signin$5,
+    ja: signin$6,
+    ru: signin$3,
+    zh: signin$1
+  }[options.languageTag ?? languageTag()]();
+};
 const loading_data = /* @__NO_SIDE_EFFECTS__ */ (params = {}, options = {}) => {
   return {
     ar: loading_data$2,
@@ -146,17 +157,6 @@ const auth_required_desc = /* @__NO_SIDE_EFFECTS__ */ (params = {}, options = {}
     zh: auth_required_desc$1
   }[options.languageTag ?? languageTag()]();
 };
-const sign_in_hint = /* @__NO_SIDE_EFFECTS__ */ (params = {}, options = {}) => {
-  return {
-    ar: sign_in_hint$2,
-    en: sign_in_hint$7,
-    es: sign_in_hint$4,
-    fr: sign_in_hint$5,
-    ja: sign_in_hint$6,
-    ru: sign_in_hint$3,
-    zh: sign_in_hint$1
-  }[options.languageTag ?? languageTag()]();
-};
 const admin = /* @__NO_SIDE_EFFECTS__ */ (params = {}, options = {}) => {
   return {
     ar: admin$2,
@@ -183,7 +183,7 @@ export {
   settings as a,
   auth_required_title as b,
   auth_required_desc as c,
-  sign_in_hint as d,
+  signin as d,
   admin as e,
   loading_data as l,
   overview as o,

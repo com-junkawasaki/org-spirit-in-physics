@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { REVISION, DefaultLoadingManager, Vector3, Sphere, Matrix4, Ray, Object3D, Vector2, Box3, UniformsLib, ShaderLib, UniformsUtils, Vector4, Line3, Mesh, ShaderChunk, OrthographicCamera, BufferGeometry, Float32BufferAttribute, MeshBasicMaterial } from "three";
 import { g as get, w as writable, d as derived } from "./index2.js";
-import { d as bind_props } from "./index.js";
+import { f as bind_props } from "./index.js";
 import { h as getContext, s as setContext } from "./context.js";
 function fromStore(store) {
   if ("set" in store) {
