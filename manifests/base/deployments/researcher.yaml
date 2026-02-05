@@ -16,8 +16,14 @@ spec:
       containers:
       - name: researcher
         image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/researcher:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
+        env:
+        - name: PUBLIC_CLERK_PUBLISHABLE_KEY
+          value: "__PUBLIC_CLERK_PUBLISHABLE_KEY__"
+        - name: PUBLIC_API_URL
+          value: "https://spirit-in-physics.com/api"
         resources:
           requests:
             memory: "32Mi"

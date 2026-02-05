@@ -1,0 +1,18 @@
+{
+	"/": [
+		"src/routes/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/participants": [
+		"src/routes/+layout.ts"
+	],
+	"/participants/[id]": [
+		"src/routes/+layout.ts"
+	],
+	"/sessions": [
+		"src/routes/+layout.ts"
+	],
+	"/settings": [
+		"src/routes/+layout.ts"
+	]
+}

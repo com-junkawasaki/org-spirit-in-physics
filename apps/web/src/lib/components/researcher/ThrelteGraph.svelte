@@ -4,7 +4,7 @@
   import * as THREE from 'three';
   import { onMount, onDestroy } from 'svelte';
   import * as d3 from 'd3-force-3d';
-  import type { WordNode, WordLink, GapArea, DensityRegion, GhostPattern } from './types';
+  import type { WordNode, WordLink, GapArea, DensityRegion, GhostPattern } from '@spirit/visualization';
 
   interface Props {
     nodes: WordNode[];
@@ -237,19 +237,19 @@
 {#each d3Links as link, i}
   {#if typeof link.source === 'object' && typeof link.target === 'object'}
     <T.Line
-      oncreate={({ ref }) => {
-        linkRefs[i] = { ref, sourceIdx: link.sourceIdx, targetIdx: link.targetIdx };
+      oncreate={(e: any) => {
+        linkRefs[i] = { ref: e.ref, sourceIdx: link.sourceIdx, targetIdx: link.targetIdx };
       }}
     >
       <T.BufferGeometry
-        oncreate={({ ref }) => {
+        oncreate={(e: any) => {
           const s = d3Nodes[link.sourceIdx];
           const t = d3Nodes[link.targetIdx];
           const vertices = new Float32Array([
             s.x || 0, s.y || 0, s.z || 0,
             t.x || 0, t.y || 0, t.z || 0
           ]);
-          ref.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+          e.ref.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
         }}
       />
       <T is={getLinkMaterial(link.color || (link.mode === 'tension' ? '#666' : '#3b82f6'), 0.3)} />
@@ -288,10 +288,10 @@
       {/if}
     </T.Group>
   {:else}
-    <T.Group 
-      oncreate={({ ref }) => {
-        nodeRefs[node.id] = ref;
-        ref.position.set(node.x || 0, node.y || 0, node.z || 0);
+    <T.Group
+      oncreate={(e: any) => {
+        nodeRefs[node.id] = e.ref;
+        e.ref.position.set(node.x || 0, node.y || 0, node.z || 0);
       }}
     >
       <T.Mesh
