@@ -7,10 +7,14 @@ spec:
   hostnames:
   - spirit-in-physics.com
   - sip.junkawasaki.com
+  - researcher.spirit-in-physics.com
   parentRefs:
   - name: infra-gateway
     namespace: spirit-in-physics
     sectionName: http-0
+  - name: infra-gateway
+    namespace: spirit-in-physics
+    sectionName: researcher-http
   rules:
   # ACME チャレンジはリダイレクトしない（cert-manager が処理）
   # cert-manager の gatewayHTTPRoute solver が自動的にルートを作成する

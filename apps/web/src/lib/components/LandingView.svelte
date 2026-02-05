@@ -1,6 +1,6 @@
 <script lang="ts">
   import Force3DThrelte from "./researcher/Force3DThrelte.svelte";
-  import type { WordNode, WordLink } from "./researcher/types";
+  import type { WordNode, WordLink } from "@spirit/visualization";
   import * as m from "$lib/paraglide/messages.js";
   import { resolveRoute } from "$lib/routing";
   import { onMount } from "svelte";

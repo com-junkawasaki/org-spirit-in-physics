@@ -6,6 +6,7 @@ metadata:
 spec:
   gatewayClassName: envoy
   listeners:
+  # Main site listeners
   - allowedRoutes:
       namespaces:
         from: Same
@@ -23,4 +24,23 @@ spec:
     tls:
       certificateRefs:
       - name: sip-tls-cert
+      mode: Terminate
+  # Researcher subdomain listeners
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: researcher.spirit-in-physics.com
+    name: researcher-http
+    port: 80
+    protocol: HTTP
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: researcher.spirit-in-physics.com
+    name: researcher-https
+    port: 443
+    protocol: HTTPS
+    tls:
+      certificateRefs:
+      - name: researcher-tls-cert
       mode: Terminate

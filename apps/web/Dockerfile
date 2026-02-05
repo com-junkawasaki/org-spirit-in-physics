@@ -3,29 +3,31 @@ FROM node:20-slim AS builder
 WORKDIR /app
 RUN npm install -g pnpm@10.26.2
 
-# Copy package files for dependency caching
-COPY package.json pnpm-lock.yaml ./
+# Copy workspace files for monorepo
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY pkg ./pkg
+COPY apps/web ./apps/web
+
+# Install dependencies
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --no-frozen-lockfile
 
-# Copy everything else and build
-COPY . .
+# Build the web app
+WORKDIR /app/apps/web
 RUN pnpm build
 
 FROM node:20-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y python3 && rm -rf /var/lib/apt/lists/*
-RUN npm install -g pnpm@10.26.2
 
-# Copy package files and install production dependencies
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --no-frozen-lockfile
+# Install only sirv-cli for serving the SPA
+RUN npm install -g sirv-cli@3.0.1
 
 # Copy built files and scripts
-COPY --from=builder /app/build ./build
-COPY replace-env.py ./
+COPY --from=builder /app/apps/web/build ./build
+COPY apps/web/replace-env.py ./
 
 EXPOSE 80
 ENV PORT=80
 ENV NODE_ENV=production
 
-CMD ["/bin/sh", "-c", "python3 replace-env.py build && ./node_modules/.bin/sirv build --port 80 --single spa.html --host 0.0.0.0"]
+CMD ["/bin/sh", "-c", "python3 replace-env.py build && sirv build --port 80 --single spa.html --host 0.0.0.0"]

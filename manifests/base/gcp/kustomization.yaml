@@ -6,9 +6,11 @@ resources:
   # - gcs-bucket.yaml
   # - gcs-iam.yaml
   - cert-manager/certificate.yaml
+  - cert-manager/researcher-certificate.yaml
   - cert-manager/clusterissuer.yaml
   - cert-manager/cleanup-rbac.yaml
   - cert-manager/cleanup-cronjob.yaml
   - gateway/infra-gateway.yaml
   - gateway/infra-https-redirect.yaml
   - gateway/infra-main-route.yaml
+  - gateway/infra-researcher-route.yaml

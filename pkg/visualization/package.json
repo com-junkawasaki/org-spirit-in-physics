@@ -1,0 +1,14 @@
+{
+  "name": "@spirit/visualization",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./emotion": "./src/emotion-normalization.ts",
+    "./analysis": "./src/structure-analysis.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
