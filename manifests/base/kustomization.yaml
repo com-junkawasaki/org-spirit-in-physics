@@ -10,7 +10,9 @@ resources:
   - services/importer.yaml
   - services/infra-timescaledb.yaml
   - services/portal.yaml
+  - services/researcher.yaml
   - deployments/api.yaml
   - deployments/importer.yaml
   - deployments/portal.yaml
+  - deployments/researcher.yaml
   - statefulsets/infra-timescaledb.yaml

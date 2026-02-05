@@ -244,8 +244,8 @@ docker-compose*.yml
 .env.test.local
 .env.production.local
 
-# Package manager files
-pnpm-lock.yaml
+# Package manager files (keep pnpm-lock.yaml for monorepo builds)
+# pnpm-lock.yaml  # Needed for monorepo builds
 yarn.lock
 package-lock.json
 

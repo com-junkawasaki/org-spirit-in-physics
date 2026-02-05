@@ -6,7 +6,6 @@
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import UserSync from "$lib/components/auth/UserSync.svelte";
-  import ResearcherGuard from "$lib/components/auth/ResearcherGuard.svelte";
   import * as m from "$lib/paraglide/messages.js";
   import { languageTag, availableLanguageTags } from "$lib/paraglide/runtime.js";
   import { resolveRoute } from "$lib/routing";
@@ -41,7 +40,7 @@
 
   let activeTab = $derived.by(() => {
     const path = page.url.pathname;
-    if (path.includes('/researcher')) return 'analyzer';
+    if (path.includes('/analyzer')) return 'analyzer';
     if (path.includes('/paper')) return 'paper';
     return 'spirit';
   });
@@ -99,9 +98,9 @@
     {#if !isExperimentRoute}
       <nav class="bottom-nav">
         <div class="nav-container">
-          <a href={resolveRoute("/researcher")} class="nav-item" class:active={activeTab === 'analyzer'}>
+          <a href={resolveRoute("/analyzer")} class="nav-item" class:active={activeTab === 'analyzer'}>
             <span class="icon">📊</span>
-            <span class="label">Analyzer</span>
+            <span class="label">Analysis</span>
           </a>
           
           <a href={resolveRoute("/")} class="nav-item spirit-tab" class:active={activeTab === 'spirit'}>

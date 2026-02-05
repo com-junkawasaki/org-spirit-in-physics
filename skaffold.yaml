@@ -2,76 +2,6 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: spirit-in-physics
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-build:
-  local:
-    push: false
-  artifacts:
-    - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app
-      build:
-        local:
-          push: false
-        artifacts:
-          - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app
-            context: ./apps/web
-            docker:
-              dockerfile: Dockerfile
-          - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service
-            context: ./performers/services/grpc
-            docker:
-              dockerfile: Dockerfile
-          - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service
-            context: ./performers/services/import
-            docker:
-              dockerfile: Dockerfile
-          - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts
-            context: ./performers/services/temporal-ts
-            docker:
-              dockerfile: Dockerfile
-
-      manifests:
-        kustomize:
-          paths:
-            - manifests/overlays/local
-
-      deploy:
-        kubectl: {}
-
-      portForward:
-        - resourceType: service
-          resourceName: portal
-          namespace: spirit-in-physics
-          port: 80
-          localPort: 3000
-        - resourceType: service
-          resourceName: grpc-service
-          namespace: spirit-in-physics
-          port: 8080
-          localPort: 8080
-        - resourceType: service
-          resourceName: import-service
-          namespace: spirit-in-physics
-          port: 8082
-          localPort: 8082
-        - resourceType: service
-          resourceName: infra-temporal
-          namespace: spirit-in-physics
-          port: 7233
-          localPort: 7233
-        - resourceType: service
-          resourceName: infra-temporal
-          namespace: spirit-in-physics
-          port: 8088
-          localPort: 8088
-        - resourceType: service
-          resourceName: infra-timescaledb
-          namespace: spirit-in-physics
-          port: 5432
-          localPort: 5432
-      - manifests/overlays/local
-=======
 
 profiles:
   - name: local
@@ -81,9 +11,13 @@ profiles:
         useBuildkit: true
       artifacts:
         - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/portal
-          context: apps/web
+          context: .
           docker:
-            dockerfile: Dockerfile
+            dockerfile: apps/web/Dockerfile
+        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/researcher
+          context: .
+          docker:
+            dockerfile: apps/researcher/Dockerfile
         - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/api
           context: performers/services/api
           docker:
@@ -104,112 +38,24 @@ profiles:
         useBuildkit: true
       artifacts:
         - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/portal
-        build:
-          local:
-            push: false
-          artifacts:
-            - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/svelte-app
-              context: ./apps/web
-              docker:
-                dockerfile: Dockerfile
-            - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/grpc-service
-              context: ./performers/services/grpc
-              docker:
-                dockerfile: Dockerfile
-            - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/import-service
-              context: ./performers/services/import
-              docker:
-                dockerfile: Dockerfile
-            - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/temporal-ts
-              context: ./performers/services/temporal-ts
-              docker:
-                dockerfile: Dockerfile
-
-        manifests:
-          kustomize:
-            paths:
-              - manifests/overlays/local
-
-        deploy:
-          kubectl: {}
-
-        portForward:
-          - resourceType: service
-            resourceName: portal
-            namespace: spirit-in-physics
-            port: 80
-            localPort: 3000
-          - resourceType: service
-            resourceName: grpc-service
-            namespace: spirit-in-physics
-            port: 8080
-            localPort: 8080
-          - resourceType: service
-            resourceName: import-service
-            namespace: spirit-in-physics
-            port: 8082
-            localPort: 8082
-          - resourceType: service
-            resourceName: infra-temporal
-            namespace: spirit-in-physics
-            port: 7233
-            localPort: 7233
-          - resourceType: service
-            resourceName: infra-temporal
-            namespace: spirit-in-physics
-            port: 8088
-            localPort: 8088
-          - resourceType: service
-            resourceName: infra-timescaledb
-            namespace: spirit-in-physics
-            port: 5432
-            localPort: 5432
-
-        profiles:
-          - name: local
-            build:
-              local:
-                push: false
-                useBuildkit: true
-              artifacts:
-                - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/portal
-                  context: ./apps/web
-                  docker:
-                    dockerfile: Dockerfile
-                - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/api
-                  context: ./performers/services/api
-                  docker:
-                    dockerfile: Dockerfile
-                - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/importer
-                  context: ./performers/services/importer
-                  docker:
-                    dockerfile: Dockerfile
-            manifests:
-              kustomize:
-                paths:
-                  - manifests/overlays/local
-
-          - name: gke
-            build:
-              local:
-                push: true
-                useBuildkit: true
-              artifacts:
-                - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/portal
-                  context: ./apps/web
-                  docker:
-                    dockerfile: Dockerfile
-                - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/api
-                  context: ./performers/services/api
-                  docker:
-                    dockerfile: Dockerfile
-                - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/importer
-                  context: ./performers/services/importer
-                  docker:
-                    dockerfile: Dockerfile
-            manifests:
-              kustomize:
-                paths:
-                  - manifests/overlays/gke
-            deploy:
-              kubeContext: gke_com-junkawasaki-sip_asia-northeast1-a_spirit-standard
+          context: .
+          docker:
+            dockerfile: apps/web/Dockerfile
+        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/researcher
+          context: .
+          docker:
+            dockerfile: apps/researcher/Dockerfile
+        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/api
+          context: performers/services/api
+          docker:
+            dockerfile: Dockerfile
+        - image: asia-northeast1-docker.pkg.dev/com-junkawasaki-sip/spirit-in-physics/importer
+          context: performers/services/importer
+          docker:
+            dockerfile: Dockerfile
+    manifests:
+      kustomize:
+        paths:
+          - manifests/overlays/gke
+    deploy:
+      kubeContext: gke_com-junkawasaki-sip_asia-northeast1-a_spirit-standard

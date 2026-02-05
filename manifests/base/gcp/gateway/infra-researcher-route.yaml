@@ -1,0 +1,29 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: infra-researcher-route
+  namespace: spirit-in-physics
+spec:
+  hostnames:
+  - researcher.spirit-in-physics.com
+  parentRefs:
+  - name: infra-gateway
+    namespace: spirit-in-physics
+    sectionName: researcher-https
+  rules:
+  # API requests to backend
+  - backendRefs:
+    - name: api
+      port: 8080
+    matches:
+    - path:
+        type: PathPrefix
+        value: /api
+  # All other requests to researcher app
+  - backendRefs:
+    - name: researcher
+      port: 80
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
