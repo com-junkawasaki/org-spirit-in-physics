@@ -5,7 +5,7 @@
 git_url("git@github.com:com-junkawasaki/spirit-in-physics-certificates.git")
 
 # アプリの Bundle ID
-app_identifier(["com.junkawasaki.spiriti-in-physics"])
+app_identifier(["com.junkawasaki.spirit-in-physics"])
 
 # Apple ID（Apple Developer 登録後に設定）
 username("jun784@gmail.com")

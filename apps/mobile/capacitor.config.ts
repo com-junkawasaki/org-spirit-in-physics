@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.junkawasaki.spiriti-in-physics',
+  appId: 'com.junkawasaki.spirit-in-physics',
   appName: 'Spirit in Physics',
   webDir: '../web/build',
   server: {

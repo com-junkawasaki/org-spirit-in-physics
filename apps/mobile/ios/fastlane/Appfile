@@ -1,5 +1,5 @@
 # App Store Connect 認証情報
-app_identifier("com.junkawasaki.spiriti-in-physics")  # Bundle ID
+app_identifier("com.junkawasaki.spirit-in-physics")  # Bundle ID
 apple_id("jun784@gmail.com")       # Apple ID
 
 # App Store Connect API Key
