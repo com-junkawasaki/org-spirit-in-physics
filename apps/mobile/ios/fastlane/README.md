@@ -31,6 +31,54 @@ Debug build for Simulator
 
 Run on Simulator
 
+### ios sync_certs
+
+```sh
+[bundle exec] fastlane ios sync_certs
+```
+
+証明書とプロファイルを同期 (match)
+
+### ios create_certs
+
+```sh
+[bundle exec] fastlane ios create_certs
+```
+
+新しい証明書とプロファイルを作成
+
+### ios beta
+
+```sh
+[bundle exec] fastlane ios beta
+```
+
+TestFlight にアップロード
+
+### ios release
+
+```sh
+[bundle exec] fastlane ios release
+```
+
+App Store に提出
+
+### ios fetch_metadata
+
+```sh
+[bundle exec] fastlane ios fetch_metadata
+```
+
+App Store メタデータをダウンロード
+
+### ios upload_screenshots
+
+```sh
+[bundle exec] fastlane ios upload_screenshots
+```
+
+スクリーンショットをアップロード
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

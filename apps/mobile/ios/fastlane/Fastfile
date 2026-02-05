@@ -43,15 +43,18 @@ platform :ios do
   # ==================== TestFlight ====================
   desc "TestFlight にアップロード"
   lane :beta do
-    # Web アプリをビルド
-    Dir.chdir("../../..") do
-      sh("cd web && pnpm build")
-    end
+    # プロジェクトルートパスを取得
+    mobile_dir = File.expand_path("../..", __dir__)
+    apps_dir = File.expand_path("..", mobile_dir)
 
-    # Capacitor 同期
-    Dir.chdir("..") do
-      sh("npx cap sync ios")
-    end
+    # Web アプリをビルド
+    sh("cd #{apps_dir}/web && pnpm build")
+
+    # Capacitor copy (assets only)
+    sh("cd #{mobile_dir} && npx cap copy ios")
+
+    # CocoaPods インストール
+    cocoapods(podfile: "App/Podfile")
 
     # 証明書を取得
     match(type: "appstore", readonly: true)
@@ -84,10 +87,13 @@ platform :ios do
       sh("cd web && pnpm build")
     end
 
-    # Capacitor 同期
+    # Capacitor copy (assets only)
     Dir.chdir("..") do
-      sh("npx cap sync ios")
+      sh("npx cap copy ios")
     end
+
+    # CocoaPods インストール
+    cocoapods(podfile: "App/Podfile")
 
     # 証明書を取得
     match(type: "appstore", readonly: true)
