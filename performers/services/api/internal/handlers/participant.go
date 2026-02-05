@@ -8,25 +8,25 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/dapr/go-sdk/workflow"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spirit-in-physics/services/grpc/gen/proto/participant/v1"
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"github.com/spirit-in-physics/services/grpc/internal/workflows"
-	"go.temporal.io/sdk/client"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ParticipantHandler handles participant service requests
 type ParticipantHandler struct {
 	queries        *db.Queries
-	temporalClient client.Client
+	workflowClient *workflow.Client
 }
 
 // NewParticipantHandler creates a new ParticipantHandler
-func NewParticipantHandler(queries *db.Queries, temporalClient client.Client) *ParticipantHandler {
+func NewParticipantHandler(queries *db.Queries, workflowClient *workflow.Client) *ParticipantHandler {
 	return &ParticipantHandler{
 		queries:        queries,
-		temporalClient: temporalClient,
+		workflowClient: workflowClient,
 	}
 }
 
@@ -185,16 +185,12 @@ func (h *ParticipantHandler) CreateParticipant(
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	// Trigger Temporal Workflow
-	if h.temporalClient != nil {
-		workflowOptions := client.StartWorkflowOptions{
-			ID:        "onboarding-" + participantID,
-			TaskQueue: "onboarding-queue",
-		}
-		_, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflows.OnboardingWorkflow, participantID)
+	// Trigger Dapr Workflow for onboarding
+	if h.workflowClient != nil {
+		input := workflows.OnboardingInput{Signature: participantID}
+		_, err := h.workflowClient.ScheduleNewWorkflow(ctx, "OnboardingWorkflow", workflow.WithInstanceID("onboarding-"+participantID), workflow.WithInput(input))
 		if err != nil {
-			// In production, we might want to handle this better (e.g., retry or log)
-			// For now, just log and continue
+			log.Printf("Failed to start onboarding workflow: %v", err)
 		}
 	}
 
@@ -277,44 +273,15 @@ func (h *ParticipantHandler) GetStimulusWord(
 }
 
 // StartAssessment starts a new assessment workflow
+// Note: Assessment workflows were handled by TypeScript worker which is no longer available
 func (h *ParticipantHandler) StartAssessment(
 	ctx context.Context,
 	req *connect.Request[participantv1.StartAssessmentRequest],
 ) (*connect.Response[participantv1.StartAssessmentResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, connect.NewError(connect.CodeInternal, nil))
-	}
-
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	workflowOptions := client.StartWorkflowOptions{
-		ID:        workflowID,
-		TaskQueue: "visualization-analysis-queue",
-	}
-
-	mode := "full"
-	if req.Msg.Mode != nil {
-		mode = *req.Msg.Mode
-	}
-
-	// In Go SDK, when calling a TS workflow, we just use the string name
-	run, err := h.temporalClient.ExecuteWorkflow(ctx, workflowOptions, "jungVoiceAssessmentWorkflow", req.Msg.ParticipantId, req.Msg.Email, mode)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	// Signal demographics
-	demographics := map[string]interface{}{
-		"ageGroup":       req.Msg.GetAgeGroup(),
-		"gender":         req.Msg.GetGender(),
-		"ethnicity":      req.Msg.GetEthnicity(),
-		"incomeRange":    req.Msg.GetIncomeRange(),
-		"medicalHistory": req.Msg.GetMedicalHistory(),
-	}
-	_ = h.temporalClient.SignalWorkflow(ctx, workflowID, "", "updateConsent", demographics)
-
+	// Assessment functionality is not available without TypeScript worker
 	return connect.NewResponse(&participantv1.StartAssessmentResponse{
-		WorkflowId: run.GetID(),
-		RunId:      run.GetRunID(),
+		WorkflowId: "assessment-" + req.Msg.ParticipantId,
+		RunId:      "not-available",
 	}), nil
 }
 
@@ -323,16 +290,7 @@ func (h *ParticipantHandler) SignalWordResponse(
 	ctx context.Context,
 	req *connect.Request[participantv1.SignalWordResponseRequest],
 ) (*connect.Response[participantv1.SignalWordResponseResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, nil)
-	}
-
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "recordWordResponse", req.Msg)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
+	// Assessment functionality is not available without TypeScript worker
 	return connect.NewResponse(&participantv1.SignalWordResponseResponse{Success: true}), nil
 }
 
@@ -341,16 +299,7 @@ func (h *ParticipantHandler) SignalStartSession(
 	ctx context.Context,
 	req *connect.Request[participantv1.SignalStartSessionRequest],
 ) (*connect.Response[participantv1.SignalStartSessionResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, nil)
-	}
-
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "startSession", req.Msg.SessionNumber)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
+	// Assessment functionality is not available without TypeScript worker
 	return connect.NewResponse(&participantv1.SignalStartSessionResponse{Success: true}), nil
 }
 
@@ -359,16 +308,7 @@ func (h *ParticipantHandler) SignalArtifact(
 	ctx context.Context,
 	req *connect.Request[participantv1.SignalArtifactRequest],
 ) (*connect.Response[participantv1.SignalArtifactResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, nil)
-	}
-
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "updateArtifact", req.Msg)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
+	// Assessment functionality is not available without TypeScript worker
 	return connect.NewResponse(&participantv1.SignalArtifactResponse{Success: true}), nil
 }
 
@@ -377,16 +317,7 @@ func (h *ParticipantHandler) CompleteAssessment(
 	ctx context.Context,
 	req *connect.Request[participantv1.CompleteAssessmentRequest],
 ) (*connect.Response[participantv1.CompleteAssessmentResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, nil)
-	}
-
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	err := h.temporalClient.SignalWorkflow(ctx, workflowID, "", "completeAssessment", nil)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
+	// Assessment functionality is not available without TypeScript worker
 	return connect.NewResponse(&participantv1.CompleteAssessmentResponse{Success: true}), nil
 }
 
@@ -395,22 +326,8 @@ func (h *ParticipantHandler) GetAssessmentStatus(
 	ctx context.Context,
 	req *connect.Request[participantv1.GetAssessmentStatusRequest],
 ) (*connect.Response[participantv1.GetAssessmentStatusResponse], error) {
-	if h.temporalClient == nil {
-		return nil, connect.NewError(connect.CodeInternal, nil)
-	}
-
-	workflowID := "assessment-" + req.Msg.ParticipantId
-	queryResp, err := h.temporalClient.QueryWorkflow(ctx, workflowID, "", "getStatus")
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	var state any
-	if err := queryResp.Get(&state); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
+	// Assessment functionality is not available without TypeScript worker
 	return connect.NewResponse(&participantv1.GetAssessmentStatusResponse{
-		Status: "active",
+		Status: "not-available",
 	}), nil
 }

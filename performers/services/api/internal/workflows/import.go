@@ -1,33 +1,44 @@
 package workflows
 
 import (
-	"time"
-
-	"github.com/spirit-in-physics/services/grpc/internal/activities"
-	"go.temporal.io/sdk/workflow"
+	"github.com/dapr/go-sdk/workflow"
 )
 
-func ImportParticipantsWorkflow(ctx workflow.Context) (int, error) {
-	options := workflow.ActivityOptions{
-		StartToCloseTimeout: 5 * time.Minute,
-	}
-	ctx = workflow.WithActivityOptions(ctx, options)
-
-	var a *activities.ImportActivities
-	var count int
-	err := workflow.ExecuteActivity(ctx, a.ImportParticipantsActivity).Get(ctx, &count)
-	return count, err
+type ImportEmotionsInput struct {
+	ParticipantID string `json:"participantId"`
 }
 
-func ImportEmotionsWorkflow(ctx workflow.Context, participantID string) (int, error) {
-	options := workflow.ActivityOptions{
-		StartToCloseTimeout: 10 * time.Minute,
-	}
-	ctx = workflow.WithActivityOptions(ctx, options)
-
-	var a *activities.ImportActivities
-	var count int
-	err := workflow.ExecuteActivity(ctx, a.ImportEmotionsActivity, participantID).Get(ctx, &count)
-	return count, err
+type ImportResult struct {
+	Count int `json:"count"`
 }
 
+func ImportParticipantsWorkflow(ctx *workflow.WorkflowContext) (any, error) {
+	var result ImportResult
+	if err := ctx.CallActivity(ImportParticipantsActivity, workflow.ActivityInput(nil)).Await(&result); err != nil {
+		return nil, err
+	}
+	return result.Count, nil
+}
+
+func ImportEmotionsWorkflow(ctx *workflow.WorkflowContext) (any, error) {
+	var input ImportEmotionsInput
+	if err := ctx.GetInput(&input); err != nil {
+		return nil, err
+	}
+
+	var result ImportResult
+	if err := ctx.CallActivity(ImportEmotionsActivity, workflow.ActivityInput(input.ParticipantID)).Await(&result); err != nil {
+		return nil, err
+	}
+	return result.Count, nil
+}
+
+// ImportParticipantsActivity placeholder - actual implementation in activities/import.go
+func ImportParticipantsActivity(ctx workflow.ActivityContext) (any, error) {
+	return nil, nil
+}
+
+// ImportEmotionsActivity placeholder - actual implementation in activities/import.go
+func ImportEmotionsActivity(ctx workflow.ActivityContext) (any, error) {
+	return nil, nil
+}

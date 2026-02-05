@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/dapr/go-sdk/workflow"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
@@ -25,8 +26,6 @@ import (
 	"github.com/spirit-in-physics/services/grpc/internal/db"
 	"github.com/spirit-in-physics/services/grpc/internal/handlers"
 	"github.com/spirit-in-physics/services/grpc/internal/workflows"
-	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/worker"
 )
 
 type responseWriter struct {
@@ -77,56 +76,54 @@ func main() {
 
 	queries := db.New(pool)
 
-	// Temporal Client Setup
-	temporalAddress := os.Getenv("TEMPORAL_ADDRESS")
-	if temporalAddress == "" {
-		temporalAddress = "localhost:7233"
-	}
+	// Dapr Workflow Worker Setup
+	var workflowWorker *workflow.WorkflowWorker
+	var workflowClient *workflow.Client
 
-	temporalClient, err := client.Dial(client.Options{
-		HostPort: temporalAddress,
-	})
+	log.Println("Initializing Dapr Workflow worker...")
+	workflowWorker, err = workflow.NewWorker()
 	if err != nil {
-		log.Printf("Unable to create Temporal client: %v", err)
+		log.Printf("Unable to create Dapr Workflow worker: %v", err)
 	} else {
-		defer temporalClient.Close()
+		// Initialize activities with queries
+		participantActivities := &activities.ParticipantActivities{Queries: queries}
+		importActivities := &activities.ImportActivities{Queries: queries}
+		timelineActivities := &activities.TimelineActivities{Queries: queries}
 
-		// Start Temporal Worker in background
-		log.Println("Initializing Temporal worker...")
+		// Register Workflows
+		log.Println("Registering Dapr workflows and activities")
+		workflowWorker.RegisterWorkflow(workflows.OnboardingWorkflow)
+		workflowWorker.RegisterWorkflow(workflows.ImportParticipantsWorkflow)
+		workflowWorker.RegisterWorkflow(workflows.ImportEmotionsWorkflow)
+		workflowWorker.RegisterWorkflow(workflows.TimelineWorkflow)
+
+		// Register Activities
+		workflowWorker.RegisterActivity(participantActivities.CreateParticipantActivity)
+		workflowWorker.RegisterActivity(participantActivities.SetupEnvironmentActivity)
+		workflowWorker.RegisterActivity(importActivities.ImportParticipantActivity)
+		workflowWorker.RegisterActivity(importActivities.ImportEmotionActivity)
+		workflowWorker.RegisterActivity(timelineActivities.FetchTimelineActivity)
+
+		// Start worker in background
 		go func() {
-			w := worker.New(temporalClient, "onboarding-queue", worker.Options{})
-
-			// Register Workflows and Activities
-			log.Println("Registering Temporal workflows and activities")
-			w.RegisterWorkflow(workflows.OnboardingWorkflow)
-			w.RegisterWorkflow(workflows.ImportParticipantsWorkflow)
-			w.RegisterWorkflow(workflows.ImportEmotionsWorkflow)
-			w.RegisterWorkflow(workflows.TimelineWorkflow)
-			w.RegisterWorkflow(workflows.WordAggregatesWorkflow)
-			w.RegisterWorkflow(workflows.EmotionVectorsWorkflow)
-			w.RegisterWorkflow(workflows.WordStatisticsWorkflow)
-			w.RegisterWorkflow(workflows.VisualizationAnalysisWorkflow)
-			
-			a := &activities.ParticipantActivities{Queries: queries}
-			w.RegisterActivity(a)
-
-			ia := &activities.ImportActivities{Queries: queries}
-			w.RegisterActivity(ia)
-
-			ta := &activities.TimelineActivities{Queries: queries}
-			w.RegisterActivity(ta)
-
-			log.Println("Starting Temporal worker on queue 'onboarding-queue'")
-			if err := w.Run(worker.InterruptCh()); err != nil {
-				log.Printf("Unable to start Temporal worker: %v", err)
+			log.Println("Starting Dapr Workflow worker...")
+			if err := workflowWorker.Start(); err != nil {
+				log.Printf("Unable to start Dapr Workflow worker: %v", err)
 			}
 		}()
+		defer workflowWorker.Shutdown()
+
+		// Create workflow client
+		workflowClient, err = workflow.NewClient()
+		if err != nil {
+			log.Printf("Unable to create Dapr Workflow client: %v", err)
+		}
 	}
 
-	participantHandler := handlers.NewParticipantHandler(queries, temporalClient)
+	participantHandler := handlers.NewParticipantHandler(queries, workflowClient)
 	sessionHandler := handlers.NewSessionHandler(queries)
-	timelineHandler := handlers.NewTimelineHandler(queries, temporalClient)
-	importHandler := handlers.NewImportHandler(queries, temporalClient)
+	timelineHandler := handlers.NewTimelineHandler(queries, workflowClient)
+	importHandler := handlers.NewImportHandler(queries, workflowClient)
 	storageHandler := handlers.NewStorageHandler()
 	preferenceHandler := handlers.NewPreferenceHandler()
 
