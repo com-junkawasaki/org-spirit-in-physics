@@ -1,0 +1,29 @@
+Spirit in Physics is the world's first research platform that measures and visualizes human "spirit" as a thermodynamic information quantity through Jungian word association experiments.
+
+ABOUT THE RESEARCH
+This app is a collaborative research project with the Brain Research Institute at Niigata University. We aim to shift "spirit" from a metaphysical concept to a physically measurable quantity.
+
+KEY FEATURES
+- Word Association Test (two sessions of 100 words)
+- Real-time speech recognition for response recording
+- Emotion data measurement from facial expressions and voice
+- 3D visualization of spirit structure as a high-dimensional manifold
+- Access to research papers
+
+EXPERIMENT FLOW
+1. Sign the research consent form
+2. Enter demographic information (optional)
+3. Set up camera and microphone
+4. Complete the word association test (~20 minutes)
+5. View your results visualization
+
+DATA PRIVACY
+- All data is anonymized and strictly protected
+- Compliant with ICH-GCP standards
+- Approved by Niigata University Ethics Committee (2024-0269)
+
+REQUIRED PERMISSIONS
+- Camera: For facial expression measurement
+- Microphone: For recording voice responses
+
+Participation is completely voluntary. Your data contributes to advancing the physics of consciousness and spirit research.

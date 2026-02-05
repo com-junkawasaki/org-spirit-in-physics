@@ -1,0 +1,5 @@
+Initial Release
+- Word association test functionality
+- Real-time speech recognition
+- Research consent process
+- 3D spirit manifold visualization

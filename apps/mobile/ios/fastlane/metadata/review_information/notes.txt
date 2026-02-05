@@ -1,0 +1,14 @@
+This is a research application for a collaborative study between the developer and Niigata University Brain Research Institute in Japan.
+
+The app conducts Jungian word association experiments to measure psychological responses. Users see stimulus words and respond verbally with the first word that comes to mind.
+
+To test the app:
+1. Open the app and tap "Start Experiment"
+2. Sign in with email (you will receive a verification code)
+3. Review and accept the research consent
+4. Allow camera and microphone access when prompted
+5. Complete the word association test (100 words per session)
+
+The app requires camera access for facial expression measurement and microphone access for voice response recording.
+
+This research has been approved by Niigata University Ethics Committee (Approval number: 2024-0269).
