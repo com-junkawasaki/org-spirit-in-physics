@@ -154,7 +154,8 @@
       <p>For any questions or concerns about this privacy policy, your personal data, or to exercise your rights, please contact:</p>
       <div class="info-card">
         <p><strong>Email:</strong> <a href="mailto:support@spirit-in-physics.com">support@spirit-in-physics.com</a></p>
-        <p><strong>Research Supervisor:</strong> Kazutaka Tainaka</p>
+        <p><strong>Principal Investigator:</strong> Jun Kawasaki</p>
+        <p><strong>Supervising Professor:</strong> Kazutaka Tainaka</p>
         <p>Niigata University Brain Research Institute</p>
         <p>Systems Brain Pathology Laboratory (Tainaka Lab)</p>
       </div>
