@@ -6,11 +6,33 @@ const config: CapacitorConfig = {
   webDir: '../web/build',
   server: {
     androidScheme: 'https',
-    hostname: 'sip.junkawasaki.com', // 本番ドメインに合わせる
-    allowNavigation: ['sip.junkawasaki.com', '*.clerk.accounts.dev', 'localhost', '127.0.0.1']
+    iosScheme: 'https',
+    hostname: 'spirit-in-physics.com',
+    allowNavigation: [
+      'sip.junkawasaki.com',
+      'spirit-in-physics.com',
+      '*.spirit-in-physics.com',
+      // Clerk domains for authentication
+      '*.clerk.accounts.dev',
+      '*.clerk.com',
+      'clerk.com',
+      'accounts.clerk.com',
+      'charming-monkey-45.clerk.accounts.dev',  // Test Clerk instance
+      // Local development
+      'localhost',
+      '127.0.0.1'
+    ]
   },
   ios: {
-    contentInset: 'always'
+    contentInset: 'always',
+    // Allow inline media playback (for better WebView experience)
+    allowsLinkPreview: false
+  },
+  plugins: {
+    // Capacitor HTTP plugin for better cookie handling
+    CapacitorHttp: {
+      enabled: true
+    }
   }
 };
 

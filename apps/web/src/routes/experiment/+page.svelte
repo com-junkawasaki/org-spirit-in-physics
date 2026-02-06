@@ -5,14 +5,26 @@
   import { runtimeConfig } from "$lib/env.svelte";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { browser } from "$app/environment";
 
-  const clerk = useClerkContext();
+  // Only use clerk context if key is available
+  const clerk = $derived(runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? useClerkContext() : null);
+  const isClerkLoaded = $derived(clerk?.isLoaded ?? false);
 
   // On mobile, if already signed in, skip this page entirely and go to consent
   $effect(() => {
-    if (runtimeConfig.IS_CAPACITOR && clerk.user) {
+    if (runtimeConfig.IS_CAPACITOR && clerk?.user) {
       console.log("[Mobile] User is signed in, redirecting to consent");
       goto(resolveRoute('/experiment/consent'));
+    }
+  });
+
+  // Debug logging for mobile
+  $effect(() => {
+    if (browser && runtimeConfig.IS_CAPACITOR) {
+      console.log("[Mobile Debug] Clerk key:", runtimeConfig.PUBLIC_CLERK_PUBLISHABLE_KEY ? "present" : "missing");
+      console.log("[Mobile Debug] Clerk loaded:", isClerkLoaded);
+      console.log("[Mobile Debug] Clerk user:", clerk?.user ? "signed in" : "not signed in");
     }
   });
 </script>
@@ -33,10 +45,13 @@
   </div>
 
   <div class="w-full max-w-md bg-gray-50 dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-gray-800" class:mt-8={runtimeConfig.IS_CAPACITOR}>
-    {#if !clerk}
+    {#if !clerk || !isClerkLoaded}
       <div class="flex flex-col items-center py-12 gap-4">
         <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Initializing Space...</p>
+        {#if runtimeConfig.IS_CAPACITOR}
+          <p class="text-[8px] text-gray-300">Mobile Mode</p>
+        {/if}
       </div>
     {:else}
       <SignedOut>
@@ -79,7 +94,7 @@
             </svg>
           </div>
           <h2 class="text-xl font-bold mb-2">Ready to Start</h2>
-          <p class="text-sm text-gray-500 mb-8">You are signed in as {clerk.user?.primaryEmailAddress?.emailAddress}</p>
+          <p class="text-sm text-gray-500 mb-8">You are signed in as {clerk?.user?.primaryEmailAddress?.emailAddress}</p>
           
           <a 
             href={resolveRoute('/experiment/consent')}

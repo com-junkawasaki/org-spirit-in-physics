@@ -8,7 +8,8 @@ const getEnv = (key: string, defaultValue: string = ''): string => {
     }
     // Fallback for Capacitor/local dev if dynamic env isn't available
     if (key === 'PUBLIC_CLERK_PUBLISHABLE_KEY' && ((env as any)[key] === undefined || (env as any)[key] === "")) {
-        return "pk_test_cmVsYXhlZC13aWxkY2F0LTk3LmNsZXJrLmFjY291bnRzLmRldiQ";
+        // Use production Clerk key for Capacitor (hostname: spirit-in-physics.com)
+        return "pk_live_Y2xlcmsuc3Bpcml0LWluLXBoeXNpY3MuY29tJA";
     }
     if (key === 'PUBLIC_API_URL' && ((env as any)[key] === undefined || (env as any)[key] === "")) {
         // For Capacitor iOS Simulator, use localhost

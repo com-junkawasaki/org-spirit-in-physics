@@ -74,7 +74,14 @@ platform :ios do
       configuration: "Release",
       export_method: "app-store",
       output_directory: "./build",
-      output_name: "SpiritInPhysics.ipa"
+      output_name: "SpiritInPhysics.ipa",
+      export_options: {
+        signingStyle: "manual",
+        signingCertificate: "Apple Distribution",
+        provisioningProfiles: {
+          "com.junkawasaki.spirit-in-physics" => "match AppStore com.junkawasaki.spirit-in-physics 1770292523"
+        }
+      }
     )
 
     # TestFlight にアップロード
@@ -124,7 +131,14 @@ platform :ios do
       export_method: "app-store",
       output_directory: "./build",
       output_name: "SpiritInPhysics.ipa",
-      include_bitcode: false
+      include_bitcode: false,
+      export_options: {
+        signingStyle: "manual",
+        signingCertificate: "Apple Distribution",
+        provisioningProfiles: {
+          "com.junkawasaki.spirit-in-physics" => "match AppStore com.junkawasaki.spirit-in-physics 1770292523"
+        }
+      }
     )
 
     # App Store Connect にアップロード
@@ -253,7 +267,14 @@ platform :ios do
       export_method: "app-store",
       output_directory: "./build",
       output_name: "SpiritInPhysics.ipa",
-      include_bitcode: false
+      include_bitcode: false,
+      export_options: {
+        signingStyle: "manual",
+        signingCertificate: "Apple Distribution",
+        provisioningProfiles: {
+          "com.junkawasaki.spirit-in-physics" => "match AppStore com.junkawasaki.spirit-in-physics 1770292523"
+        }
+      }
     )
 
     # App Store Connect にアップロード＆審査提出
