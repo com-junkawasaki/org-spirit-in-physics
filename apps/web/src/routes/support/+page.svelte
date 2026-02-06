@@ -11,27 +11,20 @@
     <h1>Support</h1>
 
     <section class="section">
-      <h2>Contact Information</h2>
+      <h2>Contact Us</h2>
+      <p>If you need assistance, have questions, or want to provide feedback, please reach out to us:</p>
       <div class="contact-card">
         <div class="contact-item">
           <span class="label">Email:</span>
-          <a href="mailto:jun784@gmail.com">jun784@gmail.com</a>
-        </div>
-        <div class="contact-item">
-          <span class="label">Phone:</span>
-          <a href="tel:+81-80-4280-1991">+81-80-4280-1991</a>
+          <a href="mailto:support@spirit-in-physics.com">support@spirit-in-physics.com</a>
         </div>
       </div>
+      <p>We aim to respond to all inquiries within 48 hours.</p>
     </section>
 
     <section class="section">
-      <h2>Research Institution</h2>
-      <div class="institution-card">
-        <h3>Niigata University Brain Research Institute</h3>
-        <p>Systems Brain Pathology Laboratory (Tainaka Lab)</p>
-        <p>Phone: 025-227-0900</p>
-        <p>Email: <a href="mailto:kztainaka@bri.niigata-u.ac.jp">kztainaka@bri.niigata-u.ac.jp</a></p>
-      </div>
+      <h2>About the App</h2>
+      <p>Spirit in Physics is a research application that uses Jungian word association experiments to measure and visualize emotional responses. The app is developed in collaboration with Niigata University Brain Research Institute.</p>
     </section>
 
     <section class="section">
@@ -39,7 +32,7 @@
 
       <div class="faq-item">
         <h3>What is Spirit in Physics?</h3>
-        <p>Spirit in Physics is a research platform that uses Jungian word association experiments to measure and visualize human "spirit" as a thermodynamic information quantity.</p>
+        <p>Spirit in Physics is a research platform that uses Jungian word association experiments to measure and visualize human emotional responses as a thermodynamic information quantity.</p>
       </div>
 
       <div class="faq-item">
@@ -49,30 +42,36 @@
 
       <div class="faq-item">
         <h3>Why do you need camera and microphone access?</h3>
-        <p>The camera is used to measure facial expressions using Hume AI technology. The microphone records your verbal responses for speech recognition. Both are essential for the research data collection.</p>
+        <p>The camera is used to measure facial expressions using Hume AI technology. The microphone records your verbal responses for speech recognition. Both are essential for the research data collection. You can revoke these permissions at any time through your device settings.</p>
       </div>
 
       <div class="faq-item">
         <h3>How is my data protected?</h3>
-        <p>All data is anonymized and stored securely. The research complies with ICH-GCP standards and has been approved by the Niigata University Ethics Committee (Approval number: 2024-0269).</p>
+        <p>All data is anonymized and stored securely. The research complies with ICH-GCP standards and has been approved by the Niigata University Ethics Committee (Approval number: 2024-0269). For more details, please see our <a href="/privacy/">Privacy Policy</a>.</p>
       </div>
 
       <div class="faq-item">
         <h3>Can I withdraw from the study?</h3>
-        <p>Yes, participation is completely voluntary. You may withdraw at any time without providing a reason, and this will not result in any disadvantages.</p>
+        <p>Yes, participation is completely voluntary. You may withdraw at any time without providing a reason, and this will not result in any disadvantages. To request data deletion, contact us at <a href="mailto:support@spirit-in-physics.com">support@spirit-in-physics.com</a>.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How do I delete my account?</h3>
+        <p>To delete your account and all associated data, please contact us at <a href="mailto:support@spirit-in-physics.com">support@spirit-in-physics.com</a>. We will process your request within 30 days.</p>
       </div>
     </section>
 
     <section class="section">
-      <h2>Technical Support</h2>
+      <h2>Troubleshooting</h2>
       <p>If you experience technical issues with the app:</p>
       <ul>
         <li>Ensure you have a stable internet connection</li>
         <li>Grant camera and microphone permissions when prompted</li>
-        <li>Use a modern browser (Chrome, Safari, Firefox)</li>
-        <li>Try refreshing the page if the app becomes unresponsive</li>
+        <li>Make sure your device is running the latest version of iOS</li>
+        <li>Try closing and reopening the app if it becomes unresponsive</li>
+        <li>Check that your device has sufficient storage space</li>
       </ul>
-      <p>For persistent issues, please contact us at <a href="mailto:jun784@gmail.com">jun784@gmail.com</a>.</p>
+      <p>If the issue persists, please contact us at <a href="mailto:support@spirit-in-physics.com">support@spirit-in-physics.com</a> with a description of the problem and your device model.</p>
     </section>
   </div>
 </div>
