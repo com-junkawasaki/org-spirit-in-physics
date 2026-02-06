@@ -119,6 +119,88 @@ python scripts/local_importer.py \
 ### Git Annex (Legacy)
 Previously used git-annex for large files. Now migrated to regular git for CSV/JSON, with videos gitignored.
 
+## iOS Mobile App (Capacitor)
+
+### App Identifiers
+- **App ID**: `6758669071`
+- **Bundle ID**: `com.junkawasaki.spirit-in-physics`
+- **App Name**: Spirit in Physics
+- **iPhone only** (TARGETED_DEVICE_FAMILY = 1)
+
+### Project Structure
+```
+apps/mobile/
+├── ios/
+│   ├── App/
+│   │   ├── App.xcworkspace
+│   │   ├── App.xcodeproj/
+│   │   ├── App/
+│   │   │   ├── Info.plist
+│   │   │   └── ...
+│   │   ├── Podfile
+│   │   └── Podfile.lock
+│   └── fastlane/
+│       ├── Fastfile
+│       ├── Appfile
+│       ├── Matchfile
+│       └── metadata/   # App Store metadata (deliver)
+├── capacitor.config.ts
+└── package.json
+```
+
+### Environment Setup (Required before running Fastlane)
+```bash
+# Use Homebrew Ruby (system Ruby 2.6 has bundler issues)
+export PATH="/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:$PATH"
+
+# UTF-8 locale required for CocoaPods
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+```
+
+### App Store Connect API
+- **Key ID**: `62BW4Q57AB`
+- **Issuer ID**: `69a6de81-326a-47e3-e053-5b8c7c11a4d1`
+- **Key File**: `~/.appstoreconnect/private_keys/AuthKey_62BW4Q57AB.p8`
+
+### Fastlane Commands
+```bash
+cd apps/mobile/ios
+
+# TestFlight upload (builds web app → cap copy → cocoapods → match → build → upload)
+bundle exec fastlane beta
+
+# Submit existing build for App Store review
+bundle exec fastlane submit_for_review
+
+# Full release: build + upload + submit for review
+bundle exec fastlane full_release
+
+# Metadata management
+bundle exec fastlane fetch_metadata
+bundle exec fastlane upload_metadata
+bundle exec fastlane upload_screenshots
+```
+
+### Info.plist Required Keys
+- `ITSAppUsesNonExemptEncryption`: `false` (no encryption compliance required)
+- `NSMicrophoneUsageDescription`: Voice recording for word association experiment
+- `NSCameraUsageDescription`: Facial expression capture for emotion analysis
+- `NSPhotoLibraryUsageDescription`: Image save/select for profile and records
+
+### App Privacy Data Types (App Store Connect)
+Configured and published in App Store Connect:
+- 名前 (Name), メールアドレス (Email), 写真またはビデオ (Photos/Videos)
+- オーディオデータ (Audio), ユーザID (User ID), 製品の操作 (Product Interaction)
+- All: Purpose=App Functionality+Analytics, Linked to user=Yes, Tracking=No
+
+### Important Notes
+- `contentRightsDeclaration` is an **app-level** attribute (not version-level). Set via `PATCH /v1/apps/{appId}`, not `/v1/appStoreVersions/`
+- Privacy info must be **published** (公開) in App Store Connect before submission
+- App is set to **manual release** after approval
+- Price: Free ($0.00)
+- Age rating: 4+
+
 ## Frontend Notes
 
 ### Threlte (Three.js + Svelte)
