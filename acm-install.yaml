@@ -1,8 +1,0 @@
-# acm-install.yaml
-applySpecVersion: 1
-spec:
-  configSync:
-    enabled: true
-    sourceFormat: unstructured
-  configConnector:
-    enabled: true

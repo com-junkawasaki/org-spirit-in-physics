@@ -1,5 +1,11 @@
 ## Spirit-in-Physics Visualizer — Emotion-Kernel Tensegrity 3D Model
 
+### Deployment Direction
+
+- Active target runtime: Cloudflare native (`Pages + Workers + D1 + R2 + Durable Objects`)
+- Archived runtime: Kubernetes / GKE under [archive/kubernetes](/Users/junkawasaki/github/spirit-in-physics/archive/kubernetes)
+- Active infra design: [docs/cloudflare-native-architecture.md](/Users/junkawasaki/github/spirit-in-physics/docs/cloudflare-native-architecture.md)
+
 本プロジェクトの 3D 可視化は、感情に誘導された距離（メトリック／カーネル）で語集合に幾何（距離空間）を与え、その距離を最もよく保存するように低次元へ埋め込み、さらにテンセグリティ物理で自己支持的な立体構造へ収束させるモデルです。
 
 ### 1. データからグラフへ（Emotion Kernel Graph）
@@ -86,5 +92,4 @@ tilt up
 実装の中心ファイル:
 - `apps/researcher/src/components/TimelineVisualization.tsx`
 - `apps/researcher/src/components/Force3DWordGraph.tsx`
-
 

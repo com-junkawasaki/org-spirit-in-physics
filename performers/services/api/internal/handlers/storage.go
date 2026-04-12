@@ -104,7 +104,9 @@ func (h *StorageHandler) UploadArtifact(
 
 	// Generate a URL (this depends on the storage provider and network setup)
 	var publicURL string
-	if h.repository == "spirit-in-physics" && os.Getenv("STORAGE_ENDPOINT") == "" {
+	if publicBaseURL := os.Getenv("STORAGE_PUBLIC_BASE_URL"); publicBaseURL != "" {
+		publicURL = fmt.Sprintf("%s/%s", publicBaseURL, info.Key)
+	} else if h.repository == "spirit-in-physics" && os.Getenv("STORAGE_ENDPOINT") == "" {
 		// Default to GCS public URL if using defaults
 		publicURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", h.repository, info.Key)
 	} else {
@@ -115,4 +117,3 @@ func (h *StorageHandler) UploadArtifact(
 		PublicUrl: publicURL,
 	}), nil
 }
-
